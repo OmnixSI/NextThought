@@ -1,7 +1,10 @@
 name: Release
 # Builds the macOS app on GitHub's Apple Silicon runners and publishes a GitHub
-# Release with a DMG and a ZIP. Trigger by pushing a tag like `v0.2.0`, or run it
-# manually from the Actions tab.
+# Release with a DMG and a ZIP. Trigger it by any of:
+# - pushing a tag like `v0.2.0`;
+# - pushing a commit to main or a claude/** branch whose message contains
+#   `[release v0.2.0]` (the tag is created on that commit);
+# - running it manually from the Actions tab (workflow must be on the default branch).
 #
 # Signing:
 # - Default: ad-hoc signature (no Apple account needed). Users approve the app
@@ -13,6 +16,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+    branches: [main, 'claude/**']
   workflow_dispatch:
     inputs:
       tag:
@@ -29,12 +33,28 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/') ||
+      contains(github.event.head_commit.message, '[release v')
     runs-on: macos-latest
     timeout-minutes: 45
-    env:
-      TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve release tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          if [[ -n "$INPUT_TAG" ]]; then tag="$INPUT_TAG"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then tag="$GITHUB_REF_NAME"
+          else tag="$(printf '%s' "$MESSAGE" | grep -oE '\[release v[0-9][0-9A-Za-z.+-]*\]' | head -1 | sed -E 's/^\[release (.*)\]$/\1/')"
+          fi
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.]+)?$ ]]; then
+            echo "Invalid release tag: '$tag'" >&2; exit 1
+          fi
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "Releasing $tag from $GITHUB_SHA"
       - name: Toolchain
         run: |
           xcodebuild -version
@@ -114,7 +134,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: InterviewHacker-${{ env.TAG }}
+          name: InterviewHacker-${{ env.TAG || github.sha }}
           path: dist/InterviewHacker-*
           if-no-files-found: ignore
           retention-days: 14

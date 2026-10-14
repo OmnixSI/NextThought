@@ -28,7 +28,10 @@ INTERVIEWHACKER_MAKE_DMG=1 ./scripts/build-app.sh   # 另外生成 DMG
 ## 发布新版本
 
 1. 更新 `CHANGELOG.md`，在 `docs/releases/<tag>.md` 写发布说明（文件存在时会作为 Release 正文）。
-2. 推送版本标签，例如 `git tag v0.3.0 && git push origin v0.3.0`；带连字符的标签（如 `v0.3.0-beta.1`）自动标记为预发布。也可以在 Actions → Release 手动运行。
+2. 三种触发方式任选其一（带连字符的版本如 `v0.3.0-beta.1` 自动标记为预发布）：
+   - 推送版本标签：`git tag v0.3.0 && git push origin v0.3.0`；
+   - 在 `main` 或 `claude/**` 分支提交时，在提交信息里写 `[release v0.3.0]`，工作流会在该提交上创建标签；
+   - 在 Actions → Release 手动运行（工作流需已合并到默认分支）。
 3. `.github/workflows/release.yml` 会在 Apple Silicon runner 上测试、编译 whisper.cpp、生成图标、签名，产出 `InterviewHacker-<版本>-macOS-arm64.dmg`、`.zip` 和 `SHA256SUMS.txt`，并创建 GitHub Release。
 
 ### 签名与公证
