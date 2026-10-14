@@ -6,6 +6,7 @@
 #
 #   ./scripts/install-latest.sh            # latest release (including betas)
 #   ./scripts/install-latest.sh v0.2.0-beta.3
+#   ./scripts/install-latest.sh main-latest   # newest build of the main branch
 set -euo pipefail
 
 # Defaults to the GitHub repository of the current clone; override with INTERVIEWHACKER_REPO=owner/name.
@@ -16,7 +17,8 @@ if [[ -z "$repo" ]]; then
 fi
 tag="${1:-}"
 if [[ -z "$tag" ]]; then
-    tag="$(gh release list --repo "$repo" --limit 1 --json tagName -q '.[0].tagName')"
+    # Newest versioned release (betas included); "main-latest" is the rolling build of main.
+    tag="$(gh release list --repo "$repo" --limit 20 --json tagName -q '[.[] | select(.tagName != "main-latest")][0].tagName')"
 fi
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
