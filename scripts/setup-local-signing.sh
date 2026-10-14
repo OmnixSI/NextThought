@@ -22,10 +22,10 @@ ensure_keychain_visible() {
 }
 
 ensure_codesign_trust() {
-    if ! security find-identity -v -p codesigning "$ih_keychain" | rg -Fq "$ih_identity"; then
+    if ! security find-identity -v -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
         security add-trusted-cert -r trustRoot -p codeSign -k "$ih_keychain" "$ih_dir/certificate.pem"
     fi
-    if ! security find-identity -v -p codesigning "$ih_keychain" | rg -Fq "$ih_identity"; then
+    if ! security find-identity -v -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
         echo "macOS has not accepted code signing trust for this local identity." >&2
         exit 1
     fi
@@ -36,7 +36,7 @@ if [[ -f "$ih_keychain" && -f "$ih_password_file" && -f "$ih_identity_file" ]]; 
     IFS= read -r ih_identity < "$ih_identity_file"
     security unlock-keychain -p "$ih_password" "$ih_keychain"
     ensure_keychain_visible
-    if ! security find-identity -p codesigning "$ih_keychain" | rg -Fq "$ih_identity"; then
+    if ! security find-identity -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
         echo "The saved local signing identity is missing. Restore .local-signing from backup; do not create a new identity for an existing permission grant." >&2
         exit 1
     fi
@@ -98,7 +98,7 @@ security set-key-partition-list -S apple-tool: -s -k "$ih_password" "$ih_keychai
 /usr/bin/openssl x509 -in "$ih_dir/certificate.pem" -noout -fingerprint -sha1 \
     | sed 's/.*=//; s/://g' > "$ih_identity_file"
 IFS= read -r ih_identity < "$ih_identity_file"
-if ! security find-identity -p codesigning "$ih_keychain" | rg -Fq "$ih_identity"; then
+if ! security find-identity -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
     echo "The local certificate and private key did not form a code signing identity." >&2
     exit 1
 fi

@@ -32,6 +32,8 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>InterviewHacker uses on-device speech recognition for the system audio you select.</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>InterviewHacker captures system audio from the selected meeting or lesson window for on-device transcription.</string>
 	<key>NSScreenCaptureUsageDescription</key>
