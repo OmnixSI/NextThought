@@ -8,6 +8,8 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     var isFinal: Bool
     var startedAt: Date?
     var endedAt: Date?
+    var roleLabel: String { source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音" }
+    var contextualText: String { "[\(roleLabel)] \(text)" }
 }
 
 struct SavedSession: Codable {
@@ -68,7 +70,7 @@ enum AppFailure: LocalizedError {
         case .noTranscriber:
             return "应用内 Whisper 运行时不可用。请重新构建或安装 InterviewHacker 应用包。"
         case .modelMissing:
-            return "本地 Whisper 模型尚未下载。请在设置中确认并下载约 547 MiB 的模型。"
+            return "本地 Whisper 模型尚未就绪。请在设置中选择下载模型，或扫描并导入已有模型。"
         case let .capture(message), let .transcription(message), let .screenshot(message):
             return message
         }

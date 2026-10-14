@@ -33,8 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.level = keepOnTop ? .floating : .normal
                 window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
                 window.minSize = NSSize(width: 520, height: 600)
-                window.backgroundColor = .clear
-                window.isOpaque = false
+                window.backgroundColor = .windowBackgroundColor
+                window.isOpaque = true
             }
         }
     }

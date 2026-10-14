@@ -34,9 +34,10 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 520, minHeight: 600)
-        .background(.ultraThinMaterial)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .foregroundStyle(.primary)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24).stroke(.white.opacity(0.34), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
         .preferredColorScheme(state.darkMode ? .dark : .light)
         .confirmationDialog("下载本地语音识别模型？", isPresented: $showModelDownloadWarning, titleVisibility: .visible) {
             Button("下载 \(state.selectedModel?.sizeLabel ?? "模型")") { state.downloadModel() }
@@ -239,14 +240,14 @@ struct ContentView: View {
             }.onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
             HStack(spacing: 7) {
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 12)).foregroundStyle(.secondary)
-                Text(state.transcriptionBackend == "apple" ? "系统音频 → Apple Speech · 端侧流式" : "系统音频 → Whisper · 分段识别")
+                Text(state.microphoneEnabled ? "对方 · 系统声音  /  我 · 麦克风" : "对方 · 系统声音（麦克风已关闭）")
                     .font(.system(size: 12)).foregroundStyle(.secondary)
                 Spacer()
                 Text(state.shortcutLabel(.toggleSession)).font(.system(size: 11, design: .monospaced)).foregroundStyle(.tertiary)
             }
         }
         .padding(14)
-        .background(.background.opacity(0.72), in: RoundedRectangle(cornerRadius: 17))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 17))
         .overlay(RoundedRectangle(cornerRadius: 17).stroke(.primary.opacity(0.06), lineWidth: 1))
         .disabled(state.isChangingSession)
     }
@@ -264,29 +265,33 @@ struct ContentView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
-                        if state.entries.isEmpty && state.partialTranscript.isEmpty {
+                        if state.entries.isEmpty && state.partialTranscript.isEmpty && state.microphonePartialTranscript.isEmpty {
                             Text("开始辅助后，稳定识别的会议语音会出现在这里。原始音频不保存。")
                                 .font(.system(size: 13)).foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 14)
                         }
                         ForEach(state.entries.suffix(80)) { entry in
-                            transcriptLine(entry.text, time: entry.date.formatted(date: .omitted, time: .shortened), partial: false)
+                            transcriptLine(entry.text, time: entry.date.formatted(date: .omitted, time: .shortened), partial: false, role: entry.roleLabel)
                                 .id(entry.id)
                         }
                         if !state.partialTranscript.isEmpty {
-                            transcriptLine(state.partialTranscript, time: "识别中", partial: true)
+                            transcriptLine(state.partialTranscript, time: "识别中", partial: true, role: "对方 · 系统声音")
                                 .id("partial")
+                        }
+                        if !state.microphonePartialTranscript.isEmpty {
+                            transcriptLine(state.microphonePartialTranscript, time: "识别中", partial: true, role: "我 · 麦克风").id("microphone-partial")
                         }
                     }
                 }
                 .frame(minHeight: 90, maxHeight: 210)
                 .onChange(of: state.partialTranscript) { _, _ in if followTranscript { withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo("partial", anchor: .bottom) } } }
+                .onChange(of: state.microphonePartialTranscript) { _, _ in if followTranscript { proxy.scrollTo("microphone-partial", anchor: .bottom) } }
                 .onChange(of: state.entries.count) { _, _ in if followTranscript { withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(state.entries.last?.id, anchor: .bottom) } } }
             }
         }
         .padding(14)
-        .background(.background.opacity(0.55), in: RoundedRectangle(cornerRadius: 17))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 17))
     }
 
     private var answerCard: some View {
@@ -317,7 +322,7 @@ struct ContentView: View {
                 Button { state.regenerate() } label: { Label("重新生成", systemImage: "arrow.clockwise") }
                     .disabled(state.isAnswering)
                 Spacer()
-                Text(state.lastAnswerSeconds.map { String(format: "回答 %.1f s · Codex", $0) } ?? "Codex CLI").font(.system(size: 11)).foregroundStyle(.tertiary)
+                Text(state.lastAnswerSeconds.map { String(format: "回答 %.1f s", $0) + " · " + (state.lastAnswerModel ?? state.codexModelID) } ?? "Codex · \(state.codexModelID)").font(.system(size: 11)).foregroundStyle(.tertiary)
             }
             .buttonStyle(.plain)
             .font(.system(size: 12, weight: .medium))
@@ -338,7 +343,7 @@ struct ContentView: View {
             Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 125).clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .padding(12)
-        .background(.background.opacity(0.68), in: RoundedRectangle(cornerRadius: 15))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 15))
     }
 
     private var questionComposer: some View {
@@ -356,7 +361,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 9)
-        .background(.background.opacity(0.76), in: RoundedRectangle(cornerRadius: 14))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(.primary.opacity(0.07), lineWidth: 1))
     }
 
@@ -374,11 +379,14 @@ struct ContentView: View {
         .foregroundStyle(.secondary)
     }
 
-    private func transcriptLine(_ text: String, time: String, partial: Bool) -> some View {
+    private func transcriptLine(_ text: String, time: String, partial: Bool, role: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text(time).font(.system(size: 11, design: .rounded)).foregroundStyle(.tertiary).frame(width: 42, alignment: .trailing)
-            Text(text).font(.system(size: 13)).lineSpacing(3).foregroundStyle(partial ? .secondary : .primary)
-                .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(role).font(.system(size: 11, weight: .semibold)).foregroundStyle(role.hasPrefix("我") ? Color.accentColor : Color.secondary)
+                Text(text).font(.system(size: 13)).lineSpacing(3).foregroundStyle(partial ? .secondary : .primary)
+                    .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
+            }
         }
     }
 
@@ -426,7 +434,25 @@ struct ContentView: View {
                         }
                         .buttonStyle(SecondaryButtonStyle())
                     }
-                    Text("不使用 API Key。每次调用通过本机 Codex CLI 指定 GPT-5.6 Luna 与推理强度 none；转录、资料和截图会交给 Codex 服务处理。")
+                    Picker("回答模型", selection: $state.codexModelID) {
+                        if !state.codexModels.contains(where: { $0.id == state.codexModelID }) {
+                            Text(state.codexModelID.isEmpty ? "请选择模型" : state.codexModelID).tag(state.codexModelID)
+                        }
+                        ForEach(state.codexModels) { model in Text(model.name).tag(model.id) }
+                    }
+                    .disabled(state.isAnswering)
+                    .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
+                    if state.codexModels.isEmpty {
+                        TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
+                            .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
+                            .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
+                        Text("尚未读取到模型列表，请打开 Codex 后刷新；也可填写模型 ID。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Picker("推理强度", selection: $state.codexReasoning) {
+                        ForEach(state.codexEfforts, id: \.self) { Text($0).tag($0) }
+                    }.disabled(state.isAnswering).onChange(of: state.codexReasoning) { _, _ in state.updateSettings() }
+                    Text("每次回答都将此处选择的模型和推理强度传给本机 Codex。模型列表来自本机 Codex；请求失败时显示原因，不会偷偷换模型。转录、资料和截图会交给 Codex 服务处理，不使用 API Key。")
                         .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Button("打开 ChatGPT / Codex") {
                         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.openai.chat") {
@@ -454,6 +480,33 @@ struct ContentView: View {
                     }
                 }
                 settingsSection("本地语音识别", icon: "waveform") {
+                    HStack {
+                        Text("已发现的本地模型").font(.system(size: 13, weight: .semibold))
+                        Spacer()
+                        if state.isScanningModels { ProgressView().controlSize(.small) }
+                        Button("重新扫描") { Task { await state.scanLocalModels() } }.disabled(state.isScanningModels)
+                    }
+                    Text(state.modelScanStatus.isEmpty ? "正在扫描常用 Whisper 模型缓存…" : state.modelScanStatus)
+                        .font(.caption).foregroundStyle(.secondary)
+                    if !state.discoveredModels.isEmpty {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 10) {
+                                ForEach(state.discoveredModels) { model in
+                                    HStack(alignment: .top) {
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(model.name).font(.system(size: 12, weight: .medium))
+                                            Text("\(model.format) · \(ByteCountFormatter.string(fromByteCount: model.bytes, countStyle: .binary))").font(.caption).foregroundStyle(.secondary)
+                                            Text(model.url.path).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2).textSelection(.enabled)
+                                        }
+                                        Spacer()
+                                        Button("使用") { state.useDiscoveredModel(model) }.disabled(state.modelControlsDisabled)
+                                    }
+                                }
+                            }
+                        }.frame(maxHeight: 170)
+                    }
+                    Button("从其他位置选择…") { state.importLocalModel() }.disabled(state.modelControlsDisabled)
+                    Divider()
                     Picker("选择模型", selection: $state.selectedModelID) {
                         ForEach(WhisperModel.catalog) { model in
                             Text("\(model.id) · \(model.sizeLabel)\(FileManager.default.fileExists(atPath: LocalWhisperService.modelsDirectory.appendingPathComponent(model.filename).path) ? " · 已下载" : "")").tag(model.id)
@@ -512,11 +565,15 @@ struct ContentView: View {
                     HStack {
                         Text("音频通道").font(.system(size: 12, weight: .medium))
                         Spacer()
-                        Text("系统输出").font(.system(size: 12)).foregroundStyle(.secondary)
+                        Text(state.microphoneEnabled ? "系统输出 + 麦克风" : "系统输出").font(.system(size: 12)).foregroundStyle(.secondary)
                         Button { Task { await state.refreshTargets() } } label: { Image(systemName: "arrow.clockwise") }
                             .buttonStyle(.plain).foregroundStyle(Color.accentColor)
                     }
-                    Text("本版捕获所选屏幕或窗口的系统音频。麦克风通道与多人说话人区分尚未实现。首次使用需允许屏幕与系统音频录制。")
+                    Toggle("采集麦克风（我）", isOn: $state.microphoneEnabled)
+                        .disabled(state.isRunning || state.isChangingSession)
+                        .onChange(of: state.microphoneEnabled) { _, _ in state.updateSettings() }
+                    Button("麦克风权限设置") { state.openMicrophoneSettings() }.buttonStyle(.plain).foregroundStyle(Color.accentColor)
+                    Text("系统声音标记为“对方”，麦克风标记为“我”，分别识别并记录。自动回答仅由对方提问触发。首次开始时申请麦克风权限；戴耳机可减少对方声音被麦克风再次收录。")
                         .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -583,12 +640,12 @@ struct ContentView: View {
                                     Text("\(session.entries.count) 条转录 · \(session.answers.count) 个回答")
                                         .font(.system(size: 11)).foregroundStyle(.secondary)
                                 }
-                                Text(session.entries.map(\.text).joined(separator: " · "))
+                                Text(session.entries.map(\.contextualText).joined(separator: " · "))
                                     .font(.system(size: 12)).lineLimit(3).foregroundStyle(.secondary)
                             }
                             .padding(12)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(.background.opacity(0.7), in: RoundedRectangle(cornerRadius: 13))
+                            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 13))
                         }
                     }
                 }
@@ -609,7 +666,7 @@ struct ContentView: View {
         }
         .padding(13)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.opacity(0.68), in: RoundedRectangle(cornerRadius: 15))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 15))
     }
 
     private func shortcutLine(_ key: String, detail: String) -> some View {

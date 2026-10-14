@@ -73,7 +73,8 @@ private struct TeleprompterView: View {
             }
         }
         .padding(18).padding(.top, 18)
-        .background(.regularMaterial)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .foregroundStyle(.primary)
         .preferredColorScheme(state.darkMode ? .dark : .light)
     }
 }

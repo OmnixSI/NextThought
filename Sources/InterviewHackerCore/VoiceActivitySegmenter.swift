@@ -1,5 +1,9 @@
 import Foundation
 
+public enum SpeechAudioSource: String, Sendable, Equatable {
+    case system, microphone
+}
+
 public struct SpeechSegmentEvent: Sendable, Equatable {
     public enum Kind: Sendable, Equatable {
         case partial
@@ -12,6 +16,7 @@ public struct SpeechSegmentEvent: Sendable, Equatable {
     public var endSample: Int
     public var samples: [Int16]
     public var streamStartedAt: Date? = nil
+    public var source: SpeechAudioSource = .system
 }
 
 public struct VoiceActivitySegmenter {
