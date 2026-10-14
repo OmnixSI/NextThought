@@ -1,0 +1,5 @@
+# Keep GitHub's language stats about this project, not the vendored runtime.
+Vendor/** linguist-vendored
+docs/** linguist-documentation
+Tools/Validation/Fixtures/*.wav binary
+*.png binary

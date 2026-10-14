@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.isOpaque = false
             }
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
+            DemoMode.apply()
         }
     }
 }

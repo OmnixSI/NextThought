@@ -292,6 +292,8 @@ final class AppState: ObservableObject {
         registerHotkeys()
         loadCloudKey()
         Diagnostics.pruneOldLogs()
+        // Demo / screenshot mode shows sample data and never touches devices or models.
+        guard !DemoMode.isEnabled else { return }
         Task { await scanLocalModels() }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()

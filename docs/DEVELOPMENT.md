@@ -12,8 +12,8 @@ Tests/InterviewHackerCoreTests/   Swift Testing 测试（含问题识别标注�
 Resources/               Info.plist、entitlements、第三方声明、.pt 转换脚本
 scripts/                 build-app.sh（构建+签名+打包）、sign-app.sh、make-icon.swift
 Vendor/whisper.cpp/      固定版本的 whisper.cpp（MIT）
-docs/                    审计、改进说明、验证记录、发布说明
-validation/              第一版实机验证用的提示词、合成音频与日志
+docs/                    审计、改进说明、验证记录与素材（docs/validation）、发布说明、截图
+Tools/Validation/        生成验证用合成音频播放器与题图的工具
 ```
 
 ## 常用命令
