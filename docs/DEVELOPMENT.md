@@ -31,12 +31,19 @@ INTERVIEWHACKER_MAKE_DMG=1 ./scripts/build-app.sh   # 另外生成 DMG
 
 ## 发布新版本
 
-1. 更新 `CHANGELOG.md`，在 `docs/releases/<tag>.md` 写发布说明（文件存在时会作为 Release 正文）。
-2. 三种触发方式任选其一（带连字符的版本如 `v0.3.0-beta.1` 自动标记为预发布）：
-   - 推送版本标签：`git tag v0.3.0 && git push origin v0.3.0`；
-   - 在 `main` 或 `claude/**` 分支提交时，在提交信息里写 `[release v0.3.0]`，工作流会在该提交上创建标签；
-   - 在 Actions → Release 手动运行（工作流需已合并到默认分支）。
-3. `.github/workflows/release.yml` 会在 Apple Silicon runner 上测试、编译 whisper.cpp、生成图标、签名，产出 `InterviewHacker-<版本>-macOS-arm64.dmg`、`.zip` 和 `SHA256SUMS.txt`，并创建 GitHub Release。
+`.github/workflows/release.yml` 在 Apple Silicon runner 上测试、编译 whisper.cpp、生成图标、签名，产出 DMG、ZIP 与 `SHA256SUMS.txt`：
+
+| 操作 | 结果 |
+| --- | --- |
+| 推送到 `main` | 更新滚动预发布 **`main-latest`**（每次推送替换为最新构建）。提交信息含 `[skip release]` 时跳过 |
+| 提交信息含 `[release v0.3.0]`（`main` 或 `claude/**`） | 在该提交创建正式版本 `v0.3.0` |
+| 推送标签 `v0.3.0` | 创建正式版本 `v0.3.0` |
+| 在 GitHub 网页 **Releases → Draft a new release** 发布 | 自动构建并把 DMG / ZIP 附加到这个 Release（约 8–10 分钟后出现） |
+| Actions → Release → Run workflow | 用输入的标签创建或更新版本 |
+
+带连字符的版本（如 `v0.3.0-beta.1`）自动标记为预发布；`docs/releases/<tag>.md` 存在时作为发布说明。
+
+> 私有仓库的 macOS runner 按 10 倍计费分钟数；若 Actions 页面显示额度不足，构建不会运行。
 
 ### 签名与公证
 

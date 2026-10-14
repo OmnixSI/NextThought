@@ -1,26 +1,30 @@
 name: Release
-# Builds the macOS app on GitHub's Apple Silicon runners and publishes a GitHub
-# Release with a DMG and a ZIP. Trigger it by any of:
-# - pushing a tag like `v0.2.0`;
-# - pushing a commit to main or a claude/** branch whose message contains
-#   `[release v0.2.0]` (the tag is created on that commit);
-# - running it manually from the Actions tab (workflow must be on the default branch).
+# Builds the macOS app on GitHub's Apple Silicon runners and publishes a DMG + ZIP.
+#
+#   push to main                         → updates the rolling pre-release "main-latest"
+#   push with "[release v0.3.0]" in msg  → formal release v0.3.0 on that commit
+#   push a tag v0.3.0                    → formal release v0.3.0
+#   create/publish a Release in the UI   → builds and attaches the DMG to that release
+#   Actions → Release → Run workflow     → formal release with the given tag
+# Add "[skip release]" to a commit message to skip the main-latest build.
 #
 # Signing:
 # - Default: ad-hoc signature (no Apple account needed). Users approve the app
 #   once in System Settings → Privacy & Security → "Open Anyway".
-# - Optional Developer ID signing + notarization when these repository secrets exist:
-#   MACOS_CERTIFICATE_P12_BASE64, MACOS_CERTIFICATE_PASSWORD, MACOS_SIGNING_IDENTITY
-#   (e.g. "Developer ID Application: Name (TEAMID)"), and for notarization
+# - Stable signing: run scripts/setup-release-signing.sh once (self-signed identity),
+#   or add Developer ID secrets for signing + notarization:
+#   MACOS_CERTIFICATE_P12_BASE64, MACOS_CERTIFICATE_PASSWORD, MACOS_SIGNING_IDENTITY,
 #   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_SPECIFIC_PASSWORD.
 on:
   push:
     tags: ['v*']
     branches: [main, 'claude/**']
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to create or update (e.g. v0.2.0)'
+        description: 'Release tag to create or update (e.g. v0.3.0)'
         required: true
       prerelease:
         description: 'Mark as pre-release'
@@ -29,14 +33,17 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  # One build per release tag / branch; a newer push to main supersedes an older one.
+  group: release-${{ github.event.release.tag_name || github.ref }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
 jobs:
   build:
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'release' ||
       startsWith(github.ref, 'refs/tags/') ||
-      contains(github.event.head_commit.message, '[release v')
+      contains(github.event.head_commit.message, '[release v') ||
+      (github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip release]'))
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -44,17 +51,23 @@ jobs:
       - name: Resolve release tag
         env:
           INPUT_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
           MESSAGE: ${{ github.event.head_commit.message }}
         run: |
+          mode=formal
           if [[ -n "$INPUT_TAG" ]]; then tag="$INPUT_TAG"
+          elif [[ -n "$RELEASE_TAG" ]]; then tag="$RELEASE_TAG"
           elif [[ "$GITHUB_REF" == refs/tags/* ]]; then tag="$GITHUB_REF_NAME"
-          else tag="$(printf '%s' "$MESSAGE" | grep -oE '\[release v[0-9][0-9A-Za-z.+-]*\]' | head -1 | sed -E 's/^\[release (.*)\]$/\1/')"
+          else
+            tag="$(printf '%s' "$MESSAGE" | grep -oE '\[release v[0-9][0-9A-Za-z.+-]*\]' | head -1 | sed -E 's/^\[release (.*)\]$/\1/')"
+            if [[ -z "$tag" && "$GITHUB_REF" == refs/heads/main ]]; then tag="main-latest"; mode=rolling; fi
           fi
-          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.]+)?$ ]]; then
-            echo "Invalid release tag: '$tag'" >&2; exit 1
-          fi
+          if [[ -z "$tag" || "$tag" =~ [[:space:]] ]]; then echo "No usable release tag" >&2; exit 1; fi
+          # Bundle version: numeric part of a vX.Y.Z tag; otherwise keep Info.plist's version.
+          if [[ "$tag" =~ ^v?([0-9]+\.[0-9]+(\.[0-9]+)?) ]]; then echo "BUNDLE_VERSION=${BASH_REMATCH[1]}" >> "$GITHUB_ENV"; fi
           echo "TAG=$tag" >> "$GITHUB_ENV"
-          echo "Releasing $tag from $GITHUB_SHA"
+          echo "MODE=$mode" >> "$GITHUB_ENV"
+          echo "Releasing $tag ($mode) from $GITHUB_SHA"
       - name: Toolchain
         run: |
           xcodebuild -version
@@ -106,8 +119,7 @@ jobs:
           INTERVIEWHACKER_BUILD_NUMBER: ${{ github.run_number }}
         run: |
           # CFBundleShortVersionString must be numeric: v0.3.0-beta.1 -> 0.3.0
-          version="${TAG#v}"
-          export INTERVIEWHACKER_VERSION="${version%%[-+]*}"
+          [[ -n "${BUNDLE_VERSION:-}" ]] && export INTERVIEWHACKER_VERSION="$BUNDLE_VERSION"
           ./scripts/build-app.sh
       - name: Notarize (optional)
         if: steps.cert.outputs.developer_id == '1'
@@ -133,12 +145,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PRERELEASE: ${{ github.event.inputs.prerelease || 'false' }}
         run: |
+          files=(dist/InterviewHacker-*-macOS-arm64.dmg dist/InterviewHacker-*-macOS-arm64.zip dist/SHA256SUMS.txt)
+          if [[ "$MODE" == rolling ]]; then
+            # Move the rolling pre-release to this commit and replace its files.
+            gh release delete "$TAG" --cleanup-tag --yes 2>/dev/null || true
+            short="${GITHUB_SHA:0:7}"
+            printf '%s\n' \
+              "main 分支最新提交 \`$short\` 的自动构建（$(date -u '+%Y-%m-%d %H:%M UTC')），每次推送到 main 都会更新。" "" \
+              "- 下载 \`InterviewHacker-main-latest-macOS-arm64.dmg\`，拖进“应用程序”；首次打开到 系统设置 → 隐私与安全性 点“仍要打开”。" \
+              "- 或在仓库目录运行 \`./scripts/install-latest.sh main-latest\`（不会弹“仍要打开”）。" "" \
+              "正式版本见其它 Release。" > "$RUNNER_TEMP/notes.md"
+            gh release create "$TAG" "${files[@]}" --title "main 最新构建 · $short" --target "$GITHUB_SHA" --prerelease --notes-file "$RUNNER_TEMP/notes.md"
+            exit 0
+          fi
           notes="docs/releases/${TAG}.md"
           flags=()
           [[ -f "$notes" ]] && flags+=(--notes-file "$notes") || flags+=(--generate-notes)
           [[ "$PRERELEASE" == "true" || "$TAG" == *-* ]] && flags+=(--prerelease)
-          files=(dist/InterviewHacker-*-macOS-arm64.dmg dist/InterviewHacker-*-macOS-arm64.zip dist/SHA256SUMS.txt)
           if gh release view "$TAG" >/dev/null 2>&1; then
+            # Release created in the UI (or a rerun): attach / replace the build.
             gh release upload "$TAG" "${files[@]}" --clobber
           else
             gh release create "$TAG" "${files[@]}" --title "InterviewHacker ${TAG}" --target "$GITHUB_SHA" "${flags[@]}"
