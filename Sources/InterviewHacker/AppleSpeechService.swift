@@ -1,10 +1,4 @@
-[
-{
-"path": 'Sources/InterviewHacker/AppleSpeechService.swift',
-"old": 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-"new": '28ac68c815e5c3314a7d0c922b9c863f78a86c6524e0fd3293d7a473dd3dd39c',
-"edits": [
-(0, 0, r'''import AVFoundation
+import AVFoundation
 import Foundation
 import Speech
 
@@ -173,65 +167,3 @@ private final class SpeechInputSink: @unchecked Sendable {
     }
 }
 #endif
-'''),
-]
-},
-{
-"path": 'Sources/InterviewHacker/AudioCaptureService.swift',
-"old": 'edb2be1ca01f03ebc2342c577a4b93d833f88df8ab95ee9ac982f541cd7f6c11',
-"new": '28eb4ee3f7a70706de4ecad26ff8da188030c409638c8445934d7bc4f44b1d7b',
-"edits": [
-(14, 14, r'''    private var pcmHandler: (@Sendable ([Int16], Date) -> Void)?
-    func setPCMHandler(_ handler: (@Sendable ([Int16], Date) -> Void)?) { audioQueue.sync { pcmHandler = handler } }
-
-    /// Finalize the current utterance without interrupting screen capture.
-    func flushUtterance() async -> SpeechSegmentEvent? {
-        await withCheckedContinuation { continuation in
-            audioQueue.async { continuation.resume(returning: self.segmenter.flush().map { self.stamped($0) }) }
-        }
-    }
-
-'''),
-(75, 75, r'''                pcmHandler?(pendingSamples, streamStartedAt)
-'''),
-(129, 129, r'''            pcmHandler?(ready, streamStartedAt)
-'''),
-]
-},
-{
-"path": 'Sources/InterviewHacker/CodexBridge.swift',
-"old": '229e431630637a0ba1ade555452465f43250b5c319cb8ec04a1cc91645134bed',
-"new": '21d5548a600fe41d057f6b6f581d7797fd88655853f084a23d4b8a364ef42f65',
-"edits": [
-(5, 5, r'''    private var cachedLogin: (status: String, date: Date)?
-'''),
-(65, 66, r'''        let status = await validatedLoginStatus()
-'''),
-(149, 150, r'''        await Task.detached(priority: .utility) { process.waitUntilExit() }.value
-'''),
-(158, 158, r'''            invalidateLoginCache()
-'''),
-(164, 164, r'''    }
-
-    func invalidateLoginCache() {
-        lock.lock(); cachedLogin = nil; lock.unlock()
-    }
-
-    private func readLoginCache() -> String? {
-        lock.lock(); defer { lock.unlock() }
-        guard let cachedLogin, Date().timeIntervalSince(cachedLogin.date) < 30 else { return nil }
-        return cachedLogin.status
-    }
-    private func storeLoginCache(_ status: String) {
-        lock.lock(); defer { lock.unlock() }
-        cachedLogin = Self.isChatGPTLogin(status) ? (status, Date()) : nil
-    }
-    private func validatedLoginStatus() async -> String {
-        if let status = readLoginCache() { return status }
-        let status = await Self.loginStatus()
-        storeLoginCache(status)
-        return status
-'''),
-]
-},
-]

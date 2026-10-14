@@ -3,6 +3,7 @@ import InterviewHackerCore
 
 final class CodexBridge: @unchecked Sendable {
     private let lock = NSLock()
+    private var cachedLogin: (status: String, date: Date)?
     private var activeProcess: Process?
     private var activeID: UUID?
     private var timedOutIDs: Set<UUID> = []
@@ -63,7 +64,7 @@ final class CodexBridge: @unchecked Sendable {
     private func runRequest(id requestID: UUID, prompt: String, imageURL: URL?, onUpdate: @escaping (String) async -> Void) async throws -> String {
         try Task.checkCancellation()
         guard let executable = Self.executableURL() else { throw AppFailure.codexUnavailable }
-        let status = await Self.loginStatus()
+        let status = await validatedLoginStatus()
         try Task.checkCancellation()
         guard Self.isChatGPTLogin(status) else { throw AppFailure.codexNotSignedIn }
 
@@ -147,7 +148,7 @@ final class CodexBridge: @unchecked Sendable {
             readError = error
         }
 
-        process.waitUntilExit()
+        await Task.detached(priority: .utility) { process.waitUntilExit() }.value
         Diagnostics.record("codex.exited", ["request_id": requestID.uuidString, "seconds": Date().timeIntervalSince(startedAt), "exit_code": process.terminationStatus, "events": eventTypes.sorted()])
         let detail = (try? String(contentsOf: errorURL, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if takeTimedOut(requestID) {
@@ -156,12 +157,33 @@ final class CodexBridge: @unchecked Sendable {
         try Task.checkCancellation()
         if let readError { throw readError }
         guard process.terminationStatus == 0 else {
+            invalidateLoginCache()
             throw AppFailure.capture(detail.isEmpty ? "Codex CLI 退出，状态码 \(process.terminationStatus)。请检查登录状态与账号使用限制。" : detail)
         }
         guard !fullText.isEmpty else {
             throw AppFailure.capture("Codex 没有返回文本。请确认本机 Codex CLI 与账号可用。")
         }
         return fullText
+    }
+
+    func invalidateLoginCache() {
+        lock.lock(); cachedLogin = nil; lock.unlock()
+    }
+
+    private func readLoginCache() -> String? {
+        lock.lock(); defer { lock.unlock() }
+        guard let cachedLogin, Date().timeIntervalSince(cachedLogin.date) < 30 else { return nil }
+        return cachedLogin.status
+    }
+    private func storeLoginCache(_ status: String) {
+        lock.lock(); defer { lock.unlock() }
+        cachedLogin = Self.isChatGPTLogin(status) ? (status, Date()) : nil
+    }
+    private func validatedLoginStatus() async -> String {
+        if let status = readLoginCache() { return status }
+        let status = await Self.loginStatus()
+        storeLoginCache(status)
+        return status
     }
 
     private static func runStatus(executable: URL, arguments: [String], timeout: TimeInterval) -> (status: Int32, output: String) {

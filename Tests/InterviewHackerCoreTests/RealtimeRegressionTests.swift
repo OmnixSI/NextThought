@@ -1,10 +1,4 @@
-[
-{
-"path": 'Tests/InterviewHackerCoreTests/RealtimeRegressionTests.swift',
-"old": 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-"new": 'dd00d41baf93f44e01ad38e25fe25952a45cc7128016e240d8e161d456257b1c',
-"edits": [
-(0, 0, r'''import Foundation
+import Foundation
 import Testing
 @testable import InterviewHackerCore
 
@@ -66,22 +60,3 @@ struct RealtimeRegressionTests {
         #expect(segmenter.flush() == nil)
     }
 }
-'''),
-]
-},
-{
-"path": 'scripts/setup-local-signing.sh',
-"old": '3f813413867c380545029b18824352f9ad7b0b91a59a5828cbdf38df9e704523',
-"new": '64ce4a9568cdfa1412b68f3f0bec94ffd6db6096aa3dc8a5304393e2399cf5c3',
-"edits": [
-(24, 25, r'''    if ! security find-identity -v -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
-'''),
-(27, 28, r'''    if ! security find-identity -v -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
-'''),
-(38, 39, r'''    if ! security find-identity -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
-'''),
-(100, 101, r'''if ! security find-identity -p codesigning "$ih_keychain" | grep -Fq "$ih_identity"; then
-'''),
-]
-},
-]

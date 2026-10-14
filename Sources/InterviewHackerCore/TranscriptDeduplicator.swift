@@ -1,6 +1,11 @@
 import Foundation
 
 public enum TranscriptDeduplicator {
+    public static func removeOverlappingPrefix(previous: String, incoming: String, previousEnd: Date?, incomingStart: Date) -> String {
+        guard let previousEnd, incomingStart < previousEnd else { return incoming.trimmingCharacters(in: .whitespacesAndNewlines) }
+        return removeRepeatedPrefix(previous: previous, incoming: incoming)
+    }
+
     private struct Token {
         var value: String
         var range: Range<String.Index>

@@ -1,39 +1,46 @@
 import Foundation
 
 public struct QuestionDetector {
-    private var recentKeys: [String] = []
+    private var recentKeys: [(key: String, date: Date)] = []
+    private var fragmentDate: Date?
+    private let duplicateWindow: TimeInterval = 15
+    private let fragmentWindow: TimeInterval = 8
     private var pendingFragment = ""
 
     public init() {}
 
-    public mutating func detect(_ text: String) -> String? {
-        let incoming = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    public mutating func detect(_ text: String, now: Date = Date()) -> String? {
+        let duplicateCutoff = now.addingTimeInterval(-duplicateWindow)
+        recentKeys.removeAll { $0.date <= duplicateCutoff }
+        if let fragmentDate, now.timeIntervalSince(fragmentDate) > fragmentWindow {
+            pendingFragment = ""
+            self.fragmentDate = nil
+        }
+        let incoming = String(text.suffix(2_000)).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !incoming.isEmpty else { return nil }
 
         var question = incoming
         if !pendingFragment.isEmpty {
             question = pendingFragment + " " + incoming
             pendingFragment = ""
+            fragmentDate = nil
         }
 
-        if isIncomplete(question) {
-            pendingFragment = question
+        if !isShortFollowUp(question), isIncomplete(question) {
+            pendingFragment = String(question.suffix(2_000))
+            fragmentDate = now
             return nil
         }
-        guard looksLikeQuestion(question) else { return nil }
+        guard isShortFollowUp(question) || looksLikeQuestion(question) else { return nil }
         guard question.count >= 4 || isShortFollowUp(question) else { return nil }
 
         let key = normalize(question)
         guard !key.isEmpty else { return nil }
-        for previous in recentKeys.suffix(12) {
-            if previous == key || similarity(previous, key) >= 0.78 {
-                return nil
-            }
-        }
-        recentKeys.append(key)
-        if recentKeys.count > 30 {
-            recentKeys.removeFirst(recentKeys.count - 30)
-        }
+        // Time-bounded exact normalization does not collapse different entities,
+        // word order, negation or repeated follow-ups throughout a whole session.
+        guard !recentKeys.contains(where: { $0.key == key }) else { return nil }
+        recentKeys.append((key, now))
+        if recentKeys.count > 30 { recentKeys.removeFirst(recentKeys.count - 30) }
         return question
     }
 
@@ -45,21 +52,21 @@ public struct QuestionDetector {
             "what ", "what's", "why ", "how ", "when ", "where ", "who ", "which ",
             "can you ", "could you ", "would you ", "tell me ", "explain ",
             "describe ", "compare ", "please explain ", "walk me through ",
-            "help me understand ", "difference between "
+            "help me understand ", "difference between ", "do you ", "did you ", "have you ", "is there ", "are there ", "could we ", "can we "
         ]
         if englishStarts.contains(where: { lower.hasPrefix($0) }) { return true }
 
         let chineseMarkers = [
             "你觉得", "为什么", "怎么", "如何", "能不能", "可不可以", "请解释", "解释一下",
             "请说明", "说明一下", "分析一下", "比较一下", "讲讲", "谈谈", "什么是", "有什么",
-            "哪些", "是否", "设计思路是什么", "怎么样"
+            "哪些", "是否", "设计思路是什么", "怎么样", "介绍一下", "举个例子", "举一个例子", "能否", "对吗", "是不是", "有什么区别"
         ]
         return chineseMarkers.contains(where: { lower.contains($0) })
     }
 
     private func isShortFollowUp(_ text: String) -> Bool {
-        let lower = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        let followUps = ["为什么", "怎么", "然后呢", "那为什么", "那怎么", "why", "how", "and why", "what about that"]
+        let lower = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+        let followUps = ["为什么", "怎么", "然后呢", "那为什么", "那怎么", "why", "how", "and why", "what about that", "然后呢", "所以呢", "举例呢", "why not", "and then"]
         return followUps.contains(lower)
     }
 
@@ -98,7 +105,6 @@ public struct QuestionDetector {
                 tokens.append(word)
             }
         }
-        tokens.sort()
         return tokens.joined(separator: " ")
     }
 
@@ -106,10 +112,4 @@ public struct QuestionDetector {
         text.unicodeScalars.contains { (0x4E00...0x9FFF).contains($0.value) }
     }
 
-    private func similarity(_ first: String, _ second: String) -> Double {
-        let left = Set(first.split(separator: " "))
-        let right = Set(second.split(separator: " "))
-        let total = left.union(right).count
-        return total == 0 ? 0 : Double(left.intersection(right).count) / Double(total)
-    }
 }
