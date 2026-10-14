@@ -129,7 +129,8 @@ struct ContentView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 8)
+        .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 10)
+        .background(alignment: .top) { ScrollEdgeFade(edge: .top, height: 70).ignoresSafeArea() }
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.errorMessage)
     }
 
@@ -178,7 +179,8 @@ struct ContentView: View {
             }
             privacyNote
         }
-        .padding(.horizontal, 14).padding(.top, 6).padding(.bottom, 10)
+        .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 10)
+        .background(alignment: .bottom) { ScrollEdgeFade(edge: .bottom, height: 110).ignoresSafeArea() }
     }
 
     private var sessionCard: some View {

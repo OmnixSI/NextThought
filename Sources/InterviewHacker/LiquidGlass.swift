@@ -228,3 +228,20 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
         .glassCapsule()
     }
 }
+
+/// Soft scroll edge: content fades out under floating glass bars (like macOS 26's
+/// scroll edge effect) instead of colliding with them.
+struct ScrollEdgeFade: View {
+    enum Edge { case top, bottom }
+    var edge: Edge
+    var height: CGFloat = 36
+    var body: some View {
+        Rectangle()
+            .fill(.ultraThinMaterial)
+            .mask(LinearGradient(colors: [.black, .black.opacity(0.85), .clear],
+                                 startPoint: edge == .bottom ? .bottom : .top,
+                                 endPoint: edge == .bottom ? .top : .bottom))
+            .frame(height: height)
+            .allowsHitTesting(false)
+    }
+}

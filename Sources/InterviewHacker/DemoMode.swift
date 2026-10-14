@@ -27,6 +27,8 @@ enum DemoMode {
         state.populateDemo()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
             if let main = NSApp.windows.first(where: { !($0 is NSPanel) }) {
                 main.setFrame(NSRect(x: 80, y: 80, width: 760, height: 900), display: true)
                 main.makeKeyAndOrderFront(nil)
