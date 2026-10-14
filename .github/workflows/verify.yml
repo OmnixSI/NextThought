@@ -1,0 +1,32 @@
+name: Verify
+on:
+  push:
+    branches: [main, improve/realtime-workspace]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Build and test
+        run: swift test --disable-sandbox
+      - name: Source snapshot for reproducible review
+        if: always()
+        run: tar -czf source-snapshot.tar.gz Package.swift Sources Tests Resources scripts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reviewed-source-${{ github.sha }}
+          path: source-snapshot.tar.gz
+          retention-days: 2
+          if-no-files-found: error
