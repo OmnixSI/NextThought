@@ -101,12 +101,14 @@ struct GlassGroup<Content: View>: View {
     }
 }
 
-/// Desktop-through window backdrop with soft brand light, so glass has something to refract.
+/// Window backdrop with soft brand light, so glass has something to refract.
+/// Deliberately opaque: macOS 26 glass controls pick their text color from what is
+/// behind them, and a see-through window would make that depend on the wallpaper.
 struct AppBackdrop: View {
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         ZStack {
-            VisualEffectBackground(material: .underWindowBackground)
+            Color(nsColor: .windowBackgroundColor)
             GeometryReader { proxy in
                 let size = proxy.size
                 Circle().fill(Brand.accent.opacity(scheme == .dark ? 0.30 : 0.22))
