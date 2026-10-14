@@ -113,7 +113,7 @@ public enum AnswerRefinement: String, CaseIterable, Sendable, Identifiable {
 
     /// The question sent to the model; the previous answer travels in recent_answers.
     public func question(for original: String) -> String {
-        let base = String(original.prefix(2_000))
+        let base = String(Self.originalQuestion(of: original).prefix(2_000))
         let request: String
         switch self {
         case .shorter: request = "把上一条回答压缩成 1–2 句可以直接说出口的话，保留最关键的信息。"
@@ -125,6 +125,14 @@ public enum AnswerRefinement: String, CaseIterable, Sendable, Identifiable {
         case .clarify: request = "不要直接回答。给出 1–2 个我可以向对方确认的澄清问题，以便更准确地回答原问题。"
         case .followUps: request = "给出 2–3 个我可以在回答后向对方提出的有见地的问题。"
         }
-        return request + "\n原问题：" + base
+        return request + Self.marker + base
+    }
+
+    static let marker = "\n原问题："
+
+    /// Chained refinements (“更简短” then “英文版”) keep pointing at the real question.
+    public static func originalQuestion(of text: String) -> String {
+        guard let range = text.range(of: marker, options: .backwards) else { return text }
+        return String(text[range.upperBound...])
     }
 }

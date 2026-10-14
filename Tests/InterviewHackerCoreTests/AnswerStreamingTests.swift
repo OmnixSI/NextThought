@@ -108,3 +108,13 @@ struct OfficeImportTests {
         #expect(decoded == preset)
     }
 }
+
+struct RefinementTests {
+    @Test func chainedRefinementsDoNotNest() {
+        let once = AnswerRefinement.shorter.question(for: "什么是索引")
+        let twice = AnswerRefinement.english.question(for: once)
+        #expect(twice.components(separatedBy: "原问题：").count == 2)
+        #expect(twice.hasSuffix("什么是索引"))
+        #expect(AnswerRefinement.originalQuestion(of: twice) == "什么是索引")
+    }
+}
