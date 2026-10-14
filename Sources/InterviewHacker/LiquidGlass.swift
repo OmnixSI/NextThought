@@ -55,7 +55,7 @@ extension View {
     #endif
 }
 
-private struct FrostedFallback<S: Shape>: ViewModifier {
+private struct FrostedFallback<S: InsettableShape>: ViewModifier {
     let shape: S
     let tint: Color?
     @Environment(\.colorScheme) private var scheme
