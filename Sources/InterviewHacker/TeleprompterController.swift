@@ -162,7 +162,7 @@ private struct TeleprompterView: View {
             if hovering || !state.clickThrough { footer }
         }
         .padding(18)
-        .glassSurface(cornerRadius: 26)
+        .glassBackground(cornerRadius: 26)
         .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
         .padding(14)
         .foregroundStyle(.primary)

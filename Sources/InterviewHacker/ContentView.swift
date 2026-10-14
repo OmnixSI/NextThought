@@ -125,7 +125,7 @@ struct ContentView: View {
                         .buttonStyle(GlassIconButtonStyle(size: 26)).help("关闭提示")
                 }
                 .padding(12)
-                .glassSurface(cornerRadius: 18, tint: Color.orange.opacity(0.25))
+                .glassBackground(cornerRadius: 18, tint: Color.orange.opacity(0.25))
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -403,7 +403,7 @@ struct ContentView: View {
         }
         .padding(.leading, 16).padding(.trailing, 6).padding(.vertical, 6)
         .frame(minHeight: 40)
-        .glassSurface(cornerRadius: 20, interactive: true)
+        .glassBackground(cornerRadius: 20)
     }
 
     private var privacyNote: some View {

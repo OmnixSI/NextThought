@@ -32,6 +32,17 @@ extension View {
         #endif
     }
 
+    /// Glass drawn as a background layer. Use for containers holding regular
+    /// controls (pickers, text fields): content inside `glassEffect` is rendered
+    /// with glass vibrancy, which makes system pop-up menus unreadable in light mode.
+    func glassBackground(cornerRadius: CGFloat = 20, tint: Color? = nil) -> some View {
+        background {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color.clear)
+                .glassSurface(cornerRadius: cornerRadius, tint: tint)
+        }
+    }
+
     /// Glass surface in a capsule (pills, chips, tab bars).
     @ViewBuilder
     func glassCapsule(tint: Color? = nil, interactive: Bool = false) -> some View {
@@ -136,8 +147,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
             .frame(height: 36)
-            .background { if !Brand.hasLiquidGlass { Capsule().fill(Brand.gradient) } }
-            .glassCapsule(tint: Brand.accent.opacity(0.9), interactive: true)
+            .background(ProminentFill())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -166,7 +176,7 @@ struct ChipButtonStyle: ButtonStyle {
             .lineLimit(1)
             .padding(.horizontal, 11).padding(.vertical, 6)
             .foregroundStyle(prominent ? Color.white : Color.primary)
-            .glassCapsule(tint: prominent ? Brand.accent.opacity(0.9) : nil, interactive: true)
+            .modifier(ChipSurface(prominent: prominent))
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -181,7 +191,7 @@ struct GlassIconButtonStyle: ButtonStyle {
             .font(.system(size: 14, weight: .medium))
             .frame(width: size, height: size)
             .foregroundStyle(tint == nil ? Color.primary : Color.white)
-            .glassCapsule(tint: tint, interactive: true)
+            .modifier(ChipSurface(prominent: tint != nil))
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -243,5 +253,26 @@ struct ScrollEdgeFade: View {
                                  endPoint: edge == .bottom ? .top : .bottom))
             .frame(height: height)
             .allowsHitTesting(false)
+    }
+}
+
+/// Brand gradient capsule with a glassy top highlight. Used for prominent actions so
+/// they stay colored in non-key windows (the teleprompter never becomes key, and
+/// system glass tints render desaturated there).
+struct ProminentFill: View {
+    var body: some View {
+        Capsule()
+            .fill(Brand.gradient)
+            .overlay(Capsule().fill(LinearGradient(colors: [.white.opacity(0.32), .clear], startPoint: .top, endPoint: .center)))
+            .overlay(Capsule().strokeBorder(.white.opacity(0.28), lineWidth: 0.7))
+            .shadow(color: Brand.accent.opacity(0.35), radius: 8, y: 3)
+    }
+}
+
+private struct ChipSurface: ViewModifier {
+    var prominent: Bool
+    func body(content: Content) -> some View {
+        if prominent { content.background(ProminentFill()) }
+        else { content.glassCapsule(interactive: true) }
     }
 }
