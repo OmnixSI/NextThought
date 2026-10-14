@@ -250,10 +250,8 @@ struct ContentView: View {
                 }.buttonStyle(ChipButtonStyle())
                 Spacer(minLength: 4)
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(.secondary)
-                Picker("音频来源", selection: $state.selectedTargetID) {
-                    ForEach(state.captureTargets) { Text($0.title).tag($0.id) }
-                }
-                .labelsHidden().pickerStyle(.menu).frame(maxWidth: 220)
+                MenuPicker(selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择音频来源")
+                    .frame(maxWidth: 240, alignment: .trailing)
                 .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
                 if state.microphoneEnabled {
                     Image(systemName: "mic.fill").font(.system(size: 11)).foregroundStyle(.secondary).help("同时采集麦克风（我）")
@@ -390,10 +388,16 @@ struct ContentView: View {
 
     private var questionComposer: some View {
         HStack(spacing: 8) {
-            TextField(state.screenshotPreview == nil ? "输入问题，回车发送…" : "对截图的补充要求（可留空）…", text: $state.questionInput, axis: .vertical)
+            TextField("", text: $state.questionInput, axis: .vertical)
                 .lineLimit(1...4)
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))
+                .background(alignment: .leading) {
+                    if state.questionInput.isEmpty {
+                        Text(state.screenshotPreview == nil ? "输入问题，回车发送…" : "对截图的补充要求（可留空）…")
+                            .font(.system(size: 14)).foregroundStyle(.secondary).allowsHitTesting(false)
+                    }
+                }
                 .onSubmit { state.screenshotPreview == nil ? state.answerInput() : state.answerScreenshot() }
             Button { state.screenshotPreview == nil ? state.answerInput() : state.answerScreenshot() } label: {
                 Image(systemName: "arrow.up").font(.system(size: 13, weight: .bold))
@@ -459,9 +463,7 @@ struct ContentView: View {
                 if state.transcriptionBackend == "whisper" { whisperSection }
 
                 settingsSection("捕获目标", icon: "rectangle.on.rectangle") {
-                    Picker("系统音频来源", selection: $state.selectedTargetID) {
-                        ForEach(state.captureTargets) { target in Text(target.title).tag(target.id) }
-                    }
+                    MenuPicker(title: "系统音频来源", selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择音频来源")
                     .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
                     Toggle("采集麦克风（标记为“我”）", isOn: $state.microphoneEnabled)
                         .disabled(state.isRunning || state.isChangingSession)
@@ -505,9 +507,7 @@ struct ContentView: View {
 
     private var answerEngineSection: some View {
         settingsSection("回答引擎", icon: "sparkles") {
-            Picker("引擎", selection: $state.answerBackend) {
-                ForEach(AnswerBackend.allCases) { Text($0.title).tag($0) }
-            }
+            MenuPicker(title: "引擎", selection: $state.answerBackend, options: AnswerBackend.allCases.map { ($0, $0.title) })
             .disabled(state.isAnswering)
             .onChange(of: state.answerBackend) { _, value in
                 state.saveAnswerSettings()
@@ -548,12 +548,9 @@ struct ContentView: View {
                     Button { Task { await state.refreshCodexStatus() } } label: { Image(systemName: "arrow.clockwise").frame(width: 28, height: 28) }
                         .buttonStyle(SecondaryButtonStyle())
                 }
-                Picker("回答模型", selection: $state.codexModelID) {
-                    if !state.codexModels.contains(where: { $0.id == state.codexModelID }) {
-                        Text(state.codexModelID.isEmpty ? "请选择模型" : state.codexModelID).tag(state.codexModelID)
-                    }
-                    ForEach(state.codexModels) { model in Text(model.name).tag(model.id) }
-                }
+                MenuPicker(title: "回答模型", selection: $state.codexModelID,
+                           options: codexModelOptions,
+                           placeholder: "请选择模型")
                 .disabled(state.isAnswering)
                 .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
                 if state.codexModels.isEmpty {
@@ -561,9 +558,7 @@ struct ContentView: View {
                         .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
                         .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
                 }
-                Picker("推理强度", selection: $state.codexReasoning) {
-                    ForEach(state.codexEfforts, id: \.self) { Text($0).tag($0) }
-                }.disabled(state.isAnswering).onChange(of: state.codexReasoning) { _, _ in state.updateSettings() }
+                MenuPicker(title: "推理强度", selection: $state.codexReasoning, options: state.codexEfforts.map { ($0, $0) }).disabled(state.isAnswering).onChange(of: state.codexReasoning) { _, _ in state.updateSettings() }
                 Text(state.answerBackend == .codexAppServer
                      ? "常驻 `codex app-server` 复用进程与登录，逐字流式显示；不可用时自动回退到 codex exec。实时问答建议推理强度选 low 或更低。"
                      : "每次回答启动一次 codex exec，等待完整结果后显示；仅在常驻服务不可用时使用。")
@@ -573,20 +568,24 @@ struct ContentView: View {
         }
     }
 
+    private var codexModelOptions: [(String, String)] {
+        var options: [(String, String)] = state.codexModels.map { ($0.id, $0.name) }
+        if !state.codexModelID.isEmpty, !state.codexModels.contains(where: { $0.id == state.codexModelID }) {
+            options.insert((state.codexModelID, state.codexModelID), at: 0)
+        }
+        return options
+    }
+
     private var transcriptionSection: some View {
         settingsSection("语音识别引擎", icon: "waveform") {
-            Picker("引擎", selection: $state.transcriptionBackend) {
-                Text("Whisper · 本地 / 自动中英文").tag("whisper")
-                Text("Apple Speech · 本地流式 / macOS 26").tag("apple")
-                Text("云端流式 · 最快 / 需 API Key").tag("cloud")
-            }
+            MenuPicker(title: "引擎", selection: $state.transcriptionBackend, options: [
+                ("whisper", "Whisper · 本地 / 自动中英文"),
+                ("apple", "Apple Speech · 本地流式 / macOS 26"),
+                ("cloud", "云端流式 · 最快 / 需 API Key"),
+            ])
             .disabled(state.isRunning || state.isPreparingModel)
             .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
-            Picker("识别语言", selection: $state.recognitionLanguage) {
-                Text("自动 / 中英混说").tag("auto")
-                Text("中文").tag("zh")
-                Text("English").tag("en")
-            }
+            MenuPicker(title: "识别语言", selection: $state.recognitionLanguage, options: [("auto", "自动 / 中英混说"), ("zh", "中文"), ("en", "English")])
             .disabled(state.isRunning || state.isPreparingModel)
             .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
             Toggle("后台预加载识别模型（开始辅助几乎瞬间启动）", isOn: $state.keepRecognizerWarm)
@@ -602,9 +601,7 @@ struct ContentView: View {
                 Text("Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。")
                     .font(.caption).foregroundStyle(.secondary)
             case "cloud":
-                Picker("服务", selection: $state.cloudProvider) {
-                    ForEach(CloudSTTProvider.allCases) { Text($0.title).tag($0) }
-                }
+                MenuPicker(title: "服务", selection: $state.cloudProvider, options: CloudSTTProvider.allCases.map { ($0, $0.title) })
                 .disabled(state.isRunning)
                 .onChange(of: state.cloudProvider) { _, _ in state.loadCloudKey(); state.saveAnswerSettings() }
                 TextField("模型（留空使用 \(state.cloudProvider.defaultModel)）", text: $state.cloudModel)
@@ -661,14 +658,12 @@ struct ContentView: View {
                     }
                 }.frame(maxHeight: 150)
             }
-            Picker("选择模型", selection: $state.selectedModelID) {
-                ForEach(WhisperModel.catalog) { model in
-                    Text("\(model.id) · \(model.sizeLabel)\(FileManager.default.fileExists(atPath: LocalWhisperService.modelsDirectory.appendingPathComponent(model.filename).path) ? " · 已下载" : "")").tag(model.id)
-                }
-                ForEach(state.localModelPaths, id: \.self) { name in
-                    Text("本地导入 · \(name.replacingOccurrences(of: #"^imported-[A-Fa-f0-9-]{36}-"#, with: "", options: .regularExpression))").tag("local:" + name)
-                }
-            }
+            MenuPicker(title: "选择模型", selection: $state.selectedModelID, options:
+                WhisperModel.catalog.map { model in
+                    (model.id, "\(model.id) · \(model.sizeLabel)\(FileManager.default.fileExists(atPath: LocalWhisperService.modelsDirectory.appendingPathComponent(model.filename).path) ? " · 已下载" : "")")
+                } + state.localModelPaths.map { name in
+                    ("local:" + name, "本地导入 · \(name.replacingOccurrences(of: #"^imported-[A-Fa-f0-9-]{36}-"#, with: "", options: .regularExpression))")
+                })
             .disabled(state.modelControlsDisabled)
             Text(state.selectedModel?.summary ?? "本地导入的 Whisper 模型。占用和识别效果取决于所选版本；.en 模型仅支持英语。")
                 .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)

@@ -278,3 +278,31 @@ private struct ChipSurface: ViewModifier {
         else { content.glassCapsule(interactive: true) }
     }
 }
+
+/// Drop-down picker built on `Menu`. On macOS 26 the system pop-up `Picker`
+/// can render its label white on light glass cards; a `Menu` with our own label
+/// keeps normal text colors in both appearances.
+struct MenuPicker<Value: Hashable>: View {
+    var title: String? = nil
+    @Binding var selection: Value
+    let options: [(Value, String)]
+    var placeholder = "请选择"
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let title { Text(title) }
+            Menu {
+                ForEach(options.indices, id: \.self) { index in
+                    let option = options[index]
+                    Button { selection = option.0 } label: {
+                        if option.0 == selection { Label(option.1, systemImage: "checkmark") } else { Text(option.1) }
+                    }
+                }
+            } label: {
+                Text(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
+                    .lineLimit(1)
+            }
+            .fixedSize()
+        }
+    }
+}
