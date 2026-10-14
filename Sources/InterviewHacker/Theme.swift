@@ -76,7 +76,7 @@ struct CardBackground: ViewModifier {
         content
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassSurface(cornerRadius: 22, tint: tint?.opacity(0.18))
+            .glassBackground(cornerRadius: 22, tint: tint?.opacity(0.18))
     }
 }
 

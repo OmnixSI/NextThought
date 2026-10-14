@@ -7,7 +7,7 @@ on:
   push:
     branches: [main, 'claude/**']
 permissions:
-  contents: read
+  contents: write
 jobs:
   capture:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[screenshots]')
@@ -44,7 +44,7 @@ jobs:
               screencapture -x -l "$main" "shots/$section-$appearance.png" || echo "window capture failed"
               if [[ "$section" == assistant && "$panel" != 0 ]]; then
                 screencapture -x -l "$panel" "shots/teleprompter-$appearance.png" || true
-                screencapture -x "shots/desktop-$appearance.png" || true
+                true
               fi
             else
               echo "demo window list not written for $appearance/$section"
@@ -56,6 +56,19 @@ jobs:
             for section in assistant materials settings history; do capture "$appearance" "$section"; done
           done
           ls -la shots
+      - name: Commit screenshots to docs/screenshots
+        run: |
+          mkdir -p docs/screenshots
+          for f in shots/*.png; do
+            # Keep the repository small: downscale to at most 1600 px on the long side.
+            sips -Z 1600 "$f" --out "docs/screenshots/$(basename "$f")" >/dev/null
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then echo "No screenshot changes"; exit 0; fi
+          git commit -m "docs: update screenshots from demo mode"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
       - uses: actions/upload-artifact@v4
         with:
           name: screenshots

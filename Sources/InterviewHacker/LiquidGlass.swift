@@ -32,6 +32,17 @@ extension View {
         #endif
     }
 
+    /// Glass drawn as a background layer. Use for containers holding regular
+    /// controls (pickers, text fields): content inside `glassEffect` is rendered
+    /// with glass vibrancy, which makes system pop-up menus unreadable in light mode.
+    func glassBackground(cornerRadius: CGFloat = 20, tint: Color? = nil) -> some View {
+        background {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color.clear)
+                .glassSurface(cornerRadius: cornerRadius, tint: tint)
+        }
+    }
+
     /// Glass surface in a capsule (pills, chips, tab bars).
     @ViewBuilder
     func glassCapsule(tint: Color? = nil, interactive: Bool = false) -> some View {
@@ -90,12 +101,14 @@ struct GlassGroup<Content: View>: View {
     }
 }
 
-/// Desktop-through window backdrop with soft brand light, so glass has something to refract.
+/// Window backdrop with soft brand light, so glass has something to refract.
+/// Deliberately opaque: macOS 26 glass controls pick their text color from what is
+/// behind them, and a see-through window would make that depend on the wallpaper.
 struct AppBackdrop: View {
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         ZStack {
-            VisualEffectBackground(material: .underWindowBackground)
+            Color(nsColor: .windowBackgroundColor)
             GeometryReader { proxy in
                 let size = proxy.size
                 Circle().fill(Brand.accent.opacity(scheme == .dark ? 0.30 : 0.22))
@@ -136,8 +149,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
             .frame(height: 36)
-            .background { if !Brand.hasLiquidGlass { Capsule().fill(Brand.gradient) } }
-            .glassCapsule(tint: Brand.accent.opacity(0.9), interactive: true)
+            .background(ProminentFill())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -166,7 +178,7 @@ struct ChipButtonStyle: ButtonStyle {
             .lineLimit(1)
             .padding(.horizontal, 11).padding(.vertical, 6)
             .foregroundStyle(prominent ? Color.white : Color.primary)
-            .glassCapsule(tint: prominent ? Brand.accent.opacity(0.9) : nil, interactive: true)
+            .modifier(ChipSurface(prominent: prominent))
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -181,7 +193,7 @@ struct GlassIconButtonStyle: ButtonStyle {
             .font(.system(size: 14, weight: .medium))
             .frame(width: size, height: size)
             .foregroundStyle(tint == nil ? Color.primary : Color.white)
-            .glassCapsule(tint: tint, interactive: true)
+            .modifier(ChipSurface(prominent: tint != nil))
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -226,5 +238,86 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
         }
         .padding(4)
         .glassCapsule()
+    }
+}
+
+/// Soft scroll edge: content fades out under floating glass bars (like macOS 26's
+/// scroll edge effect) instead of colliding with them.
+struct ScrollEdgeFade: View {
+    enum Edge { case top, bottom }
+    var edge: Edge
+    var height: CGFloat = 36
+    var body: some View {
+        Rectangle()
+            .fill(.ultraThinMaterial)
+            .mask(LinearGradient(colors: [.black, .black.opacity(0.85), .clear],
+                                 startPoint: edge == .bottom ? .bottom : .top,
+                                 endPoint: edge == .bottom ? .top : .bottom))
+            .frame(height: height)
+            .allowsHitTesting(false)
+    }
+}
+
+/// Brand gradient capsule with a glassy top highlight. Used for prominent actions so
+/// they stay colored in non-key windows (the teleprompter never becomes key, and
+/// system glass tints render desaturated there).
+struct ProminentFill: View {
+    var body: some View {
+        Capsule()
+            .fill(Brand.gradient)
+            .overlay(Capsule().fill(LinearGradient(colors: [.white.opacity(0.32), .clear], startPoint: .top, endPoint: .center)))
+            .overlay(Capsule().strokeBorder(.white.opacity(0.28), lineWidth: 0.7))
+            .shadow(color: Brand.accent.opacity(0.35), radius: 8, y: 3)
+    }
+}
+
+private struct ChipSurface: ViewModifier {
+    var prominent: Bool
+    func body(content: Content) -> some View {
+        if prominent { content.background(ProminentFill()) }
+        else { content.glassCapsule(interactive: true) }
+    }
+}
+
+/// Drop-down picker built on `Menu`. On macOS 26 the system pop-up `Picker`
+/// can render its label white on light glass cards; a `Menu` with our own label
+/// keeps normal text colors in both appearances.
+struct MenuPicker<Value: Hashable>: View {
+    var title: String? = nil
+    @Binding var selection: Value
+    let options: [(Value, String)]
+    var placeholder = "请选择"
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if let title { Text(title) }
+            Menu {
+                ForEach(options.indices, id: \.self) { index in
+                    let option = options[index]
+                    Button { selection = option.0 } label: {
+                        if option.0 == selection { Label(option.1, systemImage: "checkmark") } else { Text(option.1) }
+                    }
+                }
+            } label: {
+                // Rendered by SwiftUI (plain button style), not by the AppKit pop-up,
+                // so the text color follows our appearance on glass cards.
+                HStack(spacing: 6) {
+                    Text(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
+                        .lineLimit(1)
+                        .foregroundStyle(Color.primary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.secondary)
+                }
+                .font(.system(size: 12.5, weight: .medium))
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .glassCapsule(interactive: true)
+                .contentShape(Capsule())
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+        }
     }
 }

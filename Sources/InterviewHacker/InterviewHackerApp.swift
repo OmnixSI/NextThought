@@ -33,9 +33,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.level = keepOnTop ? .floating : .normal
                 window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
                 window.minSize = NSSize(width: 580, height: 640)
-                // Translucent window: the SwiftUI backdrop blurs the desktop behind it.
-                window.backgroundColor = .clear
-                window.isOpaque = false
+                window.backgroundColor = .windowBackgroundColor
+                window.isOpaque = true
             }
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()

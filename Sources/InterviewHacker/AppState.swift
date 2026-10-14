@@ -518,6 +518,7 @@ final class AppState: ObservableObject {
 
     func changeCaptureTarget() async {
         updateSettings()
+        guard !DemoMode.isEnabled else { return }
         guard isRunning && !isPaused else { return }
         await pauseSession()
         await resumeSession()

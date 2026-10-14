@@ -48,6 +48,11 @@ final class TeleprompterController {
             next.isOpaque = false
             next.setFrameAutosaveName("InterviewHacker.Teleprompter")
             if !next.setFrameUsingName("InterviewHacker.Teleprompter") { place(next, .camera) }
+            // The glass panel draws its own chrome; hide the floating traffic lights.
+            for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
+                next.standardWindowButton(button)?.isHidden = true
+            }
+            next.hasShadow = false
             next.contentView = NSHostingView(rootView: TeleprompterView().environmentObject(AppState.shared))
             panel = next
         }
@@ -156,9 +161,10 @@ private struct TeleprompterView: View {
             }
             if hovering || !state.clickThrough { footer }
         }
-        .padding(18).padding(.top, 12)
-        .glassSurface(cornerRadius: 26)
-        .padding(6)
+        .padding(18)
+        .glassBackground(cornerRadius: 26)
+        .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
+        .padding(14)
         .foregroundStyle(.primary)
         .preferredColorScheme(state.colorScheme)
         .onHover { hovering = $0 }
@@ -187,6 +193,8 @@ private struct TeleprompterView: View {
                 .buttonStyle(GlassIconButtonStyle(size: 26)).help("放大文字")
             Button { state.toggleClickThrough() } label: { Image(systemName: state.clickThrough ? "cursorarrow.slash" : "cursorarrow") }
                 .buttonStyle(GlassIconButtonStyle(size: 26, tint: state.clickThrough ? Brand.accent : nil)).help("鼠标穿透 · \(state.shortcutLabel(.toggleClickThrough))")
+            Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "xmark") }
+                .buttonStyle(GlassIconButtonStyle(size: 26)).help("隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
         } }
     }
 
