@@ -1,46 +1,52 @@
 # InterviewHacker
 
-InterviewHacker 是一个原生 SwiftUI macOS 悬浮助手，用于会议、面试和网课。它采集用户选择的屏幕或窗口系统音频，在本机进行中英文语音识别，再通过本机 Codex CLI 回答问题。也支持截取窗口或屏幕区域后提问。不包含模拟面试、面试评分、训练或题库。
+InterviewHacker 是一个原生 SwiftUI macOS 悬浮助手，用于会议、面试和网课。它分别采集用户选择的屏幕或窗口系统音频与麦克风，在本机进行中英文语音识别，再通过本机 Codex CLI 回答问题。也支持截取窗口或屏幕区域后提问。不包含模拟面试、面试评分、训练或题库。
 
 ## 数据处理位置
 
-- 系统音频在本机识别，不保存原始音频。
+- 系统音频与麦克风音频在本机分别识别，不保存原始音频。
 - 转录文本、当前问题、导入资料和用户主动截取的图片会交给 Codex CLI，并由 Codex 服务处理。应用不调用 OpenAI API，也不要求 API Key。
-- Codex 复用本机 CLI 登录态。每次回答调用都传入 `gpt-5.6-luna` 和 `model_reasoning_effort=none`，忽略用户全局配置，不修改 `config.toml`。请求使用 `--sandbox read-only`，工作目录为独立临时目录；会议内容、资料和图片均作为不可信数据处理。
+- Codex 复用本机 CLI 登录态。每次回答调用都传入用户在应用设置中选择的模型和推理强度，忽略用户全局配置，不修改 `config.toml`。请求使用 `--sandbox read-only`，工作目录为独立临时目录；会议内容、资料和图片均作为不可信数据处理。
 - 本机 Codex CLI 的 JSONL 输出目前只观察到完成事件，没有文本增量事件；界面会显示“正在生成”，收到完整回答后再展示，不冒称逐 token 流式输出。
 
 ## 语音识别
 
-应用包包含 Apple Silicon `whisper-server` 常驻运行时，普通用户不需要安装 Homebrew、Python 或 Whisper。识别模型单独下载到：
+应用启动时自动扫描常见 Whisper 缓存、应用模型目录、Homebrew 共享目录和 Hugging Face 的 Whisper 缓存（支持 `XDG_CACHE_HOME`、`HF_HOME`、`HUGGINGFACE_HUB_CACHE`）。发现的兼容 `.pt` / GGML `.bin` 显示名称、格式、体积和位置，点击“使用”进行校验与导入；其他位置可手动选择。扫描只读取文件信息，不加载权重，也不遍历私人文档。
 
-`~/Library/Application Support/InterviewHacker/models/ggml-large-v3-turbo-q5_0.bin`
+应用包包含 Apple Silicon `whisper-server` 常驻运行时。设置中的“本地语音识别”提供模型选择、下载、切换、删除副本与本地导入：
 
-模型详情：
-
-- 名称：Whisper `large-v3-turbo-q5_0`，多语言模型，支持中文和英文；默认自动识别，也可在设置选择中文或英文。
-- 大小：574,041,195 字节（约 547 MiB）。
-- SHA-1：`e050f7970618a659205450ad97eb95a18d69c9ee`。
-- 来源：[ggerganov/whisper.cpp 模型仓库](https://huggingface.co/ggerganov/whisper.cpp)。运行时和权重为 MIT 许可；权重不包含在应用包内。
-- 首次启动应用后，在“设置 → 本地语音识别”下载模型。界面显示进度，可取消、重试、检查完整性和删除模型。
+- 内置模型目录覆盖 Tiny、Base、Small、Medium、Large v1/v2/v3 和 Turbo，以及英语专用与 Q5/Q8 量化版本。每个选项显示下载大小，选中后显示语言、速度、识别质量与内存占用的简短说明。`.en` 仅适合英语，其他版本支持中文、英文等多语言。
+- 用户可保留多个模型，通过“使用此模型”切换。下载完成后通过上游 SHA-256 校验才会启用；下载失败或取消会保留原先使用的模型。会议或模型操作期间禁用切换。
+- 默认选项仍为 `large-v3-turbo-q5_0`（约 547 MiB），不强制下载。模型目录为 `~/Library/Application Support/InterviewHacker/models/`。
+- “导入本地模型…”支持 whisper.cpp `.bin` 和 OpenAI Whisper `.pt`。`.pt` 使用电脑已有的 Python `openai-whisper` 转换，转换时禁止加载可执行 pickle 对象，不下载新权重。官方命名的 `.pt` 会先校验官方 SHA-256，损坏或未下载完成的缓存会提示失败。
+- 导入文件复制到应用目录，记录 SHA-256，并通过 whisper.cpp 实际加载后启用；原始文件保留。“删除副本”只删除应用管理的文件。
+- 模型大小、摘要与 SHA-256 来自 [whisper.cpp 模型仓库](https://huggingface.co/ggerganov/whisper.cpp/tree/main)，速度与语言说明参考 [OpenAI Whisper 模型说明](https://github.com/openai/whisper#available-models-and-languages)。实际速度与识别效果取决于设备、语言和音质。运行时和模型均为 MIT 许可。
 
 ScreenCaptureKit 请求 48 kHz 双声道系统音频，应用用 `AVAudioConverter` 转成 16 kHz 单声道 Int16。音频缓冲、VAD 和分段在专用队列处理；模型驻留在本机辅助进程中，片段复用已加载模型，不逐段启动和加载。VAD 使用短前缓冲、静音收尾和有界转录队列；连续语音达到上限时带重叠切段，临时结果不会重复写入最终会话。
+
+## 音频角色、外观与回答模型
+
+- 系统声音与麦克风分别采集、转换和分段，系统声音标记为“对方”，麦克风标记为“我”。麦克风首次使用请求系统授权，也可在设置关闭；暂停、恢复、停止会同时作用于两路。Whisper 与 Apple Speech 路径均保留来源，Apple Speech 为两路创建独立识别器。
+- 转录、导出和发给 Codex 的上下文保留角色；去重只比较同一来源，自动问题检测仅使用系统声音。角色按输入通道分配，不做声纹识别，也不区分系统声音中的多位说话者。建议戴耳机，避免扬声器声音被麦克风再次收录。
+- 深浅色使用一致的不透明系统语义背景与文本颜色，并同步 AppKit 外观；主窗口、卡片、原生弹窗与提词器不再混用透明背景。
+- 设置 → Codex 助手可选择回答模型和推理强度。模型列表读取本机 Codex 的 `models_cache.json`，无缓存时可填写模型 ID。每次请求快照所选值并通过 CLI 的 `--model` / `model_reasoning_effort` 传入；失败显示错误，不静默切换其他模型。成功回答显示本次所选模型，诊断事件记录请求参数。模型可用性由 Codex 服务与登录账号决定。
 
 ## 首次运行
 
 1. 安装并登录 ChatGPT/Codex 桌面客户端，确认本机 Codex CLI 可用。
-2. 打开 InterviewHacker 的设置页，刷新 Codex 状态并下载本地语音模型。首次下载需要网络。
+2. 打开 InterviewHacker 的设置页，刷新 Codex 状态，选择下载模型或导入已有模型，再切换使用。首次下载需要网络。
 3. 回到助手页，选择会议窗口或整个屏幕，再点击“开始辅助”。
-4. macOS 首次请求屏幕与系统音频权限时，选择允许。若之前拒绝，到“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”允许 InterviewHacker，再回应用刷新目标或重新启动辅助。
+4. macOS 首次请求屏幕与系统音频权限时，选择允许。若之前拒绝，到“系统设置 → 隐私与安全性”中的“屏幕与系统音频录制”和“麦克风”允许 InterviewHacker，再回应用刷新目标或重新启动辅助。
 5. 可手动输入问题；也可开启规则型自动问题检测。点击窗口截图或区域截图后，可预览、取消或交给 Codex 分析。
 
 模型、Codex CLI、目标音源和权限都就绪后，助手页会显示“可以开始”。没有 Codex 登录、模型校验失败或没有应用内识别运行时时，开始按钮会保持禁用。
 
 ## 构建与运行
 
-已验证的目标是 Apple Silicon arm64、macOS 14 或更新版本。应用不要求终端或 Homebrew；从源码构建需要 Swift 6、Apple Command Line Tools 和 CMake。Whisper.cpp v1.9.4 源码固定在 `Vendor/whisper.cpp`，构建脚本会编译并把常驻运行时打进 app：
+已验证的目标是 Apple Silicon arm64、macOS 14 或更新版本。应用不要求终端或 Homebrew；从源码构建需要 Swift 6、Apple Command Line Tools 和 CMake。构建脚本显式选择 SDK 的 C++ 头文件，可在只安装 Command Line Tools 的机器上构建。Whisper.cpp v1.9.4 源码固定在 `Vendor/whisper.cpp`，构建脚本会编译并把常驻运行时打进 app：
 
 ```sh
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer ./scripts/build-app.sh
+./scripts/build-app.sh
 open dist/InterviewHacker.app
 ```
 
@@ -58,10 +64,12 @@ open dist/InterviewHacker.app
 - 支持开始、暂停、恢复、停止，屏幕/窗口系统音频选择，手动提问、规则型自动检测、最近 5 分钟转录上下文、资料导入、会话保存/导出/删除和固定快捷键。
 - 自动检测覆盖常见中英文问句、解释请求和追问；不对每个词调用 Codex。检测使用启发式规则，仍可能漏掉或误判问题。
 - 窗口截图先在应用内列出可见窗口，按窗口 ID 捕获；区域截图通过 ScreenCaptureKit 读取所选显示器，再在应用内预览、拖动裁切。捕获时隐藏助手窗，完成或取消后恢复窗口。图片会按比例缩小到最长边 2,400 像素并以 JPEG 质量 0.9 交给 Codex；代码截图要求模型先核对相关行是否清楚，看不清时请求更清晰图片。
-- 麦克风独立采集、多人说话人识别、自定义快捷键和扫描版 PDF OCR 尚未实现。
-- 系统音频和截图仍受 macOS 隐私授权控制。用户拒绝权限后，应用不会绕过系统授权。
+- 多人声纹识别和扫描版 PDF OCR 尚未实现；当前角色按麦克风与系统声音通道划分。
+- 系统音频、麦克风和截图受 macOS 隐私授权控制。用户拒绝权限后，应用不会绕过系统授权。
 
 ## 验证记录
+
+以下为此前版本的历史验证记录。本次模型扫描、双路音频、外观和 Codex 模型选择改动按用户要求未运行本地构建或功能测试，由用户后续验证。
 
 验证日期：2026-10-14。设备为 MacBook Air、Apple M4、16 GB 内存、macOS 26.5.2；Xcode 26.0.1、Swift 6.2、Codex CLI `0.162.0-alpha.17.2`。工程最低部署版本为 macOS 14，构建产物为 arm64。
 
@@ -97,7 +105,7 @@ open dist/InterviewHacker.app
 
 - 区域截图完整交互已实测；本机仅有一个显示器，多显示器与不同缩放比例尚未实测。原尺寸区域图的可读性仍需补测。
 - 持续系统音频转录慢于实时语速，长时间会议可能排队或丢弃旧段；当前没有可报告的通用准确率。
-- 独立麦克风采集、多说话人识别、自定义快捷键、扫描版 PDF OCR 尚未实现。
+- 多说话人声纹识别、扫描版 PDF OCR 尚未实现；当前“我 / 对方”角色按输入通道划分。
 - 本地自签名应用只适合此开发 Mac 上验证。正式分发需要 Developer ID 签名、公证和另一台干净 Mac 的安装测试。
 
-本机运行步骤：确认 ChatGPT/Codex 客户端已登录；打开 `dist/InterviewHacker.app`；首次运行在设置中确认 Codex 状态并下载本地模型；在 macOS 隐私与安全性中允许“屏幕与系统音频录制”；回助手页开始辅助。重建后使用相同工作区、`.local-signing/` 和 `scripts/build-app.sh`，本次验证已确认系统权限保持有效。
+本机运行步骤：确认 ChatGPT/Codex 客户端已登录；打开 `dist/InterviewHacker.app`；首次运行在设置中确认 Codex 状态，下载或导入本地模型并选择使用；在 macOS 隐私与安全性中允许“屏幕与系统音频录制”；回助手页开始辅助。重建后使用相同工作区、`.local-signing/` 和 `scripts/build-app.sh`，本次验证已确认系统权限保持有效。

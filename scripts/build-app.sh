@@ -17,7 +17,12 @@ cd "$project_root"
 swift build --disable-sandbox -c release --scratch-path "$build_root/swift"
 binary_path="$(swift build --disable-sandbox --show-bin-path -c release --scratch-path "$build_root/swift")/InterviewHacker"
 
+# Explicit SDK paths also support Command Line Tools installations whose compiler
+# does not discover the SDK's libc++ headers automatically.
+ih_sdk="$(xcrun --show-sdk-path)"
 cmake -S Vendor/whisper.cpp -B "$runtime_build" \
+    -DCMAKE_OSX_SYSROOT="$ih_sdk" \
+    -DCMAKE_CXX_FLAGS="-isystem $ih_sdk/usr/include/c++/v1" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_OSX_ARCHITECTURES=arm64 \
     -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
@@ -55,6 +60,10 @@ cp "$project_root/Vendor/whisper.cpp/LICENSE" "$app_path/Contents/Resources/Whis
 cp "$project_root/Resources/ThirdPartyNotices.txt" "$app_path/Contents/Resources/ThirdPartyNotices.txt"
 printf 'APPL????' > "$app_path/Contents/PkgInfo"
 
+cp "$project_root/Resources/import-whisper-model.py" "$app_path/Contents/Resources/"
+cp "$project_root/Vendor/whisper.cpp/models/convert-pt-to-ggml.py" "$app_path/Contents/Resources/"
+# Cloud-backed folders can attach Finder metadata that codesign rejects.
+xattr -cr "$app_path"
 "$project_root/scripts/sign-app.sh" "$app_path"
 
 codesign --verify --strict "$app_path/Contents/Helpers/whisper-server"

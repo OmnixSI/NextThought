@@ -52,17 +52,22 @@ final class CodexBridge: @unchecked Sendable {
         if process?.isRunning == true { process?.terminate() }
     }
 
-    func run(prompt: String, imageURL: URL? = nil, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, onUpdate: @escaping (String) async -> Void) async throws -> String {
         let requestID = UUID()
         return try await withTaskCancellationHandler {
-            try await runRequest(id: requestID, prompt: prompt, imageURL: imageURL, onUpdate: onUpdate)
+            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, onUpdate: onUpdate)
         } onCancel: {
             self.terminate(requestID)
         }
     }
 
-    private func runRequest(id requestID: UUID, prompt: String, imageURL: URL?, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, onUpdate: @escaping (String) async -> Void) async throws -> String {
         try Task.checkCancellation()
+        let identifierCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._/:"))
+        guard !model.isEmpty, model.unicodeScalars.allSatisfy({ identifierCharacters.contains($0) }),
+              ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"].contains(reasoning) else {
+            throw AppFailure.transcription("请选择有效的 Codex 模型与推理强度。")
+        }
         guard let executable = Self.executableURL() else { throw AppFailure.codexUnavailable }
         let status = await validatedLoginStatus()
         try Task.checkCancellation()
@@ -83,8 +88,8 @@ final class CodexBridge: @unchecked Sendable {
         process.executableURL = executable
         process.arguments = [
             "exec", "--json", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check",
-            "--sandbox", "read-only", "--model", "gpt-5.6-luna",
-            "--config", "model_reasoning_effort=none",
+            "--sandbox", "read-only", "--model", model,
+            "--config", "model_reasoning_effort=\"\(reasoning)\"",
             "--config", "features.shell_tool=false",
             "--config", "features.apps=false",
             "--config", "features.multi_agent=false",
@@ -108,7 +113,7 @@ final class CodexBridge: @unchecked Sendable {
         setActiveProcess(process, id: requestID)
         defer { clearActiveProcess(id: requestID) }
         let startedAt = Date()
-        Diagnostics.record("codex.started", ["request_id": requestID.uuidString, "model": "gpt-5.6-luna", "reasoning": "none", "pid": process.processIdentifier])
+        Diagnostics.record("codex.started", ["request_id": requestID.uuidString, "model": model, "reasoning": reasoning, "pid": process.processIdentifier])
 
         let timeoutTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(90))

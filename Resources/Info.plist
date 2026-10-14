@@ -34,6 +34,8 @@
 	<true/>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>InterviewHacker uses on-device speech recognition for the system audio you select.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>InterviewHacker uses your microphone for local transcription, labelled as your voice separately from system audio.</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>InterviewHacker captures system audio from the selected meeting or lesson window for on-device transcription.</string>
 	<key>NSScreenCaptureUsageDescription</key>
