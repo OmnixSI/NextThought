@@ -20,6 +20,8 @@ jobs:
           swift --version
       - name: Build and test
         run: swift test --disable-sandbox
+      - name: Release build
+        run: swift build --disable-sandbox -c release
       - name: Source snapshot for reproducible review
         if: always()
         run: tar -czf source-snapshot.tar.gz Package.swift Sources Tests Resources scripts
