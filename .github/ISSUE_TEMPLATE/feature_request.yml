@@ -1,0 +1,11 @@
+name: 功能建议
+description: 希望增加或改进的功能
+labels: [enhancement]
+body:
+  - type: textarea
+    id: scenario
+    attributes: { label: 使用场景, description: 在会议 / 面试 / 网课中的什么情况下需要它 }
+    validations: { required: true }
+  - type: textarea
+    id: idea
+    attributes: { label: 期望的效果 }

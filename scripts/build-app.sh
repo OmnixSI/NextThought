@@ -60,6 +60,23 @@ cp "$project_root/Vendor/whisper.cpp/LICENSE" "$app_path/Contents/Resources/Whis
 cp "$project_root/Resources/ThirdPartyNotices.txt" "$app_path/Contents/Resources/ThirdPartyNotices.txt"
 printf 'APPL????' > "$app_path/Contents/PkgInfo"
 
+# App icon (generated; a failure here only leaves the generic icon).
+icon_set="$build_root/AppIcon.iconset"
+rm -rf "$icon_set"
+if swift "$project_root/scripts/make-icon.swift" "$icon_set" && iconutil -c icns "$icon_set" -o "$app_path/Contents/Resources/AppIcon.icns"; then
+    echo "Generated app icon"
+else
+    echo "warning: could not generate the app icon" >&2
+fi
+
+# Optional version stamping (release builds).
+if [[ -n "${INTERVIEWHACKER_VERSION:-}" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $INTERVIEWHACKER_VERSION" "$app_path/Contents/Info.plist"
+fi
+if [[ -n "${INTERVIEWHACKER_BUILD_NUMBER:-}" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $INTERVIEWHACKER_BUILD_NUMBER" "$app_path/Contents/Info.plist"
+fi
+
 cp "$project_root/Resources/import-whisper-model.py" "$app_path/Contents/Resources/"
 cp "$project_root/Vendor/whisper.cpp/models/convert-pt-to-ggml.py" "$app_path/Contents/Resources/"
 # Cloud-backed folders can attach Finder metadata that codesign rejects.
@@ -76,4 +93,13 @@ ditto -c -k --sequesterRsrc --keepParent "$app_path" "$archive_path"
 
 echo "Built arm64 macOS 14+ app: $app_path"
 echo "Created archive: $archive_path"
-echo "Distribution: local development build; not notarized."
+if [[ "${INTERVIEWHACKER_MAKE_DMG:-0}" == 1 ]]; then
+    dmg_root="$build_root/dmg-root"
+    rm -rf "$dmg_root" && mkdir -p "$dmg_root"
+    cp -R "$app_path" "$dmg_root/"
+    ln -s /Applications "$dmg_root/Applications"
+    rm -f "$project_root/dist/InterviewHacker.dmg"
+    hdiutil create -volname "InterviewHacker" -srcfolder "$dmg_root" -ov -format UDZO "$project_root/dist/InterviewHacker.dmg"
+    echo "Created disk image: $project_root/dist/InterviewHacker.dmg"
+fi
+echo "Distribution: ${INTERVIEWHACKER_SIGNING_IDENTITY:+signed with $INTERVIEWHACKER_SIGNING_IDENTITY}${INTERVIEWHACKER_SIGNING_IDENTITY:-local development build}; not notarized unless the release workflow notarized it."

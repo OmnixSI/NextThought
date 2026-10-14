@@ -4,3 +4,6 @@ dist/
 *.xcuserstate
 DerivedData/
 .local-signing/
+*.dmg
+.swiftpm/
+.vscode/
