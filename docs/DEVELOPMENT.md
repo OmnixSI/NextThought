@@ -36,7 +36,8 @@ INTERVIEWHACKER_MAKE_DMG=1 ./scripts/build-app.sh   # 另外生成 DMG
 
 ### 签名与公证
 
-- **默认 ad-hoc 签名**：不需要 Apple 账号。用户首次打开需在“系统设置 → 隐私与安全性”点“仍要打开”；每次更新后代码哈希变化，录屏 / 麦克风权限可能需要重新授权。
+- **默认 ad-hoc 签名**（没有配置任何证书时）：不需要 Apple 账号，但每个版本的签名都不同，macOS 会把每次更新当作新应用，录屏 / 麦克风权限需要重新授权；浏览器下载的版本首次打开还要点“仍要打开”。
+- **固定自签名身份（推荐，免费）**：在自己的 Mac 上运行一次 `./scripts/setup-release-signing.sh`。脚本复用 `.local-signing/` 中的自签名证书（与本地构建同一身份），通过 `gh secret set` 写入 `MACOS_CERTIFICATE_P12_BASE64`、`MACOS_CERTIFICATE_PASSWORD`、`MACOS_SIGNING_IDENTITY`。之后发布工作流会在 runner 上信任该证书并签名，各版本 designated requirement 相同，**系统权限在升级后保留**。配合 `./scripts/install-latest.sh` 安装（`gh` 下载不带隔离标记），也不会再有 Gatekeeper 提示。请备份 `.local-signing/`。
 - **Developer ID + 公证**（推荐正式分发）：在仓库 Settings → Secrets 添加
   `MACOS_CERTIFICATE_P12_BASE64`（`base64 -i cert.p12`）、`MACOS_CERTIFICATE_PASSWORD`、`MACOS_SIGNING_IDENTITY`（如 `Developer ID Application: 名字 (TEAMID)`），
   以及公证用的 `APPLE_ID`、`APPLE_TEAM_ID`、`APPLE_APP_SPECIFIC_PASSWORD`。工作流会自动启用 hardened runtime（`Resources/InterviewHacker.entitlements`）、公证并装订 DMG。签名身份固定后，更新不会再丢失系统权限。

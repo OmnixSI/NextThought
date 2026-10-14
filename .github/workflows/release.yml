@@ -83,14 +83,24 @@ jobs:
           security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain"
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          # A self-signed identity (scripts/setup-release-signing.sh) must be trusted
+          # for code signing; Developer ID certificates are already trusted.
+          if ! security find-identity -v -p codesigning "$keychain" | grep -q "$IDENTITY"; then
+            /usr/bin/openssl pkcs12 -in "$RUNNER_TEMP/cert.p12" -clcerts -nokeys -passin "pass:$P12_PASSWORD" -out "$RUNNER_TEMP/cert.pem"
+            sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+            rm -f "$RUNNER_TEMP/cert.pem"
+          fi
+          security find-identity -v -p codesigning "$keychain"
           rm -f "$RUNNER_TEMP/cert.p12"
           echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
+          [[ "$IDENTITY" == *"Developer ID"* ]] && echo "developer_id=1" >> "$GITHUB_OUTPUT" || echo "developer_id=0" >> "$GITHUB_OUTPUT"
           echo "keychain=$keychain" >> "$GITHUB_OUTPUT"
       - name: Build app, ZIP and DMG
         env:
           INTERVIEWHACKER_SIGNING_IDENTITY: ${{ steps.cert.outputs.identity }}
           INTERVIEWHACKER_SIGNING_KEYCHAIN: ${{ steps.cert.outputs.keychain }}
-          INTERVIEWHACKER_HARDENED_RUNTIME: ${{ steps.cert.outputs.identity != '-' && '1' || '0' }}
+          # Hardened runtime only for Developer ID (needed for notarization).
+          INTERVIEWHACKER_HARDENED_RUNTIME: ${{ steps.cert.outputs.developer_id == '1' && '1' || '0' }}
           INTERVIEWHACKER_MAKE_DMG: '1'
           INTERVIEWHACKER_BUILD_JOBS: '6'
           INTERVIEWHACKER_BUILD_NUMBER: ${{ github.run_number }}
@@ -100,7 +110,7 @@ jobs:
           export INTERVIEWHACKER_VERSION="${version%%[-+]*}"
           ./scripts/build-app.sh
       - name: Notarize (optional)
-        if: steps.cert.outputs.identity != '-'
+        if: steps.cert.outputs.developer_id == '1'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
