@@ -11,9 +11,26 @@
 
 **[⬇️ 下载最新版本](../../releases)** · [使用说明](#快速上手) · [隐私](#数据去向) · [开发文档](docs/DEVELOPMENT.md)
 
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/assistant-dark.png">
+  <img src="docs/screenshots/assistant-light.png" width="720" alt="InterviewHacker 主界面：实时转录、问题识别与流式回答">
+</picture>
+
 </div>
 
 ---
+
+## 截图
+
+| 提词器（可放在摄像头下方，支持鼠标穿透） | 资料与回答要求 |
+| --- | --- |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/teleprompter-dark.png"><img src="docs/screenshots/teleprompter-light.png" alt="提词器"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/materials-dark.png"><img src="docs/screenshots/materials-light.png" alt="资料页"></picture> |
+| **设置** | **会话记录** |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png"><img src="docs/screenshots/settings-light.png" alt="设置"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png"><img src="docs/screenshots/history-light.png" alt="记录"></picture> |
+
+<sub>截图由 GitHub Actions 在 macOS 26 上用演示数据自动生成（`INTERVIEWHACKER_DEMO=1`，见 `.github/workflows/screenshots.yml`）。</sub>
 
 ## 功能
 

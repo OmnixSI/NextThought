@@ -25,6 +25,10 @@ swift build                           # 编译（不含 Whisper 运行时）
 INTERVIEWHACKER_MAKE_DMG=1 ./scripts/build-app.sh   # 另外生成 DMG
 ```
 
+## 截图与演示模式
+
+`INTERVIEWHACKER_DEMO=1` 启动时应用显示一组示例会话（不采集音频、不调用模型），可选 `INTERVIEWHACKER_DEMO_SECTION=assistant|materials|settings|history`、`INTERVIEWHACKER_DEMO_APPEARANCE=light|dark`。`.github/workflows/screenshots.yml` 在 macOS runner 上用它为每个页面截取浅色 / 深色截图并提交到 `docs/screenshots/`；手动运行或在提交信息中写 `[screenshots]` 触发。
+
 ## 发布新版本
 
 1. 更新 `CHANGELOG.md`，在 `docs/releases/<tag>.md` 写发布说明（文件存在时会作为 Release 正文）。

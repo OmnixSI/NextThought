@@ -44,7 +44,7 @@ jobs:
               screencapture -x -l "$main" "shots/$section-$appearance.png" || echo "window capture failed"
               if [[ "$section" == assistant && "$panel" != 0 ]]; then
                 screencapture -x -l "$panel" "shots/teleprompter-$appearance.png" || true
-                screencapture -x "shots/desktop-$appearance.png" || true
+                true
               fi
             else
               echo "demo window list not written for $appearance/$section"
