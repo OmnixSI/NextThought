@@ -1,0 +1,9 @@
+InterviewHacker includes whisper.cpp v1.9.4 and its ggml inference runtime from ggml-org.
+The bundled source and runtime are licensed under the MIT License. See WhisperCpp-LICENSE.txt.
+
+The optional Whisper large-v3-turbo Q5_0 model is downloaded separately from the ggerganov/whisper.cpp
+Hugging Face repository. The model is multilingual and is distributed under the MIT License from
+OpenAI Whisper. The model is not included in the application bundle.
+
+The runtime is built for Apple Silicon and links the macOS Accelerate framework. Metal is disabled
+in this build because the build machine does not have Apple's Metal compiler installed.

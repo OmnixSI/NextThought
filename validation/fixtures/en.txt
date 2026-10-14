@@ -1,0 +1,1 @@
+This is a test of local speech recognition. Please explain how a database index improves query speed.

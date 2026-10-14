@@ -1,0 +1,36 @@
+import Foundation
+
+enum Diagnostics {
+    static let launchID = UUID().uuidString
+    static let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("InterviewHacker/diagnostics", isDirectory: true)
+    private static let queue = DispatchQueue(label: "app.interviewhacker.diagnostics")
+    private static let eventsURL = directory.appendingPathComponent("events-\(launchID).jsonl")
+
+    static func record(_ event: String, _ fields: [String: Any] = [:]) {
+        var data = fields
+        data["event"] = event
+        data["launch_id"] = launchID
+        data["timestamp"] = Date().timeIntervalSince1970
+        data["uptime"] = ProcessInfo.processInfo.systemUptime
+        guard let json = try? JSONSerialization.data(withJSONObject: data, options: [.sortedKeys]) else { return }
+        queue.async {
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                if !FileManager.default.fileExists(atPath: eventsURL.path) {
+                    FileManager.default.createFile(atPath: eventsURL.path, contents: nil)
+                }
+                let handle = try FileHandle(forWritingTo: eventsURL)
+                defer { try? handle.close() }
+                try handle.seekToEnd()
+                try handle.write(contentsOf: json)
+                try handle.write(contentsOf: Data([10]))
+            } catch { }
+        }
+    }
+
+    static func runtimeLogURL() -> URL {
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent("whisper-\(launchID).log")
+    }
+}

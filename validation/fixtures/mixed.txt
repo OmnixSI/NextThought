@@ -1,0 +1,1 @@
+这个 system design 需要考虑 cache invalidation 和 database consistency，请解释一下 trade-off。

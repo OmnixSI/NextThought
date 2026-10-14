@@ -1,0 +1,26 @@
+Executable=/Users/spdor/Desktop/CodeSpace/InterviewHacker/dist/InterviewHacker.app/Contents/MacOS/InterviewHacker
+Identifier=com.interviewhacker.app
+Format=app bundle with Mach-O thin (arm64)
+CodeDirectory v=20400 size=3760 flags=0x0(none) hashes=111+3 location=embedded
+VersionPlatform=1
+VersionMin=917504
+VersionSDK=1703936
+Hash type=sha256 size=32
+CandidateCDHash sha256=dcf3bfb384bf0f7cfdfb0a2180c4889b4cd92f24
+CandidateCDHashFull sha256=dcf3bfb384bf0f7cfdfb0a2180c4889b4cd92f241f4c0b0453b1645d56ae10ca
+Hash choices=sha256
+CMSDigest=dcf3bfb384bf0f7cfdfb0a2180c4889b4cd92f241f4c0b0453b1645d56ae10ca
+CMSDigestType=2
+Executable Segment base=0
+Executable Segment limit=540672
+Executable Segment flags=0x1
+Page size=16384
+CDHash=dcf3bfb384bf0f7cfdfb0a2180c4889b4cd92f24
+Signature size=2211
+Authority=(unavailable)
+Info.plist=not bound
+TeamIdentifier=not set
+Sealed Resources version=2 rules=13 files=3
+Internal requirements count=1 size=100
+Executable=/Users/spdor/Desktop/CodeSpace/InterviewHacker/dist/InterviewHacker.app/Contents/MacOS/InterviewHacker
+designated => identifier "com.interviewhacker.app" and certificate leaf = H"5b8b4bbaca96e69f133b309314530534304e9092"
