@@ -1,0 +1,284 @@
+[
+{
+"path": 'Resources/Info.plist',
+"old": '5731963750607f22a6e02730731758d1434c104bb3c179f05e38bdf8a6b654b7',
+"new": 'fd3f3d7031e0f2e0dbb0d1ead865c071f4e027e3e1a942235a5ae0a37e9bda5b',
+"edits": [
+(34, 34, r'''	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>InterviewHacker uses on-device speech recognition for the system audio you select.</string>
+'''),
+]
+},
+{
+"path": 'Sources/InterviewHacker/AppState.swift',
+"old": 'fd88ba0e9b577d8a76bf0b8eacd7172feff7862505cebbf8b71eba67eb87a184',
+"new": 'e3c2bff26a4a9af09ad1ea37ecd9d97c762fc6f5287c42c88e0b98921bac6250',
+"edits": [
+(8, 8, r'''
+    @Published var recognitionVocabulary = UserDefaults.standard.string(forKey: "recognitionVocabulary") ?? ""
+    @Published var transcriptionBackend = UserDefaults.standard.string(forKey: "transcriptionBackend") ?? "whisper"
+    @Published var sessionMode = SessionMode(rawValue: UserDefaults.standard.string(forKey: "sessionMode") ?? "meeting") ?? .meeting
+    @Published var answerStyle = AnswerStyle(rawValue: UserDefaults.standard.string(forKey: "answerStyle") ?? "concise") ?? .concise
+    @Published var answerPreferences = UserDefaults.standard.string(forKey: "answerPreferences") ?? ""
+    @Published var documents: [ContextDocument] = []
+    @Published var isImportingDocuments = false
+    @Published var isIndexingDocuments = false
+    @Published var selectedExcerpts: [ContextExcerpt] = []
+    @Published var lastASRSeconds: Double?
+    @Published var lastRTF: Double?
+    @Published var lastAnswerSeconds: Double?
+    @Published var droppedAudioSegments = 0
+    @Published var teleprompterFontSize = 22.0
+    @Published var capturePrivacy = false
+    @Published var customShortcuts: [String: ShortcutBinding] = {
+        guard let data = UserDefaults.standard.data(forKey: "customShortcuts"),
+              let values = try? JSONDecoder().decode([String: ShortcutBinding].self, from: data) else { return [:] }
+        return values
+    }()
+    var contextIndex = SessionContextIndex()
+    var documentRevision = UUID()
+    var importTask: Task<Void, Never>?
+    var manualTriggerTask: Task<Void, Never>?
+    private var liveTranscriber: (any LiveTranscribing)?
+    private var audioEpoch = UUID()
+    private var forceTriggerID = UUID()
+'''),
+(21, 21, r'''    @Published var answerDraft = ""
+    var displayedAnswer: String { isAnswering && !answerDraft.isEmpty ? answerDraft : answer }
+    var displayedQuestion: String { isAnswering && !answerDraft.isEmpty ? pendingQuestion : currentQuestion }
+'''),
+(94, 97, r'''        if transcriptionBackend == "apple" {
+            if !LiveTranscriberFactory.supported { return "Apple 流式识别需要 macOS 26" }
+            if recognitionLanguage == "auto" { return "请为 Apple 识别选择中文或 English" }
+        }
+        if transcriptionBackend == "whisper", LocalWhisperService.findExecutable() == nil { return "应用内语音运行时不可用" }
+        if transcriptionBackend == "whisper", !isModelInstalled { return "需要下载或修复本地语音模型" }
+'''),
+(140, 140, r'''        codex.invalidateLoginCache()
+'''),
+(157, 160, r'''        guard transcriptionBackend != "whisper" || LocalWhisperService.findExecutable() != nil else { errorMessage = AppFailure.noTranscriber.localizedDescription; section = .settings; return }
+        guard transcriptionBackend != "whisper" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
+'''),
+(161, 161, r'''        cancelAnswer()
+        currentQuestion = ""; answer = ""; pendingQuestion = ""; partialTranscript = ""
+        clearScreenshot()
+        selectedExcerpts = []; lastASRSeconds = nil; lastRTF = nil; lastAnswerSeconds = nil; droppedAudioSegments = 0
+        finalQueue.removeAll(); finalVoiceIDs.removeAll()
+        audioEpoch = UUID()
+'''),
+(166, 167, r'''            modelLoadSeconds = try await prepareTranscriber()
+'''),
+(169, 169, r'''            isRunning = true
+'''),
+(188, 188, r'''            isRunning = false
+            audio.setPCMHandler(nil)
+            await liveTranscriber?.cancel()
+            liveTranscriber = nil
+'''),
+(199, 199, r'''        cancelAnswer()
+'''),
+(202, 204, r'''        if transcriptionBackend == "apple" { await liveTranscriber?.finish(); audio.setPCMHandler(nil) }
+        else {
+            for event in pending where event.kind == .final { enqueueFinal(event, shouldDetectQuestion: false) }
+            await drainTranscriptions()
+'''),
+(205, 206, r''''''),
+(220, 221, r'''            audioEpoch = UUID()
+            _ = try await prepareTranscriber()
+'''),
+(246, 248, r'''        if transcriptionBackend == "apple" { await liveTranscriber?.finish(); audio.setPCMHandler(nil) }
+        else {
+            for event in pending where event.kind == .final { enqueueFinal(event, shouldDetectQuestion: false) }
+            await drainTranscriptions()
+'''),
+(249, 250, r'''        audioEpoch = UUID()
+        liveTranscriber = nil
+'''),
+(293, 293, r'''        answerDraft = ""
+        forceTriggerID = UUID()
+        manualTriggerTask?.cancel()
+        manualTriggerTask = nil
+'''),
+(334, 335, r'''                let image = try await ScreenshotService.captureDisplay(displayID)
+                guard selectedScreenshotDisplayID == displayID, isRegionCapturePresented else { return }
+                regionCaptureImage = image
+'''),
+(441, 441, r'''        guard !isRunning, !isChangingSession, !isDownloadingModel else { errorMessage = "请先停止辅助和模型下载，再删除模型。"; return }
+'''),
+(463, 464, r'''        UserDefaults.standard.set(recognitionVocabulary, forKey: "recognitionVocabulary")
+        UserDefaults.standard.set(transcriptionBackend, forKey: "transcriptionBackend")
+        UserDefaults.standard.set(sessionMode.rawValue, forKey: "sessionMode")
+        UserDefaults.standard.set(answerStyle.rawValue, forKey: "answerStyle")
+        UserDefaults.standard.set(answerPreferences, forKey: "answerPreferences")
+        for window in NSApp.windows where !(window is NSPanel) {
+            window.level = keepOnTop ? .floating : .normal
+        }
+        TeleprompterController.shared.applyPrivacy(capturePrivacy)
+'''),
+(486, 487, r'''        NSPasteboard.general.setString(displayedAnswer, forType: .string)
+'''),
+(492, 492, r'''        importTask?.cancel()
+        manualTriggerTask?.cancel()
+        audio.setPCMHandler(nil)
+'''),
+(500, 501, r'''        guard isRunning, transcriptionBackend == "whisper" else { return }
+'''),
+(519, 520, r'''            droppedAudioSegments += 1
+            transcriptionStatus = "识别积压 · 已遗漏 \(droppedAudioSegments) 段"
+'''),
+(526, 527, r'''            while !finalQueue.isEmpty, !Task.isCancelled {
+'''),
+(535, 535, r'''        let epoch = audioEpoch
+        let began = Date()
+'''),
+(536, 536, r'''            finalVoiceIDs.remove(event.id)
+'''),
+(539, 541, r'''            var text = try await whisper.transcribe(event.samples, modelPath: modelPath, language: recognitionLanguage, vocabulary: recognitionVocabulary)
+            guard isRunning, audioEpoch == epoch, !Task.isCancelled else { return }
+            lastASRSeconds = Date().timeIntervalSince(began)
+            lastRTF = (lastASRSeconds ?? 0) / max(0.001, Double(event.samples.count) / 16_000)
+            let incomingStart = (event.streamStartedAt ?? sessionStartedAt ?? Date()).addingTimeInterval(Double(event.startSample) / 16_000)
+'''),
+(542, 543, r'''                text = TranscriptDeduplicator.removeOverlappingPrefix(previous: previous.text, incoming: text, previousEnd: previous.endedAt, incomingStart: incomingStart)
+'''),
+(557, 558, r'''            if automaticAnswers, shouldDetectQuestion, !isPaused, !isStopping, let question = detector.detect(text) {
+'''),
+(562, 563, r'''            guard isRunning, !Task.isCancelled, !isStopping else { return }
+'''),
+(567, 568, r'''    func ask(_ question: String, screenshot: URL?, recentContext: String? = nil, isAutomatic: Bool = false) {
+'''),
+(573, 573, r'''        guard CodexBridge.isChatGPTLogin(codexLoginStatus) else {
+            errorMessage = "转写可继续；生成回答需要先登录 Codex。请在设置中刷新登录状态。"
+            return
+        }
+        if isIndexingDocuments { errorMessage = "资料索引正在更新，请完成后再生成回答。"; return }
+'''),
+(582, 583, r'''        let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
+        selectedExcerpts = excerpts
+        let prompt = AnswerPromptBuilder.make(question: question, context: context, profile: profile, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: answerPreferences, mode: sessionMode, style: answerStyle, excerpts: excerpts)
+        let answerStartedAt = Date()
+'''),
+(591, 592, r'''                let result = try await codex.run(prompt: prompt, imageURL: screenshot) { [weak self] text in
+                    await MainActor.run {
+                        guard let self, self.requestID == id else { return }
+                        self.answerDraft = text
+                    }
+                }
+'''),
+(594, 594, r'''                lastAnswerSeconds = Date().timeIntervalSince(answerStartedAt)
+'''),
+(624, 625, r'''    func suspendShortcuts() { hotkeys.unregister() }
+
+    func registerHotkeys() {
+'''),
+(635, 637, r'''            .regenerate: { [weak self] in self?.regenerate() },
+            .forceAnswer: { [weak self] in self?.forceAnswerCurrent() },
+            .togglePause: { [weak self] in
+                guard let self else { return }
+                Task { if self.isPaused { await self.resumeSession() } else { await self.pauseSession() } }
+            },
+            .toggleTeleprompter: { TeleprompterController.shared.toggle() },
+            .cancelAnswer: { [weak self] in self?.cancelAnswer() }
+        ], overrides: customShortcuts)
+'''),
+(671, 671, r'''
+    private func prepareTranscriber() async throws -> TimeInterval {
+        let captureEpoch = audioEpoch
+        audio.onSegment = { [weak self] event in
+            Task { @MainActor in
+                guard let self, self.audioEpoch == captureEpoch else { return }
+                self.receiveSpeechEvent(event)
+            }
+        }
+        audio.onCaptureError = { [weak self] message in
+            Task { @MainActor in
+                guard let self, self.audioEpoch == captureEpoch else { return }
+                self.errorMessage = "采集已停止：\(message)"
+                await self.stopSession()
+            }
+        }
+        if transcriptionBackend == "whisper" {
+            audio.setPCMHandler(nil)
+            return try await whisper.prepare(modelPath: modelPath)
+        }
+        guard let service = LiveTranscriberFactory.make() else {
+            throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换 Whisper。")
+        }
+        statusText = "正在准备 Apple Speech；首次使用可能下载语言资源…"
+        let epoch = audioEpoch
+        let started = Date()
+        liveTranscriber = service
+        try await service.start(language: recognitionLanguage) { [weak self] text, final, start, end in
+            guard let self, self.audioEpoch == epoch, self.isRunning else { return }
+            if final {
+                self.partialTranscript = ""
+                self.entries.append(TranscriptEntry(date: start, source: CaptureSource.system.rawValue, text: text, isFinal: true, startedAt: start, endedAt: end))
+                if self.entries.count > 400 { self.entries.removeFirst(self.entries.count - 400) }
+                self.transcriptionStatus = "Apple Speech · 流式识别"
+                if self.automaticAnswers, !self.isPaused, !self.isStopping, let question = self.detector.detect(text) {
+                    self.ask(question, screenshot: nil, isAutomatic: true)
+                }
+            } else {
+                self.partialTranscript = text
+                self.transcriptionStatus = "Apple Speech · 暂定文字（可能修订）"
+            }
+        } onError: { [weak self] message in
+            guard let self, self.audioEpoch == epoch else { return }
+            self.errorMessage = message
+            Task { await self.pauseSession() }
+        }
+        audio.setPCMHandler(service.inputHandler())
+        return Date().timeIntervalSince(started)
+    }
+
+    private func drainTranscriptions() async {
+        guard let task = finalTranscriptionTask else { return }
+        let epoch = audioEpoch
+        let deadline = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled, let self, self.audioEpoch == epoch else { return }
+            self.droppedAudioSegments += self.finalQueue.count + 1
+            self.finalQueue.removeAll()
+            task.cancel()
+            self.whisper.cancelAll()
+        }
+        await task.value
+        deadline.cancel()
+        finalTranscriptionTask = nil
+    }
+
+    /// Uses the freshest text. A Whisper flush runs without stopping capture; it is
+    /// explicitly not presented as instantaneous speech recognition.
+    func forceAnswerCurrent() {
+        let cutoff = Date().addingTimeInterval(-45)
+        let hasRecent = entries.contains { ($0.endedAt ?? $0.date) > cutoff }
+        if !questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !partialTranscript.isEmpty || hasRecent {
+            submitCurrentText()
+            return
+        }
+        guard isRunning, !isPaused, transcriptionBackend == "whisper", manualTriggerTask == nil else {
+            errorMessage = "还没有识别出的文字，请先说话或手动输入问题。"; return
+        }
+        let id = UUID(); forceTriggerID = id
+        manualTriggerTask = Task {
+            defer { if forceTriggerID == id { manualTriggerTask = nil } }
+            if let event = await audio.flushUtterance() {
+                enqueueFinal(event, shouldDetectQuestion: false)
+                transcriptionStatus = "已提交当前语音；文字出现后可点击回答"
+            }
+        }
+    }
+
+    private func submitCurrentText() {
+        let cutoff = Date().addingTimeInterval(-45)
+        let recent = entries.filter { ($0.endedAt ?? $0.date) > cutoff }.map(\.text)
+        guard let question = ManualQuestionBuilder.make(typed: questionInput, partial: partialTranscript, recent: recent) else {
+            errorMessage = "还没有最近 45 秒的转写。请先说话或手动输入问题。"; return
+        }
+        ask(question, screenshot: nil)
+    }
+
+'''),
+]
+},
+]
