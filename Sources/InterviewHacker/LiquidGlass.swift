@@ -299,9 +299,24 @@ struct MenuPicker<Value: Hashable>: View {
                     }
                 }
             } label: {
-                Text(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
-                    .lineLimit(1)
+                // Rendered by SwiftUI (plain button style), not by the AppKit pop-up,
+                // so the text color follows our appearance on glass cards.
+                HStack(spacing: 6) {
+                    Text(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
+                        .lineLimit(1)
+                        .foregroundStyle(Color.primary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.secondary)
+                }
+                .font(.system(size: 12.5, weight: .medium))
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .glassCapsule(interactive: true)
+                .contentShape(Capsule())
             }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
             .fixedSize()
         }
     }

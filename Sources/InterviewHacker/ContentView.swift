@@ -388,16 +388,17 @@ struct ContentView: View {
 
     private var questionComposer: some View {
         HStack(spacing: 8) {
-            TextField("", text: $state.questionInput, axis: .vertical)
-                .lineLimit(1...4)
-                .textFieldStyle(.plain)
-                .font(.system(size: 14))
-                .background(alignment: .leading) {
-                    if state.questionInput.isEmpty {
-                        Text(state.screenshotPreview == nil ? "输入问题，回车发送…" : "对截图的补充要求（可留空）…")
-                            .font(.system(size: 14)).foregroundStyle(.secondary).allowsHitTesting(false)
-                    }
+            ZStack(alignment: .leading) {
+                if state.questionInput.isEmpty {
+                    Text(state.screenshotPreview == nil ? "输入问题，回车发送…" : "对截图的补充要求（可留空）…")
+                        .font(.system(size: 14)).foregroundStyle(Color.secondary).allowsHitTesting(false)
                 }
+                TextField("", text: $state.questionInput, axis: .vertical)
+                    .lineLimit(1...4)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.primary)
+            }
                 .onSubmit { state.screenshotPreview == nil ? state.answerInput() : state.answerScreenshot() }
             Button { state.screenshotPreview == nil ? state.answerInput() : state.answerScreenshot() } label: {
                 Image(systemName: "arrow.up").font(.system(size: 13, weight: .bold))
