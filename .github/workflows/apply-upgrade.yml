@@ -59,6 +59,7 @@ jobs:
                   print(f'Verified {relative}')
           print(f'Applied {len(seen)} exact source changes')
           PY
+          python3 .github/realtime-upgrade/native-fixes.py
       - name: Native build and regression tests
         shell: bash
         run: |
