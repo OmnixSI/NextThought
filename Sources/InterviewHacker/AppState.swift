@@ -2,6 +2,7 @@ import AppKit
 import CoreGraphics
 import Foundation
 import InterviewHackerCore
+import UniformTypeIdentifiers
 
 @MainActor
 final class AppState: ObservableObject {
@@ -61,6 +62,73 @@ final class AppState: ObservableObject {
     @Published var selectedTargetID = UserDefaults.standard.string(forKey: "selectedTargetID") ?? ""
     @Published var codexLoginStatus = "正在检查 Codex…"
     @Published var codexVersion = "正在检测 Codex…"
+    @Published var selectedModelID = WhisperModel.matching(URL(fileURLWithPath: UserDefaults.standard.string(forKey: "modelPath") ?? LocalWhisperService.defaultModelURL.path))?.id ?? WhisperModel.defaultID
+    @Published var localModelPaths: [String] = []
+    @Published var isImportingModel = false
+    var modelControlsDisabled: Bool { isRunning || isChangingSession || isPreparingModel || isDownloadingModel || isImportingModel }
+    var selectedModel: WhisperModel? { WhisperModel.named(selectedModelID) }
+    var selectedModelURL: URL {
+        if let model = selectedModel { return LocalWhisperService.modelsDirectory.appendingPathComponent(model.filename) }
+        return LocalWhisperService.modelsDirectory.appendingPathComponent(String(selectedModelID.dropFirst("local:".count)))
+    }
+    var selectedModelExists: Bool { FileManager.default.fileExists(atPath: selectedModelURL.path) }
+    func reloadLocalModels() {
+        localModelPaths = ((try? FileManager.default.contentsOfDirectory(at: LocalWhisperService.modelsDirectory, includingPropertiesForKeys: nil)) ?? [])
+            .filter { $0.lastPathComponent.hasPrefix("imported-") && $0.pathExtension == "bin" }.map(\.lastPathComponent).sorted()
+    }
+    func useSelectedModel() {
+        guard !modelControlsDisabled else { return }
+        let url = selectedModelURL
+        Task {
+            isImportingModel = true
+            defer { isImportingModel = false }
+            do {
+                try await Task.detached(priority: .utility) { try WhisperModelFile.verify(at: url, expected: WhisperModel.matching(url)) }.value
+                modelPath = url.path
+                if url.lastPathComponent.contains(".en") { recognitionLanguage = "en" }
+                modelIsReady = true
+                modelDownloadStatus = "已切换到 \(url.lastPathComponent)"
+                updateSettings()
+            } catch { modelDownloadStatus = error.localizedDescription }
+        }
+    }
+    func importLocalModel() {
+        guard !modelControlsDisabled else { return }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "bin")!, UTType(filenameExtension: "pt")!]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cache/whisper")
+        panel.message = "选择 Whisper .bin 或 .pt 模型；原文件会保留，.pt 将在本机转换。"
+        guard panel.runModal() == .OK, let source = panel.url else { return }
+        importModel(from: source)
+    }
+    func importModel(from source: URL) {
+        guard !modelControlsDisabled else { return }
+        isImportingModel = true
+        modelDownloadStatus = "正在导入 \(source.lastPathComponent)；.pt 转换可能需要一些时间…"
+        Task {
+            defer { isImportingModel = false }
+            do {
+                let url = try await Task.detached(priority: .utility) { try LocalModelImporter.importModel(from: source) }.value
+                do {
+                    _ = try await whisper.prepare(modelPath: url.path)
+                    await whisper.shutdown()
+                } catch {
+                    try? FileManager.default.removeItem(at: url)
+                    try? FileManager.default.removeItem(at: url.appendingPathExtension("sha256"))
+                    throw error
+                }
+                reloadLocalModels()
+                selectedModelID = "local:" + url.lastPathComponent
+                modelPath = url.path
+                if url.lastPathComponent.contains(".en") { recognitionLanguage = "en" }
+                modelIsReady = true
+                modelDownloadStatus = "已导入，通过完整性校验和本地加载验证。"
+                updateSettings()
+            } catch { modelDownloadStatus = error.localizedDescription }
+        }
+    }
     @Published var modelPath = UserDefaults.standard.string(forKey: "modelPath") ?? LocalWhisperService.defaultModelURL.path
     @Published var modelDownloadStatus = ""
     @Published var isDownloadingModel = false
@@ -179,18 +247,25 @@ final class AppState: ObservableObject {
     }
 
     func refreshModelStatus() async {
+        reloadLocalModels()
+        if URL(fileURLWithPath: modelPath).lastPathComponent.hasPrefix("imported-") {
+            selectedModelID = "local:" + URL(fileURLWithPath: modelPath).lastPathComponent
+        }
         let path = modelPath
-        modelIsReady = await Task.detached(priority: .utility) {
+        let ready = await Task.detached(priority: .utility) {
             LocalWhisperService.isValidModel(at: path)
         }.value
+        guard modelPath == path else { return }
+        modelIsReady = ready
         if !modelIsReady, FileManager.default.fileExists(atPath: path) {
-            modelDownloadStatus = "模型文件不完整或校验失败。删除后重新下载即可修复。"
+            modelDownloadStatus = "模型文件不完整或校验失败。可重新下载或导入完整的本地模型。"
         }
     }
 
     func startSession() async {
         guard !isRunning, !isChangingSession else { return }
         guard transcriptionBackend != "whisper" || LocalWhisperService.findExecutable() != nil else { errorMessage = AppFailure.noTranscriber.localizedDescription; section = .settings; return }
+        guard !isImportingModel, !isDownloadingModel else { return }
         guard transcriptionBackend != "whisper" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
         cancelAnswer()
@@ -467,24 +542,26 @@ final class AppState: ObservableObject {
     }
 
     func downloadModel() {
-        guard !isDownloadingModel else { return }
+        guard !modelControlsDisabled, let model = selectedModel else { return }
+        let destination = selectedModelURL
         isDownloadingModel = true
         modelDownloadProgress = 0
-        modelDownloadStatus = "正在从 Hugging Face 下载约 547 MiB；下载后会校验文件。"
+        modelDownloadStatus = "正在下载 \(model.id) · \(model.sizeLabel)，完成后校验。"
         modelDownloadTask = Task {
             do {
-                let destination = URL(fileURLWithPath: modelPath)
-                try await LocalWhisperService.downloadModel(to: destination) { [weak self] progress in
+                try await LocalWhisperService.downloadModel(model, to: destination) { [weak self] progress in
                     Task { @MainActor in
                         self?.modelDownloadProgress = progress
-                        let amount = Int(Double(LocalWhisperService.modelBytes) * progress)
-                        self?.modelDownloadStatus = "正在下载：\(ByteCountFormatter.string(fromByteCount: Int64(amount), countStyle: .file)) / 547 MiB"
+                        self?.modelDownloadStatus = "正在下载 \(model.id)：\(Int(progress * 100))% / \(model.sizeLabel)"
                     }
                 }
+                modelPath = destination.path
+                if model.englishOnly { recognitionLanguage = "en" }
                 modelIsReady = true
-                modelDownloadStatus = "模型已下载并通过 SHA-1 完整性校验。"
+                updateSettings()
+                modelDownloadStatus = "已下载并通过 SHA-256 校验，当前使用 \(model.id)。"
             } catch {
-                modelDownloadStatus = error is CancellationError ? "下载已取消；未完成的文件不会作为可用模型保留。" : "下载失败：\(error.localizedDescription) 可点击重试。"
+                modelDownloadStatus = error is CancellationError ? "下载已取消。" : "下载失败：\(error.localizedDescription) 可点击重试。"
             }
             isDownloadingModel = false
             modelDownloadTask = nil
@@ -496,13 +573,22 @@ final class AppState: ObservableObject {
     }
 
     func deleteModel() {
-        guard !isRunning, !isChangingSession, !isDownloadingModel else { errorMessage = "请先停止辅助和模型下载，再删除模型。"; return }
+        guard !modelControlsDisabled else { return }
+        let url = selectedModelURL
+        // Only managed copies are deleted; imported source files are never removed.
+        guard url.deletingLastPathComponent().standardizedFileURL == LocalWhisperService.modelsDirectory.standardizedFileURL else { return }
         Task {
+            isImportingModel = true
+            defer { isImportingModel = false }
             await whisper.shutdown()
-            try? FileManager.default.removeItem(atPath: modelPath)
-            try? FileManager.default.removeItem(atPath: modelPath + ".partial")
-            modelIsReady = false
-            modelDownloadStatus = "模型已删除。"
+            do {
+                try FileManager.default.removeItem(at: url)
+                try? FileManager.default.removeItem(at: url.appendingPathExtension("sha256"))
+                if modelPath == url.path { modelIsReady = false }
+                if selectedModel == nil { selectedModelID = WhisperModel.defaultID }
+                reloadLocalModels()
+                modelDownloadStatus = "已删除应用内模型副本，原始导入文件保留。"
+            } catch { modelDownloadStatus = error.localizedDescription }
         }
     }
 

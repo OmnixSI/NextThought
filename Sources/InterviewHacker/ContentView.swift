@@ -39,10 +39,10 @@ struct ContentView: View {
         .overlay(RoundedRectangle(cornerRadius: 24).stroke(.white.opacity(0.34), lineWidth: 1))
         .preferredColorScheme(state.darkMode ? .dark : .light)
         .confirmationDialog("下载本地语音识别模型？", isPresented: $showModelDownloadWarning, titleVisibility: .visible) {
-            Button("下载约 547 MiB") { state.downloadModel() }
+            Button("下载 \(state.selectedModel?.sizeLabel ?? "模型")") { state.downloadModel() }
             Button("取消", role: .cancel) { }
         } message: {
-            Text("模型会保存到本机应用支持目录。首次下载需要网络；权重不包含在应用安装包中。")
+            Text("\(state.selectedModel?.id ?? "") 会保存到本机应用支持目录，下载后自动切换使用。")
         }
         .confirmationDialog("删除全部本地记录？", isPresented: $showHistoryDeleteWarning, titleVisibility: .visible) {
             Button("删除记录", role: .destructive) { state.deleteHistory() }
@@ -454,25 +454,34 @@ struct ContentView: View {
                     }
                 }
                 settingsSection("本地语音识别", icon: "waveform") {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(LocalWhisperService.modelName).font(.system(size: 13, weight: .semibold))
-                            Text(state.isModelInstalled ? "已安装并通过完整性校验" : "尚未就绪 · 约 547 MiB")
-                                .font(.system(size: 12)).foregroundStyle(state.isModelInstalled ? .green : .secondary)
+                    Picker("选择模型", selection: $state.selectedModelID) {
+                        ForEach(WhisperModel.catalog) { model in
+                            Text("\(model.id) · \(model.sizeLabel)\(FileManager.default.fileExists(atPath: LocalWhisperService.modelsDirectory.appendingPathComponent(model.filename).path) ? " · 已下载" : "")").tag(model.id)
                         }
-                        Spacer()
-                        if state.isModelInstalled {
-                            Button("删除") { state.deleteModel() }.disabled(state.isRunning || state.isChangingSession || state.isDownloadingModel).buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.red)
-                        } else if state.isDownloadingModel {
-                            Button("取消") { state.cancelModelDownload() }.buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(.secondary)
-                        } else {
-                            Button("下载模型") { showModelDownloadWarning = true }
-                                .buttonStyle(SecondaryButtonStyle())
+                        ForEach(state.localModelPaths, id: \.self) { name in
+                            Text("本地导入 · \(name.replacingOccurrences(of: #"^imported-[A-Fa-f0-9-]{36}-"#, with: "", options: .regularExpression))").tag("local:" + name)
                         }
                     }
+                    .disabled(state.modelControlsDisabled)
+                    Text(state.selectedModel?.summary ?? "本地导入的 Whisper 模型。占用和识别效果取决于所选版本；.en 模型仅支持英语。")
+                        .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text("当前使用：\(URL(fileURLWithPath: state.modelPath).lastPathComponent)\(state.isModelInstalled ? " · 已校验" : " · 尚未就绪")")
+                        .font(.system(size: 12)).foregroundStyle(state.isModelInstalled ? .green : .secondary)
+                    HStack {
+                        if state.isDownloadingModel {
+                            Button("取消下载") { state.cancelModelDownload() }.buttonStyle(SecondaryButtonStyle())
+                        } else if state.selectedModelExists {
+                            Button("使用此模型") { state.useSelectedModel() }.buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
+                            Button("删除副本") { state.deleteModel() }.foregroundStyle(.red).disabled(state.modelControlsDisabled)
+                        } else if state.selectedModel != nil {
+                            Button("下载并使用") { showModelDownloadWarning = true }.buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
+                        }
+                        Button("导入本地模型…") { state.importLocalModel() }.buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
+                    }
                     if state.isDownloadingModel { ProgressView(value: state.modelDownloadProgress).controlSize(.small) }
+                    if state.isImportingModel { ProgressView().controlSize(.small) }
                     if !state.modelDownloadStatus.isEmpty {
-                        Text(state.modelDownloadStatus).font(.system(size: 12)).foregroundStyle(.secondary)
+                        Text(state.modelDownloadStatus).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
                     }
                     Picker("识别语言", selection: $state.recognitionLanguage) {
                         Text("自动识别中英文").tag("auto")
@@ -481,7 +490,7 @@ struct ContentView: View {
                     }
                     .disabled(state.isRunning || state.isPreparingModel)
                     .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings() }
-                    Text("音频在本机用 Whisper.cpp 1.9.4 和 large-v3-turbo Q5_0 识别，不会翻译。模型为多语言版，来源 Hugging Face，文件约 547 MiB，MIT 许可。用户无需安装 Homebrew 或 Whisper。")
+                    Text("音频在本机识别。模型越大通常越占内存；Q5/Q8 通过量化缩小体积，实际速度与准确率因设备、语言和音质而异。导入 .bin 可直接使用；导入 .pt 需要本机已有 Python Whisper，转换后保留原文件。")
                         .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Link("模型来源与开源说明", destination: URL(string: "https://huggingface.co/ggerganov/whisper.cpp")!)
                         .font(.system(size: 11)).foregroundStyle(Color.accentColor)

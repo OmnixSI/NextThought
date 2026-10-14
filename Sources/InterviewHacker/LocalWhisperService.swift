@@ -1,12 +1,8 @@
-import CryptoKit
+import InterviewHackerCore
 import Foundation
 import Darwin
 
 final class LocalWhisperService: @unchecked Sendable {
-    static let modelURL = URL(string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin")!
-    static let modelName = "Whisper large-v3-turbo · Q5_0"
-    static let modelBytes = 574_041_195
-    static let modelSHA1 = "e050f7970618a659205450ad97eb95a18d69c9ee"
     static let runtimeName = "whisper-server"
 
     private struct Worker {
@@ -20,10 +16,12 @@ final class LocalWhisperService: @unchecked Sendable {
     private var worker: Worker?
     private var session = URLSession(configuration: .ephemeral)
 
-    static var defaultModelURL: URL {
+    static var modelsDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("InterviewHacker/models/ggml-large-v3-turbo-q5_0.bin")
+        return base.appendingPathComponent("InterviewHacker/models", isDirectory: true)
     }
+
+    static var defaultModelURL: URL { modelsDirectory.appendingPathComponent(WhisperModel.named(WhisperModel.defaultID)!.filename) }
 
     static func findExecutable() -> String? {
         let paths: [String?] = [
@@ -45,8 +43,8 @@ final class LocalWhisperService: @unchecked Sendable {
         }
     }
 
-    static func downloadModel(to destination: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
-        let operation = ModelDownloadOperation(destination: destination, progress: progress)
+    static func downloadModel(_ model: WhisperModel, to destination: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+        let operation = ModelDownloadOperation(model: model, destination: destination, progress: progress)
         try await withTaskCancellationHandler {
             try await operation.start()
         } onCancel: {
@@ -287,30 +285,14 @@ final class LocalWhisperService: @unchecked Sendable {
     }
 
     fileprivate static func verifyModel(at url: URL) throws {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw AppFailure.modelMissing
-        }
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let fileSize = attributes[.size] as? NSNumber,
-              fileSize.intValue == modelBytes else {
-            throw AppFailure.transcription("语音模型文件大小不正确。请删除文件后重新下载。")
-        }
-
-        let file = try FileHandle(forReadingFrom: url)
-        defer { try? file.close() }
-        var hasher = Insecure.SHA1()
-        while let data = try file.read(upToCount: 8 * 1024 * 1024), !data.isEmpty {
-            hasher.update(data: data)
-        }
-        let digest = hasher.finalize().map { String(format: "%02x", $0) }.joined()
-        guard digest == modelSHA1 else {
-            throw AppFailure.transcription("语音模型校验未通过。请删除损坏文件后重新下载。")
-        }
+        try WhisperModelFile.verify(at: url, expected: WhisperModel.matching(url))
     }
+
 }
 
 private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let lock = NSLock()
+    private let model: WhisperModel
     private let destination: URL
     private let progress: @Sendable (Double) -> Void
     private var continuation: CheckedContinuation<Void, Error>?
@@ -319,7 +301,8 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
     private var isFinished = false
     private var cancellationRequested = false
 
-    init(destination: URL, progress: @escaping @Sendable (Double) -> Void) {
+    init(model: WhisperModel, destination: URL, progress: @escaping @Sendable (Double) -> Void) {
+        self.model = model
         self.destination = destination
         self.progress = progress
     }
@@ -335,7 +318,7 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
             self.continuation = continuation
             let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
             self.session = session
-            let task = session.downloadTask(with: LocalWhisperService.modelURL)
+            let task = session.downloadTask(with: model.downloadURL)
             self.task = task
             lock.unlock()
             task.resume()
@@ -365,7 +348,7 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
             let partialURL = destination.appendingPathExtension("partial")
             try? FileManager.default.removeItem(at: partialURL)
             try FileManager.default.moveItem(at: location, to: partialURL)
-            try LocalWhisperService.verifyDownloadedModel(at: partialURL)
+            try WhisperModelFile.verify(at: partialURL, expected: model)
             lock.lock()
             let cancelled = cancellationRequested
             lock.unlock()
@@ -398,12 +381,6 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
         lock.unlock()
         nextSession?.finishTasksAndInvalidate()
         nextContinuation?.resume(with: result)
-    }
-}
-
-fileprivate extension LocalWhisperService {
-    static func verifyDownloadedModel(at url: URL) throws {
-        try verifyModel(at: url)
     }
 }
 
