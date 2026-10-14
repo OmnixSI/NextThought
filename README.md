@@ -7,7 +7,6 @@
 听对方说话 → 实时转写 → 自动判断“这是不是在问我” → 逐字流式给出可以直接说出口的回答
 
 [![Verify](https://github.com/ooooooomygosh/InterviewHacker/actions/workflows/verify.yml/badge.svg)](https://github.com/ooooooomygosh/InterviewHacker/actions/workflows/verify.yml)
-[![Release](https://img.shields.io/github/v/release/ooooooomygosh/InterviewHacker?include_prereleases&label=下载)](https://github.com/ooooooomygosh/InterviewHacker/releases)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 ![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-arm64-blue)
 

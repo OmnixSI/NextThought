@@ -95,7 +95,9 @@ jobs:
           INTERVIEWHACKER_BUILD_JOBS: '6'
           INTERVIEWHACKER_BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          export INTERVIEWHACKER_VERSION="${TAG#v}"
+          # CFBundleShortVersionString must be numeric: v0.3.0-beta.1 -> 0.3.0
+          version="${TAG#v}"
+          export INTERVIEWHACKER_VERSION="${version%%[-+]*}"
           ./scripts/build-app.sh
       - name: Notarize (optional)
         if: steps.cert.outputs.identity != '-'
