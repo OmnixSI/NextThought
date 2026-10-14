@@ -213,7 +213,7 @@ final class CodexBridge: @unchecked Sendable {
         }
     }
 
-    private static func childEnvironment() -> [String: String] {
+    static func childEnvironment() -> [String: String] {
         var environment = ProcessInfo.processInfo.environment
         environment.removeValue(forKey: "OPENAI_API_KEY")
         environment.removeValue(forKey: "CODEX_API_KEY")

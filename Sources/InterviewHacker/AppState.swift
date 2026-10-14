@@ -15,6 +15,7 @@ final class AppState: ObservableObject {
     @Published var answerStyle = AnswerStyle(rawValue: UserDefaults.standard.string(forKey: "answerStyle") ?? "concise") ?? .concise
     @Published var answerPreferences = UserDefaults.standard.string(forKey: "answerPreferences") ?? ""
     @Published var documents: [ContextDocument] = []
+    @Published var presets: [SessionPreset] = []
     @Published var isImportingDocuments = false
     @Published var isIndexingDocuments = false
     @Published var selectedExcerpts: [ContextExcerpt] = []
@@ -22,8 +23,8 @@ final class AppState: ObservableObject {
     @Published var lastRTF: Double?
     @Published var lastAnswerSeconds: Double?
     @Published var droppedAudioSegments = 0
-    @Published var teleprompterFontSize = 22.0
-    @Published var capturePrivacy = false
+    @Published var teleprompterFontSize = UserDefaults.standard.object(forKey: "teleprompterFontSize") as? Double ?? 22
+    @Published var capturePrivacy = UserDefaults.standard.object(forKey: "capturePrivacy") as? Bool ?? true
     @Published var customShortcuts: [String: ShortcutBinding] = {
         guard let data = UserDefaults.standard.data(forKey: "customShortcuts"),
               let values = try? JSONDecoder().decode([String: ShortcutBinding].self, from: data) else { return [:] }
@@ -35,8 +36,36 @@ final class AppState: ObservableObject {
     var manualTriggerTask: Task<Void, Never>?
     private var microphoneTranscriber: (any LiveTranscribing)?
     private var liveTranscriber: (any LiveTranscribing)?
-    private var audioEpoch = UUID()
+    var audioEpoch = UUID()
     private var forceTriggerID = UUID()
+
+    // Answer engines
+    @Published var answerBackend = AnswerBackend(rawValue: UserDefaults.standard.string(forKey: "answerBackend") ?? "") ?? .codexAppServer
+    @Published var apiBaseURL = UserDefaults.standard.string(forKey: "apiBaseURL") ?? "https://api.openai.com/v1"
+    @Published var apiModel = UserDefaults.standard.string(forKey: "apiModel") ?? ""
+    @Published var apiKey = KeychainStore.read("answer.api")
+    @Published var appServerNote = ""
+    @Published var lastFirstTokenSeconds: Double?
+    @Published var answerHistory: [AnswerRecord] = []
+    /// nil shows the latest answer; otherwise an index into `answerHistory`.
+    @Published var historyCursor: Int?
+    // Question candidates
+    @Published var liveCandidate: QuestionCandidate?
+    @Published var suggestedQuestions: [QuestionCandidate] = []
+    @Published var verifyUncertainWithModel = UserDefaults.standard.bool(forKey: "verifyUncertainWithModel")
+    // Cloud speech recognition (explicit opt-in)
+    @Published var cloudProvider = CloudSTTProvider(rawValue: UserDefaults.standard.string(forKey: "cloudProvider") ?? "") ?? .soniox
+    @Published var cloudModel = UserDefaults.standard.string(forKey: "cloudModel") ?? ""
+    @Published var cloudKey = ""
+    @Published var cloudConsent = UserDefaults.standard.bool(forKey: "cloudConsent")
+    @Published var liveWhisperPreview = UserDefaults.standard.object(forKey: "liveWhisperPreview") as? Bool ?? true
+    // Overlay
+    @Published var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 0.96
+    @Published var clickThrough = false
+    @Published var shareTestImage: NSImage?
+    @Published var companionEnabled = false
+    @Published var companionAddress: String?
+    @Published var companionStatus = "未开启"
 
     @Published var section: AppSection = .assistant
     @Published var isRunning = false
@@ -75,8 +104,20 @@ final class AppState: ObservableObject {
     @Published var pendingQuestion = ""
     @Published var answer = ""
     @Published var answerDraft = ""
-    var displayedAnswer: String { isAnswering && !answerDraft.isEmpty ? answerDraft : answer }
-    var displayedQuestion: String { isAnswering && !answerDraft.isEmpty ? pendingQuestion : currentQuestion }
+    var displayedAnswer: String {
+        if isAnswering && !answerDraft.isEmpty && historyCursor == nil { return answerDraft }
+        if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].answer }
+        return answer
+    }
+    var displayedQuestion: String {
+        if isAnswering && !answerDraft.isEmpty && historyCursor == nil { return pendingQuestion }
+        if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].question }
+        return currentQuestion
+    }
+    var historyPositionText: String? {
+        guard answerHistory.count > 1 else { return nil }
+        return "\((historyCursor ?? answerHistory.count - 1) + 1)/\(answerHistory.count)"
+    }
     @Published var isAnswering = false
     @Published var questionInput = ""
     @Published var profile = UserDefaults.standard.string(forKey: "profile") ?? ""
@@ -200,19 +241,25 @@ final class AppState: ObservableObject {
 
     private let audio = AudioCaptureService()
     private let microphone = MicrophoneCaptureService()
-    private let whisper = LocalWhisperService()
+    let whisper = LocalWhisperService()
     private let codex = CodexBridge()
     private let hotkeys = HotkeyManager()
-    private var detector = QuestionDetector()
-    private var activeVoiceID: UUID?
-    private var finalQueue: [(SpeechSegmentEvent, Bool)] = []
-    private var finalTranscriptionTask: Task<Void, Never>?
+    var tracker = QuestionCandidateTracker()
+    let appServer = CodexAppServerClient()
+    let apiClient = OpenAICompatibleClient()
+    var candidateTicker: Task<Void, Never>?
+    var appleUtteranceCounter: [String: Int] = [:]
+    var isPreviewTranscribing = false
+    private var firstTokenAt: Date?
+    var activeVoiceID: UUID?
+    var finalQueue: [(SpeechSegmentEvent, Bool)] = []
+    var finalTranscriptionTask: Task<Void, Never>?
     private var finalVoiceIDs: Set<UUID> = []
-    private var isStopping = false
+    var isStopping = false
     private var modelDownloadTask: Task<Void, Never>?
     private var answerTask: Task<Void, Never>?
     private var requestID = UUID()
-    private var sessionStartedAt: Date?
+    var sessionStartedAt: Date?
     private var sessionAnswers: [String] = []
     private var answerTurns: [AnswerTurn] = []
     private var lastQuestionUsesScreenshot = false
@@ -221,6 +268,7 @@ final class AppState: ObservableObject {
     private init() {
         Diagnostics.record("app.launch", ["bundle_id": Bundle.main.bundleIdentifier ?? "unknown"])
         loadSessions()
+        loadPresets()
         audio.onSegment = { [weak self] event in
             Task { @MainActor in self?.receiveSpeechEvent(event) }
         }
@@ -234,8 +282,14 @@ final class AppState: ObservableObject {
         }
         NSApp.appearance = NSAppearance(named: darkMode ? .darkAqua : .aqua)
         registerHotkeys()
+        loadCloudKey()
+        Diagnostics.pruneOldLogs()
         Task { await scanLocalModels() }
-        Task { await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus() }
+        Task {
+            await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
+            // Warm the persistent Codex service so the first answer does not pay start-up cost.
+            if answerBackend == .codexAppServer, CodexBridge.executableURL() != nil { await appServer.prewarm() }
+        }
     }
 
     var isModelInstalled: Bool { modelIsReady }
@@ -245,6 +299,10 @@ final class AppState: ObservableObject {
         if transcriptionBackend == "apple" {
             if !LiveTranscriberFactory.supported { return "Apple 流式识别需要 macOS 26" }
             if recognitionLanguage == "auto" { return "请为 Apple 识别选择中文或 English" }
+        }
+        if transcriptionBackend == "cloud" {
+            if !cloudConsent { return "请在设置中确认云端识别的数据说明" }
+            if cloudKey.isEmpty { return "请填写云端识别 API Key" }
         }
         if transcriptionBackend == "whisper", LocalWhisperService.findExecutable() == nil { return "应用内语音运行时不可用" }
         if transcriptionBackend == "whisper", !isModelInstalled { return "需要下载或修复本地语音模型" }
@@ -340,8 +398,11 @@ final class AppState: ObservableObject {
             sessionStartedAt = startedAt
             entries = []
             sessionAnswers = []
-            detector = QuestionDetector()
+            tracker = QuestionCandidateTracker(mode: sessionMode)
+            liveCandidate = nil; suggestedQuestions = []; appleUtteranceCounter = [:]
+            answerHistory = []; historyCursor = nil
             answerTurns.removeAll()
+            if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
             isRunning = true
             do {
@@ -357,6 +418,7 @@ final class AppState: ObservableObject {
             transcriptionStatus = "等待系统音频"
             pendingAutomaticQuestion = nil
             errorMessage = nil
+            startCandidateTicker()
         } catch {
             isRunning = false
             _ = await audio.stopCapture()
@@ -390,7 +452,7 @@ final class AppState: ObservableObject {
         microphonePartialTranscript = ""
         let systemPending = await audio.stopCapture()
         let pending = systemPending + microphone.stopCapture()
-        if transcriptionBackend == "apple" {
+        if transcriptionBackend != "whisper" {
             await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
             audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         }
@@ -446,7 +508,7 @@ final class AppState: ObservableObject {
         pendingAutomaticQuestion = nil
         let systemPending = await audio.stopCapture()
         let pending = systemPending + microphone.stopCapture()
-        if transcriptionBackend == "apple" {
+        if transcriptionBackend != "whisper" {
             await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
             audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         }
@@ -457,6 +519,8 @@ final class AppState: ObservableObject {
         audioEpoch = UUID()
         liveTranscriber = nil
         microphoneTranscriber = nil
+        candidateTicker?.cancel(); candidateTicker = nil
+        liveCandidate = nil
         cancelAnswer()
         await whisper.shutdown()
         isRunning = false
@@ -508,6 +572,7 @@ final class AppState: ObservableObject {
         requestID = UUID()
         answerTask?.cancel()
         codex.cancel()
+        appServer.cancelActiveTurn()
         isAnswering = false
         pendingQuestion = ""
         pendingAutomaticQuestion = nil
@@ -731,6 +796,16 @@ final class AppState: ObservableObject {
 
     func closeError() { errorMessage = nil }
 
+    func showPreviousAnswer() {
+        guard !answerHistory.isEmpty else { return }
+        historyCursor = max(0, (historyCursor ?? answerHistory.count - 1) - 1)
+    }
+
+    func showNextAnswer() {
+        guard let current = historyCursor else { return }
+        historyCursor = current + 1 >= answerHistory.count ? nil : current + 1
+    }
+
     func prepareForTermination() {
         importTask?.cancel()
         manualTriggerTask?.cancel()
@@ -741,6 +816,8 @@ final class AppState: ObservableObject {
         answerTask?.cancel()
         codex.cancel()
         whisper.shutdownImmediately()
+        appServer.shutdown()
+        CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
     }
 
@@ -751,6 +828,7 @@ final class AppState: ObservableObject {
             guard !isPaused, !isStopping else { return }
             activeVoiceID = event.id
             if finalTranscriptionTask == nil { transcriptionStatus = "正在采集语音…" }
+            transcribePreview(event)
         } else {
             activeVoiceID = event.id
             if event.source == .system { partialTranscript = "" } else { microphonePartialTranscript = "" }
@@ -810,9 +888,8 @@ final class AppState: ObservableObject {
             entries.sort { $0.date < $1.date }
             Diagnostics.record("transcript.committed", ["voice_id": event.id.uuidString, "source": event.source.rawValue, "characters": text.count])
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
-            let recent = TranscriptContextBuilder.recent(entries.map { (date: $0.date, text: $0.contextualText) })
-            if event.source == .system, automaticAnswers, shouldDetectQuestion, !isPaused, !isStopping, let question = detector.detect(text) {
-                ask(question, screenshot: nil, recentContext: recent, isAutomatic: true)
+            if event.source == .system {
+                processRecognized(text, isFinal: true, key: event.id.uuidString, allowAutomatic: shouldDetectQuestion)
             }
         } catch is CancellationError {
         } catch {
@@ -827,26 +904,30 @@ final class AppState: ObservableObject {
             Diagnostics.record("answer.queued")
             return
         }
-        guard CodexBridge.isChatGPTLogin(codexLoginStatus) else {
-            errorMessage = "转写可继续；生成回答需要先登录 Codex。请在设置中刷新登录状态。"
+        let backend = answerBackend
+        if backend == .codexExec, !CodexBridge.isChatGPTLogin(codexLoginStatus) {
+            errorMessage = "转写可继续；生成回答需要先登录 Codex。请在设置中刷新登录状态，或切换到 API 回答引擎。"
             return
         }
         if isIndexingDocuments { errorMessage = "资料索引正在更新，请完成后再生成回答。"; return }
-        let selectedCodexModel = codexModelID.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !selectedCodexModel.isEmpty else { errorMessage = "请在设置中选择 Codex 回答模型。"; section = .settings; return }
-        let selectedCodexReasoning = codexReasoning
+        let selectedModel = (backend == .openAICompatible ? apiModel : codexModelID).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !selectedModel.isEmpty else { errorMessage = "请在设置中选择回答模型。"; section = .settings; return }
+        let selectedReasoning = codexReasoning
         cancelAnswer()
+        historyCursor = nil
         pendingQuestion = question
         isAnswering = true
-        statusText = "Codex 正在整理回答…"
+        firstTokenAt = nil
+        statusText = backend == .openAICompatible ? "正在流式生成回答…" : "Codex 正在整理回答…"
         let id = UUID()
         requestID = id
-        Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count])
+        Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue])
 
         let context = recentContext ?? TranscriptContextBuilder.recent(entries.map { (date: $0.date, text: $0.contextualText) })
         let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
         selectedExcerpts = excerpts
-        let prompt = AnswerPromptBuilder.make(question: question, context: context, profile: profile, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: answerPreferences, mode: sessionMode, style: answerStyle, excerpts: excerpts)
+        let parts = AnswerPromptBuilder.makeParts(question: question, context: context, profile: profile, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: answerPreferences, mode: sessionMode, style: answerStyle, excerpts: excerpts)
+        let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot)
         let answerStartedAt = Date()
 
         answerTask = Task {
@@ -856,23 +937,34 @@ final class AppState: ObservableObject {
                 }
             }
             do {
-                let result = try await codex.run(prompt: prompt, model: selectedCodexModel, reasoning: selectedCodexReasoning, imageURL: screenshot) { [weak self] text in
-                    await MainActor.run {
-                        guard let self, self.requestID == id else { return }
-                        self.answerDraft = text
+                let onDelta: @Sendable (String) -> Void = { [weak self] text in
+                    Task { @MainActor in
+                        guard let self, self.requestID == id, self.isAnswering else { return }
+                        if self.firstTokenAt == nil {
+                            self.firstTokenAt = Date()
+                            self.lastFirstTokenSeconds = Date().timeIntervalSince(answerStartedAt)
+                        }
+                        // Deltas carry the full text so far; never step backwards.
+                        if text.count >= self.answerDraft.count { self.answerDraft = text }
                     }
                 }
+                let result = try await runAnswer(request, backend: backend, onDelta: onDelta)
                 guard requestID == id else { return }
                 answer = result
+                answerDraft = ""
                 lastAnswerSeconds = Date().timeIntervalSince(answerStartedAt)
-                lastAnswerModel = selectedCodexModel
+                if firstTokenAt == nil { lastFirstTokenSeconds = lastAnswerSeconds }
+                lastAnswerModel = selectedModel
                 currentQuestion = question
                 pendingQuestion = ""
                 lastQuestionUsesScreenshot = screenshot != nil
                 isAnswering = false
-                Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedCodexModel, "reasoning": selectedCodexReasoning])
-                statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听 · 仅本地转录") : "就绪"
+                Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
+                statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
                 sessionAnswers.append(result)
+                answerHistory.append(AnswerRecord(question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic))
+                if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
+                tracker.noteAnswered()
                 answerTurns.append(AnswerTurn(question: question, answer: result))
                 if answerTurns.count > 6 { answerTurns.removeFirst(answerTurns.count - 6) }
                 errorMessage = nil
@@ -889,9 +981,31 @@ final class AppState: ObservableObject {
                 guard requestID == id else { return }
                 isAnswering = false
                 pendingQuestion = ""
-                Diagnostics.record("answer.failed", ["request_id": id.uuidString])
-                statusText = "Codex 错误"
+                // Keep whatever streamed so far visible instead of losing it.
+                if !answerDraft.isEmpty { answer = answerDraft; currentQuestion = question; answerDraft = "" }
+                Diagnostics.record("answer.failed", ["request_id": id.uuidString, "backend": backend.rawValue])
+                statusText = "回答出错"
                 errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func runAnswer(_ request: AnswerRequest, backend: AnswerBackend, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
+        switch backend {
+        case .openAICompatible:
+            return try await apiClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey, onDelta: onDelta)
+        case .codexExec:
+            return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
+        case .codexAppServer:
+            do {
+                let text = try await appServer.answer(request, onDelta: onDelta)
+                appServerNote = ""
+                return text
+            } catch let AnswerEngineError.appServerUnavailable(detail) {
+                // Older CLIs or a crashed service: fall back to the one-shot exec path.
+                appServerNote = "常驻服务不可用，已临时改用 codex exec：\(detail)"
+                Diagnostics.record("appserver.fallback")
+                return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
             }
         }
     }
@@ -916,13 +1030,19 @@ final class AppState: ObservableObject {
                 Task { if self.isPaused { await self.resumeSession() } else { await self.pauseSession() } }
             },
             .toggleTeleprompter: { TeleprompterController.shared.toggle() },
-            .cancelAnswer: { [weak self] in self?.cancelAnswer() }
+            .cancelAnswer: { [weak self] in self?.cancelAnswer() },
+            .copyAnswer: { [weak self] in self?.copyAnswer() },
+            .toggleClickThrough: { [weak self] in self?.toggleClickThrough() },
+            .panicHide: { TeleprompterController.shared.panicHide() },
+            .previousAnswer: { [weak self] in self?.showPreviousAnswer() },
+            .nextAnswer: { [weak self] in self?.showNextAnswer() },
+            .refineShorter: { [weak self] in self?.refine(.shorter) }
         ], overrides: customShortcuts)
     }
 
     private func persistActiveSession() {
         guard let startedAt = sessionStartedAt, !entries.isEmpty else { return }
-        let saved = SavedSession(startedAt: startedAt, endedAt: Date(), entries: entries, answers: sessionAnswers)
+        let saved = SavedSession(startedAt: startedAt, endedAt: Date(), entries: entries, answers: sessionAnswers, records: answerHistory, mode: sessionMode.rawValue)
         if let idx = savedSessions.firstIndex(where: { $0.startedAt == startedAt }) {
             savedSessions[idx] = saved
         } else {
@@ -931,7 +1051,7 @@ final class AppState: ObservableObject {
         persistSessions()
     }
 
-    private func persistSessions() {
+    func persistSessions() {
         guard let url = sessionsURL else { return }
         do {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -976,16 +1096,25 @@ final class AppState: ObservableObject {
             audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
             return try await whisper.prepare(modelPath: modelPath)
         }
-        guard let service = LiveTranscriberFactory.make() else {
-            throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换 Whisper。")
+        let factory: () -> (any LiveTranscribing)?
+        if transcriptionBackend == "cloud" {
+            guard cloudConsent, !cloudKey.isEmpty else { throw AppFailure.transcription("请先在设置中确认云端识别说明并填写 API Key。") }
+            let provider = cloudProvider, key = cloudKey, model = cloudModel, vocabulary = recognitionVocabulary
+            factory = { CloudStreamingTranscriber(provider: provider, apiKey: key, model: model, vocabulary: vocabulary) }
+            statusText = "正在连接云端识别…"
+        } else {
+            factory = { LiveTranscriberFactory.make() }
+            statusText = "正在准备 Apple Speech；首次使用可能下载语言资源…"
         }
-        statusText = "正在准备 Apple Speech；首次使用可能下载语言资源…"
+        guard let service = factory() else {
+            throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换 Whisper 或云端识别。")
+        }
         let started = Date()
         liveTranscriber = service
         try await startApple(service, source: .system, epoch: captureEpoch)
         audio.setPCMHandler(service.inputHandler())
         if microphoneEnabled {
-            guard let micService = LiveTranscriberFactory.make() else { throw AppFailure.capture("无法创建麦克风识别器。") }
+            guard let micService = factory() else { throw AppFailure.capture("无法创建麦克风识别器。") }
             microphoneTranscriber = micService
             try await startApple(micService, source: .microphone, epoch: captureEpoch)
             microphone.setPCMHandler(micService.inputHandler())
@@ -996,17 +1125,7 @@ final class AppState: ObservableObject {
     private func startApple(_ service: any LiveTranscribing, source: CaptureSource, epoch: UUID) async throws {
         try await service.start(language: recognitionLanguage) { [weak self] text, final, start, end in
             guard let self, self.audioEpoch == epoch, self.isRunning else { return }
-            if final {
-                if source == .system { self.partialTranscript = "" } else { self.microphonePartialTranscript = "" }
-                self.entries.append(TranscriptEntry(date: start, source: source.rawValue, text: text, isFinal: true, startedAt: start, endedAt: end))
-                self.entries.sort { $0.date < $1.date }
-                if self.entries.count > 400 { self.entries.removeFirst(self.entries.count - 400) }
-                self.transcriptionStatus = "Apple Speech · 双路独立识别"
-                if source == .system, self.automaticAnswers, !self.isPaused, !self.isStopping, let question = self.detector.detect(text) {
-                    self.ask(question, screenshot: nil, isAutomatic: true)
-                }
-            } else if source == .system { self.partialTranscript = text }
-            else { self.microphonePartialTranscript = text }
+            self.receiveStreamingResult(text, final: final, start: start, end: end, source: source)
         } onError: { [weak self] message in
             guard let self, self.audioEpoch == epoch else { return }
             self.errorMessage = message
@@ -1033,6 +1152,13 @@ final class AppState: ObservableObject {
     /// Uses the freshest text. A Whisper flush runs without stopping capture; it is
     /// explicitly not presented as instantaneous speech recognition.
     func forceAnswerCurrent() {
+        // Priority: typed text → latest unanswered question candidate → recent transcript.
+        if questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let candidate = [liveCandidate].compactMap({ $0 }).first(where: { $0.state != .triggered && $0.assessment.intent != .statement }) ?? suggestedQuestions.last,
+           Date().timeIntervalSince(candidate.lastChanged) < 30 {
+            answerCandidate(candidate)
+            return
+        }
         let cutoff = Date().addingTimeInterval(-45)
         let hasRecent = entries.contains { $0.source == CaptureSource.system.rawValue && ($0.endedAt ?? $0.date) > cutoff }
         if !questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !partialTranscript.isEmpty || hasRecent {

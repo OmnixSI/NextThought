@@ -12,12 +12,27 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     var contextualText: String { "[\(roleLabel)] \(text)" }
 }
 
-struct SavedSession: Codable {
+struct SavedSession: Codable, Identifiable {
     var id = UUID()
     var startedAt: Date
     var endedAt: Date
     var entries: [TranscriptEntry]
     var answers: [String]
+    /// Question/answer pairs (absent in sessions saved by older versions).
+    var records: [AnswerRecord]?
+    var mode: String?
+}
+
+/// One generated answer, kept for history navigation, the phone view and export.
+struct AnswerRecord: Identifiable, Codable, Equatable {
+    var id = UUID()
+    var date = Date()
+    var question: String
+    var answer: String
+    var model: String
+    var seconds: Double?
+    var firstTokenSeconds: Double?
+    var automatic: Bool
 }
 
 struct CaptureTarget: Identifiable, Hashable {
@@ -47,7 +62,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-enum CaptureSource: String {
+enum CaptureSource: String, Hashable {
     case system = "系统音频"
     case microphone = "麦克风"
 }

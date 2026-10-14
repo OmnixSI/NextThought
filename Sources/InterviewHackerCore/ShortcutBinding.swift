@@ -11,7 +11,7 @@ public struct ShortcutBinding: Codable, Sendable, Equatable {
     }
     public var isSafe: Bool { keyCode <= 127 && (command || option || control) }
     public var label: String {
-        let names: [UInt32: String] = [0:"A", 1:"S", 8:"C", 15:"R", 31:"O", 35:"P", 36:"↩", 40:"K", 46:"M", 53:"Esc"]
+        let names: [UInt32: String] = [0:"A", 1:"S", 8:"C", 11:"B", 15:"R", 16:"Y", 18:"1", 19:"2", 20:"3", 31:"O", 35:"P", 36:"↩", 40:"K", 42:"\\", 46:"M", 49:"Space", 53:"Esc", 123:"←", 124:"→", 125:"↓", 126:"↑"]
         return (control ? "⌃" : "") + (option ? "⌥" : "") + (shift ? "⇧" : "") + (command ? "⌘" : "") + (names[keyCode] ?? "Key \(keyCode)")
     }
     public static func validate(_ bindings: [String: ShortcutBinding]) -> String? {

@@ -36,6 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.backgroundColor = .windowBackgroundColor
                 window.isOpaque = true
             }
+            TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
         }
     }
 }

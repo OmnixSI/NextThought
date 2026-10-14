@@ -29,6 +29,19 @@ enum Diagnostics {
         }
     }
 
+    /// Keeps the 10 most recent launch logs; older diagnostics are deleted.
+    static func pruneOldLogs() {
+        queue.async {
+            let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+            let sorted = files.sorted {
+                let a = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                let b = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                return a > b
+            }
+            for file in sorted.dropFirst(10) { try? FileManager.default.removeItem(at: file) }
+        }
+    }
+
     static func runtimeLogURL() -> URL {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory.appendingPathComponent("whisper-\(launchID).log")
