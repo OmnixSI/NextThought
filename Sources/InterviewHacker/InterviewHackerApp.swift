@@ -12,7 +12,7 @@ struct InterviewHackerApp: App {
                 .environmentObject(state)
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 620, height: 780)
+        .defaultSize(width: 720, height: 820)
         .windowResizability(.contentMinSize)
     }
 }
@@ -32,10 +32,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
                 window.level = keepOnTop ? .floating : .normal
                 window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-                window.minSize = NSSize(width: 520, height: 600)
-                window.backgroundColor = .windowBackgroundColor
-                window.isOpaque = true
+                window.minSize = NSSize(width: 580, height: 640)
+                // Translucent window: the SwiftUI backdrop blurs the desktop behind it.
+                window.backgroundColor = .clear
+                window.isOpaque = false
             }
+            TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
+            DemoMode.apply()
         }
     }
 }

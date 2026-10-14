@@ -21,7 +21,14 @@ public struct SpeechSegmentEvent: Sendable, Equatable {
 
 public struct VoiceActivitySegmenter {
     private let sampleRate = 16_000
-    private let threshold = 0.012
+    /// Base RMS threshold; raised automatically above a slowly tracked noise floor so
+    /// quiet remote voices are not lost and steady background noise does not count.
+    private let baseThreshold = 0.008
+    private var noiseFloor = 0.0
+    /// Silence that ends an utterance. Shorter than the previous 1 s for faster turns.
+    public var endSilenceSamples = 11_200
+    /// New audio needed between live partial previews.
+    public var partialInterval = 24_000
     private var totalSamples = 0
     private var currentID: UUID?
     private var startSample = 0
@@ -44,7 +51,13 @@ public struct VoiceActivitySegmenter {
             squareTotal += value * value
         }
         let level = sqrt(squareTotal / Double(newSamples.count))
+        let threshold = max(baseThreshold, min(0.03, noiseFloor * 3))
         let isSpeech = level >= threshold
+        // Floor follower: drops quickly to quieter chunks, rises slowly (~1 min) so a
+        // constant background hum is eventually ignored without swallowing speech.
+        if noiseFloor == 0 { noiseFloor = min(level, 0.01) }
+        else if level < noiseFloor { noiseFloor = noiseFloor * 0.8 + level * 0.2 }
+        else { noiseFloor = noiseFloor * 0.998 + level * 0.002 }
         if isSpeech { hasNewSpeech = true }
 
         if currentID == nil {
@@ -74,12 +87,12 @@ public struct VoiceActivitySegmenter {
         }
 
         var events: [SpeechSegmentEvent] = []
-        if samples.count - lastPartialCount >= 64_000, samples.count >= 32_000, let currentID {
+        if isSpeech, samples.count - lastPartialCount >= partialInterval, samples.count >= 16_000, let currentID {
             events.append(makeEvent(.partial, id: currentID))
             lastPartialCount = samples.count
         }
 
-        let reachedSilence = silenceSamples >= sampleRate
+        let reachedSilence = silenceSamples >= endSilenceSamples
         let reachedLimit = samples.count >= sampleRate * 12
         if (reachedSilence || reachedLimit), let currentID {
             if speechSamples >= sampleRate / 2, hasNewSpeech {
@@ -114,6 +127,7 @@ public struct VoiceActivitySegmenter {
 
     public mutating func reset() {
         totalSamples = 0
+        noiseFloor = 0
         resetCurrent()
         preRoll.removeAll(keepingCapacity: false)
     }

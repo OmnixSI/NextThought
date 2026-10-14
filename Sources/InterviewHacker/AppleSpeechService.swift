@@ -24,6 +24,17 @@ enum LiveTranscriberFactory {
         #endif
         return nil
     }
+
+    /// Resolves the locale and installs language assets ahead of the session.
+    @MainActor static func prewarm(language: String) async {
+        #if compiler(>=6.2)
+        if #available(macOS 26.0, *) {
+            let started = Date()
+            _ = try? await AppleSpeechService.preparedLocale(for: language)
+            Diagnostics.record("apple_speech.prewarmed", ["seconds": Date().timeIntervalSince(started)])
+        }
+        #endif
+    }
 }
 
 #if compiler(>=6.2)
@@ -39,18 +50,8 @@ final class AppleSpeechService: LiveTranscribing {
                onError: @escaping (String) -> Void) async throws {
         await cancel()
         let id = UUID(); generation = id
-        // Locale choice is explicit: this path does not pretend to auto-detect mixed speech.
-        guard language == "zh" || language == "en" else {
-            throw AppFailure.transcription("Apple 流式识别需要先选择中文或 English；自动混合识别请使用 Whisper。")
-        }
-        let requested = Locale(identifier: language == "zh" ? "zh-CN" : "en-US")
-        guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: requested) else {
-            throw AppFailure.transcription("这台设备的 Apple Speech 不支持所选语言，请改用 Whisper。")
-        }
+        let locale = try await Self.preparedLocale(for: language)
         let transcriber = SpeechTranscriber(locale: locale, transcriptionOptions: [], reportingOptions: [.volatileResults], attributeOptions: [.audioTimeRange])
-        if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-            try await request.downloadAndInstall()
-        }
         try Task.checkCancellation()
         guard generation == id else { throw CancellationError() }
         guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
@@ -85,6 +86,28 @@ final class AppleSpeechService: LiveTranscribing {
         }
         do { try await engine.start(inputSequence: pair.stream) }
         catch { await cancel(); throw error }
+    }
+
+    /// Locale resolution and asset installation are slow; do them once per language
+    /// per app run (and ahead of time via `LiveTranscriberFactory.prewarm`).
+    private static var readyLocales: [String: Locale] = [:]
+
+    static func preparedLocale(for language: String) async throws -> Locale {
+        // Locale choice is explicit: this path does not pretend to auto-detect mixed speech.
+        guard language == "zh" || language == "en" else {
+            throw AppFailure.transcription("Apple 流式识别需要先选择中文或 English；自动混合识别请使用 Whisper 或云端识别。")
+        }
+        if let ready = readyLocales[language] { return ready }
+        let requested = Locale(identifier: language == "zh" ? "zh-CN" : "en-US")
+        guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: requested) else {
+            throw AppFailure.transcription("这台设备的 Apple Speech 不支持所选语言，请改用 Whisper。")
+        }
+        let probe = SpeechTranscriber(locale: locale, transcriptionOptions: [], reportingOptions: [.volatileResults], attributeOptions: [.audioTimeRange])
+        if let request = try await AssetInventory.assetInstallationRequest(supporting: [probe]) {
+            try await request.downloadAndInstall()
+        }
+        readyLocales[language] = locale
+        return locale
     }
 
     func inputHandler() -> (@Sendable ([Int16], Date) -> Void) {

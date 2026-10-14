@@ -43,6 +43,70 @@ extension AppState {
         }
     }
 
+    // MARK: Presets
+
+    private var presetsURL: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("InterviewHacker/presets.json")
+    }
+
+    func loadPresets() {
+        guard let url = presetsURL, let data = try? Data(contentsOf: url),
+              let values = try? JSONDecoder().decode([SessionPreset].self, from: data) else { return }
+        presets = values
+    }
+
+    private func persistPresets() {
+        guard let url = presetsURL else { return }
+        do {
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try JSONEncoder().encode(presets).write(to: url, options: .atomic)
+        } catch { errorMessage = "保存预设失败：\(error.localizedDescription)" }
+    }
+
+    /// Saves the current prompt/mode/background and, if chosen, the imported files.
+    func savePreset(named rawName: String, includeDocuments: Bool) {
+        let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let preset = SessionPreset(id: presets.first(where: { $0.name == name })?.id ?? UUID(), name: name, mode: sessionMode, style: answerStyle,
+                                   preferences: answerPreferences, profile: profile, documents: includeDocuments ? documents : [])
+        presets.removeAll { $0.name == name }
+        presets.insert(preset, at: 0)
+        persistPresets()
+    }
+
+    func applyPreset(_ preset: SessionPreset) {
+        sessionMode = preset.mode
+        answerStyle = preset.style
+        answerPreferences = preset.preferences
+        setProfile(preset.profile)
+        if !preset.documents.isEmpty {
+            documents = preset.documents
+            rebuildContextIndex()
+        }
+        updateSettings()
+    }
+
+    func deletePreset(_ id: UUID) {
+        presets.removeAll { $0.id == id }
+        persistPresets()
+    }
+
+    func applyTemplatePreferences() {
+        answerPreferences = SessionPreset.templatePreferences(for: sessionMode)
+        updateSettings()
+    }
+
+    /// Pre-session preparation: likely questions with short talking points from the files.
+    func predictQuestions() {
+        guard !documents.filter(\.enabled).isEmpty || !profile.isEmpty else {
+            errorMessage = "请先添加资料（简历、JD、议程或课件）或填写背景说明。"; return
+        }
+        section = .assistant
+        let topic = documents.filter(\.enabled).map(\.name).joined(separator: "、")
+        ask("请根据我提供的资料（\(topic.isEmpty ? "背景说明" : topic)），预测本次\(sessionMode.title)中最可能被问到的 8 个问题，并为每个问题给出 1 句可直接说的回答要点；引用资料时标注来源页码。", screenshot: nil)
+    }
+
     func removeDocument(_ id: UUID) { documents.removeAll { $0.id == id }; rebuildContextIndex() }
     func setDocumentEnabled(_ id: UUID, enabled: Bool) {
         guard let index = documents.firstIndex(where: { $0.id == id }) else { return }

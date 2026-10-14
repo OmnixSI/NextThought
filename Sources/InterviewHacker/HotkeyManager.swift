@@ -4,6 +4,7 @@ import InterviewHackerCore
 
 enum HotkeyAction: UInt32, CaseIterable, Identifiable {
     case captureWindow = 1, captureRegion, toggleSession, regenerate, forceAnswer, togglePause, toggleTeleprompter, cancelAnswer
+    case copyAnswer, toggleClickThrough, panicHide, previousAnswer, nextAnswer, refineShorter
     var id: UInt32 { rawValue }
     var title: String {
         switch self {
@@ -15,11 +16,32 @@ enum HotkeyAction: UInt32, CaseIterable, Identifiable {
         case .togglePause: "暂停 / 恢复聆听"
         case .toggleTeleprompter: "显示 / 隐藏提词器"
         case .cancelAnswer: "取消当前回答"
+        case .copyAnswer: "复制当前回答"
+        case .toggleClickThrough: "提词器鼠标穿透"
+        case .panicHide: "立即隐藏所有窗口"
+        case .previousAnswer: "上一条回答"
+        case .nextAnswer: "下一条回答"
+        case .refineShorter: "把回答改短"
         }
     }
     var defaultBinding: ShortcutBinding {
-        let keys: [UInt32] = [0, 1, 46, 15, 36, 35, 31, 53]
-        return ShortcutBinding(keyCode: keys[Int(rawValue) - 1])
+        switch self {
+        case .captureWindow: return ShortcutBinding(keyCode: 0)
+        case .captureRegion: return ShortcutBinding(keyCode: 1)
+        case .toggleSession: return ShortcutBinding(keyCode: 46)
+        case .regenerate: return ShortcutBinding(keyCode: 15)
+        case .forceAnswer: return ShortcutBinding(keyCode: 36)
+        case .togglePause: return ShortcutBinding(keyCode: 35)
+        case .toggleTeleprompter: return ShortcutBinding(keyCode: 31)
+        case .cancelAnswer: return ShortcutBinding(keyCode: 53)
+        case .copyAnswer: return ShortcutBinding(keyCode: 16)
+        case .toggleClickThrough: return ShortcutBinding(keyCode: 40)
+        case .panicHide: return ShortcutBinding(keyCode: 42)
+        // ⌃⌘←/→ avoid the ⌘⇧[ ] tab-switching shortcuts of browsers and editors.
+        case .previousAnswer: return ShortcutBinding(keyCode: 123, command: true, shift: false, control: true)
+        case .nextAnswer: return ShortcutBinding(keyCode: 124, command: true, shift: false, control: true)
+        case .refineShorter: return ShortcutBinding(keyCode: 18)
+        }
     }
 }
 

@@ -10,6 +10,18 @@ fi
 ih_identity="${INTERVIEWHACKER_SIGNING_IDENTITY:-}"
 ih_args=()
 ih_local=0
+ih_entitlements="$ih_root/Resources/InterviewHacker.entitlements"
+
+# Ad-hoc signing for CI release builds without a certificate. macOS will ask the
+# user to approve the app once ("Open Anyway"), and privacy permissions must be
+# granted again after each update because the code hash changes.
+if [[ "$ih_identity" == "-" ]]; then
+    codesign --force --sign - --identifier com.interviewhacker.whisper-server "$ih_app/Contents/Helpers/whisper-server"
+    codesign --force --sign - --identifier com.interviewhacker.app "$ih_app"
+    codesign --verify --deep --strict "$ih_app"
+    echo "Signature: ad-hoc (not notarized)"
+    exit 0
+fi
 
 if [[ -z "$ih_identity" ]]; then
     "$ih_root/scripts/setup-local-signing.sh"
@@ -21,6 +33,10 @@ if [[ -z "$ih_identity" ]]; then
     ih_local=1
 elif [[ -n "${INTERVIEWHACKER_SIGNING_KEYCHAIN:-}" ]]; then
     ih_args=(--keychain "$INTERVIEWHACKER_SIGNING_KEYCHAIN")
+fi
+# Developer ID builds use the hardened runtime (required for notarization).
+if [[ "${INTERVIEWHACKER_HARDENED_RUNTIME:-0}" == 1 ]]; then
+    ih_args+=(--options runtime --timestamp)
 fi
 
 if [[ ! -x "$ih_runtime" ]]; then
@@ -39,7 +55,11 @@ if [[ "$ih_local" == 1 ]]; then
 else
     codesign --force --sign "$ih_identity" "${ih_args[@]}" \
         --identifier com.interviewhacker.whisper-server "$ih_runtime"
-    codesign --force --sign "$ih_identity" "${ih_args[@]}" "$ih_app"
+    if [[ "${INTERVIEWHACKER_HARDENED_RUNTIME:-0}" == 1 ]]; then
+        codesign --force --sign "$ih_identity" "${ih_args[@]}" --entitlements "$ih_entitlements" "$ih_app"
+    else
+        codesign --force --sign "$ih_identity" "${ih_args[@]}" "$ih_app"
+    fi
 fi
 
 codesign --verify --strict "$ih_runtime"

@@ -17,9 +17,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.2.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>2</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>LSApplicationCategoryType</key>
@@ -32,6 +34,8 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>InterviewHacker serves the optional phone companion page on your local network when you turn it on.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>InterviewHacker uses on-device speech recognition for the system audio you select.</string>
 	<key>NSMicrophoneUsageDescription</key>

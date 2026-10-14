@@ -117,3 +117,70 @@ public enum ManualQuestionBuilder {
         return "请根据以下最新转录，回答其中的最后一个问题或解释最后一个知识点；如果没有明确对象，请指出，不要自造问题。\n" + String(text.suffix(4_000))
     }
 }
+
+/// Extracts visible text from Office Open XML parts (PowerPoint slides, Excel shared
+/// strings, Word documents). Regex-based so it works without an XML parser and never
+/// resolves external entities.
+public enum OfficeXMLText {
+    public static func extract(_ xml: String) -> String {
+        var paragraphs: [String] = []
+        // Paragraph containers: a:p (DrawingML), w:p (Word), si (Excel shared strings).
+        let paragraphPattern = #"<(a:p|w:p|si)[ >].*?</\1>"#
+        let textPattern = #"<(?:a:t|w:t|t)(?: [^>]*)?>(.*?)</(?:a:t|w:t|t)>"#
+        guard let paragraphRegex = try? NSRegularExpression(pattern: paragraphPattern, options: [.dotMatchesLineSeparators]),
+              let textRegex = try? NSRegularExpression(pattern: textPattern, options: [.dotMatchesLineSeparators]) else { return "" }
+        let ns = xml as NSString
+        for match in paragraphRegex.matches(in: xml, range: NSRange(location: 0, length: ns.length)) {
+            let paragraph = ns.substring(with: match.range) as NSString
+            let pieces = textRegex.matches(in: paragraph as String, range: NSRange(location: 0, length: paragraph.length))
+                .map { decode(paragraph.substring(with: $0.range(at: 1))) }
+            let line = pieces.joined().trimmingCharacters(in: .whitespacesAndNewlines)
+            if !line.isEmpty { paragraphs.append(line) }
+        }
+        return paragraphs.joined(separator: "\n")
+    }
+
+    static func decode(_ text: String) -> String {
+        text.replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&apos;", with: "'")
+            .replacingOccurrences(of: "&amp;", with: "&")
+    }
+
+    /// Sorts "ppt/slides/slide10.xml" after "slide9.xml".
+    public static func numericOrder(_ names: [String]) -> [String] {
+        names.sorted { lhs, rhs in
+            let l = Int(lhs.filter(\.isNumber)) ?? 0, r = Int(rhs.filter(\.isNumber)) ?? 0
+            return l == r ? lhs < rhs : l < r
+        }
+    }
+}
+
+/// A named, reusable context: prompt, mode, style, background and (optionally) files.
+public struct SessionPreset: Codable, Sendable, Identifiable, Equatable {
+    public var id: UUID
+    public var name: String
+    public var mode: SessionMode
+    public var style: AnswerStyle
+    public var preferences: String
+    public var profile: String
+    public var documents: [ContextDocument]
+    public var updatedAt: Date
+    public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle, preferences: String, profile: String, documents: [ContextDocument], updatedAt: Date = Date()) {
+        self.id = id; self.name = name; self.mode = mode; self.style = style
+        self.preferences = preferences; self.profile = profile; self.documents = documents; self.updatedAt = updatedAt
+    }
+
+    /// Starting points for the answer-requirements field.
+    public static func templatePreferences(for mode: SessionMode) -> String {
+        switch mode {
+        case .interview:
+            return "我是候选人。用第一人称、口语化回答，先给一句结论，再给 2–3 个要点；行为题用 STAR 结构，只使用我资料中的真实经历，没有的用【待补充】标出；技术题给关键原理与取舍。"
+        case .meeting:
+            return "我是会议参与者。回答聚焦决策、风险和下一步行动，给出可以直接说出口的简短发言；涉及数据时标注来源，不确定时建议先确认。"
+        case .lesson:
+            return "我是学生。先用一句话解释概念，再给推导或例子；公式用 LaTeX 行内格式；指出与课件对应的页码。"
+        }
+    }
+}

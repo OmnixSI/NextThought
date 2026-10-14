@@ -45,7 +45,7 @@
 
 ## 可复现的合成验证题
 
-音频位于 `ValidationTools/Fixtures`，屏幕播放器由 `scripts/build-validation-media.sh` 构建。样本是合成语音，不是真人录音。
+音频位于 `Tools/Validation/Fixtures`，屏幕播放器由 `scripts/build-validation-media.sh` 构建。样本是合成语音，不是真人录音。
 
 | 文件 | 合成内容 | 回答目标 |
 | --- | --- | --- |
@@ -53,10 +53,10 @@
 | `en.wav` | This is a test of local speech recognition. Please explain how a database index improves query speed. | 英文回答索引的查询作用，并指出维护成本。 |
 | `mixed.wav` | 这个 system design 需要考虑 cache invalidation 和 database consistency，请解释一下 trade-off。 | 中文作答，保留术语，比较一致性、延迟和缓存失效方案。 |
 
-截图文件位于 `validation/fixtures`。`binary-search.png` 询问 `[1, 3]`、target `3` 时二分查找代码为何会卡在 `left = mid`，要求修复与复杂度；`math.png` 询问区间 `[0, 1]` 上 `∫x² dx` 的精确值。二分查找图已通过应用内窗口截图的预览、压缩、Codex 图片输入和回答展示。应用内区域框选也已实际裁切桌面上显示的题图缩略图并得到正确回答；该次区域输入为 426×283 像素，不等同于原始 PNG 的原尺寸区域清晰度测试。
+截图文件位于 `docs/validation/fixtures`。`binary-search.png` 询问 `[1, 3]`、target `3` 时二分查找代码为何会卡在 `left = mid`，要求修复与复杂度；`math.png` 询问区间 `[0, 1]` 上 `∫x² dx` 的精确值。二分查找图已通过应用内窗口截图的预览、压缩、Codex 图片输入和回答展示。应用内区域框选也已实际裁切桌面上显示的题图缩略图并得到正确回答；该次区域输入为 426×283 像素，不等同于原始 PNG 的原尺寸区域清晰度测试。
 
 ## 代码位置
 
 - 固定指令、JSON 结构和长度上限：`Sources/InterviewHackerCore/AnswerPromptBuilder.swift`
 - Codex CLI 的图片参数、模型、推理强度与受限执行配置：`Sources/InterviewHacker/CodexBridge.swift`
-- 实际测试媒体和图像生成器：`ValidationTools/TestMediaApp.swift`、`ValidationTools/GenerateImages.swift`
+- 实际测试媒体和图像生成器：`Tools/Validation/TestMediaApp.swift`、`Tools/Validation/GenerateImages.swift`

@@ -1,0 +1,64 @@
+name: Screenshots
+# Renders README screenshots on a real macOS runner using the app's demo mode
+# (sample data, no audio or network). Run manually, or push a commit whose message
+# contains "[screenshots]". Images are uploaded as the "screenshots" artifact.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'claude/**']
+permissions:
+  contents: read
+jobs:
+  capture:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[screenshots]')
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build app bundle (no Whisper runtime needed)
+        run: |
+          swift build --disable-sandbox -c release
+          bin="$(swift build --disable-sandbox -c release --show-bin-path)/InterviewHacker"
+          app="$RUNNER_TEMP/InterviewHacker.app"
+          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+          cp "$bin" "$app/Contents/MacOS/InterviewHacker"
+          cp Resources/Info.plist "$app/Contents/Info.plist"
+          swift scripts/make-icon.swift "$RUNNER_TEMP/AppIcon.iconset" && iconutil -c icns "$RUNNER_TEMP/AppIcon.iconset" -o "$app/Contents/Resources/AppIcon.icns" || true
+          codesign --force --sign - "$app"
+          echo "APP=$app" >> "$GITHUB_ENV"
+      - name: Capture
+        run: |
+          mkdir -p shots
+          sw_vers
+          capture() {
+            local appearance="$1" section="$2" out="$RUNNER_TEMP/windows-$1-$2.json"
+            rm -f "$out"
+            INTERVIEWHACKER_DEMO=1 INTERVIEWHACKER_DEMO_APPEARANCE="$appearance" INTERVIEWHACKER_DEMO_SECTION="$section" \
+              INTERVIEWHACKER_DEMO_OUT="$out" "$APP/Contents/MacOS/InterviewHacker" >/dev/null 2>&1 &
+            local pid=$!
+            for _ in $(seq 1 40); do [[ -s "$out" ]] && break; sleep 0.5; done
+            sleep 1.5
+            if [[ -s "$out" ]]; then
+              main=$(python3 -c "import json;print(json.load(open('$out'))['main'])")
+              panel=$(python3 -c "import json;print(json.load(open('$out'))['teleprompter'])")
+              screencapture -x -l "$main" "shots/$section-$appearance.png" || echo "window capture failed"
+              if [[ "$section" == assistant && "$panel" != 0 ]]; then
+                screencapture -x -l "$panel" "shots/teleprompter-$appearance.png" || true
+                screencapture -x "shots/desktop-$appearance.png" || true
+              fi
+            else
+              echo "demo window list not written for $appearance/$section"
+            fi
+            kill "$pid" 2>/dev/null || true
+            sleep 1
+          }
+          for appearance in dark light; do
+            for section in assistant materials settings history; do capture "$appearance" "$section"; done
+          done
+          ls -la shots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots/
+          if-no-files-found: warn
+          retention-days: 14

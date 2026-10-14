@@ -1,7 +1,7 @@
 name: Verify
 on:
   push:
-    branches: [main, improve/realtime-workspace]
+    branches: [main, improve/realtime-workspace, 'claude/**']
   pull_request:
 permissions:
   contents: read

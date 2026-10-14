@@ -39,14 +39,14 @@ enum ScreenshotService {
         }
     }
 
-    static func captureDisplay(_ displayID: UInt32) async throws -> NSImage {
+    static func captureDisplay(_ displayID: UInt32, hidingAppWindows: Bool = true) async throws -> NSImage {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
             throw AppFailure.screenshot("所选显示器已不可用。请刷新显示器列表后重试。")
         }
-        await MainActor.run { WindowCoordinator.hide() }
-        defer { WindowCoordinator.show() }
-        try? await Task.sleep(nanoseconds: 250_000_000)
+        if hidingAppWindows { await MainActor.run { WindowCoordinator.hide() } }
+        defer { if hidingAppWindows { WindowCoordinator.show() } }
+        if hidingAppWindows { try? await Task.sleep(nanoseconds: 250_000_000) }
 
         let filter = SCContentFilter(display: display, excludingWindows: [])
         let configuration = SCStreamConfiguration()
