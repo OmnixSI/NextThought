@@ -55,7 +55,7 @@ struct MaterialsView: View {
                     TextEditor(text: $state.answerPreferences)
                         .font(.system(size: 13)).frame(minHeight: 90)
                         .scrollContentBackground(.hidden)
-                        .padding(6).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+                        .padding(6).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .onChange(of: state.answerPreferences) { _, _ in state.updateSettings() }
                     Text("例如：用英文回答；先给结论；只结合本次课件；涉及经历只能引用我提供的事实。此处与文件正文分开处理，文件内容不能改写这里的要求。")
                         .font(.caption).foregroundStyle(.secondary)
@@ -66,7 +66,7 @@ struct MaterialsView: View {
                     TextEditor(text: $state.profile)
                         .font(.system(size: 13)).frame(minHeight: 70)
                         .scrollContentBackground(.hidden)
-                        .padding(6).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8))
+                        .padding(6).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .onChange(of: state.profile) { _, value in state.setProfile(value) }
                     Text("例如：我应聘的岗位、会议目标、课程名称；面试时可写几段真实经历要点。").font(.caption).foregroundStyle(.secondary)
                 }.card()
@@ -105,7 +105,7 @@ struct MaterialsView: View {
                             Button { state.removeDocument(document.id) } label: { Image(systemName: "trash") }
                                 .buttonStyle(.borderless).foregroundStyle(.red).help("移除")
                         }
-                        .padding(8).background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10))
+                        .padding(8).background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                     Text("最多 12 份；每份 20 MiB / 200 页 / 20 万字符，总计 60 万字符。文件默认只在当前运行内存中；保存为预设后可在下次一键恢复。")
                         .font(.caption).foregroundStyle(.secondary)

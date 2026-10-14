@@ -69,14 +69,14 @@ struct MarkdownText: View {
     }
 }
 
+/// Content card: a glass panel with comfortable padding.
 struct CardBackground: ViewModifier {
     var tint: Color? = nil
     func body(content: Content) -> some View {
         content
-            .padding(14)
+            .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background((tint ?? Color(nsColor: .controlBackgroundColor)).opacity(tint == nil ? 1 : 0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke((tint ?? .primary).opacity(tint == nil ? 0.07 : 0.18), lineWidth: 1))
+            .glassSurface(cornerRadius: 22, tint: tint?.opacity(0.18))
     }
 }
 
@@ -93,20 +93,8 @@ struct MetricPill: View {
         Label(text, systemImage: symbol)
             .font(.system(size: 11, weight: .medium))
             .foregroundStyle(tint)
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(tint.opacity(0.1), in: Capsule())
-    }
-}
-
-struct ChipButtonStyle: ButtonStyle {
-    var prominent = false
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12, weight: .medium))
-            .lineLimit(1)
-            .padding(.horizontal, 10).padding(.vertical, 5)
-            .foregroundStyle(prominent ? Color.white : Color.primary)
-            .background(prominent ? Color.accentColor.opacity(configuration.isPressed ? 0.75 : 1) : Color.primary.opacity(configuration.isPressed ? 0.12 : 0.06), in: Capsule())
+            .padding(.horizontal, 9).padding(.vertical, 4)
+            .glassCapsule()
     }
 }
 

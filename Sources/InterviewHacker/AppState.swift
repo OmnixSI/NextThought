@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import AVFoundation
 import CoreGraphics
 import Foundation
@@ -129,7 +130,13 @@ final class AppState: ObservableObject {
     @Published var automaticAnswers = UserDefaults.standard.object(forKey: "automaticAnswers") as? Bool ?? true
     @Published var saveHistory = UserDefaults.standard.bool(forKey: "saveHistory")
     @Published var keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
-    @Published var darkMode = UserDefaults.standard.bool(forKey: "darkMode")
+    /// "system", "light" or "dark". Migrates the old darkMode switch.
+    @Published var appearance = UserDefaults.standard.string(forKey: "appearance")
+        ?? (UserDefaults.standard.object(forKey: "darkMode") as? Bool == true ? "dark" : "system")
+    var colorScheme: ColorScheme? { appearance == "dark" ? .dark : appearance == "light" ? .light : nil }
+    func applyAppearance() {
+        NSApp.appearance = appearance == "dark" ? NSAppearance(named: .darkAqua) : appearance == "light" ? NSAppearance(named: .aqua) : nil
+    }
     @Published var captureTargets: [CaptureTarget] = []
     @Published var selectedTargetID = UserDefaults.standard.string(forKey: "selectedTargetID") ?? ""
     @Published var codexModels: [CodexModelOption] = []
@@ -281,7 +288,7 @@ final class AppState: ObservableObject {
         audio.onCaptureError = { [weak self] message in
             Task { @MainActor in self?.recoverSystemCapture(message) }
         }
-        NSApp.appearance = NSAppearance(named: darkMode ? .darkAqua : .aqua)
+        applyAppearance()
         registerHotkeys()
         loadCloudKey()
         Diagnostics.pruneOldLogs()
@@ -771,9 +778,9 @@ final class AppState: ObservableObject {
         UserDefaults.standard.set(automaticAnswers, forKey: "automaticAnswers")
         UserDefaults.standard.set(saveHistory, forKey: "saveHistory")
         UserDefaults.standard.set(keepOnTop, forKey: "keepOnTop")
-        UserDefaults.standard.set(darkMode, forKey: "darkMode")
+        UserDefaults.standard.set(appearance, forKey: "appearance")
         UserDefaults.standard.set(microphoneEnabled, forKey: "microphoneEnabled")
-        NSApp.appearance = NSAppearance(named: darkMode ? .darkAqua : .aqua)
+        applyAppearance()
         UserDefaults.standard.set(selectedTargetID, forKey: "selectedTargetID")
         UserDefaults.standard.set(modelPath, forKey: "modelPath")
         UserDefaults.standard.set(recognitionLanguage, forKey: "recognitionLanguage")

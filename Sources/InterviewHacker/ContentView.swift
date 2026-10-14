@@ -12,20 +12,8 @@ struct ContentView: View {
     @State private var transcriptExpanded = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            navigation
-            if let message = state.errorMessage {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                    Text(message).font(.callout).textSelection(.enabled)
-                    Spacer()
-                    Button { state.closeError() } label: { Image(systemName: "xmark") }.buttonStyle(.borderless).help("关闭提示")
-                }
-                .padding(10)
-                .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
-                .padding(.horizontal, 16).padding(.bottom, 8)
-            }
+        ZStack {
+            AppBackdrop()
             Group {
                 switch state.section {
                 case .assistant: assistant
@@ -35,11 +23,12 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .top, spacing: 0) { topBar }
         }
-        .frame(minWidth: 520, minHeight: 600)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .frame(minWidth: 580, minHeight: 640)
+        .tint(Brand.accent)
         .foregroundStyle(.primary)
-        .preferredColorScheme(state.darkMode ? .dark : .light)
+        .preferredColorScheme(state.colorScheme)
         .confirmationDialog("下载本地语音识别模型？", isPresented: $showModelDownloadWarning, titleVisibility: .visible) {
             Button("下载 \(state.selectedModel?.sizeLabel ?? "模型")") { state.downloadModel() }
             Button("取消", role: .cancel) { }
@@ -105,131 +94,168 @@ struct ContentView: View {
         }
     }
 
-    // MARK: Header
+    // MARK: Top bar
 
-    private var header: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10).fill(Color.accentColor.gradient)
-                Image(systemName: "waveform.and.mic").font(.system(size: 14, weight: .semibold)).foregroundStyle(.white)
-            }
-            .frame(width: 32, height: 32)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("InterviewHacker").font(.system(size: 14, weight: .semibold))
-                HStack(spacing: 5) {
-                    Circle().fill(state.isRunning && !state.isPaused ? .green : .secondary.opacity(0.55)).frame(width: 6, height: 6)
-                    Text(state.statusText).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
+    private var topBar: some View {
+        VStack(spacing: 8) {
+            GlassGroup(spacing: 10) {
+                HStack(spacing: 10) {
+                    // Room for the window's traffic-light buttons (hidden title bar).
+                    Color.clear.frame(width: 64, height: 1)
+                    GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol)
+                    Spacer(minLength: 6)
+                    HStack(spacing: 6) {
+                        PulseDot(active: state.isRunning && !state.isPaused)
+                        Text(state.isRunning ? (state.isPaused ? "已暂停" : "聆听中") : "未开始")
+                            .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 12).frame(height: 34)
+                    .glassCapsule()
+                    Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
+                        .buttonStyle(GlassIconButtonStyle())
+                        .help("显示 / 隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
                 }
             }
-            Spacer()
-            if let rtf = state.lastRTF {
-                MetricPill(symbol: "waveform", text: String(format: "识别 RTF %.2f", rtf), tint: rtf < 0.6 ? .green : rtf < 1 ? .orange : .red)
-                    .help("识别耗时 / 音频时长；大于 1 表示识别慢于说话")
+            if let message = state.errorMessage {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    Text(message).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    Button { withAnimation { state.closeError() } } label: { Image(systemName: "xmark") }
+                        .buttonStyle(GlassIconButtonStyle(size: 26)).help("关闭提示")
+                }
+                .padding(12)
+                .glassSurface(cornerRadius: 18, tint: Color.orange.opacity(0.25))
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
-            if let first = state.lastFirstTokenSeconds {
-                MetricPill(symbol: "bolt", text: String(format: "首字 %.1fs", first), tint: first < 2 ? .green : .orange)
-                    .help("从提问到第一个字出现")
-            }
-            Button { TeleprompterController.shared.toggle() } label: {
-                Image(systemName: "rectangle.topthird.inset.filled").frame(width: 30, height: 30)
-                    .background(Color.primary.opacity(0.055), in: Circle())
-            }
-            .buttonStyle(.plain).help("显示 / 隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
         }
-        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 10)
-    }
-
-    private var navigation: some View {
-        Picker("", selection: $state.section) {
-            ForEach(AppSection.allCases) { Text($0.rawValue).tag($0) }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .padding(.horizontal, 16).padding(.bottom, 10)
+        .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 8)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.errorMessage)
     }
 
     // MARK: Assistant
 
     private var assistant: some View {
-        VStack(spacing: 10) {
-            ScrollView {
-                VStack(spacing: 10) {
-                    sessionCard
-                    if state.liveCandidate != nil || !state.suggestedQuestions.isEmpty {
-                        CandidateStrip().card()
-                    }
-                    if let preview = state.screenshotPreview { screenshotCard(preview) }
-                    if !state.displayedQuestion.isEmpty || state.isAnswering || !state.displayedAnswer.isEmpty { answerCard }
-                    transcriptCard
+        ScrollView {
+            VStack(spacing: 12) {
+                sessionCard
+                if state.liveCandidate != nil || !state.suggestedQuestions.isEmpty {
+                    CandidateStrip().card()
+                        .transition(.scale(scale: 0.97).combined(with: .opacity))
                 }
-                .padding(.horizontal, 16)
+                if let preview = state.screenshotPreview { screenshotCard(preview) }
+                if !state.displayedQuestion.isEmpty || state.isAnswering || !state.displayedAnswer.isEmpty {
+                    answerCard.transition(.scale(scale: 0.97).combined(with: .opacity))
+                }
+                transcriptCard
             }
-            VStack(spacing: 8) {
+            .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 12)
+            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.isAnswering)
+            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: state.liveCandidate?.id)
+        }
+        .scrollContentBackground(.hidden)
+        .safeAreaInset(edge: .bottom, spacing: 0) { dock }
+    }
+
+    /// Floating composer dock: question field, screenshots and “answer now”.
+    private var dock: some View {
+        VStack(spacing: 6) {
+            GlassGroup(spacing: 8) {
                 HStack(spacing: 8) {
+                    questionComposer
+                    Button { state.captureScreenshot(.region) } label: { Image(systemName: "viewfinder") }
+                        .buttonStyle(GlassIconButtonStyle(size: 40))
+                        .help("区域截图提问 · \(state.shortcutLabel(.captureRegion))")
+                    Button { state.captureScreenshot(.window) } label: { Image(systemName: "macwindow") }
+                        .buttonStyle(GlassIconButtonStyle(size: 40))
+                        .help("窗口截图提问 · \(state.shortcutLabel(.captureWindow))")
                     Button { state.forceAnswerCurrent() } label: {
-                        Label("立即回答", systemImage: "bolt.fill").frame(maxWidth: .infinity)
+                        Label("立即回答", systemImage: "bolt.fill")
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .help("回答最新的问题或转写，不等待自动判断 · \(state.shortcutLabel(.forceAnswer))")
-                    Button { state.captureScreenshot(.region) } label: { Image(systemName: "viewfinder") }
-                        .buttonStyle(SecondaryButtonStyle()).help("区域截图提问 · \(state.shortcutLabel(.captureRegion))")
-                    Button { state.captureScreenshot(.window) } label: { Image(systemName: "macwindow") }
-                        .buttonStyle(SecondaryButtonStyle()).help("窗口截图提问 · \(state.shortcutLabel(.captureWindow))")
                 }
-                questionComposer
-                privacyNote
             }
-            .padding(.horizontal, 16).padding(.bottom, 12)
+            privacyNote
         }
+        .padding(.horizontal, 14).padding(.top, 6).padding(.bottom, 10)
     }
 
     private var sessionCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Picker("场景", selection: $state.sessionMode) {
-                    ForEach(SessionMode.allCases) { Text($0.title).tag($0) }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 12) {
+                ZStack {
+                    Circle().fill(Brand.gradient)
+                    Image(systemName: state.isRunning && !state.isPaused ? "waveform" : "waveform.and.mic")
+                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                        .symbolEffect(.variableColor.iterative, isActive: state.isRunning && !state.isPaused)
                 }
-                .pickerStyle(.segmented).labelsHidden().frame(maxWidth: 200)
-                .onChange(of: state.sessionMode) { _, _ in state.updateSettings() }
-                Button { state.section = .materials } label: {
-                    Label("资料 \(state.documents.filter(\.enabled).count)", systemImage: "doc.text")
-                }.buttonStyle(ChipButtonStyle())
-                Spacer()
-                Text(state.readinessText)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(state.readinessText == "可以开始" ? .green : .secondary)
+                .frame(width: 42, height: 42)
+                .shadow(color: Brand.accent.opacity(0.45), radius: 10, y: 4)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(state.isRunning ? (state.isPaused ? "已暂停" : "正在实时辅助") : "实时辅助")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text(state.isRunning ? state.statusText : state.readinessText)
+                        .font(.system(size: 12))
+                        .foregroundStyle(!state.isRunning && state.readinessText == "可以开始" ? Color.green : Color.secondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                if let rtf = state.lastRTF {
+                    MetricPill(symbol: "waveform", text: String(format: "RTF %.2f", rtf), tint: rtf < 0.6 ? .green : rtf < 1 ? .orange : .red)
+                        .help("识别耗时 / 音频时长；大于 1 表示识别慢于说话")
+                }
+                if let first = state.lastFirstTokenSeconds {
+                    MetricPill(symbol: "bolt", text: String(format: "首字 %.1fs", first), tint: first < 2 ? .green : .orange)
+                        .help("从提问到第一个字出现")
+                }
             }
-            HStack(spacing: 8) {
-                if !state.capturePermissionGranted {
-                    Button("允许录屏与系统音频") { Task { await state.requestCapturePermission() } }
+            GlassGroup(spacing: 8) {
+                HStack(spacing: 8) {
+                    if !state.capturePermissionGranted {
+                        Button("允许录屏与系统音频") { Task { await state.requestCapturePermission() } }
+                            .buttonStyle(PrimaryButtonStyle())
+                    }
+                    if !state.isRunning {
+                        Button { Task { await state.startSession() } } label: {
+                            HStack(spacing: 6) {
+                                if state.isChangingSession { ProgressView().controlSize(.small).tint(.white) }
+                                Label(state.isChangingSession ? "正在启动…" : "开始辅助", systemImage: "play.fill")
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
                         .buttonStyle(PrimaryButtonStyle())
-                }
-                if !state.isRunning {
-                    Button { Task { await state.startSession() } } label: {
-                        Label("开始辅助", systemImage: "play.fill").frame(maxWidth: .infinity)
+                        .disabled(state.readinessText != "可以开始" || state.isPreparingModel || state.isChangingSession)
+                    } else {
+                        Button { Task { if state.isPaused { await state.resumeSession() } else { await state.pauseSession() } } } label: {
+                            Label(state.isPaused ? "恢复" : "暂停", systemImage: state.isPaused ? "play.fill" : "pause.fill").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(state.isPaused ? AnyButtonStyle(PrimaryButtonStyle()) : AnyButtonStyle(SecondaryButtonStyle()))
+                        Button { Task { await state.stopSession() } } label: {
+                            Label("停止", systemImage: "stop.fill").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
                     }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(state.readinessText != "可以开始" || state.isPreparingModel)
-                } else {
-                    Button { Task { if state.isPaused { await state.resumeSession() } else { await state.pauseSession() } } } label: {
-                        Label(state.isPaused ? "恢复" : "暂停", systemImage: state.isPaused ? "play.fill" : "pause.fill").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(state.isPaused ? AnyButtonStyle(PrimaryButtonStyle()) : AnyButtonStyle(SecondaryButtonStyle()))
-                    Button { Task { await state.stopSession() } } label: {
-                        Label("停止", systemImage: "stop.fill").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
                 }
             }
             HStack(spacing: 6) {
+                ForEach(SessionMode.allCases) { mode in
+                    Button(mode.title) { state.sessionMode = mode; state.updateSettings() }
+                        .buttonStyle(ChipButtonStyle(prominent: state.sessionMode == mode))
+                }
+                Button { state.section = .materials } label: {
+                    Label("资料 \(state.documents.filter(\.enabled).count)", systemImage: "doc.text")
+                }.buttonStyle(ChipButtonStyle())
+                Spacer(minLength: 4)
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(.secondary)
                 Picker("音频来源", selection: $state.selectedTargetID) {
                     ForEach(state.captureTargets) { Text($0.title).tag($0.id) }
                 }
-                .labelsHidden()
+                .labelsHidden().pickerStyle(.menu).frame(maxWidth: 220)
                 .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
-                Text(state.microphoneEnabled ? "+ 麦克风" : "").font(.system(size: 11)).foregroundStyle(.secondary)
-                Text(state.shortcutLabel(.toggleSession)).font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary)
+                if state.microphoneEnabled {
+                    Image(systemName: "mic.fill").font(.system(size: 11)).foregroundStyle(.secondary).help("同时采集麦克风（我）")
+                }
             }
             if state.droppedAudioSegments > 0 {
                 Label("已遗漏 \(state.droppedAudioSegments) 段音频，转录不完整。可换更快的模型或云端识别。", systemImage: "exclamationmark.triangle")
@@ -237,56 +263,55 @@ struct ContentView: View {
             }
         }
         .card()
-        .disabled(state.isChangingSession)
+        .disabled(state.isChangingSession && state.isRunning)
     }
 
     private var answerCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(state.isAnswering && state.historyCursor == nil ? "正在回答" : "建议回答").font(.system(size: 13, weight: .semibold))
+                VStack(alignment: .leading, spacing: 4) {
+                    Label(state.isAnswering && state.historyCursor == nil ? "正在回答" : "建议回答", systemImage: "sparkles")
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(Brand.accent)
                     Text(state.displayedQuestion.isEmpty ? state.pendingQuestion : state.displayedQuestion)
-                        .font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(3).textSelection(.enabled)
+                        .font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary).lineLimit(3).textSelection(.enabled)
                 }
                 Spacer()
                 if let position = state.historyPositionText {
-                    HStack(spacing: 2) {
-                        Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }.buttonStyle(.borderless)
-                            .help("上一条 · \(state.shortcutLabel(.previousAnswer))")
+                    HStack(spacing: 4) {
+                        Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }
+                            .buttonStyle(GlassIconButtonStyle(size: 26)).help("上一条 · \(state.shortcutLabel(.previousAnswer))")
                         Text(position).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }.buttonStyle(.borderless)
-                            .help("下一条 · \(state.shortcutLabel(.nextAnswer))")
+                        Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }
+                            .buttonStyle(GlassIconButtonStyle(size: 26)).help("下一条 · \(state.shortcutLabel(.nextAnswer))")
                     }
                 }
                 if state.isAnswering {
                     ProgressView().controlSize(.small)
-                    Button { state.cancelAnswer() } label: { Image(systemName: "xmark.circle.fill") }
-                        .buttonStyle(.plain).foregroundStyle(.secondary).help("取消回答 · \(state.shortcutLabel(.cancelAnswer))")
+                    Button { state.cancelAnswer() } label: { Image(systemName: "xmark") }
+                        .buttonStyle(GlassIconButtonStyle(size: 26)).help("取消回答 · \(state.shortcutLabel(.cancelAnswer))")
                 }
             }
             ScrollView {
                 if state.displayedAnswer.isEmpty {
-                    Text("正在生成…").font(.system(size: 15)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                    Text("正在生成…").font(.system(size: 16)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    MarkdownText(text: state.displayedAnswer, size: 15)
+                    MarkdownText(text: state.displayedAnswer, size: 16, lineSpacing: 5)
                 }
             }
-            .frame(minHeight: 120, maxHeight: 340)
+            .frame(minHeight: 120, maxHeight: 360)
             RefinementBar()
-            HStack(spacing: 12) {
-                Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }
+            HStack(spacing: 8) {
+                Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }.buttonStyle(ChipButtonStyle())
                 Button { state.regenerate() } label: { Label("重新生成", systemImage: "arrow.clockwise") }
-                    .disabled(state.isAnswering)
+                    .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering)
                 Spacer()
                 Text(answerMeta).font(.system(size: 11)).foregroundStyle(.tertiary)
             }
-            .buttonStyle(.plain)
-            .font(.system(size: 12, weight: .medium))
             if !state.appServerNote.isEmpty {
                 Text(state.appServerNote).font(.caption).foregroundStyle(.orange)
             }
         }
-        .card(tint: .accentColor)
+        .card(tint: Brand.accent)
     }
 
     private var answerMeta: String {
@@ -298,20 +323,20 @@ struct ContentView: View {
     }
 
     private var transcriptCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Button { withAnimation(.easeOut(duration: 0.15)) { transcriptExpanded.toggle() } } label: {
+                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { transcriptExpanded.toggle() } } label: {
                     Label(transcriptTitle, systemImage: transcriptExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 13, weight: .semibold))
                 }.buttonStyle(.plain)
                 Spacer()
                 Text(state.transcriptionStatus).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
-                Toggle("跟随", isOn: $followTranscript).toggleStyle(.checkbox).font(.caption)
+                Toggle("跟随", isOn: $followTranscript).toggleStyle(.switch).controlSize(.mini).font(.caption)
             }
             if transcriptExpanded {
                 ScrollViewReader { proxy in
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 10) {
                             if state.entries.isEmpty && state.partialTranscript.isEmpty && state.microphonePartialTranscript.isEmpty {
                                 Text("开始辅助后，识别的会议语音会出现在这里。原始音频不保存。")
                                     .font(.system(size: 12)).foregroundStyle(.secondary)
@@ -329,7 +354,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .frame(minHeight: 90, maxHeight: 220)
+                    .frame(minHeight: 90, maxHeight: 240)
                     .onChange(of: state.partialTranscript) { _, _ in if followTranscript { proxy.scrollTo("partial", anchor: .bottom) } }
                     .onChange(of: state.microphonePartialTranscript) { _, _ in if followTranscript { proxy.scrollTo("microphone-partial", anchor: .bottom) } }
                     .onChange(of: state.entries.count) { _, _ in if followTranscript { proxy.scrollTo(state.entries.last?.id, anchor: .bottom) } }
@@ -348,14 +373,14 @@ struct ContentView: View {
     }
 
     private func screenshotCard(_ image: NSImage) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("截图预览", systemImage: "viewfinder").font(.system(size: 13, weight: .semibold))
                 Spacer()
                 Button("取消") { state.clearScreenshot() }.buttonStyle(ChipButtonStyle())
                 Button("分析截图") { state.answerScreenshot() }.buttonStyle(ChipButtonStyle(prominent: true))
             }
-            Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 140).clipShape(RoundedRectangle(cornerRadius: 8))
+            Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 150).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             Text("可在下方输入框补充要求，例如“只指出 bug”。").font(.caption).foregroundStyle(.secondary)
         }
         .card()
@@ -363,29 +388,28 @@ struct ContentView: View {
 
     private var questionComposer: some View {
         HStack(spacing: 8) {
-            TextField(state.screenshotPreview == nil ? "手动输入问题，回车发送…" : "对截图的补充要求（可留空）…", text: $state.questionInput, axis: .vertical)
-                .lineLimit(1...3)
+            TextField(state.screenshotPreview == nil ? "输入问题，回车发送…" : "对截图的补充要求（可留空）…", text: $state.questionInput, axis: .vertical)
+                .lineLimit(1...4)
                 .textFieldStyle(.plain)
                 .font(.system(size: 14))
                 .onSubmit { state.screenshotPreview == nil ? state.answerInput() : state.answerScreenshot() }
             Button { state.screenshotPreview == nil ? state.answerInput() : state.answerScreenshot() } label: {
-                Image(systemName: "arrow.up.circle.fill").font(.system(size: 22)).foregroundStyle(Color.accentColor)
+                Image(systemName: "arrow.up").font(.system(size: 13, weight: .bold))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(GlassIconButtonStyle(size: 28, tint: Brand.accent))
             .disabled(state.screenshotPreview == nil && state.questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(.primary.opacity(0.07), lineWidth: 1))
+        .padding(.leading, 16).padding(.trailing, 6).padding(.vertical, 6)
+        .frame(minHeight: 40)
+        .glassSurface(cornerRadius: 20, interactive: true)
     }
 
     private var privacyNote: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "lock.shield").foregroundStyle(.green)
+        HStack(spacing: 5) {
+            Image(systemName: "lock.shield.fill").foregroundStyle(.green)
             Text(privacyText).lineLimit(1)
-            Spacer(minLength: 0)
         }
-        .font(.system(size: 11))
+        .font(.system(size: 10.5))
         .foregroundStyle(.secondary)
     }
 
@@ -400,9 +424,9 @@ struct ContentView: View {
             Text(time).font(.system(size: 10, design: .rounded)).foregroundStyle(.tertiary).frame(width: 40, alignment: .trailing)
             Text(isMe ? "我" : "对方")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(isMe ? Color.accentColor : Color.secondary)
-                .padding(.horizontal, 5).padding(.vertical, 1)
-                .background((isMe ? Color.accentColor : Color.secondary).opacity(0.12), in: Capsule())
+                .foregroundStyle(isMe ? Brand.accent : Color.secondary)
+                .padding(.horizontal, 7).padding(.vertical, 2)
+                .background((isMe ? Brand.accent : Color.secondary).opacity(0.14), in: Capsule())
             Text(text).font(.system(size: 13)).lineSpacing(2).foregroundStyle(partial ? .secondary : .primary)
                 .frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
         }
@@ -459,7 +483,13 @@ struct ContentView: View {
                 settingsSection("记录与外观", icon: "keyboard") {
                     Toggle("保存会话转录和回答", isOn: $state.saveHistory).onChange(of: state.saveHistory) { _, _ in state.updateSettings() }
                     Toggle("工作台窗口置顶", isOn: $state.keepOnTop).onChange(of: state.keepOnTop) { _, _ in state.updateSettings() }
-                    Toggle("深色外观", isOn: $state.darkMode).onChange(of: state.darkMode) { _, _ in state.updateSettings() }
+                    Picker("外观", selection: $state.appearance) {
+                        Text("跟随系统").tag("system")
+                        Text("浅色").tag("light")
+                        Text("深色").tag("dark")
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: state.appearance) { _, _ in state.updateSettings() }
                     Divider()
                     Text("全局快捷键").font(.system(size: 13, weight: .semibold))
                     ShortcutSettingsView()
@@ -755,8 +785,14 @@ struct ContentView: View {
     }
 
     private func settingsSection<Content: View>(_ title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label(title, systemImage: icon).font(.system(size: 13, weight: .semibold))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 26, height: 26)
+                    .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                Text(title).font(.system(size: 14, weight: .semibold))
+            }
             content()
         }
         .font(.system(size: 12))
@@ -825,31 +861,30 @@ struct QRCodeView: View {
     }
 }
 
-struct PrimaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(Color.accentColor.opacity(configuration.isPressed ? 0.78 : 1), in: RoundedRectangle(cornerRadius: 10))
+private extension AppSection {
+    var symbol: String {
+        switch self {
+        case .assistant: "waveform"
+        case .materials: "doc.on.doc"
+        case .settings: "gearshape"
+        case .history: "clock"
+        }
     }
 }
 
-struct SecondaryButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(.primary)
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(.primary.opacity(configuration.isPressed ? 0.1 : 0.055), in: RoundedRectangle(cornerRadius: 10))
+/// Breathing status dot shown while listening.
+struct PulseDot: View {
+    var active: Bool
+    @State private var pulse = false
+    var body: some View {
+        ZStack {
+            if active {
+                Circle().fill(Color.green.opacity(0.35)).frame(width: 14, height: 14)
+                    .scaleEffect(pulse ? 1.25 : 0.6).opacity(pulse ? 0 : 1)
+            }
+            Circle().fill(active ? Color.green : Color.secondary.opacity(0.6)).frame(width: 7, height: 7)
+        }
+        .frame(width: 14, height: 14)
+        .onAppear { withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { pulse = true } }
     }
-}
-
-/// Type-erased button style for conditional styling.
-struct AnyButtonStyle: ButtonStyle {
-    private let make: (Configuration) -> AnyView
-    init<S: ButtonStyle>(_ style: S) { make = { AnyView(style.makeBody(configuration: $0)) } }
-    func makeBody(configuration: Configuration) -> some View { make(configuration) }
 }

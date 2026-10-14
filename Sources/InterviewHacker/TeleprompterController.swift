@@ -132,8 +132,10 @@ private struct TeleprompterView: View {
             header
             if !state.displayedQuestion.isEmpty || state.isAnswering {
                 Text(state.displayedQuestion.isEmpty ? state.pendingQuestion : state.displayedQuestion)
-                    .font(.system(size: max(12, state.teleprompterFontSize * 0.6)))
+                    .font(.system(size: max(12, state.teleprompterFontSize * 0.6), weight: .medium))
                     .foregroundStyle(.secondary).lineLimit(2)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .glassCapsule(tint: Brand.accent.opacity(0.15))
             }
             ScrollViewReader { proxy in
                 ScrollView {
@@ -154,17 +156,17 @@ private struct TeleprompterView: View {
             }
             if hovering || !state.clickThrough { footer }
         }
-        .padding(16).padding(.top, 14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.55), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(18).padding(.top, 12)
+        .glassSurface(cornerRadius: 26)
+        .padding(6)
         .foregroundStyle(.primary)
-        .preferredColorScheme(state.darkMode ? .dark : .light)
+        .preferredColorScheme(state.colorScheme)
         .onHover { hovering = $0 }
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Circle().fill(state.isRunning && !state.isPaused ? Color.green : Color.secondary).frame(width: 8, height: 8)
+        GlassGroup(spacing: 6) { HStack(spacing: 8) {
+            PulseDot(active: state.isRunning && !state.isPaused)
             Text(state.isRunning ? (state.isPaused ? "已暂停" : "正在聆听") : "未采集").font(.caption)
             if state.isAnswering { ProgressView().controlSize(.mini) }
             if let first = state.lastFirstTokenSeconds, !state.isAnswering {
@@ -175,17 +177,17 @@ private struct TeleprompterView: View {
             }
             Spacer()
             if let position = state.historyPositionText {
-                Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }.buttonStyle(.borderless)
+                Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }.buttonStyle(GlassIconButtonStyle(size: 26))
                 Text(position).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }.buttonStyle(.borderless)
+                Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }.buttonStyle(GlassIconButtonStyle(size: 26))
             }
             Button { state.teleprompterFontSize = max(14, state.teleprompterFontSize - 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.smaller") }
-                .buttonStyle(.borderless).help("缩小文字")
+                .buttonStyle(GlassIconButtonStyle(size: 26)).help("缩小文字")
             Button { state.teleprompterFontSize = min(44, state.teleprompterFontSize + 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.larger") }
-                .buttonStyle(.borderless).help("放大文字")
+                .buttonStyle(GlassIconButtonStyle(size: 26)).help("放大文字")
             Button { state.toggleClickThrough() } label: { Image(systemName: state.clickThrough ? "cursorarrow.slash" : "cursorarrow") }
-                .buttonStyle(.borderless).help("鼠标穿透 · \(state.shortcutLabel(.toggleClickThrough))")
-        }
+                .buttonStyle(GlassIconButtonStyle(size: 26, tint: state.clickThrough ? Brand.accent : nil)).help("鼠标穿透 · \(state.shortcutLabel(.toggleClickThrough))")
+        } }
     }
 
     private var footer: some View {
