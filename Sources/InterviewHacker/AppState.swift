@@ -63,6 +63,11 @@ final class AppState: ObservableObject {
     @Published var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 0.96
     @Published var clickThrough = false
     @Published var shareTestImage: NSImage?
+    @Published var lastStartupSeconds: Double?
+    @Published var keepRecognizerWarm = UserDefaults.standard.object(forKey: "keepRecognizerWarm") as? Bool ?? true
+    @Published var companionPort = UserDefaults.standard.object(forKey: "companionPort") as? Int ?? 8_765
+    var whisperIdleTask: Task<Void, Never>?
+    var systemRecoveryTask: Task<Void, Never>?
     @Published var companionEnabled = false
     @Published var companionAddress: String?
     @Published var companionStatus = "未开启"
@@ -177,6 +182,7 @@ final class AppState: ObservableObject {
                 modelIsReady = true
                 modelDownloadStatus = "已切换到 \(url.lastPathComponent)"
                 updateSettings()
+                await prewarmRecognizer()
             } catch { modelDownloadStatus = error.localizedDescription }
         }
     }
@@ -239,8 +245,8 @@ final class AppState: ObservableObject {
     @Published var capturePermissionGranted = false
     @Published var capturePermissionStatus = "正在检查录屏与系统音频权限…"
 
-    private let audio = AudioCaptureService()
-    private let microphone = MicrophoneCaptureService()
+    let audio = AudioCaptureService()
+    let microphone = MicrophoneCaptureService()
     let whisper = LocalWhisperService()
     private let codex = CodexBridge()
     private let hotkeys = HotkeyManager()
@@ -273,12 +279,7 @@ final class AppState: ObservableObject {
             Task { @MainActor in self?.receiveSpeechEvent(event) }
         }
         audio.onCaptureError = { [weak self] message in
-            Task { @MainActor in
-                self?.errorMessage = "系统音频采集已停止：\(message)"
-                self?.statusText = "采集错误"
-                Task { await self?.refreshTargets() }
-                Task { await self?.stopSession() }
-            }
+            Task { @MainActor in self?.recoverSystemCapture(message) }
         }
         NSApp.appearance = NSAppearance(named: darkMode ? .darkAqua : .aqua)
         registerHotkeys()
@@ -289,6 +290,7 @@ final class AppState: ObservableObject {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
             if answerBackend == .codexAppServer, CodexBridge.executableURL() != nil { await appServer.prewarm() }
+            await prewarmRecognizer()
         }
     }
 
@@ -389,10 +391,15 @@ final class AppState: ObservableObject {
         isChangingSession = true
         defer { isChangingSession = false }
         do {
+            let startupBegan = Date()
+            whisperIdleTask?.cancel(); whisperIdleTask = nil
             if microphoneEnabled { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
-            statusText = "正在加载本地语音模型…"
+            if transcriptionBackend == "whisper" {
+                statusText = whisper.isWarm(modelPath: modelPath) ? "正在启动…" : "正在加载本地语音模型（首次较慢，之后会常驻）…"
+            }
             modelLoadSeconds = try await prepareTranscriber()
+            Diagnostics.record("session.transcriber_ready", ["backend": transcriptionBackend, "seconds": Date().timeIntervalSince(startupBegan)])
             isPreparingModel = false
             let startedAt = Date()
             sessionStartedAt = startedAt
@@ -410,10 +417,15 @@ final class AppState: ObservableObject {
             } catch {
                 throw AppFailure.capture("无法捕获所选音源。请在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”允许 InterviewHacker，并确认目标窗口仍打开。\n\(error.localizedDescription)")
             }
-            if microphoneEnabled { try await microphone.startCapture() }
+            if microphoneEnabled {
+                do { try await microphone.startCapture() }
+                catch { microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)") }
+            }
             isRunning = true
             isPaused = false
-            statusText = "正在聆听 · 仅本地转录"
+            lastStartupSeconds = Date().timeIntervalSince(startupBegan)
+            Diagnostics.record("session.started", ["backend": transcriptionBackend, "seconds": lastStartupSeconds ?? -1])
+            statusText = String(format: "正在聆听 · 启动 %.1f s", lastStartupSeconds ?? 0)
             isStopping = false
             transcriptionStatus = "等待系统音频"
             pendingAutomaticQuestion = nil
@@ -477,7 +489,10 @@ final class AppState: ObservableObject {
             audioEpoch = UUID()
             _ = try await prepareTranscriber()
             try await audio.startCapture(targetID: selectedTargetID)
-            if microphoneEnabled { try await microphone.startCapture() }
+            if microphoneEnabled {
+                do { try await microphone.startCapture() }
+                catch { microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)") }
+            }
             isPaused = false
             statusText = "正在聆听 · 仅本地转录"
             transcriptionStatus = "等待系统音频"
@@ -522,7 +537,8 @@ final class AppState: ObservableObject {
         candidateTicker?.cancel(); candidateTicker = nil
         liveCandidate = nil
         cancelAnswer()
-        await whisper.shutdown()
+        // Keep the model loaded so the next start is instant; unload after idling.
+        scheduleWhisperIdleShutdown()
         isRunning = false
         isPaused = false
         statusText = "已停止"
@@ -709,6 +725,7 @@ final class AppState: ObservableObject {
                 modelIsReady = true
                 updateSettings()
                 modelDownloadStatus = "已下载并通过 SHA-256 校验，当前使用 \(model.id)。"
+                await prewarmRecognizer()
             } catch {
                 modelDownloadStatus = error is CancellationError ? "下载已取消。" : "下载失败：\(error.localizedDescription) 可点击重试。"
             }
@@ -836,7 +853,7 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func enqueueFinal(_ event: SpeechSegmentEvent, shouldDetectQuestion: Bool = true) {
+    func enqueueFinal(_ event: SpeechSegmentEvent, shouldDetectQuestion: Bool = true) {
         guard finalVoiceIDs.insert(event.id).inserted else { return }
         if finalQueue.filter({ $0.0.source == event.source }).count >= 3,
            let index = finalQueue.firstIndex(where: { $0.0.source == event.source }) {
@@ -1081,17 +1098,29 @@ final class AppState: ObservableObject {
                 self.receiveSpeechEvent(event)
             }
         }
-        let failure: (String) -> Void = { [weak self] message in
-            Task { @MainActor in
-                guard let self, self.audioEpoch == captureEpoch else { return }
-                self.errorMessage = "采集已停止：\(message)"
-                await self.stopSession()
-            }
-        }
         audio.onSegment = receive
         microphone.onSegment = receive
-        audio.onCaptureError = failure
-        microphone.onCaptureError = failure
+        // Device changes (headphones, AirPods, display sleep) must not end the session:
+        // system audio reconnects automatically; the microphone follows the default input.
+        audio.onCaptureError = { [weak self] message in
+            Task { @MainActor in
+                guard let self, self.audioEpoch == captureEpoch else { return }
+                self.recoverSystemCapture(message)
+            }
+        }
+        microphone.onCaptureError = { [weak self] message in
+            Task { @MainActor in
+                guard let self, self.audioEpoch == captureEpoch else { return }
+                self.microphoneUnavailable(message)
+            }
+        }
+        microphone.onDeviceChanged = { [weak self] name in
+            Task { @MainActor in
+                guard let self, self.audioEpoch == captureEpoch, self.isRunning else { return }
+                self.transcriptionStatus = "麦克风已切换到 \(name)"
+                Diagnostics.record("microphone.device_changed")
+            }
+        }
         if transcriptionBackend == "whisper" {
             audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
             return try await whisper.prepare(modelPath: modelPath)
@@ -1111,14 +1140,23 @@ final class AppState: ObservableObject {
         }
         let started = Date()
         liveTranscriber = service
-        try await startApple(service, source: .system, epoch: captureEpoch)
-        audio.setPCMHandler(service.inputHandler())
-        if microphoneEnabled {
-            guard let micService = factory() else { throw AppFailure.capture("无法创建麦克风识别器。") }
-            microphoneTranscriber = micService
-            try await startApple(micService, source: .microphone, epoch: captureEpoch)
-            microphone.setPCMHandler(micService.inputHandler())
+        let micService = microphoneEnabled ? factory() : nil
+        microphoneTranscriber = micService
+        // System and microphone recognizers start in parallel (both on the main actor,
+        // interleaving at their awaits).
+        let micStart: Task<String?, Never>? = micService.map { mic in
+            Task { @MainActor in
+                do { try await self.startApple(mic, source: .microphone, epoch: captureEpoch); return nil }
+                catch { return error.localizedDescription }
+            }
         }
+        try await startApple(service, source: .system, epoch: captureEpoch)
+        if let micStart, let failure = await micStart.value {
+            microphoneTranscriber = nil
+            microphoneUnavailable("麦克风识别器启动失败：\(failure)")
+        }
+        audio.setPCMHandler(service.inputHandler())
+        if let micService = microphoneTranscriber { microphone.setPCMHandler(micService.inputHandler()) }
         return Date().timeIntervalSince(started)
     }
 

@@ -549,14 +549,19 @@ struct ContentView: View {
                 Text("云端流式 · 最快 / 需 API Key").tag("cloud")
             }
             .disabled(state.isRunning || state.isPreparingModel)
-            .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings() }
+            .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
             Picker("识别语言", selection: $state.recognitionLanguage) {
                 Text("自动 / 中英混说").tag("auto")
                 Text("中文").tag("zh")
                 Text("English").tag("en")
             }
             .disabled(state.isRunning || state.isPreparingModel)
-            .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings() }
+            .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
+            Toggle("后台预加载识别模型（开始辅助几乎瞬间启动）", isOn: $state.keepRecognizerWarm)
+                .onChange(of: state.keepRecognizerWarm) { _, _ in state.saveRecognizerSettings() }
+            if let seconds = state.lastStartupSeconds {
+                Text(String(format: "上次开始辅助用时 %.1f 秒", seconds)).font(.caption).foregroundStyle(.secondary)
+            }
             TextField("专业词 / 人名，逗号分隔（提升识别准确度）", text: $state.recognitionVocabulary)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: state.recognitionVocabulary) { _, _ in state.updateSettings() }
@@ -696,7 +701,14 @@ struct ContentView: View {
     private var companionSection: some View {
         settingsSection("手机伴侣", icon: "iphone") {
             Toggle("在局域网开启手机显示与遥控", isOn: Binding(get: { state.companionEnabled }, set: { state.setCompanion(enabled: $0) }))
-            Text(state.companionStatus).font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Text("首选端口")
+                TextField("8765", value: $state.companionPort, format: .number.grouping(.never))
+                    .textFieldStyle(.roundedBorder).frame(width: 80)
+                Button("重新生成链接") { state.setCompanion(enabled: true) }.buttonStyle(ChipButtonStyle())
+                Text("端口被占用时会自动换用下一个可用端口").font(.caption).foregroundStyle(.secondary)
+            }
+            Text(state.companionStatus).font(.caption).foregroundStyle(state.companionStatus.hasPrefix("启动失败") ? .orange : .secondary)
             if let address = state.companionAddress {
                 HStack(alignment: .top, spacing: 14) {
                     QRCodeView(text: address).frame(width: 132, height: 132)

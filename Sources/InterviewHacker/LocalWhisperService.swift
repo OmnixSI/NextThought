@@ -10,6 +10,7 @@ final class LocalWhisperService: @unchecked Sendable {
         var port: UInt16
         var modelPath: String
         var logHandle: FileHandle?
+        var isReady = false
     }
 
     private let lock = NSLock()
@@ -58,7 +59,16 @@ final class LocalWhisperService: @unchecked Sendable {
             throw AppFailure.noTranscriber
         }
         if let existing = currentWorker(), existing.process.isRunning, existing.modelPath == modelPath {
-            return 0
+            if existing.isReady { return 0 }
+            // Another caller (e.g. the launch-time prewarm) is loading this model: wait for it.
+            let waitStarted = Date()
+            while Date().timeIntervalSince(waitStarted) < 90 {
+                try Task.checkCancellation()
+                guard let current = currentWorker(), current.process.isRunning, current.modelPath == modelPath else { break }
+                if current.isReady { return Date().timeIntervalSince(waitStarted) }
+                try await Task.sleep(for: .milliseconds(150))
+            }
+            if let current = currentWorker(), current.isReady, current.modelPath == modelPath { return 0 }
         }
         try await Task.detached(priority: .utility) {
             try Self.verifyModel(at: URL(fileURLWithPath: modelPath))
@@ -103,6 +113,7 @@ final class LocalWhisperService: @unchecked Sendable {
             request.httpMethod = "GET"
             if let (_, response) = try? await currentSession().data(for: request),
                (response as? HTTPURLResponse)?.statusCode == 200 {
+                markReady(process)
                 Diagnostics.record("whisper.ready", ["pid": process.processIdentifier, "seconds": Date().timeIntervalSince(startedAt)])
                 return Date().timeIntervalSince(startedAt)
             }
@@ -114,7 +125,7 @@ final class LocalWhisperService: @unchecked Sendable {
 
     func transcribe(_ samples: [Int16], modelPath: String, language: String, vocabulary: String = "") async throws -> String {
         guard !samples.isEmpty else { return "" }
-        if currentWorker()?.modelPath != modelPath {
+        if currentWorker()?.modelPath != modelPath || currentWorker()?.isReady != true {
             _ = try await prepare(modelPath: modelPath)
         }
         guard let worker = currentWorker(), worker.process.isRunning else {
@@ -184,6 +195,12 @@ final class LocalWhisperService: @unchecked Sendable {
     private func setWorker(_ nextWorker: Worker?) {
         lock.lock()
         worker = nextWorker
+        lock.unlock()
+    }
+
+    private func markReady(_ process: Process) {
+        lock.lock()
+        if worker?.process === process { worker?.isReady = true }
         lock.unlock()
     }
 
@@ -284,8 +301,21 @@ final class LocalWhisperService: @unchecked Sendable {
         return data
     }
 
+    /// Full SHA-256 of a 0.5–3 GB model takes seconds, so a successful check is
+    /// remembered by path + size + modification date and only redone when the file changes.
     fileprivate static func verifyModel(at url: URL) throws {
+        let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        let fingerprint = "\(values?.fileSize ?? -1):\(values?.contentModificationDate?.timeIntervalSince1970 ?? -1)"
+        let key = "verifiedModel:" + url.standardizedFileURL.path
+        if values?.fileSize != nil, UserDefaults.standard.string(forKey: key) == fingerprint { return }
         try WhisperModelFile.verify(at: url, expected: WhisperModel.matching(url))
+        UserDefaults.standard.set(fingerprint, forKey: key)
+    }
+
+    /// True when a worker for this model is already running (no load needed).
+    func isWarm(modelPath: String) -> Bool {
+        guard let worker = currentWorker() else { return false }
+        return worker.isReady && worker.process.isRunning && worker.modelPath == modelPath
     }
 
 }

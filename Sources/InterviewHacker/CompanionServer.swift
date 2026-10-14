@@ -21,41 +21,14 @@ final class CompanionServer {
     private let queue = DispatchQueue(label: "app.interviewhacker.companion")
     private(set) var pairingURL: URL?
 
-    func start(onStatus: @escaping (String, String?) -> Void) {
+    /// Starts on the preferred port; if it is taken (another app, or a previous
+    /// instance still closing) the next free port is used automatically.
+    func start(preferredPort: Int, onStatus: @escaping (String, String?) -> Void) {
         stop()
         token = Self.randomToken()
-        do {
-            let parameters = NWParameters.tcp
-            parameters.allowLocalEndpointReuse = true
-            let listener = try NWListener(using: parameters, on: NWEndpoint.Port(rawValue: 8_765) ?? .any)
-            listener.newConnectionHandler = { [weak self] connection in
-                Task { @MainActor in self?.accept(connection) }
-            }
-            listener.stateUpdateHandler = { [weak self] state in
-                Task { @MainActor in
-                    guard let self else { return }
-                    switch state {
-                    case .ready:
-                        let port = listener.port?.rawValue ?? 8_765
-                        guard let host = Self.lanAddress() else {
-                            onStatus("没有找到局域网地址；请连接与手机相同的 Wi‑Fi。", nil); return
-                        }
-                        let url = URL(string: "http://\(host):\(port)/?t=\(self.token)")
-                        self.pairingURL = url
-                        onStatus("已开启 · 手机与 Mac 需在同一局域网", url?.absoluteString)
-                    case let .failed(error):
-                        onStatus("启动失败：\(error.localizedDescription)", nil)
-                        self.stop()
-                    default: break
-                    }
-                }
-            }
-            listener.start(queue: queue)
-            self.listener = listener
-        } catch {
-            onStatus("启动失败：\(error.localizedDescription)", nil)
-            return
-        }
+        let base = (1_024...65_000).contains(preferredPort) ? preferredPort : 8_765
+        let candidates = Array(base..<(base + 20))
+        listen(on: candidates, index: 0, onStatus: onStatus)
         // Push the answer state to connected phones whenever the app state changes.
         subscription = AppState.shared.objectWillChange
             .debounce(for: .milliseconds(120), scheduler: RunLoop.main)
@@ -67,6 +40,57 @@ final class CompanionServer {
             }
         }
         Diagnostics.record("companion.started")
+    }
+
+    private func listen(on ports: [Int], index: Int, onStatus: @escaping (String, String?) -> Void) {
+        // Last resort: let the system pick any free port.
+        let port: NWEndpoint.Port = index < ports.count ? (NWEndpoint.Port(rawValue: UInt16(ports[index])) ?? .any) : .any
+        let parameters = NWParameters.tcp
+        parameters.allowLocalEndpointReuse = true
+        let listener: NWListener
+        do {
+            listener = try NWListener(using: parameters, on: port)
+        } catch {
+            if index <= ports.count { listen(on: ports, index: index + 1, onStatus: onStatus) }
+            else { onStatus("启动失败：\(error.localizedDescription)", nil) }
+            return
+        }
+        listener.newConnectionHandler = { [weak self] connection in
+            Task { @MainActor in self?.accept(connection) }
+        }
+        listener.stateUpdateHandler = { [weak self] state in
+            Task { @MainActor in
+                guard let self, self.listener === listener else { return }
+                switch state {
+                case .ready:
+                    let actual = listener.port?.rawValue ?? 0
+                    guard let host = Self.lanAddress() else {
+                        onStatus("没有找到局域网地址；请把 Mac 和手机连到同一个 Wi‑Fi 后点“重新生成链接”。", nil); return
+                    }
+                    let url = URL(string: "http://\(host):\(actual)/?t=\(self.token)")
+                    self.pairingURL = url
+                    let note = index == 0 ? "" : "（端口 \(ports.first ?? 0) 被占用，已改用 \(actual)）"
+                    onStatus("已开启 · 手机与 Mac 需在同一局域网\(note)", url?.absoluteString)
+                case let .failed(error):
+                    listener.cancel()
+                    if Self.isAddressInUse(error), index <= ports.count {
+                        Diagnostics.record("companion.port_in_use", ["port": index < ports.count ? ports[index] : 0])
+                        self.listen(on: ports, index: index + 1, onStatus: onStatus)
+                    } else {
+                        onStatus("启动失败：\(error.localizedDescription)", nil)
+                        self.stop()
+                    }
+                default: break
+                }
+            }
+        }
+        self.listener = listener
+        listener.start(queue: queue)
+    }
+
+    private static func isAddressInUse(_ error: NWError) -> Bool {
+        if case let .posix(code) = error { return code == .EADDRINUSE }
+        return false
     }
 
     func stop() {

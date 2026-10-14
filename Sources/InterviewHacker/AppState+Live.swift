@@ -170,7 +170,9 @@ extension AppState {
     func setCompanion(enabled: Bool) {
         companionEnabled = enabled
         if enabled {
-            CompanionServer.shared.start { [weak self] status, address in
+            UserDefaults.standard.set(companionPort, forKey: "companionPort")
+            companionStatus = "正在启动…"
+            CompanionServer.shared.start(preferredPort: companionPort) { [weak self] status, address in
                 self?.companionStatus = status
                 self?.companionAddress = address
             }
