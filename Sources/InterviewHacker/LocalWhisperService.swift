@@ -1,29 +1,27 @@
-import CryptoKit
+import InterviewHackerCore
 import Foundation
 import Darwin
 
 final class LocalWhisperService: @unchecked Sendable {
-    static let modelURL = URL(string: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin")!
-    static let modelName = "Whisper large-v3-turbo · Q5_0"
-    static let modelBytes = 574_041_195
-    static let modelSHA1 = "e050f7970618a659205450ad97eb95a18d69c9ee"
     static let runtimeName = "whisper-server"
 
     private struct Worker {
         var process: Process
         var port: UInt16
         var modelPath: String
-        var logHandle: FileHandle
+        var logHandle: FileHandle?
     }
 
     private let lock = NSLock()
     private var worker: Worker?
     private var session = URLSession(configuration: .ephemeral)
 
-    static var defaultModelURL: URL {
+    static var modelsDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("InterviewHacker/models/ggml-large-v3-turbo-q5_0.bin")
+        return base.appendingPathComponent("InterviewHacker/models", isDirectory: true)
     }
+
+    static var defaultModelURL: URL { modelsDirectory.appendingPathComponent(WhisperModel.named(WhisperModel.defaultID)!.filename) }
 
     static func findExecutable() -> String? {
         let paths: [String?] = [
@@ -45,8 +43,8 @@ final class LocalWhisperService: @unchecked Sendable {
         }
     }
 
-    static func downloadModel(to destination: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
-        let operation = ModelDownloadOperation(destination: destination, progress: progress)
+    static func downloadModel(_ model: WhisperModel, to destination: URL, progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+        let operation = ModelDownloadOperation(model: model, destination: destination, progress: progress)
         try await withTaskCancellationHandler {
             try await operation.start()
         } onCancel: {
@@ -78,17 +76,14 @@ final class LocalWhisperService: @unchecked Sendable {
             "--language", "auto",
         ]
         process.standardOutput = FileHandle.nullDevice
-        let logURL = Diagnostics.runtimeLogURL()
-        if !FileManager.default.fileExists(atPath: logURL.path) {
-            FileManager.default.createFile(atPath: logURL.path, contents: nil)
-        }
-        let logHandle = try FileHandle(forWritingTo: logURL)
-        try logHandle.seekToEnd()
-        process.standardError = logHandle
+        // Whisper's raw stderr may include decoded text. Do not retain it in a
+        // background log when history saving is disabled (or otherwise).
+        let logHandle: FileHandle? = nil
+        process.standardError = FileHandle.nullDevice
         do {
             try process.run()
         } catch {
-            try? logHandle.close()
+            try? logHandle?.close()
             throw AppFailure.transcription("无法启动应用内的 Whisper 识别组件：\(error.localizedDescription)")
         }
 
@@ -99,7 +94,7 @@ final class LocalWhisperService: @unchecked Sendable {
         let startedAt = Date()
         let endpoint = URL(string: "http://127.0.0.1:\(port)/")!
         while Date().timeIntervalSince(startedAt) < 90 {
-            try Task.checkCancellation()
+            if Task.isCancelled { await stopWorker(); throw CancellationError() }
             guard process.isRunning else {
                 await stopWorker()
                 throw AppFailure.transcription("Whisper 识别组件启动失败。请检查模型是否完整，然后重试。")
@@ -117,7 +112,7 @@ final class LocalWhisperService: @unchecked Sendable {
         throw AppFailure.transcription("Whisper 模型加载超过 90 秒。请关闭其他占用大量内存的应用后重试。")
     }
 
-    func transcribe(_ samples: [Int16], modelPath: String, language: String) async throws -> String {
+    func transcribe(_ samples: [Int16], modelPath: String, language: String, vocabulary: String = "") async throws -> String {
         guard !samples.isEmpty else { return "" }
         if currentWorker()?.modelPath != modelPath {
             _ = try await prepare(modelPath: modelPath)
@@ -130,7 +125,7 @@ final class LocalWhisperService: @unchecked Sendable {
         request.httpMethod = "POST"
         let boundary = "InterviewHacker-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        request.httpBody = Self.makeMultipart(samples: samples, boundary: boundary, language: language)
+        request.httpBody = Self.makeMultipart(samples: samples, boundary: boundary, language: language, vocabulary: vocabulary)
         let startedAt = Date()
         Diagnostics.record("asr.started", ["samples": samples.count, "audio_seconds": Double(samples.count) / 16_000, "language": language, "pid": worker.process.processIdentifier])
 
@@ -177,7 +172,7 @@ final class LocalWhisperService: @unchecked Sendable {
         cancelAll()
         let oldWorker = takeWorker()
         if oldWorker?.process.isRunning == true { oldWorker?.process.terminate() }
-        try? oldWorker?.logHandle.close()
+        try? oldWorker?.logHandle?.close()
     }
 
     private func currentWorker() -> Worker? {
@@ -208,10 +203,13 @@ final class LocalWhisperService: @unchecked Sendable {
 
     private func stopWorker() async {
         let oldWorker = takeWorker()
-        defer { try? oldWorker?.logHandle.close() }
+        defer { try? oldWorker?.logHandle?.close() }
         guard let process = oldWorker?.process, process.isRunning else { return }
         process.terminate()
         await Task.detached(priority: .utility) {
+            let deadline = ProcessInfo.processInfo.systemUptime + 2
+            while process.isRunning && ProcessInfo.processInfo.systemUptime < deadline { try? await Task.sleep(for: .milliseconds(50)) }
+            if process.isRunning { Darwin.kill(process.processIdentifier, SIGKILL) }
             process.waitUntilExit()
         }.value
     }
@@ -244,7 +242,7 @@ final class LocalWhisperService: @unchecked Sendable {
         return UInt16(bigEndian: result.sin_port)
     }
 
-    private static func makeMultipart(samples: [Int16], boundary: String, language: String) -> Data {
+    private static func makeMultipart(samples: [Int16], boundary: String, language: String, vocabulary: String) -> Data {
         var body = Data()
         let newline = "\r\n"
 
@@ -256,7 +254,7 @@ final class LocalWhisperService: @unchecked Sendable {
         body.append(makeWave(samples))
         body.append(Data(newline.utf8))
         addField("language", language)
-        addField("prompt", "database index, database consistency, cache invalidation, system design, trade-off, API, SQL, latency")
+        addField("prompt", String(vocabulary.prefix(1_200)))
         addField("response_format", "verbose_json")
         addField("temperature", "0.0")
         addField("no_language_probabilities", "true")
@@ -287,49 +285,40 @@ final class LocalWhisperService: @unchecked Sendable {
     }
 
     fileprivate static func verifyModel(at url: URL) throws {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw AppFailure.modelMissing
-        }
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let fileSize = attributes[.size] as? NSNumber,
-              fileSize.intValue == modelBytes else {
-            throw AppFailure.transcription("语音模型文件大小不正确。请删除文件后重新下载。")
-        }
-
-        let file = try FileHandle(forReadingFrom: url)
-        defer { try? file.close() }
-        var hasher = Insecure.SHA1()
-        while let data = try file.read(upToCount: 8 * 1024 * 1024), !data.isEmpty {
-            hasher.update(data: data)
-        }
-        let digest = hasher.finalize().map { String(format: "%02x", $0) }.joined()
-        guard digest == modelSHA1 else {
-            throw AppFailure.transcription("语音模型校验未通过。请删除损坏文件后重新下载。")
-        }
+        try WhisperModelFile.verify(at: url, expected: WhisperModel.matching(url))
     }
+
 }
 
 private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let lock = NSLock()
+    private let model: WhisperModel
     private let destination: URL
     private let progress: @Sendable (Double) -> Void
     private var continuation: CheckedContinuation<Void, Error>?
     private var session: URLSession?
     private var task: URLSessionDownloadTask?
     private var isFinished = false
+    private var cancellationRequested = false
 
-    init(destination: URL, progress: @escaping @Sendable (Double) -> Void) {
+    init(model: WhisperModel, destination: URL, progress: @escaping @Sendable (Double) -> Void) {
+        self.model = model
         self.destination = destination
         self.progress = progress
     }
 
     func start() async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             lock.lock()
+            if cancellationRequested {
+                lock.unlock()
+                continuation.resume(throwing: CancellationError())
+                return
+            }
             self.continuation = continuation
             let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
             self.session = session
-            let task = session.downloadTask(with: LocalWhisperService.modelURL)
+            let task = session.downloadTask(with: model.downloadURL)
             self.task = task
             lock.unlock()
             task.resume()
@@ -338,6 +327,7 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
 
     func cancel() {
         lock.lock()
+        cancellationRequested = true
         let task = task
         lock.unlock()
         task?.cancel()
@@ -358,7 +348,11 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
             let partialURL = destination.appendingPathExtension("partial")
             try? FileManager.default.removeItem(at: partialURL)
             try FileManager.default.moveItem(at: location, to: partialURL)
-            try LocalWhisperService.verifyDownloadedModel(at: partialURL)
+            try WhisperModelFile.verify(at: partialURL, expected: model)
+            lock.lock()
+            let cancelled = cancellationRequested
+            lock.unlock()
+            if cancelled { throw CancellationError() }
             try? FileManager.default.removeItem(at: destination)
             try FileManager.default.moveItem(at: partialURL, to: destination)
             progress(1)
@@ -370,7 +364,7 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        if let error { finish(.failure(error)) }
+        if let error { finish(.failure((error as NSError).code == NSURLErrorCancelled ? CancellationError() : error)) }
     }
 
     private func finish(_ result: Result<Void, Error>) {
@@ -387,12 +381,6 @@ private final class ModelDownloadOperation: NSObject, URLSessionDownloadDelegate
         lock.unlock()
         nextSession?.finishTasksAndInvalidate()
         nextContinuation?.resume(with: result)
-    }
-}
-
-fileprivate extension LocalWhisperService {
-    static func verifyDownloadedModel(at url: URL) throws {
-        try verifyModel(at: url)
     }
 }
 

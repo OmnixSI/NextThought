@@ -13,7 +13,7 @@ struct RegionScreenshotPicker: View {
 
     private var displaySelection: Binding<UInt32> {
         Binding(
-            get: { selectedDisplayID ?? displays[0].id },
+            get: { selectedDisplayID ?? displays.first?.id ?? 0 },
             set: onDisplaySelected)
     }
 
@@ -51,6 +51,7 @@ struct RegionScreenshotPicker: View {
         }
         .padding(16)
         .frame(minWidth: 720, minHeight: 540)
+        .onChange(of: selectedDisplayID) { _, _ in selectedRect = nil }
     }
 }
 

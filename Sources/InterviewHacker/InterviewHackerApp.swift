@@ -12,8 +12,8 @@ struct InterviewHackerApp: App {
                 .environmentObject(state)
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 460, height: 760)
-        .windowResizability(.contentSize)
+        .defaultSize(width: 620, height: 780)
+        .windowResizability(.contentMinSize)
     }
 }
 
@@ -32,9 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
                 window.level = keepOnTop ? .floating : .normal
                 window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-                window.minSize = NSSize(width: 400, height: 560)
-                window.backgroundColor = .clear
-                window.isOpaque = false
+                window.minSize = NSSize(width: 520, height: 600)
+                window.backgroundColor = .windowBackgroundColor
+                window.isOpaque = true
             }
         }
     }

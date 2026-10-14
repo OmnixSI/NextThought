@@ -12,6 +12,14 @@ final class AudioCaptureService: NSObject, SCStreamOutput, SCStreamDelegate {
     private var segmenter = VoiceActivitySegmenter()
     private var streamStartedAt = Date()
     private var didLogFormat = false
+    private var pcmHandler: (@Sendable ([Int16], Date) -> Void)?
+    func setPCMHandler(_ handler: (@Sendable ([Int16], Date) -> Void)?) { audioQueue.sync { pcmHandler = handler } }
+
+    /// Finalize the current utterance without interrupting screen capture.
+    func flushUtterance() async -> SpeechSegmentEvent? {
+        audioQueue.sync { segmenter.flush().map { stamped($0) } }
+    }
+
     var onSegment: ((SpeechSegmentEvent) -> Void)?
     var onCaptureError: ((String) -> Void)?
 
@@ -73,6 +81,7 @@ final class AudioCaptureService: NSObject, SCStreamOutput, SCStreamDelegate {
         return audioQueue.sync {
             var events: [SpeechSegmentEvent] = []
             if !pendingSamples.isEmpty {
+                pcmHandler?(pendingSamples, streamStartedAt)
                 events.append(contentsOf: segmenter.append(pendingSamples))
             }
             pendingSamples.removeAll(keepingCapacity: false)
@@ -127,6 +136,7 @@ final class AudioCaptureService: NSObject, SCStreamOutput, SCStreamDelegate {
         while pendingSamples.count >= 1_600 {
             let ready = Array(pendingSamples.prefix(1_600))
             pendingSamples.removeFirst(1_600)
+            pcmHandler?(ready, streamStartedAt)
             for event in segmenter.append(ready) {
                 onSegment?(stamped(event))
             }

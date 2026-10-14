@@ -1,5 +1,9 @@
 import Foundation
 
+public enum SpeechAudioSource: String, Sendable, Equatable {
+    case system, microphone
+}
+
 public struct SpeechSegmentEvent: Sendable, Equatable {
     public enum Kind: Sendable, Equatable {
         case partial
@@ -12,6 +16,7 @@ public struct SpeechSegmentEvent: Sendable, Equatable {
     public var endSample: Int
     public var samples: [Int16]
     public var streamStartedAt: Date? = nil
+    public var source: SpeechAudioSource = .system
 }
 
 public struct VoiceActivitySegmenter {
@@ -24,6 +29,7 @@ public struct VoiceActivitySegmenter {
     private var preRoll: [Int16] = []
     private var silenceSamples = 0
     private var speechSamples = 0
+    private var hasNewSpeech = false
     private var lastPartialCount = 0
 
     public init() {}
@@ -39,6 +45,7 @@ public struct VoiceActivitySegmenter {
         }
         let level = sqrt(squareTotal / Double(newSamples.count))
         let isSpeech = level >= threshold
+        if isSpeech { hasNewSpeech = true }
 
         if currentID == nil {
             if !isSpeech {
@@ -75,7 +82,7 @@ public struct VoiceActivitySegmenter {
         let reachedSilence = silenceSamples >= sampleRate
         let reachedLimit = samples.count >= sampleRate * 12
         if (reachedSilence || reachedLimit), let currentID {
-            if speechSamples >= sampleRate / 2 {
+            if speechSamples >= sampleRate / 2, hasNewSpeech {
                 events.append(makeEvent(.final, id: currentID))
             }
             if reachedLimit && isSpeech {
@@ -86,6 +93,7 @@ public struct VoiceActivitySegmenter {
                 self.startSample = totalSamples - overlap.count
                 self.silenceSamples = 0
                 self.speechSamples = overlap.count
+                self.hasNewSpeech = false
                 self.lastPartialCount = overlap.count
             } else {
                 resetCurrent()
@@ -95,7 +103,7 @@ public struct VoiceActivitySegmenter {
     }
 
     public mutating func flush() -> SpeechSegmentEvent? {
-        guard speechSamples >= sampleRate / 2, let currentID else {
+        guard hasNewSpeech, speechSamples >= sampleRate / 2, let currentID else {
             resetCurrent()
             return nil
         }
@@ -124,6 +132,7 @@ public struct VoiceActivitySegmenter {
         samples.removeAll(keepingCapacity: true)
         silenceSamples = 0
         speechSamples = 0
+        hasNewSpeech = false
         lastPartialCount = 0
         startSample = totalSamples
     }
