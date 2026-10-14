@@ -161,9 +161,11 @@ struct ContentView: View {
     /// Floating composer dock: question field, screenshots and “answer now”.
     private var dock: some View {
         VStack(spacing: 6) {
-            GlassGroup(spacing: 8) {
-                HStack(spacing: 8) {
-                    questionComposer
+            HStack(spacing: 8) {
+                // Outside the glass container: a GlassEffectContainer composites merged
+                // glass above non-glass content, which would hide the text field.
+                questionComposer
+                GlassGroup(spacing: 8) { HStack(spacing: 8) {
                     Button { state.captureScreenshot(.region) } label: { Image(systemName: "viewfinder") }
                         .buttonStyle(GlassIconButtonStyle(size: 40))
                         .help("区域截图提问 · \(state.shortcutLabel(.captureRegion))")
@@ -175,7 +177,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(PrimaryButtonStyle())
                     .help("回答最新的问题或转写，不等待自动判断 · \(state.shortcutLabel(.forceAnswer))")
-                }
+                } }
             }
             privacyNote
         }
