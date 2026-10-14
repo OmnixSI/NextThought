@@ -6,11 +6,10 @@
 
 听对方说话 → 实时转写 → 自动判断“这是不是在问我” → 逐字流式给出可以直接说出口的回答
 
-[![Verify](https://github.com/ooooooomygosh/InterviewHacker/actions/workflows/verify.yml/badge.svg)](https://github.com/ooooooomygosh/InterviewHacker/actions/workflows/verify.yml)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 ![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-arm64-blue)
 
-**[⬇️ 下载最新版本](https://github.com/ooooooomygosh/InterviewHacker/releases)** · [使用说明](#快速上手) · [隐私](#数据去向) · [开发文档](docs/DEVELOPMENT.md)
+**[⬇️ 下载最新版本](../../releases)** · [使用说明](#快速上手) · [隐私](#数据去向) · [开发文档](docs/DEVELOPMENT.md)
 
 </div>
 
@@ -33,7 +32,7 @@
 
 ## 安装
 
-1. 到 **[Releases](https://github.com/ooooooomygosh/InterviewHacker/releases)** 下载 `InterviewHacker-<版本>-macOS-arm64.dmg`，打开后把 InterviewHacker 拖进“应用程序”。
+1. 到 **[Releases](../../releases)** 下载 `InterviewHacker-<版本>-macOS-arm64.dmg`，打开后把 InterviewHacker 拖进“应用程序”。
 2. 第一次打开：应用未经 Apple 公证，macOS 会拦截。打开 **系统设置 → 隐私与安全性**，在页面底部点 **“仍要打开”**。
    也可以在终端执行：`xattr -dr com.apple.quarantine /Applications/InterviewHacker.app`
 3. 按提示允许 **屏幕与系统音频录制** 和 **麦克风**。授权后如系统要求重启应用，照做即可。
@@ -103,11 +102,50 @@
 
 请遵守会议、课程、考试和面试方的规则，并在录音和转写前取得参与者同意。本软件不宣称“无法被检测”。
 
+## 常见问题
+
+<details>
+<summary><b>每次更新都要重新允许录屏 / 麦克风？</b></summary>
+
+macOS 把权限绑定在应用的签名身份上。运行一次 `./scripts/setup-release-signing.sh`，之后发布的版本使用固定签名，升级后权限保留；再用 `./scripts/install-latest.sh` 更新，也不会再弹“仍要打开”。详见上方[更新](#更新不用每次重新授权)。
+</details>
+
+<details>
+<summary><b>点“开始辅助”要等很久？</b></summary>
+
+第一次加载 Whisper 模型需要几秒到几十秒（首次还要编译 Metal 着色器）。之后模型会在应用启动时预加载并常驻，开始几乎瞬间完成；状态栏会显示每次的启动耗时。设置 → 语音识别引擎 里可关闭“后台预加载识别模型”以节省内存。识别仍然跟不上时，换更小的模型（顶部 RTF 应明显小于 1），或改用 Apple Speech / 云端流式。
+</details>
+
+<details>
+<summary><b>摘戴耳机、切换 AirPods 后会断吗？</b></summary>
+
+不会。麦克风会自动跟随系统默认输入设备，系统音频中断后自动重连；麦克风暂时不可用时，仍会继续识别对方的声音。
+</details>
+
+<details>
+<summary><b>手机伴侣提示 “Address already in use”？</b></summary>
+
+新版本会在首选端口被占用时自动换用下一个空闲端口。也可以在 设置 → 手机伴侣 修改首选端口并点“重新生成链接”。手机和 Mac 需要连同一个 Wi‑Fi。
+</details>
+
+<details>
+<summary><b>共享屏幕时对方会看到提词器吗？</b></summary>
+
+只共享会议窗口或浏览器标签页时看不到。共享整个屏幕时，macOS 没有能保证排除的公开接口，部分软件仍可能拍到——用 设置 → 共享可见性测试 自己确认，或改用手机伴侣。
+</details>
+
+<details>
+<summary><b>没有 Codex 账号能用吗？</b></summary>
+
+可以。设置 → 回答引擎 选“OpenAI 兼容 API”，填 DeepSeek、通义千问、Kimi、Groq、OpenRouter 的 Key，或本机 Ollama / LM Studio 地址。
+</details>
+
 ## 文档
 
 - [开发与发布](docs/DEVELOPMENT.md)：项目结构、构建、打包、签名与公证、发布流程
 - [第二轮改进说明](docs/IMPROVEMENTS-2026-10-14-round2.md)：流式回答、问题识别、云端识别、手机伴侣等设计与验收清单
 - [第一轮代码审计](docs/AUDIT-2026-10-14.md) · [历史验证记录](docs/VALIDATION-2026-10-14.md) · [更新日志](CHANGELOG.md)
+- 问题反馈与功能建议：[Issues](../../issues/new/choose)
 
 ## 从源码构建
 

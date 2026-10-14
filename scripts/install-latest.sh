@@ -8,7 +8,12 @@
 #   ./scripts/install-latest.sh v0.2.0-beta.3
 set -euo pipefail
 
-repo="${INTERVIEWHACKER_REPO:-ooooooomygosh/InterviewHacker}"
+# Defaults to the GitHub repository of the current clone; override with INTERVIEWHACKER_REPO=owner/name.
+repo="${INTERVIEWHACKER_REPO:-$(cd "$(dirname "$0")/.." && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
+if [[ -z "$repo" ]]; then
+    echo "Run this inside a clone of the repository, or set INTERVIEWHACKER_REPO=owner/InterviewHacker." >&2
+    exit 1
+fi
 tag="${1:-}"
 if [[ -z "$tag" ]]; then
     tag="$(gh release list --repo "$repo" --limit 1 --json tagName -q '.[0].tagName')"
