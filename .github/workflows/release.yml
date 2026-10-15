@@ -121,13 +121,13 @@ jobs:
           [[ -n "${BUNDLE_VERSION:-}" ]] && export INTERVIEWHACKER_VERSION="$BUNDLE_VERSION"
           ./scripts/build-app.sh
       - name: Self-test the packaged app (data round trip, updater)
+        timeout-minutes: 10
         env:
           INTERVIEWHACKER_DATA_DIR: ${{ runner.temp }}/ih-selftest
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir -p "$INTERVIEWHACKER_DATA_DIR"
-          dist/InterviewHacker.app/Contents/MacOS/InterviewHacker --self-test data update --repo "${{ github.repository }}" 2>&1 | tee selftest.log
-          grep -q "SELFTEST all passed" selftest.log
+          dist/InterviewHacker.app/Contents/MacOS/InterviewHacker --self-test data update --repo "${{ github.repository }}"
       - name: Notarize (optional)
         if: steps.cert.outputs.developer_id == '1'
         env:

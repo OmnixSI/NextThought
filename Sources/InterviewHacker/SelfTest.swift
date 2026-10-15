@@ -30,6 +30,7 @@ enum SelfTest {
     }
 
     static func run(_ arguments: [String]) -> Int32 {
+        setvbuf(stdout, nil, _IONBF, 0)
         guard ProcessInfo.processInfo.environment["INTERVIEWHACKER_DATA_DIR"] != nil else {
             print("SELFTEST refuse: set INTERVIEWHACKER_DATA_DIR to a scratch folder first.")
             return 2

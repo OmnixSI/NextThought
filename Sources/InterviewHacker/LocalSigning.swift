@@ -8,8 +8,10 @@ enum Shell {
         var error: String
     }
 
+    /// Runs a tool; it is terminated after `timeout` seconds so a stuck system prompt
+    /// cannot hang the app.
     @discardableResult
-    static func run(_ executable: String, _ arguments: [String], input: String? = nil) throws -> Result {
+    static func run(_ executable: String, _ arguments: [String], input: String? = nil, timeout: TimeInterval = 180) throws -> Result {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
@@ -26,6 +28,9 @@ enum Shell {
             process.standardInput = FileHandle.nullDevice
             try process.run()
         }
+        let watchdog = DispatchWorkItem { if process.isRunning { process.terminate() } }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout, execute: watchdog)
+        defer { watchdog.cancel() }
         // Read before waiting so a chatty tool cannot fill the pipe and block.
         let outData = output.fileHandleForReading.readDataToEndOfFile()
         let errData = errors.fileHandleForReading.readDataToEndOfFile()
@@ -176,7 +181,8 @@ enum LocalSigning {
         _ = try? Shell.run("/usr/bin/security", ["set-key-partition-list", "-S", "apple-tool:,apple:", "-s", "-k", password, keychain.path])
         // Trusting the certificate for code signing shows a system password prompt once.
         // Signing works without it on current macOS, so a cancelled prompt is not fatal.
-        let trust = try? Shell.run("/usr/bin/security", ["add-trusted-cert", "-r", "trustRoot", "-p", "codeSign", "-k", keychain.path, certificateFile.path])
+        let skipTrust = ProcessInfo.processInfo.environment["INTERVIEWHACKER_SKIP_CERT_TRUST"] == "1"
+        let trust = skipTrust ? nil : try? Shell.run("/usr/bin/security", ["add-trusted-cert", "-r", "trustRoot", "-p", "codeSign", "-k", keychain.path, certificateFile.path], timeout: 120)
         Diagnostics.record("signing.identity_created", ["trusted": trust?.status == 0])
 
         try password.write(to: passwordFile, atomically: true, encoding: .utf8)
