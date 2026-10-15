@@ -75,10 +75,10 @@ jobs:
           }
           for appearance in dark light; do
             for section in assistant materials settings history; do capture "$appearance" "$section"; done
+            capture "$appearance" materials workspace-knowledge "workspaceEditorTab=经验库与题库"
+            capture "$appearance" materials workspace-review "workspaceEditorTab=复盘"
+            capture "$appearance" settings settings-data "settingsGroup=数据"
           done
-          capture dark materials workspace-knowledge "workspaceEditorTab=经验库与题库"
-          capture dark materials workspace-review "workspaceEditorTab=复盘"
-          capture dark settings settings-data "settingsGroup=数据"
           ls -la shots
       - name: Commit screenshots to docs/screenshots
         run: |
