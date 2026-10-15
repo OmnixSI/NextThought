@@ -17,6 +17,11 @@ enum DemoMode {
     static func apply() {
         guard isEnabled else { return }
         let environment = ProcessInfo.processInfo.environment
+        // INTERVIEWHACKER_DEMO_DEFAULTS="key=value;key=value" opens specific tabs.
+        for pair in (environment["INTERVIEWHACKER_DEMO_DEFAULTS"] ?? "").split(separator: ";") {
+            let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
+            if parts.count == 2 { UserDefaults.standard.set(parts[1], forKey: parts[0]) }
+        }
         let state = AppState.shared
         // Screenshots must be able to see the windows.
         state.capturePrivacy = false

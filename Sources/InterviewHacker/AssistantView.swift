@@ -163,13 +163,13 @@ private struct ConversationPanel: View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Label("实时对话", systemImage: "text.bubble").font(.system(size: 13, weight: .semibold))
+                Label("实时对话", systemImage: "text.bubble").font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
                 Text("\(state.entries.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
                 if state.isRunning { WorkspacePicker(compact: true) }
                 if state.isRunning {
                     MenuPicker(selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "音频来源")
-                        .frame(maxWidth: 200, alignment: .trailing)
+                        .frame(maxWidth: 170, alignment: .trailing)
                         .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
                 }
                 Button { follow.toggle() } label: {

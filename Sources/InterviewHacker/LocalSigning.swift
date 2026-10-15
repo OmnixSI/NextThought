@@ -105,7 +105,8 @@ enum LocalSigning {
     }
 
     static var designatedRequirement: String? {
-        identity.map { "designated => identifier \"\(bundleIdentifier)\" and certificate leaf = H\"\($0)\"" }
+        // codesign prints the certificate hash in lowercase; use the same form.
+        identity.map { "designated => identifier \"\(bundleIdentifier)\" and certificate leaf = H\"\($0.lowercased())\"" }
     }
 
     // MARK: Inspecting signatures

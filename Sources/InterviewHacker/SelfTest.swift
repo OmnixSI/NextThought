@@ -164,7 +164,7 @@ enum SelfTest {
         try await Task.detached { try LocalSigning.sign(first); try LocalSigning.sign(second) }.value
         let a = LocalSigning.requirement(of: first), b = LocalSigning.requirement(of: second)
         try expect(a != nil && a == b && a == LocalSigning.designatedRequirement, "requirements differ: \(a ?? "nil") / \(b ?? "nil")")
-        try expect(a?.contains(identity) == true, "requirement does not pin the certificate")
+        try expect(a?.lowercased().contains(identity.lowercased()) == true, "requirement does not pin the certificate")
         let info = LocalSigning.signature(of: first)
         try expect(info?.isAdHoc == false, "re-signed copy still ad-hoc")
         // A second ensureIdentity must reuse the same certificate (permissions depend on it).

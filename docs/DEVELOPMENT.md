@@ -100,6 +100,20 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 
 `SessionArchive` 把每次会话写到 `~/Library/Application Support/InterviewHacker/Sessions/<id>/`：`meta.json`、`context.json`、`transcript.jsonl`、`questions.jsonl`、`answers.jsonl`、`summary.json`。JSONL 边发生边追加，最后一行写坏时读取会跳过。会后摘要由 `AppState.generateSummary` 用独立的 API 客户端或一次性 `codex exec` 生成（不占用常驻服务），超过 6 万字的转录先分段整理再合并（`SessionSummaryPrompt`），`SessionSummaryParser` 提取标题与问题清单。
 
+## 场景（Workspace）与模式
+
+`Workspace`（Core）是一个场景：模式、结构化字段（`ModeProfile.fields`）、分类资料、回答要求、背景、经验库（`WorkspaceLesson`）、题库（`QuestionBankItem`）和阶段复盘。`WorkspaceStore` 每个场景存一个 JSON（`Workspaces/<id>.json`，原子写入、0.6 s 合并保存）；读不了的文件改名为 `.unreadable` 保留。`AppState.sessionMode / documents / answerPreferences / profile` 是当前场景的视图，旧代码路径不变。回答提示词里 `user_material` 来自 `Workspace.materialText`，`experience_notes` 来自经验库，题库作为一份“题库”资料参与检索。
+
+复盘：`SessionSummaryPrompt.system(for:)` 按模式加入复盘重点，并要求输出“经验沉淀”“题库更新”；`SessionSummaryParser.parseAll` 解析后由 `KnowledgeMerger` 合并（相似问题按归一化后的二元组相似度去重并更新答案）。`StageReviewPrompt` 汇总一个场景下所有带摘要的会话。
+
+## 数据与备份
+
+全部数据在 `AppPaths.root`（`INTERVIEWHACKER_DATA_DIR` 可重定向）。`DataBackup` 导出 `.ihbackup`（ZIP：`manifest.json`、`settings.plist`、可选 `secrets.plist`、`Workspaces/`、`Sessions/`）；导入用 `BackupMerge` 合并，从不删除。自动备份：每天一次、安装更新前、导入前，保留 10 份。
+
+## 自检（self-test）
+
+`InterviewHacker --self-test data signing update asr --fixtures Tools/Validation/Fixtures` 在应用包内运行真实代码路径（需设置 `INTERVIEWHACKER_DATA_DIR` 指向临时目录）。Verify 工作流的 `selftest` 任务逐项运行；Release 工作流在打包后运行 `data update`。
+
 ## 自动更新与本机签名
 
 - 发布工作流为每个 Release 上传 `update.json`（tag、版本、构建号 = run number、ZIP 名与 SHA-256）。
