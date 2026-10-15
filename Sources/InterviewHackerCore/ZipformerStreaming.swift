@@ -11,6 +11,86 @@ public enum ZipformerModelFiles {
     public static let sampleRate = 16_000
 }
 
+/// Files and decoding options of one streaming transducer model.
+public struct OnlineTransducerModel: Sendable, Equatable {
+    public var directory: URL
+    public var encoder: String
+    public var decoder: String
+    public var joiner: String
+    public var tokens: String
+    /// SentencePiece vocabulary (`piece<TAB>score`); required for hotwords.
+    public var bpeVocabulary: String?
+    public var modelingUnit: String
+
+    public init(directory: URL, encoder: String, decoder: String, joiner: String, tokens: String = "tokens.txt",
+                bpeVocabulary: String? = nil, modelingUnit: String = "bpe") {
+        self.directory = directory; self.encoder = encoder; self.decoder = decoder; self.joiner = joiner
+        self.tokens = tokens; self.bpeVocabulary = bpeVocabulary; self.modelingUnit = modelingUnit
+    }
+
+    /// sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20 (no punctuation).
+    public static func legacyBilingual(at directory: URL) -> Self {
+        .init(directory: directory, encoder: ZipformerModelFiles.encoder, decoder: ZipformerModelFiles.decoder,
+              joiner: ZipformerModelFiles.joiner, tokens: ZipformerModelFiles.tokens,
+              bpeVocabulary: ZipformerModelFiles.bpeVocabulary, modelingUnit: "cjkchar+bpe")
+    }
+
+    /// X-ASR zh-en streaming Zipformer (2026-06): punctuation, casing, code-switching.
+    public static func xasrStreaming(at directory: URL) -> Self {
+        .init(directory: directory, encoder: "encoder.int8.onnx", decoder: "decoder.onnx", joiner: "joiner.int8.onnx",
+              bpeVocabulary: "bpe.vocab", modelingUnit: "bpe")
+    }
+
+    public var requiredFiles: [String] { [encoder, decoder, joiner, tokens] }
+    func path(_ name: String) -> String { directory.appendingPathComponent(name).path }
+    var hasVocabulary: Bool { bpeVocabulary.map { FileManager.default.fileExists(atPath: path($0)) } ?? false }
+}
+
+/// Files of one non-streaming transducer used to re-decode finished utterances.
+public struct OfflineTransducerModel: Sendable, Equatable {
+    public var directory: URL
+    public var encoder: String
+    public var decoder: String
+    public var joiner: String
+    public var tokens: String
+    public var bpeVocabulary: String?
+    public var modelingUnit: String
+
+    public init(directory: URL, encoder: String, decoder: String, joiner: String, tokens: String = "tokens.txt",
+                bpeVocabulary: String? = nil, modelingUnit: String = "bpe") {
+        self.directory = directory; self.encoder = encoder; self.decoder = decoder; self.joiner = joiner
+        self.tokens = tokens; self.bpeVocabulary = bpeVocabulary; self.modelingUnit = modelingUnit
+    }
+
+    /// X-ASR zh-en offline Zipformer (2026-06): same tokenizer as the streaming model.
+    public static func xasrOffline(at directory: URL) -> Self {
+        .init(directory: directory, encoder: "encoder-epoch-99-avg-1.int8.onnx", decoder: "decoder-epoch-99-avg-1.onnx",
+              joiner: "joiner-epoch-99-avg-1.int8.onnx", bpeVocabulary: "bpe.vocab", modelingUnit: "bpe")
+    }
+
+    public var requiredFiles: [String] { [encoder, decoder, joiner, tokens] }
+    func path(_ name: String) -> String { directory.appendingPathComponent(name).path }
+    var hasVocabulary: Bool { bpeVocabulary.map { FileManager.default.fileExists(atPath: path($0)) } ?? false }
+}
+
+enum HotwordsFile {
+    static func clean(_ hotwords: String) -> [String] {
+        hotwords
+            .components(separatedBy: CharacterSet(charactersIn: ",，、\n\r;；"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    /// Writes a temporary hotwords file; the caller deletes it after the recognizer is created.
+    static func write(_ words: [String]) throws -> String {
+        guard !words.isEmpty else { return "" }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("interviewhacker-hotwords-\(UUID().uuidString).txt")
+        try words.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+        return url.path
+    }
+}
+
 public struct ZipformerHypothesis: Sendable {
     public let text: String
     public let isFinal: Bool
@@ -70,10 +150,14 @@ public final class ZipformerRuntime: @unchecked Sendable {
     private init() {}
 
     public func configure(modelDirectory: URL, hotwords: String = "", threads: Int = 2) async throws {
+        try await configure(model: .legacyBilingual(at: modelDirectory), hotwords: hotwords, threads: threads)
+    }
+
+    public func configure(model: OnlineTransducerModel, hotwords: String = "", threads: Int = 2) async throws {
         try await withCheckedThrowingContinuation { continuation in
             queue.async {
                 do {
-                    try self.configureNow(modelDirectory: modelDirectory, hotwords: hotwords, threads: threads)
+                    try self.configureNow(model: model, hotwords: hotwords, threads: threads)
                     continuation.resume()
                 } catch {
                     continuation.resume(throwing: error)
@@ -165,7 +249,7 @@ public final class ZipformerRuntime: @unchecked Sendable {
                     continuation.resume(returning: nil)
                     return
                 }
-                let final = self.finishCurrentSegment(recognizer: recognizer, state: &state)
+                let final = self.finishCurrentSegment(recognizer: recognizer, state: &state, tailPadding: 0.8)
                 SherpaOnnxDestroyOnlineStream(state.pointer)
                 continuation.resume(returning: final)
             }
@@ -205,54 +289,37 @@ public final class ZipformerRuntime: @unchecked Sendable {
         }
     }
 
-    private func configureNow(modelDirectory: URL, hotwords: String, threads: Int) throws {
-        let required = [ZipformerModelFiles.encoder, ZipformerModelFiles.decoder,
-                        ZipformerModelFiles.joiner, ZipformerModelFiles.tokens,
-                        ZipformerModelFiles.bpeVocabulary]
-        for name in required where !FileManager.default.fileExists(atPath: modelDirectory.appendingPathComponent(name).path) {
+    private func configureNow(model: OnlineTransducerModel, hotwords: String, threads: Int) throws {
+        for name in model.requiredFiles where !FileManager.default.fileExists(atPath: model.path(name)) {
             throw ZipformerRuntimeError.missingModelFile(name)
         }
-        let cleanedHotwords = hotwords
-            .components(separatedBy: CharacterSet(charactersIn: ",\n\r;"))
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        let key = modelDirectory.standardizedFileURL.path + "|" + cleanedHotwords.joined(separator: "\n")
+        // Hotwords need the SentencePiece vocabulary; without it they are skipped.
+        let cleanedHotwords = model.hasVocabulary ? HotwordsFile.clean(hotwords) : []
+        let key = model.directory.standardizedFileURL.path + "|" + model.encoder + "|" + cleanedHotwords.joined(separator: "\n")
         if configurationKey == key, recognizer != nil { return }
         guard streams.isEmpty else { throw ZipformerRuntimeError.activeStreams }
         if let recognizer { SherpaOnnxDestroyOnlineRecognizer(recognizer) }
         self.recognizer = nil
 
-        let encoder = modelDirectory.appendingPathComponent(ZipformerModelFiles.encoder).path
-        let decoder = modelDirectory.appendingPathComponent(ZipformerModelFiles.decoder).path
-        let joiner = modelDirectory.appendingPathComponent(ZipformerModelFiles.joiner).path
-        let tokens = modelDirectory.appendingPathComponent(ZipformerModelFiles.tokens).path
-        let bpeVocab = modelDirectory.appendingPathComponent(ZipformerModelFiles.bpeVocabulary).path
-        let hotwordsFile: String
-        if cleanedHotwords.isEmpty {
-            hotwordsFile = ""
-        } else {
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("interviewhacker-zipformer-hotwords-\(UUID().uuidString).txt")
-            try cleanedHotwords.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
-            hotwordsFile = url.path
-        }
+        let hotwordsFile = try HotwordsFile.write(cleanedHotwords)
         defer {
             if !hotwordsFile.isEmpty { try? FileManager.default.removeItem(atPath: hotwordsFile) }
         }
 
-        let transducer = sherpaOnnxOnlineTransducerModelConfig(encoder: encoder, decoder: decoder, joiner: joiner)
-        let model = sherpaOnnxOnlineModelConfig(
-            tokens: tokens,
+        let transducer = sherpaOnnxOnlineTransducerModelConfig(
+            encoder: model.path(model.encoder), decoder: model.path(model.decoder), joiner: model.path(model.joiner))
+        let modelConfig = sherpaOnnxOnlineModelConfig(
+            tokens: model.path(model.tokens),
             transducer: transducer,
             numThreads: max(1, min(threads, 4)),
             provider: "cpu",
             modelType: "zipformer",
-            modelingUnit: "cjkchar+bpe",
-            bpeVocab: bpeVocab)
+            modelingUnit: model.modelingUnit,
+            bpeVocab: model.hasVocabulary ? model.path(model.bpeVocabulary ?? "") : "")
         let features = sherpaOnnxFeatureConfig(sampleRate: ZipformerModelFiles.sampleRate, featureDim: 80)
         let config = sherpaOnnxOnlineRecognizerConfig(
             featConfig: features,
-            modelConfig: model,
+            modelConfig: modelConfig,
             enableEndpoint: false,
             rule1MinTrailingSilence: 2.4,
             rule2MinTrailingSilence: 1.2,
@@ -270,7 +337,15 @@ public final class ZipformerRuntime: @unchecked Sendable {
     }
 
     private func finishCurrentSegment(recognizer: OpaquePointer,
-                                      state: inout StreamState) -> ZipformerHypothesis? {
+                                      state: inout StreamState, tailPadding: Double = 0.4) -> ZipformerHypothesis? {
+        // Chunked encoders hold back their right context; a little silence flushes the
+        // last words of the utterance instead of cutting them off.
+        if tailPadding > 0 {
+            let padding = [Float](repeating: 0, count: Int(Double(ZipformerModelFiles.sampleRate) * tailPadding))
+            padding.withUnsafeBufferPointer { buffer in
+                SherpaOnnxOnlineStreamAcceptWaveform(state.pointer, Int32(ZipformerModelFiles.sampleRate), buffer.baseAddress, Int32(buffer.count))
+            }
+        }
         SherpaOnnxOnlineStreamInputFinished(state.pointer)
         while SherpaOnnxIsOnlineStreamReady(recognizer, state.pointer) != 0 {
             let started = ProcessInfo.processInfo.systemUptime
@@ -303,5 +378,109 @@ public final class ZipformerRuntime: @unchecked Sendable {
             endedAt: origin.addingTimeInterval(streamStart + duration),
             inferenceSeconds: state.inferenceSeconds,
             audioSeconds: duration)
+    }
+}
+
+/// Second pass: re-decodes each finished utterance with a non-streaming model, which
+/// sees the whole utterance at once and is markedly more accurate than the streaming
+/// pass (punctuation, code-switching, the last words of a question).
+public final class OfflineSegmentRecognizer: @unchecked Sendable {
+    public static let shared = OfflineSegmentRecognizer()
+
+    private let queue = DispatchQueue(label: "app.interviewhacker.offline-asr", qos: .userInitiated)
+    private var recognizer: OpaquePointer?
+    private var configurationKey: String?
+
+    private init() {}
+
+    public var isLoaded: Bool { queue.sync { recognizer != nil } }
+
+    public func configure(model: OfflineTransducerModel, hotwords: String = "", threads: Int = 2) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            queue.async {
+                do {
+                    try self.configureNow(model: model, hotwords: hotwords, threads: threads)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    /// Returns the recognized text and the decoding time in seconds.
+    public func recognize(_ samples: [Int16]) async -> (text: String, seconds: Double)? {
+        guard samples.count >= ZipformerModelFiles.sampleRate / 4 else { return nil }
+        return await withCheckedContinuation { continuation in
+            queue.async {
+                guard let recognizer = self.recognizer, let stream = SherpaOnnxCreateOfflineStream(recognizer) else {
+                    continuation.resume(returning: nil); return
+                }
+                defer { SherpaOnnxDestroyOfflineStream(stream) }
+                let started = ProcessInfo.processInfo.systemUptime
+                var normalized = samples.map { Float($0) / 32_768 }
+                // Same right-context flush as the streaming pass.
+                normalized += [Float](repeating: 0, count: ZipformerModelFiles.sampleRate * 3 / 10)
+                normalized.withUnsafeBufferPointer { buffer in
+                    SherpaOnnxAcceptWaveformOffline(stream, Int32(ZipformerModelFiles.sampleRate), buffer.baseAddress, Int32(buffer.count))
+                }
+                SherpaOnnxDecodeOfflineStream(recognizer, stream)
+                var text = ""
+                if let result = SherpaOnnxGetOfflineStreamResult(stream) {
+                    if let pointer = result.pointee.text { text = String(cString: pointer) }
+                    SherpaOnnxDestroyOfflineRecognizerResult(result)
+                }
+                let seconds = ProcessInfo.processInfo.systemUptime - started
+                continuation.resume(returning: (text.trimmingCharacters(in: .whitespacesAndNewlines), seconds))
+            }
+        }
+    }
+
+    public func unload() async {
+        await withCheckedContinuation { continuation in
+            queue.async {
+                if let recognizer = self.recognizer { SherpaOnnxDestroyOfflineRecognizer(recognizer) }
+                self.recognizer = nil
+                self.configurationKey = nil
+                continuation.resume()
+            }
+        }
+    }
+
+    private func configureNow(model: OfflineTransducerModel, hotwords: String, threads: Int) throws {
+        for name in model.requiredFiles where !FileManager.default.fileExists(atPath: model.path(name)) {
+            throw ZipformerRuntimeError.missingModelFile(name)
+        }
+        let cleanedHotwords = model.hasVocabulary ? HotwordsFile.clean(hotwords) : []
+        let key = model.directory.standardizedFileURL.path + "|" + cleanedHotwords.joined(separator: "\n")
+        if configurationKey == key, recognizer != nil { return }
+        if let recognizer { SherpaOnnxDestroyOfflineRecognizer(recognizer) }
+        recognizer = nil
+        let hotwordsFile = try HotwordsFile.write(cleanedHotwords)
+        defer { if !hotwordsFile.isEmpty { try? FileManager.default.removeItem(atPath: hotwordsFile) } }
+
+        let transducer = sherpaOnnxOfflineTransducerModelConfig(
+            encoder: model.path(model.encoder), decoder: model.path(model.decoder), joiner: model.path(model.joiner))
+        let modelConfig = sherpaOnnxOfflineModelConfig(
+            tokens: model.path(model.tokens),
+            transducer: transducer,
+            numThreads: max(1, min(threads, 4)),
+            provider: "cpu",
+            modelType: "transducer",
+            modelingUnit: model.modelingUnit,
+            bpeVocab: model.hasVocabulary ? model.path(model.bpeVocabulary ?? "") : "")
+        let features = sherpaOnnxFeatureConfig(sampleRate: ZipformerModelFiles.sampleRate, featureDim: 80)
+        var config = sherpaOnnxOfflineRecognizerConfig(
+            featConfig: features,
+            modelConfig: modelConfig,
+            decodingMethod: "modified_beam_search",
+            maxActivePaths: 4,
+            hotwordsFile: hotwordsFile,
+            hotwordsScore: 1.5)
+        guard let created = withUnsafePointer(to: &config, SherpaOnnxCreateOfflineRecognizer) else {
+            throw ZipformerRuntimeError.recognizerCreationFailed
+        }
+        recognizer = created
+        configurationKey = key
     }
 }
