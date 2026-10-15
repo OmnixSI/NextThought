@@ -877,18 +877,15 @@ private extension AppSection {
 }
 
 /// Breathing status dot shown while listening.
+/// Listening indicator. Static on purpose: a looping animation forces the window
+/// server to recomposite every glass layer in the window ~60–120 times a second.
 struct PulseDot: View {
     var active: Bool
-    @State private var pulse = false
     var body: some View {
         ZStack {
-            if active {
-                Circle().fill(Color.green.opacity(0.35)).frame(width: 14, height: 14)
-                    .scaleEffect(pulse ? 1.25 : 0.6).opacity(pulse ? 0 : 1)
-            }
+            if active { Circle().fill(Color.green.opacity(0.25)).frame(width: 14, height: 14) }
             Circle().fill(active ? Color.green : Color.secondary.opacity(0.6)).frame(width: 7, height: 7)
         }
         .frame(width: 14, height: 14)
-        .onAppear { withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { pulse = true } }
     }
 }

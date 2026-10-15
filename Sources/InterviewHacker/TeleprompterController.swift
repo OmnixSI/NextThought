@@ -98,7 +98,8 @@ final class TeleprompterController {
     /// ScreenCaptureKit-based recorders may still capture it. Use the share test.
     func applyAppearance() {
         let state = AppState.shared
-        panel?.alphaValue = CGFloat(min(1, max(0.35, state.teleprompterOpacity)))
+        let opacity = min(1, max(0.35, state.teleprompterOpacity))
+        panel?.alphaValue = opacity >= 0.99 ? 1 : CGFloat(opacity)
         applyPrivacy(state.capturePrivacy)
     }
 

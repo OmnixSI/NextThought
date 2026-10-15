@@ -96,14 +96,28 @@ extension AppState {
     func receiveStreamingResult(_ text: String, final: Bool, start: Date, end: Date, source: CaptureSource) {
         let key = "\(source.rawValue)-\(appleUtteranceCounter[source.rawValue, default: 0])"
         if final {
+            (source == .system ? partialThrottle : micPartialThrottle).cancel()
             if source == .system { partialTranscript = "" } else { microphonePartialTranscript = "" }
             entries.append(TranscriptEntry(date: start, source: source.rawValue, text: text, isFinal: true, startedAt: start, endedAt: end))
             entries.sort { $0.date < $1.date }
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
             transcriptionStatus = transcriptionBackend == "cloud" ? "云端流式识别 · \(cloudProvider.title)" : "Apple Speech · 双路独立识别"
             appleUtteranceCounter[source.rawValue, default: 0] += 1
-        } else if source == .system { partialTranscript = text }
-        else { microphonePartialTranscript = text }
+        } else {
+            // Streaming recognizers revise partial text ~10×/s. Each UI change makes the
+            // window server recomposite every glass layer, so partials are coalesced to
+            // ≤4 updates/s (finals are never delayed).
+            (source == .system ? partialThrottle : micPartialThrottle).run { [weak self] in
+                guard let self, self.isRunning else { return }
+                if source == .system {
+                    self.partialTranscript = text
+                    if !self.isPaused, !self.isStopping { self.processRecognized(text, isFinal: false, key: key, allowAutomatic: true) }
+                } else {
+                    self.microphonePartialTranscript = text
+                }
+            }
+            return
+        }
         if source == .system, !isPaused, !isStopping {
             processRecognized(text, isFinal: final, key: key, allowAutomatic: true)
         }

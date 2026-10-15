@@ -335,3 +335,40 @@ extension View {
         modifier(FrostedFallback(shape: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), tint: tint))
     }
 }
+
+/// Coalesces rapid UI updates (streaming text) to at most one per `interval`;
+/// the latest value always wins and is applied when the interval elapses.
+@MainActor
+final class UIThrottle {
+    private let interval: TimeInterval
+    private var last = Date.distantPast
+    private var pending: (() -> Void)?
+    private var scheduled = false
+
+    init(interval: TimeInterval) { self.interval = interval }
+
+    func run(_ work: @escaping () -> Void) {
+        let elapsed = Date().timeIntervalSince(last)
+        if elapsed >= interval, !scheduled {
+            last = Date()
+            work()
+            return
+        }
+        pending = work
+        guard !scheduled else { return }
+        scheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.01, interval - elapsed)) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.scheduled = false
+                self.last = Date()
+                let work = self.pending
+                self.pending = nil
+                work?()
+            }
+        }
+    }
+
+    /// Drop a pending update (e.g. a final result superseded it).
+    func cancel() { pending = nil }
+}

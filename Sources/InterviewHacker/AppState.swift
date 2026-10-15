@@ -61,11 +61,15 @@ final class AppState: ObservableObject {
     @Published var cloudConsent = UserDefaults.standard.bool(forKey: "cloudConsent")
     @Published var liveWhisperPreview = UserDefaults.standard.object(forKey: "liveWhisperPreview") as? Bool ?? true
     // Overlay
-    @Published var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 0.96
+    // Fully opaque by default: a translucent window costs an extra blend every frame.
+    @Published var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 1.0
     @Published var clickThrough = false
     @Published var shareTestImage: NSImage?
     @Published var lastStartupSeconds: Double?
     @Published var reducedEffects = UserDefaults.standard.bool(forKey: "reducedEffects")
+    let partialThrottle = UIThrottle(interval: 0.25)
+    let micPartialThrottle = UIThrottle(interval: 0.25)
+    let draftThrottle = UIThrottle(interval: 0.066)
     @Published var keepRecognizerWarm = UserDefaults.standard.object(forKey: "keepRecognizerWarm") as? Bool ?? true
     @Published var companionPort = UserDefaults.standard.object(forKey: "companionPort") as? Int ?? 8_765
     var whisperIdleTask: Task<Void, Never>?
@@ -972,12 +976,17 @@ final class AppState: ObservableObject {
                             self.firstTokenAt = Date()
                             self.lastFirstTokenSeconds = Date().timeIntervalSince(answerStartedAt)
                         }
-                        // Deltas carry the full text so far; never step backwards.
-                        if text.count >= self.answerDraft.count { self.answerDraft = text }
+                        // Deltas carry the full text so far; never step backwards. Coalesced to
+                        // ~15 UI updates/s to keep window-server compositing light.
+                        self.draftThrottle.run { [weak self] in
+                            guard let self, self.requestID == id, self.isAnswering else { return }
+                            if text.count >= self.answerDraft.count { self.answerDraft = text }
+                        }
                     }
                 }
                 let result = try await runAnswer(request, backend: backend, onDelta: onDelta)
                 guard requestID == id else { return }
+                draftThrottle.cancel()
                 answer = result
                 answerDraft = ""
                 lastAnswerSeconds = Date().timeIntervalSince(answerStartedAt)
