@@ -15,6 +15,12 @@ enum Brand {
         #endif
         return false
     }
+    /// Real glass is GPU-heavy (refraction is re-rendered per frame). It is skipped when
+    /// the user asks for fewer effects or the system "Reduce transparency" is on.
+    static var useLiquidGlass: Bool {
+        hasLiquidGlass && !UserDefaults.standard.bool(forKey: "reducedEffects")
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+    }
 }
 
 extension View {
@@ -22,7 +28,7 @@ extension View {
     @ViewBuilder
     func glassSurface(cornerRadius: CGFloat = 20, tint: Color? = nil, interactive: Bool = false) -> some View {
         #if compiler(>=6.2)
-        if #available(macOS 26.0, *) {
+        if #available(macOS 26.0, *), Brand.useLiquidGlass {
             self.glassEffect(Self.glass(tint: tint, interactive: interactive), in: .rect(cornerRadius: cornerRadius))
         } else {
             self.modifier(FrostedFallback(shape: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), tint: tint))
@@ -47,7 +53,7 @@ extension View {
     @ViewBuilder
     func glassCapsule(tint: Color? = nil, interactive: Bool = false) -> some View {
         #if compiler(>=6.2)
-        if #available(macOS 26.0, *) {
+        if #available(macOS 26.0, *), Brand.useLiquidGlass {
             self.glassEffect(Self.glass(tint: tint, interactive: interactive), in: .capsule)
         } else {
             self.modifier(FrostedFallback(shape: Capsule(), tint: tint))
@@ -66,21 +72,21 @@ extension View {
     #endif
 }
 
-private struct FrostedFallback<S: InsettableShape>: ViewModifier {
+struct FrostedFallback<S: InsettableShape>: ViewModifier {
     let shape: S
     let tint: Color?
     @Environment(\.colorScheme) private var scheme
     func body(content: Content) -> some View {
         content
+            // Flat translucent fill + rim: looks glassy, costs no blur or shadow pass.
             .background {
                 ZStack {
-                    shape.fill(.regularMaterial)
+                    shape.fill(Color(nsColor: .controlBackgroundColor).opacity(scheme == .dark ? 0.72 : 0.82))
                     if let tint { shape.fill(tint.opacity(0.22)) }
-                    shape.fill(LinearGradient(colors: [.white.opacity(scheme == .dark ? 0.06 : 0.35), .clear], startPoint: .top, endPoint: .center))
+                    shape.fill(LinearGradient(colors: [.white.opacity(scheme == .dark ? 0.05 : 0.3), .clear], startPoint: .top, endPoint: .center))
                 }
             }
-            .overlay(shape.strokeBorder(LinearGradient(colors: [.white.opacity(scheme == .dark ? 0.22 : 0.7), .white.opacity(0.05)], startPoint: .top, endPoint: .bottom), lineWidth: 0.8))
-            .shadow(color: .black.opacity(scheme == .dark ? 0.35 : 0.08), radius: 12, y: 4)
+            .overlay(shape.strokeBorder(LinearGradient(colors: [.white.opacity(scheme == .dark ? 0.18 : 0.8), .white.opacity(0.04)], startPoint: .top, endPoint: .bottom), lineWidth: 0.8))
     }
 }
 
@@ -90,7 +96,7 @@ struct GlassGroup<Content: View>: View {
     @ViewBuilder var content: Content
     var body: some View {
         #if compiler(>=6.2)
-        if #available(macOS 26.0, *) {
+        if #available(macOS 26.0, *), Brand.useLiquidGlass {
             GlassEffectContainer(spacing: spacing) { content }
         } else {
             content
@@ -109,17 +115,19 @@ struct AppBackdrop: View {
     var body: some View {
         ZStack {
             Color(nsColor: .windowBackgroundColor)
+            // Radial gradients instead of large blurred shapes: same soft glow,
+            // no full-window Gaussian blur on every redraw or resize.
             GeometryReader { proxy in
                 let size = proxy.size
-                Circle().fill(Brand.accent.opacity(scheme == .dark ? 0.30 : 0.22))
-                    .frame(width: size.width * 0.9).blur(radius: 90)
-                    .offset(x: -size.width * 0.35, y: -size.height * 0.25)
-                Circle().fill(Brand.accent2.opacity(scheme == .dark ? 0.26 : 0.18))
-                    .frame(width: size.width * 0.8).blur(radius: 100)
-                    .offset(x: size.width * 0.45, y: size.height * 0.45)
-                Circle().fill(Color.teal.opacity(scheme == .dark ? 0.14 : 0.12))
-                    .frame(width: size.width * 0.6).blur(radius: 100)
-                    .offset(x: size.width * 0.5, y: -size.height * 0.1)
+                let radius = max(size.width, size.height)
+                ZStack {
+                    RadialGradient(colors: [Brand.accent.opacity(scheme == .dark ? 0.30 : 0.20), .clear],
+                                   center: UnitPoint(x: 0.1, y: 0.15), startRadius: 0, endRadius: radius * 0.6)
+                    RadialGradient(colors: [Brand.accent2.opacity(scheme == .dark ? 0.24 : 0.16), .clear],
+                                   center: UnitPoint(x: 0.95, y: 0.95), startRadius: 0, endRadius: radius * 0.6)
+                    RadialGradient(colors: [Color.teal.opacity(scheme == .dark ? 0.12 : 0.10), .clear],
+                                   center: UnitPoint(x: 0.95, y: 0.2), startRadius: 0, endRadius: radius * 0.45)
+                }
             }
             .allowsHitTesting(false)
         }
@@ -163,7 +171,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .foregroundStyle(.primary)
             .padding(.horizontal, 14)
             .frame(height: 36)
-            .glassCapsule(interactive: true)
+            .glassCapsule()
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -248,11 +256,10 @@ struct ScrollEdgeFade: View {
     var edge: Edge
     var height: CGFloat = 36
     var body: some View {
-        Rectangle()
-            .fill(.ultraThinMaterial)
-            .mask(LinearGradient(colors: [.black, .black.opacity(0.85), .clear],
-                                 startPoint: edge == .bottom ? .bottom : .top,
-                                 endPoint: edge == .bottom ? .top : .bottom))
+        // Plain color gradient (no material + mask offscreen pass).
+        LinearGradient(colors: [Color(nsColor: .windowBackgroundColor), Color(nsColor: .windowBackgroundColor).opacity(0.85), Color(nsColor: .windowBackgroundColor).opacity(0)],
+                       startPoint: edge == .bottom ? .bottom : .top,
+                       endPoint: edge == .bottom ? .top : .bottom)
             .frame(height: height)
             .allowsHitTesting(false)
     }
@@ -267,7 +274,6 @@ struct ProminentFill: View {
             .fill(Brand.gradient)
             .overlay(Capsule().fill(LinearGradient(colors: [.white.opacity(0.32), .clear], startPoint: .top, endPoint: .center)))
             .overlay(Capsule().strokeBorder(.white.opacity(0.28), lineWidth: 0.7))
-            .shadow(color: Brand.accent.opacity(0.35), radius: 8, y: 3)
     }
 }
 
@@ -275,7 +281,7 @@ private struct ChipSurface: ViewModifier {
     var prominent: Bool
     func body(content: Content) -> some View {
         if prominent { content.background(ProminentFill()) }
-        else { content.glassCapsule(interactive: true) }
+        else { content.glassCapsule() }
     }
 }
 
@@ -311,7 +317,7 @@ struct MenuPicker<Value: Hashable>: View {
                 }
                 .font(.system(size: 12.5, weight: .medium))
                 .padding(.horizontal, 12).padding(.vertical, 6)
-                .glassCapsule(interactive: true)
+                .glassCapsule()
                 .contentShape(Capsule())
             }
             .menuStyle(.button)
@@ -319,5 +325,13 @@ struct MenuPicker<Value: Hashable>: View {
             .menuIndicator(.hidden)
             .fixedSize()
         }
+    }
+}
+
+extension View {
+    /// Surface for content cards. Real glass is reserved for floating controls (as in
+    /// Apple's guidance); large glass cards are expensive on smaller GPUs.
+    func cardSurface(cornerRadius: CGFloat = 22, tint: Color? = nil) -> some View {
+        modifier(FrostedFallback(shape: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous), tint: tint))
     }
 }

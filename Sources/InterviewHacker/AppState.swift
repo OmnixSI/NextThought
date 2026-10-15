@@ -65,6 +65,7 @@ final class AppState: ObservableObject {
     @Published var clickThrough = false
     @Published var shareTestImage: NSImage?
     @Published var lastStartupSeconds: Double?
+    @Published var reducedEffects = UserDefaults.standard.bool(forKey: "reducedEffects")
     @Published var keepRecognizerWarm = UserDefaults.standard.object(forKey: "keepRecognizerWarm") as? Bool ?? true
     @Published var companionPort = UserDefaults.standard.object(forKey: "companionPort") as? Int ?? 8_765
     var whisperIdleTask: Task<Void, Never>?

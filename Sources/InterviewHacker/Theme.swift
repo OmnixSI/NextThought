@@ -4,7 +4,7 @@ import InterviewHackerCore
 
 /// Lightweight markdown for streamed answers: paragraphs, bullets, headings, inline
 /// bold/italic/code and fenced code blocks. Re-rendering on every delta is cheap.
-struct MarkdownText: View {
+struct MarkdownText: View, Equatable {
     var text: String
     var size: CGFloat = 15
     var lineSpacing: CGFloat = 4
@@ -76,7 +76,7 @@ struct CardBackground: ViewModifier {
         content
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassBackground(cornerRadius: 22, tint: tint?.opacity(0.18))
+            .cardSurface(cornerRadius: 22, tint: tint?.opacity(0.18))
     }
 }
 
