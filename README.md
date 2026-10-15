@@ -11,7 +11,7 @@
 ![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-arm64-blue)
 ![本地识别](https://img.shields.io/badge/%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB-%E6%9C%AC%E6%9C%BA%E7%A6%BB%E7%BA%BF-34c759)
 
-**[⬇️ 下载最新版本](../../releases/latest)** · [安装](#安装) · [快速上手](#快速上手) · [场景与模式](#场景与模式) · [复盘与自我迭代](#复盘与自我迭代) · [数据与备份](#数据与备份) · [隐私](#数据去向)
+**[⬇️ 下载最新版本](../../releases/latest)** · [界面导览](#界面导览) · [安装](#安装) · [快速上手](#快速上手) · [场景与模式](#场景与模式) · [复盘与自我迭代](#复盘与自我迭代) · [数据与备份](#数据与备份) · [隐私](#数据去向)
 
 <br>
 
@@ -31,17 +31,67 @@
 
 完整说明见 [v1.3.0 发布说明](docs/releases/v1.3.0.md) 和 [更新日志](CHANGELOG.md)。
 
-## 截图
+## 界面导览
 
-| 提词器（可放在摄像头下方，支持鼠标穿透） | 场景：信息、分类资料与回答要求 |
-| --- | --- |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/teleprompter-dark.png"><img src="docs/screenshots/teleprompter-light.png" alt="提词器"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/materials-dark.png"><img src="docs/screenshots/materials-light.png" alt="场景资料页"></picture> |
-| **经验库与题库（自我迭代）** | **场景复盘：会话汇总与阶段复盘** |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workspace-knowledge-dark.png"><img src="docs/screenshots/workspace-knowledge-light.png" alt="经验库与题库"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workspace-review-dark.png"><img src="docs/screenshots/workspace-review-light.png" alt="阶段复盘"></picture> |
-| **会话记录：摘要、问题清单、完整转录** | **数据：导入导出与自动备份** |
-| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png"><img src="docs/screenshots/history-light.png" alt="会话记录"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-data-dark.png"><img src="docs/screenshots/settings-data-light.png" alt="数据设置"></picture> |
+顶栏四个页面：**助手 · 场景 · 记录 · 设置**。开始 / 暂停 / 停止、计时和双路音量表常驻在右上角，在任何页面都能控制。
 
-<sub>截图由 GitHub Actions 在 macOS 上用演示数据自动生成（`INTERVIEWHACKER_DEMO=1`，见 `.github/workflows/screenshots.yml`），随系统深色 / 浅色显示。</sub>
+### ① 助手：实时对话 + 建议回答（见顶部截图）
+
+- **左侧实时对话**：对方和我分两侧显示，被识别为问题的句子标上“问题”；虚线气泡是对方正在说、还没说完的话。悬停任意一句可以“回答这句”。
+- **顶部一行**：当前场景（如“字节后端二面”）和音频来源都可以直接切换；下面一行是识别状态，包括识别引擎、实时率 RTF、整句精修耗时，以及已忽略的回声段数。
+- **右侧问题条**：显示识别到的问题类型（明确提问 / 请求 / 追问）和置信度。对方补充了后半句时，会自动改答完整的问题。
+- **建议回答**：逐字流式输出，重点加粗；可以左右翻看历史回答。下方一键调整（更简短 / 展开 / 举例 / STAR / 英文版 / 中文版 / 澄清…），右下角显示首字耗时和总耗时。
+- **底部输入框**：可以手动输入问题，或截图提问；**立即回答**（⌘⇧Return）会立刻回答最新的问题。
+
+### ② 提词器：放在摄像头下方，看着镜头就能读
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/teleprompter-dark.png"><img src="docs/screenshots/teleprompter-light.png" width="640" alt="提词器"></picture>
+
+- 半透明悬浮窗，显示聆听状态、首字耗时、当前问题和回答。可以翻页、调字号，开启鼠标穿透后不挡操作。
+- 常用调整和“回答 / 取消 / 复制”都在窗上；⌘⇧\ 一键隐藏全部窗口。
+
+### ③ 场景：每场面试、每次报告各用一套
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/materials-dark.png"><img src="docs/screenshots/materials-light.png" width="720" alt="场景页：资料与要求"></picture>
+
+- **左栏**：按模式分组列出所有场景（面试 / 学术会议 / 商务会议…），每个场景显示资料数、题库题数和会话数。点 ＋ 新建，右键可复制或删除。
+- **资料与要求**：填写当前模式的专属信息（面试是应聘公司、岗位、面试官 / HR、我的亮点、期望与底线），按分类上传资料（简历、JD、八股、面经…），设置回答要求。
+- 右上角可以切换模式、选择回答模板，或用“预测问题”在会前生成可能被问到的问题。
+
+### ④ 经验库与题库：越用越懂你
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workspace-knowledge-dark.png"><img src="docs/screenshots/workspace-knowledge-light.png" width="720" alt="经验库与题库"></picture>
+
+- **经验库**：每次会后复盘提炼出的“下次怎么做更好”。可以置顶（优先交给模型）、删除，也可以手动添加。
+- **题库**：对方问过的问题和改进后的回答，记录被问次数，支持搜索。下次遇到同类问题时，优先采用这里准备好的答案。
+- 顶部开关控制回答时是否参考这里的内容。
+
+### ⑤ 复盘：看清进步和薄弱点
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workspace-review-dark.png"><img src="docs/screenshots/workspace-review-light.png" width="720" alt="场景复盘"></picture>
+
+- 顶部统计这个场景累计的会话、问题、经验和题库数量。
+- **阶段复盘**：把多次会话放在一起分析，给出总体进展、高频问题（附次数）和下一步准备清单。
+- 下方列出这个场景的所有会话，点“查看”跳到记录页。
+
+### ⑥ 记录：每次会话的完整档案
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png"><img src="docs/screenshots/history-light.png" width="720" alt="会话记录"></picture>
+
+- 每次会话自动保存，可以按场景筛选。
+- 每条记录有四个视图：**摘要**（标题、摘要、完整问题清单含我的回答要点、关键信息、待办、复盘建议）、**问题**、**转录**（可搜索）、**提词**。
+- 可以重命名、复制或导出 Markdown、在 Finder 中显示；“已加入场景经验库”表示这次的复盘已经进了经验库和题库。
+
+### ⑦ 设置 → 数据：换模型、换接口、更新都不丢
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-data-dark.png"><img src="docs/screenshots/settings-data-light.png" width="720" alt="设置：数据"></picture>
+
+- **会话记录与复盘**：可以分别开关记录、会后摘要和自我迭代。
+- **导出与导入**：一个 `.ihbackup` 文件包含全部场景、记录和设置，可选是否包含 API Key；导入只合并、不删除现有数据。
+- **自动备份**：每天一次，更新前和导入前也会备份；可以从任意一份备份合并恢复。
+- 其他分组：常规（外观、系统权限、绑定本机签名）、识别（模型下载与整句精修、回声处理）、回答（引擎与模型）、提词器、更新、快捷键。
+
+<sub>截图由 GitHub Actions 在 macOS 上用演示数据自动生成（`INTERVIEWHACKER_DEMO=1`，见 `.github/workflows/screenshots.yml`），会随你的系统切换深色 / 浅色。</sub>
 
 ## 功能
 
