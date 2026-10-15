@@ -4,12 +4,11 @@ import SwiftUI
 @main
 struct InterviewHackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @State private var state = AppState.shared
-
     var body: some Scene {
         WindowGroup {
+            // Created on first use (after NSApplication exists), not in App.init.
             ContentView()
-                .environment(state)
+                .environment(AppState.shared)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1080, height: 780)
@@ -36,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.backgroundColor = .windowBackgroundColor
                 window.isOpaque = true
             }
+            AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()
         }

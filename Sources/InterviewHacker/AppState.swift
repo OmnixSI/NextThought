@@ -268,6 +268,8 @@ final class AppState {
     }
 
     func applyAppearance() {
+        // NSApp is nil until NSApplication is created; the app delegate re-applies it.
+        guard NSApp != nil else { return }
         NSApp.appearance = appearance == "dark" ? NSAppearance(named: .darkAqua) : appearance == "light" ? NSAppearance(named: .aqua) : nil
     }
 
