@@ -149,9 +149,9 @@ enum LocalSigning {
         defer { try? fileManager.removeItem(at: work) }
 
         let password = UUID().uuidString + UUID().uuidString
-        let passwordFile = work.appendingPathComponent("password")
-        try password.write(to: passwordFile, atomically: true, encoding: .utf8)
-        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: passwordFile.path)
+        let exportPasswordFile = work.appendingPathComponent("password")
+        try password.write(to: exportPasswordFile, atomically: true, encoding: .utf8)
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: exportPasswordFile.path)
         let config = work.appendingPathComponent("openssl.cnf")
         try """
         [req]
@@ -173,7 +173,7 @@ enum LocalSigning {
                                              "-config", config.path, "-keyout", key.path, "-out", certificateFile.path], "生成证书")
         try Shell.check("/usr/bin/openssl", ["pkcs12", "-export", "-name", commonName, "-inkey", key.path, "-in", certificateFile.path,
                                              "-keypbe", "PBE-SHA1-3DES", "-certpbe", "PBE-SHA1-3DES", "-out", p12.path,
-                                             "-passout", "file:\(passwordFile.path)"], "导出签名身份")
+                                             "-passout", "file:\(exportPasswordFile.path)"], "导出签名身份")
         let fingerprint = try Shell.check("/usr/bin/openssl", ["x509", "-in", certificateFile.path, "-noout", "-fingerprint", "-sha1"], "读取证书指纹").output
         let sha1 = fingerprint.components(separatedBy: "=").last?.replacingOccurrences(of: ":", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines).uppercased() ?? ""
@@ -191,8 +191,8 @@ enum LocalSigning {
         let trust = skipTrust ? nil : try? Shell.run("/usr/bin/security", ["add-trusted-cert", "-r", "trustRoot", "-p", "codeSign", "-k", keychain.path, certificateFile.path], timeout: 120)
         Diagnostics.record("signing.identity_created", ["trusted": trust?.status == 0])
 
-        try password.write(to: passwordFile, atomically: true, encoding: .utf8)
-        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: passwordFile.path)
+        try password.write(to: Self.passwordFile, atomically: true, encoding: .utf8)
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: Self.passwordFile.path)
         try sha1.write(to: identityFile, atomically: true, encoding: .utf8)
         return sha1
     }
