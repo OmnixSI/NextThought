@@ -59,7 +59,7 @@ struct ScreenshotDisplay: Identifiable, Hashable, Sendable {
 
 enum AppSection: String, CaseIterable, Identifiable {
     case assistant = "助手"
-    case materials = "资料"
+    case materials = "场景"
     case history = "记录"
     case settings = "设置"
 

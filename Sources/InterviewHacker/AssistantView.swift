@@ -85,13 +85,10 @@ private struct SetupCard: View {
                 Text(state.modelDownloadStatus).font(.caption).foregroundStyle(.secondary)
             }
             HStack(spacing: 6) {
-                ForEach(SessionMode.allCases) { mode in
-                    Button(mode.title) { state.sessionMode = mode; state.updateSettings() }
-                        .buttonStyle(ChipButtonStyle(prominent: state.sessionMode == mode))
-                }
+                WorkspacePicker()
                 Button { state.section = .materials } label: {
-                    Label("资料 \(state.documents.filter(\.enabled).count)", systemImage: "doc.text")
-                }.buttonStyle(ChipButtonStyle())
+                    Label("资料 \(state.documents.filter(\.enabled).count) · 题库 \(state.activeWorkspace.questionBank.count)", systemImage: "doc.text")
+                }.buttonStyle(ChipButtonStyle()).help("编辑这个场景的资料、回答要求、经验库与题库")
                 Spacer(minLength: 4)
                 Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(.secondary)
                 MenuPicker(selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择音频来源")
@@ -110,6 +107,52 @@ private struct SetupCard: View {
     }
 }
 
+/// Active scenario: mode icon and name; switching loads its materials and knowledge.
+struct WorkspacePicker: View {
+    @Environment(AppState.self) private var state
+    var compact = false
+
+    var body: some View {
+        Menu {
+            ForEach(SessionMode.allCases) { mode in
+                let items = state.workspaces.visible.filter { $0.mode == mode }
+                if !items.isEmpty {
+                    Section(mode.title) {
+                        ForEach(items) { workspace in
+                            Button { state.switchWorkspace(workspace.id) } label: {
+                                if workspace.id == state.activeWorkspace.id { Label(workspace.name, systemImage: "checkmark") } else { Text(workspace.name) }
+                            }
+                        }
+                    }
+                }
+            }
+            Divider()
+            Menu("新建场景") {
+                ForEach(SessionMode.allCases) { mode in
+                    Button { state.createWorkspace(mode: mode); state.section = .materials } label: { Label(mode.title, systemImage: mode.symbol) }
+                }
+            }
+            Button("管理场景…") { state.section = .materials }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: state.sessionMode.symbol).foregroundStyle(Brand.accent)
+                Text(state.activeWorkspace.name).lineLimit(1).foregroundStyle(Color.primary)
+                if !compact { Text(state.sessionMode.title).foregroundStyle(.secondary) }
+                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
+            }
+            .font(.system(size: 12.5, weight: .medium))
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .glassCapsule()
+            .contentShape(Capsule())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("当前场景：模式、资料、回答要求和经验库都来自这里")
+    }
+}
+
 // MARK: - Live conversation
 
 private struct ConversationPanel: View {
@@ -123,6 +166,7 @@ private struct ConversationPanel: View {
                 Label("实时对话", systemImage: "text.bubble").font(.system(size: 13, weight: .semibold))
                 Text("\(state.entries.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
+                if state.isRunning { WorkspacePicker(compact: true) }
                 if state.isRunning {
                     MenuPicker(selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "音频来源")
                         .frame(maxWidth: 200, alignment: .trailing)

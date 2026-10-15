@@ -1,10 +1,32 @@
 import Foundation
 
+/// Scenario the assistant works in. Raw values are stored in settings, sessions and
+/// workspaces; `meeting` keeps its old raw value and is presented as business meetings.
 public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
-    case meeting, interview, lesson
+    case general, interview, academic, meeting, lesson
     public var id: String { rawValue }
     public var title: String {
-        switch self { case .meeting: "会议"; case .interview: "面试"; case .lesson: "课程" }
+        switch self {
+        case .general: "通用"
+        case .interview: "面试"
+        case .academic: "学术会议"
+        case .meeting: "商务会议"
+        case .lesson: "课程"
+        }
+    }
+    public var symbol: String {
+        switch self {
+        case .general: "sparkles"
+        case .interview: "person.crop.rectangle"
+        case .academic: "graduationcap"
+        case .meeting: "briefcase"
+        case .lesson: "book"
+        }
+    }
+    /// Unknown raw values (e.g. from a newer version) fall back to general.
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = SessionMode(rawValue: raw) ?? .general
     }
 }
 
@@ -19,9 +41,16 @@ public struct ContextDocument: Identifiable, Codable, Sendable, Equatable {
     public var name: String
     public var pages: [String]
     public var enabled: Bool
+    /// Material slot within the workspace (简历 / 论文 / 议程 …); nil for older files.
+    public var category: String?
     public var characterCount: Int { pages.reduce(0) { $0 + $1.count } }
-    public init(id: UUID = UUID(), name: String, pages: [String], enabled: Bool = true) {
-        self.id = id; self.name = name; self.pages = pages; self.enabled = enabled
+    public init(id: UUID = UUID(), name: String, pages: [String], enabled: Bool = true, category: String? = nil) {
+        self.id = id; self.name = name; self.pages = pages; self.enabled = enabled; self.category = category
+    }
+    /// Name shown to the model, e.g. "[简历] resume.pdf".
+    public var labeledName: String {
+        guard let category, !category.isEmpty else { return name }
+        return "[\(category)] \(name)"
     }
 }
 
@@ -45,14 +74,14 @@ public struct SessionContextIndex: Sendable {
     private var chunks: [Chunk] = []
     private var documentFrequency: [String: Int] = [:]
     public init(documents: [ContextDocument] = []) {
-        for document in documents.prefix(12) where document.enabled {
+        for document in documents.prefix(16) where document.enabled {
             for (pageNumber, page) in document.pages.prefix(200).enumerated() {
                 let chars = Array(page.prefix(200_000))
                 var start = 0
                 while start < chars.count && chunks.count < 2_000 {
                     let end = min(start + 900, chars.count)
                     let text = String(chars[start..<end])
-                    chunks.append(Chunk(excerpt: .init(source: document.name, page: pageNumber + 1, text: text),
+                    chunks.append(Chunk(excerpt: .init(source: document.labeledName, page: pageNumber + 1, text: text),
                                         terms: Self.terms(text), order: chunks.count))
                     if end == chars.count { break }
                     start = end - 120
@@ -174,13 +203,6 @@ public struct SessionPreset: Codable, Sendable, Identifiable, Equatable {
 
     /// Starting points for the answer-requirements field.
     public static func templatePreferences(for mode: SessionMode) -> String {
-        switch mode {
-        case .interview:
-            return "我是候选人。用第一人称、口语化回答，先给一句结论，再给 2–3 个要点；行为题用 STAR 结构，只使用我资料中的真实经历，没有的用【待补充】标出；技术题给关键原理与取舍。"
-        case .meeting:
-            return "我是会议参与者。回答聚焦决策、风险和下一步行动，给出可以直接说出口的简短发言；涉及数据时标注来源，不确定时建议先确认。"
-        case .lesson:
-            return "我是学生。先用一句话解释概念，再给推导或例子；公式用 LaTeX 行内格式；指出与课件对应的页码。"
-        }
+        ModeProfile.for(mode).templatePreferences
     }
 }

@@ -10,12 +10,14 @@ extension AppState {
 
     func beginArchive(startedAt: Date) {
         guard recordSessions else { activeArchiveID = nil; return }
-        let meta = SessionMeta(startedAt: startedAt, mode: sessionMode,
+        let workspace = activeWorkspace
+        let meta = SessionMeta(startedAt: startedAt, mode: workspace.mode,
                                audioSource: captureTargets.first { $0.id == selectedTargetID }?.title ?? "",
                                recognizer: recognizerDescription,
-                               answerModel: currentAnswerModel)
-        let context = SessionContextSnapshot(mode: sessionMode, style: answerStyle, preferences: answerPreferences,
-                                             profile: profile, documents: documents.filter(\.enabled))
+                               answerModel: currentAnswerModel,
+                               workspaceID: workspace.id, workspaceName: workspace.name)
+        let context = SessionContextSnapshot(mode: workspace.mode, style: workspace.style, preferences: workspace.preferences,
+                                             profile: workspace.materialText, documents: workspace.documents.filter(\.enabled))
         archive.begin(meta, context: context)
         activeArchiveID = meta.id
     }
@@ -85,22 +87,26 @@ extension AppState {
                 let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: detail.lines, answers: detail.answers,
                                                              detected: detail.questions, context: detail.context)
                 let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt))
+                let system = SessionSummaryPrompt.system(for: detail.meta.mode)
                 let markdown: String
                 if chunks.count == 1 {
-                    markdown = try await summarize(user: SessionSummaryPrompt.full(material), backend: backend, model: model, reasoning: reasoning)
+                    markdown = try await summarize(system: system, user: SessionSummaryPrompt.full(material), backend: backend, model: model, reasoning: reasoning)
                 } else {
                     var partials: [String] = []
                     for (index, chunk) in chunks.enumerated() {
-                        partials.append(try await summarize(user: SessionSummaryPrompt.partial(chunk, index: index, count: chunks.count, material: material),
+                        partials.append(try await summarize(system: system, user: SessionSummaryPrompt.partial(chunk, index: index, count: chunks.count, material: material),
                                                             backend: backend, model: model, reasoning: reasoning))
                     }
-                    markdown = try await summarize(user: SessionSummaryPrompt.merge(partials, material: material), backend: backend, model: model, reasoning: reasoning)
+                    markdown = try await summarize(system: system, user: SessionSummaryPrompt.merge(partials, material: material), backend: backend, model: model, reasoning: reasoning)
                 }
-                let parsed = SessionSummaryParser.parse(markdown)
+                let parsed = SessionSummaryParser.parseAll(markdown)
                 let summary = SessionSummary(title: parsed.title ?? detail.meta.displayTitle, markdown: markdown,
-                                             questions: parsed.questions, generatedAt: Date(), model: model)
+                                             questions: parsed.questions, generatedAt: Date(), model: model,
+                                             lessons: parsed.lessons, bank: parsed.bank, appliedToWorkspace: false)
                 archive.saveSummary(summary, for: id)
-                Diagnostics.record("summary.completed", ["questions": parsed.questions.count, "chunks": chunks.count])
+                // Self-iteration: the review feeds the scenario's experience and question bank.
+                if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
+                Diagnostics.record("summary.completed", ["questions": parsed.questions.count, "lessons": parsed.lessons.count, "bank": parsed.bank.count, "chunks": chunks.count])
             } catch {
                 if var failed = archive.sessions.first(where: { $0.id == id }) {
                     failed.summaryState = .failed
@@ -112,8 +118,8 @@ extension AppState {
         }
     }
 
-    private func summarize(user: String, backend: AnswerBackend, model: String, reasoning: String) async throws -> String {
-        let request = AnswerRequest(system: SessionSummaryPrompt.system, user: user, model: model, effort: reasoning, imageURL: nil)
+    private func summarize(system: String, user: String, backend: AnswerBackend, model: String, reasoning: String) async throws -> String {
+        let request = AnswerRequest(system: system, user: user, model: model, effort: reasoning, imageURL: nil)
         switch backend {
         case .openAICompatible:
             return try await summaryAPIClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey) { _ in }

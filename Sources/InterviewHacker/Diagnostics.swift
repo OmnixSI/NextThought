@@ -2,8 +2,7 @@ import Foundation
 
 enum Diagnostics {
     static let launchID = UUID().uuidString
-    static let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("InterviewHacker/diagnostics", isDirectory: true)
+    static let directory = AppPaths.root.appendingPathComponent("diagnostics", isDirectory: true)
     private static let queue = DispatchQueue(label: "app.interviewhacker.diagnostics")
     private static let eventsURL = directory.appendingPathComponent("events-\(launchID).jsonl")
 

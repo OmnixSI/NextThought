@@ -40,7 +40,9 @@ public enum QuestionIntentClassifier {
             // Lecturers ask many rhetorical questions; require stronger evidence.
             case .lesson: Thresholds(actionable: 0.6, uncertain: 0.35)
             case .interview: Thresholds(actionable: 0.45, uncertain: 0.25)
-            case .meeting: Thresholds(actionable: 0.5, uncertain: 0.3)
+            // Audience / chair questions after a talk are usually explicit.
+            case .academic: Thresholds(actionable: 0.5, uncertain: 0.3)
+            case .meeting, .general: Thresholds(actionable: 0.5, uncertain: 0.3)
             }
         }
     }

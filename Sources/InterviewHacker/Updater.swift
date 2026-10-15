@@ -208,6 +208,9 @@ final class Updater {
         guard let stagedApp else { return }
         do {
             phase = .installing
+            // Data lives outside the app bundle, but keep a snapshot from before every update.
+            _ = try? DataBackup.automaticBackup(reason: "update")
+            AppState.shared.prepareForTermination()
             try Self.replaceAndRelaunch(with: stagedApp)
         } catch {
             phase = .failed(error.localizedDescription)
@@ -233,31 +236,69 @@ final class Updater {
         guard FileManager.default.isWritableFile(atPath: destination.deletingLastPathComponent().path) else {
             throw UpdateError.notWritable(destination.deletingLastPathComponent().path)
         }
+        _ = try runSwap(waitingFor: ProcessInfo.processInfo.processIdentifier, source: newApp, destination: destination, relaunch: true, wait: false)
+        Diagnostics.record("update.relaunching")
+        NSApp.terminate(nil)
+    }
+
+    /// Starts the helper that waits for `pid` to exit, swaps `destination` for `source`
+    /// (restoring the old bundle if the copy fails) and optionally reopens the app.
+    @discardableResult
+    nonisolated static func runSwap(waitingFor pid: Int32, source: URL, destination: URL, relaunch: Bool, wait: Bool) throws -> Int32 {
         let script = FileManager.default.temporaryDirectory.appendingPathComponent("ih-relaunch-\(UUID().uuidString).sh")
         try """
         #!/bin/bash
         # Waits for InterviewHacker to quit, swaps the bundle and relaunches it.
-        pid="$1"; src="$2"; dst="$3"
+        pid="$1"; src="$2"; dst="$3"; relaunch="$4"
         for _ in $(seq 1 150); do kill -0 "$pid" 2>/dev/null || break; sleep 0.2; done
         backup="$dst.previous"
         rm -rf "$backup"
+        status=0
         if mv "$dst" "$backup" && /usr/bin/ditto "$src" "$dst"; then
             rm -rf "$backup"
         else
+            status=1
             rm -rf "$dst"; mv "$backup" "$dst"
         fi
         /usr/bin/xattr -dr com.apple.quarantine "$dst" 2>/dev/null
-        /usr/bin/open "$dst"
+        if [ "$relaunch" = "1" ]; then /usr/bin/open "$dst"; fi
         rm -rf "$(dirname "$src")" "$0"
+        exit $status
         """.write(to: script, atomically: true, encoding: .utf8)
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/nohup")
-        process.arguments = ["/bin/bash", script.path, String(ProcessInfo.processInfo.processIdentifier), newApp.path, destination.path]
+        process.arguments = ["/bin/bash", script.path, String(pid), source.path, destination.path, relaunch ? "1" : "0"]
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         try process.run()
-        Diagnostics.record("update.relaunching")
-        NSApp.terminate(nil)
+        guard wait else { return 0 }
+        process.waitUntilExit()
+        return process.terminationStatus
+    }
+
+    /// Self-test: finds the newest release on `channel`, downloads it and runs every
+    /// check the real update runs (checksum, unpack, signature) without installing.
+    func stageForSelfTest(channel: UpdateChannel, token: String?) async throws -> (app: URL, note: String?, tag: String) {
+        let releases = try GitHubRelease.decodeList(try await api("releases?per_page=20", token: token))
+        guard let release = UpdateCatalog.candidate(in: releases, channel: channel), let zip = release.zipAsset else {
+            throw UpdateError.invalidArchive
+        }
+        var sha: String?
+        if let asset = release.asset(named: "update.json"), let manifest = try? UpdateManifest.decode(try await download(asset, token: token)), manifest.zip == zip.name {
+            sha = manifest.sha256
+        }
+        if sha == nil, let sums = release.asset(named: "SHA256SUMS.txt") {
+            sha = UpdateCatalog.sha256(for: zip.name, in: String(decoding: try await download(sums, token: token), as: UTF8.self))
+        }
+        guard let expected = sha else { throw UpdateError.missingChecksum }
+        let staging = FileManager.default.temporaryDirectory.appendingPathComponent("ih-update-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
+        let file = staging.appendingPathComponent(zip.name)
+        try await UpdateDownloader().download(request(URL(string: zip.url)!, token: token, binary: true), to: file) { _ in }
+        let (app, note) = try await Task.detached(priority: .userInitiated) { () throws -> (URL, String?) in
+            try Self.prepare(zip: file, expectedSHA256: expected, in: staging)
+        }.value
+        return (app, note, release.tagName)
     }
 
     // MARK: GitHub API

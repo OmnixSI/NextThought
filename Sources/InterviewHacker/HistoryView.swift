@@ -6,10 +6,14 @@ import InterviewHackerCore
 /// navigation on narrow windows).
 struct HistoryView: View {
     @Environment(AppState.self) private var state
-    @State private var selection: UUID?
     @State private var showDeleteAll = false
 
     private var archive: SessionArchive { SessionArchive.shared }
+    private var selection: UUID? { state.historySelection }
+    private var filtered: [SessionMeta] {
+        guard let filter = state.historyWorkspaceFilter else { return archive.sessions }
+        return archive.sessions.filter { $0.workspaceID == filter }
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -19,7 +23,7 @@ struct HistoryView: View {
                     sessionList.frame(width: wide ? 300 : nil)
                 }
                 if let selection, archive.sessions.contains(where: { $0.id == selection }) {
-                    SessionDetailView(id: selection, showsBack: !wide) { self.selection = nil }
+                    SessionDetailView(id: selection, showsBack: !wide) { state.historySelection = nil }
                         .id(selection)
                 } else if wide {
                     ContentUnavailableView("选择一次会话", systemImage: "rectangle.stack",
@@ -31,12 +35,12 @@ struct HistoryView: View {
             .padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 4)
         }
         .confirmationDialog("删除全部本地记录？", isPresented: $showDeleteAll, titleVisibility: .visible) {
-            Button("删除全部记录", role: .destructive) { archive.deleteAll(); selection = nil }
+            Button("删除全部记录", role: .destructive) { archive.deleteAll(); state.historySelection = nil }
             Button("取消", role: .cancel) { }
         } message: {
             Text("会删除所有会话的转录、问题、回答和摘要，无法恢复。")
         }
-        .onAppear { if selection == nil { selection = archive.sessions.first?.id } }
+        .onAppear { if selection == nil { state.historySelection = filtered.first?.id } }
     }
 
     private var sessionList: some View {
@@ -52,17 +56,19 @@ struct HistoryView: View {
                     .buttonStyle(GlassIconButtonStyle(size: 28)).foregroundStyle(.red)
                     .disabled(archive.sessions.isEmpty).help("删除全部记录")
             }
-            if archive.sessions.isEmpty {
+            MenuPicker(selection: Binding(get: { state.historyWorkspaceFilter }, set: { state.historyWorkspaceFilter = $0 }),
+                       options: [(UUID?.none, "全部场景")] + state.workspaces.workspaces.map { (Optional($0.id), $0.name) })
+            if filtered.isEmpty {
                 ContentUnavailableView("还没有记录", systemImage: "clock",
                                        description: Text("开始一次辅助后，转录、问题与回答会自动保存在这里；结束时自动生成摘要。"))
                     .frame(maxHeight: .infinity)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 6) {
-                        ForEach(archive.sessions) { meta in
+                        ForEach(filtered) { meta in
                             SessionRow(meta: meta, selected: meta.id == selection, active: meta.id == archive.activeID)
                                 .contentShape(Rectangle())
-                                .onTapGesture { selection = meta.id }
+                                .onTapGesture { state.historySelection = meta.id }
                         }
                     }
                 }
@@ -94,6 +100,7 @@ private struct SessionRow: View {
 
     private var details: String {
         var parts = [meta.startedAt.formatted(date: .abbreviated, time: .shortened)]
+        if let workspace = meta.workspaceName { parts.insert(workspace, at: 0) }
         if meta.duration >= 60 { parts.append("\(Int(meta.duration / 60)) 分钟") }
         parts.append("\(meta.questionCount) 个问题")
         parts.append("\(meta.answerCount) 条提词")
@@ -202,7 +209,7 @@ private struct SessionDetailView: View {
     }
 
     private func subtitle(_ meta: SessionMeta) -> String {
-        var parts = [meta.mode.title, meta.startedAt.formatted(date: .complete, time: .shortened)]
+        var parts = [meta.workspaceName.map { "\(meta.mode.title) · \($0)" } ?? meta.mode.title, meta.startedAt.formatted(date: .complete, time: .shortened)]
         if meta.duration >= 60 { parts.append("\(Int(meta.duration / 60)) 分钟") }
         if !meta.audioSource.isEmpty { parts.append(meta.audioSource) }
         if !meta.recognizer.isEmpty { parts.append(meta.recognizer) }
@@ -229,6 +236,12 @@ private struct SummaryTab: View {
                 } else if let summary = detail.summary {
                     Text("由 \(summary.model) 于 \(summary.generatedAt.formatted(date: .omitted, time: .shortened)) 生成")
                         .font(.caption).foregroundStyle(.tertiary)
+                    if summary.appliedToWorkspace == true {
+                        Label("已加入场景经验库", systemImage: "checkmark.seal").font(.caption).foregroundStyle(.green)
+                    } else if meta.workspaceID != nil, !(summary.lessons ?? []).isEmpty || !(summary.bank ?? []).isEmpty {
+                        Button("加入场景经验库") { state.applyReview(summary, sessionID: meta.id, workspaceID: meta.workspaceID) }
+                            .buttonStyle(ChipButtonStyle())
+                    }
                 }
                 Spacer()
                 Button { state.generateSummary(for: meta.id) } label: {

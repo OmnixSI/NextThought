@@ -90,8 +90,7 @@ enum LocalASRPackage: String, CaseIterable, Identifiable {
     }
 
     var directory: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InterviewHacker/models/\(archiveName)", isDirectory: true)
+        AppPaths.models.appendingPathComponent(archiveName, isDirectory: true)
     }
 
     private var manifestURL: URL { directory.appendingPathComponent("installed.json") }

@@ -17,7 +17,7 @@ struct ContentView: View {
             Group {
                 switch state.section {
                 case .assistant: AssistantView()
-                case .materials: MaterialsView()
+                case .materials: WorkspacesView()
                 case .history: HistoryView()
                 case .settings: SettingsView()
                 }
@@ -264,7 +264,7 @@ extension AppSection {
     var symbol: String {
         switch self {
         case .assistant: "waveform"
-        case .materials: "doc.on.doc"
+        case .materials: "square.stack.3d.up"
         case .settings: "gearshape"
         case .history: "clock"
         }

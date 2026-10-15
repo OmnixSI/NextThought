@@ -70,8 +70,7 @@ enum LocalSigning {
     static let commonName = "InterviewHacker Local Signing"
 
     static var directory: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InterviewHacker/Signing", isDirectory: true)
+        AppPaths.signing
     }
     static var keychain: URL { directory.appendingPathComponent("signing.keychain-db") }
     private static var identityFile: URL { directory.appendingPathComponent("identity-sha1") }

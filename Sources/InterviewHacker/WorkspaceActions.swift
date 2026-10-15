@@ -1,29 +1,41 @@
 import AppKit
 import Foundation
 import InterviewHackerCore
+import UniformTypeIdentifiers
 
+/// Workspace (scenario) management, materials, knowledge and data import/export.
 @MainActor
 extension AppState {
-    func importDocuments(_ urls: [URL]) {
+    // MARK: Materials
+
+    static let maxDocuments = 16
+
+    func importDocuments(_ urls: [URL], category: String? = nil) {
         guard !isImportingDocuments else { return }
-        guard documents.count + urls.count <= 12 else { errorMessage = "每个工作区最多 12 份资料，请先移除不需要的文件。"; return }
+        guard documents.count + urls.count <= Self.maxDocuments else {
+            errorMessage = "每个场景最多 \(Self.maxDocuments) 份资料，请先移除不需要的文件。"; return
+        }
+        let workspaceID = activeWorkspace.id
         isImportingDocuments = true
         importTask = Task {
             defer { isImportingDocuments = false; importTask = nil }
             do {
                 let imported = try await DocumentImporter.read(urls)
                 try Task.checkCancellation()
-                guard (documents + imported).reduce(0, { $0 + $1.characterCount }) <= 600_000 else {
-                    throw AppFailure.capture("工作区资料总量超过 60 万字，请只保留本次会话相关章节。")
+                guard var workspace = workspaces.workspace(workspaceID) else { return }
+                guard (workspace.documents + imported).reduce(0, { $0 + $1.characterCount }) <= 600_000 else {
+                    throw AppFailure.capture("这个场景的资料总量超过 60 万字，请只保留本次相关的章节。")
                 }
-                var names = Set(documents.map(\.name))
+                var names = Set(workspace.documents.map(\.name))
                 for var document in imported {
                     let original = document.name
                     var suffix = 2
                     while names.contains(document.name) { document.name = "\(original) (\(suffix))"; suffix += 1 }
                     names.insert(document.name)
-                    documents.append(document)
+                    document.category = category
+                    workspace.documents.append(document)
                 }
+                workspaces.update(workspace)
                 rebuildContextIndex()
             } catch is CancellationError {} catch { errorMessage = "资料导入失败：\(error.localizedDescription)" }
         }
@@ -31,7 +43,7 @@ extension AppState {
 
     func rebuildContextIndex() {
         let revision = UUID(); documentRevision = revision
-        let snapshot = documents
+        let snapshot = activeWorkspace.retrievalDocuments
         // Never reuse a disabled/removed document while a replacement index builds.
         contextIndex = SessionContextIndex(); selectedExcerpts = []
         isIndexingDocuments = true
@@ -43,78 +55,223 @@ extension AppState {
         }
     }
 
-    // MARK: Presets
-
-    private var presetsURL: URL? {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("InterviewHacker/presets.json")
-    }
-
-    func loadPresets() {
-        guard let url = presetsURL, let data = try? Data(contentsOf: url),
-              let values = try? JSONDecoder().decode([SessionPreset].self, from: data) else { return }
-        presets = values
-    }
-
-    private func persistPresets() {
-        guard let url = presetsURL else { return }
-        do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try JSONEncoder().encode(presets).write(to: url, options: .atomic)
-        } catch { errorMessage = "保存预设失败：\(error.localizedDescription)" }
-    }
-
-    /// Saves the current prompt/mode/background and, if chosen, the imported files.
-    func savePreset(named rawName: String, includeDocuments: Bool) {
-        let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        let preset = SessionPreset(id: presets.first(where: { $0.name == name })?.id ?? UUID(), name: name, mode: sessionMode, style: answerStyle,
-                                   preferences: answerPreferences, profile: profile, documents: includeDocuments ? documents : [])
-        presets.removeAll { $0.name == name }
-        presets.insert(preset, at: 0)
-        persistPresets()
-    }
-
-    func applyPreset(_ preset: SessionPreset) {
-        sessionMode = preset.mode
-        answerStyle = preset.style
-        answerPreferences = preset.preferences
-        setProfile(preset.profile)
-        if !preset.documents.isEmpty {
-            documents = preset.documents
-            rebuildContextIndex()
-        }
-        updateSettings()
-    }
-
-    func deletePreset(_ id: UUID) {
-        presets.removeAll { $0.id == id }
-        persistPresets()
-    }
-
-    func applyTemplatePreferences() {
-        answerPreferences = SessionPreset.templatePreferences(for: sessionMode)
-        updateSettings()
-    }
-
-    /// Pre-session preparation: likely questions with short talking points from the files.
-    func predictQuestions() {
-        guard !documents.filter(\.enabled).isEmpty || !profile.isEmpty else {
-            errorMessage = "请先添加资料（简历、JD、议程或课件）或填写背景说明。"; return
-        }
-        section = .assistant
-        let topic = documents.filter(\.enabled).map(\.name).joined(separator: "、")
-        ask("请根据我提供的资料（\(topic.isEmpty ? "背景说明" : topic)），预测本次\(sessionMode.title)中最可能被问到的 8 个问题，并为每个问题给出 1 句可直接说的回答要点；引用资料时标注来源页码。", screenshot: nil)
-    }
-
     func removeDocument(_ id: UUID) { documents.removeAll { $0.id == id }; rebuildContextIndex() }
+
     func setDocumentEnabled(_ id: UUID, enabled: Bool) {
         guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
         documents[index].enabled = enabled; rebuildContextIndex()
     }
+
+    func setDocumentCategory(_ id: UUID, category: String?) {
+        guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
+        documents[index].category = category; rebuildContextIndex()
+    }
+
+    func applyTemplatePreferences() {
+        answerPreferences = ModeProfile.for(sessionMode).templatePreferences
+    }
+
+    // MARK: Workspaces
+
+    func switchWorkspace(_ id: UUID) {
+        guard id != activeWorkspace.id else { return }
+        workspaces.activate(id)
+        tracker.mode = sessionMode
+        rebuildContextIndex()
+        Diagnostics.record("workspace.switched", ["mode": sessionMode.rawValue])
+    }
+
+    func createWorkspace(mode: SessionMode) {
+        workspaces.create(mode: mode)
+        rebuildContextIndex()
+    }
+
+    func duplicateWorkspace(_ id: UUID) {
+        workspaces.duplicate(id)
+        rebuildContextIndex()
+    }
+
+    func deleteWorkspace(_ id: UUID) {
+        workspaces.delete(id)
+        rebuildContextIndex()
+    }
+
+    /// Pre-session preparation: likely questions with short talking points from the materials.
+    func predictQuestions() {
+        let workspace = activeWorkspace
+        guard !workspace.documents.filter(\.enabled).isEmpty || !workspace.materialText.isEmpty else {
+            errorMessage = "请先在场景里填写信息或添加资料。"; return
+        }
+        section = .assistant
+        let topic = workspace.documents.filter(\.enabled).map(\.labeledName).joined(separator: "、")
+        let who = ModeProfile.for(workspace.mode).role
+        ask("请根据这个场景的资料（\(topic.isEmpty ? "场景信息" : topic)），预测本次\(workspace.mode.title)中我（\(who)）最可能被问到的 8 个问题，并为每个问题给出 1–2 句可直接说的回答要点；引用资料时标注来源页码；题库里已有准备的问题优先使用准备好的答案。", screenshot: nil)
+    }
+
+    // MARK: Knowledge (experience bank and question bank)
+
+    func addLesson(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        activeWorkspace.lessons.append(WorkspaceLesson(text: trimmed))
+    }
+
+    func updateLesson(_ lesson: WorkspaceLesson) {
+        guard let index = activeWorkspace.lessons.firstIndex(where: { $0.id == lesson.id }) else { return }
+        activeWorkspace.lessons[index] = lesson
+    }
+
+    func deleteLesson(_ id: UUID) { activeWorkspace.lessons.removeAll { $0.id == id } }
+
+    func addBankItem(question: String, answer: String) {
+        guard !question.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        activeWorkspace.questionBank.append(QuestionBankItem(question: question, answer: answer, timesAsked: 0))
+        rebuildContextIndex()
+    }
+
+    func updateBankItem(_ item: QuestionBankItem) {
+        guard let index = activeWorkspace.questionBank.firstIndex(where: { $0.id == item.id }) else { return }
+        var next = item; next.updatedAt = Date()
+        activeWorkspace.questionBank[index] = next
+        rebuildContextIndex()
+    }
+
+    func deleteBankItem(_ id: UUID) {
+        activeWorkspace.questionBank.removeAll { $0.id == id }
+        rebuildContextIndex()
+    }
+
+    /// Merges a session review's lessons and improved answers into its workspace.
+    @discardableResult
+    func applyReview(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> (lessons: Int, questions: Int)? {
+        guard let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return nil }
+        let result = KnowledgeMerger.merge(lessons: summary.lessons ?? [], bank: (summary.bank ?? []).map { ($0.question, $0.answer) },
+                                           into: &workspace, session: sessionID)
+        workspaces.update(workspace)
+        if workspaceID == activeWorkspace.id { rebuildContextIndex() }
+        var applied = summary
+        applied.appliedToWorkspace = true
+        archive.saveSummary(applied, for: sessionID)
+        Diagnostics.record("knowledge.applied", ["lessons": result.lessons, "questions": result.questions])
+        return result
+    }
+
+    // MARK: Stage review
+
+    /// Reviews every summarized session of a workspace together: trends, recurring
+    /// questions and weaknesses, a preparation list, and new lessons.
+    func generateStageReview(for workspaceID: UUID) {
+        guard !stageReviewing.contains(workspaceID), let workspace = workspaces.workspace(workspaceID) else { return }
+        let model = currentAnswerModel
+        guard !model.isEmpty else { errorMessage = "请先在设置中选择回答模型。"; return }
+        let metas = archive.sessions.filter { $0.workspaceID == workspaceID && $0.summaryState == .ready }
+        guard !metas.isEmpty else { errorMessage = "这个场景还没有带摘要的会话记录。先完成一次会话并生成摘要。"; return }
+        stageReviewing.insert(workspaceID)
+        let backend = answerBackend, reasoning = codexReasoning
+        Task {
+            defer { stageReviewing.remove(workspaceID) }
+            var digests: [StageReviewPrompt.SessionDigest] = []
+            for meta in metas {
+                if let summary = await archive.detail(meta.id)?.summary {
+                    digests.append(.init(title: summary.title, date: meta.startedAt, summary: summary.markdown))
+                }
+            }
+            do {
+                let request = AnswerRequest(system: StageReviewPrompt.system, user: StageReviewPrompt.make(workspace: workspace, sessions: digests),
+                                            model: model, effort: reasoning, imageURL: nil)
+                let markdown: String
+                switch backend {
+                case .openAICompatible:
+                    markdown = try await summaryAPIClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey) { _ in }
+                case .codexExec, .codexAppServer:
+                    markdown = try await summaryCodex.run(prompt: request.fullPrompt, model: model, reasoning: reasoning, timeout: 600) { _ in }
+                }
+                guard var latest = workspaces.workspace(workspaceID) else { return }
+                latest.stageReview = markdown
+                latest.stageReviewAt = Date()
+                if autoApplyLessons {
+                    _ = KnowledgeMerger.merge(lessons: SessionSummaryParser.parseAll(markdown).lessons, bank: [], into: &latest, session: nil)
+                }
+                workspaces.update(latest)
+                Diagnostics.record("stage_review.completed", ["sessions": digests.count])
+            } catch {
+                errorMessage = "阶段复盘生成失败：\(error.localizedDescription)"
+            }
+        }
+    }
+
+    // MARK: Data export / import
+
+    func exportAllData(includeSecrets: Bool) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "ihbackup") ?? .zip]
+        panel.nameFieldStringValue = "InterviewHacker-\(Date.now.formatted(.iso8601.year().month().day())).ihbackup"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        workspaces.flush()
+        let items = workspaces.workspaces
+        runDataTask("正在导出…") {
+            try await Task.detached(priority: .userInitiated) { try DataBackup.exportAll(to: url, includeSecrets: includeSecrets, workspaces: items) }.value
+            return "已导出到 \(url.lastPathComponent)。"
+        }
+    }
+
+    func exportWorkspace(_ id: UUID, includeSessions: Bool) {
+        guard let workspace = workspaces.workspace(id) else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "ihbackup") ?? .zip]
+        panel.nameFieldStringValue = "\(workspace.name.replacingOccurrences(of: "/", with: "-")).ihbackup"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        workspaces.flush()
+        let sessions = includeSessions ? archive.sessions.filter { $0.workspaceID == id }.map(\.id) : []
+        runDataTask("正在导出场景…") {
+            try await Task.detached(priority: .userInitiated) { try DataBackup.exportWorkspace(workspace, sessions: sessions, to: url) }.value
+            return "已导出“\(workspace.name)”。"
+        }
+    }
+
+    /// Asks for a file and merges it (settings optional).
+    func importData(applySettings: Bool) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "ihbackup") ?? .zip, .zip]
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        importArchive(url, applySettings: applySettings)
+    }
+
+    func importArchive(_ url: URL, applySettings: Bool) {
+        guard !isRunning else { errorMessage = "请先停止辅助再导入数据。"; return }
+        do {
+            let summary = try DataBackup.importArchive(url, applySettings: applySettings)
+            archive.load()
+            rebuildContextIndex()
+            dataStatus = summary.description + (applySettings && summary.settingsApplied > 0 ? " 设置在重新打开应用后完全生效。" : "")
+        } catch {
+            errorMessage = "导入失败：\(error.localizedDescription)"
+        }
+    }
+
+    func backupNow() {
+        runDataTask("正在备份…") {
+            let url = try DataBackup.automaticBackup(reason: "manual")
+            return "已备份到 \(url.lastPathComponent)。"
+        }
+    }
+
+    private func runDataTask(_ progress: String, _ work: @escaping () async throws -> String) {
+        dataStatus = progress
+        isDataBusy = true
+        Task {
+            defer { isDataBusy = false }
+            do { dataStatus = try await work() } catch { dataStatus = ""; errorMessage = "操作失败：\(error.localizedDescription)" }
+        }
+    }
+
+    // MARK: Shortcuts
+
     func shortcutLabel(_ action: HotkeyAction) -> String {
         (customShortcuts[String(action.rawValue)] ?? action.defaultBinding).label
     }
+
     func setShortcut(_ action: HotkeyAction, binding: ShortcutBinding) {
         var next = customShortcuts
         next[String(action.rawValue)] = binding
@@ -125,6 +282,7 @@ extension AppState {
         UserDefaults.standard.set(try? JSONEncoder().encode(next), forKey: "customShortcuts")
         registerHotkeys()
     }
+
     func resetShortcuts() {
         customShortcuts = [:]; UserDefaults.standard.removeObject(forKey: "customShortcuts"); registerHotkeys()
     }

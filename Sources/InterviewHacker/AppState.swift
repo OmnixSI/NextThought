@@ -15,18 +15,48 @@ import UniformTypeIdentifiers
 final class AppState {
     static let shared = AppState()
 
-    // MARK: Session context
+    // MARK: Session context (the active workspace)
     var recognitionVocabulary = UserDefaults.standard.string(forKey: "recognitionVocabulary") ?? ""
     var transcriptionBackend = AppState.loadTranscriptionBackend()
-    var sessionMode = SessionMode(rawValue: UserDefaults.standard.string(forKey: "sessionMode") ?? "meeting") ?? .meeting
-    var answerStyle = AnswerStyle(rawValue: UserDefaults.standard.string(forKey: "answerStyle") ?? "concise") ?? .concise
-    var answerPreferences = UserDefaults.standard.string(forKey: "answerPreferences") ?? ""
-    var documents: [ContextDocument] = []
-    var presets: [SessionPreset] = []
     var isImportingDocuments = false
     var isIndexingDocuments = false
     var selectedExcerpts: [ContextExcerpt] = []
-    var profile = UserDefaults.standard.string(forKey: "profile") ?? ""
+    /// Workspaces whose stage review is being written.
+    var stageReviewing: Set<UUID> = []
+    /// Result line of the last export / import / backup.
+    var dataStatus = ""
+    var isDataBusy = false
+    /// Session selected in the history page (also set when jumping from a workspace review).
+    var historySelection: UUID?
+    /// nil shows sessions of all workspaces.
+    var historyWorkspaceFilter: UUID?
+
+    /// The scenario in use. Mode, materials, requirements and background all belong to it.
+    var activeWorkspace: Workspace {
+        get { workspaces.active }
+        set { workspaces.update(newValue) }
+    }
+    var sessionMode: SessionMode {
+        get { activeWorkspace.mode }
+        set { workspaces.setMode(newValue, for: activeWorkspace.id) }
+    }
+    var answerStyle: AnswerStyle {
+        get { activeWorkspace.style }
+        set { activeWorkspace.style = newValue }
+    }
+    var answerPreferences: String {
+        get { activeWorkspace.preferences }
+        set { activeWorkspace.preferences = newValue }
+    }
+    var documents: [ContextDocument] {
+        get { activeWorkspace.documents }
+        set { activeWorkspace.documents = newValue }
+    }
+    /// Free-form background notes of the workspace.
+    var profile: String {
+        get { activeWorkspace.notes }
+        set { activeWorkspace.notes = newValue }
+    }
 
     // MARK: Metrics
     var lastASRSeconds: Double?
@@ -120,6 +150,10 @@ final class AppState {
     var recordSessions = UserDefaults.standard.object(forKey: "recordSessions") as? Bool ?? true
     /// Ask the answer model for a summary and question list when a session ends.
     var autoSummarize = UserDefaults.standard.object(forKey: "autoSummarize") as? Bool ?? true
+    /// Add the review's lessons and improved answers to the workspace automatically.
+    var autoApplyLessons = UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
+    /// Daily automatic backups (also taken before updates and imports).
+    var autoBackup = UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true
     var activeArchiveID: UUID?
 
     // MARK: Companion
@@ -194,6 +228,7 @@ final class AppState {
     /// A question that arrived while the user was talking; answered if they stop soon.
     @ObservationIgnored var deferredCandidate: (candidate: QuestionCandidate, date: Date)?
     let archive = SessionArchive.shared
+    let workspaces = WorkspaceStore.shared
 
     var modelControlsDisabled: Bool { isRunning || isChangingSession || isPreparingModel || isDownloadingModel }
     var colorScheme: ColorScheme? { appearance == "dark" ? .dark : appearance == "light" ? .light : nil }
@@ -221,8 +256,9 @@ final class AppState {
 
     private init() {
         Diagnostics.record("app.launch", ["bundle_id": Bundle.main.bundleIdentifier ?? "unknown"])
-        loadPresets()
+        if !DemoMode.isEnabled { workspaces.load() }
         archive.load()
+        rebuildContextIndex()
         audio.onSegment = { [weak self] event in
             Task { @MainActor in self?.receiveSpeechEvent(event) }
         }
@@ -236,6 +272,11 @@ final class AppState {
         // Demo / screenshot mode shows sample data and never touches devices or models.
         guard !DemoMode.isEnabled else { return }
         Updater.shared.start()
+        Task {
+            // After launch settles: one backup a day, never blocking start-up.
+            try? await Task.sleep(for: .seconds(8))
+            DataBackup.dailyBackupIfNeeded()
+        }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
@@ -607,7 +648,8 @@ final class AppState {
         let context = recentContext ?? TranscriptContextBuilder.recent(entries.map { (date: $0.date, text: $0.contextualText) })
         let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
         selectedExcerpts = excerpts
-        let parts = AnswerPromptBuilder.makeParts(question: question, context: context, profile: profile, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: answerPreferences, mode: sessionMode, style: answerStyle, excerpts: excerpts)
+        let workspace = activeWorkspace
+        let parts = AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts, experience: workspace.experienceNotes())
         let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot)
         let answerStartedAt = Date()
 
@@ -844,7 +886,6 @@ final class AppState {
 
     func setProfile(_ text: String) {
         profile = text
-        UserDefaults.standard.set(text, forKey: "profile")
     }
 
     func updateSettings() {
@@ -854,6 +895,8 @@ final class AppState {
         defaults.set(automaticAnswers, forKey: "automaticAnswers")
         defaults.set(recordSessions, forKey: "recordSessions")
         defaults.set(autoSummarize, forKey: "autoSummarize")
+        defaults.set(autoApplyLessons, forKey: "autoApplyLessons")
+        defaults.set(autoBackup, forKey: "autoBackup")
         defaults.set(keepOnTop, forKey: "keepOnTop")
         defaults.set(appearance, forKey: "appearance")
         defaults.set(microphoneEnabled, forKey: "microphoneEnabled")
@@ -866,9 +909,6 @@ final class AppState {
         defaults.set(transcriptionBackend, forKey: "transcriptionBackend")
         defaults.set(localStreamingModel.rawValue, forKey: "localStreamingModel")
         defaults.set(secondPassEnabled, forKey: "secondPassEnabled")
-        defaults.set(sessionMode.rawValue, forKey: "sessionMode")
-        defaults.set(answerStyle.rawValue, forKey: "answerStyle")
-        defaults.set(answerPreferences, forKey: "answerPreferences")
         for window in NSApp.windows where !(window is NSPanel) {
             window.level = keepOnTop ? .floating : .normal
         }
@@ -907,6 +947,7 @@ final class AppState {
 
     func prepareForTermination() {
         importTask?.cancel()
+        workspaces.flush()
         audio.setPCMHandler(nil)
         microphone.setPCMHandler(nil)
         _ = microphone.stopCapture()

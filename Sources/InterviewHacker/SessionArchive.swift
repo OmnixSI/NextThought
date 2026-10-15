@@ -39,10 +39,7 @@ final class SessionArchive {
     @ObservationIgnored private var activeMeta: SessionMeta?
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
 
-    static var root: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InterviewHacker/Sessions", isDirectory: true)
-    }
+    static var root: URL { AppPaths.sessions }
 
     func folder(_ id: UUID) -> URL { Self.root.appendingPathComponent(id.uuidString, isDirectory: true) }
 
@@ -236,7 +233,7 @@ final class SessionArchive {
 
     /// Converts the single `sessions.json` written by earlier versions, once.
     nonisolated private static func migrateLegacySessions(into root: URL) {
-        let legacy = root.deletingLastPathComponent().appendingPathComponent("sessions.json")
+        let legacy = AppPaths.legacySessions
         guard FileManager.default.fileExists(atPath: legacy.path),
               let data = try? Data(contentsOf: legacy),
               let old = try? JSONDecoder().decode([SavedSession].self, from: data) else { return }

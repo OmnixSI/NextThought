@@ -32,3 +32,36 @@ jobs:
           path: source-snapshot.tar.gz
           retention-days: 2
           if-no-files-found: error
+  selftest:
+    # Runs the real app binary headlessly: data round trip, local signing,
+    # the updater against this repository's releases, and the X-ASR pipeline.
+    runs-on: macos-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build app bundle
+        run: |
+          swift build --disable-sandbox -c release
+          bin="$(swift build --disable-sandbox -c release --show-bin-path)/InterviewHacker"
+          app="$RUNNER_TEMP/InterviewHacker.app"
+          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+          cp "$bin" "$app/Contents/MacOS/InterviewHacker"
+          cp Resources/Info.plist "$app/Contents/Info.plist"
+          codesign --force --sign - --identifier com.interviewhacker.app "$app"
+          echo "APP=$app" >> "$GITHUB_ENV"
+      - name: Cache X-ASR models
+        uses: actions/cache@v4
+        with:
+          path: ~/ih-selftest/models
+          key: xasr-zh-en-2026-06-v1
+      - name: Self-test
+        env:
+          INTERVIEWHACKER_DATA_DIR: /Users/runner/ih-selftest
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$INTERVIEWHACKER_DATA_DIR"
+          "$APP/Contents/MacOS/InterviewHacker" --self-test data signing update asr \
+            --fixtures Tools/Validation/Fixtures --repo "${{ github.repository }}" 2>&1 | tee selftest.log
+          grep -q "SELFTEST all passed" selftest.log

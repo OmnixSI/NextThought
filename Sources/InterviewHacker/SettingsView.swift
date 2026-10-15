@@ -3,7 +3,7 @@ import SwiftUI
 import InterviewHackerCore
 
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case general = "常规", recognition = "识别", answers = "回答", overlay = "提词器", recording = "记录", updates = "更新", shortcuts = "快捷键"
+    case general = "常规", recognition = "识别", answers = "回答", overlay = "提词器", recording = "数据", updates = "更新", shortcuts = "快捷键"
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -422,25 +422,86 @@ private struct OverlaySettings: View {
 
 private struct RecordingSettings: View {
     @Environment(AppState.self) private var state
+    @State private var includeSecrets = false
+    @State private var applySettings = true
+    @State private var backups: [DataBackup.BackupFile] = []
+    @State private var restoring: DataBackup.BackupFile?
 
     var body: some View {
         @Bindable var state = state
-        SettingsSection(title: "会话记录", icon: "tray.full") {
-            Toggle("记录每次会话（转录、识别到的问题、提词与当时的资料要求）", isOn: $state.recordSessions)
+        SettingsSection(title: "会话记录与复盘", icon: "tray.full") {
+            Toggle("记录每次会话（转录、识别到的问题、提词与当时的场景资料）", isOn: $state.recordSessions)
                 .disabled(state.isRunning)
                 .onChange(of: state.recordSessions) { _, _ in state.updateSettings() }
-            Toggle("会话结束后自动生成摘要与问题清单", isOn: $state.autoSummarize)
+            Toggle("会话结束后自动生成摘要、问题清单与复盘", isOn: $state.autoSummarize)
                 .disabled(!state.recordSessions)
                 .onChange(of: state.autoSummarize) { _, _ in state.updateSettings() }
-            Note("记录边说边写入本机（崩溃或强制退出也不会丢），不保存原始音频。摘要用当前的回答引擎生成，会把这次会话的转录发给该引擎；在“记录”里可随时重新生成、导出 Markdown 或删除。")
+            Toggle("把复盘得到的经验和改进回答自动加入场景的经验库与题库（自我迭代）", isOn: $state.autoApplyLessons)
+                .disabled(!state.autoSummarize)
+                .onChange(of: state.autoApplyLessons) { _, _ in state.updateSettings() }
+            Note("记录边说边写入本机（崩溃或强制退出也不会丢），不保存原始音频。摘要与复盘用当前的回答引擎生成，会把这次会话的转录发给该引擎。")
+        }
+        SettingsSection(title: "导出与导入", icon: "externaldrive") {
+            Note("一个 .ihbackup 文件包含全部场景（资料、经验库、题库、阶段复盘）、全部会话记录和设置。换电脑、重装或想留档时导出；导入只合并，不删除现有数据，同一场景以较新的修改为准。")
             HStack {
-                Button("打开记录文件夹") {
-                    try? FileManager.default.createDirectory(at: SessionArchive.root, withIntermediateDirectories: true)
-                    NSWorkspace.shared.open(SessionArchive.root)
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                Button("导出当前转录（纯文本）") { state.saveTranscriptExport() }.buttonStyle(SecondaryButtonStyle()).disabled(state.entries.isEmpty)
+                Button("导出全部数据…") { state.exportAllData(includeSecrets: includeSecrets) }.buttonStyle(PrimaryButtonStyle()).disabled(state.isDataBusy)
+                Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets).toggleStyle(.checkbox)
             }
+            HStack {
+                Button("导入…") { state.importData(applySettings: applySettings) }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
+                Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings).toggleStyle(.checkbox)
+            }
+            if includeSecrets { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
+            if state.isDataBusy { ProgressView().controlSize(.small) }
+            if !state.dataStatus.isEmpty { Note(state.dataStatus, color: .green) }
+        }
+        SettingsSection(title: "自动备份", icon: "clock.arrow.circlepath") {
+            Toggle("每天自动备份一次（另外在安装更新和导入前也会备份）", isOn: $state.autoBackup)
+                .onChange(of: state.autoBackup) { _, _ in state.updateSettings() }
+            HStack {
+                Button("立即备份") { state.backupNow(); refreshSoon() }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy)
+                Button("打开数据文件夹") {
+                    try? FileManager.default.createDirectory(at: AppPaths.root, withIntermediateDirectories: true)
+                    NSWorkspace.shared.open(AppPaths.root)
+                }.buttonStyle(SecondaryButtonStyle())
+            }
+            if backups.isEmpty {
+                Note("还没有自动备份。")
+            } else {
+                ForEach(backups.prefix(10)) { backup in
+                    HStack {
+                        Image(systemName: "archivebox").foregroundStyle(.secondary)
+                        Text(backup.date.formatted(date: .abbreviated, time: .shortened))
+                        Text(reasonTitle(backup.reason)).foregroundStyle(.secondary)
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(backup.size), countStyle: .file)).foregroundStyle(.tertiary)
+                        Spacer()
+                        Button("恢复…") { restoring = backup }.buttonStyle(ChipButtonStyle()).disabled(state.isRunning)
+                        Button { NSWorkspace.shared.activateFileViewerSelecting([backup.url]) } label: { Image(systemName: "folder") }.buttonStyle(.borderless)
+                    }
+                }
+            }
+            Note("所有数据都在 \(AppPaths.root.path)。更新应用、更换模型或回答接口都不会改动这里的文件；自动备份保留最近 10 份，不含密钥。")
+        }
+        .onAppear { backups = DataBackup.listBackups() }
+        .confirmationDialog("从这份备份恢复？", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }), titleVisibility: .visible) {
+            Button("合并恢复") { if let restoring { state.importArchive(restoring.url, applySettings: false) }; restoring = nil; refreshSoon() }
+            Button("取消", role: .cancel) { restoring = nil }
+        } message: {
+            Text("把备份里的场景和会话记录合并回来；现有数据不会被删除，较新的修改会保留。")
+        }
+    }
+
+    private func refreshSoon() {
+        Task { try? await Task.sleep(for: .seconds(2)); backups = DataBackup.listBackups() }
+    }
+
+    private func reasonTitle(_ reason: String) -> String {
+        switch reason {
+        case "daily": "每日"
+        case "update": "更新前"
+        case "import": "导入前"
+        case "manual": "手动"
+        default: reason
         }
     }
 }
