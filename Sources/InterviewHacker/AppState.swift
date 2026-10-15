@@ -4,94 +4,286 @@ import AVFoundation
 import CoreGraphics
 import Foundation
 import InterviewHackerCore
+import Observation
 import UniformTypeIdentifiers
 
+/// App-wide state. Uses the Observation framework: a view re-renders only when a
+/// property it actually read changes, so a partial transcript arriving 4×/s or an
+/// answer streaming 15×/s redraws only the few views that show them.
 @MainActor
-final class AppState: ObservableObject {
+@Observable
+final class AppState {
     static let shared = AppState()
 
-    @Published var recognitionVocabulary = UserDefaults.standard.string(forKey: "recognitionVocabulary") ?? ""
-    @Published var transcriptionBackend = AppState.loadTranscriptionBackend()
-    @Published var sessionMode = SessionMode(rawValue: UserDefaults.standard.string(forKey: "sessionMode") ?? "meeting") ?? .meeting
-    @Published var answerStyle = AnswerStyle(rawValue: UserDefaults.standard.string(forKey: "answerStyle") ?? "concise") ?? .concise
-    @Published var answerPreferences = UserDefaults.standard.string(forKey: "answerPreferences") ?? ""
-    @Published var documents: [ContextDocument] = []
-    @Published var presets: [SessionPreset] = []
-    @Published var isImportingDocuments = false
-    @Published var isIndexingDocuments = false
-    @Published var selectedExcerpts: [ContextExcerpt] = []
-    @Published var lastASRSeconds: Double?
-    @Published var lastRTF: Double?
-    @Published var lastAnswerSeconds: Double?
-    @Published var droppedAudioSegments = 0
-    @Published var teleprompterFontSize = UserDefaults.standard.object(forKey: "teleprompterFontSize") as? Double ?? 22
-    @Published var capturePrivacy = UserDefaults.standard.object(forKey: "capturePrivacy") as? Bool ?? true
-    @Published var customShortcuts: [String: ShortcutBinding] = {
+    // MARK: Session context (the active workspace)
+    var recognitionVocabulary = UserDefaults.standard.string(forKey: "recognitionVocabulary") ?? ""
+    var transcriptionBackend = AppState.loadTranscriptionBackend()
+    var isImportingDocuments = false
+    var isIndexingDocuments = false
+    var selectedExcerpts: [ContextExcerpt] = []
+    /// Workspaces whose stage review is being written.
+    var stageReviewing: Set<UUID> = []
+    /// Result line of the last export / import / backup.
+    var dataStatus = ""
+    var isDataBusy = false
+    /// Session selected in the history page (also set when jumping from a workspace review).
+    var historySelection: UUID?
+    /// nil shows sessions of all workspaces.
+    var historyWorkspaceFilter: UUID?
+
+    /// The scenario in use. Mode, materials, requirements and background all belong to it.
+    var activeWorkspace: Workspace {
+        get { workspaces.active }
+        set { workspaces.update(newValue) }
+    }
+    var sessionMode: SessionMode {
+        get { activeWorkspace.mode }
+        set { workspaces.setMode(newValue, for: activeWorkspace.id) }
+    }
+    var answerStyle: AnswerStyle {
+        get { activeWorkspace.style }
+        set { activeWorkspace.style = newValue }
+    }
+    var answerPreferences: String {
+        get { activeWorkspace.preferences }
+        set { activeWorkspace.preferences = newValue }
+    }
+    var documents: [ContextDocument] {
+        get { activeWorkspace.documents }
+        set { activeWorkspace.documents = newValue }
+    }
+    /// Free-form background notes of the workspace.
+    var profile: String {
+        get { activeWorkspace.notes }
+        set { activeWorkspace.notes = newValue }
+    }
+
+    // MARK: Metrics
+    var lastASRSeconds: Double?
+    var lastRTF: Double?
+    var lastRefineSeconds: Double?
+    var lastAnswerSeconds: Double?
+    var lastFirstTokenSeconds: Double?
+    var lastStartupSeconds: Double?
+    var droppedAudioSegments = 0
+    var echoDroppedCount = 0
+
+    // MARK: Appearance and overlay
+    var teleprompterFontSize = UserDefaults.standard.object(forKey: "teleprompterFontSize") as? Double ?? 22
+    // Fully opaque by default: a translucent window costs an extra blend every frame.
+    var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 1.0
+    var capturePrivacy = UserDefaults.standard.object(forKey: "capturePrivacy") as? Bool ?? true
+    var clickThrough = false
+    var shareTestImage: NSImage?
+    var reducedEffects = UserDefaults.standard.bool(forKey: "reducedEffects")
+    var keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
+    /// "system", "light" or "dark". Migrates the old darkMode switch.
+    var appearance = UserDefaults.standard.string(forKey: "appearance")
+        ?? (UserDefaults.standard.object(forKey: "darkMode") as? Bool == true ? "dark" : "system")
+    var customShortcuts: [String: ShortcutBinding] = {
         guard let data = UserDefaults.standard.data(forKey: "customShortcuts"),
               let values = try? JSONDecoder().decode([String: ShortcutBinding].self, from: data) else { return [:] }
         return values
     }()
-    var contextIndex = SessionContextIndex()
-    var documentRevision = UUID()
-    var importTask: Task<Void, Never>?
-    private var microphoneTranscriber: (any LiveTranscribing)?
-    var liveTranscriber: (any LiveTranscribing)?
-    var audioEpoch = UUID()
+    var shortcutErrors: [String] = []
 
-    // Answer engines
-    @Published var answerBackend = AnswerBackend(rawValue: UserDefaults.standard.string(forKey: "answerBackend") ?? "") ?? .codexAppServer
-    @Published var apiBaseURL = UserDefaults.standard.string(forKey: "apiBaseURL") ?? "https://api.openai.com/v1"
-    @Published var apiModel = UserDefaults.standard.string(forKey: "apiModel") ?? ""
-    @Published var apiKey = KeychainStore.read("answer.api")
-    @Published var appServerNote = ""
-    @Published var lastFirstTokenSeconds: Double?
-    @Published var answerHistory: [AnswerRecord] = []
+    // MARK: Answer engines
+    var answerBackend = AnswerBackend(rawValue: UserDefaults.standard.string(forKey: "answerBackend") ?? "") ?? .codexAppServer
+    var apiBaseURL = UserDefaults.standard.string(forKey: "apiBaseURL") ?? "https://api.openai.com/v1"
+    var apiModel = UserDefaults.standard.string(forKey: "apiModel") ?? ""
+    var apiKey = KeychainStore.read("answer.api")
+    var appServerNote = ""
+    var codexModels: [CodexModelOption] = []
+    var codexModelID = UserDefaults.standard.string(forKey: "codexModelID") ?? ""
+    var codexReasoning = UserDefaults.standard.string(forKey: "codexReasoning") ?? "low"
+    var codexLoginStatus = "正在检查 Codex…"
+    var codexVersion = "正在检测 Codex…"
+    var lastAnswerModel: String?
+
+    // MARK: Questions and answers
+    var answerHistory: [AnswerRecord] = []
     /// nil shows the latest answer; otherwise an index into `answerHistory`.
-    @Published var historyCursor: Int?
-    // Question candidates
-    @Published var liveCandidate: QuestionCandidate?
-    @Published var suggestedQuestions: [QuestionCandidate] = []
-    @Published var verifyUncertainWithModel = UserDefaults.standard.bool(forKey: "verifyUncertainWithModel")
-    // Cloud speech recognition (explicit opt-in)
-    @Published var cloudProvider = CloudSTTProvider(rawValue: UserDefaults.standard.string(forKey: "cloudProvider") ?? "") ?? .soniox
-    @Published var cloudModel = AppState.loadCloudModel()
-    @Published var cloudKey = ""
-    @Published var cloudConsent = UserDefaults.standard.bool(forKey: "cloudConsent")
-    // Overlay
-    // Fully opaque by default: a translucent window costs an extra blend every frame.
-    @Published var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 1.0
-    @Published var clickThrough = false
-    @Published var shareTestImage: NSImage?
-    @Published var lastStartupSeconds: Double?
-    @Published var reducedEffects = UserDefaults.standard.bool(forKey: "reducedEffects")
-    let partialThrottle = UIThrottle(interval: 0.25)
+    var historyCursor: Int?
+    var liveCandidate: QuestionCandidate?
+    /// Recent detected questions, for marking them in the conversation view.
+    var questionTexts: [String] = []
+    var suggestedQuestions: [QuestionCandidate] = []
+    var verifyUncertainWithModel = UserDefaults.standard.bool(forKey: "verifyUncertainWithModel")
+    var automaticAnswers = UserDefaults.standard.object(forKey: "automaticAnswers") as? Bool ?? true
+    var currentQuestion = ""
+    var currentLeadIn: String?
+    var pendingQuestion = ""
+    var answer = ""
+    var answerDraft = ""
+    var isAnswering = false
+    var questionInput = ""
+
+    // MARK: Cloud speech recognition (explicit opt-in)
+    var cloudProvider = CloudSTTProvider(rawValue: UserDefaults.standard.string(forKey: "cloudProvider") ?? "") ?? .soniox
+    var cloudModel = AppState.loadCloudModel()
+    var cloudKey = ""
+    var cloudConsent = UserDefaults.standard.bool(forKey: "cloudConsent")
+
+    // MARK: Local recognizer
+    var localStreamingModel = LocalStreamingModel(rawValue: UserDefaults.standard.string(forKey: "localStreamingModel") ?? "") ?? .xasr480
+    /// Re-decode each finished utterance with the offline model (more accurate final text).
+    var secondPassEnabled = UserDefaults.standard.object(forKey: "secondPassEnabled") as? Bool ?? true
+    var keepRecognizerWarm = UserDefaults.standard.object(forKey: "keepRecognizerWarm") as? Bool ?? true
+    var modelDownloadStatus = ""
+    var isDownloadingModel = false
+    var modelDownloadProgress = 0.0
+    /// Bumped when model files change on disk so readiness is re-evaluated.
+    var modelInstallRevision = 0
+    var legacyModelInstalled = false
+    var isPreparingModel = false
+    var modelLoadSeconds: Double?
+    var recognitionLanguage = UserDefaults.standard.string(forKey: "recognitionLanguage") ?? "auto"
+
+    // MARK: Echo handling
+    /// Drop microphone text that repeats the other side (speaker echo without headphones).
+    var echoSuppression = UserDefaults.standard.object(forKey: "echoSuppression") as? Bool ?? true
+    /// Apple voice processing (acoustic echo cancellation) on the microphone input.
+    var microphoneVoiceProcessing = UserDefaults.standard.bool(forKey: "microphoneVoiceProcessing")
+
+    // MARK: Recording
+    /// Record every session (transcript, questions, answers) to the local archive.
+    var recordSessions = UserDefaults.standard.object(forKey: "recordSessions") as? Bool ?? true
+    /// Ask the answer model for a summary and question list when a session ends.
+    var autoSummarize = UserDefaults.standard.object(forKey: "autoSummarize") as? Bool ?? true
+    /// Add the review's lessons and improved answers to the workspace automatically.
+    var autoApplyLessons = UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
+    /// Daily automatic backups (also taken before updates and imports).
+    var autoBackup = UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true
+    var activeArchiveID: UUID?
+
+    // MARK: Companion
+    var companionPort = UserDefaults.standard.object(forKey: "companionPort") as? Int ?? 8_765
+    var companionEnabled = false
+    var companionAddress: String?
+    var companionStatus = "未开启"
+
+    // MARK: Live session
+    var section: AppSection = .assistant
+    var isRunning = false
+    var isPaused = false
+    var isChangingSession = false
+    var statusText = "就绪"
+    var errorMessage: String?
+    var entries: [TranscriptEntry] = []
+    var partialTranscript = ""
+    var microphonePartialTranscript = ""
+    var microphoneEnabled = UserDefaults.standard.object(forKey: "microphoneEnabled") as? Bool ?? true
+    var transcriptionStatus = "等待系统音频"
+    var sessionStartedAt: Date?
+    var captureTargets: [CaptureTarget] = []
+    var selectedTargetID = UserDefaults.standard.string(forKey: "selectedTargetID") ?? ""
+    var capturePermissionGranted = false
+    var capturePermissionStatus = "正在检查录屏与系统音频权限…"
+
+    // MARK: Screenshots
+    var screenshotPreview: NSImage?
+    var screenshotURL: URL?
+    var screenshotWindows: [ScreenshotWindow] = []
+    var isWindowPickerPresented = false
+    var screenshotDisplays: [ScreenshotDisplay] = []
+    var selectedScreenshotDisplayID: UInt32?
+    var regionCaptureImage: NSImage?
+    var isRegionCapturePresented = false
+
+    // MARK: Not observed (services, tasks, bookkeeping)
+    @ObservationIgnored var contextIndex = SessionContextIndex()
+    @ObservationIgnored var documentRevision = UUID()
+    @ObservationIgnored var importTask: Task<Void, Never>?
+    @ObservationIgnored var microphoneTranscriber: (any LiveTranscribing)?
+    @ObservationIgnored var liveTranscriber: (any LiveTranscribing)?
+    @ObservationIgnored var audioEpoch = UUID()
+    let partialThrottle = UIThrottle(interval: 0.2)
     let micPartialThrottle = UIThrottle(interval: 0.25)
     let draftThrottle = UIThrottle(interval: 0.066)
-    @Published var keepRecognizerWarm = UserDefaults.standard.object(forKey: "keepRecognizerWarm") as? Bool ?? true
-    @Published var companionPort = UserDefaults.standard.object(forKey: "companionPort") as? Int ?? 8_765
-    var recognizerIdleTask: Task<Void, Never>?
-    var systemRecoveryTask: Task<Void, Never>?
-    @Published var companionEnabled = false
-    @Published var companionAddress: String?
-    @Published var companionStatus = "未开启"
+    @ObservationIgnored var recognizerIdleTask: Task<Void, Never>?
+    @ObservationIgnored var systemRecoveryTask: Task<Void, Never>?
+    @ObservationIgnored private var modelDownloadTask: Task<Void, Never>?
+    let audio = AudioCaptureService()
+    let microphone = MicrophoneCaptureService()
+    let echoMonitor = EchoMonitor()
+    private let codex = CodexBridge()
+    let summaryCodex = CodexBridge()
+    private let hotkeys = HotkeyManager()
+    @ObservationIgnored var tracker = QuestionCandidateTracker()
+    let appServer = CodexAppServerClient()
+    let apiClient = OpenAICompatibleClient()
+    let summaryAPIClient = OpenAICompatibleClient(resourceTimeout: 600)
+    @ObservationIgnored var candidateTicker: Task<Void, Never>?
+    @ObservationIgnored var appleUtteranceCounter: [String: Int] = [:]
+    @ObservationIgnored private var firstTokenAt: Date?
+    @ObservationIgnored var isStopping = false
+    @ObservationIgnored private var answerTask: Task<Void, Never>?
+    @ObservationIgnored private var requestID = UUID()
+    @ObservationIgnored private var answerTurns: [AnswerTurn] = []
+    @ObservationIgnored private var lastQuestionUsesScreenshot = false
+    @ObservationIgnored private var pendingAutomaticQuestion: (question: String, context: String, candidateID: UUID?)?
+    /// Candidate behind the answer being generated / last generated automatically.
+    @ObservationIgnored var answeringCandidateID: UUID?
+    @ObservationIgnored var lastAutomaticAnswer: (candidateID: UUID, date: Date)?
+    /// A question that arrived while the user was talking; answered if they stop soon.
+    @ObservationIgnored var deferredCandidate: (candidate: QuestionCandidate, date: Date)?
+    let archive = SessionArchive.shared
+    let workspaces = WorkspaceStore.shared
 
-    @Published var section: AppSection = .assistant
-    @Published var isRunning = false
-    @Published var isPaused = false
-    @Published var statusText = "就绪"
-    @Published var errorMessage: String?
-    @Published var entries: [TranscriptEntry] = []
-    @Published var partialTranscript = ""
-    @Published var microphonePartialTranscript = ""
-    @Published var microphoneEnabled = UserDefaults.standard.object(forKey: "microphoneEnabled") as? Bool ?? true
-    @Published var modelDownloadStatus = ""
-    @Published var isDownloadingModel = false
-    @Published var modelDownloadProgress = 0.0
-    @Published var modelIsReady = false
-    @Published var isPreparingModel = false
-    @Published var modelLoadSeconds: Double?
-    private var modelDownloadTask: Task<Void, Never>?
     var modelControlsDisabled: Bool { isRunning || isChangingSession || isPreparingModel || isDownloadingModel }
+    var colorScheme: ColorScheme? { appearance == "dark" ? .dark : appearance == "light" ? .light : nil }
+    var codexEfforts: [String] {
+        codexModels.first(where: { $0.id == codexModelID })?.efforts ?? ["low", "medium", "high"]
+    }
+    var currentAnswerModel: String {
+        (answerBackend == .openAICompatible ? apiModel : codexModelID).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var displayedAnswer: String {
+        if isAnswering && !answerDraft.isEmpty && historyCursor == nil { return answerDraft }
+        if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].answer }
+        return answer
+    }
+    var displayedQuestion: String {
+        if isAnswering && historyCursor == nil && !pendingQuestion.isEmpty { return pendingQuestion }
+        if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].question }
+        return currentQuestion
+    }
+    var historyPositionText: String? {
+        guard answerHistory.count > 1 else { return nil }
+        return "\((historyCursor ?? answerHistory.count - 1) + 1)/\(answerHistory.count)"
+    }
+
+    private init() {
+        Diagnostics.record("app.launch", ["bundle_id": Bundle.main.bundleIdentifier ?? "unknown"])
+        if !DemoMode.isEnabled { workspaces.load() }
+        archive.load()
+        rebuildContextIndex()
+        audio.onSegment = { [weak self] event in
+            Task { @MainActor in self?.receiveSpeechEvent(event) }
+        }
+        audio.onCaptureError = { [weak self] message in
+            Task { @MainActor in self?.recoverSystemCapture(message) }
+        }
+        applyAppearance()
+        registerHotkeys()
+        loadCloudKey()
+        Diagnostics.pruneOldLogs()
+        // Demo / screenshot mode shows sample data and never touches devices or models.
+        guard !DemoMode.isEnabled else { return }
+        Updater.shared.start()
+        Task {
+            // After launch settles: one backup a day, never blocking start-up.
+            try? await Task.sleep(for: .seconds(8))
+            DataBackup.dailyBackupIfNeeded()
+        }
+        Task {
+            await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
+            // Warm the persistent Codex service so the first answer does not pay start-up cost.
+            if answerBackend == .codexAppServer, CodexBridge.executableURL() != nil { await appServer.prewarm() }
+            await prewarmRecognizer()
+        }
+    }
 
     private static func loadTranscriptionBackend() -> String {
         let defaults = UserDefaults.standard
@@ -116,175 +308,13 @@ final class AppState: ObservableObject {
         return saved
     }
 
-    func downloadModel() {
-        guard !modelControlsDisabled else { return }
-        isDownloadingModel = true
-        modelDownloadProgress = 0
-        modelDownloadStatus = "正在下载中英双语流式模型（约 200 MB），完成后逐项校验。"
-        modelDownloadTask = Task {
-            do {
-                try await ZipformerModelStore.download { [weak self] progress, message in
-                    Task { @MainActor in
-                        self?.modelDownloadProgress = progress
-                        self?.modelDownloadStatus = "\(message) · \(Int(progress * 100))%"
-                    }
-                }
-                modelIsReady = true
-                modelDownloadStatus = "模型文件组已下载并通过 SHA-256 校验。"
-                updateSettings()
-                await prewarmRecognizer()
-            } catch is CancellationError {
-                modelDownloadStatus = "下载已取消。"
-            } catch {
-                modelDownloadStatus = "下载失败：\(error.localizedDescription) 可点击重试。"
-            }
-            isDownloadingModel = false
-            modelDownloadTask = nil
-        }
-    }
-
-    func cancelModelDownload() { modelDownloadTask?.cancel() }
-
-    func deleteModel() {
-        guard !modelControlsDisabled else { return }
-        Task {
-            isPreparingModel = true
-            defer { isPreparingModel = false }
-            await ZipformerRuntime.shared.unload()
-            do {
-                if FileManager.default.fileExists(atPath: ZipformerModelStore.modelDirectory.path) {
-                    try FileManager.default.removeItem(at: ZipformerModelStore.modelDirectory)
-                }
-                modelIsReady = false
-                modelDownloadProgress = 0
-                modelDownloadStatus = "已删除应用管理的 Zipformer 模型文件组。"
-            } catch {
-                modelDownloadStatus = "删除模型失败：\(error.localizedDescription)"
-            }
-        }
-    }
-
-    func openMicrophoneSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") { NSWorkspace.shared.open(url) }
-    }
-
-    @Published var transcriptionStatus = "等待系统音频"
-    @Published var isChangingSession = false
-    @Published var currentQuestion = ""
-    @Published var pendingQuestion = ""
-    @Published var answer = ""
-    @Published var answerDraft = ""
-    var displayedAnswer: String {
-        if isAnswering && !answerDraft.isEmpty && historyCursor == nil { return answerDraft }
-        if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].answer }
-        return answer
-    }
-    var displayedQuestion: String {
-        if isAnswering && !answerDraft.isEmpty && historyCursor == nil { return pendingQuestion }
-        if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].question }
-        return currentQuestion
-    }
-    var historyPositionText: String? {
-        guard answerHistory.count > 1 else { return nil }
-        return "\((historyCursor ?? answerHistory.count - 1) + 1)/\(answerHistory.count)"
-    }
-    @Published var isAnswering = false
-    @Published var questionInput = ""
-    @Published var profile = UserDefaults.standard.string(forKey: "profile") ?? ""
-    @Published var automaticAnswers = UserDefaults.standard.object(forKey: "automaticAnswers") as? Bool ?? true
-    @Published var saveHistory = UserDefaults.standard.bool(forKey: "saveHistory")
-    @Published var keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
-    /// "system", "light" or "dark". Migrates the old darkMode switch.
-    @Published var appearance = UserDefaults.standard.string(forKey: "appearance")
-        ?? (UserDefaults.standard.object(forKey: "darkMode") as? Bool == true ? "dark" : "system")
-    var colorScheme: ColorScheme? { appearance == "dark" ? .dark : appearance == "light" ? .light : nil }
     func applyAppearance() {
+        // NSApp is nil until NSApplication is created; the app delegate re-applies it.
+        guard NSApp != nil else { return }
         NSApp.appearance = appearance == "dark" ? NSAppearance(named: .darkAqua) : appearance == "light" ? NSAppearance(named: .aqua) : nil
     }
-    @Published var captureTargets: [CaptureTarget] = []
-    @Published var selectedTargetID = UserDefaults.standard.string(forKey: "selectedTargetID") ?? ""
-    @Published var codexModels: [CodexModelOption] = []
-    @Published var codexModelID = UserDefaults.standard.string(forKey: "codexModelID") ?? ""
-    @Published var codexReasoning = UserDefaults.standard.string(forKey: "codexReasoning") ?? "low"
-    @Published var lastAnswerModel: String?
-    var codexEfforts: [String] {
-        codexModels.first(where: { $0.id == codexModelID })?.efforts ?? ["low", "medium", "high"]
-    }
-    func refreshCodexModels() async {
-        let models = await Task.detached(priority: .utility) { CodexModelCatalog.load() }.value
-        codexModels = models
-        if codexModelID.isEmpty, let first = models.first {
-            codexModelID = first.id
-        }
-        normalizeCodexSelection()
-    }
-    func normalizeCodexSelection() {
-        if let model = codexModels.first(where: { $0.id == codexModelID }), !model.efforts.contains(codexReasoning) {
-            codexReasoning = model.defaultEffort
-        }
-        updateSettings()
-    }
-    @Published var codexLoginStatus = "正在检查 Codex…"
-    @Published var codexVersion = "正在检测 Codex…"
-    @Published var recognitionLanguage = UserDefaults.standard.string(forKey: "recognitionLanguage") ?? "auto"
-    @Published var screenshotPreview: NSImage?
-    @Published var screenshotURL: URL?
-    @Published var screenshotWindows: [ScreenshotWindow] = []
-    @Published var isWindowPickerPresented = false
-    @Published var screenshotDisplays: [ScreenshotDisplay] = []
-    @Published var selectedScreenshotDisplayID: UInt32?
-    @Published var regionCaptureImage: NSImage?
-    @Published var isRegionCapturePresented = false
-    @Published var savedSessions: [SavedSession] = []
-    @Published var shortcutErrors: [String] = []
-    @Published var capturePermissionGranted = false
-    @Published var capturePermissionStatus = "正在检查录屏与系统音频权限…"
 
-    let audio = AudioCaptureService()
-    let microphone = MicrophoneCaptureService()
-    private let codex = CodexBridge()
-    private let hotkeys = HotkeyManager()
-    var tracker = QuestionCandidateTracker()
-    let appServer = CodexAppServerClient()
-    let apiClient = OpenAICompatibleClient()
-    var candidateTicker: Task<Void, Never>?
-    var appleUtteranceCounter: [String: Int] = [:]
-    private var firstTokenAt: Date?
-    var activeVoiceID: UUID?
-    var isStopping = false
-    private var answerTask: Task<Void, Never>?
-    private var requestID = UUID()
-    var sessionStartedAt: Date?
-    private var sessionAnswers: [String] = []
-    private var answerTurns: [AnswerTurn] = []
-    private var lastQuestionUsesScreenshot = false
-    private var pendingAutomaticQuestion: (question: String, context: String)?
-
-    private init() {
-        Diagnostics.record("app.launch", ["bundle_id": Bundle.main.bundleIdentifier ?? "unknown"])
-        loadSessions()
-        loadPresets()
-        audio.onSegment = { [weak self] event in
-            Task { @MainActor in self?.receiveSpeechEvent(event) }
-        }
-        audio.onCaptureError = { [weak self] message in
-            Task { @MainActor in self?.recoverSystemCapture(message) }
-        }
-        applyAppearance()
-        registerHotkeys()
-        loadCloudKey()
-        Diagnostics.pruneOldLogs()
-        // Demo / screenshot mode shows sample data and never touches devices or models.
-        guard !DemoMode.isEnabled else { return }
-        Task {
-            await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
-            // Warm the persistent Codex service so the first answer does not pay start-up cost.
-            if answerBackend == .codexAppServer, CodexBridge.executableURL() != nil { await appServer.prewarm() }
-            await prewarmRecognizer()
-        }
-    }
-
-    var isModelInstalled: Bool { modelIsReady }
+    // MARK: Readiness
 
     var readinessText: String {
         if !capturePermissionGranted { return "需要允许录屏与系统音频" }
@@ -296,10 +326,12 @@ final class AppState: ObservableObject {
             if !cloudConsent { return "请在设置中确认云端识别的数据说明" }
             if cloudKey.isEmpty { return "请填写云端识别 API Key" }
         }
-        if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载 Zipformer 中英双语模型" }
+        if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
         if captureTargets.isEmpty || selectedTargetID.isEmpty { return "请检查屏幕与系统音频权限" }
         return "可以开始"
     }
+
+    var isReadyToStart: Bool { readinessText == "可以开始" }
 
     func refreshTargets() async {
         capturePermissionGranted = CGPreflightScreenCaptureAccess()
@@ -307,7 +339,7 @@ final class AppState: ObservableObject {
         guard capturePermissionGranted else {
             captureTargets = []
             selectedTargetID = ""
-            capturePermissionStatus = "请允许当前 InterviewHacker 访问录屏与系统音频；构建脚本会复用同一签名身份。"
+            capturePermissionStatus = "请允许当前 InterviewHacker 访问录屏与系统音频。绑定本机签名后，以后更新不必重新授权。"
             return
         }
         do {
@@ -339,6 +371,10 @@ final class AppState: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
+    func openMicrophoneSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") { NSWorkspace.shared.open(url) }
+    }
+
     func refreshCodexStatus() async {
         codex.invalidateLoginCache()
         let version = await Task.detached(priority: .utility) { CodexBridge.version() ?? "未检测到" }.value
@@ -347,12 +383,23 @@ final class AppState: ObservableObject {
         await refreshCodexModels()
     }
 
-    func refreshModelStatus() async {
-        modelIsReady = await Task.detached(priority: .utility) { ZipformerModelStore.isInstalled() }.value
-        if !modelIsReady, modelDownloadStatus.isEmpty {
-            modelDownloadStatus = "Zipformer 模型尚未下载。下载后将保存在应用支持目录。"
+    func refreshCodexModels() async {
+        let models = await Task.detached(priority: .utility) { CodexModelCatalog.load() }.value
+        codexModels = models
+        if codexModelID.isEmpty, let first = models.first {
+            codexModelID = first.id
         }
+        normalizeCodexSelection()
     }
+
+    func normalizeCodexSelection() {
+        if let model = codexModels.first(where: { $0.id == codexModelID }), !model.efforts.contains(codexReasoning) {
+            codexReasoning = model.defaultEffort
+        }
+        updateSettings()
+    }
+
+    // MARK: Session lifecycle
 
     func startSession() async {
         guard !isRunning, !isChangingSession else { return }
@@ -360,11 +407,12 @@ final class AppState: ObservableObject {
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
         cancelAnswer()
-        currentQuestion = ""; answer = ""; pendingQuestion = ""; partialTranscript = ""
+        currentQuestion = ""; currentLeadIn = nil; answer = ""; pendingQuestion = ""; partialTranscript = ""
         microphonePartialTranscript = ""
         lastAnswerModel = nil
         clearScreenshot()
-        selectedExcerpts = []; lastASRSeconds = nil; lastRTF = nil; lastAnswerSeconds = nil; droppedAudioSegments = 0
+        selectedExcerpts = []; lastASRSeconds = nil; lastRTF = nil; lastRefineSeconds = nil; lastAnswerSeconds = nil
+        droppedAudioSegments = 0; echoDroppedCount = 0
         audioEpoch = UUID()
         isChangingSession = true
         defer { isChangingSession = false }
@@ -374,7 +422,7 @@ final class AppState: ObservableObject {
             if microphoneEnabled { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
             if transcriptionBackend == "zipformer" {
-                statusText = "正在加载本地 Zipformer 模型…"
+                statusText = "正在加载本地识别模型…"
             }
             modelLoadSeconds = try await prepareTranscriber()
             Diagnostics.record("session.transcriber_ready", ["backend": transcriptionBackend, "seconds": Date().timeIntervalSince(startupBegan)])
@@ -382,11 +430,12 @@ final class AppState: ObservableObject {
             let startedAt = Date()
             sessionStartedAt = startedAt
             entries = []
-            sessionAnswers = []
             tracker = QuestionCandidateTracker(mode: sessionMode)
-            liveCandidate = nil; suggestedQuestions = []; appleUtteranceCounter = [:]
+            liveCandidate = nil; suggestedQuestions = []; questionTexts = []; appleUtteranceCounter = [:]
+            deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
             answerHistory = []; historyCursor = nil
             answerTurns.removeAll()
+            echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
             isRunning = true
@@ -396,6 +445,7 @@ final class AppState: ObservableObject {
                 throw AppFailure.capture("无法捕获所选音源。请在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”允许 InterviewHacker，并确认目标窗口仍打开。\n\(error.localizedDescription)")
             }
             if microphoneEnabled {
+                microphone.voiceProcessing = microphoneVoiceProcessing
                 do { try await microphone.startCapture() }
                 catch { microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)") }
             }
@@ -408,6 +458,7 @@ final class AppState: ObservableObject {
             transcriptionStatus = "等待系统音频"
             pendingAutomaticQuestion = nil
             errorMessage = nil
+            beginArchive(startedAt: startedAt)
             startCandidateTicker()
         } catch {
             isRunning = false
@@ -458,11 +509,12 @@ final class AppState: ObservableObject {
             _ = try await prepareTranscriber()
             try await audio.startCapture(targetID: selectedTargetID)
             if microphoneEnabled {
+                microphone.voiceProcessing = microphoneVoiceProcessing
                 do { try await microphone.startCapture() }
                 catch { microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)") }
             }
             isPaused = false
-            statusText = "正在聆听 · 仅本地转录"
+            statusText = "正在聆听"
             transcriptionStatus = "等待系统音频"
             errorMessage = nil
         } catch {
@@ -473,6 +525,10 @@ final class AppState: ObservableObject {
             liveTranscriber = nil; microphoneTranscriber = nil
             errorMessage = "恢复辅助失败：\(error.localizedDescription)"
         }
+    }
+
+    func togglePause() async {
+        if isPaused { await resumeSession() } else { await pauseSession() }
     }
 
     func changeCaptureTarget() async {
@@ -490,6 +546,7 @@ final class AppState: ObservableObject {
         isStopping = true
         statusText = "正在处理最后片段…"
         pendingAutomaticQuestion = nil
+        deferredCandidate = nil
         _ = await audio.stopCapture()
         _ = microphone.stopCapture()
         await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
@@ -507,12 +564,13 @@ final class AppState: ObservableObject {
         statusText = "已停止"
         partialTranscript = ""
         microphonePartialTranscript = ""
-        activeVoiceID = nil
         transcriptionStatus = "已停止"
-        if saveHistory { persistActiveSession() }
+        finishArchive()
         sessionStartedAt = nil
         isStopping = false
     }
+
+    // MARK: Asking
 
     func answerInput() {
         let question = questionInput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -552,9 +610,169 @@ final class AppState: ObservableObject {
         isAnswering = false
         pendingQuestion = ""
         pendingAutomaticQuestion = nil
+        answeringCandidateID = nil
         Diagnostics.record("answer.cancelled")
-        statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听 · 仅本地转录") : "就绪"
+        statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
     }
+
+    /// - Parameters:
+    ///   - candidateID: the detector candidate this answers (for superseding).
+    ///   - supersede: replace an in-flight automatic answer instead of queueing.
+    func ask(_ question: String, screenshot: URL?, recentContext: String? = nil, isAutomatic: Bool = false,
+             candidateID: UUID? = nil, supersede: Bool = false) {
+        if isAutomatic && isAnswering && !supersede {
+            pendingAutomaticQuestion = (question, recentContext ?? "", candidateID)
+            Diagnostics.record("answer.queued")
+            return
+        }
+        let backend = answerBackend
+        if backend == .codexExec, !CodexBridge.isChatGPTLogin(codexLoginStatus) {
+            errorMessage = "转写可继续；生成回答需要先登录 Codex。请在设置中刷新登录状态，或切换到 API 回答引擎。"
+            return
+        }
+        if isIndexingDocuments { errorMessage = "资料索引正在更新，请完成后再生成回答。"; return }
+        let selectedModel = currentAnswerModel
+        guard !selectedModel.isEmpty else { errorMessage = "请在设置中选择回答模型。"; section = .settings; return }
+        let selectedReasoning = codexReasoning
+        cancelAnswer()
+        historyCursor = nil
+        pendingQuestion = question
+        isAnswering = true
+        answeringCandidateID = candidateID
+        firstTokenAt = nil
+        statusText = backend == .openAICompatible ? "正在流式生成回答…" : "Codex 正在整理回答…"
+        let id = UUID()
+        requestID = id
+        Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue, "supersede": supersede])
+
+        let context = recentContext ?? TranscriptContextBuilder.recent(entries.map { (date: $0.date, text: $0.contextualText) })
+        let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
+        selectedExcerpts = excerpts
+        let workspace = activeWorkspace
+        let parts = AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts, experience: workspace.experienceNotes())
+        let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot)
+        let answerStartedAt = Date()
+
+        answerTask = Task {
+            defer {
+                if let screenshot, screenshot.pathExtension.lowercased() == "jpg" {
+                    try? FileManager.default.removeItem(at: screenshot)
+                }
+            }
+            do {
+                let onDelta: @Sendable (String) -> Void = { [weak self] text in
+                    Task { @MainActor in
+                        guard let self, self.requestID == id, self.isAnswering else { return }
+                        if self.firstTokenAt == nil {
+                            self.firstTokenAt = Date()
+                            self.lastFirstTokenSeconds = Date().timeIntervalSince(answerStartedAt)
+                        }
+                        // Deltas carry the full text so far; never step backwards. Coalesced to
+                        // ~15 UI updates/s to keep window-server compositing light.
+                        self.draftThrottle.run { [weak self] in
+                            guard let self, self.requestID == id, self.isAnswering else { return }
+                            if text.count >= self.answerDraft.count { self.answerDraft = text }
+                        }
+                    }
+                }
+                let result = try await runAnswer(request, backend: backend, onDelta: onDelta)
+                guard requestID == id else { return }
+                draftThrottle.cancel()
+                answer = result
+                answerDraft = ""
+                lastAnswerSeconds = Date().timeIntervalSince(answerStartedAt)
+                if firstTokenAt == nil { lastFirstTokenSeconds = lastAnswerSeconds }
+                lastAnswerModel = selectedModel
+                currentQuestion = question
+                pendingQuestion = ""
+                lastQuestionUsesScreenshot = screenshot != nil
+                isAnswering = false
+                if let candidateID, isAutomatic { lastAutomaticAnswer = (candidateID, Date()) }
+                answeringCandidateID = nil
+                Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
+                statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
+                let record = AnswerRecord(question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic)
+                answerHistory.append(record)
+                if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
+                tracker.noteAnswered()
+                answerTurns.append(AnswerTurn(question: question, answer: result))
+                if answerTurns.count > 6 { answerTurns.removeFirst(answerTurns.count - 6) }
+                errorMessage = nil
+                recordAnswer(record)
+                if let next = pendingAutomaticQuestion, isRunning, !isPaused, !isStopping {
+                    pendingAutomaticQuestion = nil
+                    ask(next.question, screenshot: nil, recentContext: next.context, isAutomatic: true, candidateID: next.candidateID)
+                }
+            } catch is CancellationError {
+                guard requestID == id else { return }
+                isAnswering = false
+                pendingQuestion = ""
+            } catch {
+                guard requestID == id else { return }
+                isAnswering = false
+                pendingQuestion = ""
+                // Keep whatever streamed so far visible instead of losing it.
+                if !answerDraft.isEmpty { answer = answerDraft; currentQuestion = question; answerDraft = "" }
+                Diagnostics.record("answer.failed", ["request_id": id.uuidString, "backend": backend.rawValue])
+                statusText = "回答出错"
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func runAnswer(_ request: AnswerRequest, backend: AnswerBackend, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
+        switch backend {
+        case .openAICompatible:
+            return try await apiClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey, onDelta: onDelta)
+        case .codexExec:
+            return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
+        case .codexAppServer:
+            do {
+                let text = try await appServer.answer(request, onDelta: onDelta)
+                appServerNote = ""
+                return text
+            } catch let AnswerEngineError.appServerUnavailable(detail) {
+                // Older CLIs or a crashed service: fall back to the one-shot exec path.
+                appServerNote = "常驻服务不可用，已临时改用 codex exec：\(detail)"
+                Diagnostics.record("appserver.fallback")
+                return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
+            }
+        }
+    }
+
+    func forceAnswerCurrent() {
+        // Priority: typed text → latest unanswered question candidate → recent transcript.
+        if questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           let candidate = [liveCandidate].compactMap({ $0 }).first(where: { $0.state != .triggered && $0.assessment.intent != .statement }) ?? suggestedQuestions.last,
+           Date().timeIntervalSince(candidate.lastChanged) < 30 {
+            answerCandidate(candidate)
+            return
+        }
+        let cutoff = Date().addingTimeInterval(-45)
+        let hasRecent = entries.contains { $0.source == CaptureSource.system.rawValue && ($0.endedAt ?? $0.date) > cutoff }
+        if !questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !partialTranscript.isEmpty || hasRecent {
+            submitCurrentText()
+            return
+        }
+        errorMessage = "还没有识别出的文字，请先说话或手动输入问题。"
+    }
+
+    /// Answer one transcript line on demand (click in the conversation view).
+    func answerEntry(_ entry: TranscriptEntry) {
+        recordQuestion(text: entry.text, leadIn: nil, intent: "manual", score: 1, disposition: "manual")
+        ask(entry.text, screenshot: nil)
+    }
+
+    private func submitCurrentText() {
+        let cutoff = Date().addingTimeInterval(-45)
+        let recent = entries.filter { $0.source == CaptureSource.system.rawValue && ($0.endedAt ?? $0.date) > cutoff }.map(\.text)
+        guard let question = ManualQuestionBuilder.make(typed: questionInput, partial: partialTranscript, recent: recent) else {
+            errorMessage = "还没有最近 45 秒的转写。请先说话或手动输入问题。"; return
+        }
+        ask(question, screenshot: nil)
+    }
+
+    // MARK: Screenshots
 
     func captureScreenshot(_ kind: ScreenshotKind) {
         if kind == .window {
@@ -605,7 +823,6 @@ final class AppState: ObservableObject {
             screenshotURL = result.url
             screenshotPreview = result.preview
             section = .assistant
-            statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听 · 仅本地转录") : "就绪"
             Diagnostics.record("screenshot.capture.completed", ["mode": "region", "width": Int(result.preview.size.width), "height": Int(result.preview.size.height)])
         } catch {
             errorMessage = "区域截图失败：\(error.localizedDescription)"
@@ -646,7 +863,6 @@ final class AppState: ObservableObject {
                 screenshotURL = result.url
                 screenshotPreview = result.preview
                 section = .assistant
-                statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听 · 仅本地转录") : "就绪"
                 Diagnostics.record("screenshot.capture.completed", ["mode": "window", "owner": window.owner, "width": Int(result.preview.size.width), "height": Int(result.preview.size.height)])
             } catch {
                 errorMessage = "截图失败：\(error.localizedDescription)"
@@ -666,27 +882,33 @@ final class AppState: ObservableObject {
         screenshotPreview = nil
     }
 
+    // MARK: Settings
+
     func setProfile(_ text: String) {
         profile = text
-        UserDefaults.standard.set(text, forKey: "profile")
     }
 
     func updateSettings() {
-        UserDefaults.standard.set(codexModelID, forKey: "codexModelID")
-        UserDefaults.standard.set(codexReasoning, forKey: "codexReasoning")
-        UserDefaults.standard.set(automaticAnswers, forKey: "automaticAnswers")
-        UserDefaults.standard.set(saveHistory, forKey: "saveHistory")
-        UserDefaults.standard.set(keepOnTop, forKey: "keepOnTop")
-        UserDefaults.standard.set(appearance, forKey: "appearance")
-        UserDefaults.standard.set(microphoneEnabled, forKey: "microphoneEnabled")
+        let defaults = UserDefaults.standard
+        defaults.set(codexModelID, forKey: "codexModelID")
+        defaults.set(codexReasoning, forKey: "codexReasoning")
+        defaults.set(automaticAnswers, forKey: "automaticAnswers")
+        defaults.set(recordSessions, forKey: "recordSessions")
+        defaults.set(autoSummarize, forKey: "autoSummarize")
+        defaults.set(autoApplyLessons, forKey: "autoApplyLessons")
+        defaults.set(autoBackup, forKey: "autoBackup")
+        defaults.set(keepOnTop, forKey: "keepOnTop")
+        defaults.set(appearance, forKey: "appearance")
+        defaults.set(microphoneEnabled, forKey: "microphoneEnabled")
+        defaults.set(echoSuppression, forKey: "echoSuppression")
+        defaults.set(microphoneVoiceProcessing, forKey: "microphoneVoiceProcessing")
         applyAppearance()
-        UserDefaults.standard.set(selectedTargetID, forKey: "selectedTargetID")
-        UserDefaults.standard.set(recognitionLanguage, forKey: "recognitionLanguage")
-        UserDefaults.standard.set(recognitionVocabulary, forKey: "recognitionVocabulary")
-        UserDefaults.standard.set(transcriptionBackend, forKey: "transcriptionBackend")
-        UserDefaults.standard.set(sessionMode.rawValue, forKey: "sessionMode")
-        UserDefaults.standard.set(answerStyle.rawValue, forKey: "answerStyle")
-        UserDefaults.standard.set(answerPreferences, forKey: "answerPreferences")
+        defaults.set(selectedTargetID, forKey: "selectedTargetID")
+        defaults.set(recognitionLanguage, forKey: "recognitionLanguage")
+        defaults.set(recognitionVocabulary, forKey: "recognitionVocabulary")
+        defaults.set(transcriptionBackend, forKey: "transcriptionBackend")
+        defaults.set(localStreamingModel.rawValue, forKey: "localStreamingModel")
+        defaults.set(secondPassEnabled, forKey: "secondPassEnabled")
         for window in NSApp.windows where !(window is NSPanel) {
             window.level = keepOnTop ? .floating : .normal
         }
@@ -704,11 +926,6 @@ final class AppState: ObservableObject {
         } catch {
             errorMessage = "导出失败：\(error.localizedDescription)"
         }
-    }
-
-    func deleteHistory() {
-        savedSessions.removeAll()
-        persistSessions()
     }
 
     func copyAnswer() {
@@ -730,145 +947,26 @@ final class AppState: ObservableObject {
 
     func prepareForTermination() {
         importTask?.cancel()
+        workspaces.flush()
         audio.setPCMHandler(nil)
         microphone.setPCMHandler(nil)
         _ = microphone.stopCapture()
+        if isRunning { _ = archive.finish() }
         Task {
             await liveTranscriber?.cancel()
             await microphoneTranscriber?.cancel()
             await ZipformerRuntime.shared.unload()
+            await OfflineSegmentRecognizer.shared.unload()
         }
         answerTask?.cancel()
         codex.cancel()
+        summaryCodex.cancel()
         appServer.shutdown()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
     }
 
-    private func receiveSpeechEvent(_ event: SpeechSegmentEvent) {
-        guard isRunning, !isPaused, !isStopping, event.kind == .final else { return }
-        guard transcriptionBackend == "zipformer"
-            || (transcriptionBackend == "cloud" && cloudProvider == .openai) else { return }
-        let transcriber = event.source == .microphone ? microphoneTranscriber : liveTranscriber
-        Task { await transcriber?.commitUtterance() }
-    }
-
-    func ask(_ question: String, screenshot: URL?, recentContext: String? = nil, isAutomatic: Bool = false) {
-        if isAutomatic && isAnswering {
-            pendingAutomaticQuestion = (question, recentContext ?? "")
-            Diagnostics.record("answer.queued")
-            return
-        }
-        let backend = answerBackend
-        if backend == .codexExec, !CodexBridge.isChatGPTLogin(codexLoginStatus) {
-            errorMessage = "转写可继续；生成回答需要先登录 Codex。请在设置中刷新登录状态，或切换到 API 回答引擎。"
-            return
-        }
-        if isIndexingDocuments { errorMessage = "资料索引正在更新，请完成后再生成回答。"; return }
-        let selectedModel = (backend == .openAICompatible ? apiModel : codexModelID).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !selectedModel.isEmpty else { errorMessage = "请在设置中选择回答模型。"; section = .settings; return }
-        let selectedReasoning = codexReasoning
-        cancelAnswer()
-        historyCursor = nil
-        pendingQuestion = question
-        isAnswering = true
-        firstTokenAt = nil
-        statusText = backend == .openAICompatible ? "正在流式生成回答…" : "Codex 正在整理回答…"
-        let id = UUID()
-        requestID = id
-        Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue])
-
-        let context = recentContext ?? TranscriptContextBuilder.recent(entries.map { (date: $0.date, text: $0.contextualText) })
-        let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
-        selectedExcerpts = excerpts
-        let parts = AnswerPromptBuilder.makeParts(question: question, context: context, profile: profile, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: answerPreferences, mode: sessionMode, style: answerStyle, excerpts: excerpts)
-        let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot)
-        let answerStartedAt = Date()
-
-        answerTask = Task {
-            defer {
-                if let screenshot, screenshot.pathExtension.lowercased() == "jpg" {
-                    try? FileManager.default.removeItem(at: screenshot)
-                }
-            }
-            do {
-                let onDelta: @Sendable (String) -> Void = { [weak self] text in
-                    Task { @MainActor in
-                        guard let self, self.requestID == id, self.isAnswering else { return }
-                        if self.firstTokenAt == nil {
-                            self.firstTokenAt = Date()
-                            self.lastFirstTokenSeconds = Date().timeIntervalSince(answerStartedAt)
-                        }
-                        // Deltas carry the full text so far; never step backwards. Coalesced to
-                        // ~15 UI updates/s to keep window-server compositing light.
-                        self.draftThrottle.run { [weak self] in
-                            guard let self, self.requestID == id, self.isAnswering else { return }
-                            if text.count >= self.answerDraft.count { self.answerDraft = text }
-                        }
-                    }
-                }
-                let result = try await runAnswer(request, backend: backend, onDelta: onDelta)
-                guard requestID == id else { return }
-                draftThrottle.cancel()
-                answer = result
-                answerDraft = ""
-                lastAnswerSeconds = Date().timeIntervalSince(answerStartedAt)
-                if firstTokenAt == nil { lastFirstTokenSeconds = lastAnswerSeconds }
-                lastAnswerModel = selectedModel
-                currentQuestion = question
-                pendingQuestion = ""
-                lastQuestionUsesScreenshot = screenshot != nil
-                isAnswering = false
-                Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
-                statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
-                sessionAnswers.append(result)
-                answerHistory.append(AnswerRecord(question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic))
-                if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
-                tracker.noteAnswered()
-                answerTurns.append(AnswerTurn(question: question, answer: result))
-                if answerTurns.count > 6 { answerTurns.removeFirst(answerTurns.count - 6) }
-                errorMessage = nil
-                if saveHistory { persistActiveSession() }
-                if let next = pendingAutomaticQuestion, isRunning, !isPaused, !isStopping {
-                    pendingAutomaticQuestion = nil
-                    ask(next.question, screenshot: nil, recentContext: next.context, isAutomatic: true)
-                }
-            } catch is CancellationError {
-                guard requestID == id else { return }
-                isAnswering = false
-                pendingQuestion = ""
-            } catch {
-                guard requestID == id else { return }
-                isAnswering = false
-                pendingQuestion = ""
-                // Keep whatever streamed so far visible instead of losing it.
-                if !answerDraft.isEmpty { answer = answerDraft; currentQuestion = question; answerDraft = "" }
-                Diagnostics.record("answer.failed", ["request_id": id.uuidString, "backend": backend.rawValue])
-                statusText = "回答出错"
-                errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    private func runAnswer(_ request: AnswerRequest, backend: AnswerBackend, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
-        switch backend {
-        case .openAICompatible:
-            return try await apiClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey, onDelta: onDelta)
-        case .codexExec:
-            return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
-        case .codexAppServer:
-            do {
-                let text = try await appServer.answer(request, onDelta: onDelta)
-                appServerNote = ""
-                return text
-            } catch let AnswerEngineError.appServerUnavailable(detail) {
-                // Older CLIs or a crashed service: fall back to the one-shot exec path.
-                appServerNote = "常驻服务不可用，已临时改用 codex exec：\(detail)"
-                Diagnostics.record("appserver.fallback")
-                return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
-            }
-        }
-    }
+    // MARK: Hotkeys
 
     func suspendShortcuts() { hotkeys.unregister() }
 
@@ -887,7 +985,7 @@ final class AppState: ObservableObject {
             .forceAnswer: { [weak self] in self?.forceAnswerCurrent() },
             .togglePause: { [weak self] in
                 guard let self else { return }
-                Task { if self.isPaused { await self.resumeSession() } else { await self.pauseSession() } }
+                Task { await self.togglePause() }
             },
             .toggleTeleprompter: { TeleprompterController.shared.toggle() },
             .cancelAnswer: { [weak self] in self?.cancelAnswer() },
@@ -900,37 +998,14 @@ final class AppState: ObservableObject {
         ], overrides: customShortcuts)
     }
 
-    private func persistActiveSession() {
-        guard let startedAt = sessionStartedAt, !entries.isEmpty else { return }
-        let saved = SavedSession(startedAt: startedAt, endedAt: Date(), entries: entries, answers: sessionAnswers, records: answerHistory, mode: sessionMode.rawValue)
-        if let idx = savedSessions.firstIndex(where: { $0.startedAt == startedAt }) {
-            savedSessions[idx] = saved
-        } else {
-            savedSessions.insert(saved, at: 0)
-        }
-        persistSessions()
-    }
+    // MARK: Transcriber setup
 
-    func persistSessions() {
-        guard let url = sessionsURL else { return }
-        do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let data = try JSONEncoder().encode(savedSessions)
-            try data.write(to: url, options: .atomic)
-        } catch {
-            errorMessage = "保存本地记录失败：\(error.localizedDescription)"
-        }
-    }
-
-    private func loadSessions() {
-        guard let url = sessionsURL, let data = try? Data(contentsOf: url),
-              let sessions = try? JSONDecoder().decode([SavedSession].self, from: data) else { return }
-        savedSessions = sessions
-    }
-
-    private var sessionsURL: URL? {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("InterviewHacker/sessions.json")
+    private func receiveSpeechEvent(_ event: SpeechSegmentEvent) {
+        guard isRunning, !isPaused, !isStopping, event.kind == .final else { return }
+        guard transcriptionBackend == "zipformer"
+            || (transcriptionBackend == "cloud" && cloudProvider == .openai) else { return }
+        let transcriber = event.source == .microphone ? microphoneTranscriber : liveTranscriber
+        Task { await transcriber?.commitUtterance(event) }
     }
 
     private func prepareTranscriber() async throws -> TimeInterval {
@@ -967,10 +1042,12 @@ final class AppState: ObservableObject {
         let factory: () -> (any LiveTranscribing)?
         switch transcriptionBackend {
         case "zipformer":
-            guard modelIsReady else { throw AppFailure.modelMissing }
+            guard isModelInstalled else { throw AppFailure.modelMissing }
             let vocabulary = recognitionVocabulary
-            factory = { ZipformerStreamingTranscriber(vocabulary: vocabulary) }
-            statusText = "正在准备本地 Zipformer 流式识别…"
+            let model = localStreamingModel.onlineModel
+            let refiner = refinerModel
+            factory = { ZipformerStreamingTranscriber(model: model, refiner: refiner, vocabulary: vocabulary) }
+            statusText = "正在准备本地流式识别…"
         case "cloud":
             guard cloudConsent, !cloudKey.isEmpty else {
                 throw AppFailure.transcription("请先在设置中确认云端识别说明并填写 API Key。")
@@ -987,7 +1064,7 @@ final class AppState: ObservableObject {
         }
 
         guard let service = factory() else {
-            throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换 Zipformer 或云端识别。")
+            throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换本地或云端识别。")
         }
         let started = Date()
         liveTranscriber = service
@@ -1004,8 +1081,20 @@ final class AppState: ObservableObject {
             microphoneTranscriber = nil
             microphoneUnavailable("麦克风识别器启动失败：\(failure)")
         }
-        audio.setPCMHandler(service.inputHandler())
-        if let micService = microphoneTranscriber { microphone.setPCMHandler(micService.inputHandler()) }
+        // Both channels also feed the echo monitor (loudness envelopes only).
+        let monitor = echoMonitor
+        let systemInput = service.inputHandler()
+        audio.setPCMHandler { samples, origin in
+            systemInput(samples, origin)
+            monitor.system(samples)
+        }
+        if let micService = microphoneTranscriber {
+            let micInput = micService.inputHandler()
+            microphone.setPCMHandler { samples, origin in
+                micInput(samples, origin)
+                monitor.microphone(samples)
+            }
+        }
         return Date().timeIntervalSince(started)
     }
 
@@ -1022,30 +1111,100 @@ final class AppState: ObservableObject {
         }
     }
 
-    func forceAnswerCurrent() {
-        // Priority: typed text → latest unanswered question candidate → recent transcript.
-        if questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           let candidate = [liveCandidate].compactMap({ $0 }).first(where: { $0.state != .triggered && $0.assessment.intent != .statement }) ?? suggestedQuestions.last,
-           Date().timeIntervalSince(candidate.lastChanged) < 30 {
-            answerCandidate(candidate)
-            return
-        }
-        let cutoff = Date().addingTimeInterval(-45)
-        let hasRecent = entries.contains { $0.source == CaptureSource.system.rawValue && ($0.endedAt ?? $0.date) > cutoff }
-        if !questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !partialTranscript.isEmpty || hasRecent {
-            submitCurrentText()
-            return
-        }
-        errorMessage = "还没有识别出的文字，请先说话或手动输入问题。"
+    // MARK: Local model management
+
+    var refinerModel: OfflineTransducerModel? {
+        guard secondPassEnabled, localStreamingModel != .legacy, LocalASRPackage.xasrOffline.isInstalled else { return nil }
+        return .xasrOffline(at: LocalASRPackage.xasrOffline.directory)
     }
 
-    private func submitCurrentText() {
-        let cutoff = Date().addingTimeInterval(-45)
-        let recent = entries.filter { $0.source == CaptureSource.system.rawValue && ($0.endedAt ?? $0.date) > cutoff }.map(\.text)
-        guard let question = ManualQuestionBuilder.make(typed: questionInput, partial: partialTranscript, recent: recent) else {
-            errorMessage = "还没有最近 45 秒的转写。请先说话或手动输入问题。"; return
-        }
-        ask(question, screenshot: nil)
+    var isModelInstalled: Bool {
+        _ = modelInstallRevision
+        if let package = localStreamingModel.package { return package.isInstalled }
+        return legacyModelInstalled
     }
 
+    /// Packages still missing for the current choice (streaming + optional second pass).
+    var missingPackages: [LocalASRPackage] {
+        _ = modelInstallRevision
+        var result: [LocalASRPackage] = []
+        if let package = localStreamingModel.package, !package.isInstalled { result.append(package) }
+        if secondPassEnabled, localStreamingModel != .legacy, !LocalASRPackage.xasrOffline.isInstalled { result.append(.xasrOffline) }
+        return result
+    }
+
+    func refreshModelStatus() async {
+        legacyModelInstalled = await Task.detached(priority: .utility) { ZipformerModelStore.isInstalled() }.value
+        modelInstallRevision += 1
+        if !isModelInstalled, modelDownloadStatus.isEmpty {
+            modelDownloadStatus = "本地识别模型尚未下载。"
+        }
+    }
+
+    func downloadModel() {
+        guard !modelControlsDisabled else { return }
+        isDownloadingModel = true
+        modelDownloadProgress = 0
+        modelDownloadTask = Task {
+            do {
+                if localStreamingModel == .legacy {
+                    modelDownloadStatus = "正在下载旧版双语模型（约 200 MB）…"
+                    try await ZipformerModelStore.download { [weak self] progress, message in
+                        Task { @MainActor in
+                            self?.modelDownloadProgress = progress
+                            self?.modelDownloadStatus = "\(message) · \(Int(progress * 100))%"
+                        }
+                    }
+                    legacyModelInstalled = true
+                } else {
+                    let packages = missingPackages
+                    for (index, package) in packages.enumerated() {
+                        try Task.checkCancellation()
+                        try await package.install { [weak self] progress, message in
+                            Task { @MainActor in
+                                let overall = (Double(index) + progress) / Double(max(1, packages.count))
+                                self?.modelDownloadProgress = overall
+                                self?.modelDownloadStatus = "\(message) · \(Int(overall * 100))%"
+                            }
+                        }
+                        modelInstallRevision += 1
+                    }
+                }
+                modelInstallRevision += 1
+                modelDownloadStatus = "模型已下载并通过 SHA-256 校验，可离线使用。"
+                updateSettings()
+                await prewarmRecognizer()
+            } catch is CancellationError {
+                modelDownloadStatus = "下载已取消。"
+            } catch {
+                modelDownloadStatus = "下载失败：\(error.localizedDescription)"
+            }
+            isDownloadingModel = false
+            modelDownloadTask = nil
+        }
+    }
+
+    func cancelModelDownload() { modelDownloadTask?.cancel() }
+
+    func deleteModels() {
+        guard !modelControlsDisabled else { return }
+        Task {
+            isPreparingModel = true
+            defer { isPreparingModel = false }
+            await ZipformerRuntime.shared.unload()
+            await OfflineSegmentRecognizer.shared.unload()
+            do {
+                for package in LocalASRPackage.allCases { try package.remove() }
+                if FileManager.default.fileExists(atPath: ZipformerModelStore.modelDirectory.path) {
+                    try FileManager.default.removeItem(at: ZipformerModelStore.modelDirectory)
+                }
+                legacyModelInstalled = false
+                modelInstallRevision += 1
+                modelDownloadProgress = 0
+                modelDownloadStatus = "已删除全部本地识别模型。"
+            } catch {
+                modelDownloadStatus = "删除模型失败：\(error.localizedDescription)"
+            }
+        }
+    }
 }

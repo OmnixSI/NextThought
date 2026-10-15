@@ -3,7 +3,7 @@ import SwiftUI
 import InterviewHackerCore
 
 struct ShortcutSettingsView: View {
-    @EnvironmentObject var state: AppState
+    @Environment(AppState.self) private var state
     @State private var recording: HotkeyAction?
     var body: some View {
         VStack(spacing: 10) {

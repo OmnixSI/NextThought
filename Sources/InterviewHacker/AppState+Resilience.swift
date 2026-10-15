@@ -58,12 +58,13 @@ extension AppState {
         guard keepRecognizerWarm, !isRunning else { return }
         switch transcriptionBackend {
         case "zipformer":
-            guard modelIsReady else { return }
+            guard isModelInstalled else { return }
             let started = Date()
             do {
-                try await ZipformerRuntime.shared.configure(
-                    modelDirectory: ZipformerModelStore.modelDirectory,
-                    hotwords: recognitionVocabulary)
+                try await ZipformerRuntime.shared.configure(model: localStreamingModel.onlineModel, hotwords: recognitionVocabulary)
+                if let refiner = refinerModel {
+                    try await OfflineSegmentRecognizer.shared.configure(model: refiner, hotwords: recognitionVocabulary)
+                }
                 Diagnostics.record("zipformer.prewarmed", ["seconds": Date().timeIntervalSince(started)])
             } catch {
                 Diagnostics.record("zipformer.prewarm_failed")
@@ -79,13 +80,14 @@ extension AppState {
     func scheduleRecognizerIdleShutdown() {
         recognizerIdleTask?.cancel()
         guard keepRecognizerWarm else {
-            Task { await ZipformerRuntime.shared.unload() }
+            Task { await ZipformerRuntime.shared.unload(); await OfflineSegmentRecognizer.shared.unload() }
             return
         }
         recognizerIdleTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(15 * 60))
             guard !Task.isCancelled, let self, !self.isRunning else { return }
             await ZipformerRuntime.shared.unload()
+            await OfflineSegmentRecognizer.shared.unload()
             Diagnostics.record("zipformer.idle_unloaded")
         }
     }
@@ -93,6 +95,6 @@ extension AppState {
     func saveRecognizerSettings() {
         UserDefaults.standard.set(keepRecognizerWarm, forKey: "keepRecognizerWarm")
         if keepRecognizerWarm { Task { await prewarmRecognizer() } }
-        else if !isRunning { Task { await ZipformerRuntime.shared.unload() } }
+        else if !isRunning { Task { await ZipformerRuntime.shared.unload(); await OfflineSegmentRecognizer.shared.unload() } }
     }
 }

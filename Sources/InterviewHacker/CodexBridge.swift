@@ -52,16 +52,16 @@ final class CodexBridge: @unchecked Sendable {
         if process?.isRunning == true { process?.terminate() }
     }
 
-    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
         let requestID = UUID()
         return try await withTaskCancellationHandler {
-            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, onUpdate: onUpdate)
+            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, timeout: timeout, onUpdate: onUpdate)
         } onCancel: {
             self.terminate(requestID)
         }
     }
 
-    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, timeout: TimeInterval, onUpdate: @escaping (String) async -> Void) async throws -> String {
         try Task.checkCancellation()
         let identifierCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._/:"))
         guard !model.isEmpty, model.unicodeScalars.allSatisfy({ identifierCharacters.contains($0) }),
@@ -116,7 +116,7 @@ final class CodexBridge: @unchecked Sendable {
         Diagnostics.record("codex.started", ["request_id": requestID.uuidString, "model": model, "reasoning": reasoning, "pid": process.processIdentifier])
 
         let timeoutTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(90))
+            try? await Task.sleep(for: .seconds(timeout))
             guard !Task.isCancelled else { return }
             self?.markTimedOut(requestID)
             self?.terminate(requestID)
@@ -157,7 +157,7 @@ final class CodexBridge: @unchecked Sendable {
         Diagnostics.record("codex.exited", ["request_id": requestID.uuidString, "seconds": Date().timeIntervalSince(startedAt), "exit_code": process.terminationStatus, "events": eventTypes.sorted()])
         let detail = (try? String(contentsOf: errorURL, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if takeTimedOut(requestID) {
-            throw AppFailure.capture("Codex 请求超过 90 秒，已自动取消。请检查网络或稍后重试。")
+            throw AppFailure.capture("Codex 请求超过 \(Int(timeout)) 秒，已自动取消。请检查网络或稍后重试。")
         }
         try Task.checkCancellation()
         if let readError { throw readError }

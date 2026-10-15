@@ -5,10 +5,7 @@ import InterviewHackerCore
 enum ZipformerModelStore {
     static let modelID = "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20"
     static let revision = "98590b7ed6443e77b714204da2757d75e1a642f4"
-    static let modelDirectory: URL = {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("InterviewHacker/models/\(modelID)", isDirectory: true)
-    }()
+    static let modelDirectory: URL = AppPaths.models.appendingPathComponent(modelID, isDirectory: true)
 
     private struct Asset {
         let name: String
@@ -104,7 +101,7 @@ enum ZipformerModelError: LocalizedError {
     }
 }
 
-private final class ZipformerAssetDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+final class ZipformerAssetDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<Void, Error>?
     private var destination: URL?

@@ -100,7 +100,7 @@ struct MetricPill: View {
 
 /// Quick follow-ups on the current answer.
 struct RefinementBar: View {
-    @EnvironmentObject var state: AppState
+    @Environment(AppState.self) private var state
     var compact = false
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -113,37 +113,5 @@ struct RefinementBar: View {
             }
         }
         .disabled(state.displayedAnswer.isEmpty || state.isAnswering)
-    }
-}
-
-/// The question the detector is currently tracking, plus uncertain ones to click.
-struct CandidateStrip: View {
-    @EnvironmentObject var state: AppState
-    var body: some View {
-        if state.liveCandidate != nil || !state.suggestedQuestions.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                if let candidate = state.liveCandidate, candidate.state != .triggered || state.isAnswering == false {
-                    HStack(spacing: 6) {
-                        Image(systemName: candidate.isFinal ? "text.bubble" : "waveform").foregroundStyle(Color.accentColor)
-                        Text(candidate.assessment.intent.title).font(.system(size: 11, weight: .semibold)).foregroundStyle(Color.accentColor)
-                        Text(candidate.text).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
-                        Spacer(minLength: 0)
-                        if candidate.state != .triggered, candidate.assessment.intent != .statement {
-                            Button("回答") { state.answerCandidate(candidate) }.buttonStyle(ChipButtonStyle(prominent: true))
-                        }
-                    }
-                }
-                ForEach(state.suggestedQuestions.reversed()) { candidate in
-                    HStack(spacing: 6) {
-                        Image(systemName: "questionmark.bubble").foregroundStyle(.orange)
-                        Text(candidate.text).font(.system(size: 12)).lineLimit(1)
-                        Spacer(minLength: 0)
-                        Button("回答") { state.answerCandidate(candidate) }.buttonStyle(ChipButtonStyle())
-                        Button { state.dismissCandidate(candidate) } label: { Image(systemName: "xmark") }
-                            .buttonStyle(.borderless).foregroundStyle(.secondary)
-                    }
-                }
-            }
-        }
     }
 }

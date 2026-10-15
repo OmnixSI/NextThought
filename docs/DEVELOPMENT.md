@@ -71,16 +71,57 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 
 ## 语音识别实现
 
-默认引擎是 Sherpa-ONNX 1.13.8 C API，固定 SwiftPM 依赖到 `v1.13.8`；该包把 ONNX Runtime 1.28.2 的静态 macOS 框架一起链接。Zipformer 权重选用官方文档列出的 `sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20`。Sherpa 文档将它列为中文和英文双语在线 transducer，并展示实时麦克风识别用法。权重来自 Hugging Face 仓库固定修订 `98590b7ed6443e77b714204da2757d75e1a642f4`，采用 Apache-2.0 许可证。第三方声明中记录了全部模型文件 SHA-256。
+默认引擎是 Sherpa-ONNX 1.13.8 C API，固定 SwiftPM 依赖到 `v1.13.8`；该包把 ONNX Runtime 1.28.2 的静态 macOS 框架一起链接。
 
-应用将音频采集服务提供的 16 kHz 单声道 Int16 PCM 转成 float 输入，按每块音频增量喂给在线 recognizer。所有 Sherpa C API 调用串行排入后台队列。系统声音和麦克风各建独立 online stream，共享已加载的只读 recognizer 权重，但不共享解码状态。现有 `VoiceActivitySegmenter` 是本地 Zipformer 唯一的句尾提交机制，使用 700 ms 句尾静音门限；模型端点检测保持关闭，避免两套机制重复提交。停止或暂停前先排空采集回调，再结束对应流，把尾句提交一次。
+**两遍识别**（`ZipformerStreamingTranscriber` + `ZipformerRuntime` / `OfflineSegmentRecognizer`）：
 
-识别回调返回当前完整假设，临时字幕按原有来源分别替换；VAD 句尾、暂停或停止时的最终结果只提交一次。识别器提供的时间信息按输入 PCM 累计样本换算；当前 streaming 模型不提供逐词时间戳。系统音频继续标记为“对方”，麦克风标记为“我”；问题检测只读取系统音频结果。专业词通过 Sherpa transducer 的 `modified_beam_search` 与 BPE hotwords 文件作为上下文提示，不承诺固定准确率增益。
+1. 流式：X-ASR zh-en 流式 Zipformer（默认 480 ms 块，可选 160 ms），边说边给出带标点的临时文字。系统声音和麦克风各建独立 online stream，共享只读权重。
+2. 精修：`VoiceActivitySegmenter` 以 700 ms 句尾静音提交一句时，流式流补 0.4 s 静音后定稿，同时把这一句的 PCM 交给 X-ASR 离线 Zipformer 整句重识别，结果作为最终文字（失败或为空时回退到流式结果）。分句超过 12 s 时 VAD 重复的半秒重叠会按样本序号去掉。
 
-原来保存的 `whisper` 本地引擎选择会迁移到 Zipformer；Apple Speech、云端引擎和答案模型配置不变。OpenAI 转写服务的旧 Whisper 模型 ID 会迁移为空值并回到服务默认模型；Soniox 与 Deepgram 的独立自定义模型 ID 保留。旧模型目录和系统级缓存不会扫描、加载或删除。
+模型来自 sherpa-onnx `asr-models` 发布（`LocalASRPackage`），下载 `.tar.bz2` 后校验整包 SHA-256，用系统 `tar` 解压，只保留所需文件并按大小校验（`installed.json` 标记）。X-ASR 包里只有 `bpe.model`，热词需要的 `bpe.vocab`（piece + score）由 `sentencepiece` 导出后内嵌在 `XASRVocabulary.swift` 中，安装时写到模型目录。旧版 `sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20` 仍可在设置里选择，按原来的逐文件方式下载。
+
+选型与实测数据见 [ASR-MODELS-2026-10.md](ASR-MODELS-2026-10.md)。
+
+## 问题识别
+
+`QuestionIntentClassifier`（规则打分）+ `QuestionCandidateTracker`（流式候选调度），都在 Core，可在 Linux 上单测：
+
+- 先去掉识别结果开头的口头禅，再按问号、疑问词、语气词、倒装、请求句式、附加问句、选择问句等证据打分，减去自述、自问自答、设备确认等反证。
+- 同一句流式修订只更新一个候选；以问号或“吗 / 呢”结尾、或证据很强时 0.6 s 稳定即触发，否则 1.2 s 或等定稿。
+- 提前触发后最终文字明显变长时，返回 `supersedes` 指向旧候选，应用取消旧回答改答完整问题。
+- 问题前 8 s 内同一方的陈述句作为 `leadIn` 一起交给模型。
+- `Tests/InterviewHackerCoreTests/QuestionCorpus*.swift` 是贴近识别输出的语料（含留出集），`QuestionDetectionEvaluator` 报告召回与误触发。
+
+## 回声与抢话
+
+`CrossTalkMonitor`（Core）比较两路 20 ms 帧的对数响度包络，在 −0.3…+0.5 s 延迟内找最大相关；1.6 s 窗口内相关 ≥ 0.7 视为麦克风里是扬声器回声。`EchoMonitor` 在两个音频队列上加锁调用它并提供音量表数据。麦克风定稿文字若与对方近 12 s 内的话大部分重合（`EchoTextFilter`）同样丢弃。`MicrophoneCaptureService.voiceProcessing` 可选开启 Apple 语音处理。
+
+## 会话记录
+
+`SessionArchive` 把每次会话写到 `~/Library/Application Support/InterviewHacker/Sessions/<id>/`：`meta.json`、`context.json`、`transcript.jsonl`、`questions.jsonl`、`answers.jsonl`、`summary.json`。JSONL 边发生边追加，最后一行写坏时读取会跳过。会后摘要由 `AppState.generateSummary` 用独立的 API 客户端或一次性 `codex exec` 生成（不占用常驻服务），超过 6 万字的转录先分段整理再合并（`SessionSummaryPrompt`），`SessionSummaryParser` 提取标题与问题清单。
+
+## 场景（Workspace）与模式
+
+`Workspace`（Core）是一个场景：模式、结构化字段（`ModeProfile.fields`）、分类资料、回答要求、背景、经验库（`WorkspaceLesson`）、题库（`QuestionBankItem`）和阶段复盘。`WorkspaceStore` 每个场景存一个 JSON（`Workspaces/<id>.json`，原子写入、0.6 s 合并保存）；读不了的文件改名为 `.unreadable` 保留。`AppState.sessionMode / documents / answerPreferences / profile` 是当前场景的视图，旧代码路径不变。回答提示词里 `user_material` 来自 `Workspace.materialText`，`experience_notes` 来自经验库，题库作为一份“题库”资料参与检索。
+
+复盘：`SessionSummaryPrompt.system(for:)` 按模式加入复盘重点，并要求输出“经验沉淀”“题库更新”；`SessionSummaryParser.parseAll` 解析后由 `KnowledgeMerger` 合并（相似问题按归一化后的二元组相似度去重并更新答案）。`StageReviewPrompt` 汇总一个场景下所有带摘要的会话。
+
+## 数据与备份
+
+全部数据在 `AppPaths.root`（`INTERVIEWHACKER_DATA_DIR` 可重定向）。`DataBackup` 导出 `.ihbackup`（ZIP：`manifest.json`、`settings.plist`、可选 `secrets.plist`、`Workspaces/`、`Sessions/`）；导入用 `BackupMerge` 合并，从不删除。自动备份：每天一次、安装更新前、导入前，保留 10 份。
+
+## 自检（self-test）
+
+`InterviewHacker --self-test data signing update asr --fixtures Tools/Validation/Fixtures` 在应用包内运行真实代码路径（需设置 `INTERVIEWHACKER_DATA_DIR` 指向临时目录）。Verify 工作流的 `selftest` 任务逐项运行；Release 工作流在打包后运行 `data update`。
+
+## 自动更新与本机签名
+
+- 发布工作流为每个 Release 上传 `update.json`（tag、版本、构建号 = run number、ZIP 名与 SHA-256）。
+- `Updater` 通过 GitHub API 读取 Releases（私有仓库用钥匙串里的只读令牌，或 `gh auth token`），比较构建号，后台下载 ZIP（重定向到存储时去掉 Authorization），校验 SHA-256、`codesign --verify` 并比较指定要求（designated requirement）。安装时写一个辅助脚本：等应用退出、替换 `.app`、去掉隔离属性、重新打开。
+- `LocalSigning` 用系统 `openssl` 生成自签名代码签名证书，导入专用钥匙串（`Application Support/InterviewHacker/Signing`），以 `identifier "com.interviewhacker.app" and certificate leaf = H"…"` 作为指定要求重新签名。绑定后，下载的新版本若签名不同会先用本机证书重新签名，TCC 权限因此保持。
 
 ## 音频角色与回答模型
 
 - 系统声音与麦克风分别采集、转换和流式解码，分别标记“对方”和“我”。麦克风首次使用请求系统授权；暂停、恢复、停止同时作用于两路。
-- 转录、导出和发给 Codex 的上下文保留角色；自动问题检测只看系统声音，不做声纹识别，也不区分系统声音中的多位说话者。建议戴耳机，避免麦克风重复收到扬声器声音。
+- 转录、导出和发给 Codex 的上下文保留角色；自动问题检测只看系统声音，不做声纹识别，也不区分系统声音中的多位说话者。不戴耳机时扬声器回声由上面的回声检测处理，戴耳机仍是最干净的方式。
 - 回答引擎与模型设置独立于识别模型；Codex 服务失败时显示错误，不静默切换其他回答模型。

@@ -318,12 +318,15 @@ final class CodexAppServerClient: @unchecked Sendable {
 
 final class OpenAICompatibleClient: @unchecked Sendable {
     // One shared session keeps TLS/HTTP2 connections warm between answers.
-    private let session: URLSession = {
+    private let session: URLSession
+
+    /// `resourceTimeout` caps a whole answer; summaries of long sessions get more time.
+    init(resourceTimeout: TimeInterval = 90) {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 30
-        configuration.timeoutIntervalForResource = 90
-        return URLSession(configuration: configuration)
-    }()
+        configuration.timeoutIntervalForResource = resourceTimeout
+        session = URLSession(configuration: configuration)
+    }
 
     func answer(_ request: AnswerRequest, baseURL: String, apiKey: String, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
         guard let endpoint = ChatCompletionStreamParser.endpoint(from: baseURL) else { throw AnswerEngineError.invalidEndpoint }

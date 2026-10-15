@@ -1,4 +1,5 @@
 import Foundation
+import InterviewHackerCore
 
 struct TranscriptEntry: Identifiable, Codable, Equatable {
     var id = UUID()
@@ -10,8 +11,11 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     var endedAt: Date?
     var roleLabel: String { source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音" }
     var contextualText: String { "[\(roleLabel)] \(text)" }
+    var isMe: Bool { source == CaptureSource.microphone.rawValue }
+    var speaker: SessionSpeaker { isMe ? .me : .remote }
 }
 
+/// Format of the single `sessions.json` written by earlier versions (read once for migration).
 struct SavedSession: Codable, Identifiable {
     var id = UUID()
     var startedAt: Date
@@ -55,9 +59,9 @@ struct ScreenshotDisplay: Identifiable, Hashable, Sendable {
 
 enum AppSection: String, CaseIterable, Identifiable {
     case assistant = "助手"
-    case materials = "资料"
-    case settings = "设置"
+    case materials = "场景"
     case history = "记录"
+    case settings = "设置"
 
     var id: String { rawValue }
 }

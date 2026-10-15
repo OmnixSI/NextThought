@@ -25,6 +25,10 @@ final class MicrophoneCaptureService {
     var onCaptureError: ((String) -> Void)?
     /// Called with the new device name after an automatic switch.
     var onDeviceChanged: ((String) -> Void)?
+    /// Apple voice processing on the input (acoustic echo cancellation + noise
+    /// suppression). Removes the other side's voice coming back from the speakers.
+    /// Off by default: it can fail on some device combinations and ducks other audio.
+    var voiceProcessing = false
 
     func setPCMHandler(_ handler: (@Sendable ([Int16], Date) -> Void)?) { queue.sync { pcmHandler = handler } }
 
@@ -71,6 +75,19 @@ final class MicrophoneCaptureService {
         // A fresh engine binds to the *current* default input device.
         let next = AVAudioEngine()
         let input = next.inputNode
+        if voiceProcessing {
+            do {
+                try input.setVoiceProcessingEnabled(true)
+                // Keep the meeting audio at full volume while echo cancellation runs.
+                if #available(macOS 14.0, *) {
+                    input.voiceProcessingOtherAudioDuckingConfiguration = .init(enableAdvancedDucking: false, duckingLevel: .min)
+                }
+                Diagnostics.record("microphone.voice_processing", ["enabled": true])
+            } catch {
+                // Different input/output devices or unsupported hardware: continue without it.
+                Diagnostics.record("microphone.voice_processing_failed")
+            }
+        }
         let inputFormat = input.outputFormat(forBus: 0)
         guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0,
               let nextConverter = AVAudioConverter(from: inputFormat, to: format) else {

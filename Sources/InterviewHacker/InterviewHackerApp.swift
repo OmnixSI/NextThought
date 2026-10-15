@@ -1,18 +1,16 @@
 import AppKit
 import SwiftUI
 
-@main
 struct InterviewHackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @StateObject private var state = AppState.shared
-
     var body: some Scene {
         WindowGroup {
+            // Created on first use (after NSApplication exists), not in App.init.
             ContentView()
-                .environmentObject(state)
+                .environment(AppState.shared)
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 720, height: 820)
+        .defaultSize(width: 1080, height: 780)
         .windowResizability(.contentMinSize)
     }
 }
@@ -32,10 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
                 window.level = keepOnTop ? .floating : .normal
                 window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-                window.minSize = NSSize(width: 580, height: 640)
+                window.minSize = NSSize(width: 600, height: 620)
                 window.backgroundColor = .windowBackgroundColor
                 window.isOpaque = true
             }
+            AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()
         }
