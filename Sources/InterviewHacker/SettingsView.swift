@@ -34,6 +34,8 @@ struct SettingsView: View {
                 }
                 .padding(.horizontal, 16)
             }
+            .frame(maxWidth: 852)
+            .frame(maxWidth: .infinity)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     switch group {
