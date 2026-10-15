@@ -1,5 +1,14 @@
 # 更新日志
 
+## 未发布 — 2026-10-15
+
+### 语音识别
+- 默认本机识别迁移为 Sherpa-ONNX 在线 Zipformer，中英双语、离线推理；系统音频与麦克风保持独立流和来源标记。
+- 删除 Whisper 服务、`whisper.cpp` vendor 源码、模型扫描/导入、转换脚本及打包依赖；旧本机引擎选项迁移到 Zipformer，旧模型与缓存保留。
+- 接入校验下载、进度、取消、加载和卸载状态；专业词作为 BPE 解码提示。
+- OpenAI Realtime 转写采用当前 `gpt-live-transcribe` 默认模型与 VAD 提交；Soniox、Deepgram 和 Apple Speech 仍可选。
+- 增加本机真实推理与流生命周期集成验证，记录模型来源、许可、校验值和实测限制。
+
 ## v0.2.0-beta.4 — 2026-10-14
 
 ### 界面修复（基于 macOS 26 实机截图）

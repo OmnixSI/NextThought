@@ -72,7 +72,6 @@ jobs:
         run: |
           xcodebuild -version
           swift --version
-          cmake --version
       - name: Test
         run: swift test --disable-sandbox
       - name: Import Developer ID certificate (optional)

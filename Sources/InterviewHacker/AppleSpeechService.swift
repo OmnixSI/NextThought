@@ -4,11 +4,18 @@ import Speech
 
 @MainActor
 protocol LiveTranscribing: AnyObject {
-    func start(language: String, onResult: @escaping (String, Bool, Date, Date) -> Void,
+    func start(language: String, onResult: @escaping (String, Bool, Date, Date, Double?, Double?) -> Void,
                onError: @escaping (String) -> Void) async throws
     func inputHandler() -> (@Sendable ([Int16], Date) -> Void)
+    func commitUtterance() async
     func finish() async
     func cancel() async
+    func reset() async
+}
+
+extension LiveTranscribing {
+    func commitUtterance() async {}
+    func reset() async {}
 }
 
 enum LiveTranscriberFactory {
@@ -46,7 +53,7 @@ final class AppleSpeechService: LiveTranscribing {
     private var sink: SpeechInputSink?
     private var generation = UUID()
 
-    func start(language: String, onResult: @escaping (String, Bool, Date, Date) -> Void,
+    func start(language: String, onResult: @escaping (String, Bool, Date, Date, Double?, Double?) -> Void,
                onError: @escaping (String) -> Void) async throws {
         await cancel()
         let id = UUID(); generation = id
@@ -77,7 +84,7 @@ final class AppleSpeechService: LiveTranscribing {
                     let start = ranges.map { CMTimeGetSeconds($0.start) }.filter(\.isFinite).min() ?? 0
                     let end = ranges.map { CMTimeGetSeconds(CMTimeRangeGetEnd($0)) }.filter(\.isFinite).max() ?? start
                     let origin = input.origin ?? Date()
-                    onResult(text, result.isFinal, origin.addingTimeInterval(start), origin.addingTimeInterval(max(start, end)))
+                    onResult(text, result.isFinal, origin.addingTimeInterval(start), origin.addingTimeInterval(max(start, end)), nil, nil)
                 }
             } catch {
                 guard self?.generation == id, !Task.isCancelled else { return }
@@ -95,12 +102,12 @@ final class AppleSpeechService: LiveTranscribing {
     static func preparedLocale(for language: String) async throws -> Locale {
         // Locale choice is explicit: this path does not pretend to auto-detect mixed speech.
         guard language == "zh" || language == "en" else {
-            throw AppFailure.transcription("Apple 流式识别需要先选择中文或 English；自动混合识别请使用 Whisper 或云端识别。")
+            throw AppFailure.transcription("Apple 流式识别需要先选择中文或 English；中英混说请使用 Zipformer 或云端识别。")
         }
         if let ready = readyLocales[language] { return ready }
         let requested = Locale(identifier: language == "zh" ? "zh-CN" : "en-US")
         guard let locale = await SpeechTranscriber.supportedLocale(equivalentTo: requested) else {
-            throw AppFailure.transcription("这台设备的 Apple Speech 不支持所选语言，请改用 Whisper。")
+            throw AppFailure.transcription("这台设备的 Apple Speech 不支持所选语言，请改用 Zipformer 或云端识别。")
         }
         let probe = SpeechTranscriber(locale: locale, transcriptionOptions: [], reportingOptions: [.volatileResults], attributeOptions: [.audioTimeRange])
         if let request = try await AssetInventory.assetInstallationRequest(supporting: [probe]) {

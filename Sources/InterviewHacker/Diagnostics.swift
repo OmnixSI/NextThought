@@ -44,6 +44,6 @@ enum Diagnostics {
 
     static func runtimeLogURL() -> URL {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        return directory.appendingPathComponent("whisper-\(launchID).log")
+        return directory.appendingPathComponent("asr-\(launchID).log")
     }
 }

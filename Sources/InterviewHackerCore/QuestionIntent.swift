@@ -236,7 +236,7 @@ public struct QuestionCandidateTracker: Sendable {
     }
 
     /// Feed recognized text. `utteranceKey` identifies one utterance whose partial
-    /// text may be revised (Apple/cloud result id, Whisper voice id).
+    /// text may be revised (Apple/cloud result id or local stream identity).
     public mutating func ingest(_ raw: String, isFinal: Bool, utteranceKey: String? = nil, now: Date = Date()) -> CandidateDecision {
         expire(now)
         let incoming = String(raw.suffix(2_000)).trimmingCharacters(in: .whitespacesAndNewlines)

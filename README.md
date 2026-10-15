@@ -9,7 +9,7 @@
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 ![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-arm64-blue)
 
-**[⬇️ 下载最新版本](../../releases)** · [使用说明](#快速上手) · [隐私](#数据去向) · [开发文档](docs/DEVELOPMENT.md)
+**[⬇️ 下载最新版本](../../releases)** · [使用说明](#快速上手) · [隐私](#数据去向) · [开发文档](docs/DEVELOPMENT.md) · [Zipformer 迁移与实测](docs/ZIPFORMER-MIGRATION.md)
 
 <br>
 
@@ -37,7 +37,7 @@
 | | |
 | --- | --- |
 | 🎧 **双路收音** | 分别采集会议窗口的系统声音（对方）和麦克风（我），转录里清楚标出谁在说话 |
-| ⚡ **多种识别引擎** | 本机 Whisper（自动中英文，说话时即可预览）、Apple Speech 流式（macOS 26）、云端流式（Soniox / OpenAI / Deepgram，自带 Key） |
+| ⚡ **多种识别引擎** | 默认离线 Zipformer 流式识别（中文、英文和中英混说）；也可选 Apple Speech（macOS 26）或云端流式（Soniox / OpenAI / Deepgram，自带 Key） |
 | 🧠 **问题识别** | 区分陈述、未说完、提问、请求解释、追问；排除自问自答和口头禅；拿不准的句子一键回答 |
 | ✍️ **流式回答** | 常驻 Codex 服务或任意 OpenAI 兼容 API（DeepSeek / 通义 / Kimi / Groq / Ollama…）逐字输出，显示首字耗时 |
 | 📄 **资料与 Prompt** | 导入简历、JD、议程、课件（PDF 含扫描件 OCR、Word、PPT、Excel、图片），按问题检索相关片段并标注页码；场景模板与预设 |
@@ -80,8 +80,8 @@
    - 已安装并登录 ChatGPT / Codex 客户端：用默认的“Codex 常驻服务”，选模型，推理强度建议 `low`。
    - 或选“OpenAI 兼容 API”，点“常用”选服务商，填模型 ID 和 API Key（存入钥匙串）。
 2. **设置 → 语音识别引擎**
-   - 本机 Whisper：首次需下载模型（推荐 `large-v3-turbo-q5_0`；电脑较慢选 `small-q5_1`）。顶部显示的 RTF 明显小于 1 才跟得上说话。
-   - 追求最快、中英混说：选云端流式 + Soniox，填 Key 并勾选数据说明。
+   - 本机 Zipformer：首次下载约 200 MB 的中英双语流式模型；下载完成后离线识别，系统声音和麦克风各用独立识别流。
+   - Apple Speech 仅支持所选单一语言；中英混说可用 Zipformer，或在同意上传后选择云端流式 + Soniox。
 3. **资料** 页：拖入相关文件，选场景（面试 / 会议 / 课程），点“填入模板”后按需修改回答要求；可保存为预设。
 4. **助手** 页选择会议窗口作为音频来源，点 **开始辅助**。对方提问会自动出回答；随时按 **⌘⇧Return** 立即回答。
 5. 按 **⌘⇧O** 打开提词器，在 设置 → 提词器 里选“摄像头下方”。
@@ -130,7 +130,7 @@ macOS 把权限绑定在应用的签名身份上。运行一次 `./scripts/setup
 <details>
 <summary><b>点“开始辅助”要等很久？</b></summary>
 
-第一次加载 Whisper 模型需要几秒到几十秒（首次还要编译 Metal 着色器）。之后模型会在应用启动时预加载并常驻，开始几乎瞬间完成；状态栏会显示每次的启动耗时。设置 → 语音识别引擎 里可关闭“后台预加载识别模型”以节省内存。识别仍然跟不上时，换更小的模型（顶部 RTF 应明显小于 1），或改用 Apple Speech / 云端流式。
+本机模型首次下载约 200 MB，随后会从 Application Support 加载；状态栏提供本机测得的识别耗时和 RTF。设置 → 语音识别引擎里可关闭后台预加载以减少空闲时的内存占用。
 </details>
 
 <details>
@@ -166,7 +166,7 @@ macOS 把权限绑定在应用的签名身份上。运行一次 `./scripts/setup
 
 ## 从源码构建
 
-需要 Apple Silicon、Xcode（Swift 6）和 CMake：
+需要 Apple Silicon 和 Xcode（Swift 6）：
 
 ```sh
 swift test --disable-sandbox     # 运行测试
@@ -178,4 +178,4 @@ open dist/InterviewHacker.app
 
 ## 致谢
 
-语音识别运行时基于 [whisper.cpp](https://github.com/ggml-org/whisper.cpp)（MIT），模型来自 [OpenAI Whisper](https://github.com/openai/whisper)。第三方声明见 [`Resources/ThirdPartyNotices.txt`](Resources/ThirdPartyNotices.txt)。
+本地语音识别使用 [Sherpa-ONNX](https://github.com/k2-fsa/sherpa-onnx) 在线 C API 和 Apache-2.0 双语 Streaming Zipformer 模型；ONNX Runtime 与模型的版本、来源和许可证见 [`Resources/ThirdPartyNotices.txt`](Resources/ThirdPartyNotices.txt)。

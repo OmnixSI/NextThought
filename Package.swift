@@ -8,8 +8,14 @@ let package = Package(
         .executable(name: "InterviewHacker", targets: ["InterviewHacker"]),
         .library(name: "InterviewHackerCore", targets: ["InterviewHackerCore"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/k2-fsa/sherpa-onnx.git", exact: "1.13.8")
+    ],
     targets: [
-        .target(name: "InterviewHackerCore", path: "Sources/InterviewHackerCore"),
+        .target(
+            name: "InterviewHackerCore",
+            dependencies: [.product(name: "sherpa-onnx", package: "sherpa-onnx")],
+            path: "Sources/InterviewHackerCore"),
         .executableTarget(
             name: "InterviewHacker",
             dependencies: ["InterviewHackerCore"],

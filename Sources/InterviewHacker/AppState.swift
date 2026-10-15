@@ -11,7 +11,7 @@ final class AppState: ObservableObject {
     static let shared = AppState()
 
     @Published var recognitionVocabulary = UserDefaults.standard.string(forKey: "recognitionVocabulary") ?? ""
-    @Published var transcriptionBackend = UserDefaults.standard.string(forKey: "transcriptionBackend") ?? "whisper"
+    @Published var transcriptionBackend = AppState.loadTranscriptionBackend()
     @Published var sessionMode = SessionMode(rawValue: UserDefaults.standard.string(forKey: "sessionMode") ?? "meeting") ?? .meeting
     @Published var answerStyle = AnswerStyle(rawValue: UserDefaults.standard.string(forKey: "answerStyle") ?? "concise") ?? .concise
     @Published var answerPreferences = UserDefaults.standard.string(forKey: "answerPreferences") ?? ""
@@ -34,11 +34,9 @@ final class AppState: ObservableObject {
     var contextIndex = SessionContextIndex()
     var documentRevision = UUID()
     var importTask: Task<Void, Never>?
-    var manualTriggerTask: Task<Void, Never>?
     private var microphoneTranscriber: (any LiveTranscribing)?
-    private var liveTranscriber: (any LiveTranscribing)?
+    var liveTranscriber: (any LiveTranscribing)?
     var audioEpoch = UUID()
-    private var forceTriggerID = UUID()
 
     // Answer engines
     @Published var answerBackend = AnswerBackend(rawValue: UserDefaults.standard.string(forKey: "answerBackend") ?? "") ?? .codexAppServer
@@ -56,10 +54,9 @@ final class AppState: ObservableObject {
     @Published var verifyUncertainWithModel = UserDefaults.standard.bool(forKey: "verifyUncertainWithModel")
     // Cloud speech recognition (explicit opt-in)
     @Published var cloudProvider = CloudSTTProvider(rawValue: UserDefaults.standard.string(forKey: "cloudProvider") ?? "") ?? .soniox
-    @Published var cloudModel = UserDefaults.standard.string(forKey: "cloudModel") ?? ""
+    @Published var cloudModel = AppState.loadCloudModel()
     @Published var cloudKey = ""
     @Published var cloudConsent = UserDefaults.standard.bool(forKey: "cloudConsent")
-    @Published var liveWhisperPreview = UserDefaults.standard.object(forKey: "liveWhisperPreview") as? Bool ?? true
     // Overlay
     @Published var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 0.96
     @Published var clickThrough = false
@@ -67,7 +64,7 @@ final class AppState: ObservableObject {
     @Published var lastStartupSeconds: Double?
     @Published var keepRecognizerWarm = UserDefaults.standard.object(forKey: "keepRecognizerWarm") as? Bool ?? true
     @Published var companionPort = UserDefaults.standard.object(forKey: "companionPort") as? Int ?? 8_765
-    var whisperIdleTask: Task<Void, Never>?
+    var recognizerIdleTask: Task<Void, Never>?
     var systemRecoveryTask: Task<Void, Never>?
     @Published var companionEnabled = false
     @Published var companionAddress: String?
@@ -82,24 +79,86 @@ final class AppState: ObservableObject {
     @Published var partialTranscript = ""
     @Published var microphonePartialTranscript = ""
     @Published var microphoneEnabled = UserDefaults.standard.object(forKey: "microphoneEnabled") as? Bool ?? true
-    @Published var discoveredModels: [DiscoveredWhisperModel] = []
-    @Published var isScanningModels = false
-    @Published var modelScanStatus = ""
+    @Published var modelDownloadStatus = ""
+    @Published var isDownloadingModel = false
+    @Published var modelDownloadProgress = 0.0
+    @Published var modelIsReady = false
+    @Published var isPreparingModel = false
+    @Published var modelLoadSeconds: Double?
+    private var modelDownloadTask: Task<Void, Never>?
+    var modelControlsDisabled: Bool { isRunning || isChangingSession || isPreparingModel || isDownloadingModel }
 
-    func scanLocalModels() async {
-        guard !isScanningModels else { return }
-        isScanningModels = true
-        defer { isScanningModels = false }
-        discoveredModels = await Task.detached(priority: .utility) { LocalModelScanner.scan() }.value
-        modelScanStatus = "发现 \(discoveredModels.count) 个本地 Whisper 模型；导入时检查完整性。"
+    private static func loadTranscriptionBackend() -> String {
+        let defaults = UserDefaults.standard
+        let saved = defaults.string(forKey: "transcriptionBackend")
+        if saved?.lowercased() == "whisper" {
+            defaults.set("zipformer", forKey: "transcriptionBackend")
+            return "zipformer"
+        }
+        if let saved, ["zipformer", "apple", "cloud"].contains(saved) { return saved }
+        defaults.set("zipformer", forKey: "transcriptionBackend")
+        return "zipformer"
     }
-    func useDiscoveredModel(_ model: DiscoveredWhisperModel) {
+
+    private static func loadCloudModel() -> String {
+        let defaults = UserDefaults.standard
+        let saved = defaults.string(forKey: "cloudModel") ?? ""
+        let provider = CloudSTTProvider(rawValue: defaults.string(forKey: "cloudProvider") ?? "") ?? .soniox
+        if provider.isRemovedWhisperModelIdentifier(saved) {
+            defaults.set("", forKey: "cloudModel")
+            return ""
+        }
+        return saved
+    }
+
+    func downloadModel() {
         guard !modelControlsDisabled else { return }
-        if model.url.deletingLastPathComponent().standardizedFileURL == LocalWhisperService.modelsDirectory.standardizedFileURL {
-            selectedModelID = WhisperModel.matching(model.url)?.id ?? "local:" + model.url.lastPathComponent
-            useSelectedModel()
-        } else { importModel(from: model.url) }
+        isDownloadingModel = true
+        modelDownloadProgress = 0
+        modelDownloadStatus = "正在下载中英双语流式模型（约 200 MB），完成后逐项校验。"
+        modelDownloadTask = Task {
+            do {
+                try await ZipformerModelStore.download { [weak self] progress, message in
+                    Task { @MainActor in
+                        self?.modelDownloadProgress = progress
+                        self?.modelDownloadStatus = "\(message) · \(Int(progress * 100))%"
+                    }
+                }
+                modelIsReady = true
+                modelDownloadStatus = "模型文件组已下载并通过 SHA-256 校验。"
+                updateSettings()
+                await prewarmRecognizer()
+            } catch is CancellationError {
+                modelDownloadStatus = "下载已取消。"
+            } catch {
+                modelDownloadStatus = "下载失败：\(error.localizedDescription) 可点击重试。"
+            }
+            isDownloadingModel = false
+            modelDownloadTask = nil
+        }
     }
+
+    func cancelModelDownload() { modelDownloadTask?.cancel() }
+
+    func deleteModel() {
+        guard !modelControlsDisabled else { return }
+        Task {
+            isPreparingModel = true
+            defer { isPreparingModel = false }
+            await ZipformerRuntime.shared.unload()
+            do {
+                if FileManager.default.fileExists(atPath: ZipformerModelStore.modelDirectory.path) {
+                    try FileManager.default.removeItem(at: ZipformerModelStore.modelDirectory)
+                }
+                modelIsReady = false
+                modelDownloadProgress = 0
+                modelDownloadStatus = "已删除应用管理的 Zipformer 模型文件组。"
+            } catch {
+                modelDownloadStatus = "删除模型失败：\(error.localizedDescription)"
+            }
+        }
+    }
+
     func openMicrophoneSettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") { NSWorkspace.shared.open(url) }
     }
@@ -162,82 +221,6 @@ final class AppState: ObservableObject {
     }
     @Published var codexLoginStatus = "正在检查 Codex…"
     @Published var codexVersion = "正在检测 Codex…"
-    @Published var selectedModelID = WhisperModel.matching(URL(fileURLWithPath: UserDefaults.standard.string(forKey: "modelPath") ?? LocalWhisperService.defaultModelURL.path))?.id ?? WhisperModel.defaultID
-    @Published var localModelPaths: [String] = []
-    @Published var isImportingModel = false
-    var modelControlsDisabled: Bool { isRunning || isChangingSession || isPreparingModel || isDownloadingModel || isImportingModel }
-    var selectedModel: WhisperModel? { WhisperModel.named(selectedModelID) }
-    var selectedModelURL: URL {
-        if let model = selectedModel { return LocalWhisperService.modelsDirectory.appendingPathComponent(model.filename) }
-        return LocalWhisperService.modelsDirectory.appendingPathComponent(String(selectedModelID.dropFirst("local:".count)))
-    }
-    var selectedModelExists: Bool { FileManager.default.fileExists(atPath: selectedModelURL.path) }
-    func reloadLocalModels() {
-        localModelPaths = ((try? FileManager.default.contentsOfDirectory(at: LocalWhisperService.modelsDirectory, includingPropertiesForKeys: nil)) ?? [])
-            .filter { $0.lastPathComponent.hasPrefix("imported-") && $0.pathExtension == "bin" }.map(\.lastPathComponent).sorted()
-    }
-    func useSelectedModel() {
-        guard !modelControlsDisabled else { return }
-        let url = selectedModelURL
-        isImportingModel = true
-        Task {
-            defer { isImportingModel = false }
-            do {
-                try await Task.detached(priority: .utility) { try WhisperModelFile.verify(at: url, expected: WhisperModel.matching(url)) }.value
-                modelPath = url.path
-                if url.lastPathComponent.contains(".en") { recognitionLanguage = "en" }
-                modelIsReady = true
-                modelDownloadStatus = "已切换到 \(url.lastPathComponent)"
-                updateSettings()
-                await prewarmRecognizer()
-            } catch { modelDownloadStatus = error.localizedDescription }
-        }
-    }
-    func importLocalModel() {
-        guard !modelControlsDisabled else { return }
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType(filenameExtension: "bin")!, UTType(filenameExtension: "pt")!]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cache/whisper")
-        panel.message = "选择 Whisper .bin 或 .pt 模型；原文件会保留，.pt 将在本机转换。"
-        guard panel.runModal() == .OK, let source = panel.url else { return }
-        importModel(from: source)
-    }
-    func importModel(from source: URL) {
-        guard !modelControlsDisabled else { return }
-        isImportingModel = true
-        modelDownloadStatus = "正在导入 \(source.lastPathComponent)；.pt 转换可能需要一些时间…"
-        Task {
-            defer { isImportingModel = false }
-            do {
-                let url = try await Task.detached(priority: .utility) { try LocalModelImporter.importModel(from: source) }.value
-                do {
-                    _ = try await whisper.prepare(modelPath: url.path)
-                    await whisper.shutdown()
-                } catch {
-                    try? FileManager.default.removeItem(at: url)
-                    try? FileManager.default.removeItem(at: url.appendingPathExtension("sha256"))
-                    throw error
-                }
-                reloadLocalModels()
-                selectedModelID = "local:" + url.lastPathComponent
-                modelPath = url.path
-                if url.lastPathComponent.contains(".en") { recognitionLanguage = "en" }
-                modelIsReady = true
-                modelDownloadStatus = "已导入，通过完整性校验和本地加载验证。"
-                await scanLocalModels()
-                updateSettings()
-            } catch { modelDownloadStatus = error.localizedDescription }
-        }
-    }
-    @Published var modelPath = UserDefaults.standard.string(forKey: "modelPath") ?? LocalWhisperService.defaultModelURL.path
-    @Published var modelDownloadStatus = ""
-    @Published var isDownloadingModel = false
-    @Published var modelDownloadProgress = 0.0
-    @Published var modelIsReady = false
-    @Published var isPreparingModel = false
-    @Published var modelLoadSeconds: Double?
     @Published var recognitionLanguage = UserDefaults.standard.string(forKey: "recognitionLanguage") ?? "auto"
     @Published var screenshotPreview: NSImage?
     @Published var screenshotURL: URL?
@@ -254,7 +237,6 @@ final class AppState: ObservableObject {
 
     let audio = AudioCaptureService()
     let microphone = MicrophoneCaptureService()
-    let whisper = LocalWhisperService()
     private let codex = CodexBridge()
     private let hotkeys = HotkeyManager()
     var tracker = QuestionCandidateTracker()
@@ -262,14 +244,9 @@ final class AppState: ObservableObject {
     let apiClient = OpenAICompatibleClient()
     var candidateTicker: Task<Void, Never>?
     var appleUtteranceCounter: [String: Int] = [:]
-    var isPreviewTranscribing = false
     private var firstTokenAt: Date?
     var activeVoiceID: UUID?
-    var finalQueue: [(SpeechSegmentEvent, Bool)] = []
-    var finalTranscriptionTask: Task<Void, Never>?
-    private var finalVoiceIDs: Set<UUID> = []
     var isStopping = false
-    private var modelDownloadTask: Task<Void, Never>?
     private var answerTask: Task<Void, Never>?
     private var requestID = UUID()
     var sessionStartedAt: Date?
@@ -294,7 +271,6 @@ final class AppState: ObservableObject {
         Diagnostics.pruneOldLogs()
         // Demo / screenshot mode shows sample data and never touches devices or models.
         guard !DemoMode.isEnabled else { return }
-        Task { await scanLocalModels() }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
@@ -315,8 +291,7 @@ final class AppState: ObservableObject {
             if !cloudConsent { return "请在设置中确认云端识别的数据说明" }
             if cloudKey.isEmpty { return "请填写云端识别 API Key" }
         }
-        if transcriptionBackend == "whisper", LocalWhisperService.findExecutable() == nil { return "应用内语音运行时不可用" }
-        if transcriptionBackend == "whisper", !isModelInstalled { return "需要下载或修复本地语音模型" }
+        if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载 Zipformer 中英双语模型" }
         if captureTargets.isEmpty || selectedTargetID.isEmpty { return "请检查屏幕与系统音频权限" }
         return "可以开始"
     }
@@ -368,26 +343,16 @@ final class AppState: ObservableObject {
     }
 
     func refreshModelStatus() async {
-        reloadLocalModels()
-        if URL(fileURLWithPath: modelPath).lastPathComponent.hasPrefix("imported-") {
-            selectedModelID = "local:" + URL(fileURLWithPath: modelPath).lastPathComponent
-        }
-        let path = modelPath
-        let ready = await Task.detached(priority: .utility) {
-            LocalWhisperService.isValidModel(at: path)
-        }.value
-        guard modelPath == path else { return }
-        modelIsReady = ready
-        if !modelIsReady, FileManager.default.fileExists(atPath: path) {
-            modelDownloadStatus = "模型文件不完整或校验失败。可重新下载或导入完整的本地模型。"
+        modelIsReady = await Task.detached(priority: .utility) { ZipformerModelStore.isInstalled() }.value
+        if !modelIsReady, modelDownloadStatus.isEmpty {
+            modelDownloadStatus = "Zipformer 模型尚未下载。下载后将保存在应用支持目录。"
         }
     }
 
     func startSession() async {
         guard !isRunning, !isChangingSession else { return }
-        guard transcriptionBackend != "whisper" || LocalWhisperService.findExecutable() != nil else { errorMessage = AppFailure.noTranscriber.localizedDescription; section = .settings; return }
-        guard !isImportingModel, !isDownloadingModel else { return }
-        guard transcriptionBackend != "whisper" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
+        guard !isDownloadingModel else { return }
+        guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
         cancelAnswer()
         currentQuestion = ""; answer = ""; pendingQuestion = ""; partialTranscript = ""
@@ -395,17 +360,16 @@ final class AppState: ObservableObject {
         lastAnswerModel = nil
         clearScreenshot()
         selectedExcerpts = []; lastASRSeconds = nil; lastRTF = nil; lastAnswerSeconds = nil; droppedAudioSegments = 0
-        finalQueue.removeAll(); finalVoiceIDs.removeAll()
         audioEpoch = UUID()
         isChangingSession = true
         defer { isChangingSession = false }
         do {
             let startupBegan = Date()
-            whisperIdleTask?.cancel(); whisperIdleTask = nil
+            recognizerIdleTask?.cancel(); recognizerIdleTask = nil
             if microphoneEnabled { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
-            if transcriptionBackend == "whisper" {
-                statusText = whisper.isWarm(modelPath: modelPath) ? "正在启动…" : "正在加载本地语音模型（首次较慢，之后会常驻）…"
+            if transcriptionBackend == "zipformer" {
+                statusText = "正在加载本地 Zipformer 模型…"
             }
             modelLoadSeconds = try await prepareTranscriber()
             Diagnostics.record("session.transcriber_ready", ["backend": transcriptionBackend, "seconds": Date().timeIntervalSince(startupBegan)])
@@ -448,14 +412,10 @@ final class AppState: ObservableObject {
             microphone.setPCMHandler(nil)
             await microphoneTranscriber?.cancel()
             microphoneTranscriber = nil
-            await whisper.shutdown()
             await liveTranscriber?.cancel()
             liveTranscriber = nil
             isPreparingModel = false
             audioEpoch = UUID()
-            finalTranscriptionTask?.cancel()
-            finalTranscriptionTask = nil
-            finalQueue.removeAll(); finalVoiceIDs.removeAll()
             sessionStartedAt = nil
             errorMessage = "启动辅助失败：\(error.localizedDescription)"
             statusText = "启动失败"
@@ -471,16 +431,10 @@ final class AppState: ObservableObject {
         statusText = "正在暂停…"
         partialTranscript = ""
         microphonePartialTranscript = ""
-        let systemPending = await audio.stopCapture()
-        let pending = systemPending + microphone.stopCapture()
-        if transcriptionBackend != "whisper" {
-            await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
-            audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
-        }
-        else {
-            for event in pending where event.kind == .final { enqueueFinal(event, shouldDetectQuestion: false) }
-            await drainTranscriptions()
-        }
+        _ = await audio.stopCapture()
+        _ = microphone.stopCapture()
+        await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
+        audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         statusText = "已暂停"
         transcriptionStatus = "已暂停采集"
     }
@@ -531,16 +485,10 @@ final class AppState: ObservableObject {
         isStopping = true
         statusText = "正在处理最后片段…"
         pendingAutomaticQuestion = nil
-        let systemPending = await audio.stopCapture()
-        let pending = systemPending + microphone.stopCapture()
-        if transcriptionBackend != "whisper" {
-            await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
-            audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
-        }
-        else {
-            for event in pending where event.kind == .final { enqueueFinal(event, shouldDetectQuestion: false) }
-            await drainTranscriptions()
-        }
+        _ = await audio.stopCapture()
+        _ = microphone.stopCapture()
+        await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
+        audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         audioEpoch = UUID()
         liveTranscriber = nil
         microphoneTranscriber = nil
@@ -548,7 +496,7 @@ final class AppState: ObservableObject {
         liveCandidate = nil
         cancelAnswer()
         // Keep the model loaded so the next start is instant; unload after idling.
-        scheduleWhisperIdleShutdown()
+        scheduleRecognizerIdleShutdown()
         isRunning = false
         isPaused = false
         statusText = "已停止"
@@ -592,9 +540,6 @@ final class AppState: ObservableObject {
 
     func cancelAnswer() {
         answerDraft = ""
-        forceTriggerID = UUID()
-        manualTriggerTask?.cancel()
-        manualTriggerTask = nil
         requestID = UUID()
         answerTask?.cancel()
         codex.cancel()
@@ -716,60 +661,6 @@ final class AppState: ObservableObject {
         screenshotPreview = nil
     }
 
-    func downloadModel() {
-        guard !modelControlsDisabled, let model = selectedModel else { return }
-        let destination = selectedModelURL
-        isDownloadingModel = true
-        modelDownloadProgress = 0
-        modelDownloadStatus = "正在下载 \(model.id) · \(model.sizeLabel)，完成后校验。"
-        modelDownloadTask = Task {
-            do {
-                try await LocalWhisperService.downloadModel(model, to: destination) { [weak self] progress in
-                    Task { @MainActor in
-                        self?.modelDownloadProgress = progress
-                        self?.modelDownloadStatus = "正在下载 \(model.id)：\(Int(progress * 100))% / \(model.sizeLabel)"
-                    }
-                }
-                modelPath = destination.path
-                if model.englishOnly { recognitionLanguage = "en" }
-                modelIsReady = true
-                updateSettings()
-                modelDownloadStatus = "已下载并通过 SHA-256 校验，当前使用 \(model.id)。"
-                await prewarmRecognizer()
-            } catch {
-                modelDownloadStatus = error is CancellationError ? "下载已取消。" : "下载失败：\(error.localizedDescription) 可点击重试。"
-            }
-            isDownloadingModel = false
-            modelDownloadTask = nil
-            await scanLocalModels()
-        }
-    }
-
-    func cancelModelDownload() {
-        modelDownloadTask?.cancel()
-    }
-
-    func deleteModel() {
-        guard !modelControlsDisabled else { return }
-        let url = selectedModelURL
-        // Only managed copies are deleted; imported source files are never removed.
-        guard url.deletingLastPathComponent().standardizedFileURL == LocalWhisperService.modelsDirectory.standardizedFileURL else { return }
-        isImportingModel = true
-        Task {
-            defer { isImportingModel = false }
-            await whisper.shutdown()
-            do {
-                try FileManager.default.removeItem(at: url)
-                try? FileManager.default.removeItem(at: url.appendingPathExtension("sha256"))
-                if modelPath == url.path { modelIsReady = false }
-                if selectedModel == nil { selectedModelID = WhisperModel.defaultID }
-                reloadLocalModels()
-                modelDownloadStatus = "已删除应用内模型副本，原始导入文件保留。"
-                await scanLocalModels()
-            } catch { modelDownloadStatus = error.localizedDescription }
-        }
-    }
-
     func setProfile(_ text: String) {
         profile = text
         UserDefaults.standard.set(text, forKey: "profile")
@@ -785,7 +676,6 @@ final class AppState: ObservableObject {
         UserDefaults.standard.set(microphoneEnabled, forKey: "microphoneEnabled")
         applyAppearance()
         UserDefaults.standard.set(selectedTargetID, forKey: "selectedTargetID")
-        UserDefaults.standard.set(modelPath, forKey: "modelPath")
         UserDefaults.standard.set(recognitionLanguage, forKey: "recognitionLanguage")
         UserDefaults.standard.set(recognitionVocabulary, forKey: "recognitionVocabulary")
         UserDefaults.standard.set(transcriptionBackend, forKey: "transcriptionBackend")
@@ -835,94 +725,27 @@ final class AppState: ObservableObject {
 
     func prepareForTermination() {
         importTask?.cancel()
-        manualTriggerTask?.cancel()
         audio.setPCMHandler(nil)
         microphone.setPCMHandler(nil)
         _ = microphone.stopCapture()
-        finalTranscriptionTask?.cancel()
+        Task {
+            await liveTranscriber?.cancel()
+            await microphoneTranscriber?.cancel()
+            await ZipformerRuntime.shared.unload()
+        }
         answerTask?.cancel()
         codex.cancel()
-        whisper.shutdownImmediately()
         appServer.shutdown()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
     }
 
     private func receiveSpeechEvent(_ event: SpeechSegmentEvent) {
-        guard isRunning, transcriptionBackend == "whisper" else { return }
-        Diagnostics.record(event.kind == .final ? "voice.final" : "voice.partial", ["voice_id": event.id.uuidString, "source": event.source.rawValue, "samples": event.samples.count, "start_sample": event.startSample, "end_sample": event.endSample])
-        if event.kind == .partial {
-            guard !isPaused, !isStopping else { return }
-            activeVoiceID = event.id
-            if finalTranscriptionTask == nil { transcriptionStatus = "正在采集语音…" }
-            transcribePreview(event)
-        } else {
-            activeVoiceID = event.id
-            if event.source == .system { partialTranscript = "" } else { microphonePartialTranscript = "" }
-            enqueueFinal(event, shouldDetectQuestion: !isStopping)
-        }
-    }
-
-    func enqueueFinal(_ event: SpeechSegmentEvent, shouldDetectQuestion: Bool = true) {
-        guard finalVoiceIDs.insert(event.id).inserted else { return }
-        if finalQueue.filter({ $0.0.source == event.source }).count >= 3,
-           let index = finalQueue.firstIndex(where: { $0.0.source == event.source }) {
-            let removed = finalQueue.remove(at: index)
-            finalVoiceIDs.remove(removed.0.id)
-            Diagnostics.record("asr.dropped", ["voice_id": removed.0.id.uuidString])
-            droppedAudioSegments += 1
-            transcriptionStatus = "识别积压 · 已遗漏 \(droppedAudioSegments) 段"
-        }
-        finalQueue.append((event, shouldDetectQuestion))
-        transcriptionStatus = "本地识别中 · \(finalQueue.count) 段待处理"
-        Diagnostics.record("asr.queued", ["voice_id": event.id.uuidString, "queue_count": finalQueue.count])
-        guard finalTranscriptionTask == nil else { return }
-        finalTranscriptionTask = Task {
-            while !finalQueue.isEmpty, !Task.isCancelled {
-                let next = finalQueue.removeFirst()
-                await transcribeFinal(next.0, shouldDetectQuestion: next.1)
-            }
-            finalTranscriptionTask = nil
-        }
-    }
-
-    private func transcribeFinal(_ event: SpeechSegmentEvent, shouldDetectQuestion: Bool) async {
-        let epoch = audioEpoch
-        let began = Date()
-        defer {
-            finalVoiceIDs.remove(event.id)
-            if finalQueue.isEmpty { transcriptionStatus = isPaused ? "已暂停采集" : "等待系统音频" }
-        }
-        do {
-            var text = try await whisper.transcribe(event.samples, modelPath: modelPath, language: recognitionLanguage, vocabulary: recognitionVocabulary)
-            guard isRunning, audioEpoch == epoch, !Task.isCancelled else { return }
-            lastASRSeconds = Date().timeIntervalSince(began)
-            lastRTF = (lastASRSeconds ?? 0) / max(0.001, Double(event.samples.count) / 16_000)
-            let incomingStart = (event.streamStartedAt ?? sessionStartedAt ?? Date()).addingTimeInterval(Double(event.startSample) / 16_000)
-            if let previous = entries.last(where: { $0.source == (event.source == .microphone ? CaptureSource.microphone.rawValue : CaptureSource.system.rawValue) }) {
-                text = TranscriptDeduplicator.removeOverlappingPrefix(previous: previous.text, incoming: text, previousEnd: previous.endedAt, incomingStart: incomingStart)
-            }
-            if activeVoiceID == event.id {
-                if event.source == .system { partialTranscript = "" } else { microphonePartialTranscript = "" }
-                activeVoiceID = nil
-            }
-            guard !text.isEmpty else { return }
-            let origin = event.streamStartedAt ?? sessionStartedAt ?? Date()
-            let startedAt = origin.addingTimeInterval(Double(event.startSample) / 16_000)
-            let endedAt = origin.addingTimeInterval(Double(event.endSample) / 16_000)
-            let entry = TranscriptEntry(date: startedAt, source: event.source == .microphone ? CaptureSource.microphone.rawValue : CaptureSource.system.rawValue, text: text, isFinal: true, startedAt: startedAt, endedAt: endedAt)
-            entries.append(entry)
-            entries.sort { $0.date < $1.date }
-            Diagnostics.record("transcript.committed", ["voice_id": event.id.uuidString, "source": event.source.rawValue, "characters": text.count])
-            if entries.count > 400 { entries.removeFirst(entries.count - 400) }
-            if event.source == .system {
-                processRecognized(text, isFinal: true, key: event.id.uuidString, allowAutomatic: shouldDetectQuestion)
-            }
-        } catch is CancellationError {
-        } catch {
-            guard isRunning, !Task.isCancelled, !isStopping else { return }
-            errorMessage = "本地识别失败：\(error.localizedDescription)"
-        }
+        guard isRunning, !isPaused, !isStopping, event.kind == .final else { return }
+        guard transcriptionBackend == "zipformer"
+            || (transcriptionBackend == "cloud" && cloudProvider == .openai) else { return }
+        let transcriber = event.source == .microphone ? microphoneTranscriber : liveTranscriber
+        Task { await transcriber?.commitUtterance() }
     }
 
     func ask(_ question: String, screenshot: URL?, recentContext: String? = nil, isAutomatic: Bool = false) {
@@ -1110,8 +933,6 @@ final class AppState: ObservableObject {
         }
         audio.onSegment = receive
         microphone.onSegment = receive
-        // Device changes (headphones, AirPods, display sleep) must not end the session:
-        // system audio reconnects automatically; the microphone follows the default input.
         audio.onCaptureError = { [weak self] message in
             Task { @MainActor in
                 guard let self, self.audioEpoch == captureEpoch else { return }
@@ -1127,40 +948,48 @@ final class AppState: ObservableObject {
         microphone.onDeviceChanged = { [weak self] name in
             Task { @MainActor in
                 guard let self, self.audioEpoch == captureEpoch, self.isRunning else { return }
+                await self.microphoneTranscriber?.reset()
                 self.transcriptionStatus = "麦克风已切换到 \(name)"
                 Diagnostics.record("microphone.device_changed")
             }
         }
-        if transcriptionBackend == "whisper" {
-            audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
-            return try await whisper.prepare(modelPath: modelPath)
-        }
+
         let factory: () -> (any LiveTranscribing)?
-        if transcriptionBackend == "cloud" {
-            guard cloudConsent, !cloudKey.isEmpty else { throw AppFailure.transcription("请先在设置中确认云端识别说明并填写 API Key。") }
-            let provider = cloudProvider, key = cloudKey, model = cloudModel, vocabulary = recognitionVocabulary
+        switch transcriptionBackend {
+        case "zipformer":
+            guard modelIsReady else { throw AppFailure.modelMissing }
+            let vocabulary = recognitionVocabulary
+            factory = { ZipformerStreamingTranscriber(vocabulary: vocabulary) }
+            statusText = "正在准备本地 Zipformer 流式识别…"
+        case "cloud":
+            guard cloudConsent, !cloudKey.isEmpty else {
+                throw AppFailure.transcription("请先在设置中确认云端识别说明并填写 API Key。")
+            }
+            let provider = cloudProvider
+            let key = cloudKey
+            let model = cloudProvider.isRemovedWhisperModelIdentifier(cloudModel) ? "" : cloudModel
+            let vocabulary = recognitionVocabulary
             factory = { CloudStreamingTranscriber(provider: provider, apiKey: key, model: model, vocabulary: vocabulary) }
             statusText = "正在连接云端识别…"
-        } else {
+        default:
             factory = { LiveTranscriberFactory.make() }
             statusText = "正在准备 Apple Speech；首次使用可能下载语言资源…"
         }
+
         guard let service = factory() else {
-            throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换 Whisper 或云端识别。")
+            throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换 Zipformer 或云端识别。")
         }
         let started = Date()
         liveTranscriber = service
         let micService = microphoneEnabled ? factory() : nil
         microphoneTranscriber = micService
-        // System and microphone recognizers start in parallel (both on the main actor,
-        // interleaving at their awaits).
         let micStart: Task<String?, Never>? = micService.map { mic in
             Task { @MainActor in
-                do { try await self.startApple(mic, source: .microphone, epoch: captureEpoch); return nil }
+                do { try await self.startLive(mic, source: .microphone, epoch: captureEpoch); return nil }
                 catch { return error.localizedDescription }
             }
         }
-        try await startApple(service, source: .system, epoch: captureEpoch)
+        try await startLive(service, source: .system, epoch: captureEpoch)
         if let micStart, let failure = await micStart.value {
             microphoneTranscriber = nil
             microphoneUnavailable("麦克风识别器启动失败：\(failure)")
@@ -1170,10 +999,12 @@ final class AppState: ObservableObject {
         return Date().timeIntervalSince(started)
     }
 
-    private func startApple(_ service: any LiveTranscribing, source: CaptureSource, epoch: UUID) async throws {
-        try await service.start(language: recognitionLanguage) { [weak self] text, final, start, end in
+    private func startLive(_ service: any LiveTranscribing, source: CaptureSource, epoch: UUID) async throws {
+        try await service.start(language: recognitionLanguage) { [weak self] text, final, start, end, inferenceSeconds, audioSeconds in
             guard let self, self.audioEpoch == epoch, self.isRunning else { return }
-            self.receiveStreamingResult(text, final: final, start: start, end: end, source: source)
+            self.receiveStreamingResult(
+                text, final: final, start: start, end: end, source: source,
+                inferenceSeconds: inferenceSeconds, audioSeconds: audioSeconds)
         } onError: { [weak self] message in
             guard let self, self.audioEpoch == epoch else { return }
             self.errorMessage = message
@@ -1181,24 +1012,6 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func drainTranscriptions() async {
-        guard let task = finalTranscriptionTask else { return }
-        let epoch = audioEpoch
-        let deadline = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(3))
-            guard !Task.isCancelled, let self, self.audioEpoch == epoch else { return }
-            self.droppedAudioSegments += self.finalQueue.count + 1
-            self.finalQueue.removeAll()
-            task.cancel()
-            self.whisper.cancelAll()
-        }
-        await task.value
-        deadline.cancel()
-        finalTranscriptionTask = nil
-    }
-
-    /// Uses the freshest text. A Whisper flush runs without stopping capture; it is
-    /// explicitly not presented as instantaneous speech recognition.
     func forceAnswerCurrent() {
         // Priority: typed text → latest unanswered question candidate → recent transcript.
         if questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -1213,17 +1026,7 @@ final class AppState: ObservableObject {
             submitCurrentText()
             return
         }
-        guard isRunning, !isPaused, transcriptionBackend == "whisper", manualTriggerTask == nil else {
-            errorMessage = "还没有识别出的文字，请先说话或手动输入问题。"; return
-        }
-        let id = UUID(); forceTriggerID = id
-        manualTriggerTask = Task {
-            defer { if forceTriggerID == id { manualTriggerTask = nil } }
-            if let event = await audio.flushUtterance() {
-                enqueueFinal(event, shouldDetectQuestion: false)
-                transcriptionStatus = "已提交当前语音；文字出现后可点击回答"
-            }
-        }
+        errorMessage = "还没有识别出的文字，请先说话或手动输入问题。"
     }
 
     private func submitCurrentText() {

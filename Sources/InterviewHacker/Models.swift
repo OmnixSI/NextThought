@@ -70,7 +70,6 @@ enum CaptureSource: String, Hashable {
 enum AppFailure: LocalizedError {
     case codexUnavailable
     case codexNotSignedIn
-    case noTranscriber
     case modelMissing
     case capture(String)
     case transcription(String)
@@ -82,10 +81,8 @@ enum AppFailure: LocalizedError {
             return "没有找到 Codex CLI。请先安装并打开 ChatGPT/Codex 桌面客户端。"
         case .codexNotSignedIn:
             return "需要使用 ChatGPT 账号登录本机 Codex CLI。此应用不使用 API Key；请在 ChatGPT/Codex 客户端登录后重试。"
-        case .noTranscriber:
-            return "应用内 Whisper 运行时不可用。请重新构建或安装 InterviewHacker 应用包。"
         case .modelMissing:
-            return "本地 Whisper 模型尚未就绪。请在设置中选择下载模型，或扫描并导入已有模型。"
+            return "Zipformer 中英双语模型尚未就绪。请在设置中下载完整模型文件组。"
         case let .capture(message), let .transcription(message), let .screenshot(message):
             return message
         }

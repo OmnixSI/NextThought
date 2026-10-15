@@ -24,7 +24,7 @@ final class CloudStreamingTranscriber: LiveTranscribing {
             .map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
     }
 
-    func start(language: String, onResult: @escaping (String, Bool, Date, Date) -> Void,
+    func start(language: String, onResult: @escaping (String, Bool, Date, Date, Double?, Double?) -> Void,
                onError: @escaping (String) -> Void) async throws {
         await cancel()
         let id = UUID(); generation = id
@@ -64,7 +64,7 @@ final class CloudStreamingTranscriber: LiveTranscribing {
                     for update in try assembler.consume(text) {
                         let start = update.startMs.map { origin.addingTimeInterval(Double($0) / 1_000) } ?? Date()
                         let end = update.endMs.map { origin.addingTimeInterval(Double($0) / 1_000) } ?? Date()
-                        onResult(update.text, update.isFinal, start, max(start, end))
+                        onResult(update.text, update.isFinal, start, max(start, end), nil, nil)
                     }
                 } catch {
                     guard let self, self.generation == id else { return }
@@ -82,10 +82,19 @@ final class CloudStreamingTranscriber: LiveTranscribing {
         return { samples, origin in sink?.append(samples, origin: origin) }
     }
 
+    func commitUtterance() async {
+        guard provider == .openai else { return }
+        sink?.commit()
+    }
+
     func finish() async {
         guard let socket else { return }
-        sink?.close()
-        try? await socket.send(.string(provider.closeMessage))
+        if provider == .openai {
+            sink?.commit()
+        } else {
+            sink?.close()
+            try? await socket.send(.string(provider.closeMessage))
+        }
         // Wait briefly for the provider to flush final results, then close.
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             finished = continuation
@@ -114,6 +123,7 @@ private final class CloudAudioSink: @unchecked Sendable {
     private let provider: CloudSTTProvider
     private let onError: @Sendable (String) -> Void
     private var inFlight = 0
+    private var samplesPending = 0
     private var closed = false
     private var streamOrigin: Date?
     var origin: Date? { lock.withLock { streamOrigin } }
@@ -128,6 +138,7 @@ private final class CloudAudioSink: @unchecked Sendable {
             if streamOrigin == nil { streamOrigin = origin }
             guard inFlight < 80 else { closed = true; return false }
             inFlight += 1
+            samplesPending += samples.count
             return true
         }
         guard accepted, let task else {
@@ -147,6 +158,20 @@ private final class CloudAudioSink: @unchecked Sendable {
                 self.close()
                 self.onError("云端识别发送失败：\(error!.localizedDescription)")
             }
+        }
+    }
+
+    func commit() {
+        let shouldSend: Bool = lock.withLock {
+            guard !closed, samplesPending > 0, task != nil else { return false }
+            samplesPending = 0
+            return true
+        }
+        guard shouldSend, let task else { return }
+        task.send(.string(#"{"type":"input_audio_buffer.commit"}"#)) { [weak self] error in
+            guard let self, error != nil, !self.lock.withLock({ self.closed }) else { return }
+            self.close()
+            self.onError("OpenAI 转写无法提交音频：\(error!.localizedDescription)")
         }
     }
 

@@ -93,40 +93,27 @@ extension AppState {
 
     // MARK: Streaming recognizers (Apple / cloud)
 
-    func receiveStreamingResult(_ text: String, final: Bool, start: Date, end: Date, source: CaptureSource) {
+    func receiveStreamingResult(_ text: String, final: Bool, start: Date, end: Date, source: CaptureSource,
+                               inferenceSeconds: Double? = nil, audioSeconds: Double? = nil) {
+        if let inferenceSeconds, let audioSeconds {
+            lastASRSeconds = inferenceSeconds
+            lastRTF = inferenceSeconds / max(0.001, audioSeconds)
+            transcriptionStatus = String(format: "Zipformer 流式识别 · 推理 %.2f s · RTF %.2f", inferenceSeconds, lastRTF ?? 0)
+        }
         let key = "\(source.rawValue)-\(appleUtteranceCounter[source.rawValue, default: 0])"
         if final {
             if source == .system { partialTranscript = "" } else { microphonePartialTranscript = "" }
             entries.append(TranscriptEntry(date: start, source: source.rawValue, text: text, isFinal: true, startedAt: start, endedAt: end))
             entries.sort { $0.date < $1.date }
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
-            transcriptionStatus = transcriptionBackend == "cloud" ? "云端流式识别 · \(cloudProvider.title)" : "Apple Speech · 双路独立识别"
+            if inferenceSeconds == nil {
+                transcriptionStatus = transcriptionBackend == "cloud" ? "云端流式识别 · \(cloudProvider.title)" : "Apple Speech · 双路独立识别"
+            }
             appleUtteranceCounter[source.rawValue, default: 0] += 1
         } else if source == .system { partialTranscript = text }
         else { microphonePartialTranscript = text }
         if source == .system, !isPaused, !isStopping {
             processRecognized(text, isFinal: final, key: key, allowAutomatic: true)
-        }
-    }
-
-    // MARK: Whisper live preview
-
-    /// While an utterance is still being spoken, decode what we have so far so the
-    /// transcript and question candidate update before the pause. Skipped when the
-    /// final queue is busy or the device decodes too slowly (RTF ≥ 0.5).
-    func transcribePreview(_ event: SpeechSegmentEvent) {
-        guard liveWhisperPreview, transcriptionBackend == "whisper", !isPreviewTranscribing,
-              finalQueue.isEmpty, finalTranscriptionTask == nil, (lastRTF ?? 0) < 0.5 else { return }
-        isPreviewTranscribing = true
-        let epoch = audioEpoch
-        let path = modelPath, language = recognitionLanguage, vocabulary = recognitionVocabulary
-        Task {
-            defer { isPreviewTranscribing = false }
-            guard let text = try? await whisper.transcribe(event.samples, modelPath: path, language: language, vocabulary: vocabulary),
-                  !text.isEmpty, audioEpoch == epoch, isRunning, activeVoiceID == event.id else { return }
-            if event.source == .microphone { microphonePartialTranscript = text; return }
-            partialTranscript = text
-            processRecognized(text, isFinal: false, key: event.id.uuidString, allowAutomatic: true)
         }
     }
 
@@ -153,9 +140,9 @@ extension AppState {
         UserDefaults.standard.set(apiModel, forKey: "apiModel")
         UserDefaults.standard.set(verifyUncertainWithModel, forKey: "verifyUncertainWithModel")
         UserDefaults.standard.set(cloudProvider.rawValue, forKey: "cloudProvider")
+        if cloudProvider.isRemovedWhisperModelIdentifier(cloudModel) { cloudModel = "" }
         UserDefaults.standard.set(cloudModel, forKey: "cloudModel")
         UserDefaults.standard.set(cloudConsent, forKey: "cloudConsent")
-        UserDefaults.standard.set(liveWhisperPreview, forKey: "liveWhisperPreview")
         UserDefaults.standard.set(teleprompterOpacity, forKey: "teleprompterOpacity")
         UserDefaults.standard.set(teleprompterFontSize, forKey: "teleprompterFontSize")
         UserDefaults.standard.set(capturePrivacy, forKey: "capturePrivacy")

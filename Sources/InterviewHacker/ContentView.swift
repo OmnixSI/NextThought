@@ -29,11 +29,11 @@ struct ContentView: View {
         .tint(Brand.accent)
         .foregroundStyle(.primary)
         .preferredColorScheme(state.colorScheme)
-        .confirmationDialog("下载本地语音识别模型？", isPresented: $showModelDownloadWarning, titleVisibility: .visible) {
-            Button("下载 \(state.selectedModel?.sizeLabel ?? "模型")") { state.downloadModel() }
+        .confirmationDialog("下载本地 Zipformer 模型？", isPresented: $showModelDownloadWarning, titleVisibility: .visible) {
+            Button("下载约 200 MB 模型") { state.downloadModel() }
             Button("取消", role: .cancel) { }
         } message: {
-            Text("\(state.selectedModel?.id ?? "") 会保存到本机应用支持目录，下载后自动切换使用。")
+            Text("中英双语流式模型文件组将保存到 InterviewHacker 的应用支持目录。完成校验后可离线识别。")
         }
         .confirmationDialog("删除全部本地记录？", isPresented: $showHistoryDeleteWarning, titleVisibility: .visible) {
             Button("删除记录", role: .destructive) { state.deleteHistory() }
@@ -368,6 +368,7 @@ struct ContentView: View {
 
     private var transcriptTitle: String {
         switch state.transcriptionBackend {
+        case "zipformer": "Zipformer 流式转录 · \(state.entries.count)"
         case "apple": "流式转录 · \(state.entries.count)"
         case "cloud": "云端流式转录 · \(state.entries.count)"
         default: "转录 · \(state.entries.count)"
@@ -463,7 +464,7 @@ struct ContentView: View {
 
                 answerEngineSection
                 transcriptionSection
-                if state.transcriptionBackend == "whisper" { whisperSection }
+                if state.transcriptionBackend == "zipformer" { zipformerSection }
 
                 settingsSection("捕获目标", icon: "rectangle.on.rectangle") {
                     MenuPicker(title: "系统音频来源", selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择音频来源")
@@ -582,24 +583,36 @@ struct ContentView: View {
     private var transcriptionSection: some View {
         settingsSection("语音识别引擎", icon: "waveform") {
             MenuPicker(title: "引擎", selection: $state.transcriptionBackend, options: [
-                ("whisper", "Whisper · 本地 / 自动中英文"),
+                ("zipformer", "Zipformer · 本地流式 / 自动中英混说"),
                 ("apple", "Apple Speech · 本地流式 / macOS 26"),
                 ("cloud", "云端流式 · 最快 / 需 API Key"),
             ])
             .disabled(state.isRunning || state.isPreparingModel)
             .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
-            MenuPicker(title: "识别语言", selection: $state.recognitionLanguage, options: [("auto", "自动 / 中英混说"), ("zh", "中文"), ("en", "English")])
-            .disabled(state.isRunning || state.isPreparingModel)
-            .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
+            if state.transcriptionBackend == "zipformer" {
+                Text("Zipformer 会自动识别中文、English 和同一句中的中英混说。")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                MenuPicker(title: "识别语言", selection: $state.recognitionLanguage, options: [("auto", "自动 / 中英混说"), ("zh", "中文"), ("en", "English")])
+                    .disabled(state.isRunning || state.isPreparingModel)
+                    .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
+            }
             Toggle("后台预加载识别模型（开始辅助几乎瞬间启动）", isOn: $state.keepRecognizerWarm)
                 .onChange(of: state.keepRecognizerWarm) { _, _ in state.saveRecognizerSettings() }
             if let seconds = state.lastStartupSeconds {
                 Text(String(format: "上次开始辅助用时 %.1f 秒", seconds)).font(.caption).foregroundStyle(.secondary)
             }
-            TextField("专业词 / 人名，逗号分隔（提升识别准确度）", text: $state.recognitionVocabulary)
+            TextField("专业词 / 人名，逗号分隔", text: $state.recognitionVocabulary)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: state.recognitionVocabulary) { _, _ in state.updateSettings() }
             switch state.transcriptionBackend {
+            case "zipformer":
+                Text("这些词会作为 Zipformer 解码热词提示；需下载完整模型文件组，下一次开始辅助时生效。提示不保证一定识别。")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if let rtf = state.lastRTF, let seconds = state.lastASRSeconds {
+                    Text(String(format: "Zipformer 最近处理 %.2f s · RTF %.2f（本机测量）", seconds, rtf))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             case "apple":
                 Text("Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。")
                     .font(.caption).foregroundStyle(.secondary)
@@ -618,15 +631,8 @@ struct ContentView: View {
                 Text("云端流式识别通常在说话的同时出字（几百毫秒），并能更早判断问题结束。Soniox 在同一句中英混说上最稳；OpenAI 转写为 24 kHz 自动重采样；Deepgram 需指定单一语言。请确认会议参与者同意录音与转写。")
                     .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             default:
-                Toggle("说话过程中预览识别（设备够快时）", isOn: $state.liveWhisperPreview)
-                    .onChange(of: state.liveWhisperPreview) { _, _ in state.saveAnswerSettings() }
-                if let rtf = state.lastRTF, let seconds = state.lastASRSeconds {
-                    Text(String(format: "上段 Whisper：%.2f s · RTF %.2f（>1 表示处理慢于音频输入）", seconds, rtf)).font(.caption)
-                    if rtf > 0.8 {
-                        Text("当前模型在这台 Mac 上偏慢，建议换 small / base 量化模型，或改用 Apple Speech / 云端流式。")
-                            .font(.caption).foregroundStyle(.orange)
-                    }
-                }
+                Text("Apple Speech 的转写文本由系统框架提供。")
+                    .font(.caption).foregroundStyle(.secondary)
             }
             if state.droppedAudioSegments > 0 {
                 Text("当前会话有 \(state.droppedAudioSegments) 段音频因积压或停止超时未完成识别；转录并不完整。").font(.caption).foregroundStyle(.orange)
@@ -634,67 +640,37 @@ struct ContentView: View {
         }
     }
 
-    private var whisperSection: some View {
-        settingsSection("本地 Whisper 模型", icon: "cpu") {
+    private var zipformerSection: some View {
+        settingsSection("本地 Zipformer 模型", icon: "cpu") {
+            Text("\(ZipformerModelStore.modelID) · 中英双语在线 Transducer")
+                .font(.system(size: 12, weight: .medium))
+                .textSelection(.enabled)
+            Text("五个模型与词表文件会一起下载到：\(ZipformerModelStore.modelDirectory.path)")
+                .font(.system(size: 11)).foregroundStyle(.secondary).textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Text("已发现的本地模型").font(.system(size: 12, weight: .semibold))
+                Text(state.isModelInstalled ? "文件组已校验 · 可离线使用" : "需要下载模型文件组")
+                    .font(.system(size: 12)).foregroundStyle(state.isModelInstalled ? .green : .secondary)
                 Spacer()
-                if state.isScanningModels { ProgressView().controlSize(.small) }
-                Button("重新扫描") { Task { await state.scanLocalModels() } }.disabled(state.isScanningModels)
-            }
-            Text(state.modelScanStatus.isEmpty ? "正在扫描常用 Whisper 模型缓存…" : state.modelScanStatus)
-                .font(.caption).foregroundStyle(.secondary)
-            if !state.discoveredModels.isEmpty {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(state.discoveredModels) { model in
-                            HStack(alignment: .top) {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(model.name).font(.system(size: 12, weight: .medium))
-                                    Text("\(model.format) · \(ByteCountFormatter.string(fromByteCount: model.bytes, countStyle: .binary))").font(.caption).foregroundStyle(.secondary)
-                                    Text(model.url.path).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2).textSelection(.enabled)
-                                }
-                                Spacer()
-                                Button("使用") { state.useDiscoveredModel(model) }.disabled(state.modelControlsDisabled)
-                            }
-                        }
-                    }
-                }.frame(maxHeight: 150)
-            }
-            MenuPicker(title: "选择模型", selection: $state.selectedModelID, options:
-                WhisperModel.catalog.map { model in
-                    (model.id, "\(model.id) · \(model.sizeLabel)\(FileManager.default.fileExists(atPath: LocalWhisperService.modelsDirectory.appendingPathComponent(model.filename).path) ? " · 已下载" : "")")
-                } + state.localModelPaths.map { name in
-                    ("local:" + name, "本地导入 · \(name.replacingOccurrences(of: #"^imported-[A-Fa-f0-9-]{36}-"#, with: "", options: .regularExpression))")
-                })
-            .disabled(state.modelControlsDisabled)
-            Text(state.selectedModel?.summary ?? "本地导入的 Whisper 模型。占用和识别效果取决于所选版本；.en 模型仅支持英语。")
-                .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Text("当前使用：\(URL(fileURLWithPath: state.modelPath).lastPathComponent)\(state.isModelInstalled ? " · 已校验" : " · 尚未就绪")")
-                .font(.system(size: 12)).foregroundStyle(state.isModelInstalled ? .green : .secondary)
-            HStack {
                 if state.isDownloadingModel {
                     Button("取消下载") { state.cancelModelDownload() }.buttonStyle(SecondaryButtonStyle())
-                } else if state.selectedModelExists {
-                    Button("使用此模型") { state.useSelectedModel() }.buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
-                    Button("删除副本") { state.deleteModel() }.foregroundStyle(.red).disabled(state.modelControlsDisabled)
-                } else if state.selectedModel != nil {
-                    Button("下载并使用") { showModelDownloadWarning = true }.buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
+                } else if state.isModelInstalled {
+                    Button("删除 Zipformer 模型") { state.deleteModel() }
+                        .foregroundStyle(.red).disabled(state.modelControlsDisabled)
+                } else {
+                    Button("下载模型文件组") { showModelDownloadWarning = true }
+                        .buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
                 }
-                Button("导入本地模型…") { state.importLocalModel() }.buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
             }
             if state.isDownloadingModel { ProgressView(value: state.modelDownloadProgress).controlSize(.small) }
-            if state.isImportingModel { ProgressView().controlSize(.small) }
             if !state.modelDownloadStatus.isEmpty {
                 Text(state.modelDownloadStatus).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
             }
-            Text("模型越大通常越准但越慢。实时会议优先选 RTF 明显小于 1 的模型；Q5/Q8 量化可显著降低内存。导入 .pt 需要本机已有 Python Whisper。")
-                .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Link("模型来源与开源说明", destination: URL(string: "https://huggingface.co/ggerganov/whisper.cpp")!)
-                .font(.system(size: 11)).foregroundStyle(Color.accentColor)
             if let seconds = state.modelLoadSeconds, seconds > 0 {
-                Text(String(format: "本次模型加载 %.1f 秒", seconds)).font(.system(size: 11)).foregroundStyle(.tertiary)
+                Text(String(format: "本次双路识别器准备 %.2f 秒", seconds)).font(.system(size: 11)).foregroundStyle(.tertiary)
             }
+            Link("模型与运行时许可证", destination: URL(string: "https://k2-fsa.github.io/sherpa/onnx/pretrained_models/online-transducer/zipformer-transducer-models.html")!)
+                .font(.system(size: 11)).foregroundStyle(Color.accentColor)
         }
     }
 

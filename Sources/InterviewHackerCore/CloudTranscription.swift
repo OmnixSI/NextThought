@@ -17,10 +17,19 @@ public enum CloudSTTProvider: String, CaseIterable, Codable, Sendable, Identifia
     public var defaultModel: String {
         switch self {
         case .soniox: "stt-rt-v5"
-        case .openai: "gpt-realtime-whisper"
+        case .openai: "gpt-live-transcribe"
         case .deepgram: "nova-3"
         }
     }
+
+    /// Whisper was a model choice only for the OpenAI transcription connection.
+    /// Other providers may use unrelated custom model names containing that word.
+    public func isRemovedWhisperModelIdentifier(_ identifier: String) -> Bool {
+        let normalized = identifier.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized == "gpt-realtime-whisper"
+            || (self == .openai && normalized.contains("whisper"))
+    }
+
     /// OpenAI Realtime only accepts 24 kHz PCM.
     public var sampleRate: Int { self == .openai ? 24_000 : 16_000 }
 
@@ -73,14 +82,15 @@ public enum CloudSTTProvider: String, CaseIterable, Codable, Sendable, Identifia
             if !vocabulary.isEmpty { config["context"] = ["terms": Array(vocabulary.prefix(100))] }
             object = config
         case .openai:
-            var transcription: [String: Any] = ["model": model.isEmpty ? defaultModel : model]
-            if (model.isEmpty ? defaultModel : model) == "gpt-realtime-whisper" {
-                transcription["delay"] = "low"
-                if language != "auto" { transcription["language"] = language }
-            } else {
-                transcription["languages"] = languages
-                if !vocabulary.isEmpty { transcription["keywords"] = Array(vocabulary.prefix(50)) }
+            var transcription: [String: Any] = [
+                "model": model.isEmpty ? defaultModel : model,
+                "languages": languages,
+                "delay": "low"
+            ]
+            let keywords = vocabulary.prefix(50).filter {
+                !$0.contains("<") && !$0.contains(">") && !$0.contains("\n") && !$0.contains("\r")
             }
+            if !keywords.isEmpty { transcription["keywords"] = Array(keywords) }
             object = [
                 "type": "session.update",
                 "session": [
@@ -88,7 +98,7 @@ public enum CloudSTTProvider: String, CaseIterable, Codable, Sendable, Identifia
                     "audio": ["input": [
                         "format": ["type": "audio/pcm", "rate": 24_000],
                         "transcription": transcription,
-                        "turn_detection": ["type": "server_vad", "threshold": 0.5, "prefix_padding_ms": 300, "silence_duration_ms": 500],
+                        "turn_detection": NSNull(),
                         "noise_reduction": ["type": "near_field"],
                     ] as [String: Any]],
                 ] as [String: Any],

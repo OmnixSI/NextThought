@@ -36,11 +36,27 @@ struct CloudTranscriptionTests {
     @Test func configurationMessagesUseExpectedFormats() throws {
         let soniox = try #require(CloudSTTProvider.soniox.configurationMessage(model: "", language: "auto", vocabulary: ["Kubernetes"]))
         #expect(soniox.contains("pcm_s16le") && soniox.contains("stt-rt-v5") && soniox.contains("Kubernetes"))
-        let openai = try #require(CloudSTTProvider.openai.configurationMessage(model: "gpt-transcribe", language: "auto", vocabulary: []))
-        #expect(openai.contains("24000") && openai.contains("\"transcription\""))
+        let openai = try #require(CloudSTTProvider.openai.configurationMessage(model: "", language: "auto", vocabulary: ["Kubernetes"]))
+        let data = try #require(openai.data(using: .utf8))
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let session = try #require(object["session"] as? [String: Any])
+        let audio = try #require(session["audio"] as? [String: Any])
+        let input = try #require(audio["input"] as? [String: Any])
+        let transcription = try #require(input["transcription"] as? [String: Any])
+        #expect(transcription["model"] as? String == "gpt-live-transcribe")
+        #expect(transcription["languages"] as? [String] == ["zh", "en"])
+        #expect(transcription["keywords"] as? [String] == ["Kubernetes"])
+        #expect(input["turn_detection"] is NSNull)
         #expect(CloudSTTProvider.deepgram.configurationMessage(model: "", language: "zh", vocabulary: []) == nil)
         let url = try #require(CloudSTTProvider.deepgram.endpoint(model: "", language: "zh", vocabulary: ["gRPC"]))
         #expect(url.absoluteString.contains("language=zh-CN") && url.absoluteString.contains("keyterm=gRPC"))
+    }
+
+    @Test func whisperMigrationIsScopedToTheOpenAITranscriptionProvider() {
+        #expect(CloudSTTProvider.openai.isRemovedWhisperModelIdentifier("gpt-realtime-whisper"))
+        #expect(CloudSTTProvider.openai.isRemovedWhisperModelIdentifier("whisper-1"))
+        #expect(!CloudSTTProvider.soniox.isRemovedWhisperModelIdentifier("soniox-whisper-compatible"))
+        #expect(!CloudSTTProvider.deepgram.isRemovedWhisperModelIdentifier("custom-whisper-v2"))
     }
 
     @Test func resamplerProducesThreeHalvesSamples() {

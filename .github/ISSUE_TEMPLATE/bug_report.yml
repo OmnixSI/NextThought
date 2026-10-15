@@ -14,7 +14,7 @@ body:
     attributes:
       label: 使用的引擎
       multiple: true
-      options: [Whisper, Apple Speech, 云端 Soniox, 云端 OpenAI, 云端 Deepgram, Codex 常驻服务, Codex exec, OpenAI 兼容 API]
+      options: [本机 Zipformer, Apple Speech, 云端 Soniox, 云端 OpenAI, 云端 Deepgram, Codex 常驻服务, Codex exec, OpenAI 兼容 API]
   - type: textarea
     id: what
     attributes: { label: 发生了什么, description: 复现步骤、期望结果与实际结果 }

@@ -1,9 +1,18 @@
-InterviewHacker includes whisper.cpp v1.9.4 and its ggml inference runtime from ggml-org.
-The bundled source and runtime are licensed under the MIT License. See WhisperCpp-LICENSE.txt.
+InterviewHacker uses the Sherpa-ONNX C API and ONNX Runtime for offline streaming speech recognition.
 
-The optional Whisper large-v3-turbo Q5_0 model is downloaded separately from the ggerganov/whisper.cpp
-Hugging Face repository. The model is multilingual and is distributed under the MIT License from
-OpenAI Whisper. The model is not included in the application bundle.
+Sherpa-ONNX v1.13.8 is licensed under Apache License 2.0:
+https://github.com/k2-fsa/sherpa-onnx/blob/v1.13.8/LICENSE
+The Sherpa-ONNX package links its static macOS XCFramework into the application executable.
 
-The runtime is built for Apple Silicon and links the macOS Accelerate framework. Metal is disabled
-in this build because the build machine does not have Apple's Metal compiler installed.
+ONNX Runtime v1.28.2 is licensed under the MIT License:
+https://github.com/csukuangfj/onnxruntime-libs/tree/v1.28.2
+
+The optional bilingual streaming Zipformer model is downloaded separately from:
+https://huggingface.co/csukuangfj/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20/tree/98590b7ed6443e77b714204da2757d75e1a642f4
+It is licensed under Apache License 2.0. The model is not included in the application bundle.
+Required files and SHA-256 values:
+  encoder-epoch-99-avg-1.int8.onnx  8fa764187a261844f859d7143ebaa563af5d10adfece4c18a8f414c88cba2a9b
+  decoder-epoch-99-avg-1.onnx       2e3b5ec371f8899ee6acd829fd753ba45772df57a91bdf37cde3136354e7db7d
+  joiner-epoch-99-avg-1.int8.onnx   1ed689c5ed19dbaa725d9d191bb4822b5f4855a39e1ffd28cbc1f340d25b2ee0
+  tokens.txt                        a8e0e4ec53810e433789b54a5c0134a7eaa2ffca595a6334d54c00da858841d3
+  bpe.vocab                         d0b642f3a2eacd5fadefdeff9e0e1358cab729647cbb7fe58cf738e1f7407029

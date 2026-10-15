@@ -19,10 +19,8 @@ extension AppState {
             for delay in [0.3, 1.0, 2.0, 4.0, 8.0] {
                 try? await Task.sleep(for: .seconds(delay))
                 guard let self, self.isRunning, !self.isPaused, !self.isStopping, self.audioEpoch == epoch else { return }
-                let pending = await self.audio.stopCapture()
-                for event in pending where event.kind == .final && self.transcriptionBackend == "whisper" {
-                    self.enqueueFinal(event, shouldDetectQuestion: false)
-                }
+                _ = await self.audio.stopCapture()
+                await self.liveTranscriber?.reset()
                 await self.refreshTargets()
                 if !self.captureTargets.contains(where: { $0.id == self.selectedTargetID }) {
                     // The window disappeared: keep listening to the whole screen instead.
@@ -55,19 +53,20 @@ extension AppState {
 
     // MARK: Warm start
 
-    /// Loads the recognizer ahead of time: Whisper model into the resident helper,
-    /// or Apple Speech locale/assets. Called at launch and when settings change.
+    /// Loads the local model ahead of time or prepares Apple Speech assets.
     func prewarmRecognizer() async {
         guard keepRecognizerWarm, !isRunning else { return }
         switch transcriptionBackend {
-        case "whisper":
-            guard modelIsReady, LocalWhisperService.findExecutable() != nil, !whisper.isWarm(modelPath: modelPath) else { return }
+        case "zipformer":
+            guard modelIsReady else { return }
             let started = Date()
             do {
-                _ = try await whisper.prepare(modelPath: modelPath)
-                Diagnostics.record("whisper.prewarmed", ["seconds": Date().timeIntervalSince(started)])
+                try await ZipformerRuntime.shared.configure(
+                    modelDirectory: ZipformerModelStore.modelDirectory,
+                    hotwords: recognitionVocabulary)
+                Diagnostics.record("zipformer.prewarmed", ["seconds": Date().timeIntervalSince(started)])
             } catch {
-                Diagnostics.record("whisper.prewarm_failed")
+                Diagnostics.record("zipformer.prewarm_failed")
             }
         case "apple":
             await LiveTranscriberFactory.prewarm(language: recognitionLanguage)
@@ -76,24 +75,24 @@ extension AppState {
         }
     }
 
-    /// Unload the Whisper helper after 15 idle minutes (or at once if warm-keeping is off).
-    func scheduleWhisperIdleShutdown() {
-        whisperIdleTask?.cancel()
+    /// Unload the recognizer after 15 idle minutes (or at once if warm-keeping is off).
+    func scheduleRecognizerIdleShutdown() {
+        recognizerIdleTask?.cancel()
         guard keepRecognizerWarm else {
-            Task { await whisper.shutdown() }
+            Task { await ZipformerRuntime.shared.unload() }
             return
         }
-        whisperIdleTask = Task { [weak self] in
+        recognizerIdleTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(15 * 60))
             guard !Task.isCancelled, let self, !self.isRunning else { return }
-            await self.whisper.shutdown()
-            Diagnostics.record("whisper.idle_unloaded")
+            await ZipformerRuntime.shared.unload()
+            Diagnostics.record("zipformer.idle_unloaded")
         }
     }
 
     func saveRecognizerSettings() {
         UserDefaults.standard.set(keepRecognizerWarm, forKey: "keepRecognizerWarm")
         if keepRecognizerWarm { Task { await prewarmRecognizer() } }
-        else if !isRunning { Task { await whisper.shutdown() } }
+        else if !isRunning { Task { await ZipformerRuntime.shared.unload() } }
     }
 }
