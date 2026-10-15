@@ -98,6 +98,12 @@ enum LocalSigning {
         identity != nil && FileManager.default.fileExists(atPath: keychain.path) && !keychainPassword.isEmpty
     }
 
+    /// Which part of the binding is missing (for diagnostics and the self-test).
+    static var bindingDiagnostics: String {
+        let files = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
+        return "identity=\(identity ?? "nil"), keychain=\(FileManager.default.fileExists(atPath: keychain.path)), password=\(!keychainPassword.isEmpty), files=\(files.sorted())"
+    }
+
     static var designatedRequirement: String? {
         identity.map { "designated => identifier \"\(bundleIdentifier)\" and certificate leaf = H\"\($0)\"" }
     }

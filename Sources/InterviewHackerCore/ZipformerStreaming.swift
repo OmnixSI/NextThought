@@ -21,18 +21,21 @@ public struct OnlineTransducerModel: Sendable, Equatable {
     /// SentencePiece vocabulary (`piece<TAB>score`); required for hotwords.
     public var bpeVocabulary: String?
     public var modelingUnit: String
+    /// sherpa-onnx model type; empty lets sherpa-onnx read it from the model metadata.
+    /// (Forcing "zipformer" on a Zipformer2 model such as X-ASR aborts the process.)
+    public var modelType: String
 
     public init(directory: URL, encoder: String, decoder: String, joiner: String, tokens: String = "tokens.txt",
-                bpeVocabulary: String? = nil, modelingUnit: String = "bpe") {
+                bpeVocabulary: String? = nil, modelingUnit: String = "bpe", modelType: String = "") {
         self.directory = directory; self.encoder = encoder; self.decoder = decoder; self.joiner = joiner
-        self.tokens = tokens; self.bpeVocabulary = bpeVocabulary; self.modelingUnit = modelingUnit
+        self.tokens = tokens; self.bpeVocabulary = bpeVocabulary; self.modelingUnit = modelingUnit; self.modelType = modelType
     }
 
     /// sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20 (no punctuation).
     public static func legacyBilingual(at directory: URL) -> Self {
         .init(directory: directory, encoder: ZipformerModelFiles.encoder, decoder: ZipformerModelFiles.decoder,
               joiner: ZipformerModelFiles.joiner, tokens: ZipformerModelFiles.tokens,
-              bpeVocabulary: ZipformerModelFiles.bpeVocabulary, modelingUnit: "cjkchar+bpe")
+              bpeVocabulary: ZipformerModelFiles.bpeVocabulary, modelingUnit: "cjkchar+bpe", modelType: "zipformer")
     }
 
     /// X-ASR zh-en streaming Zipformer (2026-06): punctuation, casing, code-switching.
@@ -313,7 +316,7 @@ public final class ZipformerRuntime: @unchecked Sendable {
             transducer: transducer,
             numThreads: max(1, min(threads, 4)),
             provider: "cpu",
-            modelType: "zipformer",
+            modelType: model.modelType,
             modelingUnit: model.modelingUnit,
             bpeVocab: model.hasVocabulary ? model.path(model.bpeVocabulary ?? "") : "")
         let features = sherpaOnnxFeatureConfig(sampleRate: ZipformerModelFiles.sampleRate, featureDim: 80)

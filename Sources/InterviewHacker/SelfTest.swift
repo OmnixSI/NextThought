@@ -153,7 +153,7 @@ enum SelfTest {
         let app = Bundle.main.bundleURL
         guard app.pathExtension == "app" else { throw Failure("run the self-test from inside InterviewHacker.app") }
         let identity = try await Task.detached { try LocalSigning.ensureIdentity() }.value
-        try expect(LocalSigning.isBound, "identity created but not bound")
+        try expect(LocalSigning.isBound, "identity created but not bound: " + LocalSigning.bindingDiagnostics)
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("selftest-sign-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
         let first = work.appendingPathComponent("A/InterviewHacker.app"), second = work.appendingPathComponent("B/InterviewHacker.app")
