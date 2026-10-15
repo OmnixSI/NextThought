@@ -390,10 +390,14 @@ public final class OfflineSegmentRecognizer: @unchecked Sendable {
     private let queue = DispatchQueue(label: "app.interviewhacker.offline-asr", qos: .userInitiated)
     private var recognizer: OpaquePointer?
     private var configurationKey: String?
+    // Readable from the main thread without waiting for a decode in progress.
+    private let loadedLock = NSLock()
+    private var loaded = false
 
     private init() {}
 
-    public var isLoaded: Bool { queue.sync { recognizer != nil } }
+    public var isLoaded: Bool { loadedLock.withLock { loaded } }
+    private func setLoaded(_ value: Bool) { loadedLock.withLock { loaded = value } }
 
     public func configure(model: OfflineTransducerModel, hotwords: String = "", threads: Int = 2) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -442,6 +446,7 @@ public final class OfflineSegmentRecognizer: @unchecked Sendable {
                 if let recognizer = self.recognizer { SherpaOnnxDestroyOfflineRecognizer(recognizer) }
                 self.recognizer = nil
                 self.configurationKey = nil
+                self.setLoaded(false)
                 continuation.resume()
             }
         }
@@ -456,6 +461,7 @@ public final class OfflineSegmentRecognizer: @unchecked Sendable {
         if configurationKey == key, recognizer != nil { return }
         if let recognizer { SherpaOnnxDestroyOfflineRecognizer(recognizer) }
         recognizer = nil
+        setLoaded(false)
         let hotwordsFile = try HotwordsFile.write(cleanedHotwords)
         defer { if !hotwordsFile.isEmpty { try? FileManager.default.removeItem(atPath: hotwordsFile) } }
 
@@ -482,5 +488,6 @@ public final class OfflineSegmentRecognizer: @unchecked Sendable {
         }
         recognizer = created
         configurationKey = key
+        setLoaded(true)
     }
 }

@@ -82,7 +82,7 @@ final class CloudStreamingTranscriber: LiveTranscribing {
         return { samples, origin in sink?.append(samples, origin: origin) }
     }
 
-    func commitUtterance() async {
+    func commitUtterance(_ event: SpeechSegmentEvent?) async {
         guard provider == .openai else { return }
         sink?.commit()
     }

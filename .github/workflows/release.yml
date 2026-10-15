@@ -139,12 +139,27 @@ jobs:
           mv dist/InterviewHacker.dmg "dist/InterviewHacker-${version}-macOS-arm64.dmg"
           mv dist/InterviewHacker-macOS.zip "dist/InterviewHacker-${version}-macOS-arm64.zip"
           cd dist && shasum -a 256 InterviewHacker-*-macOS-arm64.* > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Update manifest for the in-app updater
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          version="${TAG#v}"
+          zip="InterviewHacker-${version}-macOS-arm64.zip"
+          sha="$(shasum -a 256 "dist/$zip" | awk '{print $1}')"
+          bundle_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' dist/InterviewHacker.app/Contents/Info.plist)"
+          python3 - "$TAG" "$bundle_version" "$BUILD_NUMBER" "$zip" "$sha" "$GITHUB_SHA" > dist/update.json <<'PY'
+          import json, sys, datetime
+          tag, version, build, zip_name, sha, commit = sys.argv[1:]
+          print(json.dumps({"tag": tag, "version": version, "build": int(build), "zip": zip_name, "sha256": sha,
+                            "commit": commit, "publishedAt": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")}, indent=2))
+          PY
+          cat dist/update.json
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           PRERELEASE: ${{ github.event.inputs.prerelease || 'false' }}
         run: |
-          files=(dist/InterviewHacker-*-macOS-arm64.dmg dist/InterviewHacker-*-macOS-arm64.zip dist/SHA256SUMS.txt)
+          files=(dist/InterviewHacker-*-macOS-arm64.dmg dist/InterviewHacker-*-macOS-arm64.zip dist/SHA256SUMS.txt dist/update.json)
           if [[ "$MODE" == rolling ]]; then
             # Move the rolling pre-release to this commit and replace its files.
             gh release delete "$TAG" --cleanup-tag --yes 2>/dev/null || true
@@ -152,6 +167,7 @@ jobs:
             printf '%s\n' \
               "main 分支最新提交 \`$short\` 的自动构建（$(date -u '+%Y-%m-%d %H:%M UTC')），每次推送到 main 都会更新。" "" \
               "- 下载 \`InterviewHacker-main-latest-macOS-arm64.dmg\`，拖进“应用程序”；首次打开到 系统设置 → 隐私与安全性 点“仍要打开”。" \
+              "- 已安装的应用会自动检查更新（设置 → 更新，渠道选“main 最新构建”），下载完成后点“重启并安装”。" \
               "- 或在仓库目录运行 \`./scripts/install-latest.sh main-latest\`（不会弹“仍要打开”）。" "" \
               "正式版本见其它 Release。" > "$RUNNER_TEMP/notes.md"
             gh release create "$TAG" "${files[@]}" --title "main 最新构建 · $short" --target "$GITHUB_SHA" --prerelease --notes-file "$RUNNER_TEMP/notes.md"

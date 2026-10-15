@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 import InterviewHackerCore
 
 struct MaterialsView: View {
-    @EnvironmentObject var state: AppState
+    @Environment(AppState.self) private var state
     @State private var importing = false
     @State private var presetName = ""
     @State private var presetIncludesFiles = true
@@ -14,6 +14,7 @@ struct MaterialsView: View {
     }
 
     var body: some View {
+        @Bindable var state = state
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top) {

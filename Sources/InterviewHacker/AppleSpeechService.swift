@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import InterviewHackerCore
 import Speech
 
 @MainActor
@@ -7,14 +8,14 @@ protocol LiveTranscribing: AnyObject {
     func start(language: String, onResult: @escaping (String, Bool, Date, Date, Double?, Double?) -> Void,
                onError: @escaping (String) -> Void) async throws
     func inputHandler() -> (@Sendable ([Int16], Date) -> Void)
-    func commitUtterance() async
+    func commitUtterance(_ event: SpeechSegmentEvent?) async
     func finish() async
     func cancel() async
     func reset() async
 }
 
 extension LiveTranscribing {
-    func commitUtterance() async {}
+    func commitUtterance(_ event: SpeechSegmentEvent?) async {}
     func reset() async {}
 }
 

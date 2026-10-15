@@ -1,7 +1,7 @@
-import Combine
 import Foundation
 import InterviewHackerCore
 import Network
+import Observation
 import Security
 
 /// LAN phone companion: the phone opens a tokenized URL (shown as a QR code) to see
@@ -15,7 +15,8 @@ final class CompanionServer {
     private var listener: NWListener?
     private var streams: [ObjectIdentifier: NWConnection] = [:]
     private var token = ""
-    private var subscription: AnyCancellable?
+    private var observing = false
+    private var observationGeneration = UUID()
     private var heartbeat: Task<Void, Never>?
     private var lastSent: CompanionSnapshot?
     private let queue = DispatchQueue(label: "app.interviewhacker.companion")
@@ -29,10 +30,10 @@ final class CompanionServer {
         let base = (1_024...65_000).contains(preferredPort) ? preferredPort : 8_765
         let candidates = Array(base..<(base + 20))
         listen(on: candidates, index: 0, onStatus: onStatus)
-        // Push the answer state to connected phones whenever the app state changes.
-        subscription = AppState.shared.objectWillChange
-            .debounce(for: .milliseconds(120), scheduler: RunLoop.main)
-            .sink { [weak self] _ in self?.broadcast() }
+        // Push the answer state to connected phones whenever it changes.
+        observing = true
+        observationGeneration = UUID()
+        observeSnapshot(observationGeneration)
         heartbeat = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(15))
@@ -93,8 +94,23 @@ final class CompanionServer {
         return false
     }
 
+    /// Re-arms Observation tracking of the snapshot after every change (coalesced).
+    private func observeSnapshot(_ generation: UUID) {
+        guard observing, generation == observationGeneration else { return }
+        withObservationTracking {
+            _ = AppState.shared.companionSnapshot
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .milliseconds(120))
+                guard let self, self.observing, generation == self.observationGeneration else { return }
+                self.broadcast()
+                self.observeSnapshot(generation)
+            }
+        }
+    }
+
     func stop() {
-        subscription = nil
+        observing = false
         heartbeat?.cancel(); heartbeat = nil
         listener?.cancel(); listener = nil
         streams.values.forEach { $0.cancel() }

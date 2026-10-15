@@ -104,7 +104,7 @@ enum ZipformerModelError: LocalizedError {
     }
 }
 
-private final class ZipformerAssetDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+final class ZipformerAssetDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let lock = NSLock()
     private var continuation: CheckedContinuation<Void, Error>?
     private var destination: URL?

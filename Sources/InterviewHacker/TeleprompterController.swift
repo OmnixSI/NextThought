@@ -54,7 +54,7 @@ final class TeleprompterController {
             }
             // System window shadow: computed by the window server, free while dragging.
             next.hasShadow = true
-            next.contentView = NSHostingView(rootView: TeleprompterView().environmentObject(AppState.shared))
+            next.contentView = NSHostingView(rootView: TeleprompterView().environment(AppState.shared))
             panel = next
         }
         applyAppearance()
@@ -131,7 +131,7 @@ private final class OverlayPanel: NSPanel {
 }
 
 private struct TeleprompterView: View {
-    @EnvironmentObject var state: AppState
+    @Environment(AppState.self) private var state
     @State private var hovering = false
 
     var body: some View {

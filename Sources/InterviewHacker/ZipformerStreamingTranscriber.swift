@@ -1,33 +1,46 @@
 import Foundation
 import InterviewHackerCore
 
+/// Local two-pass recognizer: a streaming Zipformer produces live partial text, and when
+/// the voice-activity segmenter closes an utterance, the offline model re-decodes the
+/// whole utterance for the final text (better words, punctuation and “？”).
 @MainActor
 final class ZipformerStreamingTranscriber: LiveTranscribing {
     private let runtime = ZipformerRuntime.shared
-    private let modelDirectory: URL
+    private let model: OnlineTransducerModel
+    private let refiner: OfflineTransducerModel?
     private let vocabulary: String
     private var streamID: UUID?
     private var generation = UUID()
     private var resultHandler: ((String, Bool, Date, Date, Double?, Double?) -> Void)?
     private var errorHandler: ((String) -> Void)?
     private var lastFinalizedAt = Date.distantPast
+    /// Absolute sample index up to which audio has been committed (the segmenter
+    /// re-sends half a second of overlap when it splits a long monologue).
+    private var committedThroughSample = 0
+    private(set) var lastRefineSeconds: Double?
 
-    init(modelDirectory: URL = ZipformerModelStore.modelDirectory, vocabulary: String) {
-        self.modelDirectory = modelDirectory
+    init(model: OnlineTransducerModel, refiner: OfflineTransducerModel?, vocabulary: String) {
+        self.model = model
+        self.refiner = refiner
         self.vocabulary = vocabulary
     }
 
     func start(language: String, onResult: @escaping (String, Bool, Date, Date, Double?, Double?) -> Void,
                onError: @escaping (String) -> Void) async throws {
         await cancel()
-        try ZipformerModelStore.verify(at: modelDirectory)
-        try await runtime.configure(modelDirectory: modelDirectory, hotwords: vocabulary)
+        try await runtime.configure(model: model, hotwords: vocabulary)
+        if let refiner {
+            do { try await OfflineSegmentRecognizer.shared.configure(model: refiner, hotwords: vocabulary) }
+            catch { Diagnostics.record("refiner.configure_failed") }
+        }
         resultHandler = onResult
         errorHandler = onError
         lastFinalizedAt = .distantPast
+        committedThroughSample = 0
         generation = UUID()
         streamID = try await runtime.makeStream()
-        Diagnostics.record("zipformer.stream_started", ["language": language, "hotwords": !vocabulary.isEmpty])
+        Diagnostics.record("zipformer.stream_started", ["language": language, "hotwords": !vocabulary.isEmpty, "refine": refiner != nil])
     }
 
     func inputHandler() -> (@Sendable ([Int16], Date) -> Void) {
@@ -52,13 +65,37 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
         Diagnostics.record("zipformer.stream_finished")
     }
 
-    func commitUtterance() async {
+    func commitUtterance(_ event: SpeechSegmentEvent?) async {
         guard let streamID else { return }
+        let id = generation
+        let streaming: ZipformerHypothesis?
         do {
-            if let final = try await runtime.commitStream(streamID) { deliver(final) }
+            streaming = try await runtime.commitStream(streamID)
         } catch {
             errorHandler?("Zipformer 提交语音片段失败：\(error.localizedDescription)")
+            return
         }
+        guard generation == id else { return }
+        guard refiner != nil, let event, OfflineSegmentRecognizer.shared.isLoaded else {
+            if let streaming { deliver(streaming) }
+            return
+        }
+        let samples = newSamples(of: event)
+        committedThroughSample = max(committedThroughSample, event.endSample)
+        guard let refined = await OfflineSegmentRecognizer.shared.recognize(samples), generation == id else {
+            if let streaming { deliver(streaming) }
+            return
+        }
+        lastRefineSeconds = refined.seconds
+        Diagnostics.record("refiner.decoded", ["seconds": refined.seconds, "audio_seconds": Double(samples.count) / 16_000, "changed": refined.text != streaming?.text])
+        let text = refined.text.isEmpty ? (streaming?.text ?? "") : refined.text
+        guard !text.isEmpty else { return }
+        let origin = event.streamStartedAt ?? Date()
+        let started = streaming?.startedAt ?? origin.addingTimeInterval(Double(event.startSample) / 16_000)
+        let ended = streaming?.endedAt ?? origin.addingTimeInterval(Double(event.endSample) / 16_000)
+        deliver(ZipformerHypothesis(text: text, isFinal: true, startedAt: started, endedAt: max(ended, started.addingTimeInterval(0.01)),
+                                    inferenceSeconds: (streaming?.inferenceSeconds ?? 0) + refined.seconds,
+                                    audioSeconds: Double(samples.count) / 16_000))
     }
 
     func reset() async {
@@ -68,6 +105,7 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
         } catch {
             errorHandler?("Zipformer 切换音频设备后重置失败：\(error.localizedDescription)")
         }
+        committedThroughSample = 0
         Diagnostics.record("zipformer.stream_reset")
     }
 
@@ -79,6 +117,13 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
         }
         resultHandler = nil
         errorHandler = nil
+    }
+
+    /// Drops the overlap the segmenter repeats after splitting a long utterance.
+    private func newSamples(of event: SpeechSegmentEvent) -> [Int16] {
+        let alreadyCommitted = max(0, committedThroughSample - event.startSample)
+        guard alreadyCommitted > 0 else { return event.samples }
+        return Array(event.samples.dropFirst(min(alreadyCommitted, event.samples.count)))
     }
 
     private func deliver(_ hypothesis: ZipformerHypothesis) {
@@ -99,16 +144,16 @@ final class ZipformerStreamingTranscriber: LiveTranscribing {
             hypothesis.audioSeconds)
     }
 
-    private static func normalize(_ rawText: String) -> String {
+    private static let hanSpace = try? NSRegularExpression(pattern: "(?<=[\\p{Han}])\\s+(?=[\\p{Han}])")
+    private static let punctuationSpace = try? NSRegularExpression(pattern: "\\s*([，。？！、；：])\\s*")
+
+    /// Joins Chinese characters the recognizer separated and removes the spaces it puts
+    /// around Chinese punctuation (“请解释一下， trade off” → “请解释一下，trade off”).
+    static func normalize(_ rawText: String) -> String {
         var text = rawText.split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        let chineseWordBoundary = try? NSRegularExpression(pattern: "([\\p{Han}])\\s+([\\p{Han}])")
-        while let expression = chineseWordBoundary,
-              let match = expression.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
-              let range = Range(match.range, in: text),
-              let left = Range(match.range(at: 1), in: text),
-              let right = Range(match.range(at: 2), in: text) {
-            text.replaceSubrange(range, with: text[left] + text[right])
-        }
+        let range = { NSRange(text.startIndex..., in: text) }
+        if let hanSpace { text = hanSpace.stringByReplacingMatches(in: text, range: range(), withTemplate: "") }
+        if let punctuationSpace { text = punctuationSpace.stringByReplacingMatches(in: text, range: range(), withTemplate: "$1") }
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
