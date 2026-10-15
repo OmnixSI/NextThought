@@ -24,11 +24,16 @@
 
 ## 截图
 
-| 提词器（可放在摄像头下方，支持鼠标穿透） | 资料与回答要求 |
+| 提词器（可放在摄像头下方，支持鼠标穿透） | 场景：资料与回答要求 |
 | --- | --- |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/teleprompter-dark.png"><img src="docs/screenshots/teleprompter-light.png" alt="提词器"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/materials-dark.png"><img src="docs/screenshots/materials-light.png" alt="资料页"></picture> |
+| **场景经验库与题库（自我迭代）** | **阶段复盘** |
+| <img src="docs/screenshots/workspace-knowledge-dark.png" alt="经验库与题库"> | <img src="docs/screenshots/workspace-review-dark.png" alt="阶段复盘"> |
 | **设置** | **会话记录** |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png"><img src="docs/screenshots/settings-light.png" alt="设置"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png"><img src="docs/screenshots/history-light.png" alt="记录"></picture> |
+
+| **数据：导入导出与自动备份** | |
+| <img src="docs/screenshots/settings-data-dark.png" alt="数据设置"> | |
 
 <sub>截图由 GitHub Actions 在 macOS 26 上用演示数据自动生成（`INTERVIEWHACKER_DEMO=1`，见 `.github/workflows/screenshots.yml`）。</sub>
 
