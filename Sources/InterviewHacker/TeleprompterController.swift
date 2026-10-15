@@ -52,7 +52,8 @@ final class TeleprompterController {
             for button in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] {
                 next.standardWindowButton(button)?.isHidden = true
             }
-            next.hasShadow = false
+            // System window shadow: computed by the window server, free while dragging.
+            next.hasShadow = true
             next.contentView = NSHostingView(rootView: TeleprompterView().environmentObject(AppState.shared))
             panel = next
         }
@@ -97,7 +98,8 @@ final class TeleprompterController {
     /// ScreenCaptureKit-based recorders may still capture it. Use the share test.
     func applyAppearance() {
         let state = AppState.shared
-        panel?.alphaValue = CGFloat(min(1, max(0.35, state.teleprompterOpacity)))
+        let opacity = min(1, max(0.35, state.teleprompterOpacity))
+        panel?.alphaValue = opacity >= 0.99 ? 1 : CGFloat(opacity)
         applyPrivacy(state.capturePrivacy)
     }
 
@@ -150,7 +152,7 @@ private struct TeleprompterView: View {
                                 .font(.system(size: state.teleprompterFontSize * 0.75))
                                 .foregroundStyle(.secondary)
                         } else {
-                            MarkdownText(text: state.displayedAnswer, size: state.teleprompterFontSize, lineSpacing: state.teleprompterFontSize * 0.3)
+                            MarkdownText(text: state.displayedAnswer, size: state.teleprompterFontSize, lineSpacing: state.teleprompterFontSize * 0.3).equatable()
                         }
                         Color.clear.frame(height: 1).id("end")
                     }
@@ -163,8 +165,7 @@ private struct TeleprompterView: View {
         }
         .padding(18)
         .glassBackground(cornerRadius: 26)
-        .shadow(color: .black.opacity(0.25), radius: 18, y: 8)
-        .padding(14)
+        .padding(2)
         .foregroundStyle(.primary)
         .preferredColorScheme(state.colorScheme)
         .onHover { hovering = $0 }

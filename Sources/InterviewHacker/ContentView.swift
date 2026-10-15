@@ -192,10 +192,8 @@ struct ContentView: View {
                     Circle().fill(Brand.gradient)
                     Image(systemName: state.isRunning && !state.isPaused ? "waveform" : "waveform.and.mic")
                         .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                        .symbolEffect(.variableColor.iterative, isActive: state.isRunning && !state.isPaused)
                 }
                 .frame(width: 42, height: 42)
-                .shadow(color: Brand.accent.opacity(0.45), radius: 10, y: 4)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(state.isRunning ? (state.isPaused ? "已暂停" : "正在实时辅助") : "实时辅助")
                         .font(.system(size: 16, weight: .semibold))
@@ -297,7 +295,7 @@ struct ContentView: View {
                 if state.displayedAnswer.isEmpty {
                     Text("正在生成…").font(.system(size: 16)).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    MarkdownText(text: state.displayedAnswer, size: 16, lineSpacing: 5)
+                    MarkdownText(text: state.displayedAnswer, size: 16, lineSpacing: 5).equatable()
                 }
             }
             .frame(minHeight: 120, maxHeight: 360)
@@ -491,6 +489,12 @@ struct ContentView: View {
                 settingsSection("记录与外观", icon: "keyboard") {
                     Toggle("保存会话转录和回答", isOn: $state.saveHistory).onChange(of: state.saveHistory) { _, _ in state.updateSettings() }
                     Toggle("工作台窗口置顶", isOn: $state.keepOnTop).onChange(of: state.keepOnTop) { _, _ in state.updateSettings() }
+                    Toggle("减少视觉特效（更流畅，适合轻薄本 / 省电）", isOn: $state.reducedEffects)
+                        .onChange(of: state.reducedEffects) { _, value in
+                            UserDefaults.standard.set(value, forKey: "reducedEffects")
+                        }
+                    Text("关闭液态玻璃的实时折射，改用平面半透明效果。系统“降低透明度”开启时会自动使用。")
+                        .font(.caption).foregroundStyle(.secondary)
                     Picker("外观", selection: $state.appearance) {
                         Text("跟随系统").tag("system")
                         Text("浅色").tag("light")
@@ -798,7 +802,7 @@ private struct SessionRow: View {
                 ForEach(session.records ?? []) { record in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(record.question).font(.system(size: 12, weight: .medium)).textSelection(.enabled)
-                        MarkdownText(text: record.answer, size: 12)
+                        MarkdownText(text: record.answer, size: 12).equatable()
                     }
                     .padding(8)
                     .background(Color.accentColor.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
@@ -849,18 +853,15 @@ private extension AppSection {
 }
 
 /// Breathing status dot shown while listening.
+/// Listening indicator. Static on purpose: a looping animation forces the window
+/// server to recomposite every glass layer in the window ~60–120 times a second.
 struct PulseDot: View {
     var active: Bool
-    @State private var pulse = false
     var body: some View {
         ZStack {
-            if active {
-                Circle().fill(Color.green.opacity(0.35)).frame(width: 14, height: 14)
-                    .scaleEffect(pulse ? 1.25 : 0.6).opacity(pulse ? 0 : 1)
-            }
+            if active { Circle().fill(Color.green.opacity(0.25)).frame(width: 14, height: 14) }
             Circle().fill(active ? Color.green : Color.secondary.opacity(0.6)).frame(width: 7, height: 7)
         }
         .frame(width: 14, height: 14)
-        .onAppear { withAnimation(.easeOut(duration: 1.4).repeatForever(autoreverses: false)) { pulse = true } }
     }
 }
