@@ -41,7 +41,8 @@ public enum CodexAppServerProtocol {
     /// also on models whose catalog default is Fast.
     public static func serviceTier(fast: Bool) -> Any { fast ? "fast" : NSNull() }
 
-    public static func threadStartParams(model: String, effort: String, cwd: String, fast: Bool = false) -> [String: Any] {
+    /// `webSearch`: Codex may use its live web search (background “联网” answers only).
+    public static func threadStartParams(model: String, effort: String, cwd: String, fast: Bool = false, webSearch: Bool = false) -> [String: Any] {
         [
             "model": model,
             "serviceTier": serviceTier(fast: fast),
@@ -51,7 +52,7 @@ public enum CodexAppServerProtocol {
             "ephemeral": true,
             "config": [
                 "model_reasoning_effort": effort,
-                "web_search": "disabled",
+                "web_search": webSearch ? "live" : "disabled",
                 "features.shell_tool": false,
                 "features.apps": false,
                 "features.multi_agent": false,

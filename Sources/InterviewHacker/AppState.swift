@@ -107,6 +107,22 @@ final class AppState {
     var codexVersion = "正在检测 Codex…"
     var lastAnswerModel: String?
 
+    // MARK: Web search
+    var webSearchMode = WebSearchMode(rawValue: UserDefaults.standard.string(forKey: "webSearchMode") ?? "") ?? .auto
+    var webSearchProvider = WebSearchProvider(rawValue: UserDefaults.standard.string(forKey: "webSearchProvider") ?? "") ?? .codex
+    var tavilyKey = KeychainStore.read(TavilyClient.keyAccount)
+    /// Background web answers by answer id.
+    var webLookups: [UUID: WebLookup] = [:]
+    /// Answers where the user switched back from the web version.
+    var showOriginalAnswer: Set<UUID> = []
+    /// Id of the latest answer (also while it streams).
+    var currentAnswerID: UUID?
+    @ObservationIgnored var webLookupTask: Task<Void, Never>?
+    let webAppServer = CodexAppServerClient()
+    let webCodex = CodexBridge()
+    let webAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
+    let judge = JudgeService()
+
     // MARK: Questions and answers
     var answerHistory: [AnswerRecord] = []
     /// nil shows the latest answer; otherwise an index into `answerHistory`.
@@ -272,6 +288,7 @@ final class AppState {
     }
 
     var displayedAnswer: String {
+        if showsWebAnswer, let lookup = displayedWebLookup { return lookup.answer }
         if isAnswering && !answerDraft.isEmpty && historyCursor == nil { return answerDraft }
         if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].answer }
         return answer
@@ -467,7 +484,7 @@ final class AppState {
             tracker = QuestionCandidateTracker(mode: sessionMode)
             liveCandidate = nil; suggestedQuestions = []; questionTexts = []; appleUtteranceCounter = [:]
             deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
-            answerHistory = []; historyCursor = nil
+            answerHistory = []; historyCursor = nil; webLookups = [:]; showOriginalAnswer = []; currentAnswerID = nil; webLookupTask?.cancel()
             answerTurns.removeAll()
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
@@ -677,14 +694,33 @@ final class AppState {
         statusText = backend == .openAICompatible ? "正在流式生成回答…" : "Codex 正在整理回答…"
         let id = UUID()
         requestID = id
+        currentAnswerID = id
         Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue, "supersede": supersede])
 
         let context = recentContext ?? TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
         let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
         selectedExcerpts = excerpts
         let workspace = activeWorkspace
-        let parts = AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts, experience: workspace.experienceNotes())
+        let skills = activeSkillSnippets
+        let turns = answerTurns
+        let buildParts = { (webSearch: Bool, results: [WebResult]?) in
+            AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: screenshot != nil,
+                                          preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
+                                          experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch)
+        }
+        let parts = buildParts(false, nil)
         let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: activeServiceTier)
+        // Quick answer first; a web-updated one follows in the background when needed.
+        let isRefinement = question.contains(AnswerRefinement.markerText)
+        if screenshot == nil, !isRefinement, webSearchMode != .off, webSearchAvailable {
+            Task { [weak self] in
+                guard let self else { return }
+                let decision = await self.shouldSearchWeb(question)
+                Diagnostics.record("web.decision", ["search": decision.search, "reason": decision.reason])
+                guard decision.search, self.currentAnswerID == id else { return }
+                self.startWebLookup(id: id, question: question, model: selectedModel, parts: { buildParts($0, $1) })
+            }
+        }
         let answerStartedAt = Date()
 
         answerTask = Task {
@@ -725,7 +761,7 @@ final class AppState {
                 answeringCandidateID = nil
                 Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "service_tier": request.serviceTier ?? "standard", "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
-                let record = AnswerRecord(question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic)
+                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic)
                 answerHistory.append(record)
                 if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
                 tracker.noteAnswered()
@@ -772,6 +808,12 @@ final class AppState {
                 return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL, serviceTier: request.serviceTier) { text in onDelta(text) }
             }
         }
+    }
+
+    /// A finished web lookup updates the remembered answer so follow-ups build on it.
+    func replaceTurnAnswer(question: String, with answer: String) {
+        guard let index = answerTurns.lastIndex(where: { $0.question == question }) else { return }
+        answerTurns[index].answer = answer
     }
 
     func forceAnswerCurrent() {
@@ -997,6 +1039,9 @@ final class AppState {
         codex.cancel()
         summaryCodex.cancel()
         appServer.shutdown()
+        webLookupTask?.cancel()
+        webAppServer.shutdown()
+        webCodex.cancel()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
     }

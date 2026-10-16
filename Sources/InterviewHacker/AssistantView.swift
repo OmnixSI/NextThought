@@ -392,8 +392,10 @@ private struct AnswerPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             AnswerHeader()
+            WebLookupStrip()
             AnswerBody()
                 .frame(minHeight: fillHeight ? 160 : 120, maxHeight: fillHeight ? .infinity : 340)
+            WebSourcesList()
             RefinementBar()
             AnswerFooter()
         }
@@ -459,6 +461,62 @@ private struct AnswerBody: View {
     }
 }
 
+/// Background web lookup for the answer on screen: searching, updated (switch
+/// back and forth), failed — or a button to look it up by hand.
+private struct WebLookupStrip: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        if let lookup = state.displayedWebLookup {
+            HStack(spacing: 8) {
+                switch lookup.status {
+                case .searching:
+                    ProgressView().controlSize(.mini)
+                    Text("正在联网查最新信息，先看上面的快速回答…").foregroundStyle(.secondary)
+                    TimelineView(.periodic(from: lookup.startedAt, by: 1)) { context in
+                        Text("\(Int(context.date.timeIntervalSince(lookup.startedAt))) 秒").monospacedDigit().foregroundStyle(.tertiary)
+                    }
+                case .done:
+                    Image(systemName: "globe").foregroundStyle(Brand.accent)
+                    Text(state.showsWebAnswer ? "已用联网结果更新" : "正在看原回答").foregroundStyle(state.showsWebAnswer ? Brand.accent : .secondary)
+                    if let seconds = lookup.seconds { Text(String(format: "%.0f 秒", seconds)).foregroundStyle(.tertiary) }
+                    Spacer(minLength: 0)
+                    Button(state.showsWebAnswer ? "看原回答" : "看联网版") { state.toggleWebAnswer() }.buttonStyle(ChipButtonStyle())
+                case let .failed(message):
+                    Image(systemName: "globe").foregroundStyle(.secondary)
+                    Text("联网没有完成：\(message)").foregroundStyle(.secondary).lineLimit(1)
+                    Spacer(minLength: 0)
+                    Button("重试") { state.lookUpDisplayedAnswer() }.buttonStyle(ChipButtonStyle())
+                }
+                if lookup.status == .searching { Spacer(minLength: 0) }
+            }
+            .font(.system(size: 12))
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(Brand.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+}
+
+/// Tavily sources behind the web answer, numbered like the [1] marks in the text.
+private struct WebSourcesList: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        if state.showsWebAnswer, let sources = state.displayedWebLookup?.sources, !sources.isEmpty {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(Array(sources.prefix(6).enumerated()), id: \.offset) { index, source in
+                    if let url = URL(string: source.url) {
+                        Link(destination: url) {
+                            Text("[\(index + 1)] \(source.title)").lineLimit(1)
+                        }
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
 private struct AnswerFooter: View {
     @Environment(AppState.self) private var state
     var body: some View {
@@ -468,6 +526,11 @@ private struct AnswerFooter: View {
                     .buttonStyle(ChipButtonStyle()).disabled(state.displayedAnswer.isEmpty)
                 Button { state.regenerate() } label: { Label("重新生成", systemImage: "arrow.clockwise") }
                     .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering || state.currentQuestion.isEmpty)
+                if state.webSearchMode != .off, state.displayedWebLookup == nil {
+                    Button { state.lookUpDisplayedAnswer() } label: { Label("联网查一下", systemImage: "globe") }
+                        .buttonStyle(ChipButtonStyle()).disabled(state.displayedAnswer.isEmpty || state.displayedQuestion.isEmpty)
+                        .help("用联网搜索的最新信息重新回答这个问题；快速回答保留，可以切换")
+                }
                 Spacer()
                 Text(meta).font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
             }

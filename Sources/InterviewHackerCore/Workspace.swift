@@ -139,23 +139,26 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var createdAt: Date
     public var updatedAt: Date
     public var archived: Bool
+    /// Skills from the library attached to this scenario (global skills apply anyway).
+    public var skillIDs: [UUID]
 
     public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle = .concise, preferences: String? = nil,
                 notes: String = "", fields: [String: String] = [:], documents: [ContextDocument] = [],
                 lessons: [WorkspaceLesson] = [], questionBank: [QuestionBankItem] = [], useKnowledge: Bool = true,
-                stageReview: String? = nil, stageReviewAt: Date? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), archived: Bool = false) {
+                stageReview: String? = nil, stageReviewAt: Date? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), archived: Bool = false, skillIDs: [UUID] = []) {
         self.id = id; self.name = name; self.mode = mode; self.style = style
         self.preferences = preferences ?? ModeProfile.for(mode).templatePreferences
         self.notes = notes; self.fields = fields; self.documents = documents; self.lessons = lessons
         self.questionBank = questionBank; self.useKnowledge = useKnowledge
         self.stageReview = stageReview; self.stageReviewAt = stageReviewAt
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.archived = archived
+        self.skillIDs = skillIDs
     }
 
     // Tolerant decoding: fields added in later versions get defaults.
     enum CodingKeys: String, CodingKey {
         case id, name, mode, style, preferences, notes, fields, documents, lessons, questionBank, useKnowledge
-        case stageReview, stageReviewAt, createdAt, updatedAt, archived
+        case stageReview, stageReviewAt, createdAt, updatedAt, archived, skillIDs
     }
 
     public init(from decoder: Decoder) throws {
@@ -176,6 +179,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
         archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
+        skillIDs = try c.decodeIfPresent([UUID].self, forKey: .skillIDs) ?? []
     }
 
     public var profile: ModeProfile { ModeProfile.for(mode) }

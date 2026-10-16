@@ -23,6 +23,8 @@ struct AnswerRequest {
     /// Codex service tier: "fast" (Fast mode), "default" (force standard on models that
     /// default to Fast) or nil (standard).
     var serviceTier: String? = nil
+    /// Let Codex search the web (background “联网” answers).
+    var webSearch = false
     var fullPrompt: String { system + "\n\n" + user }
 }
 
@@ -91,7 +93,7 @@ final class CodexAppServerClient: @unchecked Sendable {
 
         let started: [String: Any]
         do {
-            started = try await send("thread/start", CodexAppServerProtocol.threadStartParams(model: request.model, effort: request.effort, cwd: workDir.path, fast: request.serviceTier == "fast"), timeout: 20)
+            started = try await send("thread/start", CodexAppServerProtocol.threadStartParams(model: request.model, effort: request.effort, cwd: workDir.path, fast: request.serviceTier == "fast", webSearch: request.webSearch), timeout: 20)
         } catch let error as AnswerEngineError {
             throw error
         } catch {

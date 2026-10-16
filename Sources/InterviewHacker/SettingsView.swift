@@ -5,13 +5,14 @@ import InterviewHackerCore
 /// Six groups: “基础” has everything needed to get a session working; the others
 /// open with their main options and keep the rest under “高级选项”.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", overlay = "提词器", recording = "数据", more = "更多"
+    case essentials = "基础", recognition = "识别", answers = "回答", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
     var id: String { rawValue }
     var symbol: String {
         switch self {
         case .essentials: "checklist"
         case .recognition: "waveform"
         case .answers: "sparkles"
+        case .skills: "wand.and.stars"
         case .overlay: "rectangle.topthird.inset.filled"
         case .recording: "tray.full"
         case .more: "ellipsis.circle"
@@ -47,6 +48,7 @@ struct SettingsView: View {
                         case .essentials: EssentialSettings()
                         case .recognition: RecognitionSettings()
                         case .answers: AnswerSettings()
+                        case .skills: SkillSettings()
                         case .overlay: OverlaySettings()
                         case .recording: RecordingSettings()
                         case .more: MoreSettings()
@@ -68,7 +70,8 @@ extension SettingsGroup {
         switch self {
         case .essentials: "使用前检查 · 音频来源 · 外观"
         case .recognition: "识别引擎 · 模型 · 专业词"
-        case .answers: "回答引擎 · Fast 模式 · 自动回答"
+        case .answers: "回答引擎 · 联网搜索 · 判断模型"
+        case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 屏幕共享"
         case .recording: "会话记录 · 导入导出 · 备份"
         case .more: "更新 · 权限 · 快捷键 · 手机伴侣"
@@ -456,7 +459,9 @@ private struct AnswerSettings: View {
             Toggle("对方提问时自动生成回答", isOn: $state.automaticAnswers).onChange(of: state.automaticAnswers) { _, _ in state.updateSettings() }
             Note("以问号或“吗 / 呢”结尾的问题约 0.6 秒内开始回答；对方补充后半句时自动改答完整问题。拿不准的句子显示为可点击的“可能的问题”。")
         }
+        WebSearchSettings()
         AdvancedOptions("answers") {
+            JudgeSettings()
             SettingsSection(title: "问题识别", icon: "text.magnifyingglass") {
                 Toggle("不确定的句子交给 API 模型二次判断", isOn: $state.verifyUncertainWithModel)
                     .disabled(state.answerBackend != .openAICompatible)
@@ -544,6 +549,73 @@ struct AnswerEngineForm: View {
             options.insert((state.codexModelID, state.codexModelID), at: 0)
         }
         return options
+    }
+}
+
+private struct WebSearchSettings: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var state = state
+        SettingsSection(title: "联网搜索", icon: "globe") {
+            Picker("联网", selection: $state.webSearchMode) {
+                ForEach(WebSearchMode.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: state.webSearchMode) { _, _ in state.saveWebSearchSettings() }
+            Note("先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则，拿不准的交给判断模型（如已设置）。")
+            if state.webSearchMode != .off {
+                MenuPicker(title: "搜索方式", selection: $state.webSearchProvider, options: WebSearchProvider.allCases.map { ($0, $0.title) })
+                    .onChange(of: state.webSearchProvider) { _, _ in state.saveWebSearchSettings() }
+                switch state.webSearchProvider {
+                case .codex:
+                    if !state.codexReady {
+                        Note("需要安装 Codex 并用 ChatGPT 账号登录（见上方回答引擎）。", color: .orange)
+                    } else {
+                        Note("用 Codex 自带的实时网页搜索，再按当前场景写成能直接说的回答；回答引擎是 API 时也可以用它来搜索。")
+                    }
+                case .tavily:
+                    HStack {
+                        SecureField("Tavily API Key（保存在系统钥匙串）", text: $state.tavilyKey)
+                            .textFieldStyle(.roundedBorder)
+                            .onChange(of: state.tavilyKey) { _, _ in state.saveTavilyKey() }
+                        Link("获取 Key", destination: URL(string: "https://app.tavily.com")!).font(.system(size: 12))
+                    }
+                    Note("Tavily 返回网页摘要，交给当前回答引擎整理，回答里会用 [1] [2] 标注来源。问题文本会发送给 Tavily。")
+                }
+            }
+        }
+    }
+}
+
+/// Optional external judge (“JEV”) for uncertain decisions.
+private struct JudgeSettings: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var judge = state.judge
+        SettingsSection(title: "判断模型（JEV）", icon: "checkmark.seal") {
+            Toggle("启用判断模型", isOn: $judge.enabled).onChange(of: judge.enabled) { _, _ in judge.save() }
+            Note("本地规则拿不准时，把“这句是不是在问我”“这个问题要不要联网”交给一个快速模型判断；超过 1.5 秒或出错就按本地规则处理，不会拖慢回答。任何 OpenAI 兼容接口都可以；接口约定见仓库 docs/JUDGE-API.md，方便以后接入自己的 JEV 模型。")
+            if judge.enabled {
+                TextField("接口地址，例如 https://api.example.com/v1", text: $judge.baseURL).textFieldStyle(.roundedBorder)
+                    .onChange(of: judge.baseURL) { _, _ in judge.save() }
+                HStack {
+                    TextField("模型 ID", text: $judge.model).textFieldStyle(.roundedBorder)
+                        .onChange(of: judge.model) { _, _ in judge.save() }
+                    SecureField("Key（可留空）", text: $judge.key).textFieldStyle(.roundedBorder)
+                        .onChange(of: judge.key) { _, _ in judge.save() }
+                }
+                HStack(spacing: 16) {
+                    Toggle("判断是不是在问我", isOn: $judge.forQuestions).onChange(of: judge.forQuestions) { _, _ in judge.save() }
+                    Toggle("判断要不要联网", isOn: $judge.forWebSearch).onChange(of: judge.forWebSearch) { _, _ in judge.save() }
+                }
+                HStack {
+                    Button("测试") { Task { await judge.test() } }.buttonStyle(SecondaryButtonStyle()).disabled(!judge.configured)
+                    if !judge.status.isEmpty { Note(judge.status) }
+                }
+            }
+        }
     }
 }
 
@@ -647,6 +719,90 @@ struct EngineTestRow: View {
             }
             Spacer(minLength: 0)
         }
+    }
+}
+
+// MARK: - Skills
+
+private struct SkillSettings: View {
+    @Environment(AppState.self) private var state
+    @State private var editing: Skill?
+    @State private var deleting: Skill?
+    private var library: SkillLibrary { SkillLibrary.shared }
+
+    var body: some View {
+        SettingsSection(title: "技能库", icon: "wand.and.stars") {
+            Note("技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有场景”的技能每次回答都会用；其他技能在 场景 → 资料与要求 → 技能 里按场景勾选。")
+            HStack {
+                Button { library.importFiles(global: false) } label: { Label("导入 .md 文件…", systemImage: "square.and.arrow.down") }
+                    .buttonStyle(PrimaryButtonStyle())
+                Button { editing = library.create(global: false) } label: { Label("新建技能", systemImage: "plus") }
+                    .buttonStyle(SecondaryButtonStyle())
+                Spacer()
+            }
+            if library.skills.isEmpty {
+                Note("还没有技能。可以导入现成的 SKILL.md，或点“新建技能”从模板开始。")
+            } else {
+                VStack(spacing: 6) {
+                    ForEach(library.skills) { skill in row(skill) }
+                }
+            }
+        }
+        .sheet(item: $editing) { skill in SkillEditor(skill: skill) { library.update($0) } }
+        .confirmationDialog("删除技能“\(deleting?.name ?? "")”？", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
+            Button("删除", role: .destructive) { if let deleting { library.delete(deleting.id) }; deleting = nil }
+            Button("取消", role: .cancel) { deleting = nil }
+        }
+    }
+
+    private func row(_ skill: Skill) -> some View {
+        let attached = state.workspaces.workspaces.filter { $0.skillIDs.contains(skill.id) }.count
+        return HStack(spacing: 10) {
+            Image(systemName: skill.global ? "globe" : "doc.text").foregroundStyle(skill.enabled ? Brand.accent : .secondary).frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(skill.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(skill.enabled ? .primary : .secondary)
+                Text(skill.summary.isEmpty ? "\(skill.content.count) 字" : skill.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                if !skill.global { Text(attached == 0 ? "还没有场景使用" : "\(attached) 个场景在用").font(.system(size: 10.5)).foregroundStyle(.tertiary) }
+            }
+            Spacer()
+            Toggle("所有场景", isOn: Binding(get: { skill.global }, set: { var next = skill; next.global = $0; library.update(next) }))
+                .toggleStyle(.checkbox)
+            Toggle("启用", isOn: Binding(get: { skill.enabled }, set: { var next = skill; next.enabled = $0; library.update(next) }))
+                .toggleStyle(.switch).controlSize(.small).labelsHidden()
+            Button("编辑") { editing = skill }.buttonStyle(ChipButtonStyle())
+            Button { deleting = skill } label: { Image(systemName: "trash") }.buttonStyle(.borderless).foregroundStyle(.red)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+struct SkillEditor: View {
+    @State var skill: Skill
+    let save: (Skill) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("编辑技能").font(.headline)
+            TextField("名称", text: $skill.name).textFieldStyle(.roundedBorder)
+            TextField("一句话说明（可选）", text: $skill.summary).textFieldStyle(.roundedBorder)
+            TextEditor(text: $skill.content)
+                .font(.system(size: 13, design: .monospaced))
+                .scrollContentBackground(.hidden)
+                .padding(6)
+                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                .frame(minHeight: 320)
+            Toggle("所有场景都使用这个技能", isOn: $skill.global)
+            HStack {
+                Text("\(skill.content.count) 字 · 单个技能最多使用约 6000 字").font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer()
+                Button("取消") { dismiss() }
+                Button("保存") { save(skill); dismiss() }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 620)
     }
 }
 

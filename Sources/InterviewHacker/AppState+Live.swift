@@ -53,7 +53,7 @@ extension AppState {
         case let .uncertain(candidate):
             remember(candidate)
             recordQuestion(candidate, disposition: "uncertain")
-            if verifyUncertainWithModel, answerBackend == .openAICompatible, automaticAnswers, allowAutomatic {
+            if automaticAnswers, allowAutomatic, judge.handlesQuestions || (verifyUncertainWithModel && answerBackend == .openAICompatible) {
                 verify(candidate)
             }
         }
@@ -106,8 +106,21 @@ extension AppState {
         if deferredCandidate?.candidate.id == candidate.id { deferredCandidate = nil }
     }
 
-    /// Second layer: ask a fast API model whether an uncertain utterance needs an answer.
+    /// Second layer for uncertain utterances: the judge model (JEV) when set, else a
+    /// fast API model; both under a short deadline, the rules stand otherwise.
     private func verify(_ candidate: QuestionCandidate) {
+        if judge.handlesQuestions {
+            let context = String(contextEntries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800))
+            Task {
+                guard let verdict = await judge.isQuestion(candidate.fullText, context: context, mode: sessionMode, ruleScore: candidate.assessment.score),
+                      verdict.yes, verdict.confidence >= 0.5, isRunning, !isPaused, !isAnswering else { return }
+                if tracker.confirm(candidate) {
+                    suggestedQuestions.removeAll { $0.id == candidate.id }
+                    ask(candidate.fullText, screenshot: nil, isAutomatic: true, candidateID: candidate.id)
+                }
+            }
+            return
+        }
         let request = AnswerRequest(
             system: "你判断会议转录中的一句话是否是需要回答的提问或请求。只输出 yes 或 no。",
             user: "上下文：\(String(contextEntries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800)))\n待判断：\(candidate.fullText)",

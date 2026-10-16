@@ -187,6 +187,8 @@ public enum AnswerRefinement: String, CaseIterable, Sendable, Identifiable {
     }
 
     static let marker = "\n原问题："
+    /// Lets callers tell a refinement request from a new question.
+    public static var markerText: String { marker }
 
     /// Chained refinements (“更简短” then “英文版”) keep pointing at the real question.
     public static func originalQuestion(of text: String) -> String {
