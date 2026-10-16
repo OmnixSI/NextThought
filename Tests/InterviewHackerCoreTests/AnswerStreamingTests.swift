@@ -24,6 +24,19 @@ struct AnswerStreamingTests {
         #expect((params["config"] as? [String: Any])?["features.shell_tool"] as? Bool == false)
     }
 
+    /// Fast mode: "fast" on both requests; standard speed is an explicit JSON null so a
+    /// model whose default tier is Fast also runs at standard speed.
+    @Test func serviceTierIsFastOrExplicitNull() throws {
+        let fast = CodexAppServerProtocol.request(id: 1, method: "thread/start", params: CodexAppServerProtocol.threadStartParams(model: "m", effort: "low", cwd: "/tmp/x", fast: true))
+        let fastText = String(decoding: fast, as: UTF8.self)
+        #expect(fastText.contains(#""serviceTier":"fast""#))
+        let standard = CodexAppServerProtocol.request(id: 2, method: "turn/start", params: CodexAppServerProtocol.turnStartParams(threadID: "T", text: "q", imagePath: nil, effort: "low"))
+        let standardText = String(decoding: standard, as: UTF8.self)
+        #expect(standardText.contains(#""serviceTier":null"#))
+        let turn = CodexAppServerProtocol.turnStartParams(threadID: "T", text: "q", imagePath: nil, effort: "low", fast: true)
+        #expect(turn["serviceTier"] as? String == "fast")
+    }
+
     @Test func classifiesInboundMessages() {
         guard case let .response(id, result, error)? = CodexAppServerProtocol.parse(#"{"id":2,"result":{"thread":{"id":"T1"}}}"#) else {
             Issue.record("response"); return

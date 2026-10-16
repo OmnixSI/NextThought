@@ -20,6 +20,9 @@ struct AnswerRequest {
     var model: String
     var effort: String
     var imageURL: URL?
+    /// Codex service tier: "fast" (Fast mode), "default" (force standard on models that
+    /// default to Fast) or nil (standard).
+    var serviceTier: String? = nil
     var fullPrompt: String { system + "\n\n" + user }
 }
 
@@ -88,7 +91,7 @@ final class CodexAppServerClient: @unchecked Sendable {
 
         let started: [String: Any]
         do {
-            started = try await send("thread/start", CodexAppServerProtocol.threadStartParams(model: request.model, effort: request.effort, cwd: workDir.path), timeout: 20)
+            started = try await send("thread/start", CodexAppServerProtocol.threadStartParams(model: request.model, effort: request.effort, cwd: workDir.path, fast: request.serviceTier == "fast"), timeout: 20)
         } catch let error as AnswerEngineError {
             throw error
         } catch {
@@ -121,7 +124,7 @@ final class CodexAppServerClient: @unchecked Sendable {
                 turn.setContinuation(continuation)
                 Task {
                     do {
-                        let result = try await self.send("turn/start", CodexAppServerProtocol.turnStartParams(threadID: threadID, text: request.fullPrompt, imagePath: request.imageURL?.path, effort: request.effort), timeout: 20)
+                        let result = try await self.send("turn/start", CodexAppServerProtocol.turnStartParams(threadID: threadID, text: request.fullPrompt, imagePath: request.imageURL?.path, effort: request.effort, fast: request.serviceTier == "fast"), timeout: 20)
                         turn.setTurnID(CodexAppServerProtocol.turnID(fromTurnStart: result))
                     } catch {
                         turn.finish(.failure(error))

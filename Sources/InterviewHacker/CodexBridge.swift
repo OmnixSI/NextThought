@@ -52,16 +52,16 @@ final class CodexBridge: @unchecked Sendable {
         if process?.isRunning == true { process?.terminate() }
     }
 
-    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, serviceTier: String? = nil, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
         let requestID = UUID()
         return try await withTaskCancellationHandler {
-            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, timeout: timeout, onUpdate: onUpdate)
+            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, serviceTier: serviceTier, timeout: timeout, onUpdate: onUpdate)
         } onCancel: {
             self.terminate(requestID)
         }
     }
 
-    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, timeout: TimeInterval, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, serviceTier: String?, timeout: TimeInterval, onUpdate: @escaping (String) async -> Void) async throws -> String {
         try Task.checkCancellation()
         let identifierCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._/:"))
         guard !model.isEmpty, model.unicodeScalars.allSatisfy({ identifierCharacters.contains($0) }),
@@ -96,6 +96,10 @@ final class CodexBridge: @unchecked Sendable {
             "--config", "web_search=\"disabled\"",
             "--cd", workDir.path
         ]
+        // `--ignore-user-config` drops the user's own service_tier, so set it explicitly.
+        if let serviceTier, ["fast", "default"].contains(serviceTier) {
+            process.arguments?.append(contentsOf: ["--config", "service_tier=\"\(serviceTier)\""])
+        }
         if let imageURL {
             process.arguments?.append(contentsOf: ["--image", imageURL.path])
         }

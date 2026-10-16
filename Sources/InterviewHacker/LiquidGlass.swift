@@ -230,6 +230,7 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { selection = tab }
                 } label: {
                     Label(title(tab), systemImage: symbol(tab))
+                        .lineLimit(1).fixedSize()
                         .font(.system(size: 12.5, weight: selected ? .semibold : .medium))
                         .foregroundStyle(selected ? Color.primary : Color.secondary)
                         .padding(.horizontal, 12).padding(.vertical, 7)

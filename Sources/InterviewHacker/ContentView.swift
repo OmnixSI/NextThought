@@ -24,8 +24,11 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaInset(edge: .top, spacing: 0) { TopBar() }
+            if state.isOnboardingPresented {
+                OnboardingView().transition(.opacity)
+            }
         }
-        .frame(minWidth: 600, minHeight: 620)
+        .frame(minWidth: MainWindowLayout.minimum.width, minHeight: MainWindowLayout.minimum.height)
         .tint(Brand.accent)
         .foregroundStyle(.primary)
         .preferredColorScheme(state.colorScheme)

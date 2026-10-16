@@ -10,8 +10,72 @@ struct InterviewHackerApp: App {
                 .environment(AppState.shared)
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 1080, height: 780)
+        .defaultSize(width: MainWindowLayout.ideal.width, height: MainWindowLayout.ideal.height)
         .windowResizability(.contentMinSize)
+        .commands {
+            CommandGroup(after: .windowSize) {
+                Button("恢复最佳窗口大小") { MainWindowLayout.resetFrontWindow() }
+                    .keyboardShortcut("0", modifiers: [.command, .option])
+            }
+        }
+    }
+}
+
+/// The main window opens at the size the README screenshots use (wide enough for
+/// conversation and answer side by side), centred on the screen with the pointer,
+/// every launch: a frame dragged small or half off-screen last time never comes back.
+@MainActor
+enum MainWindowLayout {
+    static let ideal = NSSize(width: 1120, height: 820)
+    /// Below this the side-by-side layout breaks down and labels start to wrap.
+    static let minimum = NSSize(width: 960, height: 660)
+    private static var configured: Set<ObjectIdentifier> = []
+
+    static func isMainWindow(_ window: NSWindow) -> Bool {
+        !(window is NSPanel) && !window.isSheet && window.sheetParent == nil
+            && window.contentViewController != nil && window.styleMask.contains(.titled)
+    }
+
+    /// Styles a main window once and gives it the ideal frame.
+    static func configure(_ window: NSWindow) {
+        guard isMainWindow(window), configured.insert(ObjectIdentifier(window)).inserted else { return }
+        window.title = "InterviewHacker"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
+        window.level = keepOnTop ? .floating : .normal
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.minSize = minimum
+        window.backgroundColor = .windowBackgroundColor
+        window.isOpaque = true
+        window.isRestorable = false
+        window.setFrameAutosaveName("")
+        reset(window)
+    }
+
+    static func reset(_ window: NSWindow) {
+        if window.styleMask.contains(.fullScreen) { return }
+        window.setFrame(idealFrame(on: screen(for: window)), display: true, animate: window.isVisible)
+    }
+
+    static func resetFrontWindow() {
+        let window = NSApp.keyWindow.flatMap { isMainWindow($0) ? $0 : nil } ?? NSApp.windows.first(where: isMainWindow)
+        if let window { reset(window) }
+    }
+
+    /// Ideal size clamped to the visible area (menu bar and Dock excluded), centred.
+    static func idealFrame(on screen: NSScreen?) -> NSRect {
+        guard let visible = screen?.visibleFrame else { return NSRect(origin: .zero, size: ideal) }
+        let margin: CGFloat = 24
+        let width = max(minimum.width, min(ideal.width, visible.width - margin * 2))
+        let height = max(minimum.height, min(ideal.height, visible.height - margin * 2))
+        return NSRect(x: (visible.midX - width / 2).rounded(), y: (visible.midY - height / 2).rounded(), width: width, height: height)
+    }
+
+    private static func screen(for window: NSWindow) -> NSScreen? {
+        let pointer = NSEvent.mouseLocation
+        return NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) } ?? window.screen ?? NSScreen.main
     }
 }
 
@@ -21,19 +85,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // A window reopened from the Dock after closing is a new window: style and size it too.
+        NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
+            guard let window = note.object as? NSWindow else { return }
+            MainActor.assumeIsolated { MainWindowLayout.configure(window) }
+        }
         DispatchQueue.main.async {
-            for window in NSApp.windows {
-                window.title = "InterviewHacker"
-                window.titleVisibility = .hidden
-                window.titlebarAppearsTransparent = true
-                window.isMovableByWindowBackground = true
-                let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
-                window.level = keepOnTop ? .floating : .normal
-                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-                window.minSize = NSSize(width: 600, height: 620)
-                window.backgroundColor = .windowBackgroundColor
-                window.isOpaque = true
-            }
+            for window in NSApp.windows { MainWindowLayout.configure(window) }
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()

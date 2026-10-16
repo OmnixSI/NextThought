@@ -36,9 +36,15 @@ public enum CodexAppServerProtocol {
         ["clientInfo": ["name": clientName, "title": "InterviewHacker", "version": version]]
     }
 
-    public static func threadStartParams(model: String, effort: String, cwd: String) -> [String: Any] {
+    /// `serviceTier`: "fast" turns on Codex Fast mode (accepted by every app-server
+    /// version; newer ones normalise it to "priority"); `null` asks for standard speed,
+    /// also on models whose catalog default is Fast.
+    public static func serviceTier(fast: Bool) -> Any { fast ? "fast" : NSNull() }
+
+    public static func threadStartParams(model: String, effort: String, cwd: String, fast: Bool = false) -> [String: Any] {
         [
             "model": model,
+            "serviceTier": serviceTier(fast: fast),
             "cwd": cwd,
             "approvalPolicy": "never",
             "sandbox": "read-only",
@@ -53,10 +59,10 @@ public enum CodexAppServerProtocol {
         ]
     }
 
-    public static func turnStartParams(threadID: String, text: String, imagePath: String?, effort: String) -> [String: Any] {
+    public static func turnStartParams(threadID: String, text: String, imagePath: String?, effort: String, fast: Bool = false) -> [String: Any] {
         var input: [[String: Any]] = [["type": "text", "text": text]]
         if let imagePath { input.append(["type": "localImage", "path": imagePath]) }
-        return ["threadId": threadID, "input": input, "effort": effort, "summary": "none"]
+        return ["threadId": threadID, "input": input, "effort": effort, "summary": "none", "serviceTier": serviceTier(fast: fast)]
     }
 
     private static func line(_ object: [String: Any]) -> Data {

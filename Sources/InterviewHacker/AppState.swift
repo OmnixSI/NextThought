@@ -96,6 +96,8 @@ final class AppState {
     var codexModels: [CodexModelOption] = []
     var codexModelID = UserDefaults.standard.string(forKey: "codexModelID") ?? ""
     var codexReasoning = UserDefaults.standard.string(forKey: "codexReasoning") ?? "low"
+    /// nil follows the model's own default (some models run Fast unless told otherwise).
+    var codexFastSetting = UserDefaults.standard.object(forKey: "codexFastMode") as? Bool
     var codexLoginStatus = "正在检查 Codex…"
     var codexVersion = "正在检测 Codex…"
     var lastAnswerModel: String?
@@ -179,6 +181,11 @@ final class AppState {
     var selectedTargetID = UserDefaults.standard.string(forKey: "selectedTargetID") ?? ""
     var capturePermissionGranted = false
     var capturePermissionStatus = "正在检查录屏与系统音频权限…"
+    var microphoneAccess = MicrophoneAccess.current()
+
+    // MARK: Onboarding
+    var isOnboardingPresented = false
+    var engineTest = EngineTestState.idle
 
     // MARK: Screenshots
     var screenshotPreview: NSImage?
@@ -235,6 +242,26 @@ final class AppState {
     var codexEfforts: [String] {
         codexModels.first(where: { $0.id == codexModelID })?.efforts ?? ["low", "medium", "high"]
     }
+    var currentCodexModel: CodexModelOption? { codexModels.first { $0.id == codexModelID } }
+    /// Unknown catalog (no models cache yet): allow it; the server drops tiers a model lacks.
+    var codexFastAvailable: Bool {
+        answerBackend != .openAICompatible && (codexModels.isEmpty || currentCodexModel?.fastTier != nil)
+    }
+    var codexFastMode: Bool {
+        get { codexFastSetting ?? currentCodexModel?.defaultsToFast ?? false }
+        set { codexFastSetting = newValue }
+    }
+    var codexFastLabel: String {
+        let label = currentCodexModel?.fastLabel ?? ""
+        return label.isEmpty ? "约 1.5 倍速度 · 用量更多" : label
+    }
+    /// Service tier for Codex requests: Fast when switched on, explicit standard for a
+    /// model that would otherwise default to Fast.
+    var activeServiceTier: String? {
+        guard answerBackend != .openAICompatible else { return nil }
+        if codexFastMode && codexFastAvailable { return "fast" }
+        return currentCodexModel?.defaultsToFast == true ? "default" : nil
+    }
     var currentAnswerModel: String {
         (answerBackend == .openAICompatible ? apiModel : codexModelID).trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -271,6 +298,7 @@ final class AppState {
         Diagnostics.pruneOldLogs()
         // Demo / screenshot mode shows sample data and never touches devices or models.
         guard !DemoMode.isEnabled else { return }
+        if !UserDefaults.standard.bool(forKey: "onboardingCompleted") { isOnboardingPresented = true }
         Updater.shared.start()
         Task {
             // After launch settles: one backup a day, never blocking start-up.
@@ -650,7 +678,7 @@ final class AppState {
         selectedExcerpts = excerpts
         let workspace = activeWorkspace
         let parts = AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: answerTurns, hasScreenshot: screenshot != nil, preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts, experience: workspace.experienceNotes())
-        let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot)
+        let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: activeServiceTier)
         let answerStartedAt = Date()
 
         answerTask = Task {
@@ -689,7 +717,7 @@ final class AppState {
                 isAnswering = false
                 if let candidateID, isAutomatic { lastAutomaticAnswer = (candidateID, Date()) }
                 answeringCandidateID = nil
-                Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
+                Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "service_tier": request.serviceTier ?? "standard", "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
                 let record = AnswerRecord(question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic)
                 answerHistory.append(record)
@@ -720,12 +748,12 @@ final class AppState {
         }
     }
 
-    private func runAnswer(_ request: AnswerRequest, backend: AnswerBackend, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
+    func runAnswer(_ request: AnswerRequest, backend: AnswerBackend, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
         switch backend {
         case .openAICompatible:
             return try await apiClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey, onDelta: onDelta)
         case .codexExec:
-            return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
+            return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL, serviceTier: request.serviceTier) { text in onDelta(text) }
         case .codexAppServer:
             do {
                 let text = try await appServer.answer(request, onDelta: onDelta)
@@ -735,7 +763,7 @@ final class AppState {
                 // Older CLIs or a crashed service: fall back to the one-shot exec path.
                 appServerNote = "常驻服务不可用，已临时改用 codex exec：\(detail)"
                 Diagnostics.record("appserver.fallback")
-                return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL) { text in onDelta(text) }
+                return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL, serviceTier: request.serviceTier) { text in onDelta(text) }
             }
         }
     }
@@ -892,6 +920,7 @@ final class AppState {
         let defaults = UserDefaults.standard
         defaults.set(codexModelID, forKey: "codexModelID")
         defaults.set(codexReasoning, forKey: "codexReasoning")
+        if let codexFastSetting { defaults.set(codexFastSetting, forKey: "codexFastMode") }
         defaults.set(automaticAnswers, forKey: "automaticAnswers")
         defaults.set(recordSessions, forKey: "recordSessions")
         defaults.set(autoSummarize, forKey: "autoSummarize")

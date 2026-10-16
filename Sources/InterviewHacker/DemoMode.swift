@@ -17,10 +17,15 @@ enum DemoMode {
     static func apply() {
         guard isEnabled else { return }
         let environment = ProcessInfo.processInfo.environment
+        // Each capture starts from the default tabs; earlier captures must not leak in.
+        for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
         // INTERVIEWHACKER_DEMO_DEFAULTS="key=value;key=value" opens specific tabs.
         for pair in (environment["INTERVIEWHACKER_DEMO_DEFAULTS"] ?? "").split(separator: ";") {
             let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
-            if parts.count == 2 { UserDefaults.standard.set(parts[1], forKey: parts[0]) }
+            guard parts.count == 2 else { continue }
+            if let number = Int(parts[1]) { UserDefaults.standard.set(number, forKey: parts[0]) } else { UserDefaults.standard.set(parts[1], forKey: parts[0]) }
         }
         let state = AppState.shared
         // Screenshots must be able to see the windows.
@@ -30,6 +35,10 @@ enum DemoMode {
         state.applyAppearance()
         state.section = AppSection.allCases.first { "\($0)" == environment["INTERVIEWHACKER_DEMO_SECTION"] } ?? .assistant
         state.populateDemo()
+        // INTERVIEWHACKER_DEMO_ONBOARDING=1 shows the first-run guide (step via onboardingStep).
+        if environment["INTERVIEWHACKER_DEMO_ONBOARDING"] == "1" || UserDefaults.standard.integer(forKey: "demoOnboarding") == 1 {
+            state.isOnboardingPresented = true
+        }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             NSApp.setActivationPolicy(.regular)
@@ -95,6 +104,13 @@ extension AppState {
                                  fields: ["goal": "确认二期报价与上线时间", "numbers": "二期报价 86 万；上线窗口 11 月 20 日"])
         workspaces.installDemo([interview, academic, business])
         capturePermissionGranted = true
+        codexLoginStatus = "Logged in using ChatGPT"
+        codexVersion = "codex-cli 0.160.0"
+        codexModels = [CodexModelOption(id: "gpt-5.5", name: "GPT-5.5", efforts: ["low", "medium", "high"], defaultEffort: "low", fastTier: "1.5x speed, increased usage"),
+                       CodexModelOption(id: "gpt-6-luna", name: "GPT-6 Luna", efforts: ["low", "medium", "high"], defaultEffort: "low", fastTier: "1.5x speed", defaultsToFast: true)]
+        codexModelID = "gpt-5.5"
+        codexReasoning = "low"
+        codexFastSetting = true
         captureTargets = [CaptureTarget(id: "window:1", title: "Zoom · 后端工程师二面"), CaptureTarget(id: "display:1", title: "整个屏幕 · 3024×1964")]
         selectedTargetID = "window:1"
         isRunning = true
@@ -105,7 +121,7 @@ extension AppState {
         lastRefineSeconds = 0.12
         lastFirstTokenSeconds = 0.9
         lastAnswerSeconds = 4.2
-        lastAnswerModel = "gpt-5.5-mini"
+        lastAnswerModel = "gpt-5.5"
         entries = [
             entry(95, .system, "好，我们先聊聊你最近做的项目吧，简单介绍一下你负责的部分。"),
             entry(80, .microphone, "我主要负责订单服务的缓存层，把核心查询从数据库迁移到 Redis。"),

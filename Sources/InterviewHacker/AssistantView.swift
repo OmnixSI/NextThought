@@ -84,6 +84,14 @@ private struct SetupCard: View {
                 ProgressView(value: state.modelDownloadProgress).controlSize(.small)
                 Text(state.modelDownloadStatus).font(.caption).foregroundStyle(.secondary)
             }
+            if !state.answerEngineReady {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
+                    Text("回答引擎还没设置好：可以转写，但不会生成回答。").font(.system(size: 12))
+                    Spacer()
+                    Button("设置向导") { state.openOnboarding() }.buttonStyle(ChipButtonStyle(prominent: true))
+                }
+            }
             HStack(spacing: 6) {
                 WorkspacePicker()
                 Button { state.section = .materials } label: {
@@ -452,6 +460,7 @@ private struct AnswerFooter: View {
         if let total = state.lastAnswerSeconds { parts.append(String(format: "完成 %.1fs", total)) }
         let model = state.lastAnswerModel ?? state.currentAnswerModel
         if !model.isEmpty { parts.append(model) }
+        if state.activeServiceTier == "fast" { parts.append("Fast") }
         return parts.joined(separator: " · ")
     }
 }
@@ -488,6 +497,9 @@ private struct ComposerDock: View {
                 // glass above non-glass content, which would hide the text field.
                 QuestionComposer()
                 GlassGroup(spacing: 8) { HStack(spacing: 8) {
+                    if state.answerBackend != .openAICompatible && state.codexFastAvailable {
+                        FastModeToggle()
+                    }
                     Button { state.captureScreenshot(.region) } label: { Image(systemName: "viewfinder") }
                         .buttonStyle(GlassIconButtonStyle(size: 40))
                         .help("区域截图提问 · \(state.shortcutLabel(.captureRegion))")
@@ -505,6 +517,22 @@ private struct ComposerDock: View {
         }
         .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 10)
         .background(alignment: .bottom) { ScrollEdgeFade(edge: .bottom, height: 100).ignoresSafeArea() }
+    }
+}
+
+/// Codex Fast mode, switchable mid-session (applies from the next answer).
+private struct FastModeToggle: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        Button {
+            state.codexFastMode.toggle()
+            state.updateSettings()
+        } label: {
+            Label("Fast", systemImage: state.codexFastMode ? "hare.fill" : "hare")
+        }
+        .buttonStyle(ChipButtonStyle(prominent: state.codexFastMode))
+        .help(state.codexFastMode ? "Codex Fast 模式已开启（\(state.codexFastLabel)）· 点按关闭" : "开启 Codex Fast 模式：\(state.codexFastLabel)")
     }
 }
 
