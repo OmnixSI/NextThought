@@ -198,6 +198,22 @@ private struct ModuleColumn: View {
     }
 }
 
+/// Hands its window to `found`; invisible to clicks.
+private struct WindowReader: NSViewRepresentable {
+    let found: (NSWindow?) -> Void
+    final class ReaderView: NSView {
+        var found: ((NSWindow?) -> Void)?
+        override func viewDidMoveToWindow() { DispatchQueue.main.async { [weak self] in self?.found?(self?.window) } }
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+    func makeNSView(context: Context) -> NSView {
+        let view = ReaderView()
+        view.found = found
+        return view
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
 /// The gap between modules or columns: a faint grabber that darkens on hover; drag to
 /// trade size between the two sides.
 private struct ResizeHandle: View {
@@ -209,9 +225,11 @@ private struct ResizeHandle: View {
     @State private var hovering = false
     @State private var active = false
     @State private var cursorPushed = false
+    @State private var window: NSWindow?
 
     var body: some View {
         ZStack {
+            WindowReader { window = $0 }
             Color.clear.contentShape(Rectangle())
             Capsule().fill(active ? AnyShapeStyle(Brand.accent) : AnyShapeStyle(Color.primary.opacity(hovering ? 0.35 : 0.12)))
                 .frame(width: axis == .horizontal ? 4 : 48, height: axis == .horizontal ? 48 : 4)
@@ -236,10 +254,13 @@ private struct ResizeHandle: View {
         .help("拖动调整大小")
     }
 
-    /// Push and pop stay paired, so the resize cursor never sticks after a drag.
+    /// Push and pop stay paired, so the resize cursor never sticks after a drag. While
+    /// the pointer is on the handle the window stops moving with background drags:
+    /// otherwise it follows the pointer too and the whole page shakes while resizing.
     private func setCursor(_ on: Bool) {
         guard on != cursorPushed else { return }
         cursorPushed = on
+        window?.isMovableByWindowBackground = !on
         if on { (axis == .horizontal ? NSCursor.resizeLeftRight : NSCursor.resizeUpDown).push() } else { NSCursor.pop() }
     }
 }
