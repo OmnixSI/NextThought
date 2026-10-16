@@ -40,8 +40,9 @@ extension AppState {
         let context = contextEntries.suffix(6).dropLast().map(\.contextualText)
         let previous = questionTexts.last
         let mode = sessionMode
+        guard let deadline = decisions.budget(.uncertainQuestion) else { return }
         Task {
-            guard let verdict = await decisions.judgeUtterance(trimmed, context: Array(context), previousQuestion: previous, mode: mode),
+            guard let verdict = await decisions.judgeUtterance(trimmed, context: Array(context), previousQuestion: previous, mode: mode, deadline: deadline),
                   verdict.shouldAnswer, verdict.answerProbability >= 0.75,
                   isRunning, !isPaused, !isAnswering, !isUserSpeaking else { return }
             Diagnostics.record("decision.found_question", ["p": verdict.answerProbability, "intent": verdict.intent.rawValue])
@@ -58,10 +59,11 @@ extension AppState {
         case let .updated(candidate):
             if liveCandidate != candidate { liveCandidate = candidate }
         case let .trigger(candidate):
-            // Clear-cut questions answer at once; the rest wait (≤ 0.9 s) for the model.
-            if decisions.handlesQuestions, candidate.assessment.score < 0.85 {
+            // Clear-cut questions answer at once; the rest wait briefly for the model
+            // (a budget set by its measured speed; none on a slow Mac).
+            if decisions.handlesQuestions, candidate.assessment.score < 0.85, let deadline = decisions.budget(.ruleTrigger) {
                 liveCandidate = candidate
-                confirmTrigger(candidate, allowAutomatic: allowAutomatic)
+                confirmTrigger(candidate, allowAutomatic: allowAutomatic, deadline: deadline)
                 return
             }
             handleTrigger(candidate, allowAutomatic: allowAutomatic)
@@ -76,13 +78,13 @@ extension AppState {
 
     /// The model's view of a rule trigger: decline it (kept as a clickable suggestion),
     /// or answer — as a replacement of the previous answer when it continues that question.
-    private func confirmTrigger(_ candidate: QuestionCandidate, allowAutomatic: Bool) {
+    private func confirmTrigger(_ candidate: QuestionCandidate, allowAutomatic: Bool, deadline: Double) {
         let context = Array(contextEntries.suffix(6).map(\.contextualText))
         let previous = questionTexts.last(where: { $0 != candidate.text })
         let mode = sessionMode
         Task {
             var candidate = candidate
-            let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode)
+            let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode, deadline: deadline)
             Diagnostics.record("decision.trigger", ["p": verdict?.answerProbability ?? -1, "rule": candidate.assessment.score])
             if let verdict, !verdict.shouldAnswer, verdict.answerProbability < 0.35 {
                 remember(candidate)
@@ -164,11 +166,12 @@ extension AppState {
     /// fast API model; both under a short deadline, the rules stand otherwise.
     private func verify(_ candidate: QuestionCandidate) {
         if decisions.handlesQuestions {
+            guard let deadline = decisions.budget(.uncertainQuestion) else { return }
             let context = Array(contextEntries.suffix(6).map(\.contextualText))
             let previous = questionTexts.last(where: { $0 != candidate.text })
             let mode = sessionMode
             Task {
-                guard let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode),
+                guard let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode, deadline: deadline),
                       verdict.shouldAnswer, verdict.answerProbability >= 0.6, isRunning, !isPaused, !isAnswering else { return }
                 if tracker.confirm(candidate) {
                     suggestedQuestions.removeAll { $0.id == candidate.id }

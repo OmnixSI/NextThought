@@ -16,7 +16,16 @@ InterviewHacker 里很多判断原来靠正则和关键词规则：这句是不�
 
 **默认推荐 Laya**，任何 Apple Silicon Mac 都适合：
 
-- 实时判断每句话都要跑，0.9 秒内没结果就作废。Laya 在 M3 Max 上单个问题中位 7.4 ms（P95 7.8 ms），峰值显存 688 MiB；较慢的 M1 / M2 估计也在几十毫秒内（[laya-mlx 实测](https://github.com/mizorewww/laya-mlx)）。
+- 实时判断每句话都要跑。Laya 在 M3 Max 上单个问题中位 7.4 ms（P95 7.8 ms），峰值显存 688 MiB；较慢的 M1 / M2 估计也在几十毫秒内（[laya-mlx 实测](https://github.com/mizorewww/laya-mlx)，M1 / M2 的数字是估计，没实测过）。
+- 等多久按本机实测决定（`DecisionSpeed`）：启动时预热后测 5 次，之后每次调用都计入最近 30 次的中位数和 P90，超时按截止时间计。
+
+  | 本机速度（中位） | 回答前（题型、技能） | 规则拿不准的触发 | 规则漏掉的问题 | 后台（联网、回声、屏幕、讲稿、待办） |
+  |---|---|---|---|---|
+  | 很快（< 30 ms） / 够快（< 80 ms） | 最多 60–150 ms | 最多 100–300 ms | 最多 150–500 ms | 0.8–4 s |
+  | 偏慢（< 200 ms） | 不等 | 不等，规则直接回答 | 最多 300–700 ms | 同上，屏幕检查间隔 ×2 |
+  | 太慢（≥ 200 ms） | 不等 | 不等 | 不用 | 同上，间隔 ×4 |
+
+  回答引擎（Codex / API）首字本来就要约 1 秒，所以模型在回答路径上最多只加几十到一两百毫秒，慢的 Mac 上完全不加。会话中每 20 秒没调用就轻量调用一次，避免冷启动变慢。
 - 体积不到 StartLux 4B 的六分之一，和语音识别模型、回答引擎一起跑没有压力。
 - Apache-2.0，以后商用也没问题；StartLux 权重仅限非商业用途。
 - 中文：社区的中文评测（[zh-decision-bench](https://github.com/CodyQin/zh-decision-bench)）里，多语言版在语音意图路由上准确率 0.88，客服分流、紧急程度等任务 0.55–0.67；中文是非题的置信度偏高（[Laya BENCHMARKS](https://github.com/NandhaKishorM/laya/blob/main/BENCHMARKS.md)）。

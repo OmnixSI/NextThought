@@ -196,9 +196,17 @@ private struct DecisionStatusRow: View {
         case .stopped: decisions.enabled ? "已停止：现在按规则判断。" : "已下载；打开上面的开关后使用。"
         case .starting: "启动期间按规则判断。"
         case .running:
-            "运行中" + (decisions.latencyMs.map { "，每次判断约 \(Int($0)) ms" } ?? "") + (decisions.enabled ? "" : "（开关关闭，未使用）")
+            "运行中" + speedText(decisions.speed) + (decisions.enabled ? "" : "（开关关闭，未使用）")
         case let .failed(message): message
         }
+    }
+
+    private func speedText(_ speed: DecisionSpeed) -> String {
+        guard let p50 = speed.p50 else { return "" }
+        var text = "，每次判断约 \(Int(p50.rounded())) ms"
+        if let p90 = speed.p90, p90 >= p50 * 1.3 { text += "（慢的时候 \(Int(p90.rounded())) ms）" }
+        if let tier = speed.tier { text += "。本机速度：\(tier.title)" }
+        return text
     }
 
     private func statusColor(_ decisions: DecisionService) -> Color {

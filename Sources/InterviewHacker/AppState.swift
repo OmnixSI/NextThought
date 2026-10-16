@@ -505,6 +505,7 @@ final class AppState {
             insights.resetSession()
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
+            decisions.keepWarm(true)
             isStopping = false
             isRunning = true
             do {
@@ -530,6 +531,7 @@ final class AppState {
             startCandidateTicker()
         } catch {
             isRunning = false
+            decisions.keepWarm(false)
             _ = await audio.stopCapture()
             _ = microphone.stopCapture()
             audio.setPCMHandler(nil)
@@ -627,6 +629,7 @@ final class AppState {
         cancelAnswer()
         // Keep the model loaded so the next start is instant; unload after idling.
         scheduleRecognizerIdleShutdown()
+        decisions.keepWarm(false)
         isRunning = false
         isPaused = false
         statusText = "已停止"

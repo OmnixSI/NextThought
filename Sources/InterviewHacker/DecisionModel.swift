@@ -107,7 +107,9 @@ final class DecisionService {
 
     // State
     private(set) var phase: Phase = .notInstalled
-    private(set) var latencyMs: Double?
+    /// Measured speed on this Mac; sets how long each use may wait (see `DecisionSpeed`).
+    private(set) var speed = DecisionSpeed()
+    var latencyMs: Double? { speed.p50 }
     private(set) var downloadBytes: Int64?
     private(set) var evaluation = ""
     private(set) var isEvaluating = false
@@ -442,33 +444,66 @@ final class DecisionService {
         request.httpBody = DecisionProtocol.body(state: state, questions: questions)
         let session = session
         let started = Date()
-        let data: Data? = try? await withThrowingTaskGroup(of: Data?.self) { group in
+        lastCall = started
+        enum Outcome { case data(Data?), late }
+        let outcome: Outcome = (try? await withThrowingTaskGroup(of: Outcome.self) { group in
             group.addTask {
                 let (data, response) = try await session.data(for: request)
-                return (response as? HTTPURLResponse)?.statusCode == 200 ? data : nil
+                return .data((response as? HTTPURLResponse)?.statusCode == 200 ? data : nil)
             }
-            group.addTask { try await Task.sleep(for: .seconds(deadline)); return nil }
+            group.addTask { try await Task.sleep(for: .seconds(deadline)); return .late }
             defer { group.cancelAll() }
-            return try await group.next() ?? nil
-        }
-        guard let data, let answers = DecisionProtocol.parse(data) else {
-            Diagnostics.record("decision.missed", ["questions": questions.count])
+            return try await group.next() ?? .data(nil)
+        }) ?? .data(nil)
+        guard case let .data(data) = outcome, let data, let answers = DecisionProtocol.parse(data) else {
+            var late = false
+            if case .late = outcome { late = true; speed.recordMiss(deadlineMs: deadline * 1000) }
+            Diagnostics.record("decision.missed", ["questions": questions.count, "late": late])
             return nil
         }
-        let ms = Date().timeIntervalSince(started) * 1000
-        latencyMs = latencyMs.map { $0 * 0.8 + ms * 0.2 } ?? ms
+        speed.record(ms: Date().timeIntervalSince(started) * 1000)
         return answers
+    }
+
+    /// Seconds a use may wait for the model on this Mac; nil means skip it and keep the rule.
+    func budget(_ use: DecisionSpeed.Use) -> Double? { speed.budget(for: use) }
+    /// For uses that never block an answer.
+    var backgroundDeadline: Double { speed.budget(for: .background) ?? 2 }
+
+    // MARK: Speed
+
+    @ObservationIgnored private var lastCall = Date.distantPast
+    @ObservationIgnored private var warmTask: Task<Void, Never>?
+
+    /// While a session runs, a tiny call every 20 s of quiet keeps the weights resident and
+    /// the GPU awake, so the first question after a pause is not a cold (slow) call.
+    func keepWarm(_ active: Bool) {
+        warmTask?.cancel()
+        warmTask = nil
+        guard active else { return }
+        warmTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                guard let self else { return }
+                guard self.isReady, Date().timeIntervalSince(self.lastCall) > 20 else { continue }
+                let task = DecisionTasks.webSearch("你好", today: AnswerPromptBuilder.todayText())
+                _ = await self.decide(state: task.state, questions: task.questions, deadline: 5)
+            }
+        }
     }
 
     private func measureLatency() async {
         let task = DecisionTasks.webSearch("今天美元兑人民币汇率是多少？", today: AnswerPromptBuilder.todayText())
-        latencyMs = nil
-        for _ in 0..<3 { _ = await decide(state: task.state, questions: task.questions, deadline: 15) }
+        speed.reset()
+        // The first call warms up (compiles kernels, pages weights in); time the next five.
+        _ = await decide(state: task.state, questions: task.questions, deadline: 15)
+        speed.reset()
+        for _ in 0..<5 { _ = await decide(state: task.state, questions: task.questions, deadline: 15) }
     }
 
     // MARK: The judgments
 
-    func judgeUtterance(_ text: String, context: [String], previousQuestion: String?, mode: SessionMode, deadline: Double = 0.9) async -> DecisionTasks.UtteranceVerdict? {
+    func judgeUtterance(_ text: String, context: [String], previousQuestion: String?, mode: SessionMode, deadline: Double) async -> DecisionTasks.UtteranceVerdict? {
         // Laya reads at most 1,024 tokens; a shorter context keeps the utterance itself in view.
         let recent = variant.isLaya && source == .local ? context.suffix(3).map { String($0.suffix(160)) } : context
         let task = DecisionTasks.utterance(text, context: recent, previousQuestion: previousQuestion, mode: mode)
@@ -476,12 +511,14 @@ final class DecisionService {
         return DecisionTasks.utteranceVerdict(answers)
     }
 
-    func needsWebSearch(_ question: String, deadline: Double = 1.2) async -> Double? {
+    func needsWebSearch(_ question: String, deadline: Double? = nil) async -> Double? {
+        let deadline = deadline ?? backgroundDeadline
         let task = DecisionTasks.webSearch(question, today: AnswerPromptBuilder.todayText())
         return await decide(state: task.state, questions: task.questions, deadline: deadline)?[DecisionTasks.Key.needsWeb]?.yes
     }
 
-    func isUserSpeech(_ microphone: String, otherSide: [String], deadline: Double = 1.5) async -> Double? {
+    func isUserSpeech(_ microphone: String, otherSide: [String], deadline: Double? = nil) async -> Double? {
+        let deadline = deadline ?? backgroundDeadline
         let task = DecisionTasks.echo(microphone: microphone, otherSide: otherSide)
         return await decide(state: task.state, questions: task.questions, deadline: deadline)?[DecisionTasks.Key.isUser]?.yes
     }
