@@ -28,40 +28,133 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     }
 }
 
+/// Same shape as “场景”: groups on the left, the chosen group's settings on the right.
 struct SettingsView: View {
     @Environment(AppState.self) private var state
     @AppStorage("settingsGroup") private var groupRaw = SettingsGroup.essentials.rawValue
 
     var body: some View {
         let group = SettingsGroup(stored: groupRaw)
-        VStack(spacing: 10) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(SettingsGroup.allCases) { item in
-                        Button { groupRaw = item.rawValue } label: { Label(item.rawValue, systemImage: item.symbol) }
-                            .buttonStyle(ChipButtonStyle(prominent: item == group))
+        GeometryReader { proxy in
+            let wide = proxy.size.width >= 820
+            HStack(alignment: .top, spacing: 12) {
+                SettingsSidebar(selection: group, compact: !wide) { groupRaw = $0.rawValue }
+                    .frame(width: wide ? 250 : 200)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        SettingsPageHeader(group: group)
+                        switch group {
+                        case .essentials: EssentialSettings()
+                        case .recognition: RecognitionSettings()
+                        case .answers: AnswerSettings()
+                        case .overlay: OverlaySettings()
+                        case .recording: RecordingSettings()
+                        case .more: MoreSettings()
+                        }
                     }
+                    .frame(maxWidth: 760, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 18)
                 }
-                .padding(.horizontal, 16)
+                .id(group)
             }
-            .frame(maxWidth: 852)
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 4)
+        }
+    }
+}
+
+extension SettingsGroup {
+    var summary: String {
+        switch self {
+        case .essentials: "使用前检查 · 音频来源 · 外观"
+        case .recognition: "识别引擎 · 模型 · 专业词"
+        case .answers: "回答引擎 · Fast 模式 · 自动回答"
+        case .overlay: "位置 · 字号 · 屏幕共享"
+        case .recording: "会话记录 · 导入导出 · 备份"
+        case .more: "更新 · 权限 · 快捷键 · 手机伴侣"
+        }
+    }
+}
+
+private struct SettingsSidebar: View {
+    @Environment(AppState.self) private var state
+    let selection: SettingsGroup
+    var compact: Bool
+    let select: (SettingsGroup) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("设置").font(.system(size: 15, weight: .semibold))
+                Text("先完成“基础”，其余按需调整").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    switch group {
-                    case .essentials: EssentialSettings()
-                    case .recognition: RecognitionSettings()
-                    case .answers: AnswerSettings()
-                    case .overlay: OverlaySettings()
-                    case .recording: RecordingSettings()
-                    case .more: MoreSettings()
-                    }
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(SettingsGroup.allCases) { group in row(group) }
                 }
-                .padding(.horizontal, 16).padding(.bottom, 18)
-                .frame(maxWidth: 820)
-                .frame(maxWidth: .infinity)
             }
         }
+        .card()
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func row(_ group: SettingsGroup) -> some View {
+        let selected = group == selection
+        return HStack(spacing: 10) {
+            Image(systemName: group.symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(selected ? Color.white : Brand.accent)
+                .frame(width: 30, height: 30)
+                .background(selected ? AnyShapeStyle(Brand.gradient) : AnyShapeStyle(Brand.accent.opacity(0.12)),
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(group.rawValue).font(.system(size: 13, weight: selected ? .semibold : .medium)).lineLimit(1)
+                if !compact {
+                    Text(group.summary).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+            badge(group)
+        }
+        .padding(8)
+        .background(selected ? Brand.accent.opacity(0.14) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture { select(group) }
+        .help(group.summary)
+    }
+
+    @ViewBuilder private func badge(_ group: SettingsGroup) -> some View {
+        switch group {
+        case .essentials:
+            let pending = state.setupItems(confirmBinding: {}).filter { $0.status == .required }.count
+            if pending > 0 {
+                Text("\(pending)").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
+                    .frame(minWidth: 18, minHeight: 18).background(Color.orange, in: Capsule())
+                    .help("还有 \(pending) 项必需设置未完成")
+            }
+        case .more:
+            if Updater.shared.phase == .ready || Updater.shared.phase == .available {
+                Circle().fill(Brand.accent).frame(width: 8, height: 8).help("有新版本")
+            }
+        default: EmptyView()
+        }
+    }
+}
+
+private struct SettingsPageHeader: View {
+    let group: SettingsGroup
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: group.symbol)
+                .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: 38, height: 38)
+                .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(group.rawValue).font(.system(size: 18, weight: .bold))
+                Text(group.summary).font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 4).padding(.top, 2).padding(.bottom, 2)
     }
 }
 
@@ -82,7 +175,7 @@ struct SettingsSection<Content: View>: View {
             }
             content
         }
-        .font(.system(size: 12))
+        .font(.system(size: 13))
         .card()
     }
 }
@@ -119,7 +212,7 @@ struct Note: View {
     var color: Color = .secondary
     init(_ text: String, color: Color = .secondary) { self.text = text; self.color = color }
     var body: some View {
-        Text(text).font(.system(size: 11)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
+        Text(text).font(.system(size: 11.5)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -607,6 +700,7 @@ private struct RecordingSettings: View {
             Note("所有数据都在 \(AppPaths.root.path)。更新应用、更换模型或回答接口都不会改动这里的文件；自动备份保留最近 10 份，不含密钥。")
         }
         .onAppear { backups = DataBackup.listBackups() }
+        .onChange(of: state.section) { _, section in if section == .settings { backups = DataBackup.listBackups() } }
         .confirmationDialog("从这份备份恢复？", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }), titleVisibility: .visible) {
             Button("合并恢复") { if let restoring { state.importArchive(restoring.url, applySettings: false) }; restoring = nil; refreshSoon() }
             Button("取消", role: .cancel) { restoring = nil }
@@ -661,7 +755,6 @@ private struct MoreSettings: View {
 
 private struct UpdateSettings: View {
     @Environment(AppState.self) private var state
-    @State private var token = ""
     private var updater: Updater { Updater.shared }
 
     var body: some View {
@@ -696,22 +789,11 @@ private struct UpdateSettings: View {
                 .onChange(of: updater.automaticChecks) { _, _ in updater.saveSettings() }
             Note("从 GitHub Releases 下载，校验 SHA-256 和签名后再安装；已绑定本机签名时，更新后权限保持不变。")
         }
-        AdvancedOptions("updates") {
-        SettingsSection(title: "GitHub 访问", icon: "key") {
-            HStack {
-                TextField("仓库", text: $updater.repository).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
-                    .onSubmit { updater.saveSettings() }
-                Spacer()
-                Label(updater.hasToken ? "已保存访问令牌" : "未保存访问令牌", systemImage: updater.hasToken ? "checkmark.seal" : "key")
-                    .foregroundStyle(updater.hasToken ? .green : .secondary)
-            }
-            HStack {
-                SecureField("访问令牌（fine-grained token，Contents 只读）", text: $token).textFieldStyle(.roundedBorder)
-                Button("保存") { updater.saveToken(token); token = "" }.buttonStyle(ChipButtonStyle(prominent: true)).disabled(token.isEmpty)
-                if updater.hasToken { Button("清除") { updater.saveToken("") }.buttonStyle(ChipButtonStyle()) }
-            }
-            Note("仓库是私有的，检查和下载更新需要授权：在 GitHub → Settings → Developer settings → Fine-grained tokens 新建令牌，只勾选该仓库的 Contents: Read-only。令牌保存在系统钥匙串。已用 GitHub CLI 登录（gh auth login）时可以不填。")
-        }
+        // Shown open when access is the problem; otherwise tucked under 高级选项.
+        if updater.needsAccessHelp || !updater.hasToken && updater.phase != .upToDate {
+            GitHubAccessSection()
+        } else {
+            AdvancedOptions("updates") { GitHubAccessSection() }
         }
     }
 
@@ -733,6 +815,45 @@ private struct UpdateSettings: View {
         case .failed: .orange
         case .ready, .available: Brand.accent
         default: .secondary
+        }
+    }
+}
+
+private struct GitHubAccessSection: View {
+    @State private var token = ""
+
+    var body: some View {
+        @Bindable var updater = Updater.shared
+        SettingsSection(title: "GitHub 访问", icon: "key") {
+            HStack {
+                TextField("仓库", text: $updater.repository).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                    .onSubmit { updater.saveSettings() }
+                Spacer()
+                Label(updater.hasToken ? "已保存访问令牌" : "未保存访问令牌", systemImage: updater.hasToken ? "checkmark.seal" : "key")
+                    .foregroundStyle(updater.hasToken ? .green : .secondary)
+            }
+            HStack {
+                SecureField("粘贴访问令牌（github_pat_…）", text: $token).textFieldStyle(.roundedBorder)
+                Button("保存并检查") {
+                    updater.saveToken(token); token = ""
+                    Task { await updater.check(userInitiated: true) }
+                }
+                .buttonStyle(ChipButtonStyle(prominent: true)).disabled(token.isEmpty)
+                if updater.hasToken { Button("清除") { updater.saveToken("") }.buttonStyle(ChipButtonStyle()) }
+            }
+            if let note = updater.accessNote { Note(note, color: .orange) }
+            HStack(spacing: 8) {
+                Button { NSWorkspace.shared.open(Updater.createTokenURL) } label: { Label("去 GitHub 创建令牌", systemImage: "arrow.up.right.square") }
+                    .buttonStyle(SecondaryButtonStyle())
+                Text("或在终端运行 gh auth login，就不用填令牌").font(.system(size: 11.5)).foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text("创建令牌时这样填：").font(.system(size: 11.5, weight: .semibold))
+                Note("1. Resource owner 选仓库所属的组织 \(updater.repository.split(separator: "/").first.map(String.init) ?? "")（不是个人账号）")
+                Note("2. Repository access 选 Only select repositories → \(updater.repository.split(separator: "/").last.map(String.init) ?? "")")
+                Note("3. Permissions → Contents 选 Read-only，其余不动；生成后复制 github_pat_ 开头的整串粘贴到上面")
+                Note("令牌保存在系统钥匙串。组织要求审批时，需要管理员批准后才能用。")
+            }
         }
     }
 }

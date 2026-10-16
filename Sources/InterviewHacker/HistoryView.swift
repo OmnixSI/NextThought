@@ -40,7 +40,13 @@ struct HistoryView: View {
         } message: {
             Text("会删除所有会话的转录、问题、回答和摘要，无法恢复。")
         }
-        .onAppear { if selection == nil { state.historySelection = filtered.first?.id } }
+        .onAppear { selectFirstIfNeeded() }
+        // The page stays alive between visits; pick up sessions recorded meanwhile.
+        .onChange(of: state.section) { _, section in if section == .history { selectFirstIfNeeded() } }
+    }
+
+    private func selectFirstIfNeeded() {
+        if selection == nil || !filtered.contains(where: { $0.id == selection }) { state.historySelection = filtered.first?.id }
     }
 
     private var sessionList: some View {
@@ -138,10 +144,7 @@ private struct SessionDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
-            Picker("", selection: $tab) {
-                ForEach(DetailTab.allCases) { Text(tabTitle($0)).tag($0) }
-            }
-            .pickerStyle(.segmented).labelsHidden()
+            PillTabs(items: DetailTab.allCases.map { (value: $0, title: tabTitle($0)) }, selection: $tab)
             Group {
                 if let detail {
                     switch tab {

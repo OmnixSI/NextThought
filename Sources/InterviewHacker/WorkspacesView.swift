@@ -127,10 +127,7 @@ private struct WorkspaceEditor: View {
                     .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering)
                     .help("根据资料预测最可能被问到的问题，并给出要点")
             }
-            Picker("", selection: $tabRaw) {
-                ForEach(EditorTab.allCases) { Text($0.rawValue).tag($0.rawValue) }
-            }
-            .pickerStyle(.segmented).labelsHidden()
+            PillTabs(items: EditorTab.allCases.map { (value: $0.rawValue, title: $0.rawValue) }, selection: $tabRaw)
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     switch tab {

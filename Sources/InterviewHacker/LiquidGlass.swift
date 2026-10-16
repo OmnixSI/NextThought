@@ -147,16 +147,29 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ view: NSVisualEffectView, context: Context) { view.material = material }
 }
 
+// MARK: Metrics
+
+/// Shared sizes so controls line up across pages.
+enum UI {
+    /// Top bar: tab bar, status pill and its buttons.
+    static let barHeight: CGFloat = 40
+    /// Standard button height (primary / secondary).
+    static let controlHeight: CGFloat = 36
+    /// Chips and compact buttons.
+    static let chipHeight: CGFloat = 30
+}
+
 // MARK: Buttons
 
 /// Prominent (tinted) glass button for primary actions.
 struct PrimaryButtonStyle: ButtonStyle {
+    var height: CGFloat = UI.controlHeight
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: height > UI.controlHeight ? 14 : 13, weight: .semibold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .frame(height: 36)
+            .padding(.horizontal, height > UI.controlHeight ? 18 : 16)
+            .frame(height: height)
             .background(ProminentFill())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
@@ -170,7 +183,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.primary)
             .padding(.horizontal, 14)
-            .frame(height: 36)
+            .frame(height: UI.controlHeight)
             .glassCapsule()
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
@@ -182,9 +195,10 @@ struct ChipButtonStyle: ButtonStyle {
     var prominent = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: prominent ? .semibold : .medium))
+            .font(.system(size: 12.5, weight: prominent ? .semibold : .medium))
             .lineLimit(1)
-            .padding(.horizontal, 11).padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .frame(minHeight: UI.chipHeight)
             .foregroundStyle(prominent ? Color.white : Color.primary)
             .modifier(ChipSurface(prominent: prominent))
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
@@ -198,7 +212,7 @@ struct GlassIconButtonStyle: ButtonStyle {
     var tint: Color? = nil
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .medium))
+            .font(.system(size: size >= UI.barHeight ? 15 : 14, weight: .medium))
             .frame(width: size, height: size)
             .foregroundStyle(tint == nil ? Color.primary : Color.white)
             .modifier(ChipSurface(prominent: tint != nil))
@@ -214,30 +228,27 @@ struct AnyButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { make(configuration) }
 }
 
-/// Floating glass tab bar (iOS 26 style) used for the main sections.
-struct GlassTabBar<Tab: Hashable & Identifiable>: View {
-    let tabs: [Tab]
-    @Binding var selection: Tab
-    let title: (Tab) -> String
-    let symbol: (Tab) -> String
+/// In-page tabs (场景 editor, 记录 detail): pill buttons on a soft track, with the
+/// selection sliding between them. Larger and clearer than a segmented control.
+struct PillTabs<Value: Hashable>: View {
+    let items: [(value: Value, title: String)]
+    @Binding var selection: Value
     @Namespace private var namespace
 
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(tabs) { tab in
-                let selected = tab == selection
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { selection = tab }
-                } label: {
-                    Label(title(tab), systemImage: symbol(tab))
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                let selected = item.value == selection
+                Button { selection = item.value } label: {
+                    Text(item.title)
+                        .font(.system(size: 13, weight: selected ? .semibold : .medium))
                         .lineLimit(1).fixedSize()
-                        .font(.system(size: 12.5, weight: selected ? .semibold : .medium))
-                        .foregroundStyle(selected ? Color.primary : Color.secondary)
-                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .foregroundStyle(selected ? Color.white : Color.secondary)
+                        .padding(.horizontal, 14)
+                        .frame(height: UI.chipHeight)
                         .background {
                             if selected {
-                                Capsule().fill(Color.primary.opacity(0.1))
-                                    .matchedGeometryEffect(id: "tab", in: namespace)
+                                Capsule().fill(Brand.gradient).matchedGeometryEffect(id: "pill", in: namespace)
                             }
                         }
                         .contentShape(Capsule())
@@ -245,7 +256,56 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
                 .buttonStyle(.plain)
             }
         }
+        .padding(3)
+        .background(Capsule().fill(Color.primary.opacity(0.06)))
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: selection)
+    }
+}
+
+/// Floating glass tab bar (iOS 26 style) used for the main sections.
+struct GlassTabBar<Tab: Hashable & Identifiable>: View {
+    let tabs: [Tab]
+    @Binding var selection: Tab
+    let title: (Tab) -> String
+    let symbol: (Tab) -> String
+    /// Icons only (narrow windows); titles move to the tooltip.
+    var showsTitles = true
+    @Namespace private var namespace
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(tabs) { tab in
+                let selected = tab == selection
+                // Only the selection indicator animates; the page switch itself is instant.
+                Button { selection = tab } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: symbol(tab))
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(selected ? Brand.accent : Color.secondary)
+                        if showsTitles {
+                            Text(title(tab))
+                                .font(.system(size: 14, weight: selected ? .semibold : .medium))
+                                .foregroundStyle(selected ? Color.primary : Color.secondary)
+                        }
+                    }
+                    .lineLimit(1).fixedSize()
+                    .padding(.horizontal, showsTitles ? 16 : 12)
+                    .frame(height: UI.barHeight - 8)
+                    .background {
+                        if selected {
+                            Capsule().fill(Brand.accent.opacity(0.18))
+                                .overlay(Capsule().strokeBorder(Brand.accent.opacity(0.35), lineWidth: 0.8))
+                                .matchedGeometryEffect(id: "tab", in: namespace)
+                        }
+                    }
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help(title(tab))
+            }
+        }
         .padding(4)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: selection)
         .glassCapsule()
     }
 }
