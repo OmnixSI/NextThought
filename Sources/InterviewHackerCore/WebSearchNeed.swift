@@ -13,7 +13,7 @@ public enum WebSearchMode: String, CaseIterable, Identifiable, Sendable {
 }
 
 public struct WebSearchAssessment: Sendable, Equatable {
-    /// 0…1; `needsSearch` at ≥ 0.6. Between 0.35 and 0.6 a judge model may decide.
+    /// 0…1; `needsSearch` at ≥ 0.6. The decision model, when on, decides instead.
     public var score: Double
     public var reason: String
     public var needsSearch: Bool { score >= 0.6 }
@@ -42,6 +42,27 @@ public enum WebSearchNeed {
     static let conceptWords = ["是什么", "什么是", "原理", "区别", "怎么实现", "如何实现", "为什么", "优缺点", "介绍一下", "解释一下",
                                "what is", "difference between", "how does", "how do you implement", "explain", "why"]
     static let selfWords = ["你", "您", "你们", "you", "your"]
+
+    /// Labeled questions for the unit tests and the in-app rules-vs-model comparison.
+    public static let evalSamples: [(question: String, needsSearch: Bool)] = [
+        ("现在比特币多少钱", true),
+        ("最近 OpenAI 发布了什么新模型", true),
+        ("今天北京天气怎么样", true),
+        ("英伟达最新一季的财报营收是多少", true),
+        ("苹果现任 CEO 是谁", true),
+        ("2026 年诺贝尔物理学奖颁给了谁", true),
+        ("What's the latest version of Swift?", true),
+        ("What is the current exchange rate of USD to CNY", true),
+        ("这周 A 股的行情怎么样，股价跌了吗", true),
+        ("你最近在做什么项目", false),
+        ("介绍一下你目前负责的工作", false),
+        ("Redis 和 Memcached 有什么区别", false),
+        ("数据库和缓存怎么保证一致性", false),
+        ("为什么选择 Kafka 而不是 RabbitMQ", false),
+        ("讲一下 TCP 三次握手的原理", false),
+        ("Can you walk me through your current project?", false),
+        ("目前我们团队用的是微服务架构，你怎么看", false),
+    ]
 
     public static func assess(_ question: String, now: Date = Date()) -> WebSearchAssessment {
         let text = question.lowercased()

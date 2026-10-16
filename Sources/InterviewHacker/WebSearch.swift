@@ -90,18 +90,17 @@ extension AppState {
 
     // MARK: Deciding
 
-    /// Mode, then local rules; an uncertain question goes to the judge model when set.
+    /// Mode, then the decision model when on; the local rules decide when it is off or late.
     func shouldSearchWeb(_ question: String) async -> (search: Bool, reason: String) {
         switch webSearchMode {
         case .off: return (false, "联网已关闭")
         case .always: return (true, "每次都联网")
         case .auto:
-            let rules = WebSearchNeed.assess(question)
-            if rules.needsSearch { return (true, rules.reason) }
-            if rules.uncertain, judge.handlesWebSearch, let verdict = await judge.needsWebSearch(question) {
-                return (verdict, "判断模型：\(verdict ? "需要" : "不需要")联网")
+            if decisions.handlesWebSearch, let yes = await decisions.needsWebSearch(question) {
+                return (yes >= 0.5, String(format: "判断模型：%.0f%%", yes * 100))
             }
-            return (false, rules.reason)
+            let rules = WebSearchNeed.assess(question)
+            return (rules.needsSearch, rules.reason)
         }
     }
 

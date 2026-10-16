@@ -27,6 +27,28 @@ extension AppState {
         let decision = tracker.ingest(text, isFinal: isFinal, utteranceKey: key)
         if isFinal, decision == .none, liveCandidate?.utteranceKey == key || key == nil { liveCandidate = nil }
         applyCandidateDecision(decision, allowAutomatic: allowAutomatic)
+        if isFinal, decision == .none, allowAutomatic { checkMissedQuestion(text) }
+    }
+
+    /// The rules saw no question in a finished sentence; the decision model may still
+    /// find one (“我想听听你在这方面的经历” said without a question word).
+    private func checkMissedQuestion(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard decisions.handlesQuestions, automaticAnswers, isRunning, !isPaused, !isAnswering, trimmed.count >= 6,
+              Date().timeIntervalSince(lastAutomaticAnswer?.date ?? .distantPast) > 8,
+              !questionTexts.contains(trimmed) else { return }
+        let context = contextEntries.suffix(6).dropLast().map(\.contextualText)
+        let previous = questionTexts.last
+        let mode = sessionMode
+        Task {
+            guard let verdict = await decisions.judgeUtterance(trimmed, context: Array(context), previousQuestion: previous, mode: mode),
+                  verdict.shouldAnswer, verdict.answerProbability >= 0.75,
+                  isRunning, !isPaused, !isAnswering, !isUserSpeaking else { return }
+            Diagnostics.record("decision.found_question", ["p": verdict.answerProbability, "intent": verdict.intent.rawValue])
+            recordQuestion(text: trimmed, leadIn: nil, intent: verdict.intent.rawValue, score: verdict.answerProbability, disposition: "model_found")
+            ask(trimmed, screenshot: nil, recentContext: TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) }),
+                isAutomatic: true)
+        }
     }
 
     func applyCandidateDecision(_ decision: CandidateDecision, allowAutomatic: Bool) {
@@ -36,6 +58,45 @@ extension AppState {
         case let .updated(candidate):
             if liveCandidate != candidate { liveCandidate = candidate }
         case let .trigger(candidate):
+            // Clear-cut questions answer at once; the rest wait (≤ 0.9 s) for the model.
+            if decisions.handlesQuestions, candidate.assessment.score < 0.85 {
+                liveCandidate = candidate
+                confirmTrigger(candidate, allowAutomatic: allowAutomatic)
+                return
+            }
+            handleTrigger(candidate, allowAutomatic: allowAutomatic)
+        case let .uncertain(candidate):
+            remember(candidate)
+            recordQuestion(candidate, disposition: "uncertain")
+            if automaticAnswers, allowAutomatic, decisions.handlesQuestions || (verifyUncertainWithModel && answerBackend == .openAICompatible) {
+                verify(candidate)
+            }
+        }
+    }
+
+    /// The model's view of a rule trigger: decline it (kept as a clickable suggestion),
+    /// or answer — as a replacement of the previous answer when it continues that question.
+    private func confirmTrigger(_ candidate: QuestionCandidate, allowAutomatic: Bool) {
+        let context = Array(contextEntries.suffix(6).map(\.contextualText))
+        let previous = questionTexts.last(where: { $0 != candidate.text })
+        let mode = sessionMode
+        Task {
+            var candidate = candidate
+            let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode)
+            Diagnostics.record("decision.trigger", ["p": verdict?.answerProbability ?? -1, "rule": candidate.assessment.score])
+            if let verdict, !verdict.shouldAnswer, verdict.answerProbability < 0.35 {
+                remember(candidate)
+                recordQuestion(candidate, disposition: "model_declined")
+                return
+            }
+            if let continues = verdict?.continuesPrevious, continues >= 0.6, candidate.supersedes == nil {
+                candidate.supersedes = answeringCandidateID ?? lastAutomaticAnswer?.candidateID
+            }
+            handleTrigger(candidate, allowAutomatic: allowAutomatic)
+        }
+    }
+
+    private func handleTrigger(_ candidate: QuestionCandidate, allowAutomatic: Bool) {
             liveCandidate = candidate
             Diagnostics.record("question.triggered", ["intent": candidate.assessment.intent.rawValue, "score": candidate.assessment.score, "final": candidate.isFinal, "revision": candidate.revision, "supersedes": candidate.supersedes != nil, "lead_in": candidate.leadIn != nil])
             let canAnswer = automaticAnswers && allowAutomatic && isRunning && !isPaused && !isStopping
@@ -50,13 +111,6 @@ extension AppState {
                 remember(candidate)
                 recordQuestion(candidate, disposition: "suggested")
             }
-        case let .uncertain(candidate):
-            remember(candidate)
-            recordQuestion(candidate, disposition: "uncertain")
-            if automaticAnswers, allowAutomatic, judge.handlesQuestions || (verifyUncertainWithModel && answerBackend == .openAICompatible) {
-                verify(candidate)
-            }
-        }
     }
 
     private func answerAutomatically(_ candidate: QuestionCandidate) {
@@ -106,14 +160,16 @@ extension AppState {
         if deferredCandidate?.candidate.id == candidate.id { deferredCandidate = nil }
     }
 
-    /// Second layer for uncertain utterances: the judge model (JEV) when set, else a
+    /// Second layer for uncertain utterances: the decision model when on, else a
     /// fast API model; both under a short deadline, the rules stand otherwise.
     private func verify(_ candidate: QuestionCandidate) {
-        if judge.handlesQuestions {
-            let context = String(contextEntries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800))
+        if decisions.handlesQuestions {
+            let context = Array(contextEntries.suffix(6).map(\.contextualText))
+            let previous = questionTexts.last(where: { $0 != candidate.text })
+            let mode = sessionMode
             Task {
-                guard let verdict = await judge.isQuestion(candidate.fullText, context: context, mode: sessionMode, ruleScore: candidate.assessment.score),
-                      verdict.yes, verdict.confidence >= 0.5, isRunning, !isPaused, !isAnswering else { return }
+                guard let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode),
+                      verdict.shouldAnswer, verdict.answerProbability >= 0.6, isRunning, !isPaused, !isAnswering else { return }
                 if tracker.confirm(candidate) {
                     suggestedQuestions.removeAll { $0.id == candidate.id }
                     ask(candidate.fullText, screenshot: nil, isAutomatic: true, candidateID: candidate.id)
@@ -162,6 +218,7 @@ extension AppState {
                 echoDroppedCount += 1
                 entry.suspectedEcho = true
                 Diagnostics.record("microphone.echo_dropped", ["characters": text.count])
+                recheckEcho(entry)
             }
             // Results arrive in order per channel; only a late result needs sorting.
             if let last = entries.last, last.date > start {
@@ -207,6 +264,19 @@ extension AppState {
 
     /// Lines that feed answers, summaries and exports (suspected echo left out).
     var contextEntries: [TranscriptEntry] { entries.filter { $0.suspectedEcho != true } }
+
+    /// The decision model gets the last word on a line the rules took for echo.
+    private func recheckEcho(_ entry: TranscriptEntry) {
+        guard decisions.handlesEcho else { return }
+        let start = entry.startedAt ?? entry.date
+        let other = entries.suffix(16).filter { $0.source == CaptureSource.system.rawValue && abs(($0.startedAt ?? $0.date).timeIntervalSince(start)) < 12 }.map(\.text)
+            + (partialTranscript.isEmpty ? [] : [partialTranscript])
+        Task {
+            guard let yes = await decisions.isUserSpeech(entry.text, otherSide: other), yes >= 0.6 else { return }
+            Diagnostics.record("decision.echo_restored", ["p": yes])
+            markNotEcho(entry.id)
+        }
+    }
 
     /// The user says a dimmed line was really them.
     func markNotEcho(_ id: UUID) {

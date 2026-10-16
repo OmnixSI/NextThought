@@ -5,13 +5,14 @@ import InterviewHackerCore
 /// Six groups: “基础” has everything needed to get a session working; the others
 /// open with their main options and keep the rest under “高级选项”.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
+    case essentials = "基础", recognition = "识别", answers = "回答", decisions = "判断", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
     var id: String { rawValue }
     var symbol: String {
         switch self {
         case .essentials: "checklist"
         case .recognition: "waveform"
         case .answers: "sparkles"
+        case .decisions: "brain"
         case .skills: "wand.and.stars"
         case .overlay: "rectangle.topthird.inset.filled"
         case .recording: "tray.full"
@@ -48,6 +49,7 @@ struct SettingsView: View {
                         case .essentials: EssentialSettings()
                         case .recognition: RecognitionSettings()
                         case .answers: AnswerSettings()
+                        case .decisions: DecisionSettings()
                         case .skills: SkillSettings()
                         case .overlay: OverlaySettings()
                         case .recording: RecordingSettings()
@@ -70,7 +72,8 @@ extension SettingsGroup {
         switch self {
         case .essentials: "使用前检查 · 音频来源 · 外观"
         case .recognition: "识别引擎 · 模型 · 专业词"
-        case .answers: "回答引擎 · 联网搜索 · 判断模型"
+        case .answers: "回答引擎 · 自动回答 · 联网搜索"
+        case .decisions: "StartLux 决策模型 · 问题识别 / 联网 / 回声 / 题库"
         case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 屏幕共享"
         case .recording: "会话记录 · 导入导出 · 备份"
@@ -461,7 +464,6 @@ private struct AnswerSettings: View {
         }
         WebSearchSettings()
         AdvancedOptions("answers") {
-            JudgeSettings()
             SettingsSection(title: "问题识别", icon: "text.magnifyingglass") {
                 Toggle("不确定的句子交给 API 模型二次判断", isOn: $state.verifyUncertainWithModel)
                     .disabled(state.answerBackend != .openAICompatible)
@@ -582,37 +584,6 @@ struct WebSearchSettings: View {
                         Link("获取 Key", destination: URL(string: "https://app.tavily.com")!).font(.system(size: 12))
                     }
                     Note("Tavily 返回网页摘要，交给当前回答引擎整理，回答里会用 [1] [2] 标注来源。问题文本会发送给 Tavily。")
-                }
-            }
-        }
-    }
-}
-
-/// Optional external judge (“JEV”) for uncertain decisions.
-private struct JudgeSettings: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        @Bindable var judge = state.judge
-        SettingsSection(title: "判断模型（JEV）", icon: "checkmark.seal") {
-            Toggle("启用判断模型", isOn: $judge.enabled).onChange(of: judge.enabled) { _, _ in judge.save() }
-            Note("本地规则拿不准时，把“这句是不是在问我”“这个问题要不要联网”交给一个快速模型判断；超过 1.5 秒或出错就按本地规则处理，不会拖慢回答。任何 OpenAI 兼容接口都可以；接口约定见仓库 docs/JUDGE-API.md，方便以后接入自己的 JEV 模型。")
-            if judge.enabled {
-                TextField("接口地址，例如 https://api.example.com/v1", text: $judge.baseURL).textFieldStyle(.roundedBorder)
-                    .onChange(of: judge.baseURL) { _, _ in judge.save() }
-                HStack {
-                    TextField("模型 ID", text: $judge.model).textFieldStyle(.roundedBorder)
-                        .onChange(of: judge.model) { _, _ in judge.save() }
-                    SecureField("Key（可留空）", text: $judge.key).textFieldStyle(.roundedBorder)
-                        .onChange(of: judge.key) { _, _ in judge.save() }
-                }
-                HStack(spacing: 16) {
-                    Toggle("判断是不是在问我", isOn: $judge.forQuestions).onChange(of: judge.forQuestions) { _, _ in judge.save() }
-                    Toggle("判断要不要联网", isOn: $judge.forWebSearch).onChange(of: judge.forWebSearch) { _, _ in judge.save() }
-                }
-                HStack {
-                    Button("测试") { Task { await judge.test() } }.buttonStyle(SecondaryButtonStyle()).disabled(!judge.configured)
-                    if !judge.status.isEmpty { Note(judge.status) }
                 }
             }
         }

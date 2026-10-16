@@ -131,7 +131,8 @@ final class AppState {
     let webAppServer = CodexAppServerClient()
     let webCodex = CodexBridge()
     let webAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
-    let judge = JudgeService()
+    /// StartLux-Decision: every rule-based judgment goes here first when it is on.
+    let decisions = DecisionService()
 
     // MARK: Questions and answers
     var answerHistory: [AnswerRecord] = []
@@ -333,6 +334,7 @@ final class AppState {
         guard !DemoMode.isEnabled else { return }
         if !UserDefaults.standard.bool(forKey: "onboardingCompleted") { isOnboardingPresented = true }
         Updater.shared.start()
+        decisions.startIfEnabled()
         Task {
             // After launch settles: one backup a day, never blocking start-up.
             try? await Task.sleep(for: .seconds(8))
@@ -1051,6 +1053,7 @@ final class AppState {
         appServer.shutdown()
         webLookupTask?.cancel()
         webAppServer.shutdown()
+        decisions.stop()
         webCodex.cancel()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }

@@ -90,7 +90,14 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 - 同一句流式修订只更新一个候选；以问号或“吗 / 呢”结尾、或证据很强时 0.6 s 稳定即触发，否则 1.2 s 或等定稿。
 - 提前触发后最终文字明显变长时，返回 `supersedes` 指向旧候选，应用取消旧回答改答完整问题。
 - 问题前 8 s 内同一方的陈述句作为 `leadIn` 一起交给模型。
-- `Tests/InterviewHackerCoreTests/QuestionCorpus*.swift` 是贴近识别输出的语料（含留出集），`QuestionDetectionEvaluator` 报告召回与误触发。
+- `QuestionEvalCorpus`（Core，含留出集与扩展集）是贴近识别输出的标注语料，`QuestionDetectionEvaluator` 报告召回与误触发；设置 → 判断 的“评测”用同一份语料对比规则与决策模型。
+
+## 决策模型
+
+可选的 StartLux-Decision 模型接管上面这些规则判断，详见 [DECISION-MODEL.md](DECISION-MODEL.md)：
+
+- `DecisionProtocol` / `DecisionTasks`（Core）：`/v1/systemone` 请求与解析，以及“是不是在问我”“要不要联网”“是不是我说的”“是不是同一个问题”四类判断的 state 与问题。
+- `DecisionService`（应用）：在 `~/Library/Application Support/InterviewHacker/decision` 建 Python 环境（uv 或 Python 3.10+）、安装 `startlux-decide[mlx]`、从 Hugging Face 下载 Instant MLX 模型，启动 `startlux-decide serve --backend mlx` 在 127.0.0.1:8790；也可连接已有服务。每次调用有截止时间（0.9–1.5 s），超时或出错就用规则结果。
 
 ## 回声与抢话
 
