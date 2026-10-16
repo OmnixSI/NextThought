@@ -69,7 +69,7 @@ private struct ModuleHost: View {
                     EmptyLayoutHint()
                 } else if wide && layout.usesTwoColumns {
                     let split = liveSplit ?? layout.split
-                    let left = max(300, min(proxy.size.width - 312, (proxy.size.width - 12) * split))
+                    let left = max(CGFloat(300), min(proxy.size.width - CGFloat(312), (proxy.size.width - CGFloat(12)) * CGFloat(split)))
                     HStack(spacing: 0) {
                         ModuleColumn(slots: layout.slots(in: 0), height: proxy.size.height).frame(width: left)
                             .zIndex(layout.slots(in: 0).contains { $0.module == state.draggingModule } ? 1 : 0)
@@ -77,7 +77,7 @@ private struct ModuleHost: View {
                             splitStart = left
                         } onDrag: { delta in
                             let start = splitStart ?? left
-                            liveSplit = min(max((start + delta) / max(1, proxy.size.width - 12), 0.25), 0.75)
+                            liveSplit = Double(min(max((start + delta) / max(CGFloat(1), proxy.size.width - CGFloat(12)), 0.25), 0.75))
                         } onEnd: {
                             if let liveSplit { state.updateLayout { $0.split = liveSplit } }
                             liveSplit = nil
