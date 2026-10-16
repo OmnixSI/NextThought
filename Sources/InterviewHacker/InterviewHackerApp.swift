@@ -95,6 +95,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()
+            DetachedModuleController.shared.restore()
         }
     }
 }

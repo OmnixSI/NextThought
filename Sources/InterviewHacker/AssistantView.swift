@@ -2,40 +2,446 @@ import AppKit
 import SwiftUI
 import InterviewHackerCore
 
-/// The live workspace. Wide windows show the conversation and the answer side by
-/// side; narrow windows stack them with the answer first.
+/// The live workspace: the setup card, then the modules (对话 / 问题 / 回答 / 记录)
+/// arranged by the user's layout — two columns, one column, or popped out.
 struct AssistantView: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        GeometryReader { proxy in
-            let wide = proxy.size.width >= 880
+        VStack(spacing: 12) {
+            if !state.isRunning { SetupCard() }
+            ModuleHost()
+        }
+        .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 8)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .safeAreaInset(edge: .bottom, spacing: 0) { ComposerDock() }
+    }
+}
+
+/// One module's content, docked or in its own window.
+struct AssistantModuleContent: View {
+    @Environment(AppState.self) private var state
+    let module: AssistantModule
+    var detached = false
+
+    var body: some View {
+        switch module {
+        case .conversation: ConversationPanel()
+        case .question:
+            if detached {
+                DetectionStrip(showsEmpty: true).frame(maxHeight: .infinity, alignment: .top)
+            } else {
+                DetectionStrip()
+            }
+        case .answer:
             VStack(spacing: 12) {
-                if !state.isRunning { SetupCard() }
-                if wide {
-                    HStack(alignment: .top, spacing: 12) {
-                        ConversationPanel()
-                            .frame(width: max(340, proxy.size.width * 0.44))
-                        VStack(spacing: 12) {
-                            DetectionStrip()
-                            ScreenshotCard()
-                            AnswerPanel(fillHeight: true)
+                ScreenshotCard()
+                AnswerPanel(fillHeight: true)
+            }
+        case .history: AnswerHistoryPanel()
+        }
+    }
+}
+
+// MARK: - Module layout
+
+private struct ModuleFramesKey: PreferenceKey {
+    static let defaultValue: [AssistantModule: CGRect] = [:]
+    static func reduce(value: inout [AssistantModule: CGRect], nextValue: () -> [AssistantModule: CGRect]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+/// Docked modules in one or two columns with draggable gaps between them.
+private struct ModuleHost: View {
+    @Environment(AppState.self) private var state
+    @State private var liveSplit: Double?
+    @State private var splitStart: CGFloat?
+
+    var body: some View {
+        GeometryReader { proxy in
+            let layout = state.assistantLayout
+            let wide = proxy.size.width >= 760
+            Group {
+                if layout.slots.isEmpty {
+                    EmptyLayoutHint()
+                } else if wide && layout.usesTwoColumns {
+                    let split = liveSplit ?? layout.split
+                    let left = max(300, min(proxy.size.width - 312, (proxy.size.width - 12) * split))
+                    HStack(spacing: 0) {
+                        ModuleColumn(slots: layout.slots(in: 0), height: proxy.size.height).frame(width: left)
+                            .zIndex(layout.slots(in: 0).contains { $0.module == state.draggingModule } ? 1 : 0)
+                        ResizeHandle(axis: .horizontal) {
+                            splitStart = left
+                        } onDrag: { delta in
+                            let start = splitStart ?? left
+                            liveSplit = min(max((start + delta) / max(1, proxy.size.width - 12), 0.25), 0.75)
+                        } onEnd: {
+                            if let liveSplit { state.updateLayout { $0.split = liveSplit } }
+                            liveSplit = nil
+                            splitStart = nil
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .frame(width: 12)
+                        ModuleColumn(slots: layout.slots(in: 1), height: proxy.size.height)
+                            .zIndex(layout.slots(in: 1).contains { $0.module == state.draggingModule } ? 1 : 0)
                     }
-                    .frame(maxHeight: .infinity)
                 } else {
-                    DetectionStrip()
-                    ScreenshotCard()
-                    AnswerPanel(fillHeight: false)
-                    ConversationPanel()
-                        .frame(minHeight: 220, maxHeight: .infinity)
+                    // One column (narrow window or single-column layout): answer side first.
+                    ModuleColumn(slots: layout.slots(in: 1) + layout.slots(in: 0), height: proxy.size.height)
                 }
             }
-            .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 8)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+            .onPreferenceChange(ModuleFramesKey.self) { frames in
+                MainActor.assumeIsolated { state.moduleFrames = frames }
+            }
+            .overlay {
+                if let module = state.dockHoverModule {
+                    DropHint(text: "松开鼠标，把“\(module.title)”合并回这里", symbol: "arrow.down.right.and.arrow.up.left")
+                } else if let module = state.draggingModule, state.dragIsOutside {
+                    DropHint(text: "松开鼠标，把“\(module.title)”弹出为独立窗口", symbol: "macwindow.on.rectangle")
+                }
+            }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { ComposerDock() }
+    }
+}
+
+private struct DropHint: View {
+    let text: String
+    let symbol: String
+    var body: some View {
+        RoundedRectangle(cornerRadius: 18, style: .continuous)
+            .strokeBorder(Brand.accent, style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
+            .background(Brand.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(alignment: .top) {
+                Label(text, systemImage: symbol)
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(Brand.gradient, in: Capsule())
+                    .padding(.top, 14)
+            }
+            .allowsHitTesting(false)
+    }
+}
+
+private struct EmptyLayoutHint: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "rectangle.3.group").font(.system(size: 28)).foregroundStyle(.secondary)
+            Text("所有模块都已隐藏或弹出为独立窗口").foregroundStyle(.secondary)
+            Button("恢复默认布局") { state.updateLayout { $0 = .standard } }.buttonStyle(SecondaryButtonStyle())
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .card()
+    }
+}
+
+/// A column: compact modules take their own height, the rest share what is left by weight.
+private struct ModuleColumn: View {
+    @Environment(AppState.self) private var state
+    let slots: [AssistantLayout.Slot]
+    let height: CGFloat
+    @State private var compactHeights: [AssistantModule: CGFloat] = [:]
+    @State private var liveWeights: [AssistantModule: Double] = [:]
+    /// Heights and combined weight of the pair when a gap drag began.
+    @State private var dragStart: (top: CGFloat, bottom: CGFloat, weights: Double)?
+
+    private static let gap: CGFloat = 12
+    private static let minimum: CGFloat = 110
+
+    var body: some View {
+        let heights = weightedHeights()
+        VStack(spacing: 0) {
+            ForEach(Array(slots.enumerated()), id: \.element.module) { index, slot in
+                ModuleFrame(module: slot.module)
+                    .frame(height: slot.module.isCompact ? nil : heights[slot.module])
+                    .background {
+                        if slot.module.isCompact {
+                            GeometryReader { geo in
+                                Color.clear.onAppear { compactHeights[slot.module] = geo.size.height }
+                                    .onChange(of: geo.size.height) { _, value in compactHeights[slot.module] = value }
+                            }
+                        }
+                    }
+                if index < slots.count - 1 {
+                    gap(after: index, heights: heights)
+                }
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func weight(_ slot: AssistantLayout.Slot) -> Double { liveWeights[slot.module] ?? slot.weight }
+
+    /// No gap under an empty compact strip (no questions yet).
+    private func gapHeight(after index: Int) -> CGFloat {
+        let slot = slots[index]
+        return slot.module.isCompact && (compactHeights[slot.module] ?? 0) < 1 ? 0 : Self.gap
+    }
+
+    private func weightedHeights() -> [AssistantModule: CGFloat] {
+        let flexible = slots.filter { !$0.module.isCompact }
+        let fixed = slots.filter(\.module.isCompact).reduce(CGFloat(0)) { $0 + (compactHeights[$1.module] ?? 0) }
+        let gaps = (0..<max(0, slots.count - 1)).reduce(CGFloat(0)) { $0 + gapHeight(after: $1) }
+        let available = max(0, height - fixed - gaps)
+        let total = flexible.reduce(0) { $0 + weight($1) }
+        var result: [AssistantModule: CGFloat] = [:]
+        for slot in flexible { result[slot.module] = max(Self.minimum, available * CGFloat(weight(slot) / max(total, 0.01))) }
+        return result
+    }
+
+    /// Between two flexible modules the gap is a handle that trades height between them.
+    @ViewBuilder
+    private func gap(after index: Int, heights: [AssistantModule: CGFloat]) -> some View {
+        let above = slots[index], below = slots[index + 1]
+        if !above.module.isCompact, !below.module.isCompact, let top = heights[above.module], let bottom = heights[below.module] {
+            ResizeHandle(axis: .vertical) {
+                dragStart = (top, bottom, weight(above) + weight(below))
+            } onDrag: { delta in
+                guard let start = dragStart else { return }
+                let sum = start.top + start.bottom
+                let share = Double(min(max(start.top + delta, Self.minimum), sum - Self.minimum) / sum)
+                liveWeights[above.module] = start.weights * share
+                liveWeights[below.module] = start.weights * (1 - share)
+            } onEnd: {
+                let changes = liveWeights
+                state.updateLayout { layout in for (module, weight) in changes { layout.setWeight(module, weight) } }
+                liveWeights = [:]
+                dragStart = nil
+            }
+            .frame(height: Self.gap)
+        } else {
+            Color.clear.frame(height: gapHeight(after: index))
+        }
+    }
+}
+
+/// Thin drag area between modules or columns; shows a grabber on hover.
+private struct ResizeHandle: View {
+    enum Axis { case horizontal, vertical }
+    let axis: Axis
+    let onBegin: () -> Void
+    let onDrag: (CGFloat) -> Void
+    let onEnd: () -> Void
+    @State private var hovering = false
+    @State private var active = false
+
+    var body: some View {
+        ZStack {
+            Color.clear.contentShape(Rectangle())
+            Capsule().fill(Color.primary.opacity(hovering ? 0.28 : 0))
+                .frame(width: axis == .horizontal ? 4 : 44, height: axis == .horizontal ? 44 : 4)
+        }
+        .onHover { inside in
+            hovering = inside
+            if inside { (axis == .horizontal ? NSCursor.resizeLeftRight : NSCursor.resizeUpDown).push() } else { NSCursor.pop() }
+        }
+        .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .global)
+            .onChanged { value in
+                if !active { active = true; onBegin() }
+                onDrag(axis == .horizontal ? value.translation.width : value.translation.height)
+            }
+            .onEnded { _ in active = false; onEnd() })
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .help("拖动调整大小")
+    }
+}
+
+/// A docked module with a hover grip: drag it to move, drag it out to pop it out.
+private struct ModuleFrame: View {
+    @Environment(AppState.self) private var state
+    let module: AssistantModule
+    @State private var hovering = false
+    @State private var translation: CGSize = .zero
+
+    private var dragging: Bool { state.draggingModule == module }
+
+    var body: some View {
+        AssistantModuleContent(module: module)
+            .overlay(alignment: .top) {
+                if hovering || dragging { ModuleGrip(module: module, translation: $translation).offset(y: -9) }
+            }
+            .background {
+                GeometryReader { geo in
+                    Color.clear.preference(key: ModuleFramesKey.self, value: [module: geo.frame(in: .global)])
+                }
+            }
+            .offset(translation)
+            .opacity(dragging ? (state.dragIsOutside ? 0.45 : 0.85) : 1)
+            .shadow(color: .black.opacity(dragging ? 0.25 : 0), radius: 18, y: 8)
+            .zIndex(dragging ? 10 : 0)
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: 0.12), value: hovering)
+    }
+}
+
+private struct ModuleGrip: View {
+    @Environment(AppState.self) private var state
+    let module: AssistantModule
+    @Binding var translation: CGSize
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 10, weight: .bold))
+                .frame(width: 30, height: 18)
+                .contentShape(Rectangle())
+                .gesture(drag)
+                .help("拖动：移动位置；拖出窗口：弹出为独立窗口")
+            Menu {
+                ModuleMenuItems(module: module)
+            } label: {
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold)).frame(width: 18, height: 18)
+            }
+            .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        }
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 4)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12)))
+    }
+
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .global)
+            .onChanged { value in
+                state.draggingModule = module
+                translation = value.translation
+                state.dragIsOutside = !Self.windowBounds.contains(value.location)
+            }
+            .onEnded { value in
+                let outside = !Self.windowBounds.contains(value.location)
+                translation = .zero
+                state.draggingModule = nil
+                state.dragIsOutside = false
+                if outside, let window = Self.window {
+                    let screen = NSPoint(x: window.frame.minX + value.location.x, y: window.frame.maxY - value.location.y)
+                    state.detachModule(module, at: screen)
+                } else {
+                    let target = state.dropTarget(at: value.location, windowWidth: Self.windowBounds.width, excluding: module)
+                    state.updateLayout { $0.place(module, column: target.column, index: target.index) }
+                }
+            }
+    }
+
+    @MainActor private static var window: NSWindow? { NSApp.keyWindow.flatMap { MainWindowLayout.isMainWindow($0) ? $0 : nil } ?? NSApp.windows.first(where: MainWindowLayout.isMainWindow) }
+    @MainActor private static var windowBounds: CGRect { CGRect(origin: .zero, size: window?.contentView?.bounds.size ?? CGSize(width: 10_000, height: 10_000)) }
+}
+
+/// Per-module actions, shared by the grip menu and the 布局 menu.
+struct ModuleMenuItems: View {
+    @Environment(AppState.self) private var state
+    let module: AssistantModule
+
+    var body: some View {
+        let layout = state.assistantLayout
+        if layout.isDetached(module) {
+            Button("合并回主窗口") { state.dockModule(module) }
+        } else {
+            Button("弹出为独立窗口") { state.detachModule(module) }
+        }
+        if let slot = layout.slots.first(where: { $0.module == module }) {
+            Button(slot.column == 0 ? "移到右栏" : "移到左栏") { state.updateLayout { $0.place(module, column: 1 - slot.column, index: .max) } }
+            Button("上移") { state.updateLayout { $0.move(module, by: -1) } }
+            Button("下移") { state.updateLayout { $0.move(module, by: 1) } }
+            Divider()
+            Button("放大") { state.updateLayout { $0.setWeight(module, slot.weight * 1.4) } }.disabled(module.isCompact)
+            Button("缩小") { state.updateLayout { $0.setWeight(module, slot.weight / 1.4) } }.disabled(module.isCompact)
+        }
+        Divider()
+        if layout.isHidden(module) {
+            Button("显示") { state.updateLayout { $0.show(module) } }
+        } else {
+            Button("隐藏") { state.updateLayout { $0.hide(module) } }
+        }
+    }
+}
+
+/// 布局 menu in the composer bar: modules, presets, reset.
+private struct LayoutMenu: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        Menu {
+            Section("模块") {
+                ForEach(AssistantModule.allCases) { module in
+                    Menu {
+                        ModuleMenuItems(module: module)
+                    } label: {
+                        let layout = state.assistantLayout
+                        Label(module.title + (layout.isDetached(module) ? "（独立窗口）" : layout.isHidden(module) ? "（已隐藏）" : ""),
+                              systemImage: layout.isHidden(module) ? "eye.slash" : module.symbol)
+                    }
+                }
+            }
+            Section("预设布局") {
+                ForEach(AssistantLayout.Preset.allCases) { preset in
+                    Button(preset.title) { state.updateLayout { $0 = preset.layout } }
+                }
+            }
+            Divider()
+            Button("恢复默认布局") { state.updateLayout { $0 = .standard } }
+        } label: {
+            Image(systemName: "rectangle.3.group")
+        }
+        .menuStyle(.button).menuIndicator(.hidden).fixedSize()
+        .buttonStyle(GlassIconButtonStyle(size: 40))
+        .help("布局：显示 / 隐藏模块、弹出为独立窗口、预设布局。也可以把鼠标移到模块顶部，用出现的把手拖动。")
+    }
+}
+
+/// Every answer in this session; click one to show it in the answer module.
+private struct AnswerHistoryPanel: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("回答记录", systemImage: "clock.arrow.circlepath").font(.system(size: 13, weight: .semibold))
+                Text("\(state.answerHistory.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
+                Spacer()
+                if state.historyCursor != nil {
+                    Button("回到最新") { state.historyCursor = nil }.buttonStyle(ChipButtonStyle())
+                }
+            }
+            if state.answerHistory.isEmpty {
+                Text("回答过的问题会按时间列在这里，点一下就能回看当时的回答。")
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 6) {
+                        ForEach(Array(state.answerHistory.enumerated().reversed()), id: \.element.id) { index, record in
+                            row(record, index: index)
+                        }
+                    }
+                }
+            }
+        }
+        .card()
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func row(_ record: AnswerRecord, index: Int) -> some View {
+        let shown = (state.historyCursor ?? state.answerHistory.count - 1) == index
+        let web = state.webLookups[record.id]?.status == .done
+        return Button {
+            state.historyCursor = index == state.answerHistory.count - 1 ? nil : index
+        } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(record.date.formatted(date: .omitted, time: .shortened)).font(.system(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
+                    if web { Image(systemName: "globe").font(.system(size: 9)).foregroundStyle(Brand.accent) }
+                    if !record.automatic { Text("手动").font(.system(size: 9.5)).foregroundStyle(.tertiary) }
+                }
+                Text(AnswerRefinement.originalQuestion(of: record.question)).font(.system(size: 12.5, weight: .semibold)).lineLimit(2)
+                Text(record.answer.replacingOccurrences(of: "**", with: "")).font(.system(size: 11.5)).foregroundStyle(.secondary).lineLimit(2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(8)
+            .background(shown ? Brand.accent.opacity(0.14) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -334,6 +740,8 @@ private struct PartialBubbles: View {
 /// What the detector is tracking right now, plus uncertain questions to click.
 struct DetectionStrip: View {
     @Environment(AppState.self) private var state
+    /// In its own window the strip stays visible with a hint instead of collapsing.
+    var showsEmpty = false
 
     var body: some View {
         let live = state.liveCandidate.flatMap { candidate -> QuestionCandidate? in
@@ -366,6 +774,11 @@ struct DetectionStrip: View {
             }
             .card()
             .transition(.opacity)
+        } else if showsEmpty {
+            Text("对方提问时，识别到的问题和“可能的问题”会出现在这里。")
+                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card()
         }
     }
 }
@@ -583,6 +996,7 @@ private struct ComposerDock: View {
                 // glass above non-glass content, which would hide the text field.
                 QuestionComposer()
                 GlassGroup(spacing: 8) { HStack(spacing: 8) {
+                    LayoutMenu()
                     if state.answerBackend != .openAICompatible && state.codexFastAvailable {
                         FastModeToggle()
                     }

@@ -102,6 +102,11 @@ extension AppState {
                                              ContextDocument(name: "slides-v3.pptx", pages: ["slide"], category: "PPT / 幻灯片")])
         let business = Workspace(name: "周一客户例会 · 华东区", mode: .meeting,
                                  fields: ["goal": "确认二期报价与上线时间", "numbers": "二期报价 86 万；上线窗口 11 月 20 日"])
+        let spoken = Skill(name: "面试口语化", summary: "回答像真人说话，先结论后例子", content: "先用一句话回答，再讲一个我做过的具体例子；不用“首先其次最后”。", global: true)
+        let design = Skill(name: "系统设计答题框架", summary: "需求 → 估算 → 架构 → 取舍", content: "系统设计题按 需求澄清、容量估算、核心架构、关键取舍 四步回答。")
+        let rebuttal = Skill(name: "学术答辩应对", summary: "承认局限、给出补充实验", content: "被质疑时先承认问题，再说明已有证据和计划中的补充实验。")
+        SkillLibrary.shared.installDemo([spoken, design, rebuttal])
+        interview.skillIDs = [design.id]
         workspaces.installDemo([interview, academic, business])
         capturePermissionGranted = true
         codexLoginStatus = "Logged in using ChatGPT"
