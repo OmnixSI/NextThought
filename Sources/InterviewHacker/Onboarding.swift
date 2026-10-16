@@ -529,7 +529,7 @@ private struct ExtrasStep: View {
                 }
             }
             SettingsSection(title: "助手页布局", icon: "rectangle.3.group") {
-                Note("助手页由 实时对话、当前问题、建议回答、回答记录 四个模块组成。鼠标移到模块顶部会出现把手：拖动换位置，拖出窗口变成独立小窗，拖回来就合并；模块之间的空隙可以拖动调整大小。")
+                Note("助手页由 实时对话、当前问题、建议回答、回答记录 等模块组成。先选一个布局，再拖动模块之间的空隙调整大小（上下、左右都可以）；底部的“模块”按钮可以换布局、显示 / 隐藏模块或弹出为独立窗口。")
                 HStack(spacing: 6) {
                     Text("先选一个布局：").foregroundStyle(.secondary)
                     ForEach(AssistantLayout.Preset.allCases) { preset in
@@ -538,7 +538,7 @@ private struct ExtrasStep: View {
                     }
                 }
             }
-            Text("想让一个更快的模型来判断“这句是不是在问我”“要不要联网”，可以在 设置 → 回答 → 高级选项 → 判断模型（JEV）里接入。")
+            Text("在 设置 → 识别 可以打开“屏幕感知”：讲 PPT 时自动跟到当前页并给出讲稿提示，屏幕上和对话相关的题目、代码会纳入回答。")
                 .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .sheet(item: $editing) { skill in SkillEditor(skill: skill) { library.update($0) } }
@@ -633,7 +633,7 @@ private struct DoneStep: View {
                 shortcut(state.shortcutLabel(.toggleTeleprompter), "显示 / 隐藏提词器（可放在摄像头下方）")
                 shortcut(state.shortcutLabel(.panicHide), "一键隐藏全部窗口")
                 Text("小技巧").font(.system(size: 12, weight: .semibold)).padding(.top, 8)
-                Text("· 需要最新信息的问题会先给快速回答，联网结果查好后自动替换，可切回原回答。\n· 鼠标移到助手页模块顶部，拖动把手可以换位置或拖出成独立窗口；输入框旁的“布局”按钮可以换预设。\n· 你说的话被当成回声时会灰色显示，点“是我说的”恢复。")
+                Text("· 需要最新信息的问题会先给快速回答，联网结果查好后自动替换，可切回原回答。\n· 输入框旁的“模块”按钮可以换预设布局；模块之间的空隙可以拖动调整大小。\n· 你说的话被当成回声时会灰色显示，点“是我说的”恢复。")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }

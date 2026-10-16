@@ -90,7 +90,11 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 - 同一句流式修订只更新一个候选；以问号或“吗 / 呢”结尾、或证据很强时 0.6 s 稳定即触发，否则 1.2 s 或等定稿。
 - 提前触发后最终文字明显变长时，返回 `supersedes` 指向旧候选，应用取消旧回答改答完整问题。
 - 问题前 8 s 内同一方的陈述句作为 `leadIn` 一起交给模型。
-- `Tests/InterviewHackerCoreTests/QuestionCorpus*.swift` 是贴近识别输出的语料（含留出集），`QuestionDetectionEvaluator` 报告召回与误触发。
+- `QuestionEvalCorpus`（Core，含留出集与扩展集）是贴近识别输出的标注语料，`QuestionDetectionEvaluator` 报告召回与误触发。
+
+## 屏幕感知与讲稿跟随
+
+`LiveInsights`（Core：`TextSimilarity`、`ScreenText`、`SlideMatcher`、`SlideNotes`、`AnswerPoints`）和应用里的 `AppState+Insights`：屏幕感知（ScreenCaptureKit 截主显示器并排除本应用窗口，Vision 识别文字，按和最近对话的文字重合判断相关性）、讲稿跟随、回答进度。界面在 `InsightsPanel.swift`（模块“屏幕与讲稿”），设置在 `InsightSettingsView.swift`（设置 → 识别）。
 
 ## 回声与抢话
 

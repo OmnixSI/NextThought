@@ -3,7 +3,7 @@ import SwiftUI
 import InterviewHackerCore
 
 /// The live workspace: the setup card, then the modules (对话 / 问题 / 回答 / 记录)
-/// arranged by the user's layout — two columns, one column, or popped out.
+/// arranged by the user's layout: two columns or one, sized by dragging the gaps.
 struct AssistantView: View {
     @Environment(AppState.self) private var state
 
@@ -39,20 +39,14 @@ struct AssistantModuleContent: View {
                 AnswerPanel(fillHeight: true)
             }
         case .history: AnswerHistoryPanel()
+        case .insights: InsightsPanel()
         }
     }
 }
 
 // MARK: - Module layout
 
-private struct ModuleFramesKey: PreferenceKey {
-    static let defaultValue: [AssistantModule: CGRect] = [:]
-    static func reduce(value: inout [AssistantModule: CGRect], nextValue: () -> [AssistantModule: CGRect]) {
-        value.merge(nextValue()) { $1 }
-    }
-}
-
-/// Docked modules in one or two columns with draggable gaps between them.
+/// Docked modules in one or two columns; the gaps between them are resize handles.
 private struct ModuleHost: View {
     @Environment(AppState.self) private var state
     @State private var liveSplit: Double?
@@ -70,7 +64,6 @@ private struct ModuleHost: View {
                     let left = max(CGFloat(300), min(proxy.size.width - CGFloat(312), (proxy.size.width - CGFloat(12)) * CGFloat(split)))
                     HStack(spacing: 0) {
                         ModuleColumn(slots: layout.slots(in: 0), height: proxy.size.height).frame(width: left)
-                            .zIndex(layout.slots(in: 0).contains { $0.module == state.draggingModule } ? 1 : 0)
                         ResizeHandle(axis: .horizontal) {
                             splitStart = left
                         } onDrag: { delta in
@@ -83,7 +76,6 @@ private struct ModuleHost: View {
                         }
                         .frame(width: 12)
                         ModuleColumn(slots: layout.slots(in: 1), height: proxy.size.height)
-                            .zIndex(layout.slots(in: 1).contains { $0.module == state.draggingModule } ? 1 : 0)
                     }
                 } else {
                     // One column (narrow window or single-column layout): answer side first.
@@ -91,35 +83,7 @@ private struct ModuleHost: View {
                 }
             }
             .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
-            .onPreferenceChange(ModuleFramesKey.self) { frames in
-                MainActor.assumeIsolated { state.moduleFrames = frames }
-            }
-            .overlay {
-                if let module = state.dockHoverModule {
-                    DropHint(text: "松开鼠标，把“\(module.title)”合并回这里", symbol: "arrow.down.right.and.arrow.up.left")
-                } else if let module = state.draggingModule, state.dragIsOutside {
-                    DropHint(text: "松开鼠标，把“\(module.title)”弹出为独立窗口", symbol: "macwindow.on.rectangle")
-                }
-            }
         }
-    }
-}
-
-private struct DropHint: View {
-    let text: String
-    let symbol: String
-    var body: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
-            .strokeBorder(Brand.accent, style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
-            .background(Brand.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(alignment: .top) {
-                Label(text, systemImage: symbol)
-                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(Brand.gradient, in: Capsule())
-                    .padding(.top, 14)
-            }
-            .allowsHitTesting(false)
     }
 }
 
@@ -128,7 +92,7 @@ private struct EmptyLayoutHint: View {
     var body: some View {
         VStack(spacing: 10) {
             Image(systemName: "rectangle.3.group").font(.system(size: 28)).foregroundStyle(.secondary)
-            Text("所有模块都已隐藏或弹出为独立窗口").foregroundStyle(.secondary)
+            Text("所有模块都已隐藏或弹出为独立窗口，可以在下方“模块”菜单里恢复").foregroundStyle(.secondary)
             Button("恢复默认布局") { state.updateLayout { $0 = .standard } }.buttonStyle(SecondaryButtonStyle())
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -147,14 +111,32 @@ private struct ModuleColumn: View {
     @State private var dragStart: (top: CGFloat, bottom: CGFloat, weights: Double)?
 
     private static let gap: CGFloat = 12
-    private static let minimum: CGFloat = 110
+
+    /// Below this a module's own controls no longer fit and would spill over its neighbours.
+    private static func minimum(_ module: AssistantModule) -> CGFloat {
+        switch module {
+        case .answer: 360
+        case .insights: 180
+        case .conversation: 150
+        default: 120
+        }
+    }
 
     var body: some View {
         let heights = weightedHeights()
+        let needed = heights.values.reduce(0, +) + slots.filter(\.module.isCompact).reduce(CGFloat(0)) { $0 + (compactHeights[$1.module] ?? 0) }
+            + (0..<max(0, slots.count - 1)).reduce(CGFloat(0)) { $0 + gapHeight(after: $1) }
+        // Too many modules for the window: scroll instead of squeezing them into each other.
+        ScrollView(.vertical) { stack(heights) }
+            .scrollDisabled(needed <= height + 1)
+            .scrollIndicators(needed > height + 1 ? .automatic : .hidden)
+    }
+
+    private func stack(_ heights: [AssistantModule: CGFloat]) -> some View {
         VStack(spacing: 0) {
             ForEach(Array(slots.enumerated()), id: \.element.module) { index, slot in
-                ModuleFrame(module: slot.module)
-                    .frame(height: slot.module.isCompact ? nil : heights[slot.module])
+                AssistantModuleContent(module: slot.module)
+                    .frame(height: slot.module.isCompact ? nil : heights[slot.module], alignment: .top)
                     .background {
                         if slot.module.isCompact {
                             GeometryReader { geo in
@@ -186,7 +168,7 @@ private struct ModuleColumn: View {
         let available = max(0, height - fixed - gaps)
         let total = flexible.reduce(0) { $0 + weight($1) }
         var result: [AssistantModule: CGFloat] = [:]
-        for slot in flexible { result[slot.module] = max(Self.minimum, available * CGFloat(weight(slot) / max(total, 0.01))) }
+        for slot in flexible { result[slot.module] = max(Self.minimum(slot.module), available * CGFloat(weight(slot) / max(total, 0.01))) }
         return result
     }
 
@@ -200,7 +182,7 @@ private struct ModuleColumn: View {
             } onDrag: { delta in
                 guard let start = dragStart else { return }
                 let sum = start.top + start.bottom
-                let share = Double(min(max(start.top + delta, Self.minimum), sum - Self.minimum) / sum)
+                let share = Double(min(max(start.top + delta, Self.minimum(above.module)), sum - Self.minimum(below.module)) / max(sum, 1))
                 liveWeights[above.module] = start.weights * share
                 liveWeights[below.module] = start.weights * (1 - share)
             } onEnd: {
@@ -216,7 +198,24 @@ private struct ModuleColumn: View {
     }
 }
 
-/// Thin drag area between modules or columns; shows a grabber on hover.
+/// Hands its window to `found`; invisible to clicks.
+private struct WindowReader: NSViewRepresentable {
+    let found: (NSWindow?) -> Void
+    final class ReaderView: NSView {
+        var found: ((NSWindow?) -> Void)?
+        override func viewDidMoveToWindow() { DispatchQueue.main.async { [weak self] in self?.found?(self?.window) } }
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+    func makeNSView(context: Context) -> NSView {
+        let view = ReaderView()
+        view.found = found
+        return view
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+/// The gap between modules or columns: a faint grabber that darkens on hover; drag to
+/// trade size between the two sides.
 private struct ResizeHandle: View {
     enum Axis { case horizontal, vertical }
     let axis: Axis
@@ -225,109 +224,48 @@ private struct ResizeHandle: View {
     let onEnd: () -> Void
     @State private var hovering = false
     @State private var active = false
+    @State private var cursorPushed = false
+    @State private var window: NSWindow?
 
     var body: some View {
         ZStack {
+            WindowReader { window = $0 }
             Color.clear.contentShape(Rectangle())
-            Capsule().fill(Color.primary.opacity(hovering ? 0.28 : 0))
-                .frame(width: axis == .horizontal ? 4 : 44, height: axis == .horizontal ? 44 : 4)
+            Capsule().fill(active ? AnyShapeStyle(Brand.accent) : AnyShapeStyle(Color.primary.opacity(hovering ? 0.35 : 0.12)))
+                .frame(width: axis == .horizontal ? 4 : 48, height: axis == .horizontal ? 48 : 4)
         }
         .onHover { inside in
             hovering = inside
-            if inside { (axis == .horizontal ? NSCursor.resizeLeftRight : NSCursor.resizeUpDown).push() } else { NSCursor.pop() }
+            setCursor(inside || active)
         }
         .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .global)
             .onChanged { value in
                 if !active { active = true; onBegin() }
                 onDrag(axis == .horizontal ? value.translation.width : value.translation.height)
             }
-            .onEnded { _ in active = false; onEnd() })
+            .onEnded { _ in
+                active = false
+                onEnd()
+                setCursor(hovering)
+            })
+        .onDisappear { setCursor(false) }
         .animation(.easeOut(duration: 0.12), value: hovering)
+        .animation(.easeOut(duration: 0.12), value: active)
         .help("拖动调整大小")
     }
-}
 
-/// A docked module with a hover grip: drag it to move, drag it out to pop it out.
-private struct ModuleFrame: View {
-    @Environment(AppState.self) private var state
-    let module: AssistantModule
-    @State private var hovering = false
-    @State private var translation: CGSize = .zero
-
-    private var dragging: Bool { state.draggingModule == module }
-
-    var body: some View {
-        AssistantModuleContent(module: module)
-            .overlay(alignment: .top) {
-                if hovering || dragging { ModuleGrip(module: module, translation: $translation).offset(y: -9) }
-            }
-            .background {
-                GeometryReader { geo in
-                    Color.clear.preference(key: ModuleFramesKey.self, value: [module: geo.frame(in: .global)])
-                }
-            }
-            .offset(translation)
-            .opacity(dragging ? (state.dragIsOutside ? 0.45 : 0.85) : 1)
-            .shadow(color: .black.opacity(dragging ? 0.25 : 0), radius: 18, y: 8)
-            .zIndex(dragging ? 10 : 0)
-            .onHover { hovering = $0 }
-            .animation(.easeOut(duration: 0.12), value: hovering)
+    /// Push and pop stay paired, so the resize cursor never sticks after a drag. While
+    /// the pointer is on the handle the window stops moving with background drags:
+    /// otherwise it follows the pointer too and the whole page shakes while resizing.
+    private func setCursor(_ on: Bool) {
+        guard on != cursorPushed else { return }
+        cursorPushed = on
+        window?.isMovableByWindowBackground = !on
+        if on { (axis == .horizontal ? NSCursor.resizeLeftRight : NSCursor.resizeUpDown).push() } else { NSCursor.pop() }
     }
 }
 
-private struct ModuleGrip: View {
-    @Environment(AppState.self) private var state
-    let module: AssistantModule
-    @Binding var translation: CGSize
-
-    var body: some View {
-        HStack(spacing: 2) {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 10, weight: .bold))
-                .frame(width: 30, height: 18)
-                .contentShape(Rectangle())
-                .gesture(drag)
-                .help("拖动：移动位置；拖出窗口：弹出为独立窗口")
-            Menu {
-                ModuleMenuItems(module: module)
-            } label: {
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold)).frame(width: 18, height: 18)
-            }
-            .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
-        }
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 4)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12)))
-    }
-
-    private var drag: some Gesture {
-        DragGesture(minimumDistance: 4, coordinateSpace: .global)
-            .onChanged { value in
-                state.draggingModule = module
-                translation = value.translation
-                state.dragIsOutside = !Self.windowBounds.contains(value.location)
-            }
-            .onEnded { value in
-                let outside = !Self.windowBounds.contains(value.location)
-                translation = .zero
-                state.draggingModule = nil
-                state.dragIsOutside = false
-                if outside, let window = Self.window {
-                    let screen = NSPoint(x: window.frame.minX + value.location.x, y: window.frame.maxY - value.location.y)
-                    state.detachModule(module, at: screen)
-                } else {
-                    let target = state.dropTarget(at: value.location, windowWidth: Self.windowBounds.width, excluding: module)
-                    state.updateLayout { $0.place(module, column: target.column, index: target.index) }
-                }
-            }
-    }
-
-    @MainActor private static var window: NSWindow? { NSApp.keyWindow.flatMap { MainWindowLayout.isMainWindow($0) ? $0 : nil } ?? NSApp.windows.first(where: MainWindowLayout.isMainWindow) }
-    @MainActor private static var windowBounds: CGRect { CGRect(origin: .zero, size: window?.contentView?.bounds.size ?? CGSize(width: 10_000, height: 10_000)) }
-}
-
-/// Per-module actions, shared by the grip menu and the 布局 menu.
+/// Per-module actions in the 模块 menu.
 struct ModuleMenuItems: View {
     @Environment(AppState.self) private var state
     let module: AssistantModule
@@ -343,9 +281,6 @@ struct ModuleMenuItems: View {
             Button(slot.column == 0 ? "移到右栏" : "移到左栏") { state.updateLayout { $0.place(module, column: 1 - slot.column, index: .max) } }
             Button("上移") { state.updateLayout { $0.move(module, by: -1) } }
             Button("下移") { state.updateLayout { $0.move(module, by: 1) } }
-            Divider()
-            Button("放大") { state.updateLayout { $0.setWeight(module, slot.weight * 1.4) } }.disabled(module.isCompact)
-            Button("缩小") { state.updateLayout { $0.setWeight(module, slot.weight / 1.4) } }.disabled(module.isCompact)
         }
         Divider()
         if layout.isHidden(module) {
@@ -362,6 +297,12 @@ private struct LayoutMenu: View {
 
     var body: some View {
         Menu {
+            Section("预设布局") {
+                ForEach(AssistantLayout.Preset.allCases) { preset in
+                    Toggle(preset.title, isOn: Binding(get: { state.assistantLayout == preset.layout },
+                                                       set: { _ in state.updateLayout { $0 = preset.layout } }))
+                }
+            }
             Section("模块") {
                 ForEach(AssistantModule.allCases) { module in
                     Menu {
@@ -373,11 +314,6 @@ private struct LayoutMenu: View {
                     }
                 }
             }
-            Section("预设布局") {
-                ForEach(AssistantLayout.Preset.allCases) { preset in
-                    Button(preset.title) { state.updateLayout { $0 = preset.layout } }
-                }
-            }
             Divider()
             Button("恢复默认布局") { state.updateLayout { $0 = .standard } }
         } label: {
@@ -385,7 +321,7 @@ private struct LayoutMenu: View {
         }
         .menuStyle(.button).menuIndicator(.hidden).fixedSize()
         .buttonStyle(GlassIconButtonStyle(size: 40))
-        .help("布局：显示 / 隐藏模块、弹出为独立窗口、预设布局。也可以把鼠标移到模块顶部，用出现的把手拖动。")
+        .help("模块与布局：选一个预设布局，显示 / 隐藏、移动模块或弹出为独立窗口。模块之间的空隙可以拖动调整大小。")
     }
 }
 
@@ -806,6 +742,7 @@ private struct AnswerPanel: View {
         VStack(alignment: .leading, spacing: 12) {
             AnswerHeader()
             WebLookupStrip()
+            AnswerProgressStrip()
             AnswerBody()
                 .frame(minHeight: fillHeight ? 160 : 120, maxHeight: fillHeight ? .infinity : 340)
             WebSourcesList()
@@ -891,7 +828,8 @@ private struct WebLookupStrip: View {
                     }
                 case .done:
                     Image(systemName: "globe").foregroundStyle(Brand.accent)
-                    Text(state.showsWebAnswer ? "已用联网结果更新" : "正在看原回答").foregroundStyle(state.showsWebAnswer ? Brand.accent : .secondary)
+                    Text(state.showsWebAnswer ? "已用联网结果更新" : "正在看原回答")
+                        .foregroundStyle(state.showsWebAnswer ? Brand.accent : .secondary)
                     if let seconds = lookup.seconds { Text(String(format: "%.0f 秒", seconds)).foregroundStyle(.tertiary) }
                     Spacer(minLength: 0)
                     Button(state.showsWebAnswer ? "看原回答" : "看联网版") { state.toggleWebAnswer() }.buttonStyle(ChipButtonStyle())

@@ -90,18 +90,14 @@ extension AppState {
 
     // MARK: Deciding
 
-    /// Mode, then local rules; an uncertain question goes to the judge model when set.
+    /// Mode, then the local rules.
     func shouldSearchWeb(_ question: String) async -> (search: Bool, reason: String) {
         switch webSearchMode {
         case .off: return (false, "联网已关闭")
         case .always: return (true, "每次都联网")
         case .auto:
             let rules = WebSearchNeed.assess(question)
-            if rules.needsSearch { return (true, rules.reason) }
-            if rules.uncertain, judge.handlesWebSearch, let verdict = await judge.needsWebSearch(question) {
-                return (verdict, "判断模型：\(verdict ? "需要" : "不需要")联网")
-            }
-            return (false, rules.reason)
+            return (rules.needsSearch, rules.reason)
         }
     }
 
@@ -178,6 +174,9 @@ extension AppState {
 
     private func finishWebLookup(id: UUID, text: String, sources: [WebResult], seconds: Double, model: String) {
         guard var lookup = webLookups[id] else { return }
+        if id == currentAnswerID, insights.answerID == id {
+            insights.beginAnswer(id: id, text: text, since: insights.answerSince)
+        }
         lookup.status = .done
         lookup.answer = text
         lookup.sources = sources
@@ -198,9 +197,10 @@ extension AppState {
         }
     }
 
-    /// Search results through the regular engine, on separate clients so the
-    /// quick answer and the next question are never blocked.
-    nonisolated private func runWebAnswer(_ request: AnswerRequest, backend: AnswerBackend) async throws -> String {
+    /// Search results (and other background work, such as slide notes) through the
+    /// regular engine, on separate clients so the quick answer and the next question
+    /// are never blocked.
+    nonisolated func runWebAnswer(_ request: AnswerRequest, backend: AnswerBackend) async throws -> String {
         switch backend {
         case .openAICompatible:
             let (base, key, effort) = await MainActor.run { (self.apiBaseURL, self.apiKey, self.apiEffortParameter) }

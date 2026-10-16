@@ -36,6 +36,17 @@ extension AppState {
         case let .updated(candidate):
             if liveCandidate != candidate { liveCandidate = candidate }
         case let .trigger(candidate):
+            handleTrigger(candidate, allowAutomatic: allowAutomatic)
+        case let .uncertain(candidate):
+            remember(candidate)
+            recordQuestion(candidate, disposition: "uncertain")
+            if automaticAnswers, allowAutomatic, verifyUncertainWithModel, answerBackend == .openAICompatible {
+                verify(candidate)
+            }
+        }
+    }
+
+    private func handleTrigger(_ candidate: QuestionCandidate, allowAutomatic: Bool) {
             liveCandidate = candidate
             Diagnostics.record("question.triggered", ["intent": candidate.assessment.intent.rawValue, "score": candidate.assessment.score, "final": candidate.isFinal, "revision": candidate.revision, "supersedes": candidate.supersedes != nil, "lead_in": candidate.leadIn != nil])
             let canAnswer = automaticAnswers && allowAutomatic && isRunning && !isPaused && !isStopping
@@ -50,13 +61,6 @@ extension AppState {
                 remember(candidate)
                 recordQuestion(candidate, disposition: "suggested")
             }
-        case let .uncertain(candidate):
-            remember(candidate)
-            recordQuestion(candidate, disposition: "uncertain")
-            if automaticAnswers, allowAutomatic, judge.handlesQuestions || (verifyUncertainWithModel && answerBackend == .openAICompatible) {
-                verify(candidate)
-            }
-        }
     }
 
     private func answerAutomatically(_ candidate: QuestionCandidate) {
@@ -106,21 +110,9 @@ extension AppState {
         if deferredCandidate?.candidate.id == candidate.id { deferredCandidate = nil }
     }
 
-    /// Second layer for uncertain utterances: the judge model (JEV) when set, else a
-    /// fast API model; both under a short deadline, the rules stand otherwise.
+    /// Second layer for uncertain utterances: a fast API model under a short deadline;
+    /// the rules stand otherwise.
     private func verify(_ candidate: QuestionCandidate) {
-        if judge.handlesQuestions {
-            let context = String(contextEntries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800))
-            Task {
-                guard let verdict = await judge.isQuestion(candidate.fullText, context: context, mode: sessionMode, ruleScore: candidate.assessment.score),
-                      verdict.yes, verdict.confidence >= 0.5, isRunning, !isPaused, !isAnswering else { return }
-                if tracker.confirm(candidate) {
-                    suggestedQuestions.removeAll { $0.id == candidate.id }
-                    ask(candidate.fullText, screenshot: nil, isAutomatic: true, candidateID: candidate.id)
-                }
-            }
-            return
-        }
         let request = AnswerRequest(
             system: "你判断会议转录中的一句话是否是需要回答的提问或请求。只输出 yes 或 no。",
             user: "上下文：\(String(contextEntries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800)))\n待判断：\(candidate.fullText)",
@@ -171,7 +163,10 @@ extension AppState {
                 entries.append(entry)
             }
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
-            if entry.suspectedEcho != true { recordTranscript(entry) }
+            if entry.suspectedEcho != true {
+                recordTranscript(entry)
+                insightsDidReceive(entry)
+            }
             transcriptionStatus = statusLine
         } else {
             // Streaming recognizers revise partial text ~10×/s; coalesce to ≤5 updates/s.

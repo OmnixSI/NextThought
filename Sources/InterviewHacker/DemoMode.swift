@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import InterviewHackerCore
+import SwiftUI
 
 /// Screenshot / demo mode. Launch with `INTERVIEWHACKER_DEMO=1` to show a realistic
 /// sample session without capturing audio or calling any model. Used by the
@@ -10,6 +11,11 @@ import InterviewHackerCore
 /// - `INTERVIEWHACKER_DEMO_SECTION`: assistant | materials | settings | history
 /// - `INTERVIEWHACKER_DEMO_APPEARANCE`: light | dark
 /// - `INTERVIEWHACKER_DEMO_OUT`: file that receives the window numbers as JSON
+/// - `INTERVIEWHACKER_DEMO_FRAME`: x,y,width,height (screen coordinates): show the demo in
+///   a window there, without activating the app (launch with `open -j`)
+/// - `INTERVIEWHACKER_DEMO_LAYOUT`: an assistant layout preset (standard, presenting…)
+/// - `INTERVIEWHACKER_DEMO_SNAPSHOT`: PNG the app renders its own main window into
+///   (no Screen Recording permission needed)
 enum DemoMode {
     static var isEnabled: Bool { ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO"] == "1" }
 
@@ -35,11 +41,28 @@ enum DemoMode {
         state.applyAppearance()
         state.section = AppSection.allCases.first { "\($0)" == environment["INTERVIEWHACKER_DEMO_SECTION"] } ?? .assistant
         state.populateDemo()
+        if let preset = AssistantLayout.Preset(rawValue: environment["INTERVIEWHACKER_DEMO_LAYOUT"] ?? "") { state.assistantLayout = preset.layout }
         // INTERVIEWHACKER_DEMO_ONBOARDING=1 shows the first-run guide (step via onboardingStep).
         if environment["INTERVIEWHACKER_DEMO_ONBOARDING"] == "1" || UserDefaults.standard.integer(forKey: "demoOnboarding") == 1 {
             state.isOnboardingPresented = true
         }
 
+        // INTERVIEWHACKER_DEMO_FRAME: the demo on one display while the others stay in use.
+        let frame = (environment["INTERVIEWHACKER_DEMO_FRAME"] ?? "").split(separator: ",").compactMap { Double($0) }
+        if frame.count == 4 {
+            // A window of its own: a hidden launch does not always create the SwiftUI one.
+            let window = NSWindow(contentRect: NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]),
+                                  styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            window.isReleasedWhenClosed = false
+            window.contentView = NSHostingView(rootView: ContentView().environment(state))
+            window.setFrame(NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]), display: true)
+            window.orderFront(nil)
+            demoWindow = window
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: environment["INTERVIEWHACKER_DEMO_SNAPSHOT"]) }
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
@@ -53,12 +76,26 @@ enum DemoMode {
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            snapshot(NSApp.windows.first(where: MainWindowLayout.isMainWindow), to: environment["INTERVIEWHACKER_DEMO_SNAPSHOT"])
             guard let path = environment["INTERVIEWHACKER_DEMO_OUT"] else { return }
             let main = NSApp.windows.first(where: { !($0 is NSPanel) && $0.isVisible })?.windowNumber ?? 0
             let panel = NSApp.windows.first(where: { $0 is NSPanel && $0.isVisible })?.windowNumber ?? 0
             try? JSONSerialization.data(withJSONObject: ["main": main, "teleprompter": panel])
                 .write(to: URL(fileURLWithPath: path))
         }
+    }
+}
+
+extension DemoMode {
+    @MainActor static var demoWindow: NSWindow?
+
+    /// Renders a window's own content into a PNG (no Screen Recording permission needed).
+    @MainActor
+    static func snapshot(_ window: NSWindow?, to path: String?) {
+        guard let path, let view = window?.contentView?.superview,
+              let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        try? bitmap.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
     }
 }
 

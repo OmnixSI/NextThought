@@ -114,12 +114,12 @@ public enum SettingsSnapshot {
         "activeWorkspaceID", "autoBackup",
         "apiPresets", "activeAPIPresetID",
         "webSearchMode", "webSearchProvider",
-        "judgeEnabled", "judgeBaseURL", "judgeModel", "judgeForQuestions", "judgeForWebSearch",
+        "insightScreenWatch", "insightScreenInterval", "insightFollowSlides", "insightAnswerProgress",
         "globalSkillIDs", "assistantLayout",
     ]
 
     /// Keychain accounts exported only on request.
-    public static var secretAccounts: [String] { ["answer.api", "github.token", "websearch.tavily", "judge.api"] + CloudSTTProvider.allCases.map(\.keychainAccount) }
+    public static var secretAccounts: [String] { ["answer.api", "github.token", "websearch.tavily"] + CloudSTTProvider.allCases.map(\.keychainAccount) }
 
     /// Fixed accounts plus one per saved API preset (`answer.api.<id>`).
     public static func isSecretAccount(_ account: String) -> Bool {

@@ -2,6 +2,7 @@ import AppKit
 import CoreGraphics
 import ImageIO
 import ScreenCaptureKit
+import Vision
 
 enum ScreenshotKind: Equatable {
     case window
@@ -58,6 +59,47 @@ enum ScreenshotService {
         configuration.showsCursor = false
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
         return NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
+    }
+
+    /// The main display without this app's own windows (assistant, teleprompter): for
+    /// reading the screen in the background, so nothing on screen has to be hidden.
+    static func captureForReading(maxWidth: Int = 1_600) async throws -> CGImage {
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        let mainID = (NSScreen.main?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+        guard let display = content.displays.first(where: { $0.displayID == mainID }) ?? content.displays.first else {
+            throw AppFailure.screenshot("没有找到可读取的显示器。")
+        }
+        let ownPID = NSRunningApplication.current.processIdentifier
+        let own = content.applications.filter { $0.processID == ownPID }
+        let filter = SCContentFilter(display: display, excludingApplications: own, exceptingWindows: [])
+        let configuration = SCStreamConfiguration()
+        let scale = min(2, Double(maxWidth) / Double(max(1, display.width)))
+        configuration.width = max(1, Int(Double(display.width) * scale))
+        configuration.height = max(1, Int(Double(display.height) * scale))
+        configuration.showsCursor = false
+        return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+    }
+
+    /// On-device text recognition (Chinese + English), off the main thread.
+    nonisolated static func recognizeText(_ image: CGImage) async throws -> String {
+        try await Task.detached(priority: .utility) {
+            let request = VNRecognizeTextRequest()
+            request.recognitionLevel = .accurate
+            request.recognitionLanguages = ["zh-Hans", "en-US"]
+            request.usesLanguageCorrection = false
+            try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
+            return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+        }.value
+    }
+
+    /// A frame as a PNG file for the screenshot-answer flow.
+    static func writePNG(_ image: CGImage) throws -> (url: URL, preview: NSImage) {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("interviewhacker-\(UUID().uuidString).png")
+        guard let data = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
+            throw AppFailure.screenshot("无法保存屏幕截图。")
+        }
+        try data.write(to: url, options: .atomic)
+        return (url, NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height)))
     }
 
     static func crop(image: NSImage, normalizedRect: CGRect) throws -> (url: URL, preview: NSImage) {

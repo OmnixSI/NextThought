@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import InterviewHackerCore
 
-/// Six groups: “基础” has everything needed to get a session working; the others
+/// Seven groups: “基础” has everything needed to get a session working; the others
 /// open with their main options and keep the rest under “高级选项”.
 enum SettingsGroup: String, CaseIterable, Identifiable {
     case essentials = "基础", recognition = "识别", answers = "回答", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
@@ -69,8 +69,8 @@ extension SettingsGroup {
     var summary: String {
         switch self {
         case .essentials: "使用前检查 · 音频来源 · 外观"
-        case .recognition: "识别引擎 · 模型 · 专业词"
-        case .answers: "回答引擎 · 联网搜索 · 判断模型"
+        case .recognition: "识别引擎 · 模型 · 专业词 · 屏幕感知"
+        case .answers: "回答引擎 · 自动回答 · 联网搜索"
         case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 屏幕共享"
         case .recording: "会话记录 · 导入导出 · 备份"
@@ -386,6 +386,7 @@ private struct RecognitionSettings: View {
                 Note("不戴耳机时对方的声音会从扬声器传进麦克风；应用比对两路音频的节奏和文字，回声不记为“我”。戴耳机始终最干净。")
             }
         }
+        InsightSettings()
     }
 }
 
@@ -461,7 +462,6 @@ private struct AnswerSettings: View {
         }
         WebSearchSettings()
         AdvancedOptions("answers") {
-            JudgeSettings()
             SettingsSection(title: "问题识别", icon: "text.magnifyingglass") {
                 Toggle("不确定的句子交给 API 模型二次判断", isOn: $state.verifyUncertainWithModel)
                     .disabled(state.answerBackend != .openAICompatible)
@@ -563,7 +563,7 @@ struct WebSearchSettings: View {
             }
             .pickerStyle(.segmented)
             .onChange(of: state.webSearchMode) { _, _ in state.saveWebSearchSettings() }
-            Note("先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则，拿不准的交给判断模型（如已设置）。")
+            Note("先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则。")
             if state.webSearchMode != .off {
                 MenuPicker(title: "搜索方式", selection: $state.webSearchProvider, options: WebSearchProvider.allCases.map { ($0, $0.title) })
                     .onChange(of: state.webSearchProvider) { _, _ in state.saveWebSearchSettings() }
@@ -582,37 +582,6 @@ struct WebSearchSettings: View {
                         Link("获取 Key", destination: URL(string: "https://app.tavily.com")!).font(.system(size: 12))
                     }
                     Note("Tavily 返回网页摘要，交给当前回答引擎整理，回答里会用 [1] [2] 标注来源。问题文本会发送给 Tavily。")
-                }
-            }
-        }
-    }
-}
-
-/// Optional external judge (“JEV”) for uncertain decisions.
-private struct JudgeSettings: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        @Bindable var judge = state.judge
-        SettingsSection(title: "判断模型（JEV）", icon: "checkmark.seal") {
-            Toggle("启用判断模型", isOn: $judge.enabled).onChange(of: judge.enabled) { _, _ in judge.save() }
-            Note("本地规则拿不准时，把“这句是不是在问我”“这个问题要不要联网”交给一个快速模型判断；超过 1.5 秒或出错就按本地规则处理，不会拖慢回答。任何 OpenAI 兼容接口都可以；接口约定见仓库 docs/JUDGE-API.md，方便以后接入自己的 JEV 模型。")
-            if judge.enabled {
-                TextField("接口地址，例如 https://api.example.com/v1", text: $judge.baseURL).textFieldStyle(.roundedBorder)
-                    .onChange(of: judge.baseURL) { _, _ in judge.save() }
-                HStack {
-                    TextField("模型 ID", text: $judge.model).textFieldStyle(.roundedBorder)
-                        .onChange(of: judge.model) { _, _ in judge.save() }
-                    SecureField("Key（可留空）", text: $judge.key).textFieldStyle(.roundedBorder)
-                        .onChange(of: judge.key) { _, _ in judge.save() }
-                }
-                HStack(spacing: 16) {
-                    Toggle("判断是不是在问我", isOn: $judge.forQuestions).onChange(of: judge.forQuestions) { _, _ in judge.save() }
-                    Toggle("判断要不要联网", isOn: $judge.forWebSearch).onChange(of: judge.forWebSearch) { _, _ in judge.save() }
-                }
-                HStack {
-                    Button("测试") { Task { await judge.test() } }.buttonStyle(SecondaryButtonStyle()).disabled(!judge.configured)
-                    if !judge.status.isEmpty { Note(judge.status) }
                 }
             }
         }

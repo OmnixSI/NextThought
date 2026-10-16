@@ -109,13 +109,6 @@ final class AppState {
 
     // MARK: Assistant layout
     var assistantLayout = AssistantLayout.load()
-    /// Module frames in window coordinates, for drop targets.
-    @ObservationIgnored var moduleFrames: [AssistantModule: CGRect] = [:]
-    /// A detached window hovering over the main window (shows the dock highlight).
-    var dockHoverModule: AssistantModule?
-    /// A docked module being dragged by its grip, and whether it is outside the window.
-    var draggingModule: AssistantModule?
-    var dragIsOutside = false
 
     // MARK: Web search
     var webSearchMode = WebSearchMode(rawValue: UserDefaults.standard.string(forKey: "webSearchMode") ?? "") ?? .auto
@@ -131,7 +124,9 @@ final class AppState {
     let webAppServer = CodexAppServerClient()
     let webCodex = CodexBridge()
     let webAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
-    let judge = JudgeService()
+    /// Screen, slides and answer progress.
+    let insights = LiveInsights()
+    @ObservationIgnored var screenWatchTask: Task<Void, Never>?
 
     // MARK: Questions and answers
     var answerHistory: [AnswerRecord] = []
@@ -333,6 +328,7 @@ final class AppState {
         guard !DemoMode.isEnabled else { return }
         if !UserDefaults.standard.bool(forKey: "onboardingCompleted") { isOnboardingPresented = true }
         Updater.shared.start()
+        startScreenWatch()
         Task {
             // After launch settles: one backup a day, never blocking start-up.
             try? await Task.sleep(for: .seconds(8))
@@ -496,6 +492,7 @@ final class AppState {
             deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
             answerHistory = []; historyCursor = nil; webLookups = [:]; showOriginalAnswer = []; currentAnswerID = nil; webLookupTask?.cancel()
             answerTurns.removeAll()
+            insights.resetSession()
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
@@ -711,15 +708,18 @@ final class AppState {
         let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
         selectedExcerpts = excerpts
         let workspace = activeWorkspace
-        let skills = activeSkillSnippets
+        let skills = activeSkills
+        let allSnippets = skills.map { SkillSnippet(name: $0.name, content: $0.content) }
         let turns = answerTurns
-        let buildParts = { (webSearch: Bool, results: [WebResult]?) in
+        let screenText = relevantScreenText
+        let slide = currentSlideExcerpt
+        let tier = activeServiceTier
+        let buildParts = { (webSearch: Bool, results: [WebResult]?, snippets: [SkillSnippet]) in
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: screenshot != nil,
                                           preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
-                                          experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch)
+                                          experience: workspace.experienceNotes(), skills: snippets, webResults: results, webSearch: webSearch,
+                                          screen: screenText, currentSlide: slide)
         }
-        let parts = buildParts(false, nil)
-        let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: activeServiceTier)
         // Quick answer first; a web-updated one follows in the background when needed.
         let isRefinement = question.contains(AnswerRefinement.markerText)
         if screenshot == nil, !isRefinement, webSearchMode != .off, webSearchAvailable {
@@ -728,7 +728,7 @@ final class AppState {
                 let decision = await self.shouldSearchWeb(question)
                 Diagnostics.record("web.decision", ["search": decision.search, "reason": decision.reason])
                 guard decision.search, self.currentAnswerID == id else { return }
-                self.startWebLookup(id: id, question: question, model: selectedModel, parts: { buildParts($0, $1) })
+                self.startWebLookup(id: id, question: question, model: selectedModel, parts: { buildParts($0, $1, allSnippets) })
             }
         }
         let answerStartedAt = Date()
@@ -740,6 +740,8 @@ final class AppState {
                 }
             }
             do {
+                let parts = buildParts(false, nil, allSnippets)
+                let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: tier)
                 let onDelta: @Sendable (String) -> Void = { [weak self] text in
                     Task { @MainActor in
                         guard let self, self.requestID == id, self.isAnswering else { return }
@@ -773,6 +775,7 @@ final class AppState {
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
                 let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic)
                 answerHistory.append(record)
+                insights.beginAnswer(id: id, text: result, since: answerStartedAt)
                 if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
                 tracker.noteAnswered()
                 answerTurns.append(AnswerTurn(question: question, answer: result))
@@ -1051,6 +1054,7 @@ final class AppState {
         appServer.shutdown()
         webLookupTask?.cancel()
         webAppServer.shutdown()
+        screenWatchTask?.cancel()
         webCodex.cancel()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
