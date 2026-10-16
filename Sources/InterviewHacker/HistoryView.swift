@@ -144,10 +144,7 @@ private struct SessionDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
-            Picker("", selection: $tab) {
-                ForEach(DetailTab.allCases) { Text(tabTitle($0)).tag($0) }
-            }
-            .pickerStyle(.segmented).labelsHidden()
+            PillTabs(items: DetailTab.allCases.map { (value: $0, title: tabTitle($0)) }, selection: $tab)
             Group {
                 if let detail {
                     switch tab {

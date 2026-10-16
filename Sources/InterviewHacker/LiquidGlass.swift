@@ -228,6 +228,40 @@ struct AnyButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View { make(configuration) }
 }
 
+/// In-page tabs (场景 editor, 记录 detail): pill buttons on a soft track, with the
+/// selection sliding between them. Larger and clearer than a segmented control.
+struct PillTabs<Value: Hashable>: View {
+    let items: [(value: Value, title: String)]
+    @Binding var selection: Value
+    @Namespace private var namespace
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                let selected = item.value == selection
+                Button { selection = item.value } label: {
+                    Text(item.title)
+                        .font(.system(size: 13, weight: selected ? .semibold : .medium))
+                        .lineLimit(1).fixedSize()
+                        .foregroundStyle(selected ? Color.white : Color.secondary)
+                        .padding(.horizontal, 14)
+                        .frame(height: UI.chipHeight)
+                        .background {
+                            if selected {
+                                Capsule().fill(Brand.gradient).matchedGeometryEffect(id: "pill", in: namespace)
+                            }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(Capsule().fill(Color.primary.opacity(0.06)))
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: selection)
+    }
+}
+
 /// Floating glass tab bar (iOS 26 style) used for the main sections.
 struct GlassTabBar<Tab: Hashable & Identifiable>: View {
     let tabs: [Tab]
