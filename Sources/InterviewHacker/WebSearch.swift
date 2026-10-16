@@ -90,15 +90,12 @@ extension AppState {
 
     // MARK: Deciding
 
-    /// Mode, then the decision model when on; the local rules decide when it is off or late.
+    /// Mode, then the local rules.
     func shouldSearchWeb(_ question: String) async -> (search: Bool, reason: String) {
         switch webSearchMode {
         case .off: return (false, "联网已关闭")
         case .always: return (true, "每次都联网")
         case .auto:
-            if decisions.handlesWebSearch, let yes = await decisions.needsWebSearch(question) {
-                return (yes >= 0.5, String(format: "判断模型：%.0f%%", yes * 100))
-            }
             let rules = WebSearchNeed.assess(question)
             return (rules.needsSearch, rules.reason)
         }
@@ -148,9 +145,7 @@ extension AppState {
                 }
                 let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !text.isEmpty else { throw AnswerEngineError.empty }
-                let quick = self.answerHistory.last(where: { $0.id == id })?.answer ?? ""
-                let matches = await self.webAnswerMatches(quick: quick, web: text)
-                self.finishWebLookup(id: id, text: text, sources: result.sources, seconds: Date().timeIntervalSince(started), model: model, matchesQuick: matches)
+                self.finishWebLookup(id: id, text: text, sources: result.sources, seconds: Date().timeIntervalSince(started), model: model)
             } catch is CancellationError {
                 if self.webLookups[id]?.status == .searching { self.webLookups[id]?.status = .failed("已取消") }
             } catch {
@@ -177,13 +172,9 @@ extension AppState {
         }
     }
 
-    private func finishWebLookup(id: UUID, text: String, sources: [WebResult], seconds: Double, model: String, matchesQuick: Bool) {
+    private func finishWebLookup(id: UUID, text: String, sources: [WebResult], seconds: Double, model: String) {
         guard var lookup = webLookups[id] else { return }
-        // Nothing new from the web: the quick answer stays on screen, marked as checked.
-        if matchesQuick {
-            insights.webConfirmed.insert(id)
-            showOriginalAnswer.insert(id)
-        } else if id == currentAnswerID, insights.answerID == id {
+        if id == currentAnswerID, insights.answerID == id {
             insights.beginAnswer(id: id, text: text, since: insights.answerSince)
         }
         lookup.status = .done
@@ -191,7 +182,7 @@ extension AppState {
         lookup.sources = sources
         lookup.seconds = seconds
         webLookups[id] = lookup
-        Diagnostics.record("web.completed", ["provider": lookup.provider.rawValue, "seconds": seconds, "sources": sources.count, "matches_quick": matchesQuick])
+        Diagnostics.record("web.completed", ["provider": lookup.provider.rawValue, "seconds": seconds, "sources": sources.count])
         // Follow-ups should build on the updated answer.
         replaceTurnAnswer(question: lookup.question, with: text)
         recordAnswer(AnswerRecord(question: lookup.question, answer: text, model: "\(model) · 联网", seconds: seconds, firstTokenSeconds: nil, automatic: true))

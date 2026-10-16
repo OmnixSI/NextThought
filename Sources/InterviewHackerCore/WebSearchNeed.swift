@@ -13,7 +13,7 @@ public enum WebSearchMode: String, CaseIterable, Identifiable, Sendable {
 }
 
 public struct WebSearchAssessment: Sendable, Equatable {
-    /// 0…1; `needsSearch` at ≥ 0.6. The decision model, when on, decides instead.
+    /// 0…1; `needsSearch` at ≥ 0.6.
     public var score: Double
     public var reason: String
     public var needsSearch: Bool { score >= 0.6 }

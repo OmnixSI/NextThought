@@ -538,7 +538,7 @@ private struct ExtrasStep: View {
                     }
                 }
             }
-            Text("想让“这句是不是在问我”“要不要联网”判断得更准，可以在 设置 → 判断 下载决策模型 Laya，在这台 Mac 上运行（可选，约 0.7 GB）。同一页还能打开“屏幕感知”：讲 PPT 时自动跟到当前页并给出讲稿提示，屏幕上出现题目时一键回答。")
+            Text("在 设置 → 识别 可以打开“屏幕感知”：讲 PPT 时自动跟到当前页并给出讲稿提示，屏幕上和对话相关的题目、代码会纳入回答。")
                 .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .sheet(item: $editing) { skill in SkillEditor(skill: skill) { library.update($0) } }

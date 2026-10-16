@@ -2,17 +2,16 @@ import AppKit
 import SwiftUI
 import InterviewHackerCore
 
-/// Six groups: “基础” has everything needed to get a session working; the others
+/// Seven groups: “基础” has everything needed to get a session working; the others
 /// open with their main options and keep the rest under “高级选项”.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", decisions = "判断", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
+    case essentials = "基础", recognition = "识别", answers = "回答", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
     var id: String { rawValue }
     var symbol: String {
         switch self {
         case .essentials: "checklist"
         case .recognition: "waveform"
         case .answers: "sparkles"
-        case .decisions: "brain"
         case .skills: "wand.and.stars"
         case .overlay: "rectangle.topthird.inset.filled"
         case .recording: "tray.full"
@@ -49,7 +48,6 @@ struct SettingsView: View {
                         case .essentials: EssentialSettings()
                         case .recognition: RecognitionSettings()
                         case .answers: AnswerSettings()
-                        case .decisions: DecisionSettings()
                         case .skills: SkillSettings()
                         case .overlay: OverlaySettings()
                         case .recording: RecordingSettings()
@@ -71,9 +69,8 @@ extension SettingsGroup {
     var summary: String {
         switch self {
         case .essentials: "使用前检查 · 音频来源 · 外观"
-        case .recognition: "识别引擎 · 模型 · 专业词"
+        case .recognition: "识别引擎 · 模型 · 专业词 · 屏幕感知"
         case .answers: "回答引擎 · 自动回答 · 联网搜索"
-        case .decisions: "决策模型 · 问题识别 / 屏幕与讲稿 / 回答进度 / 待办"
         case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 屏幕共享"
         case .recording: "会话记录 · 导入导出 · 备份"
@@ -389,6 +386,7 @@ private struct RecognitionSettings: View {
                 Note("不戴耳机时对方的声音会从扬声器传进麦克风；应用比对两路音频的节奏和文字，回声不记为“我”。戴耳机始终最干净。")
             }
         }
+        InsightSettings()
     }
 }
 
@@ -565,7 +563,7 @@ struct WebSearchSettings: View {
             }
             .pickerStyle(.segmented)
             .onChange(of: state.webSearchMode) { _, _ in state.saveWebSearchSettings() }
-            Note("先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则，拿不准的交给判断模型（如已设置）。")
+            Note("先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则。")
             if state.webSearchMode != .off {
                 MenuPicker(title: "搜索方式", selection: $state.webSearchProvider, options: WebSearchProvider.allCases.map { ($0, $0.title) })
                     .onChange(of: state.webSearchProvider) { _, _ in state.saveWebSearchSettings() }

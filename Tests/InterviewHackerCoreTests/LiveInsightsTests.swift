@@ -110,79 +110,11 @@ import Testing
 
     // MARK: Decision tasks
 
-    @Test func screenTaskAndVerdict() throws {
-        let task = DecisionTasks.screen("LeetCode 146 LRU 缓存", recent: ["[对方] 看一下屏幕上的题"], mode: .interview)
-        #expect(task.state.contains("LeetCode 146"))
-        #expect(task.questions.count == 2)
-        let verdict = DecisionTasks.screenVerdict([
-            DecisionTasks.InsightKey.screenKind: DecisionAnswer(choice: "question", confidence: 0.9),
-            DecisionTasks.InsightKey.screenRelevant: DecisionAnswer(yes: 0.82),
-        ])
-        #expect(verdict?.kind == .question)
-        #expect(verdict?.isRelevant == true)
-        #expect(DecisionTasks.screenVerdict([:]) == nil)
-    }
-
-    @Test func slideTaskRoundTrip() {
-        let candidates = Array(talk[2...3])
-        let task = DecisionTasks.slide("方法 动态稀疏注意力", candidates: candidates)
-        guard case let .choice(_, options) = task.questions[DecisionTasks.InsightKey.slide] else { Issue.record("not a choice"); return }
-        #expect(options.count == 3)
-        #expect(options.last?.id == "none")
-        let key = DecisionTasks.slideKey(candidates[0])
-        let pick = DecisionTasks.slideChoice([DecisionTasks.InsightKey.slide: DecisionAnswer(choice: key, probabilities: [key: 0.8])], candidates: candidates)
-        #expect(pick == candidates[0])
-        #expect(DecisionTasks.slideChoice([DecisionTasks.InsightKey.slide: DecisionAnswer(choice: "none")], candidates: candidates) == nil)
-        #expect(DecisionTasks.slideChoice([DecisionTasks.InsightKey.slide: DecisionAnswer(choice: key, probabilities: [key: 0.3])], candidates: candidates) == nil)
-    }
-
-    @Test func coverageTask() {
-        let task = DecisionTasks.coverage(speech: "我会先更新数据库再删缓存", points: [(0, "先更新数据库再删缓存"), (3, "监控命中率")])
-        #expect(task.questions.keys.sorted() == ["point_0", "point_3"])
-        let covered = DecisionTasks.covered(["point_0": DecisionAnswer(yes: 0.9), "point_3": DecisionAnswer(yes: 0.2)])
-        #expect(covered == [0])
-    }
-
-    @Test func questionKindAndSkills() {
-        let task = DecisionTasks.questionKind("讲一个你和同事意见不合的经历", mode: .interview)
-        guard case let .choice(_, options) = task.questions[DecisionTasks.InsightKey.questionKind] else { Issue.record("not a choice"); return }
-        #expect(options.count == QuestionKind.allCases.count)
-        #expect(DecisionTasks.questionKindChoice([DecisionTasks.InsightKey.questionKind: DecisionAnswer(choice: "behavioral", probabilities: ["behavioral": 0.7])]) == .behavioral)
-        #expect(DecisionTasks.questionKindChoice([DecisionTasks.InsightKey.questionKind: DecisionAnswer(choice: "behavioral", probabilities: ["behavioral": 0.2])]) == nil)
-        #expect(!QuestionKind.behavioral.hint.isEmpty)
-
-        let skills = DecisionTasks.skills("实现 LRU", skills: [("算法题模板", "思路-代码-复杂度"), ("STAR 行为题", "")])
-        #expect(skills.questions.count == 2)
-        let drop = DecisionTasks.unrelatedSkills(["skill_0": DecisionAnswer(yes: 0.9), "skill_1": DecisionAnswer(yes: 0.1)], count: 3)
-        #expect(drop == [1])
-    }
-
-    @Test func liveLineAndWebCheck() {
-        let task = DecisionTasks.liveLine("那这个需求下周三之前你整理一份方案发给我", isMine: false, mode: .meeting)
-        #expect(task.questions.count == 2)
-        let verdict = DecisionTasks.lineVerdict([
-            DecisionTasks.InsightKey.noteKind: DecisionAnswer(choice: "action_item", probabilities: ["action_item": 0.8]),
-            DecisionTasks.InsightKey.wrapUp: DecisionAnswer(yes: 0.1),
-        ])
-        #expect(verdict?.note == .actionItem)
-        #expect(verdict?.noteProbability == 0.8)
-        let none = DecisionTasks.lineVerdict([
-            DecisionTasks.InsightKey.noteKind: DecisionAnswer(choice: "none", probabilities: ["none": 0.9]),
-            DecisionTasks.InsightKey.wrapUp: DecisionAnswer(yes: 0.95),
-        ])
-        #expect(none?.note == nil)
-        #expect(none?.wrapUp == 0.95)
-        let differ = DecisionTasks.answersDiffer(quick: "A", web: "B")
-        #expect(differ.questions[DecisionTasks.InsightKey.differs] != nil)
-    }
-
-    @Test func promptCarriesScreenSlideAndHint() {
+    @Test func promptCarriesScreenAndSlide() {
         let parts = AnswerPromptBuilder.makeParts(question: "路由开销有多大？", context: "", profile: "", turns: [], hasScreenshot: false, mode: .academic,
-                                                  screen: "方法 动态稀疏注意力", currentSlide: ContextExcerpt(source: "talk.pptx", page: 3, text: "方法"),
-                                                  answerHint: QuestionKind.numbers.hint)
+                                                  screen: "方法 动态稀疏注意力", currentSlide: ContextExcerpt(source: "talk.pptx", page: 3, text: "方法"))
         #expect(parts.user.contains("\"screen_text\""))
         #expect(parts.user.contains("\"current_slide\""))
-        #expect(parts.user.contains("\"answer_hint\""))
         let plain = AnswerPromptBuilder.makeParts(question: "q", context: "", profile: "", turns: [], hasScreenshot: false)
         #expect(!plain.user.contains("screen_text"))
     }

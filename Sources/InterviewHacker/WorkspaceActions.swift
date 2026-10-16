@@ -154,41 +154,7 @@ extension AppState {
         applied.appliedToWorkspace = true
         archive.saveSummary(applied, for: sessionID)
         Diagnostics.record("knowledge.applied", ["lessons": result.lessons, "questions": result.questions])
-        if decisions.handlesKnowledge { Task { await consolidateQuestionBank(workspaceID) } }
         return result
-    }
-
-    /// Question-bank entries that the wording rules keep apart but ask the same thing
-    /// (“缓存和数据库怎么保持一致” / “双写一致性怎么处理”) are merged when the decision
-    /// model agrees: the newer answer stays, the times asked add up.
-    func consolidateQuestionBank(_ workspaceID: UUID) async {
-        guard let workspace = workspaces.workspace(workspaceID) else { return }
-        let items = workspace.questionBank
-        var pairs: [(QuestionBankItem, QuestionBankItem)] = []
-        for i in items.indices {
-            for j in items.indices where j > i {
-                let similarity = KnowledgeMerger.similarity(KnowledgeMerger.questionKey(items[i].question), KnowledgeMerger.questionKey(items[j].question))
-                if similarity >= 0.25 && similarity < 0.55 { pairs.append((items[i], items[j])) }
-            }
-        }
-        var merges: [(keep: UUID, drop: UUID)] = []
-        var dropped = Set<UUID>()
-        for (first, second) in pairs.prefix(24) where !dropped.contains(first.id) && !dropped.contains(second.id) {
-            guard let yes = await decisions.sameQuestion(first.question, second.question), yes >= 0.7 else { continue }
-            let (keep, drop) = first.updatedAt >= second.updatedAt ? (first, second) : (second, first)
-            merges.append((keep.id, drop.id))
-            dropped.insert(drop.id)
-        }
-        guard !merges.isEmpty, var current = workspaces.workspace(workspaceID) else { return }
-        for merge in merges {
-            guard let keep = current.questionBank.firstIndex(where: { $0.id == merge.keep }),
-                  let drop = current.questionBank.firstIndex(where: { $0.id == merge.drop }) else { continue }
-            current.questionBank[keep].timesAsked += current.questionBank[drop].timesAsked
-            current.questionBank.remove(at: drop)
-        }
-        workspaces.update(current)
-        if workspaceID == activeWorkspace.id { rebuildContextIndex() }
-        Diagnostics.record("knowledge.consolidated", ["merged": merges.count])
     }
 
     // MARK: Stage review

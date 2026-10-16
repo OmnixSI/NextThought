@@ -10,7 +10,6 @@ struct AssistantView: View {
     var body: some View {
         VStack(spacing: 12) {
             if !state.isRunning { SetupCard() }
-            WrapUpBanner()
             ModuleHost()
         }
         .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 8)
@@ -894,9 +893,8 @@ private struct WebLookupStrip: View {
                     }
                 case .done:
                     Image(systemName: "globe").foregroundStyle(Brand.accent)
-                    let confirmed = state.displayedRecordID.map { state.insights.webConfirmed.contains($0) } ?? false
-                    Text(state.showsWebAnswer ? "已用联网结果更新" : confirmed ? "已联网核对：和快速回答一致" : "正在看原回答")
-                        .foregroundStyle(state.showsWebAnswer || confirmed ? Brand.accent : .secondary)
+                    Text(state.showsWebAnswer ? "已用联网结果更新" : "正在看原回答")
+                        .foregroundStyle(state.showsWebAnswer ? Brand.accent : .secondary)
                     if let seconds = lookup.seconds { Text(String(format: "%.0f 秒", seconds)).foregroundStyle(.tertiary) }
                     Spacer(minLength: 0)
                     Button(state.showsWebAnswer ? "看原回答" : "看联网版") { state.toggleWebAnswer() }.buttonStyle(ChipButtonStyle())

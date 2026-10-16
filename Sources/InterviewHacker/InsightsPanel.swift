@@ -2,8 +2,8 @@ import AppKit
 import InterviewHackerCore
 import SwiftUI
 
-/// Module “屏幕与讲稿”: the slide being presented with its talking points, what is
-/// on the screen, and notes worth keeping (待办 / 决定 / 重点).
+/// Module “屏幕与讲稿”: the slide being presented with its talking points and what is
+/// on the screen.
 struct InsightsPanel: View {
     @Environment(AppState.self) private var state
 
@@ -14,8 +14,8 @@ struct InsightsPanel: View {
                 Label("屏幕与讲稿", systemImage: AssistantModule.insights.symbol).font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
                 Spacer()
                 if insights.isReadingScreen { ProgressView().controlSize(.mini) }
-                Button { state.openDecisionSettings() } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(GlassIconButtonStyle(size: 26)).help("设置 → 判断")
+                Button { state.openInsightSettings() } label: { Image(systemName: "gearshape") }
+                    .buttonStyle(GlassIconButtonStyle(size: 26)).help("设置 → 识别 → 屏幕感知")
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -26,8 +26,7 @@ struct InsightsPanel: View {
                     }
                     if let slide = insights.slide { SlideSection(slide: slide) }
                     if insights.screenWatch, insights.slide == nil || insights.screen?.kind != .slides { ScreenSection() }
-                    if !insights.notes.isEmpty { NotesSection() }
-                    if insights.screenWatch, insights.screen == nil, insights.slide == nil, insights.notes.isEmpty, insights.screenError == nil {
+                    if insights.screenWatch, insights.screen == nil, insights.slide == nil, insights.screenError == nil {
                         Note(state.isRunning ? "正在读取屏幕…" : "开始会话后，每 \(Int(insights.screenInterval)) 秒读一次屏幕。")
                     }
                 }
@@ -124,92 +123,33 @@ private struct ScreenSection: View {
                         Text("\(Int(context.date.timeIntervalSince(screen.capturedAt))) 秒前").font(.system(size: 10)).monospacedDigit().foregroundStyle(.tertiary)
                     }
                 }
-                if state.insights.screenQuestionOffered {
-                    Button { state.answerScreenQuestion() } label: { Label("回答屏幕上的题目", systemImage: "viewfinder") }
-                        .buttonStyle(ChipButtonStyle(prominent: true))
-                }
                 if !screen.text.isEmpty {
                     Text(screen.text).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(expanded ? 30 : 3).textSelection(.enabled)
                     Button(expanded ? "收起" : "展开识别的文字") { expanded.toggle() }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Brand.accent)
                 }
-                if !screen.judgedByModel {
-                    Note("判断模型没有运行：按“屏幕文字是否出现在最近的对话里”判断相关性。")
-                }
             }
         }
     }
 }
 
-private struct NotesSection: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        let notes = state.insights.notes
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("待办 · 决定 · 重点").font(.system(size: 12, weight: .semibold))
-                Text("\(notes.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
-                Spacer()
-                Button("复制") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(state.insights.notesMarkdown, forType: .string)
-                }
-                .buttonStyle(ChipButtonStyle())
-            }
-            ForEach(Array(notes.suffix(30).reversed())) { note in
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Image(systemName: note.kind.symbol).font(.system(size: 11)).foregroundStyle(Brand.accent)
-                    Text(note.kind.title).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                    Text(note.text).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-                    Spacer(minLength: 0)
-                    Text(note.isMine ? "我" : "对方").font(.system(size: 10)).foregroundStyle(.tertiary)
-                }
-            }
-        }
-    }
-}
-
-/// Under the answer: question kind, how much has been said, and the next sentence.
+/// Under the answer: how much has been said, and the next sentence.
 struct AnswerProgressStrip: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
         let insights = state.insights
-        let kind = state.displayedRecordID.flatMap { insights.questionKinds[$0] }
         let tracking = insights.answerProgress && state.isRunning && state.historyCursor == nil && !state.isAnswering
             && insights.answerID == state.currentAnswerID && insights.answerPoints.count >= 2
-        if kind != nil || tracking {
+        if tracking {
             HStack(spacing: 8) {
-                if let kind { MetricPill(symbol: "tag", text: kind.title, tint: Brand.accent) }
-                if tracking {
-                    let covered = insights.answerCovered.count
-                    MetricPill(symbol: "checkmark.circle", text: "已讲 \(min(covered, insights.answerPoints.count))/\(insights.answerPoints.count)",
-                               tint: covered >= insights.answerPoints.count ? .green : .secondary)
-                    if let next = insights.nextAnswerPoint {
-                        Text("下一句：\(insights.answerPoints[next])").font(.system(size: 12, weight: .medium)).foregroundStyle(Brand.accent).lineLimit(1)
-                    }
+                let covered = insights.answerCovered.count
+                MetricPill(symbol: "checkmark.circle", text: "已讲 \(min(covered, insights.answerPoints.count))/\(insights.answerPoints.count)",
+                           tint: covered >= insights.answerPoints.count ? .green : .secondary)
+                if let next = insights.nextAnswerPoint {
+                    Text("下一句：\(insights.answerPoints[next])").font(.system(size: 12, weight: .medium)).foregroundStyle(Brand.accent).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }
-        }
-    }
-}
-
-/// The other side is wrapping up: offer to stop and review.
-struct WrapUpBanner: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        if state.insights.wrapUpSuggested, state.isRunning {
-            HStack(spacing: 10) {
-                Image(systemName: "flag.checkered").foregroundStyle(Brand.accent)
-                Text("对方好像在收尾了。要停止记录并整理复盘吗？").font(.system(size: 13, weight: .medium))
-                Spacer()
-                Button("继续记录") { state.dismissWrapUp() }.buttonStyle(ChipButtonStyle())
-                Button("停止并复盘") { state.stopAfterWrapUp() }.buttonStyle(ChipButtonStyle(prominent: true))
-            }
-            .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(Brand.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 }

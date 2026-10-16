@@ -1,8 +1,8 @@
 import Foundation
 
-// Building blocks for what the decision model watches besides “is this a question”:
-// the screen, the slide being presented, how much of an answer has been said, and
-// notes worth keeping. Everything here is pure text work, testable on Linux.
+// Building blocks for screen awareness, slide following and answer progress:
+// the screen, the slide being presented and how much of an answer has been said.
+// Everything here is pure text work, testable on Linux.
 
 /// Character-bigram similarity: works for Chinese (no word breaks), English and the
 /// mix that OCR and speech recognition produce.
@@ -258,92 +258,4 @@ public enum AnswerPoints {
     public static func next(after covered: Set<Int>, count: Int) -> Int? {
         (0..<count).first { !covered.contains($0) }
     }
-}
-
-// MARK: - Notes worth keeping
-
-public struct LiveNote: Codable, Sendable, Equatable, Identifiable {
-    public enum Kind: String, Codable, Sendable, CaseIterable {
-        case actionItem = "action_item", decision, deadline, keyPoint = "key_point"
-        public var title: String {
-            switch self {
-            case .actionItem: "待办"
-            case .decision: "决定"
-            case .deadline: "时间节点"
-            case .keyPoint: "重点"
-            }
-        }
-        public var symbol: String {
-            switch self {
-            case .actionItem: "checklist"
-            case .decision: "checkmark.seal"
-            case .deadline: "calendar"
-            case .keyPoint: "star"
-            }
-        }
-    }
-
-    public var id: UUID
-    public var kind: Kind
-    public var text: String
-    public var isMine: Bool
-    public var date: Date
-    public init(id: UUID = UUID(), kind: Kind, text: String, isMine: Bool, date: Date = Date()) {
-        self.id = id; self.kind = kind; self.text = text; self.isMine = isMine; self.date = date
-    }
-}
-
-// MARK: - What kind of question
-
-/// Shapes the answer before it is written: length, structure, what to lead with.
-public enum QuestionKind: String, Codable, Sendable, CaseIterable {
-    case behavioral, concept, coding, systemDesign = "system_design", project, opinion, numbers, logistics, smallTalk = "small_talk", clarification
-
-    public var title: String {
-        switch self {
-        case .behavioral: "行为题"
-        case .concept: "概念 / 原理"
-        case .coding: "编程题"
-        case .systemDesign: "系统设计"
-        case .project: "项目深挖"
-        case .opinion: "看法 / 取舍"
-        case .numbers: "数据 / 估算"
-        case .logistics: "安排 / 条件"
-        case .smallTalk: "寒暄"
-        case .clarification: "澄清"
-        }
-    }
-
-    var modelDescription: String {
-        switch self {
-        case .behavioral: "asks for a past experience: a time you did, handled, failed, led or learned something"
-        case .concept: "asks to explain a concept, principle, mechanism or the difference between things"
-        case .coding: "an algorithm or coding task: write, fix or analyze code"
-        case .systemDesign: "design a system, architecture or large-scale service"
-        case .project: "digs into the listener's own project, role, method, results or paper"
-        case .opinion: "asks for an opinion, a judgment or a trade-off"
-        case .numbers: "asks for numbers, an estimate, a calculation or metrics"
-        case .logistics: "salary, start date, schedule, location, process or other practical terms"
-        case .smallTalk: "greeting, small talk or a light personal question"
-        case .clarification: "checks or clarifies something just said (do you mean…, so you are saying…)"
-        }
-    }
-
-    /// Instruction handed to the answer model.
-    public var hint: String {
-        switch self {
-        case .behavioral: "行为题：用一个真实经历按 情境-任务-行动-结果 讲，行动部分最具体，结果尽量有数字；只用资料里的经历。"
-        case .concept: "概念题：一句话定义，再讲原理或关键区别，最后一个具体例子或适用场景。"
-        case .coding: "编程题：先说思路和数据结构，再给可运行代码，最后时间 / 空间复杂度和边界情况。"
-        case .systemDesign: "系统设计：先确认需求和规模，再讲核心组件和数据流，然后关键取舍和瓶颈。"
-        case .project: "项目追问：紧扣资料里的真实细节，讲我的角色、做法、难点和结果，数字以资料为准。"
-        case .opinion: "看法题：先表明立场，再给两三个理由和一个取舍，语气平和。"
-        case .numbers: "数据题：先给结论数字，再给推算过程和假设。"
-        case .logistics: "安排或条件类问题：一两句话直接、礼貌地回答，不展开。"
-        case .smallTalk: "寒暄：一两句自然的话，友好简短。"
-        case .clarification: "澄清：先确认或纠正对方的理解，一两句话。"
-        }
-    }
-
-    public static let options: [DecisionQuestion.Option] = allCases.map { .init($0.rawValue, $0.modelDescription) }
 }

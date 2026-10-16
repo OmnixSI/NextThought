@@ -90,15 +90,11 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 - 同一句流式修订只更新一个候选；以问号或“吗 / 呢”结尾、或证据很强时 0.6 s 稳定即触发，否则 1.2 s 或等定稿。
 - 提前触发后最终文字明显变长时，返回 `supersedes` 指向旧候选，应用取消旧回答改答完整问题。
 - 问题前 8 s 内同一方的陈述句作为 `leadIn` 一起交给模型。
-- `QuestionEvalCorpus`（Core，含留出集与扩展集）是贴近识别输出的标注语料，`QuestionDetectionEvaluator` 报告召回与误触发；设置 → 判断 的“评测”用同一份语料对比规则与决策模型。
+- `QuestionEvalCorpus`（Core，含留出集与扩展集）是贴近识别输出的标注语料，`QuestionDetectionEvaluator` 报告召回与误触发。
 
-## 决策模型
+## 屏幕感知与讲稿跟随
 
-可选的决策模型（默认 Laya 多语言版，也可选 StartLux-Decision）接管上面这些规则判断，详见 [DECISION-MODEL.md](DECISION-MODEL.md)：
-
-- `DecisionProtocol` / `DecisionTasks`（Core）：`/v1/systemone` 请求与解析，以及“是不是在问我”“要不要联网”“是不是我说的”“是不是同一个问题”四类判断的 state 与问题。
-- `LiveInsights`（Core：`TextSimilarity`、`SlideMatcher`、`SlideNotes`、`AnswerPoints`、`LiveNote`、`QuestionKind`；`DecisionTasks+Insights` 是对应的判断）和应用里的 `AppState+Insights`：屏幕感知（ScreenCaptureKit 截主显示器并排除本应用窗口，Vision 识别文字）、讲稿跟随、回答进度、问题类型、待办与重点、收尾提醒、联网核对。界面在 `InsightsPanel.swift`（模块“屏幕与讲稿”）。
-- `DecisionService`（应用）：在 `~/Library/Application Support/InterviewHacker/decision` 建 Python 环境（uv 或 Python 3.11+），Laya 装 `laya-mlx` 并用内置的 `laya_server.py`（标准库 HTTP 服务）提供 `/v1/systemone`，StartLux 装 `startlux-decide[mlx]` 并启动 `startlux-decide serve --backend mlx`，都在 127.0.0.1:8790；也可连接已有服务。每次调用有截止时间（0.9–1.5 s），超时或出错就用规则结果。
+`LiveInsights`（Core：`TextSimilarity`、`ScreenText`、`SlideMatcher`、`SlideNotes`、`AnswerPoints`）和应用里的 `AppState+Insights`：屏幕感知（ScreenCaptureKit 截主显示器并排除本应用窗口，Vision 识别文字，按和最近对话的文字重合判断相关性）、讲稿跟随、回答进度。界面在 `InsightsPanel.swift`（模块“屏幕与讲稿”），设置在 `InsightSettingsView.swift`（设置 → 识别）。
 
 ## 回声与抢话
 
