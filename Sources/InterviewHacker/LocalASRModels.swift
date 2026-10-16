@@ -19,6 +19,12 @@ enum LocalStreamingModel: String, CaseIterable, Identifiable {
         case .legacy: "Zipformer 双语 2023（旧版）"
         }
     }
+    var shortTitle: String {
+        switch self {
+        case .xasr480, .xasr160: "X-ASR 中英模型"
+        case .legacy: "Zipformer 双语模型"
+        }
+    }
     var detail: String {
         switch self {
         case .xasr480: "2026 年 6 月发布，约 100 万小时训练，自带标点与大小写，中英混说准确率明显高于旧版。"

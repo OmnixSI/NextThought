@@ -2,28 +2,38 @@ import AppKit
 import SwiftUI
 import InterviewHackerCore
 
+/// Six groups: “基础” has everything needed to get a session working; the others
+/// open with their main options and keep the rest under “高级选项”.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case general = "常规", recognition = "识别", answers = "回答", overlay = "提词器", recording = "数据", updates = "更新", shortcuts = "快捷键"
+    case essentials = "基础", recognition = "识别", answers = "回答", overlay = "提词器", recording = "数据", more = "更多"
     var id: String { rawValue }
     var symbol: String {
         switch self {
-        case .general: "switch.2"
+        case .essentials: "checklist"
         case .recognition: "waveform"
         case .answers: "sparkles"
         case .overlay: "rectangle.topthird.inset.filled"
         case .recording: "tray.full"
-        case .updates: "arrow.down.circle"
-        case .shortcuts: "keyboard"
+        case .more: "ellipsis.circle"
+        }
+    }
+
+    /// Accepts names stored by older versions (常规 / 更新 / 快捷键).
+    init(stored: String) {
+        switch stored {
+        case "常规": self = .essentials
+        case "更新", "快捷键": self = .more
+        default: self = SettingsGroup(rawValue: stored) ?? .essentials
         }
     }
 }
 
 struct SettingsView: View {
     @Environment(AppState.self) private var state
-    @AppStorage("settingsGroup") private var groupRaw = SettingsGroup.general.rawValue
+    @AppStorage("settingsGroup") private var groupRaw = SettingsGroup.essentials.rawValue
 
     var body: some View {
-        let group = SettingsGroup(rawValue: groupRaw) ?? .general
+        let group = SettingsGroup(stored: groupRaw)
         VStack(spacing: 10) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
@@ -39,13 +49,12 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     switch group {
-                    case .general: GeneralSettings()
+                    case .essentials: EssentialSettings()
                     case .recognition: RecognitionSettings()
                     case .answers: AnswerSettings()
                     case .overlay: OverlaySettings()
                     case .recording: RecordingSettings()
-                    case .updates: UpdateSettings()
-                    case .shortcuts: ShortcutSection()
+                    case .more: MoreSettings()
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 18)
@@ -78,7 +87,34 @@ struct SettingsSection<Content: View>: View {
     }
 }
 
-private struct Note: View {
+/// Collapsed by default; remembers whether the user opened it.
+struct AdvancedOptions<Content: View>: View {
+    @AppStorage private var expanded: Bool
+    private let content: Content
+
+    init(_ id: String, @ViewBuilder content: () -> Content) {
+        _expanded = AppStorage(wrappedValue: false, "settings.advanced.\(id)")
+        self.content = content()
+    }
+
+    var body: some View {
+        Button { withAnimation(.snappy(duration: 0.25)) { expanded.toggle() } } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    .rotationEffect(.degrees(expanded ? 90 : 0))
+                Text(expanded ? "收起高级选项" : "高级选项").font(.system(size: 12, weight: .medium))
+                Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
+            }
+            .foregroundStyle(.secondary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 4).padding(.top, 4)
+        if expanded { content }
+    }
+}
+
+struct Note: View {
     var text: String
     var color: Color = .secondary
     init(_ text: String, color: Color = .secondary) { self.text = text; self.color = color }
@@ -87,38 +123,34 @@ private struct Note: View {
     }
 }
 
-// MARK: - General
+// MARK: - Essentials
 
-private struct GeneralSettings: View {
+private struct EssentialSettings: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
         @Bindable var state = state
-        SettingsSection(title: "系统权限", icon: "lock.shield") {
-            Text(state.capturePermissionStatus).foregroundStyle(state.capturePermissionGranted ? .green : .secondary)
+        SettingsSection(title: "使用前检查", icon: "checklist") {
+            SetupChecklist()
             HStack {
-                Button(state.capturePermissionGranted ? "打开系统设置" : "申请录屏与系统音频") {
-                    if state.capturePermissionGranted { state.openCapturePermissionSettings() }
-                    else { Task { await state.requestCapturePermission() } }
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                Button("刷新状态") { Task { await state.refreshTargets() } }.buttonStyle(.plain)
-                Button("麦克风权限") { state.openMicrophoneSettings() }.buttonStyle(.plain).foregroundStyle(Color.accentColor)
+                Button { state.openOnboarding() } label: { Label("打开新手引导", systemImage: "sparkles") }
+                    .buttonStyle(SecondaryButtonStyle())
+                Spacer()
+                Button("刷新") { Task { await state.refreshSetupStatus() } }.buttonStyle(ChipButtonStyle())
             }
-            SignatureStatus()
         }
-        SettingsSection(title: "捕获目标", icon: "rectangle.on.rectangle") {
+        SettingsSection(title: "音频来源", icon: "speaker.wave.2") {
             HStack {
-                MenuPicker(title: "系统音频来源", selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择音频来源")
+                MenuPicker(title: "对方的声音", selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择会议窗口或屏幕")
                     .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
                 Button { Task { await state.refreshTargets() } } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.borderless)
             }
-            Toggle("采集麦克风（标记为“我”）", isOn: $state.microphoneEnabled)
+            Toggle("同时采集麦克风（标记为“我”）", isOn: $state.microphoneEnabled)
                 .disabled(state.isRunning || state.isChangingSession)
                 .onChange(of: state.microphoneEnabled) { _, _ in state.updateSettings() }
-            Note("系统声音标记为“对方”，麦克风标记为“我”，两路分别识别，互相抢话也不会混在一起。自动回答只由对方的提问触发；你在说话时会等你说完再出回答。")
+            Note("选会议 App 的窗口只采集它的声音。两路分别识别，抢话也不会混；自动回答只由对方的提问触发。")
         }
-        SettingsSection(title: "外观与窗口", icon: "paintbrush") {
+        SettingsSection(title: "外观", icon: "paintbrush") {
             Picker("外观", selection: $state.appearance) {
                 Text("跟随系统").tag("system")
                 Text("浅色").tag("light")
@@ -127,16 +159,12 @@ private struct GeneralSettings: View {
             .pickerStyle(.segmented)
             .onChange(of: state.appearance) { _, _ in state.updateSettings() }
             Toggle("工作台窗口置顶", isOn: $state.keepOnTop).onChange(of: state.keepOnTop) { _, _ in state.updateSettings() }
-            Toggle("减少视觉特效（更流畅，适合轻薄本 / 省电）", isOn: $state.reducedEffects)
-                .onChange(of: state.reducedEffects) { _, value in UserDefaults.standard.set(value, forKey: "reducedEffects") }
-            Note("关闭液态玻璃的实时折射，改用平面半透明效果。系统“降低透明度”开启时会自动使用。")
         }
-        CompanionSection()
     }
 }
 
 /// Current code signature and the one-click “bind to this Mac”.
-private struct SignatureStatus: View {
+struct SignatureStatus: View {
     private var updater: Updater { Updater.shared }
     @State private var confirming = false
 
@@ -152,7 +180,7 @@ private struct SignatureStatus: View {
                         .buttonStyle(SecondaryButtonStyle())
                         .disabled(!updater.canInstall || updater.phase == .installing)
                 }
-                Note("macOS 把录屏 / 麦克风权限绑定在应用的签名上。下载的版本是临时签名，每个版本都不同，所以每次更新都要重新授权。绑定后，应用会在本机生成一个只属于这台 Mac 的签名证书并用它重新签名；之后应用内自动更新会用同一证书签名新版本，权限一直有效。首次绑定后需要再授权一次；系统可能请求一次登录密码以信任该证书。")
+                Note("macOS 把录屏 / 麦克风权限绑定在应用签名上。绑定后应用用本机证书重新签名，之后的自动更新沿用同一签名，权限一直有效。绑定后需要再授权一次。")
             }
         }
         .confirmationDialog("绑定本机签名并重新打开？", isPresented: $confirming, titleVisibility: .visible) {
@@ -204,7 +232,7 @@ private struct RecognitionSettings: View {
 
     var body: some View {
         @Bindable var state = state
-        SettingsSection(title: "语音识别引擎", icon: "waveform") {
+        SettingsSection(title: "语音识别", icon: "waveform") {
             MenuPicker(title: "引擎", selection: $state.transcriptionBackend, options: [
                 ("zipformer", "本地流式 · 离线（推荐）"),
                 ("apple", "Apple Speech · 本地 / macOS 26"),
@@ -212,76 +240,96 @@ private struct RecognitionSettings: View {
             ])
             .disabled(state.isRunning || state.isPreparingModel)
             .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
-            if state.transcriptionBackend != "zipformer" {
-                MenuPicker(title: "识别语言", selection: $state.recognitionLanguage, options: [("auto", "自动 / 中英混说"), ("zh", "中文"), ("en", "English")])
-                    .disabled(state.isRunning || state.isPreparingModel)
-                    .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
+            switch state.transcriptionBackend {
+            case "zipformer": ModelDownloadRow()
+            case "apple":
+                LanguagePicker()
+                Note("Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。")
+            default:
+                LanguagePicker()
+                CloudSettings()
             }
-            TextField("专业词 / 人名，逗号分隔（热词）", text: $state.recognitionVocabulary)
+            TextField("专业词 / 人名，逗号分隔（提高识别准确度）", text: $state.recognitionVocabulary)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: state.recognitionVocabulary) { _, _ in state.updateSettings() }
-            Toggle("后台预加载识别模型（开始辅助几乎瞬间启动）", isOn: $state.keepRecognizerWarm)
-                .onChange(of: state.keepRecognizerWarm) { _, _ in state.saveRecognizerSettings() }
-            if let seconds = state.lastStartupSeconds {
-                Note(String(format: "上次开始辅助用时 %.1f 秒", seconds))
-            }
-            switch state.transcriptionBackend {
-            case "apple": Note("Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。")
-            case "cloud": CloudSettings()
-            default: EmptyView()
-            }
         }
-        if state.transcriptionBackend == "zipformer" {
-            SettingsSection(title: "本地模型", icon: "cpu") {
-                MenuPicker(title: "流式模型", selection: $state.localStreamingModel, options: LocalStreamingModel.allCases.map { ($0, $0.title) })
-                    .disabled(state.modelControlsDisabled)
-                    .onChange(of: state.localStreamingModel) { _, _ in state.updateSettings(); Task { await state.refreshModelStatus(); await state.prewarmRecognizer() } }
-                Note(state.localStreamingModel.detail)
-                Toggle("整句精修（二次识别）：每句说完后用离线模型重新识别整句", isOn: $state.secondPassEnabled)
-                    .disabled(state.modelControlsDisabled || state.localStreamingModel == .legacy)
-                    .onChange(of: state.secondPassEnabled) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
-                Note("边说边出字用流式模型；一句话结束后，离线模型看到整句再识别一次，错字、中英混说和句尾的问号明显更准（本机约 0.1–0.3 秒）。问题识别也用精修后的文字。")
-                HStack {
-                    if state.isModelInstalled && state.missingPackages.isEmpty {
-                        Label("模型已就绪 · 可离线使用", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-                    } else {
-                        let size = state.missingPackages.reduce(0) { $0 + $1.approximateMegabytes }
-                        Label(size > 0 ? "需要下载约 \(size) MB" : "需要下载模型", systemImage: "arrow.down.circle").foregroundStyle(.orange)
+        AdvancedOptions("recognition") {
+            if state.transcriptionBackend == "zipformer" {
+                SettingsSection(title: "本地模型", icon: "cpu") {
+                    MenuPicker(title: "流式模型", selection: $state.localStreamingModel, options: LocalStreamingModel.allCases.map { ($0, $0.title) })
+                        .disabled(state.modelControlsDisabled)
+                        .onChange(of: state.localStreamingModel) { _, _ in state.updateSettings(); Task { await state.refreshModelStatus(); await state.prewarmRecognizer() } }
+                    Note(state.localStreamingModel.detail)
+                    Toggle("整句精修：每句说完后用离线模型重新识别整句（推荐）", isOn: $state.secondPassEnabled)
+                        .disabled(state.modelControlsDisabled || state.localStreamingModel == .legacy)
+                        .onChange(of: state.secondPassEnabled) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
+                    if let rtf = state.lastRTF, let seconds = state.lastASRSeconds {
+                        Note(String(format: "最近处理 %.2f s · RTF %.2f", seconds, rtf) + (state.lastRefineSeconds.map { String(format: " · 精修 %.2f s", $0) } ?? ""))
                     }
-                    Spacer()
-                    if state.isDownloadingModel {
-                        Button("取消下载") { state.cancelModelDownload() }.buttonStyle(SecondaryButtonStyle())
-                    } else if !state.missingPackages.isEmpty || !state.isModelInstalled {
-                        Button("下载") { state.downloadModel() }.buttonStyle(PrimaryButtonStyle()).disabled(state.modelControlsDisabled)
+                    HStack {
+                        Link("模型来源：sherpa-onnx X-ASR（Apache-2.0）", destination: URL(string: "https://github.com/Gilgamesh-J/X-ASR")!)
+                            .font(.system(size: 11)).foregroundStyle(Color.accentColor)
+                        Spacer()
+                        Button("删除全部模型") { confirmDelete = true }.buttonStyle(.borderless).foregroundStyle(.red).disabled(state.modelControlsDisabled)
                     }
-                    Button("删除全部模型") { confirmDelete = true }.buttonStyle(.borderless).foregroundStyle(.red).disabled(state.modelControlsDisabled)
                 }
-                if state.isDownloadingModel { ProgressView(value: state.modelDownloadProgress).controlSize(.small) }
-                if !state.modelDownloadStatus.isEmpty { Note(state.modelDownloadStatus) }
-                if let rtf = state.lastRTF, let seconds = state.lastASRSeconds {
-                    Note(String(format: "最近处理 %.2f s · RTF %.2f", seconds, rtf) + (state.lastRefineSeconds.map { String(format: " · 精修 %.2f s", $0) } ?? ""))
+                .confirmationDialog("删除全部本地识别模型？", isPresented: $confirmDelete, titleVisibility: .visible) {
+                    Button("删除", role: .destructive) { state.deleteModels() }
+                    Button("取消", role: .cancel) { }
                 }
-                Link("模型来源：sherpa-onnx X-ASR（Apache-2.0）", destination: URL(string: "https://github.com/Gilgamesh-J/X-ASR")!)
-                    .font(.system(size: 11)).foregroundStyle(Color.accentColor)
             }
-            .confirmationDialog("删除全部本地识别模型？", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("删除", role: .destructive) { state.deleteModels() }
-                Button("取消", role: .cancel) { }
+            SettingsSection(title: "启动与回声", icon: "speaker.wave.2.bubble.left") {
+                Toggle("后台预加载识别模型（开始几乎瞬间启动）", isOn: $state.keepRecognizerWarm)
+                    .onChange(of: state.keepRecognizerWarm) { _, _ in state.saveRecognizerSettings() }
+                if let seconds = state.lastStartupSeconds { Note(String(format: "上次开始用时 %.1f 秒", seconds)) }
+                Toggle("忽略麦克风里的扬声器回声（推荐）", isOn: $state.echoSuppression)
+                    .onChange(of: state.echoSuppression) { _, _ in state.updateSettings() }
+                Toggle("麦克风回声消除（Apple 语音处理，实验）", isOn: $state.microphoneVoiceProcessing)
+                    .disabled(state.isRunning)
+                    .onChange(of: state.microphoneVoiceProcessing) { _, _ in state.updateSettings() }
+                Note("不戴耳机时对方的声音会从扬声器传进麦克风；应用比对两路音频的节奏和文字，回声不记为“我”。戴耳机始终最干净。")
             }
-        }
-        SettingsSection(title: "回声与抢话", icon: "speaker.wave.2.bubble.left") {
-            Toggle("忽略麦克风里的扬声器回声（推荐）", isOn: $state.echoSuppression)
-                .onChange(of: state.echoSuppression) { _, _ in state.updateSettings() }
-            Note("不戴耳机时，对方的声音会从扬声器传进麦克风。应用会比对两路音频的节奏和文字：属于回声的部分不记为“我”，也不会因此暂停自动回答。你和对方同时说话时两路仍分别识别。")
-            Toggle("麦克风回声消除（Apple 语音处理，实验）", isOn: $state.microphoneVoiceProcessing)
-                .disabled(state.isRunning)
-                .onChange(of: state.microphoneVoiceProcessing) { _, _ in state.updateSettings() }
-            Note("用系统的语音处理在源头消除回声和噪声；输入与输出设备不同（例如外接麦克风 + 内置扬声器）时可能不生效。戴耳机始终是最干净的方式。")
         }
     }
 }
 
-private struct CloudSettings: View {
+/// Model status with download / cancel, shared by settings, the setup checklist and onboarding.
+struct ModelDownloadRow: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                if state.isModelInstalled && state.missingPackages.isEmpty {
+                    Label("\(state.localStreamingModel.shortTitle)已就绪 · 可离线使用", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                } else {
+                    let size = state.missingPackages.reduce(0) { $0 + $1.approximateMegabytes }
+                    Label(size > 0 ? "需要下载识别模型（约 \(size) MB，只需一次）" : "需要下载识别模型", systemImage: "arrow.down.circle").foregroundStyle(.orange)
+                }
+                Spacer()
+                if state.isDownloadingModel {
+                    Button("取消") { state.cancelModelDownload() }.buttonStyle(SecondaryButtonStyle())
+                } else if !state.missingPackages.isEmpty || !state.isModelInstalled {
+                    Button("下载") { state.downloadModel() }.buttonStyle(PrimaryButtonStyle()).disabled(state.modelControlsDisabled)
+                }
+            }
+            if state.isDownloadingModel { ProgressView(value: state.modelDownloadProgress).controlSize(.small) }
+            if !state.modelDownloadStatus.isEmpty { Note(state.modelDownloadStatus) }
+        }
+    }
+}
+
+private struct LanguagePicker: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        @Bindable var state = state
+        MenuPicker(title: "识别语言", selection: $state.recognitionLanguage, options: [("auto", "自动 / 中英混说"), ("zh", "中文"), ("en", "English")])
+            .disabled(state.isRunning || state.isPreparingModel)
+            .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
+    }
+}
+
+struct CloudSettings: View {
     @Environment(AppState.self) private var state
     var body: some View {
         @Bindable var state = state
@@ -296,7 +344,7 @@ private struct CloudSettings: View {
             .onChange(of: state.cloudKey) { _, _ in state.saveCloudKey() }
         Toggle("我了解：会议音频会实时上传到所选服务商并按其条款处理", isOn: $state.cloudConsent)
             .onChange(of: state.cloudConsent) { _, _ in state.saveAnswerSettings() }
-        Note("云端流式识别通常在说话的同时出字（几百毫秒）。Soniox 在同一句中英混说上最稳；OpenAI 转写为 24 kHz 自动重采样；Deepgram 需指定单一语言。请确认会议参与者同意录音与转写。")
+        Note("云端识别通常几百毫秒出字；Soniox 在中英混说上最稳，Deepgram 需指定单一语言。请确认参与者同意录音与转写。")
     }
 }
 
@@ -308,68 +356,114 @@ private struct AnswerSettings: View {
     var body: some View {
         @Bindable var state = state
         SettingsSection(title: "回答引擎", icon: "sparkles") {
-            MenuPicker(title: "引擎", selection: $state.answerBackend, options: AnswerBackend.allCases.map { ($0, $0.title) })
-                .disabled(state.isAnswering)
-                .onChange(of: state.answerBackend) { _, value in
-                    state.saveAnswerSettings()
-                    if value == .codexAppServer { Task { await state.appServer.prewarm() } }
-                }
-            if state.answerBackend == .openAICompatible {
-                HStack {
-                    TextField("API 地址，例如 https://api.openai.com/v1", text: $state.apiBaseURL)
-                        .textFieldStyle(.roundedBorder)
-                        .onChange(of: state.apiBaseURL) { _, _ in state.saveAnswerSettings() }
-                    Menu("常用") {
-                        Button("OpenAI") { state.apiBaseURL = "https://api.openai.com/v1" }
-                        Button("DeepSeek") { state.apiBaseURL = "https://api.deepseek.com/v1" }
-                        Button("通义千问 DashScope") { state.apiBaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1" }
-                        Button("Moonshot Kimi") { state.apiBaseURL = "https://api.moonshot.cn/v1" }
-                        Button("Groq") { state.apiBaseURL = "https://api.groq.com/openai/v1" }
-                        Button("OpenRouter") { state.apiBaseURL = "https://openrouter.ai/api/v1" }
-                        Button("本机 Ollama") { state.apiBaseURL = "http://localhost:11434/v1" }
-                        Button("本机 LM Studio") { state.apiBaseURL = "http://localhost:1234/v1" }
-                    }.fixedSize()
-                }
-                TextField("模型 ID（与服务商一致）", text: $state.apiModel)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: state.apiModel) { _, _ in state.saveAnswerSettings() }
-                SecureField("API Key（保存在系统钥匙串）", text: $state.apiKey)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { state.saveAPIKey() }
-                    .onChange(of: state.apiKey) { _, _ in state.saveAPIKey() }
-                Note("逐字流式输出，首字通常最快。实时问答建议选择低延迟模型；截图题需要支持图像输入的模型。转录片段、检索到的资料和截图会发送到所填服务。")
-            } else {
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(state.codexLoginStatus).font(.system(size: 13, weight: .medium))
-                        Text("Codex CLI · \(state.codexVersion)").font(.system(size: 11)).foregroundStyle(.secondary)
+            AnswerEngineForm()
+            EngineTestRow()
+        }
+        SettingsSection(title: "自动回答", icon: "text.bubble") {
+            Toggle("对方提问时自动生成回答", isOn: $state.automaticAnswers).onChange(of: state.automaticAnswers) { _, _ in state.updateSettings() }
+            Note("以问号或“吗 / 呢”结尾的问题约 0.6 秒内开始回答；对方补充后半句时自动改答完整问题。拿不准的句子显示为可点击的“可能的问题”。")
+        }
+        AdvancedOptions("answers") {
+            SettingsSection(title: "问题识别", icon: "text.magnifyingglass") {
+                Toggle("不确定的句子交给 API 模型二次判断", isOn: $state.verifyUncertainWithModel)
+                    .disabled(state.answerBackend != .openAICompatible)
+                    .onChange(of: state.verifyUncertainWithModel) { _, _ in state.saveAnswerSettings() }
+                Note("本地规则逐句判断：区分陈述、未说完、提问、请求（“说一下你对…的理解”“walk me through…”）和追问；去掉口头禅，忽略“能听到吗”这类设备确认。课程场景更严格，避免把讲师的自问自答当成提问。")
+            }
+            if state.answerBackend != .openAICompatible {
+                SettingsSection(title: "Codex 运行方式", icon: "terminal") {
+                    Picker("运行方式", selection: $state.answerBackend) {
+                        Text("常驻服务 · 流式（推荐）").tag(AnswerBackend.codexAppServer)
+                        Text("codex exec · 兼容").tag(AnswerBackend.codexExec)
                     }
-                    Spacer()
-                    Button { Task { await state.refreshCodexStatus() } } label: { Image(systemName: "arrow.clockwise").frame(width: 28, height: 28) }
-                        .buttonStyle(SecondaryButtonStyle())
+                    .pickerStyle(.segmented)
+                    .onChange(of: state.answerBackend) { _, _ in state.saveAnswerSettings() }
+                    Note("常驻 `codex app-server` 复用进程与登录，逐字流式显示；不可用时自动回退到 codex exec。exec 每次启动一个进程，等完整结果后显示。")
                 }
-                MenuPicker(title: "回答模型", selection: $state.codexModelID, options: codexModelOptions, placeholder: "请选择模型")
-                    .disabled(state.isAnswering)
-                    .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
-                if state.codexModels.isEmpty {
-                    TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
-                        .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
-                        .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
-                }
-                MenuPicker(title: "推理强度", selection: $state.codexReasoning, options: state.codexEfforts.map { ($0, $0) })
-                    .disabled(state.isAnswering).onChange(of: state.codexReasoning) { _, _ in state.updateSettings() }
-                Note(state.answerBackend == .codexAppServer
-                     ? "常驻 `codex app-server` 复用进程与登录，逐字流式显示；不可用时自动回退到 codex exec。实时问答建议推理强度选 low 或更低。"
-                     : "每次回答启动一次 codex exec，等待完整结果后显示；仅在常驻服务不可用时使用。")
-                if !state.appServerNote.isEmpty { Note(state.appServerNote, color: .orange) }
             }
         }
-        SettingsSection(title: "问题识别", icon: "text.bubble") {
-            Toggle("自动识别问题并回答", isOn: $state.automaticAnswers).onChange(of: state.automaticAnswers) { _, _ in state.updateSettings() }
-            Toggle("不确定的句子交给 API 模型二次判断", isOn: $state.verifyUncertainWithModel)
-                .disabled(state.answerBackend != .openAICompatible)
-                .onChange(of: state.verifyUncertainWithModel) { _, _ in state.saveAnswerSettings() }
-            Note("本地规则逐句判断：区分陈述、未说完、提问、请求（“说一下你对…的理解”“我想了解…”“walk me through…”）和追问；去掉“嗯、那个、um、so”等口头禅；忽略“能听到吗”这类设备确认。以问号或“吗 / 呢”结尾的问题约 0.6 秒内就开始回答；对方补充了后半句时自动用完整问题重新回答；问题前面的铺垫句会一并交给模型。课程场景更严格，避免把讲师的自问自答当成提问。拿不准的句子显示为可点击的“可能的问题”。")
+    }
+}
+
+/// Engine choice and its fields; shared by settings and onboarding.
+struct AnswerEngineForm: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var state = state
+        Picker("引擎", selection: Binding(get: { state.answerBackend == .openAICompatible ? AnswerBackend.openAICompatible : .codexAppServer },
+                                          set: { state.selectAnswerBackend($0) })) {
+            Text("Codex（ChatGPT 账号）").tag(AnswerBackend.codexAppServer)
+            Text("API Key（任意 OpenAI 兼容服务）").tag(AnswerBackend.openAICompatible)
+        }
+        .pickerStyle(.segmented)
+        .disabled(state.isAnswering)
+        if state.answerBackend == .openAICompatible {
+            HStack {
+                TextField("API 地址，例如 https://api.openai.com/v1", text: $state.apiBaseURL)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: state.apiBaseURL) { _, _ in state.saveAnswerSettings() }
+                Menu("常用") {
+                    Button("OpenAI") { state.apiBaseURL = "https://api.openai.com/v1" }
+                    Button("DeepSeek") { state.apiBaseURL = "https://api.deepseek.com/v1" }
+                    Button("通义千问 DashScope") { state.apiBaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1" }
+                    Button("Moonshot Kimi") { state.apiBaseURL = "https://api.moonshot.cn/v1" }
+                    Button("Groq") { state.apiBaseURL = "https://api.groq.com/openai/v1" }
+                    Button("OpenRouter") { state.apiBaseURL = "https://openrouter.ai/api/v1" }
+                    Button("本机 Ollama") { state.apiBaseURL = "http://localhost:11434/v1" }
+                    Button("本机 LM Studio") { state.apiBaseURL = "http://localhost:1234/v1" }
+                }.fixedSize()
+            }
+            TextField("模型 ID（与服务商一致）", text: $state.apiModel)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: state.apiModel) { _, _ in state.saveAnswerSettings() }
+            SecureField("API Key（保存在系统钥匙串）", text: $state.apiKey)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { state.saveAPIKey() }
+                .onChange(of: state.apiKey) { _, _ in state.saveAPIKey() }
+            Note("实时问答建议选低延迟模型；截图题需要支持图像输入的模型。转录片段、检索到的资料和截图会发送到所填服务。")
+        } else {
+            HStack {
+                Image(systemName: state.codexReady ? "checkmark.circle.fill" : "exclamationmark.circle")
+                    .foregroundStyle(state.codexReady ? .green : .orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(state.codexLoginStatus).font(.system(size: 13, weight: .medium)).lineLimit(2)
+                    Text("Codex CLI · \(state.codexVersion)").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button { Task { await state.refreshCodexStatus() } } label: { Image(systemName: "arrow.clockwise").frame(width: 28, height: 28) }
+                    .buttonStyle(SecondaryButtonStyle()).help("重新检测 Codex 登录状态和可用模型")
+            }
+            if !state.codexInstalled {
+                Note("未检测到 Codex：安装 ChatGPT / Codex 桌面客户端，或在终端运行 `npm i -g @openai/codex`，然后 `codex login` 用 ChatGPT 账号登录，再点右侧刷新。", color: .orange)
+            }
+            HStack(spacing: 10) {
+                MenuPicker(title: "模型", selection: $state.codexModelID, options: codexModelOptions, placeholder: "请选择模型")
+                    .disabled(state.isAnswering)
+                    .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
+                MenuPicker(title: "推理强度", selection: $state.codexReasoning, options: state.codexEfforts.map { ($0, $0) })
+                    .disabled(state.isAnswering).onChange(of: state.codexReasoning) { _, _ in state.updateSettings() }
+            }
+            if state.codexModels.isEmpty {
+                TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
+                    .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
+                    .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
+            }
+            Toggle(isOn: $state.codexFastMode) {
+                HStack(spacing: 6) {
+                    Image(systemName: "bolt.fill").foregroundStyle(state.codexFastMode ? Brand.accent : .secondary)
+                    Text("Fast 模式")
+                    Text(state.codexFastLabel).foregroundStyle(.secondary)
+                }
+            }
+            .disabled(state.isAnswering || !state.codexFastAvailable)
+            .onChange(of: state.codexFastMode) { _, _ in state.updateSettings() }
+            Note(state.codexFastAvailable
+                 ? (state.currentCodexModel?.defaultsToFast == true
+                    ? "这个模型默认使用 Fast；关闭后改用标准速度、节省用量。与 Codex 客户端里的“Fast”相同。"
+                    : "与 Codex 客户端里的“Fast”相同：回答更快，消耗 ChatGPT 套餐用量更多。实时问答推荐推理强度 low，需要更快时打开 Fast。")
+                 : "当前模型或 Codex 版本不支持 Fast 模式（需要 ChatGPT 账号登录和较新的 Codex）。")
+            if !state.appServerNote.isEmpty { Note(state.appServerNote, color: .orange) }
         }
     }
 
@@ -379,6 +473,36 @@ private struct AnswerSettings: View {
             options.insert((state.codexModelID, state.codexModelID), at: 0)
         }
         return options
+    }
+}
+
+/// Sends a one-line test question through the configured engine.
+struct EngineTestRow: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Button {
+                Task { await state.testAnswerEngine() }
+            } label: {
+                HStack(spacing: 6) {
+                    if state.engineTest == .running { ProgressView().controlSize(.small) }
+                    Label("测试回答", systemImage: "play.circle")
+                }
+            }
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(state.engineTest == .running || state.isAnswering)
+            switch state.engineTest {
+            case .idle: Text("发一句测试问题，确认引擎能正常回答").font(.system(size: 11)).foregroundStyle(.secondary)
+            case .running: Text("正在请求…").font(.system(size: 11)).foregroundStyle(.secondary)
+            case let .passed(seconds, reply):
+                Label(String(format: "可以使用 · %.1f 秒 · “%@”", seconds, String(reply.prefix(24))), systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 11)).foregroundStyle(.green).lineLimit(1)
+            case let .failed(message):
+                Label(message, systemImage: "xmark.octagon.fill").font(.system(size: 11)).foregroundStyle(.orange).lineLimit(2)
+            }
+            Spacer(minLength: 0)
+        }
     }
 }
 
@@ -413,7 +537,7 @@ private struct OverlaySettings: View {
                 Button("共享可见性测试") { state.runShareVisibilityTest() }.buttonStyle(SecondaryButtonStyle())
                 Button("仅显示提词器") { TeleprompterController.shared.showOnlyTeleprompter() }.buttonStyle(SecondaryButtonStyle())
             }
-            Note("macOS 没有公开 API 能保证窗口不被录屏：此选项对旧式捕获和多数“共享单个窗口”有效，但 macOS 15 起部分基于 ScreenCaptureKit 的整屏共享 / 录屏仍可能拍到。最稳妥的做法是只共享会议窗口或标签页，或者把回答放到手机上（常规 → 手机伴侣）。\(state.shortcutLabel(.panicHide)) 可一键隐藏全部窗口。请遵守会议、考试与面试方的规则。")
+            Note("macOS 无法保证窗口不被录屏：只共享会议窗口或标签页最稳妥，或者用手机看回答（更多 → 手机伴侣）。\(state.shortcutLabel(.panicHide)) 一键隐藏全部窗口。")
         }
     }
 }
@@ -506,6 +630,33 @@ private struct RecordingSettings: View {
     }
 }
 
+// MARK: - More
+
+private struct MoreSettings: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var state = state
+        UpdateSettings()
+        SettingsSection(title: "权限与签名", icon: "lock.shield") {
+            Text(state.capturePermissionStatus).foregroundStyle(state.capturePermissionGranted ? .green : .secondary)
+            HStack {
+                Button("录屏与系统音频…") { state.openCapturePermissionSettings() }.buttonStyle(SecondaryButtonStyle())
+                Button("麦克风…") { state.openMicrophoneSettings() }.buttonStyle(SecondaryButtonStyle())
+                Button("刷新") { Task { await state.refreshSetupStatus() } }.buttonStyle(ChipButtonStyle())
+            }
+            SignatureStatus()
+        }
+        ShortcutSection()
+        CompanionSection()
+        SettingsSection(title: "性能", icon: "gauge.with.dots.needle.33percent") {
+            Toggle("减少视觉特效（更流畅，适合轻薄本 / 省电）", isOn: $state.reducedEffects)
+                .onChange(of: state.reducedEffects) { _, value in UserDefaults.standard.set(value, forKey: "reducedEffects") }
+            Note("关闭液态玻璃的实时折射，改用平面半透明效果。系统“降低透明度”开启时会自动使用。")
+        }
+    }
+}
+
 // MARK: - Updates
 
 private struct UpdateSettings: View {
@@ -543,8 +694,9 @@ private struct UpdateSettings: View {
             .onChange(of: updater.channel) { _, _ in updater.saveSettings(); Task { await updater.check(userInitiated: true) } }
             Toggle("自动检查更新（启动后与每 6 小时；有新版本时在后台下载）", isOn: $updater.automaticChecks)
                 .onChange(of: updater.automaticChecks) { _, _ in updater.saveSettings() }
-            Note("从 GitHub Releases 下载，校验 SHA-256 和签名后再安装；点击“重启并安装”后应用会替换自身并重新打开。若已绑定本机签名，新版本会自动用同一签名重新签名，录屏与麦克风权限保持不变。")
+            Note("从 GitHub Releases 下载，校验 SHA-256 和签名后再安装；已绑定本机签名时，更新后权限保持不变。")
         }
+        AdvancedOptions("updates") {
         SettingsSection(title: "GitHub 访问", icon: "key") {
             HStack {
                 TextField("仓库", text: $updater.repository).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
@@ -559,6 +711,7 @@ private struct UpdateSettings: View {
                 if updater.hasToken { Button("清除") { updater.saveToken("") }.buttonStyle(ChipButtonStyle()) }
             }
             Note("仓库是私有的，检查和下载更新需要授权：在 GitHub → Settings → Developer settings → Fine-grained tokens 新建令牌，只勾选该仓库的 Contents: Read-only。令牌保存在系统钥匙串。已用 GitHub CLI 登录（gh auth login）时可以不填。")
+        }
         }
     }
 

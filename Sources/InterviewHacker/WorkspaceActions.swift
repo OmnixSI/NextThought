@@ -81,8 +81,9 @@ extension AppState {
         Diagnostics.record("workspace.switched", ["mode": sessionMode.rawValue])
     }
 
-    func createWorkspace(mode: SessionMode) {
-        workspaces.create(mode: mode)
+    func createWorkspace(mode: SessionMode, name: String? = nil) {
+        workspaces.create(mode: mode, name: name)
+        tracker.mode = sessionMode
         rebuildContextIndex()
     }
 

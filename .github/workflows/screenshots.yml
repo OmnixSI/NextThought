@@ -44,7 +44,7 @@ jobs:
               main=$(python3 -c "import json;print(json.load(open('$out'))['main'])")
               panel=$(python3 -c "import json;print(json.load(open('$out'))['teleprompter'])")
               screencapture -x -l "$main" "shots/$name-$appearance.png" || echo "window capture failed"
-              if [[ "$section" == assistant && "$panel" != 0 ]]; then
+              if [[ "$name" == assistant && "$panel" != 0 ]]; then
                 screencapture -x -l "$panel" "shots/teleprompter-$appearance.png" || true
                 true
               fi
@@ -78,6 +78,8 @@ jobs:
             capture "$appearance" materials workspace-knowledge "workspaceEditorTab=经验库与题库"
             capture "$appearance" materials workspace-review "workspaceEditorTab=复盘"
             capture "$appearance" settings settings-data "settingsGroup=数据"
+            capture "$appearance" assistant onboarding-welcome "demoOnboarding=1;onboardingStep=0"
+            capture "$appearance" assistant onboarding-engine "demoOnboarding=1;onboardingStep=3"
           done
           ls -la shots
       - name: Commit screenshots to docs/screenshots
