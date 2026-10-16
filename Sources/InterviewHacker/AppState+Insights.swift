@@ -52,7 +52,7 @@ extension AppState {
         var state = LiveInsights.ScreenState(text: text, kind: onSlide ? .slides : nil, relevance: onSlide ? 1 : 0, capturedAt: Date(), judgedByModel: false)
         if decisions.isReady, text.count >= 8 {
             let task = DecisionTasks.screen(text, recent: Array(contextEntries.suffix(3).map(\.contextualText)), mode: sessionMode)
-            if let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline),
+            if let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline(questions: task.questions.count)),
                let verdict = DecisionTasks.screenVerdict(answers) {
                 state.kind = onSlide ? .slides : verdict.kind
                 state.relevance = onSlide ? max(verdict.relevance, 0.6) : verdict.relevance
@@ -122,7 +122,7 @@ extension AppState {
             let list = candidates.map(\.page)
             if decisions.isReady {
                 let task = DecisionTasks.slide(text, candidates: list)
-                if let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline) {
+                if let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline(questions: task.questions.count)) {
                     page = DecisionTasks.slideChoice(answers, candidates: list)
                 }
             }
@@ -211,7 +211,7 @@ extension AppState {
                 var covered = job.covered
                 if decisions.isReady {
                     let task = DecisionTasks.coverage(speech: speech, points: open.prefix(8).map { (index: $0, text: job.points[$0]) })
-                    if let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline) {
+                    if let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline(questions: task.questions.count)) {
                         covered.formUnion(DecisionTasks.covered(answers))
                     }
                 } else {
@@ -232,7 +232,7 @@ extension AppState {
         guard decisions.isReady, insights.liveNotesOn || insights.wrapUpHint, entry.text.count >= 6 else { return }
         let task = DecisionTasks.liveLine(entry.text, isMine: entry.isMe, mode: sessionMode)
         Task {
-            guard let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline),
+            guard let answers = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline(questions: task.questions.count)),
                   let verdict = DecisionTasks.lineVerdict(answers) else { return }
             if insights.liveNotesOn, let kind = verdict.note, verdict.noteProbability >= 0.6 {
                 insights.addNote(LiveNote(kind: kind, text: entry.text, isMine: entry.isMe, date: entry.date))
@@ -274,13 +274,17 @@ extension AppState {
     /// Mac: it would delay every answer.
     func shapeAnswer(_ question: String, skills: [Skill], isRefinement: Bool, answerID: UUID) async -> (hint: String?, skills: [SkillSnippet]) {
         let all = skills.map { SkillSnippet(name: $0.name, content: $0.content) }
-        guard insights.shapeAnswers, decisions.isReady, !isRefinement, let deadline = decisions.budget(.beforeAnswer) else { return (nil, all) }
+        guard insights.shapeAnswers, decisions.isReady, !isRefinement else { return (nil, all) }
         let kindTask = DecisionTasks.questionKind(question, mode: sessionMode)
         var questions = kindTask.questions
         if skills.count >= 2 {
             questions.merge(DecisionTasks.skills(question, skills: skills.map { (name: $0.name, summary: $0.summary) }).questions) { $1 }
         }
-        guard let answers = await decisions.decide(state: kindTask.state, questions: questions, deadline: deadline) else { return (nil, all) }
+        // Each skill is one more question for the model; when they do not fit the wait,
+        // ask only for the question kind and keep every skill.
+        if decisions.budget(.beforeAnswer, questions: questions.count) == nil { questions = kindTask.questions }
+        guard let deadline = decisions.budget(.beforeAnswer, questions: questions.count),
+              let answers = await decisions.decide(state: kindTask.state, questions: questions, deadline: deadline) else { return (nil, all) }
         let kind = DecisionTasks.questionKindChoice(answers)
         if let kind { insights.questionKinds[answerID] = kind }
         let dropped = skills.count >= 2 ? DecisionTasks.unrelatedSkills(answers, count: skills.count) : []
@@ -293,7 +297,7 @@ extension AppState {
     func webAnswerMatches(quick: String, web: String) async -> Bool {
         guard insights.webCheck, decisions.isReady, !quick.isEmpty else { return false }
         let task = DecisionTasks.answersDiffer(quick: quick, web: web)
-        guard let differs = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline)?[DecisionTasks.InsightKey.differs]?.yes else { return false }
+        guard let differs = await decisions.decide(state: task.state, questions: task.questions, deadline: decisions.backgroundDeadline(questions: task.questions.count))?[DecisionTasks.InsightKey.differs]?.yes else { return false }
         return differs < 0.3
     }
 }

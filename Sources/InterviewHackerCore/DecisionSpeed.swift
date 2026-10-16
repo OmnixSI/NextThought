@@ -1,18 +1,21 @@
 import Foundation
 
 /// How fast the decision model answers on this Mac, from its recent calls, and how long
-/// each use may wait for it. Community numbers come from M3 / M4 Max; a base M1 / M2 can
+/// each use may wait for it. Times are kept as one-question equivalents: each extra question
+/// adds about half a one-question call (Laya on an M2 Pro: ~43 ms for one, ~66 for two,
+/// ~89 for three, ~135 for five), so mixing one-question background checks with
+/// three-question utterance checks would otherwise make the tier swing with whatever ran last. Community numbers come from M3 / M4 Max; a base M1 / M2 can
 /// be several times slower, and the answer engine (Codex / API) already takes about a
 /// second to its first token, so anything that delays an answer gets a budget scaled to
 /// the measured speed and is skipped outright on a slow Mac. Background uses (screen,
 /// slides, notes) never block an answer and only get a longer budget.
 public struct DecisionSpeed: Sendable, Equatable {
     public enum Tier: String, Sendable {
-        /// P50 under 30 ms (M-series Max / Pro class).
+        /// Median under 15 ms for a one-question call (M3 / M4 Max class).
         case instant
-        /// Under 80 ms: fine on the answer path with a tight budget.
+        /// Under 50 ms (Laya on an M2 Pro: ~35-45): fine on the answer path with a tight budget.
         case fast
-        /// Under 200 ms: kept off the answer path, background only.
+        /// Under 120 ms: kept off the answer path, background only.
         case slow
         /// Slower still: only the uses that never block (and fewer of them).
         case tooSlow
@@ -46,18 +49,19 @@ public struct DecisionSpeed: Sendable, Equatable {
 
     public init(samples: [Double] = []) { self.samples = Array(samples.suffix(Self.window)) }
 
-    /// A successful call, in milliseconds.
-    public mutating func record(ms: Double) {
-        samples.append(max(0, ms))
+    /// A successful call, in milliseconds, that asked `questions` questions.
+    public mutating func record(ms: Double, questions: Int = 1) {
+        samples.append(max(0, ms) / Self.cost(questions))
         if samples.count > Self.window { samples.removeFirst(samples.count - Self.window) }
     }
 
     /// A call that ran past its deadline: counted as the deadline, so a slow Mac is not
     /// mistaken for a fast one just because its slow calls never return in time.
-    public mutating func recordMiss(deadlineMs: Double) { record(ms: deadlineMs) }
+    public mutating func recordMiss(deadlineMs: Double, questions: Int = 1) { record(ms: deadlineMs, questions: questions) }
 
     public mutating func reset() { samples = [] }
 
+    /// For a one-question call.
     public var p50: Double? { percentile(0.5) }
     public var p90: Double? { percentile(0.9) }
 
@@ -65,28 +69,31 @@ public struct DecisionSpeed: Sendable, Equatable {
     public var tier: Tier? {
         guard samples.count >= 3, let p50 else { return nil }
         switch p50 {
-        case ..<30: return .instant
-        case ..<80: return .fast
-        case ..<200: return .slow
+        case ..<15: return .instant
+        case ..<50: return .fast
+        case ..<120: return .slow
         default: return .tooSlow
         }
     }
 
-    /// Seconds this use may wait, or nil to skip the model and keep the rule.
-    public func budget(for use: Use) -> Double? {
-        let p90 = p90 ?? 0
+    /// Seconds a call asking `questions` questions may wait, or nil to skip the model and
+    /// keep the rule. On the answer path a call that would not finish inside the cap is
+    /// skipped rather than started: it would only miss, and the miss would make this Mac
+    /// look slower than it is.
+    public func budget(for use: Use, questions: Int = 1) -> Double? {
+        let p90 = (p90 ?? 0) * Self.cost(questions)
         switch (use, tier) {
         case (.beforeAnswer, nil):
             // Unmeasured: a short wait at most.
             return 0.12
         case (.beforeAnswer, .instant?), (.beforeAnswer, .fast?):
-            return Self.clamp(p90 * 1.5 + 25, 60, 150) / 1000
+            return Self.within(p90 * 1.5 + 25, 60, 150)
         case (.beforeAnswer, _):
             return nil
         case (.ruleTrigger, nil):
             return 0.3
         case (.ruleTrigger, .instant?), (.ruleTrigger, .fast?):
-            return Self.clamp(p90 * 2 + 40, 100, 300) / 1000
+            return Self.within(p90 * 2 + 40, 100, 300)
         case (.ruleTrigger, _):
             return nil
         case (.uncertainQuestion, nil):
@@ -117,6 +124,14 @@ public struct DecisionSpeed: Sendable, Equatable {
         let sorted = samples.sorted()
         let index = Int((Double(sorted.count - 1) * fraction).rounded())
         return sorted[min(max(index, 0), sorted.count - 1)]
+    }
+
+    /// A call asking `questions` questions, in one-question calls.
+    static func cost(_ questions: Int) -> Double { (1 + Double(max(1, questions))) / 2 }
+
+    /// The wait in seconds, at least `low` ms, or nil when it would exceed `high` ms.
+    private static func within(_ value: Double, _ low: Double, _ high: Double) -> Double? {
+        value > high ? nil : max(value, low) / 1000
     }
 
     private static func clamp(_ value: Double, _ low: Double, _ high: Double) -> Double { min(max(value, low), high) }

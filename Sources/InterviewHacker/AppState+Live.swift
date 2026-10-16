@@ -40,7 +40,7 @@ extension AppState {
         let context = contextEntries.suffix(6).dropLast().map(\.contextualText)
         let previous = questionTexts.last
         let mode = sessionMode
-        guard let deadline = decisions.budget(.uncertainQuestion) else { return }
+        guard let deadline = decisions.budget(.uncertainQuestion, questions: previous == nil ? 2 : 3) else { return }
         Task {
             guard let verdict = await decisions.judgeUtterance(trimmed, context: Array(context), previousQuestion: previous, mode: mode, deadline: deadline),
                   verdict.shouldAnswer, verdict.answerProbability >= 0.75,
@@ -61,7 +61,8 @@ extension AppState {
         case let .trigger(candidate):
             // Clear-cut questions answer at once; the rest wait briefly for the model
             // (a budget set by its measured speed; none on a slow Mac).
-            if decisions.handlesQuestions, candidate.assessment.score < 0.85, let deadline = decisions.budget(.ruleTrigger) {
+            if decisions.handlesQuestions, candidate.assessment.score < 0.85,
+               let deadline = decisions.budget(.ruleTrigger, questions: questionTexts.contains { $0 != candidate.text } ? 3 : 2) {
                 liveCandidate = candidate
                 confirmTrigger(candidate, allowAutomatic: allowAutomatic, deadline: deadline)
                 return
@@ -86,7 +87,7 @@ extension AppState {
             var candidate = candidate
             let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode, deadline: deadline)
             Diagnostics.record("decision.trigger", ["p": verdict?.answerProbability ?? -1, "rule": candidate.assessment.score])
-            if let verdict, !verdict.shouldAnswer, verdict.answerProbability < 0.35 {
+            if let verdict, verdict.declinesTrigger {
                 remember(candidate)
                 recordQuestion(candidate, disposition: "model_declined")
                 return
@@ -166,9 +167,9 @@ extension AppState {
     /// fast API model; both under a short deadline, the rules stand otherwise.
     private func verify(_ candidate: QuestionCandidate) {
         if decisions.handlesQuestions {
-            guard let deadline = decisions.budget(.uncertainQuestion) else { return }
-            let context = Array(contextEntries.suffix(6).map(\.contextualText))
             let previous = questionTexts.last(where: { $0 != candidate.text })
+            guard let deadline = decisions.budget(.uncertainQuestion, questions: previous == nil ? 2 : 3) else { return }
+            let context = Array(contextEntries.suffix(6).map(\.contextualText))
             let mode = sessionMode
             Task {
                 guard let verdict = await decisions.judgeUtterance(candidate.fullText, context: context, previousQuestion: previous, mode: mode, deadline: deadline),

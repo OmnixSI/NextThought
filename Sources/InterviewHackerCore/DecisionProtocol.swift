@@ -113,6 +113,11 @@ public enum DecisionTasks {
         /// Line checks (“can you hear me”) and rhetorical questions.
         public var isLogistics: Bool
         public var shouldAnswer: Bool { answerProbability >= 0.5 && intent.isActionable && !isLogistics }
+        /// Strong enough to drop a question the rules already triggered on. The answer-now
+        /// score runs low on real questions (Laya scored 29 of the corpus's 63 unsure rule
+        /// triggers below 0.35, e.g. 「你期望的薪资是多少」 0.11) while its intent label is
+        /// mostly right, so a veto needs both a non-question label and a very low score.
+        public var declinesTrigger: Bool { answerProbability < 0.15 && (intent == .statement || isLogistics) }
     }
 
     static let intentOptions: [DecisionQuestion.Option] = [

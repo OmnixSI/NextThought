@@ -457,18 +457,18 @@ final class DecisionService {
         }) ?? .data(nil)
         guard case let .data(data) = outcome, let data, let answers = DecisionProtocol.parse(data) else {
             var late = false
-            if case .late = outcome { late = true; speed.recordMiss(deadlineMs: deadline * 1000) }
+            if case .late = outcome { late = true; speed.recordMiss(deadlineMs: deadline * 1000, questions: questions.count) }
             Diagnostics.record("decision.missed", ["questions": questions.count, "late": late])
             return nil
         }
-        speed.record(ms: Date().timeIntervalSince(started) * 1000)
+        speed.record(ms: Date().timeIntervalSince(started) * 1000, questions: questions.count)
         return answers
     }
 
     /// Seconds a use may wait for the model on this Mac; nil means skip it and keep the rule.
-    func budget(_ use: DecisionSpeed.Use) -> Double? { speed.budget(for: use) }
+    func budget(_ use: DecisionSpeed.Use, questions: Int = 1) -> Double? { speed.budget(for: use, questions: questions) }
     /// For uses that never block an answer.
-    var backgroundDeadline: Double { speed.budget(for: .background) ?? 2 }
+    func backgroundDeadline(questions: Int = 1) -> Double { speed.budget(for: .background, questions: questions) ?? 2 }
 
     // MARK: Speed
 
@@ -512,13 +512,13 @@ final class DecisionService {
     }
 
     func needsWebSearch(_ question: String, deadline: Double? = nil) async -> Double? {
-        let deadline = deadline ?? backgroundDeadline
+        let deadline = deadline ?? backgroundDeadline()
         let task = DecisionTasks.webSearch(question, today: AnswerPromptBuilder.todayText())
         return await decide(state: task.state, questions: task.questions, deadline: deadline)?[DecisionTasks.Key.needsWeb]?.yes
     }
 
     func isUserSpeech(_ microphone: String, otherSide: [String], deadline: Double? = nil) async -> Double? {
-        let deadline = deadline ?? backgroundDeadline
+        let deadline = deadline ?? backgroundDeadline()
         let task = DecisionTasks.echo(microphone: microphone, otherSide: otherSide)
         return await decide(state: task.state, questions: task.questions, deadline: deadline)?[DecisionTasks.Key.isUser]?.yes
     }
