@@ -11,7 +11,9 @@ permissions:
 jobs:
   capture:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[screenshots]')
-    runs-on: macos-latest
+    # The maintainer's Mac (docs/SELF-HOSTED-RUNNER.md): windows appear on screen for about
+    # a minute and the runner needs Screen Recording permission. MAC_RUNNER=github to move back.
+    runs-on: ${{ vars.MAC_RUNNER == 'github' && 'macos-latest' || fromJSON('["self-hosted","macOS","ARM64"]') }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +25,8 @@ jobs:
           mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
           cp "$bin" "$app/Contents/MacOS/InterviewHacker"
           cp Resources/Info.plist "$app/Contents/Info.plist"
+          # Demo mode writes tab choices to UserDefaults: keep them out of the installed app.
+          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
           swift scripts/make-icon.swift "$RUNNER_TEMP/AppIcon.iconset" && iconutil -c icns "$RUNNER_TEMP/AppIcon.iconset" -o "$app/Contents/Resources/AppIcon.icns" || true
           codesign --force --sign - "$app"
           echo "APP=$app" >> "$GITHUB_ENV"

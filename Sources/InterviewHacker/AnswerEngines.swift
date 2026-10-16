@@ -373,7 +373,9 @@ final class OpenAICompatibleClient: @unchecked Sendable {
 // MARK: - Keychain
 
 enum KeychainStore {
-    private static let service = "com.interviewhacker.app"
+    /// The app's bundle identifier ("com.interviewhacker.app"); CI builds use their own
+    /// identifier, so tests never read or prompt for the user's real keychain items.
+    private static let service = Bundle.main.bundleIdentifier ?? "com.interviewhacker.app"
 
     static func read(_ account: String) -> String {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,

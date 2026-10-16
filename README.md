@@ -304,6 +304,8 @@ macOS 把权限绑定在应用的签名身份上。最简单：在 设置 → �
 ## 文档
 
 - [开发与发布](docs/DEVELOPMENT.md)：项目结构、构建、打包、签名与公证、发布流程、`--self-test` 自检
+- [用自己的 Mac 当构建机](docs/SELF-HOSTED-RUNNER.md)：`./scripts/setup-ci-runner.sh` 一键注册，构建 / 测试 / 发布不再消耗 GitHub 的 macOS 分钟数
+- [判断模型（JEV）接口](docs/JUDGE-API.md)
 - [v1.3.0 发布说明](docs/releases/v1.3.0.md)
 - [本地语音识别模型调研（2026-10）](docs/ASR-MODELS-2026-10.md)：X-ASR / Qwen3-ASR / FireRedASR2 / SenseVoice / Whisper 对比与实测，回声与抢话处理
 - [第二轮改进说明](docs/IMPROVEMENTS-2026-10-14-round2.md)：流式回答、问题识别、云端识别、手机伴侣等设计与验收清单

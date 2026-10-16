@@ -125,3 +125,7 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 - 系统声音与麦克风分别采集、转换和流式解码，分别标记“对方”和“我”。麦克风首次使用请求系统授权；暂停、恢复、停止同时作用于两路。
 - 转录、导出和发给 Codex 的上下文保留角色；自动问题检测只看系统声音，不做声纹识别，也不区分系统声音中的多位说话者。不戴耳机时扬声器回声由上面的回声检测处理，戴耳机仍是最干净的方式。
 - 回答引擎与模型设置独立于识别模型；Codex 服务失败时显示错误，不静默切换其他回答模型。
+
+## 构建机
+
+GitHub Actions 的 Verify / Release / Screenshots 默认在维护者自己的 Mac 上运行（self-hosted runner），设置方法见 [SELF-HOSTED-RUNNER.md](SELF-HOSTED-RUNNER.md)。仓库变量 `MAC_RUNNER=github` 可改回 GitHub 的 `macos-latest`。CI 里构建的测试应用使用独立的 bundle id `com.interviewhacker.app.ci`，测试数据放在 `~/.interviewhacker-ci`，钥匙串服务名跟随 bundle id，因此不会读写本机已安装应用的设置与密钥。

@@ -44,7 +44,8 @@ jobs:
       startsWith(github.ref, 'refs/tags/') ||
       contains(github.event.head_commit.message, '[release v') ||
       (github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip release]'))
-    runs-on: macos-latest
+    # The maintainer's Mac (docs/SELF-HOSTED-RUNNER.md); MAC_RUNNER=github for GitHub's runners.
+    runs-on: ${{ vars.MAC_RUNNER == 'github' && 'macos-latest' || fromJSON('["self-hosted","macOS","ARM64"]') }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +100,14 @@ jobs:
           # for code signing; Developer ID certificates are already trusted.
           if ! security find-identity -v -p codesigning "$keychain" | grep -q "$IDENTITY"; then
             /usr/bin/openssl pkcs12 -in "$RUNNER_TEMP/cert.p12" -clcerts -nokeys -passin "pass:$P12_PASSWORD" -out "$RUNNER_TEMP/cert.pem"
-            sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+            if sudo -n true 2>/dev/null; then
+              sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
+            else
+              # Self-hosted Mac without password-less sudo: an untrusted identity still
+              # signs when named by its fingerprint.
+              IDENTITY=$(/usr/bin/openssl x509 -in "$RUNNER_TEMP/cert.pem" -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')
+              echo "Signing with certificate fingerprint (not trusted system-wide)."
+            fi
             rm -f "$RUNNER_TEMP/cert.pem"
           fi
           security find-identity -v -p codesigning "$keychain"
@@ -127,7 +135,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir -p "$INTERVIEWHACKER_DATA_DIR"
-          dist/InterviewHacker.app/Contents/MacOS/InterviewHacker --self-test data update --repo "${{ github.repository }}"
+          # A copy with its own identity, so the test never touches the installed app's settings.
+          ci="$RUNNER_TEMP/InterviewHacker-selftest.app"
+          rm -rf "$ci" && cp -R dist/InterviewHacker.app "$ci"
+          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$ci/Contents/Info.plist"
+          codesign --force --deep --sign - "$ci"
+          "$ci/Contents/MacOS/InterviewHacker" --self-test data update --repo "${{ github.repository }}"
       - name: Notarize (optional)
         if: steps.cert.outputs.developer_id == '1'
         env:
@@ -198,3 +211,13 @@ jobs:
           path: dist/InterviewHacker-*
           if-no-files-found: ignore
           retention-days: 14
+      - name: Remove signing keychain
+        if: always()
+        env:
+          KEYCHAIN: ${{ steps.cert.outputs.keychain }}
+        run: |
+          if [[ -n "$KEYCHAIN" ]]; then security delete-keychain "$KEYCHAIN" 2>/dev/null || true; fi
+          # Signing tests register keychains under the CI data folder; take them off
+          # the user's keychain search list again (matters on a self-hosted Mac).
+          keep=$(security list-keychains -d user | tr -d '"' | sed 's/^ *//' | grep -v -e '/ih-selftest/' -e '/.interviewhacker-ci/' -e "$RUNNER_TEMP" || true)
+          [[ -n "$keep" ]] && security list-keychains -d user -s $keep || true
