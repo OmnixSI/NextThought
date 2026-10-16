@@ -2,17 +2,25 @@ import Foundation
 import InterviewHackerCore
 import Observation
 
-/// StartLux-Decision v1.1 Instant sizes. Instant models answer in one read-out (no
-/// thinking), which is what live judgments need; AutoThink models think for seconds.
+/// The local decision models. Laya (multilingual, 322M, a bidirectional encoder) is
+/// the default: about 10 ms a decision on Apple silicon and well under 1 GB. The
+/// StartLux-Decision v1.1 Instant sizes are larger LLM-based models: more general
+/// knowledge, much more memory and time. (AutoThink builds think for seconds, too slow
+/// for live judgments.)
 enum DecisionModelVariant: String, CaseIterable, Identifiable, Codable {
-    case b08 = "0.8B", b2 = "2B", b4 = "4B", b9 = "9B", b27 = "27B"
+    case laya = "Laya", b08 = "0.8B", b2 = "2B", b4 = "4B", b9 = "9B", b27 = "27B"
     var id: String { rawValue }
 
-    /// Estimated download in GB for MLX 8-bit / 4-bit (from the published GGUF sizes;
-    /// the MLX builds keep a small vision tower in BF16). The real size is read from
-    /// Hugging Face before downloading.
+    var isLaya: Bool { self == .laya }
+    var title: String { isLaya ? "Laya 多语言 322M" : "StartLux \(rawValue)" }
+    func displayName(bits: Int) -> String { isLaya ? title : "\(title) \(bits)-bit" }
+
+    /// Estimated download in GB for 8-bit / 4-bit (Laya ships FP16 only; StartLux from
+    /// the published GGUF sizes, the MLX builds keep a small vision tower in BF16). The
+    /// real size is read from Hugging Face before downloading.
     var estimatedGB: (eight: Double, four: Double) {
         switch self {
+        case .laya: (0.7, 0.7)
         case .b08: (0.9, 0.6)
         case .b2: (2.2, 1.4)
         case .b4: (4.7, 2.9)
@@ -21,15 +29,18 @@ enum DecisionModelVariant: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    /// Memory while running (weights + about 1.5 GB), GB, for 8-bit / 4-bit.
+    /// Memory while running, GB, for 8-bit / 4-bit (Laya: 0.69 GB measured peak plus Python).
     var estimatedRAM: (eight: Double, four: Double) {
+        if isLaya { return (1, 1) }
         let size = estimatedGB
         return (size.eight + 1.5, size.four + 1.5)
     }
 
-    /// Decision Index 0.3 (vendor-reported, English benchmarks).
-    var decisionIndex: Double {
+    /// StartLux Decision Index 0.3 (vendor-reported, English benchmarks); Laya publishes
+    /// different benchmarks, so it has none.
+    var decisionIndex: Double? {
         switch self {
+        case .laya: nil
         case .b08: 53.75
         case .b2: 59.14
         case .b4: 67.88
@@ -40,28 +51,29 @@ enum DecisionModelVariant: String, CaseIterable, Identifiable, Codable {
 
     var note: String {
         switch self {
-        case .b08: "最小最快，准确率明显低"
-        case .b2: "8 GB 内存的 Mac 可用"
-        case .b4: "推荐：准确率接近 9B，16 GB 内存的 Mac 也能流畅运行"
+        case .laya: "推荐：最小最快（M3 Max 实测约 7 ms 一次），支持中文等 100 多种语言"
+        case .b08: "StartLux 最小版，准确率明显低"
+        case .b2: "8 GB 内存也能跑；每次判断要几百毫秒"
+        case .b4: "比 Laya 大得多、慢得多，常识更多；16 GB 以上内存"
         case .b9: "更准一些，需要 32 GB 以上内存"
         case .b27: "最准但太大太慢，不适合实时判断"
         }
     }
 
-    func repository(bits: Int) -> String { "startlux-models/StartLux-Decision-v1.1-\(rawValue)-Instant-MLX-\(bits)bit" }
+    var license: String { isLaya ? "Apache-2.0（可商用）" : "CC BY-NC 4.0（仅限非商业用途）" }
 
-    /// 4B 8-bit for most Macs; smaller with little memory, 9B with plenty.
-    static var recommended: (variant: DecisionModelVariant, bits: Int) {
-        let gb = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
-        if gb < 12 { return (.b2, 8) }
-        if gb >= 32 { return (.b9, 8) }
-        return (.b4, 8)
+    func repository(bits: Int) -> String {
+        isLaya ? "aac6fef/laya-multilingual-mlx" : "startlux-models/StartLux-Decision-v1.1-\(rawValue)-Instant-MLX-\(bits)bit"
     }
+
+    /// Laya on every Mac: live judgments run on every sentence, so speed and memory
+    /// matter most. The in-app evaluation shows whether a StartLux size does better.
+    static var recommended: (variant: DecisionModelVariant, bits: Int) { (.laya, 8) }
 }
 
-/// Runs StartLux-Decision for the app: either a local `startlux-decide serve
-/// --backend mlx` (installed into Application Support on first use) or any server the
-/// user points at. Every call has a short deadline; on a miss the caller keeps its
+/// Runs the decision model for the app: locally (Laya through `laya-mlx`, or
+/// `startlux-decide serve --backend mlx`, installed into Application Support on first
+/// use) or any `/v1/systemone` server the user points at. Every call has a short deadline; on a miss the caller keeps its
 /// rule-based result, so a slow or missing model never delays an answer.
 @MainActor
 @Observable
@@ -131,8 +143,13 @@ final class DecisionService {
     // MARK: Paths
 
     private var root: URL { AppPaths.root.appendingPathComponent("decision", isDirectory: true) }
-    private var venv: URL { root.appendingPathComponent("venv", isDirectory: true) }
-    private var executable: URL { venv.appendingPathComponent("bin/startlux-decide") }
+    /// One Python environment per family: their dependencies do not overlap.
+    private func venv(_ variant: DecisionModelVariant) -> URL { root.appendingPathComponent(variant.isLaya ? "laya-venv" : "venv", isDirectory: true) }
+    /// The file whose presence means the runtime is installed.
+    private func runtime(_ variant: DecisionModelVariant) -> URL {
+        venv(variant).appendingPathComponent(variant.isLaya ? "lib/.laya-mlx-installed" : "bin/startlux-decide")
+    }
+    private var layaServer: URL { root.appendingPathComponent("laya_server.py") }
     private func modelFolder(_ variant: DecisionModelVariant, bits: Int) -> URL {
         root.appendingPathComponent("models", isDirectory: true).appendingPathComponent(variant.repository(bits: bits).components(separatedBy: "/").last ?? "model", isDirectory: true)
     }
@@ -140,13 +157,17 @@ final class DecisionService {
 
     func isInstalled(_ variant: DecisionModelVariant, bits: Int) -> Bool {
         let folder = modelFolder(variant, bits: bits)
-        return FileManager.default.isExecutableFile(atPath: executable.path)
-            && FileManager.default.fileExists(atPath: folder.appendingPathComponent("decision_config.json").path)
+        guard FileManager.default.fileExists(atPath: runtime(variant).path) else { return false }
+        if variant.isLaya {
+            let files = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+            return files.contains { $0.hasSuffix(".safetensors") }
+        }
+        return FileManager.default.fileExists(atPath: folder.appendingPathComponent("decision_config.json").path)
     }
 
     var installedModels: [(variant: DecisionModelVariant, bits: Int)] {
         DecisionModelVariant.allCases.flatMap { variant in
-            [8, 4].filter { isInstalled(variant, bits: $0) }.map { (variant: variant, bits: $0) }
+            (variant.isLaya ? [8] : [8, 4]).filter { isInstalled(variant, bits: $0) }.map { (variant: variant, bits: $0) }
         }
     }
 
@@ -226,9 +247,16 @@ final class DecisionService {
         let log = try FileHandle(forWritingTo: logFile)
         log.seekToEndOfFile()
         let process = Process()
-        process.executableURL = executable
-        process.arguments = ["serve", "--model", modelFolder(variant, bits: bits).path, "--backend", "mlx",
-                             "--host", "127.0.0.1", "--port", String(port), "--think-mode", "never", "--no-images"]
+        let folder = modelFolder(variant, bits: bits).path
+        if variant.isLaya {
+            try Self.layaServerScript.write(to: layaServer, atomically: true, encoding: .utf8)
+            process.executableURL = venv(variant).appendingPathComponent("bin/python")
+            process.arguments = ["-I", layaServer.path, folder, String(port)]
+        } else {
+            process.executableURL = runtime(variant)
+            process.arguments = ["serve", "--model", folder, "--backend", "mlx",
+                                 "--host", "127.0.0.1", "--port", String(port), "--think-mode", "never", "--no-images"]
+        }
         process.environment = ProcessInfo.processInfo.environment.merging(["PYTHONUNBUFFERED": "1", "HF_HUB_OFFLINE": "1"]) { $1 }
         process.standardOutput = log
         process.standardError = log
@@ -252,16 +280,16 @@ final class DecisionService {
             defer { self.installTask = nil }
             do {
                 try FileManager.default.createDirectory(at: self.root, withIntermediateDirectories: true)
-                if !FileManager.default.isExecutableFile(atPath: self.executable.path) {
+                if !FileManager.default.fileExists(atPath: self.runtime(variant).path) {
                     self.phase = .installing("正在准备 Python 环境…", nil)
-                    try await self.createEnvironment()
+                    try await self.createEnvironment(variant)
                 }
                 self.phase = .installing("正在查询模型大小…", nil)
                 let expected = await self.repositorySize(repository)
                 self.downloadBytes = expected
                 self.phase = .installing("正在下载 \(repository)" + (expected.map { "（\(ByteCountFormatter.string(fromByteCount: $0, countStyle: .file))）" } ?? ""), 0)
-                try await self.download(repository, to: folder, expected: expected)
-                guard self.isInstalled(variant, bits: bits) else { throw DecisionError.command("下载完成但模型目录不完整（缺少 decision_config.json）") }
+                try await self.download(repository, to: folder, expected: expected, python: self.venv(variant).appendingPathComponent("bin/python").path)
+                guard self.isInstalled(variant, bits: bits) else { throw DecisionError.command("下载完成但模型目录不完整，详情见日志") }
                 Diagnostics.record("decision.installed", ["variant": variant.rawValue, "bits": bits])
                 self.phase = .stopped
                 await self.start()
@@ -285,27 +313,34 @@ final class DecisionService {
         refreshPhase()
     }
 
-    private func createEnvironment() async throws {
-        let python = try await Self.findPython()
-        switch python {
+    private func createEnvironment(_ variant: DecisionModelVariant) async throws {
+        let venv = self.venv(variant)
+        let python = venv.appendingPathComponent("bin/python").path
+        let packages = variant.isLaya ? Self.layaPackages : Self.startLuxPackages
+        switch try await Self.findPython(minimumMinor: variant.isLaya ? 11 : 10) {
         case let .uv(uv):
             try await run(uv, ["venv", "--python", "3.12", venv.path])
-            try await run(uv, ["pip", "install", "--python", venv.appendingPathComponent("bin/python").path] + Self.packages)
+            try await run(uv, ["pip", "install", "--python", python] + packages)
         case let .python(path):
             try await run(path, ["-m", "venv", venv.path])
-            let pip = venv.appendingPathComponent("bin/python").path
-            try await run(pip, ["-m", "pip", "install", "--upgrade", "pip"])
-            try await run(pip, ["-m", "pip", "install"] + Self.packages)
+            try await run(python, ["-m", "pip", "install", "--upgrade", "pip"])
+            try await run(python, ["-m", "pip", "install"] + packages)
         }
-        guard FileManager.default.isExecutableFile(atPath: executable.path) else { throw DecisionError.command("安装后没有找到 startlux-decide，详情见日志") }
+        if variant.isLaya {
+            try await run(python, ["-I", "-c", "import laya_mlx, huggingface_hub"])
+            FileManager.default.createFile(atPath: runtime(variant).path, contents: nil)
+        }
+        guard FileManager.default.fileExists(atPath: runtime(variant).path) else { throw DecisionError.command("安装后没有找到运行环境，详情见日志") }
     }
 
-    static let packages = ["startlux-decide[mlx] @ git+https://github.com/StartLuxLabs/Startlux-Decision", "huggingface_hub>=0.30"]
+    static let startLuxPackages = ["startlux-decide[mlx] @ git+https://github.com/StartLuxLabs/Startlux-Decision", "huggingface_hub>=0.30"]
+    /// Native MLX port of Laya: no PyTorch or Transformers.
+    static let layaPackages = ["laya-mlx>=0.4,<0.5", "huggingface_hub>=0.34"]
 
     enum PythonTool { case uv(String), python(String) }
 
-    /// Python 3.10+ (Homebrew or python.org), or `uv`, which fetches one itself.
-    static func findPython() async throws -> PythonTool {
+    /// `uv` (which fetches a Python itself), else Python 3.`minimumMinor`+ from Homebrew or python.org.
+    static func findPython(minimumMinor: Int) async throws -> PythonTool {
         try await Task.detached(priority: .utility) {
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             for uv in ["/opt/homebrew/bin/uv", "/usr/local/bin/uv", "\(home)/.local/bin/uv", "\(home)/.cargo/bin/uv"] where FileManager.default.isExecutableFile(atPath: uv) {
@@ -314,15 +349,15 @@ final class DecisionService {
             let candidates = ["3.13", "3.12", "3.11", "3.10"].flatMap { ["/opt/homebrew/bin/python\($0)", "/usr/local/bin/python\($0)", "/Library/Frameworks/Python.framework/Versions/\($0)/bin/python3"] }
                 + ["/opt/homebrew/bin/python3", "/usr/local/bin/python3"]
             for path in candidates where FileManager.default.isExecutableFile(atPath: path) {
-                if let result = try? Shell.run(path, ["-c", "import sys; print(sys.version_info >= (3, 10))"], timeout: 10), result.output.contains("True") {
+                if let result = try? Shell.run(path, ["-c", "import sys; print(sys.version_info >= (3, \(minimumMinor)))"], timeout: 10), result.output.contains("True") {
                     return .python(path)
                 }
             }
-            throw DecisionError.command("需要 Python 3.10 或更新版本。在终端运行 brew install python@3.12（或安装 uv：brew install uv），然后再点“下载并启动”。")
+            throw DecisionError.command("需要 Python 3.\(minimumMinor) 或更新版本。在终端运行 brew install uv（或 brew install python@3.12），然后再点“下载并启动”。")
         }.value
     }
 
-    private func download(_ repository: String, to folder: URL, expected: Int64?) async throws {
+    private func download(_ repository: String, to folder: URL, expected: Int64?, python: String) async throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let script = "from huggingface_hub import snapshot_download; snapshot_download(repo_id='\(repository)', local_dir=r'''\(folder.path)''')"
         let progress = Task { [weak self] in
@@ -336,7 +371,7 @@ final class DecisionService {
             }
         }
         defer { progress.cancel() }
-        try await run(venv.appendingPathComponent("bin/python").path, ["-c", script])
+        try await run(python, ["-I", "-c", script])
     }
 
     /// Sum of the repository's files from the Hugging Face API, when reachable.
@@ -434,7 +469,9 @@ final class DecisionService {
     // MARK: The judgments
 
     func judgeUtterance(_ text: String, context: [String], previousQuestion: String?, mode: SessionMode, deadline: Double = 0.9) async -> DecisionTasks.UtteranceVerdict? {
-        let task = DecisionTasks.utterance(text, context: context, previousQuestion: previousQuestion, mode: mode)
+        // Laya reads at most 1,024 tokens; a shorter context keeps the utterance itself in view.
+        let recent = variant.isLaya && source == .local ? context.suffix(3).map { String($0.suffix(160)) } : context
+        let task = DecisionTasks.utterance(text, context: recent, previousQuestion: previousQuestion, mode: mode)
         guard let answers = await decide(state: task.state, questions: task.questions, deadline: deadline) else { return nil }
         return DecisionTasks.utteranceVerdict(answers)
     }
@@ -494,6 +531,75 @@ final class DecisionService {
         """
         Diagnostics.record("decision.evaluated", ["rule": ruleRight, "model": modelRight, "count": samples.count, "median_ms": median])
     }
+}
+
+extension DecisionService {
+    /// `laya-mlx` has no server of its own: this one serves the same `/v1/systemone`
+    /// format as StartLux and Jev on 127.0.0.1, with the Python standard library only.
+    /// The model loads (and answers one warm-up question) before /health turns green.
+    static let layaServerScript = #"""
+    import json
+    import sys
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    import laya_mlx as laya
+
+    model_dir, port = sys.argv[1], int(sys.argv[2])
+    agent = laya.load(model_dir)
+    lock = threading.Lock()
+
+
+    def clean(questions):
+        # Laya takes criteria as labels or {label: description}; empty descriptions become the label.
+        result = {}
+        for key, question in questions.items():
+            question = dict(question)
+            criteria = question.get("criteria")
+            if isinstance(criteria, dict):
+                question["criteria"] = {label: (text or label) for label, text in criteria.items()}
+            result[key] = question
+        return result
+
+
+    with lock:
+        agent.predict("你好", {"warmup": {"type": "noul", "instructions": "Is this a greeting?"}})
+
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def send(self, status, body):
+            data = json.dumps(body, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def do_GET(self):
+            if self.path == "/health":
+                self.send(200, {"status": "ok"})
+            else:
+                self.send(404, {"error": "not found"})
+
+        def do_POST(self):
+            if self.path != "/v1/systemone":
+                return self.send(404, {"error": "not found"})
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(length) or b"{}")
+                with lock:
+                    result = agent.predict(body.get("state", ""), clean(body.get("questions", {})))
+                self.send(200, result)
+            except Exception as error:
+                self.send(400, {"error": str(error)})
+
+
+    print(f"laya server on 127.0.0.1:{port} with {model_dir}", flush=True)
+    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    """#
 }
 
 enum DecisionError: LocalizedError {

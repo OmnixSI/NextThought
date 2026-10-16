@@ -1,24 +1,29 @@
-# 决策模型（StartLux-Decision）
+# 决策模型（Laya / StartLux-Decision）
 
-InterviewHacker 里很多判断原来靠正则和关键词规则：这句是不是在问我、问题说完没有、要不要联网、麦克风这句是不是扬声器回声、两道题是不是同一个问题。[StartLux-Decision](https://decision.startlux.com/)（[代码](https://github.com/StartLuxLabs/Startlux-Decision)）是专门做这类“选择题 / 是非题 / 打分题”的模型：一次前向计算读出每个选项的概率，不生成长文本，所以适合实时判断。
+InterviewHacker 里很多判断原来靠正则和关键词规则：这句是不是在问我、问题说完没有、要不要联网、麦克风这句是不是扬声器回声、两道题是不是同一个问题。决策模型专门回答这类“选择题 / 是非题 / 打分题”：一次计算读出每个选项的概率，不生成文字，所以适合边听边判断。
 
 在 **设置 → 判断** 里可以下载并在这台 Mac 上运行，或连接已有的服务。默认关闭；关闭、没启动、超时或出错时，一切照旧按规则判断。
 
-## 选哪个大小
+## 选哪个
 
-只用 **Instant**（一次读出）版本。AutoThink 版会先“思考”几秒，不适合边听边判断。
-
-| 大小 | 8-bit 磁盘 | 4-bit 磁盘 | 运行时内存（8-bit） | 准确度（官方 Decision Index） | 适合 |
+| 模型 | 磁盘 | 运行内存 | 一次判断 | 许可 | 说明 |
 | --- | --- | --- | --- | --- | --- |
-| 0.8B | ≈ 0.9 GB | ≈ 0.6 GB | ≈ 2.5 GB | 53.8 | 只想试试；准确率明显低 |
-| 2B | ≈ 2.2 GB | ≈ 1.4 GB | ≈ 3.5 GB | 59.1 | 8 GB 内存的 Mac |
-| **4B** | **≈ 4.7 GB** | ≈ 2.9 GB | **≈ 6 GB** | **67.9** | **推荐：16–24 GB 内存** |
-| 9B | ≈ 10 GB | ≈ 6 GB | ≈ 11.5 GB | 70.0 | 32 GB 以上内存 |
-| 27B | ≈ 29 GB | ≈ 17 GB | ≈ 30 GB | 72.8 | 不推荐实时使用：太大、太慢 |
+| **Laya 多语言 322M（推荐）** | **≈ 0.7 GB** | **≈ 1 GB** | **≈ 7 ms**（M3 Max） | **Apache-2.0，可商用** | 双向编码器（mmBERT），100 多种语言 |
+| StartLux 2B Instant 8-bit | ≈ 2.2 GB | ≈ 3.5 GB | 未公布 Mac 数据，估计几百毫秒 | CC BY-NC 4.0，非商业 | 基于大语言模型，常识更多 |
+| StartLux 4B Instant 8-bit | ≈ 4.7 GB | ≈ 6 GB | 同上，更慢 | CC BY-NC 4.0，非商业 | |
+| StartLux 9B Instant 8-bit | ≈ 10 GB | ≈ 11.5 GB | 同上，更慢 | CC BY-NC 4.0，非商业 | 32 GB 以上内存 |
+| StartLux 0.8B / 27B | ≈ 0.9 / 29 GB | | | | 太弱 / 太大，不推荐 |
 
-- 磁盘大小是按参数量估算的（v1 官方 GGUF：Q8 约 0.81 / 2.0 / 4.5 / 9.5 / 28.6 GB），以下载时显示的实际大小为准。另需约 1 GB 的 Python 运行环境。
-- 4B 比 2B 准约 9 个点，只比 9B 低 2 个点，体积不到一半，和语音识别模型、回答引擎同时运行也宽裕，所以是默认推荐。应用会按这台 Mac 的内存自动选：< 12 GB → 2B，≥ 32 GB → 9B，其余 4B。
-- 准确度来自官方英文基准。中文对话的效果请在设置里点 **评测**，用内置的中英文标注语料对比规则和模型。
+**默认推荐 Laya**，任何 Apple Silicon Mac 都适合：
+
+- 实时判断每句话都要跑，0.9 秒内没结果就作废。Laya 在 M3 Max 上单个问题中位 7.4 ms（P95 7.8 ms），峰值显存 688 MiB；较慢的 M1 / M2 估计也在几十毫秒内（[laya-mlx 实测](https://github.com/mizorewww/laya-mlx)）。
+- 体积不到 StartLux 4B 的六分之一，和语音识别模型、回答引擎一起跑没有压力。
+- Apache-2.0，以后商用也没问题；StartLux 权重仅限非商业用途。
+- 中文：社区的中文评测（[zh-decision-bench](https://github.com/CodyQin/zh-decision-bench)）里，多语言版在语音意图路由上准确率 0.88，客服分流、紧急程度等任务 0.55–0.67；中文是非题的置信度偏高（[Laya BENCHMARKS](https://github.com/NandhaKishorM/laya/blob/main/BENCHMARKS.md)）。
+
+StartLux 的优势是常识：比如“这个问题要不要联网”需要知道哪些信息会过时，大语言模型更擅长。如果在 **评测** 里看到 Laya 在你的场景不够准，可以换成 StartLux 2B（8 GB 内存）或 4B（16 GB 以上）试试。StartLux 的官方 Decision Index（英文）：0.8B 53.8、2B 59.1、4B 67.9、9B 70.0、27B 72.8；只用 Instant 版，AutoThink 版会先“思考”几秒。
+
+两者的中文效果都没有覆盖我们的具体任务，请以 **评测** 的结果为准：它用内置的中英文标注语料，对比规则和模型的准确率与耗时。
 
 ## 接管了哪些判断
 
@@ -35,17 +40,18 @@ InterviewHacker 里很多判断原来靠正则和关键词规则：这句是不�
 
 ## 怎么运行
 
-“下载并启动”会：
+“下载并启动”会在 `~/Library/Application Support/InterviewHacker/decision` 里：
 
-1. 在 `~/Library/Application Support/InterviewHacker/decision/venv` 建 Python 环境（优先用 `uv`，否则用 Python 3.10 以上），安装 `startlux-decide[mlx]` 和 `huggingface_hub`；
-2. 从 Hugging Face 下载 `startlux-models/StartLux-Decision-v1.1-<大小>-Instant-MLX-<8|4>bit`；
-3. 启动 `startlux-decide serve --backend mlx --host 127.0.0.1 --port 8790 --think-mode never`，日志在同一目录的 `decision.log`。
+1. 建 Python 环境（优先用 `uv`，否则用 Python 3.11 以上）。Laya 装 [`laya-mlx`](https://pypi.org/project/laya-mlx/)（原生 MLX，不需要 PyTorch），放在 `laya-venv`；StartLux 装 `startlux-decide[mlx]`，放在 `venv`。
+2. 从 Hugging Face 下载模型：Laya 为 `aac6fef/laya-multilingual-mlx`；StartLux 为 `startlux-models/StartLux-Decision-v1.1-<大小>-Instant-MLX-<8|4>bit`。
+3. 在 127.0.0.1:8790 启动服务：Laya 用应用自带的小服务脚本 `laya_server.py`（只用 Python 标准库）；StartLux 用 `startlux-decide serve --backend mlx --think-mode never`。日志在 `decision.log`。
 
-之后每次打开应用会在后台自动启动。也可以在别的机器上运行 `startlux-decide serve`，在设置里选“连接已有的服务”并填地址。
+之后每次打开应用会在后台自动启动。也可以在别的机器上运行任何兼容的服务（`laya-serve`、`startlux-decide serve`），在设置里选“连接已有的服务”并填地址。
 
-接口：`GET /health`，`POST /v1/systemone`，请求体为 `state`（情境文字）和 `questions`（`choice` / `noul` / `score`），应用固定发送 `think_mode: "never"`。请求与解析在 `Sources/InterviewHackerCore/DecisionProtocol.swift`，可在 Linux 上单测。
+接口：`GET /health`，`POST /v1/systemone`，请求体为 `state`（情境文字）和 `questions`（`choice` / `noul` / `score`），Laya、StartLux 和 Jev 用的是同一种格式。请求与解析在 `Sources/InterviewHackerCore/DecisionProtocol.swift`，可在 Linux 上单测。Laya 多语言版最多读 1,024 个 token，所以用 Laya 时只带最近 3 句对话。
 
 ## 许可与隐私
 
-- 模型权重为 **CC BY-NC 4.0**，仅限非商业用途。
-- 在本机运行时，对话文字只发给 127.0.0.1 上的服务。连接其他服务时，文字会发到那台机器；官方在线演示服务不在应用里使用。
+- Laya：Apache-2.0（[Convai Innovations](https://github.com/NandhaKishorM/laya)；Mac 版 [laya-mlx](https://github.com/mizorewww/laya-mlx) 为社区移植，同样 Apache-2.0）。
+- StartLux-Decision：权重 **CC BY-NC 4.0**，仅限非商业用途。
+- 在本机运行时，对话文字只发给 127.0.0.1 上的服务。连接其他服务时，文字会发到那台机器。

@@ -25,7 +25,7 @@
 
 - **联网搜索（v1.5）**：先立刻给出快速回答；问到价格、新闻、版本、现任人员、“今天 / 最近”这类需要最新信息的问题时，在后台联网（Codex 实时搜索或 Tavily），查好后自动换成联网版，可随时切回原回答。
 - **模块可拆可合（v1.5）**：助手页的 实时对话 / 当前问题 / 建议回答 / 回答记录 可以拖动位置、调整大小、隐藏，或拖出窗口变成独立小窗，拖回来就合并。
-- **决策模型（下一版）**：可选下载 [StartLux-Decision](https://decision.startlux.com/) 在本机运行，接管原来靠正则规则做的判断：这句是不是在问我、问题是否说完、要不要联网、麦克风这句是不是回声、题库里是不是重复问题。几十毫秒出结果，超时自动按规则处理。见 [docs/DECISION-MODEL.md](docs/DECISION-MODEL.md)。
+- **决策模型（下一版）**：可选下载 [Laya](https://github.com/NandhaKishorM/laya)（多语言 322M，约 0.7 GB，Apache-2.0）在本机运行，或换成 [StartLux-Decision](https://decision.startlux.com/)，接管原来靠正则规则做的判断：这句是不是在问我、问题是否说完、要不要联网、麦克风这句是不是回声、题库里是不是重复问题。Laya 在 Apple Silicon 上约 10 毫秒一次，超时自动按规则处理。见 [docs/DECISION-MODEL.md](docs/DECISION-MODEL.md)。
 - **API 预设 + 技能（v1.5）**：保存多家服务商（地址、Key、模型、思考强度）一键切换；导入自己的 SKILL.md 全局或按场景使用。
 - **回答更像人话（v1.5）**：按“照着说出口”来写，第一人称、短句，不再是提纲和 AI 套话；你说的话被误判为回声时会灰色显示，点“是我说的”恢复。
 - v1.4：新手引导、设置左右布局、Codex Fast 模式、切换页面不闪烁。v1.3：场景分区与五种模式、会后复盘与自我迭代、数据备份。
@@ -99,7 +99,7 @@
 
 - **API 预设**：保存多家服务商（OpenAI、DeepSeek、通义、Kimi、智谱、豆包、OpenRouter、本机 Ollama…），每个预设有自己的地址、Key（钥匙串）、模型和思考强度（`reasoning_effort`），“获取模型列表”直接从服务商拉取可选模型。
 - **联网搜索**：关闭 / 自动判断 / 每次都查；搜索方式选 Codex 实时搜索（ChatGPT 账号）或 Tavily（填 Key，结果交给当前回答引擎整理并标注来源）。
-- **设置 → 判断**：下载并运行 StartLux 决策模型（按内存推荐大小，默认 4B 8-bit），选择交给它的判断，用内置语料对比规则和模型的准确率与耗时。
+- **设置 → 判断**：下载并运行决策模型（默认 Laya 多语言版，也可选 StartLux 2B–27B），选择交给它的判断，用内置语料对比规则和模型的准确率与耗时。
 
 **设置 → 技能：加载自己的 SKILL.md**
 
@@ -306,7 +306,7 @@ macOS 把权限绑定在应用的签名身份上。最简单：在 设置 → �
 
 - [开发与发布](docs/DEVELOPMENT.md)：项目结构、构建、打包、签名与公证、发布流程、`--self-test` 自检
 - [用自己的 Mac 当构建机](docs/SELF-HOSTED-RUNNER.md)：`./scripts/setup-ci-runner.sh` 一键注册，构建 / 测试 / 发布不再消耗 GitHub 的 macOS 分钟数
-- [决策模型（StartLux-Decision）](docs/DECISION-MODEL.md)：各尺寸占用、推荐、接管了哪些判断、许可
+- [决策模型（Laya / StartLux-Decision）](docs/DECISION-MODEL.md)：各模型占用、推荐、接管了哪些判断、许可
 - [v1.3.0 发布说明](docs/releases/v1.3.0.md)
 - [本地语音识别模型调研（2026-10）](docs/ASR-MODELS-2026-10.md)：X-ASR / Qwen3-ASR / FireRedASR2 / SenseVoice / Whisper 对比与实测，回声与抢话处理
 - [第二轮改进说明](docs/IMPROVEMENTS-2026-10-14-round2.md)：流式回答、问题识别、云端识别、手机伴侣等设计与验收清单

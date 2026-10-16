@@ -538,7 +538,7 @@ private struct ExtrasStep: View {
                     }
                 }
             }
-            Text("想让“这句是不是在问我”“要不要联网”判断得更准，可以在 设置 → 判断 下载 StartLux 决策模型，在这台 Mac 上运行（可选，约 5 GB）。")
+            Text("想让“这句是不是在问我”“要不要联网”判断得更准，可以在 设置 → 判断 下载决策模型 Laya，在这台 Mac 上运行（可选，约 0.7 GB）。")
                 .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .sheet(item: $editing) { skill in SkillEditor(skill: skill) { library.update($0) } }

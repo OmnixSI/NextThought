@@ -94,10 +94,10 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 
 ## 决策模型
 
-可选的 StartLux-Decision 模型接管上面这些规则判断，详见 [DECISION-MODEL.md](DECISION-MODEL.md)：
+可选的决策模型（默认 Laya 多语言版，也可选 StartLux-Decision）接管上面这些规则判断，详见 [DECISION-MODEL.md](DECISION-MODEL.md)：
 
 - `DecisionProtocol` / `DecisionTasks`（Core）：`/v1/systemone` 请求与解析，以及“是不是在问我”“要不要联网”“是不是我说的”“是不是同一个问题”四类判断的 state 与问题。
-- `DecisionService`（应用）：在 `~/Library/Application Support/InterviewHacker/decision` 建 Python 环境（uv 或 Python 3.10+）、安装 `startlux-decide[mlx]`、从 Hugging Face 下载 Instant MLX 模型，启动 `startlux-decide serve --backend mlx` 在 127.0.0.1:8790；也可连接已有服务。每次调用有截止时间（0.9–1.5 s），超时或出错就用规则结果。
+- `DecisionService`（应用）：在 `~/Library/Application Support/InterviewHacker/decision` 建 Python 环境（uv 或 Python 3.11+），Laya 装 `laya-mlx` 并用内置的 `laya_server.py`（标准库 HTTP 服务）提供 `/v1/systemone`，StartLux 装 `startlux-decide[mlx]` 并启动 `startlux-decide serve --backend mlx`，都在 127.0.0.1:8790；也可连接已有服务。每次调用有截止时间（0.9–1.5 s），超时或出错就用规则结果。
 
 ## 回声与抢话
 

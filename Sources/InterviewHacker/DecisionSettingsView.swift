@@ -2,7 +2,7 @@ import AppKit
 import InterviewHackerCore
 import SwiftUI
 
-/// Settings → 判断模型: the StartLux-Decision model that takes over the rule-based
+/// Settings → 判断: the decision model (Laya or StartLux-Decision) that takes over the rule-based
 /// judgments (is this a question for me, does it need the web, is this mic line mine,
 /// are these the same question).
 struct DecisionSettings: View {
@@ -10,13 +10,13 @@ struct DecisionSettings: View {
 
     var body: some View {
         @Bindable var decisions = state.decisions
-        SettingsSection(title: "StartLux 决策模型", icon: "brain") {
+        SettingsSection(title: "决策模型", icon: "brain") {
             Toggle("用决策模型做判断", isOn: $decisions.enabled)
                 .onChange(of: decisions.enabled) { _, on in
                     decisions.save()
                     if on { Task { await decisions.start() } } else { decisions.stop() }
                 }
-            Note("原来靠正则和关键词规则做的判断，交给专门做“选择题”的小模型：一次读出每个选项的概率，几十毫秒出结果，不写长文。规则仍是兜底：模型没开、没启动、超时（约 1 秒）或出错时，照常按规则处理，不会拖慢回答。")
+            Note("原来靠正则和关键词规则做的判断，交给专门做“选择题”的模型：一次读出每个选项的概率，不生成文字。规则仍是兜底：模型没开、没启动、超时（约 1 秒）或出错时，照常按规则处理，不会拖慢回答。")
             Picker("运行在", selection: $decisions.source) {
                 ForEach(DecisionService.Source.allCases) { Text($0.title).tag($0) }
             }
@@ -46,9 +46,14 @@ struct DecisionSettings: View {
         }
         DecisionEvaluationSection()
         SettingsSection(title: "许可与隐私", icon: "doc.text") {
-            Note("模型权重使用 CC BY-NC 4.0 许可，仅限非商业用途。官方基准以英文为主，中文效果请用上面的“评测”在这台 Mac 上实测。")
+            Note("Laya（Convai Innovations，Mac 版由社区移植为 laya-mlx）使用 Apache-2.0 许可，可商用。StartLux-Decision 权重使用 CC BY-NC 4.0，仅限非商业用途。两者的中文效果都请用上面的“评测”在这台 Mac 上实测。")
             Note("在这台 Mac 上运行时，对话文本只发给本机 127.0.0.1 的服务，不会上传。连接其他服务时，文本会发给那台机器。")
-            Link("项目主页与论文", destination: URL(string: "https://decision.startlux.com/")!).font(.system(size: 12))
+            HStack(spacing: 14) {
+                Link("Laya", destination: URL(string: "https://github.com/NandhaKishorM/laya")!)
+                Link("laya-mlx", destination: URL(string: "https://github.com/mizorewww/laya-mlx")!)
+                Link("StartLux-Decision", destination: URL(string: "https://decision.startlux.com/")!)
+            }
+            .font(.system(size: 12))
         }
     }
 }
@@ -63,25 +68,27 @@ private struct DecisionModelPicker: View {
         let memory = Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("模型大小").font(.system(size: 12, weight: .medium))
+                Text("模型").font(.system(size: 12, weight: .medium))
                 Spacer()
-                Picker("精度", selection: $decisions.bits) {
-                    Text("8-bit（推荐）").tag(8)
-                    Text("4-bit（更小）").tag(4)
+                if !decisions.variant.isLaya {
+                    Picker("StartLux 精度", selection: $decisions.bits) {
+                        Text("8-bit（推荐）").tag(8)
+                        Text("4-bit（更小）").tag(4)
+                    }
+                    .labelsHidden().pickerStyle(.segmented).frame(width: 220)
+                    .onChange(of: decisions.bits) { _, _ in decisions.save(); decisions.stop() }
                 }
-                .labelsHidden().pickerStyle(.segmented).frame(width: 220)
-                .onChange(of: decisions.bits) { _, _ in decisions.save(); decisions.stop() }
             }
             ForEach(DecisionModelVariant.allCases) { variant in
                 DecisionVariantRow(variant: variant, bits: decisions.bits, selected: decisions.variant == variant,
-                                   recommended: recommended.variant == variant && recommended.bits == decisions.bits,
+                                   recommended: recommended.variant == variant && (variant.isLaya || recommended.bits == decisions.bits),
                                    installed: decisions.isInstalled(variant, bits: decisions.bits)) {
                     decisions.variant = variant
                     decisions.save()
                     decisions.stop()
                 }
             }
-            Note(String(format: "这台 Mac 有 %.0f GB 内存，推荐 %@ %d-bit。大小为估算值，以下载时显示的为准。首次下载还会安装约 1 GB 的 Python 运行环境（需要 uv 或 Python 3.10 以上），都放在应用数据目录里。", memory, recommended.variant.rawValue, recommended.bits))
+            Note(String(format: "这台 Mac 有 %.0f GB 内存。实时判断每句话都要跑，所以推荐又小又快的 Laya；StartLux 是大模型，常识更多，但占用和耗时大得多。大小为估算值，以下载时显示的为准。首次下载还会安装 Python 运行环境（Laya 约 300 MB，StartLux 约 1 GB；需要 uv 或 Python 3.11 以上），都放在应用数据目录里。", memory))
         }
     }
 }
@@ -101,15 +108,16 @@ private struct DecisionVariantRow: View {
             HStack(spacing: 10) {
                 Image(systemName: selected ? "largecircle.fill.circle" : "circle")
                     .foregroundStyle(selected ? Brand.accent : .secondary)
-                Text(variant.rawValue).font(.system(size: 13, weight: .semibold)).frame(width: 40, alignment: .leading)
+                Text(variant.title).font(.system(size: 13, weight: .semibold)).frame(width: 130, alignment: .leading)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(String(format: "约 %.1f GB 磁盘 · 运行约 %.0f GB 内存 · 准确度 %.1f", disk, memory, variant.decisionIndex))
+                        Text(String(format: "约 %.1f GB 磁盘 · 运行约 %.0f GB 内存", disk, memory)
+                             + (variant.decisionIndex.map { String(format: " · DI %.1f", $0) } ?? ""))
                             .font(.system(size: 12)).monospacedDigit()
                         if recommended { DecisionBadge("推荐", color: Brand.accent) }
                         if installed { DecisionBadge("已下载", color: .green) }
                     }
-                    Text(variant.note).font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text("\(variant.note) · \(variant.license)").font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }
@@ -143,7 +151,7 @@ private struct DecisionStatusRow: View {
                 switch decisions.phase {
                 case .notInstalled:
                     if decisions.source == .local {
-                        Button { decisions.install() } label: { Label("下载并启动 \(decisions.variant.rawValue)", systemImage: "arrow.down.circle") }
+                        Button { decisions.install() } label: { Label("下载并启动 \(decisions.variant.title)", systemImage: "arrow.down.circle") }
                             .buttonStyle(PrimaryButtonStyle())
                     }
                 case .installing:
@@ -158,7 +166,7 @@ private struct DecisionStatusRow: View {
                     }
                 case .starting:
                     ProgressView().controlSize(.small)
-                    Text("正在启动（首次加载模型约半分钟）…").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(decisions.variant.isLaya ? "正在启动…" : "正在启动（首次加载模型约半分钟）…").font(.system(size: 12)).foregroundStyle(.secondary)
                 case .running:
                     Button { decisions.stop() } label: { Label("停止", systemImage: "stop.fill") }.buttonStyle(SecondaryButtonStyle())
                 }
@@ -182,7 +190,7 @@ private struct DecisionStatusRow: View {
 
     private func statusText(_ decisions: DecisionService) -> String {
         switch decisions.phase {
-        case .notInstalled: decisions.source == .local ? "还没有下载 \(decisions.variant.rawValue) \(decisions.bits)-bit。" : "未连接"
+        case .notInstalled: decisions.source == .local ? "还没有下载 \(decisions.variant.displayName(bits: decisions.bits))。" : "未连接"
         case .installing: "下载可以随时取消，已下载的部分会保留。"
         case .stopped: decisions.enabled ? "已停止：现在按规则判断。" : "已下载；打开上面的开关后使用。"
         case .starting: "启动期间按规则判断。"
