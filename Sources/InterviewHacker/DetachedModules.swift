@@ -1,16 +1,13 @@
 import AppKit
 import SwiftUI
 
-/// Windows for modules popped out of the assistant page. Moving one over the main
-/// window and letting go docks it back where it was dropped; closing it docks it too.
+/// Windows for modules popped out of the assistant page (模块 menu). “合并回主窗口”
+/// or closing the window docks the module back.
 @MainActor
 final class DetachedModuleController: NSObject, NSWindowDelegate {
     static let shared = DetachedModuleController()
 
     private var panels: [AssistantModule: NSPanel] = [:]
-    /// Screen point (top-left) for the next window of a module, from a drag-out.
-    var pendingOrigin: [AssistantModule: NSPoint?] = [:]
-    private var settleTask: Task<Void, Never>?
     /// Closing programmatically (dock) must not dock again from `windowWillClose`.
     private var closingByDock: Set<AssistantModule> = []
 
@@ -40,12 +37,7 @@ final class DetachedModuleController: NSObject, NSWindowDelegate {
         panel.delegate = self
         panel.contentView = NSHostingView(rootView: DetachedModuleView(module: module).environment(state))
         panel.setFrameAutosaveName("InterviewHacker.Module.\(module.rawValue)")
-        if let origin = pendingOrigin[module] ?? nil {
-            panel.setFrameTopLeftPoint(NSPoint(x: origin.x - 40, y: origin.y + 16))
-        } else if !panel.setFrameUsingName("InterviewHacker.Module.\(module.rawValue)") {
-            panel.center()
-        }
-        pendingOrigin[module] = nil
+        if !panel.setFrameUsingName("InterviewHacker.Module.\(module.rawValue)") { panel.center() }
         panels[module] = panel
         panel.makeKeyAndOrderFront(nil)
     }
@@ -55,7 +47,6 @@ final class DetachedModuleController: NSObject, NSWindowDelegate {
         closingByDock.insert(module)
         panel.close()
         closingByDock.remove(module)
-        if AppState.shared.dockHoverModule == module { AppState.shared.dockHoverModule = nil }
     }
 
     func applyPrivacy(_ enabled: Bool) {
@@ -76,42 +67,12 @@ final class DetachedModuleController: NSObject, NSWindowDelegate {
         panels.first { $0.value === window }?.key
     }
 
-    private var mainWindow: NSWindow? { NSApp.windows.first { MainWindowLayout.isMainWindow($0) && $0.isVisible } }
-
     // MARK: NSWindowDelegate
 
     func windowWillClose(_ notification: Notification) {
         guard let module = module(of: notification.object as? NSWindow), !closingByDock.contains(module) else { return }
         panels[module] = nil
         AppState.shared.dockModule(module)
-    }
-
-    /// While a module window is dragged over the main window, highlight it; once the
-    /// drag ends there (button up, no more movement), dock the module at that spot.
-    func windowDidMove(_ notification: Notification) {
-        guard let panel = notification.object as? NSPanel, let module = module(of: panel), let main = mainWindow else { return }
-        let pointer = NSEvent.mouseLocation
-        let over = main.frame.contains(pointer) && main.isOnActiveSpace
-        AppState.shared.dockHoverModule = over ? module : (AppState.shared.dockHoverModule == module ? nil : AppState.shared.dockHoverModule)
-        guard over else { return }
-        settleTask?.cancel()
-        settleTask = Task { [weak self] in
-            // Wait for the drag to finish.
-            while NSEvent.pressedMouseButtons & 1 == 1 {
-                try? await Task.sleep(for: .milliseconds(80))
-                if Task.isCancelled { return }
-            }
-            guard let self, !Task.isCancelled, self.panels[module] === panel else { return }
-            let pointer = NSEvent.mouseLocation
-            guard let main = self.mainWindow, main.frame.contains(pointer) else {
-                AppState.shared.dockHoverModule = nil
-                return
-            }
-            let local = CGPoint(x: pointer.x - main.frame.minX, y: main.frame.maxY - pointer.y)
-            let target = AppState.shared.dropTarget(at: local, windowWidth: main.frame.width, excluding: module)
-            AppState.shared.dockHoverModule = nil
-            AppState.shared.dockModule(module, column: target.column, index: target.index)
-        }
     }
 }
 
@@ -130,7 +91,6 @@ struct DetachedModuleView: View {
                     Spacer()
                     Button { state.dockModule(module) } label: { Label("合并回主窗口", systemImage: "arrow.down.right.and.arrow.up.left") }
                         .buttonStyle(ChipButtonStyle())
-                        .help("也可以把这个窗口拖回主窗口里松开")
                 }
                 .padding(.horizontal, 10).padding(.top, 6)
                 AssistantModuleContent(module: module, detached: true)

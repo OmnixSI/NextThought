@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
 
-/// The assistant page's building blocks; each can be shown, hidden, resized, moved
-/// between the two columns or popped out into its own window.
+/// The assistant page's building blocks; each can be shown, hidden, resized (drag the
+/// gaps), moved between the two columns or popped out into its own window.
 enum AssistantModule: String, CaseIterable, Codable, Identifiable {
     case conversation, question, answer, history, insights
     var id: String { rawValue }
@@ -48,12 +48,13 @@ struct AssistantLayout: Codable, Equatable {
     ])
 
     enum Preset: String, CaseIterable, Identifiable {
-        case standard, answerFirst, stacked, answerOnly
+        case standard, answerFirst, presenting, stacked, answerOnly
         var id: String { rawValue }
         var title: String {
             switch self {
             case .standard: "对话在左 · 回答在右（默认）"
             case .answerFirst: "回答在左 · 对话在右"
+            case .presenting: "讲稿在左 · 回答在右（演讲 / 答辩）"
             case .stacked: "单栏上下排列（小屏）"
             case .answerOnly: "只看回答"
             }
@@ -62,6 +63,7 @@ struct AssistantLayout: Codable, Equatable {
             switch self {
             case .standard: "对话 | 回答"
             case .answerFirst: "回答 | 对话"
+            case .presenting: "讲稿 | 回答"
             case .stacked: "单栏"
             case .answerOnly: "只看回答"
             }
@@ -72,6 +74,9 @@ struct AssistantLayout: Codable, Equatable {
             case .answerFirst: AssistantLayout(slots: [
                 Slot(module: .question, column: 0, weight: 1), Slot(module: .answer, column: 0, weight: 1),
                 Slot(module: .conversation, column: 1, weight: 1), Slot(module: .history, column: 1, weight: 0.5)], split: 0.58)
+            case .presenting: AssistantLayout(slots: [
+                Slot(module: .insights, column: 0, weight: 1.4), Slot(module: .conversation, column: 0, weight: 0.6),
+                Slot(module: .question, column: 1, weight: 1), Slot(module: .answer, column: 1, weight: 1)], split: 0.5)
             case .stacked: AssistantLayout(slots: [
                 Slot(module: .question, column: 0, weight: 1), Slot(module: .answer, column: 0, weight: 1.3),
                 Slot(module: .conversation, column: 0, weight: 1), Slot(module: .history, column: 0, weight: 0.45)])
@@ -161,8 +166,7 @@ extension AppState {
         for module in wasDetached.subtracting(nowDetached) { DetachedModuleController.shared.close(module) }
     }
 
-    func detachModule(_ module: AssistantModule, at screenPoint: NSPoint? = nil) {
-        DetachedModuleController.shared.pendingOrigin[module] = screenPoint
+    func detachModule(_ module: AssistantModule) {
         updateLayout { $0.detach(module) }
         Diagnostics.record("layout.detached", ["module": module.rawValue])
     }
@@ -173,28 +177,5 @@ extension AppState {
             layout.place(module, column: column, index: index)
         }
         Diagnostics.record("layout.docked", ["module": module.rawValue])
-    }
-
-    /// Where a module dropped at `point` (window coordinates) lands: before or after
-    /// the module under the pointer, else at the end of the column under it.
-    func dropTarget(at point: CGPoint, windowWidth: CGFloat, excluding module: AssistantModule) -> (column: Int, index: Int) {
-        let layout = assistantLayout
-        for column in 0...1 {
-            let slots = layout.slots(in: column).filter { $0.module != module }
-            for (index, slot) in slots.enumerated() {
-                guard let frame = moduleFrames[slot.module], frame.insetBy(dx: -6, dy: -6).contains(point) else { continue }
-                return (column, point.y < frame.midY ? index : index + 1)
-            }
-        }
-        let left = layout.slots(in: 0).compactMap { moduleFrames[$0.module] }.reduce(CGRect.null) { $0.union($1) }
-        let right = layout.slots(in: 1).compactMap { moduleFrames[$0.module] }.reduce(CGRect.null) { $0.union($1) }
-        let column: Int
-        if !left.isNull, !right.isNull { column = point.x < (left.maxX + right.minX) / 2 ? 0 : 1 }
-        else if layout.usesTwoColumns == false, !left.isNull || !right.isNull {
-            // One column on screen: dropping in the outer third opens a second column there.
-            let occupied = left.isNull ? 1 : 0
-            if point.x < windowWidth / 3 { column = 0 } else if point.x > windowWidth * 2 / 3 { column = 1 } else { column = occupied }
-        } else { column = 1 }
-        return (column, .max)
     }
 }

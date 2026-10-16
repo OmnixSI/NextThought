@@ -109,13 +109,6 @@ final class AppState {
 
     // MARK: Assistant layout
     var assistantLayout = AssistantLayout.load()
-    /// Module frames in window coordinates, for drop targets.
-    @ObservationIgnored var moduleFrames: [AssistantModule: CGRect] = [:]
-    /// A detached window hovering over the main window (shows the dock highlight).
-    var dockHoverModule: AssistantModule?
-    /// A docked module being dragged by its grip, and whether it is outside the window.
-    var draggingModule: AssistantModule?
-    var dragIsOutside = false
 
     // MARK: Web search
     var webSearchMode = WebSearchMode(rawValue: UserDefaults.standard.string(forKey: "webSearchMode") ?? "") ?? .auto
