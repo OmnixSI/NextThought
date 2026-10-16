@@ -331,7 +331,7 @@ final class OpenAICompatibleClient: @unchecked Sendable {
         session = URLSession(configuration: configuration)
     }
 
-    func answer(_ request: AnswerRequest, baseURL: String, apiKey: String, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
+    func answer(_ request: AnswerRequest, baseURL: String, apiKey: String, reasoningEffort: String? = nil, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
         guard let endpoint = ChatCompletionStreamParser.endpoint(from: baseURL) else { throw AnswerEngineError.invalidEndpoint }
         let isLocal = ["localhost", "127.0.0.1", "::1"].contains(endpoint.host?.lowercased() ?? "")
         guard isLocal || !apiKey.isEmpty else { throw AnswerEngineError.missingKey }
@@ -341,7 +341,7 @@ final class OpenAICompatibleClient: @unchecked Sendable {
         urlRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         if !apiKey.isEmpty { urlRequest.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization") }
         let image = try request.imageURL.map { try Data(contentsOf: $0).base64EncodedString() }
-        urlRequest.httpBody = ChatCompletionStreamParser.body(model: request.model, system: request.system, user: request.user, imageJPEGBase64: image)
+        urlRequest.httpBody = ChatCompletionStreamParser.body(model: request.model, system: request.system, user: request.user, imageJPEGBase64: image, reasoningEffort: reasoningEffort)
 
         let (bytes, response) = try await session.bytes(for: urlRequest)
         guard let http = response as? HTTPURLResponse else { throw AnswerEngineError.empty }

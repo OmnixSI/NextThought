@@ -92,6 +92,11 @@ final class AppState {
     var apiBaseURL = UserDefaults.standard.string(forKey: "apiBaseURL") ?? "https://api.openai.com/v1"
     var apiModel = UserDefaults.standard.string(forKey: "apiModel") ?? ""
     var apiKey = KeychainStore.read("answer.api")
+    var apiReasoningEffort = "default"
+    var apiPresets: [APIPreset] = []
+    var activeAPIPresetID: UUID?
+    var apiModelChoices: [String] = []
+    var apiModelsStatus = ""
     var appServerNote = ""
     var codexModels: [CodexModelOption] = []
     var codexModelID = UserDefaults.standard.string(forKey: "codexModelID") ?? ""
@@ -284,6 +289,7 @@ final class AppState {
     private init() {
         Diagnostics.record("app.launch", ["bundle_id": Bundle.main.bundleIdentifier ?? "unknown"])
         if !DemoMode.isEnabled { workspaces.load() }
+        loadAPIPresets()
         archive.load()
         rebuildContextIndex()
         audio.onSegment = { [weak self] event in
@@ -673,7 +679,7 @@ final class AppState {
         requestID = id
         Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue, "supersede": supersede])
 
-        let context = recentContext ?? TranscriptContextBuilder.recent(entries.map { (date: $0.date, text: $0.contextualText) })
+        let context = recentContext ?? TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
         let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
         selectedExcerpts = excerpts
         let workspace = activeWorkspace
@@ -751,7 +757,7 @@ final class AppState {
     func runAnswer(_ request: AnswerRequest, backend: AnswerBackend, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
         switch backend {
         case .openAICompatible:
-            return try await apiClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey, onDelta: onDelta)
+            return try await apiClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey, reasoningEffort: apiEffortParameter, onDelta: onDelta)
         case .codexExec:
             return try await codex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, imageURL: request.imageURL, serviceTier: request.serviceTier) { text in onDelta(text) }
         case .codexAppServer:
@@ -949,7 +955,7 @@ final class AppState {
         panel.allowedContentTypes = [.plainText]
         panel.nameFieldStringValue = "InterviewHacker-Transcript-\(Date.now.formatted(.iso8601.year().month().day())).txt"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        let text = entries.map { "[\($0.date.formatted(date: .omitted, time: .shortened))] \($0.roleLabel): \($0.text)" }.joined(separator: "\n")
+        let text = contextEntries.map { "[\($0.date.formatted(date: .omitted, time: .shortened))] \($0.roleLabel): \($0.text)" }.joined(separator: "\n")
         do {
             try text.write(to: url, atomically: true, encoding: .utf8)
         } catch {

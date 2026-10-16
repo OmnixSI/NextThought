@@ -217,8 +217,15 @@ private struct TranscriptStatusLine: View {
     var body: some View {
         HStack(spacing: 6) {
             Text(state.isRunning ? state.transcriptionStatus : "未在采集")
+            if !state.microphoneEnabled {
+                Text("· 麦克风未开启，不会显示你说的话").foregroundStyle(.orange)
+                    .help("在“准备开始”卡片里点麦克风按钮，或在 设置 → 基础 → 音频来源 打开")
+            } else if state.microphoneAccess == .denied {
+                Button("· 麦克风未授权，点此打开系统设置") { state.openMicrophoneSettings() }
+                    .buttonStyle(.plain).foregroundStyle(.orange)
+            }
             if state.echoDroppedCount > 0 {
-                Text("· 已忽略 \(state.echoDroppedCount) 段回声").help("麦克风收到的扬声器声音（对方说的话）不会记为“我”")
+                Text("· \(state.echoDroppedCount) 句疑似回声").help("和对方刚说的话几乎一样的麦克风文字被当作扬声器回声，灰色显示、不参与回答；如果是你说的，点那一行的“是我说的”")
             }
             if state.droppedAudioSegments > 0 {
                 Text("· 遗漏 \(state.droppedAudioSegments) 段").foregroundStyle(.orange)
@@ -245,9 +252,25 @@ private struct ConversationBubble: View {
     @State private var hovering = false
 
     var body: some View {
+        if entry.suspectedEcho == true { echoLine } else { bubble }
+    }
+
+    /// Microphone text that matched the other side: dimmed, one click to keep it.
+    private var echoLine: some View {
+        HStack(spacing: 6) {
+            Spacer(minLength: 40)
+            Image(systemName: "speaker.wave.2").font(.system(size: 10)).foregroundStyle(.tertiary)
+            Text(entry.text).font(.system(size: 11.5)).foregroundStyle(.tertiary).lineLimit(1).strikethrough(color: .secondary.opacity(0.4))
+            Button("是我说的") { state.markNotEcho(entry.id) }
+                .buttonStyle(.plain).font(.system(size: 11, weight: .medium)).foregroundStyle(Brand.accent)
+        }
+        .help("这句和对方刚说的话很像，被当作扬声器回声忽略了（不参与回答）。如果是你说的，点“是我说的”。")
+    }
+
+    private var bubble: some View {
         let isMe = entry.isMe
         let isQuestion = !isMe && state.isQuestionText(entry.text)
-        HStack(alignment: .bottom, spacing: 6) {
+        return HStack(alignment: .bottom, spacing: 6) {
             if isMe { Spacer(minLength: 40) }
             VStack(alignment: isMe ? .trailing : .leading, spacing: 3) {
                 HStack(spacing: 5) {

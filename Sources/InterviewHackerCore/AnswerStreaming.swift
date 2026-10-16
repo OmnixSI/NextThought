@@ -213,18 +213,21 @@ public struct ChatCompletionStreamParser: Sendable {
     }
 
     /// Request body. The image is sent inline as a data URL when present.
-    public static func body(model: String, system: String, user: String, imageJPEGBase64: String?, temperature: Double = 0.3) -> Data {
+    /// `reasoningEffort` goes out as `reasoning_effort`; reasoning models reject a custom
+    /// temperature, so it is left out when an effort is set.
+    public static func body(model: String, system: String, user: String, imageJPEGBase64: String?, temperature: Double = 0.3,
+                            reasoningEffort: String? = nil) -> Data {
         var content: Any = user
         if let imageJPEGBase64 {
             content = [["type": "text", "text": user],
                        ["type": "image_url", "image_url": ["url": "data:image/jpeg;base64," + imageJPEGBase64]]]
         }
-        let object: [String: Any] = [
+        var object: [String: Any] = [
             "model": model,
             "stream": true,
-            "temperature": temperature,
             "messages": [["role": "system", "content": system], ["role": "user", "content": content]],
         ]
+        if let reasoningEffort, !reasoningEffort.isEmpty { object["reasoning_effort"] = reasoningEffort } else { object["temperature"] = temperature }
         return (try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])) ?? Data()
     }
 
@@ -238,5 +241,19 @@ public struct ChatCompletionStreamParser: Sendable {
         // Plain HTTP only for local servers (Ollama / LM Studio); never send keys in clear text.
         if scheme == "http", !["localhost", "127.0.0.1", "::1"].contains(url.host?.lowercased() ?? "") { return nil }
         return url
+    }
+}
+
+
+/// `GET /models` of OpenAI-compatible services: `{"data":[{"id":…}]}` (OpenAI, DeepSeek,
+/// OpenRouter…) or `{"models":[{"name"|"id":…}]}` (some local servers).
+public enum ModelListParser {
+    public static func ids(from data: Data) -> [String] {
+        guard let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
+        let items = (root["data"] as? [[String: Any]]) ?? (root["models"] as? [[String: Any]]) ?? []
+        var seen = Set<String>()
+        return items.compactMap { ($0["id"] as? String) ?? ($0["name"] as? String) }
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 }

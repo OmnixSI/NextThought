@@ -210,7 +210,7 @@ enum DataBackup {
 
     private static func writeSecrets(into staging: URL) throws {
         var secrets: [String: String] = [:]
-        for account in SettingsSnapshot.secretAccounts {
+        for account in SettingsSnapshot.secretAccounts + APIPreset.loadAll().map(\.keyAccount) {
             let value = KeychainStore.read(account)
             if !value.isEmpty { secrets[account] = value }
         }
@@ -230,7 +230,7 @@ enum DataBackup {
         guard let data = try? Data(contentsOf: url),
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String] else { return 0 }
         var applied = 0
-        for (account, value) in values where SettingsSnapshot.secretAccounts.contains(account) {
+        for (account, value) in values where SettingsSnapshot.isSecretAccount(account) {
             if KeychainStore.write(value, account: account) { applied += 1 }
         }
         return applied

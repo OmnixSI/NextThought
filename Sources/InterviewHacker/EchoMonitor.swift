@@ -10,9 +10,11 @@ final class EchoMonitor: @unchecked Sendable {
     private var systemLevel: Float = 0
     private var microphoneLevel: Float = 0
     private var echo = false
+    /// Recent per-chunk echo flags, to judge a whole utterance afterwards.
+    private var history: [(date: Date, echo: Bool)] = []
 
     func reset() {
-        lock.withLock { monitor.reset(); systemLevel = 0; microphoneLevel = 0; echo = false }
+        lock.withLock { monitor.reset(); systemLevel = 0; microphoneLevel = 0; echo = false; history.removeAll() }
     }
 
     func system(_ samples: [Int16]) {
@@ -30,11 +32,22 @@ final class EchoMonitor: @unchecked Sendable {
         lock.withLock {
             echo = monitor.appendMicrophone(samples, at: now)
             microphoneLevel = max(level, microphoneLevel * 0.6)
+            history.append((Date(), echo))
+            if history.count > 600 { history.removeFirst(history.count - 600) }
         }
     }
 
     /// The microphone currently carries the speakers' sound rather than the user.
     var microphoneIsEcho: Bool { lock.withLock { echo } }
+
+    /// Share of microphone chunks flagged as echo between two times (0 when unknown).
+    func echoFraction(from start: Date, to end: Date) -> Double {
+        lock.withLock {
+            let window = history.filter { $0.date >= start.addingTimeInterval(-0.3) && $0.date <= end.addingTimeInterval(0.3) }
+            guard !window.isEmpty else { return 0 }
+            return Double(window.filter(\.echo).count) / Double(window.count)
+        }
+    }
 
     /// 0…1 levels for the meters (decaying peak of a dB scale).
     var levels: (system: Float, microphone: Float) {

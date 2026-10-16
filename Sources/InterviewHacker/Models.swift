@@ -9,6 +9,9 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     var isFinal: Bool
     var startedAt: Date?
     var endedAt: Date?
+    /// Microphone line that looked like speaker echo: shown dimmed, kept out of answers
+    /// and records until the user marks it as theirs.
+    var suspectedEcho: Bool?
     var roleLabel: String { source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音" }
     var contextualText: String { "[\(roleLabel)] \(text)" }
     var isMe: Bool { source == CaptureSource.microphone.rawValue }

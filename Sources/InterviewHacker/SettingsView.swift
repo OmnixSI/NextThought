@@ -492,29 +492,7 @@ struct AnswerEngineForm: View {
         .pickerStyle(.segmented)
         .disabled(state.isAnswering)
         if state.answerBackend == .openAICompatible {
-            HStack {
-                TextField("API 地址，例如 https://api.openai.com/v1", text: $state.apiBaseURL)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: state.apiBaseURL) { _, _ in state.saveAnswerSettings() }
-                Menu("常用") {
-                    Button("OpenAI") { state.apiBaseURL = "https://api.openai.com/v1" }
-                    Button("DeepSeek") { state.apiBaseURL = "https://api.deepseek.com/v1" }
-                    Button("通义千问 DashScope") { state.apiBaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1" }
-                    Button("Moonshot Kimi") { state.apiBaseURL = "https://api.moonshot.cn/v1" }
-                    Button("Groq") { state.apiBaseURL = "https://api.groq.com/openai/v1" }
-                    Button("OpenRouter") { state.apiBaseURL = "https://openrouter.ai/api/v1" }
-                    Button("本机 Ollama") { state.apiBaseURL = "http://localhost:11434/v1" }
-                    Button("本机 LM Studio") { state.apiBaseURL = "http://localhost:1234/v1" }
-                }.fixedSize()
-            }
-            TextField("模型 ID（与服务商一致）", text: $state.apiModel)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: state.apiModel) { _, _ in state.saveAnswerSettings() }
-            SecureField("API Key（保存在系统钥匙串）", text: $state.apiKey)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit { state.saveAPIKey() }
-                .onChange(of: state.apiKey) { _, _ in state.saveAPIKey() }
-            Note("实时问答建议选低延迟模型；截图题需要支持图像输入的模型。转录片段、检索到的资料和截图会发送到所填服务。")
+            APIPresetForm()
         } else {
             HStack {
                 Image(systemName: state.codexReady ? "checkmark.circle.fill" : "exclamationmark.circle")
@@ -566,6 +544,79 @@ struct AnswerEngineForm: View {
             options.insert((state.codexModelID, state.codexModelID), at: 0)
         }
         return options
+    }
+}
+
+/// Saved providers: pick one, or add another from a template; each keeps its own
+/// address, key, model and thinking strength.
+struct APIPresetForm: View {
+    @Environment(AppState.self) private var state
+    @State private var renaming = false
+    @State private var newName = ""
+    @State private var confirmDelete = false
+
+    var body: some View {
+        @Bindable var state = state
+        HStack(spacing: 8) {
+            Text("预设").foregroundStyle(.secondary)
+            Menu {
+                ForEach(state.apiPresets) { preset in
+                    Button { state.selectAPIPreset(preset.id) } label: {
+                        if preset.id == state.activeAPIPresetID { Label(preset.name, systemImage: "checkmark") } else { Text(preset.name) }
+                    }
+                }
+                Divider()
+                Menu("新建预设") {
+                    ForEach(APIPreset.templates, id: \.name) { template in
+                        Button(template.name) { state.addAPIPreset(name: template.name, baseURL: template.url) }
+                    }
+                    Divider()
+                    Button("自定义…") { state.addAPIPreset(name: "自定义", baseURL: "https://") }
+                }
+            } label: {
+                Label(state.activeAPIPreset?.name ?? "选择预设", systemImage: "server.rack")
+            }
+            .fixedSize()
+            Button("重命名") { newName = state.activeAPIPreset?.name ?? ""; renaming = true }.buttonStyle(ChipButtonStyle())
+            Button("删除") { confirmDelete = true }.buttonStyle(ChipButtonStyle()).disabled(state.apiPresets.count <= 1)
+            Spacer()
+        }
+        .disabled(state.isAnswering)
+        .alert("重命名预设", isPresented: $renaming) {
+            TextField("名称", text: $newName)
+            Button("保存") { if let id = state.activeAPIPresetID { state.renameAPIPreset(id, to: newName) } }
+            Button("取消", role: .cancel) { }
+        }
+        .confirmationDialog("删除预设“\(state.activeAPIPreset?.name ?? "")”？", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("删除", role: .destructive) { if let id = state.activeAPIPresetID { state.deleteAPIPreset(id) } }
+            Button("取消", role: .cancel) { }
+        } message: { Text("会同时删除保存在钥匙串里的这个 API Key。") }
+
+        TextField("API 地址，例如 https://api.openai.com/v1", text: $state.apiBaseURL)
+            .textFieldStyle(.roundedBorder)
+            .onChange(of: state.apiBaseURL) { _, _ in state.saveAnswerSettings() }
+        SecureField("API Key（保存在系统钥匙串）", text: $state.apiKey)
+            .textFieldStyle(.roundedBorder)
+            .onSubmit { state.saveAPIKey() }
+            .onChange(of: state.apiKey) { _, _ in state.saveAPIKey() }
+        HStack(spacing: 8) {
+            TextField("模型 ID（与服务商一致）", text: $state.apiModel)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: state.apiModel) { _, _ in state.saveAnswerSettings() }
+            if !state.apiModelChoices.isEmpty {
+                Menu("选择") {
+                    ForEach(state.apiModelChoices, id: \.self) { id in
+                        Button(id) { state.apiModel = id; state.saveAnswerSettings() }
+                    }
+                }
+                .fixedSize()
+            }
+            Button("获取模型列表") { Task { await state.fetchAPIModels() } }.buttonStyle(ChipButtonStyle())
+        }
+        if !state.apiModelsStatus.isEmpty { Note(state.apiModelsStatus) }
+        MenuPicker(title: "思考强度", selection: $state.apiReasoningEffort, options: APIPreset.efforts)
+            .onChange(of: state.apiReasoningEffort) { _, _ in state.saveAnswerSettings() }
+        Note("思考强度会作为 reasoning_effort 发送，只对支持推理的模型有效（如 OpenAI o / GPT-5 系列）；其他模型选“默认”。实时问答建议 minimal 或 low。转录片段、检索到的资料和截图会发送到这个服务。")
     }
 }
 

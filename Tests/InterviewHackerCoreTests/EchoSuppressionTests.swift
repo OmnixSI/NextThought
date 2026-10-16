@@ -80,6 +80,29 @@ struct EchoSuppressionTests {
         #expect(EchoTextFilter.isLikelyEcho("how do you handle cache invalidation", recentSystemTexts: ["So how do you handle cache invalidation in production?"]))
         #expect(!EchoTextFilter.isLikelyEcho("好的", recentSystemTexts: ["好的"]))
     }
+
+    /// Replies reuse the question's words; they must stay the user's lines.
+    @Test func repliesThatReuseWordsAreNotEcho() {
+        let now = Date()
+        let lines = [TimedLine(text: "那数据库和缓存同时更新的时候，你们是怎么保证一致性的？", start: now.addingTimeInterval(-6), end: now.addingTimeInterval(-2)),
+                     TimedLine(text: "你们的缓存是放在 Redis 里吗？", start: now.addingTimeInterval(-12), end: now.addingTimeInterval(-9))]
+        #expect(!EchoTextFilter.isEcho(microphone: "我们保证一致性的方式是先更新数据库再删缓存", start: now, end: now.addingTimeInterval(3), system: lines, acousticEchoFraction: 0))
+        #expect(!EchoTextFilter.isEcho(microphone: "对，缓存放在 Redis 里", start: now, end: now.addingTimeInterval(2), system: lines, acousticEchoFraction: 0.1))
+        // Old union matching would have called this echo (most bigrams appear somewhere above).
+        #expect(!EchoTextFilter.isLikelyEcho("你们的数据库缓存是怎么更新的", recentSystemTexts: lines.map(\.text), threshold: 0.8))
+    }
+
+    @Test func echoAtTheSameTimeIsCaught() {
+        let now = Date()
+        let line = TimedLine(text: "那数据库和缓存同时更新的时候，你们是怎么保证一致性的？", start: now, end: now.addingTimeInterval(4))
+        // Near-verbatim repeat while the other side speaks: echo even without the audio monitor.
+        #expect(EchoTextFilter.isEcho(microphone: "数据库和缓存同时更新的时候你们是怎么保证一致性的", start: now.addingTimeInterval(0.3), end: now.addingTimeInterval(4.2), system: [line], acousticEchoFraction: 0))
+        // Partial repeat: echo only if the speakers were heard in the microphone.
+        #expect(EchoTextFilter.isEcho(microphone: "缓存和数据库怎么保证一致性", start: now.addingTimeInterval(0.5), end: now.addingTimeInterval(4), system: [line], acousticEchoFraction: 0.7))
+        #expect(!EchoTextFilter.isEcho(microphone: "缓存和数据库怎么保证一致性", start: now.addingTimeInterval(0.5), end: now.addingTimeInterval(4), system: [line], acousticEchoFraction: 0))
+        // The same words a minute later are the user, not echo.
+        #expect(!EchoTextFilter.isEcho(microphone: "数据库和缓存同时更新的时候你们是怎么保证一致性的", start: now.addingTimeInterval(60), end: now.addingTimeInterval(64), system: [line], acousticEchoFraction: 0))
+    }
 }
 
 struct SeededGenerator: RandomNumberGenerator {
