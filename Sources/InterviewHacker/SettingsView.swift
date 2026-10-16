@@ -755,7 +755,6 @@ private struct MoreSettings: View {
 
 private struct UpdateSettings: View {
     @Environment(AppState.self) private var state
-    @State private var token = ""
     private var updater: Updater { Updater.shared }
 
     var body: some View {
@@ -790,22 +789,11 @@ private struct UpdateSettings: View {
                 .onChange(of: updater.automaticChecks) { _, _ in updater.saveSettings() }
             Note("从 GitHub Releases 下载，校验 SHA-256 和签名后再安装；已绑定本机签名时，更新后权限保持不变。")
         }
-        AdvancedOptions("updates") {
-        SettingsSection(title: "GitHub 访问", icon: "key") {
-            HStack {
-                TextField("仓库", text: $updater.repository).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
-                    .onSubmit { updater.saveSettings() }
-                Spacer()
-                Label(updater.hasToken ? "已保存访问令牌" : "未保存访问令牌", systemImage: updater.hasToken ? "checkmark.seal" : "key")
-                    .foregroundStyle(updater.hasToken ? .green : .secondary)
-            }
-            HStack {
-                SecureField("访问令牌（fine-grained token，Contents 只读）", text: $token).textFieldStyle(.roundedBorder)
-                Button("保存") { updater.saveToken(token); token = "" }.buttonStyle(ChipButtonStyle(prominent: true)).disabled(token.isEmpty)
-                if updater.hasToken { Button("清除") { updater.saveToken("") }.buttonStyle(ChipButtonStyle()) }
-            }
-            Note("仓库是私有的，检查和下载更新需要授权：在 GitHub → Settings → Developer settings → Fine-grained tokens 新建令牌，只勾选该仓库的 Contents: Read-only。令牌保存在系统钥匙串。已用 GitHub CLI 登录（gh auth login）时可以不填。")
-        }
+        // Shown open when access is the problem; otherwise tucked under 高级选项.
+        if updater.needsAccessHelp || !updater.hasToken && updater.phase != .upToDate {
+            GitHubAccessSection()
+        } else {
+            AdvancedOptions("updates") { GitHubAccessSection() }
         }
     }
 
@@ -827,6 +815,45 @@ private struct UpdateSettings: View {
         case .failed: .orange
         case .ready, .available: Brand.accent
         default: .secondary
+        }
+    }
+}
+
+private struct GitHubAccessSection: View {
+    @State private var token = ""
+
+    var body: some View {
+        @Bindable var updater = Updater.shared
+        SettingsSection(title: "GitHub 访问", icon: "key") {
+            HStack {
+                TextField("仓库", text: $updater.repository).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                    .onSubmit { updater.saveSettings() }
+                Spacer()
+                Label(updater.hasToken ? "已保存访问令牌" : "未保存访问令牌", systemImage: updater.hasToken ? "checkmark.seal" : "key")
+                    .foregroundStyle(updater.hasToken ? .green : .secondary)
+            }
+            HStack {
+                SecureField("粘贴访问令牌（github_pat_…）", text: $token).textFieldStyle(.roundedBorder)
+                Button("保存并检查") {
+                    updater.saveToken(token); token = ""
+                    Task { await updater.check(userInitiated: true) }
+                }
+                .buttonStyle(ChipButtonStyle(prominent: true)).disabled(token.isEmpty)
+                if updater.hasToken { Button("清除") { updater.saveToken("") }.buttonStyle(ChipButtonStyle()) }
+            }
+            if let note = updater.accessNote { Note(note, color: .orange) }
+            HStack(spacing: 8) {
+                Button { NSWorkspace.shared.open(Updater.createTokenURL) } label: { Label("去 GitHub 创建令牌", systemImage: "arrow.up.right.square") }
+                    .buttonStyle(SecondaryButtonStyle())
+                Text("或在终端运行 gh auth login，就不用填令牌").font(.system(size: 11.5)).foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text("创建令牌时这样填：").font(.system(size: 11.5, weight: .semibold))
+                Note("1. Resource owner 选仓库所属的组织 \(updater.repository.split(separator: "/").first.map(String.init) ?? "")（不是个人账号）")
+                Note("2. Repository access 选 Only select repositories → \(updater.repository.split(separator: "/").last.map(String.init) ?? "")")
+                Note("3. Permissions → Contents 选 Read-only，其余不动；生成后复制 github_pat_ 开头的整串粘贴到上面")
+                Note("令牌保存在系统钥匙串。组织要求审批时，需要管理员批准后才能用。")
+            }
         }
     }
 }

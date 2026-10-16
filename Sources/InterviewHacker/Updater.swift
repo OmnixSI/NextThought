@@ -46,6 +46,12 @@ final class Updater {
     var automaticChecks: Bool = UserDefaults.standard.object(forKey: "automaticUpdateChecks") as? Bool ?? true
     var repository: String = UserDefaults.standard.string(forKey: "updateRepository") ?? "OmnixSI/InterviewHacker"
     private(set) var hasToken = !KeychainStore.read("github.token").isEmpty
+    /// The last check failed for lack of access (no token, rejected, repository not visible).
+    private(set) var needsAccessHelp = false
+    /// Shown when the saved token failed and the GitHub CLI login was used instead.
+    private(set) var accessNote: String?
+    /// The saved token could not see the repository but `gh` could: use `gh` this run.
+    @ObservationIgnored private var preferCLIToken = false
     private(set) var signature: LocalSigning.SignatureInfo?
 
     @ObservationIgnored private var stagedApp: URL?
@@ -97,6 +103,30 @@ final class Updater {
         let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
         _ = KeychainStore.write(trimmed, account: "github.token")
         hasToken = !trimmed.isEmpty
+        preferCLIToken = false
+        accessNote = nil
+    }
+
+    static let createTokenURL = URL(string: "https://github.com/settings/personal-access-tokens/new")!
+
+    /// Token for this run: the saved one, unless it already failed and `gh` worked.
+    private func currentToken() async -> String? {
+        if preferCLIToken, let cli = await Self.cliToken() { return cli }
+        return await Self.resolveToken()
+    }
+
+    /// Lists releases; when the saved token is refused, retries once with the GitHub CLI login.
+    private func listReleases() async throws -> (data: Data, token: String?) {
+        let token = await currentToken()
+        do {
+            return (try await api("releases?per_page=20", token: token), token)
+        } catch let error as UpdateError where error.isAccessProblem && !preferCLIToken && !KeychainStore.read("github.token").isEmpty {
+            guard let cli = await Self.cliToken(), cli != token, let data = try? await api("releases?per_page=20", token: cli) else { throw error }
+            preferCLIToken = true
+            accessNote = "保存的令牌无权访问 \(repository)，已改用 GitHub CLI 的登录（gh）。可以在下方清除那个令牌。"
+            Diagnostics.record("update.token_fallback_cli")
+            return (data, cli)
+        }
     }
 
     // MARK: Checking
@@ -109,8 +139,9 @@ final class Updater {
         }
         phase = .checking
         do {
-            let token = await Self.resolveToken()
-            let releases = try GitHubRelease.decodeList(try await api("releases?per_page=20", token: token))
+            let (data, token) = try await listReleases()
+            let releases = try GitHubRelease.decodeList(data)
+            needsAccessHelp = false
             lastChecked = Date()
             guard let release = UpdateCatalog.candidate(in: releases, channel: channel), let zip = release.zipAsset else {
                 available = nil; phase = .upToDate; return
@@ -134,8 +165,9 @@ final class Updater {
             // Download in the background so “重启安装” is instant.
             if stagedApp == nil { downloadUpdate() }
         } catch {
+            needsAccessHelp = (error as? UpdateError)?.isAccessProblem == true
             phase = userInitiated || available == nil ? .failed(error.localizedDescription) : .available
-            Diagnostics.record("update.check_failed")
+            Diagnostics.record("update.check_failed", ["access": needsAccessHelp])
         }
     }
 
@@ -149,7 +181,7 @@ final class Updater {
             do {
                 guard let expected = available.sha256 else { throw UpdateError.missingChecksum }
                 self.phase = .downloading(0)
-                let token = await Self.resolveToken()
+                let token = await self.currentToken()
                 let staging = FileManager.default.temporaryDirectory.appendingPathComponent("ih-update-\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
                 let zip = staging.appendingPathComponent(available.zip.name)
@@ -336,7 +368,12 @@ final class Updater {
     nonisolated static func resolveToken() async -> String? {
         let saved = KeychainStore.read("github.token")
         if !saved.isEmpty { return saved }
-        return await Task.detached(priority: .utility) { () -> String? in
+        return await cliToken()
+    }
+
+    /// Token of a logged-in GitHub CLI (`gh auth token`), if any.
+    nonisolated static func cliToken() async -> String? {
+        await Task.detached(priority: .utility) { () -> String? in
             for path in ["/opt/homebrew/bin/gh", "/usr/local/bin/gh", "/usr/bin/gh"] where FileManager.default.isExecutableFile(atPath: path) {
                 if let result = try? Shell.run(path, ["auth", "token"]), result.status == 0 {
                     let token = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -350,14 +387,22 @@ final class Updater {
 
 enum UpdateError: LocalizedError {
     case needsToken, tokenRejected, badRepository, repositoryNotFound(String), http(Int)
+
+    var isAccessProblem: Bool {
+        switch self {
+        case .needsToken, .tokenRejected, .repositoryNotFound: true
+        default: false
+        }
+    }
     case missingChecksum, checksumMismatch, invalidArchive, notWritable(String)
 
     var errorDescription: String? {
         switch self {
-        case .needsToken: "仓库是私有的：请在 设置 → 更新 填写 GitHub 访问令牌（只需 Contents 只读权限），或在终端运行 gh auth login。"
-        case .tokenRejected: "GitHub 拒绝了访问令牌：请确认令牌未过期，且对该仓库有 Contents 读取权限。"
+        case .needsToken: "仓库是私有的，检查更新需要授权：点“去 GitHub 创建令牌”新建一个只读令牌并保存，或在终端运行 gh auth login。"
+        case .tokenRejected: "GitHub 拒绝了这个令牌（可能已过期或被撤销）。请重新创建一个，或清除令牌后在终端运行 gh auth login。"
         case .badRepository: "更新仓库地址无效。"
-        case let .repositoryNotFound(name): "找不到仓库 \(name)，或令牌无权访问它。"
+        case let .repositoryNotFound(name):
+            "令牌看不到仓库 \(name)。常见原因：创建令牌时 Resource owner 选成了个人账号（应选 \(name.split(separator: "/").first.map(String.init) ?? "仓库所属组织")）、没有勾选这个仓库，或组织还没批准这个令牌。也可以清除令牌后在终端运行 gh auth login。"
         case let .http(code): "GitHub 返回 HTTP \(code)。稍后会自动重试。"
         case .missingChecksum: "该版本没有提供 SHA-256 校验值，为安全起见不自动安装。"
         case .checksumMismatch: "下载的更新未通过 SHA-256 校验，已放弃安装。"
