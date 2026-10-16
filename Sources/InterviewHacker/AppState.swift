@@ -133,6 +133,9 @@ final class AppState {
     let webAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
     /// StartLux-Decision: every rule-based judgment goes here first when it is on.
     let decisions = DecisionService()
+    /// Screen, slides, answer progress, notes: what the decision model watches besides questions.
+    let insights = LiveInsights()
+    @ObservationIgnored var screenWatchTask: Task<Void, Never>?
 
     // MARK: Questions and answers
     var answerHistory: [AnswerRecord] = []
@@ -335,6 +338,7 @@ final class AppState {
         if !UserDefaults.standard.bool(forKey: "onboardingCompleted") { isOnboardingPresented = true }
         Updater.shared.start()
         decisions.startIfEnabled()
+        startScreenWatch()
         Task {
             // After launch settles: one backup a day, never blocking start-up.
             try? await Task.sleep(for: .seconds(8))
@@ -498,6 +502,7 @@ final class AppState {
             deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
             answerHistory = []; historyCursor = nil; webLookups = [:]; showOriginalAnswer = []; currentAnswerID = nil; webLookupTask?.cancel()
             answerTurns.removeAll()
+            insights.resetSession()
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
@@ -713,15 +718,18 @@ final class AppState {
         let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
         selectedExcerpts = excerpts
         let workspace = activeWorkspace
-        let skills = activeSkillSnippets
+        let skills = activeSkills
+        let allSnippets = skills.map { SkillSnippet(name: $0.name, content: $0.content) }
         let turns = answerTurns
-        let buildParts = { (webSearch: Bool, results: [WebResult]?) in
+        let screenText = relevantScreenText
+        let slide = currentSlideExcerpt
+        let tier = activeServiceTier
+        let buildParts = { (webSearch: Bool, results: [WebResult]?, hint: String?, snippets: [SkillSnippet]) in
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: screenshot != nil,
                                           preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
-                                          experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch)
+                                          experience: workspace.experienceNotes(), skills: snippets, webResults: results, webSearch: webSearch,
+                                          screen: screenText, currentSlide: slide, answerHint: hint)
         }
-        let parts = buildParts(false, nil)
-        let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: activeServiceTier)
         // Quick answer first; a web-updated one follows in the background when needed.
         let isRefinement = question.contains(AnswerRefinement.markerText)
         if screenshot == nil, !isRefinement, webSearchMode != .off, webSearchAvailable {
@@ -730,7 +738,7 @@ final class AppState {
                 let decision = await self.shouldSearchWeb(question)
                 Diagnostics.record("web.decision", ["search": decision.search, "reason": decision.reason])
                 guard decision.search, self.currentAnswerID == id else { return }
-                self.startWebLookup(id: id, question: question, model: selectedModel, parts: { buildParts($0, $1) })
+                self.startWebLookup(id: id, question: question, model: selectedModel, parts: { buildParts($0, $1, nil, allSnippets) })
             }
         }
         let answerStartedAt = Date()
@@ -742,6 +750,11 @@ final class AppState {
                 }
             }
             do {
+                // Question kind and fitting skills (≤ 0.35 s; skipped when the model is off or slow).
+                let shape = await shapeAnswer(question, skills: skills, isRefinement: isRefinement, answerID: id)
+                guard requestID == id else { return }
+                let parts = buildParts(false, nil, shape.hint, shape.skills)
+                let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: tier)
                 let onDelta: @Sendable (String) -> Void = { [weak self] text in
                     Task { @MainActor in
                         guard let self, self.requestID == id, self.isAnswering else { return }
@@ -775,6 +788,7 @@ final class AppState {
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
                 let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic)
                 answerHistory.append(record)
+                insights.beginAnswer(id: id, text: result, since: answerStartedAt)
                 if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
                 tracker.noteAnswered()
                 answerTurns.append(AnswerTurn(question: question, answer: result))
@@ -1054,6 +1068,7 @@ final class AppState {
         webLookupTask?.cancel()
         webAppServer.shutdown()
         decisions.stop()
+        screenWatchTask?.cancel()
         webCodex.cancel()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }

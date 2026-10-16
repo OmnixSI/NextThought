@@ -68,6 +68,7 @@ final class DetachedModuleController: NSObject, NSWindowDelegate {
         case .question: NSSize(width: 520, height: 160)
         case .answer: NSSize(width: 560, height: 480)
         case .history: NSSize(width: 380, height: 460)
+        case .insights: NSSize(width: 440, height: 520)
         }
     }
 

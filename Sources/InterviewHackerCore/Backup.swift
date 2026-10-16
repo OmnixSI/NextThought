@@ -116,6 +116,8 @@ public enum SettingsSnapshot {
         "webSearchMode", "webSearchProvider",
         "decisionEnabled", "decisionSource", "decisionVariant", "decisionBits", "decisionServerURL",
         "decisionForQuestions", "decisionForWebSearch", "decisionForEcho", "decisionForKnowledge",
+        "insightScreenWatch", "insightScreenInterval", "insightFollowSlides", "insightAnswerProgress",
+        "insightShapeAnswers", "insightLiveNotes", "insightWrapUp", "insightWebCheck",
         "globalSkillIDs", "assistantLayout",
     ]
 

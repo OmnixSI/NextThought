@@ -228,7 +228,10 @@ extension AppState {
                 entries.append(entry)
             }
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
-            if entry.suspectedEcho != true { recordTranscript(entry) }
+            if entry.suspectedEcho != true {
+                recordTranscript(entry)
+                insightsDidReceive(entry)
+            }
             transcriptionStatus = statusLine
         } else {
             // Streaming recognizers revise partial text ~10×/s; coalesce to ≤5 updates/s.

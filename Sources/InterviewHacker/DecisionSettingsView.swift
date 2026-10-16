@@ -44,6 +44,7 @@ struct DecisionSettings: View {
                 .onChange(of: decisions.useForKnowledge) { _, _ in decisions.save() }
             Note("把握很大的问题（以问号结尾等）仍由规则立即回答；模型负责拿不准的句子，并在规则漏掉问题时补上。")
         }
+        InsightSettings()
         DecisionEvaluationSection()
         SettingsSection(title: "许可与隐私", icon: "doc.text") {
             Note("Laya（Convai Innovations，Mac 版由社区移植为 laya-mlx）使用 Apache-2.0 许可，可商用。StartLux-Decision 权重使用 CC BY-NC 4.0，仅限非商业用途。两者的中文效果都请用上面的“评测”在这台 Mac 上实测。")
@@ -227,6 +228,57 @@ private struct DecisionEvaluationSection: View {
             if !decisions.evaluation.isEmpty {
                 Text(decisions.evaluation).font(.system(size: 12)).monospacedDigit().textSelection(.enabled)
             }
+        }
+    }
+}
+
+/// The model's other uses: the screen, slides, answer progress, notes, wrap-up, web check.
+private struct InsightSettings: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var insights = state.insights
+        let modelReady = state.decisions.isReady
+        SettingsSection(title: "屏幕感知", icon: "eye") {
+            Toggle("会话中每隔几秒读一次屏幕", isOn: $insights.screenWatch)
+                .onChange(of: insights.screenWatch) { _, on in
+                    insights.save()
+                    state.startScreenWatch()
+                    if on { state.updateLayout { $0.show(.insights) } }
+                }
+            if insights.screenWatch {
+                HStack {
+                    Text("间隔")
+                    Picker("间隔", selection: $insights.screenInterval) {
+                        Text("2 秒").tag(2.0)
+                        Text("4 秒").tag(4.0)
+                        Text("8 秒").tag(8.0)
+                        Text("15 秒").tag(15.0)
+                    }
+                    .labelsHidden().pickerStyle(.segmented).frame(width: 260)
+                    .onChange(of: insights.screenInterval) { _, _ in insights.save() }
+                }
+                Toggle("跟随演示文稿：认出正在讲第几页，给出这一页的讲稿提示", isOn: $insights.followSlides)
+                    .onChange(of: insights.followSlides) { _, _ in insights.save() }
+            }
+            Note("在本机用系统文字识别读取主显示器（不含 InterviewHacker 自己的窗口），文字不上传。模型判断屏幕内容是否和对话相关：相关的才交给回答引擎（例如共享屏幕上的题目、代码、文档）；屏幕上出现题目时，助手页“屏幕与讲稿”里会出现“回答屏幕上的题目”。")
+            Note("讲稿跟随：把 PPT / Keynote / PDF 导入当前场景的资料，放映时自动认出当前页，提前写好这一页的要点、过渡句和听众可能问的问题，并勾掉你已经讲过的要点；回答提问时会关联当前页。需要“屏幕与系统音频录制”权限。")
+            if let error = insights.screenError { Note(error, color: .orange) }
+        }
+        SettingsSection(title: "更多交给模型的判断", icon: "sparkle.magnifyingglass") {
+            Toggle("回答进度：边听你说，勾掉已经讲过的句子，提示下一句", isOn: $insights.answerProgress)
+                .onChange(of: insights.answerProgress) { _, _ in insights.save() }
+            Toggle("按问题类型调整回答（行为题用 STAR、编程题给代码和复杂度…），只带用得上的技能", isOn: $insights.shapeAnswers)
+                .onChange(of: insights.shapeAnswers) { _, _ in insights.save() }
+            Toggle("记下待办、决定、时间节点和课堂重点", isOn: $insights.liveNotesOn)
+                .onChange(of: insights.liveNotesOn) { _, _ in insights.save() }
+            Toggle("对方收尾时提醒停止并复盘", isOn: $insights.wrapUpHint)
+                .onChange(of: insights.wrapUpHint) { _, _ in insights.save() }
+            Toggle("联网核对：联网结果没有新内容时保留快速回答", isOn: $insights.webCheck)
+                .onChange(of: insights.webCheck) { _, _ in insights.save() }
+            Note(modelReady
+                 ? "这些判断每次只要几十毫秒；问题类型判断最多等 0.35 秒，模型较慢（每次超过 0.3 秒）时自动跳过，不拖慢回答。"
+                 : "需要上面的决策模型运行。没有模型时，讲稿跟随和回答进度按文字重合度判断，其余几项不生效。")
         }
     }
 }

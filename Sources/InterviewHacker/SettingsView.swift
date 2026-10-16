@@ -73,7 +73,7 @@ extension SettingsGroup {
         case .essentials: "使用前检查 · 音频来源 · 外观"
         case .recognition: "识别引擎 · 模型 · 专业词"
         case .answers: "回答引擎 · 自动回答 · 联网搜索"
-        case .decisions: "决策模型 Laya · 问题识别 / 联网 / 回声 / 题库"
+        case .decisions: "决策模型 · 问题识别 / 屏幕与讲稿 / 回答进度 / 待办"
         case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 屏幕共享"
         case .recording: "会话记录 · 导入导出 · 备份"

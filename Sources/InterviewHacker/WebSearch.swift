@@ -148,7 +148,9 @@ extension AppState {
                 }
                 let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !text.isEmpty else { throw AnswerEngineError.empty }
-                self.finishWebLookup(id: id, text: text, sources: result.sources, seconds: Date().timeIntervalSince(started), model: model)
+                let quick = self.answerHistory.last(where: { $0.id == id })?.answer ?? ""
+                let matches = await self.webAnswerMatches(quick: quick, web: text)
+                self.finishWebLookup(id: id, text: text, sources: result.sources, seconds: Date().timeIntervalSince(started), model: model, matchesQuick: matches)
             } catch is CancellationError {
                 if self.webLookups[id]?.status == .searching { self.webLookups[id]?.status = .failed("已取消") }
             } catch {
@@ -175,14 +177,21 @@ extension AppState {
         }
     }
 
-    private func finishWebLookup(id: UUID, text: String, sources: [WebResult], seconds: Double, model: String) {
+    private func finishWebLookup(id: UUID, text: String, sources: [WebResult], seconds: Double, model: String, matchesQuick: Bool) {
         guard var lookup = webLookups[id] else { return }
+        // Nothing new from the web: the quick answer stays on screen, marked as checked.
+        if matchesQuick {
+            insights.webConfirmed.insert(id)
+            showOriginalAnswer.insert(id)
+        } else if id == currentAnswerID, insights.answerID == id {
+            insights.beginAnswer(id: id, text: text, since: insights.answerSince)
+        }
         lookup.status = .done
         lookup.answer = text
         lookup.sources = sources
         lookup.seconds = seconds
         webLookups[id] = lookup
-        Diagnostics.record("web.completed", ["provider": lookup.provider.rawValue, "seconds": seconds, "sources": sources.count])
+        Diagnostics.record("web.completed", ["provider": lookup.provider.rawValue, "seconds": seconds, "sources": sources.count, "matches_quick": matchesQuick])
         // Follow-ups should build on the updated answer.
         replaceTurnAnswer(question: lookup.question, with: text)
         recordAnswer(AnswerRecord(question: lookup.question, answer: text, model: "\(model) · 联网", seconds: seconds, firstTokenSeconds: nil, automatic: true))
@@ -197,9 +206,10 @@ extension AppState {
         }
     }
 
-    /// Search results through the regular engine, on separate clients so the
-    /// quick answer and the next question are never blocked.
-    nonisolated private func runWebAnswer(_ request: AnswerRequest, backend: AnswerBackend) async throws -> String {
+    /// Search results (and other background work, such as slide notes) through the
+    /// regular engine, on separate clients so the quick answer and the next question
+    /// are never blocked.
+    nonisolated func runWebAnswer(_ request: AnswerRequest, backend: AnswerBackend) async throws -> String {
         switch backend {
         case .openAICompatible:
             let (base, key, effort) = await MainActor.run { (self.apiBaseURL, self.apiKey, self.apiEffortParameter) }

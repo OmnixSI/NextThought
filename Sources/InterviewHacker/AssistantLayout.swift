@@ -4,7 +4,7 @@ import SwiftUI
 /// The assistant page's building blocks; each can be shown, hidden, resized, moved
 /// between the two columns or popped out into its own window.
 enum AssistantModule: String, CaseIterable, Codable, Identifiable {
-    case conversation, question, answer, history
+    case conversation, question, answer, history, insights
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -12,6 +12,7 @@ enum AssistantModule: String, CaseIterable, Codable, Identifiable {
         case .question: "当前问题与候选"
         case .answer: "建议回答"
         case .history: "回答记录"
+        case .insights: "屏幕与讲稿"
         }
     }
     var symbol: String {
@@ -20,6 +21,7 @@ enum AssistantModule: String, CaseIterable, Codable, Identifiable {
         case .question: "questionmark.bubble"
         case .answer: "sparkles"
         case .history: "clock.arrow.circlepath"
+        case .insights: "rectangle.on.rectangle"
         }
     }
     /// Sizes to its content (a strip) instead of sharing the column height.

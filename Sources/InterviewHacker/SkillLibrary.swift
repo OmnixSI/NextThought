@@ -93,6 +93,8 @@ extension AppState {
     var skillLibrary: SkillLibrary { SkillLibrary.shared }
 
     /// Skills for the current scenario, as prompt snippets.
+    var activeSkills: [Skill] { Skill.active(SkillLibrary.shared.skills, attached: activeWorkspace.skillIDs) }
+
     var activeSkillSnippets: [SkillSnippet] {
         Skill.active(SkillLibrary.shared.skills, attached: activeWorkspace.skillIDs).map { SkillSnippet(name: $0.name, content: $0.content) }
     }

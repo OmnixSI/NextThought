@@ -52,6 +52,7 @@ public enum AnswerPromptBuilder {
     11. experience_notes 是这个场景以往复盘沉淀的经验，回答时遵循其中适用的提醒；retrieved_material 中“题库”来源的片段是以前复盘整理的改进版回答，问题相同或相近时优先采用并按当前问题调整。
     12. skills 是用户加载的技能说明（Markdown），描述回答风格、方法或领域知识，按其中适用的部分执行；与真实性和安全约束冲突时以本说明为准。
     13. today 是今天的日期，“现在”“最近”“今年”按它理解。你的知识可能过时：web_results 存在时，时效性事实以其为准，并用 [1]、[2] 标注对应结果；没有 web_results 而问题依赖最新信息（价格、新闻、版本、现任人员等）时，简短说明信息可能不是最新的。
+    14. screen_text 是此刻屏幕上识别出的文字（OCR，可能不完整），只在判断与当前对话相关时提供；问题涉及屏幕上的题目、代码或文档时以它为准。current_slide 是我此刻正在展示的幻灯片（来自导入的演示文稿），回答听众提问时优先关联这一页，并标注 [文件名 p.页码]。answer_hint 是根据问题类型给出的回答方式建议，与用户偏好冲突时以用户偏好为准。
 
     转录中 [我 · 麦克风] 表示用户自己的发言，[对方 · 系统声音] 表示对方通过系统音频的发言。区分双方角色，不把用户自己的回答当成对方的新问题。角色标签仅标记采集通道，不代表声纹身份鉴定。
 
@@ -73,6 +74,9 @@ public enum AnswerPromptBuilder {
         var today: String
         var skills: [SkillSnippet]
         var web_results: [WebResult]?
+        var screen_text: String?
+        var current_slide: ContextExcerpt?
+        var answer_hint: String?
     }
 
     /// "2026-10-16 星期五"
@@ -85,15 +89,18 @@ public enum AnswerPromptBuilder {
 
     /// System/user split for chat-style APIs. `make` keeps the single-prompt form.
     public static func makeParts(question: String, context: String, profile: String, turns: [AnswerTurn], hasScreenshot: Bool, preferences: String = "", mode: SessionMode = .meeting, style: AnswerStyle = .concise, excerpts: [ContextExcerpt] = [], experience: String = "",
-                                 skills: [SkillSnippet] = [], webResults: [WebResult]? = nil, webSearch: Bool = false, today: Date = Date()) -> (system: String, user: String) {
+                                 skills: [SkillSnippet] = [], webResults: [WebResult]? = nil, webSearch: Bool = false, today: Date = Date(),
+                                 screen: String? = nil, currentSlide: ContextExcerpt? = nil, answerHint: String? = nil) -> (system: String, user: String) {
         let system = instructions(webSearch: webSearch)
         let full = make(question: question, context: context, profile: profile, turns: turns, hasScreenshot: hasScreenshot, preferences: preferences, mode: mode, style: style, excerpts: excerpts, experience: experience,
-                        skills: skills, webResults: webResults, webSearch: webSearch, today: today)
+                        skills: skills, webResults: webResults, webSearch: webSearch, today: today,
+                        screen: screen, currentSlide: currentSlide, answerHint: answerHint)
         return (system, String(full.dropFirst(system.count + 2)))
     }
 
     public static func make(question: String, context: String, profile: String, turns: [AnswerTurn], hasScreenshot: Bool, preferences: String = "", mode: SessionMode = .meeting, style: AnswerStyle = .concise, excerpts: [ContextExcerpt] = [], experience: String = "",
-                            skills: [SkillSnippet] = [], webResults: [WebResult]? = nil, webSearch: Bool = false, today: Date = Date()) -> String {
+                            skills: [SkillSnippet] = [], webResults: [WebResult]? = nil, webSearch: Bool = false, today: Date = Date(),
+                            screen: String? = nil, currentSlide: ContextExcerpt? = nil, answerHint: String? = nil) -> String {
         var recent: [AnswerTurn] = []
         for turn in turns.suffix(6) {
             recent.append(AnswerTurn(question: limit(turn.question, count: 1_000), answer: limit(turn.answer, count: 2_000)))
@@ -110,7 +117,10 @@ public enum AnswerPromptBuilder {
             experience_notes: limit(experience, count: 2_500),
             today: todayText(today),
             skills: skillBudget(skills),
-            web_results: webResults.map { Array($0.prefix(8)).map { .init(title: limit($0.title, count: 200), url: limit($0.url, count: 300), snippet: limit($0.snippet, count: 1_200)) } })
+            web_results: webResults.map { Array($0.prefix(8)).map { .init(title: limit($0.title, count: 200), url: limit($0.url, count: 300), snippet: limit($0.snippet, count: 1_200)) } },
+            screen_text: screen.flatMap { $0.isEmpty ? nil : limit($0, count: 2_500) },
+            current_slide: currentSlide.map { .init(source: limit($0.source, count: 200), page: $0.page, text: limit($0.text, count: 2_000)) },
+            answer_hint: answerHint)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
         let data = try! encoder.encode(input)
