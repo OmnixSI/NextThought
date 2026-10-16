@@ -249,15 +249,16 @@ struct SetupRow: View {
 // MARK: - Onboarding
 
 enum OnboardingStep: Int, CaseIterable {
-    case welcome, permissions, recognition, answers, scenario, done
+    case welcome, permissions, recognition, answers, extras, scenario, done
 
     var title: String {
         switch self {
         case .welcome: "欢迎"
-        case .permissions: "系统权限"
-        case .recognition: "语音识别"
-        case .answers: "回答引擎"
-        case .scenario: "第一个场景"
+        case .permissions: "权限"
+        case .recognition: "识别"
+        case .answers: "回答"
+        case .extras: "联网与技能"
+        case .scenario: "场景"
         case .done: "完成"
         }
     }
@@ -299,7 +300,7 @@ struct OnboardingView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 10) {
             ForEach(OnboardingStep.allCases, id: \.rawValue) { item in
                 let current = item == step, passed = item.rawValue < step.rawValue
                 HStack(spacing: 6) {
@@ -328,6 +329,7 @@ struct OnboardingView: View {
         case .permissions: PermissionsStep()
         case .recognition: RecognitionStep()
         case .answers: AnswersStep()
+        case .extras: ExtrasStep()
         case .scenario: ScenarioStep()
         case .done: DoneStep()
         }
@@ -403,8 +405,9 @@ private struct WelcomeStep: View {
                 feature("text.bubble", "给出回答", "结合简历、资料和经验库，逐字给出能直接说的回答")
             }
             VStack(alignment: .leading, spacing: 8) {
-                Text("接下来 4 步，大约 2 分钟").font(.system(size: 13, weight: .semibold))
-                ForEach(Array(["允许录屏与麦克风", "下载语音识别模型（约 270 MB，只需一次）", "连接回答引擎（Codex 或 API Key）", "建一个场景，放入你的资料"].enumerated()), id: \.offset) { index, text in
+                Text("接下来几步，大约 2 分钟").font(.system(size: 13, weight: .semibold))
+                ForEach(Array(["允许录屏与麦克风", "下载语音识别模型（约 270 MB，只需一次）", "连接回答引擎（Codex 或 API Key，可存多家预设）",
+                               "可选：联网搜索、导入自己的技能、调整助手页布局", "建一个场景，放入你的资料"].enumerated()), id: \.offset) { index, text in
                     HStack(spacing: 8) {
                         Text("\(index + 1)").font(.system(size: 11, weight: .bold)).foregroundStyle(Brand.accent)
                             .frame(width: 20, height: 20).background(Brand.accent.opacity(0.14), in: Circle())
@@ -494,10 +497,51 @@ private struct RecognitionStep: View {
 private struct AnswersStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            StepTitle(title: "连接回答引擎", subtitle: "有 ChatGPT 账号就用 Codex（不额外付费，可开 Fast 模式更快）；也可以填任意 OpenAI 兼容服务的 API Key。")
+            StepTitle(title: "连接回答引擎", subtitle: "有 ChatGPT 账号就用 Codex（不额外付费，可开 Fast 模式更快）；也可以填任意 OpenAI 兼容服务的 API Key，多家服务商可以各存一个预设，随时切换。")
             AnswerEngineForm()
             EngineTestRow().padding(.top, 4)
         }
+    }
+}
+
+/// Optional extras: web search, skills, the assistant layout.
+private struct ExtrasStep: View {
+    @Environment(AppState.self) private var state
+    @State private var editing: Skill?
+    private var library: SkillLibrary { SkillLibrary.shared }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            StepTitle(title: "联网、技能与布局（可选）", subtitle: "都可以先跳过，之后在设置里随时打开。")
+            WebSearchSettings()
+            SettingsSection(title: "技能", icon: "wand.and.stars") {
+                Note("技能是一份 Markdown 说明（如 SKILL.md）：你的说话方式、答题套路、领域知识。这里导入的技能用于所有场景；只给某个场景用的，之后在 场景 → 资料与要求 → 技能 里勾选。")
+                HStack(spacing: 8) {
+                    Button { library.importFiles(global: true) } label: { Label("导入 .md 文件…", systemImage: "square.and.arrow.down") }
+                        .buttonStyle(SecondaryButtonStyle())
+                    Button { editing = library.create(global: true) } label: { Label("从模板新建", systemImage: "plus") }
+                        .buttonStyle(SecondaryButtonStyle())
+                    Spacer()
+                }
+                if !library.skills.isEmpty {
+                    Text("已有：" + library.skills.map(\.name).joined(separator: "、"))
+                        .font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2)
+                }
+            }
+            SettingsSection(title: "助手页布局", icon: "rectangle.3.group") {
+                Note("助手页由 实时对话、当前问题、建议回答、回答记录 四个模块组成。鼠标移到模块顶部会出现把手：拖动换位置，拖出窗口变成独立小窗，拖回来就合并；模块之间的空隙可以拖动调整大小。")
+                HStack(spacing: 6) {
+                    Text("先选一个布局：").foregroundStyle(.secondary)
+                    ForEach(AssistantLayout.Preset.allCases) { preset in
+                        Button(preset.shortTitle) { state.updateLayout { $0 = preset.layout } }
+                            .buttonStyle(ChipButtonStyle(prominent: state.assistantLayout == preset.layout))
+                    }
+                }
+            }
+            Text("想让一个更快的模型来判断“这句是不是在问我”“要不要联网”，可以在 设置 → 回答 → 高级选项 → 判断模型（JEV）里接入。")
+                .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+        .sheet(item: $editing) { skill in SkillEditor(skill: skill) { library.update($0) } }
     }
 }
 
@@ -588,6 +632,9 @@ private struct DoneStep: View {
                 shortcut(state.shortcutLabel(.forceAnswer), "立即回答最新的问题")
                 shortcut(state.shortcutLabel(.toggleTeleprompter), "显示 / 隐藏提词器（可放在摄像头下方）")
                 shortcut(state.shortcutLabel(.panicHide), "一键隐藏全部窗口")
+                Text("小技巧").font(.system(size: 12, weight: .semibold)).padding(.top, 8)
+                Text("· 需要最新信息的问题会先给快速回答，联网结果查好后自动替换，可切回原回答。\n· 鼠标移到助手页模块顶部，拖动把手可以换位置或拖出成独立窗口；输入框旁的“布局”按钮可以换预设。\n· 你说的话被当成回声时会灰色显示，点“是我说的”恢复。")
+                    .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
     }

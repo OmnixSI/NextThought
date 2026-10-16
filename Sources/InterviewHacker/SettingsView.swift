@@ -552,7 +552,7 @@ struct AnswerEngineForm: View {
     }
 }
 
-private struct WebSearchSettings: View {
+struct WebSearchSettings: View {
     @Environment(AppState.self) private var state
 
     var body: some View {

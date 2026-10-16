@@ -1,8 +1,14 @@
 name: Verify
+# macOS minutes count 10× against the Actions quota, so each commit is verified once:
+# pushes to these branches run here; pull requests only run for branches from forks
+# (a branch in this repository was already verified by its push). Docs-only commits
+# (README, screenshots, release notes) are skipped.
 on:
   push:
     branches: [main, improve/realtime-workspace, 'claude/**']
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
 permissions:
   contents: read
 concurrency:
@@ -10,6 +16,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   macos:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -35,6 +42,7 @@ jobs:
   selftest:
     # Runs the real app binary headlessly: data round trip, local signing,
     # the updater against this repository's releases, and the X-ASR pipeline.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: macos-latest
     timeout-minutes: 30
     permissions:

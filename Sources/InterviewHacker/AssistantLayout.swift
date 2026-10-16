@@ -56,6 +56,14 @@ struct AssistantLayout: Codable, Equatable {
             case .answerOnly: "只看回答"
             }
         }
+        var shortTitle: String {
+            switch self {
+            case .standard: "对话 | 回答"
+            case .answerFirst: "回答 | 对话"
+            case .stacked: "单栏"
+            case .answerOnly: "只看回答"
+            }
+        }
         var layout: AssistantLayout {
             switch self {
             case .standard: .standard
