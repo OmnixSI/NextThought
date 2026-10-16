@@ -175,7 +175,7 @@ struct SettingsSection<Content: View>: View {
             }
             content
         }
-        .font(.system(size: 12))
+        .font(.system(size: 13))
         .card()
     }
 }
@@ -212,7 +212,7 @@ struct Note: View {
     var color: Color = .secondary
     init(_ text: String, color: Color = .secondary) { self.text = text; self.color = color }
     var body: some View {
-        Text(text).font(.system(size: 11)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
+        Text(text).font(.system(size: 11.5)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -700,6 +700,7 @@ private struct RecordingSettings: View {
             Note("所有数据都在 \(AppPaths.root.path)。更新应用、更换模型或回答接口都不会改动这里的文件；自动备份保留最近 10 份，不含密钥。")
         }
         .onAppear { backups = DataBackup.listBackups() }
+        .onChange(of: state.section) { _, section in if section == .settings { backups = DataBackup.listBackups() } }
         .confirmationDialog("从这份备份恢复？", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }), titleVisibility: .visible) {
             Button("合并恢复") { if let restoring { state.importArchive(restoring.url, applySettings: false) }; restoring = nil; refreshSoon() }
             Button("取消", role: .cancel) { restoring = nil }

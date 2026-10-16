@@ -147,16 +147,29 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ view: NSVisualEffectView, context: Context) { view.material = material }
 }
 
+// MARK: Metrics
+
+/// Shared sizes so controls line up across pages.
+enum UI {
+    /// Top bar: tab bar, status pill and its buttons.
+    static let barHeight: CGFloat = 40
+    /// Standard button height (primary / secondary).
+    static let controlHeight: CGFloat = 36
+    /// Chips and compact buttons.
+    static let chipHeight: CGFloat = 30
+}
+
 // MARK: Buttons
 
 /// Prominent (tinted) glass button for primary actions.
 struct PrimaryButtonStyle: ButtonStyle {
+    var height: CGFloat = UI.controlHeight
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: height > UI.controlHeight ? 14 : 13, weight: .semibold))
             .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .frame(height: 36)
+            .padding(.horizontal, height > UI.controlHeight ? 18 : 16)
+            .frame(height: height)
             .background(ProminentFill())
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
@@ -170,7 +183,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.primary)
             .padding(.horizontal, 14)
-            .frame(height: 36)
+            .frame(height: UI.controlHeight)
             .glassCapsule()
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
@@ -182,9 +195,10 @@ struct ChipButtonStyle: ButtonStyle {
     var prominent = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 12, weight: prominent ? .semibold : .medium))
+            .font(.system(size: 12.5, weight: prominent ? .semibold : .medium))
             .lineLimit(1)
-            .padding(.horizontal, 11).padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .frame(minHeight: UI.chipHeight)
             .foregroundStyle(prominent ? Color.white : Color.primary)
             .modifier(ChipSurface(prominent: prominent))
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
@@ -198,7 +212,7 @@ struct GlassIconButtonStyle: ButtonStyle {
     var tint: Color? = nil
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 14, weight: .medium))
+            .font(.system(size: size >= UI.barHeight ? 15 : 14, weight: .medium))
             .frame(width: size, height: size)
             .foregroundStyle(tint == nil ? Color.primary : Color.white)
             .modifier(ChipSurface(prominent: tint != nil))
@@ -226,14 +240,14 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
         HStack(spacing: 2) {
             ForEach(tabs) { tab in
                 let selected = tab == selection
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { selection = tab }
-                } label: {
+                // Only the selection indicator animates; the page switch itself is instant.
+                Button { selection = tab } label: {
                     Label(title(tab), systemImage: symbol(tab))
                         .lineLimit(1).fixedSize()
-                        .font(.system(size: 12.5, weight: selected ? .semibold : .medium))
+                        .font(.system(size: 14, weight: selected ? .semibold : .medium))
                         .foregroundStyle(selected ? Color.primary : Color.secondary)
-                        .padding(.horizontal, 12).padding(.vertical, 7)
+                        .padding(.horizontal, 16)
+                        .frame(height: UI.barHeight - 8)
                         .background {
                             if selected {
                                 Capsule().fill(Color.primary.opacity(0.1))
@@ -246,6 +260,7 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
             }
         }
         .padding(4)
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: selection)
         .glassCapsule()
     }
 }

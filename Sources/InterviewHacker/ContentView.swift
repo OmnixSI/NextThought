@@ -14,14 +14,7 @@ struct ContentView: View {
         @Bindable var state = state
         ZStack {
             AppBackdrop()
-            Group {
-                switch state.section {
-                case .assistant: AssistantView()
-                case .materials: WorkspacesView()
-                case .history: HistoryView()
-                case .settings: SettingsView()
-                }
-            }
+            SectionStack()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaInset(edge: .top, spacing: 0) { TopBar() }
             if state.isOnboardingPresented {
@@ -52,6 +45,44 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Sections
+
+/// Every section visited once stays alive and is only hidden when another is shown:
+/// switching is instant (no rebuild, no cross-fade) and scroll positions are kept.
+/// Hidden sections are disabled so their text fields and default buttons never take
+/// keyboard input.
+private struct SectionStack: View {
+    @Environment(AppState.self) private var state
+    @State private var visited: Set<AppSection> = []
+
+    var body: some View {
+        ZStack {
+            ForEach(AppSection.allCases) { section in
+                let shown = section == state.section
+                if shown || visited.contains(section) {
+                    page(section)
+                        .opacity(shown ? 1 : 0)
+                        .allowsHitTesting(shown)
+                        .disabled(!shown)
+                        .accessibilityHidden(!shown)
+                        .zIndex(shown ? 1 : 0)
+                }
+            }
+        }
+        .transaction { $0.animation = nil }
+        .onChange(of: state.section, initial: true) { _, section in visited.insert(section) }
+    }
+
+    @ViewBuilder private func page(_ section: AppSection) -> some View {
+        switch section {
+        case .assistant: AssistantView()
+        case .materials: WorkspacesView()
+        case .history: HistoryView()
+        case .settings: SettingsView()
+        }
+    }
+}
+
 // MARK: - Top bar
 
 private struct TopBar: View {
@@ -63,14 +94,14 @@ private struct TopBar: View {
             GlassGroup(spacing: 10) {
                 HStack(spacing: 10) {
                     // Room for the window's traffic-light buttons (hidden title bar).
-                    Color.clear.frame(width: 64, height: 1)
+                    Color.clear.frame(width: 70, height: 1)
                     GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol)
                     Spacer(minLength: 6)
                     UpdateBadge()
                     SessionStatusPill()
                     SessionControls()
                     Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
-                        .buttonStyle(GlassIconButtonStyle())
+                        .buttonStyle(GlassIconButtonStyle(size: UI.barHeight))
                         .help("显示 / 隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
                 }
             }
@@ -104,16 +135,16 @@ private struct SessionStatusPill: View {
                 // Only this text redraws every second.
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     Text(Self.elapsed(from: started, to: context.date))
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .font(.system(size: 13, weight: .medium).monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
                 if !state.isPaused { LevelMeters() }
             } else {
                 Text(state.isChangingSession ? "正在启动…" : "未开始")
-                    .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                    .font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 12).frame(height: 34)
+        .padding(.horizontal, 14).frame(height: UI.barHeight)
         .glassCapsule()
         .help(state.isRunning ? state.transcriptionStatus : state.readinessText)
     }
@@ -164,15 +195,15 @@ private struct SessionControls: View {
                         Label(state.isChangingSession ? "启动中" : "开始", systemImage: "play.fill")
                     }
                 }
-                .buttonStyle(PrimaryButtonStyle())
+                .buttonStyle(PrimaryButtonStyle(height: UI.barHeight))
                 .disabled(!state.isReadyToStart || state.isPreparingModel || state.isChangingSession)
                 .help(state.isReadyToStart ? "开始实时辅助 · \(state.shortcutLabel(.toggleSession))" : state.readinessText)
             } else {
                 Button { Task { await state.togglePause() } } label: { Image(systemName: state.isPaused ? "play.fill" : "pause.fill") }
-                    .buttonStyle(GlassIconButtonStyle(tint: state.isPaused ? Brand.accent : nil))
+                    .buttonStyle(GlassIconButtonStyle(size: UI.barHeight, tint: state.isPaused ? Brand.accent : nil))
                     .help((state.isPaused ? "恢复" : "暂停") + " · \(state.shortcutLabel(.togglePause))")
                 Button { Task { await state.stopSession() } } label: { Image(systemName: "stop.fill") }
-                    .buttonStyle(GlassIconButtonStyle())
+                    .buttonStyle(GlassIconButtonStyle(size: UI.barHeight))
                     .help("停止并保存记录 · \(state.shortcutLabel(.toggleSession))")
             }
         }
