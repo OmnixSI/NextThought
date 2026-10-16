@@ -37,6 +37,30 @@ struct AnswerStreamingTests {
         #expect(turn["serviceTier"] as? String == "fast")
     }
 
+    @Test func reasoningEffortReplacesTemperature() throws {
+        let withEffort = try #require(JSONSerialization.jsonObject(with: ChatCompletionStreamParser.body(model: "m", system: "s", user: "u", imageJPEGBase64: nil, reasoningEffort: "low")) as? [String: Any])
+        #expect(withEffort["reasoning_effort"] as? String == "low")
+        #expect(withEffort["temperature"] == nil)
+        let plain = try #require(JSONSerialization.jsonObject(with: ChatCompletionStreamParser.body(model: "m", system: "s", user: "u", imageJPEGBase64: nil)) as? [String: Any])
+        #expect(plain["reasoning_effort"] == nil)
+        #expect(plain["temperature"] as? Double == 0.3)
+    }
+
+    @Test func parsesModelLists() {
+        let openAI = #"{"object":"list","data":[{"id":"gpt-5.5"},{"id":"deepseek-chat"},{"id":"gpt-5.5"}]}"#
+        #expect(ModelListParser.ids(from: Data(openAI.utf8)) == ["deepseek-chat", "gpt-5.5"])
+        let local = #"{"models":[{"name":"qwen3:8b"}]}"#
+        #expect(ModelListParser.ids(from: Data(local.utf8)) == ["qwen3:8b"])
+        #expect(ModelListParser.ids(from: Data("oops".utf8)).isEmpty)
+    }
+
+    @Test func presetKeysAreSecrets() {
+        #expect(SettingsSnapshot.isSecretAccount("answer.api.4F1C9A2E-0000-0000-0000-000000000000"))
+        #expect(SettingsSnapshot.isSecretAccount("github.token"))
+        #expect(!SettingsSnapshot.isSecretAccount("selectedTargetID"))
+        #expect(SettingsSnapshot.exportedKeys.contains("apiPresets"))
+    }
+
     @Test func classifiesInboundMessages() {
         guard case let .response(id, result, error)? = CodexAppServerProtocol.parse(#"{"id":2,"result":{"thread":{"id":"T1"}}}"#) else {
             Issue.record("response"); return

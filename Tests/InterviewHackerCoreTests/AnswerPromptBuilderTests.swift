@@ -35,4 +35,38 @@ struct AnswerPromptBuilderTests {
         #expect(AnswerPromptBuilder.instructions.contains("不要使用工具"))
         #expect(AnswerPromptBuilder.instructions.contains("不推测缩进、分支或缺失代码"))
     }
+
+    @Test func answersAreWrittenToBeSpoken() {
+        let rules = AnswerPromptBuilder.instructions
+        #expect(rules.contains("照着说出口"))
+        #expect(rules.contains("第一人称"))
+        #expect(rules.contains("希望对你有帮助"))   // listed as a phrase to avoid
+    }
+
+    @Test func todaySkillsAndWebResultsTravelInTheInput() throws {
+        let date = ISO8601DateFormatter().date(from: "2026-10-16T08:00:00Z")!
+        let prompt = AnswerPromptBuilder.make(question: "现在比特币多少钱？", context: "", profile: "", turns: [], hasScreenshot: false,
+                                              skills: [SkillSnippet(name: "口语化", content: "多用短句")],
+                                              webResults: [WebResult(title: "BTC price", url: "https://example.com", snippet: "BTC 65,000")],
+                                              today: date)
+        let json = String(prompt.dropFirst(AnswerPromptBuilder.instructions.count + 2))
+        let object = try #require(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        #expect((object["today"] as? String)?.hasPrefix("2026-10-16") == true)
+        #expect((object["skills"] as? [[String: Any]])?.first?["name"] as? String == "口语化")
+        #expect((object["web_results"] as? [[String: Any]])?.count == 1)
+    }
+
+    @Test func webSearchAnswersMayUseTheSearchTool() {
+        let parts = AnswerPromptBuilder.makeParts(question: "q", context: "", profile: "", turns: [], hasScreenshot: false, webSearch: true)
+        #expect(parts.system.contains("可以使用联网搜索"))
+        #expect(!parts.system.contains("不要使用工具。"))
+        #expect(!AnswerPromptBuilder.instructions.contains("可以使用联网搜索"))
+    }
+
+    @Test func skillsAreCappedInTotal() {
+        let big = String(repeating: "长", count: 7_000)
+        let kept = AnswerPromptBuilder.skillBudget((0..<5).map { SkillSnippet(name: "s\($0)", content: big) })
+        #expect(kept.reduce(0) { $0 + $1.content.count } <= 12_200)
+        #expect(kept.count >= 2)
+    }
 }

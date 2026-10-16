@@ -15,6 +15,8 @@ enum AppPaths {
 
     static var workspaces: URL { root.appendingPathComponent("Workspaces", isDirectory: true) }
     static var sessions: URL { root.appendingPathComponent("Sessions", isDirectory: true) }
+    /// Skill library (imported SKILL.md files and their settings).
+    static var skills: URL { root.appendingPathComponent("Skills", isDirectory: true).appendingPathComponent("library.json") }
     static var backups: URL { root.appendingPathComponent("Backups", isDirectory: true) }
     static var models: URL { root.appendingPathComponent("models", isDirectory: true) }
     static var signing: URL { root.appendingPathComponent("Signing", isDirectory: true) }

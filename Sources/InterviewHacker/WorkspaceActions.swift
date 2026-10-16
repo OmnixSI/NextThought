@@ -210,8 +210,9 @@ extension AppState {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         workspaces.flush()
         let items = workspaces.workspaces
+        let skills = SkillLibrary.shared.skills
         runDataTask("正在导出…") {
-            try await Task.detached(priority: .userInitiated) { try DataBackup.exportAll(to: url, includeSecrets: includeSecrets, workspaces: items) }.value
+            try await Task.detached(priority: .userInitiated) { try DataBackup.exportAll(to: url, includeSecrets: includeSecrets, workspaces: items, skills: skills) }.value
             return "已导出到 \(url.lastPathComponent)。"
         }
     }
@@ -224,8 +225,9 @@ extension AppState {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         workspaces.flush()
         let sessions = includeSessions ? archive.sessions.filter { $0.workspaceID == id }.map(\.id) : []
+        let skills = SkillLibrary.shared.skills
         runDataTask("正在导出场景…") {
-            try await Task.detached(priority: .userInitiated) { try DataBackup.exportWorkspace(workspace, sessions: sessions, to: url) }.value
+            try await Task.detached(priority: .userInitiated) { try DataBackup.exportWorkspace(workspace, sessions: sessions, to: url, skills: skills) }.value
             return "已导出“\(workspace.name)”。"
         }
     }

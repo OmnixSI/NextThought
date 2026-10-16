@@ -11,8 +11,10 @@ enum DataBackup {
         var sessionsAdded = 0
         var settingsApplied = 0
         var secretsApplied = 0
+        var skillsAdded = 0
         var description: String {
             var parts: [String] = []
+            if skillsAdded > 0 { parts.append("技能 \(skillsAdded) 个") }
             if workspacesAdded + workspacesUpdated > 0 { parts.append("场景 新增 \(workspacesAdded)、更新 \(workspacesUpdated)") }
             if sessionsAdded > 0 { parts.append("会话记录 \(sessionsAdded) 条") }
             if settingsApplied > 0 { parts.append("设置 \(settingsApplied) 项") }
@@ -35,10 +37,11 @@ enum DataBackup {
     // MARK: Export
 
     /// Full export: settings, all workspaces, all sessions (and API keys if asked).
-    static func exportAll(to destination: URL, includeSecrets: Bool, workspaces: [Workspace]) throws {
+    static func exportAll(to destination: URL, includeSecrets: Bool, workspaces: [Workspace], skills: [Skill] = []) throws {
         let staging = try makeStaging()
         defer { try? FileManager.default.removeItem(at: staging.deletingLastPathComponent()) }
         try writeWorkspaces(workspaces, into: staging)
+        try writeSkills(skills, into: staging)
         let sessionIDs = try copySessions(into: staging, only: nil)
         try writeSettings(into: staging)
         if includeSecrets { try writeSecrets(into: staging) }
@@ -50,10 +53,12 @@ enum DataBackup {
 
     /// One workspace with its materials and knowledge, optionally with its sessions —
     /// for moving “this interview setup” to another Mac or sharing a template.
-    static func exportWorkspace(_ workspace: Workspace, sessions: [UUID], to destination: URL) throws {
+    static func exportWorkspace(_ workspace: Workspace, sessions: [UUID], to destination: URL, skills: [Skill] = []) throws {
         let staging = try makeStaging()
         defer { try? FileManager.default.removeItem(at: staging.deletingLastPathComponent()) }
         try writeWorkspaces([workspace], into: staging)
+        // Its attached skills travel with it (global ones are the user's own setup).
+        try writeSkills(skills.filter { workspace.skillIDs.contains($0.id) }, into: staging)
         let copied = try copySessions(into: staging, only: Set(sessions))
         let manifest = BackupManifest(kind: .workspace, appVersion: appVersion, appBuild: appBuild, includesSecrets: false,
                                       workspaceCount: 1, sessionCount: copied.count)
@@ -90,6 +95,11 @@ enum DataBackup {
             WorkspaceStore.shared.activate(imported.id)
         }
 
+        if let data = try? Data(contentsOf: root.appendingPathComponent("skills.json")),
+           let skills = try? JSONLines.decoder().decode([Skill].self, from: data) {
+            summary.skillsAdded = SkillLibrary.shared.merge(skills)
+        }
+
         let sessionsDirectory = root.appendingPathComponent("Sessions", isDirectory: true)
         let incomingSessions = ((try? FileManager.default.contentsOfDirectory(at: sessionsDirectory, includingPropertiesForKeys: nil)) ?? [])
             .compactMap { UUID(uuidString: $0.lastPathComponent) }
@@ -121,7 +131,7 @@ enum DataBackup {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         let url = AppPaths.backups.appendingPathComponent("auto-\(formatter.string(from: Date()))-\(reason).ihbackup")
-        try exportAll(to: url, includeSecrets: false, workspaces: WorkspaceStore.shared.workspaces)
+        try exportAll(to: url, includeSecrets: false, workspaces: WorkspaceStore.shared.workspaces, skills: SkillLibrary.shared.skills)
         UserDefaults.standard.set(Date(), forKey: "lastAutomaticBackup")
         prune(keep: 10)
         Diagnostics.record("backup.automatic", ["reason": reason])
@@ -176,6 +186,11 @@ enum DataBackup {
         try encoder.encode(value).write(to: url, options: .atomic)
     }
 
+    private static func writeSkills(_ skills: [Skill], into staging: URL) throws {
+        guard !skills.isEmpty else { return }
+        try JSONLines.encoder().encode(skills).write(to: staging.appendingPathComponent("skills.json"))
+    }
+
     private static func writeWorkspaces(_ workspaces: [Workspace], into staging: URL) throws {
         let directory = staging.appendingPathComponent("Workspaces", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -210,7 +225,7 @@ enum DataBackup {
 
     private static func writeSecrets(into staging: URL) throws {
         var secrets: [String: String] = [:]
-        for account in SettingsSnapshot.secretAccounts {
+        for account in SettingsSnapshot.secretAccounts + APIPreset.loadAll().map(\.keyAccount) {
             let value = KeychainStore.read(account)
             if !value.isEmpty { secrets[account] = value }
         }
@@ -230,7 +245,7 @@ enum DataBackup {
         guard let data = try? Data(contentsOf: url),
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String] else { return 0 }
         var applied = 0
-        for (account, value) in values where SettingsSnapshot.secretAccounts.contains(account) {
+        for (account, value) in values where SettingsSnapshot.isSecretAccount(account) {
             if KeychainStore.write(value, account: account) { applied += 1 }
         }
         return applied

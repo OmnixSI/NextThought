@@ -52,16 +52,16 @@ final class CodexBridge: @unchecked Sendable {
         if process?.isRunning == true { process?.terminate() }
     }
 
-    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, serviceTier: String? = nil, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, serviceTier: String? = nil, webSearch: Bool = false, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
         let requestID = UUID()
         return try await withTaskCancellationHandler {
-            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, serviceTier: serviceTier, timeout: timeout, onUpdate: onUpdate)
+            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, serviceTier: serviceTier, webSearch: webSearch, timeout: timeout, onUpdate: onUpdate)
         } onCancel: {
             self.terminate(requestID)
         }
     }
 
-    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, serviceTier: String?, timeout: TimeInterval, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, serviceTier: String?, webSearch: Bool, timeout: TimeInterval, onUpdate: @escaping (String) async -> Void) async throws -> String {
         try Task.checkCancellation()
         let identifierCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._/:"))
         guard !model.isEmpty, model.unicodeScalars.allSatisfy({ identifierCharacters.contains($0) }),
@@ -93,7 +93,7 @@ final class CodexBridge: @unchecked Sendable {
             "--config", "features.shell_tool=false",
             "--config", "features.apps=false",
             "--config", "features.multi_agent=false",
-            "--config", "web_search=\"disabled\"",
+            "--config", "web_search=\"\(webSearch ? "live" : "disabled")\"",
             "--cd", workDir.path
         ]
         // `--ignore-user-config` drops the user's own service_tier, so set it explicitly.

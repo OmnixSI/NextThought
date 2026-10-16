@@ -1,8 +1,16 @@
 name: Verify
+# Runs on the maintainer's own Mac (self-hosted runner, docs/SELF-HOSTED-RUNNER.md);
+# set the repository variable MAC_RUNNER=github to use GitHub's macOS runners again
+# (their minutes count 10× against the Actions quota). Each commit is verified once:
+# pushes to these branches run here; pull requests only for branches from forks, and
+# those only on GitHub's runners (never run other people's code on your Mac).
+# Docs-only commits (README, screenshots, release notes) are skipped.
 on:
   push:
     branches: [main, improve/realtime-workspace, 'claude/**']
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
 permissions:
   contents: read
 concurrency:
@@ -10,7 +18,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   macos:
-    runs-on: macos-latest
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && vars.MAC_RUNNER == 'github')
+    runs-on: ${{ vars.MAC_RUNNER == 'github' && 'macos-latest' || fromJSON('["self-hosted","macOS","ARM64"]') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -35,7 +44,8 @@ jobs:
   selftest:
     # Runs the real app binary headlessly: data round trip, local signing,
     # the updater against this repository's releases, and the X-ASR pipeline.
-    runs-on: macos-latest
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && vars.MAC_RUNNER == 'github')
+    runs-on: ${{ vars.MAC_RUNNER == 'github' && 'macos-latest' || fromJSON('["self-hosted","macOS","ARM64"]') }}
     timeout-minutes: 30
     permissions:
       contents: read
@@ -49,33 +59,45 @@ jobs:
           mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
           cp "$bin" "$app/Contents/MacOS/InterviewHacker"
           cp Resources/Info.plist "$app/Contents/Info.plist"
-          codesign --force --sign - --identifier com.interviewhacker.app "$app"
+          # Own identity: the test app never touches the installed app's settings or keychain.
+          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
+          codesign --force --sign - --identifier com.interviewhacker.app.ci "$app"
           echo "APP=$app" >> "$GITHUB_ENV"
+          # Test data (and the downloaded models, kept between runs) in one folder.
+          echo "IH_DATA=$HOME/.interviewhacker-ci/selftest" >> "$GITHUB_ENV"
       - name: Cache X-ASR models
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v4
         with:
-          path: ~/ih-selftest/models
+          path: ~/.interviewhacker-ci/selftest/models
           key: xasr-zh-en-2026-06-v1
       - name: Self-test · data round trip
         timeout-minutes: 5
-        env: { INTERVIEWHACKER_DATA_DIR: /Users/runner/ih-selftest }
+        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}" }
         run: |
           mkdir -p "$INTERVIEWHACKER_DATA_DIR"
           "$APP/Contents/MacOS/InterviewHacker" --self-test data
       - name: Self-test · local signing
         if: success() || failure()
         timeout-minutes: 5
-        env: { INTERVIEWHACKER_DATA_DIR: /Users/runner/ih-selftest, INTERVIEWHACKER_SKIP_CERT_TRUST: "1" }
+        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}", INTERVIEWHACKER_SKIP_CERT_TRUST: "1" }
         run: '"$APP/Contents/MacOS/InterviewHacker" --self-test signing'
       - name: Self-test · updater
         if: success() || failure()
         timeout-minutes: 8
         env:
-          INTERVIEWHACKER_DATA_DIR: /Users/runner/ih-selftest
+          INTERVIEWHACKER_DATA_DIR: ${{ env.IH_DATA }}
           GITHUB_TOKEN: ${{ github.token }}
         run: '"$APP/Contents/MacOS/InterviewHacker" --self-test update --repo "${{ github.repository }}"'
       - name: Self-test · X-ASR two-pass recognition
         if: success() || failure()
         timeout-minutes: 12
-        env: { INTERVIEWHACKER_DATA_DIR: /Users/runner/ih-selftest }
+        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}" }
         run: '"$APP/Contents/MacOS/InterviewHacker" --self-test asr --fixtures Tools/Validation/Fixtures'
+      - name: Clean up test keychains
+        if: always()
+        run: |
+          # Signing tests register keychains under the CI data folder; take them off
+          # the user's keychain search list again (matters on a self-hosted Mac).
+          keep=$(security list-keychains -d user | tr -d '"' | sed 's/^ *//' | grep -v -e '/ih-selftest/' -e '/.interviewhacker-ci/' -e "$RUNNER_TEMP" || true)
+          [[ -n "$keep" ]] && security list-keychains -d user -s $keep || true

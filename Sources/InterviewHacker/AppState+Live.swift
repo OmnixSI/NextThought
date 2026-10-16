@@ -53,7 +53,7 @@ extension AppState {
         case let .uncertain(candidate):
             remember(candidate)
             recordQuestion(candidate, disposition: "uncertain")
-            if verifyUncertainWithModel, answerBackend == .openAICompatible, automaticAnswers, allowAutomatic {
+            if automaticAnswers, allowAutomatic, judge.handlesQuestions || (verifyUncertainWithModel && answerBackend == .openAICompatible) {
                 verify(candidate)
             }
         }
@@ -66,7 +66,7 @@ extension AppState {
             || (candidate.supersedes == lastAutomaticAnswer?.candidateID && Date().timeIntervalSince(lastAutomaticAnswer?.date ?? .distantPast) < 20))
         recordQuestion(candidate, disposition: "auto")
         ask(candidate.fullText, screenshot: nil,
-            recentContext: TranscriptContextBuilder.recent(entries.map { (date: $0.date, text: $0.contextualText) }),
+            recentContext: TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) }),
             isAutomatic: true, candidateID: candidate.id, supersede: supersedesCurrent)
         if supersedesCurrent { Diagnostics.record("answer.superseded") }
     }
@@ -106,11 +106,24 @@ extension AppState {
         if deferredCandidate?.candidate.id == candidate.id { deferredCandidate = nil }
     }
 
-    /// Second layer: ask a fast API model whether an uncertain utterance needs an answer.
+    /// Second layer for uncertain utterances: the judge model (JEV) when set, else a
+    /// fast API model; both under a short deadline, the rules stand otherwise.
     private func verify(_ candidate: QuestionCandidate) {
+        if judge.handlesQuestions {
+            let context = String(contextEntries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800))
+            Task {
+                guard let verdict = await judge.isQuestion(candidate.fullText, context: context, mode: sessionMode, ruleScore: candidate.assessment.score),
+                      verdict.yes, verdict.confidence >= 0.5, isRunning, !isPaused, !isAnswering else { return }
+                if tracker.confirm(candidate) {
+                    suggestedQuestions.removeAll { $0.id == candidate.id }
+                    ask(candidate.fullText, screenshot: nil, isAutomatic: true, candidateID: candidate.id)
+                }
+            }
+            return
+        }
         let request = AnswerRequest(
             system: "你判断会议转录中的一句话是否是需要回答的提问或请求。只输出 yes 或 no。",
-            user: "上下文：\(String(entries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800)))\n待判断：\(candidate.fullText)",
+            user: "上下文：\(String(contextEntries.suffix(4).map(\.contextualText).joined(separator: "\n").suffix(800)))\n待判断：\(candidate.fullText)",
             model: apiModel, effort: "low", imageURL: nil)
         let client = apiClient, base = apiBaseURL, key = apiKey
         Task {
@@ -144,12 +157,12 @@ extension AppState {
             (source == .system ? partialThrottle : micPartialThrottle).cancel()
             if source == .system { partialTranscript = "" } else { microphonePartialTranscript = "" }
             appleUtteranceCounter[source.rawValue, default: 0] += 1
-            if source == .microphone, echoSuppression, isEcho(text, at: start) {
+            var entry = TranscriptEntry(date: start, source: source.rawValue, text: text, isFinal: true, startedAt: start, endedAt: end)
+            if source == .microphone, echoSuppression, isEcho(text, start: start, end: end) {
                 echoDroppedCount += 1
+                entry.suspectedEcho = true
                 Diagnostics.record("microphone.echo_dropped", ["characters": text.count])
-                return
             }
-            let entry = TranscriptEntry(date: start, source: source.rawValue, text: text, isFinal: true, startedAt: start, endedAt: end)
             // Results arrive in order per channel; only a late result needs sorting.
             if let last = entries.last, last.date > start {
                 let index = entries.lastIndex { $0.date <= start }.map { $0 + 1 } ?? 0
@@ -158,7 +171,7 @@ extension AppState {
                 entries.append(entry)
             }
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
-            recordTranscript(entry)
+            if entry.suspectedEcho != true { recordTranscript(entry) }
             transcriptionStatus = statusLine
         } else {
             // Streaming recognizers revise partial text ~10×/s; coalesce to ≤5 updates/s.
@@ -184,10 +197,24 @@ extension AppState {
 
     /// Microphone text that repeats what the other side said moments ago, or arrives
     /// while the microphone envelope follows the system audio, is speaker echo.
-    private func isEcho(_ text: String, at start: Date) -> Bool {
-        let recent = entries.suffix(12).filter { $0.source == CaptureSource.system.rawValue && abs($0.date.timeIntervalSince(start)) < 12 }.map(\.text)
-            + (partialTranscript.isEmpty ? [] : [partialTranscript])
-        return EchoTextFilter.isLikelyEcho(text, recentSystemTexts: recent)
+    private func isEcho(_ text: String, start: Date, end: Date) -> Bool {
+        var lines = entries.suffix(16).filter { $0.source == CaptureSource.system.rawValue }
+            .map { TimedLine(text: $0.text, start: $0.startedAt ?? $0.date, end: $0.endedAt ?? $0.date) }
+        if !partialTranscript.isEmpty { lines.append(TimedLine(text: partialTranscript, start: Date().addingTimeInterval(-4), end: Date())) }
+        return EchoTextFilter.isEcho(microphone: text, start: start, end: end, system: lines,
+                                     acousticEchoFraction: echoMonitor.echoFraction(from: start, to: end))
+    }
+
+    /// Lines that feed answers, summaries and exports (suspected echo left out).
+    var contextEntries: [TranscriptEntry] { entries.filter { $0.suspectedEcho != true } }
+
+    /// The user says a dimmed line was really them.
+    func markNotEcho(_ id: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == id }), entries[index].suspectedEcho == true else { return }
+        entries[index].suspectedEcho = nil
+        echoDroppedCount = max(0, echoDroppedCount - 1)
+        recordTranscript(entries[index])
+        Diagnostics.record("microphone.echo_restored")
     }
 
     private var statusLine: String {
@@ -223,6 +250,7 @@ extension AppState {
         UserDefaults.standard.set(answerBackend.rawValue, forKey: "answerBackend")
         UserDefaults.standard.set(apiBaseURL, forKey: "apiBaseURL")
         UserDefaults.standard.set(apiModel, forKey: "apiModel")
+        storeActiveAPIPreset()
         UserDefaults.standard.set(verifyUncertainWithModel, forKey: "verifyUncertainWithModel")
         UserDefaults.standard.set(cloudProvider.rawValue, forKey: "cloudProvider")
         if cloudProvider.isRemovedWhisperModelIdentifier(cloudModel) { cloudModel = "" }
@@ -234,7 +262,9 @@ extension AppState {
         TeleprompterController.shared.applyAppearance()
     }
 
-    func saveAPIKey() { KeychainStore.write(apiKey.trimmingCharacters(in: .whitespacesAndNewlines), account: "answer.api") }
+    func saveAPIKey() {
+        KeychainStore.write(apiKey.trimmingCharacters(in: .whitespacesAndNewlines), account: activeAPIPreset?.keyAccount ?? "answer.api")
+    }
     func saveCloudKey() { KeychainStore.write(cloudKey.trimmingCharacters(in: .whitespacesAndNewlines), account: cloudProvider.keychainAccount) }
 
     // MARK: Companion

@@ -120,14 +120,39 @@ public struct CrossTalkMonitor: Sendable {
 
 /// Text-level backstop: a microphone utterance whose words largely repeat what the
 /// system channel said a moment ago is the speakers being re-recorded.
+/// A recognised line with its time span (for matching echo against what was said then).
+public struct TimedLine: Sendable {
+    public var text: String
+    public var start: Date
+    public var end: Date
+    public init(text: String, start: Date, end: Date) { self.text = text; self.start = start; self.end = end }
+}
+
 public enum EchoTextFilter {
-    public static func isLikelyEcho(_ microphoneText: String, recentSystemTexts: [String], threshold: Double = 0.55) -> Bool {
+    /// Share of the microphone text's units (CJK bigrams / words) found in one line.
+    public static func overlap(_ microphoneText: String, with line: String) -> Double {
         let mic = units(microphoneText)
-        guard mic.count >= 3 else { return false }
-        let system = Set(recentSystemTexts.flatMap(units))
-        guard !system.isEmpty else { return false }
-        let shared = mic.filter { system.contains($0) }.count
-        return Double(shared) / Double(mic.count) >= threshold
+        guard mic.count >= 3 else { return 0 }
+        let other = Set(units(line))
+        guard !other.isEmpty else { return 0 }
+        return Double(mic.filter { other.contains($0) }.count) / Double(mic.count)
+    }
+
+    /// Matches against each line on its own. A union of everything said recently
+    /// matched ordinary replies, which reuse the question's words.
+    public static func isLikelyEcho(_ microphoneText: String, recentSystemTexts: [String], threshold: Double = 0.55) -> Bool {
+        (recentSystemTexts.map { overlap(microphoneText, with: $0) }.max() ?? 0) >= threshold
+    }
+
+    /// A finished microphone utterance is speaker echo when it closely repeats one
+    /// line the other side said at about the same time (≥ 80 %), or partly repeats
+    /// it (≥ 50 %) while the audio monitor heard the speakers in the microphone.
+    public static func isEcho(microphone text: String, start: Date, end: Date, system lines: [TimedLine],
+                              acousticEchoFraction: Double) -> Bool {
+        let nearby = lines.filter { $0.end >= start.addingTimeInterval(-2.5) && $0.start <= end.addingTimeInterval(2.5) }
+        guard let best = nearby.map({ overlap(text, with: $0.text) }).max() else { return false }
+        if best >= 0.8 { return true }
+        return best >= 0.5 && acousticEchoFraction >= 0.4
     }
 
     /// Character bigrams for CJK, lowercase words for everything else.

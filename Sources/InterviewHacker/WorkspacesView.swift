@@ -165,6 +165,42 @@ private struct FieldEditor: View {
     }
 }
 
+/// Skills this scenario uses: global ones always, others ticked here.
+private struct WorkspaceSkillsSection: View {
+    @Environment(AppState.self) private var state
+    private var library: SkillLibrary { SkillLibrary.shared }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Label("技能 \(state.activeSkillSnippets.count)", systemImage: "wand.and.stars").font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Button { let added = library.importFiles(global: false); for skill in added { state.setSkill(skill.id, attached: true) } } label: {
+                    Label("导入并用于此场景…", systemImage: "square.and.arrow.down")
+                }.buttonStyle(ChipButtonStyle())
+                Button("管理技能") { state.openSettings(.skills) }.buttonStyle(ChipButtonStyle())
+            }
+            if library.skills.isEmpty {
+                Text("还没有技能。技能是一份 Markdown 说明（如 SKILL.md）：说话方式、答题套路、领域知识，回答时会遵循。").font(.caption).foregroundStyle(.secondary)
+            } else {
+                ForEach(library.skills) { skill in
+                    let attached = skill.global || state.activeWorkspace.skillIDs.contains(skill.id)
+                    Toggle(isOn: Binding(get: { attached }, set: { state.setSkill(skill.id, attached: $0) })) {
+                        HStack(spacing: 6) {
+                            Text(skill.name)
+                            if skill.global { Text("所有场景").font(.system(size: 10, weight: .semibold)).foregroundStyle(Brand.accent) }
+                            if !skill.enabled { Text("已停用").font(.system(size: 10)).foregroundStyle(.secondary) }
+                            if !skill.summary.isEmpty { Text(skill.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1) }
+                        }
+                    }
+                    .toggleStyle(.checkbox)
+                    .disabled(skill.global)
+                }
+            }
+        }
+    }
+}
+
 private struct MaterialsTab: View {
     @Environment(AppState.self) private var state
     @State private var importingCategory: String?
@@ -197,6 +233,8 @@ private struct MaterialsTab: View {
                 .padding(6).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             Text("用什么语言、多长、先说什么；与资料正文分开处理，文件内容不能改写这里的要求。").font(.caption).foregroundStyle(.secondary)
         }
+        Divider()
+        WorkspaceSkillsSection()
         Divider()
         VStack(alignment: .leading, spacing: 10) {
             HStack {
