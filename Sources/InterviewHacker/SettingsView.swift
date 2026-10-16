@@ -28,40 +28,133 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     }
 }
 
+/// Same shape as “场景”: groups on the left, the chosen group's settings on the right.
 struct SettingsView: View {
     @Environment(AppState.self) private var state
     @AppStorage("settingsGroup") private var groupRaw = SettingsGroup.essentials.rawValue
 
     var body: some View {
         let group = SettingsGroup(stored: groupRaw)
-        VStack(spacing: 10) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(SettingsGroup.allCases) { item in
-                        Button { groupRaw = item.rawValue } label: { Label(item.rawValue, systemImage: item.symbol) }
-                            .buttonStyle(ChipButtonStyle(prominent: item == group))
+        GeometryReader { proxy in
+            let wide = proxy.size.width >= 820
+            HStack(alignment: .top, spacing: 12) {
+                SettingsSidebar(selection: group, compact: !wide) { groupRaw = $0.rawValue }
+                    .frame(width: wide ? 250 : 200)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        SettingsPageHeader(group: group)
+                        switch group {
+                        case .essentials: EssentialSettings()
+                        case .recognition: RecognitionSettings()
+                        case .answers: AnswerSettings()
+                        case .overlay: OverlaySettings()
+                        case .recording: RecordingSettings()
+                        case .more: MoreSettings()
+                        }
                     }
+                    .frame(maxWidth: 760, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 18)
                 }
-                .padding(.horizontal, 16)
+                .id(group)
             }
-            .frame(maxWidth: 852)
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 4)
+        }
+    }
+}
+
+extension SettingsGroup {
+    var summary: String {
+        switch self {
+        case .essentials: "使用前检查 · 音频来源 · 外观"
+        case .recognition: "识别引擎 · 模型 · 专业词"
+        case .answers: "回答引擎 · Fast 模式 · 自动回答"
+        case .overlay: "位置 · 字号 · 屏幕共享"
+        case .recording: "会话记录 · 导入导出 · 备份"
+        case .more: "更新 · 权限 · 快捷键 · 手机伴侣"
+        }
+    }
+}
+
+private struct SettingsSidebar: View {
+    @Environment(AppState.self) private var state
+    let selection: SettingsGroup
+    var compact: Bool
+    let select: (SettingsGroup) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("设置").font(.system(size: 15, weight: .semibold))
+                Text("先完成“基础”，其余按需调整").font(.system(size: 11)).foregroundStyle(.secondary)
+            }
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    switch group {
-                    case .essentials: EssentialSettings()
-                    case .recognition: RecognitionSettings()
-                    case .answers: AnswerSettings()
-                    case .overlay: OverlaySettings()
-                    case .recording: RecordingSettings()
-                    case .more: MoreSettings()
-                    }
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(SettingsGroup.allCases) { group in row(group) }
                 }
-                .padding(.horizontal, 16).padding(.bottom, 18)
-                .frame(maxWidth: 820)
-                .frame(maxWidth: .infinity)
             }
         }
+        .card()
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    private func row(_ group: SettingsGroup) -> some View {
+        let selected = group == selection
+        return HStack(spacing: 10) {
+            Image(systemName: group.symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(selected ? Color.white : Brand.accent)
+                .frame(width: 30, height: 30)
+                .background(selected ? AnyShapeStyle(Brand.gradient) : AnyShapeStyle(Brand.accent.opacity(0.12)),
+                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(group.rawValue).font(.system(size: 13, weight: selected ? .semibold : .medium)).lineLimit(1)
+                if !compact {
+                    Text(group.summary).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+            badge(group)
+        }
+        .padding(8)
+        .background(selected ? Brand.accent.opacity(0.14) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .contentShape(Rectangle())
+        .onTapGesture { select(group) }
+        .help(group.summary)
+    }
+
+    @ViewBuilder private func badge(_ group: SettingsGroup) -> some View {
+        switch group {
+        case .essentials:
+            let pending = state.setupItems(confirmBinding: {}).filter { $0.status == .required }.count
+            if pending > 0 {
+                Text("\(pending)").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
+                    .frame(minWidth: 18, minHeight: 18).background(Color.orange, in: Capsule())
+                    .help("还有 \(pending) 项必需设置未完成")
+            }
+        case .more:
+            if Updater.shared.phase == .ready || Updater.shared.phase == .available {
+                Circle().fill(Brand.accent).frame(width: 8, height: 8).help("有新版本")
+            }
+        default: EmptyView()
+        }
+    }
+}
+
+private struct SettingsPageHeader: View {
+    let group: SettingsGroup
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: group.symbol)
+                .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                .frame(width: 38, height: 38)
+                .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(group.rawValue).font(.system(size: 18, weight: .bold))
+                Text(group.summary).font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 4).padding(.top, 2).padding(.bottom, 2)
     }
 }
 
