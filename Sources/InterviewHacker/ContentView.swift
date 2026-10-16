@@ -95,7 +95,12 @@ private struct TopBar: View {
                 HStack(spacing: 10) {
                     // Room for the window's traffic-light buttons (hidden title bar).
                     Color.clear.frame(width: 70, height: 1)
-                    GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol)
+                    // Narrow window: tabs fall back to icons so the controls on the right never clip.
+                    ViewThatFits(in: .horizontal) {
+                        GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol)
+                        GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol, showsTitles: false)
+                    }
+                    .layoutPriority(-1)
                     Spacer(minLength: 6)
                     UpdateBadge()
                     SessionStatusPill()
@@ -221,7 +226,7 @@ private struct UpdateBadge: View {
             Button { updater.installAndRelaunch() } label: {
                 Label("重启以更新", systemImage: "arrow.down.circle.fill")
             }
-            .buttonStyle(ChipButtonStyle(prominent: true))
+            .buttonStyle(PrimaryButtonStyle(height: UI.barHeight))
             .disabled(state.isRunning)
             .help(state.isRunning ? "停止辅助后再安装 \(available.displayVersion)" : "安装 \(available.displayVersion) 并重新打开")
         }

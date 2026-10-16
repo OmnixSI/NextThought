@@ -268,6 +268,8 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
     @Binding var selection: Tab
     let title: (Tab) -> String
     let symbol: (Tab) -> String
+    /// Icons only (narrow windows); titles move to the tooltip.
+    var showsTitles = true
     @Namespace private var namespace
 
     var body: some View {
@@ -276,21 +278,30 @@ struct GlassTabBar<Tab: Hashable & Identifiable>: View {
                 let selected = tab == selection
                 // Only the selection indicator animates; the page switch itself is instant.
                 Button { selection = tab } label: {
-                    Label(title(tab), systemImage: symbol(tab))
-                        .lineLimit(1).fixedSize()
-                        .font(.system(size: 14, weight: selected ? .semibold : .medium))
-                        .foregroundStyle(selected ? Color.primary : Color.secondary)
-                        .padding(.horizontal, 16)
-                        .frame(height: UI.barHeight - 8)
-                        .background {
-                            if selected {
-                                Capsule().fill(Color.primary.opacity(0.1))
-                                    .matchedGeometryEffect(id: "tab", in: namespace)
-                            }
+                    HStack(spacing: 7) {
+                        Image(systemName: symbol(tab))
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(selected ? Brand.accent : Color.secondary)
+                        if showsTitles {
+                            Text(title(tab))
+                                .font(.system(size: 14, weight: selected ? .semibold : .medium))
+                                .foregroundStyle(selected ? Color.primary : Color.secondary)
                         }
-                        .contentShape(Capsule())
+                    }
+                    .lineLimit(1).fixedSize()
+                    .padding(.horizontal, showsTitles ? 16 : 12)
+                    .frame(height: UI.barHeight - 8)
+                    .background {
+                        if selected {
+                            Capsule().fill(Brand.accent.opacity(0.18))
+                                .overlay(Capsule().strokeBorder(Brand.accent.opacity(0.35), lineWidth: 0.8))
+                                .matchedGeometryEffect(id: "tab", in: namespace)
+                        }
+                    }
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
+                .help(title(tab))
             }
         }
         .padding(4)
