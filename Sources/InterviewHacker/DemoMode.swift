@@ -132,11 +132,12 @@ extension AppState {
             entry(80, .microphone, "我主要负责订单服务的缓存层，把核心查询从数据库迁移到 Redis。"),
             entry(58, .system, "嗯，这个挺关键的。"),
             entry(52, .system, "那数据库和缓存同时更新的时候，你们是怎么保证一致性的？"),
+            { var echo = entry(51, .microphone, "数据库和缓存同时更新的时候你们是怎么保证一致性的"); echo.suspectedEcho = true; return echo }(),
             entry(20, .microphone, "我们用的是先更新数据库、再删除缓存的方式。"),
         ]
         questionTexts = ["好，我们先聊聊你最近做的项目吧，简单介绍一下你负责的部分。", "那数据库和缓存同时更新的时候，你们是怎么保证一致性的？"]
         partialTranscript = "如果删除缓存失败了怎么办"
-        echoDroppedCount = 2
+        echoDroppedCount = 1
         var demoTracker = QuestionCandidateTracker(mode: .interview)
         if case let .updated(candidate) = demoTracker.ingest("如果删除缓存失败了怎么办", isFinal: false, utteranceKey: "demo") {
             liveCandidate = candidate
