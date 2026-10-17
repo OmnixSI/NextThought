@@ -129,7 +129,7 @@ extension AppState {
             defer { self.insights.generatingNotes.remove(page.key) }
             let started = Date()
             do {
-                let text = try await self.runWebAnswer(request, backend: backend)
+                let text = try await self.runWebAnswer(request, backend: backend, forSlides: true)
                 if let notes = SlideNotes.parse(text) {
                     self.insights.slideNotes[page.key] = notes
                     Diagnostics.record("insight.slide_notes", ["page": page.page, "points": notes.points.count, "seconds": Date().timeIntervalSince(started)])

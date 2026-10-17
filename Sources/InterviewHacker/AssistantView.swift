@@ -822,7 +822,7 @@ private struct WebLookupStrip: View {
                 switch lookup.status {
                 case .searching:
                     ProgressView().controlSize(.mini)
-                    Text("正在联网查最新信息，先看上面的快速回答…").foregroundStyle(.secondary)
+                    Text(lookup.answer.isEmpty ? "正在联网查最新信息，先看上面的快速回答…" : "正在接收联网回答…").foregroundStyle(.secondary)
                     TimelineView(.periodic(from: lookup.startedAt, by: 1)) { context in
                         Text("\(Int(context.date.timeIntervalSince(lookup.startedAt))) 秒").monospacedDigit().foregroundStyle(.tertiary)
                     }

@@ -19,6 +19,7 @@ enum WebSearchProvider: String, CaseIterable, Identifiable {
 /// A background lookup for one answer (keyed by the answer's id).
 struct WebLookup: Equatable {
     enum Status: Equatable { case searching, done, failed(String) }
+    var generation = UUID()
     var status: Status = .searching
     var question: String
     var answer = ""
@@ -65,7 +66,8 @@ extension AppState {
 
     /// The web-updated version replaces the quick answer unless the user switched back.
     var showsWebAnswer: Bool {
-        guard let id = displayedRecordID, let lookup = webLookups[id], lookup.status == .done, !lookup.answer.isEmpty else { return false }
+        guard let id = displayedRecordID, let lookup = webLookups[id], !lookup.answer.isEmpty else { return false }
+        if case .failed = lookup.status { return false }
         return !showOriginalAnswer.contains(id)
     }
 
@@ -105,18 +107,22 @@ extension AppState {
 
     /// Starts the background web answer for answer `id`. `parts` rebuilds the prompt
     /// (with search results, or allowing the engine's own search).
-    func startWebLookup(id: UUID, question: String, model: String,
+    func startWebLookup(id: UUID, question: String,
                         parts: @escaping (_ webSearch: Bool, _ results: [WebResult]?) -> (system: String, user: String)) {
         guard webSearchAvailable else { return }
         webLookupTask?.cancel()
         let provider = webSearchProvider
-        webLookups[id] = WebLookup(question: question, provider: provider)
+        let lookup = WebLookup(question: question, provider: provider)
+        let generation = lookup.generation
+        webLookups[id] = lookup
         // Old lookups only clutter memory; keep the latest dozen.
         if webLookups.count > 12, let oldest = webLookups.min(by: { $0.value.startedAt < $1.value.startedAt })?.key { webLookups[oldest] = nil }
         let started = Date()
         let backend = answerBackend, effort = codexReasoning, tier = activeServiceTier
         let codexModel = codexModelID, apiModel = currentAnswerModel, key = tavilyKey
-        Diagnostics.record("web.started", ["provider": provider.rawValue])
+        let lookupModel = provider == .codex || backend != .openAICompatible ? codexModel : apiModel
+        Diagnostics.record("web.started", ["request_id": id.uuidString, "provider": provider.rawValue,
+                                           "model": lookupModel, "reasoning": effort])
         webLookupTask = Task { [weak self] in
             guard let self else { return }
             do {
@@ -126,7 +132,16 @@ extension AppState {
                         case .codex:
                             let prompt = parts(true, nil)
                             let request = AnswerRequest(system: prompt.system, user: prompt.user, model: codexModel, effort: effort, serviceTier: tier, webSearch: true)
-                            return (try await self.runWebCodex(request), [])
+                            return (try await self.runWebCodex(request) { [weak self] text in
+                                Task { @MainActor in
+                                    guard let self, self.webLookups[id]?.generation == generation,
+                                          self.webLookups[id]?.status == .searching else { return }
+                                    if self.webLookups[id]?.answer.isEmpty == true {
+                                        Diagnostics.record("web.first_text", ["request_id": id.uuidString, "seconds": Date().timeIntervalSince(started)])
+                                    }
+                                    self.webLookups[id]?.answer = text
+                                }
+                            }, [])
                         case .tavily:
                             let results = try await TavilyClient.search(question, key: key)
                             guard !results.isEmpty else { throw AnswerEngineError.empty }
@@ -143,14 +158,18 @@ extension AppState {
                     defer { group.cancelAll() }
                     return try await group.next()!
                 }
+                try Task.checkCancellation()
                 let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !text.isEmpty else { throw AnswerEngineError.empty }
-                self.finishWebLookup(id: id, text: text, sources: result.sources, seconds: Date().timeIntervalSince(started), model: model)
+                guard self.webLookups[id]?.generation == generation else { return }
+                self.finishWebLookup(id: id, text: text, sources: result.sources, seconds: Date().timeIntervalSince(started), model: lookupModel)
             } catch is CancellationError {
+                guard self.webLookups[id]?.generation == generation else { return }
                 if self.webLookups[id]?.status == .searching { self.webLookups[id]?.status = .failed("已取消") }
             } catch {
+                guard self.webLookups[id]?.generation == generation else { return }
                 self.webLookups[id]?.status = .failed(error.localizedDescription)
-                Diagnostics.record("web.failed", ["provider": provider.rawValue])
+                Diagnostics.record("web.failed", ["request_id": id.uuidString, "provider": provider.rawValue, "seconds": Date().timeIntervalSince(started)])
             }
         }
     }
@@ -165,7 +184,7 @@ extension AppState {
         let context = TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
         let excerpts = contextIndex.retrieve(question: question)
         let skills = activeSkillSnippets
-        startWebLookup(id: id, question: question, model: currentAnswerModel) { webSearch, results in
+        startWebLookup(id: id, question: question) { webSearch, results in
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: [], hasScreenshot: false,
                                           preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
                                           experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch)
@@ -188,28 +207,44 @@ extension AppState {
         recordAnswer(AnswerRecord(question: lookup.question, answer: text, model: "\(model) · 联网", seconds: seconds, firstTokenSeconds: nil, automatic: true))
     }
 
-    nonisolated private func runWebCodex(_ request: AnswerRequest) async throws -> String {
-        do {
-            return try await webAppServer.answer(request) { _ in }
-        } catch AnswerEngineError.appServerUnavailable {
-            return try await webCodex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, serviceTier: request.serviceTier,
-                                          webSearch: true, timeout: 90) { _ in }
+    nonisolated private func runWebCodex(_ request: AnswerRequest, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
+        try await withTaskCancellationHandler {
+            do {
+                return try await webAppServer.answer(request, onDelta: onDelta)
+            } catch let AnswerEngineError.appServerUnavailable(detail) {
+                try Task.checkCancellation()
+                Diagnostics.record("web.fallback", ["reason": detail])
+                return try await webCodex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, serviceTier: request.serviceTier,
+                                              webSearch: true, timeout: 90) { onDelta($0) }
+            }
+        } onCancel: {
+            // Also unblock initialize/account/read, before a turn exists.
+            self.webAppServer.shutdown()
+            self.webCodex.cancel()
         }
     }
 
-    /// Search results (and other background work, such as slide notes) through the
-    /// regular engine, on separate clients so the quick answer and the next question
-    /// are never blocked.
-    nonisolated func runWebAnswer(_ request: AnswerRequest, backend: AnswerBackend) async throws -> String {
-        switch backend {
-        case .openAICompatible:
-            let (base, key, effort) = await MainActor.run { (self.apiBaseURL, self.apiKey, self.apiEffortParameter) }
-            return try await webAPIClient.answer(request, baseURL: base, apiKey: key, reasoningEffort: effort) { _ in }
-        case .codexAppServer, .codexExec:
-            do { return try await webAppServer.answer(request) { _ in } }
-            catch AnswerEngineError.appServerUnavailable {
-                return try await webCodex.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, serviceTier: request.serviceTier, timeout: 90) { _ in }
+    /// Search and slide notes use different transports: each app-server client
+    /// owns one active turn, including its notification handler and cancellation.
+    nonisolated func runWebAnswer(_ request: AnswerRequest, backend: AnswerBackend, forSlides: Bool = false) async throws -> String {
+        let server = forSlides ? slideAppServer : webAppServer
+        let bridge = forSlides ? slideCodex : webCodex
+        let api = forSlides ? slideAPIClient : webAPIClient
+        return try await withTaskCancellationHandler {
+            switch backend {
+            case .openAICompatible:
+                let (base, key, effort) = await MainActor.run { (self.apiBaseURL, self.apiKey, self.apiEffortParameter) }
+                return try await api.answer(request, baseURL: base, apiKey: key, reasoningEffort: effort) { _ in }
+            case .codexAppServer, .codexExec:
+                do { return try await server.answer(request) { _ in } }
+                catch AnswerEngineError.appServerUnavailable {
+                    try Task.checkCancellation()
+                    return try await bridge.run(prompt: request.fullPrompt, model: request.model, reasoning: request.effort, serviceTier: request.serviceTier, timeout: 90) { _ in }
+                }
             }
+        } onCancel: {
+            server.shutdown()
+            bridge.cancel()
         }
     }
 }

@@ -53,7 +53,7 @@ public struct GitHubRelease: Codable, Sendable, Equatable {
 public struct UpdateManifest: Codable, Sendable, Equatable {
     public var tag: String
     public var version: String
-    /// CFBundleVersion of the build (the workflow run number; monotonic).
+    /// CFBundleVersion, ordered only within the same marketing version.
     public var build: Int
     public var zip: String
     public var sha256: String
@@ -89,7 +89,10 @@ public enum UpdateCatalog {
         let usable = releases.filter { !$0.draft && $0.zipAsset != nil }
         switch channel {
         case .main:
-            return usable.first { $0.tagName == rollingTag }
+            // A formal release may be newer than the last rolling build (release
+            // commits do not necessarily publish main-latest).
+            return usable.filter { $0.tagName == rollingTag || parseVersion($0.tagName) != nil }
+                .max { ($0.publishedAt ?? .distantPast) < ($1.publishedAt ?? .distantPast) }
         case .stable:
             let versioned = usable.filter { $0.tagName != rollingTag && parseVersion($0.tagName) != nil }
             return versioned.max { lhs, rhs in
@@ -101,8 +104,9 @@ public enum UpdateCatalog {
     /// Whether `manifest` (or, without one, the release tag) is newer than the running app.
     public static func isNewer(manifest: UpdateManifest?, releaseTag: String, currentVersion: String, currentBuild: Int) -> Bool {
         if let manifest {
-            if manifest.build != currentBuild { return manifest.build > currentBuild }
-            return compareVersions(manifest.version, currentVersion) == .orderedDescending
+            let versionOrder = compareVersions(manifest.version, currentVersion)
+            if versionOrder != .orderedSame { return versionOrder == .orderedDescending }
+            return manifest.build > currentBuild
         }
         guard parseVersion(releaseTag) != nil else { return false }
         return compareVersions(releaseTag, currentVersion) == .orderedDescending

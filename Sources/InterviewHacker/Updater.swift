@@ -42,9 +42,13 @@ final class Updater {
     private(set) var lastChecked: Date?
     /// Signature of the downloaded build relative to the running one.
     private(set) var stagedNote: String?
-    var channel: UpdateChannel = UpdateChannel(rawValue: UserDefaults.standard.string(forKey: "updateChannel") ?? "") ?? .stable
+    var channel: UpdateChannel = UpdateChannel(rawValue: UserDefaults.standard.string(forKey: "updateChannel") ?? "") ?? .stable {
+        didSet { if channel != oldValue { resetSelection() } }
+    }
     var automaticChecks: Bool = UserDefaults.standard.object(forKey: "automaticUpdateChecks") as? Bool ?? true
-    var repository: String = UserDefaults.standard.string(forKey: "updateRepository") ?? "OmnixSI/InterviewHacker"
+    var repository: String = UserDefaults.standard.string(forKey: "updateRepository") ?? "OmnixSI/InterviewHacker" {
+        didSet { if repository != oldValue { resetSelection() } }
+    }
     private(set) var hasToken = !KeychainStore.read("github.token").isEmpty
     /// The last check failed for lack of access (no token, rejected, repository not visible).
     private(set) var needsAccessHelp = false
@@ -58,7 +62,21 @@ final class Updater {
     @ObservationIgnored private var checkLoop: Task<Void, Never>?
     @ObservationIgnored private var downloadTask: Task<Void, Never>?
 
+    @ObservationIgnored private var selectionID = UUID()
+
     private init() {}
+
+    /// In-flight checks and downloads belong to the channel/repository that started them.
+    private func resetSelection() {
+        selectionID = UUID()
+        downloadTask?.cancel()
+        downloadTask = nil
+        stagedApp = nil
+        stagedNote = nil
+        available = nil
+        lastChecked = nil
+        phase = .idle
+    }
 
     var currentVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0" }
     var currentBuild: Int { Int(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "") ?? 0 }
@@ -137,26 +155,32 @@ final class Updater {
         case .ready where !userInitiated: return
         default: break
         }
+        let selection = selectionID
+        let selectedChannel = channel
         phase = .checking
         do {
             let (data, token) = try await listReleases()
+            guard selectionID == selection else { return }
             let releases = try GitHubRelease.decodeList(data)
             needsAccessHelp = false
             lastChecked = Date()
-            guard let release = UpdateCatalog.candidate(in: releases, channel: channel), let zip = release.zipAsset else {
-                available = nil; phase = .upToDate; return
+            guard let release = UpdateCatalog.candidate(in: releases, channel: selectedChannel), let zip = release.zipAsset else {
+                stagedApp = nil; stagedNote = nil; available = nil; phase = .upToDate; return
             }
             var manifest: UpdateManifest?
             if let asset = release.asset(named: "update.json") {
-                manifest = try? UpdateManifest.decode(try await download(asset, token: token))
+                manifest = try UpdateManifest.decode(try await download(asset, token: token))
+                guard manifest?.tag == release.tagName, manifest?.zip == zip.name else { throw UpdateError.invalidArchive }
             }
+            guard selectionID == selection else { return }
             guard UpdateCatalog.isNewer(manifest: manifest, releaseTag: release.tagName, currentVersion: currentVersion, currentBuild: currentBuild) else {
-                available = nil; phase = .upToDate; return
+                stagedApp = nil; stagedNote = nil; available = nil; phase = .upToDate; return
             }
             var sha = manifest?.zip == zip.name ? manifest?.sha256 : nil
             if sha == nil, let sums = release.asset(named: "SHA256SUMS.txt") {
                 sha = UpdateCatalog.sha256(for: zip.name, in: String(decoding: try await download(sums, token: token), as: UTF8.self))
             }
+            guard selectionID == selection else { return }
             let next = Available(release: release, manifest: manifest, zip: zip, sha256: sha)
             if next != available { stagedApp = nil; stagedNote = nil }
             available = next
@@ -165,6 +189,7 @@ final class Updater {
             // Download in the background so “重启安装” is instant.
             if stagedApp == nil { downloadUpdate() }
         } catch {
+            guard selectionID == selection else { return }
             needsAccessHelp = (error as? UpdateError)?.isAccessProblem == true
             phase = userInitiated || available == nil ? .failed(error.localizedDescription) : .available
             Diagnostics.record("update.check_failed", ["access": needsAccessHelp])
@@ -175,30 +200,51 @@ final class Updater {
 
     func downloadUpdate() {
         guard let available, downloadTask == nil else { return }
+        let selection = selectionID
         downloadTask = Task { [weak self] in
-            guard let self else { return }
-            defer { self.downloadTask = nil }
+            guard let self, self.selectionID == selection, !Task.isCancelled else { return }
+            defer { if self.selectionID == selection { self.downloadTask = nil } }
             do {
                 guard let expected = available.sha256 else { throw UpdateError.missingChecksum }
                 self.phase = .downloading(0)
                 let token = await self.currentToken()
+                try Task.checkCancellation()
+                guard self.selectionID == selection else { return }
                 let staging = FileManager.default.temporaryDirectory.appendingPathComponent("ih-update-\(UUID().uuidString)", isDirectory: true)
                 try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
                 let zip = staging.appendingPathComponent(available.zip.name)
                 let downloader = UpdateDownloader()
                 try await downloader.download(request(URL(string: available.zip.url)!, token: token, binary: true), to: zip) { fraction in
-                    Task { @MainActor in self.phase = .downloading(fraction) }
+                    Task { @MainActor in
+                        guard self.selectionID == selection, self.available == available,
+                              case .downloading = self.phase else { return }
+                        self.phase = .downloading(fraction)
+                    }
                 }
                 let (app, note) = try await Task.detached(priority: .userInitiated) { () throws -> (URL, String?) in
                     try Self.prepare(zip: zip, expectedSHA256: expected, in: staging)
                 }.value
+                try Task.checkCancellation()
+                guard self.selectionID == selection, self.available == available else { return }
+                let bundle = Bundle(url: app)
+                let version = bundle?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+                let build = Int(bundle?.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "") ?? 0
+                if let manifest = available.manifest {
+                    guard version == manifest.version, build == manifest.build else { throw UpdateError.invalidArchive }
+                }
+                guard UpdateCatalog.isNewer(manifest: UpdateManifest(tag: available.release.tagName, version: version, build: build,
+                                                                    zip: available.zip.name, sha256: expected),
+                                            releaseTag: available.release.tagName, currentVersion: self.currentVersion, currentBuild: self.currentBuild)
+                else { throw UpdateError.invalidArchive }
                 self.stagedApp = app
                 self.stagedNote = note
                 self.phase = .ready
                 Diagnostics.record("update.ready", ["tag": available.release.tagName])
             } catch is CancellationError {
+                guard self.selectionID == selection else { return }
                 self.phase = .available
             } catch {
+                guard self.selectionID == selection else { return }
                 self.phase = .failed(error.localizedDescription)
                 Diagnostics.record("update.download_failed")
             }
@@ -237,7 +283,9 @@ final class Updater {
 
     /// Replaces the running app with the staged one and relaunches.
     func installAndRelaunch() {
-        guard let stagedApp else { return }
+        guard phase == .ready, let stagedApp, let available,
+              UpdateCatalog.isNewer(manifest: available.manifest, releaseTag: available.release.tagName,
+                                    currentVersion: currentVersion, currentBuild: currentBuild) else { return }
         do {
             phase = .installing
             // Data lives outside the app bundle, but keep a snapshot from before every update.
