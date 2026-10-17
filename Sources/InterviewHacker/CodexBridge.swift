@@ -49,7 +49,7 @@ final class CodexBridge: @unchecked Sendable {
         lock.lock()
         let process = activeProcess
         lock.unlock()
-        if process?.isRunning == true { process?.terminate() }
+        if let process { Self.stop(process) }
     }
 
     func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, serviceTier: String? = nil, webSearch: Bool = false, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
@@ -138,7 +138,7 @@ final class CodexBridge: @unchecked Sendable {
         var readError: Error?
         var eventTypes: Set<String> = []
         do {
-            for try await line in output.fileHandleForReading.bytes.lines {
+            for try await line in ProcessLineReader.lines(from: output.fileHandleForReading) {
                 if let data = line.data(using: .utf8), let item = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     let type = item["type"] as? String ?? "unknown"
                     let subtype = (item["item"] as? [String: Any])?["type"] as? String ?? ""
@@ -206,7 +206,7 @@ final class CodexBridge: @unchecked Sendable {
         do {
             try process.run()
             DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
-                if process.isRunning { process.terminate() }
+                Self.stop(process)
             }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
@@ -245,7 +245,15 @@ final class CodexBridge: @unchecked Sendable {
         lock.lock()
         let process = activeID == id ? activeProcess : nil
         lock.unlock()
-        if process?.isRunning == true { process?.terminate() }
+        if let process { Self.stop(process) }
+    }
+
+    static func stop(_ process: Process) {
+        guard process.isRunning else { return }
+        process.terminate()
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 1) {
+            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+        }
     }
 
     private func markTimedOut(_ id: UUID) {

@@ -71,13 +71,14 @@ final class CodexAppServerClient: @unchecked Sendable {
     }
 
     func shutdown() {
-        let old: Process? = lock.withLock {
-            let value = process
+        let (old, startup) = lock.withLock {
+            let value = (process, startTask)
             process = nil; input = nil; startTask = nil
             return value
         }
+        startup?.cancel()
         failAll(CancellationError())
-        if old?.isRunning == true { old?.terminate() }
+        if let old { CodexBridge.stop(old) }
     }
 
     func cancelActiveTurn() {
@@ -86,7 +87,10 @@ final class CodexAppServerClient: @unchecked Sendable {
     }
 
     func answer(_ request: AnswerRequest, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
+        try Task.checkCancellation()
+        let requestStarted = Date()
         try await ensureStarted()
+        try Task.checkCancellation()
         let workDir = FileManager.default.temporaryDirectory.appendingPathComponent("interviewhacker-appserver-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: workDir) }
@@ -94,12 +98,16 @@ final class CodexAppServerClient: @unchecked Sendable {
         let started: [String: Any]
         do {
             started = try await send("thread/start", CodexAppServerProtocol.threadStartParams(model: request.model, effort: request.effort, cwd: workDir.path, fast: request.serviceTier == "fast", webSearch: request.webSearch), timeout: 20)
+        } catch is CancellationError {
+            throw CancellationError()
         } catch let error as AnswerEngineError {
             throw error
         } catch {
             // Usually an old CLI that does not know the v2 API.
             throw AnswerEngineError.appServerUnavailable(error.localizedDescription)
         }
+        Diagnostics.record("appserver.request_ready", ["seconds": Date().timeIntervalSince(requestStarted), "web_search": request.webSearch, "prompt_characters": request.fullPrompt.count])
+        try Task.checkCancellation()
         guard let threadID = CodexAppServerProtocol.threadID(fromThreadStart: started) else {
             throw AnswerEngineError.appServerUnavailable("thread/start 没有返回 thread id")
         }
@@ -127,7 +135,7 @@ final class CodexAppServerClient: @unchecked Sendable {
                 Task {
                     do {
                         let result = try await self.send("turn/start", CodexAppServerProtocol.turnStartParams(threadID: threadID, text: request.fullPrompt, imagePath: request.imageURL?.path, effort: request.effort, fast: request.serviceTier == "fast"), timeout: 20)
-                        turn.setTurnID(CodexAppServerProtocol.turnID(fromTurnStart: result))
+                        if turn.setTurnID(CodexAppServerProtocol.turnID(fromTurnStart: result)) { self.interrupt(turn) }
                     } catch {
                         turn.finish(.failure(error))
                     }
@@ -146,7 +154,7 @@ final class CodexAppServerClient: @unchecked Sendable {
 
     private func ensureStarted() async throws {
         let task: Task<Void, Error> = lock.withLock {
-            if let startTask, process?.isRunning == true { return startTask }
+            if let startTask { return startTask }
             let next = Task { try await self.launch() }
             startTask = next
             return next
@@ -159,6 +167,7 @@ final class CodexAppServerClient: @unchecked Sendable {
     }
 
     private func launch() async throws {
+        try Task.checkCancellation()
         guard let executable = CodexBridge.executableURL() else { throw AppFailure.codexUnavailable }
         let process = Process()
         let stdin = Pipe(), stdout = Pipe()
@@ -182,15 +191,21 @@ final class CodexAppServerClient: @unchecked Sendable {
         do { try process.run() } catch {
             throw AnswerEngineError.appServerUnavailable(error.localizedDescription)
         }
-        lock.withLock { self.process = process; self.input = stdin.fileHandleForWriting }
+        let accepted = lock.withLock {
+            guard !Task.isCancelled else { return false }
+            self.process = process; self.input = stdin.fileHandleForWriting
+            return true
+        }
+        guard accepted else { CodexBridge.stop(process); throw CancellationError() }
         let reader = stdout.fileHandleForReading
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                for try await line in reader.bytes.lines { self?.handle(line) }
+                for try await line in ProcessLineReader.lines(from: reader) { self?.handle(line) }
             } catch {}
         }
         let startedAt = Date()
         do {
+            try Task.checkCancellation()
             _ = try await send("initialize", CodexAppServerProtocol.initializeParams(version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"), timeout: 20)
             write(CodexAppServerProtocol.notification(method: "initialized"))
             let account = try await send("account/read", ["refreshToken": false], timeout: 15)
@@ -198,7 +213,8 @@ final class CodexAppServerClient: @unchecked Sendable {
                 throw AppFailure.codexNotSignedIn
             }
         } catch {
-            if process.isRunning { process.terminate() }
+            CodexBridge.stop(process)
+            if error is CancellationError { throw error }
             if error is AppFailure { throw error }
             throw AnswerEngineError.appServerUnavailable(error.localizedDescription)
         }
@@ -215,17 +231,20 @@ final class CodexAppServerClient: @unchecked Sendable {
             self?.resolve(id, .failure(AnswerEngineError.appServerUnavailable("\(method) 超时")))
         }
         defer { watchdog.cancel() }
-        let box: Box = try await withCheckedThrowingContinuation { continuation in
-            let accepted = lock.withLock { () -> Bool in
-                guard input != nil else { return false }
-                pending[id] = continuation
-                return true
+        let box: Box = try await withTaskCancellationHandler {
+            try Task.checkCancellation()
+            return try await withCheckedThrowingContinuation { continuation in
+                let failure: Error? = lock.withLock {
+                    if Task.isCancelled { return CancellationError() }
+                    guard input != nil else { return AnswerEngineError.appServerUnavailable("服务未运行") }
+                    pending[id] = continuation
+                    return nil
+                }
+                if let failure { continuation.resume(throwing: failure); return }
+                write(CodexAppServerProtocol.request(id: id, method: method, params: params))
             }
-            guard accepted else {
-                continuation.resume(throwing: AnswerEngineError.appServerUnavailable("服务未运行"))
-                return
-            }
-            write(CodexAppServerProtocol.request(id: id, method: method, params: params))
+        } onCancel: {
+            self.resolve(id, .failure(CancellationError()))
         }
         return box.value
     }
@@ -271,12 +290,16 @@ final class CodexAppServerClient: @unchecked Sendable {
         private var result: Result<String, Error>?
         private var storedTurnID: String?
         private let onDelta: @Sendable (String) -> Void
+        private let startedAt = Date()
 
         init(threadID: String, onDelta: @escaping @Sendable (String) -> Void) {
             self.threadID = threadID; self.onDelta = onDelta
         }
         var turnID: String? { lock.withLock { storedTurnID } }
-        func setTurnID(_ id: String?) { lock.withLock { storedTurnID = id } }
+        @discardableResult
+        func setTurnID(_ id: String?) -> Bool {
+            lock.withLock { storedTurnID = id; return result != nil }
+        }
 
         func setContinuation(_ next: CheckedContinuation<String, Error>) {
             let ready: Result<String, Error>? = lock.withLock {
@@ -294,6 +317,9 @@ final class CodexAppServerClient: @unchecked Sendable {
             case .delta, .agentMessageCompleted:
                 let text = lock.withLock { () -> String in accumulator.apply(event); return accumulator.text }
                 onDelta(text)
+            case let .webSearch(_, completed, queryCount):
+                Diagnostics.record("appserver.web_search", ["thread_id": threadID, "stage": completed ? "completed" : "started",
+                                                           "queries": queryCount, "seconds": Date().timeIntervalSince(startedAt)])
             case let .retrying(message):
                 Diagnostics.record("appserver.retrying", ["message_characters": message.count])
             case let .completed(status, error):

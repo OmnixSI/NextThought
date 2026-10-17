@@ -110,6 +110,7 @@ public enum CodexAppServerProtocol {
     public enum TurnEvent: Equatable, Sendable {
         case delta(itemID: String, text: String)
         case agentMessageCompleted(itemID: String, text: String, phase: String?)
+        case webSearch(itemID: String, completed: Bool, queryCount: Int)
         case retrying(String)
         case completed(status: String, error: String?)
     }
@@ -122,8 +123,14 @@ public enum CodexAppServerProtocol {
         case "item/agentMessage/delta":
             guard let delta = params["delta"] as? String else { return nil }
             return .delta(itemID: params["itemId"] as? String ?? "", text: delta)
-        case "item/completed":
-            guard let item = params["item"] as? [String: Any], item["type"] as? String == "agentMessage",
+        case "item/started", "item/completed":
+            guard let item = params["item"] as? [String: Any] else { return nil }
+            if item["type"] as? String == "webSearch" {
+                let action = item["action"] as? [String: Any] ?? [:]
+                let count = (action["queries"] as? [String])?.count ?? (action["query"] is String ? 1 : 0)
+                return .webSearch(itemID: item["id"] as? String ?? "", completed: method == "item/completed", queryCount: count)
+            }
+            guard method == "item/completed", item["type"] as? String == "agentMessage",
                   let text = item["text"] as? String else { return nil }
             return .agentMessageCompleted(itemID: item["id"] as? String ?? "", text: text, phase: item["phase"] as? String)
         case "turn/completed":

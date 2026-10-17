@@ -124,6 +124,10 @@ final class AppState {
     let webAppServer = CodexAppServerClient()
     let webCodex = CodexBridge()
     let webAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
+    // Slide notes are sequential, but can overlap a lookup. A transport owns one turn.
+    let slideAppServer = CodexAppServerClient()
+    let slideCodex = CodexBridge()
+    let slideAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
     /// Screen, slides and answer progress.
     let insights = LiveInsights()
     @ObservationIgnored var screenWatchTask: Task<Void, Never>?
@@ -336,6 +340,8 @@ final class AppState {
         }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
+            // Warm independent services concurrently; no model/search calls are made.
+            if webSearchMode != .off, webSearchProvider == .codex { Task { await webAppServer.prewarm() } }
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
             if answerBackend == .codexAppServer, CodexBridge.executableURL() != nil { await appServer.prewarm() }
             await prewarmRecognizer()
@@ -728,7 +734,7 @@ final class AppState {
                 let decision = await self.shouldSearchWeb(question)
                 Diagnostics.record("web.decision", ["search": decision.search, "reason": decision.reason])
                 guard decision.search, self.currentAnswerID == id else { return }
-                self.startWebLookup(id: id, question: question, model: selectedModel, parts: { buildParts($0, $1, allSnippets) })
+                self.startWebLookup(id: id, question: question, parts: { buildParts($0, $1, allSnippets) })
             }
         }
         let answerStartedAt = Date()
@@ -1056,6 +1062,9 @@ final class AppState {
         webAppServer.shutdown()
         screenWatchTask?.cancel()
         webCodex.cancel()
+        insights.sideChain?.cancel()
+        slideAppServer.shutdown()
+        slideCodex.cancel()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
     }
