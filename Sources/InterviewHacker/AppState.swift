@@ -340,6 +340,8 @@ final class AppState {
         }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
+            // Warm independent services concurrently; no model/search calls are made.
+            if webSearchMode != .off, webSearchProvider == .codex { Task { await webAppServer.prewarm() } }
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
             if answerBackend == .codexAppServer, CodexBridge.executableURL() != nil { await appServer.prewarm() }
             await prewarmRecognizer()

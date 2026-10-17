@@ -88,6 +88,7 @@ final class CodexAppServerClient: @unchecked Sendable {
 
     func answer(_ request: AnswerRequest, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {
         try Task.checkCancellation()
+        let requestStarted = Date()
         try await ensureStarted()
         try Task.checkCancellation()
         let workDir = FileManager.default.temporaryDirectory.appendingPathComponent("interviewhacker-appserver-\(UUID().uuidString)", isDirectory: true)
@@ -105,6 +106,7 @@ final class CodexAppServerClient: @unchecked Sendable {
             // Usually an old CLI that does not know the v2 API.
             throw AnswerEngineError.appServerUnavailable(error.localizedDescription)
         }
+        Diagnostics.record("appserver.request_ready", ["seconds": Date().timeIntervalSince(requestStarted), "web_search": request.webSearch, "prompt_characters": request.fullPrompt.count])
         try Task.checkCancellation()
         guard let threadID = CodexAppServerProtocol.threadID(fromThreadStart: started) else {
             throw AnswerEngineError.appServerUnavailable("thread/start 没有返回 thread id")
@@ -288,6 +290,7 @@ final class CodexAppServerClient: @unchecked Sendable {
         private var result: Result<String, Error>?
         private var storedTurnID: String?
         private let onDelta: @Sendable (String) -> Void
+        private let startedAt = Date()
 
         init(threadID: String, onDelta: @escaping @Sendable (String) -> Void) {
             self.threadID = threadID; self.onDelta = onDelta
@@ -314,6 +317,9 @@ final class CodexAppServerClient: @unchecked Sendable {
             case .delta, .agentMessageCompleted:
                 let text = lock.withLock { () -> String in accumulator.apply(event); return accumulator.text }
                 onDelta(text)
+            case let .webSearch(_, completed, queryCount):
+                Diagnostics.record("appserver.web_search", ["thread_id": threadID, "stage": completed ? "completed" : "started",
+                                                           "queries": queryCount, "seconds": Date().timeIntervalSince(startedAt)])
             case let .retrying(message):
                 Diagnostics.record("appserver.retrying", ["message_characters": message.count])
             case let .completed(status, error):

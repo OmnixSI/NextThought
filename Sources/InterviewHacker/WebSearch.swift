@@ -88,6 +88,7 @@ extension AppState {
     func saveWebSearchSettings() {
         UserDefaults.standard.set(webSearchMode.rawValue, forKey: "webSearchMode")
         UserDefaults.standard.set(webSearchProvider.rawValue, forKey: "webSearchProvider")
+        if webSearchMode != .off, webSearchProvider == .codex { Task { await webAppServer.prewarm() } }
     }
 
     // MARK: Deciding
@@ -130,7 +131,7 @@ extension AppState {
                     group.addTask {
                         switch provider {
                         case .codex:
-                            let prompt = parts(true, nil)
+                            let prompt = WebLookupPromptBuilder.makeParts(userJSON: parts(true, nil).user)
                             let request = AnswerRequest(system: prompt.system, user: prompt.user, model: codexModel, effort: effort, serviceTier: tier, webSearch: true)
                             return (try await self.runWebCodex(request) { [weak self] text in
                                 Task { @MainActor in
