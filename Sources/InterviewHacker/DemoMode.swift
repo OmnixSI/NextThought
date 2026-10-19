@@ -34,6 +34,12 @@ enum DemoMode {
             if let number = Int(parts[1]) { UserDefaults.standard.set(number, forKey: parts[0]) } else { UserDefaults.standard.set(parts[1], forKey: parts[0]) }
         }
         let state = AppState.shared
+        if let path = environment["INTERVIEWHACKER_DEMO_SCREENSHOT_PREVIEW"], let image = NSImage(contentsOfFile: path) {
+            state.screenshotPreview = image
+            if let screenshotPath = environment["INTERVIEWHACKER_DEMO_SCREENSHOT_URL"] {
+                state.screenshotURL = URL(fileURLWithPath: screenshotPath)
+            }
+        }
         // Screenshots must be able to see the windows.
         state.capturePrivacy = false
         TeleprompterController.shared.applyPrivacy(false)

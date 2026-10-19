@@ -5,10 +5,10 @@
 #
 #   ./scripts/setup-release-signing.sh
 #
-# It reuses (or creates) the self-signed "InterviewHacker Local Development"
-# identity in .local-signing/, exports it as a password-protected .p12 and stores
-# it as GitHub Actions secrets with the GitHub CLI (`gh auth login` first).
-# Local builds (scripts/build-app.sh) and release builds then share one identity.
+# It reuses (or creates) a self-signed release identity in .local-signing/, exports
+# it as a password-protected .p12 and stores it as GitHub Actions secrets with the
+# GitHub CLI (`gh auth login` first). Local builds use the app-bound Local Signing
+# identity in Application Support; its private key stays on this Mac.
 set -euo pipefail
 umask 077
 

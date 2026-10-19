@@ -55,8 +55,9 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 ### 签名与隐私权限
 
 - CI 默认使用临时 ad-hoc 签名，没有 Apple 账号要求。该签名每个版本都不同，因此 macOS 可能要求重新授予隐私权限。
-- 本机开发构建默认运行 `scripts/setup-local-signing.sh`，它会复用仓库 `.local-signing/` 中的既有自签名证书。不要删除或重建此身份：麦克风、录屏与系统音频授权依赖固定的 Bundle ID 和签名身份。该流程不需要 Apple Developer 账号。
-- 需要把固定签名用于 CI 时，可运行 `scripts/setup-release-signing.sh` 按脚本说明写入 Actions Secrets。配置 Developer ID 和公证凭据后，release workflow 会使用 hardened runtime 与 `Resources/InterviewHacker.entitlements` 公证并装订。
+- 本机 `scripts/build-app.sh` 使用应用设置中绑定的 **InterviewHacker Local Signing** 证书（`~/Library/Application Support/InterviewHacker/Signing/`）。如果身份缺失或不完整，脚本会停止，不会另建证书；先打开应用完成绑定。不要替换该身份：麦克风、录屏与系统音频权限依赖稳定的 Bundle ID 和签名要求。
+- 本机 `scripts/install-latest.sh` 会先用同一证书重签下载包，并比较它与当前安装包的 designated requirement；身份不一致时停止安装。本机脚本拒绝 ad-hoc 和其他证书，只有 GitHub Actions 发布流程可使用独立发布身份。
+- GitHub Releases 可运行 `scripts/setup-release-signing.sh`，把独立的固定发布证书写入 Actions Secrets。该密钥与本机 Local Signing 身份分开，本机私钥不会上传到 CI。配置 Developer ID 和公证凭据后，release workflow 会使用 hardened runtime 与 `Resources/InterviewHacker.entitlements` 公证并装订。
 - Bundle ID 保持为 `com.interviewhacker.app`。构建只签应用主程序；Sherpa-ONNX 和 ONNX Runtime 是静态链接，不生成需要单独签名的独立助手进程或动态运行库。
 
 ### 本地构建

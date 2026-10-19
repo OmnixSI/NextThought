@@ -979,19 +979,14 @@ private struct QuestionComposer: View {
 
     var body: some View {
         @Bindable var state = state
+        let placeholder = state.screenshotPreview == nil ? "输入问题，回车发送…" : "对截图的补充要求（可留空）…"
         HStack(spacing: 8) {
-            ZStack(alignment: .leading) {
-                if state.questionInput.isEmpty {
-                    Text(state.screenshotPreview == nil ? "输入问题，回车发送…" : "对截图的补充要求（可留空）…")
-                        .font(.system(size: 14)).foregroundStyle(Color.secondary).allowsHitTesting(false)
-                }
-                TextField("", text: $state.questionInput, axis: .vertical)
-                    .lineLimit(1...4)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.primary)
-            }
-            .onSubmit { submit() }
+            TextField("", text: $state.questionInput, prompt: Text(placeholder).foregroundStyle(Color.secondary), axis: .vertical)
+                .lineLimit(1...4)
+                .textFieldStyle(.plain)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.primary)
+                .onSubmit { submit() }
             Button { submit() } label: {
                 Image(systemName: "arrow.up").font(.system(size: 13, weight: .bold))
             }

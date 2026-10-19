@@ -193,13 +193,15 @@ flowchart LR
 
 **绑定本机签名（一次即可）**：设置 → 基础 → 使用前检查 → 本机签名 “绑定”（或 设置 → 更多 → 权限与签名）。应用会在本机生成一个只属于这台 Mac 的代码签名证书并重新签名自己；之后自动更新下载的每个新版本都会用同一证书重新签名，macOS 认为它是同一个应用，录屏和麦克风权限一直有效。绑定后需要再授权一次，系统可能请求一次登录密码以信任该证书。
 
+本机源码构建 `./scripts/build-app.sh` 使用这台 Mac 在应用设置中绑定的 **InterviewHacker Local Signing** 证书（位于 `~/Library/Application Support/InterviewHacker/Signing/`）。如果尚未绑定或身份文件不完整，构建会停止；请先打开应用完成绑定。不要为本机构建另建证书，这样已授予的系统权限才能继续对应同一签名身份。
+
 也可以用命令行更新（需要已登录的 [GitHub CLI](https://cli.github.com)）：
 
 ```sh
 ./scripts/install-latest.sh
 ```
 
-它通过 `gh` 下载最新版、校验 SHA-256、替换 `/Applications/InterviewHacker.app` 并重新打开。这样下载的文件不带浏览器的“来自互联网”标记，**不会再弹“仍要打开”**。
+它通过 `gh` 下载最新版、校验 SHA-256，再用这台 Mac 已绑定的 Local Signing 证书重签后替换 `/Applications/InterviewHacker.app`。如果当前安装包使用了不同签名身份，脚本会停止，避免更新后丢失系统权限。安装后会重新打开应用；这样下载的文件不带浏览器的“来自互联网”标记，**不会再弹“仍要打开”**。
 
 **为什么浏览器下载的版本每次都要重新授权？** macOS 的录屏 / 麦克风权限绑定在应用的**签名身份**上。没有固定证书时，CI 只能临时（ad-hoc）签名，每个版本的签名都不同，系统就把它当成新应用。在自己的 Mac 上运行一次：
 
@@ -207,7 +209,7 @@ flowchart LR
 ./scripts/setup-release-signing.sh
 ```
 
-它会把本机的固定签名身份（与 `scripts/build-app.sh` 本地构建共用）保存到仓库的 Actions Secrets，之后发布的每个版本都用同一身份签名，**升级后权限保持不变**。如需完全免除 Gatekeeper 提示，可加入 Apple Developer Program 并配置 Developer ID 与公证（见 [开发文档](docs/DEVELOPMENT.md#签名与公证)）。
+它会为 GitHub Releases 使用一张固定的发布证书，并保存到仓库的 Actions Secrets，之后发布的每个版本都用同一身份签名。它与这台 Mac 上的 Local Signing 证书分开；本机证书不会上传到 CI。需要完全免除 Gatekeeper 提示时，可加入 Apple Developer Program 并配置 Developer ID 与公证（见 [开发文档](docs/DEVELOPMENT.md#签名与公证)）。
 
 ## 快速上手
 
