@@ -35,7 +35,7 @@
 
 ## 回归与边界
 
-- 全量 Swift 单测：136 项通过，包括旧数据兼容、块引用、HTML/Markdown 长表、rowspan、公式边界和进程退出竞争。
+- 全量 Swift 单测：137 项通过，包括旧数据兼容、块引用、HTML/Markdown 长表、rowspan、公式边界和进程退出竞争。
 - Python 协议／OTSL／阅读顺序单测：4 项通过。
 - 既有 CodexTransport：并发 prewarm、取消 thread/start、迟到确认、取消后下一请求，以及 20 次即时 CLI 退出均通过；不会调用在线模型。
 - 专用文档边界自检：空／超限文件、加密 PDF、扫描+数字混合 PDF、物理页码、默认明确降级、严格模式、取消及 worker 恢复通过。
@@ -64,3 +64,5 @@ INTERVIEWHACKER_DEMO=1 "$APP" --self-test document-lifecycle model-files
 补充实际自检：运行中删除 Qwen 模型（使用项目内可丢弃的硬链接副本）通过；索引取消、worker 卸载、模型与索引清理后均没有迟到重建。正式 tar.gz 二次修复安装通过。结构化备份恢复保留 Markdown、表格／公式、warnings、真实页码与相对路径，且不包含原件、模型和运行包。
 
 正式 App 的离线隔离验证已通过：Seatbelt 拒绝网络、仓库 Sources／Resources／Tools 和 /opt/homebrew、/usr/local 的读取，仍能使用随包 helper 与新目录中的运行包完成 Paddle 公式识别。实际 MCP 读取双页 PPT 的两个不同嵌图后，图片 ID 与幻灯片对应正确；App codesign --deep --strict 再次通过，资源目录没有产生 Python bytecode 缓存。
+
+移除了旧的 2,000 检索片段截断；第 2,105 个片段仍可被关键词检索的回归已通过，全文导入后的尾部材料不会因该旧上限消失。

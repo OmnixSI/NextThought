@@ -53,22 +53,14 @@ public enum ContextChunker {
     public static let version = "2-heading-table"
     public static let chunkCharacters = 900
     public static let overlapCharacters = 120
-    /// Materials per scenario; kept in step with `SessionContextIndex.maximumDocuments`.
-    public static let maximumDocuments = 40
-    /// Sections read per material.
-    public static let maximumSectionsPerDocument = 500
-    /// Upper bound on the number of chunks, so a huge workspace cannot blow up the index.
-    public static let maximumChunks = 2_000
-
     public static func chunks(documents: [ContextDocument]) -> [ContextChunk] {
         var result: [ContextChunk] = []
-        for document in documents.prefix(maximumDocuments) where document.enabled {
+        for document in documents where document.enabled {
             let blocks = document.content?.blocks ?? document.pages.enumerated().flatMap { offset, text in
                 DocumentStructure.parse(text, locator: .init(section: offset + 1))
             }
             for block in blocks where block.kind != "heading" {
                 for (part, text) in DocumentStructure.pieces(block, target: chunkCharacters).enumerated() {
-                    guard result.count < maximumChunks else { return result }
                     let path = ([document.name] + block.locator.headingPath).joined(separator: " > ")
                     let body = path + "\n" + text
                     let fingerprint = ContextFingerprint.hash(version + document.id.uuidString + "\n" + block.id + "\n" + String(part) + "\n" + body)

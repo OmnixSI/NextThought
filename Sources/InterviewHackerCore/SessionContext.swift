@@ -103,8 +103,6 @@ public struct SessionContextIndex: Sendable {
     private var documentFrequency: [String: Int] = [:]
     /// Materials per scenario. Kept in step with `AppState.maxDocuments`.
     public static let maximumDocuments = 40
-    /// Sections read per material (a Markdown file with many headings).
-    public static let maximumSectionsPerDocument = 500
     public init(documents: [ContextDocument] = []) {
         self.init(chunks: ContextChunker.chunks(documents: documents))
     }
@@ -117,7 +115,7 @@ public struct SessionContextIndex: Sendable {
         for chunk in source {
             chunks.append(
                 Chunk(
-                    excerpt: .init(source: chunk.source, page: chunk.page, text: chunk.text, locator: chunk.locator, chunkID: chunk.id),
+                    excerpt: .init(source: chunk.source, page: chunk.page, text: chunk.text, locator: chunk.locator, chunkID: chunk.id, blockID: chunk.blockID),
                     terms: Self.terms(chunk.text), order: chunk.order))
         }
         for chunk in chunks { for term in chunk.terms { documentFrequency[term, default: 0] += 1 } }

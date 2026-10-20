@@ -34,6 +34,13 @@ struct DocumentStructureTests {
         let ex=ContextExcerpt(source:"math",page:1,text:formula,locator:.init(page:1))
         #expect(ContextExcerpt.budget([ex],characters:100).isEmpty)
     }
+    @Test func everyAcceptedBlockRemainsSearchableBeyondTheOldChunkCap() {
+        let blocks=(0..<2105).map { i in DocumentBlock(id: "block-\(i)", markdown: i == 2104 ? "terminal-needle-zebra" : "paragraph \(i)", locator: .init(section: i+1)) }
+        let document=ContextDocument(name:"many-sections.md",pages:blocks.map(\.markdown),content:.init(pipeline:"fixture",blocks:blocks))
+        let index=HybridContextIndex(documents:[document])
+        #expect(index.chunks.count==2105)
+        #expect(index.retrieve(question:"terminal-needle-zebra").first?.locator?.section==2105)
+    }
     @Test func vectorsRejectChangedChunksAndInvalidNumbers() {
         let index=SemanticIndex(entries:[.init(fingerprint:"old",vector:[1,0]),.init(fingerprint:"same",vector:[.nan,0])])
         #expect(index.rankedOrders(query:[1,0],fingerprints:["changed","same"]).isEmpty)
