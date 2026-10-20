@@ -15,6 +15,10 @@ import InterviewHackerCore
 enum Launcher {
     static func main() {
         let arguments = CommandLine.arguments
+        if let index = arguments.firstIndex(of: "--document-tool") {
+            do { try CodexDocumentReader.tool(Array(arguments.dropFirst(index + 1))); exit(0) }
+            catch { fputs("Document tool: \(error)\n", stderr); exit(1) }
+        }
         if let index = arguments.firstIndex(of: "--self-test") {
             let code = SelfTest.run(Array(arguments.dropFirst(index + 1)))
             exit(code)
@@ -50,6 +54,14 @@ enum SelfTest {
             print("SELFTEST ▶︎ \(suite)")
             let result: Result<String, Error> = runAsync {
                 switch suite {
+                case "documents": return try await DocumentSelfTest.run(options)
+                case "models": return try await DocumentSelfTest.model()
+                case "runtime": return try await DocumentSelfTest.runtime(options)
+                case "document-edges": return try await DocumentSelfTest.edges(options)
+                case "document-lifecycle": return try await DocumentSelfTest.lifecycle()
+                case "model-files": return try await DocumentSelfTest.modelFiles()
+                case "model-delete": return try await DocumentSelfTest.modelDeletion()
+                case "document-backup": return try await DocumentSelfTest.archiveRoundTrip()
                 case "data": return try await testData()
                 case "signing": return try await testSigning()
                 case "update": return try await testUpdate(options)

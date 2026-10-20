@@ -1,0 +1,89 @@
+{
+  "blocks" : [
+    {
+      "id" : "67536ad67fe06d99-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "交付说明 \/ Delivery Notes"
+        ]
+      },
+      "markdown" : "交付说明 \/ Delivery Notes"
+    },
+    {
+      "id" : "86258a20e2296174-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "交付说明 \/ Delivery Notes"
+        ]
+      },
+      "markdown" : "版本 v1.7.0，负责人：陈佳。"
+    },
+    {
+      "id" : "921ba3288343fe8d-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "交付说明 \/ Delivery Notes"
+        ]
+      },
+      "markdown" : "下图包含服务链路和容量参数。"
+    },
+    {
+      "id" : "9173eb27043917e9-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "交付说明 \/ Delivery Notes",
+          "架构图 \/ Architecture"
+        ]
+      },
+      "markdown" : "架构图 \/ Architecture"
+    },
+    {
+      "id" : "4d4f79938d343936-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "交付说明 \/ Delivery Notes",
+          "架构图 \/ Architecture"
+        ]
+      },
+      "markdown" : "Client → Gateway → Worker"
+    },
+    {
+      "id" : "c647b6232c25bb7a-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "交付说明 \/ Delivery Notes",
+          "架构图 \/ Architecture"
+        ]
+      },
+      "markdown" : "吞吐量 2,500 req\/s；超时 800 ms；重试 3 次"
+    },
+    {
+      "id" : "3ff33b65ce46470f-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "交付说明 \/ Delivery Notes"
+        ]
+      },
+      "markdown" : "验收日期：2026-10-21。"
+    }
+  ],
+  "components" : {
+    "cli" : "codex-cli 0.163.0-alpha.10.2",
+    "model" : "gpt-6-luna",
+    "reasoning" : "medium"
+  },
+  "pipeline" : "codex",
+  "schemaVersion" : 1,
+  "sourceHash" : "c7da76dbf8b1949137c991889c6d5f477ff6ced7320d9d4c9d628b74687c6abb",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

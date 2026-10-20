@@ -19,6 +19,9 @@ enum AppPaths {
     static var skills: URL { root.appendingPathComponent("Skills", isDirectory: true).appendingPathComponent("library.json") }
     static var backups: URL { root.appendingPathComponent("Backups", isDirectory: true) }
     static var models: URL { root.appendingPathComponent("models", isDirectory: true) }
+    /// The vector index of the materials; it belongs to the embedding model
+    /// that produced it, so it is removed together with that model.
+    static var index: URL { root.appendingPathComponent("Index", isDirectory: true) }
     static var signing: URL { root.appendingPathComponent("Signing", isDirectory: true) }
     static var logs: URL { root.appendingPathComponent("Logs", isDirectory: true) }
     static var legacyPresets: URL { root.appendingPathComponent("presets.json") }

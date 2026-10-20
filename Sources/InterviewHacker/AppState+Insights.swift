@@ -68,7 +68,7 @@ extension AppState {
     /// The slide on screen within the last two minutes.
     var currentSlideExcerpt: ContextExcerpt? {
         guard insights.screenWatch, let slide = insights.slide, let seen = insights.slideSeenAt, Date().timeIntervalSince(seen) < 120 else { return nil }
-        return ContextExcerpt(source: slide.documentName, page: slide.page, text: slide.text)
+        return ContextExcerpt(source: slide.documentName, page: slide.page, text: slide.text, locator: .init(slide: slide.page))
     }
 
     // MARK: Following slides
@@ -76,7 +76,11 @@ extension AppState {
     /// Pages of the imported decks (PowerPoint, Keynote, multi-page PDF).
     var slidePages: [SlidePage] {
         activeWorkspace.documents.filter { $0.enabled && SlideMatcher.isDeck(name: $0.name, pageCount: $0.pages.count) }.flatMap { document in
-            document.pages.enumerated().map { SlidePage(documentID: document.id, documentName: document.name, page: $0.offset + 1, pageCount: document.pages.count, text: $0.element) }
+            if let content = document.content {
+                let grouped = Dictionary(grouping: content.blocks.filter { $0.locator.slide != nil || $0.locator.page != nil }, by: { $0.locator.slide ?? $0.locator.page! })
+                return grouped.keys.sorted().map { number in SlidePage(documentID: document.id, documentName: document.name, page: number, pageCount: grouped.count, text: grouped[number]!.map(\.markdown).joined(separator: "\n\n")) }
+            }
+            return document.pages.enumerated().map { SlidePage(documentID: document.id, documentName: document.name, page: $0.offset + 1, pageCount: document.pages.count, text: $0.element) }
         }
     }
 
@@ -111,25 +115,29 @@ extension AppState {
         guard force || insights.slideNotes[page.key] == nil, !insights.generatingNotes.contains(page.key) else { return }
         let model = currentAnswerModel
         guard !model.isEmpty else { insights.slideNotesError = "还没有选择回答模型，讲稿提示需要回答引擎。"; return }
+        let workspaceID=activeWorkspace.id, revision=documentRevision
         insights.generatingNotes.insert(page.key)
         insights.slideNotesError = nil
         let deck = slidePages.filter { $0.documentID == page.documentID }
         let previous = deck.first { $0.page == page.page - 1 }?.text
         let next = deck.first { $0.page == page.page + 1 }?.text
-        // Supporting material (the paper, the script), not the deck itself.
-        let excerpts = contextIndex.retrieve(question: page.text, maximumCharacters: 3_000).filter { !$0.source.hasSuffix(page.documentName) }
-        let prompt = SlideNotes.prompt(page: page, previous: previous, next: next, excerpts: excerpts, mode: sessionMode, preferences: activeWorkspace.preferences)
         let backend = answerBackend
-        let request = AnswerRequest(system: prompt.system, user: prompt.user, model: model,
-                                    effort: backend == .openAICompatible ? codexReasoning : "low", serviceTier: activeServiceTier)
         let previousJob = insights.sideChain
         insights.sideChain = Task { [weak self] in
             await previousJob?.value
-            guard let self else { return }
+            guard let self, !Task.isCancelled, self.activeWorkspace.id == workspaceID, self.documentRevision == revision else { return }
             defer { self.insights.generatingNotes.remove(page.key) }
             let started = Date()
             do {
+                // Supporting material (the paper, the script), not the deck itself.
+                let excerpts = await self.retrieveExcerpts(question: page.text, maximumCharacters: 3_000)
+                    .filter { !$0.source.hasSuffix(page.documentName) }
+                let prompt = SlideNotes.prompt(page: page, previous: previous, next: next, excerpts: excerpts, mode: self.sessionMode, preferences: self.activeWorkspace.preferences)
+                let request = AnswerRequest(system: prompt.system, user: prompt.user, model: model,
+                                            effort: backend == .openAICompatible ? self.codexReasoning : "low", serviceTier: self.activeServiceTier)
                 let text = try await self.runWebAnswer(request, backend: backend, forSlides: true)
+                try Task.checkCancellation()
+                guard self.activeWorkspace.id == workspaceID, self.documentRevision == revision else { return }
                 if let notes = SlideNotes.parse(text) {
                     self.insights.slideNotes[page.key] = notes
                     Diagnostics.record("insight.slide_notes", ["page": page.page, "points": notes.points.count, "seconds": Date().timeIntervalSince(started)])
@@ -137,6 +145,7 @@ extension AppState {
                     self.insights.slideNotesError = "讲稿提示没有按格式返回，可以点“重新生成”。"
                 }
             } catch {
+                guard !Task.isCancelled, self.activeWorkspace.id == workspaceID, self.documentRevision == revision else { return }
                 self.insights.slideNotesError = "讲稿提示生成失败：\(error.localizedDescription)"
             }
         }

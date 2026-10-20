@@ -21,6 +21,14 @@
 
 ---
 
+## v1.7.0 文档与本地检索
+
+设置 → 文档模型：默认系统 OCR，无需下载权重；可选 Paddle Q8 + 版面检测，或使用本机 Codex CLI 的 **gpt-6-luna** 在线代读原文件。Codex 通过隔离的只读工具按需读取 PDF、Office 和图片，原件临时副本在任务结束后删除。不会自动把本地失败转成在线调用。
+
+Qwen3-Embedding-0.6B Q8 为资料增加本地语义检索。全部模型约 **1.88 GB**；Python 与依赖运行包另约 **186 MB 下载／632 MB 安装**，应用管理，用户无需 Python、pip 或 Homebrew。模型可取消下载、修复或删除；资料长期只保存完整 Markdown 与定位元数据。基础 TXT、Markdown 和系统 OCR 不依赖运行包。
+
+[处理管线与限制](docs/DOCUMENT-MARKDOWN-PIPELINE.md) · [六份实际对照、原始输出与验证报告](docs/VALIDATION-v1.7.0.md)。本次在 M2 Pro 16 GB／macOS 26.5.2 验证；macOS 14 为兼容目标，尚无该系统真机结果。
+
 ## 最近更新
 
 - **联网搜索（v1.5）**：先立刻给出快速回答；问到价格、新闻、版本、现任人员、“今天 / 最近”这类需要最新信息的问题时，在后台联网（Codex 实时搜索或 Tavily），查好后自动换成联网版，可随时切回原回答。
@@ -188,7 +196,7 @@ flowchart LR
 
 ## 安装
 
-1. 到 **[Releases](../../releases)** 下载 `InterviewHacker-<版本>-macOS-arm64.dmg`，打开后把 InterviewHacker 拖进“应用程序”。（`main-latest` 是 main 分支的最新自动构建，正式版本见带版本号的 Release。）
+1. 到 **[Releases](../../releases)** 下载 `InterviewHacker-<版本>-macOS-arm64.dmg`，打开后把 InterviewHacker 拖进“应用程序”。（正式版本使用版本号 Release；旧的 `main-latest` 保留为历史构建。）
 2. 第一次打开：应用未经 Apple 公证，macOS 会拦截。打开 **系统设置 → 隐私与安全性**，在页面底部点 **“仍要打开”**。
    也可以在终端执行：`xattr -dr com.apple.quarantine /Applications/InterviewHacker.app`
 3. 按提示允许 **屏幕与系统音频录制** 和 **麦克风**。授权后如系统要求重启应用，照做即可。

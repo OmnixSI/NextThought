@@ -2,8 +2,7 @@ name: Verify
 # Runs on the maintainer's own Mac (self-hosted runner, docs/SELF-HOSTED-RUNNER.md);
 # set the repository variable MAC_RUNNER=github to use GitHub's macOS runners again
 # (their minutes count 10× against the Actions quota). Each commit is verified once:
-# pushes to these branches run here; pull requests only for branches from forks, and
-# those only on GitHub's runners (never run other people's code on your Mac).
+# same-repository PRs run here; fork PRs run only when GitHub-hosted runners are selected.
 # Docs-only commits (README, screenshots, release notes) are skipped.
 on:
   push:
@@ -18,24 +17,26 @@ concurrency:
   cancel-in-progress: true
 jobs:
   macos:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && vars.MAC_RUNNER == 'github')
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository || vars.MAC_RUNNER == 'github'
     runs-on: ${{ vars.MAC_RUNNER == 'github' && 'macos-latest' || fromJSON('["self-hosted","macOS","ARM64"]') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - name: Toolchain
         run: |
-          xcodebuild -version
+          xcode-select -p
           swift --version
       - name: Build and test
         run: swift test --disable-sandbox
       - name: Codex transport regression (offline)
         run: ./Tools/Validation/CodexTransport/run.sh
+      - name: Document normalization regression (offline)
+        run: python3 -m unittest discover -s Tools/Validation/Documents -p 'test_*.py'
       - name: Release build
         run: swift build --disable-sandbox -c release
       - name: Source snapshot for reproducible review
         if: always()
-        run: tar -czf source-snapshot.tar.gz Package.swift Sources Tests Resources scripts
+        run: tar -czf source-snapshot.tar.gz Package.swift Sources Tests Resources scripts Tools
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -46,13 +47,15 @@ jobs:
   selftest:
     # Runs the real app binary headlessly: data round trip, local signing,
     # the updater against this repository's releases, and the X-ASR pipeline.
-    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name != github.repository && vars.MAC_RUNNER == 'github')
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository || vars.MAC_RUNNER == 'github'
     runs-on: ${{ vars.MAC_RUNNER == 'github' && 'macos-latest' || fromJSON('["self-hosted","macOS","ARM64"]') }}
     timeout-minutes: 30
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - name: Save keychain search list
+        run: python3 -c 'import json,shlex,subprocess,os; json.dump(shlex.split(subprocess.check_output(["security","list-keychains","-d","user"],text=True)),open(os.path.join(os.environ["RUNNER_TEMP"],"keychains.json"),"w"))'
       - name: Build app bundle
         run: |
           swift build --disable-sandbox -c release
@@ -61,17 +64,18 @@ jobs:
           mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
           cp "$bin" "$app/Contents/MacOS/InterviewHacker"
           cp Resources/Info.plist "$app/Contents/Info.plist"
+          cp -R Resources/DocumentRuntime "$app/Contents/Resources/DocumentRuntime"
           # Own identity: the test app never touches the installed app's settings or keychain.
           plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
           codesign --force --sign - --identifier com.interviewhacker.app.ci "$app"
           echo "APP=$app" >> "$GITHUB_ENV"
           # Test data (and the downloaded models, kept between runs) in one folder.
-          echo "IH_DATA=$HOME/.interviewhacker-ci/selftest" >> "$GITHUB_ENV"
+          echo "IH_DATA=$RUNNER_TEMP/ih-selftest" >> "$GITHUB_ENV"
       - name: Cache X-ASR models
         if: runner.environment == 'github-hosted'
         uses: actions/cache@v4
         with:
-          path: ~/.interviewhacker-ci/selftest/models
+          path: ${{ runner.temp }}/ih-selftest/models
           key: xasr-zh-en-2026-06-v1
       - name: Self-test · data round trip
         timeout-minutes: 5
@@ -96,10 +100,11 @@ jobs:
         timeout-minutes: 12
         env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}" }
         run: '"$APP/Contents/MacOS/InterviewHacker" --self-test asr --fixtures Tools/Validation/Fixtures'
-      - name: Clean up test keychains
+      - name: Restore keychain search list
         if: always()
         run: |
-          # Signing tests register keychains under the CI data folder; take them off
-          # the user's keychain search list again (matters on a self-hosted Mac).
-          keep=$(security list-keychains -d user | tr -d '"' | sed 's/^ *//' | grep -v -e '/ih-selftest/' -e '/.interviewhacker-ci/' -e "$RUNNER_TEMP" || true)
-          [[ -n "$keep" ]] && security list-keychains -d user -s $keep || true
+          python3 - <<'PYCODE'
+          import json,os,pathlib,subprocess
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'keychains.json'
+          if p.exists(): subprocess.run(['security','list-keychains','-d','user','-s',*json.load(p.open())],check=True)
+          PYCODE

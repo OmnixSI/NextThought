@@ -1,0 +1,85 @@
+{
+  "blocks" : [
+    {
+      "id" : "caed07435c1a02d-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "交付说明 \/ Delivery Notes"
+    },
+    {
+      "id" : "4ab50f122fb9bca8-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "版本 v1.7.0，负责人：陈佳。"
+    },
+    {
+      "id" : "259d6d6114eb50d1-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "下图包含服务链路和容量参数。"
+    },
+    {
+      "id" : "89672cd7b37a13dc-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "嵌图 image1.png"
+        ]
+      },
+      "markdown" : "架构图 \/ Architecture"
+    },
+    {
+      "id" : "af660978ebfd657d-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "嵌图 image1.png"
+        ]
+      },
+      "markdown" : "Client \\(\\rightarrow\\) Gateway \\(\\rightarrow\\) Worker"
+    },
+    {
+      "id" : "e60f20b78268bbaf-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "嵌图 image1.png"
+        ]
+      },
+      "markdown" : "吞吐量 2,500 req\/s；超时 800 ms；重试 3 次"
+    },
+    {
+      "id" : "330ec05b9e00247b-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "验收日期：2026-10-21。"
+    }
+  ],
+  "components" : {
+    "paddle" : "845ebafa9b6bed8372e4675a40b2bb19ac4c7089",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "paddle",
+  "schemaVersion" : 1,
+  "sourceHash" : "c7da76dbf8b1949137c991889c6d5f477ff6ced7320d9d4c9d628b74687c6abb",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

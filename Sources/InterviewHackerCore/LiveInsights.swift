@@ -183,7 +183,7 @@ public struct SlideNotes: Sendable, Equatable, Codable {
         if let next, !next.isEmpty { user += "\n\n下一页：\n\(String(next.prefix(800)))" }
         if !excerpts.isEmpty {
             user += "\n\n相关资料片段："
-            for excerpt in excerpts.prefix(5) { user += "\n[\(excerpt.source) p.\(excerpt.page)] \(String(excerpt.text.prefix(800)))" }
+            for excerpt in ContextExcerpt.budget(excerpts, characters: 4_000, count: 5) { user += "\n[\(excerpt.citation)] \(excerpt.text)" }
         }
         if !preferences.isEmpty { user += "\n\n我的回答偏好（可用于语气和语言）：\n\(String(preferences.prefix(1_000)))" }
         return (system, user)

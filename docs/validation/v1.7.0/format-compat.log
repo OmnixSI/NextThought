@@ -1,0 +1,1 @@
+PASS real MCP allowlist, read-only tools, path/traversal/network/write rejection, page bounds, mutation and symlink rejection; Office image IDs/slide association; HEIC/multi-page TIFF/RTF native reads; signed App stays intact

@@ -1,223 +1,82 @@
 name: Release
-# Builds the macOS app on GitHub's Apple Silicon runners and publishes a DMG + ZIP.
-#
-#   push to main                         → updates the rolling pre-release "main-latest"
-#   push with "[release v0.3.0]" in msg  → formal release v0.3.0 on that commit
-#   push a tag v0.3.0                    → formal release v0.3.0
-#   create/publish a Release in the UI   → builds and attaches the DMG to that release
-#   Actions → Release → Run workflow     → formal release with the given tag
-# Add "[skip release]" to a commit message to skip the main-latest build.
-#
-# Signing:
-# - Default: ad-hoc signature (no Apple account needed). Users approve the app
-#   once in System Settings → Privacy & Security → "Open Anyway".
-# - Stable signing: run scripts/setup-release-signing.sh once (self-signed identity),
-#   or add Developer ID secrets for signing + notarization:
-#   MACOS_CERTIFICATE_P12_BASE64, MACOS_CERTIFICATE_PASSWORD, MACOS_SIGNING_IDENTITY,
-#   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_SPECIFIC_PASSWORD.
 on:
   push:
     tags: ['v*']
-    branches: [main, 'claude/**']
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to create or update (e.g. v0.3.0)'
+        description: 'Validated release tag'
         required: true
-      prerelease:
-        description: 'Mark as pre-release'
-        type: boolean
-        default: true
+        default: v1.7.0
 permissions:
   contents: write
 concurrency:
-  # One build per release tag / branch; a newer push to main supersedes an older one.
-  group: release-${{ github.event.release.tag_name || github.ref }}
-  cancel-in-progress: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 jobs:
   build:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'release' ||
-      startsWith(github.ref, 'refs/tags/') ||
-      contains(github.event.head_commit.message, '[release v') ||
-      (github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip release]'))
-    # The maintainer's Mac (docs/SELF-HOSTED-RUNNER.md); MAC_RUNNER=github for GitHub's runners.
     runs-on: ${{ vars.MAC_RUNNER == 'github' && 'macos-latest' || fromJSON('["self-hosted","macOS","ARM64"]') }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - name: Resolve release tag
-        env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          mode=formal
-          if [[ -n "$INPUT_TAG" ]]; then tag="$INPUT_TAG"
-          elif [[ -n "$RELEASE_TAG" ]]; then tag="$RELEASE_TAG"
-          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then tag="$GITHUB_REF_NAME"
-          else
-            tag="$(printf '%s' "$MESSAGE" | grep -oE '\[release v[0-9][0-9A-Za-z.+-]*\]' | head -1 | sed -E 's/^\[release (.*)\]$/\1/')"
-            if [[ -z "$tag" && "$GITHUB_REF" == refs/heads/main ]]; then tag="main-latest"; mode=rolling; fi
-          fi
-          if [[ -z "$tag" || "$tag" =~ [[:space:]] ]]; then echo "No usable release tag" >&2; exit 1; fi
-          # Bundle version: numeric part of a vX.Y.Z tag; otherwise keep Info.plist's version.
-          if [[ "$tag" =~ ^v?([0-9]+\.[0-9]+(\.[0-9]+)?) ]]; then echo "BUNDLE_VERSION=${BASH_REMATCH[1]}" >> "$GITHUB_ENV"; fi
-          echo "TAG=$tag" >> "$GITHUB_ENV"
-          echo "MODE=$mode" >> "$GITHUB_ENV"
-          echo "Releasing $tag ($mode) from $GITHUB_SHA"
-      - name: Toolchain
-        run: |
-          xcodebuild -version
-          swift --version
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
       - name: Test
-        run: swift test --disable-sandbox
-      - name: Import Developer ID certificate (optional)
-        id: cert
-        env:
-          P12: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
-          P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
         run: |
-          if [[ -z "$P12" || -z "$IDENTITY" ]]; then
-            echo "identity=-" >> "$GITHUB_OUTPUT"
-            echo "No signing certificate configured; using ad-hoc signing."
-            exit 0
-          fi
-          keychain="$RUNNER_TEMP/signing.keychain-db"
-          password="$(openssl rand -hex 16)"
-          echo "$P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
-          security create-keychain -p "$password" "$keychain"
-          security set-keychain-settings -lut 21600 "$keychain"
-          security unlock-keychain -p "$password" "$keychain"
-          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$P12_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain"
-          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
-          # A self-signed identity (scripts/setup-release-signing.sh) must be trusted
-          # for code signing; Developer ID certificates are already trusted.
-          if ! security find-identity -v -p codesigning "$keychain" | grep -q "$IDENTITY"; then
-            /usr/bin/openssl pkcs12 -in "$RUNNER_TEMP/cert.p12" -clcerts -nokeys -passin "pass:$P12_PASSWORD" -out "$RUNNER_TEMP/cert.pem"
-            if sudo -n true 2>/dev/null; then
-              sudo security add-trusted-cert -d -r trustRoot -p codeSign -k /Library/Keychains/System.keychain "$RUNNER_TEMP/cert.pem"
-            else
-              # Self-hosted Mac without password-less sudo: an untrusted identity still
-              # signs when named by its fingerprint.
-              IDENTITY=$(/usr/bin/openssl x509 -in "$RUNNER_TEMP/cert.pem" -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')
-              echo "Signing with certificate fingerprint (not trusted system-wide)."
-            fi
-            rm -f "$RUNNER_TEMP/cert.pem"
-          fi
-          security find-identity -v -p codesigning "$keychain"
-          rm -f "$RUNNER_TEMP/cert.p12"
-          echo "identity=$IDENTITY" >> "$GITHUB_OUTPUT"
-          [[ "$IDENTITY" == *"Developer ID"* ]] && echo "developer_id=1" >> "$GITHUB_OUTPUT" || echo "developer_id=0" >> "$GITHUB_OUTPUT"
-          echo "keychain=$keychain" >> "$GITHUB_OUTPUT"
-      - name: Build app, ZIP and DMG
-        env:
-          INTERVIEWHACKER_SIGNING_IDENTITY: ${{ steps.cert.outputs.identity }}
-          INTERVIEWHACKER_SIGNING_KEYCHAIN: ${{ steps.cert.outputs.keychain }}
-          # Hardened runtime only for Developer ID (needed for notarization).
-          INTERVIEWHACKER_HARDENED_RUNTIME: ${{ steps.cert.outputs.developer_id == '1' && '1' || '0' }}
-          INTERVIEWHACKER_MAKE_DMG: '1'
-          INTERVIEWHACKER_BUILD_JOBS: '6'
-          INTERVIEWHACKER_BUILD_NUMBER: ${{ github.run_number }}
-        run: |
-          # CFBundleShortVersionString must be numeric: v0.3.0-beta.1 -> 0.3.0
-          [[ -n "${BUNDLE_VERSION:-}" ]] && export INTERVIEWHACKER_VERSION="$BUNDLE_VERSION"
-          ./scripts/build-app.sh
-      - name: Self-test the packaged app (data round trip, updater)
-        timeout-minutes: 10
-        env:
-          INTERVIEWHACKER_DATA_DIR: ${{ runner.temp }}/ih-selftest
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p "$INTERVIEWHACKER_DATA_DIR"
-          # A copy with its own identity, so the test never touches the installed app's settings.
-          ci="$RUNNER_TEMP/InterviewHacker-selftest.app"
-          rm -rf "$ci" && cp -R dist/InterviewHacker.app "$ci"
-          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$ci/Contents/Info.plist"
-          codesign --force --deep --sign - "$ci"
-          "$ci/Contents/MacOS/InterviewHacker" --self-test data update --repo "${{ github.repository }}"
-      - name: Notarize (optional)
-        if: steps.cert.outputs.developer_id == '1'
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        run: |
-          if [[ -z "$APPLE_ID" || -z "$APPLE_TEAM_ID" || -z "$APPLE_APP_SPECIFIC_PASSWORD" ]]; then
-            echo "Notarization secrets not configured; skipping."
-            exit 0
-          fi
-          xcrun notarytool submit dist/InterviewHacker.dmg --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --wait
-          xcrun stapler staple dist/InterviewHacker.dmg
-      - name: Name artifacts and checksums
-        run: |
-          version="${TAG#v}"
-          mv dist/InterviewHacker.dmg "dist/InterviewHacker-${version}-macOS-arm64.dmg"
-          mv dist/InterviewHacker-macOS.zip "dist/InterviewHacker-${version}-macOS-arm64.zip"
-          cd dist && shasum -a 256 InterviewHacker-*-macOS-arm64.* > SHA256SUMS.txt && cat SHA256SUMS.txt
-      - name: Update manifest for the in-app updater
-        env:
-          BUILD_NUMBER: ${{ github.run_number }}
-        run: |
-          version="${TAG#v}"
-          zip="InterviewHacker-${version}-macOS-arm64.zip"
-          sha="$(shasum -a 256 "dist/$zip" | awk '{print $1}')"
-          bundle_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' dist/InterviewHacker.app/Contents/Info.plist)"
-          python3 - "$TAG" "$bundle_version" "$BUILD_NUMBER" "$zip" "$sha" "$GITHUB_SHA" > dist/update.json <<'PY'
-          import json, sys, datetime
-          tag, version, build, zip_name, sha, commit = sys.argv[1:]
-          print(json.dumps({"tag": tag, "version": version, "build": int(build), "zip": zip_name, "sha256": sha,
-                            "commit": commit, "publishedAt": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")}, indent=2))
-          PY
-          cat dist/update.json
-      - name: Publish GitHub Release
+          swift --version
+          swift test --disable-sandbox
+          Tools/Validation/CodexTransport/run.sh
+          python3 -m unittest discover -s Tools/Validation/Documents -p 'test_*.py'
+      - name: Acquire the fixed runtime asset
         env:
           GH_TOKEN: ${{ github.token }}
-          PRERELEASE: ${{ github.event.inputs.prerelease || 'false' }}
         run: |
-          files=(dist/InterviewHacker-*-macOS-arm64.dmg dist/InterviewHacker-*-macOS-arm64.zip dist/SHA256SUMS.txt dist/update.json)
-          if [[ "$MODE" == rolling ]]; then
-            # Move the rolling pre-release to this commit and replace its files.
-            gh release delete "$TAG" --cleanup-tag --yes 2>/dev/null || true
-            short="${GITHUB_SHA:0:7}"
-            printf '%s\n' \
-              "main 分支最新提交 \`$short\` 的自动构建（$(date -u '+%Y-%m-%d %H:%M UTC')），每次推送到 main 都会更新。" "" \
-              "- 下载 \`InterviewHacker-main-latest-macOS-arm64.dmg\`，拖进“应用程序”；首次打开到 系统设置 → 隐私与安全性 点“仍要打开”。" \
-              "- 已安装的应用会自动检查更新（设置 → 更新，渠道选“main 最新构建”），下载完成后点“重启并安装”。" \
-              "- 或在仓库目录运行 \`./scripts/install-latest.sh main-latest\`（不会弹“仍要打开”）。" "" \
-              "正式版本见其它 Release。" > "$RUNNER_TEMP/notes.md"
-            gh release create "$TAG" "${files[@]}" --title "main 最新构建 · $short" --target "$GITHUB_SHA" --prerelease --notes-file "$RUNNER_TEMP/notes.md"
-            exit 0
-          fi
-          notes="docs/releases/${TAG}.md"
-          flags=()
-          [[ -f "$notes" ]] && flags+=(--notes-file "$notes") || flags+=(--generate-notes)
-          [[ "$PRERELEASE" == "true" || "$TAG" == *-* ]] && flags+=(--prerelease)
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            # Release created in the UI (or a rerun): attach / replace the build.
-            gh release upload "$TAG" "${files[@]}" --clobber
+          mkdir -p dist
+          asset=$(python3 -c 'import json; print(json.load(open("Resources/DocumentRuntime/runtime-manifest.json"))["asset"])')
+          if [[ -n "${INTERVIEWHACKER_RUNTIME_ASSET:-}" && -f "$INTERVIEWHACKER_RUNTIME_ASSET" ]]; then
+            cp "$INTERVIEWHACKER_RUNTIME_ASSET" "dist/$asset"
           else
-            gh release create "$TAG" "${files[@]}" --title "InterviewHacker ${TAG}" --target "$GITHUB_SHA" "${flags[@]}"
+            gh release download v1.7.0 --pattern "$asset" --dir dist --clobber
           fi
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: InterviewHacker-${{ env.TAG || github.sha }}
-          path: dist/InterviewHacker-*
-          if-no-files-found: ignore
-          retention-days: 14
-      - name: Remove signing keychain
-        if: always()
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          m=json.load(open('Resources/DocumentRuntime/runtime-manifest.json'));p=pathlib.Path('dist')/m['asset']
+          assert hashlib.file_digest(p.open('rb'),'sha256').hexdigest()==m['sha256']
+          assert p.stat().st_size==m['downloadBytes']
+          PY
+          cp Resources/DocumentRuntime/runtime-manifest.json dist/runtime-manifest.json
+      - name: Build signed App, ZIP and DMG
         env:
-          KEYCHAIN: ${{ steps.cert.outputs.keychain }}
+          INTERVIEWHACKER_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
+          INTERVIEWHACKER_MAKE_DMG: '1'
         run: |
-          if [[ -n "$KEYCHAIN" ]]; then security delete-keychain "$KEYCHAIN" 2>/dev/null || true; fi
-          # Signing tests register keychains under the CI data folder; take them off
-          # the user's keychain search list again (matters on a self-hosted Mac).
-          keep=$(security list-keychains -d user | tr -d '"' | sed 's/^ *//' | grep -v -e '/ih-selftest/' -e '/.interviewhacker-ci/' -e "$RUNNER_TEMP" || true)
-          [[ -n "$keep" ]] && security list-keychains -d user -s $keep || true
+          export INTERVIEWHACKER_VERSION="${INTERVIEWHACKER_VERSION#v}"
+          if [[ "$RUNNER_ENVIRONMENT" == github-hosted ]]; then export INTERVIEWHACKER_SIGNING_IDENTITY=-; fi
+          scripts/build-app.sh
+      - name: Isolated data selftest
+        env:
+          INTERVIEWHACKER_DATA_DIR: ${{ runner.temp }}/ih-release-selftest
+        run: |
+          ci="$RUNNER_TEMP/InterviewHacker-ci.app"
+          cp -R dist/InterviewHacker.app "$ci"
+          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$ci/Contents/Info.plist"
+          codesign --force --sign - --identifier com.interviewhacker.app.ci "$ci"
+          "$ci/Contents/MacOS/InterviewHacker" --self-test data
+      - name: Stage and validate all release assets
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: python3 Tools/DocumentRuntime/release_assets.py --tag "$RELEASE_TAG" --commit "$(git rev-parse HEAD)"
+      - name: Upload to draft, verify, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "InterviewHacker $RELEASE_TAG" --notes-file "docs/releases/$RELEASE_TAG.md"
+          fi
+          gh release upload "$RELEASE_TAG" dist/InterviewHacker-*-macOS-arm64.* dist/SHA256SUMS.txt dist/update.json dist/runtime-manifest.json --clobber
+          verify="$RUNNER_TEMP/release-verification"
+          mkdir -p "$verify"
+          gh release download "$RELEASE_TAG" --dir "$verify" --clobber
+          (cd "$verify" && shasum -a 256 -c SHA256SUMS.txt)
+          gh release edit "$RELEASE_TAG" --draft=false --latest

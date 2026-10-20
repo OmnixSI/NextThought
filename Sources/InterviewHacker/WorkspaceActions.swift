@@ -27,7 +27,9 @@ extension AppState {
         importTask = Task {
             defer { isImportingDocuments = false; importTask = nil }
             do {
-                let outcome = try await DocumentImporter.read(urls, categories: categories)
+                let outcome = try await DocumentImporter.read(
+                    urls, categories: categories,
+                    options: documentConversionOptions)
                 try Task.checkCancellation()
                 guard var workspace = workspaces.workspace(workspaceID) else { return }
                 guard workspace.documents.count + outcome.documents.count <= Self.maxDocuments else {
@@ -47,18 +49,22 @@ extension AppState {
                     }
                     // The Markdown is archived silently next to the other app
                     // data; that file is the material the model reads.
-                    let archived = try? MaterialArchive.archive(imported.markdown, name: imported.name,
+                    let archived = try MaterialArchive.archive(imported.markdown, name: imported.name,
                                                                format: imported.format, workspaceID: workspaceID)
                     var document = ContextDocument(name: imported.fileName,
                                                   pages: imported.sections,
                                                   enabled: true,
                                                   category: category ?? imported.suggestedCategory,
-                                                  markdownPath: archived?.path,
-                                                  sourceFormat: imported.format)
+                                                  markdownPath: MaterialArchive.relative(archived),
+                                                  sourceFormat: imported.format, content: imported.content)
                     let original = document.name
                     var suffix = 2
                     while names.contains(document.name) { document.name = "\(original) (\(suffix))"; suffix += 1 }
                     names.insert(document.name)
+                    if let content = document.content {
+                        let metadata = archived.deletingPathExtension().appendingPathExtension("json")
+                        try JSONEncoder().encode(content).write(to: metadata, options: .atomic)
+                    }
                     workspace.documents.append(document)
                     total += imported.characterCount
                     added += 1
@@ -91,20 +97,36 @@ extension AppState {
     }
 
     func rebuildContextIndex() {
+        cancelAnswer(); insights.sideChain?.cancel()
+        insights.slideNotes.removeAll(); insights.generatingNotes.removeAll()
+        insights.slide=nil
         let revision = UUID(); documentRevision = revision
         let snapshot = activeWorkspace.retrievalDocuments
+        let semantic = SemanticIndexStore.load(modelID: ModelCatalog.qwen3Embedding.id, workspaceID: activeWorkspace.id)
+        semanticIndex = semantic
         // Never reuse a disabled/removed document while a replacement index builds.
-        contextIndex = SessionContextIndex(); selectedExcerpts = []
+        contextIndex = HybridContextIndex(); selectedExcerpts = []
         isIndexingDocuments = true
         Task {
-            let index = await Task.detached(priority: .userInitiated) { SessionContextIndex(documents: snapshot) }.value
+            let index = await Task.detached(priority: .userInitiated) {
+                HybridContextIndex(documents: snapshot, semantic: semantic)
+            }.value
             guard documentRevision == revision else { return }
             contextIndex = index
             isIndexingDocuments = false
         }
+        // Changed material needs new vectors; the ones that did not change are kept.
+        if semanticRetrievalEnabled, embeddingModelInstalled { rebuildSemanticIndex() }
     }
 
-    func removeDocument(_ id: UUID) { documents.removeAll { $0.id == id }; rebuildContextIndex() }
+    func removeDocument(_ id: UUID) {
+        if let path = documents.first(where: { $0.id == id })?.markdownPath, let url = MaterialArchive.resolve(path),
+           workspaces.workspaces.flatMap(\.documents).filter({ $0.markdownPath == path }).count <= 1 {
+            try? FileManager.default.removeItem(at: url)
+            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("json"))
+        }
+        documents.removeAll { $0.id == id }; rebuildContextIndex()
+    }
 
     func setDocumentEnabled(_ id: UUID, enabled: Bool) {
         guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
@@ -124,6 +146,7 @@ extension AppState {
 
     func switchWorkspace(_ id: UUID) {
         guard id != activeWorkspace.id else { return }
+        cancelAnswer(); importTask?.cancel()
         workspaces.activate(id)
         tracker.mode = sessionMode
         rebuildContextIndex()

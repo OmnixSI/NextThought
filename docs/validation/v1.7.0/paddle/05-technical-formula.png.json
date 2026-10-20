@@ -1,0 +1,95 @@
+{
+  "blocks" : [
+    {
+      "id" : "42ac3504242cce0-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "模型训练 \/ Model Training"
+    },
+    {
+      "id" : "1d2a88f2fd542b0f-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "均方误差 Mean Squared Error"
+    },
+    {
+      "id" : "3c6189d37f81ca0c-0",
+      "kind" : "formula",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "$$\n\\mathrm{L}=(1\/\\mathrm{n})\\;\\Sigma_{\\mathrm{i}}\\left(\\mathbf{y}_{\\mathrm{i}}-\\hat{\\mathbf{y}}_{\\mathrm{i}}\\right)^{2}\n$$"
+    },
+    {
+      "id" : "9087ba1a43824923-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "梯度下降 Gradient Descent"
+    },
+    {
+      "id" : "32ff2e3cce72ab8d-0",
+      "kind" : "formula",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "$$\n\\theta_{t+1}=\\theta_{t}-\\eta\\;\\nabla\\mathrm{L}(\\theta_{t})\n$$"
+    },
+    {
+      "id" : "319b3c38254afd3c-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "学习率 \\(\\eta = 0.001\\)，训练 120 epochs。"
+    },
+    {
+      "id" : "30296204630b2ddb-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "验证集准确率为 96.42%。"
+    },
+    {
+      "id" : "bd8e70c9726801e3-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "质量能量关系：\\(E = mc^{2}\\)"
+    }
+  ],
+  "components" : {
+    "paddle" : "845ebafa9b6bed8372e4675a40b2bb19ac4c7089",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "paddle",
+  "schemaVersion" : 1,
+  "sourceHash" : "3dc220e5a9d7b698f2a8202ac626a6c4f09f4103354c42218d3e968cd06b27e3",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

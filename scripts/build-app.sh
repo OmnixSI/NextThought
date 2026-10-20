@@ -25,6 +25,7 @@ mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
 cp "$binary_path" "$app_path/Contents/MacOS/InterviewHacker"
 cp "$project_root/Resources/Info.plist" "$app_path/Contents/Info.plist"
 cp "$project_root/Resources/ThirdPartyNotices.txt" "$app_path/Contents/Resources/ThirdPartyNotices.txt"
+rsync -a --exclude=__pycache__ --exclude='*.pyc' "$project_root/Resources/DocumentRuntime/" "$app_path/Contents/Resources/DocumentRuntime/"
 printf 'APPL????' > "$app_path/Contents/PkgInfo"
 
 icon_set="$build_root/AppIcon.iconset"

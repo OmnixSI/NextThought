@@ -1,0 +1,35 @@
+{
+  "blocks" : [
+    {
+      "id" : "4036be24c7e6ec5d-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "季度收入表 \/ Quarterly Revenue"
+    },
+    {
+      "id" : "495195b318cbcdbd-0",
+      "kind" : "table",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "<table>\n<tr>\n<td>地区 \/ Region<\/td>\n<td colspan=\"2\">2026 收入 (万元)<\/td>\n<\/tr>\n<tr>\n<td>季度<\/td>\n<td>第一季度<\/td>\n<td>第二季度<\/td>\n<\/tr>\n<tr>\n<td>华东<\/td>\n<td>1,234.56<\/td>\n<td>1,789.01<\/td>\n<\/tr>\n<tr>\n<td>华南<\/td>\n<td>987.65<\/td>\n<td>1,012.34<\/td>\n<\/tr>\n<tr>\n<td>合计<\/td>\n<td>2,222.21<\/td>\n<td>2,801.35<\/td>\n<\/tr>\n<\/table>"
+    }
+  ],
+  "components" : {
+    "paddle" : "845ebafa9b6bed8372e4675a40b2bb19ac4c7089",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "paddle",
+  "schemaVersion" : 1,
+  "sourceHash" : "4bafc3cecd49e1c19b331f3fe1a0c5dc4bf184582d3286165ebc3489fee89c7d",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

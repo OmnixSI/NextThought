@@ -1,0 +1,11 @@
+{
+  "version": "1.7.0",
+  "asset": "InterviewHacker-document-runtime-1.7.0-macOS-arm64.tar.gz",
+  "sha256": "d454da93b12b5c871d2e1b33228ea3bca75a01127d50248f2949cc6894ae015f",
+  "downloadBytes": 185562618,
+  "installedBytes": 631880552,
+  "python": "3.12.13",
+  "platform": "macOS 14+ arm64",
+  "packages": 61,
+  "nativeFilesChecked": 190
+}

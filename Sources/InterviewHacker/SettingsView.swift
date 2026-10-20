@@ -5,12 +5,13 @@ import InterviewHackerCore
 /// Seven groups: “基础” has everything needed to get a session working; the others
 /// open with their main options and keep the rest under “高级选项”.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
+    case essentials = "基础", recognition = "识别", documents = "资料", answers = "回答", skills = "技能", overlay = "提词器", recording = "数据", more = "更多"
     var id: String { rawValue }
     var symbol: String {
         switch self {
         case .essentials: "checklist"
         case .recognition: "waveform"
+        case .documents: "doc.text.magnifyingglass"
         case .answers: "sparkles"
         case .skills: "wand.and.stars"
         case .overlay: "rectangle.topthird.inset.filled"
@@ -47,6 +48,7 @@ struct SettingsView: View {
                         switch group {
                         case .essentials: EssentialSettings()
                         case .recognition: RecognitionSettings()
+                        case .documents: DocumentModelSettings()
                         case .answers: AnswerSettings()
                         case .skills: SkillSettings()
                         case .overlay: OverlaySettings()
@@ -70,6 +72,7 @@ extension SettingsGroup {
         switch self {
         case .essentials: "使用前检查 · 音频来源 · 外观"
         case .recognition: "识别引擎 · 模型 · 专业词 · 屏幕感知"
+        case .documents: "文档识别 · 向量检索 · 本地模型"
         case .answers: "回答引擎 · 自动回答 · 联网搜索"
         case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 屏幕共享"
@@ -91,7 +94,7 @@ private struct SettingsSidebar: View {
     /// The groups that stay visible in 简洁界面: the ones used every day.
     private static let everyday: [SettingsGroup] = [.essentials, .answers, .overlay]
     /// The rest — still reachable, only folded away.
-    private static let secondary: [SettingsGroup] = [.recognition, .skills, .recording, .more]
+    private static let secondary: [SettingsGroup] = [.recognition, .documents, .skills, .recording, .more]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {

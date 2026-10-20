@@ -9,6 +9,13 @@ import Foundation
 /// exactly what the model was given. This happens silently — importing a file
 /// never opens a window or asks anything.
 enum MaterialArchive {
+    static func resolve(_ path: String) -> URL? {
+        let root = AppPaths.root.resolvingSymlinksInPath()
+        let url = (path.hasPrefix("/") ? URL(fileURLWithPath: path) : root.appendingPathComponent(path)).resolvingSymlinksInPath()
+        guard url.path.hasPrefix(root.appendingPathComponent("Materials").path + "/") else { return nil }
+        return url
+    }
+    static func relative(_ url: URL) -> String { String(url.path.dropFirst(AppPaths.root.path.count + 1)) }
     /// The folder holding the archived Markdown of one scenario.
     static func folder(for workspaceID: UUID) -> URL {
         AppPaths.root

@@ -21,6 +21,7 @@ enum MarkdownConverter {
         var format: String
         /// Which converter produced the Markdown.
         var converter: String
+        var content: DocumentContent? = nil
         var characterCount: Int { markdown.count }
     }
 
@@ -31,13 +32,6 @@ enum MarkdownConverter {
     static func convert(_ url: URL) throws -> Result {
         let format = url.pathExtension.lowercased()
         let name = url.deletingPathExtension().lastPathComponent
-
-        // An external converter (Microsoft MarkItDown, Pandoc) does a better job
-        // on complex layouts; the built-in one keeps working without it.
-        if let external = ExternalMarkdownConverter.convert(url, format: format) {
-            return Result(name: name, markdown: external.markdown, sections: external.sections,
-                          format: format, converter: external.tool)
-        }
 
         var document = MarkdownDocument()
         switch format {
@@ -182,6 +176,15 @@ struct MarkdownDocument {
         let chunk = current.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
         if !chunk.isEmpty { result.append(chunk) }
         return result
+    }
+
+    /// Takes over Markdown that is already formatted.
+    ///
+    /// The document model returns Markdown with headings, lists and tables, so
+    /// it is used as it is instead of being taken apart again.
+    mutating func raw(_ markdown: String) {
+        for line in markdown.components(separatedBy: "\n") { lines.append(line) }
+        while lines.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { lines.removeLast() }
     }
 }
 

@@ -1,0 +1,3 @@
+SELFTEST ▶︎ model-delete
+SELFTEST ✔ model-delete (1.0 s) running index cancelled, worker unloaded, model and index removed, no late recreation
+SELFTEST all passed

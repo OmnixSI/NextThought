@@ -1,0 +1,141 @@
+{
+  "blocks" : [
+    {
+      "id" : "329c0f743e7232b-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "系统设计 \/ System Design"
+        ]
+      },
+      "markdown" : "系统设计 \/ System Design"
+    },
+    {
+      "id" : "556e9b65d75bef34-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "系统设计 \/ System Design",
+          "缓存策略"
+        ]
+      },
+      "markdown" : "缓存策略"
+    },
+    {
+      "id" : "463a2f1ac7b31e71-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "系统设计 \/ System Design",
+          "缓存策略"
+        ]
+      },
+      "markdown" : "使用 Redis 缓存热点数据。"
+    },
+    {
+      "id" : "c22f81f063fecf2f-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "系统设计 \/ System Design",
+          "缓存策略"
+        ]
+      },
+      "markdown" : "命中率为 92.7%，TTL 为 300 秒。"
+    },
+    {
+      "id" : "39ef44c141ec9416-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "系统设计 \/ System Design",
+          "缓存策略"
+        ]
+      },
+      "markdown" : "缓存失效后读取 PostgreSQL。"
+    },
+    {
+      "id" : "89bfb0217d36c4fe-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "系统设计 \/ System Design",
+          "缓存策略"
+        ]
+      },
+      "markdown" : "监控 P99 延迟与错误率。"
+    },
+    {
+      "id" : "8808a6a54fb5a839-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Deployment Notes"
+        ]
+      },
+      "markdown" : "Deployment Notes"
+    },
+    {
+      "id" : "6fec07fdd7708873-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Deployment Notes"
+        ]
+      },
+      "markdown" : "Use a rolling deployment."
+    },
+    {
+      "id" : "9414840f61c717bc-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Deployment Notes"
+        ]
+      },
+      "markdown" : "Keep 2 replicas available."
+    },
+    {
+      "id" : "5f68e4cbea05328d-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Deployment Notes"
+        ]
+      },
+      "markdown" : "Rollback if errors exceed 0.5%."
+    },
+    {
+      "id" : "d6499514e126455-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Deployment Notes"
+        ]
+      },
+      "markdown" : "CPU budget: 750 millicores."
+    },
+    {
+      "id" : "4882242dfd48ddc3-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Deployment Notes"
+        ]
+      },
+      "markdown" : "Release owner: Platform Team."
+    }
+  ],
+  "components" : {
+    "cli" : "codex-cli 0.163.0-alpha.10.2",
+    "model" : "gpt-6-luna",
+    "reasoning" : "medium"
+  },
+  "pipeline" : "codex",
+  "schemaVersion" : 1,
+  "sourceHash" : "b396edde090f18ead056ccdb0005d7d888abd64d16e2ce20a56eb7e03ec2dfdf",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

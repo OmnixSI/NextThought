@@ -183,12 +183,17 @@ extension AppState {
         guard webSearchAvailable else { errorMessage = "联网搜索还没设置：在 设置 → 回答 → 联网搜索 选择 Codex 或填写 Tavily Key。"; return }
         let workspace = activeWorkspace
         let context = TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
-        let excerpts = contextIndex.retrieve(question: question)
         let skills = activeSkillSnippets
-        startWebLookup(id: id, question: question) { webSearch, results in
-            AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: [], hasScreenshot: false,
-                                          preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
-                                          experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch)
+        // With the embedding model the question is turned into a vector first,
+        // so the passages are looked up in the background.
+        Task { [weak self] in
+            guard let self else { return }
+            let passages = await self.retrieveExcerpts(question: question)
+            self.startWebLookup(id: id, question: question) { webSearch, results in
+                AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: [], hasScreenshot: false,
+                                              preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: passages,
+                                              experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch)
+            }
         }
     }
 

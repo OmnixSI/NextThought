@@ -1,0 +1,120 @@
+{
+  "blocks" : [
+    {
+      "id" : "c8cab046f0a27053-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师"
+        ],
+        "page" : 1
+      },
+      "markdown" : "王明 | 后端开发工程师"
+    },
+    {
+      "id" : "4bd879d8dd09e90e-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师"
+        ],
+        "page" : 1
+      },
+      "markdown" : "教育：华南理工大学 | 计算机科学 | 2020–2024"
+    },
+    {
+      "id" : "758d095d7b6adf46-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师"
+        ],
+        "page" : 1
+      },
+      "markdown" : "技能：Python、Go、PostgreSQL、Kubernetes"
+    },
+    {
+      "id" : "8030fe4c663d412b-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师",
+          "项目：订单服务重构"
+        ],
+        "page" : 1
+      },
+      "markdown" : "项目：订单服务重构"
+    },
+    {
+      "id" : "d63ea59c2400e88b-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师",
+          "项目：订单服务重构"
+        ],
+        "page" : 1
+      },
+      "markdown" : "将 P95 延迟从 420 ms 降低到 180 ms。"
+    },
+    {
+      "id" : "2af9698816500def-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师",
+          "项目：订单服务重构"
+        ],
+        "page" : 1
+      },
+      "markdown" : "每秒请求从 1,200 提升到 3,600，错误率 0.03%。"
+    },
+    {
+      "id" : "b597c06049d1f2ab-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师",
+          "经历：星河科技 | 2024.07–2026.09"
+        ],
+        "page" : 1
+      },
+      "markdown" : "经历：星河科技 | 2024.07–2026.09"
+    },
+    {
+      "id" : "c4a522cb71b845d1-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师",
+          "经历：星河科技 | 2024.07–2026.09"
+        ],
+        "page" : 1
+      },
+      "markdown" : "负责支付幂等与库存一致性，带领 4 人小组。"
+    },
+    {
+      "id" : "9cdc01f68ef42373-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "王明 | 后端开发工程师"
+        ],
+        "page" : 1
+      },
+      "markdown" : "联系方式：wangming@example.test"
+    }
+  ],
+  "components" : {
+    "cli" : "codex-cli 0.163.0-alpha.10.2",
+    "model" : "gpt-6-luna",
+    "reasoning" : "medium"
+  },
+  "pipeline" : "codex",
+  "schemaVersion" : 1,
+  "sourceHash" : "b4fda71f3a5b43e664d624cb7a3b6e5979af3cfc4d5fb1f549009e5902290b4b",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

@@ -1,0 +1,3 @@
+SELFTEST ▶︎ runtime
+SELFTEST ✔ runtime (3.8 s) SHA-256, signature, extraction, relocation and NDJSON health passed
+SELFTEST all passed

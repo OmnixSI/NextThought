@@ -1,0 +1,4 @@
+SELFTEST ▶︎ documents
+DOCUMENT ✔ paddle 05-technical-formula.png 8.00775694847107s
+SELFTEST ✔ documents (8.0 s) 1 files, provider=paddle, raw artifacts=/Users/yanghongming/.minimax/sessions/mvs_289b15b1e81f424587b1a78f153468d6/workspace/repo/.local/document-validation/packaged-offline
+SELFTEST all passed

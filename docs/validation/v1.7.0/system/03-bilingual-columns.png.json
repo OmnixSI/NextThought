@@ -1,0 +1,25 @@
+{
+  "blocks" : [
+    {
+      "id" : "444c4bec99818db2-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "系统设计 \/ System Design\n缓存策略\n使用 Redis 缓存热点数据。\n命中率为92.7%，TTL为300秒。\n缓存失效后读取 PostgreSQL。\n监控 P99延迟与错误率。\nDeployment Notes\nUse arolling deployment.\nKeep 2replicas available.\nRollback if errors exceed 0.5%.\nCPU budget: 750 millicores.\nRelease owner: Platform Team."
+    }
+  ],
+  "components" : {
+    "paddle" : "unused",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "system",
+  "schemaVersion" : 1,
+  "sourceHash" : "b396edde090f18ead056ccdb0005d7d888abd64d16e2ce20a56eb7e03ec2dfdf",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

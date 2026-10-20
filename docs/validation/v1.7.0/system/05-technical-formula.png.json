@@ -1,0 +1,25 @@
+{
+  "blocks" : [
+    {
+      "id" : "25900683ee5a4898-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "模型训练\/ Model Training\n均方误差 Mean Squared Error\nL= （1\/n） 工，（Y-$.）‘\n梯度下降 Gradient Descent\n0+1=0.-nVL）\n学习率 n=0.001，训练\nF 120 epochs。\n验证集准确率为96.42%。\n质量能量关系：E=mc2"
+    }
+  ],
+  "components" : {
+    "paddle" : "unused",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "system",
+  "schemaVersion" : 1,
+  "sourceHash" : "3dc220e5a9d7b698f2a8202ac626a6c4f09f4103354c42218d3e968cd06b27e3",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

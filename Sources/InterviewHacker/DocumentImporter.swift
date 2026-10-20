@@ -23,6 +23,7 @@ enum DocumentImporter {
         var format: String
         /// Which converter produced the Markdown.
         var converter: String
+        var content: DocumentContent?
         /// The material slot this file most likely belongs to.
         var suggestedCategory: String?
         var characterCount: Int { markdown.count }
@@ -60,10 +61,15 @@ enum DocumentImporter {
     ///
     /// - Parameter categories: The material slots of the current mode, used to
     ///   file every file automatically.
-    static func read(_ urls: [URL], categories: [String]) async throws -> Outcome {
-        try await Task.detached(priority: .userInitiated) { () -> Outcome in
+    /// - Parameter useDocumentModel: Read scanned pages and images with the
+    ///   document model instead of the system OCR.
+    static func read(_ urls: [URL], categories: [String], options: DocumentConversionOptions = .init()) async throws
+        -> Outcome
+    {
+        let task = Task.detached(priority: .userInitiated) { () -> Outcome in
             var outcome = Outcome()
-            for url in urls.prefix(60) {
+            guard urls.count <= 60 else { throw AppFailure.capture("每次最多导入 60 个文件。") }
+            for url in urls {
                 try Task.checkCancellation()
                 let accessed = url.startAccessingSecurityScopedResource()
                 defer { if accessed { url.stopAccessingSecurityScopedResource() } }
@@ -73,7 +79,7 @@ enum DocumentImporter {
                     guard attributes.isRegularFile == true, let size = attributes.fileSize, size <= 20 * 1024 * 1024 else {
                         throw AppFailure.capture("仅支持不超过 20 MiB 的普通文件。")
                     }
-                    let result = try MarkdownConverter.convert(url)
+                    let result = try await MarkdownConverter.convert(url, options: options)
                     guard result.sections.contains(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
                         throw AppFailure.capture("没有可提取的文字。")
                     }
@@ -87,6 +93,7 @@ enum DocumentImporter {
                         sections: result.sections,
                         format: result.format,
                         converter: result.converter,
+                        content: result.content,
                         suggestedCategory: DocumentClassifier.classify(name: url.lastPathComponent, content: result.markdown, categories: categories)))
                 } catch is CancellationError {
                     throw CancellationError()
@@ -96,6 +103,7 @@ enum DocumentImporter {
                 }
             }
             return outcome
-        }.value
+        }
+        return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
     }
 }

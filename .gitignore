@@ -7,3 +7,6 @@ DerivedData/
 *.dmg
 .swiftpm/
 .vscode/
+.local/
+__pycache__/
+*.pyc

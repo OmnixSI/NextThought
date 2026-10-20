@@ -48,16 +48,17 @@ public struct ContextDocument: Identifiable, Codable, Sendable, Equatable {
     public var markdownPath: String?
     /// Source format of the imported file (pdf / docx / pptx / md …), for the UI.
     public var sourceFormat: String?
+    public var content: DocumentContent?
     public var characterCount: Int { pages.reduce(0) { $0 + $1.count } }
     public init(id: UUID = UUID(), name: String, pages: [String], enabled: Bool = true, category: String? = nil,
-                markdownPath: String? = nil, sourceFormat: String? = nil) {
+                markdownPath: String? = nil, sourceFormat: String? = nil, content: DocumentContent? = nil) {
         self.id = id; self.name = name; self.pages = pages; self.enabled = enabled; self.category = category
-        self.markdownPath = markdownPath; self.sourceFormat = sourceFormat
+        self.markdownPath = markdownPath; self.sourceFormat = sourceFormat; self.content = content
     }
 
     // Tolerant decoding: materials imported before the Markdown pipeline have no path.
     enum CodingKeys: String, CodingKey {
-        case id, name, pages, enabled, category, markdownPath, sourceFormat
+        case id, name, pages, enabled, category, markdownPath, sourceFormat, content
     }
 
     public init(from decoder: Decoder) throws {
@@ -69,6 +70,7 @@ public struct ContextDocument: Identifiable, Codable, Sendable, Equatable {
         category = try c.decodeIfPresent(String.self, forKey: .category)
         markdownPath = try c.decodeIfPresent(String.self, forKey: .markdownPath)
         sourceFormat = try c.decodeIfPresent(String.self, forKey: .sourceFormat)
+        content = try c.decodeIfPresent(DocumentContent.self, forKey: .content)
     }
     /// Name shown to the model, e.g. "[简历] resume.pdf".
     public var labeledName: String {
@@ -81,8 +83,11 @@ public struct ContextExcerpt: Codable, Sendable, Equatable {
     public let source: String
     public let page: Int
     public let text: String
-    public init(source: String, page: Int, text: String) {
-        self.source = source; self.page = page; self.text = text
+    public let locator: DocumentLocator?
+    public let chunkID: String?
+    public let blockID: String?
+    public init(source: String, page: Int, text: String, locator: DocumentLocator? = nil, chunkID: String? = nil, blockID: String? = nil) {
+        self.source = source; self.page = page; self.text = text; self.locator = locator; self.chunkID = chunkID; self.blockID = blockID
     }
 }
 
@@ -98,35 +103,46 @@ public struct SessionContextIndex: Sendable {
     private var documentFrequency: [String: Int] = [:]
     /// Materials per scenario. Kept in step with `AppState.maxDocuments`.
     public static let maximumDocuments = 40
-    /// Sections read per material (a Markdown file with many headings).
-    public static let maximumSectionsPerDocument = 500
     public init(documents: [ContextDocument] = []) {
-        // The document cap has to match the number of materials a scenario may
-        // hold; anything above that would be indexed but never retrieved.
-        // The real bound is the chunk count below, which the workspace size
-        // limit (600k characters) never reaches.
-        for document in documents.prefix(Self.maximumDocuments) where document.enabled {
-            for (pageNumber, page) in document.pages.prefix(Self.maximumSectionsPerDocument).enumerated() {
-                let chars = Array(page.prefix(200_000))
-                var start = 0
-                while start < chars.count && chunks.count < 2_000 {
-                    let end = min(start + 900, chars.count)
-                    let text = String(chars[start..<end])
-                    chunks.append(Chunk(excerpt: .init(source: document.labeledName, page: pageNumber + 1, text: text),
-                                        terms: Self.terms(text), order: chunks.count))
-                    if end == chars.count { break }
-                    start = end - 120
-                }
-            }
+        self.init(chunks: ContextChunker.chunks(documents: documents))
+    }
+
+    /// Builds the index from a chunk list that was cut elsewhere.
+    ///
+    /// The semantic index needs the very same chunks, so both are built from
+    /// `ContextChunker` and the chunk order is the key that ties them together.
+    public init(chunks source: [ContextChunk]) {
+        for chunk in source {
+            chunks.append(
+                Chunk(
+                    excerpt: .init(source: chunk.source, page: chunk.page, text: chunk.text, locator: chunk.locator, chunkID: chunk.id, blockID: chunk.blockID),
+                    terms: Self.terms(chunk.text), order: chunk.order))
         }
         for chunk in chunks { for term in chunk.terms { documentFrequency[term, default: 0] += 1 } }
     }
 
     public func retrieve(question: String, maximumCharacters: Int = 8_000) -> [ContextExcerpt] {
         guard maximumCharacters > 0 else { return [] }
+        var remaining = min(maximumCharacters, 16_000)
+        var result: [ContextExcerpt] = []
+        for order in rankedOrders(question: question).prefix(8) where remaining > 0 {
+            guard order < chunks.count else { continue }
+            let excerpt = chunks[order].excerpt
+            guard excerpt.text.count <= remaining else { continue }
+            result.append(excerpt)
+            remaining -= excerpt.text.count
+        }
+        return result
+    }
+
+    /// The chunk orders that match the question, best first.
+    ///
+    /// The hybrid search needs the ranking itself, not only the excerpts, so it
+    /// can fuse it with the ranking of the vector index.
+    public func rankedOrders(question: String) -> [Int] {
         let query = Self.terms(String(question.suffix(2_000)))
         guard !query.isEmpty else { return [] }
-        let ranked = chunks.compactMap { chunk -> (Chunk, Double)? in
+        return chunks.compactMap { chunk -> (Chunk, Double)? in
             let overlap = query.intersection(chunk.terms)
             guard !overlap.isEmpty else { return nil }
             let score = overlap.reduce(0.0) { sum, term in
@@ -134,15 +150,7 @@ public struct SessionContextIndex: Sendable {
                 return sum + log(1 + Double(chunks.count) / Double(frequency + 1))
             } / sqrt(Double(max(1, chunk.terms.count)))
             return (chunk, score)
-        }.sorted { $0.1 == $1.1 ? $0.0.order < $1.0.order : $0.1 > $1.1 }
-        var remaining = min(maximumCharacters, 16_000)
-        var result: [ContextExcerpt] = []
-        for (chunk, _) in ranked.prefix(8) where remaining > 0 {
-            let text = String(chunk.excerpt.text.prefix(remaining))
-            result.append(.init(source: chunk.excerpt.source, page: chunk.excerpt.page, text: text))
-            remaining -= text.count
-        }
-        return result
+        }.sorted { $0.1 == $1.1 ? $0.0.order < $1.0.order : $0.1 > $1.1 }.map(\.0.order)
     }
 
     private static func terms(_ text: String) -> Set<String> {
