@@ -1,0 +1,63 @@
+{
+  "tag": "v1.7.0",
+  "commit": "c93fb3ae25768b3adb2554a2925f8ded67cce7dd",
+  "build": 1700,
+  "release": "https://github.com/OmnixSI/InterviewHacker/releases/tag/v1.7.0",
+  "workflow": "https://github.com/OmnixSI/InterviewHacker/actions/runs/39443890949",
+  "assets": [
+    {
+      "name": "InterviewHacker-1.7.0-macOS-arm64.dmg",
+      "bytes": 17994171,
+      "digest": "sha256:266835d792d6d29f81ce3d50cfc4ce97c48c1ffbd1dc6eaef5654f1012caaed2"
+    },
+    {
+      "name": "InterviewHacker-1.7.0-macOS-arm64.zip",
+      "bytes": 15441749,
+      "digest": "sha256:921c95722d22f083371bd17a0937de4efc4fc37ca992ce292cbc2a53a95a1f37"
+    },
+    {
+      "name": "InterviewHacker-document-runtime-1.7.0-macOS-arm64.tar.gz",
+      "bytes": 185562618,
+      "digest": "sha256:d454da93b12b5c871d2e1b33228ea3bca75a01127d50248f2949cc6894ae015f"
+    },
+    {
+      "name": "runtime-manifest.json",
+      "bytes": 341,
+      "digest": "sha256:d653e611715c53d2d5fa0de97b803ffcd00d0cf3891013dec83cd7f082531097"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 498,
+      "digest": "sha256:a5b1a67c356e362feafc058c84cdd1dcab02e187f42e3471cef76e4d3d546545"
+    },
+    {
+      "name": "update.json",
+      "bytes": 288,
+      "digest": "sha256:b0a7e8de87ebb44c454dca1012a13625c21f8726d745974f3470c3214a0a6d91"
+    }
+  ],
+  "publishedChecks": [
+    "all five SHA256SUMS entries",
+    "DMG integrity",
+    "ZIP extraction",
+    "codesign deep strict",
+    "bundled runtime manifest equality",
+    "1024-dimensional model test",
+    "document edge cases",
+    "structured backup restore",
+    "updater v1.7.0 download and scratch swap"
+  ],
+  "legacyCleanup": {
+    "logicalBytes": 6495634101,
+    "protectedFiles": 2470,
+    "allProtectedFileHashesUnchanged": true,
+    "oldIndexFilesFound": 0
+  },
+  "testSystem": "M2 Pro 16 GB / macOS 26.5.2; no macOS 14 hardware validation",
+  "mergedMainChecks": "https://github.com/OmnixSI/InterviewHacker/actions/runs/39443843378",
+  "temporaryRunner": {
+    "unregistered": true,
+    "serviceInstalled": false,
+    "workingDirectoryRemoved": true
+  }
+}

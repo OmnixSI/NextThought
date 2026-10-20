@@ -43,7 +43,7 @@
 - 模型文件自检：真实固定小文件下载、校验文件复用、损坏修复、真实下载取消、删除后无迟到写回通过。
 - MCP 实际子进程：仅五个只读工具，越界路径／`..`／联网参数／写入工具与参数、越界页号、原件篡改和符号链接替换均拒绝。
 
-独立审查列出的资源打包、长 HTML 表格、Office 取消、工作表展开、图片定位、PDF 覆盖、TXT 基础导入、共享归档删除、状态进程等待和回答取消后联网等缺口均已修复。最终 release build、四项既有 App 自检、PR 检查和发布资产验证结果在发布前补记。
+独立审查列出的资源打包、长 HTML 表格、Office 取消、工作表展开、图片定位、PDF 覆盖、TXT 基础导入、共享归档删除、状态进程等待和回答取消后联网等缺口均已修复。最终 release build、四项既有 App 自检（数据、签名、更新、X-ASR）、[PR 检查](https://github.com/OmnixSI/InterviewHacker/actions/runs/39442610283)和[正式发布流程](https://github.com/OmnixSI/InterviewHacker/actions/runs/39443890949)均通过。
 
 ## 显式自检
 
@@ -68,3 +68,13 @@ INTERVIEWHACKER_DEMO=1 "$APP" --self-test document-lifecycle model-files
 移除了旧的 2,000 检索片段截断；第 2,105 个片段仍可被关键词检索的回归已通过，全文导入后的尾部材料不会因该旧上限消失。
 
 格式兼容补充：原 HEIC 通过 macOS ImageIO 按需查看；多页 TIFF 的工具元数据与第二页查看通过，实际本地转换也保留两页定位。旧 RTF 通过原件的原生结构提取返回。Office 嵌图无法解码时现在明确降级提示导出 PDF，严格模式拒绝文件，避免静默漏图。以上为格式／隔离边界验证，没有扩大六份准确度对照。
+
+## 正式发布与验收后清理
+
+[PR #14](https://github.com/OmnixSI/InterviewHacker/pull/14) 已合并，[v1.7.0](https://github.com/OmnixSI/InterviewHacker/releases/tag/v1.7.0) 已正式发布。标签与 `update.json` 的 commit 均为 `c93fb3ae25768b3adb2554a2925f8ded67cce7dd`；构建版本为 1700。发布前先将六项资产上传 draft，再重新下载核验后公开；固定运行包 SHA-256 保持不变。
+
+发布后另行从 GitHub 下载公开资产，五个校验条目全部通过。实际 DMG 校验、ZIP 解包、App 的 deep/strict 签名、随包固定 runtime manifest 一致性均通过。以公开 ZIP 创建独立 `.ci` 测试 App，模型、文档边界、备份自检再次通过；更新器确实取得 v1.7.0 并完成 scratch 目录替换，没有替换用户日常安装。签名沿用既有本机证书，不代表 Developer ID 公证。资产大小、哈希和验证记录见 [release-verification.json](validation/v1.7.0/release-verification.json)。
+
+上述验收通过后，删除旧 `unlimited-ocr-mlx-coreml` 和 `qwen3-embedding-0-6b-coreml`，包括其内部 Core ML 编译缓存，合计 6,495,634,101 bytes 逻辑文件量；未发现对应旧向量索引。其余语音模型、工作区、会话、技能、备份和资料共 2,470 个文件，在清理前后逐文件 SHA-256 均一致。没有将逻辑文件量等同 APFS 实际释放空间。
+
+[合并后完整检查](https://github.com/OmnixSI/InterviewHacker/actions/runs/39443843378) 的 macos 与 selftest 两项均通过。临时自托管 runner 已停止并注销，GitHub 注册列表确认为空；未安装常驻服务，项目内 runner 临时工作目录已移除，验证日志保留在项目内。原 WIP 分支仍保留在交接提交 `6b124ca`。
