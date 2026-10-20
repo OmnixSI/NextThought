@@ -21,6 +21,6 @@ let package = Package(
             dependencies: ["InterviewHackerCore"],
             path: "Sources/InterviewHacker",
             swiftSettings: [.swiftLanguageMode(.v5)]),
-        .testTarget(name: "InterviewHackerCoreTests", dependencies: ["InterviewHackerCore"], path: "Tests/InterviewHackerCoreTests")
+        .testTarget(name: "InterviewHackerCoreTests", dependencies: ["InterviewHackerCore"], path: "Tests/InterviewHackerCoreTests", exclude: ["Fixtures"])
     ]
 )

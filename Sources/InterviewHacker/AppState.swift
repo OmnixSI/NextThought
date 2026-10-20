@@ -186,6 +186,27 @@ final class AppState {
     var modelLoadSeconds: Double?
     var recognitionLanguage = UserDefaults.standard.string(forKey: "recognitionLanguage") ?? "auto"
 
+    // MARK: Local document models (Unlimited-OCR + Qwen3-Embedding)
+    /// Read scanned pages and images with Unlimited-OCR instead of the system OCR.
+    var unlimitedOCREnabled = UserDefaults.standard.object(forKey: "unlimitedOCREnabled") as? Bool ?? false
+    /// How many pages of a document the document model reads.
+    var unlimitedOCRMaxPages = UserDefaults.standard.object(forKey: "unlimitedOCRMaxPages") as? Int ?? 20
+    /// Fall back to the system OCR when the document model fails.
+    var ocrFallbackToVision = UserDefaults.standard.object(forKey: "ocrFallbackToVision") as? Bool ?? true
+    /// Use the embedding model for the material search.
+    var semanticRetrievalEnabled = UserDefaults.standard.object(forKey: "semanticRetrievalEnabled") as? Bool ?? true
+    /// The vectors of the material chunks.
+    @ObservationIgnored var semanticIndex = SemanticIndex()
+    /// The model that is currently being downloaded, if any.
+    var managedModelDownloadID: String = ""
+    var managedModelDownloadProgress: Double = 0
+    var managedModelDownloadStatus: String = ""
+    var isDownloadingManagedModel: Bool = false
+    /// True while the vector index is being built.
+    var isBuildingSemanticIndex: Bool = false
+    /// What the vector index currently holds.
+    var semanticIndexStatus: String = ""
+
     // MARK: Echo handling
     /// Drop microphone text that repeats the other side (speaker echo without headphones).
     var echoSuppression = UserDefaults.standard.object(forKey: "echoSuppression") as? Bool ?? true
@@ -243,7 +264,7 @@ final class AppState {
     var isRegionCapturePresented = false
 
     // MARK: Not observed (services, tasks, bookkeeping)
-    @ObservationIgnored var contextIndex = SessionContextIndex()
+    @ObservationIgnored var contextIndex = HybridContextIndex()
     @ObservationIgnored var documentRevision = UUID()
     @ObservationIgnored var importTask: Task<Void, Never>?
     @ObservationIgnored var microphoneTranscriber: (any LiveTranscribing)?
@@ -739,8 +760,13 @@ final class AppState {
         Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue, "supersede": supersede])
 
         let context = recentContext ?? TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
-        let excerpts = contextIndex.retrieve(question: question + "\n" + (answerTurns.last?.question ?? ""))
-        selectedExcerpts = excerpts
+        // The passages are looked up while the answer starts: with the embedding
+        // model the question is turned into a vector first, which takes a moment.
+        let retrievalQuestion = question + "\n" + (answerTurns.last?.question ?? "")
+        let retrieval = Task { [weak self] in
+            guard let self else { return [ContextExcerpt]() }
+            return await self.retrieveExcerpts(question: retrievalQuestion)
+        }
         let workspace = activeWorkspace
         let skills = activeSkills
         let allSnippets = skills.map { SkillSnippet(name: $0.name, content: $0.content) }
@@ -748,7 +774,7 @@ final class AppState {
         let screenText = relevantScreenText
         let slide = currentSlideExcerpt
         let tier = activeServiceTier
-        let buildParts = { (webSearch: Bool, results: [WebResult]?, snippets: [SkillSnippet]) in
+        let buildParts = { (webSearch: Bool, results: [WebResult]?, snippets: [SkillSnippet], excerpts: [ContextExcerpt]) in
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: screenshot != nil,
                                           preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
                                           experience: workspace.experienceNotes(), skills: snippets, webResults: results, webSearch: webSearch,
@@ -762,7 +788,8 @@ final class AppState {
                 let decision = await self.shouldSearchWeb(question)
                 Diagnostics.record("web.decision", ["search": decision.search, "reason": decision.reason])
                 guard decision.search, self.currentAnswerID == id else { return }
-                self.startWebLookup(id: id, question: question, parts: { buildParts($0, $1, allSnippets) })
+                let excerpts = await retrieval.value
+                self.startWebLookup(id: id, question: question, parts: { buildParts($0, $1, allSnippets, excerpts) })
             }
         }
         let answerStartedAt = Date()
@@ -774,7 +801,9 @@ final class AppState {
                 }
             }
             do {
-                let parts = buildParts(false, nil, allSnippets)
+                let excerpts = await retrieval.value
+                selectedExcerpts = excerpts
+                let parts = buildParts(false, nil, allSnippets, excerpts)
                 let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: tier)
                 let onDelta: @Sendable (String) -> Void = { [weak self] text in
                     Task { @MainActor in
@@ -1077,6 +1106,10 @@ final class AppState {
         defaults.set(transcriptionBackend, forKey: "transcriptionBackend")
         defaults.set(localStreamingModel.rawValue, forKey: "localStreamingModel")
         defaults.set(secondPassEnabled, forKey: "secondPassEnabled")
+        defaults.set(unlimitedOCREnabled, forKey: "unlimitedOCREnabled")
+        defaults.set(unlimitedOCRMaxPages, forKey: "unlimitedOCRMaxPages")
+        defaults.set(ocrFallbackToVision, forKey: "ocrFallbackToVision")
+        defaults.set(semanticRetrievalEnabled, forKey: "semanticRetrievalEnabled")
         for window in NSApp.windows where !(window is NSPanel) {
             window.level = keepOnTop ? .floating : .normal
         }

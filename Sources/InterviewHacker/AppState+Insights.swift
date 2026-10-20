@@ -116,12 +116,7 @@ extension AppState {
         let deck = slidePages.filter { $0.documentID == page.documentID }
         let previous = deck.first { $0.page == page.page - 1 }?.text
         let next = deck.first { $0.page == page.page + 1 }?.text
-        // Supporting material (the paper, the script), not the deck itself.
-        let excerpts = contextIndex.retrieve(question: page.text, maximumCharacters: 3_000).filter { !$0.source.hasSuffix(page.documentName) }
-        let prompt = SlideNotes.prompt(page: page, previous: previous, next: next, excerpts: excerpts, mode: sessionMode, preferences: activeWorkspace.preferences)
         let backend = answerBackend
-        let request = AnswerRequest(system: prompt.system, user: prompt.user, model: model,
-                                    effort: backend == .openAICompatible ? codexReasoning : "low", serviceTier: activeServiceTier)
         let previousJob = insights.sideChain
         insights.sideChain = Task { [weak self] in
             await previousJob?.value
@@ -129,6 +124,12 @@ extension AppState {
             defer { self.insights.generatingNotes.remove(page.key) }
             let started = Date()
             do {
+                // Supporting material (the paper, the script), not the deck itself.
+                let excerpts = await self.retrieveExcerpts(question: page.text, maximumCharacters: 3_000)
+                    .filter { !$0.source.hasSuffix(page.documentName) }
+                let prompt = SlideNotes.prompt(page: page, previous: previous, next: next, excerpts: excerpts, mode: self.sessionMode, preferences: self.activeWorkspace.preferences)
+                let request = AnswerRequest(system: prompt.system, user: prompt.user, model: model,
+                                            effort: backend == .openAICompatible ? self.codexReasoning : "low", serviceTier: self.activeServiceTier)
                 let text = try await self.runWebAnswer(request, backend: backend, forSlides: true)
                 if let notes = SlideNotes.parse(text) {
                     self.insights.slideNotes[page.key] = notes

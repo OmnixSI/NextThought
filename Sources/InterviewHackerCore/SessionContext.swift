@@ -101,32 +101,45 @@ public struct SessionContextIndex: Sendable {
     /// Sections read per material (a Markdown file with many headings).
     public static let maximumSectionsPerDocument = 500
     public init(documents: [ContextDocument] = []) {
-        // The document cap has to match the number of materials a scenario may
-        // hold; anything above that would be indexed but never retrieved.
-        // The real bound is the chunk count below, which the workspace size
-        // limit (600k characters) never reaches.
-        for document in documents.prefix(Self.maximumDocuments) where document.enabled {
-            for (pageNumber, page) in document.pages.prefix(Self.maximumSectionsPerDocument).enumerated() {
-                let chars = Array(page.prefix(200_000))
-                var start = 0
-                while start < chars.count && chunks.count < 2_000 {
-                    let end = min(start + 900, chars.count)
-                    let text = String(chars[start..<end])
-                    chunks.append(Chunk(excerpt: .init(source: document.labeledName, page: pageNumber + 1, text: text),
-                                        terms: Self.terms(text), order: chunks.count))
-                    if end == chars.count { break }
-                    start = end - 120
-                }
-            }
+        self.init(chunks: ContextChunker.chunks(documents: documents))
+    }
+
+    /// Builds the index from a chunk list that was cut elsewhere.
+    ///
+    /// The semantic index needs the very same chunks, so both are built from
+    /// `ContextChunker` and the chunk order is the key that ties them together.
+    public init(chunks source: [ContextChunk]) {
+        for chunk in source {
+            chunks.append(
+                Chunk(
+                    excerpt: .init(source: chunk.source, page: chunk.page, text: chunk.text),
+                    terms: Self.terms(chunk.text), order: chunk.order))
         }
         for chunk in chunks { for term in chunk.terms { documentFrequency[term, default: 0] += 1 } }
     }
 
     public func retrieve(question: String, maximumCharacters: Int = 8_000) -> [ContextExcerpt] {
         guard maximumCharacters > 0 else { return [] }
+        var remaining = min(maximumCharacters, 16_000)
+        var result: [ContextExcerpt] = []
+        for order in rankedOrders(question: question).prefix(8) where remaining > 0 {
+            guard order < chunks.count else { continue }
+            let excerpt = chunks[order].excerpt
+            let text = String(excerpt.text.prefix(remaining))
+            result.append(.init(source: excerpt.source, page: excerpt.page, text: text))
+            remaining -= text.count
+        }
+        return result
+    }
+
+    /// The chunk orders that match the question, best first.
+    ///
+    /// The hybrid search needs the ranking itself, not only the excerpts, so it
+    /// can fuse it with the ranking of the vector index.
+    public func rankedOrders(question: String) -> [Int] {
         let query = Self.terms(String(question.suffix(2_000)))
         guard !query.isEmpty else { return [] }
-        let ranked = chunks.compactMap { chunk -> (Chunk, Double)? in
+        return chunks.compactMap { chunk -> (Chunk, Double)? in
             let overlap = query.intersection(chunk.terms)
             guard !overlap.isEmpty else { return nil }
             let score = overlap.reduce(0.0) { sum, term in
@@ -134,15 +147,7 @@ public struct SessionContextIndex: Sendable {
                 return sum + log(1 + Double(chunks.count) / Double(frequency + 1))
             } / sqrt(Double(max(1, chunk.terms.count)))
             return (chunk, score)
-        }.sorted { $0.1 == $1.1 ? $0.0.order < $1.0.order : $0.1 > $1.1 }
-        var remaining = min(maximumCharacters, 16_000)
-        var result: [ContextExcerpt] = []
-        for (chunk, _) in ranked.prefix(8) where remaining > 0 {
-            let text = String(chunk.excerpt.text.prefix(remaining))
-            result.append(.init(source: chunk.excerpt.source, page: chunk.excerpt.page, text: text))
-            remaining -= text.count
-        }
-        return result
+        }.sorted { $0.1 == $1.1 ? $0.0.order < $1.0.order : $0.1 > $1.1 }.map(\.0.order)
     }
 
     private static func terms(_ text: String) -> Set<String> {

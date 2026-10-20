@@ -60,7 +60,11 @@ enum DocumentImporter {
     ///
     /// - Parameter categories: The material slots of the current mode, used to
     ///   file every file automatically.
-    static func read(_ urls: [URL], categories: [String]) async throws -> Outcome {
+    /// - Parameter useDocumentModel: Read scanned pages and images with the
+    ///   document model instead of the system OCR.
+    static func read(_ urls: [URL], categories: [String], useDocumentModel: Bool = false) async throws
+        -> Outcome
+    {
         try await Task.detached(priority: .userInitiated) { () -> Outcome in
             var outcome = Outcome()
             for url in urls.prefix(60) {
@@ -73,7 +77,7 @@ enum DocumentImporter {
                     guard attributes.isRegularFile == true, let size = attributes.fileSize, size <= 20 * 1024 * 1024 else {
                         throw AppFailure.capture("仅支持不超过 20 MiB 的普通文件。")
                     }
-                    let result = try MarkdownConverter.convert(url)
+                    let result = try await MarkdownConverter.convert(url, useDocumentModel: useDocumentModel)
                     guard result.sections.contains(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
                         throw AppFailure.capture("没有可提取的文字。")
                     }

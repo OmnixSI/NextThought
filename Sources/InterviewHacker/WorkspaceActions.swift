@@ -27,7 +27,9 @@ extension AppState {
         importTask = Task {
             defer { isImportingDocuments = false; importTask = nil }
             do {
-                let outcome = try await DocumentImporter.read(urls, categories: categories)
+                let outcome = try await DocumentImporter.read(
+                    urls, categories: categories,
+                    useDocumentModel: unlimitedOCREnabled && unlimitedOCRInstalled)
                 try Task.checkCancellation()
                 guard var workspace = workspaces.workspace(workspaceID) else { return }
                 guard workspace.documents.count + outcome.documents.count <= Self.maxDocuments else {
@@ -93,15 +95,20 @@ extension AppState {
     func rebuildContextIndex() {
         let revision = UUID(); documentRevision = revision
         let snapshot = activeWorkspace.retrievalDocuments
+        let semantic = semanticIndex
         // Never reuse a disabled/removed document while a replacement index builds.
-        contextIndex = SessionContextIndex(); selectedExcerpts = []
+        contextIndex = HybridContextIndex(); selectedExcerpts = []
         isIndexingDocuments = true
         Task {
-            let index = await Task.detached(priority: .userInitiated) { SessionContextIndex(documents: snapshot) }.value
+            let index = await Task.detached(priority: .userInitiated) {
+                HybridContextIndex(documents: snapshot, semantic: semantic)
+            }.value
             guard documentRevision == revision else { return }
             contextIndex = index
             isIndexingDocuments = false
         }
+        // Changed material needs new vectors; the ones that did not change are kept.
+        if semanticRetrievalEnabled, embeddingModelInstalled { rebuildSemanticIndex() }
     }
 
     func removeDocument(_ id: UUID) { documents.removeAll { $0.id == id }; rebuildContextIndex() }
