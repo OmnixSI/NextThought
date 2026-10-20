@@ -1,5 +1,5 @@
 """Offline probes of the real MCP server. Requires packaged app and explicit runtime."""
-import argparse,pathlib,subprocess,tempfile,json,hashlib,shutil,time,sys
+import argparse,pathlib,subprocess,tempfile,json,hashlib,shutil,time,sys,os
 p=argparse.ArgumentParser();p.add_argument('--runtime',required=True);p.add_argument('--app',required=True);args=p.parse_args()
 ROOT=pathlib.Path(__file__).resolve().parents[3];runtime=pathlib.Path(args.runtime).resolve();app=pathlib.Path(args.app).resolve();python=runtime/'python/bin/python3'
 with tempfile.TemporaryDirectory(dir=ROOT/'.local',prefix='document-security-') as td:
@@ -52,6 +52,29 @@ presentation.save(sys.argv[2])
   response=request('tools/call',{'name':'view_embedded_image','arguments':{'image_id':part['image_id']}})
   assert response['result']['content'][0]['type']=='image'
  proc.terminate();proc.wait(timeout=5)
+ # Native compatibility formats: original HEIC/TIFF and legacy RTF, without a model call.
+ rtf=job/'input/source.rtf';rtf.write_text(r"{\rtf1\ansi Native RTF original file\par exact 1234}")
+ heic=job/'input/source.heic'
+ subprocess.run(['/usr/bin/sips','-s','format','heic',str(ROOT/'Tools/Validation/Documents/Fixtures/03-bilingual-columns.png'),'--out',str(heic)],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+ tiff=job/'input/source.tiff'
+ code="import sys;sys.path.insert(0,sys.argv[1]);from PIL import Image;a=Image.new('RGB',(40,40),'white');b=Image.new('RGB',(40,40),'black');a.save(sys.argv[2],save_all=True,append_images=[b])"
+ subprocess.run([str(python),'-I','-c',code,str(runtime/'site-packages'),str(tiff)],check=True)
+ for path,tool,arguments,expected in [(rtf,'read_text',{},'Native RTF original file'),(heic,'view_page',{'page':1},None),(tiff,'view_page',{'page':2},None)]:
+  manifest.write_text(json.dumps({'source':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'name':path.name,'app':str(app/'Contents/MacOS/InterviewHacker')}))
+  proc=subprocess.Popen([str(python),'-I',str(app/'Contents/Resources/DocumentRuntime/document_mcp.py'),str(manifest)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+  request('initialize');response=request('tools/call',{'name':tool,'arguments':arguments})
+  assert 'result' in response,response
+  if expected:assert expected in str(response)
+  else:assert response['result']['content'][0]['type']=='image'
+  if path==tiff:
+   info=request('tools/call',{'name':'file_info','arguments':{}})
+   assert json.loads(info['result']['content'][0]['text'])['pages']==2
+  proc.terminate();proc.wait(timeout=5)
+ env=dict(os.environ,INTERVIEWHACKER_DATA_DIR=str(job/'isolated-data'))
+ output=job/'tiff-output'
+ subprocess.run([str(app/'Contents/MacOS/InterviewHacker'),'--self-test','documents','--provider','system','--input',str(tiff),'--output',str(output)],env=env,check=True,stdout=subprocess.DEVNULL)
+ converted=json.loads((output/'source.tiff.json').read_text())
+ assert {block['locator']['page'] for block in converted['blocks']}=={1,2}
  subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict',str(app)],check=True)
  assert not list((app/'Contents/Resources/DocumentRuntime').glob('__pycache__'))
-print('PASS real MCP allowlist, read-only tools, path/traversal/network/write rejection, page bounds, mutation and symlink rejection; Office image IDs/slide association; signed App stays intact')
+print('PASS real MCP allowlist, read-only tools, path/traversal/network/write rejection, page bounds, mutation and symlink rejection; Office image IDs/slide association; HEIC/multi-page TIFF/RTF native reads; signed App stays intact')

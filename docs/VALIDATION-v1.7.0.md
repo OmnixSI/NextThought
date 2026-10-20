@@ -66,3 +66,5 @@ INTERVIEWHACKER_DEMO=1 "$APP" --self-test document-lifecycle model-files
 正式 App 的离线隔离验证已通过：Seatbelt 拒绝网络、仓库 Sources／Resources／Tools 和 /opt/homebrew、/usr/local 的读取，仍能使用随包 helper 与新目录中的运行包完成 Paddle 公式识别。实际 MCP 读取双页 PPT 的两个不同嵌图后，图片 ID 与幻灯片对应正确；App codesign --deep --strict 再次通过，资源目录没有产生 Python bytecode 缓存。
 
 移除了旧的 2,000 检索片段截断；第 2,105 个片段仍可被关键词检索的回归已通过，全文导入后的尾部材料不会因该旧上限消失。
+
+格式兼容补充：原 HEIC 通过 macOS ImageIO 按需查看；多页 TIFF 的工具元数据与第二页查看通过，实际本地转换也保留两页定位。旧 RTF 通过原件的原生结构提取返回。Office 嵌图无法解码时现在明确降级提示导出 PDF，严格模式拒绝文件，避免静默漏图。以上为格式／隔离边界验证，没有扩大六份准确度对照。

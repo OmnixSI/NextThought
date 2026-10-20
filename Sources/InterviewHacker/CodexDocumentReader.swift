@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import PDFKit
+import ImageIO
 import InterviewHackerCore
 
 enum CodexDocumentReader {
@@ -62,9 +63,23 @@ enum CodexDocumentReader {
         let manifestURL=URL(fileURLWithPath:arguments[0]).resolvingSymlinksInPath()
         let manifest=try JSONSerialization.jsonObject(with:Data(contentsOf:manifestURL)) as! [String:Any]
         let source=URL(fileURLWithPath:manifest["source"] as! String).resolvingSymlinksInPath()
-        guard source.deletingLastPathComponent().path == manifestURL.deletingLastPathComponent().appendingPathComponent("input").path, ManagedModelStore.sha256(of:source)==manifest["sha256"] as? String,
-              let pdf=PDFDocument(url:source),!pdf.isLocked,pdf.pageCount>0 else { throw AppFailure.capture("Document outside job or unreadable") }
+        guard source.deletingLastPathComponent().path == manifestURL.deletingLastPathComponent().appendingPathComponent("input").path, ManagedModelStore.sha256(of:source)==manifest["sha256"] as? String else { throw AppFailure.capture("Document outside job or changed") }
         let operation=arguments[1], number=Int(arguments[2]) ?? 0
+        if operation == "convert" {
+            let converted = try MarkdownConverter.convert(source)
+            print(String(data: try JSONSerialization.data(withJSONObject: ["markdown":converted.markdown]), encoding:.utf8)!)
+            return
+        }
+        if source.pathExtension.lowercased() != "pdf", ["image", "info"].contains(operation) {
+            guard let imageSource=CGImageSourceCreateWithURL(source as CFURL,nil) else { throw AppFailure.capture("Image cannot be read") }
+            let count=source.pathExtension.lowercased() == "tiff" ? CGImageSourceGetCount(imageSource) : 1
+            if operation == "info" { print("{\"pages\":\(count)}"); return }
+            guard number>0, number<=count, let cg=CGImageSourceCreateThumbnailAtIndex(imageSource,number-1,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:2400,kCGImageSourceCreateThumbnailWithTransform:true] as CFDictionary),
+                  let png=NSBitmapImageRep(cgImage:cg).representation(using:.png,properties:[:]) else { throw AppFailure.capture("Image or page cannot be read") }
+            print(String(data:try JSONSerialization.data(withJSONObject:["base64":png.base64EncodedString()]),encoding:.utf8)!)
+            return
+        }
+        guard let pdf=PDFDocument(url:source),!pdf.isLocked,pdf.pageCount>0 else { throw AppFailure.capture("PDF unreadable") }
         let result:[String:Any]
         if operation=="info" { result=["pages":pdf.pageCount] }
         else if operation=="text" {

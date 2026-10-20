@@ -39,11 +39,13 @@ def call(name,args):
     if not isinstance(page,int) or page<1:raise ValueError('page must be positive')
     if name=='file_info':
         info={'path':str(SOURCE),'name':JOB['name'],'sha256':JOB['sha256'],'bytes':SOURCE.stat().st_size,'format':suffix}
-        if suffix=='.pdf':info.update(native('info'))
+        if suffix in ('.pdf','.tiff','.heic'):info.update(native('info'))
+        else:info['pages']=1
         return [text(info)]
     if name=='read_text':
         if suffix=='.pdf':return [text(native('text',args.get('page',0)))]
-        if suffix in ('.docx','.pptx','.xlsx','.html','.htm','.txt','.csv','.md','.json','.rtf'):return [text([dict({k:v for k,v in p.items() if k!='image'}, **({'image_id':pathlib.Path(p['image']).name} if 'image' in p else {})) for p in structured()['parts']])]
+        if suffix in ('.doc','.odt','.rtf','.md','.markdown','.csv','.json'):return [text(native('convert'))]
+        if suffix in ('.docx','.pptx','.xlsx','.html','.htm','.txt','.csv','.md','.json'):return [text([dict({k:v for k,v in p.items() if k!='image'}, **({'image_id':pathlib.Path(p['image']).name} if 'image' in p else {})) for p in structured()['parts']])]
         return [text('This image needs view_page for visual reading.')]
     if name=='office_structure':
         result=structured();images=result.pop('images',[])
@@ -51,7 +53,8 @@ def call(name,args):
         result['images']=[dict({k:v for k,v in x.items() if k!='path'},image_id=pathlib.Path(x['path']).name) for x in images]
         return [text(result)]
     if name=='view_page':
-        if suffix=='.pdf':return [{'type':'image','mimeType':'image/png','data':native('image',page)['base64']}]
+        if suffix in ('.pdf','.heic','.tiff'):return [{'type':'image','mimeType':'image/png','data':native('image',page)['base64']}]
+        if page!=1:raise ValueError('single-page image')
         from PIL import Image
         im=Image.open(SOURCE);im.thumbnail((2400,2400));out=io.BytesIO();im.convert('RGB').save(out,format='PNG');return [image(out.getvalue(),'image/png')]
     if name=='view_embedded_image':

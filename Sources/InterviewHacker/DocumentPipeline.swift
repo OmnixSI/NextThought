@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import PDFKit
+import ImageIO
 import Vision
 import InterviewHackerCore
 
@@ -60,17 +61,34 @@ extension MarkdownConverter {
                 }
             }
         } else if documentImageFormats.contains(format) {
-            guard let image = NSImage(contentsOf:url)?.cgImage(forProposedRect:nil,context:nil,hints:nil) else { throw AppFailure.capture("图片无法读取。") }
-            add(try await ocr(image,locator:.init()),.init())
+            guard let imageSource=CGImageSourceCreateWithURL(url as CFURL,nil) else { throw AppFailure.capture("图片无法读取。") }
+            let count=format == "tiff" ? CGImageSourceGetCount(imageSource) : 1
+            guard count>0,count<=400 else { throw AppFailure.capture("图片为空或超过 400 页，请拆分后导入。") }
+            for frame in 0..<count {
+                try Task.checkCancellation()
+                guard let image=CGImageSourceCreateThumbnailAtIndex(imageSource,frame,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:2400,kCGImageSourceCreateThumbnailWithTransform:true] as CFDictionary) else { throw AppFailure.capture("图片第 \(frame+1) 页无法读取。") }
+                let locator=DocumentLocator(page:count>1 ? frame+1 : nil)
+                let text=try await ocr(image,locator:locator)
+                if text.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
+                    warnings.append("\(locator.label)：未识别到文字，请核对原件。")
+                    add("[图像页未识别到文字]",locator)
+                } else { add(text,locator) }
+            }
         } else if (["docx","pptx","xlsx"].contains(format) || (["html","htm"].contains(format) && DocumentRuntime.installed)) {
             let result = try await DocumentWorker.shared.request("convert", ["path":url.path,"output_directory":job.path],timeout:options.timeout)
             for part in result["parts"] as? [[String:Any]] ?? [] {
                 try Task.checkCancellation()
                 let loc = part["locator"] as? [String:Any] ?? [:]
                 var locator = DocumentLocator(slide:loc["slide"] as? Int,sheet:loc["sheet"] as? String)
-                if let path = part["image"] as? String, let cg = NSImage(contentsOfFile:path)?.cgImage(forProposedRect:nil,context:nil,hints:nil) {
+                if let path = part["image"] as? String {
                     locator.headingPath = ["嵌图 \(part["name"] as? String ?? "")"]
-                    add(try await ocr(cg,locator:locator),locator)
+                    if let cg = NSImage(contentsOfFile:path)?.cgImage(forProposedRect:nil,context:nil,hints:nil) {
+                        add(try await ocr(cg,locator:locator),locator)
+                    } else {
+                        let message = "\(locator.label)：嵌图格式无法解码，请将原件导出 PDF 后重试。"
+                        guard options.fallback else { throw AppFailure.capture(message) }
+                        warnings.append(message); add("[嵌图未识别：请导出 PDF 后重新导入]",locator)
+                    }
                 } else { add(part["markdown"] as? String ?? "",locator) }
             }
         } else {
