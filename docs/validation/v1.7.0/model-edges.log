@@ -1,0 +1,5 @@
+SELFTEST ▶︎ models
+SELFTEST ✔ models (8.9 s) 1024 dimensions, related=0.76810753 unrelated=0.08859579
+SELFTEST ▶︎ document-edges
+SELFTEST ✔ document-edges (1.3 s) empty, oversized, encrypted, mixed PDF, physical locators, explicit fallback, strict mode, cancellation and worker recovery passed
+SELFTEST all passed

@@ -293,7 +293,7 @@ private struct MaterialsTab: View {
             DisclosureGroup("最近回答用到的资料片段") {
                 ForEach(Array(state.selectedExcerpts.enumerated()), id: \.offset) { _, item in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("\(item.source) · p.\(item.page)").font(.system(size: 12, weight: .semibold))
+                        Text(item.citation).font(.system(size: 12, weight: .semibold))
                         Text(item.text).font(.callout).textSelection(.enabled)
                     }.padding(.vertical, 6)
                 }
@@ -338,7 +338,11 @@ private struct MaterialsTab: View {
                     Image(systemName: icon(for: document.name)).foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(document.name).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
-                        Text("\(document.pages.count) 段 · \(document.characterCount) 字符").font(.caption2).foregroundStyle(.secondary)
+                        Text("\(document.pages.count) 块 · \(document.characterCount) 字符").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    if let content = document.content, !content.warnings.isEmpty {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                            .help(content.warnings.joined(separator: "\n"))
                     }
                     if let format = document.sourceFormat {
                         Text(format.uppercased())
@@ -348,8 +352,8 @@ private struct MaterialsTab: View {
                             .help("已转成 Markdown 归档")
                     }
                     Spacer()
-                    if let path = document.markdownPath, FileManager.default.fileExists(atPath: path) {
-                        Button { NSWorkspace.shared.open(URL(fileURLWithPath: path)) } label: { Image(systemName: "doc.richtext") }
+                    if let path = document.markdownPath, let archived = MaterialArchive.resolve(path), FileManager.default.fileExists(atPath: archived.path) {
+                        Button { NSWorkspace.shared.open(archived) } label: { Image(systemName: "doc.richtext") }
                             .buttonStyle(.borderless).help("打开归档的 Markdown")
                     }
                     Menu {

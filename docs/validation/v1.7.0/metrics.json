@@ -1,0 +1,323 @@
+{
+  "system": {
+    "cases": [
+      {
+        "file": "01-chinese-cv.pdf",
+        "completed": true,
+        "numbers": {
+          "correct": 6,
+          "total": 7,
+          "missing": [
+            "3,600"
+          ]
+        },
+        "textAnchors": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "seconds": 0.5905289649963379,
+        "raw": ".local/document-validation/final-system/01-chinese-cv.pdf.md"
+      },
+      {
+        "file": "02-english-jd.pdf",
+        "completed": true,
+        "numbers": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "seconds": 0.004453897476196289,
+        "raw": ".local/document-validation/final-system/02-english-jd.pdf.md"
+      },
+      {
+        "file": "03-bilingual-columns.png",
+        "completed": true,
+        "numbers": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "seconds": 0.2565650939941406,
+        "raw": ".local/document-validation/final-system/03-bilingual-columns.png.md"
+      },
+      {
+        "file": "04-merged-table.png",
+        "completed": true,
+        "numbers": {
+          "correct": 3,
+          "total": 6,
+          "missing": [
+            "1,234.56",
+            "1,789.01",
+            "2,222.21"
+          ]
+        },
+        "textAnchors": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "seconds": 0.2115769386291504,
+        "raw": ".local/document-validation/final-system/04-merged-table.png.md"
+      },
+      {
+        "file": "05-technical-formula.png",
+        "completed": true,
+        "numbers": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 2,
+          "total": 2,
+          "missing": []
+        },
+        "seconds": 0.22277498245239258,
+        "raw": ".local/document-validation/final-system/05-technical-formula.png.md"
+      },
+      {
+        "file": "06-office-embedded.docx",
+        "completed": true,
+        "numbers": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 5,
+          "total": 5,
+          "missing": []
+        },
+        "seconds": 1.050955057144165,
+        "raw": ".local/document-validation/final-system/06-office-embedded.docx.md"
+      }
+    ],
+    "numberCorrect": 23,
+    "numberTotal": 27,
+    "textCorrect": 21,
+    "textTotal": 21,
+    "seconds": 2.336854934692383
+  },
+  "paddle": {
+    "cases": [
+      {
+        "file": "01-chinese-cv.pdf",
+        "completed": true,
+        "numbers": {
+          "correct": 7,
+          "total": 7,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "seconds": 39.362276911735535,
+        "raw": ".local/document-validation/final-paddle/01-chinese-cv.pdf.md"
+      },
+      {
+        "file": "02-english-jd.pdf",
+        "completed": true,
+        "numbers": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "seconds": 0.02809309959411621,
+        "raw": ".local/document-validation/final-paddle/02-english-jd.pdf.md"
+      },
+      {
+        "file": "03-bilingual-columns.png",
+        "completed": true,
+        "numbers": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "seconds": 4.199586033821106,
+        "raw": ".local/document-validation/final-paddle/03-bilingual-columns.png.md"
+      },
+      {
+        "file": "04-merged-table.png",
+        "completed": true,
+        "numbers": {
+          "correct": 6,
+          "total": 6,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "seconds": 4.138229012489319,
+        "raw": ".local/document-validation/final-paddle/04-merged-table.png.md"
+      },
+      {
+        "file": "05-technical-formula.png",
+        "completed": true,
+        "numbers": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 2,
+          "total": 2,
+          "missing": []
+        },
+        "seconds": 3.542217969894409,
+        "raw": ".local/document-validation/final-paddle/05-technical-formula.png.md"
+      },
+      {
+        "file": "06-office-embedded.docx",
+        "completed": true,
+        "numbers": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 5,
+          "total": 5,
+          "missing": []
+        },
+        "seconds": 2.529470920562744,
+        "raw": ".local/document-validation/final-paddle/06-office-embedded.docx.md"
+      }
+    ],
+    "numberCorrect": 27,
+    "numberTotal": 27,
+    "textCorrect": 21,
+    "textTotal": 21,
+    "seconds": 53.79987394809723
+  },
+  "codex": {
+    "cases": [
+      {
+        "file": "01-chinese-cv.pdf",
+        "completed": true,
+        "numbers": {
+          "correct": 7,
+          "total": 7,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "seconds": 27.71219301223755,
+        "raw": ".local/document-validation/accepted-codex/01-chinese-cv.pdf.md"
+      },
+      {
+        "file": "02-english-jd.pdf",
+        "completed": true,
+        "numbers": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "seconds": 20.510491967201233,
+        "raw": ".local/document-validation/accepted-codex/02-english-jd.pdf.md"
+      },
+      {
+        "file": "03-bilingual-columns.png",
+        "completed": true,
+        "numbers": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "seconds": 16.304156064987183,
+        "raw": ".local/document-validation/accepted-codex/03-bilingual-columns.png.md"
+      },
+      {
+        "file": "04-merged-table.png",
+        "completed": true,
+        "numbers": {
+          "correct": 6,
+          "total": 6,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "seconds": 15.842383980751038,
+        "raw": ".local/document-validation/accepted-codex/04-merged-table.png.md"
+      },
+      {
+        "file": "05-technical-formula.png",
+        "completed": true,
+        "numbers": {
+          "correct": 3,
+          "total": 3,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 2,
+          "total": 2,
+          "missing": []
+        },
+        "seconds": 54.22752094268799,
+        "raw": ".local/document-validation/accepted-codex/05-technical-formula.png.md"
+      },
+      {
+        "file": "06-office-embedded.docx",
+        "completed": true,
+        "numbers": {
+          "correct": 4,
+          "total": 4,
+          "missing": []
+        },
+        "textAnchors": {
+          "correct": 5,
+          "total": 5,
+          "missing": []
+        },
+        "seconds": 14.52366304397583,
+        "raw": ".local/document-validation/accepted-codex/06-office-embedded.docx.md"
+      }
+    ],
+    "numberCorrect": 27,
+    "numberTotal": 27,
+    "textCorrect": 21,
+    "textTotal": 21,
+    "seconds": 149.12040901184082
+  }
+}

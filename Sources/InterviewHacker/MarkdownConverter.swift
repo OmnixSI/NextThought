@@ -21,6 +21,7 @@ enum MarkdownConverter {
         var format: String
         /// Which converter produced the Markdown.
         var converter: String
+        var content: DocumentContent? = nil
         var characterCount: Int { markdown.count }
     }
 
@@ -31,13 +32,6 @@ enum MarkdownConverter {
     static func convert(_ url: URL) throws -> Result {
         let format = url.pathExtension.lowercased()
         let name = url.deletingPathExtension().lastPathComponent
-
-        // An external converter (Microsoft MarkItDown, Pandoc) does a better job
-        // on complex layouts; the built-in one keeps working without it.
-        if let external = ExternalMarkdownConverter.convert(url, format: format) {
-            return Result(name: name, markdown: external.markdown, sections: external.sections,
-                          format: format, converter: external.tool)
-        }
 
         var document = MarkdownDocument()
         switch format {
@@ -70,60 +64,6 @@ enum MarkdownConverter {
         let markdown = document.markdown
         return Result(name: name, markdown: markdown, sections: document.sections,
                       format: format, converter: "内置")
-    }
-}
-
-// MARK: - The document model
-
-extension MarkdownConverter {
-    /// The formats the document model reads: whole pages, not text files.
-    static let documentModelFormats: Set<String> = ["pdf", "png", "jpg", "jpeg", "heic", "tiff"]
-
-    /// Converts one local file, letting the document model read scanned pages
-    /// and images.
-    ///
-    /// The model reads whole pages and returns Markdown with headings, lists
-    /// and tables, which the built-in reader cannot do. When the model is not
-    /// available or fails, the built-in reader takes over, so an import never
-    /// breaks because of the model.
-    static func convert(_ url: URL, useDocumentModel: Bool) async throws -> Result {
-        let format = url.pathExtension.lowercased()
-        if useDocumentModel, documentModelFormats.contains(format),
-           let result = try? await documentModelResult(url, format: format) {
-            return result
-        }
-        return try convert(url)
-    }
-
-    /// Reads a file with the document model.
-    private static func documentModelResult(_ url: URL, format: String) async throws -> Result {
-        let name = url.deletingPathExtension().lastPathComponent
-        let markdown: String
-        if format == "pdf" {
-            guard let pdf = PDFDocument(url: url), !pdf.isLocked, pdf.pageCount > 0 else {
-                throw AppFailure.capture("PDF 无法读取或已加密。")
-            }
-            markdown = try await UnlimitedOCRService.read(pdf: pdf, maximumPages: documentModelPageLimit)
-        } else {
-            guard let image = NSImage(contentsOf: url),
-                  let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-                throw AppFailure.capture("图片无法读取。")
-            }
-            markdown = try await UnlimitedOCRService.read(image: cgImage)
-        }
-        guard !markdown.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw AppFailure.capture("模型没有读出文字。")
-        }
-        var document = MarkdownDocument()
-        document.raw(markdown)
-        return Result(name: name, markdown: document.markdown, sections: document.sections,
-                      format: format, converter: "Unlimited-OCR")
-    }
-
-    /// How many pages the document model reads per document.
-    static var documentModelPageLimit: Int {
-        let stored = UserDefaults.standard.object(forKey: "unlimitedOCRMaxPages") as? Int ?? 20
-        return max(1, min(200, stored))
     }
 }
 

@@ -1,0 +1,5 @@
+SELFTEST ▶︎ document-lifecycle
+SELFTEST ✔ document-lifecycle (3.5 s) workspace switch, late index rejection, disabled/deleted documents, revision-bound cache and zero embedding calls on unchanged chunks passed
+SELFTEST ▶︎ model-files
+SELFTEST ✔ model-files (1.3 s) real pinned download, verified-file reuse, corruption repair, cancellation and no late writes after delete passed
+SELFTEST all passed

@@ -52,16 +52,16 @@ final class CodexBridge: @unchecked Sendable {
         if let process { Self.stop(process) }
     }
 
-    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, serviceTier: String? = nil, webSearch: Bool = false, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    func run(prompt: String, model: String, reasoning: String, imageURL: URL? = nil, documentJob: URL? = nil, serviceTier: String? = nil, webSearch: Bool = false, timeout: TimeInterval = 90, onUpdate: @escaping (String) async -> Void) async throws -> String {
         let requestID = UUID()
         return try await withTaskCancellationHandler {
-            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, serviceTier: serviceTier, webSearch: webSearch, timeout: timeout, onUpdate: onUpdate)
+            try await runRequest(id: requestID, prompt: prompt, model: model, reasoning: reasoning, imageURL: imageURL, documentJob: documentJob, serviceTier: serviceTier, webSearch: webSearch, timeout: timeout, onUpdate: onUpdate)
         } onCancel: {
             self.terminate(requestID)
         }
     }
 
-    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, serviceTier: String?, webSearch: Bool, timeout: TimeInterval, onUpdate: @escaping (String) async -> Void) async throws -> String {
+    private func runRequest(id requestID: UUID, prompt: String, model: String, reasoning: String, imageURL: URL?, documentJob: URL?, serviceTier: String?, webSearch: Bool, timeout: TimeInterval, onUpdate: @escaping (String) async -> Void) async throws -> String {
         try Task.checkCancellation()
         let identifierCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-._/:"))
         guard !model.isEmpty, model.unicodeScalars.allSatisfy({ identifierCharacters.contains($0) }),
@@ -83,6 +83,7 @@ final class CodexBridge: @unchecked Sendable {
         defer { try? errorHandle.close() }
 
         let process = Process()
+        let completion = ProcessExitWaiter(process)
         let input = Pipe()
         let output = Pipe()
         process.executableURL = executable
@@ -96,6 +97,24 @@ final class CodexBridge: @unchecked Sendable {
             "--config", "web_search=\"\(webSearch ? "live" : "disabled")\"",
             "--cd", workDir.path
         ]
+        if let documentJob {
+            // Explicit deny-root profile supersedes the broad built-in read-only sandbox.
+            process.arguments = process.arguments?.filter { $0 != "--sandbox" && $0 != "read-only" }
+            func literal(_ value: String) -> String { { let encoder = JSONEncoder(); encoder.outputFormatting = .withoutEscapingSlashes; return String(data: try! encoder.encode(value), encoding: .utf8)! }() }
+            let helper = DocumentRuntime.resources.appendingPathComponent("document_mcp.py").path
+            let args = ["-I", helper, documentJob.appendingPathComponent("manifest.json").path]
+            let argsJSON = String(data: try JSONSerialization.data(withJSONObject: args, options: .withoutEscapingSlashes), encoding: .utf8)!
+            let fs = "{\":root\"=\"deny\",\":minimal\"=\"read\",\(literal(documentJob.path))=\"read\",\(literal(DocumentRuntime.directory.path))=\"read\",\(literal(DocumentRuntime.resources.path))=\"read\"}"
+            process.arguments?.append(contentsOf: [
+                "-c", "approval_policy=\"never\"", "-c", "default_permissions=\"document-read\"",
+                "-c", "permissions.document-read.filesystem=\(fs)",
+                "-c", "permissions.document-read.network.enabled=false",
+                "-c", "mcp_servers.document.command=\(literal(DocumentRuntime.python.path))",
+                "-c", "mcp_servers.document.args=\(argsJSON)",
+                "-c", "mcp_servers.document.required=true",
+                "-c", "mcp_servers.document.tool_timeout_sec=120"
+            ])
+        }
         // `--ignore-user-config` drops the user's own service_tier, so set it explicitly.
         if let serviceTier, ["fast", "default"].contains(serviceTier) {
             process.arguments?.append(contentsOf: ["--config", "service_tier=\"\(serviceTier)\""])
@@ -139,6 +158,13 @@ final class CodexBridge: @unchecked Sendable {
         var eventTypes: Set<String> = []
         do {
             for try await line in ProcessLineReader.lines(from: output.fileHandleForReading) {
+                if documentJob != nil, let trace = ProcessInfo.processInfo.environment["INTERVIEWHACKER_DOCUMENT_TRACE_DIR"] {
+                    let dir = URL(fileURLWithPath: trace, isDirectory: true)
+                    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                    let url = dir.appendingPathComponent(requestID.uuidString + ".ndjson")
+                    if !FileManager.default.fileExists(atPath: url.path) { FileManager.default.createFile(atPath: url.path, contents: nil) }
+                    if let h = try? FileHandle(forWritingTo: url) { _ = try? h.seekToEnd(); try? h.write(contentsOf: Data((line + "\n").utf8)); try? h.close() }
+                }
                 if let data = line.data(using: .utf8), let item = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     let type = item["type"] as? String ?? "unknown"
                     let subtype = (item["item"] as? [String: Any])?["type"] as? String ?? ""
@@ -157,17 +183,17 @@ final class CodexBridge: @unchecked Sendable {
             readError = error
         }
 
-        await Task.detached(priority: .utility) { process.waitUntilExit() }.value
-        Diagnostics.record("codex.exited", ["request_id": requestID.uuidString, "seconds": Date().timeIntervalSince(startedAt), "exit_code": process.terminationStatus, "events": eventTypes.sorted()])
+        let exitStatus = await completion.wait()
+        Diagnostics.record("codex.exited", ["request_id": requestID.uuidString, "seconds": Date().timeIntervalSince(startedAt), "exit_code": exitStatus, "events": eventTypes.sorted()])
         let detail = (try? String(contentsOf: errorURL, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if takeTimedOut(requestID) {
             throw AppFailure.capture("Codex 请求超过 \(Int(timeout)) 秒，已自动取消。请检查网络或稍后重试。")
         }
         try Task.checkCancellation()
         if let readError { throw readError }
-        guard process.terminationStatus == 0 else {
+        guard exitStatus == 0 else {
             invalidateLoginCache()
-            throw AppFailure.capture(detail.isEmpty ? "Codex CLI 退出，状态码 \(process.terminationStatus)。请检查登录状态与账号使用限制。" : detail)
+            throw AppFailure.capture(detail.isEmpty ? "Codex CLI 退出，状态码 \(exitStatus)。请检查登录状态与账号使用限制。" : detail)
         }
         guard !fullText.isEmpty else {
             throw AppFailure.capture("Codex 没有返回文本。请确认本机 Codex CLI 与账号可用。")
@@ -197,6 +223,7 @@ final class CodexBridge: @unchecked Sendable {
 
     private static func runStatus(executable: URL, arguments: [String], timeout: TimeInterval) -> (status: Int32, output: String) {
         let process = Process()
+        let completion = ProcessExitWaiter(process)
         let pipe = Pipe()
         process.executableURL = executable
         process.arguments = arguments
@@ -209,9 +236,9 @@ final class CodexBridge: @unchecked Sendable {
                 Self.stop(process)
             }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
+            let exitStatus = completion.waitSynchronously(timeout: timeout + 2) ?? -1
             let text = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return (process.terminationStatus, text)
+            return (exitStatus, text)
         } catch {
             return (-1, error.localizedDescription)
         }

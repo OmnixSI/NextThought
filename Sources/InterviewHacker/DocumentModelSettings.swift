@@ -1,127 +1,69 @@
 import SwiftUI
 import InterviewHackerCore
 
-/// The two models the app manages itself: the document model that reads whole
-/// pages and the embedding model that lets the material search understand
-/// meaning, not only words.
-///
-/// Both are downloaded on request into the data directory, applied as soon as
-/// they are there and removed with one click; the weights never ship with the
-/// app and nothing is uploaded.
 struct DocumentModelSettings: View {
     @Environment(AppState.self) private var state
-
     var body: some View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
-            SettingsSection(title: "文档识别模型", icon: "doc.text.viewfinder") {
-                ManagedModelRow(
-                    descriptor: ModelCatalog.unlimitedOCR, isInstalled: state.unlimitedOCRInstalled,
-                    unavailableReason: UnlimitedOCRService.unavailableReason)
-                Toggle("用 Unlimited-OCR 读扫描件和图片", isOn: $state.unlimitedOCREnabled)
-                    .disabled(!state.unlimitedOCRInstalled)
-                    .onChange(of: state.unlimitedOCREnabled) { _, _ in state.updateSettings() }
-                MenuPicker(
-                    title: "每个文档最多读", selection: $state.unlimitedOCRMaxPages,
-                    options: [5, 10, 20, 50, 100].map { ($0, "\($0) 页") })
-                    .disabled(!state.unlimitedOCREnabled)
-                    .onChange(of: state.unlimitedOCRMaxPages) { _, _ in state.updateSettings() }
-                Toggle("模型出错时回退到系统 OCR", isOn: $state.ocrFallbackToVision)
-                    .disabled(!state.unlimitedOCREnabled)
+            SettingsSection(title: "文档处理", icon: "doc.text.viewfinder") {
+                Picker("识别接口", selection: $state.documentOCRProvider) {
+                    ForEach(DocumentOCRProvider.allCases) { Text($0.title).tag($0) }
+                }.onChange(of: state.documentOCRProvider) { _, _ in state.documentProviderWasSelected = true; state.updateSettings() }
+                Toggle("本地识别出错时由系统 OCR 补读并标记（关闭为严格模式）", isOn: $state.ocrFallbackToVision)
                     .onChange(of: state.ocrFallbackToVision) { _, _ in state.updateSettings() }
-                Note(ModelCatalog.unlimitedOCR.note)
-            }
-
-            SettingsSection(title: "向量检索模型", icon: "sparkle.magnifyingglass") {
-                ManagedModelRow(
-                    descriptor: ModelCatalog.qwen3Embedding, isInstalled: state.embeddingModelInstalled,
-                    unavailableReason: state.embeddingModelInstalled ? nil : "尚未下载模型。")
-                Toggle("资料检索同时看语义（关键词 + 向量）", isOn: $state.semanticRetrievalEnabled)
-                    .disabled(!state.embeddingModelInstalled)
-                    .onChange(of: state.semanticRetrievalEnabled) { _, _ in
-                        state.updateSettings()
-                        if state.semanticRetrievalEnabled { state.rebuildSemanticIndex() }
-                    }
-                HStack {
-                    Button("重建向量索引") { state.rebuildSemanticIndex() }
-                        .buttonStyle(SecondaryButtonStyle())
-                        .disabled(!state.embeddingModelInstalled || state.isBuildingSemanticIndex)
-                    if state.isBuildingSemanticIndex {
-                        ProgressView().controlSize(.small)
-                    }
+                if state.documentOCRProvider == .codex {
+                    TextField("Codex 模型", text: $state.codexOCRModel).onSubmit { state.updateSettings() }
+                    Picker("推理强度", selection: $state.codexOCREffort) { ForEach(["low", "medium", "high", "xhigh"], id: \.self) { Text($0).tag($0) } }.onChange(of: state.codexOCREffort) { _, _ in state.updateSettings() }
+                    HStack { Text("每文件超时（秒）"); TextField("600", value: $state.codexOCRTimeout, format: .number).onSubmit { state.codexOCRTimeout=max(30,min(3600,state.codexOCRTimeout)); state.updateSettings() } }
+                    Note("默认 gpt-6-luna / medium / 标准速度，每文件 10 分钟。使用现有 Codex 登录，原文件临时副本经专属工具读取，任务结束删除。")
                 }
-                if !state.semanticIndexStatus.isEmpty { Note(state.semanticIndexStatus) }
-                Note(ModelCatalog.qwen3Embedding.note)
+                HStack {
+                    Text(state.runtimeInstalled ? "文档运行包已安装" : "Office、Paddle 和向量检索需要文档运行包")
+                    Spacer()
+                    Button(state.isInstallingDocumentRuntime ? "正在下载…" : "安装／修复运行包") { state.installDocumentRuntime() }
+                        .disabled(state.isInstallingDocumentRuntime)
+                }
+                Note(DocumentRuntimeInstaller.sizeDescription)
+                if state.isInstallingDocumentRuntime { Button("取消下载运行包") { state.runtimeDownloadTask?.cancel() } }
+                if state.runtimeInstalled { Button("删除运行包", role: .destructive) { state.deleteDocumentRuntime() } }
+                if !state.documentRuntimeStatus.isEmpty { Note(state.documentRuntimeStatus) }
+                ForEach([ModelCatalog.paddleOCR, ModelCatalog.layout], id: \.id) { descriptor in
+                    ManagedModelRow(descriptor: descriptor, isInstalled: state.installedDocumentModels.contains(descriptor.id))
+                }
             }
-
-            Note("模型文件在 \(AppPaths.models.path)，可以随时整个文件夹删掉；向量索引在 \(AppPaths.index.path)。")
+            SettingsSection(title: "语义检索", icon: "sparkle.magnifyingglass") {
+                ManagedModelRow(descriptor: ModelCatalog.qwen3Embedding, isInstalled: state.embeddingModelInstalled)
+                Toggle("关键词 + 语义检索", isOn: $state.semanticRetrievalEnabled)
+                    .onChange(of: state.semanticRetrievalEnabled) { _, _ in state.updateSettings(); state.rebuildContextIndex() }
+                Button("重建向量索引") { state.rebuildSemanticIndex() }.disabled(!state.embeddingModelInstalled || state.isBuildingSemanticIndex)
+                if !state.semanticIndexStatus.isEmpty { Note(state.semanticIndexStatus) }
+            }
+            Note("资料只长期保留 Markdown 与定位信息。模型和运行包单独下载，可随时删除。")
         }
     }
 }
-
-/// One downloadable model: what it is for, whether it is installed, and the
-/// buttons to download or remove it.
 struct ManagedModelRow: View {
     @Environment(AppState.self) private var state
     let descriptor: ManagedModelDescriptor
     let isInstalled: Bool
-    /// Why the model cannot be used even though it is there.
-    var unavailableReason: String?
-    @State private var confirmDelete = false
-
-    private var isDownloading: Bool {
-        state.isDownloadingManagedModel && state.managedModelDownloadID == descriptor.id
-    }
-
+    var unavailableReason: String? = nil
+    private var downloading: Bool { state.isDownloadingManagedModel && state.managedModelDownloadID == descriptor.id }
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Label(
-                    descriptor.name,
-                    systemImage: isInstalled ? "checkmark.circle.fill" : "arrow.down.circle")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(isInstalled ? Color.green : Color.orange)
+                Label(descriptor.name, systemImage: isInstalled ? "checkmark.circle.fill" : "arrow.down.circle")
                 Spacer()
-                if isDownloading {
-                    Button("取消") { state.cancelManagedModelDownload() }.buttonStyle(SecondaryButtonStyle())
-                } else if isInstalled {
-                    Button("删除") { confirmDelete = true }
-                        .buttonStyle(.borderless).foregroundStyle(.red)
-                        .disabled(state.isDownloadingManagedModel)
-                } else {
-                    Button("下载") { state.downloadManagedModel(descriptor) }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .disabled(state.isDownloadingManagedModel)
+                if downloading { Button("取消") { state.cancelManagedModelDownload() } }
+                else {
+                    Button(isInstalled ? "校验／修复" : "下载") { state.downloadManagedModel(descriptor) }.disabled(state.isDownloadingManagedModel)
+                    if isInstalled { Button("删除", role: .destructive) { state.deleteManagedModel(descriptor) } }
                 }
             }
-            Note(descriptor.summary)
-            if isDownloading {
-                ProgressView(value: state.managedModelDownloadProgress).controlSize(.small)
-            }
-            if isDownloading || !state.managedModelDownloadStatus.isEmpty {
-                Note(state.managedModelDownloadStatus)
-            }
-            if let unavailableReason {
-                Note(unavailableReason, color: .orange)
-            } else {
-                Note(
-                    "\(isInstalled ? "已安装" : "需要下载") · \(descriptor.formattedSize) · \(descriptor.license) · 需要 \(descriptor.minimumOS)"
-                )
-            }
-            HStack {
-                Link("模型来源", destination: URL(string: descriptor.homepage)!)
-                    .font(.system(size: 11)).foregroundStyle(Color.accentColor)
-                Spacer()
-                Text(descriptor.repository).font(.system(size: 10)).foregroundStyle(.secondary)
-            }
-        }
-        .confirmationDialog(
-            "删除 \(descriptor.name)？", isPresented: $confirmDelete, titleVisibility: .visible
-        ) {
-            Button("删除", role: .destructive) { state.deleteManagedModel(descriptor) }
-            Button("取消", role: .cancel) { }
-        } message: {
-            Text("模型文件在 \(AppPaths.models.path)/\(descriptor.id)，删掉后可以随时重新下载。")
+            Note("\(descriptor.formattedSize) · \(descriptor.license) · \(descriptor.summary)")
+            Link("固定版本来源", destination: URL(string: descriptor.homepage)!)
+            if downloading { ProgressView(value: state.managedModelDownloadProgress) }
+            if !state.managedModelDownloadStatus.isEmpty { Note(state.managedModelDownloadStatus) }
         }
     }
 }

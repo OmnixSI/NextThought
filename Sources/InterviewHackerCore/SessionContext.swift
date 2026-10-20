@@ -48,16 +48,17 @@ public struct ContextDocument: Identifiable, Codable, Sendable, Equatable {
     public var markdownPath: String?
     /// Source format of the imported file (pdf / docx / pptx / md …), for the UI.
     public var sourceFormat: String?
+    public var content: DocumentContent?
     public var characterCount: Int { pages.reduce(0) { $0 + $1.count } }
     public init(id: UUID = UUID(), name: String, pages: [String], enabled: Bool = true, category: String? = nil,
-                markdownPath: String? = nil, sourceFormat: String? = nil) {
+                markdownPath: String? = nil, sourceFormat: String? = nil, content: DocumentContent? = nil) {
         self.id = id; self.name = name; self.pages = pages; self.enabled = enabled; self.category = category
-        self.markdownPath = markdownPath; self.sourceFormat = sourceFormat
+        self.markdownPath = markdownPath; self.sourceFormat = sourceFormat; self.content = content
     }
 
     // Tolerant decoding: materials imported before the Markdown pipeline have no path.
     enum CodingKeys: String, CodingKey {
-        case id, name, pages, enabled, category, markdownPath, sourceFormat
+        case id, name, pages, enabled, category, markdownPath, sourceFormat, content
     }
 
     public init(from decoder: Decoder) throws {
@@ -69,6 +70,7 @@ public struct ContextDocument: Identifiable, Codable, Sendable, Equatable {
         category = try c.decodeIfPresent(String.self, forKey: .category)
         markdownPath = try c.decodeIfPresent(String.self, forKey: .markdownPath)
         sourceFormat = try c.decodeIfPresent(String.self, forKey: .sourceFormat)
+        content = try c.decodeIfPresent(DocumentContent.self, forKey: .content)
     }
     /// Name shown to the model, e.g. "[简历] resume.pdf".
     public var labeledName: String {
@@ -81,8 +83,11 @@ public struct ContextExcerpt: Codable, Sendable, Equatable {
     public let source: String
     public let page: Int
     public let text: String
-    public init(source: String, page: Int, text: String) {
-        self.source = source; self.page = page; self.text = text
+    public let locator: DocumentLocator?
+    public let chunkID: String?
+    public let blockID: String?
+    public init(source: String, page: Int, text: String, locator: DocumentLocator? = nil, chunkID: String? = nil, blockID: String? = nil) {
+        self.source = source; self.page = page; self.text = text; self.locator = locator; self.chunkID = chunkID; self.blockID = blockID
     }
 }
 
@@ -112,7 +117,7 @@ public struct SessionContextIndex: Sendable {
         for chunk in source {
             chunks.append(
                 Chunk(
-                    excerpt: .init(source: chunk.source, page: chunk.page, text: chunk.text),
+                    excerpt: .init(source: chunk.source, page: chunk.page, text: chunk.text, locator: chunk.locator, chunkID: chunk.id),
                     terms: Self.terms(chunk.text), order: chunk.order))
         }
         for chunk in chunks { for term in chunk.terms { documentFrequency[term, default: 0] += 1 } }
@@ -125,9 +130,9 @@ public struct SessionContextIndex: Sendable {
         for order in rankedOrders(question: question).prefix(8) where remaining > 0 {
             guard order < chunks.count else { continue }
             let excerpt = chunks[order].excerpt
-            let text = String(excerpt.text.prefix(remaining))
-            result.append(.init(source: excerpt.source, page: excerpt.page, text: text))
-            remaining -= text.count
+            guard excerpt.text.count <= remaining else { continue }
+            result.append(excerpt)
+            remaining -= excerpt.text.count
         }
         return result
     }

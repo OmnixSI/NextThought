@@ -1,0 +1,25 @@
+{
+  "blocks" : [
+    {
+      "id" : "fc9e599d23c2bfa4-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "季度收入表\/ Quarterly Revenue\n地区\/ Region\n2026 收入（万元）\n季度\n华东\n华南\n合计\n第一季度\n1.234.56\n987.65\n2.222.21\n第二季度\n1.789.01\n1,012.34\n2,801.35"
+    }
+  ],
+  "components" : {
+    "paddle" : "unused",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "system",
+  "schemaVersion" : 1,
+  "sourceHash" : "4bafc3cecd49e1c19b331f3fe1a0c5dc4bf184582d3286165ebc3489fee89c7d",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

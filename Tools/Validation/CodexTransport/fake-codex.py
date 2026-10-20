@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 import sys,json,threading,os,time
+if sys.argv[1:3]==['login','status']:
+ print('Logged in using ChatGPT');sys.exit(0)
+if sys.argv[1:2]==['--version']:
+ print('codex-cli test');sys.exit(0)
+if sys.argv[1:2]==['exec']:
+ sys.stdin.read()
+ print(json.dumps({'type':'item.completed','item':{'type':'agent_message','text':'done'}}),flush=True)
+ sys.exit(0)
 lock=threading.Lock()
 def emit(obj):
  with lock:

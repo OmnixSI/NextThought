@@ -1,0 +1,135 @@
+{
+  "blocks" : [
+    {
+      "id" : "427d7388d40cb372-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "系统设计 \/ System Design"
+    },
+    {
+      "id" : "7430cdebfcb55d9a-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "缓存策略"
+    },
+    {
+      "id" : "c7e7f53613e2422f-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "使用 Redis 缓存热点数据。"
+    },
+    {
+      "id" : "4c7fa0b9c6601e71-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "命中率为 92.7%，TTL 为 300 秒。"
+    },
+    {
+      "id" : "d996e2075a9aed8-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "缓存失效后读取 PostgreSQL。"
+    },
+    {
+      "id" : "d501e4b8fbeda32c-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "监控 P99 延迟与错误率。"
+    },
+    {
+      "id" : "aa8364cbc62dfd5b-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "Deployment Notes"
+    },
+    {
+      "id" : "3f50aee5a8ea1b7d-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "Use a rolling deployment."
+    },
+    {
+      "id" : "dad283373b718bfa-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "Keep 2 replicas available."
+    },
+    {
+      "id" : "1c9eae1a4aa657f-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "Rollback if errors exceed 0.5%."
+    },
+    {
+      "id" : "b7399b025e4939df-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "CPU budget: 750 millicores."
+    },
+    {
+      "id" : "e51659fd65a5dae9-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ]
+      },
+      "markdown" : "Release owner: Platform Team."
+    }
+  ],
+  "components" : {
+    "paddle" : "845ebafa9b6bed8372e4675a40b2bb19ac4c7089",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "paddle",
+  "schemaVersion" : 1,
+  "sourceHash" : "b396edde090f18ead056ccdb0005d7d888abd64d16e2ce20a56eb7e03ec2dfdf",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

@@ -1,164 +1,39 @@
-# 资料 → 结构化 Markdown 管线
+# 文档管线 v1.7.0
 
-> 需求 1：场景里可能导入 PDF、PPT、Word 等各种格式的文件，需要能把不同规格的文件统一转成结构化 Markdown。
+资料长期保存为完整 Markdown、`DocumentContent` 元数据与内容块。原件仅在导入期间使用；Codex 使用字节相同的任务临时副本，任务结束删除。旧资料仍可关键词检索和重建向量；重新识别必须重新选择原件。
 
-## 1. 结论
+## 接口选择
 
-导入的资料现在一律先转成**结构化 Markdown**，再进检索索引。转换分两层：
+设置 → 文档模型提供三种识别接口：
 
-1. **内置转换（默认，零依赖）** —— 纯 Swift、全部在本机完成，不联网、不加载模型、不引入任何第三方代码。
-   覆盖：PDF（含扫描件 OCR）、Word（.docx）、OpenDocument（.odt）、RTF / 旧版 .doc、PowerPoint（.pptx）、
-   Excel（.xlsx）、CSV、HTML、Markdown、TXT、JSON，以及图片（Vision OCR）。
-2. **外部转换器（可选，自动发现）** —— 如果本机装了 **Microsoft MarkItDown** 或 **Pandoc**，
-   导入 Word / ODT / PPTX / Excel 时优先用它们，因为它们对复杂版式的处理比内置实现更细。
-   两个工具都完全在本机运行，不上传任何文件；调用失败或超时自动回退到内置转换。
+- 系统 OCR：默认、离线、零权重下载。PDFKit 提取简单文本页；扫描页、复杂页和图片使用 Apple Vision。
+- PaddleOCR-VL-1.6 Q8：MLX／Metal，配合官方 PP-DocLayoutV3 ONNX。检测区域、按任务识别正文／OTSL 表格／LaTeX 公式，去除包含关系中的重复区域，按独立列与跨列标题重建顺序。失败默认用系统 OCR 补读并记录页码、原因；关闭补读即严格模式。不会自动转到 Codex。
+- Codex CLI：现有 ChatGPT 登录，默认 `gpt-6-luna`、medium、标准速度、600 秒／文件。独立 ephemeral 任务只收到原文件临时路径。应用不预拆 PDF；CLI 经专属本地 MCP 工具按需读取文本、Office 结构、PDF 页或嵌图。
 
-资料转好后会被**静默归档**成 `.md` 文件（`~/Library/Application Support/InterviewHacker/Materials/<场景ID>/`），
-文件头带来源格式和归档时间。归档在后台完成，不弹窗、不打断操作。
+Codex 使用 `--ignore-user-config --ignore-rules`，禁用 shell、搜索、apps 和 multi-agent；deny-root 文件权限配置仅额外开放本任务和工具运行路径，保留 CLI 必需的平台最小读取集。MCP 单独校验任务清单、哈希、路径和文件标识，只暴露五个只读工具；其进程不依赖 CLI shell 沙箱来保护文件。没有新 OAuth 或 API 密钥。
 
-## 2. 开源方案调研
+## 格式、边界与定位
 
-目标是找一个"什么格式都能转 Markdown"的现成项目。2026 年仍在活跃维护、且有 CLI 的主要有这五个：
+Office 使用运行包内的 MarkItDown；PPTX／XLSX 同时用其依赖的原生包 API 保留真实 slide／sheet，嵌图在 DOCX 正文锚点、PPT shape 或工作表位置归属处插入识别内容。XLSX 的图像以所属工作表内的嵌图块表示。复杂 Office 视觉版面建议导出 PDF。旧 doc／ODT／RTF 保留现有结构提取路线。
 
-| 项目 | 许可证 | 覆盖格式 | 运行开销 | CLI |
-|---|---|---|---|---|
-| [Microsoft MarkItDown](https://github.com/microsoft/markitdown) | MIT | PDF / PPTX / DOCX / XLSX / 图片(OCR) / 音频 / HTML / CSV / JSON / XML / ZIP / EPUB | 六个核心依赖，**不用模型、不用 PyTorch** | `markitdown file.pdf -o out.md` |
-| [Pandoc](https://pandoc.org) | GPL | docx / odt / rtf / html / markdown / csv（**不读** pptx、xlsx、pdf） | 单个二进制 | `pandoc -f docx -t gfm file.docx` |
-| [Docling](https://github.com/docling-project/docling) | MIT（IBM / LF AI & Data） | 36 种输入，PDF / Office / HTML / 图片 / EPUB | 可只跑 CPU，OCR 引擎可换 | `docling convert report.pdf --to md` |
-| [MinerU](https://github.com/opendatalab/MinerU) | MinerU 开源协议（基于 Apache-2.0，附加条件） | PDF / 图片 / Office / ODT / EPUB / HTML / CSV | basic 档可纯 CPU，standard 档要 8 GB 内存以上，最好有 GPU | `mineru-kit parse report.pdf -o report.md --tier standard` |
-| [Marker](https://github.com/datalab-to/marker) | 代码 Apache-2.0，模型权重另有 OpenRAIL-M 条款 | PDF / 图片 / PPTX / DOCX / XLSX / HTML / EPUB → markdown/json/html/chunks | fast 档纯 CPU，balanced 档要 GPU | `marker_single report.pdf --output_dir out/` |
+TXT／Markdown／CSV／JSON 等基础格式无需运行包。导入上限为每次 60 文件、每文件 20 MiB／20 万字符、工作区 40 文件／60 万字符、PDF 400 页；超限会明确失败，不静默少读页面。Office ZIP 解压内容上限 100 MiB，工作表展开区域上限 20 万单元格。
 
-公开基准（[pdf-to-markdown-benchmark](https://github.com/pdfmarkdownapp/pdf-to-markdown-benchmark)，
-在论文、日财报、法律文书、纯表格页、1973 年扫描件五类难文档上）：
+`DocumentLocator` 分开表达 PDF page、slide、sheet、headingPath 和旧资料 section。旧分段不再冒充页码。`DocumentContent` 包含完整块、warnings、complete/degraded、源文件 SHA-256 和组件版本。定位不依赖检索 chunk 序号。Codex PDF 会检查全部实际页码覆盖，缺页拒绝导入。
 
-| 工具 | 论文 | 日财报 | 法律 | 表格 | 扫描件 | 平均 | 静默错误 |
-|---|---|---|---|---|---|---|---|
-| MinerU | 99 | 95 | 67 | 100 | 71 | **86** | 0 |
-| Marker | 95 | 87 | 82 | 96 | 71 | **86** | 0 |
-| Docling | 63 | 80 | 90 | 92 | 61 | 77 | 0 |
-| PyMuPDF4LLM | 61 | 90 | 90 | 82 | 58 | 76 | 0 |
-| MarkItDown | 51 | 65 | 70 | 66 | 33 | 57 | 0 |
+## 运行包与模型
 
-在 olmOCR-bench 上：Marker balanced 76.0%、MinerU pipeline 72.7%、Docling 50.3%。
+应用下载固定 SHA-256 的可重定位 CPython 3.12.13 运行包及锁定依赖；用户无需 Python、pip、Homebrew。模型固定 revision 和每文件 SHA-256 见 `ModelCatalog.swift`。下载可取消、重试、复用已校验文件和修复损坏；启动时后台完整校验，UI 使用缓存与文件大小，不每次提问哈希 GB 权重。删除先取消任务、卸载 worker，再移除文件和对应索引。
 
-### 为什么默认不直接用这些项目
+Swift／Python 使用 version=1 NDJSON：health、convert、ocr、prepare_embedding、embed、cancel，响应 result/error/progress；stdout 仅协议。Paddle／Office 取消会终止进程，避免失控解析占据队列；向量查询 500 ms 截止后使用关键词结果。
 
-- **MarkItDown** 是最贴近"一个工具统一所有格式"的开源项目，质量对简单文档足够，
-  但基准里排在最后（平均 57 分），而且要装 Python 环境和六个依赖。
-  → 所以本项目把它做成**可选加速器**，而不是依赖。
-- **Marker / MinerU / Docling** 质量最好，但要么要 GPU，要么要 PyTorch / ONNX 运行时和几 GB 内存。
-  InterviewHacker 坚持"不打包第三方代码、全部本机处理、开箱即用"，把 2 GB 的模型塞进一个
-  几百 MB 的 App 并不划算。
-  → 所以文档写清楚怎么用它们处理**特别难的 PDF**，产出的 Markdown 可以再拖回场景里导入。
-- **Pandoc** 读取 docx/odt/rtf/html 的质量好，而且是单个二进制、无需 Python。
-  → 做成**可选加速器**，优先级排在 MarkItDown 之后（因为它读不了 pptx / xlsx / pdf）。
+## 检索、备份与并发
 
-## 3. 架构
+Qwen3-Embedding-0.6B Q8 通过真实 tokenizer、官方检索 query instruction、最后 token pooling 和 float32 L2 normalization 输出 1024 维向量。关键词与语义共用标题树切片；表格／公式不按固定字符截断，长 Markdown／HTML 表格按完整行组切开并重复表头，rowspan 行保持同组，chunk 的 blockID 可关联完整原表。
 
-```
-用户拖入 / 选择文件（可多个、可整个文件夹）
-        │
-        ▼
-DocumentImporter.expand()          展开目录，只保留受支持的格式
-        │
-        ▼
-DocumentImporter.read()             逐个转换；单个文件失败不影响其它文件
-        │
-        ├─► ExternalMarkdownConverter   装了 MarkItDown / Pandoc 就先用（仅 Office 格式）
-        │      └─ 失败或超时 → 回退
-        ▼
-MarkdownConverter.convert()         内置转换，输出统一结构
-        │                              标题 / 各级小标题 / 列表 / 表格 / 引用
-        ▼
-DocumentClassifier.classify()       按文件名 + 正文开头，自动归入场景的资料分类
-        │
-        ▼
-MaterialArchive.archive()           静默归档成 .md（带 YAML 头）
-        │
-        ▼
-ContextDocument(pages: sections)    每个小标题一个片段，进检索索引
-        │
-        ▼
-rebuildContextIndex()               回答时按问题取相关片段给模型
-```
+向量缓存包含工作区、模型 revision、切片版本和内容 fingerprint。材料变化取消当前回答和讲稿任务；索引提交校验 workspace、generation、资料 revision。未变化块按 fingerprint 复用，后台索引在回答／实时会话期间等待。回答对语义查询最多等待 500 ms，再用关键词；回答、联网与讲稿采用完整 chunk 的统一预算。
 
-### 文件位置
+备份写入完整 Markdown 和元数据，使用相对引用。恢复从可信内联正文重建归档，不读取备份中的任意绝对路径。模型、原件、Python 运行包和可重建向量缓存均不进入备份。
 
-| 文件 | 作用 |
-|---|---|
-| `Sources/InterviewHacker/MarkdownConverter.swift` | 内置转换：各格式 → 结构化 Markdown |
-| `Sources/InterviewHacker/ExternalMarkdownConverter.swift` | 发现并调用 MarkItDown / Pandoc |
-| `Sources/InterviewHacker/DocumentImporter.swift` | 批量读取、逐个容错、结果汇总 |
-| `Sources/InterviewHacker/MaterialArchive.swift` | 静默归档成 `.md` |
-| `Sources/InterviewHackerCore/DocumentClassifier.swift` | 自动归类 |
+## 验证
 
-### 各格式的转换方式
-
-| 格式 | 内置做法 | 产出结构 |
-|---|---|---|
-| PDF | PDFKit 取文字；扫描页（文字 < 8 字）渲染后 Vision OCR，最多 80 页 | 每页一个 `## p.N` 小节 |
-| Word .docx | 解包 `word/document.xml`，读 `w:pStyle` 的 Heading 级别、`w:numPr` 列表、`w:tbl` 表格 | 真实标题层级 + 列表 + 表格 |
-| ODT .odt | 解包 `content.xml`，读 `text:outline-level` 和 `text:list` | 标题层级 + 列表 |
-| .doc / .rtf | 系统 `NSAttributedString` 取正文，短独立行按版式判定为小标题 | 段落 + 推断的小标题 |
-| PowerPoint | 解包 `ppt/slides/slideN.xml`，按 `a:pPr lvl` 还原缩进 | 每页一个 `## 幻灯片 N` |
-| Excel | 解包 `xl/workbook.xml` + `sharedStrings.xml` + `worksheets/sheetN.xml`，按 `r="B7"` 补齐空列 | 每个工作表一张 Markdown 表格 |
-| CSV | 自己写的 RFC 4180 解析（引号内可含逗号和换行） | 一张 Markdown 表格 |
-| HTML | 正则分块提取 h1–h6 / p / li / blockquote / pre / table | 标题、列表、引用、表格 |
-| 图片 | Vision OCR（中英） | 一个小节 + 识别出的每行文字 |
-| TXT / JSON | 按空行分块，短独立行判为小标题 | 段落 + 小标题 |
-| Markdown | 保留原有标题层级 | 原样 |
-
-### 归档格式
-
-`Materials/<场景ID>/<文件名>.md`：
-
-```markdown
----
-source-format: pdf
-archived-at: 2026-10-20T03:14:22Z
----
-
-## p.1
-...
-```
-
-## 4. 开启外部转换器
-
-```bash
-# MarkItDown（推荐，六依赖，无需模型）
-python3 -m venv ~/.venvs/markitdown
-~/.venvs/markitdown/bin/pip install 'markitdown[all]'
-# 让应用能找到它：
-ln -s ~/.venvs/markitdown/bin/markitdown /opt/homebrew/bin/markitdown
-```
-
-```bash
-# Pandoc（单个二进制，只对 docx / odt / rtf / html / csv 生效）
-brew install pandoc
-```
-
-应用启动时会扫描 `PATH` 以及 `/opt/homebrew/bin`、`/usr/local/bin`、`/usr/bin`、`/bin`。
-找到就直接用，**不需要在设置里打开任何开关**；导入的资料列表里会显示实际使用的转换器
-（`内置` / `MarkItDown` / `Pandoc`）。
-
-## 5. 处理特别难的 PDF（Marker / MinerU / Docling）
-
-当 PDF 是扫描件、公式很多或表格极复杂时，可以用下面任一工具离线转好，再把 `.md` 拖回场景导入：
-
-```bash
-# Marker：fast 档纯 CPU
-marker_single report.pdf --output_dir out/
-
-# MinerU：basic 档纯 CPU
-mineru-kit parse report.pdf -o report.md --tier basic
-
-# Docling：可选 OCR 引擎
-docling convert report.pdf --to md --ocr-engine rapidocr
-```
-
-## 6. 边界
-
-- 单文件上限 20 MiB，单文件文字上限 20 万字，单场景资料总量上限 60 万字。
-- 每次最多导入 60 个文件，单场景最多 40 份资料。
-- 只读取用户选中的本地文件；不执行宏、脚本，不抓取远程资源。
-- 转换在后台线程进行，导入期间界面不卡死。
+固定六份自绘样本、参考答案、原始输出、工具轨迹和本机报告见 [v1.7.0 验证](VALIDATION-v1.7.0.md)。在线对照必须显式运行，日常 CI 不调用 Luna。自检目录和命令见验证报告。

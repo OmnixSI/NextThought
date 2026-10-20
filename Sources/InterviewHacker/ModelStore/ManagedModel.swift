@@ -33,6 +33,7 @@ struct ManagedModelDescriptor {
     enum Kind {
         case ocr
         case embedding
+        case layout
     }
 
     /// Directory name under `AppPaths/models`.
@@ -54,7 +55,10 @@ struct ManagedModelDescriptor {
     /// Minimum macOS the runtime needs.
     let minimumOS: String
 
-    var directory: URL { AppPaths.models.appendingPathComponent(id, isDirectory: true) }
+    var directory: URL {
+        let root = ProcessInfo.processInfo.environment["INTERVIEWHACKER_DOCUMENT_MODELS_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? AppPaths.models
+        return root.appendingPathComponent(id, isDirectory: true)
+    }
 
     var totalSize: Int64 { files.reduce(0) { $0 + $1.size } }
 
@@ -80,7 +84,14 @@ struct ManagedModelDescriptor {
 enum ManagedModelStore {
     /// True when every file of the model is present and matches its hash.
     static func isInstalled(_ descriptor: ManagedModelDescriptor) -> Bool {
-        (try? verify(descriptor, at: descriptor.directory)) != nil
+        let marker = descriptor.directory.appendingPathComponent("verified.json")
+        guard let data = try? Data(contentsOf: marker),
+              let value = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+              value["revision"] == descriptor.revision else { return false }
+        return descriptor.files.allSatisfy { file in
+            let url = descriptor.directory.appendingPathComponent(file.path)
+            return (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) == Int(file.size)
+        }
     }
 
     /// Which files are missing or damaged. Empty means the model is complete.
@@ -154,6 +165,9 @@ enum ManagedModelStore {
             progress(completedWeight / totalWeight, "已校验 \(file.path)")
         }
         try verify(descriptor, at: directory)
+        try Task.checkCancellation()
+        let marker = try JSONSerialization.data(withJSONObject: ["revision": descriptor.revision])
+        try marker.write(to: directory.appendingPathComponent("verified.json"), options: .atomic)
     }
 
     /// Removes the model from the data directory.
@@ -180,8 +194,13 @@ enum ManagedModelStore {
 
     /// SHA-256 of a file, `nil` when it cannot be read.
     static func sha256(of url: URL) -> String? {
-        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { return nil }
-        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        var hash = SHA256()
+        do {
+            while let data = try handle.read(upToCount: 4 * 1024 * 1024), !data.isEmpty { hash.update(data: data) }
+        } catch { return nil }
+        return hash.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }
 
@@ -210,6 +229,7 @@ final class ModelAssetDownloader: NSObject, URLSessionDownloadDelegate, @uncheck
     private var continuation: CheckedContinuation<Void, Error>?
     private var destination: URL?
     private var currentTask: URLSessionDownloadTask?
+    private var cancelled = false
     private var receivedFile: URL?
     private var responseError: Error?
     private var progressHandler: (@Sendable (Double) -> Void)?
@@ -217,8 +237,9 @@ final class ModelAssetDownloader: NSObject, URLSessionDownloadDelegate, @uncheck
 
     func download(from url: URL, to destination: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
         try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 lock.lock()
+                guard !cancelled && !Task.isCancelled else { lock.unlock(); continuation.resume(throwing: CancellationError()); return }
                 self.continuation = continuation
                 self.destination = destination
                 self.progressHandler = progress
@@ -236,6 +257,7 @@ final class ModelAssetDownloader: NSObject, URLSessionDownloadDelegate, @uncheck
 
     func cancel() {
         lock.lock()
+        cancelled = true
         let task = currentTask
         lock.unlock()
         task?.cancel()

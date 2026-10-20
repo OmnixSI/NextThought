@@ -28,3 +28,34 @@ Required files and SHA-256 values:
   joiner-epoch-99-avg-1.int8.onnx   1ed689c5ed19dbaa725d9d191bb4822b5f4855a39e1ffd28cbc1f340d25b2ee0
   tokens.txt                        a8e0e4ec53810e433789b54a5c0134a7eaa2ffca595a6334d54c00da858841d3
   bpe.vocab                         d0b642f3a2eacd5fadefdeff9e0e1358cab729647cbb7fe58cf738e1f7407029
+
+Document processing and semantic retrieval (v1.7.0)
+------------------------------------------------
+The optional document runtime is downloaded separately. Its exact 61-package inventory,
+versions, declared licenses and bundled license-file locations are listed in
+DocumentRuntime/THIRD_PARTY_RUNTIME.json, shipped with this app. Full upstream notices
+remain in the runtime's Python license files and site-packages/*.dist-info/licenses
+(or LICENSE / NOTICE). The runtime asset is fixed by runtime-manifest.json SHA-256.
+
+CPython 3.12.13 / python-build-standalone: Python Software Foundation License and bundled
+third-party notices. https://github.com/astral-sh/python-build-standalone
+MLX 0.32.4, mlx-metal 0.32.4, mlx-lm 0.32.2, mlx-vlm 0.7.9: MIT.
+https://github.com/ml-explore/mlx
+https://github.com/ml-explore/mlx-lm
+https://github.com/Blaizzy/mlx-vlm
+Microsoft MarkItDown 0.1.8: MIT. https://github.com/microsoft/markitdown
+ONNX Runtime 1.31.0 (document runtime): MIT. https://github.com/microsoft/onnxruntime
+
+Optional model weights are not bundled with the app or Python runtime:
+PaddleOCR-VL-1.6 MLX 8bit: Apache-2.0; converted by olragon from PaddlePaddle.
+https://huggingface.co/olragon/PaddleOCR-VL-1.6-8bit
+revision 845ebafa9b6bed8372e4675a40b2bb19ac4c7089
+Qwen3-Embedding-0.6B MLX 8bit: Apache-2.0; converted by mlx-community from Qwen.
+https://huggingface.co/mlx-community/Qwen3-Embedding-0.6B-8bit
+revision 407ad2329cd30702720aafe83f74a1ba30fdfbca
+PP-DocLayoutV3 ONNX: Apache-2.0; PaddlePaddle.
+https://huggingface.co/PaddlePaddle/PP-DocLayoutV3_onnx
+revision 46bbdf188bb0a772c08aed74882ce7e51a8f1ea6
+
+Codex CLI is an independently installed application using the user's existing login.
+InterviewHacker does not redistribute Codex CLI or acquire new OpenAI API credentials.

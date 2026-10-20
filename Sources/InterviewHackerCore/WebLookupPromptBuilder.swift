@@ -25,10 +25,13 @@ public enum WebLookupPromptBuilder {
             }
         }
         if let excerpts = input["retrieved_material"] as? [[String: Any]] {
-            output["retrieved_material"] = excerpts.prefix(2).map {
-                ["source": String(($0["source"] as? String ?? "").prefix(100)),
-                 "text": String(($0["text"] as? String ?? "").prefix(500))]
-            }
+            var remaining = 2_000
+            output["retrieved_material"] = excerpts.filter {
+                let size = ($0["text"] as? String ?? "").count
+                guard size <= remaining else { return false }
+                remaining -= size
+                return true
+            }.prefix(2).map { $0 }
         }
         // A malformed caller still gets a bounded question; never silently discard it.
         if output["question"] == nil { output["question"] = String(userJSON.prefix(2_000)) }

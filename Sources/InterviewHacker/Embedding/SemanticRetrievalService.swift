@@ -1,45 +1,33 @@
 import Foundation
 import InterviewHackerCore
 
-/// Keeps the embedding model loaded and hands out vectors.
-///
-/// Loading a Core ML model takes a moment, so the model is kept around and
-/// only loaded when it is actually needed. A failure is not an error the user
-/// has to deal with: the search simply stays lexical.
+actor MLXTextEmbedder {
+    func embedQuery(_ text: String, timeout: TimeInterval = 0.5) async throws -> [Float] { try await embed(text, query: true, timeout: timeout) }
+    func embedPassage(_ text: String) async throws -> [Float] { try await embed(text, query: false, timeout: 120) }
+    private func embed(_ text: String, query: Bool, timeout: TimeInterval) async throws -> [Float] {
+        let response = try await DocumentWorker.embedding.request("embed", [
+            "model_directory": ModelCatalog.qwen3Embedding.directory.path,
+            "text": text, "query": query
+        ], timeout: timeout)
+        guard let values = response["vector"] as? [NSNumber], values.count == 1024 else {
+            throw AppFailure.capture("向量模型输出维度不是 1024。")
+        }
+        let vector = values.map(\.floatValue)
+        let norm = vector.reduce(Float(0)) { $0 + $1 * $1 }.squareRoot()
+        guard vector.allSatisfy({ $0.isFinite }), abs(norm - 1) < 0.02 else {
+            throw AppFailure.capture("向量模型返回了无效或未归一化的向量。")
+        }
+        return vector
+    }
+}
+
 actor SemanticRetrievalService {
     static let shared = SemanticRetrievalService()
-
-    private var embedder: CoreMLTextEmbedder?
-    private var loading: Task<CoreMLTextEmbedder, Error>?
-
-    /// The loaded model, loading it if that has not happened yet.
-    func embedder() async throws -> CoreMLTextEmbedder {
-        if let embedder { return embedder }
-        if let loading { return try await loading.value }
-        let task = Task<CoreMLTextEmbedder, Error> {
-            try await CoreMLTextEmbedder.load(modelDirectory: ModelCatalog.qwen3Embedding.directory)
-        }
-        loading = task
-        do {
-            let embedder = try await task.value
-            self.embedder = embedder
-            loading = nil
-            return embedder
-        } catch {
-            loading = nil
-            throw error
-        }
+    private let instance = MLXTextEmbedder()
+    func embedder() -> MLXTextEmbedder { instance }
+    func prepare() async {
+        _ = try? await DocumentWorker.embedding.request("prepare_embedding", ["model_directory": ModelCatalog.qwen3Embedding.directory.path])
     }
-
-    /// Loads the model in the background, so the first question is not slow.
-    func prepare() {
-        guard embedder == nil, loading == nil else { return }
-        Task { _ = try? await self.embedder() }
-    }
-
-    /// The vector of a question, or `nil` when the model is not available.
-    func queryVector(_ question: String) async -> [Float]? {
-        guard let embedder = try? await embedder() else { return nil }
-        return try? await embedder.embedQuery(question)
-    }
+    func queryVector(_ question: String) async -> [Float]? { try? await instance.embedQuery(question) }
+    func unload() async { await DocumentWorker.embedding.unload() }
 }

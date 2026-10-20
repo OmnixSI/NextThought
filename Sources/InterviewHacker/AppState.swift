@@ -186,26 +186,30 @@ final class AppState {
     var modelLoadSeconds: Double?
     var recognitionLanguage = UserDefaults.standard.string(forKey: "recognitionLanguage") ?? "auto"
 
-    // MARK: Local document models (Unlimited-OCR + Qwen3-Embedding)
-    /// Read scanned pages and images with Unlimited-OCR instead of the system OCR.
-    var unlimitedOCREnabled = UserDefaults.standard.object(forKey: "unlimitedOCREnabled") as? Bool ?? false
-    /// How many pages of a document the document model reads.
-    var unlimitedOCRMaxPages = UserDefaults.standard.object(forKey: "unlimitedOCRMaxPages") as? Int ?? 20
-    /// Fall back to the system OCR when the document model fails.
+    // MARK: Managed document models
+    var documentOCRProvider = DocumentOCRProvider(rawValue: UserDefaults.standard.string(forKey: "documentOCRProvider") ?? "") ?? .system
     var ocrFallbackToVision = UserDefaults.standard.object(forKey: "ocrFallbackToVision") as? Bool ?? true
-    /// Use the embedding model for the material search.
+    var codexOCRModel = UserDefaults.standard.string(forKey: "codexOCRModel") ?? "gpt-6-luna"
+    var codexOCREffort = UserDefaults.standard.string(forKey: "codexOCREffort") ?? "medium"
+    var codexOCRTimeout = UserDefaults.standard.object(forKey: "codexOCRTimeout") as? Double ?? 600
+    var documentProviderWasSelected = UserDefaults.standard.bool(forKey: "documentProviderWasSelected")
     var semanticRetrievalEnabled = UserDefaults.standard.object(forKey: "semanticRetrievalEnabled") as? Bool ?? true
-    /// The vectors of the material chunks.
     @ObservationIgnored var semanticIndex = SemanticIndex()
-    /// The model that is currently being downloaded, if any.
-    var managedModelDownloadID: String = ""
-    var managedModelDownloadProgress: Double = 0
-    var managedModelDownloadStatus: String = ""
-    var isDownloadingManagedModel: Bool = false
-    /// True while the vector index is being built.
-    var isBuildingSemanticIndex: Bool = false
-    /// What the vector index currently holds.
-    var semanticIndexStatus: String = ""
+    @ObservationIgnored var semanticIndexTask: Task<Void, Never>?
+    @ObservationIgnored var semanticGeneration = UUID()
+    @ObservationIgnored var runtimeDownloadTask: Task<Void, Never>?
+    @ObservationIgnored var managedDownloadTask: Task<Void, Never>?
+    @ObservationIgnored var answerRetrievalTask: Task<[ContextExcerpt], Never>?
+    var installedDocumentModels: Set<String> = []
+    var managedModelDownloadID = ""
+    var managedModelDownloadProgress = 0.0
+    var managedModelDownloadStatus = ""
+    var isDownloadingManagedModel = false
+    var isBuildingSemanticIndex = false
+    var semanticIndexStatus = ""
+    var runtimeInstalled = DocumentRuntime.installed
+    var isInstallingDocumentRuntime = false
+    var documentRuntimeStatus = ""
 
     // MARK: Echo handling
     /// Drop microphone text that repeats the other side (speaker echo without headphones).
@@ -376,6 +380,7 @@ final class AppState {
         }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
+            await refreshManagedModelStatus()
             // Warm independent services concurrently; no model/search calls are made.
             if webSearchMode != .off, webSearchProvider == .codex { Task { await webAppServer.prewarm() } }
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
@@ -715,6 +720,8 @@ final class AppState {
     }
 
     func cancelAnswer() {
+        answerRetrievalTask?.cancel(); answerRetrievalTask = nil
+        webLookupTask?.cancel(); webCodex.cancel(); webAppServer.cancelActiveTurn()
         answerDraft = ""
         requestID = UUID()
         answerTask?.cancel()
@@ -763,10 +770,12 @@ final class AppState {
         // The passages are looked up while the answer starts: with the embedding
         // model the question is turned into a vector first, which takes a moment.
         let retrievalQuestion = question + "\n" + (answerTurns.last?.question ?? "")
+        let retrievalSnapshot = contextIndex
         let retrieval = Task { [weak self] in
             guard let self else { return [ContextExcerpt]() }
-            return await self.retrieveExcerpts(question: retrievalQuestion)
+            return await self.retrieveExcerpts(question: retrievalQuestion, snapshot: retrievalSnapshot)
         }
+        answerRetrievalTask = retrieval
         let workspace = activeWorkspace
         let skills = activeSkills
         let allSnippets = skills.map { SkillSnippet(name: $0.name, content: $0.content) }
@@ -787,8 +796,9 @@ final class AppState {
                 guard let self else { return }
                 let decision = await self.shouldSearchWeb(question)
                 Diagnostics.record("web.decision", ["search": decision.search, "reason": decision.reason])
-                guard decision.search, self.currentAnswerID == id else { return }
+                guard !Task.isCancelled, decision.search, self.currentAnswerID == id, self.requestID == id, self.activeWorkspace.id == workspace.id else { return }
                 let excerpts = await retrieval.value
+                guard !Task.isCancelled, self.currentAnswerID == id, self.requestID == id, self.activeWorkspace.id == workspace.id else { return }
                 self.startWebLookup(id: id, question: question, parts: { buildParts($0, $1, allSnippets, excerpts) })
             }
         }
@@ -802,6 +812,8 @@ final class AppState {
             }
             do {
                 let excerpts = await retrieval.value
+                try Task.checkCancellation()
+                guard self.requestID == id, self.activeWorkspace.id == workspace.id else { return }
                 selectedExcerpts = excerpts
                 let parts = buildParts(false, nil, allSnippets, excerpts)
                 let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: tier)
@@ -1085,6 +1097,13 @@ final class AppState {
     }
 
     func updateSettings() {
+        UserDefaults.standard.set(documentOCRProvider.rawValue, forKey: "documentOCRProvider")
+        UserDefaults.standard.set(documentProviderWasSelected, forKey: "documentProviderWasSelected")
+        UserDefaults.standard.set(ocrFallbackToVision, forKey: "ocrFallbackToVision")
+        UserDefaults.standard.set(codexOCRModel, forKey: "codexOCRModel")
+        UserDefaults.standard.set(codexOCREffort, forKey: "codexOCREffort")
+        UserDefaults.standard.set(codexOCRTimeout, forKey: "codexOCRTimeout")
+        UserDefaults.standard.set(semanticRetrievalEnabled, forKey: "semanticRetrievalEnabled")
         let defaults = UserDefaults.standard
         defaults.set(codexModelID, forKey: "codexModelID")
         defaults.set(codexReasoning, forKey: "codexReasoning")
@@ -1106,8 +1125,6 @@ final class AppState {
         defaults.set(transcriptionBackend, forKey: "transcriptionBackend")
         defaults.set(localStreamingModel.rawValue, forKey: "localStreamingModel")
         defaults.set(secondPassEnabled, forKey: "secondPassEnabled")
-        defaults.set(unlimitedOCREnabled, forKey: "unlimitedOCREnabled")
-        defaults.set(unlimitedOCRMaxPages, forKey: "unlimitedOCRMaxPages")
         defaults.set(ocrFallbackToVision, forKey: "ocrFallbackToVision")
         defaults.set(semanticRetrievalEnabled, forKey: "semanticRetrievalEnabled")
         for window in NSApp.windows where !(window is NSPanel) {

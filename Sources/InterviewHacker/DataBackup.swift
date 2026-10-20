@@ -194,13 +194,36 @@ enum DataBackup {
     private static func writeWorkspaces(_ workspaces: [Workspace], into staging: URL) throws {
         let directory = staging.appendingPathComponent("Workspaces", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        for workspace in workspaces { try write(workspace, to: directory.appendingPathComponent("\(workspace.id.uuidString).json")) }
+        for var workspace in workspaces {
+            for index in workspace.documents.indices {
+                let document = workspace.documents[index]
+                let relative = "Materials/\(workspace.id.uuidString)/\(document.id.uuidString).md"
+                let target = staging.appendingPathComponent(relative)
+                try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
+                let markdown = document.content?.markdown ?? document.pages.joined(separator: "\n\n")
+                try markdown.write(to: target, atomically: true, encoding: .utf8)
+                if let content = document.content { try write(content, to: target.deletingPathExtension().appendingPathExtension("json")) }
+                workspace.documents[index].markdownPath = relative
+            }
+            try write(workspace, to: directory.appendingPathComponent("\(workspace.id.uuidString).json"))
+        }
     }
 
     private static func readWorkspaces(in root: URL) -> [Workspace] {
         let directory = root.appendingPathComponent("Workspaces", isDirectory: true)
         let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-        return files.filter { $0.pathExtension == "json" }.compactMap { try? JSONLines.decoder().decode(Workspace.self, from: Data(contentsOf: $0)) }
+        return files.filter { $0.pathExtension == "json" }.compactMap { file in
+            guard var workspace = try? JSONLines.decoder().decode(Workspace.self, from: Data(contentsOf: file)) else { return nil }
+            for index in workspace.documents.indices {
+                let document = workspace.documents[index]
+                // Recreate archives from the canonical inline content; never trust paths from an imported backup.
+                if let url = try? MaterialArchive.archive(document.content?.markdown ?? document.pages.joined(separator: "\n\n"), name: document.name, format: document.sourceFormat ?? "legacy", workspaceID: workspace.id) {
+                    workspace.documents[index].markdownPath = MaterialArchive.relative(url)
+                    if let content = document.content { try? JSONEncoder().encode(content).write(to: url.deletingPathExtension().appendingPathExtension("json"), options: .atomic) }
+                } else { workspace.documents[index].markdownPath = nil }
+            }
+            return workspace
+        }
     }
 
     /// Copies session folders; `only` limits to the given ids.

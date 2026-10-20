@@ -1,0 +1,42 @@
+{
+  "os" : "Version 26.5.2 (Build 25F84)",
+  "provider" : "codex",
+  "records" : [
+    {
+      "characters" : 233,
+      "file" : "01-chinese-cv.pdf",
+      "seconds" : 27.712193012237549,
+      "status" : "complete"
+    },
+    {
+      "characters" : 414,
+      "file" : "02-english-jd.pdf",
+      "seconds" : 20.510491967201233,
+      "status" : "complete"
+    },
+    {
+      "characters" : 272,
+      "file" : "03-bilingual-columns.png",
+      "seconds" : 16.304156064987183,
+      "status" : "complete"
+    },
+    {
+      "characters" : 309,
+      "file" : "04-merged-table.png",
+      "seconds" : 15.842383980751038,
+      "status" : "complete"
+    },
+    {
+      "characters" : 232,
+      "file" : "05-technical-formula.png",
+      "seconds" : 54.227520942687988,
+      "status" : "complete"
+    },
+    {
+      "characters" : 155,
+      "file" : "06-office-embedded.docx",
+      "seconds" : 14.52366304397583,
+      "status" : "complete"
+    }
+  ]
+}

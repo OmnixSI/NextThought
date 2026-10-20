@@ -1,0 +1,108 @@
+{
+  "blocks" : [
+    {
+      "id" : "47875aa75601c143-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training"
+        ],
+        "page" : 1
+      },
+      "markdown" : "模型训练 \/ Model Training"
+    },
+    {
+      "id" : "e5fa0bb757ab59ea-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training",
+          "均方误差 Mean Squared Error"
+        ],
+        "page" : 1
+      },
+      "markdown" : "均方误差 Mean Squared Error"
+    },
+    {
+      "id" : "4fb4d9ede06127d6-0",
+      "kind" : "formula",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training",
+          "均方误差 Mean Squared Error"
+        ],
+        "page" : 1
+      },
+      "markdown" : "\\[L = (1\/n) \\sum_i (y_i - \\hat{y}_i)^2\\]"
+    },
+    {
+      "id" : "870b46f21bfac01a-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training",
+          "梯度下降 Gradient Descent"
+        ],
+        "page" : 1
+      },
+      "markdown" : "梯度下降 Gradient Descent"
+    },
+    {
+      "id" : "9f7e37576bb9f5ea-0",
+      "kind" : "formula",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training",
+          "梯度下降 Gradient Descent"
+        ],
+        "page" : 1
+      },
+      "markdown" : "\\[\\theta_{t+1} = \\theta_t - \\eta \\, \\nabla L(\\theta_t)\\]"
+    },
+    {
+      "id" : "5f6651600e55cd73-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training"
+        ],
+        "page" : 1
+      },
+      "markdown" : "学习率 η = 0.001，训练 120 epochs。"
+    },
+    {
+      "id" : "9cdcef53496d893c-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training"
+        ],
+        "page" : 1
+      },
+      "markdown" : "验证集准确率为 96.42%。"
+    },
+    {
+      "id" : "dc040abff0187fbd-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "模型训练 \/ Model Training"
+        ],
+        "page" : 1
+      },
+      "markdown" : "质量能量关系：E = mc²"
+    }
+  ],
+  "components" : {
+    "cli" : "codex-cli 0.163.0-alpha.10.2",
+    "model" : "gpt-6-luna",
+    "reasoning" : "medium"
+  },
+  "pipeline" : "codex",
+  "schemaVersion" : 1,
+  "sourceHash" : "3dc220e5a9d7b698f2a8202ac626a6c4f09f4103354c42218d3e968cd06b27e3",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

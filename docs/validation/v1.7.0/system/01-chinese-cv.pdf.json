@@ -1,0 +1,26 @@
+{
+  "blocks" : [
+    {
+      "id" : "349d90760e3520f5-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "王明|后端开发工程师\n教育：华南理工大学 | 计算机科学| 2020-2024\n技能：Python、Go、PostgreSQL、Kubernetes\n项目：订单服务重构\n将P95延迟从 420 ms 降低到180 ms。\n每秒请求从 1,200提升到3.600，错误率0.03%。\n经历：星河科技 | 2024.07-2026.09\n负责支付幂等与库存一致性，带领4人小组。\n联系方式：wangming@example.test"
+    }
+  ],
+  "components" : {
+    "paddle" : "unused",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "system",
+  "schemaVersion" : 1,
+  "sourceHash" : "b4fda71f3a5b43e664d624cb7a3b6e5979af3cfc4d5fb1f549009e5902290b4b",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "blocks" : [
+    {
+      "id" : "ef9ae5eea1539370-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "Backend Engineer - Platform\nLocation: Sydney | Hybrid: 3 days per week\nRequirements: Go, Python, PostgreSQL, Kubernetes\nDesign reliable distributed systems and REST APIs.\nOwn monitoring, incident response and technical documentation.\nTarget availability: 99.95%; on-call rotation: 1 in 6 weeks.\nSalary range: AUD 140,000-170,000 plus superannuation.\nApplicants should have 4+ years of production experience."
+    }
+  ],
+  "components" : {
+    "paddle" : "845ebafa9b6bed8372e4675a40b2bb19ac4c7089",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "paddle",
+  "schemaVersion" : 1,
+  "sourceHash" : "4dc2f8ee8aab48e7ab0490d9523bed2dfd43f7f5fa0ed6ddafa4e20bc37a7c7e",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

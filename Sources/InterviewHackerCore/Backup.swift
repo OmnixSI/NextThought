@@ -116,6 +116,8 @@ public enum SettingsSnapshot {
         "webSearchMode", "webSearchProvider",
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides", "insightAnswerProgress",
         "globalSkillIDs", "assistantLayout",
+        "documentOCRProvider", "documentProviderWasSelected", "ocrFallbackToVision", "semanticRetrievalEnabled",
+        "codexOCRModel", "codexOCREffort", "codexOCRTimeout",
     ]
 
     /// Keychain accounts exported only on request.

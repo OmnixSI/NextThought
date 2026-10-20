@@ -15,13 +15,17 @@ public struct ContextChunk: Sendable, Equatable {
     /// Hash of the text: it tells whether the vector of this chunk is still
     /// the vector of this text.
     public let fingerprint: String
+    public var id: String { fingerprint }
+    public let locator: DocumentLocator?
+    public let blockID: String?
 
-    public init(source: String, page: Int, text: String, order: Int, fingerprint: String) {
+    public init(source: String, page: Int, text: String, order: Int, fingerprint: String, locator: DocumentLocator? = nil, blockID: String? = nil) {
         self.source = source
         self.page = page
         self.text = text
         self.order = order
         self.fingerprint = fingerprint
+        self.locator = locator; self.blockID = blockID
     }
 }
 
@@ -46,6 +50,7 @@ public enum ContextFingerprint {
 /// characters of overlap, so a sentence that straddles two chunks is still
 /// found by both.
 public enum ContextChunker {
+    public static let version = "2-heading-table"
     public static let chunkCharacters = 900
     public static let overlapCharacters = 120
     /// Materials per scenario; kept in step with `SessionContextIndex.maximumDocuments`.
@@ -58,18 +63,18 @@ public enum ContextChunker {
     public static func chunks(documents: [ContextDocument]) -> [ContextChunk] {
         var result: [ContextChunk] = []
         for document in documents.prefix(maximumDocuments) where document.enabled {
-            for (pageNumber, page) in document.pages.prefix(maximumSectionsPerDocument).enumerated() {
-                let chars = Array(page.prefix(200_000))
-                var start = 0
-                while start < chars.count && result.count < maximumChunks {
-                    let end = min(start + chunkCharacters, chars.count)
-                    let text = String(chars[start..<end])
-                    result.append(
-                        ContextChunk(
-                            source: document.labeledName, page: pageNumber + 1,
-                            text: text, order: result.count, fingerprint: ContextFingerprint.hash(text)))
-                    if end == chars.count { break }
-                    start = end - overlapCharacters
+            let blocks = document.content?.blocks ?? document.pages.enumerated().flatMap { offset, text in
+                DocumentStructure.parse(text, locator: .init(section: offset + 1))
+            }
+            for block in blocks where block.kind != "heading" {
+                for (part, text) in DocumentStructure.pieces(block, target: chunkCharacters).enumerated() {
+                    guard result.count < maximumChunks else { return result }
+                    let path = ([document.name] + block.locator.headingPath).joined(separator: " > ")
+                    let body = path + "\n" + text
+                    let fingerprint = ContextFingerprint.hash(version + document.id.uuidString + "\n" + block.id + "\n" + String(part) + "\n" + body)
+                    result.append(ContextChunk(source: document.labeledName,
+                        page: block.locator.page ?? block.locator.slide ?? block.locator.section ?? 0,
+                        text: body, order: result.count, fingerprint: fingerprint, locator: block.locator, blockID: block.id))
                 }
             }
         }
@@ -119,7 +124,7 @@ public struct SemanticIndex: Sendable, Codable, Equatable {
     }
 
     /// The vector of a chunk, but only when it was made for the current text.
-    public func vector(for order: Int, fingerprint: String) -> [Float]? {
+    public func vector(for order: Int, fingerprint: String, locator: DocumentLocator? = nil) -> [Float]? {
         guard order >= 0, order < entries.count else { return nil }
         let entry = entries[order]
         guard !entry.vector.isEmpty, entry.fingerprint == fingerprint else { return nil }
@@ -135,10 +140,10 @@ public struct SemanticIndex: Sendable, Codable, Equatable {
     /// chunk that was changed since it was embedded does not show up in the
     /// semantic ranking.
     public func rankedOrders(query: [Float], fingerprints: [String]) -> [(order: Int, score: Double)] {
-        guard !query.isEmpty else { return [] }
+        guard !query.isEmpty, query.allSatisfy({ $0.isFinite }) else { return [] }
         var result: [(order: Int, score: Double)] = []
         for (order, entry) in entries.enumerated() where !entry.vector.isEmpty {
-            guard order < fingerprints.count, fingerprints[order] == entry.fingerprint else { continue }
+            guard order < fingerprints.count, fingerprints[order] == entry.fingerprint, entry.vector.count == query.count, entry.vector.allSatisfy({ $0.isFinite }) else { continue }
             let score = Self.dot(query, entry.vector)
             result.append((order, score))
         }
@@ -215,9 +220,10 @@ public struct HybridContextIndex: Sendable {
         for entry in fused.prefix(8) where remaining > 0 {
             guard entry.order < chunks.count else { continue }
             let chunk = chunks[entry.order]
-            let text = String(chunk.text.prefix(remaining))
+            guard chunk.text.count <= remaining else { continue }
+            let text = chunk.text
             guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
-            result.append(.init(source: chunk.source, page: chunk.page, text: text))
+            result.append(.init(source: chunk.source, page: chunk.page, text: text, locator: chunk.locator, chunkID: chunk.id, blockID: chunk.blockID))
             remaining -= text.count
         }
         return result

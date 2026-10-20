@@ -1,0 +1,126 @@
+[
+  {
+    "file": "01-chinese-cv.pdf",
+    "reference": "王明｜后端开发工程师\n教育：华南理工大学｜计算机科学｜2020–2024\n技能：Python、Go、PostgreSQL、Kubernetes\n项目：订单服务重构\n将 P95 延迟从 420 ms 降低到 180 ms。\n每秒请求从 1,200 提升到 3,600，错误率 0.03%。\n经历：星河科技｜2024.07–2026.09\n负责支付幂等与库存一致性，带领 4 人小组。\n联系方式：wangming@example.test",
+    "checks": {
+      "numbers": [
+        "420",
+        "180",
+        "1,200",
+        "3,600",
+        "0.03%",
+        "2024.07",
+        "2026.09"
+      ],
+      "text": [
+        "王明",
+        "支付幂等",
+        "库存一致性",
+        "Kubernetes"
+      ]
+    }
+  },
+  {
+    "file": "02-english-jd.pdf",
+    "reference": "Backend Engineer - Platform\nLocation: Sydney | Hybrid: 3 days per week\nRequirements: Go, Python, PostgreSQL, Kubernetes\nDesign reliable distributed systems and REST APIs.\nOwn monitoring, incident response and technical documentation.\nTarget availability: 99.95%; on-call rotation: 1 in 6 weeks.\nSalary range: AUD 140,000-170,000 plus superannuation.\nApplicants should have 4+ years of production experience.",
+    "checks": {
+      "numbers": [
+        "99.95%",
+        "140,000",
+        "170,000"
+      ],
+      "text": [
+        "incident response",
+        "PostgreSQL",
+        "superannuation"
+      ]
+    }
+  },
+  {
+    "file": "03-bilingual-columns.png",
+    "reference": "系统设计 / System Design\n缓存策略\n使用 Redis 缓存热点数据。\n命中率为 92.7%，TTL 为 300 秒。\n缓存失效后读取 PostgreSQL。\n监控 P99 延迟与错误率。\nDeployment Notes\nUse a rolling deployment.\nKeep 2 replicas available.\nRollback if errors exceed 0.5%.\nCPU budget: 750 millicores.\nRelease owner: Platform Team.",
+    "checks": {
+      "numbers": [
+        "92.7%",
+        "300",
+        "0.5%",
+        "750"
+      ],
+      "text": [
+        "缓存失效",
+        "PostgreSQL",
+        "rolling deployment",
+        "Platform Team"
+      ],
+      "order": [
+        "缓存策略",
+        "监控",
+        "Deployment Notes",
+        "Release owner"
+      ]
+    }
+  },
+  {
+    "file": "04-merged-table.png",
+    "reference": "季度收入表 / Quarterly Revenue\n地区 / Region | 2026 收入 (万元) [colspan=2]\n季度 | 第一季度 | 第二季度\n华东 | 1,234.56 | 1,789.01\n华南 | 987.65 | 1,012.34\n合计 | 2,222.21 | 2,801.35",
+    "checks": {
+      "numbers": [
+        "1,234.56",
+        "1,789.01",
+        "987.65",
+        "1,012.34",
+        "2,222.21",
+        "2,801.35"
+      ],
+      "text": [
+        "华东",
+        "华南",
+        "合计"
+      ],
+      "table": {
+        "rows": 5,
+        "columns": 3,
+        "merged": true
+      }
+    }
+  },
+  {
+    "file": "05-technical-formula.png",
+    "reference": "模型训练 / Model Training\n均方误差 Mean Squared Error\nL = (1/n) Σᵢ (yᵢ − ŷᵢ)²\n梯度下降 Gradient Descent\nθₜ₊₁ = θₜ − η ∇L(θₜ)\n学习率 η = 0.001，训练 120 epochs。\n验证集准确率为 96.42%。\n质量能量关系：E = mc²",
+    "checks": {
+      "numbers": [
+        "0.001",
+        "120",
+        "96.42%"
+      ],
+      "text": [
+        "梯度下降",
+        "Mean Squared Error"
+      ],
+      "formulas": [
+        "L = (1/n) sum_i (y_i-yhat_i)^2",
+        "theta_(t+1) = theta_t - eta grad L(theta_t)",
+        "E=mc^2"
+      ]
+    }
+  },
+  {
+    "file": "06-office-embedded.docx",
+    "reference": "交付说明 / Delivery Notes\n版本 v1.7.0，负责人：陈佳。\n下图包含服务链路和容量参数。\n架构图 / Architecture\nClient → Gateway → Worker\n吞吐量 2,500 req/s；超时 800 ms；重试 3 次\n验收日期：2026-10-21。",
+    "checks": {
+      "numbers": [
+        "1.7.0",
+        "2,500",
+        "800",
+        "2026-10-21"
+      ],
+      "text": [
+        "陈佳",
+        "Client",
+        "Gateway",
+        "Worker",
+        "重试"
+      ]
+    }
+  }
+]

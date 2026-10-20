@@ -1,10 +1,17 @@
 # 更新日志
 
-## 未发布
+## v1.7.0 · 2026-10-21
+
+### 本地模型与 Codex 文件代读
+- 默认系统 OCR，按需选择 PaddleOCR-VL-1.6 Q8、版面模型和 Qwen3-Embedding-0.6B Q8（模型合计约 1.88 GB）。独立运行包下载约 186 MB，安装约 632 MB。
+- Codex CLI 默认 gpt-6-luna，接收字节相同的原件临时路径，通过隔离的只读工具按需解析；支持取消、超时和失败提示，不复用回答上下文。
+- 模型下载可取消、重试、校验修复和删除；语义缓存按工作区／资料／模型／切片版本隔离，实时检索 500 ms 后使用关键词。
+- 完整 Markdown、表格／公式与真实定位统一保存和备份；旧资料仍可检索，重新 OCR 需要重新选择原件。
+- 六份实际对照与已知限制见 [验证报告](docs/VALIDATION-v1.7.0.md)。目标为 macOS 14+；本次实际测试为 macOS 26.5.2。
 
 ### 资料统一转成结构化 Markdown
 - 导入的资料一律先转成结构化 Markdown 再进检索索引：PDF（含扫描件 OCR）、Word、OpenDocument、RTF / 旧版 doc、PowerPoint、Excel、CSV、HTML、Markdown、TXT、JSON 和图片都支持，标题层级、列表和表格都保留。
-- 装了 [Microsoft MarkItDown](https://github.com/microsoft/markitdown) 或 [Pandoc](https://pandoc.org) 时，导入 Office 文件会自动用它们转换（更细的版式），失败自动回退到内置实现。调研与选型见 [docs/DOCUMENT-MARKDOWN-PIPELINE.md](docs/DOCUMENT-MARKDOWN-PIPELINE.md)。
+- Office 转换使用应用管理的 MarkItDown 运行包，用户无需安装 Python、pip 或 Homebrew；PPT／Excel 定位与嵌图识别随管线处理。架构见 [docs/DOCUMENT-MARKDOWN-PIPELINE.md](docs/DOCUMENT-MARKDOWN-PIPELINE.md)。
 - 转换后的 Markdown 在后台静默归档成 `.md` 文件（`Materials/<场景ID>/`），带来源格式和归档时间；资料列表里可以直接打开。
 
 ### 资料导入不再要手动分门别类

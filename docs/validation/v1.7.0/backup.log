@@ -1,0 +1,3 @@
+SELFTEST ▶︎ document-backup
+SELFTEST ✔ document-backup (0.1 s) Markdown + metadata + table/formula + physical locator restored with relative refs; no original/model/runtime in backup
+SELFTEST all passed

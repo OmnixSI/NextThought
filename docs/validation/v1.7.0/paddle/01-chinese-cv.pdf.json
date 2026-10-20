@@ -1,0 +1,114 @@
+{
+  "blocks" : [
+    {
+      "id" : "a531cebbc1e90520-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "王明 | 后端开发工程师"
+    },
+    {
+      "id" : "f4de23314d3c4727-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "教育：华南理工大学 | 计算机科学 | 2020-2024"
+    },
+    {
+      "id" : "f23bbed675bd42e1-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "技能：Python、Go、PostgreSQL、Kubernetes"
+    },
+    {
+      "id" : "81a8b4c798d9dd5b-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "项目：订单服务重构"
+    },
+    {
+      "id" : "fd39b14f9cadb0fb-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "将 P95 延迟从 420 ms 降低到 180 ms。"
+    },
+    {
+      "id" : "4565c81185d66a9f-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "每秒请求从 1,200 提升到 3,600，错误率 0.03%。"
+    },
+    {
+      "id" : "f94d446358877793-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "经历：星河科技 | 2024.07-2026.09"
+    },
+    {
+      "id" : "a59c8e70913aa1b5-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "负责支付幂等与库存一致性，带领4人小组。"
+    },
+    {
+      "id" : "4879621b5976d098-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+
+        ],
+        "page" : 1
+      },
+      "markdown" : "联系方式：wangming@example.test"
+    }
+  ],
+  "components" : {
+    "paddle" : "845ebafa9b6bed8372e4675a40b2bb19ac4c7089",
+    "pipeline" : "1.7.0"
+  },
+  "pipeline" : "paddle",
+  "schemaVersion" : 1,
+  "sourceHash" : "b4fda71f3a5b43e664d624cb7a3b6e5979af3cfc4d5fb1f549009e5902290b4b",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}

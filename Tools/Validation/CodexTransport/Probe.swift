@@ -39,5 +39,13 @@ enum Diagnostics {
   let next = try await client.answer(request) { _ in }
   precondition(next == "done")
   print("PASS: next request succeeds and ignores canceled turn notifications")
+  for _ in 0..<20 {
+   let output = try await CodexBridge().run(prompt:"test",model:"test",reasoning:"medium",timeout:5) { _ in }
+   precondition(output == "done")
+  }
+  print("PASS: 20 immediate CLI exits finish without Foundation waitUntilExit race")
  }
 }
+
+// Document transport resources are injected only for document tasks.
+enum DocumentRuntime { static let directory = URL(fileURLWithPath: "/unused-runtime"); static let resources = URL(fileURLWithPath: "/unused-resources"); static let python = URL(fileURLWithPath: "/unused-python") }

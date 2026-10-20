@@ -67,3 +67,9 @@
 - **任务一直显示 Queued / Waiting for a runner**：Runner 没在运行。运行 `--status` 看看；Mac 在睡眠或已注销时也会这样。
 - **`swift: error: ... requires Xcode`**：安装完整的 Xcode 并运行 `sudo xcode-select -s /Applications/Xcode.app`。
 - **发布时 `gh: command not found`**：Runner 服务启动时的 PATH 里没有 Homebrew。运行 `--stop`，在 `~/actions-runner-interviewhacker/.path` 末尾加上 `:/opt/homebrew/bin`，再 `--start`。
+
+## v1.7.0 临时 runner
+
+本轮仅使用仓库 `.local/actions-runner` 内的前台 runner，不安装登录服务。运行结束通过 `config.sh remove` 注销；不把私钥写入 GitHub secrets。`verify.yml` 已恢复同仓 PR 检查，并在自检前后完整保存／恢复原 keychain 搜索列表。构建自检使用独立 `.ci` identifier 和 runner 临时数据目录。
+
+发布工作流以 tag 或显式 dispatch 触发，先获取 App 内固定哈希的 Python 运行包，再构建签名 App／DMG／ZIP；所有资产上传到 draft 并重新下载验证全部 SHA-256 后才正式发布。手工准备的运行包也必须匹配受版本控制的 manifest，不会在 CI 临时解析一个“最新”依赖集合。

@@ -1,0 +1,104 @@
+{
+  "blocks" : [
+    {
+      "id" : "b6c61bdce2aab717-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Backend Engineer - Platform"
+    },
+    {
+      "id" : "22d87b87d78f99aa-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Location: Sydney | Hybrid: 3 days per week"
+    },
+    {
+      "id" : "405312cee26d27f2-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Requirements: Go, Python, PostgreSQL, Kubernetes"
+    },
+    {
+      "id" : "f2c20de6f649b21b-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Design reliable distributed systems and REST APIs."
+    },
+    {
+      "id" : "413aead3bb1a6571-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Own monitoring, incident response and technical documentation."
+    },
+    {
+      "id" : "cf27f2d770765c17-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Target availability: 99.95%; on-call rotation: 1 in 6 weeks."
+    },
+    {
+      "id" : "736a402ef8dbfb-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Salary range: AUD 140,000-170,000 plus superannuation."
+    },
+    {
+      "id" : "11b87c7cee6fb03f-0",
+      "kind" : "paragraph",
+      "locator" : {
+        "headingPath" : [
+          "Backend Engineer - Platform"
+        ],
+        "page" : 1
+      },
+      "markdown" : "Applicants should have 4+ years of production experience."
+    }
+  ],
+  "components" : {
+    "cli" : "codex-cli 0.163.0-alpha.10.2",
+    "model" : "gpt-6-luna",
+    "reasoning" : "medium"
+  },
+  "pipeline" : "codex",
+  "schemaVersion" : 1,
+  "sourceHash" : "4dc2f8ee8aab48e7ab0490d9523bed2dfd43f7f5fa0ed6ddafa4e20bc37a7c7e",
+  "status" : "complete",
+  "warnings" : [
+
+  ]
+}
