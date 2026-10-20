@@ -255,6 +255,7 @@ extension AppState {
         UserDefaults.standard.set(teleprompterFontSize, forKey: "teleprompterFontSize")
         UserDefaults.standard.set(teleprompterHideBackground, forKey: "teleprompterHideBackground")
         UserDefaults.standard.set(simplifiedInterface, forKey: "simplifiedInterface")
+        UserDefaults.standard.set(!simplifiedInterface, forKey: "advancedSettingsEnabled")
         UserDefaults.standard.set(capturePrivacy, forKey: "capturePrivacy")
         TeleprompterController.shared.applyAppearance()
     }

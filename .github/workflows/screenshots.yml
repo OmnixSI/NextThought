@@ -41,6 +41,7 @@ jobs:
             rm -f "$out"
             INTERVIEWHACKER_DEMO=1 INTERVIEWHACKER_DEMO_APPEARANCE="$appearance" INTERVIEWHACKER_DEMO_SECTION="$section" \
               INTERVIEWHACKER_DEMO_DEFAULTS="${4:-}" \
+              INTERVIEWHACKER_DEMO_ADVANCED="${5:-0}" \
               INTERVIEWHACKER_DEMO_OUT="$out" "$APP/Contents/MacOS/InterviewHacker" >"$RUNNER_TEMP/app-$1-$2.log" 2>&1 &
             local pid=$!
             for _ in $(seq 1 40); do [[ -s "$out" ]] && break; sleep 0.5; done
@@ -84,9 +85,12 @@ jobs:
             capture "$appearance" materials workspace-review "workspaceEditorTab=复盘"
             capture "$appearance" settings settings-data "settingsGroup=数据"
             capture "$appearance" settings settings-answers "settingsGroup=回答"
-            capture "$appearance" settings settings-skills "settingsGroup=技能"
-            capture "$appearance" assistant onboarding-welcome "demoOnboarding=1;onboardingStep=0"
-            capture "$appearance" assistant onboarding-engine "demoOnboarding=1;onboardingStep=3"
+            capture "$appearance" settings settings-skills "settingsGroup=技能" 1
+            capture "$appearance" settings settings-simple "settingsGroup=基础"
+            capture "$appearance" settings document-options "settingsGroup=资料"
+            capture "$appearance" assistant onboarding-realtime "demoOnboarding=1;quickStartStep=0"
+            capture "$appearance" assistant onboarding-welcome "demoOnboarding=1;quickStartStep=0"
+            capture "$appearance" assistant onboarding-engine "demoOnboarding=1;quickStartStep=2"
           done
           ls -la shots
       - name: Commit screenshots to docs/screenshots

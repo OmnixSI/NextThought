@@ -67,6 +67,7 @@ enum DocumentRuntimeInstaller {
 extension AppState {
     func deleteDocumentRuntime() {
         Task {
+            documentSetupTask?.cancel(); await documentSetupTask?.value
             runtimeDownloadTask?.cancel(); await runtimeDownloadTask?.value
             importTask?.cancel(); await importTask?.value
             semanticIndexTask?.cancel(); semanticGeneration=UUID()
@@ -78,7 +79,7 @@ extension AppState {
         }
     }
     func installDocumentRuntime() {
-        guard !isInstallingDocumentRuntime else { return }
+        guard !isInstallingDocumentRuntime, documentSetupFeature == nil else { return }
         isInstallingDocumentRuntime=true
         runtimeDownloadTask = Task {
             defer { isInstallingDocumentRuntime=false; runtimeDownloadTask=nil }

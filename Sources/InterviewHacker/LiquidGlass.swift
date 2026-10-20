@@ -163,14 +163,19 @@ enum UI {
 
 /// Prominent (tinted) glass button for primary actions.
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     var height: CGFloat = UI.controlHeight
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: height > UI.controlHeight ? 14 : 13, weight: .semibold))
-            .foregroundStyle(.white)
+            .foregroundStyle(isEnabled ? Color.white : Color.secondary)
             .padding(.horizontal, height > UI.controlHeight ? 18 : 16)
             .frame(height: height)
-            .background(ProminentFill())
+            .background {
+                if isEnabled { ProminentFill() }
+                else { Capsule().fill(Color.primary.opacity(0.08)) }
+            }
+            .opacity(isEnabled ? 1 : 0.6)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -178,6 +183,7 @@ struct PrimaryButtonStyle: ButtonStyle {
 
 /// Clear glass button for secondary actions.
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 13, weight: .medium))
@@ -185,6 +191,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .padding(.horizontal, 14)
             .frame(height: UI.controlHeight)
             .glassCapsule()
+            .opacity(isEnabled ? 1 : 0.4)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }

@@ -83,6 +83,9 @@ jobs:
         run: |
           mkdir -p "$INTERVIEWHACKER_DATA_DIR"
           "$APP/Contents/MacOS/InterviewHacker" --self-test data
+      - name: Self-test · optional document setup and versioned guide (offline)
+        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}", INTERVIEWHACKER_DEMO: "1" }
+        run: '"$APP/Contents/MacOS/InterviewHacker" --self-test document-setup'
       - name: Self-test · local signing
         if: success() || failure()
         timeout-minutes: 5

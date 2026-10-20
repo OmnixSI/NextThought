@@ -9,7 +9,7 @@ extension AppState {
         .init(provider: documentOCRProvider, fallback: ocrFallbackToVision, model: codexOCRModel, effort: codexOCREffort, timeout: codexOCRTimeout, isPaused: { await MainActor.run { self.isRunning || self.isAnswering } })
     }
     func downloadManagedModel(_ descriptor: ManagedModelDescriptor) {
-        guard !isDownloadingManagedModel else { return }
+        guard !isDownloadingManagedModel, documentSetupFeature == nil else { return }
         isDownloadingManagedModel = true; managedModelDownloadID = descriptor.id
         managedModelDownloadProgress = 0
         managedDownloadTask = Task {
@@ -33,6 +33,7 @@ extension AppState {
     func deleteManagedModel(_ descriptor: ManagedModelDescriptor) {
         modelInstallRevision += 1
         Task {
+            documentSetupTask?.cancel(); await documentSetupTask?.value
             if managedModelDownloadID == descriptor.id { managedDownloadTask?.cancel(); await managedDownloadTask?.value }
             installedDocumentModels.remove(descriptor.id)
             semanticGeneration = UUID(); semanticIndexTask?.cancel(); await semanticIndexTask?.value
@@ -59,6 +60,7 @@ extension AppState {
         }.value
         guard revision == modelInstallRevision else { return }
         installedDocumentModels = installed; runtimeInstalled = DocumentRuntime.installed
+        documentModelsChecked = true
         semanticIndex = SemanticIndexStore.load(modelID: ModelCatalog.qwen3Embedding.id, workspaceID: activeWorkspace.id)
         rebuildContextIndex()
     }
