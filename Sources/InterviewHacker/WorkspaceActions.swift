@@ -8,7 +8,9 @@ import UniformTypeIdentifiers
 extension AppState {
     // MARK: Materials
 
-    static let maxDocuments = 40
+    /// Materials per scenario. Shared with the retrieval index so a material
+    /// that can be imported is also a material that can be retrieved.
+    static let maxDocuments = SessionContextIndex.maximumDocuments
 
     /// Imports files into the current scenario.
     ///
