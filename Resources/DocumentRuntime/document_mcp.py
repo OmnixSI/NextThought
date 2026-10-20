@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Task-scoped MCP server. No arbitrary path, command, network or write tools."""
 import sys,pathlib,json,hashlib,base64,subprocess,io,zipfile
+sys.dont_write_bytecode = True
 sys.path.insert(0,str(pathlib.Path(sys.executable).resolve().parents[2]/'site-packages'))
 from contextlib import redirect_stdout
 MANIFEST=pathlib.Path(sys.argv[1]).resolve(strict=True)

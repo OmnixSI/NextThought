@@ -9,3 +9,5 @@
 最终复核确认以上修复落地，没有发现新的有具体证据的管线阻塞。另指出 workflow_dispatch 时 update.json 应记录实际 checkout 的 SHA，已将来源改为 git rev-parse HEAD。
 
 实际运行证据另见主验证报告、各 selftest 日志与原始模型输出。
+
+打包实测补充修复：Python helper 动态导入 worker 会尝试在签名 App 资源目录写 `__pycache__`。两项入口现在显式禁用 bytecode 写入，打包也排除开发缓存；在真实 MCP Office 读取后再次验证签名，避免运行一次后破坏 bundle 完整性。

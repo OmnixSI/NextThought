@@ -4,6 +4,7 @@ No model downloads, remote code, shell execution or network operations.
 """
 import sys, pathlib, os
 ROOT = pathlib.Path(sys.executable).resolve().parents[2]
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / 'site-packages'))
 import json, threading, concurrent.futures, traceback, re, html, zipfile, hashlib
 from contextlib import redirect_stdout
