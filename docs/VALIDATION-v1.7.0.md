@@ -62,3 +62,5 @@ INTERVIEWHACKER_DEMO=1 "$APP" --self-test document-lifecycle model-files
 ```
 
 补充实际自检：运行中删除 Qwen 模型（使用项目内可丢弃的硬链接副本）通过；索引取消、worker 卸载、模型与索引清理后均没有迟到重建。正式 tar.gz 二次修复安装通过。结构化备份恢复保留 Markdown、表格／公式、warnings、真实页码与相对路径，且不包含原件、模型和运行包。
+
+正式 App 的离线隔离验证已通过：Seatbelt 拒绝网络、仓库 Sources／Resources／Tools 和 /opt/homebrew、/usr/local 的读取，仍能使用随包 helper 与新目录中的运行包完成 Paddle 公式识别。实际 MCP 读取双页 PPT 的两个不同嵌图后，图片 ID 与幻灯片对应正确；App codesign --deep --strict 再次通过，资源目录没有产生 Python bytecode 缓存。

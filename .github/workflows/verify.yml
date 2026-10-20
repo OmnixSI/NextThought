@@ -2,8 +2,7 @@ name: Verify
 # Runs on the maintainer's own Mac (self-hosted runner, docs/SELF-HOSTED-RUNNER.md);
 # set the repository variable MAC_RUNNER=github to use GitHub's macOS runners again
 # (their minutes count 10× against the Actions quota). Each commit is verified once:
-# pushes to these branches run here; pull requests only for branches from forks, and
-# those only on GitHub's runners (never run other people's code on your Mac).
+# same-repository PRs run here; fork PRs run only when GitHub-hosted runners are selected.
 # Docs-only commits (README, screenshots, release notes) are skipped.
 on:
   push:
@@ -37,7 +36,7 @@ jobs:
         run: swift build --disable-sandbox -c release
       - name: Source snapshot for reproducible review
         if: always()
-        run: tar -czf source-snapshot.tar.gz Package.swift Sources Tests Resources scripts
+        run: tar -czf source-snapshot.tar.gz Package.swift Sources Tests Resources scripts Tools
       - uses: actions/upload-artifact@v4
         if: always()
         with:
