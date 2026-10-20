@@ -96,9 +96,17 @@ public struct SessionContextIndex: Sendable {
     }
     private var chunks: [Chunk] = []
     private var documentFrequency: [String: Int] = [:]
+    /// Materials per scenario. Kept in step with `AppState.maxDocuments`.
+    public static let maximumDocuments = 40
+    /// Sections read per material (a Markdown file with many headings).
+    public static let maximumSectionsPerDocument = 500
     public init(documents: [ContextDocument] = []) {
-        for document in documents.prefix(16) where document.enabled {
-            for (pageNumber, page) in document.pages.prefix(200).enumerated() {
+        // The document cap has to match the number of materials a scenario may
+        // hold; anything above that would be indexed but never retrieved.
+        // The real bound is the chunk count below, which the workspace size
+        // limit (600k characters) never reaches.
+        for document in documents.prefix(Self.maximumDocuments) where document.enabled {
+            for (pageNumber, page) in document.pages.prefix(Self.maximumSectionsPerDocument).enumerated() {
                 let chars = Array(page.prefix(200_000))
                 var start = 0
                 while start < chars.count && chunks.count < 2_000 {
