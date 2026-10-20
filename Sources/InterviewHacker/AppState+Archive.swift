@@ -52,7 +52,8 @@ extension AppState {
     func recordAnswer(_ record: AnswerRecord) {
         guard activeArchiveID != nil else { return }
         archive.append(SessionAnswerEvent(id: record.id, date: record.date, question: record.question, answer: record.answer, model: record.model,
-                                          seconds: record.seconds, firstTokenSeconds: record.firstTokenSeconds, automatic: record.automatic))
+                                          seconds: record.seconds, firstTokenSeconds: record.firstTokenSeconds, automatic: record.automatic,
+                                          screenshotPath: record.screenshotPath))
     }
 
     private var recognizerDescription: String {

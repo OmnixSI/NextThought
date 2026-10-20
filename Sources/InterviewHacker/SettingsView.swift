@@ -84,6 +84,14 @@ private struct SettingsSidebar: View {
     let selection: SettingsGroup
     var compact: Bool
     let select: (SettingsGroup) -> Void
+    @State private var query = ""
+    /// Whether the groups behind “更多设置” are expanded (简洁界面).
+    @State private var showsSecondaryGroups = false
+
+    /// The groups that stay visible in 简洁界面: the ones used every day.
+    private static let everyday: [SettingsGroup] = [.essentials, .answers, .overlay]
+    /// The rest — still reachable, only folded away.
+    private static let secondary: [SettingsGroup] = [.recognition, .skills, .recording, .more]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -91,17 +99,100 @@ private struct SettingsSidebar: View {
                 Text("设置").font(.system(size: 15, weight: .semibold))
                 Text("先完成“基础”，其余按需调整").font(.system(size: 11)).foregroundStyle(.secondary)
             }
+            searchField
             ScrollView {
                 VStack(alignment: .leading, spacing: 6) {
-                    ForEach(SettingsGroup.allCases) { group in row(group) }
+                    ForEach(visibleGroups) { group in
+                        row(group, pinned: isSearching && !matches.contains(group))
+                    }
+                    if isSearching && matches.isEmpty {
+                        Text("没有匹配的分组").font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 8)
+                    }
+                    if state.simplifiedInterface && !isSearching { secondaryDisclosure }
                 }
             }
         }
         .card()
         .frame(maxHeight: .infinity, alignment: .top)
+        .onChange(of: state.simplifiedInterface) { _, simplified in
+            // The page the user is on must stay reachable when the list shrinks.
+            if simplified, Self.secondary.contains(selection) { showsSecondaryGroups = true }
+        }
     }
 
-    private func row(_ group: SettingsGroup) -> some View {
+    /// Search box: narrows the group list by name or by summary.
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").font(.system(size: 11)).foregroundStyle(.secondary)
+            TextField("搜索分组", text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+            if !query.isEmpty {
+                Button { query = "" } label: { Image(systemName: "xmark.circle.fill").font(.system(size: 11)) }
+                    .buttonStyle(.borderless).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 5)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    /// Disclosure that reveals the groups 简洁界面 hides.
+    private var secondaryDisclosure: some View {
+        Button {
+            withAnimation(.snappy(duration: 0.2)) { showsSecondaryGroups.toggle() }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(Brand.accent)
+                    .frame(width: 30, height: 30)
+                    .background(Brand.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text(showsSecondaryGroups ? "收起更多设置" : "更多设置")
+                    .font(.system(size: 13, weight: .medium))
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    .rotationEffect(.degrees(showsSecondaryGroups ? 90 : 0))
+            }
+            .padding(8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("其余分组：识别、技能、数据、更多")
+    }
+
+    private var isSearching: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Groups the current mode shows before the text filter.
+    private var candidateGroups: [SettingsGroup] {
+        // Searching always looks through every group, even the folded ones.
+        if isSearching { return SettingsGroup.allCases }
+        if state.simplifiedInterface {
+            var groups = Self.everyday
+            if showsSecondaryGroups { groups += Self.secondary }
+            if !groups.contains(selection) { groups.append(selection) }
+            return groups
+        }
+        return SettingsGroup.allCases
+    }
+
+    private var matches: [SettingsGroup] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        return candidateGroups.filter {
+            $0.rawValue.localizedCaseInsensitiveContains(trimmed) || $0.summary.localizedCaseInsensitiveContains(trimmed)
+        }
+    }
+
+    private var visibleGroups: [SettingsGroup] {
+        guard isSearching else { return candidateGroups }
+        var groups = matches
+        // The open page stays visible even when the filter hides it.
+        if !groups.contains(selection) { groups.append(selection) }
+        return groups
+    }
+
+    private func row(_ group: SettingsGroup, pinned: Bool = false) -> some View {
         let selected = group == selection
         return HStack(spacing: 10) {
             Image(systemName: group.symbol)
@@ -117,12 +208,20 @@ private struct SettingsSidebar: View {
                 }
             }
             Spacer(minLength: 0)
+            if pinned {
+                Text("当前").font(.system(size: 9.5, weight: .medium)).foregroundStyle(.secondary)
+            }
             badge(group)
         }
         .padding(8)
         .background(selected ? Brand.accent.opacity(0.14) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         .contentShape(Rectangle())
-        .onTapGesture { select(group) }
+        .onTapGesture {
+            select(group)
+            // Selecting a group ends the search so the full list comes back.
+            query = ""
+            if Self.secondary.contains(group) { showsSecondaryGroups = true }
+        }
         .help(group.summary)
     }
 
@@ -226,6 +325,55 @@ private struct EssentialSettings: View {
 
     var body: some View {
         @Bindable var state = state
+        SettingsSection(title: "环境与模型", icon: "wrench.and.screwdriver") {
+            Note("一键检查并配好回答模型、语音模型、音频来源和资料索引；哪一步没成功会直接写在这里。")
+            HStack(spacing: 8) {
+                Button { Task { await state.runQuickEnvironmentSetup() } } label: {
+                    Label("一键配置", systemImage: "wand.and.stars")
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(state.isRunningEnvironmentSetup)
+                .help("检查回答引擎、选择模型、准备语音识别、刷新音频来源并重建资料索引。缺少本地语音模型时会在后台下载，不影响使用")
+                Button { Task { await state.rebuildEnvironment() } } label: {
+                    Label("一键重建环境", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(state.isRunningEnvironmentSetup)
+                .help("重新读取配置、重建资料索引与数据目录，不改变你的选择")
+                if state.isRunningEnvironmentSetup {
+                    ProgressView().controlSize(.small)
+                }
+                Spacer(minLength: 0)
+            }
+            if !state.environmentSetupSteps.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(state.environmentSetupSteps) { step in
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: step.status.symbol)
+                                .font(.system(size: 12))
+                                .foregroundStyle(stepColor(step.status))
+                                .frame(width: 16)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(step.title).font(.system(size: 12.5, weight: .medium))
+                                if !step.detail.isEmpty {
+                                    Text(step.detail).font(.system(size: 11)).foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+            }
+            if !state.environmentSetupSummary.isEmpty {
+                Note(state.environmentSetupSummary, color: state.environmentSetupSummary.hasPrefix("有 ") ? .orange : .green)
+            }
+        }
+        SettingsSection(title: "界面", icon: "slider.horizontal.3") {
+            Toggle("简洁界面（隐藏次要设置）", isOn: $state.simplifiedInterface)
+                .onChange(of: state.simplifiedInterface) { _, _ in state.saveAnswerSettings() }
+            Note("只收起不常用的选项，功能一个不少：侧栏只显示“基础 / 回答 / 提词器”，其余分组折叠在“更多设置”里，随时可以展开。")
+        }
         SettingsSection(title: "使用前检查", icon: "checklist") {
             SetupChecklist()
             HStack {
@@ -247,14 +395,24 @@ private struct EssentialSettings: View {
             Note("选会议 App 的窗口只采集它的声音。两路分别识别，抢话也不会混；自动回答只由对方的提问触发。")
         }
         SettingsSection(title: "外观", icon: "paintbrush") {
-            Picker("外观", selection: $state.appearance) {
+            Picker("外观", selection: Binding(get: { state.appearance }, set: { state.setAppearance($0) })) {
                 Text("跟随系统").tag("system")
                 Text("浅色").tag("light")
                 Text("深色").tag("dark")
             }
             .pickerStyle(.segmented)
-            .onChange(of: state.appearance) { _, _ in state.updateSettings() }
             Toggle("工作台窗口置顶", isOn: $state.keepOnTop).onChange(of: state.keepOnTop) { _, _ in state.updateSettings() }
+        }
+    }
+
+    /// Status colours of the one-click setup steps: green for finished, orange
+    /// for a step that needs attention, brand colour while it runs.
+    @MainActor private func stepColor(_ status: EnvironmentSetup.Step.Status) -> Color {
+        switch status {
+        case .done: .green
+        case .failed: .orange
+        case .running: Brand.accent
+        case .pending, .skipped: .secondary
         }
     }
 }
@@ -345,11 +503,14 @@ private struct RecognitionSettings: View {
                 LanguagePicker()
                 CloudSettings()
             }
-            TextField("专业词 / 人名，逗号分隔（提高识别准确度）", text: $state.recognitionVocabulary)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: state.recognitionVocabulary) { _, _ in state.updateSettings() }
         }
         AdvancedOptions("recognition") {
+            SettingsSection(title: "专业词", icon: "textformat") {
+                TextField("专业词 / 人名，逗号分隔（提高识别准确度）", text: $state.recognitionVocabulary)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: state.recognitionVocabulary) { _, _ in state.updateSettings() }
+                Note("填入人名、项目名和专有名词，识别时会更准；用逗号分隔。")
+            }
             if state.transcriptionBackend == "zipformer" {
                 SettingsSection(title: "本地模型", icon: "cpu") {
                     MenuPicker(title: "流式模型", selection: $state.localStreamingModel, options: LocalStreamingModel.allCases.map { ($0, $0.title) })
@@ -453,7 +614,7 @@ private struct AnswerSettings: View {
     var body: some View {
         @Bindable var state = state
         SettingsSection(title: "回答引擎", icon: "sparkles") {
-            AnswerEngineForm()
+            AnswerEngineForm(foldSecondary: true)
             EngineTestRow()
         }
         SettingsSection(title: "自动回答", icon: "text.bubble") {
@@ -486,6 +647,10 @@ private struct AnswerSettings: View {
 /// Engine choice and its fields; shared by settings and onboarding.
 struct AnswerEngineForm: View {
     @Environment(AppState.self) private var state
+    /// When true the rarely used knobs move into a collapsed “高级选项” block so
+    /// the form the user has to fill in stays short. Onboarding keeps them open
+    /// because it has no other place to show them.
+    var foldSecondary = false
 
     var body: some View {
         @Bindable var state = state
@@ -497,7 +662,7 @@ struct AnswerEngineForm: View {
         .pickerStyle(.segmented)
         .disabled(state.isAnswering)
         if state.answerBackend == .openAICompatible {
-            APIPresetForm()
+            APIPresetForm(foldSecondary: foldSecondary)
         } else {
             HStack {
                 Image(systemName: state.codexReady ? "checkmark.circle.fill" : "exclamationmark.circle")
@@ -513,33 +678,33 @@ struct AnswerEngineForm: View {
             if !state.codexInstalled {
                 Note("未检测到 Codex：安装 ChatGPT / Codex 桌面客户端，或在终端运行 `npm i -g @openai/codex`，然后 `codex login` 用 ChatGPT 账号登录，再点右侧刷新。", color: .orange)
             }
-            HStack(spacing: 10) {
+            if foldSecondary {
                 MenuPicker(title: "模型", selection: $state.codexModelID, options: codexModelOptions, placeholder: "请选择模型")
                     .disabled(state.isAnswering)
                     .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
-                MenuPicker(title: "推理强度", selection: $state.codexReasoning, options: state.codexEfforts.map { ($0, $0) })
-                    .disabled(state.isAnswering).onChange(of: state.codexReasoning) { _, _ in state.updateSettings() }
-            }
-            if state.codexModels.isEmpty {
-                TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
-                    .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
-                    .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
-            }
-            Toggle(isOn: $state.codexFastMode) {
-                HStack(spacing: 6) {
-                    Image(systemName: "bolt.fill").foregroundStyle(state.codexFastMode ? Brand.accent : .secondary)
-                    Text("Fast 模式")
-                    Text(state.codexFastLabel).foregroundStyle(.secondary)
+                if state.codexModels.isEmpty {
+                    TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
+                        .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
+                        .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
                 }
+                AdvancedOptions("answers-codex") {
+                    CodexReasoningPicker()
+                    CodexFastModeToggle()
+                }
+            } else {
+                HStack(spacing: 10) {
+                    MenuPicker(title: "模型", selection: $state.codexModelID, options: codexModelOptions, placeholder: "请选择模型")
+                        .disabled(state.isAnswering)
+                        .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
+                    CodexReasoningPicker()
+                }
+                if state.codexModels.isEmpty {
+                    TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
+                        .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
+                        .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
+                }
+                CodexFastModeToggle()
             }
-            .disabled(state.isAnswering || !state.codexFastAvailable)
-            .onChange(of: state.codexFastMode) { _, _ in state.updateSettings() }
-            Note(state.codexFastAvailable
-                 ? (state.currentCodexModel?.defaultsToFast == true
-                    ? "这个模型默认使用 Fast；关闭后改用标准速度、节省用量。与 Codex 客户端里的“Fast”相同。"
-                    : "与 Codex 客户端里的“Fast”相同：回答更快，消耗 ChatGPT 套餐用量更多。实时问答推荐推理强度 low，需要更快时打开 Fast。")
-                 : "当前模型或 Codex 版本不支持 Fast 模式（需要 ChatGPT 账号登录和较新的 Codex）。")
-            if !state.appServerNote.isEmpty { Note(state.appServerNote, color: .orange) }
         }
     }
 
@@ -549,6 +714,40 @@ struct AnswerEngineForm: View {
             options.insert((state.codexModelID, state.codexModelID), at: 0)
         }
         return options
+    }
+}
+
+/// Reasoning strength of the Codex engine; rarely changed, so the settings page
+/// folds it away.
+private struct CodexReasoningPicker: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        @Bindable var state = state
+        MenuPicker(title: "推理强度", selection: $state.codexReasoning, options: state.codexEfforts.map { ($0, $0) })
+            .disabled(state.isAnswering).onChange(of: state.codexReasoning) { _, _ in state.updateSettings() }
+    }
+}
+
+/// Fast mode of the Codex engine and the notes that explain it.
+private struct CodexFastModeToggle: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        @Bindable var state = state
+        Toggle(isOn: $state.codexFastMode) {
+            HStack(spacing: 6) {
+                Image(systemName: "bolt.fill").foregroundStyle(state.codexFastMode ? Brand.accent : .secondary)
+                Text("Fast 模式")
+                Text(state.codexFastLabel).foregroundStyle(.secondary)
+            }
+        }
+        .disabled(state.isAnswering || !state.codexFastAvailable)
+        .onChange(of: state.codexFastMode) { _, _ in state.updateSettings() }
+        Note(state.codexFastAvailable
+             ? (state.currentCodexModel?.defaultsToFast == true
+                ? "这个模型默认使用 Fast；关闭后改用标准速度、节省用量。与 Codex 客户端里的“Fast”相同。"
+                : "与 Codex 客户端里的“Fast”相同：回答更快，消耗 ChatGPT 套餐用量更多。实时问答推荐推理强度 low，需要更快时打开 Fast。")
+             : "当前模型或 Codex 版本不支持 Fast 模式（需要 ChatGPT 账号登录和较新的 Codex）。")
+        if !state.appServerNote.isEmpty { Note(state.appServerNote, color: .orange) }
     }
 }
 
@@ -592,6 +791,9 @@ struct WebSearchSettings: View {
 /// address, key, model and thinking strength.
 struct APIPresetForm: View {
     @Environment(AppState.self) private var state
+    /// When true the model fields move into a collapsed “高级选项” block, so the
+    /// settings page only asks for the fields most people actually fill in.
+    var foldSecondary = false
     @State private var renaming = false
     @State private var newName = ""
     @State private var confirmDelete = false
@@ -640,6 +842,22 @@ struct APIPresetForm: View {
             .textFieldStyle(.roundedBorder)
             .onSubmit { state.saveAPIKey() }
             .onChange(of: state.apiKey) { _, _ in state.saveAPIKey() }
+        if foldSecondary {
+            AdvancedOptions("answers-api") { APIModelDetails() }
+        } else {
+            APIModelDetails()
+        }
+        Note("转录片段、检索到的资料和截图会发送到这个服务。")
+    }
+}
+
+/// Model id, thinking strength and the model list of an OpenAI compatible
+/// service; the settings page folds them away, onboarding shows them.
+private struct APIModelDetails: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var state = state
         HStack(spacing: 8) {
             TextField("模型 ID（与服务商一致）", text: $state.apiModel)
                 .textFieldStyle(.roundedBorder)
@@ -657,7 +875,7 @@ struct APIPresetForm: View {
         if !state.apiModelsStatus.isEmpty { Note(state.apiModelsStatus) }
         MenuPicker(title: "思考强度", selection: $state.apiReasoningEffort, options: APIPreset.efforts)
             .onChange(of: state.apiReasoningEffort) { _, _ in state.saveAnswerSettings() }
-        Note("思考强度会作为 reasoning_effort 发送，只对支持推理的模型有效（如 OpenAI o / GPT-5 系列）；其他模型选“默认”。实时问答建议 minimal 或 low。转录片段、检索到的资料和截图会发送到这个服务。")
+        Note("思考强度会作为 reasoning_effort 发送，只对支持推理的模型有效（如 OpenAI o / GPT-5 系列）；其他模型选“默认”。实时问答建议 minimal 或 low。")
     }
 }
 
@@ -791,9 +1009,19 @@ private struct OverlaySettings: View {
             }
             HStack {
                 Text("不透明度")
-                Slider(value: $state.teleprompterOpacity, in: 0.35...1).onChange(of: state.teleprompterOpacity) { _, _ in state.saveAnswerSettings() }
+                Slider(value: $state.teleprompterOpacity, in: 0.35...1)
+                    // With the background hidden there is nothing left to fade,
+                    // and the text, the border and the buttons must stay opaque.
+                    .disabled(state.teleprompterHideBackground)
+                    .onChange(of: state.teleprompterOpacity) { _, _ in state.saveAnswerSettings() }
                 Text("\(Int(state.teleprompterOpacity * 100))%").font(.caption.monospacedDigit()).frame(width: 36)
             }
+            .help(state.teleprompterHideBackground
+                  ? "隐藏背景开启时不透明度不再生效：背景完全透明，文字、边框和按钮始终清晰"
+                  : "调整提词器整体的不透明度")
+            Toggle("隐藏背景（只显示文字，边框和按钮保持不透明）", isOn: $state.teleprompterHideBackground)
+                .onChange(of: state.teleprompterHideBackground) { _, _ in state.saveAnswerSettings() }
+            Note("打开后液态玻璃背景完全透明，只留下提词文字、边框和按钮；按钮、边框和文字不受不透明度影响，始终清晰。")
             HStack {
                 Text("字号")
                 Slider(value: $state.teleprompterFontSize, in: 14...44, step: 1).onChange(of: state.teleprompterFontSize) { _, _ in state.saveAnswerSettings() }

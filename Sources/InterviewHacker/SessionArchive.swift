@@ -137,6 +137,29 @@ final class SessionArchive {
         if let meta = activeMeta { saveMeta(meta) }
     }
 
+    /// Copies a screenshot into the session folder and returns its path
+    /// relative to that folder.
+    ///
+    /// The screenshot is otherwise a temporary file that is deleted right after
+    /// the answer; archiving it is what makes "this answer was based on that
+    /// picture" visible in the record later.
+    @discardableResult
+    func archiveScreenshot(_ url: URL?) -> String? {
+        guard let url, let id = activeID else { return nil }
+        let directory = folder(id).appendingPathComponent("screenshots", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let name = url.lastPathComponent.isEmpty ? "\(UUID().uuidString).jpg" : url.lastPathComponent
+            let destination = directory.appendingPathComponent(name)
+            try? FileManager.default.removeItem(at: destination)
+            try FileManager.default.copyItem(at: url, to: destination)
+            return "screenshots/\(name)"
+        } catch {
+            Diagnostics.record("screenshot.archive_failed")
+            return nil
+        }
+    }
+
     /// Ends the active session. Sessions without any transcript are discarded.
     @discardableResult
     func finish(at date: Date = Date()) -> SessionMeta? {

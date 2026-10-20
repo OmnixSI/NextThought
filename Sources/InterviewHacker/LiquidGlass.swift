@@ -193,6 +193,9 @@ struct SecondaryButtonStyle: ButtonStyle {
 /// Small glass chip; prominent chips are tinted with the brand color.
 struct ChipButtonStyle: ButtonStyle {
     var prominent = false
+    /// A solid surface instead of glass. Used where the window has no glass
+    /// background to sit on, so the chip keeps its own opacity.
+    var opaque = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 12.5, weight: prominent ? .semibold : .medium))
@@ -200,7 +203,7 @@ struct ChipButtonStyle: ButtonStyle {
             .padding(.horizontal, 12)
             .frame(minHeight: UI.chipHeight)
             .foregroundStyle(prominent ? Color.white : Color.primary)
-            .modifier(ChipSurface(prominent: prominent))
+            .modifier(ChipSurface(prominent: prominent, opaque: opaque))
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -210,12 +213,14 @@ struct ChipButtonStyle: ButtonStyle {
 struct GlassIconButtonStyle: ButtonStyle {
     var size: CGFloat = 34
     var tint: Color? = nil
+    /// A solid surface instead of glass; see `ChipButtonStyle.opaque`.
+    var opaque = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: size >= UI.barHeight ? 15 : 14, weight: .medium))
             .frame(width: size, height: size)
             .foregroundStyle(tint == nil ? Color.primary : Color.white)
-            .modifier(ChipSurface(prominent: tint != nil))
+            .modifier(ChipSurface(prominent: tint != nil, opaque: opaque))
             .scaleEffect(configuration.isPressed ? 0.94 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -340,8 +345,17 @@ struct ProminentFill: View {
 
 private struct ChipSurface: ViewModifier {
     var prominent: Bool
+    var opaque: Bool = false
     func body(content: Content) -> some View {
         if prominent { content.background(ProminentFill()) }
+        else if opaque {
+            // A solid, fully opaque chip: on a transparent window the glass
+            // version would have nothing to frost.
+            content.background {
+                Capsule().fill(Color(nsColor: .controlBackgroundColor))
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.22), lineWidth: 0.6))
+            }
+        }
         else { content.glassCapsule() }
     }
 }

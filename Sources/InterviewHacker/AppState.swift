@@ -20,6 +20,8 @@ final class AppState {
     var transcriptionBackend = AppState.loadTranscriptionBackend()
     var isImportingDocuments = false
     var isIndexingDocuments = false
+    /// Result line of the last material import ("已导入 3 份资料并归档为 Markdown").
+    var importStatus = ""
     var selectedExcerpts: [ContextExcerpt] = []
     /// Workspaces whose stage review is being written.
     var stageReviewing: Set<UUID> = []
@@ -77,6 +79,12 @@ final class AppState {
     var shareTestImage: NSImage?
     var reducedEffects = UserDefaults.standard.bool(forKey: "reducedEffects")
     var keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
+    /// Hide the teleprompter's liquid-glass background. The text, the border and the
+    /// buttons stay fully opaque so the answer stays readable on any wallpaper.
+    var teleprompterHideBackground = UserDefaults.standard.object(forKey: "teleprompterHideBackground") as? Bool ?? false
+    /// Simplified interface: secondary controls collapse into overflow menus and
+    /// long option lists are folded away, so the app has fewer visible knobs.
+    var simplifiedInterface = UserDefaults.standard.object(forKey: "simplifiedInterface") as? Bool ?? false
     /// "system", "light" or "dark". Migrates the old darkMode switch.
     var appearance = UserDefaults.standard.string(forKey: "appearance")
         ?? (UserDefaults.standard.object(forKey: "darkMode") as? Bool == true ? "dark" : "system")
@@ -109,6 +117,13 @@ final class AppState {
 
     // MARK: Assistant layout
     var assistantLayout = AssistantLayout.load()
+
+    // MARK: Environment setup
+    /// Progress of the one-click environment configuration / rebuild.
+    var environmentSetupSteps: [EnvironmentSetup.Step] = []
+    var isRunningEnvironmentSetup = false
+    /// Result line of the last environment setup run.
+    var environmentSetupSummary = ""
 
     // MARK: Web search
     var webSearchMode = WebSearchMode(rawValue: UserDefaults.standard.string(forKey: "webSearchMode") ?? "") ?? .auto
@@ -375,6 +390,19 @@ final class AppState {
         // NSApp is nil until NSApplication is created; the app delegate re-applies it.
         guard NSApp != nil else { return }
         NSApp.appearance = appearance == "dark" ? NSAppearance(named: .darkAqua) : appearance == "light" ? NSAppearance(named: .aqua) : nil
+    }
+
+    /// Switches the appearance with a short cross-fade so the switch does not flash.
+    /// AppKit cannot animate `NSApp.appearance` itself, so the change is made inside
+    /// `withAnimation` and the root view animates on the `appearance` value; this
+    /// makes the semantic colors cross-fade instead of snapping.
+    func setAppearance(_ value: String) {
+        guard value != appearance else { return }
+        withAnimation(.easeInOut(duration: 0.32)) {
+            appearance = value
+            applyAppearance()
+        }
+        updateSettings()
     }
 
     // MARK: Readiness
@@ -779,7 +807,7 @@ final class AppState {
                 answeringCandidateID = nil
                 Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "service_tier": request.serviceTier ?? "standard", "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
-                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic)
+                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic, screenshotPath: archive.archiveScreenshot(screenshot))
                 answerHistory.append(record)
                 insights.beginAnswer(id: id, text: result, since: answerStartedAt)
                 if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
@@ -981,6 +1009,50 @@ final class AppState {
 
     func setProfile(_ text: String) {
         profile = text
+    }
+
+    /// Runs the whole environment checklist and reports every step, so a
+    /// half-configured setup shows up as a named failed step.
+    func runQuickEnvironmentSetup() async {
+        guard !isRunningEnvironmentSetup else { return }
+        isRunningEnvironmentSetup = true
+        environmentSetupSteps = []
+        defer { isRunningEnvironmentSetup = false }
+        await EnvironmentSetup.quickSetup(state: self) { [weak self] step in
+            self?.updateEnvironmentStep(step)
+        }
+        environmentSetupSummary = environmentSetupSummaryText()
+        Diagnostics.record("environment.quick_setup", ["steps": String(environmentSetupSteps.count)])
+    }
+
+    /// Rebuilds the runtime environment (index, models, sources, folders) without
+    /// changing the user's choices.
+    func rebuildEnvironment() async {
+        guard !isRunningEnvironmentSetup else { return }
+        isRunningEnvironmentSetup = true
+        environmentSetupSteps = []
+        defer { isRunningEnvironmentSetup = false }
+        await EnvironmentSetup.rebuild(state: self) { [weak self] step in
+            self?.updateEnvironmentStep(step)
+        }
+        environmentSetupSummary = environmentSetupSummaryText()
+        Diagnostics.record("environment.rebuilt", ["steps": String(environmentSetupSteps.count)])
+    }
+
+    private func updateEnvironmentStep(_ step: EnvironmentSetup.Step) {
+        if let index = environmentSetupSteps.firstIndex(where: { $0.id == step.id }) {
+            environmentSetupSteps[index] = step
+        } else {
+            environmentSetupSteps.append(step)
+        }
+    }
+
+    private func environmentSetupSummaryText() -> String {
+        let failed = environmentSetupSteps.filter { $0.status == .failed }
+        if failed.isEmpty {
+            return "环境已经就绪：\(environmentSetupSteps.count) 项检查全部通过。"
+        }
+        return "有 \(failed.count) 项需要处理：\(failed.map(\.title).joined(separator: "、"))。"
     }
 
     func updateSettings() {

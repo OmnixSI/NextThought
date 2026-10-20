@@ -40,6 +40,9 @@ struct AnswerRecord: Identifiable, Codable, Equatable {
     var seconds: Double?
     var firstTokenSeconds: Double?
     var automatic: Bool
+    /// Screenshot that was sent with the question, relative to the session
+    /// folder ("screenshots/…"). Nil when the answer had no screenshot.
+    var screenshotPath: String?
 }
 
 struct CaptureTarget: Identifiable, Hashable {

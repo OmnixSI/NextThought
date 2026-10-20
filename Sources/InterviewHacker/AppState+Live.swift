@@ -253,6 +253,8 @@ extension AppState {
         UserDefaults.standard.set(cloudConsent, forKey: "cloudConsent")
         UserDefaults.standard.set(teleprompterOpacity, forKey: "teleprompterOpacity")
         UserDefaults.standard.set(teleprompterFontSize, forKey: "teleprompterFontSize")
+        UserDefaults.standard.set(teleprompterHideBackground, forKey: "teleprompterHideBackground")
+        UserDefaults.standard.set(simplifiedInterface, forKey: "simplifiedInterface")
         UserDefaults.standard.set(capturePrivacy, forKey: "capturePrivacy")
         TeleprompterController.shared.applyAppearance()
     }

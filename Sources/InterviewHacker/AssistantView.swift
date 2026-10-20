@@ -265,52 +265,56 @@ private struct ResizeHandle: View {
     }
 }
 
-/// Per-module actions in the 模块 menu.
-struct ModuleMenuItems: View {
-    @Environment(AppState.self) private var state
-    let module: AssistantModule
-
-    var body: some View {
-        let layout = state.assistantLayout
-        if layout.isDetached(module) {
-            Button("合并回主窗口") { state.dockModule(module) }
-        } else {
-            Button("弹出为独立窗口") { state.detachModule(module) }
-        }
-        if let slot = layout.slots.first(where: { $0.module == module }) {
-            Button(slot.column == 0 ? "移到右栏" : "移到左栏") { state.updateLayout { $0.place(module, column: 1 - slot.column, index: .max) } }
-            Button("上移") { state.updateLayout { $0.move(module, by: -1) } }
-            Button("下移") { state.updateLayout { $0.move(module, by: 1) } }
-        }
-        Divider()
-        if layout.isHidden(module) {
-            Button("显示") { state.updateLayout { $0.show(module) } }
-        } else {
-            Button("隐藏") { state.updateLayout { $0.hide(module) } }
-        }
-    }
-}
-
 /// 布局 menu in the composer bar: modules, presets, reset.
+/// The module list is deliberately flat: a menu of menus buried the most common
+/// action (show / hide a module) two levels deep and made the app feel
+/// confusing. Every module is one row now, and its state is written in the row.
 private struct LayoutMenu: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
         Menu {
-            Section("预设布局") {
-                ForEach(AssistantLayout.Preset.allCases) { preset in
-                    Toggle(preset.title, isOn: Binding(get: { state.assistantLayout == preset.layout },
-                                                       set: { _ in state.updateLayout { $0 = preset.layout } }))
+            if !state.simplifiedInterface {
+                Section("预设布局") {
+                    ForEach(AssistantLayout.Preset.allCases) { preset in
+                        Toggle(preset.title, isOn: Binding(get: { state.assistantLayout == preset.layout },
+                                                           set: { _ in state.updateLayout { $0 = preset.layout } }))
+                    }
                 }
             }
             Section("模块") {
                 ForEach(AssistantModule.allCases) { module in
-                    Menu {
-                        ModuleMenuItems(module: module)
-                    } label: {
+                    Button { toggle(module) } label: {
                         let layout = state.assistantLayout
-                        Label(module.title + (layout.isDetached(module) ? "（独立窗口）" : layout.isHidden(module) ? "（已隐藏）" : ""),
+                        Label(module.title + stateSuffix(layout, module),
                               systemImage: layout.isHidden(module) ? "eye.slash" : module.symbol)
+                    }
+                }
+            }
+            if !state.simplifiedInterface {
+                Section("独立窗口") {
+                    ForEach(AssistantModule.allCases) { module in
+                        Button { toggleDetached(module) } label: {
+                            let detached = state.assistantLayout.isDetached(module)
+                            Label(detached ? "合并回主窗口 · \(module.title)" : "弹出为独立窗口 · \(module.title)",
+                                  systemImage: detached ? "arrow.down.right.and.arrow.up.left" : "macwindow")
+                        }
+                    }
+                }
+                Section("位置") {
+                    ForEach(AssistantModule.allCases) { module in
+                        if let slot = state.assistantLayout.slots.first(where: { $0.module == module }) {
+                            Button { state.updateLayout { $0.place(module, column: 1 - slot.column, index: .max) } } label: {
+                                Label("\(module.title) · 移到\(slot.column == 0 ? "右栏" : "左栏")",
+                                      systemImage: slot.column == 0 ? "arrow.right" : "arrow.left")
+                            }
+                            Button { state.updateLayout { $0.move(module, by: -1) } } label: {
+                                Label("\(module.title) · 上移", systemImage: "arrow.up")
+                            }
+                            Button { state.updateLayout { $0.move(module, by: 1) } } label: {
+                                Label("\(module.title) · 下移", systemImage: "arrow.down")
+                            }
+                        }
                     }
                 }
             }
@@ -321,7 +325,39 @@ private struct LayoutMenu: View {
         }
         .menuStyle(.button).menuIndicator(.hidden).fixedSize()
         .buttonStyle(GlassIconButtonStyle(size: 40))
-        .help("模块与布局：选一个预设布局，显示 / 隐藏、移动模块或弹出为独立窗口。模块之间的空隙可以拖动调整大小。")
+        .help(state.simplifiedInterface
+              ? "简化模式：这里只有模块，点一下就显示或隐藏；模块之间的空隙可以拖动调整大小。"
+              : "模块与布局：点模块可显示 / 隐藏或弹出为独立窗口，也可选一个预设布局。模块之间的空隙可以拖动调整大小。")
+    }
+
+    /// One click per module: hidden → show, in its own window → back into the
+    /// main window, visible → hide. The row text says which of the three it is.
+    private func toggle(_ module: AssistantModule) {
+        let layout = state.assistantLayout
+        if layout.isHidden(module) {
+            state.updateLayout { $0.show(module) }
+        } else if layout.isDetached(module) {
+            state.dockModule(module)
+        } else {
+            state.updateLayout { $0.hide(module) }
+        }
+    }
+
+    /// Pops a module out into its own window, or merges it back.
+    private func toggleDetached(_ module: AssistantModule) {
+        if state.assistantLayout.isDetached(module) {
+            state.dockModule(module)
+        } else {
+            state.detachModule(module)
+        }
+    }
+
+    /// The module's current state, written into the row so the list explains itself:
+    /// all three possible states are visible without opening anything.
+    private func stateSuffix(_ layout: AssistantLayout, _ module: AssistantModule) -> String {
+        if layout.isDetached(module) { return "（独立窗口）" }
+        if layout.isHidden(module) { return "（已隐藏）" }
+        return "（显示）"
     }
 }
 
@@ -439,11 +475,18 @@ private struct SetupCard: View {
                 Button { state.section = .materials } label: {
                     Label("资料 \(state.documents.filter(\.enabled).count) · 题库 \(state.activeWorkspace.questionBank.count)", systemImage: "doc.text")
                 }.buttonStyle(ChipButtonStyle()).help("编辑这个场景的资料、回答要求、经验库与题库")
-                Spacer(minLength: 4)
-                Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(.secondary)
-                MenuPicker(selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择音频来源")
-                    .frame(maxWidth: 260, alignment: .trailing)
-                    .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
+                Spacer(minLength: 8)
+                // The speaker icon belongs to the picker, so both live in one
+                // fixed-size unit: the picker used to reserve a 260pt frame, which
+                // stranded the icon hundreds of points away from the visible title.
+                HStack(spacing: 4) {
+                    Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(.secondary)
+                    MenuPicker(selection: $state.selectedTargetID,
+                               options: state.captureTargets.map { ($0.id, SetupCard.shortTitle($0.title)) },
+                               placeholder: "选择音频来源")
+                        .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
+                }
+                .fixedSize(horizontal: true, vertical: false)
                 Button { Task { await state.refreshTargets() } } label: { Image(systemName: "arrow.clockwise") }
                     .buttonStyle(GlassIconButtonStyle(size: 28)).help("刷新窗口列表")
                 Toggle(isOn: $state.microphoneEnabled) { Image(systemName: "mic.fill") }
@@ -454,6 +497,12 @@ private struct SetupCard: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .card()
+    }
+
+    /// Window titles can be arbitrarily long; truncating them keeps the
+    /// icon + picker unit compact instead of letting the row grow without bound.
+    private static func shortTitle(_ title: String) -> String {
+        title.count > 24 ? String(title.prefix(24)) + "…" : title
     }
 }
 
@@ -868,23 +917,87 @@ private struct WebSourcesList: View {
     }
 }
 
+/// Lays its subviews left to right and wraps onto a new line when the row is full.
+/// The answer card uses it so a chip label is never truncated and the buttons
+/// never get squeezed into an unreadable sliver.
+private struct WrappingHStack: Layout {
+    var spacing: CGFloat = 8
+    var lineSpacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        let lines = lines(subviews: subviews, maxWidth: maxWidth)
+        let width = lines.map(\.width).max() ?? 0
+        let height = lines.reduce(0) { $0 + $1.height } + lineSpacing * CGFloat(max(0, lines.count - 1))
+        return CGSize(width: min(width, maxWidth), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let lines = lines(subviews: subviews, maxWidth: bounds.width)
+        var y = bounds.minY
+        for line in lines {
+            var x = bounds.minX
+            for item in line.items {
+                subviews[item.index].place(
+                    at: CGPoint(x: x, y: y + (line.height - item.size.height) / 2),
+                    anchor: .topLeading,
+                    proposal: ProposedViewSize(item.size)
+                )
+                x += item.size.width + spacing
+            }
+            y += line.height + lineSpacing
+        }
+    }
+
+    private struct Item { let index: Int; let size: CGSize }
+    private struct Line { var items: [Item] = []; var width: CGFloat = 0; var height: CGFloat = 0 }
+
+    /// Greedy line breaking: a subview that no longer fits starts a new line.
+    private func lines(subviews: Subviews, maxWidth: CGFloat) -> [Line] {
+        var result: [Line] = []
+        var current = Line()
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let needed = current.items.isEmpty ? size.width : current.width + spacing + size.width
+            if needed > maxWidth, !current.items.isEmpty {
+                result.append(current)
+                current = Line(items: [Item(index: index, size: size)], width: size.width, height: size.height)
+            } else {
+                current.items.append(Item(index: index, size: size))
+                current.width = needed
+                current.height = max(current.height, size.height)
+            }
+        }
+        if !current.items.isEmpty { result.append(current) }
+        return result
+    }
+}
+
 private struct AnswerFooter: View {
     @Environment(AppState.self) private var state
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+            // The action buttons wrap instead of squeezing each other, and the
+            // meta line moved to its own row: that way "重新生成" / "联网查一下"
+            // are never clipped and never overlap the timing text.
+            WrappingHStack(spacing: 8, lineSpacing: 6) {
                 Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }
                     .buttonStyle(ChipButtonStyle()).disabled(state.displayedAnswer.isEmpty)
+                    .fixedSize(horizontal: true, vertical: false)
                 Button { state.regenerate() } label: { Label("重新生成", systemImage: "arrow.clockwise") }
                     .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering || state.currentQuestion.isEmpty)
+                    .fixedSize(horizontal: true, vertical: false)
                 if state.webSearchMode != .off, state.displayedWebLookup == nil {
                     Button { state.lookUpDisplayedAnswer() } label: { Label("联网查一下", systemImage: "globe") }
                         .buttonStyle(ChipButtonStyle()).disabled(state.displayedAnswer.isEmpty || state.displayedQuestion.isEmpty)
                         .help("用联网搜索的最新信息重新回答这个问题；快速回答保留，可以切换")
+                        .fixedSize(horizontal: true, vertical: false)
                 }
-                Spacer()
-                Text(meta).font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
             }
+            Text(meta)
+                .font(.system(size: 11)).foregroundStyle(.tertiary)
+                .lineLimit(1).truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             if !state.appServerNote.isEmpty {
                 Text(state.appServerNote).font(.caption).foregroundStyle(.orange)
             }
@@ -935,7 +1048,9 @@ private struct ComposerDock: View {
                 QuestionComposer()
                 GlassGroup(spacing: 8) { HStack(spacing: 8) {
                     LayoutMenu()
-                    if state.answerBackend != .openAICompatible && state.codexFastAvailable {
+                    // Simplified mode folds the secondary switches away, so the
+                    // composer only shows the controls people actually need.
+                    if state.answerBackend != .openAICompatible && state.codexFastAvailable && !state.simplifiedInterface {
                         FastModeToggle()
                     }
                     Button { state.captureScreenshot(.region) } label: { Image(systemName: "viewfinder") }
