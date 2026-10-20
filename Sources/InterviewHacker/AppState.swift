@@ -453,7 +453,10 @@ final class AppState {
             if cloudKey.isEmpty { return "请填写云端识别 API Key" }
         }
         if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
-        if captureTargets.isEmpty || selectedTargetID.isEmpty { return "请检查屏幕与系统音频权限" }
+        if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
+        if microphoneEnabled && microphoneAccess != .granted { return "请先允许麦克风权限" }
+        if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测对话服务…" : "请先连接对话回答服务" }
+        if !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
         return "可以开始"
     }
 
@@ -537,6 +540,7 @@ final class AppState {
         }
         guard !isRunning, !isChangingSession else { return }
         guard !isDownloadingModel else { return }
+        guard answerEngineReady else { errorMessage = "请先连接对话回答服务，再开始实时辅助。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
         cancelAnswer()
