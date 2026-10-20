@@ -53,9 +53,31 @@ public struct SessionAnswerEvent: Codable, Sendable, Identifiable, Equatable {
     public var seconds: Double?
     public var firstTokenSeconds: Double?
     public var automatic: Bool
-    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool) {
+    /// Relative path of the screenshot that was sent with the question, inside the
+    /// session folder (`screenshots/…`). Nil for answers without a screenshot.
+    public var screenshotPath: String?
+    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool, screenshotPath: String? = nil) {
         self.id = id; self.date = date; self.question = question; self.answer = answer; self.model = model
         self.seconds = seconds; self.firstTokenSeconds = firstTokenSeconds; self.automatic = automatic
+        self.screenshotPath = screenshotPath
+    }
+
+    // Tolerant decoding: answers saved before screenshot archiving have no path.
+    enum CodingKeys: String, CodingKey {
+        case id, date, question, answer, model, seconds, firstTokenSeconds, automatic, screenshotPath
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        date = try c.decode(Date.self, forKey: .date)
+        question = try c.decode(String.self, forKey: .question)
+        answer = try c.decode(String.self, forKey: .answer)
+        model = try c.decode(String.self, forKey: .model)
+        seconds = try c.decodeIfPresent(Double.self, forKey: .seconds)
+        firstTokenSeconds = try c.decodeIfPresent(Double.self, forKey: .firstTokenSeconds)
+        automatic = try c.decodeIfPresent(Bool.self, forKey: .automatic) ?? false
+        screenshotPath = try c.decodeIfPresent(String.self, forKey: .screenshotPath)
     }
 }
 

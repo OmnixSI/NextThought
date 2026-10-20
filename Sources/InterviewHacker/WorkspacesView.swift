@@ -204,7 +204,9 @@ private struct WorkspaceSkillsSection: View {
 private struct MaterialsTab: View {
     @Environment(AppState.self) private var state
     @State private var importingCategory: String?
+    @State private var isFileImporterPresented = false
     @State private var dropTargeted = false
+    @State private var showsAllFields = false
 
     private var allowedTypes: [UTType] { DocumentImporter.supportedExtensions.compactMap { UTType(filenameExtension: $0) } }
 
@@ -213,10 +215,30 @@ private struct MaterialsTab: View {
         let profile = ModeProfile.for(state.sessionMode)
         // Inputs specific to the mode.
         VStack(alignment: .leading, spacing: 10) {
-            Label("\(state.sessionMode.title)信息", systemImage: "list.bullet.rectangle").font(.system(size: 13, weight: .semibold))
-            ForEach(profile.fields) { field in
+            HStack {
+                Label("\(state.sessionMode.title)信息", systemImage: "list.bullet.rectangle").font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Text("只有前两项是必填的，其余可以稍后补充")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            // Only the two most important fields are shown first: a scenario that
+            // demands eight inputs before it can be used is a scenario nobody
+            // finishes setting up.
+            ForEach(leadingFields(profile)) { field in
                 FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
                                                         set: { state.activeWorkspace.fields[field.id] = $0 }))
+            }
+            if profile.fields.count > leadingFields(profile).count {
+                DisclosureGroup(isExpanded: $showsAllFields) {
+                    ForEach(trailingFields(profile)) { field in
+                        FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
+                                                                set: { state.activeWorkspace.fields[field.id] = $0 }))
+                    }
+                } label: {
+                    Text("更多背景（可选）· \(profile.fields.count - leadingFields(profile).count) 项")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .padding(.top, 2)
             }
             FieldEditor(field: ModeField("notes", "其他背景", "任何希望回答时参考的事实：经历、数字、对方偏好…", long: true), text: $state.profile)
         }
@@ -241,18 +263,25 @@ private struct MaterialsTab: View {
                 Label("资料 \(state.documents.count)/\(AppState.maxDocuments)", systemImage: "doc.on.doc").font(.system(size: 13, weight: .semibold))
                 Spacer()
                 if state.isImportingDocuments || state.isIndexingDocuments { ProgressView().controlSize(.small) }
+                Button { importingCategory = nil; isFileImporterPresented = true } label: {
+                    Label("导入资料", systemImage: "square.and.arrow.down")
+                }
+                .buttonStyle(ChipButtonStyle(prominent: true)).disabled(state.isImportingDocuments)
+                .help("一次可以选多个文件或整个文件夹：系统转成 Markdown、在后台归档，并按内容自动归类")
+            }
+            if !state.importStatus.isEmpty {
+                Text(state.importStatus).font(.caption).foregroundStyle(.secondary)
             }
             ForEach(categories(profile), id: \.self) { category in
                 categorySection(category)
             }
-            Text("支持 PDF（含扫描件 OCR）、Word、PowerPoint、Excel、Markdown、TXT、RTF、HTML 与图片。文件在本机解析；回答时只把与问题相关的片段交给模型，并标注来源。也可以把文件直接拖到这里（归入“其他”）。")
+            Text("支持 PDF（含扫描件 OCR）、Word、PowerPoint、Excel、Markdown、TXT、RTF、HTML 与图片。可以一次拖入多个文件甚至整个文件夹：系统会把它们转成结构化 Markdown、在后台静默归档，并按内容自动归类。回答时只把与问题相关的片段交给模型，并标注来源。")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 12).strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [6])).foregroundStyle(dropTargeted ? Color.accentColor : Color.clear))
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in loadDropped(providers); return true }
-        .fileImporter(isPresented: Binding(get: { importingCategory != nil }, set: { if !$0 { importingCategory = nil } }),
-                      allowedContentTypes: allowedTypes, allowsMultipleSelection: true) { result in
+        .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: allowedTypes, allowsMultipleSelection: true) { result in
             let category = importingCategory
             importingCategory = nil
             switch result {
@@ -282,6 +311,15 @@ private struct MaterialsTab: View {
         return result
     }
 
+    /// The fields that are always visible; the rest wait behind a disclosure.
+    private func leadingFields(_ profile: ModeProfile) -> [ModeField] {
+        Array(profile.fields.prefix(2))
+    }
+
+    private func trailingFields(_ profile: ModeProfile) -> [ModeField] {
+        Array(profile.fields.dropFirst(2))
+    }
+
     private func categorySection(_ category: String) -> some View {
         let items = state.documents.filter { ($0.category ?? "其他") == category }
         return VStack(alignment: .leading, spacing: 6) {
@@ -289,7 +327,7 @@ private struct MaterialsTab: View {
                 Text(category).font(.system(size: 12, weight: .semibold))
                 Text("\(items.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
-                Button { importingCategory = category } label: { Label("添加", systemImage: "plus") }
+                Button { importingCategory = category; isFileImporterPresented = true } label: { Label("添加", systemImage: "plus") }
                     .buttonStyle(ChipButtonStyle()).disabled(state.isImportingDocuments)
             }
             ForEach(items) { document in
@@ -300,9 +338,20 @@ private struct MaterialsTab: View {
                     Image(systemName: icon(for: document.name)).foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(document.name).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
-                        Text("\(document.pages.count) 页 · \(document.characterCount) 字符").font(.caption2).foregroundStyle(.secondary)
+                        Text("\(document.pages.count) 段 · \(document.characterCount) 字符").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    if let format = document.sourceFormat {
+                        Text(format.uppercased())
+                            .font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
+                            .padding(.horizontal, 4).padding(.vertical, 1)
+                            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                            .help("已转成 Markdown 归档")
                     }
                     Spacer()
+                    if let path = document.markdownPath, FileManager.default.fileExists(atPath: path) {
+                        Button { NSWorkspace.shared.open(URL(fileURLWithPath: path)) } label: { Image(systemName: "doc.richtext") }
+                            .buttonStyle(.borderless).help("打开归档的 Markdown")
+                    }
                     Menu {
                         ForEach(categories(ModeProfile.for(state.sessionMode)), id: \.self) { target in
                             Button(target) { state.setDocumentCategory(document.id, category: target) }
@@ -333,9 +382,17 @@ private struct MaterialsTab: View {
             for provider in providers {
                 guard let item = try? await provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) else { continue }
                 let url = (item as? URL) ?? (item as? Data).flatMap { URL(dataRepresentation: $0, relativeTo: nil) }
-                if let url, DocumentImporter.supportedExtensions.contains(url.pathExtension.lowercased()) { urls.append(url) }
+                guard let url else { continue }
+                // A dropped folder is walked, so a whole set of materials can be
+                // dropped in at once.
+                urls.append(contentsOf: DocumentImporter.expand(url))
             }
-            if urls.isEmpty { state.errorMessage = "拖入的文件类型不受支持。" } else { state.importDocuments(urls, category: "其他") }
+            if urls.isEmpty {
+                state.errorMessage = "拖入的文件类型不受支持。"
+            } else {
+                // No category: the files are filed automatically.
+                state.importDocuments(urls)
+            }
         }
     }
 }

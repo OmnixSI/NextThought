@@ -8,37 +8,84 @@ import UniformTypeIdentifiers
 extension AppState {
     // MARK: Materials
 
-    static let maxDocuments = 16
+    static let maxDocuments = 40
 
+    /// Imports files into the current scenario.
+    ///
+    /// Every file is converted to Markdown, archived on disk, filed into the
+    /// material slot that fits it and added to the retrieval index in one go, so
+    /// the user can drop a whole folder in without sorting it by hand. A file
+    /// that cannot be read only fails that one file.
     func importDocuments(_ urls: [URL], category: String? = nil) {
         guard !isImportingDocuments else { return }
-        guard documents.count + urls.count <= Self.maxDocuments else {
-            errorMessage = "每个场景最多 \(Self.maxDocuments) 份资料，请先移除不需要的文件。"; return
-        }
         let workspaceID = activeWorkspace.id
+        let categories = ModeProfile.for(activeWorkspace.mode).documentCategories
         isImportingDocuments = true
+        importStatus = "正在把 \(urls.count) 个文件转成 Markdown…"
         importTask = Task {
             defer { isImportingDocuments = false; importTask = nil }
             do {
-                let imported = try await DocumentImporter.read(urls)
+                let outcome = try await DocumentImporter.read(urls, categories: categories)
                 try Task.checkCancellation()
                 guard var workspace = workspaces.workspace(workspaceID) else { return }
-                guard (workspace.documents + imported).reduce(0, { $0 + $1.characterCount }) <= 600_000 else {
-                    throw AppFailure.capture("这个场景的资料总量超过 60 万字，请只保留本次相关的章节。")
+                guard workspace.documents.count + outcome.documents.count <= Self.maxDocuments else {
+                    throw AppFailure.capture("每个场景最多 \(Self.maxDocuments) 份资料，请先移除不需要的文件。")
                 }
                 var names = Set(workspace.documents.map(\.name))
-                for var document in imported {
+                var total = workspace.documents.reduce(0) { $0 + $1.characterCount }
+                var added = 0
+                var skipped = 0
+                for imported in outcome.documents {
+                    // The size limit is per scenario, not per import: a file that
+                    // does not fit is reported instead of discarding the files
+                    // that do fit.
+                    if total + imported.characterCount > 600_000 {
+                        skipped += 1
+                        continue
+                    }
+                    // The Markdown is archived silently next to the other app
+                    // data; that file is the material the model reads.
+                    let archived = try? MaterialArchive.archive(imported.markdown, name: imported.name,
+                                                               format: imported.format, workspaceID: workspaceID)
+                    var document = ContextDocument(name: imported.fileName,
+                                                  pages: imported.sections,
+                                                  enabled: true,
+                                                  category: category ?? imported.suggestedCategory,
+                                                  markdownPath: archived?.path,
+                                                  sourceFormat: imported.format)
                     let original = document.name
                     var suffix = 2
                     while names.contains(document.name) { document.name = "\(original) (\(suffix))"; suffix += 1 }
                     names.insert(document.name)
-                    document.category = category
                     workspace.documents.append(document)
+                    total += imported.characterCount
+                    added += 1
+                }
+                guard added > 0 else {
+                    throw AppFailure.capture("这个场景的资料总量超过 60 万字，请先移除部分资料再导入。")
                 }
                 workspaces.update(workspace)
                 rebuildContextIndex()
-            } catch is CancellationError {} catch { errorMessage = "资料导入失败：\(error.localizedDescription)" }
+                importStatus = Self.importSummary(added: added, failures: outcome.failures.count, skipped: skipped)
+                if !outcome.failures.isEmpty {
+                    errorMessage = "有 \(outcome.failures.count) 个文件没有导入：\n"
+                        + outcome.failures.map { "\($0.name)：\($0.message)" }.joined(separator: "\n")
+                }
+            } catch is CancellationError {
+                importStatus = ""
+            } catch {
+                importStatus = ""
+                errorMessage = "资料导入失败：\(error.localizedDescription)"
+            }
         }
+    }
+
+    private static func importSummary(added: Int, failures: Int, skipped: Int) -> String {
+        var parts = ["已导入 \(added) 份资料"]
+        if added > 0 { parts.append("已归档为 Markdown") }
+        if failures > 0 { parts.append("\(failures) 个文件失败") }
+        if skipped > 0 { parts.append("\(skipped) 个文件超出 60 万字上限") }
+        return parts.joined(separator: " · ")
     }
 
     func rebuildContextIndex() {

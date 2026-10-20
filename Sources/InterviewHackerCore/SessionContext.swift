@@ -43,9 +43,32 @@ public struct ContextDocument: Identifiable, Codable, Sendable, Equatable {
     public var enabled: Bool
     /// Material slot within the workspace (简历 / 论文 / 议程 …); nil for older files.
     public var category: String?
+    /// Absolute path of the archived Markdown file of this material, when the file
+    /// was imported through the Markdown pipeline. Nil for older files.
+    public var markdownPath: String?
+    /// Source format of the imported file (pdf / docx / pptx / md …), for the UI.
+    public var sourceFormat: String?
     public var characterCount: Int { pages.reduce(0) { $0 + $1.count } }
-    public init(id: UUID = UUID(), name: String, pages: [String], enabled: Bool = true, category: String? = nil) {
+    public init(id: UUID = UUID(), name: String, pages: [String], enabled: Bool = true, category: String? = nil,
+                markdownPath: String? = nil, sourceFormat: String? = nil) {
         self.id = id; self.name = name; self.pages = pages; self.enabled = enabled; self.category = category
+        self.markdownPath = markdownPath; self.sourceFormat = sourceFormat
+    }
+
+    // Tolerant decoding: materials imported before the Markdown pipeline have no path.
+    enum CodingKeys: String, CodingKey {
+        case id, name, pages, enabled, category, markdownPath, sourceFormat
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        pages = try c.decodeIfPresent([String].self, forKey: .pages) ?? []
+        enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        category = try c.decodeIfPresent(String.self, forKey: .category)
+        markdownPath = try c.decodeIfPresent(String.self, forKey: .markdownPath)
+        sourceFormat = try c.decodeIfPresent(String.self, forKey: .sourceFormat)
     }
     /// Name shown to the model, e.g. "[简历] resume.pdf".
     public var labeledName: String {

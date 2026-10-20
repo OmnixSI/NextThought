@@ -10,6 +10,21 @@ final class TeleprompterController {
     static let shared = TeleprompterController()
     private var panel: NSPanel?
     private var panicHidden: [NSWindow] = []
+    /// Whether the panel is click-through right now.
+    private var clickThroughEnabled = false
+    /// A tiny always-interactive panel that floats on top of the click-through
+    /// button.
+    ///
+    /// `NSPanel.ignoresMouseEvents` applies to a whole window, so a
+    /// click-through panel cannot keep one control alive on its own. Giving that
+    /// control its own window is the only way to let everything else in the
+    /// teleprompter pass clicks through while the button itself stays usable.
+    private var controlPanel: NSPanel?
+    /// Screen frame of the click-through button, in AppKit screen coordinates.
+    private var controlScreenFrame: CGRect = .zero
+    /// Recomputes the control frame; installed by the view hosting the button.
+    var refreshControlFrame: (() -> Void)?
+    private var moveObservers: [NSObjectProtocol] = []
 
     enum Placement: String, CaseIterable, Identifiable {
         case camera, bottom, right
@@ -26,7 +41,11 @@ final class TeleprompterController {
     var isVisible: Bool { panel?.isVisible == true }
 
     func toggle() {
-        if let panel, panel.isVisible { panel.orderOut(nil); return }
+        if let panel, panel.isVisible {
+            panel.orderOut(nil)
+            controlPanel?.orderOut(nil)
+            return
+        }
         show()
     }
 
@@ -53,14 +72,47 @@ final class TeleprompterController {
                 next.standardWindowButton(button)?.isHidden = true
             }
             // System window shadow: computed by the window server, free while dragging.
-            next.hasShadow = true
+            // A fully transparent window must not cast one, or the border would
+            // sit on a dark halo.
+            next.hasShadow = !AppState.shared.teleprompterHideBackground
             next.contentView = NSHostingView(rootView: TeleprompterView().environment(AppState.shared))
             panel = next
+            controlPanel = makeControlPanel(level: next.level)
+            // The control frame is in screen coordinates: it has to follow the
+            // panel when the user drags it.
+            moveObservers = [NSWindow.didMoveNotification, NSWindow.didResizeNotification].map { name in
+                NotificationCenter.default.addObserver(forName: name, object: next, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.refreshControlFrame?() }
+                }
+            }
         }
         applyAppearance()
         applyClickThrough(AppState.shared.clickThrough)
         // Does not activate the app or move keyboard focus away from the meeting.
         panel?.orderFrontRegardless()
+        // The control panel has to end up in front of the teleprompter.
+        updateControlPanelVisibility()
+    }
+
+    /// The small always-interactive panel that carries the click-through button
+    /// while the teleprompter is click-through.
+    private func makeControlPanel(level: NSWindow.Level) -> NSPanel {
+        let control = NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        control.isFloatingPanel = true
+        control.level = level
+        control.hidesOnDeactivate = false
+        control.isReleasedWhenClosed = false
+        control.becomesKeyOnlyIfNeeded = true
+        control.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        control.backgroundColor = .clear
+        control.isOpaque = false
+        control.hasShadow = false
+        // The point of this window: it is never click-through.
+        control.ignoresMouseEvents = false
+        let overlay = ControlOverlayView()
+        overlay.onClick = { AppState.shared.toggleClickThrough() }
+        control.contentView = overlay
+        return control
     }
 
     func showOnlyTeleprompter() {
@@ -98,7 +150,10 @@ final class TeleprompterController {
     /// ScreenCaptureKit-based recorders may still capture it. Use the share test.
     func applyAppearance() {
         let state = AppState.shared
-        let opacity = min(1, max(0.35, state.teleprompterOpacity))
+        // With the background hidden the window itself must stay fully opaque:
+        // the opacity slider may not fade the text, the border or the buttons.
+        // The transparency then lives in the background layer alone.
+        let opacity = state.teleprompterHideBackground ? 1.0 : min(1, max(0.35, state.teleprompterOpacity))
         panel?.alphaValue = opacity >= 0.99 ? 1 : CGFloat(opacity)
         applyPrivacy(state.capturePrivacy)
     }
@@ -108,8 +163,37 @@ final class TeleprompterController {
         panel?.sharingType = enabled ? .none : .readOnly
     }
 
+    /// Click-through, with one exception: the button that turns it off.
+    ///
+    /// `ignoresMouseEvents` applies to a whole window, so a click-through panel
+    /// cannot keep one control alive on its own. The button therefore gets its
+    /// own tiny window that floats above the teleprompter: every other part of
+    /// the overlay passes clicks through to the meeting app, while the button
+    /// stays pressable — so click-through can always be turned off again.
     func applyClickThrough(_ enabled: Bool) {
+        clickThroughEnabled = enabled
         panel?.ignoresMouseEvents = enabled
+        updateControlPanelVisibility()
+    }
+
+    /// The screen frame of the click-through button.
+    func setControlFrame(_ frame: CGRect) {
+        // The two corners arrive in opposite orders (screen coordinates grow
+        // upwards), so the rect has to be normalized before it is used.
+        controlScreenFrame = frame.standardized
+        updateControlPanelVisibility()
+    }
+
+    /// Shows the control panel exactly over the button while click-through is
+    /// on, and hides it otherwise (then the button in the panel itself works).
+    private func updateControlPanelVisibility() {
+        guard let control = controlPanel else { return }
+        guard clickThroughEnabled, controlScreenFrame != .zero else {
+            control.orderOut(nil)
+            return
+        }
+        control.setFrame(controlScreenFrame, display: true)
+        control.orderFrontRegardless()
     }
 
     /// One key hides everything; pressing it again restores the same windows.
@@ -121,6 +205,7 @@ final class TeleprompterController {
         }
         panicHidden = NSApp.windows.filter(\.isVisible)
         panicHidden.forEach { $0.orderOut(nil) }
+        controlPanel?.orderOut(nil)
     }
 }
 
@@ -130,9 +215,17 @@ private final class OverlayPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
 
+/// An invisible view that catches the click on the click-through button while
+/// the teleprompter itself passes every click through.
+private final class ControlOverlayView: NSView {
+    var onClick: (() -> Void)?
+    override func mouseDown(with event: NSEvent) { onClick?() }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func hitTest(_ point: NSPoint) -> NSView? { self }
+}
+
 private struct TeleprompterView: View {
     @Environment(AppState.self) private var state
-    @State private var hovering = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -142,7 +235,14 @@ private struct TeleprompterView: View {
                     .font(.system(size: max(12, state.teleprompterFontSize * 0.6), weight: .medium))
                     .foregroundStyle(.secondary).lineLimit(2)
                     .padding(.horizontal, 12).padding(.vertical, 6)
-                    .glassCapsule(tint: Brand.accent.opacity(0.15))
+                    .glassCapsule(tint: state.teleprompterHideBackground ? nil : Brand.accent.opacity(0.15))
+                    .background {
+                        // With the background hidden the glass has nothing to
+                        // frost, so the question gets a solid surface instead.
+                        if state.teleprompterHideBackground {
+                            Capsule().fill(Color(nsColor: .controlBackgroundColor))
+                        }
+                    }
             }
             ScrollViewReader { proxy in
                 ScrollView {
@@ -161,14 +261,34 @@ private struct TeleprompterView: View {
                     if state.isAnswering { proxy.scrollTo("end", anchor: .bottom) }
                 }
             }
-            if hovering || !state.clickThrough { footer }
+            // In click-through mode the panel ignores the mouse, so the footer
+            // could never be used; only show it when the panel is clickable.
+            if !state.clickThrough { footer }
         }
         .padding(18)
-        .glassBackground(cornerRadius: 26)
+        .background {
+            if state.teleprompterHideBackground {
+                // The glass background disappears completely; only the text, the
+                // border and the buttons are left, each with its own opacity.
+                Color.clear
+            } else {
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color.clear)
+                    .glassSurface(cornerRadius: 26, tint: nil)
+            }
+        }
+        .overlay {
+            if state.teleprompterHideBackground {
+                // A fully opaque border, so the panel is still readable when it
+                // floats over a busy screen.
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .strokeBorder(Brand.accent, lineWidth: 1.5)
+            }
+        }
         .padding(2)
         .foregroundStyle(.primary)
         .preferredColorScheme(state.colorScheme)
-        .onHover { hovering = $0 }
+        .animation(.easeInOut(duration: 0.32), value: state.appearance)
     }
 
     private var header: some View {
@@ -184,32 +304,72 @@ private struct TeleprompterView: View {
             }
             Spacer()
             if let position = state.historyPositionText {
-                Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }.buttonStyle(GlassIconButtonStyle(size: 26))
+                Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }.buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground))
                 Text(position).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }.buttonStyle(GlassIconButtonStyle(size: 26))
+                Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }.buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground))
             }
             Button { state.teleprompterFontSize = max(14, state.teleprompterFontSize - 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.smaller") }
-                .buttonStyle(GlassIconButtonStyle(size: 26)).help("缩小文字")
+                .buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground)).help("缩小文字")
             Button { state.teleprompterFontSize = min(44, state.teleprompterFontSize + 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.larger") }
-                .buttonStyle(GlassIconButtonStyle(size: 26)).help("放大文字")
+                .buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground)).help("放大文字")
+            // This button is the way out of click-through, so it must keep
+            // receiving clicks even when the rest of the panel does not.
             Button { state.toggleClickThrough() } label: { Image(systemName: state.clickThrough ? "cursorarrow.slash" : "cursorarrow") }
-                .buttonStyle(GlassIconButtonStyle(size: 26, tint: state.clickThrough ? Brand.accent : nil)).help("鼠标穿透 · \(state.shortcutLabel(.toggleClickThrough))")
+                .buttonStyle(GlassIconButtonStyle(size: 26, tint: state.clickThrough ? Brand.accent : nil, opaque: state.teleprompterHideBackground))
+                .background(ControlFrameReporter())
+                .help("鼠标穿透 · \(state.shortcutLabel(.toggleClickThrough))")
             Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "xmark") }
-                .buttonStyle(GlassIconButtonStyle(size: 26)).help("隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
+                .buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground)).help("隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
         } }
     }
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 8) {
-            RefinementBar(compact: true)
+            RefinementBar(compact: true, opaque: state.teleprompterHideBackground)
             HStack {
                 Button { state.forceAnswerCurrent() } label: { Label("回答", systemImage: "bolt.fill") }.buttonStyle(ChipButtonStyle(prominent: true))
-                Button { state.cancelAnswer() } label: { Label("取消", systemImage: "stop.fill") }.buttonStyle(ChipButtonStyle()).disabled(!state.isAnswering)
-                Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }.buttonStyle(ChipButtonStyle())
-                Button("工作台") { TeleprompterController.shared.showWorkbench() }.buttonStyle(ChipButtonStyle())
+                Button { state.cancelAnswer() } label: { Label("取消", systemImage: "stop.fill") }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground)).disabled(!state.isAnswering)
+                Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground))
+                Button("工作台") { TeleprompterController.shared.showWorkbench() }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground))
                 Spacer()
                 Text("\(state.shortcutLabel(.forceAnswer)) 回答 · \(state.shortcutLabel(.panicHide)) 隐藏").font(.caption2).foregroundStyle(.secondary)
             }
         }
     }
+}
+
+/// Reports the screen frame of the click-through button, so the panel can tell
+/// when the cursor is over it and stay interactive there.
+private struct ControlFrameReporter: NSViewRepresentable {
+    typealias NSViewType = FrameReportingView
+
+    func makeNSView(context: Context) -> FrameReportingView {
+        let view = FrameReportingView()
+        // Weak on both sides: the view holds the closure and the singleton
+        // controller holds the closure too, so a strong capture would leak the
+        // view for the lifetime of the app.
+        view.onChange = { [weak view] in
+            guard let view, let window = view.window else { return }
+            let inWindow = view.convert(view.bounds, to: nil)
+            // Two corners, because NSWindow converts points, not rectangles.
+            let topLeft = window.convertPoint(toScreen: NSPoint(x: inWindow.minX, y: inWindow.maxY))
+            let bottomRight = window.convertPoint(toScreen: NSPoint(x: inWindow.maxX, y: inWindow.minY))
+            TeleprompterController.shared.setControlFrame(CGRect(x: topLeft.x, y: topLeft.y,
+                                                                 width: bottomRight.x - topLeft.x,
+                                                                 height: bottomRight.y - topLeft.y))
+        }
+        TeleprompterController.shared.refreshControlFrame = { [weak view] in view?.onChange?() }
+        return view
+    }
+
+    func updateNSView(_ nsView: FrameReportingView, context: Context) {
+        nsView.onChange?()
+    }
+}
+
+/// A view that reports whenever its position in the window changes.
+private final class FrameReportingView: NSView {
+    var onChange: (() -> Void)?
+    override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); onChange?() }
+    override func layout() { super.layout(); onChange?() }
 }

@@ -25,6 +25,10 @@ struct ContentView: View {
         .tint(Brand.accent)
         .foregroundStyle(.primary)
         .preferredColorScheme(state.colorScheme)
+        // A hard switch between light and dark flashes the whole window. The
+        // animation on the appearance value makes the semantic colors cross-fade
+        // instead, which is what "no transition" was missing.
+        .animation(.easeInOut(duration: 0.32), value: state.appearance)
         .sheet(isPresented: $state.isWindowPickerPresented) { WindowPickerSheet() }
         .sheet(isPresented: $state.isRegionCapturePresented) {
             if let image = state.regionCaptureImage {
