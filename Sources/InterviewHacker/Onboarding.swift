@@ -67,7 +67,7 @@ extension AppState {
               audioSource: captureTargets.contains { $0.id == selectedTargetID })
     }
     var currentGuideVersion: String {
-        OnboardingVersion.guideVersion(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.7.0")
+        OnboardingVersion.guideVersion(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.8.0")
     }
     func prepareOnboardingForCurrentVersion() {
         let defaults = UserDefaults.standard
