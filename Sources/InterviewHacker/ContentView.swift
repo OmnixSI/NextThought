@@ -17,6 +17,8 @@ struct ContentView: View {
             SectionStack()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .safeAreaInset(edge: .top, spacing: 0) { TopBar() }
+            .disabled(state.isOnboardingPresented)
+            .accessibilityHidden(state.isOnboardingPresented)
             if state.isOnboardingPresented {
                 OnboardingView().transition(.opacity)
             }

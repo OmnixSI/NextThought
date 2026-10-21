@@ -7,7 +7,7 @@ on:
       tag:
         description: 'Validated release tag'
         required: true
-        default: v1.7.0
+        default: v1.8.0
 permissions:
   contents: write
 concurrency:
@@ -62,6 +62,7 @@ jobs:
           plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$ci/Contents/Info.plist"
           codesign --force --sign - --identifier com.interviewhacker.app.ci "$ci"
           "$ci/Contents/MacOS/InterviewHacker" --self-test data
+          INTERVIEWHACKER_DEMO=1 "$ci/Contents/MacOS/InterviewHacker" --self-test document-setup
       - name: Stage and validate all release assets
         env:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}

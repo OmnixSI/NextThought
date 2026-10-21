@@ -62,6 +62,7 @@ enum SelfTest {
                 case "model-files": return try await DocumentSelfTest.modelFiles()
                 case "model-delete": return try await DocumentSelfTest.modelDeletion()
                 case "document-backup": return try await DocumentSelfTest.archiveRoundTrip()
+                case "document-setup": return try await DocumentSelfTest.setupChoices()
                 case "data": return try await testData()
                 case "signing": return try await testSigning()
                 case "update": return try await testUpdate(options)

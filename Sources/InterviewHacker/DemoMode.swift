@@ -19,12 +19,14 @@ import SwiftUI
 enum DemoMode {
     static var isEnabled: Bool { ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO"] == "1" }
 
+    static var speechReady: Bool { isEnabled && ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO_VOICE_READY"] == "1" }
+
     @MainActor
     static func apply() {
         guard isEnabled else { return }
         let environment = ProcessInfo.processInfo.environment
         // Each capture starts from the default tabs; earlier captures must not leak in.
-        for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep"] {
+        for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
         // INTERVIEWHACKER_DEMO_DEFAULTS="key=value;key=value" opens specific tabs.
@@ -47,8 +49,25 @@ enum DemoMode {
         state.applyAppearance()
         state.section = AppSection.allCases.first { "\($0)" == environment["INTERVIEWHACKER_DEMO_SECTION"] } ?? .assistant
         state.populateDemo()
+        if environment["INTERVIEWHACKER_DEMO_API"] == "1" {
+            state.answerBackend = .openAICompatible; state.apiBaseURL = "https://example.invalid/v1"
+            state.apiModel = "example-model"; state.apiKey = ""
+        }
+        if environment["INTERVIEWHACKER_DEMO_IDLE"] == "1" { state.isRunning = false }
+        if let advanced = environment["INTERVIEWHACKER_DEMO_ADVANCED"] { state.simplifiedInterface = advanced != "1" }
+        if environment["INTERVIEWHACKER_DEMO_VOICE_READY"] == "1" {
+            state.transcriptionBackend = "zipformer"; state.microphoneAccess = .granted
+        }
+        state.documentModelsChecked = true
+        if environment["INTERVIEWHACKER_DEMO_DOCUMENTS_READY"] == "1" {
+            state.installedDocumentModels = Set(ModelCatalog.all.map(\.id)); state.runtimeInstalled = true
+        }
+        if let provider = environment["INTERVIEWHACKER_DEMO_DOCUMENT_PROVIDER"].flatMap(DocumentOCRProvider.init(rawValue:)) {
+            state.documentOCRProvider = provider
+        }
+        if let semantic = environment["INTERVIEWHACKER_DEMO_SEMANTIC"] { state.semanticRetrievalEnabled = semantic == "1" }
         if let preset = AssistantLayout.Preset(rawValue: environment["INTERVIEWHACKER_DEMO_LAYOUT"] ?? "") { state.assistantLayout = preset.layout }
-        // INTERVIEWHACKER_DEMO_ONBOARDING=1 shows the first-run guide (step via onboardingStep).
+        // INTERVIEWHACKER_DEMO_ONBOARDING=1 shows the guide (step via quickStartStep).
         if environment["INTERVIEWHACKER_DEMO_ONBOARDING"] == "1" || UserDefaults.standard.integer(forKey: "demoOnboarding") == 1 {
             state.isOnboardingPresented = true
         }
@@ -64,7 +83,7 @@ enum DemoMode {
             window.isReleasedWhenClosed = false
             window.contentView = NSHostingView(rootView: ContentView().environment(state))
             window.setFrame(NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]), display: true)
-            window.orderFront(nil)
+            if environment["INTERVIEWHACKER_DEMO_HIDDEN"] != "1" { window.orderFront(nil) }
             demoWindow = window
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: environment["INTERVIEWHACKER_DEMO_SNAPSHOT"]) }
             return

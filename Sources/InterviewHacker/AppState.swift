@@ -84,7 +84,7 @@ final class AppState {
     var teleprompterHideBackground = UserDefaults.standard.object(forKey: "teleprompterHideBackground") as? Bool ?? false
     /// Simplified interface: secondary controls collapse into overflow menus and
     /// long option lists are folded away, so the app has fewer visible knobs.
-    var simplifiedInterface = UserDefaults.standard.object(forKey: "simplifiedInterface") as? Bool ?? false
+    var simplifiedInterface = !(UserDefaults.standard.object(forKey: "advancedSettingsEnabled") as? Bool ?? false)
     /// "system", "light" or "dark". Migrates the old darkMode switch.
     var appearance = UserDefaults.standard.string(forKey: "appearance")
         ?? (UserDefaults.standard.object(forKey: "darkMode") as? Bool == true ? "dark" : "system")
@@ -112,6 +112,7 @@ final class AppState {
     /// nil follows the model's own default (some models run Fast unless told otherwise).
     var codexFastSetting = UserDefaults.standard.object(forKey: "codexFastMode") as? Bool
     var codexLoginStatus = "正在检查 Codex…"
+    var isRefreshingCodexStatus = false
     var codexVersion = "正在检测 Codex…"
     var lastAnswerModel: String?
 
@@ -193,7 +194,7 @@ final class AppState {
     var codexOCREffort = UserDefaults.standard.string(forKey: "codexOCREffort") ?? "medium"
     var codexOCRTimeout = UserDefaults.standard.object(forKey: "codexOCRTimeout") as? Double ?? 600
     var documentProviderWasSelected = UserDefaults.standard.bool(forKey: "documentProviderWasSelected")
-    var semanticRetrievalEnabled = UserDefaults.standard.object(forKey: "semanticRetrievalEnabled") as? Bool ?? true
+    var semanticRetrievalEnabled = UserDefaults.standard.object(forKey: "semanticRetrievalEnabled") as? Bool ?? false
     @ObservationIgnored var semanticIndex = SemanticIndex()
     @ObservationIgnored var semanticIndexTask: Task<Void, Never>?
     @ObservationIgnored var semanticGeneration = UUID()
@@ -201,6 +202,14 @@ final class AppState {
     @ObservationIgnored var managedDownloadTask: Task<Void, Never>?
     @ObservationIgnored var answerRetrievalTask: Task<[ContextExcerpt], Never>?
     var installedDocumentModels: Set<String> = []
+    var documentModelsChecked = false
+    var documentSetupFeature: DocumentFeatureAvailability.Feature?
+    var documentSetupStatus = ""
+    var documentSetupProgress = 0.0
+    @ObservationIgnored var documentSetupTask: Task<Void, Never>?
+    @ObservationIgnored var documentSetupGeneration = UUID()
+    @ObservationIgnored var documentProviderSelectionRevision = 0
+    @ObservationIgnored var semanticSelectionRevision = 0
     var managedModelDownloadID = ""
     var managedModelDownloadProgress = 0.0
     var managedModelDownloadStatus = ""
@@ -370,7 +379,8 @@ final class AppState {
         Diagnostics.pruneOldLogs()
         // Demo / screenshot mode shows sample data and never touches devices or models.
         guard !DemoMode.isEnabled else { return }
-        if !UserDefaults.standard.bool(forKey: "onboardingCompleted") { isOnboardingPresented = true }
+        prepareOnboardingForCurrentVersion()
+        Task { await refreshManagedModelStatus() }
         Updater.shared.start()
         startScreenWatch()
         Task {
@@ -380,7 +390,6 @@ final class AppState {
         }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
-            await refreshManagedModelStatus()
             // Warm independent services concurrently; no model/search calls are made.
             if webSearchMode != .off, webSearchProvider == .codex { Task { await webAppServer.prewarm() } }
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
@@ -444,7 +453,10 @@ final class AppState {
             if cloudKey.isEmpty { return "请填写云端识别 API Key" }
         }
         if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
-        if captureTargets.isEmpty || selectedTargetID.isEmpty { return "请检查屏幕与系统音频权限" }
+        if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
+        if microphoneEnabled && microphoneAccess != .granted { return "请先允许麦克风权限" }
+        if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测对话服务…" : "请先连接对话回答服务" }
+        if !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
         return "可以开始"
     }
 
@@ -493,6 +505,9 @@ final class AppState {
     }
 
     func refreshCodexStatus() async {
+        guard !isRefreshingCodexStatus else { return }
+        isRefreshingCodexStatus = true
+        defer { isRefreshingCodexStatus = false }
         codex.invalidateLoginCache()
         let version = await Task.detached(priority: .utility) { CodexBridge.version() ?? "未检测到" }.value
         codexLoginStatus = await CodexBridge.loginStatus()
@@ -519,8 +534,13 @@ final class AppState {
     // MARK: Session lifecycle
 
     func startSession() async {
+        if DemoMode.isEnabled {
+            isRunning = true; isPaused = false; statusText = "演示：正在聆听"
+            return
+        }
         guard !isRunning, !isChangingSession else { return }
         guard !isDownloadingModel else { return }
+        guard answerEngineReady else { errorMessage = "请先连接对话回答服务，再开始实时辅助。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
         cancelAnswer()
@@ -740,6 +760,12 @@ final class AppState {
     ///   - supersede: replace an in-flight automatic answer instead of queueing.
     func ask(_ question: String, screenshot: URL?, recentContext: String? = nil, isAutomatic: Bool = false,
              candidateID: UUID? = nil, supersede: Bool = false) {
+        if DemoMode.isEnabled {
+            historyCursor = nil; currentQuestion = question; answerDraft = ""
+            answer = "这是界面演示，不会调用真实回答服务。正式使用时，助手会结合实时对话与当前场景生成建议回答。"
+            lastAnswerModel = "UI Demo"; statusText = "演示：未调用模型"
+            return
+        }
         if isAutomatic && isAnswering && !supersede {
             pendingAutomaticQuestion = (question, recentContext ?? "", candidateID)
             Diagnostics.record("answer.queued")
@@ -1164,6 +1190,7 @@ final class AppState {
     }
 
     func prepareForTermination() {
+        documentSetupTask?.cancel(); managedDownloadTask?.cancel(); runtimeDownloadTask?.cancel()
         importTask?.cancel()
         workspaces.flush()
         audio.setPCMHandler(nil)
@@ -1344,6 +1371,7 @@ final class AppState {
     }
 
     var isModelInstalled: Bool {
+        if DemoMode.speechReady { return true }
         _ = modelInstallRevision
         if let package = localStreamingModel.package { return package.isInstalled }
         return legacyModelInstalled
@@ -1351,6 +1379,7 @@ final class AppState {
 
     /// Packages still missing for the current choice (streaming + optional second pass).
     var missingPackages: [LocalASRPackage] {
+        if DemoMode.speechReady { return [] }
         _ = modelInstallRevision
         var result: [LocalASRPackage] = []
         if let package = localStreamingModel.package, !package.isInstalled { result.append(package) }

@@ -111,7 +111,7 @@ public enum SettingsSnapshot {
         "teleprompterOpacity", "teleprompterFontSize", "capturePrivacy", "keepOnTop", "appearance", "reducedEffects",
         "customShortcuts", "companionPort", "keepRecognizerWarm",
         "updateChannel", "automaticUpdateChecks", "updateRepository",
-        "activeWorkspaceID", "autoBackup",
+        "activeWorkspaceID", "autoBackup", "advancedSettingsEnabled",
         "apiPresets", "activeAPIPresetID",
         "webSearchMode", "webSearchProvider",
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides", "insightAnswerProgress",

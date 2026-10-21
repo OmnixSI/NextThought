@@ -432,7 +432,10 @@ private struct SetupCard: View {
                 }
                 .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("准备开始").font(.system(size: 16, weight: .semibold))
+                    HStack(spacing: 12) {
+                        Text("实时语音辅助").font(.system(size: 16, weight: .semibold))
+                        Button("新手引导") { state.openOnboarding() }.buttonStyle(ChipButtonStyle())
+                    }
                     Text(state.readinessText)
                         .font(.system(size: 12))
                         .foregroundStyle(state.isReadyToStart ? Color.green : Color.secondary)

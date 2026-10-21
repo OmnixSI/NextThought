@@ -186,3 +186,59 @@ extension DocumentSelfTest {
         return "Markdown + metadata + table/formula + physical locator restored with relative refs; no original/model/runtime in backup"
     }
 }
+
+extension DocumentSelfTest {
+    /// State-only setup checks: no download, online model call, or production data.
+    @MainActor static func setupChoices() async throws -> String {
+        guard DemoMode.isEnabled else { throw SelfTest.Failure("document-setup requires INTERVIEWHACKER_DEMO=1") }
+        _ = NSApplication.shared
+        let state = AppState.shared
+        state.answerBackend = .openAICompatible; state.apiModel = "test-model"; state.apiKey = ""
+        state.apiBaseURL = "http://127.0.0.1:9999/v1"
+        guard state.answerEngineReady else { throw SelfTest.Failure("local API readiness") }
+        state.apiBaseURL = "https://localhost.example.invalid/v1"
+        guard !state.answerEngineReady else { throw SelfTest.Failure("remote API bypassed key readiness") }
+        state.apiKey = "test-only-not-a-secret"; state.apiBaseURL = ""
+        guard !state.answerEngineReady else { throw SelfTest.Failure("missing API address marked ready") }
+        state.apiKey = ""; state.answerBackend = .codexAppServer
+        state.documentModelsChecked = true; state.runtimeInstalled = true
+        state.installedDocumentModels = Set(ModelCatalog.all.map(\.id))
+        state.selectDocumentProvider(.system)
+        state.prepareDocumentFeature(.paddle)
+        await state.documentSetupTask?.value
+        guard state.documentOCRProvider == .paddle else { throw SelfTest.Failure("ready bundle did not select provider") }
+        state.prepareDocumentFeature(.paddle)
+        state.selectDocumentProvider(.system)
+        await state.documentSetupTask?.value
+        guard state.documentOCRProvider == .system else { throw SelfTest.Failure("late setup overwrote explicit provider choice") }
+        state.prepareDocumentFeature(.semantic)
+        state.selectSemanticRetrieval(false)
+        await state.documentSetupTask?.value
+        guard !state.semanticRetrievalEnabled else { throw SelfTest.Failure("late setup overwrote keyword choice") }
+        state.prepareDocumentFeature(.paddle)
+        state.documentSetupTask?.cancel()
+        await state.documentSetupTask?.value
+        guard state.documentOCRProvider == .system, state.documentSetupFeature == nil else { throw SelfTest.Failure("cancelled setup selected a provider") }
+        let modelBefore = state.codexModelID, providerBefore = state.documentOCRProvider
+        state.simplifiedInterface = false; state.saveAnswerSettings()
+        guard UserDefaults.standard.bool(forKey: "advancedSettingsEnabled") else { throw SelfTest.Failure("expert preference not persisted") }
+        state.simplifiedInterface = true; state.saveAnswerSettings()
+        guard !UserDefaults.standard.bool(forKey: "advancedSettingsEnabled"), state.codexModelID == modelBefore, state.documentOCRProvider == providerBefore else { throw SelfTest.Failure("hiding expert options modified configuration") }
+        let defaults = UserDefaults.standard
+        defaults.set("0.0", forKey: "onboardingGuideStartedVersion")
+        defaults.set("0.0", forKey: "onboardingGuideCompletedVersion")
+        defaults.set(3, forKey: "quickStartStep")
+        state.prepareOnboardingForCurrentVersion()
+        guard state.isOnboardingPresented, defaults.integer(forKey: "quickStartStep") == 0 else { throw SelfTest.Failure("feature upgrade did not restart guide") }
+        defaults.set(2, forKey: "quickStartStep")
+        state.isOnboardingPresented = false
+        state.prepareOnboardingForCurrentVersion()
+        guard state.isOnboardingPresented, defaults.integer(forKey: "quickStartStep") == 2 else { throw SelfTest.Failure("interrupted guide did not resume") }
+        state.finishOnboarding(); state.prepareOnboardingForCurrentVersion()
+        guard !state.isOnboardingPresented else { throw SelfTest.Failure("completed guide repeated") }
+        state.openOnboarding()
+        guard state.isOnboardingPresented, defaults.integer(forKey: "quickStartStep") == 0 else { throw SelfTest.Failure("manual guide restart failed") }
+        state.semanticIndexTask?.cancel()
+        return "ready bundle reuse, cancellation, late-choice protection, version restart, resume, completion and advanced-mode persistence passed; no network/model calls"
+    }
+}
