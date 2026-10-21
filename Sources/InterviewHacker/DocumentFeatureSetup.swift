@@ -60,7 +60,7 @@ extension AppState {
                 documentSetupStatus = "先查找并校验本机已有文件，缺少的部分才下载…"
                 _ = try await LocalDocumentAssets.reuse(models: models, runtime: needsRuntime, verifyInstalled: true)
                 try Task.checkCancellation()
-                runtimeInstalled = DocumentRuntime.installed
+                if needsRuntime { runtimeInstalled = DocumentRuntime.installed }
                 if needsRuntime && !runtimeInstalled {
                     try await DocumentRuntimeInstaller.install(searchLocal: false) { fraction in
                         Task { @MainActor in progress(fraction, 0, "下载共用文档组件") }

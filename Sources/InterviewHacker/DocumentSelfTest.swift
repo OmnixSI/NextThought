@@ -190,7 +190,9 @@ extension DocumentSelfTest {
 extension DocumentSelfTest {
     /// State-only setup checks: no download, online model call, or production data.
     @MainActor static func setupChoices() async throws -> String {
-        guard DemoMode.isEnabled else { throw SelfTest.Failure("document-setup requires INTERVIEWHACKER_DEMO=1") }
+        guard DemoMode.isEnabled, Bundle.main.bundleIdentifier?.hasPrefix("com.interviewhacker.app.ci") == true else {
+            throw SelfTest.Failure("document-setup requires INTERVIEWHACKER_DEMO=1 and an isolated com.interviewhacker.app.ci test bundle")
+        }
         _ = NSApplication.shared
         let state = AppState.shared
         state.answerBackend = .openAICompatible; state.apiModel = "test-model"; state.apiKey = ""
