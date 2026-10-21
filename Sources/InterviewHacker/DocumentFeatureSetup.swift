@@ -76,7 +76,7 @@ extension AppState {
                         Task { @MainActor in progress(fraction, position, "下载 \(descriptor.name)") }
                     }
                     try Task.checkCancellation()
-                    modelInstallRevision += 1; installedDocumentModels.insert(descriptor.id); step += 1
+                    documentModelInstallRevision += 1; installedDocumentModels.insert(descriptor.id); step += 1
                 }
                 try Task.checkCancellation()
                 guard documentAvailability.ready(feature) else { throw AppFailure.capture("组件尚未全部就绪，请重试。") }
@@ -88,11 +88,11 @@ extension AppState {
                 }
                 documentSetupProgress = 1; documentSetupStatus = "已准备完成，可以使用。"
             } catch is CancellationError {
-                modelInstallRevision += 1; await refreshManagedModelStatus()
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
                 runtimeInstalled = DocumentRuntime.installed
                 documentSetupStatus = "已取消。已下载并校验的组件会保留，重试无需重新下载。"
             } catch {
-                modelInstallRevision += 1; await refreshManagedModelStatus()
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
                 runtimeInstalled = DocumentRuntime.installed
                 documentSetupStatus = "准备失败：\(error.localizedDescription) 可重试；当前识别方式没有改变。"
             }

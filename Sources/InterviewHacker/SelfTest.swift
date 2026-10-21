@@ -55,6 +55,7 @@ enum SelfTest {
             let result: Result<String, Error> = runAsync {
                 switch suite {
                 case "documents": return try await DocumentSelfTest.run(options)
+                case "model-readiness": return try await DocumentSelfTest.modelReadiness()
                 case "local-models": return try await DocumentSelfTest.localModels(options)
                 case "models": return try await DocumentSelfTest.model()
                 case "runtime": return try await DocumentSelfTest.runtime(options)

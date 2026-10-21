@@ -119,7 +119,7 @@ Qwen3-Embedding-0.6B Q8 为资料增加本地语义检索。全部模型约 **1.
 
 ![五步引导：从实时语音对话开始](docs/screenshots/onboarding-realtime-dark.png)
 
-资料设置按用途显示安装与生效状态，点击“下载并使用”会自动准备完整依赖，共用组件只装一次。
+资料设置按用途显示安装与生效状态，点击“准备并使用”会自动准备完整依赖，共用组件只装一次。
 
 ![资料选项：系统识别、本机增强和 Codex 的取舍](docs/screenshots/document-options-dark.png)
 

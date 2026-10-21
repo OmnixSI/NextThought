@@ -116,7 +116,7 @@ extension AppState {
                 let result = try await LocalDocumentAssets.reuse(models: missing, runtime: true,
                                                                 searchRoots: directory.map { [$0] }, verifyInstalled: true)
                 try Task.checkCancellation()
-                modelInstallRevision += 1
+                documentModelInstallRevision += 1
                 await refreshManagedModelStatus()
                 let bytes = ByteCountFormatter.string(fromByteCount: result.reusedBytes, countStyle: .file)
                 localAssetScanStatus = "本应用现有 \(installedDocumentModels.count)/3 项文档模型，支持组件\(runtimeInstalled ? "已安装" : "未安装")。本次复用 \(bytes)\(result.runtime ? "及本地运行包" : "")，没有联网下载。"
@@ -126,10 +126,10 @@ extension AppState {
                     localAssetScanStatus += " 未找到匹配部分，可选择其他目录或按需下载。"
                 }
             } catch is CancellationError {
-                modelInstallRevision += 1; await refreshManagedModelStatus()
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
                 localAssetScanStatus = "已取消扫描；已校验并复用的文件保留，原文件没有改变。"
             } catch {
-                modelInstallRevision += 1; await refreshManagedModelStatus()
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
                 localAssetScanStatus = "本机扫描失败：\(error.localizedDescription)；可选择具体目录重试。"
             }
         }

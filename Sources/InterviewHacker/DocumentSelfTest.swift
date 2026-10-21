@@ -270,3 +270,24 @@ extension DocumentSelfTest {
         return "3 pinned models + runtime ready; reused \(result.reusedBytes) model bytes; NDJSON health; repeat scan skipped installed assets; no network"
     }
 }
+
+
+extension DocumentSelfTest {
+    @MainActor static func modelReadiness() async throws -> String {
+        guard DemoMode.isEnabled, Bundle.main.bundleIdentifier?.hasPrefix("com.interviewhacker.app.ci") == true else {
+            throw SelfTest.Failure("model-readiness requires DEMO=1 and an isolated .ci test bundle; pass real model directory explicitly")
+        }
+        let state = AppState.shared
+        state.documentModelsChecked = false
+        let checking = Task { await state.refreshManagedModelStatus() }
+        try await Task.sleep(for: .milliseconds(50))
+        guard !state.documentModelsChecked else { throw SelfTest.Failure("requires real model weights to overlap verification with speech refresh") }
+        state.modelInstallRevision += 1 // Concurrent speech-model refresh must not invalidate document verification.
+        await checking.value
+        guard state.documentModelsChecked, state.installedDocumentModels.count == ModelCatalog.all.count else {
+            throw SelfTest.Failure("speech refresh discarded document readiness")
+        }
+        state.semanticIndexTask?.cancel()
+        return "real document hash verification survives concurrent speech-model revision; all 3 models ready"
+    }
+}

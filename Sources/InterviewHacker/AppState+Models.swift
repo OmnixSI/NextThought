@@ -20,24 +20,24 @@ extension AppState {
                     Task { @MainActor in self?.managedModelDownloadProgress = fraction; self?.managedModelDownloadStatus = message }
                 }
                 try Task.checkCancellation()
-                modelInstallRevision += 1
+                documentModelInstallRevision += 1
                 installedDocumentModels.insert(descriptor.id)
                 managedModelDownloadStatus = "\(descriptor.name) 已通过完整校验。"
                 if descriptor.kind == .ocr || descriptor.kind == .layout {
                     if paddleOCRInstalled && !documentProviderWasSelected { documentOCRProvider = .paddle; updateSettings() }
                 } else { rebuildSemanticIndex() }
             } catch is CancellationError {
-                modelInstallRevision += 1; await refreshManagedModelStatus()
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
                 managedModelDownloadStatus = "准备已取消，已校验文件将在重试时复用。"
             } catch {
-                modelInstallRevision += 1; await refreshManagedModelStatus()
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
                 managedModelDownloadStatus = "准备失败：\(error.localizedDescription)；重试可修复。"
             }
         }
     }
     func cancelManagedModelDownload() { managedDownloadTask?.cancel() }
     func deleteManagedModel(_ descriptor: ManagedModelDescriptor) {
-        modelInstallRevision += 1
+        documentModelInstallRevision += 1
         Task {
             localAssetScanTask?.cancel(); await localAssetScanTask?.value
             documentSetupTask?.cancel(); await documentSetupTask?.value
@@ -58,14 +58,14 @@ extension AppState {
         }
     }
     func refreshManagedModelStatus() async {
-        let revision = modelInstallRevision
+        let revision = documentModelInstallRevision
         let installed = await Task.detached(priority: .utility) {
             Set(ModelCatalog.all.filter { descriptor in
                 guard ManagedModelStore.isInstalled(descriptor) else { return false }
                 return (try? ManagedModelStore.verify(descriptor, at: descriptor.directory)) != nil
             }.map(\.id))
         }.value
-        guard revision == modelInstallRevision else { return }
+        guard revision == documentModelInstallRevision else { return }
         installedDocumentModels = installed; runtimeInstalled = DocumentRuntime.installed
         documentModelsChecked = true
         semanticIndex = SemanticIndexStore.load(modelID: ModelCatalog.qwen3Embedding.id, workspaceID: activeWorkspace.id)
