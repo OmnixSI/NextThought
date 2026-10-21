@@ -124,19 +124,19 @@ extension DocumentSelfTest {
         let file=source.files.first { $0.path=="config.json" }!
         let descriptor=ManagedModelDescriptor(id:"selftest-managed-download",name:"selftest",kind:.ocr,repository:source.repository,revision:source.revision,files:[file],summary:"",license:source.license,homepage:source.homepage,note:"",minimumOS:"14")
         defer { try? ManagedModelStore.remove(descriptor) }
-        try await ManagedModelStore.download(descriptor) { _,_ in }
+        try await ManagedModelStore.download(descriptor, searchLocal: false) { _,_ in }
         guard ManagedModelStore.isInstalled(descriptor) else { throw SelfTest.Failure("download readiness") }
         let url=descriptor.directory.appendingPathComponent(file.path),mtime=try url.resourceValues(forKeys:[.contentModificationDateKey]).contentModificationDate
-        try await ManagedModelStore.download(descriptor) { _,_ in }
+        try await ManagedModelStore.download(descriptor, searchLocal: false) { _,_ in }
         guard mtime == (try url.resourceValues(forKeys:[.contentModificationDateKey])).contentModificationDate else { throw SelfTest.Failure("verified download file not reused") }
         try Data("broken".utf8).write(to:url)
         guard !ManagedModelStore.isInstalled(descriptor) else { throw SelfTest.Failure("size corruption not detected") }
-        try await ManagedModelStore.download(descriptor) { _,_ in }
+        try await ManagedModelStore.download(descriptor, searchLocal: false) { _,_ in }
         try ManagedModelStore.verify(descriptor,at:descriptor.directory)
         let large=source.files.first { $0.path=="model.safetensors" }!
         let cancellable=ManagedModelDescriptor(id:"selftest-managed-cancel",name:"cancel",kind:.ocr,repository:source.repository,revision:source.revision,files:[large],summary:"",license:source.license,homepage:source.homepage,note:"",minimumOS:"14")
         defer { try? ManagedModelStore.remove(cancellable) }
-        let task=Task { try await ManagedModelStore.download(cancellable) { _,_ in } }
+        let task=Task { try await ManagedModelStore.download(cancellable, searchLocal: false) { _,_ in } }
         try await Task.sleep(for:.milliseconds(100));task.cancel()
         do { try await task.value;throw SelfTest.Failure("download did not cancel") } catch is CancellationError { }
         try ManagedModelStore.remove(cancellable)
@@ -240,5 +240,31 @@ extension DocumentSelfTest {
         guard state.isOnboardingPresented, defaults.integer(forKey: "quickStartStep") == 0 else { throw SelfTest.Failure("manual guide restart failed") }
         state.semanticIndexTask?.cancel()
         return "ready bundle reuse, cancellation, late-choice protection, version restart, resume, completion and advanced-mode persistence passed; no network/model calls"
+    }
+}
+
+
+extension DocumentSelfTest {
+    /// Explicit local integration test; never downloads or mutates the source directories.
+    static func localModels(_ options: [String: String]) async throws -> String {
+        guard let input = options["input"], let archiveDirectory = options["archive-directory"] else {
+            throw SelfTest.Failure("local-models requires --input model-root --archive-directory runtime-archive-root; uses isolated data directory")
+        }
+        let sources = [URL(fileURLWithPath: input), URL(fileURLWithPath: archiveDirectory)]
+        guard !ModelCatalog.all.contains(where: { $0.directory.standardizedFileURL.path.hasPrefix(sources[0].standardizedFileURL.path + "/") }) else {
+            throw SelfTest.Failure("destination must differ from input")
+        }
+        let result = try await LocalDocumentAssets.reuse(models: ModelCatalog.all, runtime: true, searchRoots: sources)
+        for descriptor in ModelCatalog.all {
+            guard ManagedModelStore.isInstalled(descriptor) else { throw SelfTest.Failure("local model not ready: \(descriptor.id)") }
+            try ManagedModelStore.verify(descriptor, at: descriptor.directory)
+        }
+        guard DocumentRuntime.installed else { throw SelfTest.Failure("local runtime missing") }
+        let health = try await DocumentWorker.shared.request("health")
+        guard health["protocol"] as? Int == 1 else { throw SelfTest.Failure("reused runtime health") }
+        await DocumentWorker.shared.unload()
+        let second = try await LocalDocumentAssets.reuse(models: ModelCatalog.all, runtime: true, searchRoots: sources)
+        guard second.reusedBytes == 0, !second.runtime else { throw SelfTest.Failure("repeat import did not reuse installed state") }
+        return "3 pinned models + runtime ready; reused \(result.reusedBytes) model bytes; NDJSON health; repeat scan skipped installed assets; no network"
     }
 }

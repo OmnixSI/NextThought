@@ -119,8 +119,11 @@ enum ManagedModelStore {
     ///   Chinese description of the current step.
     static func download(
         _ descriptor: ManagedModelDescriptor,
+        searchLocal: Bool = true,
         progress: @escaping @Sendable (Double, String) -> Void
     ) async throws {
+        if searchLocal { _ = try await LocalDocumentAssets.reuse(models: [descriptor], runtime: false, verifyInstalled: true) }
+        try Task.checkCancellation()
         let directory = descriptor.directory
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let downloader = ModelAssetDownloader()

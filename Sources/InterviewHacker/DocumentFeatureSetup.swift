@@ -8,7 +8,7 @@ extension AppState {
               layout: installedDocumentModels.contains(ModelCatalog.layout.id),
               embedding: embeddingModelInstalled, codexConnected: codexReady)
     }
-    var documentSetupBusy: Bool { documentSetupFeature != nil || isDownloadingManagedModel || isInstallingDocumentRuntime }
+    var documentSetupBusy: Bool { isScanningLocalAssets || documentSetupFeature != nil || isDownloadingManagedModel || isInstallingDocumentRuntime }
 
     func documentModels(for feature: DocumentFeatureAvailability.Feature) -> [ManagedModelDescriptor] {
         switch feature {
@@ -57,17 +57,22 @@ extension AppState {
             }
             do {
                 var step = 0
-                if needsRuntime {
-                    try await DocumentRuntimeInstaller.install { fraction in
+                documentSetupStatus = "先查找并校验本机已有文件，缺少的部分才下载…"
+                _ = try await LocalDocumentAssets.reuse(models: models, runtime: needsRuntime, verifyInstalled: true)
+                try Task.checkCancellation()
+                runtimeInstalled = DocumentRuntime.installed
+                if needsRuntime && !runtimeInstalled {
+                    try await DocumentRuntimeInstaller.install(searchLocal: false) { fraction in
                         Task { @MainActor in progress(fraction, 0, "下载共用文档组件") }
                     }
                     try Task.checkCancellation()
-                    runtimeInstalled = DocumentRuntime.installed; step += 1
+                    runtimeInstalled = DocumentRuntime.installed
                 }
+                if needsRuntime { step += 1 }
                 for descriptor in models {
                     try Task.checkCancellation()
                     let position = step
-                    try await ManagedModelStore.download(descriptor) { fraction, _ in
+                    try await ManagedModelStore.download(descriptor, searchLocal: false) { fraction, _ in
                         Task { @MainActor in progress(fraction, position, "下载 \(descriptor.name)") }
                     }
                     try Task.checkCancellation()
@@ -83,9 +88,11 @@ extension AppState {
                 }
                 documentSetupProgress = 1; documentSetupStatus = "已准备完成，可以使用。"
             } catch is CancellationError {
+                modelInstallRevision += 1; await refreshManagedModelStatus()
                 runtimeInstalled = DocumentRuntime.installed
                 documentSetupStatus = "已取消。已下载并校验的组件会保留，重试无需重新下载。"
             } catch {
+                modelInstallRevision += 1; await refreshManagedModelStatus()
                 runtimeInstalled = DocumentRuntime.installed
                 documentSetupStatus = "准备失败：\(error.localizedDescription) 可重试；当前识别方式没有改变。"
             }

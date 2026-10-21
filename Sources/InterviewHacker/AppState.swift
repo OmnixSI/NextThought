@@ -203,6 +203,9 @@ final class AppState {
     @ObservationIgnored var answerRetrievalTask: Task<[ContextExcerpt], Never>?
     var installedDocumentModels: Set<String> = []
     var documentModelsChecked = false
+    var isScanningLocalAssets = false
+    var localAssetScanStatus = ""
+    @ObservationIgnored var localAssetScanTask: Task<Void, Never>?
     var documentSetupFeature: DocumentFeatureAvailability.Feature?
     var documentSetupStatus = ""
     var documentSetupProgress = 0.0

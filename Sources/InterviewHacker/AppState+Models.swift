@@ -9,9 +9,10 @@ extension AppState {
         .init(provider: documentOCRProvider, fallback: ocrFallbackToVision, model: codexOCRModel, effort: codexOCREffort, timeout: codexOCRTimeout, isPaused: { await MainActor.run { self.isRunning || self.isAnswering } })
     }
     func downloadManagedModel(_ descriptor: ManagedModelDescriptor) {
-        guard !isDownloadingManagedModel, documentSetupFeature == nil else { return }
+        guard !documentSetupBusy else { return }
         isDownloadingManagedModel = true; managedModelDownloadID = descriptor.id
         managedModelDownloadProgress = 0
+        managedModelDownloadStatus = "先查找并校验本机文件，缺少部分才下载…"
         managedDownloadTask = Task {
             defer { isDownloadingManagedModel = false; managedModelDownloadID = ""; managedDownloadTask = nil }
             do {
@@ -25,14 +26,20 @@ extension AppState {
                 if descriptor.kind == .ocr || descriptor.kind == .layout {
                     if paddleOCRInstalled && !documentProviderWasSelected { documentOCRProvider = .paddle; updateSettings() }
                 } else { rebuildSemanticIndex() }
-            } catch is CancellationError { managedModelDownloadStatus = "下载已取消，已校验文件将在重试时复用。" }
-            catch { managedModelDownloadStatus = "下载失败：\(error.localizedDescription)；再次下载可修复。" }
+            } catch is CancellationError {
+                modelInstallRevision += 1; await refreshManagedModelStatus()
+                managedModelDownloadStatus = "准备已取消，已校验文件将在重试时复用。"
+            } catch {
+                modelInstallRevision += 1; await refreshManagedModelStatus()
+                managedModelDownloadStatus = "准备失败：\(error.localizedDescription)；重试可修复。"
+            }
         }
     }
     func cancelManagedModelDownload() { managedDownloadTask?.cancel() }
     func deleteManagedModel(_ descriptor: ManagedModelDescriptor) {
         modelInstallRevision += 1
         Task {
+            localAssetScanTask?.cancel(); await localAssetScanTask?.value
             documentSetupTask?.cancel(); await documentSetupTask?.value
             if managedModelDownloadID == descriptor.id { managedDownloadTask?.cancel(); await managedDownloadTask?.value }
             installedDocumentModels.remove(descriptor.id)
