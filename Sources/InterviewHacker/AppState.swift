@@ -258,6 +258,8 @@ final class AppState {
     var companionAddress: String?
     var companionStatus = "未开启"
     var companionRelayURL = UserDefaults.standard.string(forKey: "companionRelayURL") ?? ""
+    var companionBluetoothEnabled = false
+    var companionBluetoothStatus = "未开启"
     var companionRelayEnabled = false
     var companionRelayStatus = "未开启"
     var companionBackupAddress: String?

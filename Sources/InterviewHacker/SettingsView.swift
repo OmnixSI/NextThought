@@ -469,6 +469,19 @@ private struct CompanionSection: View {
                 }
             }
             Divider()
+            Toggle("启用原生手机 App 的蓝牙备用", isOn: Binding(get: { state.companionBluetoothEnabled }, set: { state.setCompanionBluetooth(enabled: $0) })).disabled(!state.companionEnabled)
+            Text(state.companionBluetoothStatus).font(.caption).foregroundStyle(.secondary)
+            if state.companionEnabled, let pairURL = try? CompanionServer.shared.pairing.url(base: URL(string: "interviewhacker-companion://pair")!) {
+                HStack {
+                    QRCodeView(text: pairURL.absoluteString).frame(width: 132, height: 132)
+                    VStack(alignment: .leading) {
+                        Text("原生手机 App 配对")
+                        Text("在配套 App 中扫描或粘贴链接；启用中转后请重新配对。").font(.caption)
+                        Button("复制 App 配对链接") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(pairURL.absoluteString, forType: .string) }
+                    }
+                }
+            }
+            Divider()
             TextField("HTTPS 中转服务根地址", text: $state.companionRelayURL).textFieldStyle(.roundedBorder)
             Toggle("启用互联网加密备用连接", isOn: Binding(get: { state.companionRelayEnabled }, set: { state.setCompanionRelay(enabled: $0) }))
                 .disabled(!state.companionEnabled)

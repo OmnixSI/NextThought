@@ -93,3 +93,11 @@ Qwen3 实际向量评估：24 份自编事实文档、48 条同义问题、12 �
 验证：162 Swift 测试、3 Node 真 WebSocket 测试、网页离线恢复回归通过；隔离 Mac 应用真实 URLSession→Node→订阅端状态、操作确认和重连快照通过。真实内嵌浏览器成功解密文字、点击“下一条”并显示加密回执后的状态，控制台无错误。npm audit 零已知漏洞（固定 ws 8.22.0）。截图和日志保留本地，不含用户资料。
 
 部署步骤、协议、限制与回滚见 CompanionRelay/README.md。没有部署公网服务或产生云费用；公开 HTTPS/WSS 域名、双平台真实切网、60 分钟测试和独立安全审查仍待验收。中转重启/8 小时到期须重配对。
+
+## F — 原生手机与蓝牙备用（draft）
+
+交付 Kotlin/Compose Android 项目与 SwiftUI iOS Xcode 项目；扫描、粘贴和深链配对，局域网 SSE、静默快照恢复、加密中转、Core Bluetooth/GATT 备用、当前回答/来源/核查更新及操作入口均已实现。Mac 提供可选 peripheral 服务；分片协议、完整消息认证确认、最多三次重传、最新状态合并、过期帧回收及三通道命令去重共用。
+
+验证：166 桌面 Swift 测试通过，含真实跨语言 AES-GCM 向量、乱序/重复/超时片、丢失确认重传、错误确认不能前进以及只发送最新等待状态。独立 Swift 手机共用包编译并通过 3 项测试，其中真实 TCP 验证 SSE 切题、空的新答案、命令一次执行、SSE 静默后的快照补齐。Android 真实构建产生约 10 MB 调试 APK，3 项 JVM 协议测试通过；Android 15 ARM64 模拟器的 Compose/真实 TCP 整链路仪器测试通过，验证同一组切题/操作/静默恢复场景。
+
+iOS UI 未在本机编译：本机只有 Command Line Tools，缺少完整 Xcode/iOS SDK。已提供可确定性重建的 Xcode 项目和手动构建工作流；未提供 IPA，不宣称 iPhone 真机已通过。模拟器不会证明 BLE 射频行为；Mac/iPhone/Android 三方真实 BLE、实体两平台各 60 分钟、锁屏和切网仍是发布门槛。操作和构建说明、协议与回滚见 Mobile/README.md。
