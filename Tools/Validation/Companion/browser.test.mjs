@@ -2,15 +2,14 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {webcrypto} from 'node:crypto';
 import assert from 'node:assert/strict';
-const swift=readFileSync(new URL('../../../Sources/InterviewHacker/CompanionServer.swift',import.meta.url),'utf8');
-const script=swift.match(/<script>([\s\S]*?)<\/script>/)[1];
+const script=readFileSync(new URL('../../../CompanionRelay/src/phone.js',import.meta.url),'utf8').replace(/^import .*$/m,'').replace('export function apply','function apply');
 const elements=new Map(),intervals=[],events={},requests=[];
-const document={hidden:false,getElementById(id){if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',hidden:false});return elements.get(id)},addEventListener(k,f){events[k]=f}};
+const document={hidden:false,querySelectorAll(){return []},getElementById(id){if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',hidden:false});return elements.get(id)},addEventListener(k,f){events[k]=f}};
 let active;
 class EventSource{constructor(){this.handlers={};active=this}addEventListener(k,f){this.handlers[k]=f}close(){this.closed=true}}
 let now=100000;
 const frame=(n,q,a,extra={})=>({version:1,serverID:'test',sequence:n,snapshot:{question:q,answer:a,answering:!a,status:'正在聆听',position:'',...extra}});
-const context={document,EventSource,Date:{now:()=>now},URLSearchParams,location:{search:'?t=token'},crypto:webcrypto,
+const context={document,EventSource,Date:{now:()=>now},TextDecoder,URLSearchParams,location:{search:'?t=token',hash:'',protocol:'http:'},crypto:webcrypto,
  localStorage:{getItem:()=>null,setItem(){}},window:{addEventListener(k,f){events[k]=f}},
  setInterval(f,n){intervals.push({f,n})},setTimeout(){return 1},clearTimeout(){},Math,AbortController,
  async fetch(url,options){requests.push({url,options});return {ok:true,status:200,json:async()=>frame(1,'初始','答案')}}};
@@ -29,7 +28,8 @@ assert(requests.filter(r=>r.url.startsWith('/snapshot')).length>=2);
 active.onerror();
 await new Promise(r=>setImmediate(r));
 assert(active.closed);
-await context.act('next');
+context.window.act('next');
+await new Promise(r=>setImmediate(r));
 const command=requests.find(r=>r.url.startsWith('/action'));
 assert.match(command.url,/id=[0-9a-f-]{36}/);
 assert.equal(command.options.method,'POST');

@@ -64,6 +64,7 @@ jobs:
           mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
           cp "$bin" "$app/Contents/MacOS/InterviewHacker"
           cp Resources/Info.plist "$app/Contents/Info.plist"
+          cp -R Resources/Companion "$app/Contents/Resources/Companion"
           cp -R Resources/DocumentRuntime "$app/Contents/Resources/DocumentRuntime"
           # Own identity: the test app never touches the installed app's settings or keychain.
           plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"

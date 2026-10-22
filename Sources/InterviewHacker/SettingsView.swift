@@ -468,6 +468,21 @@ private struct CompanionSection: View {
                     }
                 }
             }
+            Divider()
+            TextField("HTTPS 中转服务根地址", text: $state.companionRelayURL).textFieldStyle(.roundedBorder)
+            Toggle("启用互联网加密备用连接", isOn: Binding(get: { state.companionRelayEnabled }, set: { state.setCompanionRelay(enabled: $0) }))
+                .disabled(!state.companionEnabled)
+            Text(state.companionRelayStatus).font(.caption).foregroundStyle(.secondary)
+            if let address = state.companionBackupAddress {
+                HStack(alignment: .top) {
+                    QRCodeView(text: address).frame(width: 132, height: 132)
+                    VStack(alignment: .leading) {
+                        Text("HTTPS 备用入口 · 请在手机收藏此链接")
+                        Text("开启中转后请重新扫描配对码。局域网页仍打开时会自动切换；重新打开时可使用此备用入口。").font(.caption)
+                        Button("复制备用入口") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(address, forType: .string) }
+                    }
+                }
+            }
             Note("手机实时显示当前问题和流式回答，并可一键“回答 / 改短 / 举例 / 英文版 / 上一条”。屏幕共享完全看不到手机。只同步当前回答，不同步转录、资料或截图；链接含一次性随机配对码，关闭后失效。连接为局域网明文 HTTP，请只在可信网络使用。")
         }
     }

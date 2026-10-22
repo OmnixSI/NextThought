@@ -268,6 +268,8 @@ extension AppState {
     // MARK: Companion
 
     func setCompanion(enabled: Bool) {
+        companionRelayTask?.cancel(); companionRelayTask = nil
+        companionBackupAddress = nil
         companionEnabled = enabled
         if enabled {
             UserDefaults.standard.set(companionPort, forKey: "companionPort")
@@ -275,11 +277,32 @@ extension AppState {
             CompanionServer.shared.start(preferredPort: companionPort) { [weak self] status, address in
                 self?.companionStatus = status
                 self?.companionAddress = address
+                if address != nil, self?.companionRelayEnabled == true { self?.setCompanionRelay(enabled: true) }
             }
         } else {
             CompanionServer.shared.stop()
             companionAddress = nil
             companionStatus = "未开启"
+        }
+    }
+
+    func setCompanionRelay(enabled: Bool) {
+        companionRelayTask?.cancel(); companionRelayEnabled = enabled; companionBackupAddress = nil
+        CompanionServer.shared.disableRelay()
+        companionAddress = CompanionServer.shared.pairingURL?.absoluteString
+        guard enabled else { companionRelayStatus = "未开启"; return }
+        guard companionEnabled, let url = URL(string: companionRelayURL), url.scheme == "https",
+              ["", "/"].contains(url.path) else { companionRelayStatus = "请先开启手机伴侣，并填写 HTTPS 服务根地址"; return }
+        UserDefaults.standard.set(companionRelayURL, forKey: "companionRelayURL")
+        companionRelayStatus = "正在连接中转…"
+        CompanionServer.shared.relay.status = { [weak self] in self?.companionRelayStatus = $0 }
+        companionRelayTask = Task { [weak self] in
+            do {
+                let backup = try await CompanionServer.shared.configureRelay(base: url)
+                guard !Task.isCancelled, let self, self.companionEnabled, self.companionRelayEnabled else { return }
+                self.companionBackupAddress = backup.absoluteString
+                self.companionAddress = CompanionServer.shared.pairingURL?.absoluteString
+            } catch { self?.companionRelayStatus = "中转未就绪：\(error.localizedDescription)" }
         }
     }
 

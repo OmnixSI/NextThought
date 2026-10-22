@@ -1,0 +1,12 @@
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: CompanionRelay/Dockerfile
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    ports: ["127.0.0.1:8787:8787"]
+    mem_limit: 128m
+    pids_limit: 64
