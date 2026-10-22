@@ -15,7 +15,7 @@ enum DocumentSelfTest {
         for source in urls {
             let start=Date()
             do {
-                let converted=try await MarkdownConverter.convert(source,options:.init(provider:provider,fallback:false,model:options["model"] ?? "gpt-6-luna",effort:"medium",timeout:600))
+                let converted=try await MarkdownConverter.convert(source,options:.init(provider:provider,fallback:false,model:options["model"] ?? "gpt-6-luna",effort:"medium",timeout:600,localModelID:options["ocr-model"] ?? ModelCatalog.paddleOCR.id))
                 try converted.markdown.write(to:target.appendingPathComponent(source.lastPathComponent+".md"),atomically:true,encoding:.utf8)
                 if let content=converted.content { let encoder=JSONEncoder();encoder.outputFormatting=[.prettyPrinted,.sortedKeys];try encoder.encode(content).write(to:target.appendingPathComponent(source.lastPathComponent+".json")) }
                 records.append(["file":source.lastPathComponent,"seconds":Date().timeIntervalSince(start),"characters":converted.characterCount,"status":converted.content?.status ?? "unknown"])
@@ -56,7 +56,9 @@ extension DocumentSelfTest {
         try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
         defer { try? FileManager.default.removeItem(at:directory) }
         let empty=directory.appendingPathComponent("empty.txt");try Data().write(to:empty)
-        let large=directory.appendingPathComponent("large.txt");try Data(count:21*1024*1024).write(to:large)
+        let large=directory.appendingPathComponent("large.txt")
+        FileManager.default.createFile(atPath: large.path, contents: nil)
+        let handle = try FileHandle(forWritingTo: large); try handle.truncate(atOffset: UInt64(DocumentLimits.maximumFileBytes) + 1); try handle.close()
         let invalid=try await DocumentImporter.read([empty,large],categories:[])
         guard invalid.documents.isEmpty,invalid.failures.count==2 else { throw SelfTest.Failure("empty/oversize rejection") }
         let base=URL(fileURLWithPath:fixtures,isDirectory:true)

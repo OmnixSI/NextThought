@@ -118,6 +118,19 @@ enum DataBackup {
             summary.sessionsAdded += 1
         }
 
+        let originals = root.appendingPathComponent("Originals", isDirectory: true)
+        try await Task.detached(priority: .utility) {
+            let target = AppPaths.root.appendingPathComponent("Originals", isDirectory: true)
+            let files = (try? FileManager.default.contentsOfDirectory(at: originals, includingPropertiesForKeys: [.isRegularFileKey])) ?? []
+            if !files.isEmpty { try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true) }
+            for file in files {
+                let hash = file.deletingPathExtension().lastPathComponent
+                guard hash.count == 64, hash.allSatisfy({ $0.isHexDigit }), ManagedModelStore.sha256(of: file) == hash else { throw AppFailure.capture("备份原文件校验失败。") }
+                let destination = target.appendingPathComponent(file.lastPathComponent)
+                if !FileManager.default.fileExists(atPath: destination.path) { try FileManager.default.copyItem(at: file, to: destination) }
+            }
+        }.value
+
         if applySettings {
             summary.settingsApplied = applySettingsFile(root.appendingPathComponent("settings.plist"))
             summary.secretsApplied = applySecretsFile(root.appendingPathComponent("secrets.plist"))
@@ -225,6 +238,15 @@ enum DataBackup {
                 let markdown = document.content?.markdown ?? document.pages.joined(separator: "\n\n")
                 try markdown.write(to: target, atomically: true, encoding: .utf8)
                 if let content = document.content { try write(content, to: target.deletingPathExtension().appendingPathExtension("json")) }
+                if let hash = document.content?.sourceHash, let format = document.sourceFormat,
+                   hash.count == 64, hash.allSatisfy({ $0.isHexDigit }), !format.contains("/"), !format.contains("..") {
+                    let original = AppPaths.root.appendingPathComponent("Originals").appendingPathComponent(hash + "." + format)
+                    if FileManager.default.fileExists(atPath: original.path) {
+                        let copy = staging.appendingPathComponent("Originals").appendingPathComponent(original.lastPathComponent)
+                        try FileManager.default.createDirectory(at: copy.deletingLastPathComponent(), withIntermediateDirectories: true)
+                        if !FileManager.default.fileExists(atPath: copy.path) { try FileManager.default.copyItem(at: original, to: copy) }
+                    }
+                }
                 workspace.documents[index].markdownPath = relative
             }
             try write(workspace, to: directory.appendingPathComponent("\(workspace.id.uuidString).json"))

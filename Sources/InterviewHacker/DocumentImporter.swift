@@ -76,15 +76,12 @@ enum DocumentImporter {
 
                 do {
                     let attributes = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
-                    guard attributes.isRegularFile == true, let size = attributes.fileSize, size <= 20 * 1024 * 1024 else {
-                        throw AppFailure.capture("仅支持不超过 20 MiB 的普通文件。")
+                    guard attributes.isRegularFile == true, let size = attributes.fileSize, size <= DocumentLimits.maximumFileBytes else {
+                        throw AppFailure.capture("仅支持不超过 512 MiB 的普通文件。")
                     }
                     let result = try await MarkdownConverter.convert(url, options: options)
                     guard result.sections.contains(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
                         throw AppFailure.capture("没有可提取的文字。")
-                    }
-                    guard result.characterCount <= 200_000 else {
-                        throw AppFailure.capture("文字超过 20 万字，请按章节拆分。")
                     }
                     outcome.documents.append(Imported(
                         fileName: url.lastPathComponent,

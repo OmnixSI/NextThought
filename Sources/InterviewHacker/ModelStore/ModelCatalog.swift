@@ -48,6 +48,25 @@ enum ModelCatalog {
         ], summary: "识别文字、表格、公式区域和阅读顺序。", license: "Apache-2.0",
         homepage: "https://huggingface.co/PaddlePaddle/PP-DocLayoutV3_onnx",
         note: "官方 ONNX 模型，在本机 CPU 运行。", minimumOS: "macOS 14")
-    static let all = [paddleOCR, qwen3Embedding, layout]
+    static let paddleOCRQ4 = ManagedModelDescriptor(
+        id: "paddleocr-vl-1-6-mlx-4bit", name: "PaddleOCR-VL-1.6 Q4", kind: .ocr,
+        repository: "mlx-community/PaddleOCR-VL-1.6-4bit", revision: "c8987b277bdd8aaec8bd265d154f391bd03ad165",
+        files: [
+            ManagedModelFile(path: "added_tokens.json", sha256: "f59f889088e0fe21c523e7cf121bb6dca3b0bb148cb7159fbb4572c74dfc5644", size: 25381, weight: 25381),
+            ManagedModelFile(path: "chat_template.jinja", sha256: "2f27812dab7f333e471884e0c803d807f11953d5453140dfb1aaba234f872bc8", size: 1474, weight: 1474),
+            ManagedModelFile(path: "config.json", sha256: "f3201c9d3ffb55873a844d10ca2c616c3e1dc4939ee0631c697905a9d245f504", size: 2676, weight: 2676),
+            ManagedModelFile(path: "generation_config.json", sha256: "a6701d78ab3b4d972307cdec3b69d4c13f46e0d5140514f50ab7d84259324b94", size: 133, weight: 133),
+            ManagedModelFile(path: "model.safetensors", sha256: "5d1ce8b52bf14c528a4b860ef8ed74a8136aecf21d98ed514c09522a19cdf559", size: 703562705, weight: 703562705),
+            ManagedModelFile(path: "model.safetensors.index.json", sha256: "7922fd298904bb4271d80f51bc7bb5d4cc7d3a038921cdbf5080bfb6c0556271", size: 69879, weight: 69879),
+            ManagedModelFile(path: "preprocessor_config.json", sha256: "111872ab1e8bb7fd040ac5087bfced7ab8f011f02139b088cba294964c3b1d0e", size: 641, weight: 641),
+            ManagedModelFile(path: "processor_config.json", sha256: "37e0b148483ccbd862ec95e5a4ccd9d5a6a8e79e8b49db95eeefcb94fcb436e2", size: 609, weight: 609),
+            ManagedModelFile(path: "special_tokens_map.json", sha256: "d3a125c03103deb2acaf7730791bdbbf196f620e5a2213b664511ff9b4b25bab", size: 1151, weight: 1151),
+            ManagedModelFile(path: "tokenizer.json", sha256: "f64dee5b500fd0737498420a95cfa25927990ecbe37c0c112a6c8fcea22bc7f9", size: 11188983, weight: 11188983),
+            ManagedModelFile(path: "tokenizer_config.json", sha256: "ec27a60e0ac749b3820964af0511115d8e5a9b63ce22ff933ef6a09c36aa50fe", size: 782, weight: 782),
+        ], summary: "较小体积的本机 OCR；识别结果需核对。", license: "Apache-2.0",
+        homepage: "https://huggingface.co/mlx-community/PaddleOCR-VL-1.6-4bit",
+        note: "MLX 4bit；需版面模型及文档运行包。", minimumOS: "macOS 14")
+    static let localOCRChoices = [paddleOCR, paddleOCRQ4]
+    static let all = [paddleOCR, paddleOCRQ4, qwen3Embedding, layout]
     static func descriptor(for id: String) -> ManagedModelDescriptor? { all.first { $0.id == id } }
 }

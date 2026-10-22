@@ -15,3 +15,25 @@ class WorkerTests(unittest.TestCase):
   regions=[(0,21,(0,0,1000,1000)),(1,22,(20,20,300,50))]
   self.assertEqual(len(worker.reading_order(regions,1000)),1)
 if __name__=='__main__':unittest.main()
+
+class OfficeStabilityTests(unittest.TestCase):
+ def test_zip_rejects_traversal_and_explosive_ratios(self):
+  import zipfile,io
+  data=io.BytesIO()
+  with zipfile.ZipFile(data,'w') as archive:archive.writestr('../escape','bad')
+  with zipfile.ZipFile(data) as archive:
+   with self.assertRaises(ValueError):worker.validate_office_archive(archive)
+ def test_grouped_shapes_and_notes_source_order(self):
+  from types import SimpleNamespace as S
+  text=lambda value:S(shape_type=1,has_text_frame=True,text=value,has_table=False,has_chart=False,_element=None)
+  group=S(shape_type=6,shapes=[text('inside A'),text('inside B')])
+  parts=[]
+  worker.read_slide_shapes([text('title'),group,text('end')],{'slide':7},parts,lambda *a:None,[])
+  self.assertEqual([p['markdown'] for p in parts],['title','inside A','inside B','end'])
+  self.assertTrue(all(p['locator']=={'slide':7} for p in parts))
+ def test_slide_table_keeps_merge_and_escapes(self):
+  from types import SimpleNamespace as S
+  table=S(rows=[S(cells=[S(text='A&B',is_spanned=False,span_width=2,span_height=1),S(text='',is_spanned=True)])])
+  text=worker.slide_table(table)
+  self.assertIn('colspan="2"',text);self.assertIn('A&amp;B',text)
+  self.assertEqual(text.count('<td'),1)

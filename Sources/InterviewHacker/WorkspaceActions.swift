@@ -19,85 +19,15 @@ extension AppState {
     /// the user can drop a whole folder in without sorting it by hand. A file
     /// that cannot be read only fails that one file.
     func importDocuments(_ urls: [URL], category: String? = nil) {
-        guard !isImportingDocuments else { return }
-        let workspaceID = activeWorkspace.id
-        let categories = ModeProfile.for(activeWorkspace.mode).documentCategories
-        isImportingDocuments = true
-        importStatus = "正在把 \(urls.count) 个文件转成 Markdown…"
-        importTask = Task {
-            defer { isImportingDocuments = false; importTask = nil }
-            do {
-                let outcome = try await DocumentImporter.read(
-                    urls, categories: categories,
-                    options: documentConversionOptions)
-                try Task.checkCancellation()
-                guard var workspace = workspaces.workspace(workspaceID) else { return }
-                guard workspace.documents.count + outcome.documents.count <= Self.maxDocuments else {
-                    throw AppFailure.capture("每个场景最多 \(Self.maxDocuments) 份资料，请先移除不需要的文件。")
-                }
-                var names = Set(workspace.documents.map(\.name))
-                var total = workspace.documents.reduce(0) { $0 + $1.characterCount }
-                var added = 0
-                var skipped = 0
-                for imported in outcome.documents {
-                    // The size limit is per scenario, not per import: a file that
-                    // does not fit is reported instead of discarding the files
-                    // that do fit.
-                    if total + imported.characterCount > 600_000 {
-                        skipped += 1
-                        continue
-                    }
-                    // The Markdown is archived silently next to the other app
-                    // data; that file is the material the model reads.
-                    let archived = try MaterialArchive.archive(imported.markdown, name: imported.name,
-                                                               format: imported.format, workspaceID: workspaceID)
-                    var document = ContextDocument(name: imported.fileName,
-                                                  pages: imported.sections,
-                                                  enabled: true,
-                                                  category: category ?? imported.suggestedCategory,
-                                                  markdownPath: MaterialArchive.relative(archived),
-                                                  sourceFormat: imported.format, content: imported.content)
-                    let original = document.name
-                    var suffix = 2
-                    while names.contains(document.name) { document.name = "\(original) (\(suffix))"; suffix += 1 }
-                    names.insert(document.name)
-                    if let content = document.content {
-                        let metadata = archived.deletingPathExtension().appendingPathExtension("json")
-                        try JSONEncoder().encode(content).write(to: metadata, options: .atomic)
-                    }
-                    workspace.documents.append(document)
-                    total += imported.characterCount
-                    added += 1
-                }
-                guard added > 0 else {
-                    throw AppFailure.capture("这个场景的资料总量超过 60 万字，请先移除部分资料再导入。")
-                }
-                workspaces.update(workspace)
-                rebuildContextIndex()
-                importStatus = Self.importSummary(added: added, failures: outcome.failures.count, skipped: skipped)
-                if !outcome.failures.isEmpty {
-                    errorMessage = "有 \(outcome.failures.count) 个文件没有导入：\n"
-                        + outcome.failures.map { "\($0.name)：\($0.message)" }.joined(separator: "\n")
-                }
-            } catch is CancellationError {
-                importStatus = ""
-            } catch {
-                importStatus = ""
-                errorMessage = "资料导入失败：\(error.localizedDescription)"
-            }
-        }
-    }
-
-    private static func importSummary(added: Int, failures: Int, skipped: Int) -> String {
-        var parts = ["已导入 \(added) 份资料"]
-        if added > 0 { parts.append("已归档为 Markdown") }
-        if failures > 0 { parts.append("\(failures) 个文件失败") }
-        if skipped > 0 { parts.append("\(skipped) 个文件超出 60 万字上限") }
-        return parts.joined(separator: " · ")
+        documentPreparation.enqueue(urls, workspace: activeWorkspace, category: category, options: documentConversionOptions)
+        importStatus = "已加入准备队列，可继续上传。"
     }
 
     func rebuildContextIndex() {
-        cancelAnswer(); insights.sideChain?.cancel()
+        // Meetings retain the prepared index captured at start; preparation only
+        // publishes another revision outside the meeting.
+        guard !isRunning else { return }
+        insights.sideChain?.cancel()
         insights.slideNotes.removeAll(); insights.generatingNotes.removeAll()
         insights.slide=nil
         let revision = UUID(); documentRevision = revision
@@ -105,7 +35,7 @@ extension AppState {
         let semantic = SemanticIndexStore.load(modelID: ModelCatalog.qwen3Embedding.id, workspaceID: activeWorkspace.id)
         semanticIndex = semantic
         // Never reuse a disabled/removed document while a replacement index builds.
-        contextIndex = HybridContextIndex(); selectedExcerpts = []
+        selectedExcerpts = []
         isIndexingDocuments = true
         Task {
             let index = await Task.detached(priority: .userInitiated) {
@@ -116,10 +46,11 @@ extension AppState {
             isIndexingDocuments = false
         }
         // Changed material needs new vectors; the ones that did not change are kept.
-        if semanticRetrievalEnabled, embeddingModelInstalled { rebuildSemanticIndex() }
+        if semanticRetrievalEnabled, embeddingModelInstalled, documentPreparation.pendingCount == 0 { rebuildSemanticIndex() }
     }
 
     func removeDocument(_ id: UUID) {
+        guard !isRunning else { errorMessage = "请在会议结束后移除资料。"; return }
         if let path = documents.first(where: { $0.id == id })?.markdownPath, let url = MaterialArchive.resolve(path),
            workspaces.workspaces.flatMap(\.documents).filter({ $0.markdownPath == path }).count <= 1 {
             try? FileManager.default.removeItem(at: url)
@@ -129,6 +60,7 @@ extension AppState {
     }
 
     func setDocumentEnabled(_ id: UUID, enabled: Bool) {
+        guard !isRunning else { errorMessage = "会议中使用已锁定的资料版本。"; return }
         guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
         documents[index].enabled = enabled; rebuildContextIndex()
     }
@@ -146,7 +78,8 @@ extension AppState {
 
     func switchWorkspace(_ id: UUID) {
         guard id != activeWorkspace.id else { return }
-        cancelAnswer(); importTask?.cancel()
+        guard !isRunning else { errorMessage = "会议中保持当前资料版本；请结束会议后切换场景。"; return }
+        cancelAnswer()
         workspaces.activate(id)
         tracker.mode = sessionMode
         rebuildContextIndex()

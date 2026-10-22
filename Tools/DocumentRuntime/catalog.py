@@ -10,6 +10,9 @@ MODELS = [
     ("paddleOCR", "paddleocr-vl-1-6-mlx-8bit", "PaddleOCR-VL-1.6 Q8", "ocr",
      "olragon/PaddleOCR-VL-1.6-8bit", "845ebafa9b6bed8372e4675a40b2bb19ac4c7089",
      "按版面区域识别中英正文、表格与公式。", "MLX 8bit；本机运行。完整功能还需要版面模型和文档运行包。"),
+    ("paddleOCRQ4", "paddleocr-vl-1-6-mlx-4bit", "PaddleOCR-VL-1.6 Q4", "ocr",
+     "mlx-community/PaddleOCR-VL-1.6-4bit", "c8987b277bdd8aaec8bd265d154f391bd03ad165",
+     "较小体积的本机 OCR；识别结果需核对。", "MLX 4bit；需版面模型及文档运行包。"),
     ("qwen3Embedding", "qwen3-embedding-0-6b-mlx-8bit", "Qwen3-Embedding-0.6B Q8", "embedding",
      "mlx-community/Qwen3-Embedding-0.6B-8bit", "407ad2329cd30702720aafe83f74a1ba30fdfbca",
      "中英语义检索，1024 维向量。", "MLX 8bit；与关键词检索融合，不阻塞实时回答。"),
@@ -42,7 +45,7 @@ def main():
         for path, digest, size in files:
             parts.append(f'            ManagedModelFile(path: "{path}", sha256: "{digest}", size: {size}, weight: {max(1, size)}),\n')
         parts.append(f'        ], summary: "{summary}", license: "Apache-2.0",\n        homepage: "https://huggingface.co/{repo}",\n        note: "{note}", minimumOS: "macOS 14")\n')
-    parts.append('    static let all = [paddleOCR, qwen3Embedding, layout]\n    static func descriptor(for id: String) -> ManagedModelDescriptor? { all.first { $0.id == id } }\n}\n')
+    parts.append('    static let localOCRChoices = [paddleOCR, paddleOCRQ4]\n    static let all = [paddleOCR, paddleOCRQ4, qwen3Embedding, layout]\n    static func descriptor(for id: String) -> ManagedModelDescriptor? { all.first { $0.id == id } }\n}\n')
     (ROOT / "Sources/InterviewHacker/ModelStore/ModelCatalog.swift").write_text("".join(parts))
 
 

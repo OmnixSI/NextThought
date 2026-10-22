@@ -2,11 +2,14 @@ import Foundation
 import InterviewHackerCore
 
 extension AppState {
-    var paddleOCRInstalled: Bool { installedDocumentModels.contains(ModelCatalog.paddleOCR.id) && installedDocumentModels.contains(ModelCatalog.layout.id) }
+    var selectedOCRModel: ManagedModelDescriptor { ModelCatalog.localOCRChoices.first { $0.id == localOCRModelID } ?? ModelCatalog.paddleOCR }
+    var paddleOCRInstalled: Bool { installedDocumentModels.contains(selectedOCRModel.id) && installedDocumentModels.contains(ModelCatalog.layout.id) }
     var embeddingModelInstalled: Bool { installedDocumentModels.contains(ModelCatalog.qwen3Embedding.id) }
     var semanticRetrievalReady: Bool { semanticRetrievalEnabled && embeddingModelInstalled && runtimeInstalled && !semanticIndex.isEmpty }
     var documentConversionOptions: DocumentConversionOptions {
-        .init(provider: documentOCRProvider, fallback: ocrFallbackToVision, model: codexOCRModel, effort: codexOCREffort, timeout: codexOCRTimeout, isPaused: { await MainActor.run { self.isRunning || self.isAnswering } })
+        var options = DocumentConversionOptions(provider: documentOCRProvider, fallback: ocrFallbackToVision, model: codexOCRModel, effort: codexOCREffort, timeout: codexOCRTimeout, isPaused: { await MainActor.run { self.isRunning || self.isAnswering } })
+        options.localModelID = selectedOCRModel.id
+        return options
     }
     func downloadManagedModel(_ descriptor: ManagedModelDescriptor) {
         guard !documentSetupBusy else { return }
@@ -73,40 +76,40 @@ extension AppState {
     }
     func rebuildSemanticIndex() {
         semanticIndexTask?.cancel(); semanticGeneration = UUID()
-        let generation = semanticGeneration, workspaceID = activeWorkspace.id, revision = documentRevision
-        guard embeddingModelInstalled && semanticRetrievalEnabled && runtimeInstalled else { isBuildingSemanticIndex = false; return }
-        let documents = activeWorkspace.retrievalDocuments
-        let cached = SemanticIndexStore.load(modelID: ModelCatalog.qwen3Embedding.id, workspaceID: workspaceID)
+        let generation = semanticGeneration, workspaceID = activeWorkspace.id
+        guard !isRunning, embeddingModelInstalled && semanticRetrievalEnabled && runtimeInstalled else { isBuildingSemanticIndex = false; return }
         isBuildingSemanticIndex = true
         semanticIndexTask = Task {
             defer { if semanticGeneration == generation { isBuildingSemanticIndex = false } }
             do {
-                let chunks = await Task.detached(priority: .utility) { ContextChunker.chunks(documents: documents) }.value
-                let oldVectors = Dictionary(cached.entries.map { ($0.fingerprint, $0.vector) }, uniquingKeysWith: { a, _ in a })
-                var index = SemanticIndex()
-                let embedder = await SemanticRetrievalService.shared.embedder()
-                for (position, chunk) in chunks.enumerated() {
-                    try Task.checkCancellation()
-                    while isAnswering || isRunning { try await Task.sleep(for: .milliseconds(200)); try Task.checkCancellation() }
-                    let vector: [Float]
-                    if let old = oldVectors[chunk.fingerprint], old.count == 1024 { vector = old }
-                    else { vector = try await embedder.embedPassage(chunk.text) }
-                    index.setVector(vector, fingerprint: chunk.fingerprint, for: position)
-                    if position % 10 == 0 { semanticIndexStatus = "正在生成向量 \(position + 1)/\(chunks.count)…" }
+                try await prepareSemanticWorkspace(workspaceID) { [weak self] done, total in
+                    Task { @MainActor in self?.semanticIndexStatus = "正在生成向量 \(done)/\(total)…" }
                 }
-                try Task.checkCancellation()
-                guard semanticGeneration == generation, activeWorkspace.id == workspaceID, documentRevision == revision, embeddingModelInstalled else { return }
-                try SemanticIndexStore.save(index, modelID: ModelCatalog.qwen3Embedding.id, workspaceID: workspaceID)
-                semanticIndex = index; contextIndex = HybridContextIndex(documents: documents, semantic: index)
-                semanticIndexStatus = "已缓存 \(index.embeddedCount) 个片段向量。"
             } catch is CancellationError { }
-            catch { if semanticGeneration == generation { semanticIndexStatus = "向量索引失败：\(error.localizedDescription)" } }
+            catch { if semanticGeneration == generation { semanticIndexStatus = "向量索引失败：" + error.localizedDescription } }
+        }
+    }
+    func prepareSemanticWorkspace(_ workspaceID: UUID, progress: @escaping @Sendable (Int, Int) -> Void) async throws {
+        guard let workspace = workspaces.workspace(workspaceID), !isRunning else { throw CancellationError() }
+        let documents = workspace.retrievalDocuments
+        let index = try await SemanticWorkspacePreparation.shared.build(workspaceID: workspaceID, documents: documents, progress: progress)
+        try Task.checkCancellation()
+        guard !isRunning, embeddingModelInstalled else { throw CancellationError() }
+        if workspaceID == activeWorkspace.id, workspaces.workspace(workspaceID)?.retrievalDocuments == documents {
+            semanticIndex = index
+            let hybrid = await Task.detached(priority: .utility) { HybridContextIndex(documents: documents, semantic: index) }.value
+            guard !isRunning, workspaces.workspace(workspaceID)?.retrievalDocuments == documents else { return }
+            contextIndex = hybrid; semanticIndexStatus = "Embedding 已完成：\(index.embeddedCount) 个片段。"
         }
     }
     func retrieveExcerpts(question: String, snapshot: HybridContextIndex? = nil, maximumCharacters: Int = 8_000) async -> [ContextExcerpt] {
         let index = snapshot ?? contextIndex
         guard semanticRetrievalReady, index.hasVectors, !Task.isCancelled else { return index.retrieve(question: question, maximumCharacters: maximumCharacters) }
         let vector = await SemanticRetrievalService.shared.queryVector(question)
+        if vector == nil, let detail = await SemanticRetrievalService.shared.lastError {
+            semanticIndexStatus = "本次使用关键词查找：" + detail
+            Diagnostics.record("retrieval.fallback", ["reason": detail])
+        }
         guard !Task.isCancelled else { return [] }
         return index.retrieve(question: question, queryVector: vector, maximumCharacters: maximumCharacters)
     }

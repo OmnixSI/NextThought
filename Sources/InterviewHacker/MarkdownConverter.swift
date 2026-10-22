@@ -26,7 +26,7 @@ enum MarkdownConverter {
     }
 
     static let supportedExtensions = ["txt", "md", "markdown", "csv", "json", "rtf", "pdf", "docx", "doc",
-                                      "odt", "html", "htm", "pptx", "xlsx", "png", "jpg", "jpeg", "heic", "tiff"]
+                                      "odt", "html", "htm", "ppt", "pptx", "xlsx", "png", "jpg", "jpeg", "heic", "tiff"]
 
     /// Converts one local file. Runs off the main thread.
     static func convert(_ url: URL) throws -> Result {
@@ -193,8 +193,8 @@ struct MarkdownDocument {
 private extension MarkdownConverter {
     /// PDF: one section per page, so "p.3" still means something in a citation.
     static func pdf(_ url: URL) throws -> MarkdownDocument {
-        guard let pdf = PDFDocument(url: url), !pdf.isLocked, pdf.pageCount <= 400 else {
-            throw AppFailure.capture("\(url.lastPathComponent)：PDF 无法读取、已加密或超过 400 页。")
+        guard let pdf = PDFDocument(url: url), !pdf.isLocked, pdf.pageCount <= DocumentLimits.maximumPages else {
+            throw AppFailure.capture("\(url.lastPathComponent)：PDF 无法读取、已加密或超过 2000 页。")
         }
         var document = MarkdownDocument()
         var ocrPages = 0
@@ -250,7 +250,7 @@ private extension MarkdownConverter {
             .filter { $0.range(of: #"^ppt/slides/slide\d+\.xml$"#, options: .regularExpression) != nil }
         guard !names.isEmpty else { throw AppFailure.capture("\(url.lastPathComponent)：文件中没有可读取的文字内容。") }
         var document = MarkdownDocument()
-        for (index, name) in OfficeXMLText.numericOrder(names).prefix(300).enumerated() {
+        for (index, name) in OfficeXMLText.numericOrder(names).enumerated() {
             let xml = try ZipPart.text(url, name)
             let delegate = SlideXMLDelegate()
             let parser = XMLParser(data: Data(xml.utf8))
@@ -274,7 +274,7 @@ private extension MarkdownConverter {
 
         var document = MarkdownDocument()
         let titles = parseSheetTitles(try ZipPart.text(url, "xl/workbook.xml"))
-        for (index, name) in OfficeXMLText.numericOrder(sheetNames).prefix(60).enumerated() {
+        for (index, name) in OfficeXMLText.numericOrder(sheetNames).enumerated() {
             let xml = try ZipPart.text(url, name)
             let rows = parseSheetRows(xml, sharedStrings: sharedStrings)
             guard !rows.isEmpty else { continue }

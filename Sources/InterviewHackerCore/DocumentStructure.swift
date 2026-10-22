@@ -45,6 +45,7 @@ public struct DocumentContent: Codable, Sendable, Equatable {
     public var warnings: [String]
     public var status: String
     public var components: [String: String]
+    public var rawPages: [String: String]?
 
     public init(pipeline: String, sourceHash: String? = nil, blocks: [DocumentBlock],
                 warnings: [String] = [], components: [String: String] = [:]) {

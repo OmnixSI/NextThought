@@ -4,7 +4,7 @@ import InterviewHackerCore
 extension AppState {
     var documentAvailability: DocumentFeatureAvailability {
         .init(checking: !documentModelsChecked, runtime: runtimeInstalled,
-              ocr: installedDocumentModels.contains(ModelCatalog.paddleOCR.id),
+              ocr: installedDocumentModels.contains(selectedOCRModel.id),
               layout: installedDocumentModels.contains(ModelCatalog.layout.id),
               embedding: embeddingModelInstalled, codexConnected: codexReady)
     }
@@ -12,7 +12,7 @@ extension AppState {
 
     func documentModels(for feature: DocumentFeatureAvailability.Feature) -> [ManagedModelDescriptor] {
         switch feature {
-        case .paddle: [ModelCatalog.paddleOCR, ModelCatalog.layout]
+        case .paddle: [selectedOCRModel, ModelCatalog.layout]
         case .semantic: [ModelCatalog.qwen3Embedding]
         case .codex, .office: []
         }
