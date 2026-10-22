@@ -11,9 +11,14 @@ enum DocumentRuntimeInstaller {
         guard let m = try? JSONDecoder().decode(Manifest.self, from: Data(contentsOf: manifestURL)) else { return "运行包大小见发布清单" }
         return "下载 " + ByteCountFormatter.string(fromByteCount: m.downloadBytes, countStyle: .file) + " · 安装占用 " + ByteCountFormatter.string(fromByteCount: m.installedBytes, countStyle: .file)
     }
-    static func install(progress:@escaping @Sendable (Double)->Void) async throws {
+    static func install(searchLocal: Bool = true, progress:@escaping @Sendable (Double)->Void) async throws {
         let manifest=try JSONDecoder().decode(Manifest.self,from:Data(contentsOf:manifestURL))
         guard manifest.version == DocumentRuntime.version, manifest.sha256.count==64 else { throw AppFailure.capture("运行包清单无效。") }
+        if searchLocal {
+            let local = try await LocalDocumentAssets.reuse(models: [], runtime: true, reinstallRuntime: true)
+            try Task.checkCancellation()
+            if local.runtime { return }
+        }
         let token=await Updater.resolveToken()
         func request(_ url:URL,binary:Bool)->URLRequest {
             var r=URLRequest(url:url,timeoutInterval:120)
@@ -67,6 +72,7 @@ enum DocumentRuntimeInstaller {
 extension AppState {
     func deleteDocumentRuntime() {
         Task {
+            localAssetScanTask?.cancel(); await localAssetScanTask?.value
             documentSetupTask?.cancel(); await documentSetupTask?.value
             runtimeDownloadTask?.cancel(); await runtimeDownloadTask?.value
             importTask?.cancel(); await importTask?.value
@@ -79,8 +85,9 @@ extension AppState {
         }
     }
     func installDocumentRuntime() {
-        guard !isInstallingDocumentRuntime, documentSetupFeature == nil else { return }
+        guard !documentSetupBusy else { return }
         isInstallingDocumentRuntime=true
+        documentRuntimeStatus="先查找并校验本机运行包，缺少时再下载…"
         runtimeDownloadTask = Task {
             defer { isInstallingDocumentRuntime=false; runtimeDownloadTask=nil }
             do {

@@ -9,9 +9,10 @@ extension AppState {
         .init(provider: documentOCRProvider, fallback: ocrFallbackToVision, model: codexOCRModel, effort: codexOCREffort, timeout: codexOCRTimeout, isPaused: { await MainActor.run { self.isRunning || self.isAnswering } })
     }
     func downloadManagedModel(_ descriptor: ManagedModelDescriptor) {
-        guard !isDownloadingManagedModel, documentSetupFeature == nil else { return }
+        guard !documentSetupBusy else { return }
         isDownloadingManagedModel = true; managedModelDownloadID = descriptor.id
         managedModelDownloadProgress = 0
+        managedModelDownloadStatus = "先查找并校验本机文件，缺少部分才下载…"
         managedDownloadTask = Task {
             defer { isDownloadingManagedModel = false; managedModelDownloadID = ""; managedDownloadTask = nil }
             do {
@@ -19,20 +20,26 @@ extension AppState {
                     Task { @MainActor in self?.managedModelDownloadProgress = fraction; self?.managedModelDownloadStatus = message }
                 }
                 try Task.checkCancellation()
-                modelInstallRevision += 1
+                documentModelInstallRevision += 1
                 installedDocumentModels.insert(descriptor.id)
                 managedModelDownloadStatus = "\(descriptor.name) 已通过完整校验。"
                 if descriptor.kind == .ocr || descriptor.kind == .layout {
                     if paddleOCRInstalled && !documentProviderWasSelected { documentOCRProvider = .paddle; updateSettings() }
                 } else { rebuildSemanticIndex() }
-            } catch is CancellationError { managedModelDownloadStatus = "下载已取消，已校验文件将在重试时复用。" }
-            catch { managedModelDownloadStatus = "下载失败：\(error.localizedDescription)；再次下载可修复。" }
+            } catch is CancellationError {
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
+                managedModelDownloadStatus = "准备已取消，已校验文件将在重试时复用。"
+            } catch {
+                documentModelInstallRevision += 1; await refreshManagedModelStatus()
+                managedModelDownloadStatus = "准备失败：\(error.localizedDescription)；重试可修复。"
+            }
         }
     }
     func cancelManagedModelDownload() { managedDownloadTask?.cancel() }
     func deleteManagedModel(_ descriptor: ManagedModelDescriptor) {
-        modelInstallRevision += 1
+        documentModelInstallRevision += 1
         Task {
+            localAssetScanTask?.cancel(); await localAssetScanTask?.value
             documentSetupTask?.cancel(); await documentSetupTask?.value
             if managedModelDownloadID == descriptor.id { managedDownloadTask?.cancel(); await managedDownloadTask?.value }
             installedDocumentModels.remove(descriptor.id)
@@ -51,14 +58,14 @@ extension AppState {
         }
     }
     func refreshManagedModelStatus() async {
-        let revision = modelInstallRevision
+        let revision = documentModelInstallRevision
         let installed = await Task.detached(priority: .utility) {
             Set(ModelCatalog.all.filter { descriptor in
                 guard ManagedModelStore.isInstalled(descriptor) else { return false }
                 return (try? ManagedModelStore.verify(descriptor, at: descriptor.directory)) != nil
             }.map(\.id))
         }.value
-        guard revision == modelInstallRevision else { return }
+        guard revision == documentModelInstallRevision else { return }
         installedDocumentModels = installed; runtimeInstalled = DocumentRuntime.installed
         documentModelsChecked = true
         semanticIndex = SemanticIndexStore.load(modelID: ModelCatalog.qwen3Embedding.id, workspaceID: activeWorkspace.id)

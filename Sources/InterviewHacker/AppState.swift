@@ -203,6 +203,10 @@ final class AppState {
     @ObservationIgnored var answerRetrievalTask: Task<[ContextExcerpt], Never>?
     var installedDocumentModels: Set<String> = []
     var documentModelsChecked = false
+    var documentModelInstallRevision = 0
+    var isScanningLocalAssets = false
+    var localAssetScanStatus = ""
+    @ObservationIgnored var localAssetScanTask: Task<Void, Never>?
     var documentSetupFeature: DocumentFeatureAvailability.Feature?
     var documentSetupStatus = ""
     var documentSetupProgress = 0.0
@@ -1190,6 +1194,7 @@ final class AppState {
     }
 
     func prepareForTermination() {
+        localAssetScanTask?.cancel()
         documentSetupTask?.cancel(); managedDownloadTask?.cancel(); runtimeDownloadTask?.cancel()
         importTask?.cancel()
         workspaces.flush()

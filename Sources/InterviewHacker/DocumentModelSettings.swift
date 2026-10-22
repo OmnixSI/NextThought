@@ -20,6 +20,18 @@ struct DocumentModelSettings: View {
                     Button("先用系统识别") { state.selectDocumentProvider(.system) }.buttonStyle(SecondaryButtonStyle())
                 }
             }
+            SettingsSection(title: "已经在这台 Mac 下载过？", icon: "internaldrive") {
+                Note("先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。")
+                HStack {
+                    Button("扫描本机已有组件") { state.scanLocalDocumentAssets() }
+                        .buttonStyle(SecondaryButtonStyle()).disabled(state.documentSetupBusy || !state.documentModelsChecked)
+                    Button("选择其他目录…") { state.chooseLocalDocumentAssets() }
+                        .disabled(state.documentSetupBusy || !state.documentModelsChecked)
+                    if state.isScanningLocalAssets { ProgressView().controlSize(.small); Button("取消") { state.localAssetScanTask?.cancel() } }
+                }
+                if !state.localAssetScanStatus.isEmpty { Note(state.localAssetScanStatus) }
+                Note("扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。")
+            }
             if state.documentSetupFeature != nil || !state.documentSetupStatus.isEmpty {
                 SettingsSection(title: "准备进度", icon: "arrow.down.circle") {
                     Note(state.documentSetupStatus)
@@ -128,7 +140,7 @@ struct DocumentModelSettings: View {
         if state.documentAvailability.ready(feature) { return "本应用已安装 · 可使用" }
         if feature == .codex, state.checkingCodexStatus { return "正在检查 Codex 登录…" }
         if feature == .codex, !state.codexReady { return state.codexInstalled ? "需要登录 Codex" : "未检测到 Codex" }
-        return "需要下载 · 最多 " + state.documentDownloadSize(feature)
+        return "尚未接入 · 可扫描或下载，最多 " + state.documentDownloadSize(feature)
     }
     private func provider(_ value: DocumentOCRProvider, title: String, badge: String, ready: Bool, detail: String) -> some View {
         choice(title: title, status: badge, detail: detail) {
@@ -141,7 +153,7 @@ struct DocumentModelSettings: View {
             } else if value == .codex && !state.codexReady {
                 Button("连接 Codex") { state.openSettings(.answers) }.buttonStyle(SecondaryButtonStyle())
             } else {
-                featureButton(value == .paddle ? .paddle : .codex, title: "下载并使用")
+                featureButton(value == .paddle ? .paddle : .codex, title: "准备并使用")
             }
         }
     }
@@ -194,13 +206,13 @@ struct ManagedModelRow: View {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(descriptor.name).fontWeight(.medium)
-                    Text(!state.documentModelsChecked ? "检查中…" : isInstalled ? "已安装 · 文件已校验" : "未安装 · 需要下载")
+                    Text(!state.documentModelsChecked ? "检查中…" : isInstalled ? "已安装 · 文件已校验" : "尚未接入 · 可扫描或下载")
                         .font(.caption).foregroundStyle(isInstalled ? .green : .secondary)
                 }
                 Spacer()
                 if downloading { Button("取消") { state.cancelManagedModelDownload() } }
                 else {
-                    Button(isInstalled ? "校验／修复" : "下载") { state.downloadManagedModel(descriptor) }
+                    Button(isInstalled ? "校验／修复" : "准备") { state.downloadManagedModel(descriptor) }
                         .disabled(state.documentSetupBusy || !state.documentModelsChecked)
                     if isInstalled { Button("删除", role: .destructive) { state.deleteManagedModel(descriptor) }.disabled(state.documentSetupBusy) }
                 }
