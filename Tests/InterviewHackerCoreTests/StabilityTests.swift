@@ -64,4 +64,22 @@ struct StabilityTests {
         #expect(try JSONDecoder().decode(SessionAnswerEvent.self, from: JSONSerialization.data(withJSONObject: old)).evidence == nil)
     }
 
+    @Test func directoryEnumerationErrorCannotPublishOrPruneARecoveryPoint() async throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let source = root.appendingPathComponent("source")
+        let locked = source.appendingPathComponent("locked")
+        try fm.createDirectory(at: locked, withIntermediateDirectories: true)
+        try Data("must not disappear".utf8).write(to: locked.appendingPathComponent("original.txt"))
+        defer { try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: locked.path); try? fm.removeItem(at: root) }
+        let store = IncrementalBackupStore(root: root.appendingPathComponent("backups"))
+        let first = try await store.create(files: ["safe": Data("previous".utf8)], reason: "manual")
+        try fm.setAttributes([.posixPermissions: 0o000], ofItemAtPath: locked.path)
+        await #expect(throws: (any Error).self) {
+            try await store.create(files: ["safe": Data("changed".utf8)], directories: ["Originals": source], reason: "session", keep: 1)
+        }
+        let points = try fm.contentsOfDirectory(at: root.appendingPathComponent("backups/RestorePoints"), includingPropertiesForKeys: nil)
+        #expect(points.map { $0.resolvingSymlinksInPath() } == [first.resolvingSymlinksInPath()])
+    }
+
 }
