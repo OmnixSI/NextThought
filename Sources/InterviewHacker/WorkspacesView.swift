@@ -260,18 +260,41 @@ private struct MaterialsTab: View {
         Divider()
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("资料 \(state.documents.count)/\(AppState.maxDocuments)", systemImage: "doc.on.doc").font(.system(size: 13, weight: .semibold))
+                Label("资料 \(state.documents.count)", systemImage: "doc.on.doc").font(.system(size: 13, weight: .semibold))
                 Spacer()
                 if state.isImportingDocuments || state.isIndexingDocuments { ProgressView().controlSize(.small) }
                 Button { importingCategory = nil; isFileImporterPresented = true } label: {
                     Label("导入资料", systemImage: "square.and.arrow.down")
                 }
-                .buttonStyle(ChipButtonStyle(prominent: true)).disabled(state.isImportingDocuments)
+                .buttonStyle(ChipButtonStyle(prominent: true))
                 .help("一次可以选多个文件或整个文件夹：系统转成 Markdown、在后台归档，并按内容自动归类")
             }
             if !state.importStatus.isEmpty {
                 Text(state.importStatus).font(.caption).foregroundStyle(.secondary)
             }
+            let preparation = state.documentPreparation
+            let jobs = preparation.jobs.filter { $0.workspaceID == state.activeWorkspace.id }
+            if !jobs.isEmpty {
+                DisclosureGroup("会前准备 · \(preparation.pendingCount(workspaceID: state.activeWorkspace.id)) 项未完成") {
+                    ForEach(jobs.suffix(100)) { job in
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(job.fileName).font(.caption.bold())
+                                Text(job.progressText).font(.caption).foregroundStyle(job.stage == .failed ? .red : .secondary)
+                                if let total = job.total, total > 0, !job.stage.terminal { ProgressView(value: Double(job.completed), total: Double(total)) }
+                                if !job.message.isEmpty { Text(job.message).font(.caption2).foregroundStyle(.secondary).textSelection(.enabled) }
+                            }
+                            Spacer()
+                            if [.failed, .cancelled, .warning].contains(job.stage) {
+                                Button("重试") { preparation.retry(job.id) }.buttonStyle(.borderless)
+                            } else if !job.stage.terminal {
+                                Button("取消") { preparation.cancel(job.id) }.buttonStyle(.borderless)
+                            }
+                        }.padding(.vertical, 4)
+                    }
+                }
+            }
+            if let error = preparation.error { Text(error).font(.caption).foregroundStyle(.red) }
             ForEach(categories(profile), id: \.self) { category in
                 categorySection(category)
             }
@@ -328,7 +351,7 @@ private struct MaterialsTab: View {
                 Text("\(items.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
                 Button { importingCategory = category; isFileImporterPresented = true } label: { Label("添加", systemImage: "plus") }
-                    .buttonStyle(ChipButtonStyle()).disabled(state.isImportingDocuments)
+                    .buttonStyle(ChipButtonStyle())
             }
             ForEach(items) { document in
                 HStack(spacing: 8) {

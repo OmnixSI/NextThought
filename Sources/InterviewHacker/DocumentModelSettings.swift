@@ -14,6 +14,15 @@ struct DocumentModelSettings: View {
                          detail: "离线、无需下载。适合普通文字；复杂表格和公式可能丢失结构，重要数字请核对。")
                 provider(.paddle, title: "本机增强识别", badge: availability(.paddle), ready: state.documentAvailability.ready(.paddle),
                          detail: "适合扫描件、表格和公式。需下载识别与版面模型，在本机计算、占用内存；仍可能识别出错。")
+                if state.documentOCRProvider == .paddle {
+                    Picker("本机识别模型", selection: $state.localOCRModelID) {
+                        ForEach(ModelCatalog.localOCRChoices, id: \.id) { descriptor in
+                            Text(descriptor.name + " · " + descriptor.formattedSize + (state.installedDocumentModels.contains(descriptor.id) ? " · 已安装" : " · 未安装")).tag(descriptor.id)
+                        }
+                    }.onChange(of: state.localOCRModelID) { _, _ in
+                        state.documentProviderSelectionRevision += 1; state.updateSettings()
+                    }
+                }
                 provider(.codex, title: "Codex 文件代读", badge: availability(.codex), ready: state.documentAvailability.ready(.codex),
                          detail: "免 OCR 模型权重，读取原文件。需要已登录的 Codex、共用组件和网络；占账号额度，速度受网络影响。")
                 if !currentReady, state.documentOCRProvider != .system {
@@ -64,7 +73,10 @@ struct DocumentModelSettings: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(state.runtimeInstalled ? "已安装支持组件 · 可导入 Office 文件" : "需要共用文档组件")
                             .foregroundStyle(state.runtimeInstalled ? .green : .secondary)
-                        Note("按文件结构提取正文和嵌图；复杂排版可先导出 PDF。共用组件最多下载约 186 MB，不需要自己安装 Python。")
+                        Note("会前后台提取正文、嵌图、备注和图表。共用组件最多下载约 186 MB。")
+                        if !LegacyOfficeConverter.available {
+                            Link("安装旧版 PPT 支持（LibreOffice）", destination: URL(string: "https://www.libreoffice.org/download/download-libreoffice/")!)
+                        } else { Note("旧版 PPT 本地转换组件已就绪。") }
                     }
                     Spacer(minLength: 12)
                     if !state.runtimeInstalled { featureButton(.office, title: "安装支持") }
@@ -110,7 +122,7 @@ struct DocumentModelSettings: View {
                         .disabled(!state.documentAvailability.ready(.semantic) || !state.semanticRetrievalEnabled || state.isBuildingSemanticIndex)
                 }
             }
-            Note("资料长期保存为 Markdown 与定位信息；不保存原件副本。下载组件或模型不会自动上传资料，只有你选择在线代读或在线回答时才使用对应服务。")
+            Note("资料保留原件、Markdown 与定位信息，原件按内容去重。下载组件或模型不会自动上传资料，只有你选择在线代读或在线回答时才使用对应服务。")
         }
     }
     private var currentReady: Bool {
@@ -153,7 +165,9 @@ struct DocumentModelSettings: View {
             } else if value == .codex && !state.codexReady {
                 Button("连接 Codex") { state.openSettings(.answers) }.buttonStyle(SecondaryButtonStyle())
             } else {
-                featureButton(value == .paddle ? .paddle : .codex, title: "准备并使用")
+                if value == .paddle && state.documentOCRProvider != .paddle {
+                    Button("选择模型") { state.documentOCRProvider = .paddle; state.documentProviderWasSelected = true; state.documentProviderSelectionRevision += 1; state.updateSettings() }.buttonStyle(SecondaryButtonStyle())
+                } else { featureButton(value == .paddle ? .paddle : .codex, title: "准备并使用") }
             }
         }
     }

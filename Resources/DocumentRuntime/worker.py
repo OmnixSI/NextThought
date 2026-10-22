@@ -151,16 +151,63 @@ def recognize(payload, job):
         emit({'version':1,'id':job,'event':'progress','completed':i+1,'total':len(regions)})
     return {'markdown':'\n\n'.join(b['markdown'] for b in blocks),'blocks':blocks,'components':{'mlx-vlm':'0.7.9','layout':'PP-DocLayoutV3'}}
 
+def validate_office_archive(archive):
+    entries=archive.infolist()
+    if len(entries)>100000:raise ValueError('Office 包含过多内容项')
+    if sum(x.file_size for x in entries)>2*1024*1024*1024:raise ValueError('Office 解压内容超过2GiB，未导入')
+    for entry in entries:
+        path=pathlib.PurePosixPath(entry.filename)
+        if path.is_absolute() or '..' in path.parts:raise ValueError('Office 含有不安全路径')
+        if entry.file_size>512*1024*1024:raise ValueError('Office 单个内容项超过512MiB')
+        if entry.file_size>16*1024*1024 and entry.file_size/max(1,entry.compress_size)>1000:raise ValueError('Office 解压比例过高')
+
+def slide_table(table):
+    import html
+    rows=[]
+    for row in table.rows:
+        cells=[]
+        for cell in row.cells:
+            if getattr(cell,'is_spanned',False):continue
+            cols=getattr(cell,'span_width',1);span_rows=getattr(cell,'span_height',1)
+            attrs=(' colspan="'+str(cols)+'"' if cols>1 else '')+(' rowspan="'+str(span_rows)+'"' if span_rows>1 else '')
+            cells.append('<td'+attrs+'>'+html.escape(cell.text).replace('\n','<br>')+'</td>')
+        rows.append('<tr>'+''.join(cells)+'</tr>')
+    return '<table>\n'+'\n'.join(rows)+'\n</table>'
+
+def read_slide_shapes(shapes,locator,parts,save_image,warnings,job=None):
+    for shape in shapes:
+        checkpoint(job)
+        if int(shape.shape_type)==6:
+            read_slide_shapes(shape.shapes,locator,parts,save_image,warnings,job);continue
+        if getattr(shape,'has_text_frame',False) and shape.text.strip():parts.append(dict(markdown=shape.text,locator=locator))
+        if getattr(shape,'has_table',False):parts.append(dict(markdown=slide_table(shape.table),locator=locator))
+        if getattr(shape,'has_chart',False):
+            chart=shape.chart;lines=['### 图表']
+            if chart.has_title:lines.append(chart.chart_title.text_frame.text)
+            try:
+                categories=[str(c.label) for c in chart.plots[0].categories]
+                for series in chart.series:
+                    values=list(series.values)
+                    lines.append('系列：'+str(series.name))
+                    lines.append(mdtable([['类别','数值']]+[[categories[n] if n<len(categories) else str(n+1),str(v)] for n,v in enumerate(values)]))
+                parts.append(dict(markdown='\n'.join(lines),locator=locator))
+            except Exception as error:warnings.append('幻灯片 '+str(locator['slide'])+'：图表数据无法完整提取：'+str(error))
+        if int(shape.shape_type)==13:save_image(shape.image.blob,'image.'+shape.image.ext,locator)
+        # SmartArt/diagram relationships need rendering; do not label extraction complete.
+        xml=getattr(shape,'_element',None)
+        if xml is not None and 'drawingml/2006/diagram' in str(getattr(xml,'xml','')):
+            warnings.append('幻灯片 '+str(locator['slide'])+'：包含 SmartArt，请核对图形关系；文字已尽量提取。')
+
 def office(payload, job=None):
     from markitdown import MarkItDown
-    path=pathlib.Path(payload['path']);parts=[];images=[]
+    path=pathlib.Path(payload['path']);parts=[];images=[];warnings=[]
     if path.suffix.lower() in ('.pptx','.docx','.xlsx'):
         with zipfile.ZipFile(path) as archive:
-            if sum(x.file_size for x in archive.infolist())>100*1024*1024:raise ValueError('Office 解压内容超过100MiB，未导入')
+            validate_office_archive(archive)
     checkpoint(job)
     target=pathlib.Path(payload.get('output_directory') or path.parent/'rendered')
     def save_image(data,name,locator):
-        if len(data)>20*1024*1024:raise ValueError('嵌图超过20MiB')
+        if len(data)>128*1024*1024:raise ValueError('嵌图超过128MiB，未静默跳过')
         target.mkdir(exist_ok=True)
         dest=target/(hashlib.sha256(data).hexdigest()+pathlib.Path(name).suffix.lower())
         dest.write_bytes(data)
@@ -168,14 +215,15 @@ def office(payload, job=None):
         parts.append(dict(markdown='',image=str(dest),name=name,locator=locator))
     if path.suffix.lower()=='.pptx':
         from pptx import Presentation
-        for i,slide in enumerate(Presentation(path).slides):
-            loc={'slide':i+1}
-            for shape in slide.shapes:
-                if shape.has_text_frame:parts.append(dict(markdown=shape.text,locator=loc))
-                if shape.has_table:
-                    rows=[[c.text for c in row.cells] for row in shape.table.rows]
-                    parts.append(dict(markdown=mdtable(rows),locator=loc))
-                if shape.shape_type==13:save_image(shape.image.blob,'image.'+shape.image.ext,loc)
+        presentation=Presentation(path)
+        for i,slide in enumerate(presentation.slides):
+            checkpoint(job);loc={'slide':i+1};start=len(parts)
+            read_slide_shapes(slide.shapes,loc,parts,save_image,warnings,job)
+            if slide.has_notes_slide:
+                notes=slide.notes_slide.notes_text_frame
+                if notes is not None and notes.text.strip():parts.append(dict(markdown='### 演讲备注\n'+notes.text,locator=loc))
+            if len(parts)==start:parts.append(dict(markdown='[空白幻灯片或未提取到内容]',locator=loc));warnings.append('幻灯片 '+str(i+1)+'：请核对空白页或不可提取图形。')
+            emit({'version':1,'id':job,'event':'progress','completed':i+1,'total':len(presentation.slides)})
     elif path.suffix.lower()=='.xlsx':
         import openpyxl
         workbook=openpyxl.load_workbook(path,data_only=False,read_only=False)
@@ -204,7 +252,7 @@ def office(payload, job=None):
                     if '..' in pathlib.PurePosixPath(member).parts:raise ValueError('unsafe embedded image path')
                     save_image(archive.read(member),pathlib.Path(member).name,{})
     else:parts=[dict(markdown=MarkItDown(enable_plugins=False).convert(str(path)).text_content,locator={})]
-    return {'markdown':'\n\n'.join(p['markdown'] for p in parts),'parts':parts,'images':images,'components':{'markitdown':'0.1.8'}}
+    return {'markdown':'\n\n'.join(p['markdown'] for p in parts),'parts':parts,'images':images,'warnings':warnings,'components':{'markitdown':'0.1.8'}}
 
 def mdtable(rows):
     if not rows:return ''

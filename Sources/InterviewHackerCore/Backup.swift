@@ -117,7 +117,7 @@ public enum SettingsSnapshot {
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides", "insightAnswerProgress",
         "globalSkillIDs", "assistantLayout",
         "documentOCRProvider", "documentProviderWasSelected", "ocrFallbackToVision", "semanticRetrievalEnabled",
-        "codexOCRModel", "codexOCREffort", "codexOCRTimeout",
+        "localOCRModelID", "codexOCRModel", "codexOCREffort", "codexOCRTimeout",
     ]
 
     /// Keychain accounts exported only on request.

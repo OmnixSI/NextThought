@@ -18,6 +18,7 @@ final class AppState {
     // MARK: Session context (the active workspace)
     var recognitionVocabulary = UserDefaults.standard.string(forKey: "recognitionVocabulary") ?? ""
     var transcriptionBackend = AppState.loadTranscriptionBackend()
+    let documentPreparation = DocumentPreparation()
     var isImportingDocuments = false
     var isIndexingDocuments = false
     /// Result line of the last material import ("已导入 3 份资料并归档为 Markdown").
@@ -190,6 +191,7 @@ final class AppState {
     // MARK: Managed document models
     var documentOCRProvider = DocumentOCRProvider(rawValue: UserDefaults.standard.string(forKey: "documentOCRProvider") ?? "") ?? .system
     var ocrFallbackToVision = UserDefaults.standard.object(forKey: "ocrFallbackToVision") as? Bool ?? true
+    var localOCRModelID = UserDefaults.standard.string(forKey: "localOCRModelID") ?? ModelCatalog.paddleOCR.id
     var codexOCRModel = UserDefaults.standard.string(forKey: "codexOCRModel") ?? "gpt-6-luna"
     var codexOCREffort = UserDefaults.standard.string(forKey: "codexOCREffort") ?? "medium"
     var codexOCRTimeout = UserDefaults.standard.object(forKey: "codexOCRTimeout") as? Double ?? 600
@@ -368,6 +370,7 @@ final class AppState {
     private init() {
         Diagnostics.record("app.launch", ["bundle_id": Bundle.main.bundleIdentifier ?? "unknown"])
         if !DemoMode.isEnabled { workspaces.load() }
+        documentPreparation.start()
         loadAPIPresets()
         archive.load()
         rebuildContextIndex()
@@ -542,6 +545,9 @@ final class AppState {
         guard answerEngineReady else { errorMessage = "请先连接对话回答服务，再开始实时辅助。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
+        guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
+        documentPreparation.pauseForMeeting()
+        Task { await SemanticWorkspacePreparation.shared.cancelAll() }
         cancelAnswer()
         currentQuestion = ""; currentLeadIn = nil; answer = ""; pendingQuestion = ""; partialTranscript = ""
         microphonePartialTranscript = ""
@@ -554,6 +560,7 @@ final class AppState {
         defer { isChangingSession = false }
         do {
             let startupBegan = Date()
+            if semanticRetrievalReady { await SemanticRetrievalService.shared.prepare() }
             recognizerIdleTask?.cancel(); recognizerIdleTask = nil
             if microphoneEnabled { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
@@ -576,6 +583,7 @@ final class AppState {
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
             isRunning = true
+            documentPreparation.pauseForMeeting()
             do {
                 try await audio.startCapture(targetID: selectedTargetID)
             } catch {
@@ -1127,6 +1135,7 @@ final class AppState {
         UserDefaults.standard.set(documentOCRProvider.rawValue, forKey: "documentOCRProvider")
         UserDefaults.standard.set(documentProviderWasSelected, forKey: "documentProviderWasSelected")
         UserDefaults.standard.set(ocrFallbackToVision, forKey: "ocrFallbackToVision")
+        UserDefaults.standard.set(localOCRModelID, forKey: "localOCRModelID")
         UserDefaults.standard.set(codexOCRModel, forKey: "codexOCRModel")
         UserDefaults.standard.set(codexOCREffort, forKey: "codexOCREffort")
         UserDefaults.standard.set(codexOCRTimeout, forKey: "codexOCRTimeout")

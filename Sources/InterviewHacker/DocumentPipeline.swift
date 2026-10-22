@@ -8,11 +8,22 @@ import InterviewHackerCore
 extension MarkdownConverter {
     static func convert(_ url: URL, options: DocumentConversionOptions) async throws -> Result {
         try Task.checkCancellation()
+        if url.pathExtension.lowercased() == "ppt" {
+            let directory = (options.checkpointDirectory ?? DocumentRuntime.temporary.appendingPathComponent(UUID().uuidString)).appendingPathComponent("legacy")
+            options.onProgress(.init(.parsing, message: "正在本机转换旧版 PPT。"))
+            let converted = try await LegacyOfficeConverter.convert(url, into: directory)
+            var result = try await convert(converted, options: options)
+            result.name = url.deletingPathExtension().lastPathComponent; result.format = "ppt"
+            return result
+        }
         if options.provider == .codex { return try await CodexDocumentReader.read(url, options: options) }
         let job = DocumentRuntime.temporary.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: job, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: job) }
         let format = url.pathExtension.lowercased()
+        let sourceHash = options.sourceHash ?? ManagedModelStore.sha256(of: url) ?? ""
+        let checkpoint = DocumentCheckpoint(options: options, sourceHash: sourceHash)
+        var rawPages: [String: String] = [:]
         var blocks: [DocumentBlock] = [], warnings: [String] = []
         func add(_ text: String, _ locator: DocumentLocator) { blocks += DocumentStructure.parse(text, locator: locator) }
         func waitForForeground() async throws {
@@ -22,14 +33,17 @@ extension MarkdownConverter {
             try await waitForForeground()
             if options.provider == .paddle {
                 do {
-                    guard ManagedModelStore.isInstalled(ModelCatalog.paddleOCR), ManagedModelStore.isInstalled(ModelCatalog.layout) else {
+                    let ocrModel = ModelCatalog.localOCRChoices.first { $0.id == options.localModelID } ?? ModelCatalog.paddleOCR
+                    guard ManagedModelStore.isInstalled(ocrModel), ManagedModelStore.isInstalled(ModelCatalog.layout) else {
                         throw AppFailure.capture("Paddle 或版面模型尚未完整安装。")
                     }
                     let file = job.appendingPathComponent(UUID().uuidString+".png")
                     try NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!.write(to: file)
                     let result = try await DocumentWorker.shared.request("ocr", ["image":file.path,
-                        "model_directory":ModelCatalog.paddleOCR.directory.path,
-                        "layout_directory":ModelCatalog.layout.directory.path], timeout: options.timeout)
+                        "model_directory":ocrModel.directory.path,
+                        "layout_directory":ModelCatalog.layout.directory.path], timeout: options.timeout, onProgress: { completed, total in
+                        options.onProgress(.init(.ocr, completed: completed, total: total, message: locator.label + " · 识别区域"))
+                    })
                     guard let text = result["markdown"] as? String, !text.isEmpty else { throw AppFailure.capture("模型未返回文字。") }
                     return text
                 } catch is CancellationError { throw CancellationError() }
@@ -42,41 +56,61 @@ extension MarkdownConverter {
         }
         if format == "pdf" {
             guard let pdf = PDFDocument(url: url), !pdf.isLocked, pdf.pageCount > 0 else { throw AppFailure.capture("PDF 无法读取、为空或已加密。") }
-            guard pdf.pageCount <= 400 else { throw AppFailure.capture("PDF 超过 400 页，请拆分后导入（未导入任何页面）。") }
+            guard pdf.pageCount <= DocumentLimits.maximumPages else { throw AppFailure.capture("PDF 超过 2000 页，请拆分后导入（未导入任何页面）。") }
             for index in 0..<pdf.pageCount {
-                try await waitForForeground()
-                try Task.checkCancellation()
+                try await waitForForeground(); try Task.checkCancellation()
+                let unit = "page-\(index + 1)"
+                if let cached = checkpoint.load(unit) {
+                    blocks += cached.blocks; warnings += cached.warnings; rawPages[unit] = cached.rawText
+                    options.onProgress(.init(.parsing, completed: index + 1, total: pdf.pageCount, message: "已复用完成页面。")); continue
+                }
                 guard let page = pdf.page(at: index) else { throw AppFailure.capture("PDF 第 \(index+1) 页无法读取。") }
                 let locator = DocumentLocator(page:index+1), text = page.string ?? ""
-                // Widely separated runs on the same line indicate columns/tables; avoid flattening them with PDFKit.
+                rawPages[unit] = text
+                let firstBlock = blocks.count, firstWarning = warnings.count
                 let complex = isComplex(page)
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).count >= 8 && !complex { add(text,locator) }
+                if text.trimmingCharacters(in: .whitespacesAndNewlines).count >= 8 && !complex { add(text, locator) }
                 else {
-                    let recognized = try await ocr(try pageImage(page), locator:locator)
+                    options.onProgress(.init(.ocr, completed: index, total: pdf.pageCount, message: "正在识别 p.\(index+1)"))
+                    let recognized = try await ocr(try pageImage(page), locator: locator)
                     if recognized.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
-                        // A blank physical page is retained with an explicit marker.
-                        add("[空白页或未识别到文字]",locator)
-                        warnings.append("p.\(index+1)：未识别到文字，请核对原件。")
-                    } else { add(recognized,locator) }
+                        if !text.isEmpty { add(text, locator); warnings.append("p.\(index+1)：OCR 未提取内容，保留原始文字层，请核对图像区域。") }
+                        else { add("[空白页或未识别到文字]", locator); warnings.append("p.\(index+1)：未识别到文字，请核对原件。") }
+                    } else if text.count >= 80, recognized.count < text.count / 2 {
+                        add(text, locator); add(recognized, .init(page: index+1, headingPath: ["图像识别补充"]))
+                        warnings.append("p.\(index+1)：识别结果少于原文字层，原文与补充识别均已保留。")
+                    } else { add(recognized, locator) }
                 }
+                try checkpoint.save(unit, blocks: Array(blocks.dropFirst(firstBlock)), warnings: Array(warnings.dropFirst(firstWarning)), rawText: text)
+                options.onProgress(.init(.parsing, completed: index + 1, total: pdf.pageCount, message: "页面解析完成。"))
             }
         } else if documentImageFormats.contains(format) {
             guard let imageSource=CGImageSourceCreateWithURL(url as CFURL,nil) else { throw AppFailure.capture("图片无法读取。") }
             let count=format == "tiff" ? CGImageSourceGetCount(imageSource) : 1
-            guard count>0,count<=400 else { throw AppFailure.capture("图片为空或超过 400 页，请拆分后导入。") }
+            guard count>0,count<=DocumentLimits.maximumPages else { throw AppFailure.capture("图片为空或超过 2000 页，请拆分后导入。") }
             for frame in 0..<count {
                 try Task.checkCancellation()
                 guard let image=CGImageSourceCreateThumbnailAtIndex(imageSource,frame,[kCGImageSourceCreateThumbnailFromImageAlways:true,kCGImageSourceThumbnailMaxPixelSize:2400,kCGImageSourceCreateThumbnailWithTransform:true] as CFDictionary) else { throw AppFailure.capture("图片第 \(frame+1) 页无法读取。") }
                 let locator=DocumentLocator(page:count>1 ? frame+1 : nil)
+                let unit = "image-\(frame+1)", firstBlock = blocks.count, firstWarning = warnings.count
+                if let cached = checkpoint.load(unit) { blocks += cached.blocks; warnings += cached.warnings; continue }
                 let text=try await ocr(image,locator:locator)
                 if text.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
                     warnings.append("\(locator.label)：未识别到文字，请核对原件。")
                     add("[图像页未识别到文字]",locator)
                 } else { add(text,locator) }
+                try checkpoint.save(unit, blocks: Array(blocks.dropFirst(firstBlock)), warnings: Array(warnings.dropFirst(firstWarning)))
+                options.onProgress(.init(.ocr, completed: frame + 1, total: count, message: "图像识别完成。"))
             }
         } else if (["docx","pptx","xlsx"].contains(format) || (["html","htm"].contains(format) && DocumentRuntime.installed)) {
-            let result = try await DocumentWorker.shared.request("convert", ["path":url.path,"output_directory":job.path],timeout:options.timeout)
-            for part in result["parts"] as? [[String:Any]] ?? [] {
+            let result = try await DocumentWorker.shared.request("convert", ["path":url.path,"output_directory":job.path],timeout:options.timeout, onProgress: { completed, total in
+                options.onProgress(.init(.parsing, completed: completed, total: total))
+            })
+            let parts = result["parts"] as? [[String:Any]] ?? []
+            warnings += result["warnings"] as? [String] ?? []
+            for (partIndex, part) in parts.enumerated() {
+                let unit = "office-\(partIndex)", firstBlock = blocks.count, firstWarning = warnings.count
+                if let cached = checkpoint.load(unit) { blocks += cached.blocks; warnings += cached.warnings; continue }
                 try Task.checkCancellation()
                 let loc = part["locator"] as? [String:Any] ?? [:]
                 var locator = DocumentLocator(slide:loc["slide"] as? Int,sheet:loc["sheet"] as? String)
@@ -90,13 +124,17 @@ extension MarkdownConverter {
                         warnings.append(message); add("[嵌图未识别：请导出 PDF 后重新导入]",locator)
                     }
                 } else { add(part["markdown"] as? String ?? "",locator) }
+                try checkpoint.save(unit, blocks: Array(blocks.dropFirst(firstBlock)), warnings: Array(warnings.dropFirst(firstWarning)), rawText: part["markdown"] as? String)
+                options.onProgress(.init(.parsing, completed: partIndex + 1, total: parts.count, message: "Office 内容解析完成。"))
             }
         } else {
             let converted = try convert(url)
             add(converted.markdown,.init())
         }
-        let content = DocumentContent(pipeline:options.provider.rawValue,sourceHash:ManagedModelStore.sha256(of:url),blocks:blocks,warnings:warnings,
-            components:["pipeline":"1.7.0","paddle":options.provider == .paddle ? ModelCatalog.paddleOCR.revision : "unused"])
+        var content = DocumentContent(pipeline:options.provider.rawValue,sourceHash:sourceHash,blocks:blocks,warnings:warnings,
+            components:["pipeline":"2","ocrModelID":options.localModelID,"paddle":options.provider == .paddle ? (ModelCatalog.descriptor(for: options.localModelID)?.revision ?? "unknown") : "unused"])
+        content.rawPages = rawPages.isEmpty ? nil : rawPages
+        options.onProgress(.init(.validating, completed: blocks.count, total: blocks.count, message: "OCR / 解析已完成。"))
         return Result(name:url.deletingPathExtension().lastPathComponent,markdown:content.markdown,
             sections:blocks.map(\.markdown),format:format,converter:options.provider.title,content:content)
     }
@@ -116,13 +154,6 @@ extension MarkdownConverter {
     static func isComplex(_ page: PDFPage) -> Bool {
         let text = page.string ?? ""
         if text.contains("\t") || text.unicodeScalars.contains(where: { "∑Σ∫∇√≤≥≠θη".unicodeScalars.contains($0) }) { return true }
-        // Embedded images/forms may carry content absent from the text layer.
-        if let reference = page.pageRef, let dictionary = reference.dictionary {
-            var resources: CGPDFDictionaryRef?, objects: CGPDFDictionaryRef?
-            if CGPDFDictionaryGetDictionary(dictionary, "Resources", &resources), let resources,
-               CGPDFDictionaryGetDictionary(resources, "XObject", &objects), let objects,
-               CGPDFDictionaryGetCount(objects) > 0 { return true }
-        }
         let pageWidth = page.bounds(for: .mediaBox).width
         if page.numberOfCharacters > 40_000 { return true }
         var previous: CGRect?

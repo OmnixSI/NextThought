@@ -119,7 +119,7 @@ extension AppState {
                 documentModelInstallRevision += 1
                 await refreshManagedModelStatus()
                 let bytes = ByteCountFormatter.string(fromByteCount: result.reusedBytes, countStyle: .file)
-                localAssetScanStatus = "本应用现有 \(installedDocumentModels.count)/3 项文档模型，支持组件\(runtimeInstalled ? "已安装" : "未安装")。本次复用 \(bytes)\(result.runtime ? "及本地运行包" : "")，没有联网下载。"
+                localAssetScanStatus = "本应用现有 \(installedDocumentModels.count) 项文档模型，支持组件\(runtimeInstalled ? "已安装" : "未安装")。本次复用 \(bytes)\(result.runtime ? "及本地运行包" : "")，没有联网下载。"
                 if result.limited || result.inaccessible > 0 {
                     localAssetScanStatus += " 部分位置未完成扫描，可选择具体目录继续。"
                 } else if installedDocumentModels.count < ModelCatalog.all.count || !runtimeInstalled {

@@ -30,6 +30,12 @@ def structured():
     spec=importlib.util.spec_from_file_location('document_worker',pathlib.Path(__file__).with_name('worker.py'));worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
     # Dedicated job output only. These files are deleted with the temporary job.
     result=worker.office({'path':str(SOURCE),'output_directory':str(MANIFEST.parent/'rendered')})
+    indices=JOB.get('partIndices')
+    if indices is not None:
+        if not isinstance(indices,list) or not all(isinstance(i,int) and 0<=i<len(result['parts']) for i in indices):raise ValueError('invalid assigned parts')
+        result['parts']=[result['parts'][i] for i in indices]
+        allowed={p['image'] for p in result['parts'] if 'image' in p}
+        result['images']=[image for image in result['images'] if image['path'] in allowed]
     return result
 
 def text(value):return {'type':'text','text':value if isinstance(value,str) else json.dumps(value,ensure_ascii=False)}
@@ -39,6 +45,7 @@ def call(name,args):
     if not isinstance(page,int) or page<1:raise ValueError('page must be positive')
     if name=='file_info':
         info={'path':str(SOURCE),'name':JOB['name'],'sha256':JOB['sha256'],'bytes':SOURCE.stat().st_size,'format':suffix}
+        if 'partIndices' in JOB:info['assigned_part_indices']=JOB['partIndices']
         if suffix in ('.pdf','.tiff','.heic'):info.update(native('info'))
         else:info['pages']=1
         return [text(info)]

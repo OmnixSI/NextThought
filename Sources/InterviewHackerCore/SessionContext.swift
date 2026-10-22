@@ -102,7 +102,7 @@ public struct SessionContextIndex: Sendable {
     private var chunks: [Chunk] = []
     private var documentFrequency: [String: Int] = [:]
     /// Materials per scenario. Kept in step with `AppState.maxDocuments`.
-    public static let maximumDocuments = 40
+    public static let maximumDocuments = 1000
     public init(documents: [ContextDocument] = []) {
         self.init(chunks: ContextChunker.chunks(documents: documents))
     }

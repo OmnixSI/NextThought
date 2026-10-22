@@ -7,8 +7,8 @@ enum DocumentOCRProvider: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .system: "系统 OCR（离线、无需下载）"
-        case .paddle: "PaddleOCR-VL-1.6 Q8（本机）"
-        case .codex: "Codex Luna 代读原文件（在线）"
+        case .paddle: "本机增强识别"
+        case .codex: "Codex 文件代读（在线）"
         }
     }
 }
@@ -20,6 +20,10 @@ struct DocumentConversionOptions: Sendable {
     var effort = "medium"
     var timeout: TimeInterval = 600
     var isPaused: @Sendable () async -> Bool = { false }
+    var localModelID: String = ModelCatalog.paddleOCR.id
+    var sourceHash: String? = nil
+    var checkpointDirectory: URL? = nil
+    var onProgress: @Sendable (DocumentJobEvent) -> Void = { _ in }
 }
 
 enum DocumentRuntime {
@@ -64,6 +68,8 @@ enum DocumentRuntime {
 actor DocumentWorker {
     static let shared = DocumentWorker(terminateOnCancel: true)
     static let embedding = DocumentWorker()
+    static let realtime = DocumentWorker(terminateOnCancel: true)
+    static let queryEmbedding = DocumentWorker(terminateOnCancel: true)
     private let terminateOnCancel: Bool
     init(terminateOnCancel: Bool = false) { self.terminateOnCancel = terminateOnCancel }
     private var process: Process?
@@ -71,11 +77,14 @@ actor DocumentWorker {
     private var reader: Task<Void, Never>?
     private var pending: [String: CheckedContinuation<[String: Any], Error>] = [:]
     private var generation = UUID()
+    private var progress: [String: @Sendable (Int, Int) -> Void] = [:]
 
-    func request(_ operation: String, _ payload: [String: Any] = [:], timeout: TimeInterval = 120) async throws -> [String: Any] {
+    func request(_ operation: String, _ payload: [String: Any] = [:], timeout: TimeInterval = 120, onProgress: @escaping @Sendable (Int, Int) -> Void = { _, _ in }) async throws -> [String: Any] {
         try Task.checkCancellation()
         try start()
         let id = UUID().uuidString
+        progress[id] = onProgress
+        defer { progress[id] = nil }
         let deadline = Task { [weak self] in
             try? await Task.sleep(for: .seconds(timeout))
             guard !Task.isCancelled else { return }
@@ -124,7 +133,10 @@ actor DocumentWorker {
         guard token == generation, let data = line.data(using: .utf8),
               let message = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let id = message["id"] as? String else { return }
-        guard message["event"] as? String != "progress" else { return }
+        if message["event"] as? String == "progress" {
+            if let completed = message["completed"] as? Int, let total = message["total"] as? Int { progress[id]?(completed, total) }
+            return
+        }
         guard let continuation = pending.removeValue(forKey: id) else { return }
         if let error = message["error"] as? String { continuation.resume(throwing: AppFailure.capture(error)) }
         else if let result = message["result"] as? [String: Any] { continuation.resume(returning: result) }

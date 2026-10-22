@@ -36,7 +36,8 @@ public actor IncrementalBackupStore {
             refs[name] = hash
         }
         for (name, data) in files { try store(data, name) }
-        for (prefix, directory) in directories {
+        for (prefix, inputDirectory) in directories {
+            let directory = inputDirectory.standardizedFileURL.resolvingSymlinksInPath()
             guard Self.safePath(prefix) else { throw CocoaError(.fileReadInvalidFileName) }
             guard fm.fileExists(atPath: directory.path) else { continue }
             guard let enumerator = fm.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey], errorHandler: { _, _ in false }) else { throw CocoaError(.fileReadUnknown) }
