@@ -59,7 +59,7 @@ struct QuestionScreenContext {
             guard force || now.timeIntervalSince(candidateSince) >= 0.5 else { return nil }
             status = "正在识别当前画面…"
             let preview = Self.preview(frame)
-            let changed = preview.flatMap { ScreenDelta.region(previous: previousPreview, current: $0, width: 160, height: 90) }
+            let changed = preview.flatMap { ScreenDelta.region(previous: self.previousPreview, current: $0, width: 160, height: 90) }
             let regions = try await Self.recognize(frame)
             try Task.checkCancellation()
             guard epoch == generation, candidate == hash else { throw CancellationError() }

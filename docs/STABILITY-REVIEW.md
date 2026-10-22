@@ -63,3 +63,6 @@ Verify 与 Release 现在都调用 `scripts/verify-companions.sh --require-ios`�
 
 
 用户随后明确授权优先使用 GitHub 托管 runner，接受真机验收未完成而直接推进合并发版；云端失败时尝试本地构建，均不可用时仅合并代码。本仓库 `MAC_RUNNER` 已按授权设为 `github`。未完成项不会因此改成已通过；发行说明会继续列出实际限制。
+
+
+托管 run [39816145258](https://github.com/OmnixSI/InterviewHacker/actions/runs/39816145258) 返回 GitHub 账户付款／支出额度限制，任务未启动；不算代码编译失败或 CI 通过。按用户指定备用方案转本地构建，未修改计费设置。旧 PowerPoint 转换的取消传播也已修复：父任务取消会取消独立子任务并终止转换进程，新增成功／失败／取消／超时四项进程回归及本机真实 LibreOffice 转换验证通过；同时消除相关 Swift 并发警告。

@@ -26,6 +26,7 @@ jobs:
           swift --version
           swift test --disable-sandbox
           Tools/Validation/CodexTransport/run.sh
+          Tools/Validation/LegacyOffice/run.sh
           python3 -m unittest discover -s Tools/Validation/Documents -p 'test_*.py'
       - uses: actions/setup-node@v4
         with:

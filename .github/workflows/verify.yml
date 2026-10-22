@@ -29,7 +29,9 @@ jobs:
       - name: Build and test
         run: swift test --disable-sandbox
       - name: Codex transport regression (offline)
-        run: ./Tools/Validation/CodexTransport/run.sh
+        run: |
+          ./Tools/Validation/CodexTransport/run.sh
+          ./Tools/Validation/LegacyOffice/run.sh
       - name: Document normalization regression (offline)
         run: python3 -m unittest discover -s Tools/Validation/Documents -p 'test_*.py'
       - uses: actions/setup-node@v4

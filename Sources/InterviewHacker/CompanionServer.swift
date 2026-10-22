@@ -13,7 +13,7 @@ final class CompanionServer {
     static let shared = CompanionServer()
 
     private var listener: NWListener?
-    private final class Stream {
+    @MainActor private final class Stream {
         let connection: NWConnection
         var sending = false
         var pending: Data?
