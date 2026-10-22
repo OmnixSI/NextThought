@@ -37,7 +37,7 @@ public enum WebSearchNeed {
                               "earnings", "revenue", "funding", "valuation", "acquisition", "layoff", "election", "president", "ceo of", "version", "winner", "won"]
     /// Topics that are time-bound on their own (“现任 CEO”, “汇率”).
     static let strongTopics: Set<String> = ["股价", "汇率", "油价", "金价", "币价", "天气", "气温", "新闻", "热搜", "比分", "赛果", "票房", "现任", "最新版",
-                                            "stock price", "share price", "exchange rate", "weather", "news"]
+                                            "stock price", "share price", "exchange rate", "weather", "news", "ceo", "president", "version", "winner", "won"]
     /// Concept / how-to questions: knowledge, not news.
     static let conceptWords = ["是什么", "什么是", "原理", "区别", "怎么实现", "如何实现", "为什么", "优缺点", "介绍一下", "解释一下",
                                "what is", "difference between", "how does", "how do you implement", "explain", "why"]
@@ -73,9 +73,21 @@ public enum WebSearchNeed {
         let thisYear = text.contains(String(year))
         let lastYear = text.contains(String(year - 1))
 
+        let products = ["claude", "chatgpt", "gpt", "gemini", "deepseek", "qwen", "llama", "pytorch", "cuda", "ios", "android", "swift"]
+        let capabilities = ["上下文", "支持多长", "支持哪些", "支持什么", "多少钱", "费用", "额度", "版本", "context window", "context length", "support", "pricing", "cost", "limit", "version"]
+        if products.contains(where: { text.contains($0) }), capabilities.contains(where: { text.contains($0) }), !conceptWords.contains(where: { text.contains($0) && !text.contains("context") }) {
+            return .init(score: 0.8, reason: "产品当前能力或规格需要核查")
+        }
+        if ["sota", "state of the art", "研究进展", "主流大模型"].contains(where: { text.contains($0) }) {
+            return .init(score: 0.8, reason: "研究或产品现状需要核查")
+        }
+
+        let volatileSubjects = ["签证", "航班", "截止日期", "最低工资", "奖学金金额", "商用许可", "免费 api", "在售", "visa", "deadline", "vulnerability", "chairs the", "free storage", "coding benchmark", "tax-free", "兑人民币"]
+        if volatileSubjects.contains(where: { text.contains($0) }) { return .init(score: 0.8, reason: "外部条件可能变化，需要核查") }
+        if products.contains(where: { text.contains($0) }), ["处理图像", "process images", "开源模型"].contains(where: { text.contains($0) }) { return .init(score: 0.8, reason: "产品能力需要核查") }
         var score = 0.0
         var reasons: [String] = []
-        if strongTime { score += 0.45; reasons.append("时间词“\(times.first { !weakTimeWords.contains($0) } ?? "")”") }
+        if strongTime { score += 0.7; reasons.append("时间词“\(times.first { !weakTimeWords.contains($0) } ?? "")”") }
         else if !times.isEmpty { score += 0.2; reasons.append("时间词“\(times[0])”") }
         if let strong = topics.first(where: { strongTopics.contains($0) }) { score += 0.65; reasons.append("时效话题“\(strong)”") }
         else if !topics.isEmpty { score += 0.45; reasons.append("时效话题“\(topics[0])”") }
@@ -84,7 +96,7 @@ public enum WebSearchNeed {
         // “你最近在做什么项目” is about the speaker, not the news.
         if topics.isEmpty, isAboutListener(text, times: times) { score *= 0.3; reasons.append("问的是你本人") }
         // Concept questions without fresh topics need no search.
-        if topics.isEmpty, conceptWords.contains(where: { text.contains($0) }) { score *= 0.5 }
+        if topics.isEmpty, !strongTime, conceptWords.contains(where: { text.contains($0) }) { score *= 0.5 }
         score = min(1, score)
         return WebSearchAssessment(score: score, reason: reasons.isEmpty ? "无时效线索" : reasons.joined(separator: "、"))
     }

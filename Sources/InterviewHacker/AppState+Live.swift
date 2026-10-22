@@ -290,6 +290,7 @@ extension AppState {
         case "regenerate": regenerate()
         case "previous": showPreviousAnswer()
         case "next": showNextAnswer()
+        case "applyWeb": toggleWebAnswer()
         default:
             if let refinement = AnswerRefinement(rawValue: action) { refine(refinement) }
         }
@@ -300,14 +301,15 @@ extension AppState {
             status: isRunning ? (isPaused ? "已暂停" : "正在聆听") : "未采集",
             question: displayedQuestion.isEmpty ? pendingQuestion : displayedQuestion,
             answer: displayedAnswer,
-            answering: isAnswering,
+            answering: isAnswering && historyCursor == nil,
             candidate: liveCandidate.map { "\($0.assessment.intent.title) · \($0.text)" } ?? "",
             position: historyPositionText ?? "",
             sessionID: activeArchiveID?.uuidString,
             answerID: displayedRecordID?.uuidString,
-            phase: isAnswering ? "generating" : (statusText == "回答出错" ? "failed" : "ready"),
+            phase: historyCursor == nil ? (answerCoordinator.state?.phase.rawValue ?? "waiting") : "complete",
             sources: selectedExcerpts.map(\.citation).joined(separator: " · "),
-            slide: insights.slide.map { "\($0.documentName) · \($0.page)" })
+            slide: insights.slide.map { "\($0.documentName) · \($0.page)" },
+            updateAvailable: displayedWebLookup?.status == .done && !showsWebAnswer)
     }
 
     // MARK: Share-visibility self test

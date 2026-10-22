@@ -47,7 +47,7 @@ enum TavilyClient {
         let root = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         return (root?["results"] as? [[String: Any]] ?? []).compactMap { item in
             guard let url = item["url"] as? String else { return nil }
-            return WebResult(title: item["title"] as? String ?? url, url: url, snippet: item["content"] as? String ?? "")
+            return WebResult(title: item["title"] as? String ?? url, url: url, snippet: item["content"] as? String ?? "", publishedAt: item["published_date"] as? String, retrievedAt: Date().ISO8601Format())
         }
     }
 }
@@ -68,12 +68,14 @@ extension AppState {
     var showsWebAnswer: Bool {
         guard let id = displayedRecordID, let lookup = webLookups[id], !lookup.answer.isEmpty else { return false }
         if case .failed = lookup.status { return false }
-        return !showOriginalAnswer.contains(id)
+        return lookup.status == .done && acceptedWebAnswers.contains(id) && !showOriginalAnswer.contains(id)
     }
 
     func toggleWebAnswer() {
         guard let id = displayedRecordID else { return }
-        if showOriginalAnswer.contains(id) { showOriginalAnswer.remove(id) } else { showOriginalAnswer.insert(id) }
+        if showsWebAnswer { showOriginalAnswer.insert(id) }
+        else { acceptedWebAnswers.insert(id); showOriginalAnswer.remove(id) }
+        if showsWebAnswer, let lookup = webLookups[id] { insights.beginAnswer(id: id, text: lookup.answer, since: Date()) }
     }
 
     var webSearchAvailable: Bool {
@@ -95,20 +97,15 @@ extension AppState {
 
     /// Mode, then the local rules.
     func shouldSearchWeb(_ question: String) async -> (search: Bool, reason: String) {
-        switch webSearchMode {
-        case .off: return (false, "联网已关闭")
-        case .always: return (true, "每次都联网")
-        case .auto:
-            let rules = WebSearchNeed.assess(question)
-            return (rules.needsSearch, rules.reason)
-        }
+        let decision = await assessWebSearch(question)
+        return (decision.search, decision.reason)
     }
 
     // MARK: Looking up
 
     /// Starts the background web answer for answer `id`. `parts` rebuilds the prompt
     /// (with search results, or allowing the engine's own search).
-    func startWebLookup(id: UUID, question: String,
+    func startWebLookup(id: UUID, question: String, query: String? = nil,
                         parts: @escaping (_ webSearch: Bool, _ results: [WebResult]?) -> (system: String, user: String)) {
         guard webSearchAvailable else { return }
         webLookupTask?.cancel()
@@ -131,7 +128,8 @@ extension AppState {
                     group.addTask {
                         switch provider {
                         case .codex:
-                            let prompt = WebLookupPromptBuilder.makeParts(userJSON: parts(true, nil).user)
+                            var prompt = WebLookupPromptBuilder.makeParts(userJSON: parts(true, nil).user)
+                            if let query { prompt.user += "\n检索对象：" + String(query.prefix(500)) }
                             let request = AnswerRequest(system: prompt.system, user: prompt.user, model: codexModel, effort: effort, serviceTier: tier, webSearch: true)
                             return (try await self.runWebCodex(request) { [weak self] text in
                                 Task { @MainActor in
@@ -144,7 +142,7 @@ extension AppState {
                                 }
                             }, [])
                         case .tavily:
-                            let results = try await TavilyClient.search(question, key: key)
+                            let results = try await TavilyClient.search(query ?? question, key: key)
                             guard !results.isEmpty else { throw AnswerEngineError.empty }
                             let prompt = parts(false, results)
                             let request = AnswerRequest(system: prompt.system, user: prompt.user, model: backend == .openAICompatible ? apiModel : codexModel,
@@ -163,7 +161,8 @@ extension AppState {
                 let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !text.isEmpty else { throw AnswerEngineError.empty }
                 guard self.webLookups[id]?.generation == generation else { return }
-                self.finishWebLookup(id: id, text: text, sources: result.sources, seconds: Date().timeIntervalSince(started), model: lookupModel)
+                let sources = result.sources.isEmpty ? Self.sources(in: text) : result.sources
+                self.finishWebLookup(id: id, text: text, sources: sources, seconds: Date().timeIntervalSince(started), model: lookupModel)
             } catch is CancellationError {
                 guard self.webLookups[id]?.generation == generation else { return }
                 if self.webLookups[id]?.status == .searching { self.webLookups[id]?.status = .failed("已取消") }
@@ -199,9 +198,6 @@ extension AppState {
 
     private func finishWebLookup(id: UUID, text: String, sources: [WebResult], seconds: Double, model: String) {
         guard var lookup = webLookups[id] else { return }
-        if id == currentAnswerID, insights.answerID == id {
-            insights.beginAnswer(id: id, text: text, since: insights.answerSince)
-        }
         lookup.status = .done
         lookup.answer = text
         lookup.sources = sources
@@ -210,7 +206,22 @@ extension AppState {
         Diagnostics.record("web.completed", ["provider": lookup.provider.rawValue, "seconds": seconds, "sources": sources.count])
         // Follow-ups should build on the updated answer.
         replaceTurnAnswer(question: lookup.question, with: text)
-        recordAnswer(AnswerRecord(question: lookup.question, answer: text, model: "\(model) · 联网", seconds: seconds, firstTokenSeconds: nil, automatic: true))
+        answerCoordinator.update(id: id) { $0.evidence.webSources = sources }
+        if let position = answerHistory.firstIndex(where: { $0.id == id }) {
+            answerHistory[position].webAnswer = text; answerHistory[position].webSources = sources
+            recordAnswer(answerHistory[position])
+        }
+    }
+
+    nonisolated static func sources(in text: String) -> [WebResult] {
+        guard let regex = try? NSRegularExpression(pattern: #"\[([^\]]+)\]\((https?://[^\s)]+)\)"#) else { return [] }
+        let ns = text as NSString
+        var seen = Set<String>()
+        return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).compactMap {
+            let url = ns.substring(with: $0.range(at: 2))
+            guard let parsed = URL(string: url), parsed.host != nil, seen.insert(url).inserted else { return nil }
+            return WebResult(title: ns.substring(with: $0.range(at: 1)), url: url, snippet: "", retrievedAt: Date().ISO8601Format())
+        }
     }
 
     nonisolated private func runWebCodex(_ request: AnswerRequest, onDelta: @escaping @Sendable (String) -> Void) async throws -> String {

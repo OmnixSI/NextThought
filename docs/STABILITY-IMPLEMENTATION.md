@@ -72,3 +72,16 @@ Full Xcode/iOS SDK is not currently selected/installed; macOS Swift CLT is avail
 Remaining validation: independent retrieval calibration and physical-device/
 real-meeting acceptance. Large Excel/Office atomic blocks still need their own
 quality corpus; exceeding a processing resource must fail explicitly, not clip.
+
+
+## D — 屏幕、检索与联网证据（draft）
+
+新增选定窗口/显示器/区域的屏幕服务；每题冻结画面、物理页来源和依据，失效时清空旧匹配。快速 Vision OCR 保存坐标与置信度，复杂页面可独立调用本机增强并按模型能力附图。联网核查以同一回答 ID 保存，用户手动应用修订，手机显示更新提示。
+
+验证：160 Swift 测试；隔离应用真实 Vision OCR 验证选定来源、坐标、冻结图片、旧帧失效、问题 ID 隔离及联网修订。该测试注入采集图像，尚未覆盖真实 ScreenCaptureKit 权限、外接屏及会议延迟。
+
+Qwen3 实际向量评估：24 份自编事实文档、48 条同义问题、12 条无关问题。首次按验证集最高可行阈值 0.57 选择，验证 Recall@8 95.8%，已查看测试集 83.3%，未达标。改用验证可行区间中点 0.43，验证及原测试回归均为 100%，无关资料返回率均为 0%。原测试集因已查看，仅作回归；独立真实资料验收仍待完成。阈值与冻结样本在版本库中，报告保留首次失败。
+
+100 条中英搜索问题的实际路由：48 条规则触发，52 条模型判断超过三秒后正确记录降级；总体时效召回 96%，稳定题误触发 0%。模型复核成功率在此环境为 0%，不可宣称模型链路性能达标。截图题、追问共用入口，纯改写复用依据；搜索失败不标为已核查。独立模型延迟及端到端事实人工评分仍待验收。
+
+回滚：撤销本阶段提交；新增 ScreenContext/EvidenceBundle 与回答修订字段均为可选，旧会话可读，原始资料和旧备份不重写。该阶段依赖 C，不单独投产。

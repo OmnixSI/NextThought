@@ -11,8 +11,10 @@ final class LiveInsights {
     // MARK: Settings
 
     /// Reads the screen every few seconds during a session (on-device OCR).
+    var screenTarget = UserDefaults.standard.string(forKey: "insightScreenTarget") ?? ""
+    var screenRegion = UserDefaults.standard.array(forKey: "insightScreenRegion") as? [Double]
     var screenWatch = UserDefaults.standard.bool(forKey: "insightScreenWatch")
-    var screenInterval = UserDefaults.standard.object(forKey: "insightScreenInterval") as? Double ?? 4
+    var screenInterval = UserDefaults.standard.object(forKey: "insightScreenInterval") as? Double ?? 1
     /// Matches the screen against imported decks and shows notes for the current slide.
     var followSlides = UserDefaults.standard.object(forKey: "insightFollowSlides") as? Bool ?? true
     /// Tracks which sentences of the answer (and slide notes) have been said.
@@ -20,6 +22,8 @@ final class LiveInsights {
 
     func save() {
         let defaults = UserDefaults.standard
+        defaults.set(screenTarget, forKey: "insightScreenTarget")
+        if let screenRegion { defaults.set(screenRegion, forKey: "insightScreenRegion") } else { defaults.removeObject(forKey: "insightScreenRegion") }
         defaults.set(screenWatch, forKey: "insightScreenWatch")
         defaults.set(screenInterval, forKey: "insightScreenInterval")
         defaults.set(followSlides, forKey: "insightFollowSlides")

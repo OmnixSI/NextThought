@@ -43,6 +43,8 @@ struct AnswerRecord: Identifiable, Codable, Equatable {
     /// Screenshot that was sent with the question, relative to the session
     /// folder ("screenshots/…"). Nil when the answer had no screenshot.
     var screenshotPath: String?
+    var webAnswer: String? = nil
+    var webSources: [WebResult]? = nil
 }
 
 struct CaptureTarget: Identifiable, Hashable {

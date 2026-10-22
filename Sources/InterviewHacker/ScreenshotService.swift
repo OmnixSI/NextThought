@@ -63,21 +63,35 @@ enum ScreenshotService {
 
     /// The main display without this app's own windows (assistant, teleprompter): for
     /// reading the screen in the background, so nothing on screen has to be hidden.
-    static func captureForReading(maxWidth: Int = 1_600) async throws -> CGImage {
+    static func captureForReading(targetID: String = "", region: [Double]? = nil, maxWidth: Int = 2400) async throws -> CGImage {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        let mainID = (NSScreen.main?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
-        guard let display = content.displays.first(where: { $0.displayID == mainID }) ?? content.displays.first else {
-            throw AppFailure.screenshot("没有找到可读取的显示器。")
+        let filter: SCContentFilter
+        let width: Double, height: Double
+        if targetID.hasPrefix("window:"), let id = UInt32(targetID.dropFirst(7)) {
+            guard let window = content.windows.first(where: { $0.windowID == id }),
+                  window.owningApplication?.processID != NSRunningApplication.current.processIdentifier else { throw AppFailure.screenshot("选定演示窗口已关闭或不可用，请重新选择。") }
+            filter = SCContentFilter(desktopIndependentWindow: window)
+            width = window.frame.width; height = window.frame.height
+        } else {
+            let requested = targetID.hasPrefix("display:") ? UInt32(targetID.dropFirst(8)) : nil
+            let mainID = (NSScreen.main?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+            guard let display = content.displays.first(where: { $0.displayID == (requested ?? mainID) }) ?? (requested == nil ? content.displays.first : nil) else { throw AppFailure.screenshot("选定显示器已断开，请重新选择。") }
+            let own = content.applications.filter { $0.processID == NSRunningApplication.current.processIdentifier }
+            filter = SCContentFilter(display: display, excludingApplications: own, exceptingWindows: [])
+            width = Double(display.width); height = Double(display.height)
         }
-        let ownPID = NSRunningApplication.current.processIdentifier
-        let own = content.applications.filter { $0.processID == ownPID }
-        let filter = SCContentFilter(display: display, excludingApplications: own, exceptingWindows: [])
+        let scale = min(2, Double(maxWidth) / max(1, width))
         let configuration = SCStreamConfiguration()
-        let scale = min(2, Double(maxWidth) / Double(max(1, display.width)))
-        configuration.width = max(1, Int(Double(display.width) * scale))
-        configuration.height = max(1, Int(Double(display.height) * scale))
+        configuration.width = max(1, Int(width * scale)); configuration.height = max(1, Int(height * scale))
         configuration.showsCursor = false
-        return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+        if let region, region.count == 4 {
+            let rect = CGRect(x: region[0], y: region[1], width: region[2], height: region[3]).standardized.intersection(CGRect(x: 0, y: 0, width: 1, height: 1))
+            guard rect.width >= 0.015, rect.height >= 0.015,
+                  let cropped = image.cropping(to: CGRect(x: rect.minX * Double(image.width), y: rect.minY * Double(image.height), width: rect.width * Double(image.width), height: rect.height * Double(image.height)).integral) else { throw AppFailure.screenshot("屏幕选区无效，请重新框选。") }
+            return cropped
+        }
+        return image
     }
 
     /// On-device text recognition (Chinese + English), off the main thread.

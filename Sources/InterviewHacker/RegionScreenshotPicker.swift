@@ -55,7 +55,7 @@ struct RegionScreenshotPicker: View {
     }
 }
 
-private struct RegionSelectionCanvas: View {
+struct RegionSelectionCanvas: View {
     let image: NSImage
     @Binding var selection: CGRect?
 

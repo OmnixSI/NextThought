@@ -178,6 +178,12 @@ public enum HybridRanker {
 
 /// The retrieval the app uses: the lexical index, plus the semantic index when
 /// an embedding model is installed and enabled.
+public enum RetrievalPolicy {
+    /// Validation feasible-interval midpoint (v2); regression evaluated
+    /// in Tools/Validation/Retrieval. A low-similarity list may be empty.
+    public static let minimumSemanticScore = 0.43
+}
+
 public struct HybridContextIndex: Sendable {
     public let chunks: [ContextChunk]
     public let lexical: SessionContextIndex
@@ -198,18 +204,41 @@ public struct HybridContextIndex: Sendable {
     /// - Parameter queryVector: embedding of the question; when it is missing the
     ///   search falls back to the lexical ranking alone.
     public func retrieve(
-        question: String, queryVector: [Float]? = nil, maximumCharacters: Int = 8_000
+        question: String, queryVector: [Float]? = nil, maximumCharacters: Int = 8_000,
+        minimumSemanticScore: Double = RetrievalPolicy.minimumSemanticScore
     ) -> [ContextExcerpt] {
         guard maximumCharacters > 0 else { return [] }
-        let lexical = lexical.rankedOrders(question: question)
+        let lexicalOrders = lexical.rankedOrders(question: question)
         let fingerprints = chunks.map(\.fingerprint)
-        let semanticOrders = queryVector.map { semantic.rankedOrders(query: $0, fingerprints: fingerprints).map(\.order) } ?? []
+        let semanticRanking = queryVector.map { semantic.rankedOrders(query: $0, fingerprints: fingerprints) } ?? []
+        let scores = Dictionary(uniqueKeysWithValues: semanticRanking.map { ($0.order, $0.score) })
+        let semanticOrders = semanticRanking.filter { $0.score >= minimumSemanticScore }.map(\.order)
+        let eligibleLexical = lexicalOrders.filter { scores[$0] == nil || scores[$0]! >= minimumSemanticScore }
         let fused = semanticOrders.isEmpty
-            ? lexical.map { (order: $0, score: 0.0) }
-            : HybridRanker.fuse(lexical: lexical, semantic: semanticOrders)
+            ? eligibleLexical.map { (order: $0, score: 0.0) }
+            : HybridRanker.fuse(lexical: eligibleLexical, semantic: semanticOrders)
+        // Explicit physical-page/file requests are resolved before similarity.
+        let lower = question.lowercased()
+        let pageRegex = try? NSRegularExpression(pattern: #"(?:第\s*(\d+)\s*[页張张]|p\.?\s*(\d+)|(?:slide|幻灯片)\s*(\d+))"#, options: .caseInsensitive)
+        let ns = lower as NSString
+        let match = pageRegex?.firstMatch(in: lower, range: NSRange(location: 0, length: ns.length))
+        let page = match.flatMap { m in (1..<m.numberOfRanges).compactMap { i -> Int? in let range = m.range(at: i); return range.location == NSNotFound ? nil : Int(ns.substring(with: range)) }.first }
+        func normalize(_ s: String) -> String { String(s.lowercased().filter { $0.isLetter || $0.isNumber }) }
+        let questionKey = normalize(lower)
+        let named = Set(chunks.filter { chunk in
+            let stem = ((chunk.source as NSString).deletingPathExtension.split(separator: "_").first.map(String.init) ?? chunk.source)
+            let key = normalize(stem)
+            return key.count >= 4 && questionKey.contains(key)
+        }.map(\.source))
+        let explicit = chunks.filter { chunk in
+            let physical = chunk.locator?.page ?? chunk.locator?.slide
+            return (page != nil && physical == page && (named.isEmpty || named.contains(chunk.source))) || (page == nil && named.contains(chunk.source))
+        }.map { (order: $0.order, score: 1.0) }
+        let explicitSet = Set(explicit.map(\.order))
+        let ranking = explicit + fused.filter { !explicitSet.contains($0.order) }
         var remaining = min(maximumCharacters, 16_000)
         var result: [ContextExcerpt] = []
-        for entry in fused.prefix(8) where remaining > 0 {
+        for entry in ranking.prefix(8) where remaining > 0 {
             guard entry.order < chunks.count else { continue }
             let chunk = chunks[entry.order]
             guard chunk.text.count <= remaining else { continue }

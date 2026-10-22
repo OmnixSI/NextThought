@@ -13,6 +13,7 @@ struct InsightsPanel: View {
             HStack(spacing: 8) {
                 Label("屏幕与讲稿", systemImage: AssistantModule.insights.symbol).font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
                 Spacer()
+                Button("立即识别") { Task { await state.readScreen() } }.buttonStyle(ChipButtonStyle()).disabled(insights.isReadingScreen || !insights.screenWatch)
                 if insights.isReadingScreen { ProgressView().controlSize(.mini) }
                 Button { state.openInsightSettings() } label: { Image(systemName: "gearshape") }
                     .buttonStyle(GlassIconButtonStyle(size: 26)).help("设置 → 识别 → 屏幕感知")
@@ -24,6 +25,7 @@ struct InsightsPanel: View {
                     } else if let error = insights.screenError {
                         Note(error, color: .orange)
                     }
+                    if insights.screenWatch { Note(state.screenContextService.status + " · " + state.screenTargetTitle) }
                     if let slide = insights.slide { SlideSection(slide: slide) }
                     if insights.screenWatch, insights.slide == nil || insights.screen?.kind != .slides { ScreenSection() }
                     if insights.screenWatch, insights.screen == nil, insights.slide == nil, insights.screenError == nil {
@@ -42,7 +44,7 @@ private struct ScreenWatchOffHint: View {
     @Environment(AppState.self) private var state
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Note("打开“屏幕感知”后，每隔几秒在本机识别屏幕文字：跟随你讲到 PPT 的哪一页并给出这一页的讲稿提示；屏幕上出现题目或代码时，判断是否和对话相关并纳入回答。屏幕文字只在本机识别。")
+            Note("打开“屏幕感知”后，每隔几秒在本机识别屏幕文字：跟随你讲到 PPT 的哪一页并给出这一页的讲稿提示；屏幕上出现题目或代码时，判断是否和对话相关并纳入回答。屏幕在本机识别；相关文字与必要的当前画面会提供给回答引擎。")
             Button {
                 state.insights.screenWatch = true
                 state.insights.save()
@@ -116,7 +118,7 @@ private struct ScreenSection: View {
                 HStack(spacing: 6) {
                     Image(systemName: "display").foregroundStyle(.secondary)
                     Text(screen.kind.map { "屏幕：\($0.title)" } ?? "屏幕").font(.system(size: 12, weight: .semibold))
-                    Text(screen.isRelevant ? "与对话相关，回答会参考" : "与对话无关，不纳入回答")
+                    Text(screen.isRelevant ? "与对话相关，回答会参考" : "屏幕指代提问时会重新判断")
                         .font(.system(size: 11)).foregroundStyle(screen.isRelevant ? Brand.accent : .secondary)
                     Spacer()
                     TimelineView(.periodic(from: screen.capturedAt, by: 5)) { context in
