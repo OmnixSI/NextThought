@@ -179,7 +179,7 @@ extension DocumentSelfTest {
         let listing=try Shell.run("/usr/bin/unzip",["-Z1",file.path]).output
         guard listing.contains("Materials/"),!listing.contains("/models/"),!listing.contains("/Runtimes/") else { throw SelfTest.Failure("backup missing derived Markdown or contains reconstructible assets") }
         store.installDemo([])
-        _ = try DataBackup.importArchive(file,applySettings:false)
+        _ = try await DataBackup.importArchive(file,applySettings:false)
         guard let restored=store.workspaces.first?.documents.first,restored.content==content,
               let relative=restored.markdownPath,!relative.hasPrefix("/"),let url=MaterialArchive.resolve(relative),
               try String(contentsOf:url,encoding:.utf8).contains("1,234.56"),restored.content?.blocks.first?.locator.page==7 else { throw SelfTest.Failure("structured archive/locators/relative paths did not restore") }

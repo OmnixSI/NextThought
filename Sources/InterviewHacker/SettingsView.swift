@@ -1108,7 +1108,7 @@ private struct RecordingSettings: View {
         }
         SettingsSection(title: "自动备份", icon: "clock.arrow.circlepath") {
             if !state.simplifiedInterface {
-            Toggle("每天自动备份一次（另外在安装更新和导入前也会备份）", isOn: $state.autoBackup)
+            Toggle("会议结束后自动创建恢复点", isOn: $state.autoBackup)
                 .onChange(of: state.autoBackup) { _, _ in state.updateSettings() }
             }
             HStack {
@@ -1119,7 +1119,7 @@ private struct RecordingSettings: View {
                 }.buttonStyle(SecondaryButtonStyle())
             }
             if state.simplifiedInterface {
-                Note(state.autoBackup ? "已开启每日自动备份。" : "每日自动备份未开启，可在高级设置调整。")
+                Note(state.autoBackup ? "会议结束后自动备份；更新和导入前保留恢复点。" : "会议自动备份未开启，可在高级设置调整。")
                 if let latest = backups.first { Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened)) }
             } else if backups.isEmpty {
                 Note("还没有自动备份。")
@@ -1136,7 +1136,7 @@ private struct RecordingSettings: View {
                     }
                 }
             }
-            Note("所有数据都在 \(AppPaths.root.path)。更新应用、更换模型或回答接口都不会改动这里的文件；自动备份保留最近 10 份，不含密钥。")
+            Note("所有数据都在 \(AppPaths.root.path)。更新应用、更换模型或回答接口都不会改动这里的文件；自动恢复点按内容去重，最多保留最近 10 份、软预算 2 GiB，不含模型、索引或密钥。")
         }
         .onAppear { backups = DataBackup.listBackups() }
         .onChange(of: state.section) { _, section in if section == .settings { backups = DataBackup.listBackups() } }
@@ -1154,7 +1154,8 @@ private struct RecordingSettings: View {
 
     private func reasonTitle(_ reason: String) -> String {
         switch reason {
-        case "daily": "每日"
+        case "daily": "旧每日备份"
+        case "session": "会议结束"
         case "update": "更新前"
         case "import": "导入前"
         case "manual": "手动"

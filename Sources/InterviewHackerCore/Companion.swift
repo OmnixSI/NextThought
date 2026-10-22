@@ -9,9 +9,52 @@ public struct CompanionSnapshot: Codable, Sendable, Equatable {
     public var answering: Bool
     public var candidate: String
     public var position: String
-    public init(status: String, question: String, answer: String, answering: Bool, candidate: String, position: String) {
+    public var sessionID: String?
+    public var answerID: String?
+    public var phase: String?
+    public var sources: String?
+    public var slide: String?
+    public var updateAvailable: Bool?
+    public init(status: String, question: String, answer: String, answering: Bool, candidate: String, position: String,
+                sessionID: String? = nil, answerID: String? = nil, phase: String? = nil, sources: String? = nil,
+                slide: String? = nil, updateAvailable: Bool = false) {
         self.status = status; self.question = question; self.answer = answer
         self.answering = answering; self.candidate = candidate; self.position = position
+        self.sessionID = sessionID; self.answerID = answerID; self.phase = phase
+        self.sources = sources; self.slide = slide; self.updateAvailable = updateAvailable
+    }
+}
+
+/// A full replacement, never a text delta. Sequence numbers are scoped to one
+/// server lifetime; reconnecting clients may always recover from a single frame.
+public struct CompanionEnvelope: Codable, Sendable, Equatable {
+    public var version = 1
+    public var serverID: String
+    public var sequence: UInt64
+    public var updatedAt: Double
+    public var snapshot: CompanionSnapshot
+    public init(serverID: String, sequence: UInt64, snapshot: CompanionSnapshot, now: Date = Date()) {
+        self.serverID = serverID; self.sequence = sequence; self.snapshot = snapshot
+        updatedAt = now.timeIntervalSince1970 * 1000
+    }
+    public func sse(event: String? = nil) -> Data {
+        let json = (try? JSONEncoder().encode(self)).map { String(decoding: $0, as: UTF8.self) } ?? "{}"
+        return Data("id: \(serverID):\(sequence)\n\(event.map { "event: \($0)\n" } ?? "")data: \(json)\n\n".utf8)
+    }
+}
+
+/// Shared by LAN, relay and Bluetooth. A command can be retried on another
+/// transport without generating a second answer or moving two pages.
+public struct CompanionCommandCache: Sendable {
+    private var commands: [String: Date] = [:]
+    public init() {}
+    public mutating func accept(_ id: String, now: Date = Date()) -> Bool {
+        guard UUID(uuidString: id) != nil else { return false }
+        commands = commands.filter { now.timeIntervalSince($0.value) < 300 }
+        guard commands[id] == nil else { return false }
+        if commands.count >= 1024, let first = commands.min(by: { $0.value < $1.value })?.key { commands[first] = nil }
+        commands[id] = now
+        return true
     }
 }
 

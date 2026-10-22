@@ -351,7 +351,7 @@ final class AppState {
 
     var displayedAnswer: String {
         if showsWebAnswer, let lookup = displayedWebLookup { return lookup.answer }
-        if isAnswering && !answerDraft.isEmpty && historyCursor == nil { return answerDraft }
+        if isAnswering && historyCursor == nil { return answerDraft }
         if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].answer }
         return answer
     }
@@ -387,11 +387,6 @@ final class AppState {
         Task { await refreshManagedModelStatus() }
         Updater.shared.start()
         startScreenWatch()
-        Task {
-            // After launch settles: one backup a day, never blocking start-up.
-            try? await Task.sleep(for: .seconds(8))
-            DataBackup.dailyBackupIfNeeded()
-        }
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
             // Warm independent services concurrently; no model/search calls are made.
@@ -787,6 +782,8 @@ final class AppState {
         cancelAnswer()
         historyCursor = nil
         pendingQuestion = question
+        currentQuestion = question
+        answer = ""
         isAnswering = true
         answeringCandidateID = candidateID
         firstTokenAt = nil

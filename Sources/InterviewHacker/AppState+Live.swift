@@ -302,7 +302,12 @@ extension AppState {
             answer: displayedAnswer,
             answering: isAnswering,
             candidate: liveCandidate.map { "\($0.assessment.intent.title) · \($0.text)" } ?? "",
-            position: historyPositionText ?? "")
+            position: historyPositionText ?? "",
+            sessionID: activeArchiveID?.uuidString,
+            answerID: displayedRecordID?.uuidString,
+            phase: isAnswering ? "generating" : (statusText == "回答出错" ? "failed" : "ready"),
+            sources: selectedExcerpts.map(\.citation).joined(separator: " · "),
+            slide: insights.slide.map { "\($0.documentName) · \($0.page)" })
     }
 
     // MARK: Share-visibility self test

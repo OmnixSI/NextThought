@@ -286,14 +286,13 @@ final class Updater {
         guard phase == .ready, let stagedApp, let available,
               UpdateCatalog.isNewer(manifest: available.manifest, releaseTag: available.release.tagName,
                                     currentVersion: currentVersion, currentBuild: currentBuild) else { return }
-        do {
-            phase = .installing
-            // Data lives outside the app bundle, but keep a snapshot from before every update.
-            _ = try? DataBackup.automaticBackup(reason: "update")
-            AppState.shared.prepareForTermination()
-            try Self.replaceAndRelaunch(with: stagedApp)
-        } catch {
-            phase = .failed(error.localizedDescription)
+        phase = .installing
+        Task {
+            do {
+                _ = try await DataBackup.automaticBackup(reason: "update")
+                AppState.shared.prepareForTermination()
+                try Self.replaceAndRelaunch(with: stagedApp)
+            } catch { phase = .failed(error.localizedDescription) }
         }
     }
 
