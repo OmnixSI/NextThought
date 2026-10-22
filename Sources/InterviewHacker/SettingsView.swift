@@ -443,60 +443,76 @@ struct SignatureStatus: View {
 
 private struct CompanionSection: View {
     @Environment(AppState.self) private var state
+    @State private var appPairing = false
+    @State private var showsBackup = false
+    @State private var copiedLink: String?
 
     var body: some View {
-        @Bindable var state = state
         SettingsSection(title: "手机伴侣", icon: "iphone") {
-            Toggle("在局域网开启手机显示与遥控", isOn: Binding(get: { state.companionEnabled }, set: { state.setCompanion(enabled: $0) }))
-            HStack(spacing: 8) {
-                Text("首选端口")
-                TextField("8765", value: $state.companionPort, format: .number.grouping(.never))
-                    .textFieldStyle(.roundedBorder).frame(width: 80)
-                Button("重新生成链接") { state.setCompanion(enabled: true) }.buttonStyle(ChipButtonStyle())
-                Text("端口被占用时会自动换用下一个可用端口").font(.caption).foregroundStyle(.secondary)
-            }
-            Text(state.companionStatus).font(.caption).foregroundStyle(state.companionStatus.hasPrefix("启动失败") ? .orange : .secondary)
-            if let address = state.companionAddress {
-                HStack(alignment: .top, spacing: 14) {
-                    QRCodeView(text: address).frame(width: 132, height: 132)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("用手机相机扫码打开（无需安装 App）。").font(.callout)
-                        Text(address).font(.system(size: 11, design: .monospaced)).textSelection(.enabled).foregroundStyle(.secondary)
-                        Button("复制链接") {
-                            NSPasteboard.general.clearContents(); NSPasteboard.general.setString(address, forType: .string)
-                        }.buttonStyle(ChipButtonStyle())
+            Toggle("开启手机显示与遥控", isOn: Binding(get: { state.companionEnabled }, set: { state.setCompanion(enabled: $0) }))
+            Text(state.companionStatus).font(.system(size: 12)).foregroundStyle(state.companionStatus.hasPrefix("启动失败") ? .orange : .secondary)
+            if state.companionEnabled {
+                Picker("连接方式", selection: $appPairing) {
+                    Text("手机网页 · 无需安装").tag(false)
+                    Text("已安装手机 App").tag(true)
+                }.pickerStyle(.segmented)
+                if appPairing {
+                    if let url = try? CompanionServer.shared.pairing.url(base: URL(string: "interviewhacker-companion://pair")!) {
+                        pairingCard(url.absoluteString, title: "用手机 App 扫描", detail: "打开 InterviewHacker 手机 App，选择“扫描二维码”。", copyTitle: "复制 App 配对链接")
+                    }
+                } else if showsBackup, let address = state.companionBackupAddress {
+                    pairingCard(address, title: "互联网备用入口", detail: "用手机相机扫描。此入口使用加密中转；可在手机收藏，供重新打开时使用。", copyTitle: "复制备用入口")
+                    Button("返回局域网二维码") { showsBackup = false }.buttonStyle(ChipButtonStyle())
+                } else if let address = state.companionAddress {
+                    pairingCard(address, title: "用手机相机扫描", detail: "手机与 Mac 连接同一可信网络，在浏览器中打开，无需安装 App。局域网使用明文 HTTP。", copyTitle: "复制网页链接")
+                    if state.companionBackupAddress != nil {
+                        Button("显示互联网备用二维码") { showsBackup = true }.buttonStyle(ChipButtonStyle())
+                    }
+                }
+                if state.companionBluetoothEnabled {
+                    Label("蓝牙备用（仅 App）：" + state.companionBluetoothStatus, systemImage: "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+                if state.companionRelayEnabled {
+                    Label("加密中转：" + state.companionRelayStatus, systemImage: "network")
+                        .font(.system(size: 12)).foregroundStyle(state.companionBackupAddress == nil ? .orange : .secondary)
+                    if state.companionBackupAddress != nil {
+                        Note("备用连接已开启。若手机在开启前已配对，请使用新的二维码重新配对。")
                     }
                 }
             }
-            Divider()
+            DisclosureGroup("备用连接与高级选项") { advancedControls.padding(.top, 8) }
+            Note("手机显示当前问题、回答与来源标签，不同步完整转录、资料或截图。配对链接关闭服务后失效，请勿转发。若共享手机屏幕或将手机镜像到 Mac，回答仍可能被看见。")
+        }
+    }
+    private func pairingCard(_ address: String, title: String, detail: String, copyTitle: String) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            QRCodeView(text: address).frame(width: 168, height: 168).padding(8).background(.white, in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityLabel(title + "的配对二维码")
+            VStack(alignment: .leading, spacing: 10) {
+                Text(title).font(.system(size: 14, weight: .semibold))
+                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Button(copiedLink == address ? "已复制" : copyTitle) {
+                    NSPasteboard.general.clearContents(); NSPasteboard.general.setString(address, forType: .string); copiedLink = address
+                }.buttonStyle(ChipButtonStyle())
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }.padding(.vertical, 8)
+    }
+    private var advancedControls: some View {
+        @Bindable var state = state
+        return VStack(alignment: .leading, spacing: 12) {
             Toggle("启用原生手机 App 的蓝牙备用", isOn: Binding(get: { state.companionBluetoothEnabled }, set: { state.setCompanionBluetooth(enabled: $0) })).disabled(!state.companionEnabled)
-            Text(state.companionBluetoothStatus).font(.caption).foregroundStyle(.secondary)
-            if state.companionEnabled, let pairURL = try? CompanionServer.shared.pairing.url(base: URL(string: "interviewhacker-companion://pair")!) {
-                HStack {
-                    QRCodeView(text: pairURL.absoluteString).frame(width: 132, height: 132)
-                    VStack(alignment: .leading) {
-                        Text("原生手机 App 配对")
-                        Text("在配套 App 中扫描或粘贴链接；启用中转后请重新配对。").font(.caption)
-                        Button("复制 App 配对链接") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(pairURL.absoluteString, forType: .string) }
-                    }
-                }
-            }
-            Divider()
+            if !state.companionBluetoothEnabled { Text(state.companionBluetoothStatus).font(.system(size: 12)).foregroundStyle(.secondary) }
             TextField("HTTPS 中转服务根地址", text: $state.companionRelayURL).textFieldStyle(.roundedBorder)
-            Toggle("启用互联网加密备用连接", isOn: Binding(get: { state.companionRelayEnabled }, set: { state.setCompanionRelay(enabled: $0) }))
-                .disabled(!state.companionEnabled)
-            Text(state.companionRelayStatus).font(.caption).foregroundStyle(.secondary)
-            if let address = state.companionBackupAddress {
-                HStack(alignment: .top) {
-                    QRCodeView(text: address).frame(width: 132, height: 132)
-                    VStack(alignment: .leading) {
-                        Text("HTTPS 备用入口 · 请在手机收藏此链接")
-                        Text("开启中转后请重新扫描配对码。局域网页仍打开时会自动切换；重新打开时可使用此备用入口。").font(.caption)
-                        Button("复制备用入口") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(address, forType: .string) }
-                    }
-                }
+            Toggle("启用互联网加密备用连接", isOn: Binding(get: { state.companionRelayEnabled }, set: { state.setCompanionRelay(enabled: $0) })).disabled(!state.companionEnabled)
+            if !state.companionRelayEnabled { Text(state.companionRelayStatus).font(.system(size: 12)).foregroundStyle(.secondary) }
+            Divider()
+            HStack(spacing: 8) {
+                Text("首选端口").font(.system(size: 12))
+                TextField("8765", value: $state.companionPort, format: .number.grouping(.never)).textFieldStyle(.roundedBorder).frame(width: 80)
+                Button("重新生成链接") { state.setCompanion(enabled: true); copiedLink = nil }.buttonStyle(ChipButtonStyle()).disabled(!state.companionEnabled)
             }
-            Note("手机实时显示当前问题和流式回答，并可一键“回答 / 改短 / 举例 / 英文版 / 上一条”。屏幕共享完全看不到手机。只同步当前回答，不同步转录、资料或截图；链接含一次性随机配对码，关闭后失效。连接为局域网明文 HTTP，请只在可信网络使用。")
+            Note("端口被占用时会自动换用可用端口。重新生成链接后，手机需要重新配对。")
         }
     }
 }

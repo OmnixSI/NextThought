@@ -14,11 +14,13 @@ public struct ScreenContext: Codable, Sendable, Equatable {
     public var capturedAt: Date
     public var recognizedAt: Date
     public var regions: [ScreenTextRegion]
+    public var captureRegion: [Double]?
     public var enhancedText: String?
+    public var enhancedRegion: [Double]?
     public var recognizer: String
-    public init(frameID: String, targetID: String, source: String, capturedAt: Date = Date(), regions: [ScreenTextRegion], recognizer: String = "system") {
+    public init(frameID: String, targetID: String, source: String, capturedAt: Date = Date(), regions: [ScreenTextRegion], captureRegion: [Double]? = nil, recognizer: String = "system") {
         self.frameID = frameID; self.targetID = targetID; self.source = source; self.capturedAt = capturedAt
-        recognizedAt = Date(); self.regions = regions; self.recognizer = recognizer
+        recognizedAt = Date(); self.regions = regions; self.captureRegion = captureRegion; self.recognizer = recognizer
     }
     public var text: String { enhancedText ?? regions.map(\.text).joined(separator: "\n") }
     public var lowConfidence: Bool { regions.isEmpty || regions.contains { $0.confidence < 0.8 } }

@@ -2,28 +2,36 @@
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="referrer" content="no-referrer"><title>InterviewHacker</title>
+<meta name="referrer" content="no-referrer"><meta name="theme-color" content="#141419"><title>InterviewHacker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjI4IiBmaWxsPSIjNTE0NmM4Ii8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTQyIDMySDg2UTk4IDMyIDk4IDQ0Vjc0UTk4IDg2IDg2IDg2SDYwTDQzIDk4Vjg2SDQyUTMwIDg2IDMwIDc0VjQ0UTMwIDMyIDQyIDMyWiIvPjxwYXRoIGQ9Ik00OCA1M1Y2N002NCA0NlY3NE04MCA1M1Y2NyIvPjwvZz48L3N2Zz4=">
 <style>
-:root{--bg:#0f1115;--card:#181b22;--text:#eef1f6;--muted:#9aa3b2;--accent:#5b8cff;--line:#262b35}
-@media (prefers-color-scheme: light){:root{--bg:#f5f6f8;--card:#fff;--text:#14171c;--muted:#5d6675;--line:#e3e6eb}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
-header{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}.live .dot{background:#34c759}
-#q{margin:12px 0 6px;color:var(--muted);font-size:14px}
-#a{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;white-space:pre-wrap;word-break:break-word;min-height:40vh}
-#a strong{color:var(--accent)}#cand{font-size:13px;color:var(--muted);margin-top:8px}
-nav{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);display:flex;gap:8px;overflow-x:auto}
-button{flex:0 0 auto;border:0;border-radius:12px;padding:12px 14px;font-size:15px;background:var(--card);color:var(--text)}
-button.primary{background:var(--accent);color:#fff;font-weight:600}
-.size{margin-left:auto;display:flex;gap:6px}.size button{padding:4px 10px}
+:root{color-scheme:dark light;--bg:#141419;--card:#1e1f27;--text:#f2f1f7;--muted:#b0afbf;--accent:#bdb3ff;--primary:#5754d8;--line:#363640;--focus:#c8c0ff}
+@media(prefers-color-scheme:light){:root{--bg:#f5f5f9;--card:#fff;--text:#20212b;--muted:#626171;--accent:#5146c8;--primary:#5146c8;--line:#dcdce7;--focus:#5146c8}}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+header,main,.controls{width:100%;max-width:900px;margin:0 auto}
+header{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 16px 0;color:var(--muted);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}.live .dot{background:#34c759}
+#s{flex:1;min-width:120px}#mode{width:100%;overflow-wrap:anywhere}.size{display:flex;gap:4px}
+main{flex:1;padding:12px 16px 24px}.history{display:flex;align-items:center;gap:12px;margin-bottom:12px}.history button{background:transparent;border:1px solid var(--line);font-size:14px}.history #p{flex:1;text-align:center;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+#q{margin:12px 0;font-size:17px;font-weight:600;overflow-wrap:anywhere}#q:empty{display:none}
+#a{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;min-height:30vh;line-height:1.6}
+#a strong{font-weight:650}#a code{font-family:ui-monospace,monospace;font-size:.88em;background:var(--bg);border-radius:4px;padding:1px 4px}
+#cand,#sources{font-size:13px;color:var(--muted);margin-top:12px;overflow-wrap:anywhere}#cand:empty,#sources:empty{display:none}
+nav{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:2}.controls{display:flex;flex-direction:column;gap:8px}.actions{display:flex;gap:8px}.actions button{flex:1;min-width:0}
+button{border:1px solid transparent;border-radius:12px;min-height:44px;min-width:44px;padding:10px 12px;font:inherit;font-size:15px;background:var(--card);color:var(--text);cursor:pointer;touch-action:manipulation}button.primary{background:var(--primary);color:white;font-weight:600}button.secondary{border-color:var(--line)}button:disabled{opacity:.48;cursor:default}button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}button[hidden]{display:none}button:active:not(:disabled){filter:brightness(.94)}
+#operation{font-size:13px;color:var(--muted);overflow-wrap:anywhere}#operation:empty{display:none}#operation[data-error="true"]{color:var(--text)}[data-retry]{align-self:flex-start;border-color:var(--line)}#update{margin-top:12px;border-color:var(--line)}
+@media(min-width:700px){header{padding-top:20px}nav{padding-top:12px;padding-bottom:16px}.actions button{flex:0 1 180px}#a{min-height:40vh}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
 </style></head><body>
-<header id="h"><span class="dot"></span><span id="s">连接中…</span><span id="mode"></span><span id="p"></span>
-<span class="size"><button data-zoom="-2">A-</button><button data-zoom="2">A+</button></span></header>
-<div id="q"></div><div id="a">等待回答…</div><div id="cand"></div><div id="sources" style="font-size:12px;color:var(--muted)"></div><button id="update" hidden data-action="applyWeb">显示核查更新</button>
-<nav>
-<button class="primary" data-action="answer">回答</button>
-<button data-action="shorter">更简短</button><button data-action="example">举例</button>
-<button data-action="english">英文版</button><button data-action="previous">上一条</button>
-<button data-action="next">下一条</button><button data-action="cancel">取消</button>
-</nav>
+<header id="h"><span class="dot" aria-hidden="true"></span><span id="s" role="status">连接中…</span>
+<span class="size"><button data-zoom="-2" aria-label="减小回答字号">A−</button><button data-zoom="2" aria-label="增大回答字号">A+</button></span><span id="mode"></span></header>
+<main>
+<div class="history" aria-label="回答记录"><button data-action="previous">上一条</button><span id="p" aria-label="当前回答位置"></span><button data-action="next">下一条</button></div>
+<div id="q"></div><div id="a" aria-label="建议回答">连接 Mac 后，当前问题和回答会显示在这里。</div><div id="cand"></div><div id="sources"></div><button id="update" hidden data-action="applyWeb">显示核查更新</button>
+</main>
+<nav aria-label="回答操作"><div class="controls">
+<div id="operation" role="status" aria-live="polite"></div><button data-retry hidden>重试操作</button>
+<div class="actions"><button class="primary" data-action="answer">回答</button><button class="secondary" data-action="cancel">停止生成</button></div>
+<div class="actions"><button data-action="shorter">更简短</button><button data-action="example">举例</button><button data-action="english">英文版</button></div>
+</div></nav>
 <script type="module" src="/phone.js"></script></body></html>

@@ -79,6 +79,10 @@ enum DataBackup {
             try await recoveryStore.restore(source, into: staging)
         } else {
             try await Task.detached(priority: .utility) {
+                let names = try Shell.check("/usr/bin/zipinfo", ["-1", source.path], "读取备份目录").output
+                let listing = try Shell.check("/usr/bin/zipinfo", ["-l", source.path], "检查备份容量").output
+                let free = (try FileManager.default.attributesOfFileSystem(forPath: staging.path)[.systemFreeSize] as? NSNumber)?.int64Value ?? 0
+                try BackupArchivePolicy.validate(names: names, listing: listing, freeBytes: free)
                 try Shell.check("/usr/bin/ditto", ["-x", "-k", source.path, staging.path], "解压备份")
             }.value
         }
@@ -86,6 +90,7 @@ enum DataBackup {
         let root = try locateRoot(in: staging)
         let manifest = try JSONLines.decoder().decode(BackupManifest.self, from: Data(contentsOf: root.appendingPathComponent("manifest.json")))
         try manifest.validate()
+        try await Task.detached(priority: .utility) { try validateContents(root, manifest: manifest) }.value
 
         WorkspaceStore.shared.flush()
         _ = try await automaticBackup(reason: "import")
@@ -111,19 +116,22 @@ enum DataBackup {
             .compactMap { UUID(uuidString: $0.lastPathComponent) }
         let existing = Set(((try? FileManager.default.contentsOfDirectory(at: AppPaths.sessions, includingPropertiesForKeys: nil)) ?? [])
             .compactMap { UUID(uuidString: $0.lastPathComponent) })
-        try FileManager.default.createDirectory(at: AppPaths.sessions, withIntermediateDirectories: true)
-        for id in BackupMerge.sessionsToImport(existing: existing, incoming: incomingSessions) {
-            try FileManager.default.copyItem(at: sessionsDirectory.appendingPathComponent(id.uuidString),
-                                             to: AppPaths.sessions.appendingPathComponent(id.uuidString))
-            summary.sessionsAdded += 1
-        }
+        summary.sessionsAdded = try await Task.detached(priority: .utility) {
+            try FileManager.default.createDirectory(at: AppPaths.sessions, withIntermediateDirectories: true)
+            let ids = BackupMerge.sessionsToImport(existing: existing, incoming: incomingSessions)
+            for id in ids {
+                try FileManager.default.copyItem(at: sessionsDirectory.appendingPathComponent(id.uuidString),
+                                                 to: AppPaths.sessions.appendingPathComponent(id.uuidString))
+            }
+            return ids.count
+        }.value
 
         let originals = root.appendingPathComponent("Originals", isDirectory: true)
         try await Task.detached(priority: .utility) {
             let target = AppPaths.root.appendingPathComponent("Originals", isDirectory: true)
             let files = (try? FileManager.default.contentsOfDirectory(at: originals, includingPropertiesForKeys: [.isRegularFileKey])) ?? []
             if !files.isEmpty { try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true) }
-            for file in files {
+            for file in files where !file.lastPathComponent.hasPrefix("._") {
                 let hash = file.deletingPathExtension().lastPathComponent
                 guard hash.count == 64, hash.allSatisfy({ $0.isHexDigit }), ManagedModelStore.sha256(of: file) == hash else { throw AppFailure.capture("备份原文件校验失败。") }
                 let destination = target.appendingPathComponent(file.lastPathComponent)
@@ -167,6 +175,10 @@ enum DataBackup {
         }.value
         let url = try await recoveryStore.create(files: files, directories: ["Sessions": AppPaths.sessions,
             "Originals": AppPaths.root.appendingPathComponent("Originals", isDirectory: true)], reason: reason)
+        if try await recoveryStore.storageBytes() > 2 * 1024 * 1024 * 1024 {
+            AppState.shared.dataStatus = "最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。"
+            Diagnostics.record("backup.soft_budget_exceeded")
+        }
         Diagnostics.record("backup.automatic", ["reason": reason])
         return url
     }
@@ -201,6 +213,33 @@ enum DataBackup {
         let staging = base.appendingPathComponent("InterviewHacker-Backup", isDirectory: true)
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
         return staging
+    }
+
+    /// All semantic checks precede materialization/merge: a corrupt original
+    /// cannot leave half-imported workspaces or preferences behind.
+    private static func validateContents(_ root: URL, manifest: BackupManifest) throws {
+        let fm = FileManager.default
+        let directory = root.appendingPathComponent("Workspaces")
+        let files = ((try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [])
+            .filter { $0.pathExtension == "json" && !$0.lastPathComponent.hasPrefix("._") }
+        guard files.count == manifest.workspaceCount else { throw AppFailure.capture("备份场景数量不完整。") }
+        for file in files { _ = try JSONLines.decoder().decode(Workspace.self, from: Data(contentsOf: file)) }
+        let sessions = ((try? fm.contentsOfDirectory(at: root.appendingPathComponent("Sessions"), includingPropertiesForKeys: nil)) ?? []).filter { UUID(uuidString: $0.lastPathComponent) != nil }
+        guard sessions.count == manifest.sessionCount else { throw AppFailure.capture("备份会议数量不完整。") }
+        for name in ["settings.plist", "secrets.plist"] {
+            let file = root.appendingPathComponent(name)
+            if fm.fileExists(atPath: file.path) {
+                guard try PropertyListSerialization.propertyList(from: Data(contentsOf: file), format: nil) is [String: Any] else { throw AppFailure.capture("备份设置格式无效。") }
+            }
+        }
+        let skills = root.appendingPathComponent("skills.json")
+        if fm.fileExists(atPath: skills.path) { _ = try JSONLines.decoder().decode([Skill].self, from: Data(contentsOf: skills)) }
+        let originals = ((try? fm.contentsOfDirectory(at: root.appendingPathComponent("Originals"), includingPropertiesForKeys: [.isRegularFileKey])) ?? [])
+        for file in originals where !file.lastPathComponent.hasPrefix("._") {
+            let hash = file.deletingPathExtension().lastPathComponent
+            guard hash.count == 64, hash.allSatisfy({ $0.isHexDigit }),
+                  ManagedModelStore.sha256(of: file) == hash else { throw AppFailure.capture("备份原文件校验失败，尚未导入任何资料。") }
+        }
     }
 
     private static func locateRoot(in directory: URL) throws -> URL {
@@ -256,7 +295,7 @@ enum DataBackup {
     private static func readWorkspaces(in root: URL) -> [Workspace] {
         let directory = root.appendingPathComponent("Workspaces", isDirectory: true)
         let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-        return files.filter { $0.pathExtension == "json" }.compactMap { file in
+        return files.filter { $0.pathExtension == "json" && !$0.lastPathComponent.hasPrefix("._") }.compactMap { file in
             guard var workspace = try? JSONLines.decoder().decode(Workspace.self, from: Data(contentsOf: file)) else { return nil }
             for index in workspace.documents.indices {
                 let document = workspace.documents[index]

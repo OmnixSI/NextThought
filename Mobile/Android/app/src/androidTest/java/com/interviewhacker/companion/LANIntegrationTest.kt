@@ -32,9 +32,13 @@ class LANIntegrationTest {
             fun waitFor(text:String,timeout:Long=5000){compose.waitUntil(timeout){compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()}}
             waitFor("手机网络验证问题");compose.onNodeWithText("第一条答案").assertIsDisplayed()
             fixture.update(2,"第二条问题","",true);waitFor("第二条问题");compose.onNodeWithText("第一条答案").assertDoesNotExist();compose.onNodeWithText("正在生成…").assertIsDisplayed()
-            compose.onNodeWithText("回答",useUnmergedTree=true).performClick();compose.waitUntil(5000){fixture.commands.size==1}
+            compose.onNodeWithText("停止生成").assertIsDisplayed()
+            compose.onNodeWithText("下一条",useUnmergedTree=true).performClick();compose.waitUntil(5000){fixture.commands.size==1}
+            waitFor("Mac 已确认操作")
             fixture.update(3,"静默连接已补齐","最终答案",false);waitFor("静默连接已补齐",10000);compose.onNodeWithText("最终答案").assertIsDisplayed()
             assertEquals(1,fixture.commands.size)
+            val shot=InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+            java.io.FileOutputStream(java.io.File(context.getExternalFilesDir(null),"design-review.png")).use{shot.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)}
         }}finally{fixture.close()}
     }
     private class Fixture {

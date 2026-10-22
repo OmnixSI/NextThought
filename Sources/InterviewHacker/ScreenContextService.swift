@@ -20,6 +20,7 @@ struct QuestionScreenContext {
     private(set) var status = "尚未读取屏幕"
     private(set) var error: String?
     @ObservationIgnored private var image: CGImage?
+    @ObservationIgnored private var previousPreview: [UInt8]?
     @ObservationIgnored private var candidate = ""
     @ObservationIgnored private var candidateSince = Date.distantPast
     @ObservationIgnored private var targetKey = ""
@@ -29,7 +30,7 @@ struct QuestionScreenContext {
 
     func invalidate() {
         generation = UUID(); reading?.cancel(); reading = nil; enhancing?.cancel(); enhancing = nil
-        latest = nil; image = nil; candidate = ""; error = nil; status = "等待新画面"
+        latest = nil; image = nil; candidate = ""; previousPreview = nil; error = nil; status = "等待新画面"
     }
     func refresh(targetID: String, source: String, region: [Double]?, force: Bool = false,
                  localModelID: String? = nil) async throws -> ScreenContext? {
@@ -44,7 +45,8 @@ struct QuestionScreenContext {
             guard epoch == generation else { throw CancellationError() }
             let now = Date()
             let bytes = frame.dataProvider?.data as Data? ?? Data()
-            let hash = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+            var hasher = SHA256(); hasher.update(data: Data("\(frame.width)x\(frame.height):\(frame.bytesPerRow)".utf8)); hasher.update(data: bytes)
+            let hash = hasher.finalize().map { String(format: "%02x", $0) }.joined()
             if latest?.frameID == hash {
                 latest?.capturedAt = now; image = frame; error = nil
                 return latest
@@ -56,13 +58,17 @@ struct QuestionScreenContext {
             }
             guard force || now.timeIntervalSince(candidateSince) >= 0.5 else { return nil }
             status = "正在识别当前画面…"
+            let preview = Self.preview(frame)
+            let changed = preview.flatMap { ScreenDelta.region(previous: previousPreview, current: $0, width: 160, height: 90) }
             let regions = try await Self.recognize(frame)
             try Task.checkCancellation()
             guard epoch == generation, candidate == hash else { throw CancellationError() }
-            let context = ScreenContext(frameID: hash, targetID: targetID, source: source, capturedAt: now, regions: regions)
-            latest = context; image = frame; error = nil
+            let context = ScreenContext(frameID: hash, targetID: targetID, source: source, capturedAt: now, regions: regions, captureRegion: region)
+            latest = context; image = frame; error = nil; previousPreview = preview
             status = regions.isEmpty ? "当前画面未识别到文字，可附图分析" : "已读取当前画面"
-            if let localModelID, context.lowConfidence || Self.complex(context.text) { enhance(frame, context: context, modelID: localModelID, epoch: epoch) }
+            if let localModelID, let changed, context.lowConfidence || Self.complex(context.text) {
+                enhance(frame, context: context, changed: changed, modelID: localModelID, epoch: epoch)
+            }
             return context
         }
         reading = task
@@ -89,7 +95,16 @@ struct QuestionScreenContext {
         }
         return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
     }
-    private func enhance(_ frame: CGImage, context: ScreenContext, modelID: String, epoch: UUID) {
+    nonisolated static func preview(_ frame: CGImage) -> [UInt8]? {
+        var pixels = [UInt8](repeating: 0, count: 160 * 90 * 4)
+        let success = pixels.withUnsafeMutableBytes { bytes -> Bool in
+            guard let c = CGContext(data: bytes.baseAddress, width: 160, height: 90, bitsPerComponent: 8, bytesPerRow: 160 * 4,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
+            c.interpolationQuality = .low; c.draw(frame, in: CGRect(x: 0,y: 0,width: 160,height: 90)); return true
+        }
+        return success ? pixels : nil
+    }
+    private func enhance(_ frame: CGImage, context: ScreenContext, changed: [Double], modelID: String, epoch: UUID) {
         guard let model = ModelCatalog.descriptor(for: modelID), ManagedModelStore.isInstalled(model), ManagedModelStore.isInstalled(ModelCatalog.layout) else { return }
         status = "已读取文字，正在本机增强识别…"
         enhancing = Task { [weak self] in
@@ -99,14 +114,28 @@ struct QuestionScreenContext {
             do {
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
                 let file = directory.appendingPathComponent("frame.png")
-                guard let data = NSBitmapImageRep(cgImage: frame).representation(using: .png, properties: [:]) else { throw AppFailure.screenshot("无法编码屏幕画面。") }
-                try data.write(to: file)
+                let box = CGRect(x: changed[0] * Double(frame.width), y: changed[1] * Double(frame.height), width: changed[2] * Double(frame.width), height: changed[3] * Double(frame.height)).integral
+                guard let crop = frame.cropping(to: box) else { throw AppFailure.screenshot("无法定位变化区域。") }
+                try await Task.detached(priority: .utility) {
+                    guard let data = NSBitmapImageRep(cgImage: crop).representation(using: .png, properties: [:]) else { throw AppFailure.screenshot("无法编码屏幕变化区域。") }
+                    try data.write(to: file)
+                }.value
                 let result = try await DocumentWorker.realtime.request("ocr", ["image": file.path,
                     "model_directory": model.directory.path, "layout_directory": ModelCatalog.layout.directory.path], timeout: 60)
                 try Task.checkCancellation()
                 guard generation == epoch, latest?.frameID == context.frameID else { return }
                 if let text = result["markdown"] as? String, !text.isEmpty {
-                    latest?.enhancedText = text; latest?.recognizer = model.name; latest?.recognizedAt = Date()
+                    if changed == [0,0,1,1] { latest?.enhancedText = text }
+                    else {
+                        // Keep the system evidence outside the changed crop; the
+                        // model cannot replace text it was never shown.
+                        let area = CGRect(x: changed[0], y: changed[1], width: changed[2], height: changed[3])
+                        let outside = context.regions.filter { r in
+                            let b = r.bounds; return b.count == 4 && !area.intersects(CGRect(x: b[0], y: b[1], width: b[2], height: b[3]))
+                        }.map(\.text).joined(separator: "\n")
+                        latest?.enhancedText = outside + "\n\n[变化区域 " + changed.map { String(format: "%.3f",$0) }.joined(separator: ",") + "]\n" + text
+                    }
+                    latest?.enhancedRegion = changed; latest?.recognizer = model.name; latest?.recognizedAt = Date()
                     status = "本机增强识别已完成"
                 }
             } catch is CancellationError { }

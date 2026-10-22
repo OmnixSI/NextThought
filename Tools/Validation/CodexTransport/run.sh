@@ -8,7 +8,7 @@ trap 'rm -rf "$probe"' EXIT
 for file in AnswerEngines CodexBridge; do
   sed '/^import InterviewHackerCore$/d' "$root/Sources/InterviewHacker/$file.swift" > "$probe/$file.swift"
 done
-for file in AnswerStreaming CodexEventParser ProcessLineReader; do
+for file in AnswerStreaming CodexEventParser ProcessLineReader CancellableTaskValue; do
   cp "$root/Sources/InterviewHackerCore/$file.swift" "$probe/$file.swift"
 done
 cp "$root/Tools/Validation/CodexTransport/Probe.swift" "$probe/Probe.swift"

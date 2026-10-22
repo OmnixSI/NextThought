@@ -64,6 +64,11 @@ public actor IncrementalBackupStore {
         try prune(keep: max(1, keep), budget: budget)
         return url.resolvingSymlinksInPath()
     }
+    public func storageBytes() throws -> Int64 {
+        try FileManager.default.contentsOfDirectory(at: objects, includingPropertiesForKeys: [.fileSizeKey]).reduce(0) {
+            $0 + Int64(try $1.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        }
+    }
     public func restore(_ url: URL, into destination: URL) throws {
         // Recovery pointers must belong to this store; all objects are checked
         // before any destination file is written.

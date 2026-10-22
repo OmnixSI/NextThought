@@ -11,6 +11,17 @@ import InterviewHackerCore
             guard let cg = NSImage(contentsOf: root.appendingPathComponent(name))?.cgImage(forProposedRect: nil, context: nil, hints: nil) else { throw SelfTest.Failure("fixture unreadable") }
             return cg
         }
+        // Verify preview/crop orientation using actual CoreGraphics pixel data.
+        func pixels(_ patch: Bool) -> CGImage {
+            var data = [UInt8](repeating: 255, count: 160*90*4)
+            if patch { for y in 10..<20 { for x in 100..<120 { let n = (y*160+x)*4; data[n] = 0; data[n+1] = 0; data[n+2] = 0 } } }
+            let provider = CGDataProvider(data: Data(data) as CFData)!
+            return CGImage(width: 160,height: 90,bitsPerComponent: 8,bitsPerPixel: 32,bytesPerRow: 640,space: CGColorSpaceCreateDeviceRGB(),bitmapInfo: .init(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),provider: provider,decode: nil,shouldInterpolate: false,intent: .defaultIntent)!
+        }
+        let basePixels = ScreenContextService.preview(pixels(false))!, changedPixels = ScreenContextService.preview(pixels(true))!
+        guard let delta = ScreenDelta.region(previous: basePixels,current: changedPixels,width: 160,height: 90),
+              delta[0] <= 100.0/160, delta[0]+delta[2] >= 120.0/160,
+              delta[1] <= 10.0/90, delta[1]+delta[3] >= 20.0/90 else { throw SelfTest.Failure("changed crop coordinates flipped") }
         var frame = try image("03-bilingual-columns.png")
         var capturedTargets: [String] = []
         let service = ScreenContextService(capture: { target, _ in capturedTargets.append(target); return frame })
@@ -29,6 +40,8 @@ import InterviewHackerCore
         service.invalidate()
         guard service.latest == nil else { throw SelfTest.Failure("screen invalidation") }
         let state = AppState.shared
+        state.currentAnswerID = nil; state.historyCursor = nil; state.answer = "legacy answer"
+        guard state.displayedAnswer == "legacy answer" else { throw SelfTest.Failure("nil request IDs hid legacy answer") }
         let id = UUID(); state.answerCoordinator.begin(id: id, question: "new")
         state.currentAnswerID = id; state.historyCursor = nil; state.answer = "old answer"
         guard state.displayedAnswer.isEmpty else { throw SelfTest.Failure("new question received old answer") }

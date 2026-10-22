@@ -369,7 +369,7 @@ final class AppState {
 
     var displayedAnswer: String {
         if showsWebAnswer, let lookup = displayedWebLookup { return lookup.answer }
-        if historyCursor == nil, answerCoordinator.state?.id == currentAnswerID { return answerCoordinator.state?.text ?? "" }
+        if historyCursor == nil, let id = currentAnswerID, answerCoordinator.state?.id == id { return answerCoordinator.state?.text ?? "" }
         if isAnswering && historyCursor == nil { return answerDraft }
         if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].answer }
         return answer
@@ -935,13 +935,13 @@ final class AppState {
                 lastAnswerModel = selectedModel
                 currentQuestion = question
                 pendingQuestion = ""
-                lastQuestionUsesScreenshot = image != nil
+                lastQuestionUsesScreenshot = request.imageURL != nil
                 isAnswering = false
                 if let candidateID, isAutomatic { lastAutomaticAnswer = (candidateID, Date()) }
                 answeringCandidateID = nil
                 Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "service_tier": request.serviceTier ?? "standard", "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
-                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic, screenshotPath: archive.archiveScreenshot(image), webAnswer: webLookups[id]?.status == .done ? webLookups[id]?.answer : nil, webSources: webLookups[id]?.sources)
+                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic, screenshotPath: archive.archiveScreenshot(image), webAnswer: webLookups[id]?.status == .done ? webLookups[id]?.answer : nil, webSources: webLookups[id]?.sources, evidence: answerCoordinator.evidenceHistory[id])
                 answerHistory.append(record)
                 insights.beginAnswer(id: id, text: result, since: answerStartedAt)
                 if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }

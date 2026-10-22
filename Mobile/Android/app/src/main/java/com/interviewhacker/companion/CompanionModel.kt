@@ -17,13 +17,15 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class CompanionModel(application:Application):AndroidViewModel(application) {
-    data class Screen(val connection:String="请扫描或粘贴 Mac 配对链接", val bluetooth:String="蓝牙未开启", val snapshot:JSONObject?=null,val paired:Boolean=false,val error:String="")
+    data class Screen(val connection:String="请扫描或粘贴 Mac 配对链接", val bluetooth:String="蓝牙未开启", val snapshot:JSONObject?=null,val paired:Boolean=false,val error:String="",val operationStatus:String="",val pendingActions:Set<String> = emptySet(),val canRetryAction:Boolean=false)
     private val mutable=MutableStateFlow(Screen());val screen=mutable.asStateFlow()
     private val http=OkHttpClient.Builder().connectTimeout(2,TimeUnit.SECONDS).readTimeout(2500,TimeUnit.MILLISECONDS).callTimeout(3,TimeUnit.SECONDS).build()
     private val streaming=http.newBuilder().readTimeout(0,TimeUnit.MILLISECONDS).callTimeout(0,TimeUnit.MILLISECONDS).pingInterval(2,TimeUnit.SECONDS).build()
     private var pair:JSONObject?=null;private var generation=UUID.randomUUID();private var ticker:Job?=null;private var stream:EventSource?=null;private var socket:WebSocket?=null
     private var reconnectLAN:Job?=null;private var reconnectRelay:Job?=null;private var sequence=-1L;private var server="";private val retired=mutableSetOf<String>()
     private val last=mutableMapOf<String,Long>();private val pending=mutableMapOf<String,JSONObject>();private val nonces=LinkedHashSet<String>()
+    private var failedCommand:JSONObject?=null
+    private val firstSent=mutableMapOf<String,Long>()
     private val ble=BluetoothTransport(application,{frame->viewModelScope.launch{encrypted(frame,"蓝牙备用")}},{resync()},{text->mutable.value=mutable.value.copy(bluetooth=text)})
     fun connect(link:String,enableBluetooth:Boolean){
         try{
@@ -42,7 +44,7 @@ class CompanionModel(application:Application):AndroidViewModel(application) {
                     if(generation!=g)return@launch
                     if(now()-(last.values.maxOrNull()?:0)>8000)mutable.value=mutable.value.copy(connection="离线，正在恢复…")
                     for((id,command) in pending.toMap()){
-                        if(now()-command.getLong("createdAt")>15000){pending.remove(id);mutable.value=mutable.value.copy(error="操作未确认，请检查连接")}
+                        if(now()-command.getLong("createdAt")>15000){pending.remove(id);failedCommand?.let{firstSent.remove(it.optString("id"))};failedCommand=command;mutable.value=mutable.value.copy(pendingActions=mutable.value.pendingActions-command.getString("action"),canRetryAction=true,operationStatus="操作未确认，请检查连接后重试")}
                         else send(command,g)
                     }
                     delay(1000)
@@ -52,13 +54,28 @@ class CompanionModel(application:Application):AndroidViewModel(application) {
     }
     fun stop(){
         generation=UUID.randomUUID();ticker?.cancel();reconnectLAN?.cancel();reconnectRelay?.cancel();stream?.cancel();stream=null;socket?.close(1000,"disconnect");socket=null;ble.stop();pair=null
-        pending.clear();last.clear();retired.clear();nonces.clear();server="";sequence=-1;mutable.value=Screen(connection="已断开")
+        pending.clear();firstSent.clear();failedCommand=null;last.clear();retired.clear();nonces.clear();server="";sequence=-1;mutable.value=Screen(connection="已断开")
     }
     fun resume(){val g=generation;viewModelScope.launch{poll(g);resync();if(stream==null)connectLAN(g);if(socket==null)connectRelay(g)}}
     fun action(action:String){
         if(action !in setOf("answer","cancel","previous","next","shorter","example","english","applyWeb"))return
-        val command=JSONObject().put("id",UUID.randomUUID().toString()).put("action",action).put("createdAt",now());pending[command.getString("id")]=command
+        if(pair==null||action in mutable.value.pendingActions)return
+        if(failedCommand?.optString("action")==action){retryAction();return}
+        val command=JSONObject().put("id",UUID.randomUUID().toString()).put("action",action).put("createdAt",now());pending[command.getString("id")]=command;firstSent[command.getString("id")]=now()
+        mutable.value=mutable.value.copy(pendingActions=mutable.value.pendingActions+action,operationStatus="正在发送操作，等待 Mac 确认…")
         viewModelScope.launch{send(command,generation)}
+    }
+    fun retryAction(){
+        val command=failedCommand?:return
+        if(now()-(firstSent[command.getString("id")]?:0)>=240000){failedCommand=null;firstSent.remove(command.getString("id"));mutable.value=mutable.value.copy(canRetryAction=false,operationStatus="操作已过期，请先核对 Mac 当前状态");return}
+        command.put("createdAt",now());failedCommand=null;pending[command.getString("id")]=command
+        mutable.value=mutable.value.copy(canRetryAction=false,pendingActions=mutable.value.pendingActions+command.getString("action"),operationStatus="正在重试，等待 Mac 确认…")
+        viewModelScope.launch{send(command,generation)}
+    }
+    private fun confirmed(id:String){
+        val command=pending.remove(id)?:failedCommand?.takeIf{it.optString("id")==id}?:return;firstSent.remove(id)
+        if(failedCommand?.optString("id")==id){failedCommand=null;mutable.value=mutable.value.copy(canRetryAction=false)}
+        mutable.value=mutable.value.copy(pendingActions=mutable.value.pendingActions-command.getString("action"),operationStatus=if(failedCommand!=null)mutable.value.operationStatus else if(pending.isEmpty())"Mac 已确认操作" else "等待其他操作确认…")
     }
     private fun now()=System.currentTimeMillis()
     private fun url(path:String):HttpUrl?{val p=pair?:return null;val base=p.optString("lan").takeIf{it.isNotEmpty()}?:return null
@@ -86,7 +103,7 @@ class CompanionModel(application:Application):AndroidViewModel(application) {
     private fun encrypted(frame:JSONObject,transport:String){val p=pair?:return
         runCatching{
             val value=Protocol.open(p,frame)
-            if(frame.getString("kind")=="ack"){pending.remove(value.optString("id"));return}
+            if(frame.getString("kind")=="ack"){confirmed(value.optString("id"));return}
             if(frame.getString("kind")!="state")return
             val nonce=frame.getString("kind")+frame.getString("n");if(!nonces.add(nonce))return
             if(nonces.size>4096)nonces.remove(nonces.first())
@@ -102,7 +119,7 @@ class CompanionModel(application:Application):AndroidViewModel(application) {
     }
     private suspend fun send(command:JSONObject,g:UUID){
         val u=url("action")?.newBuilder()?.addQueryParameter("a",command.getString("action"))?.addQueryParameter("id",command.getString("id"))?.build()
-        if(u!=null){val response=request(Request.Builder().url(u).post(RequestBody.create(null,ByteArray(0))).build());if(response?.first==204&&generation==g){pending.remove(command.getString("id"));return}}
+        if(u!=null){val response=request(Request.Builder().url(u).post(RequestBody.create(null,ByteArray(0))).build());if(response?.first==204&&generation==g){confirmed(command.getString("id"));return}}
         if(generation!=g)return;val p=pair?:return
         runCatching{val frame=Protocol.seal(p,"command",command);if(ble.ready)ble.send(frame);socket?.send(frame.toString())}
     }
