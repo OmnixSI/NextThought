@@ -13,62 +13,86 @@ extension AppState {
     func startScreenWatch() {
         screenWatchTask?.cancel()
         screenWatchTask = nil
-        guard insights.screenWatch, !DemoMode.isEnabled else { insights.screen = nil; return }
+        screenContextService.invalidate()
+        insights.screen = nil; insights.slide = nil; insights.slideSeenAt = nil
+        guard insights.screenWatch, !DemoMode.isEnabled else { return }
         screenWatchTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                if self.isRunning, !self.isPaused, !self.isStopping { await self.readScreen() }
+                if self.isRunning, !self.isPaused, !self.isStopping { await self.readScreen(force: false) }
                 // After a failure (no Screen Recording permission) try again slowly.
-                let interval = max(2, self.insights.screenInterval)
+                let interval = max(1, self.insights.screenInterval)
                 try? await Task.sleep(for: .seconds(self.insights.screenError == nil ? interval : max(interval, 20)))
             }
         }
     }
 
-    func readScreen() async {
+    var screenTargetID: String { insights.screenTarget.isEmpty ? selectedTargetID : insights.screenTarget }
+    var screenTargetTitle: String { captureTargets.first(where: { $0.id == screenTargetID })?.title ?? (screenTargetID.isEmpty ? "主显示器" : screenTargetID) }
+    func readScreen(force: Bool = true) async {
         guard !insights.isReadingScreen else { return }
         insights.isReadingScreen = true
         defer { insights.isReadingScreen = false }
         do {
-            let image = try await ScreenshotService.captureForReading()
-            let text = try await ScreenshotService.recognizeText(image).trimmingCharacters(in: .whitespacesAndNewlines)
-            insights.screenError = nil
-            await screenRead(text)
-        } catch {
-            if insights.screenError == nil { Diagnostics.record("insight.screen_failed") }
-            insights.screenError = "读不到屏幕：请在 系统设置 → 隐私与安全性 → 屏幕与系统音频录制 里允许 InterviewHacker。（\(error.localizedDescription)）"
+            if let context = try await screenContextService.refresh(targetID: screenTargetID, source: screenTargetTitle,
+                region: insights.screenRegion, force: force,
+                localModelID: documentOCRProvider == .paddle ? selectedOCRModel.id : nil) {
+                insights.screenError = nil; await screenRead(context.text)
+            } else {
+                insights.screen = nil; insights.slide = nil; insights.slideSeenAt = nil
+            }
+        } catch is CancellationError { }
+        catch {
+            insights.screen = nil; insights.slide = nil; insights.slideSeenAt = nil
+            insights.screenError = "读不到选定画面：" + error.localizedDescription + "。请检查来源和屏幕录制权限。"
+            Diagnostics.record("insight.screen_failed")
         }
     }
 
     private func screenRead(_ text: String) async {
-        if let previous = insights.screen, ScreenText.isSameScreen(previous.text, text) {
-            insights.screen?.capturedAt = Date()
-            if insights.slide != nil, previous.kind == .slides { insights.slideSeenAt = Date() }
-            return
-        }
-        var onSlide = false
-        if insights.followSlides { onSlide = followSlide(text) }
-        var state = LiveInsights.ScreenState(text: text, kind: onSlide ? .slides : nil, relevance: onSlide ? 1 : 0, capturedAt: Date())
-        if !onSlide {
-            let speech = contextEntries.suffix(4).map(\.text).joined(separator: " ")
-            state.relevance = ScreenText.heuristicRelevance(screen: text, recentSpeech: speech) ? 0.6 : 0.2
-        }
-        insights.screen = state
-        Diagnostics.record("insight.screen", ["kind": state.kind?.rawValue ?? "unknown", "relevance": state.relevance, "characters": text.count])
+        // Re-evaluate even when pixels are unchanged: the current question or
+        // speaker may have changed. A previous slide is invalidated on no match.
+        let onSlide = insights.followSlides && followSlide(text)
+        let speech = contextEntries.suffix(4).map(\.text).joined(separator: " ")
+        let relevance = onSlide ? 1.0 : (ScreenText.heuristicRelevance(screen: text, recentSpeech: speech) ? 0.6 : 0.2)
+        insights.screen = .init(text: text, kind: onSlide ? .slides : nil, relevance: relevance,
+            capturedAt: screenContextService.latest?.capturedAt ?? Date())
     }
 
-    /// Screen text for answers: read in the last two minutes and relevant to the talk.
-    /// While a slide is followed, the slide itself is sent instead.
+    func screenForQuestion(_ question: String) async -> QuestionScreenContext {
+        let reference = ScreenReference.isReference(question)
+        guard insights.screenWatch else { return .init(note: reference ? "屏幕感知未开启，无法确认当前指代。" : nil) }
+        do {
+            var context = screenContextService.latest
+            if reference, context?.isFresh() != true {
+                context = try await screenContextService.refresh(targetID: screenTargetID, source: screenTargetTitle,
+                    region: insights.screenRegion, force: true,
+                    localModelID: documentOCRProvider == .paddle ? selectedOCRModel.id : nil)
+            }
+            guard let context, context.isFresh(maximumAge: reference ? 2 : 5), ScreenReference.isRelated(question, context: context) else {
+                return .init(note: reference ? "尚未取得当前画面，不能把旧页面当作当前内容。" : nil)
+            }
+            await screenRead(context.text)
+            let needsImage = reference && (ScreenReference.needsImage(question) || context.lowConfidence)
+            if needsImage, answerBackend == .openAICompatible, !apiVisionEnabled {
+                return .init(context: context, note: "当前 API 未启用图像输入，本次仅提供 OCR 文字；图形或位置不足时需要澄清。", slide: currentSlideExcerpt)
+            }
+            let image = needsImage ? try screenContextService.questionImage(frameID: context.frameID) : nil
+            return .init(context: context, image: image, slide: currentSlideExcerpt)
+        } catch {
+            insights.slide = nil; insights.slideSeenAt = nil
+            return .init(note: "当前屏幕读取失败：" + error.localizedDescription)
+        }
+    }
+
     var relevantScreenText: String? {
-        guard insights.screenWatch, let screen = insights.screen, screen.isRelevant,
-              Date().timeIntervalSince(screen.capturedAt) < 120, !(screen.kind == .slides && insights.slide != nil) else { return nil }
-        return ScreenText.trimmed(screen.text, limit: 2_500)
+        guard insights.screenWatch, let context = screenContextService.latest, context.isFresh(maximumAge: 5) else { return nil }
+        return ScreenText.trimmed(context.text, limit: 5000)
     }
-
-    /// The slide on screen within the last two minutes.
     var currentSlideExcerpt: ContextExcerpt? {
-        guard insights.screenWatch, let slide = insights.slide, let seen = insights.slideSeenAt, Date().timeIntervalSince(seen) < 120 else { return nil }
-        return ContextExcerpt(source: slide.documentName, page: slide.page, text: slide.text, locator: .init(slide: slide.page))
+        guard insights.screenWatch, let slide = insights.slide, let seen = insights.slideSeenAt,
+              Date().timeIntervalSince(seen) < 5, screenContextService.latest?.isFresh(maximumAge: 5) == true else { return nil }
+        return ContextExcerpt(source: slide.documentName, page: slide.page, text: slide.text, locator: slide.locator ?? .init(section: slide.page))
     }
 
     // MARK: Following slides
@@ -78,9 +102,9 @@ extension AppState {
         activeWorkspace.documents.filter { $0.enabled && SlideMatcher.isDeck(name: $0.name, pageCount: $0.pages.count) }.flatMap { document in
             if let content = document.content {
                 let grouped = Dictionary(grouping: content.blocks.filter { $0.locator.slide != nil || $0.locator.page != nil }, by: { $0.locator.slide ?? $0.locator.page! })
-                return grouped.keys.sorted().map { number in SlidePage(documentID: document.id, documentName: document.name, page: number, pageCount: grouped.count, text: grouped[number]!.map(\.markdown).joined(separator: "\n\n")) }
+                return grouped.keys.sorted().map { number in SlidePage(documentID: document.id, documentName: document.name, page: number, pageCount: grouped.count, text: grouped[number]!.map(\.markdown).joined(separator: "\n\n"), locator: grouped[number]!.first?.locator) }
             }
-            return document.pages.enumerated().map { SlidePage(documentID: document.id, documentName: document.name, page: $0.offset + 1, pageCount: document.pages.count, text: $0.element) }
+            return document.pages.enumerated().map { SlidePage(documentID: document.id, documentName: document.name, page: $0.offset + 1, pageCount: document.pages.count, text: $0.element, locator: .init(section: $0.offset+1)) }
         }
     }
 
@@ -93,10 +117,10 @@ extension AppState {
         switch SlideMatcher.decide(ranked, previous: insights.slide) {
         case let .page(found): page = found
         case let .ambiguous(candidates):
-            if let best = candidates.first, best.score >= 0.35 { page = best.page }
+            if let current = insights.slide, candidates.contains(where: { $0.page == current && $0.score >= 0.45 }) { page = current }
         case .none: break
         }
-        guard let page else { return false }
+        guard let page else { insights.slide = nil; insights.slideSeenAt = nil; return false }
         insights.slideSeenAt = Date()
         if insights.slide != page {
             insights.slide = page

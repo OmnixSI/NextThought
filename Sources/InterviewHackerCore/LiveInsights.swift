@@ -84,7 +84,9 @@ public struct SlidePage: Sendable, Equatable {
     public var page: Int
     public var pageCount: Int
     public var text: String
-    public init(documentID: UUID, documentName: String, page: Int, pageCount: Int, text: String) {
+    public var locator: DocumentLocator?
+    public init(documentID: UUID, documentName: String, page: Int, pageCount: Int, text: String, locator: DocumentLocator? = nil) {
+        self.locator = locator
         self.documentID = documentID; self.documentName = documentName; self.page = page; self.pageCount = pageCount; self.text = text
     }
     public var key: String { "\(documentID.uuidString)#\(page)" }

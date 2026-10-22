@@ -37,6 +37,7 @@ final class SessionArchive {
 
     private let io = DispatchQueue(label: "app.interviewhacker.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
+    @ObservationIgnored private var activeAnswerIDs: Set<UUID> = []
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
 
     static var root: URL { AppPaths.sessions }
@@ -92,17 +93,24 @@ final class SessionArchive {
             return SessionDetail(
                 meta: meta,
                 lines: lines("transcript.jsonl", SessionTranscriptLine.self),
-                answers: lines("answers.jsonl", SessionAnswerEvent.self),
+                answers: Self.latestAnswers(lines("answers.jsonl", SessionAnswerEvent.self)),
                 questions: lines("questions.jsonl", SessionQuestionEvent.self),
                 context: (try? Data(contentsOf: folder.appendingPathComponent("context.json"))).flatMap { try? decoder.decode(SessionContextSnapshot.self, from: $0) },
                 summary: (try? Data(contentsOf: folder.appendingPathComponent("summary.json"))).flatMap { try? decoder.decode(SessionSummary.self, from: $0) })
         }.value
     }
 
+    nonisolated static func latestAnswers(_ events: [SessionAnswerEvent]) -> [SessionAnswerEvent] {
+        var order: [UUID] = [], latest: [UUID: SessionAnswerEvent] = [:]
+        for event in events { if latest[event.id] == nil { order.append(event.id) }; latest[event.id] = event }
+        return order.compactMap { latest[$0] }
+    }
+
     // MARK: Recording
 
     func begin(_ meta: SessionMeta, context: SessionContextSnapshot) {
         activeID = meta.id
+        activeAnswerIDs = []
         activeMeta = meta
         sessions.removeAll { $0.id == meta.id }
         sessions.insert(meta, at: 0)
@@ -130,7 +138,7 @@ final class SessionArchive {
 
     func append(_ answer: SessionAnswerEvent) {
         guard let id = activeID else { return }
-        activeMeta?.answerCount += 1
+        if activeAnswerIDs.insert(answer.id).inserted { activeMeta?.answerCount += 1 }
         appendLine(answer, file: "answers.jsonl", session: id)
         publishActiveCounts()
         // Keep meta.json reasonably fresh for crash recovery.

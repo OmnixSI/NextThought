@@ -65,7 +65,7 @@ public enum CompanionHTTP {
         public var query: [String: String]
     }
 
-    public static let allowedActions: Set<String> = ["answer", "cancel", "regenerate", "previous", "next", "shorter", "detailed", "example", "english", "chinese", "star", "clarify", "followUps"]
+    public static let allowedActions: Set<String> = ["answer", "cancel", "regenerate", "previous", "next", "shorter", "detailed", "example", "english", "chinese", "star", "clarify", "followUps", "applyWeb"]
 
     /// Parses the request line of an HTTP/1.1 request head.
     public static func parse(_ head: String) -> Request? {

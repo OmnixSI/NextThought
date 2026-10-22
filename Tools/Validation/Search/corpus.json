@@ -1,0 +1,502 @@
+[
+  {
+    "question": "今天悉尼天气怎么样？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "现在美元兑人民币是多少？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "苹果现任 CEO 是谁？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "最近 OpenAI 发布了什么模型？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "这周英伟达股价变化如何？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "Claude 支持多长的上下文？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "Gemini 支持哪些输入模态？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "ChatGPT 现在的订阅费用是多少？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "Qwen 最新开源模型有哪些？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "PyTorch 当前支持哪个 CUDA 版本？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "这个方法和 SOTA 相比还有优势吗？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "近场波束选择的研究进展如何？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "澳大利亚学生签证现在的工作时长限制是多少？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "悉尼到墨尔本明天有哪些航班？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "Swift 最新正式版是多少？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "这家公司最近一季营收是多少？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "今年诺贝尔物理学奖是谁获得？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "最近有哪些 AI 论文在讨论这个问题？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "当前澳大利亚央行现金利率是多少？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "这个平台现在还提供免费 API 额度吗？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "这个基金今年的申请截止日期是什么时候？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "澳大利亚最低工资现在是多少？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "今年 IEEE ICC 在哪里举办？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "iPhone 当前在售的型号有哪些？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "现在 Llama 的商用许可有什么限制？",
+    "needsSearch": true,
+    "split": "validation"
+  },
+  {
+    "question": "What is the current price of Bitcoin?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Who is the CEO of Microsoft?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "How much does the Claude API cost?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Which Python version is currently supported by PyTorch?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "What is the latest Android API level?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Does Gemini support live video input?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "What are the current US visa processing times?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Who won the most recent Formula 1 race?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "What are the latest papers on conformal prediction for wireless systems?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Which model leads the current coding benchmark?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Is this conference submission deadline still open?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "How large is the GPT context window?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "What is the current tax-free threshold in Australia?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Which CUDA release works with the newest PyTorch?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "What are the current prices of M4 MacBook Pro models?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Has this package fixed the vulnerability yet?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Who currently chairs the FCC?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "What are the recent changes to the student visa policy?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "Can DeepSeek process images now?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "How much free storage does this cloud provider offer?",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "今天的澳元汇率是多少？",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "最近可商用的语音识别模型有哪些？",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "今年 UTS 博士奖学金金额是多少？",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "这篇方法与当前主流大模型方案比如何？",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "我该如何查看现在的最新软件发布记录？",
+    "needsSearch": true,
+    "split": "heldout"
+  },
+  {
+    "question": "什么是牛顿第二定律？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "近场与远场的物理区别是什么？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "为什么阵列孔径会影响瑞利距离？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "解释一下共形预测的覆盖率。",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "矩阵特征值是什么？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "二分查找的时间复杂度是多少？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "Redis 和 Memcached 有何区别？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "Python 列表和元组有什么区别？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "数据库事务的 ACID 是什么？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "TCP 三次握手为什么需要三次？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "你最近在做什么项目？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "介绍一下你目前负责的工作。",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "你们实验用了多少个样本？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "这篇论文里的实验结果是什么？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "你刚才提到的个人经历是什么？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "请把上一句话翻译成英文。",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "帮我把上面的解释缩短。",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "什么是梯度下降？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "为什么过拟合会发生？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "解释条件概率与联合概率。",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "如何实现线程安全的队列？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "什么是分布式系统的一致性？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "给出勾股定理的证明思路。",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "什么是信号的信噪比？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "你在这个项目里承担了什么职责？",
+    "needsSearch": false,
+    "split": "validation"
+  },
+  {
+    "question": "What is a singular value decomposition?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Explain the difference between near-field and far-field propagation.",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "How does binary search work?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Why does regularization reduce overfitting?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "What is the principle of conformal prediction?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Explain the TCP handshake.",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "What is a database transaction?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "How do you implement an LRU cache?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Can you walk me through your current project?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "What did you personally contribute to this paper?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "How many samples did your experiment use?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Translate the previous answer into Chinese.",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Summarize the previous explanation in two sentences.",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "What is the chain rule in calculus?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Why is the Fourier transform useful?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "How does backpropagation compute gradients?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "What is the difference between precision and recall?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "Explain covariance and correlation.",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "What is Bayes theorem?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "How does a hash table handle collisions?",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "为什么光速在真空中不变？",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "这个公式如何从上一行推导出来？",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "我们自己的消融实验做了哪些？",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "你为什么选择读博士？",
+    "needsSearch": false,
+    "split": "heldout"
+  },
+  {
+    "question": "解释近场聚焦与远场定向的差异。",
+    "needsSearch": false,
+    "split": "heldout"
+  }
+]

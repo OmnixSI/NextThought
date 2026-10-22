@@ -56,15 +56,17 @@ public struct SessionAnswerEvent: Codable, Sendable, Identifiable, Equatable {
     /// Relative path of the screenshot that was sent with the question, inside the
     /// session folder (`screenshots/…`). Nil for answers without a screenshot.
     public var screenshotPath: String?
-    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool, screenshotPath: String? = nil) {
+    public var webAnswer: String?
+    public var webSources: [WebResult]?
+    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool, screenshotPath: String? = nil, webAnswer: String? = nil, webSources: [WebResult]? = nil) {
         self.id = id; self.date = date; self.question = question; self.answer = answer; self.model = model
         self.seconds = seconds; self.firstTokenSeconds = firstTokenSeconds; self.automatic = automatic
-        self.screenshotPath = screenshotPath
+        self.screenshotPath = screenshotPath; self.webAnswer = webAnswer; self.webSources = webSources
     }
 
     // Tolerant decoding: answers saved before screenshot archiving have no path.
     enum CodingKeys: String, CodingKey {
-        case id, date, question, answer, model, seconds, firstTokenSeconds, automatic, screenshotPath
+        case id, date, question, answer, model, seconds, firstTokenSeconds, automatic, screenshotPath, webAnswer, webSources
     }
 
     public init(from decoder: Decoder) throws {
@@ -78,6 +80,8 @@ public struct SessionAnswerEvent: Codable, Sendable, Identifiable, Equatable {
         firstTokenSeconds = try c.decodeIfPresent(Double.self, forKey: .firstTokenSeconds)
         automatic = try c.decodeIfPresent(Bool.self, forKey: .automatic) ?? false
         screenshotPath = try c.decodeIfPresent(String.self, forKey: .screenshotPath)
+        webAnswer = try c.decodeIfPresent(String.self, forKey: .webAnswer)
+        webSources = try c.decodeIfPresent([WebResult].self, forKey: .webSources)
     }
 }
 

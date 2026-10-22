@@ -19,6 +19,10 @@ final class AppState {
     var recognitionVocabulary = UserDefaults.standard.string(forKey: "recognitionVocabulary") ?? ""
     var transcriptionBackend = AppState.loadTranscriptionBackend()
     let documentPreparation = DocumentPreparation()
+    let screenContextService = ScreenContextService()
+    let answerCoordinator = AnswerCoordinator()
+    var apiVisionEnabled = UserDefaults.standard.bool(forKey: "apiVisionEnabled")
+    var preparedWorkspace: Workspace?
     var isImportingDocuments = false
     var isIndexingDocuments = false
     /// Result line of the last material import ("已导入 3 份资料并归档为 Markdown").
@@ -139,6 +143,11 @@ final class AppState {
     var currentAnswerID: UUID?
     @ObservationIgnored var webLookupTask: Task<Void, Never>?
     let webAppServer = CodexAppServerClient()
+    let decisionAppServer = CodexAppServerClient()
+    let decisionCodex = CodexBridge()
+    let decisionAPIClient = OpenAICompatibleClient()
+    @ObservationIgnored var searchDecisionTask: Task<Void, Never>?
+    var acceptedWebAnswers: Set<UUID> = []
     let webCodex = CodexBridge()
     let webAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
     // Slide notes are sequential, but can overlap a lookup. A transport owns one turn.
@@ -353,6 +362,7 @@ final class AppState {
 
     var displayedAnswer: String {
         if showsWebAnswer, let lookup = displayedWebLookup { return lookup.answer }
+        if historyCursor == nil, answerCoordinator.state?.id == currentAnswerID { return answerCoordinator.state?.text ?? "" }
         if isAnswering && historyCursor == nil { return answerDraft }
         if let historyCursor, answerHistory.indices.contains(historyCursor) { return answerHistory[historyCursor].answer }
         return answer
@@ -394,6 +404,7 @@ final class AppState {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
             // Warm independent services concurrently; no model/search calls are made.
             if webSearchMode != .off, webSearchProvider == .codex { Task { await webAppServer.prewarm() } }
+            if webSearchMode == .auto, answerBackend != .openAICompatible { Task { await decisionAppServer.prewarm() } }
             // Warm the persistent Codex service so the first answer does not pay start-up cost.
             if answerBackend == .codexAppServer, CodexBridge.executableURL() != nil { await appServer.prewarm() }
             await prewarmRecognizer()
@@ -582,6 +593,7 @@ final class AppState {
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
+            preparedWorkspace = activeWorkspace
             isRunning = true
             documentPreparation.pauseForMeeting()
             do {
@@ -711,6 +723,8 @@ final class AppState {
         microphonePartialTranscript = ""
         transcriptionStatus = "已停止"
         finishArchive()
+        preparedWorkspace = nil
+        rebuildContextIndex()
         sessionStartedAt = nil
         isStopping = false
     }
@@ -747,6 +761,9 @@ final class AppState {
     }
 
     func cancelAnswer() {
+        answerCoordinator.cancel()
+        searchDecisionTask?.cancel(); searchDecisionTask = nil
+        decisionAppServer.cancelActiveTurn(); decisionCodex.cancel()
         answerRetrievalTask?.cancel(); answerRetrievalTask = nil
         webLookupTask?.cancel(); webCodex.cancel(); webAppServer.cancelActiveTurn()
         answerDraft = ""
@@ -799,6 +816,7 @@ final class AppState {
         let id = UUID()
         requestID = id
         currentAnswerID = id
+        answerCoordinator.begin(id: id, question: question)
         Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue, "supersede": supersede])
 
         let context = recentContext ?? TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
@@ -811,36 +829,49 @@ final class AppState {
             return await self.retrieveExcerpts(question: retrievalQuestion, snapshot: retrievalSnapshot)
         }
         answerRetrievalTask = retrieval
-        let workspace = activeWorkspace
-        let skills = activeSkills
-        let allSnippets = skills.map { SkillSnippet(name: $0.name, content: $0.content) }
+        let workspace = preparedWorkspace ?? activeWorkspace
+        let allSnippets = activeSkills.map { SkillSnippet(name: $0.name, content: $0.content) }
         let turns = answerTurns
-        let screenText = relevantScreenText
-        let slide = currentSlideExcerpt
         let tier = activeServiceTier
-        let buildParts = { (webSearch: Bool, results: [WebResult]?, snippets: [SkillSnippet], excerpts: [ContextExcerpt]) in
-            AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: screenshot != nil,
-                                          preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
-                                          experience: workspace.experienceNotes(), skills: snippets, webResults: results, webSearch: webSearch,
-                                          screen: screenText, currentSlide: slide)
+        let screenTask = Task { [weak self] () -> QuestionScreenContext in
+            guard let self else { return .init() }
+            if let screenshot, let image = NSImage(contentsOf: screenshot)?.cgImage(forProposedRect: nil, context: nil, hints: nil),
+               let regions = try? await ScreenContextService.recognize(image) {
+                return .init(context: ScreenContext(frameID: UUID().uuidString, targetID: "screenshot", source: "本题截图", regions: regions))
+            }
+            return await self.screenForQuestion(question)
         }
-        // Quick answer first; a web-updated one follows in the background when needed.
-        let isRefinement = question.contains(AnswerRefinement.markerText)
-        if screenshot == nil, !isRefinement, webSearchMode != .off, webSearchAvailable {
-            Task { [weak self] in
-                guard let self else { return }
-                let decision = await self.shouldSearchWeb(question)
-                Diagnostics.record("web.decision", ["search": decision.search, "reason": decision.reason])
-                guard !Task.isCancelled, decision.search, self.currentAnswerID == id, self.requestID == id, self.activeWorkspace.id == workspace.id else { return }
-                let excerpts = await retrieval.value
-                guard !Task.isCancelled, self.currentAnswerID == id, self.requestID == id, self.activeWorkspace.id == workspace.id else { return }
-                self.startWebLookup(id: id, question: question, parts: { buildParts($0, $1, allSnippets, excerpts) })
+        let makeParts = { (webSearch: Bool, results: [WebResult]?, excerpts: [ContextExcerpt], screen: ScreenContext?, slide: ContextExcerpt?, image: Bool) in
+            AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: image,
+                preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
+                experience: workspace.experienceNotes(), skills: allSnippets, webResults: results, webSearch: webSearch,
+                screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide)
+        }
+        searchDecisionTask = Task { [weak self] in
+            guard let self else { return }
+            let screen = await screenTask.value
+            let decision = await self.assessWebSearch(question, context: context, screen: screen.context?.text)
+            guard !Task.isCancelled, self.requestID == id else { return }
+            self.answerCoordinator.update(id: id) { $0.evidence.search = decision }
+            Diagnostics.record("web.decision", ["request_id": id.uuidString, "search": decision.search, "reason": decision.reason, "mechanism": decision.mechanism])
+            guard decision.search else { return }
+            guard self.webSearchAvailable else {
+                self.answerCoordinator.update(id: id) { $0.evidence.notes.append("需要联网，但搜索服务未就绪。") }; return
+            }
+            let excerpts = await retrieval.value
+            guard !Task.isCancelled, self.requestID == id else { return }
+            let slide = screen.slide
+            self.startWebLookup(id: id, question: question, query: decision.query) { webSearch, results in
+                makeParts(webSearch, results, excerpts, screen.context, slide, false)
             }
         }
         let answerStartedAt = Date()
 
         answerTask = Task {
+            var automaticScreenImage: URL?
             defer {
+                screenTask.cancel()
+                if let automaticScreenImage { try? FileManager.default.removeItem(at: automaticScreenImage) }
                 if let screenshot, screenshot.pathExtension.lowercased() == "jpg" {
                     try? FileManager.default.removeItem(at: screenshot)
                 }
@@ -849,9 +880,21 @@ final class AppState {
                 let excerpts = await retrieval.value
                 try Task.checkCancellation()
                 guard self.requestID == id, self.activeWorkspace.id == workspace.id else { return }
+                let frozen = await screenTask.value
+                try Task.checkCancellation()
+                guard self.requestID == id else { return }
+                automaticScreenImage = frozen.image
+                let image = screenshot ?? frozen.image
                 selectedExcerpts = excerpts
-                let parts = buildParts(false, nil, allSnippets, excerpts)
-                let request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: screenshot, serviceTier: tier)
+                answerCoordinator.update(id: id) {
+                    $0.evidence.materials = excerpts; $0.evidence.screen = frozen.context
+                    $0.evidence.screenImageAttached = image != nil
+                    $0.evidence.retrieval = semanticRetrievalReady ? "混合检索" : "关键词查找"
+                    if let note = frozen.note { $0.evidence.notes.append(note) }
+                }
+                var parts = makeParts(false, nil, excerpts, frozen.context, frozen.slide, image != nil)
+                if let note = frozen.note { parts.user += "\n屏幕状态：" + note }
+                var request = AnswerRequest(system: parts.system, user: parts.user, model: selectedModel, effort: selectedReasoning, imageURL: image, serviceTier: tier)
                 let onDelta: @Sendable (String) -> Void = { [weak self] text in
                     Task { @MainActor in
                         guard let self, self.requestID == id, self.isAnswering else { return }
@@ -863,27 +906,35 @@ final class AppState {
                         // ~15 UI updates/s to keep window-server compositing light.
                         self.draftThrottle.run { [weak self] in
                             guard let self, self.requestID == id, self.isAnswering else { return }
-                            if text.count >= self.answerDraft.count { self.answerDraft = text }
+                            if text.count >= self.answerDraft.count { self.answerDraft = text; self.answerCoordinator.draft(id: id, text: text) }
                         }
                     }
                 }
-                let result = try await runAnswer(request, backend: backend, onDelta: onDelta)
+                let result: String
+                do { result = try await runAnswer(request, backend: backend, onDelta: onDelta) }
+                catch let AnswerEngineError.http(code, detail) where screenshot == nil && automaticScreenImage != nil && [400, 415, 422].contains(code) {
+                    guard requestID == id else { throw CancellationError() }
+                    answerCoordinator.update(id: id) { $0.evidence.screenImageAttached = false; $0.evidence.notes.append("模型未接受屏幕图片，改用 OCR 文字：" + String(detail.prefix(120))) }
+                    request.imageURL = nil
+                    result = try await runAnswer(request, backend: backend, onDelta: onDelta)
+                }
                 guard requestID == id else { return }
                 draftThrottle.cancel()
                 answer = result
+                answerCoordinator.finish(id: id, text: result)
                 answerDraft = ""
                 lastAnswerSeconds = Date().timeIntervalSince(answerStartedAt)
                 if firstTokenAt == nil { lastFirstTokenSeconds = lastAnswerSeconds }
                 lastAnswerModel = selectedModel
                 currentQuestion = question
                 pendingQuestion = ""
-                lastQuestionUsesScreenshot = screenshot != nil
+                lastQuestionUsesScreenshot = image != nil
                 isAnswering = false
                 if let candidateID, isAutomatic { lastAutomaticAnswer = (candidateID, Date()) }
                 answeringCandidateID = nil
                 Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "service_tier": request.serviceTier ?? "standard", "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
-                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic, screenshotPath: archive.archiveScreenshot(screenshot))
+                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic, screenshotPath: archive.archiveScreenshot(image), webAnswer: webLookups[id]?.status == .done ? webLookups[id]?.answer : nil, webSources: webLookups[id]?.sources)
                 answerHistory.append(record)
                 insights.beginAnswer(id: id, text: result, since: answerStartedAt)
                 if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
@@ -892,6 +943,12 @@ final class AppState {
                 if answerTurns.count > 6 { answerTurns.removeFirst(answerTurns.count - 6) }
                 errorMessage = nil
                 recordAnswer(record)
+                if webSearchMode == .auto, webLookups[id] == nil, AnswerGrounding.needsVerification(result), webSearchAvailable {
+                    answerCoordinator.update(id: id) { $0.evidence.notes.append("快速回答指出时效性不足，已追加一次联网核查。") }
+                    startWebLookup(id: id, question: question) { webSearch, results in
+                        makeParts(webSearch, results, excerpts, frozen.context, nil, false)
+                    }
+                }
                 if let next = pendingAutomaticQuestion, isRunning, !isPaused, !isStopping {
                     pendingAutomaticQuestion = nil
                     ask(next.question, screenshot: nil, recentContext: next.context, isAutomatic: true, candidateID: next.candidateID)
@@ -904,6 +961,7 @@ final class AppState {
                 guard requestID == id else { return }
                 isAnswering = false
                 pendingQuestion = ""
+                answerCoordinator.update(id: id) { $0.phase = .failed; $0.error = error.localizedDescription }
                 // Keep whatever streamed so far visible instead of losing it.
                 if !answerDraft.isEmpty { answer = answerDraft; currentQuestion = question; answerDraft = "" }
                 Diagnostics.record("answer.failed", ["request_id": id.uuidString, "backend": backend.rawValue])
@@ -1135,6 +1193,7 @@ final class AppState {
         UserDefaults.standard.set(documentOCRProvider.rawValue, forKey: "documentOCRProvider")
         UserDefaults.standard.set(documentProviderWasSelected, forKey: "documentProviderWasSelected")
         UserDefaults.standard.set(ocrFallbackToVision, forKey: "ocrFallbackToVision")
+        UserDefaults.standard.set(apiVisionEnabled, forKey: "apiVisionEnabled")
         UserDefaults.standard.set(localOCRModelID, forKey: "localOCRModelID")
         UserDefaults.standard.set(codexOCRModel, forKey: "codexOCRModel")
         UserDefaults.standard.set(codexOCREffort, forKey: "codexOCREffort")
@@ -1220,6 +1279,9 @@ final class AppState {
         appServer.shutdown()
         webLookupTask?.cancel()
         webAppServer.shutdown()
+        decisionAppServer.shutdown(); decisionCodex.cancel(); searchDecisionTask?.cancel()
+        screenContextService.invalidate()
+        documentPreparation.shutdown()
         screenWatchTask?.cancel()
         webCodex.cancel()
         insights.sideChain?.cancel()

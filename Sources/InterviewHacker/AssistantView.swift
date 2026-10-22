@@ -880,7 +880,7 @@ private struct WebLookupStrip: View {
                     }
                 case .done:
                     Image(systemName: "globe").foregroundStyle(Brand.accent)
-                    Text(state.showsWebAnswer ? "已用联网结果更新" : "正在看原回答")
+                    Text(state.showsWebAnswer ? "已显示联网核查结果" : "有核查更新，可切换查看")
                         .foregroundStyle(state.showsWebAnswer ? Brand.accent : .secondary)
                     if let seconds = lookup.seconds { Text(String(format: "%.0f 秒", seconds)).foregroundStyle(.tertiary) }
                     Spacer(minLength: 0)
@@ -996,6 +996,18 @@ private struct AnswerFooter: View {
                         .help("用联网搜索的最新信息重新回答这个问题；快速回答保留，可以切换")
                         .fixedSize(horizontal: true, vertical: false)
                 }
+            }
+            if let id = state.displayedRecordID, let evidence = state.answerCoordinator.evidenceHistory[id] {
+                DisclosureGroup("本次依据") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(evidence.retrieval).font(.caption)
+                        ForEach(evidence.materials, id: \.citation) { item in Text(item.citation).font(.caption).textSelection(.enabled) }
+                        if let screen = evidence.screen { Text("屏幕：" + screen.source + (evidence.screenImageAttached ? " · 已附图" : " · OCR 文字")).font(.caption) }
+                        if let search = evidence.search { Text("联网：" + search.reason).font(.caption) }
+                        ForEach(evidence.webSources, id: \.url) { source in if let url = URL(string: source.url) { Link(source.title, destination: url).font(.caption) } }
+                        ForEach(evidence.notes, id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }.font(.caption)
             }
             Text(meta)
                 .font(.system(size: 11)).foregroundStyle(.tertiary)

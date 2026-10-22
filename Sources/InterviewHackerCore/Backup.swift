@@ -103,7 +103,7 @@ public enum BackupMerge {
 /// warm-up state, signing) stay on the machine.
 public enum SettingsSnapshot {
     public static let exportedKeys: [String] = [
-        "answerBackend", "apiBaseURL", "apiModel", "codexModelID", "codexReasoning", "verifyUncertainWithModel",
+        "apiVisionEnabled", "answerBackend", "apiBaseURL", "apiModel", "codexModelID", "codexReasoning", "verifyUncertainWithModel",
         "automaticAnswers", "recordSessions", "autoSummarize", "autoApplyLessons",
         "transcriptionBackend", "localStreamingModel", "secondPassEnabled", "recognitionLanguage", "recognitionVocabulary",
         "cloudProvider", "cloudModel", "cloudConsent",
