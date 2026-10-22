@@ -257,6 +257,11 @@ final class AppState {
     var companionEnabled = false
     var companionAddress: String?
     var companionStatus = "未开启"
+    var companionRelayURL = UserDefaults.standard.string(forKey: "companionRelayURL") ?? ""
+    var companionRelayEnabled = false
+    var companionRelayStatus = "未开启"
+    var companionBackupAddress: String?
+    var companionRelayTask: Task<Void, Never>?
 
     // MARK: Live session
     var section: AppSection = .assistant

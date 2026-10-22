@@ -67,6 +67,7 @@ enum SelfTest {
                 case "document-setup": return try await DocumentSelfTest.setupChoices()
                 case "retrieval-eval": return try await RetrievalSelfTest.run(options)
                 case "screen-context": return try await ScreenSelfTest.run(options)
+                case "relay": return try await CompanionRelaySelfTest.run(options)
                 case "search-eval": return try await ScreenSelfTest.search(options)
                 case "large-file": return try await PreparationSelfTest.largeFile(options)
                 case "preparation-file": return try await PreparationSelfTest.realFile(options)

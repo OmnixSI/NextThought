@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="referrer" content="no-referrer"><title>InterviewHacker</title>
+<style>
+:root{--bg:#0f1115;--card:#181b22;--text:#eef1f6;--muted:#9aa3b2;--accent:#5b8cff;--line:#262b35}
+@media (prefers-color-scheme: light){:root{--bg:#f5f6f8;--card:#fff;--text:#14171c;--muted:#5d6675;--line:#e3e6eb}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}.live .dot{background:#34c759}
+#q{margin:12px 0 6px;color:var(--muted);font-size:14px}
+#a{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;white-space:pre-wrap;word-break:break-word;min-height:40vh}
+#a strong{color:var(--accent)}#cand{font-size:13px;color:var(--muted);margin-top:8px}
+nav{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);display:flex;gap:8px;overflow-x:auto}
+button{flex:0 0 auto;border:0;border-radius:12px;padding:12px 14px;font-size:15px;background:var(--card);color:var(--text)}
+button.primary{background:var(--accent);color:#fff;font-weight:600}
+.size{margin-left:auto;display:flex;gap:6px}.size button{padding:4px 10px}
+</style></head><body>
+<header id="h"><span class="dot"></span><span id="s">连接中…</span><span id="mode"></span><span id="p"></span>
+<span class="size"><button data-zoom="-2">A-</button><button data-zoom="2">A+</button></span></header>
+<div id="q"></div><div id="a">等待回答…</div><div id="cand"></div><div id="sources" style="font-size:12px;color:var(--muted)"></div><button id="update" hidden data-action="applyWeb">显示核查更新</button>
+<nav>
+<button class="primary" data-action="answer">回答</button>
+<button data-action="shorter">更简短</button><button data-action="example">举例</button>
+<button data-action="english">英文版</button><button data-action="previous">上一条</button>
+<button data-action="next">下一条</button><button data-action="cancel">取消</button>
+</nav>
+<script type="module" src="/phone.js"></script></body></html>

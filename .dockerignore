@@ -1,0 +1,5 @@
+.git
+.build
+.local
+dist
+**/node_modules

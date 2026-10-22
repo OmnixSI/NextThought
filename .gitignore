@@ -10,3 +10,11 @@ DerivedData/
 .local/
 __pycache__/
 *.pyc
+
+# Companion build output
+CompanionRelay/node_modules/
+CompanionRelay/dist/
+Mobile/Android/.gradle/
+Mobile/Android/**/build/
+Mobile/Android/local.properties
+Mobile/iOS/.build/

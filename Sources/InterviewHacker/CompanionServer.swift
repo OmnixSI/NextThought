@@ -35,12 +35,25 @@ final class CompanionServer {
     private var lastSent: CompanionSnapshot?
     private let queue = DispatchQueue(label: "app.interviewhacker.companion")
     private(set) var pairingURL: URL?
+    private(set) var pairing = CompanionPairing()
+    let relay = CompanionRelay()
+    func configureRelay(base: URL) async throws -> URL {
+        let p = try await relay.start(base: base, local: pairing)
+        pairing = p
+        if let local = pairingURL { pairingURL = try p.url(base: local) }
+        return try p.url(base: base)
+    }
+    func disableRelay() {
+        relay.stop(); pairing.relay = nil; pairing.subscriber = nil
+        if let local = pairingURL { pairingURL = try? pairing.url(base: local) }
+    }
 
     /// Starts on the preferred port; if it is taken (another app, or a previous
     /// instance still closing) the next free port is used automatically.
     func start(preferredPort: Int, onStatus: @escaping (String, String?) -> Void) {
         stop()
         token = Self.randomToken()
+        pairing = CompanionPairing(token: token)
         let base = (1_024...65_000).contains(preferredPort) ? preferredPort : 8_765
         let candidates = Array(base..<(base + 20))
         listen(on: candidates, index: 0, onStatus: onStatus)
@@ -54,6 +67,7 @@ final class CompanionServer {
                 if Date().timeIntervalSince(self.lastHeartbeat) >= 2 {
                     self.lastHeartbeat = Date()
                     self.sendToStreams(self.currentEnvelope().sse(event: "heartbeat"))
+                    self.relay.publish(self.currentEnvelope())
                 }
                 for (key, stream) in self.streams where stream.sending && Date().timeIntervalSince(stream.sentAt) > 8 {
                     stream.connection.cancel(); self.streams.removeValue(forKey: key)
@@ -90,9 +104,10 @@ final class CompanionServer {
                         onStatus("没有找到局域网地址；请把 Mac 和手机连到同一个 Wi‑Fi 后点“重新生成链接”。", nil); return
                     }
                     let url = URL(string: "http://\(host):\(actual)/?t=\(self.token)")
-                    self.pairingURL = url
+                    self.pairing.lan = "http://\(host):\(actual)"
+                    self.pairingURL = try? self.pairing.url(base: url!)
                     let note = index == 0 ? "" : "（端口 \(ports.first ?? 0) 被占用，已改用 \(actual)）"
-                    onStatus("已开启 · 手机与 Mac 需在同一局域网\(note)", url?.absoluteString)
+                    onStatus("已开启 · 手机与 Mac 需在同一局域网\(note)", self.pairingURL?.absoluteString)
                 case let .failed(error):
                     listener.cancel()
                     if Self.isAddressInUse(error), index <= ports.count {
@@ -117,6 +132,7 @@ final class CompanionServer {
 
     func stop() {
         observing = false
+        relay.stop()
         heartbeat?.cancel(); heartbeat = nil
         listener?.cancel(); listener = nil
         streams.values.forEach { $0.connection.cancel() }; streams.removeAll()
@@ -139,6 +155,7 @@ final class CompanionServer {
         guard current.snapshot != lastSent else { return }
         lastSent = current.snapshot
         sendToStreams(current.sse())
+        relay.publish(current)
     }
 
     private func sendToStreams(_ data: Data) {
@@ -198,14 +215,18 @@ final class CompanionServer {
     }
 
     private func route(_ request: CompanionHTTP.Request, _ connection: NWConnection) {
+        if request.method == "GET", ["/", "/phone.js"].contains(request.path) {
+            let name = request.path == "/" ? "index.html" : "phone.js"
+            guard let data = CompanionPage.asset(name) else { reply(connection, "503 Service Unavailable", "text/plain", Data("手机页面资源缺失，请重新安装。".utf8)); return }
+            reply(connection, "200 OK", request.path == "/" ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", data,
+                ["Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self' wss:; frame-ancestors 'none'; base-uri 'none'"])
+            return
+        }
         guard CompanionHTTP.tokenMatches(request.query["t"], token) else {
             reply(connection, "403 Forbidden", "text/plain; charset=utf-8", Data("配对码无效或已过期，请重新扫码。".utf8))
             return
         }
         switch (request.method, request.path) {
-        case ("GET", "/"):
-            reply(connection, "200 OK", "text/html; charset=utf-8", Data(CompanionPage.html.utf8),
-                  ["Content-Security-Policy: default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'"])
         case ("GET", "/snapshot"):
             reply(connection, "200 OK", "application/json", (try? JSONEncoder().encode(currentEnvelope())) ?? Data())
         case ("POST", "/ack"):
@@ -264,82 +285,10 @@ final class CompanionServer {
 }
 
 enum CompanionPage {
-    static let html = #"""
-<!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>InterviewHacker</title>
-<style>
-:root{--bg:#0f1115;--card:#181b22;--text:#eef1f6;--muted:#9aa3b2;--accent:#5b8cff;--line:#262b35}
-@media (prefers-color-scheme: light){:root{--bg:#f5f6f8;--card:#fff;--text:#14171c;--muted:#5d6675;--line:#e3e6eb}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
-header{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}.live .dot{background:#34c759}
-#q{margin:12px 0 6px;color:var(--muted);font-size:14px}
-#a{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;white-space:pre-wrap;word-break:break-word;min-height:40vh}
-#a strong{color:var(--accent)}#cand{font-size:13px;color:var(--muted);margin-top:8px}
-nav{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);display:flex;gap:8px;overflow-x:auto}
-button{flex:0 0 auto;border:0;border-radius:12px;padding:12px 14px;font-size:15px;background:var(--card);color:var(--text)}
-button.primary{background:var(--accent);color:#fff;font-weight:600}
-.size{margin-left:auto;display:flex;gap:6px}.size button{padding:4px 10px}
-</style></head><body>
-<header id="h"><span class="dot"></span><span id="s">连接中…</span><span id="mode"></span><span id="p"></span>
-<span class="size"><button onclick="zoom(-2)">A-</button><button onclick="zoom(2)">A+</button></span></header>
-<div id="q"></div><div id="a">等待回答…</div><div id="cand"></div><div id="sources" style="font-size:12px;color:var(--muted)"></div><button id="update" hidden onclick="act('applyWeb')">显示核查更新</button>
-<nav>
-<button class="primary" onclick="act('answer')">回答</button>
-<button onclick="act('shorter')">更简短</button><button onclick="act('example')">举例</button>
-<button onclick="act('english')">英文版</button><button onclick="act('previous')">上一条</button>
-<button onclick="act('next')">下一条</button><button onclick="act('cancel')">取消</button>
-</nav>
-<script>
-const t=new URLSearchParams(location.search).get('t');let size=+(localStorage.getItem('ih-size')||20);
-const A=document.getElementById('a');A.style.fontSize=size+'px';
-function zoom(d){size=Math.max(14,Math.min(40,size+d));A.style.fontSize=size+'px';localStorage.setItem('ih-size',size)}
-function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>')}
-let es=null, retry=null, attempt=0, lastEvent=0, lastGood=0, server='', sequence=-1, polling=false, pendingPoll=false;
-function connection(label,live=false){document.getElementById('s').textContent=label;document.getElementById('h').className=live?'live':''}
-function apply(e,transport){
- if(!e||e.version!==1||!e.snapshot||typeof e.sequence!=='number')return;
- const d=e.snapshot;lastGood=Date.now();
- if(server===e.serverID&&e.sequence<sequence)return;
- server=e.serverID;sequence=e.sequence;connection(transport,true);
- document.getElementById('mode').textContent=d.status+(d.answering?' · 生成中':'');
- document.getElementById('p').textContent=d.position;document.getElementById('q').textContent=d.question;
- A.innerHTML=d.answer?md(d.answer):(d.answering?'正在生成…':'等待回答…');
- document.getElementById('cand').textContent=d.candidate?('候选：'+d.candidate):'';
- document.getElementById('sources').textContent=[d.slide,d.sources].filter(Boolean).join(' · ');
- document.getElementById('update').hidden=!d.updateAvailable;
-}
-async function request(path,options={}){
- const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),2500);
- try{const r=await fetch(path,{...options,cache:'no-store',signal:controller.signal});
- if(r.status===403){connection('配对已过期，请重新扫码');if(es)es.close();throw new Error('expired')}
- if(!r.ok)throw new Error('HTTP '+r.status);return r;
- }finally{clearTimeout(timeout)}
-}
-async function snapshot(){if(pendingPoll||document.hidden)return;pendingPoll=true;
- try{apply(await(await request('/snapshot?t='+encodeURIComponent(t))).json(),'备用连接 · 快照同步')}
- catch{if(Date.now()-lastGood>8000)connection('离线，正在恢复…')}finally{pendingPoll=false}}
-function retrySSE(){if(retry)return;const delay=Math.min(8000,500*Math.pow(2,attempt++))*(.8+Math.random()*.4);
- retry=setTimeout(()=>{retry=null;connect()},delay)}
-function connect(){if(es)es.close();es=new EventSource('/events?t='+encodeURIComponent(t));
- const received=e=>{try{lastEvent=Date.now();attempt=0;polling=false;apply(JSON.parse(e.data),'已连接 · 实时同步')}catch{}};
- es.onmessage=received;es.addEventListener('heartbeat',received);
- es.onerror=()=>{es.close();polling=true;connection('正在恢复连接…');snapshot();retrySSE()};}
-async function act(a){const id=crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=crypto.getRandomValues(new Uint8Array(1))[0]&15;return(c==='x'?r:(r&3)|8).toString(16)});
- const url='/action?t='+encodeURIComponent(t)+'&a='+a+'&id='+id;
- for(let n=0;n<2;n++){try{await request(url,{method:'POST'});snapshot();return}catch{}}
- connection('操作尚未确认，请检查连接');}
-setInterval(()=>{if(document.hidden)return;
- if(Date.now()-lastEvent>6000){polling=true;snapshot();if(es)es.close();retrySSE()}
- else if(polling)snapshot();if(Date.now()-lastGood>8000)connection('离线，正在恢复…')},1000);
-setInterval(()=>{if(lastGood&&Date.now()-lastGood<8000)request('/ack?t='+encodeURIComponent(t)+'&seq='+sequence,{method:'POST'}).catch(()=>{})},5000);
-function resume(){if(document.hidden)return;lastEvent=0;polling=true;snapshot();connect()}
-document.addEventListener('visibilitychange',resume);window.addEventListener('online',resume);window.addEventListener('pageshow',resume);
-snapshot();connect();
-</script></body></html>
-"""#
+    static func asset(_ name: String) -> Data? {
+        let root = Bundle.main.resourceURL?.appendingPathComponent("Companion")
+        if let root, let data = try? Data(contentsOf: root.appendingPathComponent(name)) { return data }
+        let source = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        return try? Data(contentsOf: source.appendingPathComponent("Resources/Companion/\(name)"))
+    }
 }
