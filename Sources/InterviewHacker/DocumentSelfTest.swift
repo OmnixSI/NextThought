@@ -172,7 +172,12 @@ extension DocumentSelfTest {
 
 extension DocumentSelfTest {
     @MainActor static func archiveRoundTrip() async throws -> String {
-        let content=DocumentContent(pipeline:"selftest",sourceHash:"fixture",blocks:DocumentStructure.parse("## Data\n\n| A | B |\n| --- | --- |\n| exact | 1,234.56 |\n\n$$\nx^2\n$$",locator:.init(page:7)),warnings:["explicit test warning"])
+        let original = Data("authored original-byte backup fixture".utf8)
+        let hash = IncrementalBackupStore.digest(original)
+        let originalURL = AppPaths.root.appendingPathComponent("Originals/" + hash + ".pdf")
+        try FileManager.default.createDirectory(at: originalURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try original.write(to: originalURL)
+        let content=DocumentContent(pipeline:"selftest",sourceHash:hash,blocks:DocumentStructure.parse("## Data\n\n| A | B |\n| --- | --- |\n| exact | 1,234.56 |\n\n$$\nx^2\n$$",locator:.init(page:7)),warnings:["explicit test warning"])
         let document=ContextDocument(name:"structured.pdf",pages:content.blocks.map(\.markdown),markdownPath:"/untrusted/path/original.pdf",sourceFormat:"pdf",content:content)
         let workspace=Workspace(name:"structured backup",mode:.general,documents:[document])
         let store=WorkspaceStore.shared;store.installDemo([workspace])
@@ -181,11 +186,24 @@ extension DocumentSelfTest {
         let listing=try Shell.run("/usr/bin/unzip",["-Z1",file.path]).output
         guard listing.contains("Materials/"),!listing.contains("/models/"),!listing.contains("/Runtimes/") else { throw SelfTest.Failure("backup missing derived Markdown or contains reconstructible assets") }
         store.installDemo([])
+        try FileManager.default.removeItem(at: originalURL)
         _ = try await DataBackup.importArchive(file,applySettings:false)
+        guard try Data(contentsOf: originalURL) == original else { throw SelfTest.Failure("original source bytes did not restore") }
         guard let restored=store.workspaces.first?.documents.first,restored.content==content,
               let relative=restored.markdownPath,!relative.hasPrefix("/"),let url=MaterialArchive.resolve(relative),
               try String(contentsOf:url,encoding:.utf8).contains("1,234.56"),restored.content?.blocks.first?.locator.page==7 else { throw SelfTest.Failure("structured archive/locators/relative paths did not restore") }
-        return "Markdown + metadata + table/formula + physical locator restored with relative refs; no original/model/runtime in backup"
+        let damaged = AppPaths.root.appendingPathComponent("damaged-backup", isDirectory: true)
+        try FileManager.default.createDirectory(at: damaged, withIntermediateDirectories: true)
+        try Shell.check("/usr/bin/ditto", ["-x","-k",file.path,damaged.path], "测试解压")
+        let archiveRoot = damaged.appendingPathComponent("InterviewHacker-Backup", isDirectory: true)
+        try Data("corrupted original".utf8).write(to: archiveRoot.appendingPathComponent("Originals/" + hash + ".pdf"))
+        let broken = AppPaths.root.appendingPathComponent("damaged.ihbackup")
+        try Shell.check("/usr/bin/ditto", ["-c","-k","--keepParent",archiveRoot.path,broken.path], "测试压缩")
+        let before = store.workspaces
+        do { _ = try await DataBackup.importArchive(broken,applySettings:false); throw SelfTest.Failure("corrupt source accepted") }
+        catch let failure as SelfTest.Failure { throw failure }
+        catch { guard store.workspaces == before else { throw SelfTest.Failure("failed restore changed workspaces") } }
+        return "structured Markdown/table/formula/physical locator + original bytes restored; corrupt original rejected before any workspace merge; no models/runtime in archive"
     }
 }
 

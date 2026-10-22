@@ -272,29 +272,7 @@ private struct MaterialsTab: View {
             if !state.importStatus.isEmpty {
                 Text(state.importStatus).font(.caption).foregroundStyle(.secondary)
             }
-            let preparation = state.documentPreparation
-            let jobs = preparation.jobs.filter { $0.workspaceID == state.activeWorkspace.id }
-            if !jobs.isEmpty {
-                DisclosureGroup("会前准备 · \(preparation.pendingCount(workspaceID: state.activeWorkspace.id)) 项未完成") {
-                    ForEach(jobs.suffix(100)) { job in
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(job.fileName).font(.caption.bold())
-                                Text(job.progressText).font(.caption).foregroundStyle(job.stage == .failed ? .red : .secondary)
-                                if let total = job.total, total > 0, !job.stage.terminal { ProgressView(value: Double(job.completed), total: Double(total)) }
-                                if !job.message.isEmpty { Text(job.message).font(.caption2).foregroundStyle(.secondary).textSelection(.enabled) }
-                            }
-                            Spacer()
-                            if [.failed, .cancelled, .warning].contains(job.stage) {
-                                Button("重试") { preparation.retry(job.id) }.buttonStyle(.borderless)
-                            } else if !job.stage.terminal {
-                                Button("取消") { preparation.cancel(job.id) }.buttonStyle(.borderless)
-                            }
-                        }.padding(.vertical, 4)
-                    }
-                }
-            }
-            if let error = preparation.error { Text(error).font(.caption).foregroundStyle(.red) }
+            PreparationQueueSummary()
             ForEach(categories(profile), id: \.self) { category in
                 categorySection(category)
             }
@@ -594,5 +572,58 @@ private struct ReviewTab: View {
         }
         .frame(maxWidth: .infinity).padding(.vertical, 8)
         .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
+/// Keep failed and partial imports visible even when no job is still running.
+private struct PreparationQueueSummary: View {
+    @Environment(AppState.self) private var state
+    @State private var expanded = false
+    private var jobs: [DocumentJob] { state.documentPreparation.jobs.filter { $0.workspaceID == state.activeWorkspace.id } }
+    private var attentionCount: Int { jobs.filter { [.failed, .warning].contains($0.stage) }.count }
+    private var summary: String {
+        var parts = ["会前准备", "\(jobs.filter { $0.stage == .ready }.count) 份已就绪"]
+        let pending = jobs.filter { !$0.stage.terminal }.count
+        let cancelled = jobs.filter { $0.stage == .cancelled }.count
+        if pending > 0 { parts.append("\(pending) 份待完成") }
+        if attentionCount > 0 { parts.append("\(attentionCount) 份需处理") }
+        if cancelled > 0 { parts.append("\(cancelled) 份已取消") }
+        return parts.joined(separator: " · ")
+    }
+    var body: some View {
+        let preparation = state.documentPreparation
+        VStack(alignment: .leading, spacing: 8) {
+            if !jobs.isEmpty {
+                if attentionCount > 0 {
+                    Label("\(attentionCount) 份资料需要处理或核对，展开下方列表查看。", systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12)).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                DisclosureGroup(summary, isExpanded: $expanded) {
+                    ForEach(jobs.suffix(100)) { job in
+                        HStack(alignment: .top, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(job.fileName).font(.system(size: 12, weight: .semibold)).textSelection(.enabled)
+                                Text(job.progressText).font(.system(size: 12)).foregroundStyle(job.stage == .failed ? .red : job.stage == .warning ? .orange : .secondary)
+                                if let total = job.total, total > 0, !job.stage.terminal { ProgressView(value: Double(job.completed), total: Double(total)) }
+                                if !job.message.isEmpty { Text(job.message).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
+                            }
+                            Spacer(minLength: 8)
+                            if [.failed, .cancelled, .warning].contains(job.stage) {
+                                Button("重试") { preparation.retry(job.id) }.buttonStyle(ChipButtonStyle())
+                            } else if !job.stage.terminal {
+                                Button("取消") { preparation.cancel(job.id) }.buttonStyle(ChipButtonStyle())
+                            }
+                        }.padding(.vertical, 6)
+                    }
+                }.font(.system(size: 12, weight: .medium))
+            }
+            if let error = preparation.error {
+                Label(error, systemImage: "exclamationmark.circle").font(.system(size: 12)).foregroundStyle(.red).textSelection(.enabled)
+            }
+        }
+        .onAppear { expanded = attentionCount > 0 }
+        .onChange(of: attentionCount) { old, count in if count > old { expanded = true } }
+        .onChange(of: state.activeWorkspace.id) { _, _ in expanded = attentionCount > 0 }
     }
 }

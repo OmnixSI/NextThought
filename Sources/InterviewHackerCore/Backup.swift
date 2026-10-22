@@ -41,6 +41,7 @@ public struct BackupManifest: Codable, Sendable, Equatable {
 
     public func validate() throws {
         guard format == Self.formatIdentifier else { throw ValidationError.notABackup }
+        guard version >= 1, workspaceCount >= 0, sessionCount >= 0 else { throw ValidationError.notABackup }
         guard version <= Self.currentVersion else { throw ValidationError.newerFormat(version) }
     }
 }
@@ -109,7 +110,7 @@ public enum SettingsSnapshot {
         "cloudProvider", "cloudModel", "cloudConsent",
         "echoSuppression", "microphoneVoiceProcessing", "microphoneEnabled",
         "teleprompterOpacity", "teleprompterFontSize", "capturePrivacy", "keepOnTop", "appearance", "reducedEffects",
-        "customShortcuts", "companionPort", "keepRecognizerWarm",
+        "customShortcuts", "companionPort", "companionRelayURL", "keepRecognizerWarm",
         "updateChannel", "automaticUpdateChecks", "updateRepository",
         "activeWorkspaceID", "autoBackup", "advancedSettingsEnabled",
         "apiPresets", "activeAPIPresetID",

@@ -4,10 +4,10 @@ Android 使用 Kotlin/Compose + Bluetooth GATT；iOS 使用 SwiftUI + Core Bluet
 
 ## 配对与使用
 
-1. Mac 设置 → 手机伴侣，开启局域网服务；需要蓝牙时开启“原生手机 App 的蓝牙备用”。需要互联网备用时先配置自己的 HTTPS 中转并开启，再配对。
+1. Mac 设置 → 高级设置 → 更多 → 手机伴侣，开启局域网服务；需要蓝牙时开启“原生手机 App 的蓝牙备用”。需要互联网备用时先配置自己的 HTTPS 中转并开启，再配对。
 2. 在手机 App 扫描“原生手机 App 配对”二维码，或粘贴其链接；也支持 `interviewhacker-companion://pair#p=…` 深链。配对密钥保留在进程内，结束进程后重新配对。
 3. 给 App 授予本地网络、蓝牙权限；扫码需要相机权限，也可粘贴链接。Android 11 及更早版本的 BLE 扫描由系统要求位置权限；不采集位置。
-4. App 显示实际接收通道。网络失联后显示离线；恢复时补齐完整最新状态，不把旧答案挂在新问题下。可调整字号、显示核查更新、触发回答/简短/举例/语言/前后/取消。
+4. App 显示实际接收通道。网络失联后显示离线；恢复时补齐完整最新状态，不把旧答案挂在新问题下。可调整字号、显示核查更新、触发回答/更简短/举例/英文版/前后/停止生成。连接状态和操作确认分开；操作未确认时可重试，四分钟内沿用原 UUID，普通心跳不会清除该提示。
 5. 当前面向前台使用。锁屏、进程被系统终止、两种真实手机各 60 分钟及切网行为尚未验收。蓝牙不会承载图片和文件。
 
 更换局域网链接、重启 Mac 服务或重新启用中转后请重新扫描。中转房间最长 8 小时且重启即消失。不要把配对链接发给他人。
@@ -19,8 +19,8 @@ Android 需要 JDK 17+、SDK 35，使用仓库内 Gradle wrapper：
 ```sh
 cd Mobile/Android
 ./gradlew assembleDebug testDebugUnitTest
-# 连接设备或启动模拟器后：
-./gradlew connectedDebugAndroidTest
+# 先用 adb devices 确认本项目设备序列号，明确指定，避免自动选中其他项目模拟器：
+ANDROID_SERIAL=emulator-5556 ./gradlew connectedDebugAndroidTest
 ```
 
 调试 APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。正式发布需用户自己的签名配置；本仓库不提交签名密钥。开发缓存可通过 `GRADLE_USER_HOME`、`ANDROID_HOME`、`ANDROID_USER_HOME` 指向项目内目录。

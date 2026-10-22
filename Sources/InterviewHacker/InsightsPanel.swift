@@ -118,15 +118,15 @@ private struct ScreenSection: View {
                 HStack(spacing: 6) {
                     Image(systemName: "display").foregroundStyle(.secondary)
                     Text(screen.kind.map { "屏幕：\($0.title)" } ?? "屏幕").font(.system(size: 12, weight: .semibold))
-                    Text(screen.isRelevant ? "与对话相关，回答会参考" : "屏幕指代提问时会重新判断")
-                        .font(.system(size: 11)).foregroundStyle(screen.isRelevant ? Brand.accent : .secondary)
+                    Text("已识别 · 是否用于回答见“本次依据”")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
                     Spacer()
                     TimelineView(.periodic(from: screen.capturedAt, by: 5)) { context in
-                        Text("\(Int(context.date.timeIntervalSince(screen.capturedAt))) 秒前").font(.system(size: 10)).monospacedDigit().foregroundStyle(.tertiary)
+                        Text("\(Int(context.date.timeIntervalSince(screen.capturedAt))) 秒前").font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
                 if !screen.text.isEmpty {
-                    Text(screen.text).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(expanded ? 30 : 3).textSelection(.enabled)
+                    Text(screen.text).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(expanded ? 30 : 3).textSelection(.enabled)
                     Button(expanded ? "收起" : "展开识别的文字") { expanded.toggle() }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Brand.accent)
                 }
             }

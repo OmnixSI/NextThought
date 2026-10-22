@@ -9,6 +9,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function fixture(t,options={}){
  const relay=createRelay(options);relay.server.listen(0,'127.0.0.1');await once(relay.server,'listening');
  const base='http://127.0.0.1:'+relay.server.address().port;
+ assert.match((await fetch(base)).headers.get('content-security-policy'),/img-src 'self' data:/);
  const room=await(await fetch(base+'/rooms',{method:'POST'})).json();
  const pair={...room,key:randomBytes(32).toString('base64')};
  t.after(()=>new Promise(resolve=>{for(const r of relay.rooms.values())for(const ws of r.sockets.keys())ws.terminate();relay.server.close(resolve)}));

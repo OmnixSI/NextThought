@@ -7,7 +7,13 @@ window.zoom=d=>{size=Math.max(14,Math.min(40,size+d));A.style.fontSize=size+'px'
 function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>')}
 let es=null,retry=null,attempt=0,lastEvent=0,lastGood=0,lastLAN=0,server='',sequence=-1,pendingPoll=false;
-let ws=null,relayTimer=null,relayAttempt=0,relayFrame=null,relayGood=0;const commands=new Map(),retired=new Set();
+let ws=null,relayTimer=null,relayAttempt=0,relayFrame=null,relayGood=0;const commands=new Map(),retired=new Set(),seenNonces=new Set();
+let failedCommand=null;
+function operation(label){const output=el('operation');if(output)output.textContent=label;
+ for(const button of document.querySelectorAll('[data-action]'))button.disabled=button.dataset.action!=='cancel'&&[...commands.values()].some(c=>c.action===button.dataset.action);
+ for(const button of document.querySelectorAll('[data-retry]'))button.hidden=!failedCommand;
+}
+function confirmed(id){if(!commands.has(id)&&failedCommand?.id!==id)return;commands.delete(id);if(failedCommand?.id===id)failedCommand=null;if(!failedCommand)operation(commands.size?'等待其他操作确认…':'Mac 已确认操作');else operation(el('operation')?.textContent||'操作未确认，请重试')}
 function connection(label,live=false){el('s').textContent=label;el('h').className=live?'live':''}
 export function apply(e,transport){
  if(!e||e.version!==1||!e.snapshot||typeof e.sequence!=='number'||typeof e.serverID!=='string')return;
@@ -38,8 +44,8 @@ function relay(){
  if(ws)ws.close();const socket=new WebSocket(url);ws=socket;
  socket.onopen=()=>{relayAttempt=0;socket.send(JSON.stringify({room:pair.room,role:'subscriber',token:pair.subscriber}));};
  socket.onmessage=e=>{try{const p=JSON.parse(e.data);if(p.joined)return;const value=open(pair,p);
- if(p.kind==='state'){relayFrame=value;relayGood=Date.now();if(Date.now()-lastLAN>4000)apply(value,'备用连接 · 加密中转')}
- if(p.kind==='ack'&&typeof value.id==='string')commands.delete(value.id);
+ if(p.kind==='state'){if(seenNonces.has(p.n))return;seenNonces.add(p.n);if(seenNonces.size>16384)seenNonces.delete(seenNonces.values().next().value);relayFrame=value;relayGood=Date.now();if(Date.now()-lastLAN>4000)apply(value,'备用连接 · 加密中转')}
+ if(p.kind==='ack'&&typeof value.id==='string')confirmed(value.id);
  }catch{connection('中转校验失败，请重新配对')}};
  socket.onclose=()=>{if(ws!==socket)return;clearTimeout(relayTimer);relayTimer=setTimeout(relay,Math.min(8000,500*2**relayAttempt++)*(.8+Math.random()*.4))};
  socket.onerror=()=>socket.close();
@@ -47,16 +53,19 @@ function relay(){
 }
 function uuid(){return crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=crypto.getRandomValues(new Uint8Array(1))[0]&15;return(c==='x'?r:(r&3)|8).toString(16)})}
 async function sendCommand(cmd){
- if(lan){try{await request('/action?t='+encodeURIComponent(token)+'&a='+cmd.action+'&id='+cmd.id,{method:'POST'});commands.delete(cmd.id);snapshot();return}catch{}}
+ if(lan){try{await request('/action?t='+encodeURIComponent(token)+'&a='+cmd.action+'&id='+cmd.id,{method:'POST'});confirmed(cmd.id);snapshot();return}catch{}}
  if(ws?.readyState===1)ws.send(JSON.stringify(seal(pair,'command',cmd)));
 }
-window.act=action=>{const cmd={id:uuid(),action,createdAt:Date.now()};commands.set(cmd.id,cmd);sendCommand(cmd)};
+window.retryAction=()=>{if(!failedCommand)return;if(Date.now()-failedCommand.firstCreatedAt>=240000){failedCommand=null;operation('操作已过期，请先核对 Mac 当前状态');return}
+ const cmd=failedCommand;failedCommand=null;cmd.createdAt=Date.now();commands.set(cmd.id,cmd);operation('正在重试，等待 Mac 确认…');sendCommand(cmd)};
+window.act=action=>{if([...commands.values()].some(c=>c.action===action))return;if(failedCommand?.action===action){window.retryAction();return}
+ const cmd={id:uuid(),action,createdAt:Date.now(),firstCreatedAt:Date.now()};commands.set(cmd.id,cmd);operation('正在发送操作，等待 Mac 确认…');sendCommand(cmd)};
 setInterval(()=>{
  if(document.hidden)return;
  if(lan&&Date.now()-lastEvent>6000){snapshot();if(es)es.close();retrySSE()}
  if(relayFrame&&Date.now()-lastLAN>4000&&Date.now()-relayGood<8000)apply(relayFrame,'备用连接 · 加密中转');
  if(Date.now()-lastGood>8000)connection('离线，正在恢复…');
- for(const [id,cmd] of commands){if(Date.now()-cmd.createdAt>15000){commands.delete(id);connection('操作未确认，请检查连接')}else sendCommand(cmd)}
+ for(const [id,cmd] of commands){if(Date.now()-cmd.createdAt>15000){commands.delete(id);failedCommand=cmd;operation('操作未确认，请检查连接后重试')}else sendCommand(cmd)}
 },1000);
 function resume(){if(document.hidden)return;snapshot();connect();if(!ws||ws.readyState>1)relay()}
 document.addEventListener('visibilitychange',resume);window.addEventListener('online',resume);window.addEventListener('pageshow',resume);
@@ -65,3 +74,5 @@ snapshot();connect();relay();
 
 for(const button of document.querySelectorAll("[data-action]"))button.addEventListener("click",()=>window.act(button.dataset.action));
 for(const button of document.querySelectorAll("[data-zoom]"))button.addEventListener("click",()=>window.zoom(Number(button.dataset.zoom)));
+
+for(const button of document.querySelectorAll('[data-retry]'))button.addEventListener('click',()=>window.retryAction());

@@ -199,6 +199,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 
 /// Small glass chip; prominent chips are tinted with the brand color.
 struct ChipButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     var prominent = false
     /// A solid surface instead of glass. Used where the window has no glass
     /// background to sit on, so the chip keeps its own opacity.
@@ -209,15 +210,17 @@ struct ChipButtonStyle: ButtonStyle {
             .lineLimit(1)
             .padding(.horizontal, 12)
             .frame(minHeight: UI.chipHeight)
-            .foregroundStyle(prominent ? Color.white : Color.primary)
-            .modifier(ChipSurface(prominent: prominent, opaque: opaque))
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .foregroundStyle(isEnabled ? (prominent ? Color.white : Color.primary) : Color.secondary)
+            .modifier(ChipSurface(prominent: prominent && isEnabled, opaque: opaque))
+            .opacity(isEnabled ? 1 : 0.5)
+            .scaleEffect(isEnabled && configuration.isPressed ? 0.96 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 
 /// Round glass icon button (toolbar-style).
 struct GlassIconButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     var size: CGFloat = 34
     var tint: Color? = nil
     /// A solid surface instead of glass; see `ChipButtonStyle.opaque`.
@@ -226,9 +229,10 @@ struct GlassIconButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(size: size >= UI.barHeight ? 15 : 14, weight: .medium))
             .frame(width: size, height: size)
-            .foregroundStyle(tint == nil ? Color.primary : Color.white)
-            .modifier(ChipSurface(prominent: tint != nil, opaque: opaque))
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .foregroundStyle(isEnabled ? (tint == nil ? Color.primary : Color.white) : Color.secondary)
+            .modifier(ChipSurface(prominent: tint != nil && isEnabled, opaque: opaque))
+            .opacity(isEnabled ? 1 : 0.5)
+            .scaleEffect(isEnabled && configuration.isPressed ? 0.94 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }

@@ -63,7 +63,10 @@ private final class LANFixture: @unchecked Sendable {
         fixture.update(frame(2,"second",""), broadcast: true)
         try await wait { client.snapshot?.question == "second" }
         #expect(client.snapshot?.answer == "")
-        client.action("next"); try await wait { fixture.commandCount == 1 }
+        client.action("next"); #expect(client.pendingActions.contains("next")); #expect(client.operationStatus.contains("等待 Mac"))
+        client.action("next")
+        try await wait { fixture.commandCount == 1 && client.pendingActions.isEmpty }
+        #expect(client.operationStatus == "Mac 已确认操作")
         // A half-open SSE remains silent, but HTTP still serves the newest state.
         fixture.update(frame(3,"silent stream recovered","complete"), broadcast: false)
         try await wait({ client.snapshot?.question == "silent stream recovered" }, timeout: 8)

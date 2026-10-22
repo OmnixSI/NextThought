@@ -15,7 +15,7 @@ export function createRelay(options: {ttl?: number; capacity?: number; assets?: 
   const server = createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store'); res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self' wss:; frame-ancestors 'none'; base-uri 'none'");
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss:; frame-ancestors 'none'; base-uri 'none'");
     const path = req.url?.split('?')[0];
     if (req.method === 'GET' && (path === '/' || path === '/phone.js')) {
       try { res.setHeader('Content-Type', path === '/' ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8'); res.end(await readFile(new URL(path === '/' ? 'index.html' : 'phone.js', assets))); }

@@ -45,6 +45,7 @@ struct AnswerRecord: Identifiable, Codable, Equatable {
     var screenshotPath: String?
     var webAnswer: String? = nil
     var webSources: [WebResult]? = nil
+    var evidence: EvidenceBundle? = nil
 }
 
 struct CaptureTarget: Identifiable, Hashable {

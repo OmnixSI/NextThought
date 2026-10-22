@@ -5,6 +5,11 @@ import Foundation
     @Published public private(set) var snapshot: CompanionSnapshot?
     @Published public private(set) var connection = "请扫描或粘贴 Mac 配对链接"
     @Published public private(set) var bluetoothStatus = "蓝牙未开启"
+    @Published public private(set) var operationStatus = ""
+    @Published public private(set) var pendingActions = Set<String>()
+    @Published public private(set) var canRetryAction = false
+    private var failedCommand: CompanionCommand?
+    private var firstSent: [String: Double] = [:]
     public private(set) var pairing: CompanionPairing?
     private var generation = UUID()
     private var tasks: [Task<Void, Never>] = []
@@ -59,7 +64,7 @@ import Foundation
                 guard self.generation == g else { return }
                 if self.last.values.max().map({ Date().timeIntervalSince($0) > 8 }) ?? true { self.connection = "离线，正在恢复…" }
                 for (id, command) in self.pending {
-                    if Date().timeIntervalSince1970 * 1000 - command.createdAt > 15000 { self.pending[id] = nil; self.connection = "操作未确认，请检查连接" }
+                    if Date().timeIntervalSince1970 * 1000 - command.createdAt > 15000 { self.pending[id] = nil; self.pendingActions.remove(command.action); if let old = self.failedCommand { self.firstSent[old.id] = nil }; self.failedCommand = command; self.canRetryAction = true; self.operationStatus = "操作未确认，请检查连接后重试" }
                     else { await self.send(command) }
                 }
                 try? await Task.sleep(for: .seconds(1))
@@ -70,13 +75,32 @@ import Foundation
         generation = UUID(); tasks.forEach { $0.cancel() }; tasks = []; bluetooth.stop()
         relaySocket?.cancel(with: .goingAway, reason: nil); relaySocket = nil
         pairing = nil; pending = [:]; last = [:]; server = ""; sequence = 0; retired = []; seenNonces = []; nonceOrder = []
+        operationStatus = ""; pendingActions = []; failedCommand = nil; firstSent = [:]; canRetryAction = false
         snapshot = nil; connection = "已断开"; bluetoothStatus = "蓝牙未开启"
     }
     public func resume() { Task { [weak self] in await self?.poll(); self?.resync() } }
     public func action(_ action: String) {
-        guard CompanionHTTP.allowedActions.contains(action) else { return }
-        let command = CompanionCommand(action: action), g = generation; pending[command.id] = command
+        guard pairing != nil, CompanionHTTP.allowedActions.contains(action), !pendingActions.contains(action) else { return }
+        if failedCommand?.action == action { retryAction(); return }
+        let command = CompanionCommand(action: action), g = generation; pending[command.id] = command; firstSent[command.id] = command.createdAt; pendingActions.insert(action); operationStatus = "正在发送操作，等待 Mac 确认…"
         Task { [weak self] in guard let self, self.generation == g else { return }; await self.send(command) }
+    }
+    public func retryAction() {
+        guard var command = failedCommand else { return }
+        guard Date().timeIntervalSince1970 * 1000 - (firstSent[command.id] ?? 0) < 240000 else {
+            canRetryAction = false; failedCommand = nil; firstSent[command.id] = nil; operationStatus = "操作已过期，请先核对 Mac 当前状态"; return
+        }
+        command.createdAt = Date().timeIntervalSince1970 * 1000
+        failedCommand = nil; canRetryAction = false; pending[command.id] = command
+        pendingActions.insert(command.action); operationStatus = "正在重试，等待 Mac 确认…"
+        let g = generation
+        Task { [weak self] in guard let self, self.generation == g else { return }; await self.send(command) }
+    }
+    private func confirmed(_ id: String) {
+        guard let command = pending.removeValue(forKey: id) ?? (failedCommand?.id == id ? failedCommand : nil) else { return }
+        if failedCommand?.id == id { failedCommand = nil; canRetryAction = false }
+        pendingActions.remove(command.action); firstSent[id] = nil
+        if failedCommand == nil { operationStatus = pending.isEmpty ? "Mac 已确认操作" : "等待其他操作确认…" }
     }
     private func resync() {
         guard let p = pairing, let frame = try? CompanionCrypto.seal(CompanionCommand(action: "resync"), kind: "command", pairing: p) else { return }
@@ -128,7 +152,7 @@ import Foundation
         guard let p = pairing else { return }
         do {
             if frame.kind == "ack" {
-                let ack = try CompanionCrypto.open(frame, as: CompanionAcknowledgement.self, pairing: p); pending[ack.id] = nil
+                let ack = try CompanionCrypto.open(frame, as: CompanionAcknowledgement.self, pairing: p); confirmed(ack.id)
             } else if frame.kind == "state" {
                 let e = try CompanionCrypto.open(frame, as: CompanionEnvelope.self, pairing: p)
                 let key = frame.kind + frame.n
@@ -149,7 +173,7 @@ import Foundation
         let g = generation
         if let url = lanURL("action", query: [.init(name: "a", value: command.action), .init(name: "id", value: command.id)]) {
             var r = URLRequest(url: url); r.httpMethod = "POST"; r.timeoutInterval = 1.5
-            if let (_, response) = try? await URLSession.shared.data(for: r), (response as? HTTPURLResponse)?.statusCode == 204, generation == g { pending[command.id] = nil; return }
+            if let (_, response) = try? await URLSession.shared.data(for: r), (response as? HTTPURLResponse)?.statusCode == 204, generation == g { confirmed(command.id); return }
         }
         guard generation == g, let p = pairing, let frame = try? CompanionCrypto.seal(command, kind: "command", pairing: p) else { return }
         if bluetooth.ready { bluetooth.send(frame) }

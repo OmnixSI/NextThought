@@ -58,15 +58,16 @@ public struct SessionAnswerEvent: Codable, Sendable, Identifiable, Equatable {
     public var screenshotPath: String?
     public var webAnswer: String?
     public var webSources: [WebResult]?
-    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool, screenshotPath: String? = nil, webAnswer: String? = nil, webSources: [WebResult]? = nil) {
+    public var evidence: EvidenceBundle?
+    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool, screenshotPath: String? = nil, webAnswer: String? = nil, webSources: [WebResult]? = nil, evidence: EvidenceBundle? = nil) {
         self.id = id; self.date = date; self.question = question; self.answer = answer; self.model = model
         self.seconds = seconds; self.firstTokenSeconds = firstTokenSeconds; self.automatic = automatic
-        self.screenshotPath = screenshotPath; self.webAnswer = webAnswer; self.webSources = webSources
+        self.screenshotPath = screenshotPath; self.webAnswer = webAnswer; self.webSources = webSources; self.evidence = evidence
     }
 
     // Tolerant decoding: answers saved before screenshot archiving have no path.
     enum CodingKeys: String, CodingKey {
-        case id, date, question, answer, model, seconds, firstTokenSeconds, automatic, screenshotPath, webAnswer, webSources
+        case id, date, question, answer, model, seconds, firstTokenSeconds, automatic, screenshotPath, webAnswer, webSources, evidence
     }
 
     public init(from decoder: Decoder) throws {
@@ -82,6 +83,7 @@ public struct SessionAnswerEvent: Codable, Sendable, Identifiable, Equatable {
         screenshotPath = try c.decodeIfPresent(String.self, forKey: .screenshotPath)
         webAnswer = try c.decodeIfPresent(String.self, forKey: .webAnswer)
         webSources = try c.decodeIfPresent([WebResult].self, forKey: .webSources)
+        evidence = try c.decodeIfPresent(EvidenceBundle.self, forKey: .evidence)
     }
 }
 

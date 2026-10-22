@@ -13,7 +13,7 @@ final class CompanionServer {
     static let shared = CompanionServer()
 
     private var listener: NWListener?
-    private final class Stream {
+    @MainActor private final class Stream {
         let connection: NWConnection
         var sending = false
         var pending: Data?
@@ -229,7 +229,7 @@ final class CompanionServer {
             let name = request.path == "/" ? "index.html" : "phone.js"
             guard let data = CompanionPage.asset(name) else { reply(connection, "503 Service Unavailable", "text/plain", Data("手机页面资源缺失，请重新安装。".utf8)); return }
             reply(connection, "200 OK", request.path == "/" ? "text/html; charset=utf-8" : "text/javascript; charset=utf-8", data,
-                ["Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self' wss:; frame-ancestors 'none'; base-uri 'none'"])
+                ["Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss:; frame-ancestors 'none'; base-uri 'none'"])
             return
         }
         guard CompanionHTTP.tokenMatches(request.query["t"], token) else {

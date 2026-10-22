@@ -159,7 +159,8 @@ final class CodexAppServerClient: @unchecked Sendable {
             startTask = next
             return next
         }
-        do { try await task.value }
+        do { try await CancellableTaskValue.value(task) }
+        catch is CancellationError { throw CancellationError() }
         catch {
             lock.withLock { if startTask == task { startTask = nil } }
             throw error

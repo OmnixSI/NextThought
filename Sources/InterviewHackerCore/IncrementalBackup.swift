@@ -39,8 +39,16 @@ public actor IncrementalBackupStore {
         for (prefix, inputDirectory) in directories {
             let directory = inputDirectory.standardizedFileURL.resolvingSymlinksInPath()
             guard Self.safePath(prefix) else { throw CocoaError(.fileReadInvalidFileName) }
-            guard fm.fileExists(atPath: directory.path) else { continue }
-            guard let enumerator = fm.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey], errorHandler: { _, _ in false }) else { throw CocoaError(.fileReadUnknown) }
+            do {
+                guard try directory.resourceValues(forKeys: [.isDirectoryKey]).isDirectory == true else { throw CocoaError(.fileReadUnsupportedScheme) }
+            } catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == NSFileReadNoSuchFileError {
+                continue // Optional data directories may not have been created yet.
+            }
+            var enumerationError: Error?
+            guard let enumerator = fm.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey, .isSymbolicLinkKey], errorHandler: { _, error in
+                enumerationError = error
+                return false
+            }) else { throw CocoaError(.fileReadUnknown) }
             for case let file as URL in enumerator {
                 let properties = try file.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey])
                 guard properties.isSymbolicLink != true else { throw CocoaError(.fileReadUnsupportedScheme) }
@@ -49,6 +57,9 @@ public actor IncrementalBackupStore {
                     try store(Data(contentsOf: file, options: .mappedIfSafe), prefix + "/" + relative)
                 }
             }
+            // A stopped enumerator is not evidence that every file was visited.
+            // Never publish/prune when any subtree could not be read.
+            if let enumerationError { throw enumerationError }
         }
         let fingerprint = Self.digest(Data(refs.keys.sorted().map { "\($0)\u{0}\(refs[$0]!)" }.joined(separator: "\n").utf8))
         let existing = try manifests()
@@ -63,6 +74,11 @@ public actor IncrementalBackupStore {
         try encoder.encode(point).write(to: url, options: .atomic)
         try prune(keep: max(1, keep), budget: budget)
         return url.resolvingSymlinksInPath()
+    }
+    public func storageBytes() throws -> Int64 {
+        try FileManager.default.contentsOfDirectory(at: objects, includingPropertiesForKeys: [.fileSizeKey]).reduce(0) {
+            $0 + Int64(try $1.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0)
+        }
     }
     public func restore(_ url: URL, into destination: URL) throws {
         // Recovery pointers must belong to this store; all objects are checked

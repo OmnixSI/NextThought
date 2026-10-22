@@ -219,6 +219,15 @@ extension AppState {
             AnswerRecord(question: "简单介绍一下你负责的部分", answer: "我负责订单服务的缓存层……", model: "gpt-5.5-mini", seconds: 3.1, firstTokenSeconds: 0.8, automatic: true),
             AnswerRecord(question: question, answer: reply, model: "gpt-5.5-mini", seconds: 4.2, firstTokenSeconds: 0.9, automatic: true),
         ]
+        currentAnswerID = answerHistory.last?.id
+        if let id = currentAnswerID {
+            answerCoordinator.begin(id: id, question: question)
+            answerCoordinator.update(id: id) { evidence in
+                evidence.evidence.retrieval = "演示：关键词查找，未调用模型"
+                evidence.evidence.materials = selectedExcerpts
+            }
+            answerCoordinator.finish(id: id, text: reply)
+        }
         let meta = SessionMeta(startedAt: started, endedAt: started.addingTimeInterval(2_640), mode: .interview,
                                title: "后端二面：缓存一致性与项目经历", audioSource: "Zoom · 后端工程师二面",
                                recognizer: "X-ASR 中英 · 480 ms + 整句精修", answerModel: "gpt-5.5-mini",

@@ -186,7 +186,7 @@ final class WorkspaceStore {
         let encoder = JSONLines.encoder()
         encoder.outputFormatting.insert(.prettyPrinted)
         guard let data = try? encoder.encode(workspace) else { return }
-        let work = {
+        let work: @Sendable () -> Void = {
             try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? data.write(to: url, options: .atomic)
         }

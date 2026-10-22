@@ -48,6 +48,38 @@ struct StabilityTests {
         #expect(FileManager.default.fileExists(atPath: first.path))
         let second = try await store.create(files: ["a": Data("new".utf8)], reason: "session", budget: 0)
         #expect(FileManager.default.fileExists(atPath: second.path))
+        #expect(try await store.storageBytes() > 0)
         #expect(try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("RestorePoints").path).count == 1)
     }
+    @Test func sessionPersistsEvidenceAndDecodesOlderAnswers() throws {
+        let id = UUID()
+        var evidence = EvidenceBundle(requestID: id)
+        evidence.notes = ["屏幕 OCR 降级为文字"]
+        evidence.search = .init(search: true, reason: "当前价格", query: "price", mechanism: "rule")
+        let record = SessionAnswerEvent(id: id, date: Date(), question: "价格？", answer: "待核实", model: "test", automatic: false, evidence: evidence)
+        let encoded = try JSONEncoder().encode(record)
+        #expect(try JSONDecoder().decode(SessionAnswerEvent.self, from: encoded).evidence == evidence)
+        var old = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        old.removeValue(forKey: "evidence")
+        #expect(try JSONDecoder().decode(SessionAnswerEvent.self, from: JSONSerialization.data(withJSONObject: old)).evidence == nil)
+    }
+
+    @Test func directoryEnumerationErrorCannotPublishOrPruneARecoveryPoint() async throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let source = root.appendingPathComponent("source")
+        let locked = source.appendingPathComponent("locked")
+        try fm.createDirectory(at: locked, withIntermediateDirectories: true)
+        try Data("must not disappear".utf8).write(to: locked.appendingPathComponent("original.txt"))
+        defer { try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: locked.path); try? fm.removeItem(at: root) }
+        let store = IncrementalBackupStore(root: root.appendingPathComponent("backups"))
+        let first = try await store.create(files: ["safe": Data("previous".utf8)], reason: "manual")
+        try fm.setAttributes([.posixPermissions: 0o000], ofItemAtPath: locked.path)
+        await #expect(throws: (any Error).self) {
+            try await store.create(files: ["safe": Data("changed".utf8)], directories: ["Originals": source], reason: "session", keep: 1)
+        }
+        let points = try fm.contentsOfDirectory(at: root.appendingPathComponent("backups/RestorePoints"), includingPropertiesForKeys: nil)
+        #expect(points.map { $0.resolvingSymlinksInPath() } == [first.resolvingSymlinksInPath()])
+    }
+
 }

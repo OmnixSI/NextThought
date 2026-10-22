@@ -997,17 +997,8 @@ private struct AnswerFooter: View {
                         .fixedSize(horizontal: true, vertical: false)
                 }
             }
-            if let id = state.displayedRecordID, let evidence = state.answerCoordinator.evidenceHistory[id] {
-                DisclosureGroup("本次依据") {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(evidence.retrieval).font(.caption)
-                        ForEach(evidence.materials, id: \.citation) { item in Text(item.citation).font(.caption).textSelection(.enabled) }
-                        if let screen = evidence.screen { Text("屏幕：" + screen.source + (evidence.screenImageAttached ? " · 已附图" : " · OCR 文字")).font(.caption) }
-                        if let search = evidence.search { Text("联网：" + search.reason).font(.caption) }
-                        ForEach(evidence.webSources, id: \.url) { source in if let url = URL(string: source.url) { Link(source.title, destination: url).font(.caption) } }
-                        ForEach(evidence.notes, id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
-                }.font(.caption)
+            if let id = state.displayedRecordID, let evidence = state.answerCoordinator.evidenceHistory[id] ?? state.answerHistory.first(where: { $0.id == id })?.evidence {
+                AnswerEvidenceDetails(evidence: evidence).id(id)
             }
             Text(meta)
                 .font(.system(size: 11)).foregroundStyle(.tertiary)
@@ -1156,5 +1147,48 @@ extension AppState {
     /// Whether a transcript line was (part of) a detected question.
     func isQuestionText(_ text: String) -> Bool {
         questionTexts.contains { $0 == text || (text.count >= 4 && $0.count >= 4 && ($0.hasSuffix(text) || text.hasSuffix($0))) }
+    }
+}
+
+private struct AnswerEvidenceDetails: View {
+    let evidence: EvidenceBundle
+    @State private var expanded = false
+    private var summary: String {
+        var parts = ["本次依据", "资料 \(evidence.materials.count)"]
+        if evidence.screen != nil { parts.append(evidence.screenImageAttached ? "屏幕已附图" : "屏幕文字") }
+        if !evidence.webSources.isEmpty { parts.append("联网 \(evidence.webSources.count)") }
+        return parts.joined(separator: " · ")
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if !evidence.notes.isEmpty {
+                Button { expanded = true } label: {
+                    Label("本次回答有 \(evidence.notes.count) 项限制 · 查看说明", systemImage: "exclamationmark.triangle")
+                        .font(.system(size: 12)).foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }.buttonStyle(.plain)
+            }
+            DisclosureGroup(summary, isExpanded: $expanded) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(evidence.retrieval).foregroundStyle(.secondary)
+                    ForEach(Array(evidence.materials.enumerated()), id: \.offset) { _, item in
+                        DisclosureGroup(item.citation) {
+                            Text(item.text).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
+                        }
+                    }
+                    if let screen = evidence.screen {
+                        Label(screen.source + (evidence.screenImageAttached ? " · 已附图" : " · OCR 文字"), systemImage: "display")
+                    }
+                    if let search = evidence.search { Label(search.reason, systemImage: "globe") }
+                    ForEach(evidence.webSources, id: \.url) { source in
+                        if let url = URL(string: source.url) { Link(source.title, destination: url) }
+                    }
+                    ForEach(evidence.notes, id: \.self) { note in
+                        Label(note, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
+            }.font(.system(size: 12))
+        }
     }
 }

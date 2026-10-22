@@ -29,9 +29,16 @@ jobs:
       - name: Build and test
         run: swift test --disable-sandbox
       - name: Codex transport regression (offline)
-        run: ./Tools/Validation/CodexTransport/run.sh
+        run: |
+          ./Tools/Validation/CodexTransport/run.sh
+          ./Tools/Validation/LegacyOffice/run.sh
       - name: Document normalization regression (offline)
         run: python3 -m unittest discover -s Tools/Validation/Documents -p 'test_*.py'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Companion protocols and iOS SDK build
+        run: scripts/verify-companions.sh --require-ios
       - name: Release build
         run: swift build --disable-sandbox -c release
       - name: Source snapshot for reproducible review

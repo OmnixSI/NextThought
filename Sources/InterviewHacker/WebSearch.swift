@@ -209,6 +209,7 @@ extension AppState {
         answerCoordinator.update(id: id) { $0.evidence.webSources = sources }
         if let position = answerHistory.firstIndex(where: { $0.id == id }) {
             answerHistory[position].webAnswer = text; answerHistory[position].webSources = sources
+            answerHistory[position].evidence?.webSources = sources
             recordAnswer(answerHistory[position])
         }
     }

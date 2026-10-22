@@ -9,6 +9,10 @@ enum AppPaths {
         if let custom = ProcessInfo.processInfo.environment["INTERVIEWHACKER_DATA_DIR"], !custom.isEmpty {
             return URL(fileURLWithPath: custom, isDirectory: true)
         }
+        if Bundle.main.bundleIdentifier?.hasPrefix("com.interviewhacker.app.ci") == true,
+           Bundle.main.object(forInfoDictionaryKey: "InterviewHackerReviewMode") as? Bool == true {
+            return Bundle.main.bundleURL.deletingLastPathComponent().appendingPathComponent(".interviewhacker-review", isDirectory: true)
+        }
         return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("InterviewHacker", isDirectory: true)
     }()

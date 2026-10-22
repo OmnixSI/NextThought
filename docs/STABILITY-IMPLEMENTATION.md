@@ -6,11 +6,13 @@ Checkout stays in the interviewhack project. No production application/data repl
 
 ## Delivery sequence
 
-- [ ] B: coherent answer state; recoverable SSE/polling; event backups off the UI thread.
-- [ ] C: durable pre-meeting document jobs; real progress; resumable parsing/indexing; formats and capacity.
-- [ ] D: selected screen target, fresh question context, local OCR enhancement, evidence/search routing.
-- [ ] E: encrypted relay and browser fallback, container deployment.
-- [ ] F: native iOS/Android companion and BLE transport.
+- [x] B: coherent answer state; recoverable SSE/polling; event backups off the UI thread.
+- [x] C: durable pre-meeting document jobs; real progress; resumable parsing/indexing; formats and capacity.
+- [x] D: selected screen target, fresh question context, local OCR enhancement, evidence/search routing.
+- [x] E: encrypted relay and browser fallback, container deployment.
+- [x] F: native iOS/Android companion and BLE transport.
+
+Checked boxes indicate implementation delivered on stacked draft PRs; release acceptance remains pending.
 
 ## Validation rules
 
@@ -101,3 +103,23 @@ Qwen3 实际向量评估：24 份自编事实文档、48 条同义问题、12 �
 验证：166 桌面 Swift 测试通过，含真实跨语言 AES-GCM 向量、乱序/重复/超时片、丢失确认重传、错误确认不能前进以及只发送最新等待状态。独立 Swift 手机共用包编译并通过 3 项测试，其中真实 TCP 验证 SSE 切题、空的新答案、命令一次执行、SSE 静默后的快照补齐。Android 真实构建产生约 10 MB 调试 APK，3 项 JVM 协议测试通过；Android 15 ARM64 模拟器的 Compose/真实 TCP 整链路仪器测试通过，验证同一组切题/操作/静默恢复场景。
 
 iOS UI 未在本机编译：本机只有 Command Line Tools，缺少完整 Xcode/iOS SDK。已提供可确定性重建的 Xcode 项目和手动构建工作流；未提供 IPA，不宣称 iPhone 真机已通过。模拟器不会证明 BLE 射频行为；Mac/iPhone/Android 三方真实 BLE、实体两平台各 60 分钟、锁屏和切网仍是发布门槛。操作和构建说明、协议与回滚见 Mobile/README.md。
+
+
+## G — 复核加固与隔离评审包
+
+屏幕增强改为在稳定帧中定位实际变化的像素区域，复用区域外文字；记录增强区域与截取区域，避免每次整屏重做重 OCR。按问题保存依据、检索策略、屏幕来源、联网决策和降级原因到会话归档，旧会话缺字段仍可读。取消一个请求不会销毁其他请求正在共用的预热任务。
+
+备份解压前检查路径、链接、重复项、条目数量、扩展容量及磁盘空间；在合并前预检 JSON、配置和原文件哈希。实际归档往返测试恢复原文件；人为破坏原文件后导入会在任何场景合并前失败。会话大文件复制移出主线程，恢复点空间超预算时保留可用备份并提示。
+
+模型联网复核改为精简提示并复用预热会话，区分超时、无效 JSON、API 配置和 HTTP 错误。最终同一 100 题回归仍为 48 条规则、52 条三秒超时回退，召回 96%、稳定题误触发 0%；没有把未解决的模型延迟写成已通过。
+
+`./scripts/build-stability-review.sh` 在隔离 APFS 卷中生成 ARM64 macOS 评审应用并输出 ZIP，使用独立 bundle ID 与应用旁 `.interviewhacker-review` 数据目录，保留生产安装；本地 ad-hoc 签名并验证，不属于公证发行。`dist/review-build.json` 记录构建提交与 SHA-256。离线测试、真实本地协议测试与设备验收边界见 `STABILITY-REVIEW.md`。
+
+
+## Astra 视觉与交互打磨
+
+应用户要求，由 Astra 审查桌面、网页及两种原生手机界面，结果见 `DESIGN-REVIEW.md`。修正准备队列异常被“0 项未完成”掩盖、依据限制全折叠、三种二维码并列、停止按钮藏在横向栏等问题。配对采用网页/App 两种入口，备用连接收进高级选项；历史位置、触控目标和主操作统一，禁用态有明确视觉反馈。已有原生图标表达各项任务，另补原创对话框/波形 SVG 标识，实际用于 Android adaptive launcher、网页 favicon 与 iOS AppIcon；未新增装饰插画。
+
+手机三端增加独立的操作状态：立即显示发送中；相同动作等待时抑制重复；普通快照不覆盖未确认提示；HTTP 成功或经认证 ACK 才标 Mac 已确认。15 秒未确认后可在原始发送起四分钟内重试，沿用原 UUID。网页覆盖超时、在线状态不清除失败、重试 ID 不变和回执；共享 Swift 真实 TCP 验证重复点击抑制与确认。
+
+最终自动化：171 桌面 Swift 测试、3 个手机共享 Swift 测试、3 个 Android JVM 测试、Android 15 ARM64 模拟器精确指定的真实 TCP/Compose 仪器测试、3 个 Node WebSocket 测试、网页恢复与操作反馈回归、7 个 Python 文档测试及真实 MCP 只读/路径隔离探针通过。真实打包应用的 Vision/冻结帧/旧答案隔离测试通过。桌面 demo 自渲染、真实 IAB 中转网页、Android 模拟器截图已复核；均不冒充真实会议或实体手机证据。
