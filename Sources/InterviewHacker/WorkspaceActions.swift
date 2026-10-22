@@ -315,19 +315,16 @@ extension AppState {
 
     func importArchive(_ url: URL, applySettings: Bool) {
         guard !isRunning else { errorMessage = "请先停止辅助再导入数据。"; return }
-        do {
-            let summary = try DataBackup.importArchive(url, applySettings: applySettings)
-            archive.load()
-            rebuildContextIndex()
-            dataStatus = summary.description + (applySettings && summary.settingsApplied > 0 ? " 设置在重新打开应用后完全生效。" : "")
-        } catch {
-            errorMessage = "导入失败：\(error.localizedDescription)"
+        runDataTask("正在校验并恢复…") {
+            let summary = try await DataBackup.importArchive(url, applySettings: applySettings)
+            self.archive.load(); self.rebuildContextIndex()
+            return summary.description + (applySettings && summary.settingsApplied > 0 ? " 设置在重新打开应用后完全生效。" : "")
         }
     }
 
     func backupNow() {
         runDataTask("正在备份…") {
-            let url = try DataBackup.automaticBackup(reason: "manual")
+            let url = try await DataBackup.automaticBackup(reason: "manual")
             return "已备份到 \(url.lastPathComponent)。"
         }
     }

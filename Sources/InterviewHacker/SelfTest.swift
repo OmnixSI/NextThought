@@ -144,7 +144,7 @@ enum SelfTest {
         try FileManager.default.removeItem(at: AppPaths.workspaces)
         try FileManager.default.removeItem(at: AppPaths.sessions)
         store.replaceAll([Workspace(name: "新机器", mode: .general)])
-        let summary = try DataBackup.importArchive(exportFile, applySettings: false)
+        let summary = try await DataBackup.importArchive(exportFile, applySettings: false)
         archive.load()
         try await Task.sleep(for: .milliseconds(500))
         try expect(store.workspaces.count == before + 1, "workspaces after import: \(store.workspaces.count), expected \(before + 1)")
@@ -155,7 +155,7 @@ enum SelfTest {
         try expect(archive.sessions.contains { $0.id == meta.id && $0.workspaceID == interview.id }, "session lost in round trip")
 
         // Importing the same file again changes nothing.
-        let again = try DataBackup.importArchive(exportFile, applySettings: false)
+        let again = try await DataBackup.importArchive(exportFile, applySettings: false)
         try expect(again.workspacesAdded == 0 && again.sessionsAdded == 0, "re-import duplicated data: \(again.description)")
         try expect(!DataBackup.listBackups().isEmpty, "no automatic backup taken before import")
         return summary.description

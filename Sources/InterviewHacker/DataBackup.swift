@@ -2,7 +2,7 @@ import Foundation
 import InterviewHackerCore
 
 /// One-click export / import of settings, workspaces and session records, plus
-/// automatic backups (daily, before every update install and before every import).
+/// event-triggered, deduplicated recovery points.
 /// Archives are ZIP files with the `.ihbackup` extension; see `BackupManifest`.
 enum DataBackup {
     struct ImportSummary {
@@ -72,20 +72,26 @@ enum DataBackup {
     /// local edits win over older copies in the archive. A backup of the current state
     /// is taken first.
     @MainActor
-    static func importArchive(_ source: URL, applySettings: Bool) throws -> ImportSummary {
+    static func importArchive(_ source: URL, applySettings: Bool) async throws -> ImportSummary {
         let staging = try makeStaging()
         defer { try? FileManager.default.removeItem(at: staging.deletingLastPathComponent()) }
-        try Shell.check("/usr/bin/ditto", ["-x", "-k", source.path, staging.path], "解压备份")
+        if source.pathExtension == "ihrestore" {
+            try await recoveryStore.restore(source, into: staging)
+        } else {
+            try await Task.detached(priority: .utility) {
+                try Shell.check("/usr/bin/ditto", ["-x", "-k", source.path, staging.path], "解压备份")
+            }.value
+        }
         // ditto keeps the top-level folder name of the archive.
         let root = try locateRoot(in: staging)
         let manifest = try JSONLines.decoder().decode(BackupManifest.self, from: Data(contentsOf: root.appendingPathComponent("manifest.json")))
         try manifest.validate()
 
         WorkspaceStore.shared.flush()
-        _ = try? automaticBackup(reason: "import")
+        _ = try await automaticBackup(reason: "import")
 
         var summary = ImportSummary()
-        let incoming = readWorkspaces(in: root)
+        let incoming = await Task.detached(priority: .utility) { readWorkspaces(in: root) }.value
         let merged = BackupMerge.workspaces(existing: WorkspaceStore.shared.workspaces, incoming: incoming)
         WorkspaceStore.shared.replaceAll(merged.merged)
         summary.workspacesAdded = merged.added
@@ -122,41 +128,57 @@ enum DataBackup {
 
     // MARK: Automatic backups
 
-    /// Snapshot into `Backups/` (keeps the newest 10). Secrets are never included.
+    private static let recoveryStore = IncrementalBackupStore(root: AppPaths.backups)
+
+    /// Capture mutable UI state first; all serialization, hashing, copying and
+    /// recovery-point maintenance runs away from the main actor.
     @MainActor
     @discardableResult
-    static func automaticBackup(reason: String) throws -> URL {
+    static func automaticBackup(reason: String) async throws -> URL {
         WorkspaceStore.shared.flush()
-        try FileManager.default.createDirectory(at: AppPaths.backups, withIntermediateDirectories: true)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        let url = AppPaths.backups.appendingPathComponent("auto-\(formatter.string(from: Date()))-\(reason).ihbackup")
-        try exportAll(to: url, includeSecrets: false, workspaces: WorkspaceStore.shared.workspaces, skills: SkillLibrary.shared.skills)
-        UserDefaults.standard.set(Date(), forKey: "lastAutomaticBackup")
-        prune(keep: 10)
+        await SessionArchive.shared.flush()
+        let workspaces = WorkspaceStore.shared.workspaces, skills = SkillLibrary.shared.skills
+        let settings = SettingsSnapshot.filter(UserDefaults.standard.dictionaryRepresentation())
+        let settingsData = try PropertyListSerialization.data(fromPropertyList: settings, format: .xml, options: 0)
+        let version = appVersion, build = appBuild
+        let files = try await Task.detached(priority: .utility) { () -> [String: Data] in
+            let encoder = JSONLines.encoder(); encoder.outputFormatting.insert(.sortedKeys)
+            var files: [String: Data] = ["settings.plist": settingsData, "skills.json": try encoder.encode(skills)]
+            for workspace in workspaces { files["Workspaces/\(workspace.id.uuidString).json"] = try encoder.encode(workspace) }
+            let sessions = ((try? FileManager.default.contentsOfDirectory(at: AppPaths.sessions, includingPropertiesForKeys: nil)) ?? []).filter { UUID(uuidString: $0.lastPathComponent) != nil }
+            var manifest = BackupManifest(kind: .full, appVersion: version, appBuild: build, includesSecrets: false, workspaceCount: workspaces.count, sessionCount: sessions.count)
+            // The point has its own date. A volatile archive date must not defeat deduplication.
+            manifest.createdAt = Date(timeIntervalSince1970: 0)
+            files["manifest.json"] = try encoder.encode(manifest)
+            return files
+        }.value
+        let url = try await recoveryStore.create(files: files, directories: ["Sessions": AppPaths.sessions,
+            "Originals": AppPaths.root.appendingPathComponent("Originals", isDirectory: true)], reason: reason)
         Diagnostics.record("backup.automatic", ["reason": reason])
         return url
     }
 
-    /// Daily backup at launch (skipped when one was made in the last 24 hours).
     @MainActor
-    static func dailyBackupIfNeeded() {
+    static func afterSession() {
         guard UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true else { return }
-        if let last = UserDefaults.standard.object(forKey: "lastAutomaticBackup") as? Date, Date().timeIntervalSince(last) < 86_400 { return }
-        _ = try? automaticBackup(reason: "daily")
+        Task {
+            do { _ = try await automaticBackup(reason: "session") }
+            catch { AppState.shared.dataStatus = "会议已保存，恢复点创建失败：" + error.localizedDescription }
+        }
     }
 
     static func listBackups() -> [BackupFile] {
-        let files = (try? FileManager.default.contentsOfDirectory(at: AppPaths.backups, includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey])) ?? []
-        return files.filter { $0.pathExtension == "ihbackup" }.compactMap { url in
+        let fm = FileManager.default
+        let legacy = (try? fm.contentsOfDirectory(at: AppPaths.backups, includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey])) ?? []
+        let points = (try? fm.contentsOfDirectory(at: AppPaths.backups.appendingPathComponent("RestorePoints"), includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey])) ?? []
+        return (legacy + points).filter { ["ihbackup", "ihrestore"].contains($0.pathExtension) }.compactMap { url in
             let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+            if url.pathExtension == "ihrestore", let data = try? Data(contentsOf: url), let point = try? JSONDecoder().decode(RestorePoint.self, from: data) {
+                return BackupFile(url: url, date: point.createdAt, size: values?.fileSize ?? 0, reason: point.reason)
+            }
             let reason = url.deletingPathExtension().lastPathComponent.components(separatedBy: "-").last ?? ""
             return BackupFile(url: url, date: values?.contentModificationDate ?? .distantPast, size: values?.fileSize ?? 0, reason: reason)
         }.sorted { $0.date > $1.date }
-    }
-
-    private static func prune(keep: Int) {
-        for file in listBackups().dropFirst(keep) { try? FileManager.default.removeItem(at: file.url) }
     }
 
     // MARK: Helpers

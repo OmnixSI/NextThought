@@ -26,6 +26,7 @@ extension AppState {
         guard activeArchiveID != nil else { return }
         activeArchiveID = nil
         guard let meta = archive.finish() else { return }
+        DataBackup.afterSession()
         if autoSummarize { generateSummary(for: meta.id) }
     }
 
