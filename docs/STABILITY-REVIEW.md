@@ -4,7 +4,7 @@
 
 ## 可审查交付
 
-- Mac ARM64 独立评审应用：运行 `./scripts/build-stability-review.sh`，输出 `dist/InterviewHacker-Stability-Review-macOS.zip` 与解压应用。
+- Mac ARM64 独立评审应用：运行 `./scripts/build-stability-review.sh`，输出 `dist/InterviewHacker-Stability-Review-macOS.zip` 。
 - 手机网页：`Resources/Companion/`，与 Mac 和中转共用同一 bundle。
 - 中转：`CompanionRelay/`，含容器、配置、协议及部署说明。尚未部署公网域名。
 - Android：`Mobile/Android/`，实际构建并执行 Android 15 ARM64 模拟器测试；APK 可从 `dist/InterviewHacker-Companion-Android-debug.apk` 安装。
@@ -31,7 +31,7 @@
 
 ## 安装、迁移与恢复
 
-1. 将 ZIP 解压到本项目 `dist/` 的可写目录，运行 **InterviewHacker Stability Review.app**。它使用独立 bundle ID、Keychain 范围和同级 `.interviewhacker-review` 数据目录。此包为本地 ad-hoc 签名，未公证；不是对外分发版本。没有替换 `/Applications` 的应用。
+1. 将 ZIP 解压到本地可写目录（避免会自动为 `.app` 添加 FinderInfo 的同步目录），运行 **InterviewHacker Stability Review.app**。它使用独立 bundle ID、Keychain 范围和同级 `.interviewhacker-review` 数据目录。此包为本地 ad-hoc 签名，未公证；不是对外分发版本。没有替换 `/Applications` 的应用。
 2. 初次运行从空数据开始。需要已有场景时，先在正式应用手动导出 `.ihbackup`，再在评审应用“设置→备份”导入。不要直接覆盖生产目录。
 3. 导入前会创建恢复点。资料结构新增字段可选，旧场景、会话和完整备份继续可读；SQLite preparation 独立于旧资料。语义索引是缓存，可重新准备，不能代替原文件。
 4. 自动恢复点位于评审数据目录 `Backups/`：清单与内容对象必须一起保留；单独复制 `.ihrestore` 清单无法恢复。手动 `.ihbackup` 是独立可移植文件。
@@ -48,3 +48,6 @@
 Astra 设计审查及实施记录见 `DESIGN-REVIEW.md`。实际修正了准备异常摘要、依据限制、手机停止按钮、历史位置、双路线配对、触控目标与禁用态；独立操作确认已在真实中转网页及原生 TCP 测试中验证。Android 浅色系统状态栏白字问题经新截图确认已修正。桌面与手机示例截图使用作者构造内容，均不代表真实会议。
 
 Android 仪器测试曾被 Gradle 默认发现的另一台并行模拟器一并运行；Gradle 随后自动移除本次应用/测试包，检查确认未残留。最终验收改为显式指定本项目 IHReview 设备（emulator-5556），单独重跑成功。后续说明要求通过 `ANDROID_SERIAL` 限定设备；没有读取其他项目文件、停止其他模拟器或修改其配置。
+
+
+Mac ZIP 已在项目内隔离 APFS 卷中解压，签名严格验证、自检执行、执行后再次验签均通过，ZIP 内无 AppleDouble 条目。当前 Documents 的文件提供器会给松散 `.app` 自动附加 FinderInfo，因此不把该同步目录里的副本作为签名交付；脚本仅输出并验证 ZIP。程序运行可用但元数据验签失败的同步副本已移到本地测试归档。ZIP 不包含模型、运行环境、生产数据或用户论文。

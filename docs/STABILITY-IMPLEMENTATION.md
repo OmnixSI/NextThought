@@ -113,7 +113,7 @@ iOS UI 未在本机编译：本机只有 Command Line Tools，缺少完整 Xcode
 
 模型联网复核改为精简提示并复用预热会话，区分超时、无效 JSON、API 配置和 HTTP 错误。最终同一 100 题回归仍为 48 条规则、52 条三秒超时回退，召回 96%、稳定题误触发 0%；没有把未解决的模型延迟写成已通过。
 
-`./scripts/build-stability-review.sh` 生成 ARM64 macOS 评审应用和 ZIP，使用独立 bundle ID 与应用旁 `.interviewhacker-review` 数据目录，保留生产安装；本地 ad-hoc 签名并验证，不属于公证发行。`dist/review-build.json` 记录构建提交与 SHA-256。离线测试、真实本地协议测试与设备验收边界见 `STABILITY-REVIEW.md`。
+`./scripts/build-stability-review.sh` 在隔离 APFS 卷中生成 ARM64 macOS 评审应用并输出 ZIP，使用独立 bundle ID 与应用旁 `.interviewhacker-review` 数据目录，保留生产安装；本地 ad-hoc 签名并验证，不属于公证发行。`dist/review-build.json` 记录构建提交与 SHA-256。离线测试、真实本地协议测试与设备验收边界见 `STABILITY-REVIEW.md`。
 
 
 ## Astra 视觉与交互打磨

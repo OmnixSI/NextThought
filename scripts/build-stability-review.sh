@@ -33,12 +33,13 @@ xattr -cr "$ih_review_app"
 codesign --force --sign - --identifier com.interviewhacker.app.ci.review "$ih_review_app"
 codesign --verify --deep --strict "$ih_review_app"
 lipo "$ih_review_app/Contents/MacOS/InterviewHacker" -verify_arch arm64
-rm -f dist/InterviewHacker-Stability-Review-macOS.zip
+if [ -f dist/InterviewHacker-Stability-Review-macOS.zip ]; then mv dist/InterviewHacker-Stability-Review-macOS.zip "$ih_review_stage/previous.zip"; fi
 ditto -c -k --keepParent --norsrc --noextattr "$ih_review_app" dist/InterviewHacker-Stability-Review-macOS.zip
-# Keep a usable local app beside its own review data directory.
-rm -rf 'dist/InterviewHacker Stability Review.app'
-ditto --norsrc --noextattr "$ih_review_app" 'dist/InterviewHacker Stability Review.app'
-codesign --verify --deep --strict 'dist/InterviewHacker Stability Review.app'
+# Verify the distributable after extraction on APFS. File providers may inject
+# FinderInfo into a loose .app under Documents, so do not treat that copy as the artifact.
+mkdir -p "$ih_review_mount/zip-check"
+ditto -x -k dist/InterviewHacker-Stability-Review-macOS.zip "$ih_review_mount/zip-check"
+codesign --verify --deep --strict "$ih_review_mount/zip-check/InterviewHacker Stability Review.app"
 python3 - <<'PY'
 import hashlib,json,subprocess
 from pathlib import Path
