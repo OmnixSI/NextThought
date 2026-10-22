@@ -37,14 +37,22 @@ final class CompanionServer {
     private(set) var pairingURL: URL?
     private(set) var pairing = CompanionPairing()
     let relay = CompanionRelay()
+    let bluetooth = CompanionBluetooth()
+    var bluetoothEnabled = false
+    func setBluetooth(enabled: Bool) {
+        bluetoothEnabled = enabled
+        if enabled { bluetooth.start(pairing: pairing); bluetooth.publish(currentEnvelope()) } else { bluetooth.stop() }
+    }
     func configureRelay(base: URL) async throws -> URL {
         let p = try await relay.start(base: base, local: pairing)
         pairing = p
+        if bluetoothEnabled { bluetooth.start(pairing: pairing) }
         if let local = pairingURL { pairingURL = try p.url(base: local) }
         return try p.url(base: base)
     }
     func disableRelay() {
         relay.stop(); pairing.relay = nil; pairing.subscriber = nil
+        if bluetoothEnabled { bluetooth.start(pairing: pairing) }
         if let local = pairingURL { pairingURL = try? pairing.url(base: local) }
     }
 
@@ -53,7 +61,7 @@ final class CompanionServer {
     func start(preferredPort: Int, onStatus: @escaping (String, String?) -> Void) {
         stop()
         token = Self.randomToken()
-        pairing = CompanionPairing(token: token)
+        pairing = CompanionPairing(token: token, ble: UUID().uuidString)
         let base = (1_024...65_000).contains(preferredPort) ? preferredPort : 8_765
         let candidates = Array(base..<(base + 20))
         listen(on: candidates, index: 0, onStatus: onStatus)
@@ -68,6 +76,7 @@ final class CompanionServer {
                     self.lastHeartbeat = Date()
                     self.sendToStreams(self.currentEnvelope().sse(event: "heartbeat"))
                     self.relay.publish(self.currentEnvelope())
+                    self.bluetooth.publish(self.currentEnvelope())
                 }
                 for (key, stream) in self.streams where stream.sending && Date().timeIntervalSince(stream.sentAt) > 8 {
                     stream.connection.cancel(); self.streams.removeValue(forKey: key)
@@ -132,7 +141,7 @@ final class CompanionServer {
 
     func stop() {
         observing = false
-        relay.stop()
+        relay.stop(); bluetooth.stop(); bluetoothEnabled = false
         heartbeat?.cancel(); heartbeat = nil
         listener?.cancel(); listener = nil
         streams.values.forEach { $0.connection.cancel() }; streams.removeAll()
@@ -156,6 +165,7 @@ final class CompanionServer {
         lastSent = current.snapshot
         sendToStreams(current.sse())
         relay.publish(current)
+        bluetooth.publish(current)
     }
 
     private func sendToStreams(_ data: Data) {

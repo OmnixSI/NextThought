@@ -18,3 +18,5 @@ Mobile/Android/.gradle/
 Mobile/Android/**/build/
 Mobile/Android/local.properties
 Mobile/iOS/.build/
+Mobile/Shared/.build/
+Mobile/iOS/DerivedData/

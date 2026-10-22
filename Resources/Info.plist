@@ -34,6 +34,8 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>InterviewHacker uses Bluetooth only when you enable the paired native phone backup connection.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>InterviewHacker serves the optional phone companion page on your local network when you turn it on.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

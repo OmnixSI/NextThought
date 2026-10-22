@@ -277,6 +277,7 @@ extension AppState {
             CompanionServer.shared.start(preferredPort: companionPort) { [weak self] status, address in
                 self?.companionStatus = status
                 self?.companionAddress = address
+                if address != nil, self?.companionBluetoothEnabled == true { self?.setCompanionBluetooth(enabled: true) }
                 if address != nil, self?.companionRelayEnabled == true { self?.setCompanionRelay(enabled: true) }
             }
         } else {
@@ -284,6 +285,13 @@ extension AppState {
             companionAddress = nil
             companionStatus = "未开启"
         }
+    }
+
+    func setCompanionBluetooth(enabled: Bool) {
+        companionBluetoothEnabled = enabled
+        CompanionServer.shared.bluetooth.status = { [weak self] in self?.companionBluetoothStatus = $0 }
+        CompanionServer.shared.setBluetooth(enabled: enabled && companionEnabled)
+        if !enabled { companionBluetoothStatus = "未开启" }
     }
 
     func setCompanionRelay(enabled: Bool) {
