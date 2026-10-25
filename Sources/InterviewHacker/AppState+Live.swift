@@ -23,7 +23,7 @@ extension AppState {
 
     /// Only the system-audio channel (the other side) is fed here.
     func processRecognized(_ text: String, isFinal: Bool, key: String?, allowAutomatic: Bool) {
-        tracker.mode = sessionMode
+        tracker.mode = activeWorkspace.effectiveMode
         let decision = tracker.ingest(text, isFinal: isFinal, utteranceKey: key)
         if isFinal, decision == .none, liveCandidate?.utteranceKey == key || key == nil { liveCandidate = nil }
         applyCandidateDecision(decision, allowAutomatic: allowAutomatic)

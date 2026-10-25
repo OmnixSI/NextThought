@@ -81,14 +81,14 @@ extension AppState {
         guard !isRunning else { errorMessage = "会议中保持当前资料版本；请结束会议后切换场景。"; return }
         cancelAnswer()
         workspaces.activate(id)
-        tracker.mode = sessionMode
+        tracker.mode = activeWorkspace.effectiveMode
         rebuildContextIndex()
         Diagnostics.record("workspace.switched", ["mode": sessionMode.rawValue])
     }
 
     func createWorkspace(mode: SessionMode, name: String? = nil) {
         workspaces.create(mode: mode, name: name)
-        tracker.mode = sessionMode
+        tracker.mode = activeWorkspace.effectiveMode
         rebuildContextIndex()
     }
 

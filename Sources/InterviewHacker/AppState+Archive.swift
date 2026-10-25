@@ -11,11 +11,13 @@ extension AppState {
     func beginArchive(startedAt: Date) {
         guard recordSessions else { activeArchiveID = nil; return }
         let workspace = activeWorkspace
-        let meta = SessionMeta(startedAt: startedAt, mode: workspace.mode,
+        var meta = SessionMeta(startedAt: startedAt, mode: workspace.mode,
+                               title: plannedMeeting?.title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 },
                                audioSource: captureTargets.first { $0.id == selectedTargetID }?.title ?? "",
                                recognizer: recognizerDescription,
                                answerModel: currentAnswerModel,
                                workspaceID: workspace.id, workspaceName: workspace.name)
+        if workspace.mode == .custom { meta.typeName = workspace.typeDisplayName }
         let context = SessionContextSnapshot(mode: workspace.mode, style: workspace.style, preferences: workspace.preferences,
                                              profile: workspace.materialText, documents: workspace.documents.filter(\.enabled))
         archive.begin(meta, context: context)

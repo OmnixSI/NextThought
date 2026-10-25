@@ -267,6 +267,10 @@ final class AppState {
 
     // MARK: Live session
     var section: AppSection = .home
+    /// The meeting being prepared on the home page (nil shows the home overview).
+    var meetingDraft: MeetingDraft?
+    /// Title, carry-over and series of the meeting that starts next / is running.
+    var plannedMeeting: MeetingPlan?
     var isRunning = false
     var isPaused = false
     var isChangingSession = false
@@ -564,6 +568,8 @@ final class AppState {
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
         guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
+        // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
+        automaticAnswers = typeDefaults.liveMode == .prompting
         documentPreparation.pauseForMeeting()
         Task { await SemanticWorkspacePreparation.shared.cancelAll() }
         cancelAnswer()
@@ -591,7 +597,7 @@ final class AppState {
             let startedAt = Date()
             sessionStartedAt = startedAt
             entries = []
-            tracker = QuestionCandidateTracker(mode: sessionMode)
+            tracker = QuestionCandidateTracker(mode: activeWorkspace.effectiveMode)
             liveCandidate = nil; suggestedQuestions = []; questionTexts = []; appleUtteranceCounter = [:]
             deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
             answerHistory = []; historyCursor = nil; webLookups = [:]; showOriginalAnswer = []; currentAnswerID = nil; webLookupTask?.cancel()
@@ -600,7 +606,7 @@ final class AppState {
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
-            preparedWorkspace = activeWorkspace
+            preparedWorkspace = await meetingWorkspaceForStart()
             isRunning = true
             documentPreparation.pauseForMeeting()
             do {
@@ -731,6 +737,7 @@ final class AppState {
         transcriptionStatus = "已停止"
         finishArchive()
         preparedWorkspace = nil
+        plannedMeeting = nil
         rebuildContextIndex()
         sessionStartedAt = nil
         isStopping = false
@@ -850,7 +857,7 @@ final class AppState {
         }
         let makeParts = { (webSearch: Bool, results: [WebResult]?, excerpts: [ContextExcerpt], screen: ScreenContext?, slide: ContextExcerpt?, image: Bool) in
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: image,
-                preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
+                preferences: workspace.preferences, mode: workspace.effectiveMode, style: workspace.style, excerpts: excerpts,
                 experience: workspace.experienceNotes(), skills: allSnippets, webResults: results, webSearch: webSearch,
                 screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide)
         }

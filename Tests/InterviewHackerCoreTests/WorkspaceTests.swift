@@ -14,7 +14,7 @@ struct WorkspaceTests {
         }
         let decoded = try JSONDecoder().decode([SessionMode].self, from: Data(#"["meeting","interview","lesson","futuremode"]"#.utf8))
         #expect(decoded == [.meeting, .interview, .lesson, .general])
-        #expect(SessionMode.meeting.title == "商务会议")
+        #expect(SessionMode.meeting.title == "工作会议")
     }
 
     @Test func workspaceDecodesOlderFilesAndBuildsMaterial() throws {

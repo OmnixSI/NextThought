@@ -84,7 +84,7 @@ struct HistoryView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("会话记录").font(.system(size: 15, weight: .semibold))
+                    Text("所有会议").font(Typo.section)
                     Text(state.recordSessions ? "自动保存 · 不含原始音频" : "记录已关闭（设置 → 记录）")
                         .font(.system(size: 11)).foregroundStyle(state.recordSessions ? Color.secondary : Color.orange)
                 }
@@ -94,7 +94,7 @@ struct HistoryView: View {
                     .disabled(archive.sessions.isEmpty).help("删除全部记录")
             }
             MenuPicker(selection: Binding(get: { state.historyWorkspaceFilter }, set: { state.historyWorkspaceFilter = $0 }),
-                       options: [(UUID?.none, "全部场景")] + state.workspaces.workspaces.map { (Optional($0.id), $0.name) })
+                       options: [(UUID?.none, String(localized: "全部系列"))] + state.workspaces.workspaces.map { (Optional($0.id), $0.name) })
             filterBar
             if archive.sessions.isEmpty {
                 ContentUnavailableView("还没有记录", systemImage: "clock",
@@ -161,7 +161,7 @@ struct HistoryView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Color.secondary)
-            TextField("搜索标题、场景或问题", text: $query)
+            TextField("搜索标题、系列或问题", text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12.5))
             if !query.isEmpty {

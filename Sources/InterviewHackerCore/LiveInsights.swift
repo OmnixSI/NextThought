@@ -166,7 +166,10 @@ public struct SlideNotes: Sendable, Equatable, Codable {
         case .meeting: role = "我在会议上讲这一页演示文稿。"
         case .lesson: role = "老师正在讲这一页课件，我是听课的学生，需要理解这一页。"
         case .interview: role = "我在面试中展示这一页材料。"
-        case .general: role = "我正在讲这一页幻灯片。"
+        case .labMeeting: role = "我在组会上汇报，正在讲这一页幻灯片。"
+        case .client: role = "我在和客户沟通，正在讲这一页演示文稿。"
+        case .discussion: role = "我在小组讨论中展示这一页材料。"
+        case .general, .custom: role = "我正在讲这一页幻灯片。"
         }
         let system = """
         你是 InterviewHacker 的讲稿助手。根据幻灯片文字和相关资料，写出这一页的口头讲解提示，显示在提词器上照着讲。

@@ -1,17 +1,24 @@
 import Foundation
 
-/// Scenario the assistant works in. Raw values are stored in settings, sessions and
-/// workspaces; `meeting` keeps its old raw value and is presented as business meetings.
+/// Meeting type ("这是什么会"). Raw values are stored in settings, sessions and
+/// workspaces and never change: `academic` is shown as 汇报 / 答辩, `meeting` as
+/// 工作会议 and `lesson` as 讲座 / 课程. The case order is the order of the type tags.
 public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
-    case general, interview, academic, meeting, lesson
+    case general, interview, academic, labMeeting, meeting, client, lesson, discussion, custom
     public var id: String { rawValue }
+    /// Chinese name used in prompts and stored text; the interface uses the
+    /// localized name defined in the app target.
     public var title: String {
         switch self {
         case .general: "通用"
         case .interview: "面试"
-        case .academic: "学术会议"
-        case .meeting: "商务会议"
-        case .lesson: "课程"
+        case .academic: "汇报 / 答辩"
+        case .labMeeting: "组会"
+        case .meeting: "工作会议"
+        case .client: "客户沟通"
+        case .lesson: "讲座 / 课程"
+        case .discussion: "小组讨论"
+        case .custom: "自定义"
         }
     }
     public var symbol: String {
@@ -19,10 +26,16 @@ public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
         case .general: "sparkles"
         case .interview: "person.crop.rectangle"
         case .academic: "graduationcap"
+        case .labMeeting: "flask"
         case .meeting: "briefcase"
+        case .client: "person.2"
         case .lesson: "book"
+        case .discussion: "bubble.left.and.bubble.right"
+        case .custom: "slider.horizontal.3"
         }
     }
+    /// The types offered as a base for a custom type (every type but custom).
+    public static var builtIn: [SessionMode] { allCases.filter { $0 != .custom } }
     /// Unknown raw values (e.g. from a newer version) fall back to general.
     public init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
