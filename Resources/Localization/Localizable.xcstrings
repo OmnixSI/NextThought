@@ -931,6 +931,16 @@
         }
       }
     },
+    "声音来源已不可用，请刷新后重新选择。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The audio source is no longer available. Refresh and choose it again."
+          }
+        }
+      }
+    },
     "复制回答": {
       "localizations": {
         "en": {
@@ -2101,6 +2111,16 @@
         }
       }
     },
+    "线下 · 麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In person · Microphone"
+          }
+        }
+      }
+    },
     "线下会议": {
       "localizations": {
         "en": {
@@ -2427,6 +2447,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Speech recognition isn't set up yet"
+          }
+        }
+      }
+    },
+    "请先选择声音来源（默认是电脑声音）。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose where the sound comes from first (computer audio by default)."
           }
         }
       }

@@ -130,6 +130,8 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
     public var workspaceName: String?
     /// Name of a custom meeting type (`mode == .custom`).
     public var typeName: String?
+    /// In-person meeting: one microphone for the room, lines labelled 现场.
+    public var inPerson: Bool?
     /// Outcome counts written with the notes (for one-line results in lists).
     public var actionItemCount: Int?
     public var improveCount: Int?

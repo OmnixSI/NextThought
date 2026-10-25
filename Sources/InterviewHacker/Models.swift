@@ -13,10 +13,17 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     /// Microphone line that looked like speaker echo: shown dimmed, kept out of answers
     /// and records until the user marks it as theirs.
     var suspectedEcho: Bool?
-    var roleLabel: String { source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音" }
+    /// In-person meeting: the microphone heard everyone in the room ("现场").
+    var onSite: Bool?
+    var roleLabel: String {
+        if onSite == true { return "现场 · 麦克风" }
+        return source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音"
+    }
     var contextualText: String { "[\(roleLabel)] \(text)" }
-    var isMe: Bool { source == CaptureSource.microphone.rawValue }
-    var speaker: SessionSpeaker { isMe ? .me : .remote }
+    var isMe: Bool { source == CaptureSource.microphone.rawValue && onSite != true }
+    var speaker: SessionSpeaker { onSite == true ? .room : (isMe ? .me : .remote) }
+    /// Someone other than the user may be speaking (the other side, or the room).
+    var isOtherSide: Bool { source == CaptureSource.system.rawValue || onSite == true }
 }
 
 /// Format of the single `sessions.json` written by earlier versions (read once for migration).

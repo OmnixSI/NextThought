@@ -18,6 +18,9 @@ extension AppState {
     /// The meeting in progress (or about to start) happens in one room.
     var isOfflineMeeting: Bool { meetingVenue == .offline }
 
+    /// The microphone is recognized: when switched on, and always in the room.
+    var usesMicrophone: Bool { microphoneEnabled || isOfflineMeeting }
+
     // MARK: Capture target
 
     /// "电脑声音" for a whole display (all system audio, this app excluded);

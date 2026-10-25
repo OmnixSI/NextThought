@@ -13,11 +13,12 @@ extension AppState {
         let workspace = activeWorkspace
         var meta = SessionMeta(startedAt: startedAt, mode: workspace.mode,
                                title: plannedMeeting?.title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 },
-                               audioSource: captureTargets.first { $0.id == selectedTargetID }?.title ?? "",
+                               audioSource: isOfflineMeeting ? String(localized: "线下 · 麦克风") : audioSourceTitle(for: selectedTargetID),
                                recognizer: recognizerDescription,
                                answerModel: currentAnswerModel,
                                workspaceID: workspace.id, workspaceName: workspace.name)
         if workspace.mode == .custom { meta.typeName = workspace.typeDisplayName }
+        if isOfflineMeeting { meta.inPerson = true }
         let context = SessionContextSnapshot(mode: workspace.mode, style: workspace.style, preferences: workspace.preferences,
                                              profile: workspace.materialText, documents: workspace.documents.filter(\.enabled))
         archive.begin(meta, context: context)
