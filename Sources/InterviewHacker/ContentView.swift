@@ -103,8 +103,8 @@ private struct TopBar: View {
                     Color.clear.frame(width: 70, height: 1)
                     // Narrow window: tabs fall back to icons so the controls on the right never clip.
                     ViewThatFits(in: .horizontal) {
-                        GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol)
-                        GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol, showsTitles: false)
+                        GlassTabBar(tabs: AppSection.primaryTabs, selection: $state.section, title: \.rawValue, symbol: \.symbol)
+                        GlassTabBar(tabs: AppSection.primaryTabs, selection: $state.section, title: \.rawValue, symbol: \.symbol, showsTitles: false)
                     }
                     .layoutPriority(-1)
                     Spacer(minLength: 6)
@@ -114,6 +114,11 @@ private struct TopBar: View {
                     Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
                         .buttonStyle(GlassIconButtonStyle(size: UI.barHeight))
                         .help("显示 / 隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
+                    Button { state.section = state.section == .settings ? .assistant : .settings } label: { Image(systemName: "gearshape") }
+                        .buttonStyle(GlassIconButtonStyle(size: UI.barHeight))
+                        .foregroundStyle(state.section == .settings ? Brand.accent : Color.primary)
+                        .keyboardShortcut(",", modifiers: .command)
+                        .help("设置 · ⌘,")
                 }
             }
             if let message = state.errorMessage {
@@ -199,7 +204,8 @@ private struct SessionControls: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            if !state.isRunning {
+            // On 助手 the setup card owns the start button; one start button per screen.
+            if !state.isRunning, state.section != .assistant {
                 Button { Task { await state.startSession() } } label: {
                     HStack(spacing: 6) {
                         if state.isChangingSession { ProgressView().controlSize(.small).tint(.white) }
@@ -209,7 +215,7 @@ private struct SessionControls: View {
                 .buttonStyle(PrimaryButtonStyle(height: UI.barHeight))
                 .disabled(!state.isReadyToStart || state.isPreparingModel || state.isChangingSession)
                 .help(state.isReadyToStart ? "开始实时辅助 · \(state.shortcutLabel(.toggleSession))" : state.readinessText)
-            } else {
+            } else if state.isRunning {
                 Button { Task { await state.togglePause() } } label: { Image(systemName: state.isPaused ? "play.fill" : "pause.fill") }
                     .buttonStyle(GlassIconButtonStyle(size: UI.barHeight, tint: state.isPaused ? Brand.accent : nil))
                     .help((state.isPaused ? "恢复" : "暂停") + " · \(state.shortcutLabel(.togglePause))")
@@ -306,6 +312,9 @@ struct QRCodeView: View {
 }
 
 extension AppSection {
+    /// Sections in the top tab bar. Settings is reached from the gear button (⌘,).
+    static let primaryTabs: [AppSection] = [.assistant, .materials, .history]
+
     var symbol: String {
         switch self {
         case .assistant: "waveform"

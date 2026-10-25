@@ -18,7 +18,7 @@ struct MarkdownText: View, Equatable {
                         .font(.system(size: size * 0.86, design: .monospaced))
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                        .background(Brand.sunken, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 case let .heading(line):
                     Text(Self.inline(line)).font(.system(size: size * 1.05, weight: .semibold))
                 case let .bullet(line, level):
@@ -76,7 +76,7 @@ struct CardBackground: ViewModifier {
         content
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .cardSurface(cornerRadius: 22, tint: tint?.opacity(0.18))
+            .cardSurface(cornerRadius: UI.cardRadius, tint: tint)
     }
 }
 
@@ -84,35 +84,54 @@ extension View {
     func card(tint: Color? = nil) -> some View { modifier(CardBackground(tint: tint)) }
 }
 
-/// Small status capsule, e.g. "首字 0.8 s".
+/// Small status line, e.g. "首字 0.8 s": icon + text, no capsule (capsules are for actions).
 struct MetricPill: View {
     var symbol: String
     var text: String
     var tint: Color = .secondary
     var body: some View {
         Label(text, systemImage: symbol)
-            .font(.system(size: 11, weight: .medium))
+            .font(.system(size: 12, weight: .medium))
             .foregroundStyle(tint)
-            .padding(.horizontal, 9).padding(.vertical, 4)
-            .glassCapsule()
     }
 }
 
-/// Quick follow-ups on the current answer.
+/// Quick follow-ups on the current answer. Three common rewrites stay visible; the rest,
+/// plus regenerate and web lookup, live under "更多" so the row never wraps or clips.
 struct RefinementBar: View {
     @Environment(AppState.self) private var state
     var compact = false
-    /// Solid chips instead of glass, for a window without a glass background.
+    /// Bordered chips, for a window without a background.
     var opaque = false
+    private static let visible: [AnswerRefinement] = [.shorter, .example, .english]
+
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(compact ? [AnswerRefinement.shorter, .example, .english, .star] : AnswerRefinement.allCases) { item in
-                    Button { state.refine(item) } label: { Label(item.title, systemImage: item.symbol) }
-                        .buttonStyle(ChipButtonStyle(opaque: opaque))
-                        .help(item == .shorter ? "把回答改短 · \(state.shortcutLabel(.refineShorter))" : item.title)
-                }
+        HStack(spacing: 6) {
+            ForEach(Self.visible) { item in
+                Button { state.refine(item) } label: { Label(item.title, systemImage: item.symbol) }
+                    .buttonStyle(ChipButtonStyle(opaque: opaque))
+                    .help(item == .shorter ? "把回答改短 · \(state.shortcutLabel(.refineShorter))" : item.title)
             }
+            Menu {
+                ForEach(AnswerRefinement.allCases.filter { !Self.visible.contains($0) }) { item in
+                    Button { state.refine(item) } label: { Label(item.title, systemImage: item.symbol) }
+                }
+                if !compact {
+                    Divider()
+                    Button { state.regenerate() } label: { Label("重新生成", systemImage: "arrow.clockwise") }
+                        .disabled(state.isAnswering || state.currentQuestion.isEmpty)
+                    if state.webSearchMode != .off, state.displayedWebLookup == nil {
+                        Button { state.lookUpDisplayedAnswer() } label: { Label("联网查一下", systemImage: "globe") }
+                            .disabled(state.displayedQuestion.isEmpty)
+                    }
+                }
+            } label: {
+                Label("更多", systemImage: "ellipsis")
+            }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .buttonStyle(ChipButtonStyle(opaque: opaque))
+            .fixedSize()
         }
         .disabled(state.displayedAnswer.isEmpty || state.isAnswering)
     }

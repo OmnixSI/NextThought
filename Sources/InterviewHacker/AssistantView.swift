@@ -426,16 +426,8 @@ private struct SetupCard: View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
-                ZStack {
-                    Circle().fill(Brand.gradient)
-                    Image(systemName: "waveform.and.mic").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                }
-                .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 12) {
-                        Text("实时语音辅助").font(.system(size: 16, weight: .semibold))
-                        Button("新手引导") { state.openOnboarding() }.buttonStyle(ChipButtonStyle())
-                    }
+                    Text("准备好就开始").font(.system(size: 15, weight: .semibold))
                     Text(state.readinessText)
                         .font(.system(size: 12))
                         .foregroundStyle(state.isReadyToStart ? Color.green : Color.secondary)
@@ -475,9 +467,6 @@ private struct SetupCard: View {
             }
             HStack(spacing: 6) {
                 WorkspacePicker()
-                Button { state.section = .materials } label: {
-                    Label("资料 \(state.documents.filter(\.enabled).count) · 题库 \(state.activeWorkspace.questionBank.count)", systemImage: "doc.text")
-                }.buttonStyle(ChipButtonStyle()).help("编辑这个场景的资料、回答要求、经验库与题库")
                 Spacer(minLength: 8)
                 // The speaker icon belongs to the picker, so both live in one
                 // fixed-size unit: the picker used to reserve a 260pt frame, which
@@ -491,13 +480,11 @@ private struct SetupCard: View {
                 }
                 .fixedSize(horizontal: true, vertical: false)
                 Button { Task { await state.refreshTargets() } } label: { Image(systemName: "arrow.clockwise") }
-                    .buttonStyle(GlassIconButtonStyle(size: 28)).help("刷新窗口列表")
+                    .buttonStyle(GlassIconButtonStyle(size: UI.chipHeight)).help("刷新窗口列表")
                 Toggle(isOn: $state.microphoneEnabled) { Image(systemName: "mic.fill") }
-                    .toggleStyle(.button).help("同时采集麦克风（我）")
+                    .toggleStyle(.button).help("同时识别麦克风，标为“我”。没戴耳机时扬声器回声会被自动忽略。")
                     .onChange(of: state.microphoneEnabled) { _, _ in state.updateSettings() }
             }
-            Text("选会议 App 的窗口只采集它的声音；麦克风单独识别并标为“我”。没戴耳机时，扬声器回声会被自动识别并忽略。")
-                .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
         .card()
     }
@@ -801,7 +788,7 @@ private struct AnswerPanel: View {
             RefinementBar()
             AnswerFooter()
         }
-        .card(tint: Brand.accent)
+        .card()
         .frame(maxHeight: fillHeight ? .infinity : nil, alignment: .top)
     }
 }
@@ -983,27 +970,18 @@ private struct AnswerFooter: View {
             // The action buttons wrap instead of squeezing each other, and the
             // meta line moved to its own row: that way "重新生成" / "联网查一下"
             // are never clipped and never overlap the timing text.
-            WrappingHStack(spacing: 8, lineSpacing: 6) {
-                Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }
-                    .buttonStyle(ChipButtonStyle()).disabled(state.displayedAnswer.isEmpty)
-                    .fixedSize(horizontal: true, vertical: false)
-                Button { state.regenerate() } label: { Label("重新生成", systemImage: "arrow.clockwise") }
-                    .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering || state.currentQuestion.isEmpty)
-                    .fixedSize(horizontal: true, vertical: false)
-                if state.webSearchMode != .off, state.displayedWebLookup == nil {
-                    Button { state.lookUpDisplayedAnswer() } label: { Label("联网查一下", systemImage: "globe") }
-                        .buttonStyle(ChipButtonStyle()).disabled(state.displayedAnswer.isEmpty || state.displayedQuestion.isEmpty)
-                        .help("用联网搜索的最新信息重新回答这个问题；快速回答保留，可以切换")
-                        .fixedSize(horizontal: true, vertical: false)
-                }
-            }
             if let id = state.displayedRecordID, let evidence = state.answerCoordinator.evidenceHistory[id] ?? state.answerHistory.first(where: { $0.id == id })?.evidence {
                 AnswerEvidenceDetails(evidence: evidence).id(id)
             }
-            Text(meta)
-                .font(.system(size: 11)).foregroundStyle(.tertiary)
-                .lineLimit(1).truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+            HStack(spacing: 6) {
+                Text(meta)
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .lineLimit(1).truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                Button { state.copyAnswer() } label: { Image(systemName: "doc.on.doc") }
+                    .buttonStyle(GlassIconButtonStyle(size: UI.chipHeight)).help("复制回答")
+                    .disabled(state.displayedAnswer.isEmpty)
+            }
             if !state.appServerNote.isEmpty {
                 Text(state.appServerNote).font(.caption).foregroundStyle(.orange)
             }
@@ -1059,12 +1037,14 @@ private struct ComposerDock: View {
                     if state.answerBackend != .openAICompatible && state.codexFastAvailable && !state.simplifiedInterface {
                         FastModeToggle()
                     }
-                    Button { state.captureScreenshot(.region) } label: { Image(systemName: "viewfinder") }
-                        .buttonStyle(GlassIconButtonStyle(size: 40))
-                        .help("区域截图提问 · \(state.shortcutLabel(.captureRegion))")
-                    Button { state.captureScreenshot(.window) } label: { Image(systemName: "macwindow") }
-                        .buttonStyle(GlassIconButtonStyle(size: 40))
-                        .help("窗口截图提问 · \(state.shortcutLabel(.captureWindow))")
+                    Menu {
+                        Button { state.captureScreenshot(.region) } label: { Label("框选区域 · \(state.shortcutLabel(.captureRegion))", systemImage: "viewfinder") }
+                        Button { state.captureScreenshot(.window) } label: { Label("选择窗口 · \(state.shortcutLabel(.captureWindow))", systemImage: "macwindow") }
+                    } label: { Image(systemName: "camera.viewfinder") }
+                        .menuStyle(.button).menuIndicator(.hidden)
+                        .buttonStyle(GlassIconButtonStyle(size: UI.controlHeight))
+                        .fixedSize()
+                        .help("截图提问")
                     Button { state.forceAnswerCurrent() } label: {
                         Label("立即回答", systemImage: "bolt.fill")
                     }
@@ -1111,12 +1091,12 @@ private struct QuestionComposer: View {
             Button { submit() } label: {
                 Image(systemName: "arrow.up").font(.system(size: 13, weight: .bold))
             }
-            .buttonStyle(GlassIconButtonStyle(size: 28, tint: Brand.accent))
+            .buttonStyle(GlassIconButtonStyle(size: 26, tint: Brand.accent))
             .disabled(state.screenshotPreview == nil && state.questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .padding(.leading, 16).padding(.trailing, 6).padding(.vertical, 6)
-        .frame(minHeight: 40)
-        .glassBackground(cornerRadius: 20)
+        .frame(minHeight: 36)
+        .glassBackground(cornerRadius: UI.controlRadius)
     }
 
     private func submit() {

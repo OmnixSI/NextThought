@@ -272,16 +272,16 @@ private struct TeleprompterView: View {
                 // border and the buttons are left, each with its own opacity.
                 Color.clear
             } else {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: UI.cardRadius, style: .continuous)
                     .fill(Color.clear)
-                    .glassSurface(cornerRadius: 26, tint: nil)
+                    .glassSurface(cornerRadius: UI.cardRadius, tint: nil)
             }
         }
         .overlay {
             if state.teleprompterHideBackground {
                 // A fully opaque border, so the panel is still readable when it
                 // floats over a busy screen.
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                RoundedRectangle(cornerRadius: UI.cardRadius, style: .continuous)
                     .strokeBorder(Brand.accent, lineWidth: 1.5)
             }
         }
@@ -327,10 +327,18 @@ private struct TeleprompterView: View {
         VStack(alignment: .leading, spacing: 8) {
             RefinementBar(compact: true, opaque: state.teleprompterHideBackground)
             HStack {
-                Button { state.forceAnswerCurrent() } label: { Label("回答", systemImage: "bolt.fill") }.buttonStyle(ChipButtonStyle(prominent: true))
-                Button { state.cancelAnswer() } label: { Label("取消", systemImage: "stop.fill") }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground)).disabled(!state.isAnswering)
-                Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground))
-                Button("工作台") { TeleprompterController.shared.showWorkbench() }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground))
+                if state.isAnswering {
+                    Button { state.cancelAnswer() } label: { Label("停止生成", systemImage: "stop.fill") }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground))
+                } else {
+                    Button { state.forceAnswerCurrent() } label: { Label("回答", systemImage: "bolt.fill") }.buttonStyle(ChipButtonStyle(prominent: true))
+                }
+                Menu {
+                    Button { state.copyAnswer() } label: { Label("复制回答", systemImage: "doc.on.doc") }
+                    Button { TeleprompterController.shared.showWorkbench() } label: { Label("打开工作台", systemImage: "macwindow") }
+                } label: { Image(systemName: "ellipsis") }
+                    .menuStyle(.button).menuIndicator(.hidden)
+                    .buttonStyle(GlassIconButtonStyle(size: UI.chipHeight, opaque: state.teleprompterHideBackground))
+                    .fixedSize()
                 Spacer()
                 Text("\(state.shortcutLabel(.forceAnswer)) 回答 · \(state.shortcutLabel(.panicHide)) 隐藏").font(.caption2).foregroundStyle(.secondary)
             }

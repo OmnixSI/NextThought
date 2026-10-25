@@ -43,7 +43,7 @@ struct AssistantLayout: Codable, Equatable {
     var split: Double = 0.44
 
     static let standard = AssistantLayout(slots: [
-        Slot(module: .conversation, column: 0, weight: 1), Slot(module: .history, column: 0, weight: 0.45),
+        Slot(module: .conversation, column: 0, weight: 1),
         Slot(module: .question, column: 1, weight: 1), Slot(module: .answer, column: 1, weight: 1),
     ])
 
