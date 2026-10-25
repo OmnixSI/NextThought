@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LanguageSetting · InterviewHacker</title>
+<link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/components.css">
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500&display=swap">
+<div class="x" style="padding:56px 40px 40px;position:relative">
+<div class="x-lang"><span data-l="zh" class="is-on">中文</span><span data-l="en">EN</span></div>
+<div class="x-card" style="max-width:520px;padding:20px 22px">
+<div style="font-weight:600"><span class="zh">语言</span><span class="en">Language</span></div><div class="x-cap" style="margin-top:4px"><span class="zh">界面、日期和纪要标题使用的语言。建议回答始终跟着对话的语言。</span><span class="en">Language for the interface, dates and note headings. Suggested answers always follow the conversation.</span></div>
+<div style="margin-top:14px"><span class="zh"><span class="x-seg"><span>跟随系统</span><span class="is-on">简体中文</span><span>English</span></span></span><span class="en"><span class="x-seg"><span>System</span><span>简体中文</span><span class="is-on">English</span></span></span></div>
+<div class="x-cap" style="margin-top:12px"><span class="zh">切换后 App 会重新打开。会议进行中不能切换。</span><span class="en">The app restarts to switch. Not available during a meeting.</span></div></div>
+<script>
+(function(){var root=document.currentScript.parentElement;root.querySelectorAll('.x-lang span').forEach(function(b){b.onclick=function(){root.setAttribute('data-lang',b.dataset.l);root.querySelectorAll('.x-lang span').forEach(function(o){o.classList.toggle('is-on',o===b)});};});})();
+</script>
+</div>
+</body></html>

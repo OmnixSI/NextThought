@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AnswerSettings · InterviewHacker</title>
+<link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/components.css">
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500&display=swap">
+<div class="x" style="padding:56px 40px 40px;position:relative">
+<div class="x-lang"><span data-l="zh" class="is-on">中文</span><span data-l="en">EN</span></div>
+<div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px"><span class="x-model is-open">gpt-5.5 <span class="bolt"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 5 13h6l-1 8 8-10h-6l1-8z"/></svg></span></span>
+<div class="x-popover">
+ <div class="h x-over"><span class="zh">模型 · Codex</span><span class="en">MODEL · CODEX</span></div>
+ <div class="r is-on"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7"/></svg>gpt-5.5</div><div class="r" style="padding-left:34px">gpt-5.5-mini</div>
+ <hr>
+ <div class="r"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 5 13h6l-1 8 8-10h-6l1-8z"/></svg><span class="x-grow"><span class="zh">快速模式</span><span class="en">Fast mode</span><div class="x-cap"><span class="zh">约 1.5 倍速度 · 用量更多</span><span class="en">~1.5× faster · uses more quota</span></div></span><span class="x-switch"></span></div>
+ <div class="r"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16"/></svg><span class="x-grow"><span class="zh">联网</span><span class="en">Web</span></span><span class="x-seg is-sm"><span><span class="zh">关</span><span class="en">Off</span></span><span class="is-on"><span class="zh">自动</span><span class="en">Auto</span></span><span><span class="zh">每次</span><span class="en">Always</span></span></span></div>
+ <div class="r"><span style="width:16px"></span><span class="x-grow"><span class="zh">回答长度</span><span class="en">Length</span></span><span class="x-seg is-sm"><span class="is-on"><span class="zh">要点</span><span class="en">Brief</span></span><span><span class="zh">详细</span><span class="en">Detailed</span></span></span></div>
+ <hr><div class="h x-cap" style="padding-bottom:8px"><span class="zh">从下一个回答开始生效</span><span class="en">Applies from the next answer</span></div>
+</div></div></div>
+<script>
+(function(){var root=document.currentScript.parentElement;root.querySelectorAll('.x-lang span').forEach(function(b){b.onclick=function(){root.setAttribute('data-lang',b.dataset.l);root.querySelectorAll('.x-lang span').forEach(function(o){o.classList.toggle('is-on',o===b)});};});})();
+</script>
+</div>
+</body></html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cover · InterviewHacker</title>
+<link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/components.css">
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500&display=swap">
+<div class="cv">
+<style>
+.cv{position:relative;width:960px;height:288px;background:var(--paper);overflow:hidden}
+.cv svg{position:absolute;left:0;top:0}
+.cv .slab{fill:var(--ink);rx:var(--radius-lg)}
+.cv .wave{fill:var(--paper)}
+.cv .ai{fill:var(--ai)}
+.cv .mid{fill:var(--ink-secondary);rx:var(--radius-lg)}
+.cv .live{fill:var(--live)}
+.cv .rule{stroke:var(--hairline);stroke-width:1}
+.cv .tb{position:absolute;left:32px;bottom:30px}
+.cv h1{margin:0;font-family:var(--font-serif);font-size:64px;line-height:.95;font-weight:500;letter-spacing:-.015em;color:var(--ink)}
+.cv p{margin:10px 0 0;font-family:var(--font-sans);font-size:14px;color:var(--ink-secondary)}
+</style>
+<svg width="960" height="136" viewBox="0 0 960 136" aria-hidden="true">
+<!--
+blocks: ink slab 512×112 (radius-lg) · ai disc ⌀112 · ink-secondary block 216×112 (radius-lg) · live dot ⌀12
+arrangement: top band (serif name too wide for its zone); a calm strip — one dark slab, one purple disc, one grey block — paper and ink with purple only for AI
+pattern: the waveform as thin bars in paper over the ink slab, plus two hairline rules like a notebook — "editorial, serif, hairlines" and the product listens
+steps: space-4 (16) block gap, space-6 (24) top inset, bar pitch 28; radii: radius-lg 16, bars half their width
+-->
+<line class="rule" x1="0" y1="24" x2="960" y2="24"/>
+<line class="rule" x1="0" y1="136" x2="960" y2="136"/>
+<rect class="slab" x="32" y="24" width="512" height="112"/>
+<rect class="wave" x="72" y="72" width="8" height="16" rx="4"/>
+<rect class="wave" x="100" y="66" width="8" height="28" rx="4"/>
+<rect class="wave" x="128" y="56" width="8" height="48" rx="4"/>
+<rect class="wave" x="156" y="44" width="8" height="72" rx="4"/>
+<rect class="wave" x="184" y="60" width="8" height="40" rx="4"/>
+<rect class="wave" x="212" y="36" width="8" height="88" rx="4"/>
+<rect class="wave" x="240" y="50" width="8" height="60" rx="4"/>
+<rect class="wave" x="268" y="64" width="8" height="32" rx="4"/>
+<rect class="wave" x="296" y="42" width="8" height="76" rx="4"/>
+<rect class="wave" x="324" y="58" width="8" height="44" rx="4"/>
+<rect class="wave" x="352" y="68" width="8" height="24" rx="4"/>
+<rect class="wave" x="380" y="52" width="8" height="56" rx="4"/>
+<rect class="wave" x="408" y="62" width="8" height="36" rx="4"/>
+<rect class="wave" x="436" y="70" width="8" height="20" rx="4"/>
+<rect class="wave" x="464" y="74" width="8" height="12" rx="4"/>
+<circle class="live" cx="516" cy="48" r="6"/>
+<circle class="ai" cx="616" cy="80" r="56"/>
+<rect class="mid" x="688" y="24" width="240" height="112"/>
+</svg>
+<div class="tb"><h1>InterviewHacker</h1><p>会前读懂资料，会中递上一句话，会后留下一份纪要。</p></div>
+</div>
+</body></html>

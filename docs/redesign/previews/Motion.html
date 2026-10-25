@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Motion · InterviewHacker</title>
+<link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/components.css">
+</head><body>
+<div class="x">
+<div class="x-cap">流式回答：每个词 160ms 淡入，不位移、不弹跳（每 6 秒重播一次）</div>
+<div class="x-prompt x-stream" id="m"></div>
+<script>
+const words="我们采用|先更新数据库|、再删除缓存|，并用 |binlog |订阅|兜底|，保证|最终一致|。".split("|");
+function play(){const el=document.getElementById("m");el.innerHTML="";words.forEach((w,i)=>{const s=document.createElement("span");s.textContent=w;s.style.animationDelay=(i*70)+"ms";el.appendChild(s);});}
+play();setInterval(play,6000);
+</script>
+</div>
+</body></html>

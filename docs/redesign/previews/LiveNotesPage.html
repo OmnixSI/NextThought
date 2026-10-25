@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LiveNotesPage · InterviewHacker</title>
+<link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/components.css">
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500&display=swap">
+<div class="x" style="padding:56px 40px 40px;position:relative">
+<div class="x-lang"><span data-l="zh" class="is-on">中文</span><span data-l="en">EN</span></div>
+<div class="x-focus" style="min-height:600px"><div class="x-traffic"><i></i><i></i><i></i></div><div class="x-bar-top"><span class="x-status" title="点击暂停"><span class="x-dot live"></span>12:38</span><span class="x-cap"><span class="zh">字节跳动 · 后端二面</span><span class="en">ByteDance · Backend, round 2</span></span><div class="x-grow"></div>
+<div class="x-seg is-sm"><span><span class="zh">提词</span><span class="en">Prompt</span></span><span class="is-on"><span class="zh">只记录</span><span class="en">Notes only</span></span></div>
+<span style="width:8px"></span><button class="x-ibtn" title="已连接 1 台手机 · 局域网"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span class="x-dot ready"></span></button><span class="x-model">gpt-5.5 <span class="bolt"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 5 13h6l-1 8 8-10h-6l1-8z"/></svg></span></span><button class="x-ibtn" title="提词器"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button><button class="x-btn"><span class="zh">结束</span><span class="en">End</span></button></div>
+<div class="x-split" style="grid-template-columns:1.35fr 1fr">
+<div class="x-pane" style="border-right:1px solid var(--hairline);padding:32px 40px">
+ <div class="x-turn"><span class="who"><span class="zh">对方</span><span class="en">Them</span></span><span class="say"><span class="zh">这个版本下周三之前必须上线，客户那边已经在催了。</span><span class="en">This release has to ship by next Wednesday. The client is already asking.</span></span></div>
+ <div class="x-turn is-me"><span class="who"><span class="zh">我</span><span class="en">Me</span></span><span class="say"><span class="zh">回归测试我来排，周二下午给结果。</span><span class="en">I'll schedule regression testing and share results Tuesday afternoon.</span></span></div>
+ <div class="x-turn"><span class="who"><span class="zh">对方</span><span class="en">Them</span></span><span class="say"><span class="zh">好，那就这么定。支付那两个 bug 今天修掉。</span><span class="en">Good, let's go with that. Fix the two payment bugs today.</span></span></div>
+ <div class="x-turn is-partial"><span class="who"><span class="zh">对方</span><span class="en">Them</span></span><span class="say"><span class="zh">设计稿周四之前…</span><span class="en">The designs by Thursday…</span></span></div>
+</div>
+<div class="x-pane" style="gap:28px">
+ <div><div class="x-over is-ai"><svg class="x-i x-spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.6 4.2 2.8 6.4 7 7-4.2.6-6.4 2.8-7 7-.6-4.2-2.8-6.4-7-7 4.2-.6 6.4-2.8 7-7z"/></svg> <span class="zh">决定</span><span class="en">DECISIONS</span></div><div style="margin-top:10px"><span class="zh">下周三前上线新版本</span><span class="en">Ship the new release by next Wednesday</span></div></div>
+ <div><div class="x-over is-ai"><svg class="x-i x-spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c.6 4.2 2.8 6.4 7 7-4.2.6-6.4 2.8-7 7-.6-4.2-2.8-6.4-7-7 4.2-.6 6.4-2.8 7-7z"/></svg> <span class="zh">待办</span><span class="en">ACTION ITEMS</span></div>
+  <div class="x-todo" style="margin-top:4px"><span class="x-check"></span><span><span class="zh">回归测试，给出结果</span><span class="en">Regression testing, share results</span></span><span class="x-chip" style="background:var(--ai-soft);color:var(--ink)"><span class="zh">我 · 周二</span><span class="en">Me · Tue</span></span></div>
+  <div class="x-todo"><span class="x-check"></span><span><span class="zh">修复支付 bug</span><span class="en">Fix payment bugs</span></span><span class="x-chip"><span class="zh">对方 · 今天</span><span class="en">Them · Today</span></span></div></div>
+</div></div>
+<div class="x-composer"><div class="x-input"><span class="zh">需要帮忙？输入问题，或按 ⌘⇧↩ 回答对方刚问的</span><span class="en">Need help? Type a question, or press ⌘⇧↩ to answer the last one</span></div><button class="x-ibtn"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+</div>
+<script>
+(function(){var root=document.currentScript.parentElement;root.querySelectorAll('.x-lang span').forEach(function(b){b.onclick=function(){root.setAttribute('data-lang',b.dataset.l);root.querySelectorAll('.x-lang span').forEach(function(o){o.classList.toggle('is-on',o===b)});};});})();
+</script>
+</div>
+</body></html>
