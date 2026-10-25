@@ -188,7 +188,7 @@ private struct WorkspaceSkillsSection: View {
                 Label("技能 \(state.activeSkillSnippets.count)", systemImage: "wand.and.stars").font(.system(size: 13, weight: .semibold))
                 Spacer()
                 Button { let added = library.importFiles(global: false); for skill in added { state.setSkill(skill.id, attached: true) } } label: {
-                    Label("导入并用于此场景…", systemImage: "square.and.arrow.down")
+                    Label("导入并用于此系列…", systemImage: "square.and.arrow.down")
                 }.buttonStyle(ChipButtonStyle())
                 Button("管理技能") { state.openSettings(.skills) }.buttonStyle(ChipButtonStyle())
             }
@@ -200,7 +200,7 @@ private struct WorkspaceSkillsSection: View {
                     Toggle(isOn: Binding(get: { attached }, set: { state.setSkill(skill.id, attached: $0) })) {
                         HStack(spacing: 6) {
                             Text(skill.name)
-                            if skill.global { Text("所有场景").font(.system(size: 10, weight: .semibold)).foregroundStyle(Brand.accent) }
+                            if skill.global { Text("所有系列").font(.system(size: 10, weight: .semibold)).foregroundStyle(Brand.accent) }
                             if !skill.enabled { Text("已停用").font(.system(size: 10)).foregroundStyle(.secondary) }
                             if !skill.summary.isEmpty { Text(skill.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1) }
                         }

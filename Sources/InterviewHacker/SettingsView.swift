@@ -81,9 +81,9 @@ extension SettingsGroup {
         case .essentials: "核心准备 · 可选资料增强"
         case .recognition: "会议声音 · 麦克风 · 语音识别"
         case .documents: "读取资料 · 免下载或按需增强"
-        case .answers: "对话服务 · 回答模型 · 自动回答"
+        case .answers: "对话服务 · 回答模型 · 联网"
         case .notes: String(localized: "纪要模型 · 模板 · 语言")
-        case .skills: "加载 SKILL.md · 全局或按场景"
+        case .skills: "加载 SKILL.md · 全局或按系列"
         case .overlay: "位置 · 字号 · 共享显示"
         case .recording: "本机会话记录 · 备份与恢复"
         case .more: "更新 · 权限 · 快捷键 · 手机伴侣"
@@ -984,7 +984,7 @@ private struct SkillSettings: View {
 
     var body: some View {
         SettingsSection(title: "技能库", icon: "wand.and.stars") {
-            Note("技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有场景”的技能每次回答都会用；其他技能在 场景 → 资料与要求 → 技能 里按场景勾选。")
+            Note("技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在 资料夹 → 系列 → 资料与要求 → 技能 里按系列勾选。")
             HStack {
                 Button { library.importFiles(global: false) } label: { Label("导入 .md 文件…", systemImage: "square.and.arrow.down") }
                     .buttonStyle(PrimaryButtonStyle())
@@ -1017,7 +1017,7 @@ private struct SkillSettings: View {
                 if !skill.global { Text(attached == 0 ? "还没有场景使用" : "\(attached) 个场景在用").font(.system(size: 10.5)).foregroundStyle(.tertiary) }
             }
             Spacer()
-            Toggle("所有场景", isOn: Binding(get: { skill.global }, set: { var next = skill; next.global = $0; library.update(next) }))
+            Toggle("所有系列", isOn: Binding(get: { skill.global }, set: { var next = skill; next.global = $0; library.update(next) }))
                 .toggleStyle(.checkbox)
             Toggle("启用", isOn: Binding(get: { skill.enabled }, set: { var next = skill; next.enabled = $0; library.update(next) }))
                 .toggleStyle(.switch).controlSize(.small).labelsHidden()
@@ -1045,7 +1045,7 @@ struct SkillEditor: View {
                 .padding(6)
                 .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
                 .frame(minHeight: 320)
-            Toggle("所有场景都使用这个技能", isOn: $skill.global)
+            Toggle("所有系列都使用这个技能", isOn: $skill.global)
             HStack {
                 Text("\(skill.content.count) 字 · 单个技能最多使用约 6000 字").font(.system(size: 11)).foregroundStyle(.secondary)
                 Spacer()
