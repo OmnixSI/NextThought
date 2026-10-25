@@ -32,6 +32,8 @@ capture() {
     [[ "$language" == en ]] && suffix="-en"
     png="$out/$name-$appearance$suffix.png"
     rm -f "$png"
+    local attempt
+    for attempt in 1 2; do
     INTERVIEWHACKER_DEMO=1 \
     INTERVIEWHACKER_DATA_DIR="$work/data" \
     INTERVIEWHACKER_DEMO_SECTION="$section" \
@@ -41,9 +43,12 @@ capture() {
     INTERVIEWHACKER_DEMO_SNAPSHOT="$png" \
     "$app/Contents/MacOS/InterviewHacker" -AppleLanguages "($language)" >"$work/$name.log" 2>&1 &
     local pid=$!
-    for _ in $(seq 1 30); do [[ -s "$png" ]] && break; sleep 0.5; done
+    for _ in $(seq 1 60); do [[ -s "$png" ]] && break; sleep 0.5; done
     kill "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
+    [[ -s "$png" ]] && break
+    sleep 1
+    done
     if [[ -s "$png" ]]; then
         sips -Z 1600 "$png" >/dev/null
         echo "ok   $(basename "$png")"
