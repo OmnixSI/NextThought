@@ -7,7 +7,9 @@
 #   .ih-loop/rebuild         pull the current branch, then build, test and package
 #   .ih-loop/release         contains a tag (e.g. v2.0.0): check out main, build,
 #                            package and publish that GitHub release
-# Output: .ih-loop/build.log + build.status, .ih-loop/release.log + release.status
+#   .ih-loop/screenshots     pull, build the app, render the README screenshots into
+#                            docs/screenshots/v2 (scripts/capture-screenshots.sh)
+# Output: .ih-loop/<build|release|screenshots>.log + .status
 # (status: "running", or the exit code when finished).
 set -u
 cd "$(dirname "$0")/../.." || exit 1
@@ -47,6 +49,12 @@ release() {
     gh release edit "$tag" --draft=false --latest
 }
 
+screenshots() {
+    git pull -q --ff-only &&
+    scripts/build-app.sh &&
+    scripts/capture-screenshots.sh
+}
+
 while true; do
     if [ -f .ih-loop/rebuild ]; then
         rm -f .ih-loop/rebuild
@@ -62,6 +70,13 @@ while true; do
         release "$tag" > .ih-loop/release.log 2>&1
         echo $? > .ih-loop/release.status
         echo "$(date '+%H:%M:%S') release $tag finished: $(cat .ih-loop/release.status)"
+    fi
+    if [ -f .ih-loop/screenshots ]; then
+        rm -f .ih-loop/screenshots
+        echo running > .ih-loop/screenshots.status
+        screenshots > .ih-loop/screenshots.log 2>&1
+        echo $? > .ih-loop/screenshots.status
+        echo "$(date '+%H:%M:%S') screenshots finished: $(cat .ih-loop/screenshots.status)"
     fi
     sleep 5
 done

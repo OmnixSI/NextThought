@@ -222,7 +222,7 @@ extension AppState {
         }
     }
 
-    /// "立即记录" (⌘⇧R): no type, no materials; a general series for quick notes.
+    /// "立即记录" (⌘⇧N): no type, no materials; a general series for quick notes.
     func recordNow() async {
         guard !isRunning, !isChangingSession else { return }
         if !UserDefaults.standard.bool(forKey: "recordingNoticeShown") { recordingNoticePending = .quick; return }

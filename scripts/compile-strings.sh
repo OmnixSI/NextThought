@@ -14,6 +14,13 @@ for catalog in "$project_root"/Resources/Localization/*.xcstrings; do
     # the catalog with the bundled Python fallback (plain string units only).
     if xcrun --find xcstringstool >/dev/null 2>&1; then
         xcrun xcstringstool compile "$catalog" --output-directory "$resources"
+        # The source language must have its own table too, or a Chinese system falls
+        # back to the development region (en) and shows English.
+        source="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("sourceLanguage","en"))' "$catalog")"
+        table="$(basename "$catalog" .xcstrings)"
+        if [[ ! -s "$resources/$source.lproj/$table.strings" ]]; then
+            python3 "$project_root/scripts/xcstrings_to_strings.py" "$catalog" "$resources" --only "$source"
+        fi
     else
         python3 "$project_root/scripts/xcstrings_to_strings.py" "$catalog" "$resources"
     fi
