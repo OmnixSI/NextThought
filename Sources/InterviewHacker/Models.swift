@@ -1,5 +1,6 @@
 import Foundation
 import InterviewHackerCore
+import SwiftUI
 
 struct TranscriptEntry: Identifiable, Codable, Equatable {
     var id = UUID()
@@ -12,10 +13,17 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     /// Microphone line that looked like speaker echo: shown dimmed, kept out of answers
     /// and records until the user marks it as theirs.
     var suspectedEcho: Bool?
-    var roleLabel: String { source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音" }
+    /// In-person meeting: the microphone heard everyone in the room ("现场").
+    var onSite: Bool?
+    var roleLabel: String {
+        if onSite == true { return "现场 · 麦克风" }
+        return source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音"
+    }
     var contextualText: String { "[\(roleLabel)] \(text)" }
-    var isMe: Bool { source == CaptureSource.microphone.rawValue }
-    var speaker: SessionSpeaker { isMe ? .me : .remote }
+    var isMe: Bool { source == CaptureSource.microphone.rawValue && onSite != true }
+    var speaker: SessionSpeaker { onSite == true ? .room : (isMe ? .me : .remote) }
+    /// Someone other than the user may be speaking (the other side, or the room).
+    var isOtherSide: Bool { source == CaptureSource.system.rawValue || onSite == true }
 }
 
 /// Format of the single `sessions.json` written by earlier versions (read once for migration).
@@ -66,13 +74,45 @@ struct ScreenshotDisplay: Identifiable, Hashable, Sendable {
     var height: Int
 }
 
+/// Sidebar sections. The live meeting is not a section: while a meeting runs the
+/// window switches to focus mode and the sidebar is hidden.
 enum AppSection: String, CaseIterable, Identifiable {
-    case assistant = "助手"
-    case materials = "场景"
-    case history = "记录"
-    case settings = "设置"
+    case home, meetings, library, settings
 
     var id: String { rawValue }
+
+    /// The three everyday sections; settings sits at the bottom of the sidebar.
+    static let primary: [AppSection] = [.home, .meetings, .library]
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .home: "首页"
+        case .meetings: "所有会议"
+        case .library: "资料夹"
+        case .settings: "设置"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .home: "house"
+        case .meetings: "list.bullet"
+        case .library: "folder"
+        case .settings: "gearshape"
+        }
+    }
+
+    /// Accepts the section names of older demo scripts (assistant, materials, history).
+    init?(demoName: String) {
+        switch demoName {
+        case "assistant", "live", "prepare": self = .home
+        case "materials": self = .library
+        case "history": self = .meetings
+        default:
+            guard let section = AppSection(rawValue: demoName) else { return nil }
+            self = section
+        }
+    }
 }
 
 enum CaptureSource: String, Hashable {

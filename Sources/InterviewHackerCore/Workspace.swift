@@ -75,7 +75,40 @@ public struct ModeProfile: Sendable {
                 documentCategories: ["课件", "笔记", "作业 / 题目", "教材", "其他"],
                 templatePreferences: "我是学生。先用一句话解释概念，再给推导或例子；公式用 LaTeX 行内格式；指出与课件对应的页码。",
                 reviewFocus: "整理本节课的知识点、老师强调的重点和布置的任务；列出我还没弄懂的地方。")
-        case .general:
+        case .labMeeting:
+            return ModeProfile(
+                mode: mode, role: "组会汇报人",
+                fields: [
+                    ModeField("progress", "本周进展", "做了哪些实验、读了哪些论文、结果如何", long: true),
+                    ModeField("problems", "卡住的地方", "想请导师或同学帮忙判断的问题", long: true),
+                    ModeField("next", "下一步计划", "下周打算做什么"),
+                ],
+                documentCategories: ["进展 / 讲稿", "论文", "实验数据", "相关工作", "其他"],
+                templatePreferences: "我在组会上汇报研究进展。回答导师或同学的追问时先给结论，再说依据（实验、数据、论文，标注来源）；结果不好时如实说明原因和下一步；不确定的地方说明还需要做什么实验来确认。",
+                reviewFocus: "整理讨论过的问题、讨论得不够透彻的地方、导师的意见和要求，以及论文和实验的下一步。")
+        case .client:
+            return ModeProfile(
+                mode: mode, role: "我方代表",
+                fields: [
+                    ModeField("counterpart", "客户 / 对方", "公司、参会人、决策人、关注点"),
+                    ModeField("goal", "沟通目标", "这次沟通要达成的结果"),
+                    ModeField("offer", "产品与报价", "我们能提供什么、价格和时间", long: true),
+                    ModeField("concerns", "客户可能的顾虑", "预算、风险、竞品，以及怎么回应", long: true),
+                ],
+                documentCategories: ["产品资料", "报价 / 合同", "客户信息", "会议纪要", "其他"],
+                templatePreferences: "我是我方代表，正在和客户沟通。回答聚焦客户的需求和顾虑，给出可以直接说出口的简短回应；涉及价格、时间和承诺时以资料为准，不确定的说“会后确认”，不替公司做资料里没有的承诺。",
+                reviewFocus: "整理客户的需求和痛点、顾虑与我们的回应、我们答应的事和时间、下一步和需要内部跟进的事项。")
+        case .discussion:
+            return ModeProfile(
+                mode: mode, role: "讨论参与者",
+                fields: [
+                    ModeField("topic", "讨论题目", "要讨论的问题或案例"),
+                    ModeField("position", "我的观点", "我想表达的看法和依据", long: true),
+                ],
+                documentCategories: ["题目材料", "参考资料", "其他"],
+                templatePreferences: "我在参加小组讨论。给出有依据的观点，回应别人的观点时先肯定合理之处再补充；需要时帮我总结各方观点、推动形成结论。",
+                reviewFocus: "整理议题、各方观点、结论与分歧和分工。")
+        case .general, .custom:
             return ModeProfile(
                 mode: mode, role: "参与者",
                 fields: [ModeField("context", "场景说明", "这是什么场合、对方是谁、我希望达成什么", long: true)],
@@ -141,6 +174,10 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var archived: Bool
     /// Skills from the library attached to this scenario (global skills apply anyway).
     public var skillIDs: [UUID]
+    /// Name of a custom meeting type (`mode == .custom`), e.g. "导师一对一".
+    public var customTypeName: String?
+    /// The built-in type a custom type takes its defaults from.
+    public var customBaseMode: SessionMode?
 
     public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle = .concise, preferences: String? = nil,
                 notes: String = "", fields: [String: String] = [:], documents: [ContextDocument] = [],
@@ -153,12 +190,15 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         self.stageReview = stageReview; self.stageReviewAt = stageReviewAt
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.archived = archived
         self.skillIDs = skillIDs
+        self.customTypeName = nil
+        self.customBaseMode = nil
     }
 
     // Tolerant decoding: fields added in later versions get defaults.
     enum CodingKeys: String, CodingKey {
         case id, name, mode, style, preferences, notes, fields, documents, lessons, questionBank, useKnowledge
         case stageReview, stageReviewAt, createdAt, updatedAt, archived, skillIDs
+        case customTypeName, customBaseMode
     }
 
     public init(from decoder: Decoder) throws {
@@ -180,9 +220,18 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         updatedAt = try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
         archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
         skillIDs = try c.decodeIfPresent([UUID].self, forKey: .skillIDs) ?? []
+        customTypeName = try c.decodeIfPresent(String.self, forKey: .customTypeName)
+        customBaseMode = try c.decodeIfPresent(SessionMode.self, forKey: .customBaseMode)
     }
 
-    public var profile: ModeProfile { ModeProfile.for(mode) }
+    /// The type whose defaults apply: a custom type behaves like its base type.
+    public var effectiveMode: SessionMode {
+        guard mode == .custom else { return mode }
+        let base = customBaseMode ?? .general
+        return base == .custom ? .general : base
+    }
+
+    public var profile: ModeProfile { ModeProfile.for(effectiveMode) }
 
     /// Background text for the model: the structured fields followed by free notes.
     public var materialText: String {

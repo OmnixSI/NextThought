@@ -167,7 +167,9 @@ final class AppState {
     var questionTexts: [String] = []
     var suggestedQuestions: [QuestionCandidate] = []
     var verifyUncertainWithModel = UserDefaults.standard.bool(forKey: "verifyUncertainWithModel")
-    var automaticAnswers = UserDefaults.standard.object(forKey: "automaticAnswers") as? Bool ?? true
+    /// 提词 (true) or 只记录 (false) in the running meeting. Set from the meeting
+    /// type at every start and switched in the live page's top bar; no longer a setting.
+    var automaticAnswers = true
     var currentQuestion = ""
     var currentLeadIn: String?
     var pendingQuestion = ""
@@ -248,6 +250,15 @@ final class AppState {
     var autoSummarize = UserDefaults.standard.object(forKey: "autoSummarize") as? Bool ?? true
     /// Add the review's lessons and improved answers to the workspace automatically.
     var autoApplyLessons = UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
+    // MARK: Notes (会后纪要), separate from live answers
+    /// "" picks automatically (see `notesEngine`).
+    var notesModelID = UserDefaults.standard.string(forKey: "notesModelID") ?? ""
+    var notesReasoning = UserDefaults.standard.string(forKey: "notesReasoning") ?? "high"
+    /// "auto" (interface language), "zh" or "en".
+    var notesLanguage = UserDefaults.standard.string(forKey: "notesLanguage") ?? "auto"
+    /// Template per meeting type (SessionMode raw value → template id).
+    var notesTemplateByType = UserDefaults.standard.dictionary(forKey: "notesTemplateByType") as? [String: String] ?? [:]
+    var customNotesTemplates = AppState.loadCustomNotesTemplates()
     /// Daily automatic backups (also taken before updates and imports).
     var autoBackup = UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true
     var activeArchiveID: UUID?
@@ -266,7 +277,22 @@ final class AppState {
     var companionRelayTask: Task<Void, Never>?
 
     // MARK: Live session
-    var section: AppSection = .assistant
+    var section: AppSection = .home
+    /// The meeting being prepared on the home page (nil shows the home overview).
+    var meetingDraft: MeetingDraft?
+    /// Title, carry-over and series of the meeting that starts next / is running.
+    var plannedMeeting: MeetingPlan?
+    /// Online (computer audio + microphone) or in the same room (microphone only).
+    /// Kept for the next meeting and for "立即记录".
+    var meetingVenue = MeetingVenue(rawValue: UserDefaults.standard.string(forKey: "meetingVenue") ?? "") ?? .online
+    /// The answer on the preparation page ("AI 读到的重点 · 可能会问").
+    var predictionAnswerID: UUID?
+    /// Phone pages streaming from the LAN server right now (CompanionServer).
+    var companionClientCount = 0
+    /// A phone was connected since the companion was turned on (to say "reconnecting").
+    var companionHadClient = false
+    /// A start waiting for the one-time recording notice.
+    var recordingNoticePending: PendingStart?
     var isRunning = false
     var isPaused = false
     var isChangingSession = false
@@ -403,7 +429,8 @@ final class AppState {
         Diagnostics.pruneOldLogs()
         // Demo / screenshot mode shows sample data and never touches devices or models.
         guard !DemoMode.isEnabled else { return }
-        prepareOnboardingForCurrentVersion()
+        // The guide is no longer shown at launch: permissions are asked for when a
+        // meeting first starts, and the guide stays available in Settings → Basics.
         Task { await refreshManagedModelStatus() }
         Updater.shared.start()
         startScreenWatch()
@@ -463,7 +490,7 @@ final class AppState {
     // MARK: Readiness
 
     var readinessText: String {
-        if !capturePermissionGranted { return "需要允许录屏与系统音频" }
+        if !isOfflineMeeting, !capturePermissionGranted { return "需要允许录屏与系统音频" }
         if transcriptionBackend == "apple" {
             if !LiveTranscriberFactory.supported { return "Apple 流式识别需要 macOS 26" }
             if recognitionLanguage == "auto" { return "请为 Apple 识别选择中文或 English" }
@@ -474,9 +501,9 @@ final class AppState {
         }
         if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
         if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
-        if microphoneEnabled && microphoneAccess != .granted { return "请先允许麦克风权限" }
+        if usesMicrophone && microphoneAccess != .granted { return "请先允许麦克风权限" }
         if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测对话服务…" : "请先连接对话回答服务" }
-        if !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
+        if !isOfflineMeeting, !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
         return "可以开始"
     }
 
@@ -496,7 +523,8 @@ final class AppState {
             capturePermissionStatus = "已允许 · 已读取 \(captureTargets.count) 个捕获目标"
             Diagnostics.record("capture.targets", ["count": captureTargets.count])
             if captureTargets.contains(where: { $0.id == selectedTargetID }) == false {
-                selectedTargetID = captureTargets.first?.id ?? ""
+                // "电脑声音": all audio this Mac plays (this app excluded), whatever the meeting app.
+                selectedTargetID = mainDisplayTargetID ?? captureTargets.first?.id ?? ""
             }
         } catch {
             captureTargets = []
@@ -562,8 +590,11 @@ final class AppState {
         guard !isDownloadingModel else { return }
         guard answerEngineReady else { errorMessage = "请先连接对话回答服务，再开始实时辅助。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
-        guard !selectedTargetID.isEmpty else { errorMessage = "请先选择屏幕或窗口作为音频捕获目标。"; section = .settings; return }
+        guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
         guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
+        // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
+        // In the room people talk face to face: answers stay quiet unless asked for.
+        automaticAnswers = typeDefaults.liveMode == .prompting && !isOfflineMeeting
         documentPreparation.pauseForMeeting()
         Task { await SemanticWorkspacePreparation.shared.cancelAll() }
         cancelAnswer()
@@ -580,7 +611,7 @@ final class AppState {
             let startupBegan = Date()
             if semanticRetrievalReady { await SemanticRetrievalService.shared.prepare() }
             recognizerIdleTask?.cancel(); recognizerIdleTask = nil
-            if microphoneEnabled { try await MicrophoneCaptureService.authorize() }
+            if usesMicrophone { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
             if transcriptionBackend == "zipformer" {
                 statusText = "正在加载本地识别模型…"
@@ -591,7 +622,7 @@ final class AppState {
             let startedAt = Date()
             sessionStartedAt = startedAt
             entries = []
-            tracker = QuestionCandidateTracker(mode: sessionMode)
+            tracker = QuestionCandidateTracker(mode: activeWorkspace.effectiveMode)
             liveCandidate = nil; suggestedQuestions = []; questionTexts = []; appleUtteranceCounter = [:]
             deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
             answerHistory = []; historyCursor = nil; webLookups = [:]; showOriginalAnswer = []; currentAnswerID = nil; webLookupTask?.cancel()
@@ -600,15 +631,17 @@ final class AppState {
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
-            preparedWorkspace = activeWorkspace
+            preparedWorkspace = await meetingWorkspaceForStart()
             isRunning = true
             documentPreparation.pauseForMeeting()
-            do {
-                try await audio.startCapture(targetID: selectedTargetID)
-            } catch {
-                throw AppFailure.capture("无法捕获所选音源。请在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”允许 InterviewHacker，并确认目标窗口仍打开。\n\(error.localizedDescription)")
+            if !isOfflineMeeting {
+                do {
+                    try await audio.startCapture(targetID: selectedTargetID)
+                } catch {
+                    throw AppFailure.capture("无法捕获所选音源。请在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”允许 InterviewHacker，并确认目标窗口仍打开。\n\(error.localizedDescription)")
+                }
             }
-            if microphoneEnabled {
+            if usesMicrophone {
                 microphone.voiceProcessing = microphoneVoiceProcessing
                 do { try await microphone.startCapture() }
                 catch { microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)") }
@@ -619,13 +652,17 @@ final class AppState {
             Diagnostics.record("session.started", ["backend": transcriptionBackend, "seconds": lastStartupSeconds ?? -1])
             statusText = String(format: "正在聆听 · 启动 %.1f s", lastStartupSeconds ?? 0)
             isStopping = false
-            transcriptionStatus = "等待系统音频"
+            transcriptionStatus = isOfflineMeeting ? "等待麦克风" : "等待系统音频"
             pendingAutomaticQuestion = nil
             errorMessage = nil
             beginArchive(startedAt: startedAt)
             startCandidateTicker()
         } catch {
             isRunning = false
+            // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
+            if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
+                rebuildContextIndex()
+            }
             _ = await audio.stopCapture()
             _ = microphone.stopCapture()
             audio.setPCMHandler(nil)
@@ -661,9 +698,8 @@ final class AppState {
 
     func resumeSession() async {
         guard isRunning && isPaused && !isChangingSession else { return }
-        guard !selectedTargetID.isEmpty else {
-            errorMessage = "请先刷新并选择仍可用的屏幕或窗口。"
-            section = .settings
+        guard isOfflineMeeting || !selectedTargetID.isEmpty else {
+            errorMessage = String(localized: "声音来源已不可用，请刷新后重新选择。")
             return
         }
         isChangingSession = true
@@ -671,15 +707,15 @@ final class AppState {
         do {
             audioEpoch = UUID()
             _ = try await prepareTranscriber()
-            try await audio.startCapture(targetID: selectedTargetID)
-            if microphoneEnabled {
+            if !isOfflineMeeting { try await audio.startCapture(targetID: selectedTargetID) }
+            if usesMicrophone {
                 microphone.voiceProcessing = microphoneVoiceProcessing
                 do { try await microphone.startCapture() }
                 catch { microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)") }
             }
             isPaused = false
             statusText = "正在聆听"
-            transcriptionStatus = "等待系统音频"
+            transcriptionStatus = isOfflineMeeting ? "等待麦克风" : "等待系统音频"
             errorMessage = nil
         } catch {
             _ = await audio.stopCapture()
@@ -731,6 +767,7 @@ final class AppState {
         transcriptionStatus = "已停止"
         finishArchive()
         preparedWorkspace = nil
+        plannedMeeting = nil
         rebuildContextIndex()
         sessionStartedAt = nil
         isStopping = false
@@ -850,7 +887,7 @@ final class AppState {
         }
         let makeParts = { (webSearch: Bool, results: [WebResult]?, excerpts: [ContextExcerpt], screen: ScreenContext?, slide: ContextExcerpt?, image: Bool) in
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: image,
-                preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: excerpts,
+                preferences: workspace.preferences, mode: workspace.effectiveMode, style: workspace.style, excerpts: excerpts,
                 experience: workspace.experienceNotes(), skills: allSnippets, webResults: results, webSearch: webSearch,
                 screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide)
         }
@@ -1013,8 +1050,9 @@ final class AppState {
             return
         }
         let cutoff = Date().addingTimeInterval(-45)
-        let hasRecent = entries.contains { $0.source == CaptureSource.system.rawValue && ($0.endedAt ?? $0.date) > cutoff }
-        if !questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !partialTranscript.isEmpty || hasRecent {
+        let hasRecent = entries.contains { $0.isOtherSide && ($0.endedAt ?? $0.date) > cutoff }
+        if !questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !partialTranscript.isEmpty
+            || (isOfflineMeeting && !microphonePartialTranscript.isEmpty) || hasRecent {
             submitCurrentText()
             return
         }
@@ -1029,8 +1067,9 @@ final class AppState {
 
     private func submitCurrentText() {
         let cutoff = Date().addingTimeInterval(-45)
-        let recent = entries.filter { $0.source == CaptureSource.system.rawValue && ($0.endedAt ?? $0.date) > cutoff }.map(\.text)
-        guard let question = ManualQuestionBuilder.make(typed: questionInput, partial: partialTranscript, recent: recent) else {
+        let recent = entries.filter { $0.isOtherSide && ($0.endedAt ?? $0.date) > cutoff }.map(\.text)
+        let partial = isOfflineMeeting ? microphonePartialTranscript : partialTranscript
+        guard let question = ManualQuestionBuilder.make(typed: questionInput, partial: partial, recent: recent) else {
             errorMessage = "还没有最近 45 秒的转写。请先说话或手动输入问题。"; return
         }
         ask(question, screenshot: nil)
@@ -1086,7 +1125,7 @@ final class AppState {
             isRegionCapturePresented = false
             screenshotURL = result.url
             screenshotPreview = result.preview
-            section = .assistant
+            if !isRunning { section = .home }
             Diagnostics.record("screenshot.capture.completed", ["mode": "region", "width": Int(result.preview.size.width), "height": Int(result.preview.size.height)])
         } catch {
             errorMessage = "区域截图失败：\(error.localizedDescription)"
@@ -1126,7 +1165,7 @@ final class AppState {
                 }
                 screenshotURL = result.url
                 screenshotPreview = result.preview
-                section = .assistant
+                if !isRunning { section = .home }
                 Diagnostics.record("screenshot.capture.completed", ["mode": "window", "owner": window.owner, "width": Int(result.preview.size.width), "height": Int(result.preview.size.height)])
             } catch {
                 errorMessage = "截图失败：\(error.localizedDescription)"
@@ -1210,7 +1249,6 @@ final class AppState {
         defaults.set(codexModelID, forKey: "codexModelID")
         defaults.set(codexReasoning, forKey: "codexReasoning")
         if let codexFastSetting { defaults.set(codexFastSetting, forKey: "codexFastMode") }
-        defaults.set(automaticAnswers, forKey: "automaticAnswers")
         defaults.set(recordSessions, forKey: "recordSessions")
         defaults.set(autoSummarize, forKey: "autoSummarize")
         defaults.set(autoApplyLessons, forKey: "autoApplyLessons")
@@ -1399,8 +1437,10 @@ final class AppState {
             throw AppFailure.transcription("Apple 流式识别需要 macOS 26 与支持的设备；请切换本地或云端识别。")
         }
         let started = Date()
-        liveTranscriber = service
-        let micService = microphoneEnabled ? factory() : nil
+        // In the room there is no computer audio: only the microphone is recognized.
+        let offline = isOfflineMeeting
+        liveTranscriber = offline ? nil : service
+        let micService = usesMicrophone ? factory() : nil
         microphoneTranscriber = micService
         let micStart: Task<String?, Never>? = micService.map { mic in
             Task { @MainActor in
@@ -1408,17 +1448,21 @@ final class AppState {
                 catch { return error.localizedDescription }
             }
         }
-        try await startLive(service, source: .system, epoch: captureEpoch)
+        if !offline { try await startLive(service, source: .system, epoch: captureEpoch) }
         if let micStart, let failure = await micStart.value {
             microphoneTranscriber = nil
             microphoneUnavailable("麦克风识别器启动失败：\(failure)")
         }
         // Both channels also feed the echo monitor (loudness envelopes only).
         let monitor = echoMonitor
-        let systemInput = service.inputHandler()
-        audio.setPCMHandler { samples, origin in
-            systemInput(samples, origin)
-            monitor.system(samples)
+        if offline {
+            audio.setPCMHandler(nil)
+        } else {
+            let systemInput = service.inputHandler()
+            audio.setPCMHandler { samples, origin in
+                systemInput(samples, origin)
+                monitor.system(samples)
+            }
         }
         if let micService = microphoneTranscriber {
             let micInput = micService.inputHandler()

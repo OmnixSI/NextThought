@@ -15,11 +15,15 @@
 
 <br>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/assistant-dark.png"><img src="docs/screenshots/assistant-light.png" width="760" alt="InterviewHacker 主界面：实时转录、问题识别与流式回答"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/redesign/screenshots/LiveSessionPage-zh-dark.png"><img src="docs/redesign/screenshots/LiveSessionPage-zh-light.png" width="760" alt="InterviewHacker 会中页：实时对话与建议回答"></picture>
 
 </div>
 
 ---
+
+## 重新设计：纸与墨（开发中）
+
+界面按 [docs/redesign](docs/redesign/README.md) 重做：一场会议就是一页（准备 → 进行中 → 纪要）；侧边栏只有 首页 / 所有会议 / 资料夹；8 种会议类型决定会中默认和纪要模板；“系列”自动接上上一场的资料、复盘和经验；声音默认听电脑声音，支持线下会议；会后纪要用单独的模型，先校对转写，再按模板整理并核对。新写的界面中英文一起交付（设置 → 基础 → 语言）。
 
 ## v1.8.0 简洁设置与实时对话引导
 
@@ -50,97 +54,71 @@ Qwen3-Embedding-0.6B Q8 为资料增加本地语义检索。全部模型约 **1.
 
 ## 界面导览
 
-顶栏四个页面：**助手 · 场景 · 记录 · 设置**。开始 / 暂停 / 停止、计时和双路音量表常驻在右上角，在任何页面都能控制。
+> 下面的图片是 [重新设计](docs/redesign/README.md) 的设计稿截图（“纸与墨”）；App 自己的截图由 Screenshots 工作流用演示数据重新生成（`INTERVIEWHACKER_DEMO=1`，见 `.github/workflows/screenshots.yml`）。
 
-### ① 助手：模块随你摆（见顶部截图）
+一场会议就是一页，会自己经历三个阶段：**准备 → 进行中 → 纪要**。窗口左边是侧边栏：**首页 · 所有会议 · 资料夹**，**设置**在最下面（也可以按 ⌘,）。界面语言在 设置 → 基础 → 语言 里切换（跟随系统 / 简体中文 / English）。
 
-助手页由四个模块组成：**实时对话、当前问题与候选、建议回答、回答记录**。输入框旁的 **模块** 按钮可以换成“回答在左”“讲稿在左”“单栏上下排列”“只看回答”等预设布局，也可以显示 / 隐藏、移动模块或弹出为独立小窗（小窗上点“合并回主窗口”或关掉就回来）。模块之间、两栏之间的空隙可以拖动调整大小，上下左右都行。布局会被记住。
+### ① 首页：马上要开会了
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/redesign/screenshots/HomePage-zh-dark.png"><img src="docs/redesign/screenshots/HomePage-zh-light.png" width="760" alt="首页"></picture>
 
-- **实时对话**：对方和我分两侧显示，被识别为问题的句子标上“问题”；虚线气泡是对方正在说、还没说完的话。悬停任意一句可以“回答这句”。和对方刚说的话几乎一样的麦克风文字会当作扬声器回声灰色显示、不参与回答，点“是我说的”即可恢复。
-- **顶部一行**：当前场景（如“字节后端二面”）和音频来源都可以直接切换；下面一行是识别状态，包括识别引擎、实时率 RTF、整句精修耗时，以及已忽略的回声段数。
-- **右侧问题条**：显示识别到的问题类型（明确提问 / 请求 / 追问）和置信度。对方补充了后半句时，会自动改答完整的问题。
-- **建议回答**：逐字流式输出，写成可以直接说出口的口语。需要最新信息时上方出现“正在联网…”，查好后自动换成联网版（带 [1] [2] 来源），可切回原回答；也可以点 **联网查一下**。下方一键调整（更简短 / 展开 / 举例 / STAR / 英文版 / 中文版 / 澄清…）。
-- **回答记录**：本场所有回答按时间排列，点一下就在建议回答里回看。
-- **底部输入框**：可以手动输入问题，或截图提问；**Fast** 按钮切换 Codex Fast 模式；**立即回答**（⌘⇧Return）会立刻回答最新的问题。
+- **新会议**（⌘N）：进入准备页。**立即记录**（⌘⇧R）：不选类型、不加资料，马上开始，结束后自动出纪要。
+- 下面是最近两场会议和它们的结果（几个待办、几道题待改进）。
+- 接日历之后这里会显示“下一场会议”（第二步）。
 
-### ② 提词器：放在摄像头下方，看着镜头就能读
+### ② 准备页：一页从上往下
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/teleprompter-dark.png"><img src="docs/screenshots/teleprompter-light.png" width="640" alt="提词器"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/redesign/screenshots/PreparePage-zh-dark.png"><img src="docs/redesign/screenshots/PreparePage-zh-light.png" width="760" alt="准备页"></picture>
 
-- 半透明悬浮窗，显示聆听状态、首字耗时、当前问题和回答。可以翻页、调字号，开启鼠标穿透后不挡操作。
-- 设置 → 提词器 里可以调不透明度，也可以打开**隐藏背景**：玻璃背景完全透明，只留下文字、边框和按钮，三者始终清晰不跟着不透明度一起变淡。
-- 鼠标穿透时**只有控制鼠标穿透的那个按钮不穿透**，其余内容照常点穿——所以随时能点掉它。
-- 常用调整和“回答 / 取消 / 复制”都在窗上；⌘⇧\ 一键隐藏全部窗口。
+1. **这是什么会**：通用、面试、汇报 / 答辩、组会、工作会议、客户沟通、讲座 / 课程、小组讨论，或自定义。选了类型，会中默认（提词还是只记录）、回答长度和纪要模板就跟着定好；输入标题时会先猜好类型。
+2. **接着上一场**：标题像以前的某个系列（例如“字节跳动 · 后端二面”接“字节跳动 · 后端”）时出现，勾选带入资料、复盘（题库）、经验，完整转写默认不带。不是同一件事就点“不是同一个系列”；也可以“从以前的会议带入…”。
+3. **这次新加的资料**：拖进来就开始读，显示“读取中 → 已读懂”；读完可以让 AI 写出“读到的重点”和“可能会问”的题。
+4. **开始前检查**：声音（线上 / 线下）、回答（当前模型，开着快速模式时标出）、手机（开启手机伴侣时）。
 
-### ③ 场景：每场面试、每次报告各用一套
+页面底部只有一个按钮：**开始**。资料没读完也能开始；录屏和麦克风权限在第一次开始时就地申请。
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/materials-dark.png"><img src="docs/screenshots/materials-light.png" width="720" alt="场景页：资料与要求"></picture>
+### ③ 会中：只留这场对话
 
-- **左栏**：按模式分组列出所有场景（面试 / 学术会议 / 商务会议…），每个场景显示资料数、题库题数和会话数。点 ＋ 新建，右键可复制或删除。
-- **资料与要求**：填写当前模式的专属信息（面试是应聘公司、岗位、面试官 / HR、我的亮点、期望与底线），按分类上传资料（简历、JD、八股、面经…），设置回答要求。只显示前两项必填信息，其余折进“更多背景（可选）”。
-- **批量导入**：点“导入资料”可以一次选多个文件或整个文件夹。系统把它们统一转成结构化 Markdown，在后台静默归档成 `.md`，并按文件名和内容**自动归类**到简历 / 岗位 JD / 八股等分类——不用再一个一个手动分。
-- 右上角可以切换模式、选择回答模板，或用“预测问题”在会前生成可能被问到的问题。
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/redesign/screenshots/LiveSessionPage-zh-dark.png"><img src="docs/redesign/screenshots/LiveSessionPage-zh-light.png" width="760" alt="会中 · 提词"></picture>
 
-### ④ 经验库与题库：越用越懂你
+- 开始后窗口进入**专注模式**：侧边栏收起，整个窗口只属于这场会议。⌘, 打开的设置是单独的小窗口。
+- **顶栏**：计时（点一下暂停）、会议标题、**提词 / 只记录**、手机状态（开启手机伴侣时）、模型标签（点开“回答设置”：模型、快速模式、联网、回答长度，从下一个回答开始生效）、提词器、结束。
+- **左栏**是实时对话（对方 / 我；线下会议标“现场”），被识别为问题的句子标“问题”；**右栏**是建议回答：头部 ‹ 2/5 › 翻看本场的回答，需要联网时才出现“正在联网核查…”，下方是 更简短 · 举例 · 英文版 和“…”（其余改写、重新生成、联网查一下、复制），底部一行写依据。
+- **底部**一行输入框（⌘L）、截图（框选区域 / 选择窗口）和全窗口唯一的主按钮 **立即回答**（⌘⇧↩）。
+- **只记录**时右栏保持安静，需要时按 ⌘⇧↩ 或输入问题。
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workspace-knowledge-dark.png"><img src="docs/screenshots/workspace-knowledge-light.png" width="720" alt="经验库与题库"></picture>
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/redesign/screenshots/LiveNotesPage-zh-dark.png"><img src="docs/redesign/screenshots/LiveNotesPage-zh-light.png" width="760" alt="会中 · 只记录"></picture>
 
-- **经验库**：每次会后复盘提炼出的“下次怎么做更好”。可以置顶（优先交给模型）、删除，也可以手动添加。
-- **题库**：对方问过的问题和改进后的回答，记录被问次数，支持搜索。下次遇到同类问题时，优先采用这里准备好的答案。
-- 顶部开关控制回答时是否参考这里的内容。
+**提词器**放在摄像头下方，看着镜头就能读：底部是三个改写、“…”（复制、打开主窗口……）和一个“立即回答 / 停止生成”按钮。可以调字号、开鼠标穿透（只有控制穿透的那个按钮不穿透），⌘⇧\ 一键隐藏全部窗口。
 
-### ⑤ 复盘：看清进步和薄弱点
+### ④ 声音从哪来
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/workspace-review-dark.png"><img src="docs/screenshots/workspace-review-light.png" width="720" alt="场景复盘"></picture>
+- **线上（默认）**：对方 = **电脑声音**（这台 Mac 播放的所有声音，App 自己的声音会被排除），不管用的是腾讯会议、飞书、Zoom 还是网页会议；我 = 麦克风。电脑还放着别的声音时，才需要改成“只听某个窗口…”。
+- **线下**：大家在同一个房间，只用麦克风，转写标“现场”，默认只记录。纪要只在原话里点了名时才把事情归到具体的人。
+- 音频只在本机识别，**不保存录音**。
 
-- 顶部统计这个场景累计的会话、问题、经验和题库数量。
-- **阶段复盘**：把多次会话放在一起分析，给出总体进展、高频问题（附次数）和下一步准备清单。
-- 下方列出这个场景的所有会话，点“查看”跳到记录页。
+### ⑤ 会后：结束就是纪要
 
-### ⑥ 记录：每次会话的完整档案
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/redesign/screenshots/SummaryPage-zh-dark.png"><img src="docs/redesign/screenshots/SummaryPage-zh-light.png" width="760" alt="会后 · 工作会议纪要"></picture>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png"><img src="docs/screenshots/history-light.png" width="720" alt="会话记录"></picture>
+点“结束”后同一场会议直接变成纪要页，纪要在后台整理（通常 1–3 分钟），分三步：
 
-- 每次会话自动保存，可以按场景筛选。
-- 记录多了也不怕：左侧可以**搜索**（标题、场景、问题和提词内容）、按**日期**和**时长**筛选，并按时间、时长或提问数排序，右上角显示命中条数，一键清除筛选。
-- 每条记录有四个视图：**摘要**（标题、摘要、完整问题清单含我的回答要点、关键信息、待办、复盘建议）、**问题**、**转录**（可搜索）、**提词**（带截图的提词会把当时的截图一起归档下来，可以直接点开看）。
-- 可以重命名、复制或导出 Markdown、在 Finder 中显示；“已加入场景经验库”表示这次的复盘已经进了经验库和题库。
+1. **校对转写**：结合资料里的专有名词纠正识别错误。改过的地方在转写里用虚线标出，悬停能看到原来识别的内容，右键可以撤销。不重新识别声音，也不保存录音。
+2. **按模板整理**：面试复盘、学术（组会 / 答辩 / 汇报）、工作会议、客户沟通、讲座 / 课程、小组讨论、通用，也可以自己建模板。每一条都带原话的时间点，点一下跳回转写。每个模板都有“不足”这一部分（答得不好 / 讨论不透彻 / 风险和未决）。
+3. **核对**：没有原话依据的条目删掉；“周四交付”这类相对日期按会议日期换成具体日期；人名听不清、截止时间有两种说法的标“待确认”。
 
-### ⑦ 设置：核心先就绪，复杂选项按需打开
+纪要用单独的模型（设置 → 纪要：默认最强模型、推理“高”、不开快速模式），可以换模板或换语言重新整理。主按钮是 **复制纪要**；面试复盘是 **存进题库 · n 题**：待改进的题和更好的答法进这个系列的题库，下一场自动带入。
 
-默认只保留核心的语音识别、音频权限、对话服务和常用提词器设置。右上角的 **高级设置** 开关可显示模型参数、联网/技能细项、备份策略及维护工具；关闭开关只收起控件，已有配置保留。
+<picture><source media="(prefers-color-scheme: dark)" srcset="docs/redesign/screenshots/ReviewPage-zh-dark.png"><img src="docs/redesign/screenshots/ReviewPage-zh-light.png" width="760" alt="会后 · 面试复盘"></picture>
 
-首次安装和功能版本升级会展示五步引导：**认识助手 → 准备语音 → 连接对话 → 资料可选 → 开始辅助**。语音和对话是核心能力；OCR 增强、向量嵌入按需启用。未完成的引导可继续，普通补丁不强制重复。
+### ⑥ 所有会议与资料夹
 
-资料页明确区分“需要下载 / 本应用已安装 / 正在使用”，说明每种方式的取舍。关闭向量检索时仍按关键词挑片段，并不是把全部资料塞进上下文。完整分层与行为说明见 [设置设计](docs/SETTINGS-DESIGN.md)。
+- **所有会议**：以前的“记录”，可以搜索、按日期和时长筛选、排序；点开就是那场会议的纪要页（纪要 / 转写 / 会中提词）。右键一场会议可以“以此为上一场，准备下一场”。
+- **资料夹**：按**系列**（同一件事的多场会议，以前叫“场景”）保存资料、回答要求、技能、经验库、题库和阶段复盘。把资料从系列里拆出来、跨会议复用放在第二步。
 
-![默认设置：只保留核心准备与常用选项](docs/screenshots/settings-simple-dark.png)
+### ⑦ 设置
 
-![五步引导：从实时语音对话开始](docs/screenshots/onboarding-realtime-dark.png)
-
-资料设置按用途显示安装与生效状态，点击“准备并使用”会自动准备完整依赖，共用组件只装一次。
-
-![资料选项：系统识别、本机增强和 Codex 的取舍](docs/screenshots/document-options-dark.png)
-
-高级设置中可管理多家 API 预设、推理强度、联网策略和逐个模型组件。
-
-**高级设置 → 技能：加载自己的 SKILL.md**
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-skills-dark.png"><img src="docs/screenshots/settings-skills-light.png" width="720" alt="设置：技能"></picture>
-
-- 导入一个或多个 Markdown 文件（支持 SKILL.md 的 `name` / `description` 头），或从模板新建。勾选“所有场景”的技能每次回答都用；其他技能在 **场景 → 资料与要求 → 技能** 里按场景勾选，比如面试场景用“系统设计答题框架”，学术会议用“答辩应对”。
-- 技能会随备份和场景导出一起保存。
-
-**设置 → 数据：换模型、换接口、更新都不丢**
-
-<picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-data-dark.png"><img src="docs/screenshots/settings-data-light.png" width="720" alt="设置：数据"></picture>
-
-- **会话记录与复盘**：默认显示记录开关与复盘状态；高级设置可调整会后摘要和自我迭代。
-- **导出与导入**：一个 `.ihbackup` 文件包含全部场景、记录和设置；默认导出不含密钥，高级设置可额外选择。导入只合并、不删除现有数据。
-- **自动备份**：每天一次，更新前和导入前也会备份；可以从任意一份备份合并恢复。
-
-<sub>截图使用隔离的演示数据生成，设置与引导截图对应 v1.8.0。截图工作流可重新生成深浅两色（`INTERVIEWHACKER_DEMO=1`，见 `.github/workflows/screenshots.yml`）。</sub>
+默认只保留核心选项，右上角的 **高级设置** 开关显示模型参数、联网与技能细项、备份策略和维护工具。新增 **纪要** 分组（纪要模型、何时整理、纪要语言、各类型的默认模板、自定义模板）和 **基础 → 语言**。原来的“自动回答”开关已经取消，由会中的“提词 / 只记录”代替。新手引导不再在启动时弹出，可以从 设置 → 基础 打开。完整分层见 [设置设计](docs/SETTINGS-DESIGN.md)。
 
 ## 功能
 

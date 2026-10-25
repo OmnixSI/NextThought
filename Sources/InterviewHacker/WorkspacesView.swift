@@ -2,8 +2,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import InterviewHackerCore
 
-/// “场景”: one workspace per interview / talk / meeting series, each with its own
-/// inputs, materials, answer requirements, experience bank, question bank and reviews.
+/// 资料夹: the series ("系列", stored as workspaces): one per interview process, talk
+/// or recurring meeting, each with its own materials, answer requirements, lessons,
+/// question bank and reviews, shared by all of its meetings.
 struct WorkspacesView: View {
     @Environment(AppState.self) private var state
 
@@ -32,27 +33,27 @@ private struct WorkspaceList: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("场景").font(.system(size: 15, weight: .semibold))
-                    Text("每套面试 / 报告 / 会议单独管理").font(.system(size: 11)).foregroundStyle(.secondary)
+                    Text("系列").font(Typo.section)
+                    Text("同一件事的多场会议，共享资料、题库和经验").font(Typo.caption).foregroundStyle(Ink.secondary)
                 }
                 Spacer()
                 Menu {
-                    ForEach(SessionMode.allCases) { mode in
-                        Button { state.createWorkspace(mode: mode) } label: { Label(mode.title, systemImage: mode.symbol) }
+                    ForEach(SessionMode.builtIn) { mode in
+                        Button { state.createWorkspace(mode: mode) } label: { Label(mode.displayName, systemImage: mode.symbol) }
                     }
                     Divider()
-                    Button("导入场景或备份…") { state.importData(applySettings: false) }
+                    Button("导入系列或备份…") { state.importData(applySettings: false) }
                 } label: { Image(systemName: "plus") }
                     .menuStyle(.button).buttonStyle(GlassIconButtonStyle(size: 28)).menuIndicator(.hidden).fixedSize()
-                    .help("新建场景")
+                    .help("新建系列")
             }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(SessionMode.allCases) { mode in
                         let items = state.workspaces.visible.filter { $0.mode == mode }
                         if !items.isEmpty {
-                            Label(mode.title, systemImage: mode.symbol)
-                                .font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary).padding(.top, 6)
+                            Label(mode.displayName, systemImage: mode.symbol)
+                                .overline().padding(.top, 6)
                             ForEach(items) { workspace in row(workspace) }
                         }
                     }
@@ -61,11 +62,11 @@ private struct WorkspaceList: View {
         }
         .card()
         .frame(maxHeight: .infinity, alignment: .top)
-        .confirmationDialog("删除场景“\(deleting?.name ?? "")”？", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
+        .confirmationDialog("删除系列“\(deleting?.name ?? "")”？", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
             Button("删除", role: .destructive) { if let deleting { state.deleteWorkspace(deleting.id) }; deleting = nil }
             Button("取消", role: .cancel) { deleting = nil }
         } message: {
-            Text("资料、经验库和题库会一起删除（会在“备份”文件夹留一份副本）。会话记录不受影响。")
+            Text("资料、经验库和题库会一起删除（会在“备份”文件夹留一份副本）。会议记录不受影响。")
         }
     }
 
@@ -79,7 +80,7 @@ private struct WorkspaceList: View {
                 if active { Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.accent) }
             }
             if !compact {
-                Text("\(workspace.documents.count) 份资料 · \(workspace.questionBank.count) 题 · \(sessions) 次会话")
+                Text("\(workspace.documents.count) 份资料 · \(workspace.questionBank.count) 题 · \(sessions) 场会议")
                     .font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
             }
         }
@@ -88,10 +89,10 @@ private struct WorkspaceList: View {
         .contentShape(Rectangle())
         .onTapGesture { state.switchWorkspace(workspace.id) }
         .contextMenu {
-            Button("使用这个场景") { state.switchWorkspace(workspace.id) }
+            Button("使用这个系列") { state.switchWorkspace(workspace.id) }
             Button("复制一份") { state.duplicateWorkspace(workspace.id) }
-            Button("导出场景（含资料与题库）…") { state.exportWorkspace(workspace.id, includeSessions: false) }
-            Button("导出场景与会话记录…") { state.exportWorkspace(workspace.id, includeSessions: true) }
+            Button("导出系列（含资料与题库）…") { state.exportWorkspace(workspace.id, includeSessions: false) }
+            Button("导出系列与会议记录…") { state.exportWorkspace(workspace.id, includeSessions: true) }
             Divider()
             Button("删除…", role: .destructive) { deleting = workspace }.disabled(state.workspaces.workspaces.count <= 1)
         }
@@ -115,13 +116,13 @@ private struct WorkspaceEditor: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: state.sessionMode.symbol)
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 34, height: 34).background(Brand.gradient, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                TextField("场景名称", text: Binding(get: { state.activeWorkspace.name }, set: { state.activeWorkspace.name = $0 }))
-                    .textFieldStyle(.plain).font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 15, weight: .regular)).foregroundStyle(Ink.secondary)
+                    .frame(width: 24, height: 24)
+                TextField("系列名称", text: Binding(get: { state.activeWorkspace.name }, set: { state.activeWorkspace.name = $0 }))
+                    .textFieldStyle(.plain).font(Typo.section)
                 Spacer()
                 MenuPicker(selection: Binding(get: { state.sessionMode }, set: { state.sessionMode = $0; state.rebuildContextIndex() }),
-                           options: SessionMode.allCases.map { ($0, $0.title) })
+                           options: typeOptions)
                 MenuPicker(selection: $state.answerStyle, options: AnswerStyle.allCases.map { ($0, $0.title) })
                 Button { state.predictQuestions() } label: { Label("预测问题", systemImage: "wand.and.stars") }
                     .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering)
@@ -141,6 +142,17 @@ private struct WorkspaceEditor: View {
         }
         .card()
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+}
+
+private extension WorkspaceEditor {
+    /// Built-in types, plus the custom type when this series uses one.
+    var typeOptions: [(SessionMode, String)] {
+        var options = SessionMode.builtIn.map { ($0, $0.displayName) }
+        if state.activeWorkspace.mode == .custom {
+            options.append((.custom, state.activeWorkspace.typeDisplayName))
+        }
+        return options
     }
 }
 
@@ -539,9 +551,9 @@ private struct ReviewTab: View {
         }
         Divider()
         VStack(alignment: .leading, spacing: 6) {
-            Label("会话记录 \(sessions.count)", systemImage: "clock").font(.system(size: 13, weight: .semibold))
+            Label("会议 \(sessions.count)", systemImage: "clock").font(.system(size: 13, weight: .semibold))
             if sessions.isEmpty {
-                Text("在这个场景下开始辅助后，记录会出现在这里。").font(.caption).foregroundStyle(.secondary)
+                Text("这个系列的会议会出现在这里。").font(.caption).foregroundStyle(.secondary)
             }
             ForEach(sessions) { meta in
                 HStack(spacing: 8) {
@@ -557,7 +569,7 @@ private struct ReviewTab: View {
                     case .failed: Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
                     case .none: EmptyView()
                     }
-                    Button("查看") { state.historySelection = meta.id; state.historyWorkspaceFilter = workspace.id; state.section = .history }
+                    Button("查看") { state.historySelection = meta.id; state.historyWorkspaceFilter = workspace.id; state.section = .meetings }
                         .buttonStyle(ChipButtonStyle())
                 }
                 .padding(8).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))

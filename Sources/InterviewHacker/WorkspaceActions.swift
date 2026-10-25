@@ -81,14 +81,14 @@ extension AppState {
         guard !isRunning else { errorMessage = "会议中保持当前资料版本；请结束会议后切换场景。"; return }
         cancelAnswer()
         workspaces.activate(id)
-        tracker.mode = sessionMode
+        tracker.mode = activeWorkspace.effectiveMode
         rebuildContextIndex()
         Diagnostics.record("workspace.switched", ["mode": sessionMode.rawValue])
     }
 
     func createWorkspace(mode: SessionMode, name: String? = nil) {
         workspaces.create(mode: mode, name: name)
-        tracker.mode = sessionMode
+        tracker.mode = activeWorkspace.effectiveMode
         rebuildContextIndex()
     }
 
@@ -102,16 +102,19 @@ extension AppState {
         rebuildContextIndex()
     }
 
-    /// Pre-session preparation: likely questions with short talking points from the materials.
+    /// Pre-session preparation: what the materials say, and likely questions with
+    /// short talking points (shown as "AI 读到的重点 · 可能会问").
     func predictQuestions() {
         let workspace = activeWorkspace
         guard !workspace.documents.filter(\.enabled).isEmpty || !workspace.materialText.isEmpty else {
-            errorMessage = "请先在场景里填写信息或添加资料。"; return
+            errorMessage = String(localized: "先添加资料，AI 才能读出重点。"); return
         }
-        section = .assistant
         let topic = workspace.documents.filter(\.enabled).map(\.labeledName).joined(separator: "、")
-        let who = ModeProfile.for(workspace.mode).role
-        ask("请根据这个场景的资料（\(topic.isEmpty ? "场景信息" : topic)），预测本次\(workspace.mode.title)中我（\(who)）最可能被问到的 8 个问题，并为每个问题给出 1–2 句可直接说的回答要点；引用资料时标注来源页码；题库里已有准备的问题优先使用准备好的答案。", screenshot: nil)
+        let who = ModeProfile.for(workspace.effectiveMode).role
+        let lessons = workspace.experienceNotes(limit: 800)
+        let carried = lessons.isEmpty ? "" : "以前的经验（结合上一场提醒我）：\n\(lessons)\n"
+        // l10n-ignore: prompt for the model
+        ask("请根据这个系列的资料（\(topic.isEmpty ? "系列信息" : topic)）为本次\(workspace.effectiveMode.title)做会前准备，我是\(who)。\(carried)严格按下面两节输出：\n## 我读到的重点\n3 条，每条一句，写这场会最需要记住的事（例如岗位偏重什么、上一场卡在哪里）。\n## 可能会问\n5 个最可能被问到的问题，每个问题后面用一两句给出可以直接说的回答要点；引用资料时标注来源页码；题库里已有准备的问题优先使用准备好的答案。", screenshot: nil)
     }
 
     // MARK: Knowledge (experience bank and question bank)

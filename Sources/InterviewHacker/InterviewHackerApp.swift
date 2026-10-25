@@ -13,6 +13,19 @@ struct InterviewHackerApp: App {
         .defaultSize(width: MainWindowLayout.ideal.width, height: MainWindowLayout.ideal.height)
         .windowResizability(.contentMinSize)
         .commands {
+            // One main window: ⌘N starts a new meeting instead of opening a window.
+            CommandGroup(replacing: .newItem) {
+                Button("新会议") { AppState.shared.beginNewMeeting() }
+                    .keyboardShortcut("n", modifiers: .command)
+                    .disabled(AppState.shared.isRunning)
+                Button("立即记录") { Task { await AppState.shared.recordNow() } }
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                    .disabled(AppState.shared.isRunning || AppState.shared.isChangingSession)
+            }
+            CommandGroup(replacing: .appSettings) {
+                Button("设置…") { AppState.shared.openSettingsFromMenu() }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(after: .windowSize) {
                 Button("恢复最佳窗口大小") { MainWindowLayout.resetFrontWindow() }
                     .keyboardShortcut("0", modifiers: [.command, .option])
@@ -33,6 +46,7 @@ enum MainWindowLayout {
 
     static func isMainWindow(_ window: NSWindow) -> Bool {
         !(window is NSPanel) && !window.isSheet && window.sheetParent == nil
+            && window.identifier != SettingsWindow.identifier
             && window.contentViewController != nil && window.styleMask.contains(.titled)
     }
 
@@ -47,7 +61,7 @@ enum MainWindowLayout {
         window.level = keepOnTop ? .floating : .normal
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.minSize = minimum
-        window.backgroundColor = .windowBackgroundColor
+        window.backgroundColor = Ink.paperNSColor
         window.isOpaque = true
         window.isRestorable = false
         window.setFrameAutosaveName("")
@@ -57,6 +71,12 @@ enum MainWindowLayout {
     static func reset(_ window: NSWindow) {
         if window.styleMask.contains(.fullScreen) { return }
         window.setFrame(idealFrame(on: screen(for: window)), display: true, animate: window.isVisible)
+    }
+
+    /// Shows the main window and activates the app.
+    static func bringToFront() {
+        NSApp.windows.first(where: isMainWindow)?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     static func resetFrontWindow() {
@@ -95,7 +115,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()
-            DetachedModuleController.shared.restore()
         }
     }
 }

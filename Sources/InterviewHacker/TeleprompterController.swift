@@ -31,9 +31,9 @@ final class TeleprompterController {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .camera: "摄像头下方"
-            case .bottom: "屏幕底部"
-            case .right: "右侧"
+            case .camera: String(localized: "摄像头下方")
+            case .bottom: String(localized: "屏幕底部")
+            case .right: String(localized: "右侧")
             }
         }
     }
@@ -52,7 +52,7 @@ final class TeleprompterController {
     func show() {
         if panel == nil {
             let next = OverlayPanel(contentRect: NSRect(x: 0, y: 0, width: 640, height: 300), styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView], backing: .buffered, defer: false)
-            next.title = "InterviewHacker 提词器"
+            next.title = String(localized: "InterviewHacker 提词器")
             next.titlebarAppearsTransparent = true
             next.titleVisibility = .hidden
             next.isFloatingPanel = true
@@ -230,29 +230,15 @@ private struct TeleprompterView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
-            if !state.displayedQuestion.isEmpty || state.isAnswering {
-                Text(state.displayedQuestion.isEmpty ? state.pendingQuestion : state.displayedQuestion)
-                    .font(.system(size: max(12, state.teleprompterFontSize * 0.6), weight: .medium))
-                    .foregroundStyle(.secondary).lineLimit(2)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .glassCapsule(tint: state.teleprompterHideBackground ? nil : Brand.accent.opacity(0.15))
-                    .background {
-                        // With the background hidden the glass has nothing to
-                        // frost, so the question gets a solid surface instead.
-                        if state.teleprompterHideBackground {
-                            Capsule().fill(Color(nsColor: .controlBackgroundColor))
-                        }
-                    }
-            }
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         if state.displayedAnswer.isEmpty {
-                            Text(state.isAnswering ? "正在生成…" : "回答会显示在这里。可拖到摄像头下方或第二块屏幕；\(state.shortcutLabel(.forceAnswer)) 立即回答。")
+                            Text(state.isAnswering ? "正在生成…" : "回答会显示在这里。拖到摄像头下方，视线就不用离开对方；\(state.shortcutLabel(.forceAnswer)) 立即回答。")
                                 .font(.system(size: state.teleprompterFontSize * 0.75))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Ink.secondary)
                         } else {
-                            MarkdownText(text: state.displayedAnswer, size: state.teleprompterFontSize, lineSpacing: state.teleprompterFontSize * 0.3).equatable()
+                            MarkdownText(text: state.displayedAnswer, size: state.teleprompterFontSize, lineSpacing: state.teleprompterFontSize * 0.45).equatable()
                         }
                         Color.clear.frame(height: 1).id("end")
                     }
@@ -268,71 +254,83 @@ private struct TeleprompterView: View {
         .padding(18)
         .background {
             if state.teleprompterHideBackground {
-                // The glass background disappears completely; only the text, the
+                // The background disappears completely; only the text, the
                 // border and the buttons are left, each with its own opacity.
                 Color.clear
             } else {
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(Color.clear)
-                    .glassSurface(cornerRadius: 26, tint: nil)
+                // A floating layer: raised surface and a hairline; the window
+                // server draws the shadow.
+                RoundedRectangle(cornerRadius: Space.radiusLarge, style: .continuous)
+                    .fill(Ink.surfaceRaised)
+                    .overlay(RoundedRectangle(cornerRadius: Space.radiusLarge, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 0.5))
             }
         }
         .overlay {
             if state.teleprompterHideBackground {
-                // A fully opaque border, so the panel is still readable when it
-                // floats over a busy screen.
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .strokeBorder(Brand.accent, lineWidth: 1.5)
+                // A fully opaque border keeps the panel readable over a busy screen.
+                RoundedRectangle(cornerRadius: Space.radiusLarge, style: .continuous)
+                    .strokeBorder(Ink.ink, lineWidth: 1.5)
             }
         }
         .padding(2)
-        .foregroundStyle(.primary)
+        .foregroundStyle(Ink.ink)
         .preferredColorScheme(state.colorScheme)
         .animation(.easeInOut(duration: 0.32), value: state.appearance)
     }
 
+    /// "● 正在听  如果删除缓存失败了怎么办？" plus the panel controls.
     private var header: some View {
-        GlassGroup(spacing: 6) { HStack(spacing: 8) {
-            PulseDot(active: state.isRunning && !state.isPaused)
-            Text(state.isRunning ? (state.isPaused ? "已暂停" : "正在聆听") : "未采集").font(.caption)
+        HStack(spacing: 8) {
+            Circle().fill(state.isRunning && !state.isPaused ? Ink.live : Ink.tertiary).frame(width: 7, height: 7)
+            Text(state.isRunning ? (state.isPaused ? "已暂停" : "正在听") : "未在听")
+                .font(.system(size: 12, weight: .medium))
+            let question = state.displayedQuestion.isEmpty ? state.pendingQuestion : state.displayedQuestion
+            if !question.isEmpty {
+                Text(verbatim: AnswerRefinement.originalQuestion(of: question))
+                    .font(.system(size: 12)).foregroundStyle(Ink.secondary).lineLimit(1)
+            } else if let candidate = state.liveCandidate, candidate.state != .triggered {
+                Text(verbatim: candidate.text).font(.system(size: 12)).foregroundStyle(Ink.secondary).lineLimit(1)
+            }
             if state.isAnswering { ProgressView().controlSize(.mini) }
-            if let first = state.lastFirstTokenSeconds, !state.isAnswering {
-                Text(String(format: "首字 %.1fs", first)).font(.caption2).foregroundStyle(.secondary)
-            }
-            if let candidate = state.liveCandidate, candidate.state != .triggered {
-                Text("· \(candidate.assessment.intent.title)：\(candidate.text)").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
             Spacer()
             if let position = state.historyPositionText {
-                Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }.buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground))
-                Text(position).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }.buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground))
+                Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }.buttonStyle(GlassIconButtonStyle(size: 24))
+                Text(verbatim: position).font(.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
+                Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }.buttonStyle(GlassIconButtonStyle(size: 24))
             }
             Button { state.teleprompterFontSize = max(14, state.teleprompterFontSize - 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.smaller") }
-                .buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground)).help("缩小文字")
+                .buttonStyle(GlassIconButtonStyle(size: 24)).help("缩小文字")
             Button { state.teleprompterFontSize = min(44, state.teleprompterFontSize + 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.larger") }
-                .buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground)).help("放大文字")
+                .buttonStyle(GlassIconButtonStyle(size: 24)).help("放大文字")
             // This button is the way out of click-through, so it must keep
             // receiving clicks even when the rest of the panel does not.
             Button { state.toggleClickThrough() } label: { Image(systemName: state.clickThrough ? "cursorarrow.slash" : "cursorarrow") }
-                .buttonStyle(GlassIconButtonStyle(size: 26, tint: state.clickThrough ? Brand.accent : nil, opaque: state.teleprompterHideBackground))
+                .buttonStyle(GlassIconButtonStyle(size: 24, tint: state.clickThrough ? Brand.accent : nil))
                 .background(ControlFrameReporter())
                 .help("鼠标穿透 · \(state.shortcutLabel(.toggleClickThrough))")
             Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "xmark") }
-                .buttonStyle(GlassIconButtonStyle(size: 26, opaque: state.teleprompterHideBackground)).help("隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
-        } }
+                .buttonStyle(GlassIconButtonStyle(size: 24)).help("隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
+        }
     }
 
+    /// Three rewrites, "…" (copy, main window, the rest) and one answer / stop button.
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            RefinementBar(compact: true, opaque: state.teleprompterHideBackground)
-            HStack {
-                Button { state.forceAnswerCurrent() } label: { Label("回答", systemImage: "bolt.fill") }.buttonStyle(ChipButtonStyle(prominent: true))
-                Button { state.cancelAnswer() } label: { Label("取消", systemImage: "stop.fill") }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground)).disabled(!state.isAnswering)
-                Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground))
-                Button("工作台") { TeleprompterController.shared.showWorkbench() }.buttonStyle(ChipButtonStyle(opaque: state.teleprompterHideBackground))
-                Spacer()
-                Text("\(state.shortcutLabel(.forceAnswer)) 回答 · \(state.shortcutLabel(.panicHide)) 隐藏").font(.caption2).foregroundStyle(.secondary)
+        HStack(spacing: 4) {
+            ForEach([AnswerRefinement.shorter, .example, .english]) { item in
+                Button { state.refine(item) } label: { Text(verbatim: item.displayName) }
+                    .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+                    .disabled(state.displayedAnswer.isEmpty || state.isAnswering)
+            }
+            AnswerMoreMenu(includesWorkbench: true)
+            Spacer()
+            if state.isAnswering {
+                Button { state.cancelAnswer() } label: { Label("停止生成", systemImage: "stop.fill") }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .help("\(state.shortcutLabel(.cancelAnswer))")
+            } else {
+                Button { state.forceAnswerCurrent() } label: { Label("立即回答", systemImage: "bolt.fill") }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .help("立即回答 · \(state.shortcutLabel(.forceAnswer)) · \(state.shortcutLabel(.panicHide)) 隐藏全部窗口")
             }
         }
     }

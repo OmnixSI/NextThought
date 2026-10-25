@@ -11,11 +11,14 @@ extension AppState {
     func beginArchive(startedAt: Date) {
         guard recordSessions else { activeArchiveID = nil; return }
         let workspace = activeWorkspace
-        let meta = SessionMeta(startedAt: startedAt, mode: workspace.mode,
-                               audioSource: captureTargets.first { $0.id == selectedTargetID }?.title ?? "",
+        var meta = SessionMeta(startedAt: startedAt, mode: workspace.mode,
+                               title: plannedMeeting?.title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 },
+                               audioSource: isOfflineMeeting ? String(localized: "线下 · 麦克风") : audioSourceTitle(for: selectedTargetID),
                                recognizer: recognizerDescription,
                                answerModel: currentAnswerModel,
                                workspaceID: workspace.id, workspaceName: workspace.name)
+        if workspace.mode == .custom { meta.typeName = workspace.typeDisplayName }
+        if isOfflineMeeting { meta.inPerson = true }
         let context = SessionContextSnapshot(mode: workspace.mode, style: workspace.style, preferences: workspace.preferences,
                                              profile: workspace.materialText, documents: workspace.documents.filter(\.enabled))
         archive.begin(meta, context: context)
@@ -27,6 +30,10 @@ extension AppState {
         activeArchiveID = nil
         guard let meta = archive.finish() else { return }
         DataBackup.afterSession()
+        // 结束就是纪要: the same meeting, now as its notes page.
+        historyWorkspaceFilter = nil
+        historySelection = meta.id
+        section = .meetings
         if autoSummarize { generateSummary(for: meta.id) }
     }
 
@@ -66,70 +73,7 @@ extension AppState {
     }
 
     // MARK: Summary
-
-    /// Writes the summary and question list with the configured answer engine. Runs in
-    /// the background on its own client, so it never interrupts a live answer.
-    func generateSummary(for id: UUID) {
-        guard !archive.summarizing.contains(id), var meta = archive.sessions.first(where: { $0.id == id }) else { return }
-        let model = currentAnswerModel
-        guard !model.isEmpty else {
-            meta.summaryState = .failed; meta.summaryError = "未选择回答模型，无法生成摘要。"
-            archive.update(meta); return
-        }
-        archive.summarizing.insert(id)
-        meta.summaryState = .pending; meta.summaryError = nil
-        archive.update(meta)
-        let backend = answerBackend
-        let reasoning = codexReasoning
-        Task {
-            defer { archive.summarizing.remove(id) }
-            do {
-                await archive.flush()
-                guard let detail = await archive.detail(id), !detail.lines.isEmpty else { throw SummaryError.emptyTranscript }
-                let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: detail.lines, answers: detail.answers,
-                                                             detected: detail.questions, context: detail.context)
-                let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt))
-                let system = SessionSummaryPrompt.system(for: detail.meta.mode)
-                let markdown: String
-                if chunks.count == 1 {
-                    markdown = try await summarize(system: system, user: SessionSummaryPrompt.full(material), backend: backend, model: model, reasoning: reasoning)
-                } else {
-                    var partials: [String] = []
-                    for (index, chunk) in chunks.enumerated() {
-                        partials.append(try await summarize(system: system, user: SessionSummaryPrompt.partial(chunk, index: index, count: chunks.count, material: material),
-                                                            backend: backend, model: model, reasoning: reasoning))
-                    }
-                    markdown = try await summarize(system: system, user: SessionSummaryPrompt.merge(partials, material: material), backend: backend, model: model, reasoning: reasoning)
-                }
-                let parsed = SessionSummaryParser.parseAll(markdown)
-                let summary = SessionSummary(title: parsed.title ?? detail.meta.displayTitle, markdown: markdown,
-                                             questions: parsed.questions, generatedAt: Date(), model: model,
-                                             lessons: parsed.lessons, bank: parsed.bank, appliedToWorkspace: false)
-                archive.saveSummary(summary, for: id)
-                // Self-iteration: the review feeds the scenario's experience and question bank.
-                if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
-                Diagnostics.record("summary.completed", ["questions": parsed.questions.count, "lessons": parsed.lessons.count, "bank": parsed.bank.count, "chunks": chunks.count])
-            } catch {
-                if var failed = archive.sessions.first(where: { $0.id == id }) {
-                    failed.summaryState = .failed
-                    failed.summaryError = error.localizedDescription
-                    archive.update(failed)
-                }
-                Diagnostics.record("summary.failed")
-            }
-        }
-    }
-
-    private func summarize(system: String, user: String, backend: AnswerBackend, model: String, reasoning: String) async throws -> String {
-        let request = AnswerRequest(system: system, user: user, model: model, effort: reasoning, imageURL: nil)
-        switch backend {
-        case .openAICompatible:
-            return try await summaryAPIClient.answer(request, baseURL: apiBaseURL, apiKey: apiKey) { _ in }
-        case .codexExec, .codexAppServer:
-            // A separate one-shot process: the persistent service stays free for live answers.
-            return try await summaryCodex.run(prompt: request.fullPrompt, model: model, reasoning: reasoning, timeout: 600) { _ in }
-        }
-    }
+    // The notes pipeline (generateSummary) lives in AppState+Notes.swift.
 
     // MARK: History actions
 

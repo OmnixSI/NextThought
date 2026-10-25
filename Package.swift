@@ -3,6 +3,9 @@ import PackageDescription
 
 let package = Package(
     name: "InterviewHacker",
+    // Interface strings are written in Simplified Chinese and translated through
+    // Resources/Localization/Localizable.xcstrings (compiled by scripts/build-app.sh).
+    defaultLocalization: "zh-Hans",
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "InterviewHacker", targets: ["InterviewHacker"]),

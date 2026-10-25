@@ -11,8 +11,16 @@ public enum SessionSpeaker: String, Codable, Sendable {
     case remote
     /// The user (microphone).
     case me
+    /// Everyone in the room (in-person meeting: one microphone, no speaker split).
+    case room
 
-    public var label: String { self == .me ? "我" : "对方" }
+    public var label: String {
+        switch self {
+        case .remote: "对方"
+        case .me: "我"
+        case .room: "现场"
+        }
+    }
 }
 
 public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable {
@@ -120,6 +128,13 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
     /// Workspace (scenario) the session ran in; nil for sessions recorded before workspaces.
     public var workspaceID: UUID?
     public var workspaceName: String?
+    /// Name of a custom meeting type (`mode == .custom`).
+    public var typeName: String?
+    /// In-person meeting: one microphone for the room, lines labelled 现场.
+    public var inPerson: Bool?
+    /// Outcome counts written with the notes (for one-line results in lists).
+    public var actionItemCount: Int?
+    public var improveCount: Int?
     public init(id: UUID = UUID(), startedAt: Date, endedAt: Date? = nil, mode: SessionMode, title: String? = nil, audioSource: String = "", recognizer: String = "", answerModel: String = "",
                 transcriptCount: Int = 0, questionCount: Int = 0, answerCount: Int = 0, summaryState: SummaryState = .none, summaryError: String? = nil,
                 workspaceID: UUID? = nil, workspaceName: String? = nil) {

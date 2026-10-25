@@ -11,6 +11,8 @@ struct SessionDetail: Equatable {
     var questions: [SessionQuestionEvent]
     var context: SessionContextSnapshot?
     var summary: SessionSummary?
+    /// Structured notes (notes.json); nil for sessions summarized before them.
+    var notes: StructuredNotes? = nil
 }
 
 /// Local session archive: one folder per session under
@@ -22,6 +24,7 @@ struct SessionDetail: Equatable {
 ///     questions.jsonl    every question the detector saw
 ///     answers.jsonl      every generated answer
 ///     summary.json       model-written summary and question list (after the session)
+///     notes.json         structured notes: template sections, times, corrections
 ///
 /// Lines are appended as they happen, so a crash or force-quit loses at most the
 /// utterance being spoken. Raw audio is never stored.
@@ -34,6 +37,10 @@ final class SessionArchive {
     private(set) var activeID: UUID?
     /// Sessions whose summary is being generated right now.
     var summarizing: Set<UUID> = []
+    /// The step the notes of a session are at while they are written.
+    var notesSteps: [UUID: NotesStep] = [:]
+    /// Bumped when notes change on disk, so open pages reload them.
+    var notesRevision = 0
 
     private let io = DispatchQueue(label: "app.interviewhacker.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
@@ -96,7 +103,8 @@ final class SessionArchive {
                 answers: Self.latestAnswers(lines("answers.jsonl", SessionAnswerEvent.self)),
                 questions: lines("questions.jsonl", SessionQuestionEvent.self),
                 context: (try? Data(contentsOf: folder.appendingPathComponent("context.json"))).flatMap { try? decoder.decode(SessionContextSnapshot.self, from: $0) },
-                summary: (try? Data(contentsOf: folder.appendingPathComponent("summary.json"))).flatMap { try? decoder.decode(SessionSummary.self, from: $0) })
+                summary: (try? Data(contentsOf: folder.appendingPathComponent("summary.json"))).flatMap { try? decoder.decode(SessionSummary.self, from: $0) },
+                notes: (try? Data(contentsOf: folder.appendingPathComponent("notes.json"))).flatMap { try? decoder.decode(StructuredNotes.self, from: $0) })
         }.value
     }
 
@@ -193,12 +201,31 @@ final class SessionArchive {
 
     func saveSummary(_ summary: SessionSummary, for id: UUID) {
         guard var meta = sessions.first(where: { $0.id == id }) else { return }
-        meta.title = summary.title.isEmpty ? meta.title : summary.title
+        // A title the user gave the meeting stays; otherwise the summary names it.
+        if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty {
+            meta.title = summary.title
+        }
         meta.summaryState = .ready
         meta.summaryError = nil
         let folder = folder(id)
         io.async { Self.write(summary, to: folder.appendingPathComponent("summary.json")) }
         update(meta)
+    }
+
+    func saveNotes(_ notes: StructuredNotes, for id: UUID) {
+        if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return }
+        let folder = folder(id)
+        io.async { Self.write(notes, to: folder.appendingPathComponent("notes.json")) }
+        notesRevision += 1
+    }
+
+    /// Edits saved notes in place (undoing a correction).
+    func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Void) {
+        Task {
+            guard var notes = await detail(id)?.notes else { return }
+            change(&notes)
+            saveNotes(notes, for: id)
+        }
     }
 
     func rename(_ id: UUID, to title: String) {

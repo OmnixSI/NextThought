@@ -4,7 +4,7 @@ import InterviewHackerCore
 
 /// Eight settings groups, with essential controls first and expert controls opt-in.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多"
+    case essentials = "基础", recognition = "识别", answers = "回答", notes = "纪要", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多"
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -12,6 +12,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .recognition: "waveform"
         case .documents: "doc.text.magnifyingglass"
         case .answers: "sparkles"
+        case .notes: "doc.text"
         case .skills: "wand.and.stars"
         case .overlay: "rectangle.topthird.inset.filled"
         case .recording: "tray.full"
@@ -50,6 +51,7 @@ struct SettingsView: View {
                             case .recognition: RecognitionSettings()
                             case .documents: DocumentModelSettings()
                             case .answers: AnswerSettings()
+                            case .notes: NotesSettingsView()
                             case .skills:
                                 if state.simplifiedInterface {
                                     SettingsSection(title: "技能", icon: "wand.and.stars") {
@@ -80,6 +82,7 @@ extension SettingsGroup {
         case .recognition: "会议声音 · 麦克风 · 语音识别"
         case .documents: "读取资料 · 免下载或按需增强"
         case .answers: "对话服务 · 回答模型 · 自动回答"
+        case .notes: String(localized: "纪要模型 · 模板 · 语言")
         case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 共享显示"
         case .recording: "本机会话记录 · 备份与恢复"
@@ -95,7 +98,7 @@ private struct SettingsSidebar: View {
     let select: (SettingsGroup) -> Void
     @State private var query = ""
     /// The groups that stay visible in 简洁界面: the ones used every day.
-    private static let everyday: [SettingsGroup] = [.essentials, .recognition, .answers, .documents, .overlay]
+    private static let everyday: [SettingsGroup] = [.essentials, .recognition, .answers, .notes, .documents, .overlay]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -175,13 +178,11 @@ private struct SettingsSidebar: View {
         let selected = group == selection
         return HStack(spacing: 10) {
             Image(systemName: group.symbol)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(selected ? Color.white : Brand.accent)
-                .frame(width: 30, height: 30)
-                .background(selected ? AnyShapeStyle(Brand.gradient) : AnyShapeStyle(Brand.accent.opacity(0.12)),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(selected ? Ink.ink : Ink.secondary)
+                .frame(width: 22, height: 22)
             VStack(alignment: .leading, spacing: 2) {
-                Text(group.rawValue).font(.system(size: 13, weight: selected ? .semibold : .medium)).lineLimit(1)
+                Text(LocalizedStringKey(group.rawValue)).font(.system(size: 13, weight: selected ? .semibold : .medium)).lineLimit(1)
                 if !compact {
                     Text(group.summary).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
                 }
@@ -193,7 +194,7 @@ private struct SettingsSidebar: View {
             badge(group)
         }
         .padding(8)
-        .background(selected ? Brand.accent.opacity(0.14) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
             select(group)
@@ -226,12 +227,8 @@ private struct SettingsPageHeader: View {
     let group: SettingsGroup
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: group.symbol)
-                .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Text(group.rawValue).font(.system(size: 18, weight: .bold))
+                Text(LocalizedStringKey(group.rawValue)).font(Typo.section)
                 Text(group.summary).font(.system(size: 12)).foregroundStyle(.secondary)
             }
             Spacer(minLength: 12)
@@ -255,10 +252,9 @@ struct SettingsSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 26, height: 26)
-                    .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                Text(title).font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .regular)).foregroundStyle(Ink.secondary)
+                    .frame(width: 18)
+                Text(LocalizedStringKey(title)).font(.system(size: 14, weight: .semibold))
             }
             content
         }
@@ -296,10 +292,10 @@ private struct EssentialSettings: View {
     @Environment(AppState.self) private var state
     var body: some View {
         SettingsSection(title: "准备实时对话助手", icon: "sparkles") {
-            Note("最简单的用法：准备语音和对话服务 → 选择会议窗口 → 开始实时辅助 → 参考建议回答。OCR 增强和向量检索按需启用。")
+            Hint("最简单的用法：首页点“新会议”或“立即记录” → 会中看建议回答，或者只记录 → 结束后自动整理纪要。第一次开始时就地申请录屏和麦克风权限；新手引导可以随时从这里打开。")
             HStack {
-                Button("打开新手引导") { state.openOnboarding() }.buttonStyle(PrimaryButtonStyle())
-                Button("去助手开始辅助") { state.section = .assistant }.buttonStyle(SecondaryButtonStyle())
+                Button("打开新手引导") { state.openOnboarding() }.buttonStyle(SecondaryButtonStyle())
+                Button("回到首页") { state.section = .home }.buttonStyle(SecondaryButtonStyle())
             }
         }
         SettingsSection(title: "这台 Mac 现在能做什么", icon: "checklist") {
@@ -310,6 +306,7 @@ private struct EssentialSettings: View {
             capability("资料增强（可选）", "系统识别与关键词直接可用；OCR 模型和向量模型按需安装", ready: true, action: "查看取舍") { state.openSettings(.documents) }
 
         }
+        LanguageSettingsSection()
         HStack {
             Button("备份与恢复") { state.openSettings(.recording) }.buttonStyle(.plain)
             Text("·").foregroundStyle(.tertiary)
@@ -383,8 +380,6 @@ private struct AdvancedEssentialSettings: View {
         SettingsSection(title: "使用前检查", icon: "checklist") {
             SetupChecklist()
             HStack {
-                Button { state.openOnboarding() } label: { Label("打开新手引导", systemImage: "sparkles") }
-                    .buttonStyle(SecondaryButtonStyle())
                 Spacer()
                 Button("刷新") { Task { await state.refreshSetupStatus() } }.buttonStyle(ChipButtonStyle())
             }
@@ -681,8 +676,7 @@ private struct AnswerSettings: View {
             EngineTestRow()
         }
         SettingsSection(title: "自动回答", icon: "text.bubble") {
-            Toggle("对方提问时自动生成回答", isOn: $state.automaticAnswers).onChange(of: state.automaticAnswers) { _, _ in state.updateSettings() }
-            Note("以问号或“吗 / 呢”结尾的问题约 0.6 秒内开始回答；对方补充后半句时自动改答完整问题。拿不准的句子显示为可点击的“可能的问题”。")
+            Hint("会议中顶栏的“提词 / 只记录”决定是否自动回答，默认值由会议类型决定（面试、汇报、客户沟通默认提词）。提词时，以问号或“吗 / 呢”结尾的问题约 0.6 秒内开始回答；拿不准的句子显示为可点击的“可能的问题”。")
         }
         Note("联网搜索：\(state.webSearchMode.title)。可在高级设置中调整。")
         AdvancedOptions("answers") {
@@ -1125,7 +1119,7 @@ private struct RecordingSettings: View {
                 .disabled(state.isRunning)
                 .onChange(of: state.recordSessions) { _, _ in state.updateSettings() }
             if !state.simplifiedInterface {
-            Toggle("会话结束后自动生成摘要、问题清单与复盘", isOn: $state.autoSummarize)
+            Toggle("会议结束后自动整理纪要（设置 → 纪要）", isOn: $state.autoSummarize)
                 .disabled(!state.recordSessions)
                 .onChange(of: state.autoSummarize) { _, _ in state.updateSettings() }
             Toggle("把复盘得到的经验和改进回答自动加入场景的经验库与题库（自我迭代）", isOn: $state.autoApplyLessons)
