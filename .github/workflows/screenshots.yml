@@ -83,6 +83,12 @@ jobs:
           }
           for appearance in dark light; do
             for section in assistant materials settings history; do capture "$appearance" "$section"; done
+            capture "$appearance" home home
+            capture "$appearance" prepare prepare
+            capture "$appearance" live-notes live-notes
+            capture "$appearance" history notes-review
+            capture "$appearance" history notes-work "demoNotes=work"
+            capture "$appearance" settings settings-notes "settingsGroup=纪要"
             capture "$appearance" materials workspace-knowledge "workspaceEditorTab=经验库与题库"
             capture "$appearance" materials workspace-review "workspaceEditorTab=复盘"
             capture "$appearance" settings settings-data "settingsGroup=数据"

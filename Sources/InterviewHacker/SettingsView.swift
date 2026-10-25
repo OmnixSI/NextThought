@@ -292,9 +292,9 @@ private struct EssentialSettings: View {
     @Environment(AppState.self) private var state
     var body: some View {
         SettingsSection(title: "准备实时对话助手", icon: "sparkles") {
-            Note("最简单的用法：准备语音和对话服务 → 选择会议窗口 → 开始实时辅助 → 参考建议回答。OCR 增强和向量检索按需启用。")
+            Hint("最简单的用法：首页点“新会议”或“立即记录” → 会中看建议回答，或者只记录 → 结束后自动整理纪要。第一次开始时就地申请录屏和麦克风权限；新手引导可以随时从这里打开。")
             HStack {
-                Button("打开新手引导") { state.openOnboarding() }.buttonStyle(PrimaryButtonStyle())
+                Button("打开新手引导") { state.openOnboarding() }.buttonStyle(SecondaryButtonStyle())
                 Button("回到首页") { state.section = .home }.buttonStyle(SecondaryButtonStyle())
             }
         }
@@ -380,8 +380,6 @@ private struct AdvancedEssentialSettings: View {
         SettingsSection(title: "使用前检查", icon: "checklist") {
             SetupChecklist()
             HStack {
-                Button { state.openOnboarding() } label: { Label("打开新手引导", systemImage: "sparkles") }
-                    .buttonStyle(SecondaryButtonStyle())
                 Spacer()
                 Button("刷新") { Task { await state.refreshSetupStatus() } }.buttonStyle(ChipButtonStyle())
             }

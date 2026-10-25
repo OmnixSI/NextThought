@@ -37,7 +37,7 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 
 ## 截图与演示模式
 
-`INTERVIEWHACKER_DEMO=1` 启动时使用示例会话，不采集音频、不调用识别或回答模型。可选设置 `INTERVIEWHACKER_DEMO_SECTION=assistant|materials|settings|history`、`INTERVIEWHACKER_DEMO_APPEARANCE=light|dark`。`.github/workflows/screenshots.yml` 在 macOS runner 上生成 README 截图。
+`INTERVIEWHACKER_DEMO=1` 启动时使用示例会话，不采集音频、不调用识别或回答模型。可选设置 `INTERVIEWHACKER_DEMO_SECTION=home|prepare|live|live-notes|meetings|library|settings`（旧名 assistant / materials / history 仍可用）、`INTERVIEWHACKER_DEMO_APPEARANCE=light|dark`。`.github/workflows/screenshots.yml` 在 macOS runner 上生成 README 截图。
 
 ## 发布
 

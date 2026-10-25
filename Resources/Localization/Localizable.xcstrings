@@ -721,6 +721,16 @@
         }
       }
     },
+    "准备实时对话助手": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get started"
+          }
+        }
+      }
+    },
     "分析截图": {
       "localizations": {
         "en": {
@@ -1811,6 +1821,16 @@
         }
       }
     },
+    "打开新手引导": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the guide"
+          }
+        }
+      }
+    },
     "打开系统设置": {
       "localizations": {
         "en": {
@@ -2127,6 +2147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shorter"
+          }
+        }
+      }
+    },
+    "最简单的用法：首页点“新会议”或“立即记录” → 会中看建议回答，或者只记录 → 结束后自动整理纪要。第一次开始时就地申请录屏和麦克风权限；新手引导可以随时从这里打开。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The simplest way: on Home click “New meeting” or “Record now” → during the meeting read the suggested answers, or just take notes → notes are written when it ends. Screen-recording and microphone access are requested the first time you start; the guide is always here."
           }
         }
       }

@@ -8,7 +8,8 @@ import SwiftUI
 /// screenshots workflow to render README images on a real macOS runner.
 ///
 /// Environment:
-/// - `INTERVIEWHACKER_DEMO_SECTION`: assistant | materials | settings | history
+/// - `INTERVIEWHACKER_DEMO_SECTION`: home | prepare | live | live-notes | meetings | library |
+///   settings (the older names assistant, materials and history still work)
 /// - `INTERVIEWHACKER_DEMO_APPEARANCE`: light | dark
 /// - `INTERVIEWHACKER_DEMO_OUT`: file that receives the window numbers as JSON
 /// - `INTERVIEWHACKER_DEMO_FRAME`: x,y,width,height (screen coordinates): show the demo in
@@ -26,7 +27,7 @@ enum DemoMode {
         guard isEnabled else { return }
         let environment = ProcessInfo.processInfo.environment
         // Each capture starts from the default tabs; earlier captures must not leak in.
-        for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep"] {
+        for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep", "demoNotes"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
         // INTERVIEWHACKER_DEMO_DEFAULTS="key=value;key=value" opens specific tabs.
@@ -56,7 +57,9 @@ enum DemoMode {
         // Only the live page shows a running meeting; every other section is the
         // normal window with the sidebar.
         let demoSection = environment["INTERVIEWHACKER_DEMO_SECTION"] ?? "assistant"
-        if environment["INTERVIEWHACKER_DEMO_IDLE"] == "1" || !["assistant", "live"].contains(demoSection) { state.isRunning = false }
+        if environment["INTERVIEWHACKER_DEMO_IDLE"] == "1" || !["assistant", "live", "live-notes"].contains(demoSection) { state.isRunning = false }
+        if demoSection == "live-notes" { state.automaticAnswers = false }
+        if demoSection == "prepare" { state.populateDemoDraft() }
         if let advanced = environment["INTERVIEWHACKER_DEMO_ADVANCED"] { state.simplifiedInterface = advanced != "1" }
         if environment["INTERVIEWHACKER_DEMO_VOICE_READY"] == "1" {
             state.transcriptionBackend = "zipformer"; state.microphoneAccess = .granted
@@ -184,6 +187,8 @@ extension AppState {
         captureTargets = [CaptureTarget(id: "window:1", title: "Zoom · 后端工程师二面"), CaptureTarget(id: "display:1", title: "整个屏幕 · 3024×1964")]
         selectedTargetID = "window:1"
         isRunning = true
+        automaticAnswers = true
+        plannedMeeting = MeetingPlan(title: "字节跳动 · 后端二面")
         sessionStartedAt = now.addingTimeInterval(-754)
         statusText = "正在聆听 · 启动 0.4 s"
         transcriptionStatus = "X-ASR 本地识别 · RTF 0.08 · 精修 0.12 s"
@@ -266,13 +271,90 @@ extension AppState {
         let lines = entries.enumerated().map { index, entry in
             SessionTranscriptLine(date: started.addingTimeInterval(Double(index) * 40 + 15), speaker: entry.speaker, text: entry.text)
         }
-        archive.installDemo([SessionDetail(
-            meta: meta, lines: lines,
+        var reviewMeta = meta
+        reviewMeta.improveCount = 1
+        let review = SessionDetail(
+            meta: reviewMeta, lines: lines,
             answers: answerHistory.map { SessionAnswerEvent(date: started.addingTimeInterval(300), question: $0.question, answer: $0.answer, model: $0.model, firstTokenSeconds: $0.firstTokenSeconds, automatic: true) },
             questions: [SessionQuestionEvent(date: started.addingTimeInterval(120), text: question, intent: "question", score: 0.95, disposition: "auto")],
             context: nil,
-            summary: SessionSummary(title: parsed.title ?? "", markdown: summaryMarkdown, questions: parsed.questions, generatedAt: started.addingTimeInterval(2_700), model: "gpt-5.5-mini",
-                                    lessons: ["一致性问题先画读写时序，再说兜底方案"], bank: [], appliedToWorkspace: true))])
-        historySelection = meta.id
+            summary: SessionSummary(title: parsed.title ?? "", markdown: summaryMarkdown, questions: parsed.questions, generatedAt: started.addingTimeInterval(2_700), model: "gpt-5.5",
+                                    lessons: ["一致性问题先画读写时序，再说兜底方案"], bank: [BankEntry(question: "热点 key 过期的一瞬间大量请求打到数据库，怎么办？", answer: "先给结论：互斥锁重建 + 逻辑过期，二选一看一致性要求。布隆过滤器解决的是穿透，不是击穿。")], appliedToWorkspace: false),
+            notes: Self.demoReviewNotes(started: started))
+        let weekly = Self.demoWeeklyMeeting(now: now, workspace: business)
+        archive.installDemo([weekly, review])
+        let showsWork = ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO_NOTES"] == "work"
+            || UserDefaults.standard.string(forKey: "demoNotes") == "work"
+        historySelection = showsWork ? weekly.meta.id : meta.id
+    }
+
+    /// The preparation page of the next interview (`INTERVIEWHACKER_DEMO_SECTION=prepare`).
+    func populateDemoDraft() {
+        guard let series = workspaces.visible.first(where: { $0.mode == .interview }) else { return }
+        var draft = MeetingDraft()
+        draft.title = "字节跳动 · 后端二面"
+        draft.mode = .interview
+        draft.suggestedSeriesID = series.id
+        draft.seriesID = series.id
+        draft.baselineDocumentIDs = Set(series.documents.map(\.id))
+        meetingDraft = draft
+        section = .home
+    }
+
+    /// Interview review notes matching docs/redesign/screenshots/ReviewPage-zh-light.png.
+    static func demoReviewNotes(started: Date) -> StructuredNotes {
+        let template = NotesTemplate.builtIn(.interview)
+        func section(_ id: String, _ items: [NotesItem]) -> NotesSectionResult {
+            let spec = template.sections.first { $0.id == id }!
+            return NotesSectionResult(id: id, title: spec.title, kind: spec.kind, isGap: spec.isGap, items: items)
+        }
+        return StructuredNotes(templateID: template.id, templateName: template.name, language: "zh", title: "字节跳动 · 后端二面", sections: [
+            section("impression", [NotesItem(text: "项目部分讲得扎实、有数字；系统设计追问时结论来得太慢，缓存击穿的方案仍然没讲完整。")]),
+            section("questions", [
+                NotesItem(text: "如果删除缓存失败了怎么办？", time: "18:22", answer: "重试队列 + binlog 异步删除，两道保险。", verdict: "good"),
+                NotesItem(text: "热点 key 过期的一瞬间大量请求打到数据库，怎么办？", time: "27:05", answer: "加锁……（停顿 8 秒）……可能用布隆过滤器。", verdict: "improve",
+                          better: "先给结论：互斥锁重建 + 逻辑过期，二选一看一致性要求。布隆过滤器解决的是穿透，不是击穿，别混用。"),
+            ]),
+            section("missed", [NotesItem(text: "简历里的“大促 8 万 QPS 零故障”一次也没提到", time: "31:40"),
+                               NotesItem(text: "职位描述里的“抖音电商订单链路”没有主动联系起来", time: "40:12")]),
+            section("improve", [NotesItem(text: "系统设计题先说结论，再展开", time: "27:05"),
+                                NotesItem(text: "准备好击穿、穿透、雪崩三者的区别", time: "27:30"),
+                                NotesItem(text: "主动带出大促数据", time: "31:40")]),
+        ], corrections: [TranscriptCorrection(line: 3, original: "缓存鸡穿", corrected: "缓存击穿")], generatedAt: started.addingTimeInterval(2_700), model: "gpt-5.5")
+    }
+
+    /// A work meeting with notes matching docs/redesign/screenshots/SummaryPage-zh-light.png.
+    static func demoWeeklyMeeting(now: Date, workspace: Workspace) -> SessionDetail {
+        let started = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: now) ?? now.addingTimeInterval(-7_200)
+        var meta = SessionMeta(startedAt: started, endedAt: started.addingTimeInterval(38 * 60), mode: .meeting,
+                               title: "周一产品例会", audioSource: "电脑声音", recognizer: "X-ASR 中英 · 480 ms + 整句精修", answerModel: "gpt-5.5",
+                               transcriptCount: 4, questionCount: 0, answerCount: 0, summaryState: .ready,
+                               workspaceID: workspace.id, workspaceName: workspace.name)
+        meta.actionItemCount = 3
+        let lines = [
+            SessionTranscriptLine(date: started.addingTimeInterval(192), speaker: .remote, text: "这个版本下周三之前必须上线，客户那边已经在催了。"),
+            SessionTranscriptLine(date: started.addingTimeInterval(295), speaker: .remote, text: "好，那就这么定。支付那两个 bug 今天修掉。"),
+            SessionTranscriptLine(date: started.addingTimeInterval(340), speaker: .me, text: "回归测试我来排，周二下午给结果。"),
+            SessionTranscriptLine(date: started.addingTimeInterval(750), speaker: .remote, text: "设计稿周四之前，或者周五也行，到时候再看。"),
+            SessionTranscriptLine(date: started.addingTimeInterval(1_268), speaker: .remote, text: "客户要的导出功能，目前还没人认领。"),
+        ]
+        let template = NotesTemplate.builtIn(.work)
+        func section(_ id: String, _ items: [NotesItem]) -> NotesSectionResult {
+            let spec = template.sections.first { $0.id == id }!
+            return NotesSectionResult(id: id, title: spec.title, kind: spec.kind, isGap: spec.isGap, items: items)
+        }
+        var notes = StructuredNotes(templateID: template.id, templateName: template.name, language: "zh", title: "周一产品例会", sections: [
+            section("summary", [NotesItem(text: "新版本下周三前上线；支付 bug 今天修，回归测试周二出结果。")]),
+            section("decisions", [NotesItem(text: "新版本下周三前上线", time: "03:12")]),
+            section("actions", [NotesItem(text: "回归测试并给出结果", time: "05:40", owner: "我", due: "周二下午"),
+                                NotesItem(text: "修复支付相关的 2 个 bug", time: "04:55", owner: "对方", due: "今天"),
+                                NotesItem(text: "设计稿复审", time: "12:30", due: "周四", uncertain: true)]),
+            section("risks", [NotesItem(text: "客户要求的导出功能没人认领", time: "21:08"),
+                              NotesItem(text: "设计稿复审是周四还是周五，两种说法", time: "12:30", uncertain: true)]),
+        ], corrections: [], generatedAt: started.addingTimeInterval(40 * 60), model: "gpt-5.5")
+        NotesVerifier.verify(&notes, lineOffsets: lines.map { Int($0.date.timeIntervalSince(started)) }, duration: meta.duration, meetingDate: started)
+        let summary = SessionSummary(title: "周一产品例会", markdown: NotesMarkdown.render(notes, title: "周一产品例会", facts: ""),
+                                     questions: [], generatedAt: notes.generatedAt, model: "gpt-5.5", lessons: [], bank: [], appliedToWorkspace: true)
+        return SessionDetail(meta: meta, lines: lines, answers: [], questions: [], context: nil, summary: summary, notes: notes)
     }
 }
