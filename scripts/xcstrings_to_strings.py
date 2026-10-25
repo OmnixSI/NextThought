@@ -6,7 +6,11 @@ Fallback for machines with only the Command Line Tools, where Xcode's
 this project's catalogs use; entries with variations (plurals, devices) are
 reported and skipped.
 
-Usage: xcstrings_to_strings.py <Catalog.xcstrings> <output Resources directory>
+The source language always gets a full table (key = value unless the catalog
+overrides it). Without it, NSBundle finds no table in zh-Hans.lproj and falls back
+to the development region, so a Chinese system would show the English text.
+
+Usage: xcstrings_to_strings.py <Catalog.xcstrings> <output Resources directory> [--only <language>]
 """
 import json
 import pathlib
@@ -20,12 +24,18 @@ def escape(text: str) -> str:
 
 def main() -> int:
     catalog_path, output = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+    only = sys.argv[4] if len(sys.argv) > 4 and sys.argv[3] == "--only" else None
     catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    source = catalog.get("sourceLanguage", "en")
     table = catalog_path.stem
     per_language: dict[str, list[str]] = {}
     skipped = 0
     for key, entry in sorted(catalog.get("strings", {}).items()):
-        for language, localization in entry.get("localizations", {}).items():
+        localizations = dict(entry.get("localizations", {}))
+        localizations.setdefault(source, {"stringUnit": {"state": "translated", "value": key}})
+        for language, localization in localizations.items():
+            if only and language != only:
+                continue
             unit = localization.get("stringUnit")
             if unit is None:
                 skipped += 1
