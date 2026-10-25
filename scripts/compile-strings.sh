@@ -10,8 +10,12 @@ mkdir -p "$resources"
 
 for catalog in "$project_root"/Resources/Localization/*.xcstrings; do
     [[ -e "$catalog" ]] || continue
-    if ! xcrun xcstringstool compile "$catalog" --output-directory "$resources"; then
-        echo "warning: could not compile $(basename "$catalog"); the app will show the Chinese source strings" >&2
+    # xcstringstool ships with Xcode only; with just the Command Line Tools, convert
+    # the catalog with the bundled Python fallback (plain string units only).
+    if xcrun --find xcstringstool >/dev/null 2>&1; then
+        xcrun xcstringstool compile "$catalog" --output-directory "$resources"
+    else
+        python3 "$project_root/scripts/xcstrings_to_strings.py" "$catalog" "$resources"
     fi
 done
 
