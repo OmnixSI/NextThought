@@ -206,25 +206,8 @@ private struct UpdateBadge: View {
 
 /// While a meeting runs the window belongs to it alone.
 private struct FocusModeView: View {
-    @Environment(AppState.self) private var state
-
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: Space.s2) {
-                // Room for the window's traffic-light buttons (hidden title bar).
-                Color.clear.frame(width: 70, height: 1)
-                PulseDot(active: !state.isPaused)
-                Spacer()
-                Button { Task { await state.togglePause() } } label: { Image(systemName: state.isPaused ? "play" : "pause") }
-                    .buttonStyle(GlassIconButtonStyle())
-                Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
-                    .buttonStyle(GlassIconButtonStyle())
-                Button("结束") { Task { await state.stopSession() } }
-                    .buttonStyle(SecondaryButtonStyle())
-            }
-            .padding(.horizontal, Space.s4).frame(height: 52)
-            AssistantView()
-        }
+        LiveSessionView()
     }
 }
 

@@ -675,8 +675,7 @@ private struct AnswerSettings: View {
             EngineTestRow()
         }
         SettingsSection(title: "自动回答", icon: "text.bubble") {
-            Toggle("对方提问时自动生成回答", isOn: $state.automaticAnswers).onChange(of: state.automaticAnswers) { _, _ in state.updateSettings() }
-            Note("以问号或“吗 / 呢”结尾的问题约 0.6 秒内开始回答；对方补充后半句时自动改答完整问题。拿不准的句子显示为可点击的“可能的问题”。")
+            Hint("会议中顶栏的“提词 / 只记录”决定是否自动回答，默认值由会议类型决定（面试、汇报、客户沟通默认提词）。提词时，以问号或“吗 / 呢”结尾的问题约 0.6 秒内开始回答；拿不准的句子显示为可点击的“可能的问题”。")
         }
         Note("联网搜索：\(state.webSearchMode.title)。可在高级设置中调整。")
         AdvancedOptions("answers") {

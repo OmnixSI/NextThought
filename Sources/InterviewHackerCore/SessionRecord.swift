@@ -11,8 +11,16 @@ public enum SessionSpeaker: String, Codable, Sendable {
     case remote
     /// The user (microphone).
     case me
+    /// Everyone in the room (in-person meeting: one microphone, no speaker split).
+    case room
 
-    public var label: String { self == .me ? "我" : "对方" }
+    public var label: String {
+        switch self {
+        case .remote: "对方"
+        case .me: "我"
+        case .room: "现场"
+        }
+    }
 }
 
 public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable {

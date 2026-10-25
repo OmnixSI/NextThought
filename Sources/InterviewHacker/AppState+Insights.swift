@@ -217,6 +217,6 @@ extension AppState {
 
     func openInsightSettings() {
         UserDefaults.standard.set(SettingsGroup.recognition.rawValue, forKey: "settingsGroup")
-        section = .settings
+        select(.settings)
     }
 }

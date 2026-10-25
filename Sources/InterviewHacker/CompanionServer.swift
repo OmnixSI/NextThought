@@ -81,6 +81,7 @@ final class CompanionServer {
                 for (key, stream) in self.streams where stream.sending && Date().timeIntervalSince(stream.sentAt) > 8 {
                     stream.connection.cancel(); self.streams.removeValue(forKey: key)
                 }
+                self.publishClientCount()
                 do { try await Task.sleep(for: .milliseconds(150)) } catch { return }
             }
         }
@@ -139,7 +140,21 @@ final class CompanionServer {
         return false
     }
 
+    /// Phones streaming the live page right now; shown as the phone status in the
+    /// live page's top bar.
+    var clientCount: Int { streams.count }
+
+    private func publishClientCount() {
+        let state = AppState.shared
+        let count = streams.count
+        guard state.companionClientCount != count else { return }
+        state.companionClientCount = count
+        if count > 0 { state.companionHadClient = true }
+    }
+
     func stop() {
+        AppState.shared.companionClientCount = 0
+        AppState.shared.companionHadClient = false
         observing = false
         relay.stop(); bluetooth.stop(); bluetoothEnabled = false
         heartbeat?.cancel(); heartbeat = nil

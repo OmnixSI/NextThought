@@ -167,7 +167,9 @@ final class AppState {
     var questionTexts: [String] = []
     var suggestedQuestions: [QuestionCandidate] = []
     var verifyUncertainWithModel = UserDefaults.standard.bool(forKey: "verifyUncertainWithModel")
-    var automaticAnswers = UserDefaults.standard.object(forKey: "automaticAnswers") as? Bool ?? true
+    /// 提词 (true) or 只记录 (false) in the running meeting. Set from the meeting
+    /// type at every start and switched in the live page's top bar; no longer a setting.
+    var automaticAnswers = true
     var currentQuestion = ""
     var currentLeadIn: String?
     var pendingQuestion = ""
@@ -1229,7 +1231,6 @@ final class AppState {
         defaults.set(codexModelID, forKey: "codexModelID")
         defaults.set(codexReasoning, forKey: "codexReasoning")
         if let codexFastSetting { defaults.set(codexFastSetting, forKey: "codexFastMode") }
-        defaults.set(automaticAnswers, forKey: "automaticAnswers")
         defaults.set(recordSessions, forKey: "recordSessions")
         defaults.set(autoSummarize, forKey: "autoSummarize")
         defaults.set(autoApplyLessons, forKey: "autoApplyLessons")

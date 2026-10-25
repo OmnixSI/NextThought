@@ -1,12 +1,32 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    " · %lld 项限制": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · %lld limits"
+          }
+        }
+      }
+    },
     " · 建议放：%@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": " · Bring: %@"
+          }
+        }
+      }
+    },
+    "%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@"
           }
         }
       }
@@ -111,12 +131,82 @@
         }
       }
     },
+    "Apple 识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple recognition"
+          }
+        }
+      }
+    },
     "English": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "English"
+          }
+        }
+      }
+    },
+    "InterviewHacker 提词器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "InterviewHacker teleprompter"
+          }
+        }
+      }
+    },
+    "STAR": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "STAR"
+          }
+        }
+      }
+    },
+    "· %lld 句回声已忽略": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %lld echo lines ignored"
+          }
+        }
+      }
+    },
+    "· 遗漏 %lld 段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %lld segments missed"
+          }
+        }
+      }
+    },
+    "· 麦克风未开启，不会记下你说的话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· Microphone off; what you say isn't recorded"
+          }
+        }
+      }
+    },
+    "· 麦克风未授权，打开系统设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· Microphone not allowed; open System Settings"
           }
         }
       }
@@ -141,12 +231,32 @@
         }
       }
     },
+    "上一条 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous · %@"
+          }
+        }
+      }
+    },
     "上午好": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Good morning"
+          }
+        }
+      }
+    },
+    "下一条 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next · %@"
           }
         }
       }
@@ -181,12 +291,72 @@
         }
       }
     },
+    "不保存会议记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting records are not saved"
+          }
+        }
+      }
+    },
+    "不打扰，安静地记。结束后自动整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stays out of the way and takes notes. Notes are written when you end."
+          }
+        }
+      }
+    },
     "不是同一个系列": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Not the same series"
+          }
+        }
+      }
+    },
+    "不联网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "中文版": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Chinese"
+          }
+        }
+      }
+    },
+    "举例": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Example"
+          }
+        }
+      }
+    },
+    "云端识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud recognition"
           }
         }
       }
@@ -207,6 +377,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Today %@"
+          }
+        }
+      }
+    },
+    "从下一个回答开始生效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies from the next answer"
           }
         }
       }
@@ -281,6 +461,16 @@
         }
       }
     },
+    "会议中顶栏的“提词 / 只记录”决定是否自动回答，默认值由会议类型决定（面试、汇报、客户沟通默认提词）。提词时，以问号或“吗 / 呢”结尾的问题约 0.6 秒内开始回答；拿不准的句子显示为可点击的“可能的问题”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Prompt / Notes only switch in the meeting's top bar decides whether answers appear automatically; the meeting type sets the default (interviews, presentations and client calls start in Prompt). In Prompt, questions are answered within about 0.6 seconds; unclear sentences show up as clickable “possible questions”."
+          }
+        }
+      }
+    },
     "会议进行中不能切换语言。": {
       "localizations": {
         "en": {
@@ -297,6 +487,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Use this series"
+          }
+        }
+      }
+    },
+    "依据：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Based on: %@"
+          }
+        }
+      }
+    },
+    "停止生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop"
           }
         }
       }
@@ -471,12 +681,32 @@
         }
       }
     },
+    "取消回答 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel the answer · %@"
+          }
+        }
+      }
+    },
     "只听某个窗口…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Only one window…"
+          }
+        }
+      }
+    },
+    "只记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes only"
           }
         }
       }
@@ -531,12 +761,32 @@
         }
       }
     },
+    "可能的问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Possible question"
+          }
+        }
+      }
+    },
     "可跳过": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Optional"
+          }
+        }
+      }
+    },
+    "右侧": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right side"
           }
         }
       }
@@ -571,12 +821,82 @@
         }
       }
     },
+    "回答会显示在这里。拖到摄像头下方，视线就不用离开对方；%@ 立即回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers appear here. Drag it below the camera so you keep eye contact; %@ answers now."
+          }
+        }
+      }
+    },
+    "回答所需的文字发送到你配置的 API": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text needed for answers goes to the API you configured"
+          }
+        }
+      }
+    },
+    "回答所需的文字和截图交给 Codex": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text and screenshots needed for answers go to Codex"
+          }
+        }
+      }
+    },
+    "回答最新的问题或转写，不等自动判断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer the latest question or transcript without waiting"
+          }
+        }
+      }
+    },
     "回答服务还没连上": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Answer engine not connected"
+          }
+        }
+      }
+    },
+    "回答设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer settings"
+          }
+        }
+      }
+    },
+    "回答这句": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer this"
+          }
+        }
+      }
+    },
+    "回答长度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Length"
           }
         }
       }
@@ -611,6 +931,16 @@
         }
       }
     },
+    "复制回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy answer"
+          }
+        }
+      }
+    },
     "复盘 · 改进后的答法": {
       "localizations": {
         "en": {
@@ -631,6 +961,16 @@
         }
       }
     },
+    "实时对话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live transcript"
+          }
+        }
+      }
+    },
     "客户沟通": {
       "localizations": {
         "en": {
@@ -641,12 +981,52 @@
         }
       }
     },
+    "对截图的补充要求（可留空）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instructions for the screenshot (optional)"
+          }
+        }
+      }
+    },
+    "对方": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Them"
+          }
+        }
+      }
+    },
     "对方 · 系统声音": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Them · computer audio"
+          }
+        }
+      }
+    },
+    "对方和你说的话会实时出现在这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What they say and what you say appear here as you talk."
+          }
+        }
+      }
+    },
+    "对方提问时，这里会自动给出建议回答。也可以在下方输入问题，或按 %@ 立即回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you're asked something, a suggested answer appears here. You can also type a question below, or press %@ to answer now."
           }
         }
       }
@@ -701,6 +1081,46 @@
         }
       }
     },
+    "屏幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen"
+          }
+        }
+      }
+    },
+    "屏幕底部": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bottom of the screen"
+          }
+        }
+      }
+    },
+    "屏幕感知已开启：跟随讲稿，相关的屏幕文字会用于回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen awareness is on: follows your slides; relevant screen text is used in answers"
+          }
+        }
+      }
+    },
+    "展开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand"
+          }
+        }
+      }
+    },
     "工作会议": {
       "localizations": {
         "en": {
@@ -717,6 +1137,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancelled"
+          }
+        }
+      }
+    },
+    "已暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        }
+      }
+    },
+    "已暂停 · 点按继续 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused · Click to resume · %@"
+          }
+        }
+      }
+    },
+    "已暂停自动滚动（点按恢复）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-scroll paused (click to resume)"
           }
         }
       }
@@ -771,6 +1221,16 @@
         }
       }
     },
+    "建议回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggested answer"
+          }
+        }
+      }
+    },
     "建议放：%@": {
       "localizations": {
         "en": {
@@ -821,6 +1281,16 @@
         }
       }
     },
+    "开始说话后，房间里的声音会实时出现在这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once people speak, what's said in the room appears here."
+          }
+        }
+      }
+    },
     "开始（资料还在读取 %lld/%lld）": {
       "localizations": {
         "en": {
@@ -851,12 +1321,32 @@
         }
       }
     },
+    "快速模式 ⚡ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast mode ⚡ · %@"
+          }
+        }
+      }
+    },
     "恢复最佳窗口大小": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Restore best window size"
+          }
+        }
+      }
+    },
+    "我": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me"
           }
         }
       }
@@ -871,12 +1361,42 @@
         }
       }
     },
+    "我可以反问": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questions to ask back"
+          }
+        }
+      }
+    },
     "截图": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Screenshot"
+          }
+        }
+      }
+    },
+    "截图已就绪，可以补充要求后发送": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot ready; add instructions if you like, then send"
+          }
+        }
+      }
+    },
+    "截图提问 · 区域 %@ · 窗口 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask about a screenshot · Area %@ · Window %@"
           }
         }
       }
@@ -911,6 +1431,16 @@
         }
       }
     },
+    "打开主窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open main window"
+          }
+        }
+      }
+    },
     "打开手机上的页面扫码连接": {
       "localizations": {
         "en": {
@@ -937,6 +1467,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skills"
+          }
+        }
+      }
+    },
+    "把回答改短 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make it shorter · %@"
           }
         }
       }
@@ -971,6 +1511,16 @@
         }
       }
     },
+    "提词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prompt"
+          }
+        }
+      }
+    },
     "提词器": {
       "localizations": {
         "en": {
@@ -981,12 +1531,52 @@
         }
       }
     },
+    "提词器 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teleprompter · %@"
+          }
+        }
+      }
+    },
+    "提词：对方提问时自动给出回答。只记录：不打扰，需要时按 %@。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prompt: answers appear when you're asked something. Notes only: stays quiet; press %@ when you need help."
+          }
+        }
+      }
+    },
     "搜索标题、系列或问题": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Search titles, series or questions"
+          }
+        }
+      }
+    },
+    "摄像头下方": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Below the camera"
+          }
+        }
+      }
+    },
+    "放大文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Larger text"
           }
         }
       }
@@ -1051,6 +1641,16 @@
         }
       }
     },
+    "是我说的": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That was me"
+          }
+        }
+      }
+    },
     "晚上好": {
       "localizations": {
         "en": {
@@ -1071,12 +1671,32 @@
         }
       }
     },
+    "更多回答设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More answer settings…"
+          }
+        }
+      }
+    },
     "更换": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Change"
+          }
+        }
+      }
+    },
+    "更简短": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shorter"
           }
         }
       }
@@ -1091,12 +1711,32 @@
         }
       }
     },
+    "未在听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not listening"
+          }
+        }
+      }
+    },
     "本周进展、相关论文": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This week's progress, related papers"
+          }
+        }
+      }
+    },
+    "本机识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device recognition"
           }
         }
       }
@@ -1111,12 +1751,52 @@
         }
       }
     },
+    "框选区域": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select an area"
+          }
+        }
+      }
+    },
+    "模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model"
+          }
+        }
+      }
+    },
+    "正在听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listening"
+          }
+        }
+      }
+    },
     "正在启动…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Starting…"
+          }
+        }
+      }
+    },
+    "正在回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answering"
           }
         }
       }
@@ -1141,6 +1821,26 @@
         }
       }
     },
+    "正在生成…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing…"
+          }
+        }
+      }
+    },
+    "正在联网核查…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking the web…"
+          }
+        }
+      }
+    },
     "正在读取显示器…": {
       "localizations": {
         "en": {
@@ -1157,6 +1857,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reading the materials…"
+          }
+        }
+      }
+    },
+    "每次都查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always"
           }
         }
       }
@@ -1191,6 +1901,36 @@
         }
       }
     },
+    "澄清问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clarify"
+          }
+        }
+      }
+    },
+    "点按暂停 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click to pause · %@"
+          }
+        }
+      }
+    },
+    "现场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Room"
+          }
+        }
+      }
+    },
     "用回答服务读一遍这场会议的资料": {
       "localizations": {
         "en": {
@@ -1207,6 +1947,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Computer audio"
+          }
+        }
+      }
+    },
+    "看原回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show original"
+          }
+        }
+      }
+    },
+    "看联网版": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show web version"
+          }
+        }
+      }
+    },
+    "立即回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer now"
+          }
+        }
+      }
+    },
+    "立即回答 · %@ · %@ 隐藏全部窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer now · %@ · %@ hides all windows"
           }
         }
       }
@@ -1341,6 +2121,16 @@
         }
       }
     },
+    "线下会议：只用麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In-person meeting: microphone only"
+          }
+        }
+      }
+    },
     "组会": {
       "localizations": {
         "en": {
@@ -1371,12 +2161,122 @@
         }
       }
     },
+    "结束并整理纪要 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End and write notes · %@"
+          }
+        }
+      }
+    },
     "继续": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Continue"
+          }
+        }
+      }
+    },
+    "缩小文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smaller text"
+          }
+        }
+      }
+    },
+    "联网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search"
+          }
+        }
+      }
+    },
+    "联网 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web %lld"
+          }
+        }
+      }
+    },
+    "联网查一下": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the web"
+          }
+        }
+      }
+    },
+    "联网没有完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web check didn't finish"
+          }
+        }
+      }
+    },
+    "联网版 · %lld 个来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web version · %lld sources"
+          }
+        }
+      }
+    },
+    "联网版已就绪 · %lld 个来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web version ready · %lld sources"
+          }
+        }
+      }
+    },
+    "自动判断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic"
+          }
+        }
+      }
+    },
+    "自动回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic answers"
+          }
+        }
+      }
+    },
+    "自动滚动到最新（点按暂停）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follows the latest line (click to pause)"
           }
         }
       }
@@ -1401,12 +2301,32 @@
         }
       }
     },
+    "英文版": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In English"
+          }
+        }
+      }
+    },
     "要开会了？": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Meeting coming up?"
+          }
+        }
+      }
+    },
+    "要点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brief"
           }
         }
       }
@@ -1477,6 +2397,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recognition"
+          }
+        }
+      }
+    },
+    "详细": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detailed"
           }
         }
       }
@@ -1561,6 +2491,16 @@
         }
       }
     },
+    "资料 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Materials %lld"
+          }
+        }
+      }
+    },
     "资料 · %@": {
       "localizations": {
         "en": {
@@ -1601,6 +2541,26 @@
         }
       }
     },
+    "转写和回答保存在本机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcripts and answers are kept on this Mac"
+          }
+        }
+      }
+    },
+    "输入问题，回车发送": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type a question, press Return to send"
+          }
+        }
+      }
+    },
     "这个系列的会议会出现在这里。": {
       "localizations": {
         "en": {
@@ -1627,6 +2587,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "This series has no materials, questions or lessons to bring in yet."
+          }
+        }
+      }
+    },
+    "这句和对方刚说的话很像，当作扬声器回声忽略了，不参与回答。如果是你说的，点“是我说的”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This line matches what the other side just said, so it was treated as speaker echo and left out of answers. If you said it, click “That was me”."
           }
         }
       }
@@ -1701,6 +2671,26 @@
         }
       }
     },
+    "选择模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a model"
+          }
+        }
+      }
+    },
+    "选择窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a window"
+          }
+        }
+      }
+    },
     "选择要截图的窗口": {
       "localizations": {
         "en": {
@@ -1741,6 +2731,16 @@
         }
       }
     },
+    "重新生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate"
+          }
+        }
+      }
+    },
     "重试": {
       "localizations": {
         "en": {
@@ -1751,12 +2751,32 @@
         }
       }
     },
+    "问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question"
+          }
+        }
+      }
+    },
     "随手记录": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Quick notes"
+          }
+        }
+      }
+    },
+    "隐藏提词器 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide teleprompter · %@"
           }
         }
       }
@@ -1791,6 +2811,26 @@
         }
       }
     },
+    "需要帮忙时按 %@，或在下方输入问题。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press %@ when you need help, or type a question below."
+          }
+        }
+      }
+    },
+    "需要帮忙？输入问题，或按 %@ 回答对方刚问的": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Need help? Type a question, or press %@ to answer what they just asked"
+          }
+        }
+      }
+    },
     "需要重新打开 App": {
       "localizations": {
         "en": {
@@ -1807,6 +2847,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Interview"
+          }
+        }
+      }
+    },
+    "音频发送到 %@ 识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio is sent to %@ for recognition"
+          }
+        }
+      }
+    },
+    "音频只在本机识别，不保存录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio is transcribed on this Mac and never saved"
           }
         }
       }
@@ -1857,6 +2917,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "The microphone mostly hears speaker echo (ignored)"
+          }
+        }
+      }
+    },
+    "鼠标穿透 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click-through · %@"
+          }
+        }
+      }
+    },
+    "；": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": ";"
           }
         }
       }

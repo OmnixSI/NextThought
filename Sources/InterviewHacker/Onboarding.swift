@@ -93,7 +93,8 @@ extension AppState {
 
     func openSettings(_ group: SettingsGroup) {
         UserDefaults.standard.set(group.rawValue, forKey: "settingsGroup")
-        section = .settings
+        // During a meeting settings open in their own window.
+        select(.settings)
     }
 
     func refreshSetupStatus() async {
