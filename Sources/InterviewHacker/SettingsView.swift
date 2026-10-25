@@ -303,6 +303,7 @@ private struct EssentialSettings: View {
             capability("资料增强（可选）", "系统识别与关键词直接可用；OCR 模型和向量模型按需安装", ready: true, action: "查看取舍") { state.openSettings(.documents) }
 
         }
+        LanguageSettingsSection()
         HStack {
             Button("备份与恢复") { state.openSettings(.recording) }.buttonStyle(.plain)
             Text("·").foregroundStyle(.tertiary)

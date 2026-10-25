@@ -26,6 +26,7 @@ jobs:
           cp "$bin" "$app/Contents/MacOS/InterviewHacker"
           cp Resources/Info.plist "$app/Contents/Info.plist"
           cp -R Resources/Companion "$app/Contents/Resources/Companion"
+          scripts/compile-strings.sh "$app/Contents/Resources"
           cp -R Resources/DocumentRuntime "$app/Contents/Resources/DocumentRuntime"
           # Demo mode writes tab choices to UserDefaults: keep them out of the installed app.
           plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
