@@ -46,6 +46,20 @@ struct MeetingDraft: Equatable {
     /// Series the user said this meeting does not belong to.
     var declinedSeriesIDs: Set<UUID> = []
     var carry = MeetingCarry.standard
+    /// Materials the bound series had before this meeting.
+    var baselineDocumentIDs: Set<UUID> = []
+    /// When the page opened (files added since then are "这次新加的资料").
+    var startedAt = Date()
+}
+
+/// Where the meeting happens (02-scenarios-and-flows.md, "声音从哪来").
+enum MeetingVenue: String, CaseIterable, Identifiable {
+    /// Them = everything this Mac plays; me = the microphone.
+    case online
+    /// Everyone in one room: the microphone only, transcribed as "现场".
+    case offline
+    var id: String { rawValue }
+    var title: LocalizedStringKey { self == .online ? "线上" : "线下" }
 }
 
 extension SessionMode {

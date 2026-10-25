@@ -1,6 +1,56 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    " · 建议放：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Bring: %@"
+          }
+        }
+      }
+    },
+    "%@ · %lld 分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld min"
+          }
+        }
+      }
+    },
+    "%@：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: %@"
+          }
+        }
+      }
+    },
+    "%lld 个待办": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld action items"
+          }
+        }
+      }
+    },
+    "%lld 份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld files"
+          }
+        }
+      }
+    },
     "%lld 份资料 · %lld 题 · %lld 场会议": {
       "localizations": {
         "en": {
@@ -11,12 +61,82 @@
         }
       }
     },
+    "%lld 分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "%lld 条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lessons"
+          }
+        }
+      }
+    },
+    "%lld 道题待改进": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld questions to improve"
+          }
+        }
+      }
+    },
+    "%lld 题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld questions"
+          }
+        }
+      }
+    },
+    "AI 读到的重点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What AI took away"
+          }
+        }
+      }
+    },
     "English": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "English"
+          }
+        }
+      }
+    },
+    "上一场完整转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full transcript of last time"
+          }
+        }
+      }
+    },
+    "上一场：%@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last time: %@ · %@"
           }
         }
       }
@@ -41,6 +161,16 @@
         }
       }
     },
+    "下载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download"
+          }
+        }
+      }
+    },
     "下面是用 ScreenCaptureKit 截取整个屏幕的结果，与 Zoom / Teams / Meet 等共享整屏时的取图方式相同。如果能看到提词器，说明共享整屏时对方也可能看到；请改为只共享会议窗口或标签页。": {
       "localizations": {
         "en": {
@@ -51,12 +181,52 @@
         }
       }
     },
+    "不是同一个系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not the same series"
+          }
+        }
+      }
+    },
     "产品资料、报价": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Product materials, pricing"
+          }
+        }
+      }
+    },
+    "今天 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today %@"
+          }
+        }
+      }
+    },
+    "从以前的会议带入…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bring in from a past meeting…"
+          }
+        }
+      }
+    },
+    "以此为上一场，准备下一场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare the next meeting from this one"
           }
         }
       }
@@ -87,6 +257,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Answers appear automatically, follows your slides · Brief answers · Notes: what the audience asked and better answers"
+          }
+        }
+      }
+    },
+    "会议 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting %@"
           }
         }
       }
@@ -131,6 +311,36 @@
         }
       }
     },
+    "允许": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow"
+          }
+        }
+      }
+    },
+    "先添加资料，AI 才能读出重点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add materials first so AI has something to read."
+          }
+        }
+      }
+    },
+    "先连接回答服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an answer engine first"
+          }
+        }
+      }
+    },
     "全部系列": {
       "localizations": {
         "en": {
@@ -171,6 +381,26 @@
         }
       }
     },
+    "准备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare"
+          }
+        }
+      }
+    },
+    "分析截图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer from screenshot"
+          }
+        }
+      }
+    },
     "切换语言后，App 会保存当前内容并自动重新打开。": {
       "localizations": {
         "en": {
@@ -201,12 +431,52 @@
         }
       }
     },
+    "刷新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        }
+      }
+    },
+    "去设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "去连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect"
+          }
+        }
+      }
+    },
     "取消": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Cancel"
+          }
+        }
+      }
+    },
+    "只听某个窗口…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only one window…"
           }
         }
       }
@@ -261,6 +531,16 @@
         }
       }
     },
+    "可跳过": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional"
+          }
+        }
+      }
+    },
     "同一件事的多场会议，共享资料、题库和经验": {
       "localizations": {
         "en": {
@@ -291,12 +571,52 @@
         }
       }
     },
+    "回答服务还没连上": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer engine not connected"
+          }
+        }
+      }
+    },
+    "基于": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Based on"
+          }
+        }
+      }
+    },
     "基础": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Basics"
+          }
+        }
+      }
+    },
+    "声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio"
+          }
+        }
+      }
+    },
+    "复盘 · 改进后的答法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review · improved answers"
           }
         }
       }
@@ -327,6 +647,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Them · computer audio"
+          }
+        }
+      }
+    },
+    "对方的声音从哪里来：默认是这台 Mac 播放的所有声音（App 自己的声音会被排除）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where the other side's voice comes from: by default everything this Mac plays (this app's own sound is excluded)"
           }
         }
       }
@@ -381,6 +711,146 @@
         }
       }
     },
+    "已取消": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled"
+          }
+        }
+      }
+    },
+    "已读懂": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read"
+          }
+        }
+      }
+    },
+    "已读懂 · 需核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read · Please check"
+          }
+        }
+      }
+    },
+    "已连接 %lld 台手机 · 局域网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld phone(s) connected · Local network"
+          }
+        }
+      }
+    },
+    "已连接手机 · 加密中转": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone connected · Encrypted relay"
+          }
+        }
+      }
+    },
+    "已连接手机 · 蓝牙": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone connected · Bluetooth"
+          }
+        }
+      }
+    },
+    "建议放：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggested: %@"
+          }
+        }
+      }
+    },
+    "开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "开始一场会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a meeting"
+          }
+        }
+      }
+    },
+    "开始前检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you start"
+          }
+        }
+      }
+    },
+    "开始记录之前": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you record"
+          }
+        }
+      }
+    },
+    "开始（资料还在读取 %lld/%lld）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start (reading materials %lld/%lld)"
+          }
+        }
+      }
+    },
+    "开过的会议会出现在这里；结束后自动整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your meetings appear here; notes are written when each one ends."
+          }
+        }
+      }
+    },
+    "快速": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast"
+          }
+        }
+      }
+    },
     "恢复最佳窗口大小": {
       "localizations": {
         "en": {
@@ -401,6 +871,16 @@
         }
       }
     },
+    "截图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot"
+          }
+        }
+      }
+    },
     "所有会议": {
       "localizations": {
         "en": {
@@ -411,12 +891,82 @@
         }
       }
     },
+    "手机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone"
+          }
+        }
+      }
+    },
+    "手机已断开 · 正在重连": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone disconnected · Reconnecting"
+          }
+        }
+      }
+    },
+    "打开手机上的页面扫码连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan the code with your phone to connect"
+          }
+        }
+      }
+    },
+    "打开系统设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        }
+      }
+    },
     "技能": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Skills"
+          }
+        }
+      }
+    },
+    "把文件拖到这里，或点右上角“添加”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop files here, or click Add above"
+          }
+        }
+      }
+    },
+    "拖入的文件类型不受支持。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Those file types aren't supported."
+          }
+        }
+      }
+    },
+    "接着上一场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue from last time"
           }
         }
       }
@@ -471,12 +1021,32 @@
         }
       }
     },
+    "新会议：放进资料、检查设备，再开始。立即记录：马上开始，结束后自动整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New meeting: add materials, check your setup, then start. Record now: start right away; notes are written when you end."
+          }
+        }
+      }
+    },
     "新建系列": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "New series"
+          }
+        }
+      }
+    },
+    "昨天 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yesterday %@"
           }
         }
       }
@@ -501,12 +1071,72 @@
         }
       }
     },
+    "更换": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change"
+          }
+        }
+      }
+    },
+    "最近": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent"
+          }
+        }
+      }
+    },
     "本周进展、相关论文": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "This week's progress, related papers"
+          }
+        }
+      }
+    },
+    "根据标题选好了，可以改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Picked from the title; you can change it"
+          }
+        }
+      }
+    },
+    "正在启动…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starting…"
+          }
+        }
+      }
+    },
+    "正在整理纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing notes"
+          }
+        }
+      }
+    },
+    "正在检测回答服务…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking the answer engine…"
           }
         }
       }
@@ -521,12 +1151,62 @@
         }
       }
     },
+    "正在读资料…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading the materials…"
+          }
+        }
+      }
+    },
     "汇报 / 答辩": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Presentation / Defense"
+          }
+        }
+      }
+    },
+    "没读出来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read"
+          }
+        }
+      }
+    },
+    "添加": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "用回答服务读一遍这场会议的资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the answer engine to read this meeting's materials"
+          }
+        }
+      }
+    },
+    "电脑声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Computer audio"
           }
         }
       }
@@ -561,6 +1241,16 @@
         }
       }
     },
+    "类型名称，例如：导师一对一": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type name, e.g. Advisor 1:1"
+          }
+        }
+      }
+    },
     "系列": {
       "localizations": {
         "en": {
@@ -591,12 +1281,82 @@
         }
       }
     },
+    "纪要没有整理好 · 可以重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes weren't written · Try again"
+          }
+        }
+      }
+    },
+    "线上": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Online"
+          }
+        }
+      }
+    },
+    "线上会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Online meeting"
+          }
+        }
+      }
+    },
+    "线下": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In person"
+          }
+        }
+      }
+    },
+    "线下会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In-person meeting"
+          }
+        }
+      }
+    },
+    "线下会议只用麦克风，转写标为“现场”。笔记本尽量放在桌子中间；人多时建议外接会议麦克风。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In-person meetings use the microphone only and the transcript is labeled “Room”. Put the laptop in the middle of the table; for larger rooms use an external conference mic."
+          }
+        }
+      }
+    },
     "组会": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Lab meeting"
+          }
+        }
+      }
+    },
+    "经验 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lessons · %@"
           }
         }
       }
@@ -611,12 +1371,42 @@
         }
       }
     },
+    "继续": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
     "自定义": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Custom"
+          }
+        }
+      }
+    },
+    "自定义…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom…"
+          }
+        }
+      }
+    },
+    "要开会了？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting coming up?"
           }
         }
       }
@@ -701,6 +1491,56 @@
         }
       }
     },
+    "语音识别还没设置好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech recognition isn't set up yet"
+          }
+        }
+      }
+    },
+    "请确认录音符合当地法律，并告知参会的人。声音只在这台 Mac 上识别，不保存录音。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make sure recording is allowed where you are, and tell the people in the meeting. Audio is transcribed on this Mac only and never saved."
+          }
+        }
+      }
+    },
+    "读一遍资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the materials"
+          }
+        }
+      }
+    },
+    "读取中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading"
+          }
+        }
+      }
+    },
+    "读完资料后，AI 写出它读到的 3 条重点和 5 道可能会问的题，可以先在心里过一遍。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI reads the materials and writes 3 key points and 5 likely questions you can rehearse in your head."
+          }
+        }
+      }
+    },
     "课件": {
       "localizations": {
         "en": {
@@ -717,6 +1557,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Materials"
+          }
+        }
+      }
+    },
+    "资料 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Materials · %@"
           }
         }
       }
@@ -761,12 +1611,92 @@
         }
       }
     },
+    "这个系列还没有开过会": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meetings in this series yet"
+          }
+        }
+      }
+    },
+    "这个系列还没有资料、题库或经验可以带入。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This series has no materials, questions or lessons to bring in yet."
+          }
+        }
+      }
+    },
+    "这场会议叫什么": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting title"
+          }
+        }
+      }
+    },
+    "这是「%@」的第 %lld 场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting %2$lld of “%1$@”"
+          }
+        }
+      }
+    },
+    "这是什么会": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What kind of meeting"
+          }
+        }
+      }
+    },
+    "这次新加的资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New materials for this meeting"
+          }
+        }
+      }
+    },
     "选一个类型作为基础，再改名字": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Pick a type to start from, then rename it"
+          }
+        }
+      }
+    },
+    "选择一个以前的系列，带入它的资料、复盘和经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick an earlier series and bring in its materials, review and lessons"
+          }
+        }
+      }
+    },
+    "选择声音来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an audio source"
           }
         }
       }
@@ -811,6 +1741,56 @@
         }
       }
     },
+    "重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
+    "随手记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick notes"
+          }
+        }
+      }
+    },
+    "需要允许“屏幕与系统音频录制”才能听到会议里的声音。允许后回到这里点开始。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow “Screen & System Audio Recording” so the app can hear the meeting, then come back and click Start."
+          }
+        }
+      }
+    },
+    "需要允许录屏与系统音频，才能听到会议里的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow screen and system audio recording so the app can hear the meeting"
+          }
+        }
+      }
+    },
+    "需要先下载本机识别模型（只需一次）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download the on-device speech model first (one time)"
+          }
+        }
+      }
+    },
     "需要重新打开 App": {
       "localizations": {
         "en": {
@@ -837,6 +1817,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Home"
+          }
+        }
+      }
+    },
+    "麦克风 · 我": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone · Me"
+          }
+        }
+      }
+    },
+    "麦克风未开启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone off"
+          }
+        }
+      }
+    },
+    "麦克风没有授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access not allowed"
           }
         }
       }

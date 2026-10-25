@@ -118,6 +118,10 @@ struct HistoryView: View {
                             SessionRow(meta: meta, selected: meta.id == selection, active: meta.id == archive.activeID)
                                 .contentShape(Rectangle())
                                 .onTapGesture { state.historySelection = meta.id }
+                                .contextMenu {
+                                    Button("以此为上一场，准备下一场") { state.prepareNextMeeting(after: meta.id) }
+                                        .disabled(meta.workspaceID == nil || state.isRunning)
+                                }
                         }
                     }
                 }

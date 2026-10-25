@@ -271,6 +271,17 @@ final class AppState {
     var meetingDraft: MeetingDraft?
     /// Title, carry-over and series of the meeting that starts next / is running.
     var plannedMeeting: MeetingPlan?
+    /// Online (computer audio + microphone) or in the same room (microphone only).
+    /// Kept for the next meeting and for "立即记录".
+    var meetingVenue = MeetingVenue(rawValue: UserDefaults.standard.string(forKey: "meetingVenue") ?? "") ?? .online
+    /// The answer on the preparation page ("AI 读到的重点 · 可能会问").
+    var predictionAnswerID: UUID?
+    /// Phone pages streaming from the LAN server right now (CompanionServer).
+    var companionClientCount = 0
+    /// A phone was connected since the companion was turned on (to say "reconnecting").
+    var companionHadClient = false
+    /// A start waiting for the one-time recording notice.
+    var recordingNoticePending: PendingStart?
     var isRunning = false
     var isPaused = false
     var isChangingSession = false
@@ -407,7 +418,8 @@ final class AppState {
         Diagnostics.pruneOldLogs()
         // Demo / screenshot mode shows sample data and never touches devices or models.
         guard !DemoMode.isEnabled else { return }
-        prepareOnboardingForCurrentVersion()
+        // The guide is no longer shown at launch: permissions are asked for when a
+        // meeting first starts, and the guide stays available in Settings → Basics.
         Task { await refreshManagedModelStatus() }
         Updater.shared.start()
         startScreenWatch()

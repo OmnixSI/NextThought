@@ -14,19 +14,6 @@ extension AppState {
         section = target
     }
 
-    /// "新会议" (⌘N): the preparation page of a new meeting.
-    func beginNewMeeting() {
-        guard !isRunning else { return }
-        section = .home
-        MainWindowLayout.bringToFront()
-    }
-
-    /// "立即记录" (⌘⇧R): start right away, no preparation.
-    func recordNow() async {
-        guard !isRunning, !isChangingSession else { return }
-        await startSession()
-    }
-
     /// ⌘, from the menu bar.
     func openSettingsFromMenu() {
         if isRunning {

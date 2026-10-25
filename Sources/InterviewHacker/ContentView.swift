@@ -55,6 +55,18 @@ struct ContentView: View {
         .sheet(isPresented: Binding(get: { state.shareTestImage != nil }, set: { if !$0 { state.shareTestImage = nil } })) {
             ShareTestSheet()
         }
+        // Shown once, before the first recording.
+        .alert("开始记录之前", isPresented: Binding(get: { state.recordingNoticePending != nil },
+                                              set: { if !$0 { state.recordingNoticePending = nil } })) {
+            Button("继续") {
+                // Read now: dismissing the alert clears the pending start.
+                let pending = state.recordingNoticePending
+                Task { await state.confirmRecordingNotice(pending) }
+            }
+            Button("取消", role: .cancel) { state.recordingNoticePending = nil }
+        } message: {
+            Text("请确认录音符合当地法律，并告知参会的人。声音只在这台 Mac 上识别，不保存录音。")
+        }
     }
 }
 

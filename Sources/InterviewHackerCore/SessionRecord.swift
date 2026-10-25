@@ -122,6 +122,9 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
     public var workspaceName: String?
     /// Name of a custom meeting type (`mode == .custom`).
     public var typeName: String?
+    /// Outcome counts written with the notes (for one-line results in lists).
+    public var actionItemCount: Int?
+    public var improveCount: Int?
     public init(id: UUID = UUID(), startedAt: Date, endedAt: Date? = nil, mode: SessionMode, title: String? = nil, audioSource: String = "", recognizer: String = "", answerModel: String = "",
                 transcriptCount: Int = 0, questionCount: Int = 0, answerCount: Int = 0, summaryState: SummaryState = .none, summaryError: String? = nil,
                 workspaceID: UUID? = nil, workspaceName: String? = nil) {
