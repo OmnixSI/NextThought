@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NotesProgress · InterviewHacker</title>
+<link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/components.css">
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500&display=swap">
+<div class="x" style="padding:56px 40px 40px;position:relative">
+<div class="x-lang"><span data-l="zh" class="is-on">中文</span><span data-l="en">EN</span></div>
+<div style="display:flex;flex-direction:column;gap:14px;max-width:760px">
+<div class="x-progress"><span class="x-spin"></span><span style="font-weight:600"><span class="zh">正在整理纪要</span><span class="en">Writing your notes</span></span><span class="x-cap"><span class="zh">通常 1–3 分钟 · 可以先看转写</span><span class="en">Usually 1–3 min · transcript is ready</span></span><div class="x-grow"></div>
+ <span class="st done"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7"/></svg><span class="zh">校对转写</span><span class="en">Fix transcript</span></span><span class="st now"><span class="zh">按模板整理</span><span class="en">Apply template</span></span><span class="st"><span class="zh">核对引用</span><span class="en">Check sources</span></span></div>
+<div class="x-card" style="font-size:14px;line-height:24px"><span class="x-cap"><span class="zh">转写 · 校对后</span><span class="en">Transcript · fixed</span></span><br><span class="zh">对方：那热点 key 过期的一瞬间，就是</span><span class="en">Them: So the instant a hot key expires, that's</span> <span class="x-fix" title="原识别：缓存鸡穿"><span class="zh">缓存击穿</span><span class="en">cache breakdown</span></span><span class="zh">，你们怎么处理？</span><span class="en">, how do you handle it?</span><div class="x-cap" style="margin-top:6px"><span class="zh">虚下划线 = AI 根据上下文改过的地方，悬停看原来识别的：“缓存鸡穿”</span><span class="en">Dotted underline = corrected from context; hover to see the original: “cash breakdown”</span></div></div>
+</div>
+<script>
+(function(){var root=document.currentScript.parentElement;root.querySelectorAll('.x-lang span').forEach(function(b){b.onclick=function(){root.setAttribute('data-lang',b.dataset.l);root.querySelectorAll('.x-lang span').forEach(function(o){o.classList.toggle('is-on',o===b)});};});})();
+</script>
+</div>
+</body></html>

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SessionStatus · InterviewHacker</title>
+<link rel="stylesheet" href="../design-system/tokens.css"><link rel="stylesheet" href="../design-system/components.css">
+</head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500&display=swap">
+<div class="x" style="padding:56px 40px 40px;position:relative">
+<div class="x-lang"><span data-l="zh" class="is-on">中文</span><span data-l="en">EN</span></div>
+<div style="display:flex;flex-direction:column;gap:18px">
+<div class="x-row" style="gap:28px"><span class="x-status"><span class="x-dot live"></span>12:38</span><span class="x-cap"><span class="zh">录制中 · 点一下暂停</span><span class="en">Recording · click to pause</span></span></div>
+<div class="x-row" style="gap:28px"><span class="x-status" style="color:var(--ink-secondary)"><span class="x-dot"></span><span class="zh">已暂停</span><span class="en">Paused</span> 12:38</span><span class="x-cap"><span class="zh">暂停时计时变灰</span><span class="en">Timer turns grey when paused</span></span></div>
+<div class="x-row" style="gap:28px"><button class="x-ibtn"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span class="x-dot ready"></span></button><span class="x-cap"><span class="zh">已连接 1 台手机 · 局域网</span><span class="en">1 phone connected · Local network</span></span></div>
+<div class="x-row" style="gap:28px"><button class="x-ibtn"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span class="x-dot caution"></span></button><span class="x-cap"><span class="zh">手机已断开 · 正在重连</span><span class="en">Phone disconnected · Reconnecting</span></span></div>
+<div class="x-row" style="gap:28px"><span class="x-websrc"><svg class="x-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c2.5 2.5 2.5 13.5 0 16M12 4c-2.5 2.5-2.5 13.5 0 16"/></svg><span class="zh">正在联网核查…</span><span class="en">Checking the web…</span></span><span class="x-cap"><span class="zh">先给出快速回答，查完自动换成联网版</span><span class="en">Shows a quick answer first, then swaps in the web version</span></span></div>
+<div class="x-row" style="gap:28px"><span class="x-cap" style="color:var(--caution)"><span class="zh">依据：资料 0 · 截图未附上</span><span class="en">Based on: 0 materials · screenshot not attached</span></span><span class="x-cap"><span class="zh">有限制时，依据这一行变成琥珀色</span><span class="en">The basis line turns amber when something was missing</span></span></div>
+</div>
+<script>
+(function(){var root=document.currentScript.parentElement;root.querySelectorAll('.x-lang span').forEach(function(b){b.onclick=function(){root.setAttribute('data-lang',b.dataset.l);root.querySelectorAll('.x-lang span').forEach(function(o){o.classList.toggle('is-on',o===b)});};});})();
+</script>
+</div>
+</body></html>

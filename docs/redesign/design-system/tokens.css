@@ -1,0 +1,83 @@
+/* InterviewHacker — generated from tokens.json */
+:root, [data-theme="light"] {
+  --paper: #f6f5f2;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --sunken: rgba(28, 27, 25, 0.04);
+  --hover: rgba(28, 27, 25, 0.06);
+  --ink: #1c1b19;
+  --on-ink: #ffffff;
+  --ink-secondary: #6b6963;
+  --ink-tertiary: #8e8c86;
+  --hairline: #e7e5e0;
+  --ai: #5146c8;
+  --ai-soft: rgba(81, 70, 200, 0.07);
+  --live: #d93a3a;
+  --ready: #2f9e5b;
+  --caution: #c27c0e;
+  --focus: #5146c8;
+  --brand-mark: #5146c8;
+  --shadow-float: 0 12px 32px rgba(28, 27, 25, 0.12), 0 0 0 0.5px rgba(28, 27, 25, 0.08);
+}
+[data-theme="dark"] {
+  --paper: #131312;
+  --surface: #1c1c1a;
+  --surface-raised: #242422;
+  --sunken: rgba(236, 235, 232, 0.05);
+  --hover: rgba(236, 235, 232, 0.08);
+  --ink: #ecebe8;
+  --on-ink: #131312;
+  --ink-secondary: #a3a19b;
+  --ink-tertiary: #75736e;
+  --hairline: #2c2b28;
+  --ai: #aaa3ff;
+  --ai-soft: rgba(170, 163, 255, 0.1);
+  --live: #ff6b63;
+  --ready: #4cc38a;
+  --caution: #f0b24a;
+  --focus: #aaa3ff;
+  --brand-mark: #5146c8;
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(236, 235, 232, 0.08);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #131312;
+  --surface: #1c1c1a;
+  --surface-raised: #242422;
+  --sunken: rgba(236, 235, 232, 0.05);
+  --hover: rgba(236, 235, 232, 0.08);
+  --ink: #ecebe8;
+  --on-ink: #131312;
+  --ink-secondary: #a3a19b;
+  --ink-tertiary: #75736e;
+  --hairline: #2c2b28;
+  --ai: #aaa3ff;
+  --ai-soft: rgba(170, 163, 255, 0.1);
+  --live: #ff6b63;
+  --ready: #4cc38a;
+  --caution: #f0b24a;
+  --focus: #aaa3ff;
+  --brand-mark: #5146c8;
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(236, 235, 232, 0.08);
+} }
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-10: 40px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --control-height: 32px;
+  --control-height-lg: 40px;
+  --sidebar-width: 220px;
+  --content-width: 720px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --font-serif: "New York", ui-serif, "Songti SC", "Noto Serif SC", Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+body { margin: 0; background: var(--paper); }
