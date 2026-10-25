@@ -4,7 +4,7 @@ import InterviewHackerCore
 
 /// Eight settings groups, with essential controls first and expert controls opt-in.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多"
+    case essentials = "基础", recognition = "识别", answers = "回答", notes = "纪要", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多"
     var id: String { rawValue }
     var symbol: String {
         switch self {
@@ -12,6 +12,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .recognition: "waveform"
         case .documents: "doc.text.magnifyingglass"
         case .answers: "sparkles"
+        case .notes: "doc.text"
         case .skills: "wand.and.stars"
         case .overlay: "rectangle.topthird.inset.filled"
         case .recording: "tray.full"
@@ -50,6 +51,7 @@ struct SettingsView: View {
                             case .recognition: RecognitionSettings()
                             case .documents: DocumentModelSettings()
                             case .answers: AnswerSettings()
+                            case .notes: NotesSettingsView()
                             case .skills:
                                 if state.simplifiedInterface {
                                     SettingsSection(title: "技能", icon: "wand.and.stars") {
@@ -80,6 +82,7 @@ extension SettingsGroup {
         case .recognition: "会议声音 · 麦克风 · 语音识别"
         case .documents: "读取资料 · 免下载或按需增强"
         case .answers: "对话服务 · 回答模型 · 自动回答"
+        case .notes: String(localized: "纪要模型 · 模板 · 语言")
         case .skills: "加载 SKILL.md · 全局或按场景"
         case .overlay: "位置 · 字号 · 共享显示"
         case .recording: "本机会话记录 · 备份与恢复"
@@ -95,7 +98,7 @@ private struct SettingsSidebar: View {
     let select: (SettingsGroup) -> Void
     @State private var query = ""
     /// The groups that stay visible in 简洁界面: the ones used every day.
-    private static let everyday: [SettingsGroup] = [.essentials, .recognition, .answers, .documents, .overlay]
+    private static let everyday: [SettingsGroup] = [.essentials, .recognition, .answers, .notes, .documents, .overlay]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -1118,7 +1121,7 @@ private struct RecordingSettings: View {
                 .disabled(state.isRunning)
                 .onChange(of: state.recordSessions) { _, _ in state.updateSettings() }
             if !state.simplifiedInterface {
-            Toggle("会话结束后自动生成摘要、问题清单与复盘", isOn: $state.autoSummarize)
+            Toggle("会议结束后自动整理纪要（设置 → 纪要）", isOn: $state.autoSummarize)
                 .disabled(!state.recordSessions)
                 .onChange(of: state.autoSummarize) { _, _ in state.updateSettings() }
             Toggle("把复盘得到的经验和改进回答自动加入场景的经验库与题库（自我迭代）", isOn: $state.autoApplyLessons)

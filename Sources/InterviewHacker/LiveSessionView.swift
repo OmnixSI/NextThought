@@ -460,7 +460,9 @@ private struct NotesOnlyColumn: View {
     }
 
     private var notesHint: String {
-        state.activeWorkspace.effectiveMode.defaultsSummary
+        let template = state.notesTemplate(for: state.activeWorkspace)
+        let sections = template.sections.map(\.title).joined(separator: " · ")
+        return String(localized: "纪要模板：\(template.name) · \(sections)")
     }
 }
 

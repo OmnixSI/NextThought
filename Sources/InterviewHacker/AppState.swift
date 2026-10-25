@@ -250,6 +250,15 @@ final class AppState {
     var autoSummarize = UserDefaults.standard.object(forKey: "autoSummarize") as? Bool ?? true
     /// Add the review's lessons and improved answers to the workspace automatically.
     var autoApplyLessons = UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
+    // MARK: Notes (会后纪要), separate from live answers
+    /// "" picks automatically (see `notesEngine`).
+    var notesModelID = UserDefaults.standard.string(forKey: "notesModelID") ?? ""
+    var notesReasoning = UserDefaults.standard.string(forKey: "notesReasoning") ?? "high"
+    /// "auto" (interface language), "zh" or "en".
+    var notesLanguage = UserDefaults.standard.string(forKey: "notesLanguage") ?? "auto"
+    /// Template per meeting type (SessionMode raw value → template id).
+    var notesTemplateByType = UserDefaults.standard.dictionary(forKey: "notesTemplateByType") as? [String: String] ?? [:]
+    var customNotesTemplates = AppState.loadCustomNotesTemplates()
     /// Daily automatic backups (also taken before updates and imports).
     var autoBackup = UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true
     var activeArchiveID: UUID?

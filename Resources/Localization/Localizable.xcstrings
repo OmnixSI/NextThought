@@ -41,6 +41,16 @@
         }
       }
     },
+    "%@ 副本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ copy"
+          }
+        }
+      }
+    },
     "%@：%@": {
       "localizations": {
         "en": {
@@ -57,6 +67,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld action items"
+          }
+        }
+      }
+    },
+    "%lld 个部分": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sections"
           }
         }
       }
@@ -207,6 +227,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "· Microphone not allowed; open System Settings"
+          }
+        }
+      }
+    },
+    "一个模板就是若干部分，每部分有名字和一句给 AI 的要求，例如“风险：列出可能导致延期的事，附原话”。可以从现有模板复制一份再改。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A template is a list of sections, each with a name and one sentence for the AI, e.g. “Risks: list what could cause a delay, with quotes”. Start from a copy of an existing template."
+          }
+        }
+      }
+    },
+    "一句话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One line"
           }
         }
       }
@@ -401,12 +441,32 @@
         }
       }
     },
+    "从模板复制…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy a template…"
+          }
+        }
+      }
+    },
     "以此为上一场，准备下一场": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Prepare the next meeting from this one"
+          }
+        }
+      }
+    },
+    "会中提词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live answers"
           }
         }
       }
@@ -441,6 +501,26 @@
         }
       }
     },
+    "会删除所有会议的转写、问题、提词和纪要，无法恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This deletes every meeting's transcript, questions, answers and notes. It can't be undone."
+          }
+        }
+      }
+    },
+    "会后整理纪要不赶时间，追求准确和详细，所以用单独的模型：默认是能用到的最强模型，推理强度“高”，不开快速模式。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes are not in a hurry; they need to be accurate and detailed, so they use their own model: by default the strongest available, reasoning “high”, no fast mode."
+          }
+        }
+      }
+    },
     "会议 %@": {
       "localizations": {
         "en": {
@@ -471,12 +551,42 @@
         }
       }
     },
+    "会议结束后自动整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write notes when a meeting ends"
+          }
+        }
+      }
+    },
+    "会议结束后自动整理纪要（设置 → 纪要）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write notes when a meeting ends (Settings → Notes)"
+          }
+        }
+      }
+    },
     "会议进行中不能切换语言。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You can't change the language during a meeting."
+          }
+        }
+      }
+    },
+    "会议进行中，结束后自动整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting is still running; notes are written when it ends."
           }
         }
       }
@@ -497,6 +607,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Based on: %@"
+          }
+        }
+      }
+    },
+    "保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
           }
         }
       }
@@ -631,6 +751,36 @@
         }
       }
     },
+    "删除全部会议记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all meeting records"
+          }
+        }
+      }
+    },
+    "删除全部会议记录？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all meeting records?"
+          }
+        }
+      }
+    },
+    "删除全部记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all records"
+          }
+        }
+      }
+    },
     "删除系列“%@”？": {
       "localizations": {
         "en": {
@@ -641,12 +791,52 @@
         }
       }
     },
+    "删除这一部分": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove this section"
+          }
+        }
+      }
+    },
+    "删除这场会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this meeting"
+          }
+        }
+      }
+    },
     "刷新": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Refresh"
+          }
+        }
+      }
+    },
+    "原来识别为：%@（右键可以撤销）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Originally recognized as: %@ (right-click to undo)"
+          }
+        }
+      }
+    },
+    "去掉了 %lld 条没有原话依据的内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dropped %lld items with no support in the transcript"
           }
         }
       }
@@ -791,6 +981,16 @@
         }
       }
     },
+    "各类型的默认模板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default template per type"
+          }
+        }
+      }
+    },
     "同一件事的多场会议，共享资料、题库和经验": {
       "localizations": {
         "en": {
@@ -901,6 +1101,16 @@
         }
       }
     },
+    "在 Finder 中显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        }
+      }
+    },
     "基于": {
       "localizations": {
         "en": {
@@ -951,12 +1161,42 @@
         }
       }
     },
+    "复制纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy notes"
+          }
+        }
+      }
+    },
+    "复盘": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review"
+          }
+        }
+      }
+    },
     "复盘 · 改进后的答法": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Review · improved answers"
+          }
+        }
+      }
+    },
+    "存进题库 · %lld 题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save to question bank · %lld"
           }
         }
       }
@@ -1061,6 +1301,16 @@
         }
       }
     },
+    "导出 Markdown…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Markdown…"
+          }
+        }
+      }
+    },
     "导出系列与会议记录…": {
       "localizations": {
         "en": {
@@ -1151,6 +1401,16 @@
         }
       }
     },
+    "已复制": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        }
+      }
+    },
     "已暂停": {
       "localizations": {
         "en": {
@@ -1177,6 +1437,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Auto-scroll paused (click to resume)"
+          }
+        }
+      }
+    },
+    "已校对 %lld 处识别错误": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld recognition errors fixed"
           }
         }
       }
@@ -1311,12 +1581,62 @@
         }
       }
     },
+    "开过的会议会保存在这里；结束时自动整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your meetings are kept here; notes are written when each one ends."
+          }
+        }
+      }
+    },
     "开过的会议会出现在这里；结束后自动整理纪要。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Your meetings appear here; notes are written when each one ends."
+          }
+        }
+      }
+    },
+    "待办格式（谁 · 什么时候）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Action format (who · when)"
+          }
+        }
+      }
+    },
+    "待改进": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To improve"
+          }
+        }
+      }
+    },
+    "待改进的题和更好的答法存进这个系列的题库，下一场自动带入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saves the questions to improve, with better answers, to this series' question bank for next time"
+          }
+        }
+      }
+    },
+    "待确认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To confirm"
           }
         }
       }
@@ -1351,6 +1671,16 @@
         }
       }
     },
+    "恢复校对：%@ → %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redo correction: %@ → %@"
+          }
+        }
+      }
+    },
     "我": {
       "localizations": {
         "en": {
@@ -1377,6 +1707,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Questions to ask back"
+          }
+        }
+      }
+    },
+    "我答：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My answer: %@"
           }
         }
       }
@@ -1417,6 +1757,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Meetings"
+          }
+        }
+      }
+    },
+    "手动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual"
           }
         }
       }
@@ -1511,12 +1861,42 @@
         }
       }
     },
+    "按模板整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organize by template"
+          }
+        }
+      }
+    },
+    "换个模板重新整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rewrite with another template"
+          }
+        }
+      }
+    },
     "接着上一场": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Continue from last time"
+          }
+        }
+      }
+    },
+    "推理强度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reasoning"
           }
         }
       }
@@ -1581,6 +1961,16 @@
         }
       }
     },
+    "撤销校对：%@ → %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo correction: %@ → %@"
+          }
+        }
+      }
+    },
     "放大文字": {
       "localizations": {
         "en": {
@@ -1607,6 +1997,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "The language of the whole app. The app reopens after you change it. Suggested answers follow the language of the conversation, not this setting."
+          }
+        }
+      }
+    },
+    "整理分三步：校对转写（结合资料里的专有名词纠正识别错误）→ 按模板整理（每条带原话的时间点）→ 核对（去掉没有原话依据的条目，相对日期换成具体日期，不确定的标“待确认”）。不重新识别声音，也不保存录音。整理在后台进行，失败时保留转写，可以重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three steps: proofread the transcript (fix recognition errors using names and terms from your materials) → organize by template (every item cites when it was said) → check (drop items nothing in the transcript supports, turn relative dates into dates, mark unclear ones “to confirm”). Audio is not recognized again and never saved. It runs in the background; if it fails, the transcript is kept and you can retry."
+          }
+        }
+      }
+    },
+    "整理纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write notes"
           }
         }
       }
@@ -1691,6 +2101,16 @@
         }
       }
     },
+    "更好的答法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Better answer"
+          }
+        }
+      }
+    },
     "更换": {
       "localizations": {
         "en": {
@@ -1751,6 +2171,36 @@
         }
       }
     },
+    "标题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        }
+      }
+    },
+    "校对转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proofread transcript"
+          }
+        }
+      }
+    },
+    "核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check"
+          }
+        }
+      }
+    },
     "根据标题选好了，可以改": {
       "localizations": {
         "en": {
@@ -1777,6 +2227,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Model"
+          }
+        }
+      }
+    },
+    "模型 ID（留空时与回答模型相同）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model ID (empty: same as the answer model)"
+          }
+        }
+      }
+    },
+    "模板名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Template name"
+          }
+        }
+      }
+    },
+    "模板：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Template: %@"
           }
         }
       }
@@ -1817,6 +2297,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Writing notes"
+          }
+        }
+      }
+    },
+    "正在整理纪要 · 通常 1–3 分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing notes · usually 1–3 minutes"
           }
         }
       }
@@ -1871,6 +2361,16 @@
         }
       }
     },
+    "每场会议的转写、纪要和提词都保存在这台 Mac 上。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every meeting's transcript, notes and answers are kept on this Mac."
+          }
+        }
+      }
+    },
     "每次都查": {
       "localizations": {
         "en": {
@@ -1891,6 +2391,16 @@
         }
       }
     },
+    "没有可用的纪要模型。请在 设置 → 纪要 里选择。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes model available. Choose one in Settings → Notes."
+          }
+        }
+      }
+    },
     "没读出来": {
       "localizations": {
         "en": {
@@ -1907,6 +2417,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Add"
+          }
+        }
+      }
+    },
+    "添加一部分": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a section"
           }
         }
       }
@@ -1947,6 +2467,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Use the answer engine to read this meeting's materials"
+          }
+        }
+      }
+    },
+    "由 %@ 整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Written by %@"
           }
         }
       }
@@ -2011,6 +2541,16 @@
         }
       }
     },
+    "答得好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good"
+          }
+        }
+      }
+    },
     "简体中文": {
       "localizations": {
         "en": {
@@ -2071,12 +2611,82 @@
         }
       }
     },
+    "纪要已整理好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes are ready"
+          }
+        }
+      }
+    },
+    "纪要模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes model"
+          }
+        }
+      }
+    },
+    "纪要模型 · 模板 · 语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes model · Templates · Language"
+          }
+        }
+      }
+    },
+    "纪要模型没有按要求的格式回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notes model didn't reply in the expected format."
+          }
+        }
+      }
+    },
+    "纪要模板：%@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes template: %@ · %@"
+          }
+        }
+      }
+    },
     "纪要没有整理好 · 可以重试": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Notes weren't written · Try again"
+          }
+        }
+      }
+    },
+    "纪要语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes language"
+          }
+        }
+      }
+    },
+    "纪要页的“模板”菜单可以给单场会议换个模板重新整理。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the Template menu on a meeting's notes to rewrite them with another template."
           }
         }
       }
@@ -2191,12 +2801,42 @@
         }
       }
     },
+    "给 AI 的要求，例如：列出可能导致延期的事，附原话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What the AI should write, e.g. list what could cause a delay, with quotes"
+          }
+        }
+      }
+    },
     "继续": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Continue"
+          }
+        }
+      }
+    },
+    "编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "编辑模板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit template"
           }
         }
       }
@@ -2271,6 +2911,36 @@
         }
       }
     },
+    "自动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        }
+      }
+    },
+    "自动 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic · %@"
+          }
+        }
+      }
+    },
+    "自动保存 · 不保存录音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved automatically · no audio kept"
+          }
+        }
+      }
+    },
     "自动判断": {
       "localizations": {
         "en": {
@@ -2321,6 +2991,16 @@
         }
       }
     },
+    "自定义模板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom templates"
+          }
+        }
+      }
+    },
     "英文版": {
       "localizations": {
         "en": {
@@ -2367,6 +3047,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Agenda"
+          }
+        }
+      }
+    },
+    "记录已关闭（设置 → 数据）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording is off (Settings → Data)"
           }
         }
       }
@@ -2561,12 +3251,42 @@
         }
       }
     },
+    "跟随界面语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Same as the app"
+          }
+        }
+      }
+    },
     "跟随系统": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Follow system"
+          }
+        }
+      }
+    },
+    "跳到转写里的这句话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jump to this moment in the transcript"
+          }
+        }
+      }
+    },
+    "转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript"
           }
         }
       }
@@ -2587,6 +3307,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Type a question, press Return to send"
+          }
+        }
+      }
+    },
+    "还没有会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meetings yet"
+          }
+        }
+      }
+    },
+    "还没有纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes yet."
           }
         }
       }
@@ -2641,6 +3381,46 @@
         }
       }
     },
+    "这场会议没有整理出内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to note from this meeting."
+          }
+        }
+      }
+    },
+    "这场会议没有生成提词。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No answers were given in this meeting."
+          }
+        }
+      }
+    },
+    "这场会议没有转写。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This meeting has no transcript."
+          }
+        }
+      }
+    },
+    "这是“不足”的部分（答得不好、没讨论透、风险）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a “gaps” section (weak answers, unsettled points, risks)"
+          }
+        }
+      }
+    },
     "这是「%@」的第 %lld 场": {
       "localizations": {
         "en": {
@@ -2691,6 +3471,16 @@
         }
       }
     },
+    "选择一场会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a meeting"
+          }
+        }
+      }
+    },
     "选择声音来源": {
       "localizations": {
         "en": {
@@ -2731,12 +3521,32 @@
         }
       }
     },
+    "逐题回放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question by question"
+          }
+        }
+      }
+    },
     "通用": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "General"
+          }
+        }
+      }
+    },
+    "部分名称，例如：风险": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Section name, e.g. Risks"
           }
         }
       }
@@ -2751,12 +3561,42 @@
         }
       }
     },
+    "重命名…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename…"
+          }
+        }
+      }
+    },
+    "重命名会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename meeting"
+          }
+        }
+      }
+    },
     "重新打开": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Reopen"
+          }
+        }
+      }
+    },
+    "重新整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rewrite notes"
           }
         }
       }
