@@ -190,8 +190,15 @@ extension AppState {
     /// streams into the preparation page.
     func readDraftMaterials() {
         guard ensureDraftSeries() != nil else { return }
-        predictQuestions()
-        predictionAnswerID = isAnswering ? currentAnswerID : nil
+        // Binding or creating the series rebuilds its index, and `ask` refuses to run
+        // while that is in progress: wait for it (as starting does).
+        Task {
+            for _ in 0..<100 where isIndexingDocuments {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            predictQuestions()
+            predictionAnswerID = isAnswering ? currentAnswerID : nil
+        }
     }
 
     // MARK: Starting
@@ -209,7 +216,8 @@ extension AppState {
         if isRunning {
             meetingDraft = nil
             predictionAnswerID = nil
-        } else {
+        } else if !isChangingSession {
+            // A second click while the first start is still running must not clear its plan.
             plannedMeeting = nil
         }
     }
@@ -222,7 +230,7 @@ extension AppState {
         if activeWorkspace.id != id { switchWorkspace(id) }
         plannedMeeting = MeetingPlan()
         await startWithPermissions()
-        if !isRunning { plannedMeeting = nil }
+        if !isRunning && !isChangingSession { plannedMeeting = nil }
     }
 
     /// The first start shows a short notice about recording consent.
