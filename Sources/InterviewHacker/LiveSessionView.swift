@@ -52,8 +52,7 @@ private struct LiveTopBar: View {
                     .help("线下会议：只用麦克风")
             }
             Spacer(minLength: Space.s3)
-            InkSegmented(items: [(value: true, title: "提词"), (value: false, title: "只记录")],
-                         selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }))
+            InkSegmented(items: Self.modeItems, selection: modeSelection)
                 .fixedSize()
                 .help("提词：对方提问时自动给出回答。只记录：不打扰，需要时按 \(state.shortcutLabel(.forceAnswer))。")
             HStack(spacing: Space.s1) {
@@ -72,6 +71,12 @@ private struct LiveTopBar: View {
         .padding(.horizontal, Space.s4)
         .frame(height: 52)
         .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+    }
+
+    private static let modeItems: [(value: Bool, title: LocalizedStringKey)] = [(value: true, title: "提词"), (value: false, title: "只记录")]
+
+    private var modeSelection: Binding<Bool> {
+        Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) })
     }
 
     private var title: String {
@@ -152,7 +157,7 @@ private struct AnswerSettingsMenu: View {
     var body: some View {
         Menu {
             Section("模型") {
-                Picker("模型", selection: Binding(get: { state.currentAnswerModel }, set: { state.setLiveModel($0) })) {
+                Picker("模型", selection: modelSelection) {
                     ForEach(modelOptions, id: \.id) { option in
                         Text(verbatim: option.name).tag(option.id)
                     }
@@ -161,12 +166,12 @@ private struct AnswerSettingsMenu: View {
                 .labelsHidden()
             }
             if state.codexFastAvailable {
-                Toggle(isOn: Binding(get: { state.codexFastMode }, set: { state.codexFastMode = $0; state.updateSettings() })) {
+                Toggle(isOn: fastModeSelection) {
                     Text("快速模式 ⚡ · \(state.codexFastLabel)")
                 }
             }
             Section("联网") {
-                Picker("联网", selection: Binding(get: { state.webSearchMode }, set: { state.webSearchMode = $0; state.saveWebSearchSettings() })) {
+                Picker("联网", selection: webSearchSelection) {
                     ForEach(WebSearchMode.allCases) { mode in
                         Text(verbatim: mode.displayName).tag(mode)
                     }
@@ -175,7 +180,7 @@ private struct AnswerSettingsMenu: View {
                 .labelsHidden()
             }
             Section("回答长度") {
-                Picker("回答长度", selection: Binding(get: { state.liveAnswerStyle }, set: { state.setLiveAnswerStyle($0) })) {
+                Picker("回答长度", selection: answerStyleSelection) {
                     Text("要点").tag(AnswerStyle.concise)
                     Text("详细").tag(AnswerStyle.detailed)
                 }
@@ -203,6 +208,29 @@ private struct AnswerSettingsMenu: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .help("回答设置")
+    }
+
+    // Bindings kept out of the menu builder so each one type-checks on its own.
+    private var modelSelection: Binding<String> {
+        Binding(get: { state.currentAnswerModel }, set: { state.setLiveModel($0) })
+    }
+
+    private var fastModeSelection: Binding<Bool> {
+        Binding(get: { state.codexFastMode }, set: { value in
+            state.codexFastMode = value
+            state.updateSettings()
+        })
+    }
+
+    private var webSearchSelection: Binding<WebSearchMode> {
+        Binding(get: { state.webSearchMode }, set: { value in
+            state.webSearchMode = value
+            state.saveWebSearchSettings()
+        })
+    }
+
+    private var answerStyleSelection: Binding<AnswerStyle> {
+        Binding(get: { state.liveAnswerStyle }, set: { state.setLiveAnswerStyle($0) })
     }
 
     private struct ModelOption { let id: String; let name: String }
