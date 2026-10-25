@@ -659,6 +659,10 @@ final class AppState {
             startCandidateTicker()
         } catch {
             isRunning = false
+            // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
+            if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
+                rebuildContextIndex()
+            }
             _ = await audio.stopCapture()
             _ = microphone.stopCapture()
             audio.setPCMHandler(nil)
