@@ -33,7 +33,10 @@ capture() {
     png="$out/$name-$appearance$suffix.png"
     rm -f "$png"
     local attempt
-    for attempt in 1 2; do
+    for attempt in 1 2 3; do
+    # A sleeping display draws nothing; declare the user active to wake it.
+    caffeinate -u -t 3 >/dev/null 2>&1 &
+    pkill -9 -f "InterviewHacker-ci.app/Contents/MacOS" 2>/dev/null || true
     INTERVIEWHACKER_DEMO=1 \
     INTERVIEWHACKER_DATA_DIR="$work/data" \
     INTERVIEWHACKER_DEMO_SECTION="$section" \
@@ -45,8 +48,11 @@ capture() {
     local pid=$!
     for _ in $(seq 1 60); do [[ -s "$png" ]] && break; sleep 0.5; done
     kill "$pid" 2>/dev/null || true
+    sleep 0.5
+    kill -9 "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
     [[ -s "$png" ]] && break
+    cp "$work/$name.log" "$project_root/.ih-loop/capture-$name-$appearance$suffix-$attempt.log" 2>/dev/null || true
     sleep 1
     done
     if [[ -s "$png" ]]; then
@@ -59,6 +65,8 @@ capture() {
 }
 
 # README uses the light appearance only; pass APPEARANCES="light dark" for both.
+# Keep the display awake for the whole run.
+caffeinate -d -u -w $$ >/dev/null 2>&1 &
 for appearance in ${APPEARANCES:-light}; do
     capture home        home       "$appearance" zh-Hans
     capture prepare     prepare    "$appearance" zh-Hans
