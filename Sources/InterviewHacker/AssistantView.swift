@@ -967,9 +967,8 @@ private struct AnswerFooter: View {
     @Environment(AppState.self) private var state
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // The action buttons wrap instead of squeezing each other, and the
-            // meta line moved to its own row: that way "重新生成" / "联网查一下"
-            // are never clipped and never overlap the timing text.
+            // Rewrites, regenerate and web lookup live in RefinementBar (3 + 更多);
+            // the footer keeps only evidence, timing and a copy icon.
             if let id = state.displayedRecordID, let evidence = state.answerCoordinator.evidenceHistory[id] ?? state.answerHistory.first(where: { $0.id == id })?.evidence {
                 AnswerEvidenceDetails(evidence: evidence).id(id)
             }
