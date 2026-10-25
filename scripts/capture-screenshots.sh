@@ -53,7 +53,8 @@ capture() {
     sleep 0.5
 }
 
-for appearance in light dark; do
+# README uses the light appearance only; pass APPEARANCES="light dark" for both.
+for appearance in ${APPEARANCES:-light}; do
     capture home        home       "$appearance" zh-Hans
     capture prepare     prepare    "$appearance" zh-Hans
     capture live        live       "$appearance" zh-Hans
