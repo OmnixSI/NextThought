@@ -22,6 +22,7 @@ cp -R "$source_app" "$app"
 plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
 codesign --force --sign - --identifier com.interviewhacker.app.ci "$app" >/dev/null 2>&1
 
+defaults delete com.interviewhacker.app.ci >/dev/null 2>&1 || true
 out="$project_root/docs/screenshots/v2"
 mkdir -p "$out"
 
@@ -37,6 +38,9 @@ capture() {
     # A sleeping display draws nothing; declare the user active to wake it.
     caffeinate -u -t 3 >/dev/null 2>&1 &
     pkill -9 -f "InterviewHacker-ci.app/Contents/MacOS" 2>/dev/null || true
+    # Every capture ends with a kill; without this the next launch tries to restore
+    # windows after an "unexpected quit" and never draws the demo window.
+    rm -rf "$HOME/Library/Saved Application State/com.interviewhacker.app.ci.savedState"
     INTERVIEWHACKER_DEMO=1 \
     INTERVIEWHACKER_DATA_DIR="$work/data" \
     INTERVIEWHACKER_DEMO_SECTION="$section" \
@@ -44,7 +48,8 @@ capture() {
     INTERVIEWHACKER_DEMO_DEFAULTS="$defaults" \
     INTERVIEWHACKER_DEMO_VOICE_READY=1 \
     INTERVIEWHACKER_DEMO_SNAPSHOT="$png" \
-    "$app/Contents/MacOS/InterviewHacker" -AppleLanguages "($language)" >"$work/$name.log" 2>&1 &
+    "$app/Contents/MacOS/InterviewHacker" -AppleLanguages "($language)" \
+        -ApplePersistenceIgnoreState YES -NSQuitAlwaysKeepsWindows NO >"$work/$name.log" 2>&1 &
     local pid=$!
     for _ in $(seq 1 60); do [[ -s "$png" ]] && break; sleep 0.5; done
     kill "$pid" 2>/dev/null || true
@@ -60,6 +65,9 @@ capture() {
         echo "ok   $(basename "$png")"
     else
         echo "FAIL $(basename "$png")"; tail -n 20 "$work/$name.log" || true
+        report="$(ls -t "$HOME"/Library/Logs/DiagnosticReports/InterviewHacker* 2>/dev/null | head -1 || true)"
+        [[ -n "$report" ]] && echo "     latest crash report: $report" && head -n 40 "$report"
+        pgrep -fl "InterviewHacker" || true
     fi
     sleep 0.5
 }
