@@ -175,13 +175,11 @@ private struct SettingsSidebar: View {
         let selected = group == selection
         return HStack(spacing: 10) {
             Image(systemName: group.symbol)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(selected ? Color.white : Brand.accent)
-                .frame(width: 30, height: 30)
-                .background(selected ? AnyShapeStyle(Brand.gradient) : AnyShapeStyle(Brand.accent.opacity(0.12)),
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(selected ? Ink.ink : Ink.secondary)
+                .frame(width: 22, height: 22)
             VStack(alignment: .leading, spacing: 2) {
-                Text(group.rawValue).font(.system(size: 13, weight: selected ? .semibold : .medium)).lineLimit(1)
+                Text(LocalizedStringKey(group.rawValue)).font(.system(size: 13, weight: selected ? .semibold : .medium)).lineLimit(1)
                 if !compact {
                     Text(group.summary).font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
                 }
@@ -193,7 +191,7 @@ private struct SettingsSidebar: View {
             badge(group)
         }
         .padding(8)
-        .background(selected ? Brand.accent.opacity(0.14) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
         .contentShape(Rectangle())
         .onTapGesture {
             select(group)
@@ -226,12 +224,8 @@ private struct SettingsPageHeader: View {
     let group: SettingsGroup
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: group.symbol)
-                .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                .frame(width: 38, height: 38)
-                .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Text(group.rawValue).font(.system(size: 18, weight: .bold))
+                Text(LocalizedStringKey(group.rawValue)).font(Typo.section)
                 Text(group.summary).font(.system(size: 12)).foregroundStyle(.secondary)
             }
             Spacer(minLength: 12)
@@ -255,10 +249,9 @@ struct SettingsSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 26, height: 26)
-                    .background(Brand.gradient, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-                Text(title).font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .regular)).foregroundStyle(Ink.secondary)
+                    .frame(width: 18)
+                Text(LocalizedStringKey(title)).font(.system(size: 14, weight: .semibold))
             }
             content
         }

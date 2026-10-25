@@ -321,10 +321,7 @@ extension AppSection {
 struct PulseDot: View {
     var active: Bool
     var body: some View {
-        ZStack {
-            if active { Circle().fill(Color.green.opacity(0.25)).frame(width: 14, height: 14) }
-            Circle().fill(active ? Color.green : Color.secondary.opacity(0.6)).frame(width: 7, height: 7)
-        }
-        .frame(width: 14, height: 14)
+        Circle().fill(active ? Ink.live : Ink.tertiary).frame(width: 7, height: 7)
+            .frame(width: 14, height: 14)
     }
 }

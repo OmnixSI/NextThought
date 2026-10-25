@@ -47,7 +47,7 @@ enum MainWindowLayout {
         window.level = keepOnTop ? .floating : .normal
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.minSize = minimum
-        window.backgroundColor = .windowBackgroundColor
+        window.backgroundColor = Ink.paperNSColor
         window.isOpaque = true
         window.isRestorable = false
         window.setFrameAutosaveName("")

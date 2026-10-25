@@ -115,8 +115,8 @@ private struct WorkspaceEditor: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: state.sessionMode.symbol)
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
-                    .frame(width: 34, height: 34).background(Brand.gradient, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .font(.system(size: 15, weight: .regular)).foregroundStyle(Ink.secondary)
+                    .frame(width: 24, height: 24)
                 TextField("场景名称", text: Binding(get: { state.activeWorkspace.name }, set: { state.activeWorkspace.name = $0 }))
                     .textFieldStyle(.plain).font(.system(size: 17, weight: .semibold))
                 Spacer()

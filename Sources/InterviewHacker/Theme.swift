@@ -18,12 +18,12 @@ struct MarkdownText: View, Equatable {
                         .font(.system(size: size * 0.86, design: .monospaced))
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall))
                 case let .heading(line):
                     Text(Self.inline(line)).font(.system(size: size * 1.05, weight: .semibold))
                 case let .bullet(line, level):
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("•").foregroundStyle(Color.accentColor)
+                        Text(verbatim: "•").foregroundStyle(Ink.ai)
                         Text(Self.inline(line)).font(.system(size: size)).lineSpacing(lineSpacing)
                     }.padding(.leading, CGFloat(level) * 14)
                 case let .paragraph(line):
@@ -76,7 +76,7 @@ struct CardBackground: ViewModifier {
         content
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .cardSurface(cornerRadius: 22, tint: tint?.opacity(0.18))
+            .cardSurface(cornerRadius: Space.radiusMedium, tint: tint)
     }
 }
 
