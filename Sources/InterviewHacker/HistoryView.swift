@@ -68,7 +68,7 @@ struct HistoryView: View {
         }
         .onAppear { selectFirstIfNeeded() }
         // The page stays alive between visits; pick up sessions recorded meanwhile.
-        .onChange(of: state.section) { _, section in if section == .history { selectFirstIfNeeded() } }
+        .onChange(of: state.section) { _, section in if section == .meetings { selectFirstIfNeeded() } }
         // Re-runs the content search whenever the query or the filter scope changes;
         // `.task(id:)` cancels the previous run automatically.
         .task(id: contentSearchKey) { await runContentSearch() }

@@ -266,7 +266,7 @@ final class AppState {
     var companionRelayTask: Task<Void, Never>?
 
     // MARK: Live session
-    var section: AppSection = .assistant
+    var section: AppSection = .home
     var isRunning = false
     var isPaused = false
     var isChangingSession = false
@@ -1086,7 +1086,7 @@ final class AppState {
             isRegionCapturePresented = false
             screenshotURL = result.url
             screenshotPreview = result.preview
-            section = .assistant
+            if !isRunning { section = .home }
             Diagnostics.record("screenshot.capture.completed", ["mode": "region", "width": Int(result.preview.size.width), "height": Int(result.preview.size.height)])
         } catch {
             errorMessage = "区域截图失败：\(error.localizedDescription)"
@@ -1126,7 +1126,7 @@ final class AppState {
                 }
                 screenshotURL = result.url
                 screenshotPreview = result.preview
-                section = .assistant
+                if !isRunning { section = .home }
                 Diagnostics.record("screenshot.capture.completed", ["mode": "window", "owner": window.owner, "width": Int(result.preview.size.width), "height": Int(result.preview.size.height)])
             } catch {
                 errorMessage = "截图失败：\(error.localizedDescription)"

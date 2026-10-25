@@ -47,13 +47,16 @@ enum DemoMode {
         TeleprompterController.shared.applyPrivacy(false)
         state.appearance = environment["INTERVIEWHACKER_DEMO_APPEARANCE"] ?? "dark"
         state.applyAppearance()
-        state.section = AppSection.allCases.first { "\($0)" == environment["INTERVIEWHACKER_DEMO_SECTION"] } ?? .assistant
+        state.section = AppSection(demoName: environment["INTERVIEWHACKER_DEMO_SECTION"] ?? "") ?? .home
         state.populateDemo()
         if environment["INTERVIEWHACKER_DEMO_API"] == "1" {
             state.answerBackend = .openAICompatible; state.apiBaseURL = "https://example.invalid/v1"
             state.apiModel = "example-model"; state.apiKey = ""
         }
-        if environment["INTERVIEWHACKER_DEMO_IDLE"] == "1" { state.isRunning = false }
+        // Only the live page shows a running meeting; every other section is the
+        // normal window with the sidebar.
+        let demoSection = environment["INTERVIEWHACKER_DEMO_SECTION"] ?? "assistant"
+        if environment["INTERVIEWHACKER_DEMO_IDLE"] == "1" || !["assistant", "live"].contains(demoSection) { state.isRunning = false }
         if let advanced = environment["INTERVIEWHACKER_DEMO_ADVANCED"] { state.simplifiedInterface = advanced != "1" }
         if environment["INTERVIEWHACKER_DEMO_VOICE_READY"] == "1" {
             state.transcriptionBackend = "zipformer"; state.microphoneAccess = .granted

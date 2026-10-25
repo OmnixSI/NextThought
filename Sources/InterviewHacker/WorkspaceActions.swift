@@ -108,7 +108,6 @@ extension AppState {
         guard !workspace.documents.filter(\.enabled).isEmpty || !workspace.materialText.isEmpty else {
             errorMessage = "请先在场景里填写信息或添加资料。"; return
         }
-        section = .assistant
         let topic = workspace.documents.filter(\.enabled).map(\.labeledName).joined(separator: "、")
         let who = ModeProfile.for(workspace.mode).role
         ask("请根据这个场景的资料（\(topic.isEmpty ? "场景信息" : topic)），预测本次\(workspace.mode.title)中我（\(who)）最可能被问到的 8 个问题，并为每个问题给出 1–2 句可直接说的回答要点；引用资料时标注来源页码；题库里已有准备的问题优先使用准备好的答案。", screenshot: nil)

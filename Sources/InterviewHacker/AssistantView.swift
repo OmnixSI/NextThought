@@ -9,7 +9,6 @@ struct AssistantView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            if !state.isRunning { SetupCard() }
             ModuleHost()
         }
         .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 8)
@@ -419,142 +418,6 @@ private struct AnswerHistoryPanel: View {
 
 // MARK: - Setup (before a session)
 
-private struct SetupCard: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        @Bindable var state = state
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center, spacing: 12) {
-                ZStack {
-                    Circle().fill(Brand.gradient)
-                    Image(systemName: "waveform.and.mic").font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
-                }
-                .frame(width: 40, height: 40)
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 12) {
-                        Text("实时语音辅助").font(.system(size: 16, weight: .semibold))
-                        Button("新手引导") { state.openOnboarding() }.buttonStyle(ChipButtonStyle())
-                    }
-                    Text(state.readinessText)
-                        .font(.system(size: 12))
-                        .foregroundStyle(state.isReadyToStart ? Color.green : Color.secondary)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 8)
-                if !state.capturePermissionGranted {
-                    Button("允许录屏与系统音频") { Task { await state.requestCapturePermission() } }
-                        .buttonStyle(PrimaryButtonStyle())
-                } else if state.transcriptionBackend == "zipformer", !state.isModelInstalled {
-                    Button(state.isDownloadingModel ? "下载中 \(Int(state.modelDownloadProgress * 100))%" : "下载识别模型") { state.downloadModel() }
-                        .buttonStyle(PrimaryButtonStyle()).disabled(state.isDownloadingModel)
-                } else {
-                    Button { Task { await state.startSession() } } label: {
-                        HStack(spacing: 6) {
-                            if state.isChangingSession { ProgressView().controlSize(.small).tint(.white) }
-                            Label(state.isChangingSession ? "正在启动…" : "开始辅助", systemImage: "play.fill")
-                        }
-                        .frame(minWidth: 120)
-                    }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!state.isReadyToStart || state.isPreparingModel || state.isChangingSession)
-                }
-            }
-            if state.isDownloadingModel {
-                ProgressView(value: state.modelDownloadProgress).controlSize(.small)
-                Text(state.modelDownloadStatus).font(.caption).foregroundStyle(.secondary)
-            }
-            if !state.answerEngineReady {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
-                    Text("回答引擎还没设置好：可以转写，但不会生成回答。").font(.system(size: 12))
-                    Spacer()
-                    Button("设置向导") { state.openOnboarding() }.buttonStyle(ChipButtonStyle(prominent: true))
-                }
-            }
-            HStack(spacing: 6) {
-                WorkspacePicker()
-                Button { state.section = .materials } label: {
-                    Label("资料 \(state.documents.filter(\.enabled).count) · 题库 \(state.activeWorkspace.questionBank.count)", systemImage: "doc.text")
-                }.buttonStyle(ChipButtonStyle()).help("编辑这个场景的资料、回答要求、经验库与题库")
-                Spacer(minLength: 8)
-                // The speaker icon belongs to the picker, so both live in one
-                // fixed-size unit: the picker used to reserve a 260pt frame, which
-                // stranded the icon hundreds of points away from the visible title.
-                HStack(spacing: 4) {
-                    Image(systemName: "speaker.wave.2.fill").font(.system(size: 11)).foregroundStyle(.secondary)
-                    MenuPicker(selection: $state.selectedTargetID,
-                               options: state.captureTargets.map { ($0.id, SetupCard.shortTitle($0.title)) },
-                               placeholder: "选择音频来源")
-                        .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
-                }
-                .fixedSize(horizontal: true, vertical: false)
-                Button { Task { await state.refreshTargets() } } label: { Image(systemName: "arrow.clockwise") }
-                    .buttonStyle(GlassIconButtonStyle(size: 28)).help("刷新窗口列表")
-                Toggle(isOn: $state.microphoneEnabled) { Image(systemName: "mic.fill") }
-                    .toggleStyle(.button).help("同时采集麦克风（我）")
-                    .onChange(of: state.microphoneEnabled) { _, _ in state.updateSettings() }
-            }
-            Text("选会议 App 的窗口只采集它的声音；麦克风单独识别并标为“我”。没戴耳机时，扬声器回声会被自动识别并忽略。")
-                .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-        }
-        .card()
-    }
-
-    /// Window titles can be arbitrarily long; truncating them keeps the
-    /// icon + picker unit compact instead of letting the row grow without bound.
-    private static func shortTitle(_ title: String) -> String {
-        title.count > 24 ? String(title.prefix(24)) + "…" : title
-    }
-}
-
-/// Active scenario: mode icon and name; switching loads its materials and knowledge.
-struct WorkspacePicker: View {
-    @Environment(AppState.self) private var state
-    var compact = false
-
-    var body: some View {
-        Menu {
-            ForEach(SessionMode.allCases) { mode in
-                let items = state.workspaces.visible.filter { $0.mode == mode }
-                if !items.isEmpty {
-                    Section(mode.title) {
-                        ForEach(items) { workspace in
-                            Button { state.switchWorkspace(workspace.id) } label: {
-                                if workspace.id == state.activeWorkspace.id { Label(workspace.name, systemImage: "checkmark") } else { Text(workspace.name) }
-                            }
-                        }
-                    }
-                }
-            }
-            Divider()
-            Menu("新建场景") {
-                ForEach(SessionMode.allCases) { mode in
-                    Button { state.createWorkspace(mode: mode); state.section = .materials } label: { Label(mode.title, systemImage: mode.symbol) }
-                }
-            }
-            Button("管理场景…") { state.section = .materials }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: state.sessionMode.symbol).foregroundStyle(Brand.accent)
-                Text(state.activeWorkspace.name).lineLimit(1).foregroundStyle(Color.primary)
-                if !compact { Text(state.sessionMode.title).foregroundStyle(.secondary) }
-                Image(systemName: "chevron.up.chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
-            }
-            .font(.system(size: 12.5, weight: .medium))
-            .padding(.horizontal, 12).padding(.vertical, 6)
-            .glassCapsule()
-            .contentShape(Capsule())
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .help("当前场景：模式、资料、回答要求和经验库都来自这里")
-    }
-}
-
 // MARK: - Live conversation
 
 private struct ConversationPanel: View {
@@ -568,7 +431,6 @@ private struct ConversationPanel: View {
                 Label("实时对话", systemImage: "text.bubble").font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
                 Text("\(state.entries.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
-                if state.isRunning { WorkspacePicker(compact: true) }
                 if state.isRunning {
                     MenuPicker(selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "音频来源")
                         .frame(maxWidth: 170, alignment: .trailing)

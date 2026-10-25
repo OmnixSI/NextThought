@@ -292,7 +292,7 @@ private struct EssentialSettings: View {
             Note("最简单的用法：准备语音和对话服务 → 选择会议窗口 → 开始实时辅助 → 参考建议回答。OCR 增强和向量检索按需启用。")
             HStack {
                 Button("打开新手引导") { state.openOnboarding() }.buttonStyle(PrimaryButtonStyle())
-                Button("去助手开始辅助") { state.section = .assistant }.buttonStyle(SecondaryButtonStyle())
+                Button("回到首页") { state.section = .home }.buttonStyle(SecondaryButtonStyle())
             }
         }
         SettingsSection(title: "这台 Mac 现在能做什么", icon: "checklist") {

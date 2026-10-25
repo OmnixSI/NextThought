@@ -4,9 +4,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import InterviewHackerCore
 
-/// Root window: a floating top bar (sections, live session controls) over one section.
-/// Each section and bar element is its own view, so with Observation a change in the
-/// transcript or the streaming answer redraws only the views that display it.
+/// Root window. Outside a meeting: a sidebar (首页 / 所有会议 / 资料夹, 设置 at the
+/// bottom) next to the chosen section. While a meeting runs the window is in focus
+/// mode: no sidebar, only the meeting (02-scenarios-and-flows.md, "会议中").
 struct ContentView: View {
     @Environment(AppState.self) private var state
 
@@ -14,22 +14,29 @@ struct ContentView: View {
         @Bindable var state = state
         ZStack {
             AppBackdrop()
-            SectionStack()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaInset(edge: .top, spacing: 0) { TopBar() }
+            Group {
+                if state.isRunning {
+                    FocusModeView()
+                        .transition(.opacity)
+                } else {
+                    MainShell()
+                        .transition(.opacity)
+                }
+            }
             .disabled(state.isOnboardingPresented)
             .accessibilityHidden(state.isOnboardingPresented)
             if state.isOnboardingPresented {
                 OnboardingView().transition(.opacity)
             }
         }
+        .overlay(alignment: .top) { ErrorBanner() }
+        .animation(Motion.phase, value: state.isRunning)
         .frame(minWidth: MainWindowLayout.minimum.width, minHeight: MainWindowLayout.minimum.height)
         .tint(Brand.accent)
-        .foregroundStyle(.primary)
+        .foregroundStyle(Ink.ink)
         .preferredColorScheme(state.colorScheme)
         // A hard switch between light and dark flashes the whole window. The
-        // animation on the appearance value makes the semantic colors cross-fade
-        // instead, which is what "no transition" was missing.
+        // animation on the appearance value makes the colors cross-fade.
         .animation(.easeInOut(duration: 0.32), value: state.appearance)
         .sheet(isPresented: $state.isWindowPickerPresented) { WindowPickerSheet() }
         .sheet(isPresented: $state.isRegionCapturePresented) {
@@ -51,12 +58,66 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Sections
+// MARK: - Shell (outside a meeting)
+
+private struct MainShell: View {
+    var body: some View {
+        HStack(spacing: 0) {
+            Sidebar()
+                .frame(width: Space.sidebar)
+            Rectangle().fill(Ink.hairline).frame(width: 1).ignoresSafeArea()
+            SectionStack()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+/// macOS-style sidebar: three sections, settings at the bottom.
+private struct Sidebar: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            // Room for the window's traffic-light buttons (hidden title bar).
+            Color.clear.frame(height: 40)
+            ForEach(AppSection.primary) { section in
+                row(section)
+            }
+            Spacer(minLength: Space.s4)
+            UpdateBadge()
+            row(.settings)
+        }
+        .padding(.horizontal, Space.s3)
+        .padding(.bottom, Space.s3)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Ink.paper.ignoresSafeArea())
+    }
+
+    private func row(_ section: AppSection) -> some View {
+        let selected = state.section == section
+        return Button { state.select(section) } label: {
+            HStack(spacing: Space.s2) {
+                Image(systemName: section.symbol)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(selected ? Ink.ink : Ink.secondary)
+                    .frame(width: 18)
+                Text(section.title)
+                    .font(Typo.label)
+                    .foregroundStyle(selected ? Ink.ink : Ink.secondary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+            .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
 
 /// Every section visited once stays alive and is only hidden when another is shown:
-/// switching is instant (no rebuild, no cross-fade) and scroll positions are kept.
-/// Hidden sections are disabled so their text fields and default buttons never take
-/// keyboard input.
+/// switching is instant and scroll positions are kept. Hidden sections are disabled
+/// so their text fields and default buttons never take keyboard input.
 private struct SectionStack: View {
     @Environment(AppState.self) private var state
     @State private var visited: Set<AppSection> = []
@@ -81,148 +142,37 @@ private struct SectionStack: View {
 
     @ViewBuilder private func page(_ section: AppSection) -> some View {
         switch section {
-        case .assistant: AssistantView()
-        case .materials: WorkspacesView()
-        case .history: HistoryView()
-        case .settings: SettingsView()
+        case .home: HomeView()
+        case .meetings: HistoryView().padding(.top, Space.s8)
+        case .library: WorkspacesView().padding(.top, Space.s8)
+        case .settings: SettingsView().padding(.top, Space.s8)
         }
     }
 }
 
-// MARK: - Top bar
-
-private struct TopBar: View {
+/// Error or warning line, floating at the top of the window in every mode.
+private struct ErrorBanner: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        @Bindable var state = state
-        VStack(spacing: 8) {
-            GlassGroup(spacing: 10) {
-                HStack(spacing: 10) {
-                    // Room for the window's traffic-light buttons (hidden title bar).
-                    Color.clear.frame(width: 70, height: 1)
-                    // Narrow window: tabs fall back to icons so the controls on the right never clip.
-                    ViewThatFits(in: .horizontal) {
-                        GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol)
-                        GlassTabBar(tabs: AppSection.allCases, selection: $state.section, title: \.rawValue, symbol: \.symbol, showsTitles: false)
-                    }
-                    .layoutPriority(-1)
-                    Spacer(minLength: 6)
-                    UpdateBadge()
-                    SessionStatusPill()
-                    SessionControls()
-                    Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
-                        .buttonStyle(GlassIconButtonStyle(size: UI.barHeight))
-                        .help("显示 / 隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
-                }
+        if let message = state.errorMessage {
+            HStack(alignment: .top, spacing: Space.s2) {
+                Image(systemName: "exclamationmark.triangle").foregroundStyle(Ink.caution)
+                Text(message).font(Typo.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Button { state.closeError() } label: { Image(systemName: "xmark") }
+                    .buttonStyle(GlassIconButtonStyle(size: 24)).help("关闭提示")
             }
-            if let message = state.errorMessage {
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                    Text(message).font(.callout).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                    Button { withAnimation { state.closeError() } } label: { Image(systemName: "xmark") }
-                        .buttonStyle(GlassIconButtonStyle(size: 26)).help("关闭提示")
-                }
-                .padding(12)
-                .glassBackground(cornerRadius: 18, tint: Color.orange.opacity(0.25))
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
+            .padding(Space.s3)
+            .frame(maxWidth: 560)
+            .floatingSurface(cornerRadius: Space.radiusMedium)
+            .padding(.top, Space.s3)
+            .transition(.opacity)
         }
-        .padding(.horizontal, 14).padding(.top, 8).padding(.bottom, 10)
-        .background(alignment: .top) { ScrollEdgeFade(edge: .top, height: 70).ignoresSafeArea() }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: state.errorMessage)
     }
 }
 
-/// Listening state, elapsed time and live input levels.
-private struct SessionStatusPill: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        HStack(spacing: 7) {
-            PulseDot(active: state.isRunning && !state.isPaused)
-            if state.isRunning, let started = state.sessionStartedAt {
-                // Only this text redraws every second.
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    Text(Self.elapsed(from: started, to: context.date))
-                        .font(.system(size: 13, weight: .medium).monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-                if !state.isPaused { LevelMeters() }
-            } else {
-                Text(state.isChangingSession ? "正在启动…" : "未开始")
-                    .font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
-            }
-        }
-        .padding(.horizontal, 14).frame(height: UI.barHeight)
-        .glassCapsule()
-        .help(state.isRunning ? state.transcriptionStatus : state.readinessText)
-    }
-
-    static func elapsed(from start: Date, to now: Date) -> String {
-        let seconds = max(0, Int(now.timeIntervalSince(start)))
-        return seconds >= 3_600 ? String(format: "%d:%02d:%02d", seconds / 3_600, seconds / 60 % 60, seconds % 60)
-            : String(format: "%02d:%02d", seconds / 60, seconds % 60)
-    }
-}
-
-/// Two small bars: the other side (system audio) and me (microphone). Read at 8 Hz
-/// from the audio threads' latest values, so audio never drives SwiftUI directly.
-struct LevelMeters: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: 0.125)) { _ in
-            let levels = state.echoMonitor.levels
-            let echo = state.echoSuppression && state.echoMonitor.microphoneIsEcho
-            HStack(spacing: 3) {
-                meter(levels.system, color: .secondary).help("对方 · 系统声音")
-                meter(levels.microphone, color: echo ? .orange : Brand.accent).help(echo ? "麦克风里主要是扬声器回声（已忽略）" : "我 · 麦克风")
-            }
-        }
-        .frame(height: 16)
-    }
-
-    private func meter(_ level: Float, color: Color) -> some View {
-        ZStack(alignment: .bottom) {
-            Capsule().fill(Color.primary.opacity(0.1))
-            Capsule().fill(color).frame(height: max(2, CGFloat(level) * 16))
-        }
-        .frame(width: 4, height: 16)
-    }
-}
-
-/// Start / pause / stop, always reachable from every section.
-private struct SessionControls: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        HStack(spacing: 6) {
-            if !state.isRunning {
-                Button { Task { await state.startSession() } } label: {
-                    HStack(spacing: 6) {
-                        if state.isChangingSession { ProgressView().controlSize(.small).tint(.white) }
-                        Label(state.isChangingSession ? "启动中" : "开始", systemImage: "play.fill")
-                    }
-                }
-                .buttonStyle(PrimaryButtonStyle(height: UI.barHeight))
-                .disabled(!state.isReadyToStart || state.isPreparingModel || state.isChangingSession)
-                .help(state.isReadyToStart ? "开始实时辅助 · \(state.shortcutLabel(.toggleSession))" : state.readinessText)
-            } else {
-                Button { Task { await state.togglePause() } } label: { Image(systemName: state.isPaused ? "play.fill" : "pause.fill") }
-                    .buttonStyle(GlassIconButtonStyle(size: UI.barHeight, tint: state.isPaused ? Brand.accent : nil))
-                    .help((state.isPaused ? "恢复" : "暂停") + " · \(state.shortcutLabel(.togglePause))")
-                Button { Task { await state.stopSession() } } label: { Image(systemName: "stop.fill") }
-                    .buttonStyle(GlassIconButtonStyle(size: UI.barHeight))
-                    .help("停止并保存记录 · \(state.shortcutLabel(.toggleSession))")
-            }
-        }
-        .disabled(state.isChangingSession && state.isRunning)
-    }
-}
-
-/// Appears when an update is downloaded and ready to install.
+/// Appears in the sidebar when an update is downloaded and ready to install.
 private struct UpdateBadge: View {
     @Environment(AppState.self) private var state
     private var updater: Updater { Updater.shared }
@@ -230,12 +180,66 @@ private struct UpdateBadge: View {
     var body: some View {
         if updater.phase == .ready, let available = updater.available {
             Button { updater.installAndRelaunch() } label: {
-                Label("重启以更新", systemImage: "arrow.down.circle.fill")
+                Label("重启以更新", systemImage: "arrow.down.circle")
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(PrimaryButtonStyle(height: UI.barHeight))
+            .buttonStyle(GhostButtonStyle())
             .disabled(state.isRunning)
             .help(state.isRunning ? "停止辅助后再安装 \(available.displayVersion)" : "安装 \(available.displayVersion) 并重新打开")
         }
+    }
+}
+
+// MARK: - Focus mode (during a meeting)
+
+/// While a meeting runs the window belongs to it alone.
+private struct FocusModeView: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: Space.s2) {
+                // Room for the window's traffic-light buttons (hidden title bar).
+                Color.clear.frame(width: 70, height: 1)
+                PulseDot(active: !state.isPaused)
+                Spacer()
+                Button { Task { await state.togglePause() } } label: { Image(systemName: state.isPaused ? "play" : "pause") }
+                    .buttonStyle(GlassIconButtonStyle())
+                Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
+                    .buttonStyle(GlassIconButtonStyle())
+                Button("结束") { Task { await state.stopSession() } }
+                    .buttonStyle(SecondaryButtonStyle())
+            }
+            .padding(.horizontal, Space.s4).frame(height: 52)
+            AssistantView()
+        }
+    }
+}
+
+/// Two small bars: the other side (system audio) and me (microphone). Read at 8 Hz
+/// from the audio threads' latest values, so audio never drives SwiftUI directly.
+struct LevelMeters: View {
+    @Environment(AppState.self) private var state
+    var height: CGFloat = 16
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.125)) { _ in
+            let levels = state.echoMonitor.levels
+            let echo = state.echoSuppression && state.echoMonitor.microphoneIsEcho
+            HStack(spacing: 3) {
+                meter(levels.system, color: Ink.secondary).help("对方 · 系统声音")
+                meter(levels.microphone, color: echo ? Ink.caution : Ink.ink).help(echo ? "麦克风里主要是扬声器回声（已忽略）" : "我 · 麦克风")
+            }
+        }
+        .frame(height: height)
+    }
+
+    private func meter(_ level: Float, color: Color) -> some View {
+        ZStack(alignment: .bottom) {
+            Capsule().fill(Ink.sunken)
+            Capsule().fill(color).frame(height: max(2, CGFloat(level) * height))
+        }
+        .frame(width: 4, height: height)
     }
 }
 
@@ -302,17 +306,6 @@ struct QRCodeView: View {
         let image = NSImage(size: representation.size)
         image.addRepresentation(representation)
         return image
-    }
-}
-
-extension AppSection {
-    var symbol: String {
-        switch self {
-        case .assistant: "waveform"
-        case .materials: "square.stack.3d.up"
-        case .settings: "gearshape"
-        case .history: "clock"
-        }
     }
 }
 

@@ -1,5 +1,6 @@
 import Foundation
 import InterviewHackerCore
+import SwiftUI
 
 struct TranscriptEntry: Identifiable, Codable, Equatable {
     var id = UUID()
@@ -66,13 +67,45 @@ struct ScreenshotDisplay: Identifiable, Hashable, Sendable {
     var height: Int
 }
 
+/// Sidebar sections. The live meeting is not a section: while a meeting runs the
+/// window switches to focus mode and the sidebar is hidden.
 enum AppSection: String, CaseIterable, Identifiable {
-    case assistant = "助手"
-    case materials = "场景"
-    case history = "记录"
-    case settings = "设置"
+    case home, meetings, library, settings
 
     var id: String { rawValue }
+
+    /// The three everyday sections; settings sits at the bottom of the sidebar.
+    static let primary: [AppSection] = [.home, .meetings, .library]
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .home: "首页"
+        case .meetings: "所有会议"
+        case .library: "资料夹"
+        case .settings: "设置"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .home: "house"
+        case .meetings: "list.bullet"
+        case .library: "folder"
+        case .settings: "gearshape"
+        }
+    }
+
+    /// Accepts the section names of older demo scripts (assistant, materials, history).
+    init?(demoName: String) {
+        switch demoName {
+        case "assistant", "live", "prepare": self = .home
+        case "materials": self = .library
+        case "history": self = .meetings
+        default:
+            guard let section = AppSection(rawValue: demoName) else { return nil }
+            self = section
+        }
+    }
 }
 
 enum CaptureSource: String, Hashable {

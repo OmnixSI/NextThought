@@ -83,7 +83,7 @@ extension AppState {
         withAnimation(.easeOut(duration: 0.2)) { isOnboardingPresented = true }
     }
 
-    func finishOnboarding(goTo section: AppSection = .assistant) {
+    func finishOnboarding(goTo section: AppSection = .home) {
         UserDefaults.standard.set(true, forKey: "onboardingCompleted")
         UserDefaults.standard.set(currentGuideVersion, forKey: "onboardingGuideCompletedVersion")
         withAnimation(.easeOut(duration: 0.2)) { isOnboardingPresented = false }
@@ -195,7 +195,7 @@ extension AppState {
             id: "workspace", icon: workspace.mode.symbol, title: "当前场景",
             detail: "\(workspace.name) · \(workspace.mode.title) · 资料 \(workspace.documents.count) 份" + (workspace.documents.isEmpty ? "（建议添加简历、JD 等）" : ""),
             status: workspace.documents.isEmpty ? .recommended : .done,
-            actionTitle: "编辑", action: { self.section = .materials }))
+            actionTitle: "编辑", action: { self.section = .library }))
         let bound = LocalSigning.isBound || Updater.shared.signature?.isAdHoc == false
         items.append(SetupItem(
             id: "signing", icon: "checkmark.shield", title: "本机签名",

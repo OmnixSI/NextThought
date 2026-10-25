@@ -216,38 +216,6 @@ struct PillTabs<Value: Hashable>: View {
     }
 }
 
-/// Section tabs of the former top bar (removed with the sidebar navigation).
-struct GlassTabBar<Tab: Hashable & Identifiable>: View {
-    let tabs: [Tab]
-    @Binding var selection: Tab
-    let title: (Tab) -> String
-    let symbol: (Tab) -> String
-    var showsTitles = true
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(tabs) { tab in
-                let selected = tab == selection
-                Button { selection = tab } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: symbol(tab)).foregroundStyle(selected ? Ink.ink : Ink.secondary)
-                        if showsTitles { Text(title(tab)).foregroundStyle(selected ? Ink.ink : Ink.secondary) }
-                    }
-                    .font(Typo.label)
-                    .lineLimit(1).fixedSize()
-                    .padding(.horizontal, 12)
-                    .frame(height: UI.barHeight - 4)
-                    .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(title(tab))
-            }
-        }
-        .padding(2)
-    }
-}
-
 /// Soft scroll edge: content fades into the paper under a bar.
 struct ScrollEdgeFade: View {
     enum Edge { case top, bottom }

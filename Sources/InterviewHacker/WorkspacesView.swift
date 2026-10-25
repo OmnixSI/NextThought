@@ -557,7 +557,7 @@ private struct ReviewTab: View {
                     case .failed: Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
                     case .none: EmptyView()
                     }
-                    Button("查看") { state.historySelection = meta.id; state.historyWorkspaceFilter = workspace.id; state.section = .history }
+                    Button("查看") { state.historySelection = meta.id; state.historyWorkspaceFilter = workspace.id; state.section = .meetings }
                         .buttonStyle(ChipButtonStyle())
                 }
                 .padding(8).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))

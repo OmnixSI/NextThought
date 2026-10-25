@@ -11,12 +11,82 @@
         }
       }
     },
+    "上午好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good morning"
+          }
+        }
+      }
+    },
+    "下午好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good afternoon"
+          }
+        }
+      }
+    },
+    "下面是用 ScreenCaptureKit 截取整个屏幕的结果，与 Zoom / Teams / Meet 等共享整屏时的取图方式相同。如果能看到提词器，说明共享整屏时对方也可能看到；请改为只共享会议窗口或标签页。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is the whole screen captured with ScreenCaptureKit, the way Zoom, Teams or Meet capture a shared screen. If you can see the teleprompter here, others may see it when you share your entire screen; share only the meeting window or tab instead."
+          }
+        }
+      }
+    },
     "会议进行中不能切换语言。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "You can't change the language during a meeting."
+          }
+        }
+      }
+    },
+    "停止辅助后再安装 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End the meeting first, then install %@"
+          }
+        }
+      }
+    },
+    "共享可见性测试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen-sharing visibility test"
+          }
+        }
+      }
+    },
+    "关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "关闭提示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
           }
         }
       }
@@ -41,6 +111,16 @@
         }
       }
     },
+    "回到首页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to Home"
+          }
+        }
+      }
+    },
     "回答": {
       "localizations": {
         "en": {
@@ -57,6 +137,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Basics"
+          }
+        }
+      }
+    },
+    "安装 %@ 并重新打开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install %@ and reopen"
+          }
+        }
+      }
+    },
+    "对方 · 系统声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Them · computer audio"
+          }
+        }
+      }
+    },
+    "恢复最佳窗口大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore best window size"
+          }
+        }
+      }
+    },
+    "我 · 麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me · microphone"
+          }
+        }
+      }
+    },
+    "所有会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meetings"
           }
         }
       }
@@ -101,12 +231,52 @@
         }
       }
     },
+    "新会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New meeting"
+          }
+        }
+      }
+    },
+    "晚上好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good evening"
+          }
+        }
+      }
+    },
     "更多": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "More"
+          }
+        }
+      }
+    },
+    "正在读取显示器…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading displays…"
+          }
+        }
+      }
+    },
+    "立即记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record now"
           }
         }
       }
@@ -131,12 +301,32 @@
         }
       }
     },
+    "结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End"
+          }
+        }
+      }
+    },
     "设置": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Settings"
+          }
+        }
+      }
+    },
+    "设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
           }
         }
       }
@@ -171,12 +361,42 @@
         }
       }
     },
+    "资料夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Library"
+          }
+        }
+      }
+    },
     "跟随系统": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Follow system"
+          }
+        }
+      }
+    },
+    "选择要截图的窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a window to capture"
+          }
+        }
+      }
+    },
+    "重启以更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart to update"
           }
         }
       }
@@ -197,6 +417,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "The app needs to reopen"
+          }
+        }
+      }
+    },
+    "首页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        }
+      }
+    },
+    "麦克风里主要是扬声器回声（已忽略）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The microphone mostly hears speaker echo (ignored)"
           }
         }
       }
