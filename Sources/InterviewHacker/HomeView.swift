@@ -65,7 +65,7 @@ private struct StartCard: View {
                     HStack(spacing: 6) {
                         Image(systemName: "record.circle")
                         Text("立即记录")
-                        ShortcutHint(text: "⌘⇧R")
+                        ShortcutHint(text: "⌘⇧N")
                     }
                 }
                 .buttonStyle(SecondaryButtonStyle())

@@ -19,7 +19,7 @@ struct InterviewHackerApp: App {
                     .keyboardShortcut("n", modifiers: .command)
                     .disabled(AppState.shared.isRunning)
                 Button("立即记录") { Task { await AppState.shared.recordNow() } }
-                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                    .keyboardShortcut("n", modifiers: [.command, .shift])
                     .disabled(AppState.shared.isRunning || AppState.shared.isChangingSession)
             }
             CommandGroup(replacing: .appSettings) {
