@@ -10,6 +10,7 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     var isFinal: Bool
     var startedAt: Date?
     var endedAt: Date?
+    var translatedText: String? = nil
     /// Microphone line that looked like speaker echo: shown dimmed, kept out of answers
     /// and records until the user marks it as theirs.
     var suspectedEcho: Bool?
@@ -115,7 +116,7 @@ enum AppSection: String, CaseIterable, Identifiable {
     }
 }
 
-enum CaptureSource: String, Hashable {
+enum CaptureSource: String, Hashable, Sendable {
     case system = "系统音频"
     case microphone = "麦克风"
 }

@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InterviewHacker · 系列表单简化方案</title>
+<style>
+:root {
+  color-scheme: dark;
+  --page: #111110;
+  --panel: #1d1d1b;
+  --panel-2: #242422;
+  --field: #292927;
+  --line: #363633;
+  --text: #f0efed;
+  --muted: #9b9994;
+  --quiet: #74726e;
+  --accent: #a99aff;
+  --accent-soft: #29243b;
+  --white: #f3f2f0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text); }
+button, input, textarea, select { font: inherit; }
+button { color: inherit; cursor: pointer; }
+.page { max-width: 1580px; margin: 0 auto; padding: 24px 28px 32px; }
+.heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 18px; }
+.eyebrow { color: var(--accent); font-size: 12px; letter-spacing: .04em; font-weight: 650; }
+h1 { margin: 6px 0 4px; font-size: 26px; letter-spacing: -.025em; }
+.intro { margin: 0; color: var(--muted); font-size: 13px; }
+.local-tag { color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; font-size: 11px; white-space: nowrap; }
+.selector { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.option { text-align: left; min-height: 75px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: #181817; cursor: pointer; transition: border-color .15s, background .15s; }
+.option:hover { border-color: #67636f; }
+.option[aria-pressed="true"] { background: var(--accent-soft); border-color: #8273c8; box-shadow: inset 0 0 0 1px #8273c8; }
+.option-num { display: block; color: var(--accent); font-size: 10px; font-weight: 700; margin-bottom: 4px; }
+.option-name { display: block; font-size: 13px; font-weight: 650; }
+.option-desc { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; line-height: 1.35; }
+.preview-shell { border: 1px solid #393936; border-radius: 17px; overflow: hidden; background: #141413; box-shadow: 0 22px 70px #0006; }
+.windowbar { height: 36px; display: flex; align-items: center; gap: 7px; padding: 0 13px; border-bottom: 1px solid #2d2d2a; color: var(--quiet); font-size: 11px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #55534f; }
+.window-title { margin-left: 9px; }
+.app-layout { display: grid; grid-template-columns: 56px 236px minmax(0, 1fr); height: min(68vh, 770px); min-height: 620px; }
+.global-nav { background: #151514; border-right: 1px solid var(--line); padding: 14px 8px; display: flex; flex-direction: column; gap: 9px; align-items: center; }
+.nav-glyph { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 10px; color: #aaa8a3; font-size: 16px; }
+.nav-glyph.active { color: var(--text); background: #30302e; }
+.series-pane { background: #191918; border-right: 1px solid var(--line); padding: 18px 12px; overflow: hidden; }
+.series-pane h3 { margin: 0 0 3px; font-size: 17px; }
+.series-pane p { margin: 0 0 16px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.group-label { color: var(--quiet); font-size: 10px; font-weight: 650; margin: 14px 4px 6px; }
+.series-row { display: block; width: 100%; padding: 9px 9px; border: 0; border-radius: 10px; margin: 3px 0; background: transparent; color: #b8b6b1; font-size: 12px; text-align: left; cursor: pointer; }
+.series-row.selected { background: #343431; color: var(--text); }
+.series-meta { display: block; margin-top: 4px; color: var(--quiet); font-size: 9px; }
+.editor { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.editor-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 58px; padding: 0 24px; border-bottom: 1px solid #2c2c29; }
+.breadcrumb { color: var(--muted); font-size: 11px; }
+.breadcrumb b { color: var(--text); font-weight: 550; }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.top-chip, .button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; background: #262624; color: #d8d6d1; padding: 7px 10px; font-size: 10px; white-space: nowrap; text-decoration: none; }
+.top-chip { cursor: pointer; }
+.button:hover, .top-chip:hover { border-color: #77736f; filter: brightness(1.08); }
+.button.primary { color: #171615; background: var(--white); border-color: var(--white); font-weight: 650; }
+.button.quiet { background: transparent; }
+.editor-tabs { display: flex; gap: 3px; padding: 12px 24px 0; }
+.editor-tab { border: 0; border-radius: 7px; padding: 7px 10px; color: var(--muted); background: transparent; font-size: 10px; cursor: pointer; }
+.editor-tab.active { color: var(--text); background: #2b2b29; }
+.template-content { min-height: 0; padding: 20px 28px 30px; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: #5b5955 transparent; flex: 1; }
+.template-content::-webkit-scrollbar { width: 8px; }
+.template-content::-webkit-scrollbar-track { background: transparent; }
+.template-content::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: #5b5955; background-clip: padding-box; }
+[hidden] { display: none !important; }
+.series-row:hover, .editor-tab:hover, .focus-nav .row:hover { background: #292927; }
+.menu-wrap { position: relative; }
+.menu-pop { position: absolute; z-index: 5; right: 0; top: calc(100% + 5px); min-width: 150px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: #242422; box-shadow: 0 10px 28px #0008; }
+.menu-pop button { display: block; width: 100%; border: 0; border-radius: 6px; padding: 8px; text-align: left; color: var(--text); background: transparent; font-size: 10px; }
+.menu-pop button:hover { background: #373633; }
+.shared-pane { max-width: 950px; margin: 0 auto; }
+.shared-pane h2 { margin: 0 0 5px; font-size: 21px; }
+.shared-pane > p { margin: 0 0 18px; color: var(--muted); font-size: 11px; }
+.action-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.list-item { display: flex; align-items: start; gap: 10px; border: 1px solid var(--line); border-radius: 9px; background: #1b1b19; padding: 10px 12px; margin: 7px 0; }
+.list-item .row-copy { flex: 1; }
+.list-item .remove { border: 0; background: transparent; color: var(--muted); padding: 2px 5px; }
+.check-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 9px; background: #1b1b19; padding: 10px 12px; margin: 8px 0; font-size: 11px; }
+.check-row input { accent-color: #a99aff; }
+.file-list { margin-top: 8px; }
+.focus-nav .row { border: 0; width: 100%; background: transparent; text-align: left; cursor: pointer; }
+.focus-nav .row.active { color: var(--text); background: #2a2928; }
+.focus-panel [data-focus-panel] { display: none; }
+.focus-panel [data-focus-panel].active { display: block; }
+.overview-card { text-align: left; color: var(--text); cursor: pointer; font: inherit; }
+.overview-card:hover { border-color: #77736f; background: #222220; }
+.fake-input { cursor: text; }
+.toast { position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translate(-50%, 12px); padding: 10px 14px; border: 1px solid #55504e; border-radius: 10px; background: #292826; color: var(--text); font-size: 12px; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; box-shadow: 0 10px 30px #0008; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+dialog { width: min(480px, calc(100vw - 32px)); border: 1px solid #4a4844; border-radius: 14px; padding: 0; background: #1d1d1b; color: var(--text); box-shadow: 0 24px 80px #000b; }
+dialog::backdrop { background: #0009; backdrop-filter: blur(3px); }
+.dialog-form { padding: 20px; }
+.dialog-form h3 { margin: 0 0 16px; font-size: 17px; }
+.dialog-form label { display: block; margin: 12px 0 5px; color: #d4d2ce; font-size: 11px; }
+.dialog-form input, .dialog-form select { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; color: var(--text); background: var(--field); font: inherit; font-size: 11px; }
+.dialog-form textarea { min-height: 86px; }
+.dialog-actions { display: flex; justify-content: end; gap: 8px; margin-top: 16px; }
+.preview { display: none; max-width: 950px; margin: 0 auto; }
+.preview.active { display: block; }
+.preview-title { margin: 0; font-size: 21px; letter-spacing: -.02em; }
+.preview-subtitle { margin: 5px 0 20px; color: var(--muted); font-size: 11px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+.section-head h4 { margin: 0; font-size: 12px; font-weight: 650; }
+.hint { color: var(--quiet); font-size: 10px; }
+.field { margin: 0 0 12px; }
+.field label { display: block; margin-bottom: 5px; font-size: 10px; color: #d4d2ce; font-weight: 600; }
+.required { color: #d4c8ff; font-size: 9px; font-weight: 500; margin-left: 4px; }
+textarea, .fake-input { display: block; width: 100%; border: 1px solid #343431; border-radius: 9px; background: var(--field); color: var(--text); outline: none; padding: 10px 11px; resize: none; font-size: 11px; line-height: 1.5; }
+textarea::placeholder, .fake-input.placeholder { color: #75736f; }
+textarea.small { height: 58px; }
+textarea.medium { height: 82px; }
+textarea.tall { height: 112px; }
+textarea:focus { border-color: #7668b4; }
+.row-card { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; background: #1c1c1a; padding: 11px 12px; margin: 8px 0; }
+.row-icon { width: 28px; height: 28px; display: grid; place-items: center; background: #292827; border-radius: 8px; color: var(--accent); font-size: 13px; flex: none; }
+.row-copy { min-width: 0; flex: 1; }
+.row-copy strong { display: block; font-size: 11px; font-weight: 620; }
+.row-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-end { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.divider { height: 1px; background: var(--line); margin: 16px 0; }
+.pill { display: inline-flex; align-items: center; border-radius: 999px; background: #2b2a29; padding: 4px 8px; color: #c8c6c0; font-size: 9px; }
+.pill.purple { color: #d2c8ff; background: var(--accent-soft); }
+button.pill { border: 1px solid var(--line); cursor: pointer; transition: background .15s, border-color .15s; }
+button.pill:hover { border-color: #8273c8; background: var(--accent-soft); }
+.dropzone { border: 1px dashed #5a5751; border-radius: 13px; min-height: 158px; display: grid; place-items: center; text-align: center; background: #191918; padding: 18px; }
+.drop-icon { margin: 0 auto 8px; width: 38px; height: 38px; border-radius: 12px; background: #2b2839; display: grid; place-items: center; color: var(--accent); font-size: 18px; }
+.dropzone strong { display: block; font-size: 13px; }
+.dropzone p { margin: 5px 0 12px; color: var(--muted); font-size: 10px; }
+.inline-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.inline-card { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #1b1b19; }
+.inline-card h4 { margin: 0 0 8px; font-size: 10px; }
+.inline-card .fake-input { min-height: 54px; color: var(--muted); }
+.accordion { border: 1px solid var(--line); border-radius: 10px; background: #1b1b19; margin: 8px 0; overflow: hidden; }
+.accordion summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; padding: 12px; }
+.accordion summary::-webkit-details-marker { display: none; }
+.accordion summary strong { font-size: 11px; font-weight: 620; }
+.accordion summary small { color: var(--muted); font-size: 9px; margin-left: auto; }
+.accordion-content { padding: 0 12px 12px; }
+.step-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.step-track { display: flex; gap: 5px; }
+.step-track i { width: 28px; height: 3px; border-radius: 5px; background: #383734; }
+.step-track i.on { background: var(--accent); }
+.prompt-question { max-width: 640px; margin: 40px auto 0; text-align: center; }
+.prompt-question h3 { margin: 0 0 8px; font-size: 20px; }
+.prompt-question p { margin: 0 0 20px; color: var(--muted); font-size: 11px; }
+.quick-choices { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; margin: 12px 0 20px; }
+.quick-choices span { border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 10px; color: #c9c7c2; }
+.prompt-actions { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+.overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.overview-card { border: 1px solid var(--line); border-radius: 11px; background: #1b1b19; padding: 14px; min-height: 124px; }
+.overview-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.overview-card h4 { margin: 0; font-size: 11px; }
+.overview-card p { color: var(--muted); font-size: 10px; line-height: 1.45; margin: 0 0 12px; }
+.overview-card .link { border: 0; padding: 0; background: transparent; color: var(--accent); font-size: 9px; text-align: left; }
+.focus-layout { display: grid; grid-template-columns: 178px minmax(0, 1fr); gap: 20px; min-height: 390px; }
+.focus-nav { border-right: 1px solid var(--line); padding-right: 14px; }
+.focus-nav .row { border-radius: 8px; padding: 9px; color: var(--muted); font-size: 10px; display: flex; justify-content: space-between; margin: 3px 0; }
+.focus-nav .row.active { color: var(--text); background: #2a2928; }
+.focus-nav .row em { font-style: normal; color: var(--quiet); font-size: 9px; }
+.focus-panel h3 { margin: 3px 0 4px; font-size: 16px; }
+.focus-panel > p { margin: 0 0 18px; color: var(--muted); font-size: 10px; }
+.note { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.empty-state { border: 1px dashed var(--line); border-radius: 9px; padding: 14px; margin: 8px 0; color: var(--quiet); font-size: 10px; text-align: center; }
+.series-row:focus-visible, button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #9585e7; outline-offset: 2px; }
+.footer-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; }
+.footer-row .hint { max-width: 65%; }
+.caption { color: var(--quiet); font-size: 9px; margin-top: 16px; }
+@media (max-width: 1000px) {
+  .page { padding: 18px; }
+  .selector { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .app-layout { grid-template-columns: 48px 200px minmax(0, 1fr); height: 72vh; }
+  .template-content { padding: 18px; }
+}
+@media (max-width: 700px) {
+  .heading { align-items: start; flex-direction: column; gap: 10px; }
+  .selector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-layout { grid-template-columns: 42px minmax(0, 1fr); }
+  .series-pane { display: none; }
+  .top-actions .top-chip { display: none; }
+  .inline-pair, .overview-grid, .focus-layout { grid-template-columns: 1fr; }
+  .focus-nav { border: 0; padding: 0; display: flex; overflow: auto; }
+  .focus-nav .row { white-space: nowrap; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="heading">
+    <div>
+      <div class="eyebrow">INTERVIEWHACKER · UI OPTIONS</div>
+      <h1>系列表单，六种更轻的组织方式</h1>
+      <p class="intro">每种方案都保留系列、回答要求和资料入口，只改变信息的呈现顺序与默认展开量。点击上方方案切换预览。</p>
+    </div>
+    <div class="local-tag">本地 HTML 预览 · 交互原型</div>
+  </header>
+
+  <nav class="selector" aria-label="选择表单方案">
+    <button class="option" aria-pressed="true" data-option="0"><span class="option-num">方案 01</span><span class="option-name">只留关键项</span><span class="option-desc">两个核心字段，其余收起</span></button>
+    <button class="option" aria-pressed="false" data-option="1"><span class="option-num">方案 02</span><span class="option-name">折叠分区</span><span class="option-desc">每类信息一行，按需展开</span></button>
+    <button class="option" aria-pressed="false" data-option="2"><span class="option-num">方案 03</span><span class="option-name">资料先行</span><span class="option-desc">突出导入，文字补充变轻</span></button>
+    <button class="option" aria-pressed="false" data-option="3"><span class="option-num">方案 04</span><span class="option-name">逐步引导</span><span class="option-desc">一次只回答一个问题</span></button>
+    <button class="option" aria-pressed="false" data-option="4"><span class="option-num">方案 05</span><span class="option-name">卡片总览</span><span class="option-desc">状态一眼可见，点击再编辑</span></button>
+    <button class="option" aria-pressed="false" data-option="5"><span class="option-num">方案 06</span><span class="option-name">专注编辑</span><span class="option-desc">左侧选栏目，右侧只显示当前项</span></button>
+  </nav>
+
+  <main class="preview-shell">
+    <div class="windowbar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="window-title">InterviewHacker · 系列</span></div>
+    <div class="app-layout">
+      <aside class="global-nav">
+        <button class="nav-glyph" data-action="nav-hint" data-destination="导航">▤</button><button class="nav-glyph" data-action="nav-hint" data-destination="首页">⌂</button><button class="nav-glyph" data-action="nav-hint" data-destination="会议">◷</button><button class="nav-glyph active" data-action="nav-hint" data-destination="资料夹">▱</button><button class="nav-glyph" data-tab="review">⚙</button>
+      </aside>
+      <aside class="series-pane">
+        <h3>系列</h3><p>同一件事的多场会议，共享资料、题库和经验</p>
+        <div class="group-label">✦　通用</div>
+        <button class="series-row selected" data-series-name="随手记录" data-series-mode="通用">随手记录<span class="series-meta">0 份资料 · 0 题 · 5 场会议</span></button>
+        <button class="series-row" data-series-name="新的通用" data-series-mode="通用">新的通用<span class="series-meta">0 份资料 · 0 题 · 0 场会议</span></button>
+        <div class="group-label">▣　面试</div>
+        <button class="series-row" data-series-name="我的面试" data-series-mode="面试">我的面试<span class="series-meta">0 份资料 · 43 题 · 11 场会议</span></button>
+        <button class="series-row" data-series-name="新的面试" data-series-mode="面试">新的面试<span class="series-meta">0 份资料 · 0 题 · 1 场会议</span></button>
+        <div class="group-label">⌘　汇报 / 答辩</div>
+        <button class="series-row" data-series-name="新的学术会议" data-series-mode="学术会议">新的学术会议<span class="series-meta">0 份资料 · 0 题 · 0 场会议</span></button>
+      </aside>
+
+      <section class="editor">
+        <div class="editor-top">
+          <div class="breadcrumb">资料夹　›　<b>随手记录</b></div>
+          <div class="top-actions">
+            <div class="menu-wrap"><button class="top-chip" data-menu="mode">通用　⌄</button><div class="menu-pop" data-menu-panel="mode" hidden><button data-set-mode="通用">通用</button><button data-set-mode="面试">面试</button><button data-set-mode="工作会议">工作会议</button><button data-set-mode="学术会议">学术会议</button></div></div>
+            <div class="menu-wrap"><button class="top-chip" data-menu="style">提词要点　⌄</button><div class="menu-pop" data-menu-panel="style" hidden><button data-set-style="提词要点">提词要点</button><button data-set-style="直接回答">直接回答</button><button data-set-style="自由讨论">自由讨论</button></div></div>
+            <button class="button primary" data-action="create-series">＋　新建系列</button>
+          </div>
+        </div>
+        <div class="editor-tabs"><button class="editor-tab active" data-tab="materials">资料与要求</button><button class="editor-tab" data-tab="knowledge">经验库与题库</button><button class="editor-tab" data-tab="review">复盘</button></div>
+        <div class="template-content">
+          <section class="preview active" data-preview="0">
+            <h2 class="preview-title">随手记录</h2><p class="preview-subtitle">通用 · 5 场会议</p>
+            <div class="section-head"><h4>让系列更了解这类会议</h4><span class="hint">只填必要信息也能开始</span></div>
+            <div class="field"><label>场景说明 <span class="required">必填</span></label><textarea class="small" data-field="description" placeholder="例如：记录临时想法、通话内容或待办"></textarea></div>
+            <div class="field"><label>回答要求 <span class="required">必填</span></label><textarea class="small" data-field="requirements" placeholder="例如：先给结论，再列出 2–3 个要点"></textarea></div>
+            <details class="accordion"><summary><span class="row-icon">＋</span><strong>补充背景</strong><small>可选 · 其他背景与专有名词　⌄</small></summary><div class="accordion-content"><textarea class="small" data-field="background" placeholder="需要时再补充。"></textarea></div></details>
+            <div class="row-card"><span class="row-icon">▧</span><div class="row-copy"><strong>资料 <span data-count="files">0</span></strong><small>添加文件后，回答时会优先参考相关内容</small></div><button class="button" data-action="choose-files">导入资料</button></div>
+            <div class="row-card"><span class="row-icon">✦</span><div class="row-copy"><strong>技能 <span data-count="skills">0</span></strong><small>添加后会应用于这个系列</small></div><button class="button" data-action="add-skill">添加技能</button><button class="button quiet" data-tab="knowledge">管理　›</button></div>
+            <div class="caption">方案特点：把“背景”和技能等低频项目收起来，主页面只保留两个最重要的填写项。</div>
+          </section>
+
+          <section class="preview" data-preview="1">
+            <h2 class="preview-title">随手记录</h2><p class="preview-subtitle">通用 · 5 场会议</p>
+            <details class="accordion" open><summary><span class="row-icon">1</span><strong>基本信息</strong><small>补充用途与背景　⌃</small></summary><div class="accordion-content">
+              <div class="field"><label>这类会议通常在讨论什么？</label><textarea class="small" data-field="description" placeholder="一句话说明场景"></textarea></div>
+              <div class="field"><label>回答时需要遵循什么？</label><textarea class="small" data-field="requirements" placeholder="可直接使用默认要求"></textarea></div>
+            </div></details>
+            <details class="accordion"><summary><span class="row-icon">2</span><strong>资料与文件</strong><small><span data-count="files">0</span> 份资料　·　添加文件　⌄</small></summary><div class="accordion-content"><div class="dropzone" style="min-height:100px"><div><strong>把资料放在这里</strong><p>支持 PDF、Word、PPT、表格和 Markdown</p><button class="button" data-action="choose-files">选择文件</button></div></div><div class="file-list" data-file-list></div></div></details>
+            <details class="accordion"><summary><span class="row-icon">3</span><strong>经验与技能</strong><small><span data-count="skills">0</span> 项　需要时再配置　⌄</small></summary><div class="accordion-content"><p class="note">添加常用回答技巧、经验和问题库。</p><div class="action-row"><button class="button" data-action="add-skill">添加技能</button><button class="button" data-tab="knowledge">管理题库</button></div></div></details>
+            <details class="accordion"><summary><span class="row-icon">4</span><strong>复盘设置</strong><small>默认设置　⌄</small></summary><div class="accordion-content"><p class="note">会议结束后整理纪要，并更新本系列的经验。</p><button class="button" data-tab="review">配置复盘</button></div></details>
+            <div class="caption">方案特点：把长页面改成四个清楚的折叠区，默认只打开基本信息。</div>
+          </section>
+
+          <section class="preview" data-preview="2">
+            <h2 class="preview-title">随手记录</h2><p class="preview-subtitle">通用 · 5 场会议</p>
+            <div class="dropzone">
+              <div><div class="drop-icon">⇧</div><strong>先添加这类会议会用到的资料</strong><p>拖入文件，或从 Mac 选择。可以稍后再补充说明。</p><button class="button primary" data-action="choose-files">选择文件</button><div class="file-list" data-file-list></div></div>
+            </div>
+            <div class="divider"></div>
+            <div class="section-head"><h4>补充一点上下文</h4><span class="hint">全部可选</span></div>
+            <div class="inline-pair">
+              <div class="inline-card"><h4>场景</h4><textarea class="small" data-field="description" placeholder="例如：通话记录、随手讨论……"></textarea></div>
+              <div class="inline-card"><h4>回答风格</h4><select class="fake-input" data-field="answerStyle"><option>提词要点</option><option>直接回答</option><option>自由讨论</option></select></div>
+            </div>
+            <details class="accordion"><summary><span class="row-icon">⋯</span><strong>更多设置</strong><small>背景、回答要求、技能　⌄</small></summary><div class="accordion-content"><textarea class="small" data-field="background" placeholder="补充背景或专有名词"></textarea><textarea class="small" data-field="requirements" placeholder="回答要求"></textarea><button class="button" data-action="add-skill">添加技能</button></div></details>
+            <div class="caption">方案特点：适合已有简历、文档等资料的系列；把文件作为主要输入，文字说明不再显得必须。</div>
+          </section>
+
+          <section class="preview" data-preview="3">
+            <div class="step-row"><span class="pill purple">系列设置　·　1 / 2</span><div class="step-track"><i class="on"></i><i></i></div></div>
+            <div class="prompt-question wizard-page" data-wizard-step="1">
+              <h3>你会把这个系列用在什么场景？</h3><p>写一句话就够了，其他内容都可以稍后补充。</p>
+              <textarea class="tall" data-field="description" placeholder="例如：临时讨论、通话记录，或整理待办事项"></textarea>
+              <div class="quick-choices"><button data-suggest="面试准备" class="pill">面试准备</button><button data-suggest="工作会议" class="pill">工作会议</button><button data-suggest="随手记录" class="pill">随手记录</button><button data-suggest="学习讨论" class="pill">学习讨论</button></div>
+              <div class="prompt-actions"><button class="button quiet" data-action="later">稍后再说</button><button class="button primary" data-action="wizard-next">下一步　→</button></div>
+              <p class="note" style="margin-top:24px">下一步只会询问回答风格。资料和技能可以在系列页面随时添加。</p>
+            </div>
+            <div class="prompt-question wizard-page" data-wizard-step="2" hidden>
+              <h3>希望 AI 怎样帮你？</h3><p>写下回答要求，也可以直接选一个常用风格。</p>
+              <textarea class="tall" data-field="requirements" placeholder="例如：先给结论，再列出 2–3 个要点"></textarea>
+              <div class="quick-choices"><button class="pill" data-style-choice="提词要点">提词要点</button><button class="pill" data-style-choice="直接回答">直接回答</button><button class="pill" data-style-choice="自由讨论">自由讨论</button></div>
+              <div class="action-row" style="justify-content:center"><button class="button" data-action="choose-files">＋ 添加参考资料</button></div>
+              <div class="prompt-actions"><button class="button quiet" data-action="wizard-back">← 上一步</button><button class="button primary" data-action="wizard-finish">保存设置</button></div>
+            </div>
+            <div class="caption">方案特点：适合第一次创建系列的人；一次只面对一个问题，代价是需要多一步操作。</div>
+          </section>
+
+          <section class="preview" data-preview="4">
+            <h2 class="preview-title">随手记录</h2><p class="preview-subtitle">通用 · 5 场会议</p>
+            <div class="overview-grid">
+              <div class="overview-card"><div class="overview-card-top"><h4>场景说明</h4><span class="pill">可选</span></div><p data-summary="description">告诉 AI 这个系列通常会记录什么。</p><button class="link" data-action="edit-field" data-field="description">添加说明　＋</button></div>
+              <div class="overview-card"><div class="overview-card-top"><h4>回答方式</h4><span class="pill purple" data-style-label>提词要点</span></div><p data-summary="requirements">先给结论，再列 2–3 个要点。</p><button class="link" data-action="edit-field" data-field="requirements">编辑要求　›</button></div>
+              <div class="overview-card"><div class="overview-card-top"><h4>资料</h4><span class="pill"><span data-count="files">0</span> 份</span></div><p>简历、会议材料或其他参考文件。</p><button class="link" data-action="choose-files">导入资料　＋</button></div>
+              <div class="overview-card"><div class="overview-card-top"><h4>技能与经验</h4><span class="pill"><span data-count="skills">0</span> 项</span></div><p>添加后，系列中的会议会共享这些内容。</p><button class="link" data-tab="knowledge">查看　›</button></div>
+            </div>
+            <label class="row-card" style="margin-top:14px"><span class="row-icon">◷</span><span class="row-copy"><strong>会议结束后自动整理纪要</strong><small>可在“复盘”中更改整理方式</small></span><input type="checkbox" data-setting="autoNotes" checked></label>
+            <div class="caption">方案特点：默认不出现输入框，先展示有哪些配置和当前状态；点击卡片后再打开编辑。</div>
+          </section>
+
+          <section class="preview" data-preview="5">
+            <h2 class="preview-title">系列设置</h2><p class="preview-subtitle">按栏目编辑，一次专注一类信息</p>
+            <div class="focus-layout">
+              <nav class="focus-nav" aria-label="设置栏目">
+                <button class="row active" data-focus="basic">基本信息 <em>1 / 2</em></button>
+                <button class="row" data-focus="requirements">回答要求 <em>已设置</em></button>
+                <button class="row" data-focus="files">资料 <em><span data-count="files">0</span></em></button>
+                <button class="row" data-focus="skills">技能 <em><span data-count="skills">0</span></em></button>
+                <button class="row" data-focus="knowledge">经验库与题库 <em><span data-count="questions">0</span></em></button>
+              </nav>
+              <div class="focus-panel">
+                <div data-focus-panel="basic" class="active"><span class="pill purple">基本信息</span><h3 data-bind="name">随手记录</h3><p>写下这个系列的用途。可以只填一项，随时回来补充。</p><div class="field"><label>场景说明</label><textarea class="medium" data-field="description" placeholder="例如：记录临时想法和通话内容"></textarea></div><details class="accordion"><summary><strong>补充背景</strong><small>可选　⌄</small></summary><div class="accordion-content"><textarea class="small" data-field="background" placeholder="重要人物、专有名词或其他背景"></textarea></div></details></div>
+                <div data-focus-panel="requirements"><span class="pill purple">回答要求</span><h3>回答风格</h3><p>告诉 AI 语言、长度、结构和需要遵循的规则。</p><textarea class="tall" data-field="requirements" placeholder="先给结论，再列出 2–3 个要点"></textarea><div class="action-row"><button class="button" data-action="reset-requirements">恢复默认要求</button></div></div>
+                <div data-focus-panel="files"><span class="pill purple">资料</span><h3>参考文件</h3><p>选择的文件只在本原型中显示文件名，不会上传。</p><button class="button primary" data-action="choose-files">选择文件</button><div class="file-list" data-file-list></div></div>
+                <div data-focus-panel="skills"><span class="pill purple">技能</span><h3>系列技能</h3><p>此处可配置常用回答套路和领域知识。</p><button class="button" data-action="add-skill">添加技能</button><div class="skill-list"></div></div>
+                <div data-focus-panel="knowledge"><span class="pill purple">经验库与题库</span><h3>共享经验</h3><p>添加本系列常见问题和会议后的经验。</p><button class="button" data-tab="knowledge">打开经验库与题库　›</button></div>
+                <div class="footer-row"><span class="hint">更改只保存在本地预览状态</span><button class="button primary" data-action="save">完成</button></div>
+              </div>
+            </div>
+            <div class="caption">方案特点：栏目清楚、单页内容少；适合资料、回答要求和经验配置都比较多的系列。</div>
+          </section>
+
+          <section class="shared-pane" id="knowledgePane" hidden>
+            <h2>经验库与题库</h2><p>当前系列中可复用的问题、经验和回答技能。这里的增删只影响本地预览状态。</p>
+            <div class="section-head"><h4>常见问题</h4><span class="pill"><span data-count="questions">0</span> 题</span></div>
+            <div class="action-row"><button class="button primary" data-action="add-question">＋ 添加问题</button><button class="button" data-action="predict-questions">✦ 预览生成问题</button></div>
+            <div id="questionList"></div>
+            <div class="divider"></div>
+            <div class="section-head"><h4>共享经验</h4><span class="pill"><span data-count="lessons">0</span> 条</span></div>
+            <div class="action-row"><button class="button" data-action="add-lesson">＋ 添加经验</button></div>
+            <div id="lessonList"></div>
+            <div class="divider"></div>
+            <div class="section-head"><h4>系列技能</h4><span class="pill"><span data-count="skills">0</span> 项</span></div>
+            <div class="action-row"><button class="button" data-action="add-skill">＋ 添加技能</button></div>
+            <div id="skillList"></div>
+          </section>
+
+          <section class="shared-pane" id="reviewPane" hidden>
+            <h2>复盘设置</h2><p>决定会议结束后如何整理纪要，以及哪些经验会带入本系列。</p>
+            <label class="check-row"><input type="checkbox" data-setting="autoNotes" checked><span><strong>会议结束后自动整理纪要</strong><br><span class="hint">保留转写，并按模板生成纪要</span></span></label>
+            <label class="check-row"><input type="checkbox" data-setting="autoApply" checked><span><strong>将确认过的经验加入系列</strong><br><span class="hint">会后检查并确认后再加入，不自动采纳未确认内容</span></span></label>
+            <div class="field"><label for="notesTemplate">纪要模板</label><select id="notesTemplate" data-setting="notesTemplate" class="fake-input"><option>简洁纪要</option><option>面试复盘</option><option>工作会议</option><option>学习讨论</option></select></div>
+            <div class="field"><label for="notesLanguage">纪要语言</label><select id="notesLanguage" data-setting="notesLanguage" class="fake-input"><option>跟随界面语言</option><option>简体中文</option><option>English</option></select></div>
+            <div class="action-row"><button class="button" data-action="reset-review">恢复默认设置</button><button class="button primary" data-action="save">保存设置</button></div>
+            <p class="note">原型状态只保存在当前页面内存中，刷新后会恢复默认示例。</p>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input id="filePicker" type="file" multiple hidden>
+<dialog id="editDialog">
+  <form class="dialog-form" id="editForm">
+    <h3 id="dialogTitle">编辑内容</h3>
+    <label id="dialogNameLabel" for="dialogName">名称</label><input id="dialogName" autocomplete="off">
+    <label id="dialogBodyLabel" for="dialogBody">内容</label><textarea id="dialogBody"></textarea>
+    <div class="dialog-actions"><button type="button" class="button" data-action="close-dialog">取消</button><button type="submit" class="button primary">保存到预览</button></div>
+  </form>
+</dialog>
+<dialog id="seriesDialog">
+  <form class="dialog-form" id="seriesForm">
+    <h3>新建系列</h3>
+    <label for="seriesName">系列名称</label><input id="seriesName" required placeholder="例如：产品评审">
+    <label for="seriesMode">系列类型</label><select id="seriesMode"><option>通用</option><option>面试</option><option>工作会议</option><option>学术会议</option></select>
+    <div class="dialog-actions"><button type="button" class="button" data-action="close-series-dialog">取消</button><button type="submit" class="button primary">创建</button></div>
+  </form>
+</dialog>
+<script>
+const optionButtons = Array.from(document.querySelectorAll(".option"));
+const previews = Array.from(document.querySelectorAll(".preview"));
+function createDefaultState(name = "随手记录", mode = "通用") {
+  return {
+    name, mode, style: "提词要点", description: "",
+    requirements: "先给一句可以说出口的结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。",
+    background: "", files: [], skills: [], questions: [], lessons: [],
+    autoNotes: true, autoApply: true, notesTemplate: "简洁纪要", notesLanguage: "跟随界面语言"
+  };
+}
+const cloneState = (value) => JSON.parse(JSON.stringify(value));
+let state = createDefaultState();
+const seriesStates = new Map([[state.name, cloneState(state)]]);
+let selectedOption = 0;
+let selectedTab = "materials";
+let wizardStep = 1;
+let dialogState = null;
+let toastTimer;
+
+const toast = document.getElementById("toast");
+const filePicker = document.getElementById("filePicker");
+const editDialog = document.getElementById("editDialog");
+const seriesDialog = document.getElementById("seriesDialog");
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2300);
+}
+
+function persistCurrentSeries() {
+  seriesStates.set(state.name, cloneState(state));
+}
+
+function setField(name, value) {
+  if (name === "answerStyle") {
+    updateStyle(value);
+    return;
+  }
+  state[name] = value;
+  document.querySelectorAll(`[data-field="${name}"]`).forEach((item) => {
+    if (item !== document.activeElement) item.value = value;
+  });
+  document.querySelectorAll(`[data-summary="${name}"]`).forEach((item) => {
+    item.textContent = value || (name === "description" ? "还没有填写场景说明。" : "使用默认回答要求。点击编辑可调整。");
+  });
+  persistCurrentSeries();
+}
+
+function setName(name) {
+  state.name = name;
+  document.querySelectorAll("[data-bind='name']").forEach((item) => item.textContent = name);
+  document.querySelectorAll(".preview-title").forEach((item) => {
+    if (item.closest("[data-preview='5']")) return;
+    item.textContent = name;
+  });
+  document.querySelector(".breadcrumb b").textContent = name;
+}
+
+function syncCurrentSeriesToUI() {
+  setName(state.name);
+  document.querySelector("[data-menu='mode']").textContent = `${state.mode}　⌄`;
+  document.querySelector("[data-menu='style']").textContent = `${state.style}　⌄`;
+  document.querySelectorAll("[data-style-label]").forEach((item) => item.textContent = state.style);
+  document.querySelectorAll("[data-field]").forEach((item) => {
+    const field = item.dataset.field;
+    const value = field === "answerStyle" ? state.style : state[field];
+    if (value !== undefined) item.value = value;
+  });
+  document.querySelectorAll("[data-setting]").forEach((item) => {
+    const value = state[item.dataset.setting];
+    if (item.type === "checkbox") item.checked = Boolean(value);
+    else if (value !== undefined) item.value = value;
+  });
+  document.querySelectorAll("[data-summary]").forEach((item) => {
+    const field = item.dataset.summary;
+    item.textContent = state[field] || (field === "description" ? "还没有填写场景说明。" : "使用默认回答要求。点击编辑可调整。");
+  });
+  renderLists();
+}
+
+function switchSeries(name, mode = "通用") {
+  persistCurrentSeries();
+  state = cloneState(seriesStates.get(name) || createDefaultState(name, mode));
+  seriesStates.set(name, cloneState(state));
+  document.querySelectorAll("[data-series-name]").forEach((row) => row.classList.toggle("selected", row.dataset.seriesName === name));
+  syncCurrentSeriesToUI();
+  showToast(`已切换到“${state.name}”`);
+}
+
+function setOption(index) {
+  selectedOption = index;
+  optionButtons.forEach((button, i) => button.setAttribute("aria-pressed", i === index ? "true" : "false"));
+  renderPane();
+}
+
+function setTab(name) {
+  selectedTab = name;
+  document.querySelectorAll(".editor-tab").forEach((button) => button.classList.toggle("active", button.dataset.tab === name));
+  renderPane();
+}
+
+function renderPane() {
+  previews.forEach((panel, i) => panel.classList.toggle("active", selectedTab === "materials" && i === selectedOption));
+  document.getElementById("knowledgePane").hidden = selectedTab !== "knowledge";
+  document.getElementById("reviewPane").hidden = selectedTab !== "review";
+}
+
+function updateMode(mode, notify = true) {
+  state.mode = mode;
+  document.querySelector("[data-menu='mode']").textContent = `${mode}　⌄`;
+  document.querySelectorAll("[data-menu-panel]").forEach((panel) => panel.hidden = true);
+  persistCurrentSeries();
+  if (notify) showToast(`系列类型已切换为“${mode}”`);
+}
+
+function updateStyle(style, notify = true) {
+  state.style = style;
+  document.querySelector("[data-menu='style']").textContent = `${style}　⌄`;
+  document.querySelectorAll("[data-style-label]").forEach((item) => item.textContent = style);
+  document.querySelectorAll("[data-field='answerStyle']").forEach((item) => item.value = style);
+  document.querySelectorAll("[data-menu-panel]").forEach((panel) => panel.hidden = true);
+  persistCurrentSeries();
+  if (notify) showToast(`回答方式已设为“${style}”`);
+}
+
+function setSetting(name, value) {
+  state[name] = value;
+  document.querySelectorAll(`[data-setting='${name}']`).forEach((item) => {
+    if (item.type === "checkbox") item.checked = Boolean(value);
+    else item.value = value;
+  });
+  persistCurrentSeries();
+}
+
+function renderItems(items, target, kind) {
+  target.replaceChildren();
+  if (!items.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = kind === "question" ? "还没有常见问题，点击上方按钮添加。" : kind === "lesson" ? "还没有经验记录。" : "还没有添加技能。";
+    target.append(empty);
+    return;
+  }
+  items.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    const icon = document.createElement("span");
+    icon.className = "row-icon";
+    icon.textContent = kind === "question" ? "?" : kind === "lesson" ? "✦" : "◇";
+    const copy = document.createElement("div");
+    copy.className = "row-copy";
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+    const detail = document.createElement("small");
+    detail.textContent = item.body || "";
+    copy.append(title, detail);
+    const remove = document.createElement("button");
+    remove.className = "remove";
+    remove.type = "button";
+    remove.dataset.removeKind = kind;
+    remove.dataset.removeIndex = index;
+    remove.setAttribute("aria-label", "移除");
+    remove.textContent = "移除";
+    row.append(icon, copy, remove);
+    target.append(row);
+  });
+}
+
+function renderLists() {
+  renderItems(state.questions, document.getElementById("questionList"), "question");
+  renderItems(state.lessons, document.getElementById("lessonList"), "lesson");
+  renderItems(state.skills, document.getElementById("skillList"), "skill");
+  document.querySelectorAll(".skill-list").forEach((target) => renderItems(state.skills, target, "skill"));
+  document.querySelectorAll("[data-count='files']").forEach((item) => item.textContent = state.files.length);
+  document.querySelectorAll("[data-count='skills']").forEach((item) => item.textContent = state.skills.length);
+  document.querySelectorAll("[data-count='questions']").forEach((item) => item.textContent = state.questions.length);
+  document.querySelectorAll("[data-count='lessons']").forEach((item) => item.textContent = state.lessons.length);
+  document.querySelectorAll("[data-file-list]").forEach((target) => {
+    target.replaceChildren();
+    if (!state.files.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "还没有选择资料。你可以选择文件或拖入文件名预览。";
+      target.append(empty);
+    }
+    state.files.forEach((name) => {
+      const row = document.createElement("div");
+      row.className = "list-item";
+      const icon = document.createElement("span");
+      icon.className = "row-icon";
+      icon.textContent = "▧";
+      const copy = document.createElement("div");
+      copy.className = "row-copy";
+      const title = document.createElement("strong");
+      title.textContent = name;
+      const detail = document.createElement("small");
+      detail.textContent = "仅显示在本地原型中，文件未上传";
+      copy.append(title, detail);
+      const remove = document.createElement("button");
+      remove.className = "remove";
+      remove.type = "button";
+      remove.dataset.removeKind = "file";
+      remove.dataset.removeName = name;
+      remove.textContent = "移除";
+      row.append(icon, copy, remove);
+      target.append(row);
+    });
+  });
+}
+
+function openEditDialog(kind, field) {
+  dialogState = { kind, field };
+  const nameLabel = document.getElementById("dialogNameLabel");
+  const nameInput = document.getElementById("dialogName");
+  const bodyLabel = document.getElementById("dialogBodyLabel");
+  const bodyInput = document.getElementById("dialogBody");
+  const title = document.getElementById("dialogTitle");
+  nameLabel.hidden = false;
+  nameInput.hidden = false;
+  bodyLabel.hidden = false;
+  bodyInput.hidden = false;
+  if (kind === "field") {
+    title.textContent = field === "description" ? "编辑场景说明" : field === "requirements" ? "编辑回答要求" : "编辑补充背景";
+    nameLabel.hidden = true;
+    nameInput.hidden = true;
+    bodyLabel.textContent = "内容";
+    bodyInput.value = state[field] || "";
+  } else if (kind === "question") {
+    title.textContent = "添加常见问题";
+    nameLabel.textContent = "问题";
+    nameInput.placeholder = "输入系列中常见的问题";
+    bodyLabel.textContent = "回答要点（可选）";
+    bodyInput.value = "";
+  } else if (kind === "skill") {
+    title.textContent = "添加系列技能";
+    nameLabel.textContent = "技能名称";
+    nameInput.placeholder = "例如：回答结构";
+    bodyLabel.textContent = "使用说明";
+    bodyInput.value = "";
+  } else {
+    title.textContent = "添加经验";
+    nameLabel.textContent = "经验标题";
+    nameInput.placeholder = "例如：下次需要先确认目标";
+    bodyLabel.textContent = "经验内容";
+    bodyInput.value = "";
+  }
+  nameInput.required = kind !== "field";
+  nameInput.value = "";
+  editDialog.showModal();
+  if (!nameInput.hidden) nameInput.focus(); else bodyInput.focus();
+}
+
+function setWizardStep(step) {
+  wizardStep = step;
+  document.querySelectorAll("[data-wizard-step]").forEach((panel) => panel.hidden = Number(panel.dataset.wizardStep) !== step);
+  const badge = document.querySelector("[data-preview='3'] .step-row .pill");
+  badge.textContent = `系列设置　·　${step} / 2`;
+  document.querySelectorAll("[data-preview='3'] .step-track i").forEach((line, index) => line.classList.toggle("on", index < step));
+}
+
+function setFocusSection(name) {
+  document.querySelectorAll("[data-focus]").forEach((button) => button.classList.toggle("active", button.dataset.focus === name));
+  document.querySelectorAll("[data-focus-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.focusPanel === name));
+}
+
+function addFiles(files) {
+  for (const file of files) {
+    if (!state.files.includes(file.name)) state.files.push(file.name);
+  }
+  persistCurrentSeries();
+  renderLists();
+  if (files.length) showToast(`已在预览中列出 ${files.length} 个文件名；没有上传文件`);
+}
+
+syncCurrentSeriesToUI();
+renderPane();
+renderLists();
+
+optionButtons.forEach((button) => button.addEventListener("click", () => setOption(Number(button.dataset.option))));
+document.addEventListener("input", (event) => {
+  const field = event.target.dataset.field;
+  if (field && event.target.tagName !== "SELECT") setField(field, event.target.value);
+});
+document.addEventListener("change", (event) => {
+  const field = event.target.dataset.field;
+  if (field) {
+    if (field === "answerStyle") updateStyle(event.target.value);
+    else setField(field, event.target.value);
+  }
+  const setting = event.target.dataset.setting;
+  if (setting) setSetting(setting, event.target.type === "checkbox" ? event.target.checked : event.target.value);
+});
+document.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-tab]");
+  if (tab) setTab(tab.dataset.tab);
+
+  const menuTrigger = event.target.closest("[data-menu]");
+  if (menuTrigger) {
+    const panel = document.querySelector(`[data-menu-panel='${menuTrigger.dataset.menu}']`);
+    panel.hidden = !panel.hidden;
+  } else if (!event.target.closest(".menu-wrap")) {
+    document.querySelectorAll("[data-menu-panel]").forEach((panel) => panel.hidden = true);
+  }
+
+  const mode = event.target.closest("[data-set-mode]");
+  if (mode) updateMode(mode.dataset.setMode);
+  const style = event.target.closest("[data-set-style], [data-style-choice]");
+  if (style) updateStyle(style.dataset.setStyle || style.dataset.styleChoice);
+
+  const suggestion = event.target.closest("[data-suggest]");
+  if (suggestion) {
+    setField("description", suggestion.dataset.suggest);
+    showToast(`已填入“${suggestion.dataset.suggest}”，你可以继续修改`);
+  }
+
+  const focus = event.target.closest("[data-focus]");
+  if (focus) setFocusSection(focus.dataset.focus);
+
+  const series = event.target.closest("[data-series-name]");
+  if (series) {
+    switchSeries(series.dataset.seriesName, series.dataset.seriesMode || "通用");
+  }
+
+  const remove = event.target.closest("[data-remove-kind]");
+  if (remove) {
+    if (remove.dataset.removeKind === "file") {
+      state.files = state.files.filter((name) => name !== remove.dataset.removeName);
+    } else {
+      const list = remove.dataset.removeKind === "question" ? state.questions : remove.dataset.removeKind === "lesson" ? state.lessons : state.skills;
+      list.splice(Number(remove.dataset.removeIndex), 1);
+    }
+    persistCurrentSeries();
+    renderLists();
+    showToast("已从本地预览中移除");
+  }
+
+  const actionButton = event.target.closest("[data-action]");
+  if (!actionButton) return;
+  const action = actionButton.dataset.action;
+  if (action === "create-series") seriesDialog.showModal();
+  if (action === "choose-files") filePicker.click();
+  if (action === "add-question") openEditDialog("question");
+  if (action === "add-skill") openEditDialog("skill");
+  if (action === "add-lesson") openEditDialog("lesson");
+  if (action === "edit-field") openEditDialog("field", actionButton.dataset.field);
+  if (action === "close-dialog") editDialog.close();
+  if (action === "close-series-dialog") seriesDialog.close();
+  if (action === "wizard-next") setWizardStep(2);
+  if (action === "wizard-back") setWizardStep(1);
+  if (action === "wizard-finish") { persistCurrentSeries(); showToast("设置已保存在本地预览状态"); }
+  if (action === "later") { setWizardStep(2); showToast("已跳过场景说明，可以稍后补充"); }
+  if (action === "save") showToast("设置已保存在本地预览状态");
+  if (action === "reset-requirements") {
+    setField("requirements", "先给一句可以说出口的结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。");
+    showToast("已恢复示例回答要求");
+  }
+  if (action === "reset-review") {
+    setSetting("autoNotes", true); setSetting("autoApply", true);
+    setSetting("notesTemplate", "简洁纪要"); setSetting("notesLanguage", "跟随界面语言");
+    showToast("复盘设置已恢复默认");
+  }
+  if (action === "predict-questions") {
+    const hasExample = state.questions.some((item) => item.title === "这场会议最需要达成什么结果？");
+    if (!hasExample) state.questions.push({ title: "这场会议最需要达成什么结果？", body: "先明确目标、负责人和下一步行动。" });
+    persistCurrentSeries();
+    renderLists();
+    showToast(hasExample ? "示例问题已存在；原型没有调用 AI 服务" : "已添加一条示例问题；原型没有调用 AI 服务");
+  }
+  if (action === "nav-hint") showToast(`${actionButton.dataset.destination}仅作为应用导航示意`);
+});
+
+filePicker.addEventListener("change", () => {
+  addFiles(Array.from(filePicker.files || []));
+  filePicker.value = "";
+});
+document.querySelectorAll(".dropzone").forEach((zone) => {
+  zone.addEventListener("dragover", (event) => { event.preventDefault(); zone.style.borderColor = "#a99aff"; });
+  zone.addEventListener("dragleave", () => zone.style.borderColor = "");
+  zone.addEventListener("drop", (event) => {
+    event.preventDefault();
+    zone.style.borderColor = "";
+    addFiles(Array.from(event.dataTransfer.files || []));
+  });
+});
+
+document.getElementById("editForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = document.getElementById("dialogName").value.trim();
+  const body = document.getElementById("dialogBody").value.trim();
+  if (dialogState.kind === "field") setField(dialogState.field, body);
+  if (dialogState.kind === "question") state.questions.push({ title: name, body });
+  if (dialogState.kind === "skill") state.skills.push({ title: name, body });
+  if (dialogState.kind === "lesson") state.lessons.push({ title: name, body });
+  persistCurrentSeries();
+  renderLists();
+  editDialog.close();
+  showToast("已更新本地预览");
+});
+
+document.getElementById("seriesForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = document.getElementById("seriesName").value.trim();
+  if (!name) return;
+  if (Array.from(document.querySelectorAll("[data-series-name]")).some((row) => row.dataset.seriesName === name)) {
+    showToast("这个系列名称已经存在，请换一个名称");
+    return;
+  }
+  const mode = document.getElementById("seriesMode").value;
+  const row = document.createElement("button");
+  row.className = "series-row";
+  row.dataset.seriesName = name;
+  row.dataset.seriesMode = mode;
+  row.textContent = name;
+  const meta = document.createElement("span");
+  meta.className = "series-meta";
+  meta.textContent = "0 份资料 · 0 题 · 0 场会议";
+  row.append(meta);
+  const firstRow = document.querySelector(".series-pane [data-series-name]");
+  firstRow.parentNode.insertBefore(row, firstRow.nextSibling);
+  switchSeries(name, mode);
+  updateMode(mode, false);
+  seriesDialog.close();
+  document.getElementById("seriesForm").reset();
+  showToast(`已在预览中创建“${name}”`);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  if (!event.target.closest(".selector")) return;
+  event.preventDefault();
+  const selected = optionButtons.findIndex((button) => button.getAttribute("aria-pressed") === "true");
+  const next = (selected + (event.key === "ArrowRight" ? 1 : 5)) % 6;
+  setOption(next);
+  optionButtons[next].focus();
+});
+</script>
+</body>
+</html>

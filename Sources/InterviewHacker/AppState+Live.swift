@@ -150,6 +150,10 @@ extension AppState {
             if source == .system { partialTranscript = "" } else { microphonePartialTranscript = "" }
             appleUtteranceCounter[source.rawValue, default: 0] += 1
             var entry = TranscriptEntry(date: start, source: source.rawValue, text: text, isFinal: true, startedAt: start, endedAt: end)
+            if liveTranslation.isEnabled {
+                let provisionalTranslation = liveTranslation.partialTranslation(for: source)
+                if !provisionalTranslation.isEmpty { entry.translatedText = provisionalTranslation }
+            }
             // In the room the microphone hears everyone: "现场", and there is no echo to drop.
             if source == .microphone, isOfflineMeeting { entry.onSite = true }
             if source == .microphone, !isOfflineMeeting, echoSuppression, isEcho(text, start: start, end: end) {
@@ -168,6 +172,9 @@ extension AppState {
             if entry.suspectedEcho != true {
                 recordTranscript(entry)
                 insightsDidReceive(entry)
+                liveTranslation.submitFinal(source, text: text, entryID: entry.id, sessionID: activeArchiveID)
+            } else {
+                liveTranslation.clearPartial(source)
             }
             transcriptionStatus = statusLine
         } else {
@@ -177,12 +184,15 @@ extension AppState {
                 guard let self, self.isRunning else { return }
                 if source == .system {
                     if self.partialTranscript != text { self.partialTranscript = text }
+                    self.liveTranslation.submitPartial(source, text: text)
                     if !self.isPaused, !self.isStopping { self.processRecognized(text, isFinal: false, key: key, allowAutomatic: true) }
                 } else {
                     // Speaker echo is not the user talking: keep it out of the transcript.
                     let echo = !self.isOfflineMeeting && self.echoSuppression && self.echoMonitor.microphoneIsEcho
                     let shown = echo ? "" : text
                     if self.microphonePartialTranscript != shown { self.microphonePartialTranscript = shown }
+                    if echo { self.liveTranslation.clearPartial(source) }
+                    else { self.liveTranslation.submitPartial(source, text: shown) }
                 }
             }
             return

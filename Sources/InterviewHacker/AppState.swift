@@ -21,6 +21,7 @@ final class AppState {
     let documentPreparation = DocumentPreparation()
     let screenContextService = ScreenContextService()
     let answerCoordinator = AnswerCoordinator()
+    let liveTranslation = LiveTranslationCoordinator()
     var apiVisionEnabled = UserDefaults.standard.bool(forKey: "apiVisionEnabled")
     var preparedWorkspace: Workspace?
     var isImportingDocuments = false
@@ -363,6 +364,9 @@ final class AppState {
     @ObservationIgnored var deferredCandidate: (candidate: QuestionCandidate, date: Date)?
     let archive = SessionArchive.shared
     let workspaces = WorkspaceStore.shared
+    @ObservationIgnored var recoveredSummaryIDs: [UUID] = []
+    @ObservationIgnored var summaryRecoveryTask: Task<Void, Never>?
+    @ObservationIgnored var summaryRecoveryReady = false
 
     var modelControlsDisabled: Bool { isRunning || isChangingSession || isPreparingModel || isDownloadingModel }
     var colorScheme: ColorScheme? { appearance == "dark" ? .dark : appearance == "light" ? .light : nil }
@@ -415,7 +419,11 @@ final class AppState {
         if !DemoMode.isEnabled { workspaces.load() }
         documentPreparation.start()
         loadAPIPresets()
-        archive.load()
+        archive.load { [weak self] ids in
+            guard let self else { return }
+            self.recoveredSummaryIDs = ids
+            self.resumeRecoveredSummariesIfNeeded()
+        }
         rebuildContextIndex()
         audio.onSegment = { [weak self] event in
             Task { @MainActor in self?.receiveSpeechEvent(event) }
@@ -436,6 +444,8 @@ final class AppState {
         startScreenWatch()
         Task {
             await refreshTargets(); await refreshCodexStatus(); await refreshModelStatus()
+            summaryRecoveryReady = true
+            resumeRecoveredSummariesIfNeeded()
             // Warm independent services concurrently; no model/search calls are made.
             if webSearchMode != .off, webSearchProvider == .codex { Task { await webAppServer.prewarm() } }
             if webSearchMode == .auto, answerBackend != .openAICompatible { Task { await decisionAppServer.prewarm() } }
@@ -583,6 +593,7 @@ final class AppState {
 
     func startSession() async {
         if DemoMode.isEnabled {
+            liveTranslation.beginMeeting()
             isRunning = true; isPaused = false; statusText = "演示：正在聆听"
             return
         }
@@ -592,6 +603,7 @@ final class AppState {
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
         guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
+        liveTranslation.beginMeeting()
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
         // In the room people talk face to face: answers stay quiet unless asked for.
         automaticAnswers = typeDefaults.liveMode == .prompting && !isOfflineMeeting
@@ -688,6 +700,8 @@ final class AppState {
         statusText = "正在暂停…"
         partialTranscript = ""
         microphonePartialTranscript = ""
+        liveTranslation.clearPartial(.system)
+        liveTranslation.clearPartial(.microphone)
         _ = await audio.stopCapture()
         _ = microphone.stopCapture()
         await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
@@ -750,6 +764,7 @@ final class AppState {
         _ = await audio.stopCapture()
         _ = microphone.stopCapture()
         await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
+        liveTranslation.finishMeeting()
         audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         audioEpoch = UUID()
         liveTranscriber = nil
@@ -1251,6 +1266,7 @@ final class AppState {
         if let codexFastSetting { defaults.set(codexFastSetting, forKey: "codexFastMode") }
         defaults.set(recordSessions, forKey: "recordSessions")
         defaults.set(autoSummarize, forKey: "autoSummarize")
+        resumeRecoveredSummariesIfNeeded()
         defaults.set(autoApplyLessons, forKey: "autoApplyLessons")
         defaults.set(autoBackup, forKey: "autoBackup")
         defaults.set(keepOnTop, forKey: "keepOnTop")

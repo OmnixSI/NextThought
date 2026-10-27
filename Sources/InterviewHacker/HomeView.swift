@@ -147,10 +147,12 @@ private struct RecentMeetings: View {
 enum MeetingOutcome {
     /// "3 个待办" / "2 道题待改进" / "面试 · 52 分钟".
     static func line(for meta: SessionMeta) -> String {
-        if meta.summaryState == .pending || SessionArchive.shared.summarizing.contains(meta.id) {
+        if SessionArchive.shared.summarizing.contains(meta.id) {
             return String(localized: "正在整理纪要")
         }
-        if meta.summaryState == .failed { return String(localized: "纪要没有整理好 · 可以重试") }
+        if meta.summaryState == .failed || meta.summaryState == .pending {
+            return String(localized: "纪要没有整理好 · 可以重试")
+        }
         if let improve = meta.improveCount, improve > 0 {
             return String(localized: "\(improve) 道题待改进")
         }

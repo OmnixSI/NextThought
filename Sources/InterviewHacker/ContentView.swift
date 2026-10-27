@@ -4,9 +4,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import InterviewHackerCore
 
-/// Root window. Outside a meeting: a sidebar (首页 / 所有会议 / 资料夹, 设置 at the
-/// bottom) next to the chosen section. While a meeting runs the window is in focus
-/// mode: no sidebar, only the meeting (02-scenarios-and-flows.md, "会议中").
+/// Root window. Outside a live meeting, global navigation stays in a compact top bar.
+/// Live meetings keep their
+/// dedicated focus mode (02-scenarios-and-flows.md, "会议中").
 struct ContentView: View {
     @Environment(AppState.self) private var state
 
@@ -25,6 +25,9 @@ struct ContentView: View {
             }
             .disabled(state.isOnboardingPresented)
             .accessibilityHidden(state.isOnboardingPresented)
+            if #available(macOS 15.0, *) {
+                LiveTranslationHosts()
+            }
             if state.isOnboardingPresented {
                 OnboardingView().transition(.opacity)
             }
@@ -74,56 +77,11 @@ struct ContentView: View {
 
 private struct MainShell: View {
     var body: some View {
-        HStack(spacing: 0) {
-            Sidebar()
-                .frame(width: Space.sidebar)
-            Rectangle().fill(Ink.hairline).frame(width: 1).ignoresSafeArea()
+        VStack(spacing: 0) {
+            AppNavigationBar()
             SectionStack()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-}
-
-/// macOS-style sidebar: three sections, settings at the bottom.
-private struct Sidebar: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            // Room for the window's traffic-light buttons (hidden title bar).
-            Color.clear.frame(height: 40)
-            ForEach(AppSection.primary) { section in
-                row(section)
-            }
-            Spacer(minLength: Space.s4)
-            UpdateBadge()
-            row(.settings)
-        }
-        .padding(.horizontal, Space.s3)
-        .padding(.bottom, Space.s3)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .background(Ink.paper.ignoresSafeArea())
-    }
-
-    private func row(_ section: AppSection) -> some View {
-        let selected = state.section == section
-        return Button { state.select(section) } label: {
-            HStack(spacing: Space.s2) {
-                Image(systemName: section.symbol)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(selected ? Ink.ink : Ink.secondary)
-                    .frame(width: 18)
-                Text(section.title)
-                    .font(Typo.label)
-                    .foregroundStyle(selected ? Ink.ink : Ink.secondary)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 32)
-            .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 }
 
@@ -135,16 +93,19 @@ private struct SectionStack: View {
     @State private var visited: Set<AppSection> = []
 
     var body: some View {
-        ZStack {
-            ForEach(AppSection.allCases) { section in
-                let shown = section == state.section
-                if shown || visited.contains(section) {
-                    page(section)
-                        .opacity(shown ? 1 : 0)
-                        .allowsHitTesting(shown)
-                        .disabled(!shown)
-                        .accessibilityHidden(!shown)
-                        .zIndex(shown ? 1 : 0)
+        GeometryReader { proxy in
+            ZStack {
+                ForEach(AppSection.allCases) { section in
+                    let shown = section == state.section
+                    if shown || visited.contains(section) {
+                        page(section)
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .opacity(shown ? 1 : 0)
+                            .allowsHitTesting(shown)
+                            .disabled(!shown)
+                            .accessibilityHidden(!shown)
+                            .zIndex(shown ? 1 : 0)
+                    }
                 }
             }
         }
@@ -180,24 +141,6 @@ private struct ErrorBanner: View {
             .floatingSurface(cornerRadius: Space.radiusMedium)
             .padding(.top, Space.s3)
             .transition(.opacity)
-        }
-    }
-}
-
-/// Appears in the sidebar when an update is downloaded and ready to install.
-private struct UpdateBadge: View {
-    @Environment(AppState.self) private var state
-    private var updater: Updater { Updater.shared }
-
-    var body: some View {
-        if updater.phase == .ready, let available = updater.available {
-            Button { updater.installAndRelaunch() } label: {
-                Label("重启以更新", systemImage: "arrow.down.circle")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .buttonStyle(GhostButtonStyle())
-            .disabled(state.isRunning)
-            .help(state.isRunning ? "停止辅助后再安装 \(available.displayVersion)" : "安装 \(available.displayVersion) 并重新打开")
         }
     }
 }

@@ -10,6 +10,7 @@ struct NotesSettingsView: View {
     var body: some View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
+        SettingsCardRow {
             SettingsSection(title: "纪要模型", icon: "doc.text") {
                 Hint("会后整理纪要不赶时间，追求准确和详细，所以用单独的模型：默认是能用到的最强模型，推理强度“高”，不开快速模式。")
                 if state.answerBackend == .openAICompatible {
@@ -30,6 +31,7 @@ struct NotesSettingsView: View {
                     .onChange(of: state.notesLanguage) { _, _ in state.saveNotesSettings() }
                 Hint("整理分三步：校对转写（结合资料里的专有名词纠正识别错误）→ 按模板整理（每条带原话的时间点）→ 核对（去掉没有原话依据的条目，相对日期换成具体日期，不确定的标“待确认”）。不重新识别声音，也不保存录音。整理在后台进行，失败时保留转写，可以重试。")
             }
+        } right: {
             SettingsSection(title: "各类型的默认模板", icon: "list.bullet.rectangle") {
                 ForEach(SessionMode.builtIn) { mode in
                     HStack(spacing: 12) {
@@ -42,6 +44,7 @@ struct NotesSettingsView: View {
                 }
                 Hint("纪要页的“模板”菜单可以给单场会议换个模板重新整理。")
             }
+        }
             SettingsSection(title: "自定义模板", icon: "square.and.pencil") {
                 Hint("一个模板就是若干部分，每部分有名字和一句给 AI 的要求，例如“风险：列出可能导致延期的事，附原话”。可以从现有模板复制一份再改。")
                 ForEach(state.customNotesTemplates) { template in

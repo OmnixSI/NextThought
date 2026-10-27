@@ -105,15 +105,15 @@ struct RefinementBar: View {
     /// Solid chips instead of glass, for a window without a glass background.
     var opaque = false
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(compact ? [AnswerRefinement.shorter, .example, .english, .star] : AnswerRefinement.allCases) { item in
-                    Button { state.refine(item) } label: { Label(item.title, systemImage: item.symbol) }
-                        .buttonStyle(ChipButtonStyle(opaque: opaque))
-                        .help(item == .shorter ? "把回答改短 · \(state.shortcutLabel(.refineShorter))" : item.title)
-                }
+        WrappingHStack(spacing: 6, lineSpacing: 6) {
+            ForEach(compact ? [AnswerRefinement.shorter, .example, .english, .star] : AnswerRefinement.allCases) { item in
+                Button { state.refine(item) } label: { Label(item.title, systemImage: item.symbol) }
+                    .buttonStyle(ChipButtonStyle(opaque: opaque))
+                    .fixedSize(horizontal: true, vertical: false)
+                    .help(item == .shorter ? "把回答改短 · \(state.shortcutLabel(.refineShorter))" : item.title)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(state.displayedAnswer.isEmpty || state.isAnswering)
     }
 }

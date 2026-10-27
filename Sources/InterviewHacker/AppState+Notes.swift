@@ -103,6 +103,7 @@ extension AppState {
         if let data = try? JSONEncoder().encode(customNotesTemplates) {
             defaults.set(data, forKey: "customNotesTemplates")
         }
+        resumeRecoveredSummariesIfNeeded()
     }
 
     nonisolated static func loadCustomNotesTemplates() -> [NotesTemplate] {
@@ -136,13 +137,18 @@ extension AppState {
 
     /// Writes the notes of a session in the background (never interrupts a live
     /// answer). `templateID` / `english` re-run it with another template or language.
-    func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil) {
-        guard !archive.summarizing.contains(id), var meta = archive.sessions.first(where: { $0.id == id }) else { return }
+    func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil,
+                         onCompletion: (@MainActor () -> Void)? = nil) {
+        guard !archive.summarizing.contains(id), var meta = archive.sessions.first(where: { $0.id == id }) else {
+            onCompletion?()
+            return
+        }
         let engine = notesEngine
         guard !engine.model.isEmpty else {
             meta.summaryState = .failed
             meta.summaryError = String(localized: "没有可用的纪要模型。请在 设置 → 纪要 里选择。")
             archive.update(meta)
+            onCompletion?()
             return
         }
         archive.summarizing.insert(id)
@@ -151,10 +157,12 @@ extension AppState {
         archive.update(meta)
         archive.notesSteps[id] = .proofreading
         let useEnglish = english ?? notesUseEnglish
+        Diagnostics.record("summary.started", ["session_id": id.uuidString])
         Task {
             defer {
                 archive.summarizing.remove(id)
                 archive.notesSteps[id] = nil
+                onCompletion?()
             }
             var loaded: SessionDetail?
             do {
@@ -177,7 +185,8 @@ extension AppState {
                 }
                 // The series keeps what the next meeting needs (question bank, lessons).
                 if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
-                Diagnostics.record("notes.completed", ["template": template.id, "items": notes.sections.reduce(0) { $0 + $1.items.count },
+                Diagnostics.record("notes.completed", ["session_id": id.uuidString, "template": template.id,
+                                                       "items": notes.sections.reduce(0) { $0 + $1.items.count },
                                                        "corrections": notes.corrections.count, "dropped": notes.droppedCount])
             } catch NotesError.unreadable {
                 // The model did not answer in JSON: keep the session useful with the
@@ -203,7 +212,30 @@ extension AppState {
             failed.summaryError = error.localizedDescription
             archive.update(failed)
         }
-        Diagnostics.record("summary.failed")
+        Diagnostics.record("summary.failed", ["session_id": id.uuidString])
+    }
+
+    /// Resume only generations that were interrupted while in progress. The
+    /// archive turns stale `pending` states into this queue during startup.
+    func resumeRecoveredSummariesIfNeeded() {
+        guard summaryRecoveryReady, autoSummarize, !recoveredSummaryIDs.isEmpty, summaryRecoveryTask == nil else { return }
+        let ids = recoveredSummaryIDs
+        recoveredSummaryIDs.removeAll()
+        summaryRecoveryTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.summaryRecoveryTask = nil }
+            Diagnostics.record("summary.recovery_started", ["count": ids.count])
+            for (index, id) in ids.enumerated() {
+                guard !Task.isCancelled, self.autoSummarize else {
+                    self.recoveredSummaryIDs.append(contentsOf: ids.dropFirst(index))
+                    return
+                }
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    self.generateSummary(for: id, onCompletion: { continuation.resume() })
+                }
+            }
+            Diagnostics.record("summary.recovery_finished", ["count": ids.count])
+        }
     }
 
     /// Proofread → organize → check.

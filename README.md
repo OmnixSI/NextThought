@@ -1,6 +1,6 @@
 <div align="center">
 
-# InterviewHacker
+# Interview Hacker
 
 **会前读懂资料，会中递上一句话，会后留下一份纪要 · 原生 macOS**
 
@@ -21,6 +21,12 @@
 </div>
 
 ---
+
+## v2.1.0：更专注的会议记录
+
+会议归档支持按系列浏览、点击面包屑返回上级、查看会议详细信息，并可收起侧边栏来专注阅读纪要。资料夹和设置页会随窗口宽度调整布局，卡片尺寸与边缘保持整齐。会议中可启用本机中英同声传译，自动识别双方语言并双向翻译；中断的纪要整理任务会在下次启动后恢复。应用名称显示为 **Interview Hacker**，原有资料、会议记录和模型继续兼容。
+
+[v2.1.0 发布说明](docs/releases/v2.1.0.md) · [更新日志](CHANGELOG.md)。
 
 ## v2.0.0：一场会议就是一页
 
@@ -211,7 +217,7 @@ flowchart LR
 
 ## 安装
 
-1. 到 **[Releases](../../releases)** 下载 `InterviewHacker-<版本>-macOS-arm64.dmg`，打开后把 InterviewHacker 拖进“应用程序”。（正式版本使用版本号 Release；旧的 `main-latest` 保留为历史构建。）
+1. 到 **[Releases](../../releases)** 下载 `InterviewHacker-<版本>-macOS-arm64.dmg`，打开后把 Interview Hacker 拖进“应用程序”。（正式版本使用版本号 Release；旧的 `main-latest` 保留为历史构建。）
 2. 第一次打开：应用未经 Apple 公证，macOS 会拦截。打开 **系统设置 → 隐私与安全性**，在页面底部点 **“仍要打开”**。
    也可以在终端执行：`xattr -dr com.apple.quarantine /Applications/InterviewHacker.app`
 3. 按提示允许 **屏幕与系统音频录制** 和 **麦克风**。授权后如系统要求重启应用，照做即可。

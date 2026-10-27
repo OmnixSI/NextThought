@@ -79,7 +79,7 @@ jobs:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "InterviewHacker $RELEASE_TAG" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "Interview Hacker $RELEASE_TAG" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
           gh release upload "$RELEASE_TAG" dist/InterviewHacker-*-macOS-arm64.* dist/SHA256SUMS.txt dist/update.json dist/runtime-manifest.json --clobber
           verify="$RUNNER_TEMP/release-verification"

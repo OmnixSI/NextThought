@@ -1,6 +1,56 @@
 {
   "sourceLanguage": "zh-Hans",
   "strings": {
+    "导航": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Navigation"
+          }
+        }
+      }
+    },
+    "收起导航栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse Navigation"
+          }
+        }
+      }
+    },
+    "展开导航栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand Navigation"
+          }
+        }
+      }
+    },
+    "收起导航栏（⌘B）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse Navigation (⌘B)"
+          }
+        }
+      }
+    },
+    "展开导航栏（⌘B）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand Navigation (⌘B)"
+          }
+        }
+      }
+    },
     " · %lld 项限制": {
       "localizations": {
         "en": {
@@ -2341,6 +2391,16 @@
         }
       }
     },
+    "纪要整理已中断 · 可以重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note generation was interrupted · you can retry"
+          }
+        }
+      }
+    },
     "正在检测回答服务…": {
       "localizations": {
         "en": {
@@ -3837,6 +3897,106 @@
           "stringUnit": {
             "state": "translated",
             "value": ";"
+          }
+        }
+      }
+    },
+    "同声传译": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live translation"
+          }
+        }
+      }
+    },
+    "开启本机中英同声传译": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on on-device Chinese–English live translation"
+          }
+        }
+      }
+    },
+    "本机同声传译需要 macOS 15 或更新版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device live translation requires macOS 15 or later"
+          }
+        }
+      }
+    },
+    "正在准备本机中英翻译…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing on-device Chinese–English translation…"
+          }
+        }
+      }
+    },
+    "已关闭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "本场同声传译已结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live translation finished"
+          }
+        }
+      }
+    },
+    "本机翻译未就绪：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device translation unavailable: %@"
+          }
+        }
+      }
+    },
+    "本机中英翻译已就绪": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device translation is ready"
+          }
+        }
+      }
+    },
+    "正在准备另一方向的语言资源…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing the other language pair…"
+          }
+        }
+      }
+    },
+    "译文：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translation: %@"
           }
         }
       }

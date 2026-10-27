@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - Paper & Ink design tokens
 //
 // The values mirror docs/redesign/design-system/tokens.json. The interface is 95 %
-// paper and ink; purple (`ai`) marks AI-written content only, red (`live`) means
+// paper and ink; neutral gray (`ai`) marks AI-written content, red (`live`) means
 // recording, green (`ready`) means ready, amber (`caution`) needs attention.
 
 extension NSColor {
@@ -44,9 +44,10 @@ enum Ink {
     /// Placeholders and decoration only; never for text that has to be read.
     static let tertiary = Color.dynamic(light: .hex(0x8e8c86), dark: .hex(0x75736e))
     static let hairline = Color.dynamic(light: .hex(0xe7e5e0), dark: .hex(0x2c2b28))
-    /// Purple means "written by AI". Never on buttons, navigation or selection.
-    static let ai = Color.dynamic(light: .hex(0x5146c8), dark: .hex(0xaaa3ff))
-    static let aiSoft = Color.dynamic(light: .hex(0x5146c8, alpha: 0.07), dark: .hex(0xaaa3ff, alpha: 0.10))
+    /// Neutral gray marks AI-written content; the interface stays grayscale.
+    static let ai = Color.dynamic(light: .hex(0x595751), dark: .hex(0xb8b6af))
+    static let aiSoft = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.045), dark: .hex(0xecebe8, alpha: 0.07))
+    static let promptPanel = Color.dynamic(light: .hex(0xf0efec), dark: .hex(0x242422))
     static let live = Color.dynamic(light: .hex(0xd93a3a), dark: .hex(0xff6b63))
     static let ready = Color.dynamic(light: .hex(0x2f9e5b), dark: .hex(0x4cc38a))
     static let caution = Color.dynamic(light: .hex(0xc27c0e), dark: .hex(0xf0b24a))
@@ -131,7 +132,7 @@ extension View {
     }
 }
 
-/// Title of an AI block: a purple sparkle and a purple overline.
+/// Title of an AI block: a neutral sparkle and overline.
 struct AIHeading: View {
     let title: LocalizedStringKey
     var body: some View {

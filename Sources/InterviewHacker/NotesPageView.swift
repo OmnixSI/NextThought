@@ -11,11 +11,14 @@ struct MeetingPage: View {
     let id: UUID
     var showsBack: Bool
     var onBack: () -> Void
+    let onShowInfo: (UUID) -> Void
+    let onRename: (UUID) -> Void
+    let onDelete: (UUID) -> Void
+    let onNavigateToAllMeetings: () -> Void
+    let onNavigateToSeries: (UUID) -> Void
     @State private var detail: SessionDetail?
     @State private var tab: MeetingTab = .notes
     @State private var jumpLine: Int?
-    @State private var renaming = false
-    @State private var newTitle = ""
     @State private var copied = false
 
     private var archive: SessionArchive { SessionArchive.shared }
@@ -62,11 +65,6 @@ struct MeetingPage: View {
             await archive.flush()
             detail = await archive.detail(id)
         }
-        .alert("重命名会议", isPresented: $renaming) {
-            TextField("标题", text: $newTitle)
-            Button("保存") { archive.rename(id, to: newTitle) }
-            Button("取消", role: .cancel) { }
-        }
     }
 
     /// Reload when the notes finish, change, or the live meeting adds lines.
@@ -99,27 +97,80 @@ struct MeetingPage: View {
 
     private var header: some View {
         HStack(spacing: Space.s2) {
-            if showsBack {
-                Button { onBack() } label: { Image(systemName: "chevron.left") }.buttonStyle(GlassIconButtonStyle(size: 28))
-            }
-            Text("所有会议").font(Typo.caption).foregroundStyle(Ink.secondary)
-            if let series = meta?.workspaceName {
-                Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
-                Text(verbatim: series).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
-            }
-            Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
-            Text(isReview ? "复盘" : "纪要").font(.system(size: 12, weight: .medium))
-            Spacer(minLength: Space.s3)
-            TemplateMenu(id: id, detail: detail)
-            moreMenu
-            primaryAction
+            navigationControls
+            breadcrumbs
+            pageActions
         }
         .padding(.horizontal, Space.s6)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 52)
         .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
     }
 
-    private var busy: Bool { archive.summarizing.contains(id) || meta?.summaryState == .pending }
+    private var navigationControls: some View {
+        HStack(spacing: Space.s1) {
+            if showsBack {
+                Button { onBack() } label: { Image(systemName: "chevron.left") }
+                    .buttonStyle(GlassIconButtonStyle(size: 28))
+                    .accessibilityLabel("返回会议列表")
+                    .help("返回会议列表")
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var breadcrumbs: some View {
+        HStack(spacing: Space.s1) {
+            Button("所有会议", action: onNavigateToAllMeetings)
+                .buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize()
+                .help("查看所有会议")
+            if let seriesID, let seriesName {
+                Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
+                Button { onNavigateToSeries(seriesID) } label: {
+                    Text(verbatim: seriesName).font(Typo.caption).foregroundStyle(Ink.secondary)
+                        .lineLimit(1).truncationMode(.middle)
+                }
+                .buttonStyle(.plain)
+                .help("查看“\(seriesName)”系列中的会议")
+            }
+            Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
+            Text(currentPageTitle).font(.system(size: 12, weight: .medium))
+                .lineLimit(1).fixedSize().help(currentPageTitle)
+        }
+        .lineLimit(1)
+    }
+
+    private var pageActions: some View {
+        ViewThatFits(in: .horizontal) {
+            pageActionRow(compactTemplate: false)
+            pageActionRow(compactTemplate: true)
+        }
+        .layoutPriority(1)
+    }
+
+    private func pageActionRow(compactTemplate: Bool) -> some View {
+        HStack(spacing: Space.s2) {
+            TemplateMenu(id: id, detail: detail, compactLabel: compactTemplate)
+            MeetingMoreMenu(sessionID: id, onShowInfo: onShowInfo, onRename: onRename, onDelete: onDelete)
+            primaryAction
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var seriesID: UUID? { meta?.workspaceID }
+
+    private var seriesName: String? {
+        guard let seriesID else { return nil }
+        return state.workspaces.workspace(seriesID)?.name ?? meta?.workspaceName ?? "已删除系列"
+    }
+
+    private var currentPageTitle: String {
+        switch tab {
+        case .notes: isReview ? "复盘" : "纪要"
+        case .transcript: "转写"
+        case .answers: "会中提词"
+        }
+    }
 
     @ViewBuilder private var primaryAction: some View {
         if let detail, let summary = detail.summary, isReview, summary.appliedToWorkspace != true,
@@ -140,34 +191,6 @@ struct MeetingPage: View {
             .buttonStyle(PrimaryButtonStyle())
             .disabled(detail == nil)
         }
-    }
-
-    private var moreMenu: some View {
-        Menu {
-            Button("重新整理") { state.generateSummary(for: id) }
-                .disabled(busy || id == archive.activeID)
-            Menu("纪要语言") {
-                Button("简体中文") { state.generateSummary(for: id, english: false) }
-                Button("English") { state.generateSummary(for: id, english: true) }
-            }
-            .disabled(busy || id == archive.activeID)
-            Divider()
-            Button("导出 Markdown…") { state.exportSession(id) }
-            Button("重命名…") { newTitle = meta?.displayTitle ?? ""; renaming = true }
-            Button("在 Finder 中显示") { archive.revealInFinder(id) }
-            Button("以此为上一场，准备下一场") { state.prepareNextMeeting(after: id) }
-                .disabled(meta?.workspaceID == nil || state.isRunning)
-            Divider()
-            Button("删除这场会议", role: .destructive) { archive.delete(id) }
-                .disabled(id == archive.activeID)
-        } label: {
-            Image(systemName: "ellipsis")
-        }
-        .menuStyle(.button)
-        .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .help("更多")
     }
 
     // MARK: Title
@@ -197,7 +220,7 @@ private struct NotesProgressLine: View {
         let meta = archive.sessions.first { $0.id == id }
         if id == archive.activeID {
             Text("会议进行中，结束后自动整理纪要。").font(Typo.caption).foregroundStyle(Ink.secondary)
-        } else if archive.summarizing.contains(id) || meta?.summaryState == .pending {
+        } else if archive.summarizing.contains(id) {
             VStack(alignment: .leading, spacing: Space.s2) {
                 HStack(spacing: Space.s2) {
                     ProgressView().controlSize(.small)
@@ -217,10 +240,10 @@ private struct NotesProgressLine: View {
                 }
             }
             .paperCard()
-        } else if meta?.summaryState == .failed {
+        } else if meta?.summaryState == .failed || meta?.summaryState == .pending {
             HStack(spacing: Space.s2) {
                 Image(systemName: "exclamationmark.triangle").foregroundStyle(Ink.caution)
-                Text(verbatim: meta?.summaryError ?? "").font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(3)
+                Text(verbatim: meta?.summaryError ?? String(localized: "纪要整理已中断 · 可以重试")).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(3)
                 Spacer(minLength: Space.s2)
                 Button("重试") { state.generateSummary(for: id) }.buttonStyle(SecondaryButtonStyle())
             }
@@ -234,6 +257,7 @@ private struct TemplateMenu: View {
     @Environment(AppState.self) private var state
     let id: UUID
     let detail: SessionDetail?
+    var compactLabel = false
     private var archive: SessionArchive { SessionArchive.shared }
 
     var body: some View {
@@ -249,10 +273,20 @@ private struct TemplateMenu: View {
                 }
             }
         } label: {
-            HStack(spacing: Space.s1) {
-                Image(systemName: "doc.plaintext").font(.system(size: 11))
-                Text("模板：\(currentName)")
-                Image(systemName: "chevron.down").font(.system(size: 9))
+            Group {
+                if compactLabel {
+                    HStack(spacing: Space.s1) {
+                        Image(systemName: "doc.plaintext").font(.system(size: 11))
+                        Image(systemName: "chevron.down").font(.system(size: 9))
+                    }
+                } else {
+                    HStack(spacing: Space.s1) {
+                        Image(systemName: "doc.plaintext").font(.system(size: 11))
+                        Text("模板：\(currentName)")
+                            .lineLimit(1).truncationMode(.middle)
+                        Image(systemName: "chevron.down").font(.system(size: 9))
+                    }
+                }
             }
             .font(Typo.caption)
             .foregroundStyle(Ink.secondary)
@@ -262,7 +296,7 @@ private struct TemplateMenu: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .disabled(archive.summarizing.contains(id) || id == archive.activeID || (detail?.lines.isEmpty ?? true))
-        .help("换个模板重新整理")
+        .help("当前模板：\(currentName) · 换个模板重新整理")
     }
 
     private var currentTemplateFallback: String {
@@ -294,7 +328,8 @@ private struct NotesBody: View {
         } else if let summary = detail.summary {
             // Notes written before the structured notes: the Markdown summary.
             MarkdownText(text: Self.body(of: summary.markdown), size: 14, lineSpacing: 6)
-        } else if !archive.summarizing.contains(detail.meta.id) && detail.meta.id != archive.activeID {
+        } else if !archive.summarizing.contains(detail.meta.id), detail.meta.id != archive.activeID,
+                  detail.meta.summaryState == .none || detail.meta.summaryState == .ready {
             VStack(alignment: .leading, spacing: Space.s3) {
                 Text("还没有纪要。").font(Typo.body)
                 Button("整理纪要") { state.generateSummary(for: detail.meta.id) }
@@ -481,11 +516,17 @@ private struct CorrectedTranscript: View {
                         .font(.system(size: 12, weight: line.speaker == .me ? .semibold : .regular))
                         .foregroundStyle(line.speaker == .me ? Ink.ink : Ink.secondary)
                         .frame(width: 40, alignment: .leading)
-                    Text(Self.text(line.text, fixes: fixes))
-                        .font(Typo.body).lineSpacing(5)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .help(Self.originals(fixes))
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text(Self.text(line.text, fixes: fixes))
+                            .font(Typo.body).lineSpacing(5)
+                            .textSelection(.enabled)
+                            .help(Self.originals(fixes))
+                        if let translation = line.translatedText, !translation.isEmpty {
+                            Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
+                                .textSelection(.enabled)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.vertical, 2)
                 .background(highlighted == index ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: 4, style: .continuous))

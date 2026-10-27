@@ -7,6 +7,12 @@ import InterviewHackerCore
 struct HistoryView: View {
     @Environment(AppState.self) private var state
     @State private var showDeleteAll = false
+    @AppStorage(AppNavigationBar.meetingsSidebarKey) private var isMeetingListHidden = false
+    @State private var isCollectionOverview = false
+    @State private var overviewFolderKey: String?
+    @State private var informationTarget: SessionInfoTarget?
+    @State private var renamingSessionID: UUID?
+    @State private var renameTitle = ""
     @State private var query = ""
     @State private var dateFilter: SessionDateFilter = .all
     @State private var lengthFilter: SessionLengthFilter = .all
@@ -23,7 +29,9 @@ struct HistoryView: View {
     /// search walks and the pool the list is drawn from.
     private var scoped: [SessionMeta] {
         var items = archive.sessions
-        if let filter = state.historyWorkspaceFilter {
+        if let overviewFolderKey, let folder = seriesFolders.first(where: { $0.id == overviewFolderKey }) {
+            items = items.filter { folder.contains($0, workspaces: state.workspaces.workspaces) }
+        } else if let filter = state.historyWorkspaceFilter {
             items = items.filter { $0.workspaceID == filter }
         }
         items = items.filter { dateFilter.matches($0.startedAt) }
@@ -45,55 +53,221 @@ struct HistoryView: View {
         GeometryReader { proxy in
             let wide = proxy.size.width >= 760
             HStack(alignment: .top, spacing: 0) {
-                if wide || selection == nil {
+                if !isMeetingListHidden && (wide || selection == nil) {
                     sessionList
-                        .frame(width: wide ? 280 : nil)
-                        .padding(.leading, 16).padding(.bottom, 14).padding(.trailing, wide ? 0 : 16)
+                        .frame(width: wide ? 270 : nil)
+                        .padding(.leading, 16).padding(.trailing, wide ? 0 : 16).padding(.top, 4).padding(.bottom, 14)
+                    Rectangle().fill(Ink.hairline).frame(width: 1).padding(.vertical, 14)
                 }
                 if let selection, archive.sessions.contains(where: { $0.id == selection }) {
-                    MeetingPage(id: selection, showsBack: !wide) { state.historySelection = nil }
+                    MeetingPage(
+                        id: selection,
+                        showsBack: !wide,
+                        onBack: returnToMeetingList,
+                        onShowInfo: showInformation,
+                        onRename: beginRenaming,
+                        onDelete: deleteSession,
+                        onNavigateToAllMeetings: showAllMeetings,
+                        onNavigateToSeries: showSeries)
                         .id(selection)
-                } else if wide {
-                    ContentUnavailableView("选择一场会议", systemImage: "rectangle.stack",
-                                           description: Text("每场会议的转写、纪要和提词都保存在这台 Mac 上。"))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if wide || isMeetingListHidden {
+                    archiveOverview
                 }
             }
         }
+        .onAppear { selectFirstIfNeeded() }
+        .onChange(of: state.section) { _, section in
+            if section == .meetings { selectFirstIfNeeded() }
+        }
+        .onChange(of: archive.sessions.count) { _, _ in selectFirstIfNeeded() }
         .confirmationDialog("删除全部会议记录？", isPresented: $showDeleteAll, titleVisibility: .visible) {
             Button("删除全部记录", role: .destructive) { archive.deleteAll(); state.historySelection = nil }
             Button("取消", role: .cancel) { }
         } message: {
             Text("会删除所有会议的转写、问题、提词和纪要，无法恢复。")
         }
-        .onAppear { selectFirstIfNeeded() }
-        // The page stays alive between visits; pick up sessions recorded meanwhile.
-        .onChange(of: state.section) { _, section in if section == .meetings { selectFirstIfNeeded() } }
+        .sheet(item: $informationTarget) { target in
+            SessionInfoView(sessionID: target.id)
+        }
+        .alert("重命名会议", isPresented: Binding(
+            get: { renamingSessionID != nil },
+            set: { if !$0 { renamingSessionID = nil } })) {
+                TextField("标题", text: $renameTitle)
+                Button("保存") {
+                    if let id = renamingSessionID { archive.rename(id, to: renameTitle) }
+                    renamingSessionID = nil
+                }
+                Button("取消", role: .cancel) { renamingSessionID = nil }
+            }
         // Re-runs the content search whenever the query or the filter scope changes;
         // `.task(id:)` cancels the previous run automatically.
         .task(id: contentSearchKey) { await runContentSearch() }
     }
 
+    private var archiveOverview: some View {
+        let isRoot = overviewFolderKey == nil && state.historyWorkspaceFilter == nil
+        let folder = selectedOverviewFolder
+        let folderSessions = folder.map { folder in
+            ordered(visibleSessions.filter { folder.contains($0, workspaces: state.workspaces.workspaces) })
+        } ?? visibleSessions
+        let title = isRoot ? "所有会议" : (folder?.name ?? "已删除系列")
+        let subtitle: String
+        if let folder, !isRoot {
+            subtitle = "\(folder.modeTitle ?? "会议系列") · 当前筛选下共 \(folderSessions.count) 场会议"
+        } else if !isRoot {
+            subtitle = "系列信息已不可用 · 当前筛选下共 \(folderSessions.count) 场会议"
+        } else {
+            subtitle = "会议记录保存在这台 Mac 上 · 当前筛选下共 \(visibleSessions.count) 场会议"
+        }
+        return MeetingArchiveOverview(
+            title: title,
+            subtitle: subtitle,
+            sessions: isRoot ? visibleSessions : folderSessions,
+            folders: isRoot ? visibleSeriesFolders : [],
+            isRoot: isRoot,
+            selectedFolder: isRoot ? nil : folder,
+            onOpenRoot: showAllMeetings,
+            onOpenFolder: showFolder,
+            onOpen: openFromOverview)
+            .padding(.leading, 16).padding(.trailing, 16).padding(.bottom, 14)
+    }
+
+    /// A folder for each saved workspace/series, plus a fallback for legacy sessions
+    /// that predate workspace grouping.
+    private var seriesFolders: [MeetingSeriesFolder] {
+        let workspaces = state.workspaces.workspaces
+        func workspaceID(for session: SessionMeta) -> UUID? {
+            session.workspaceID ?? workspaces.first(where: { $0.name == session.workspaceName })?.id
+        }
+        func key(for session: SessionMeta) -> String {
+            if let id = workspaceID(for: session) { return "workspace:\(id.uuidString)" }
+            let name = session.workspaceName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let bucket = name?.isEmpty == false ? name ?? "未分类" : "未分类"
+            return "legacy:\(bucket)"
+        }
+
+        var grouped = Dictionary(grouping: archive.sessions, by: key)
+        for workspace in workspaces where !workspace.archived {
+            let workspaceKey = "workspace:\(workspace.id.uuidString)"
+            if grouped[workspaceKey] == nil { grouped[workspaceKey] = [] }
+        }
+
+        return grouped.map { key, sessions in
+            let id = key.hasPrefix("workspace:") ? UUID(uuidString: String(key.dropFirst("workspace:".count))) : nil
+            let workspace = id.flatMap { state.workspaces.workspace($0) }
+            let fallbackName = sessions.first?.workspaceName
+            let name = workspace?.name ?? fallbackName ?? (id == nil ? String(localized: "未分类") : String(localized: "已删除系列"))
+            let modeTitle = workspace?.mode.title ?? sessions.first?.mode.title
+            let lastSessionAt = sessions.map(\.startedAt).max()
+            let updatedAt = lastSessionAt ?? workspace?.updatedAt ?? .distantPast
+            return MeetingSeriesFolder(id: key, workspaceID: id, name: name, modeTitle: modeTitle,
+                                       sessions: sessions, lastMeetingAt: lastSessionAt, updatedAt: updatedAt)
+        }
+        .sorted { lhs, rhs in
+            lhs.updatedAt == rhs.updatedAt ? lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending : lhs.updatedAt > rhs.updatedAt
+        }
+    }
+
+    private var selectedOverviewFolder: MeetingSeriesFolder? {
+        if let overviewFolderKey, let folder = seriesFolders.first(where: { $0.id == overviewFolderKey }) { return folder }
+        if let workspaceID = state.historyWorkspaceFilter {
+            return seriesFolders.first(where: { $0.workspaceID == workspaceID })
+        }
+        return nil
+    }
+
+    private var visibleSeriesFolders: [MeetingSeriesFolder] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return seriesFolders.compactMap { folder in
+            let matching = ordered(visibleSessions.filter { folder.contains($0, workspaces: state.workspaces.workspaces) })
+            let nameMatches = !trimmed.isEmpty && folder.name.localizedCaseInsensitiveContains(trimmed)
+            let hasNarrowingFilter = !trimmed.isEmpty || dateFilter != .all || lengthFilter != .all
+            guard !matching.isEmpty || nameMatches || !hasNarrowingFilter else { return nil }
+            return folder.withSessions(matching)
+        }
+    }
+
+    private func showInformation(_ id: UUID) {
+        informationTarget = SessionInfoTarget(id: id)
+    }
+
     private func selectFirstIfNeeded() {
+        guard !isCollectionOverview else { return }
         if selection == nil || !visibleSessions.contains(where: { $0.id == selection }) {
             state.historySelection = visibleSessions.first?.id
         }
+    }
+
+    private func openFromOverview(_ id: UUID) {
+        isCollectionOverview = false
+        state.historySelection = id
+    }
+
+    private func beginRenaming(_ id: UUID) {
+        renameTitle = archive.sessions.first(where: { $0.id == id })?.displayTitle ?? ""
+        renamingSessionID = id
+    }
+
+    private func deleteSession(_ id: UUID) {
+        archive.delete(id)
+        if state.historySelection == id {
+            isCollectionOverview = true
+            state.historySelection = nil
+        }
+    }
+
+    private func showAllMeetings() {
+        isCollectionOverview = true
+        overviewFolderKey = nil
+        state.historyWorkspaceFilter = nil
+        state.historySelection = nil
+    }
+
+    private func showSeries(_ id: UUID) {
+        isCollectionOverview = true
+        overviewFolderKey = "workspace:\(id.uuidString)"
+        state.historyWorkspaceFilter = id
+        state.historySelection = nil
+    }
+
+    private func showFolder(_ folder: MeetingSeriesFolder) {
+        isCollectionOverview = true
+        overviewFolderKey = folder.id
+        state.historyWorkspaceFilter = folder.workspaceID
+        state.historySelection = nil
+    }
+
+    private func returnToMeetingList() {
+        isMeetingListHidden = false
+        isCollectionOverview = true
+        state.historySelection = nil
+    }
+
+    private var sessionListTitle: String {
+        if let overviewFolder = selectedOverviewFolder { return overviewFolder.name }
+        guard let workspaceID = state.historyWorkspaceFilter else { return "所有会议" }
+        return state.workspaces.workspace(workspaceID)?.name ?? "已删除系列"
     }
 
     private var sessionList: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("所有会议").font(Typo.section)
-                    Text(state.recordSessions ? "自动保存 · 不保存录音" : "记录已关闭（设置 → 数据）")
-                        .font(Typo.caption).foregroundStyle(state.recordSessions ? Ink.secondary : Ink.caution)
+                    Text(sessionListTitle).font(Typo.section).lineLimit(1)
+                    Text(state.historyWorkspaceFilter == nil
+                         ? (overviewFolderKey != nil ? "这个系列中的会议记录" : (state.recordSessions ? "自动保存 · 不保存录音" : "记录已关闭（设置 → 数据）"))
+                         : "这个系列中的会议记录")
+                        .font(Typo.caption)
+                        .foregroundStyle(state.historyWorkspaceFilter == nil && !state.recordSessions ? Ink.caution : Ink.secondary)
                 }
                 Spacer()
                 Button { showDeleteAll = true } label: { Image(systemName: "trash") }
                     .buttonStyle(GlassIconButtonStyle(size: 28))
                     .disabled(archive.sessions.isEmpty).help("删除全部会议记录")
             }
-            MenuPicker(selection: Binding(get: { state.historyWorkspaceFilter }, set: { state.historyWorkspaceFilter = $0 }),
+            MenuPicker(selection: Binding(get: { state.historyWorkspaceFilter }, set: { id in
+                if let id { showSeries(id) } else { showAllMeetings() }
+            }),
                        options: [(UUID?.none, String(localized: "全部系列"))] + state.workspaces.workspaces.map { (Optional($0.id), $0.name) })
             filterBar
             if archive.sessions.isEmpty {
@@ -117,10 +291,12 @@ struct HistoryView: View {
                         ForEach(visibleSessions) { meta in
                             SessionRow(meta: meta, selected: meta.id == selection, active: meta.id == archive.activeID)
                                 .contentShape(Rectangle())
-                                .onTapGesture { state.historySelection = meta.id }
+                                .onTapGesture { openFromOverview(meta.id) }
                                 .contextMenu {
-                                    Button("以此为上一场，准备下一场") { state.prepareNextMeeting(after: meta.id) }
-                                        .disabled(meta.workspaceID == nil || state.isRunning)
+                                    MeetingMenuItems(sessionID: meta.id,
+                                                     onShowInfo: showInformation,
+                                                     onRename: beginRenaming,
+                                                     onDelete: deleteSession)
                                 }
                         }
                     }
@@ -133,28 +309,24 @@ struct HistoryView: View {
 
     // MARK: Search, filter and sort
 
-    /// Compact bar above the list: a search field, two filters and the order.
-    /// The three menus are split over two rows so nothing is clipped in the
-    /// 300 pt column.
+    /// Compact bar above the list: search, then time, length and sort in one row.
     private var filterBar: some View {
         VStack(alignment: .leading, spacing: 6) {
             searchField
             HStack(spacing: 6) {
-                MenuPicker(selection: $dateFilter, options: SessionDateFilter.allCases.map { ($0, $0.rawValue) })
-                    .fixedSize(horizontal: true, vertical: false)
-                MenuPicker(selection: $lengthFilter, options: SessionLengthFilter.allCases.map { ($0, $0.rawValue) })
-                    .fixedSize(horizontal: true, vertical: false)
+                HistoryFilterPicker(selection: $dateFilter, options: SessionDateFilter.allCases.map { ($0, $0.rawValue) })
+                HistoryFilterPicker(selection: $lengthFilter, options: SessionLengthFilter.allCases.map { ($0, $0.rawValue) })
+                HistoryFilterPicker(selection: $sortOrder, options: SessionSort.allCases.map { ($0, $0.rawValue) })
             }
+            .frame(maxWidth: .infinity)
             HStack(spacing: 6) {
-                MenuPicker(selection: $sortOrder, options: SessionSort.allCases.map { ($0, $0.rawValue) })
-                    .fixedSize(horizontal: true, vertical: false)
+                Text(resultCount).font(.system(size: 11)).foregroundStyle(.tertiary)
                 Spacer(minLength: 0)
                 if hasActiveFilter {
                     Button("清除筛选") { clearFilters() }.buttonStyle(ChipButtonStyle())
                         .help("清除搜索、筛选、排序和场景")
                 }
             }
-            Text(resultCount).font(.system(size: 11)).foregroundStyle(.tertiary)
         }
     }
 
@@ -198,6 +370,7 @@ struct HistoryView: View {
         lengthFilter = .all
         sortOrder = .newest
         contentMatch = []
+        overviewFolderKey = nil
         state.historyWorkspaceFilter = nil
     }
 
@@ -222,7 +395,7 @@ struct HistoryView: View {
 
     /// Re-runs the content search when the query or the filter scope changes.
     private var contentSearchKey: String {
-        "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")"
+        "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")"
     }
 
     /// Content search: the question and answer text lives in the session files,
@@ -262,6 +435,186 @@ struct HistoryView: View {
         contentMatch = matches
         isContentSearching = false
     }
+}
+
+private struct HistoryFilterPicker<Value: Hashable>: View {
+    @Binding var selection: Value
+    let options: [(Value, String)]
+
+    var body: some View {
+        Menu {
+            ForEach(options.indices, id: \.self) { index in
+                let option = options[index]
+                Button { selection = option.0 } label: {
+                    if option.0 == selection { Label(option.1, systemImage: "checkmark") }
+                    else { Text(option.1) }
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Text(options.first(where: { $0.0 == selection })?.1 ?? "筛选")
+                    .lineLimit(1).minimumScaleFactor(0.72)
+                    .frame(maxWidth: .infinity)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold)).foregroundStyle(Ink.secondary)
+            }
+            .font(.system(size: 11, weight: .medium))
+            .padding(.horizontal, 7).padding(.vertical, 6)
+            .glassCapsule()
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden)
+        .frame(maxWidth: .infinity)
+        .help(options.first(where: { $0.0 == selection })?.1 ?? "筛选")
+    }
+}
+
+private struct SessionInfoTarget: Identifiable {
+    let id: UUID
+}
+
+private struct MeetingSeriesFolder: Identifiable {
+    let id: String
+    let workspaceID: UUID?
+    let name: String
+    let modeTitle: String?
+    let sessions: [SessionMeta]
+    let lastMeetingAt: Date?
+    let updatedAt: Date
+
+    func withSessions(_ sessions: [SessionMeta]) -> MeetingSeriesFolder {
+        MeetingSeriesFolder(id: id, workspaceID: workspaceID, name: name, modeTitle: modeTitle,
+                            sessions: sessions, lastMeetingAt: sessions.map(\.startedAt).max(), updatedAt: updatedAt)
+    }
+
+    func contains(_ session: SessionMeta, workspaces: [Workspace]) -> Bool {
+        let resolvedID = session.workspaceID ?? workspaces.first(where: { $0.name == session.workspaceName })?.id
+        if let workspaceID { return resolvedID == workspaceID }
+        guard resolvedID == nil else { return false }
+        let sessionName = session.workspaceName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (sessionName?.isEmpty == false ? sessionName ?? "未分类" : "未分类") == name
+    }
+}
+
+private struct MeetingArchiveOverview: View {
+    let title: String
+    let subtitle: String
+    let sessions: [SessionMeta]
+    let folders: [MeetingSeriesFolder]
+    let isRoot: Bool
+    let selectedFolder: MeetingSeriesFolder?
+    let onOpenRoot: () -> Void
+    let onOpenFolder: (MeetingSeriesFolder) -> Void
+    let onOpen: (UUID) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: Space.s2) {
+                if !isRoot {
+                    Button("所有会议") { onOpenRoot() }
+                        .buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.secondary)
+                    Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
+                }
+                Text(selectedFolder?.name ?? title).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
+                Spacer(minLength: Space.s2)
+            }
+            .padding(.horizontal, Space.s6)
+            .frame(height: 52)
+            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.s6) {
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        Text(title).font(Typo.display)
+                        Text(subtitle).font(Typo.caption).foregroundStyle(Ink.secondary)
+                    }
+                    HStack(spacing: Space.s2) {
+                        MetricPill(symbol: "clock", text: "\(sessions.count) 场会议")
+                        if isRoot {
+                            MetricPill(symbol: "folder", text: "\(folders.count) 个系列")
+                        } else {
+                            MetricPill(symbol: "sparkles", text: "\(sessions.filter { $0.summaryState == .ready }.count) 篇已整理")
+                        }
+                    }
+                    Text(isRoot ? "会议系列" : "系列中的会议").font(Typo.section)
+                    if isRoot {
+                        if folders.isEmpty {
+                            ContentUnavailableView("还没有会议系列", systemImage: "folder",
+                                                   description: Text("开始一场会议后，它会归入对应系列。"))
+                                .frame(maxWidth: .infinity, minHeight: 180)
+                        } else {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: Space.s3)],
+                                      alignment: .leading, spacing: Space.s3) {
+                                ForEach(folders) { folder in folderCard(folder) }
+                            }
+                        }
+                    } else {
+                        if sessions.isEmpty {
+                            ContentUnavailableView("这个系列里还没有会议", systemImage: "folder",
+                                                   description: Text("会议记录会显示在这个系列里。"))
+                                .frame(maxWidth: .infinity, minHeight: 180)
+                        } else {
+                            LazyVStack(spacing: 6) {
+                                ForEach(sessions) { meta in
+                                    Button { onOpen(meta.id) } label: {
+                                        SessionRow(meta: meta, selected: false, active: false)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: Space.content, alignment: .leading)
+                .padding(.horizontal, Space.s8)
+                .padding(.top, Space.s8)
+                .padding(.bottom, Space.s12)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+        }
+        .card()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private func folderCard(_ folder: MeetingSeriesFolder) -> some View {
+        Button { onOpenFolder(folder) } label: {
+            HStack(alignment: .top, spacing: Space.s3) {
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 22, weight: .regular))
+                    .foregroundStyle(Ink.ai)
+                    .frame(width: 28, height: 30)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(verbatim: folder.name)
+                        .font(Typo.section)
+                        .foregroundStyle(Ink.ink)
+                        .lineLimit(1)
+                    Text(folderSummary(folder))
+                        .font(Typo.caption)
+                        .foregroundStyle(Ink.secondary)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Ink.tertiary)
+                    .padding(.top, 4)
+            }
+            .padding(Space.s4)
+            .frame(maxWidth: .infinity, minHeight: 78, alignment: .leading)
+            .glassBackground(cornerRadius: Space.radiusMedium)
+            .contentShape(RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help("打开系列：\(folder.name)")
+    }
+
+    private func folderSummary(_ folder: MeetingSeriesFolder) -> String {
+        let count = "\(folder.sessions.count) 场会议"
+        guard let latest = folder.lastMeetingAt else { return count + " · 暂无会议" }
+        return count + " · 最近 \(latest.formatted(date: .abbreviated, time: .shortened))"
+    }
+
 }
 
 /// Date window a session has to fall into.
@@ -355,7 +708,10 @@ private struct SessionRow: View {
     @ViewBuilder private var summaryIcon: some View {
         switch meta.summaryState {
         case .ready: Image(systemName: "sparkle").foregroundStyle(Ink.ai).help("纪要已整理好")
-        case .pending: ProgressView().controlSize(.mini).help("正在整理纪要")
+        case .pending where SessionArchive.shared.summarizing.contains(meta.id):
+            ProgressView().controlSize(.mini).help("正在整理纪要")
+        case .pending:
+            Image(systemName: "exclamationmark.circle").foregroundStyle(Ink.caution).help("纪要整理已中断 · 可以重试")
         case .failed: Image(systemName: "exclamationmark.circle").foregroundStyle(Ink.caution).help(meta.summaryError ?? "")
         case .none: EmptyView()
         }

@@ -56,6 +56,7 @@ private struct LiveTopBar: View {
                          selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }))
                 .fixedSize()
                 .help("提词：对方提问时自动给出回答。只记录：不打扰，需要时按 \(state.shortcutLabel(.forceAnswer))。")
+            LiveTranslationToggle()
             HStack(spacing: Space.s1) {
                 if state.insights.screenWatch { ScreenStatusIcon() }
                 if state.companionEnabled { PhoneStatusIcon() }
@@ -307,6 +308,9 @@ private struct TranscriptLine: View {
                 SpeakerLabel(speaker: entry.speaker)
                 VStack(alignment: .leading, spacing: Space.s1) {
                     lineText(isQuestion: isQuestion)
+                    if let translation = entry.translatedText, !translation.isEmpty {
+                        Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
+                    }
                     if hovering && entry.speaker != .me {
                         Button { state.answerEntry(entry) } label: { Label("回答这句", systemImage: "bolt") }
                             .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 6))
@@ -322,7 +326,7 @@ private struct TranscriptLine: View {
         }
     }
 
-    /// The line, with a small purple "问题" tag when the detector saw a question.
+    /// The line, with a small neutral "问题" tag when the detector saw a question.
     private func lineText(isQuestion: Bool) -> Text {
         let body = Text(verbatim: entry.text).font(Typo.body).foregroundStyle(Ink.ink)
         guard isQuestion else { return body }
@@ -336,17 +340,23 @@ private struct PartialLines: View {
     @Environment(AppState.self) private var state
     var body: some View {
         if !state.partialTranscript.isEmpty {
-            line(state.partialTranscript, speaker: .remote)
+            line(state.partialTranscript, translation: state.liveTranslation.systemPartialTranslation, speaker: .remote)
         }
         if !state.microphonePartialTranscript.isEmpty {
-            line(state.microphonePartialTranscript, speaker: state.isOfflineMeeting ? .room : .me)
+            line(state.microphonePartialTranscript, translation: state.liveTranslation.microphonePartialTranslation,
+                 speaker: state.isOfflineMeeting ? .room : .me)
         }
     }
 
-    private func line(_ text: String, speaker: SessionSpeaker) -> some View {
+    private func line(_ text: String, translation: String, speaker: SessionSpeaker) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
             SpeakerLabel(speaker: speaker)
-            Text(verbatim: text).font(Typo.body).foregroundStyle(Ink.secondary).lineSpacing(5)
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text(verbatim: text).font(Typo.body).foregroundStyle(Ink.secondary).lineSpacing(5)
+                if !translation.isEmpty {
+                    Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
+                }
+            }
             Spacer(minLength: 0)
         }
     }
@@ -398,6 +408,9 @@ private struct TranscriptStatus: View {
             }
             if state.droppedAudioSegments > 0 {
                 Text("· 遗漏 \(state.droppedAudioSegments) 段").foregroundStyle(Ink.caution)
+            }
+            if state.liveTranslation.isEnabled, !state.liveTranslation.status.isEmpty {
+                Text("· \(state.liveTranslation.status)")
             }
             if !state.microphoneEnabled && !state.isOfflineMeeting {
                 Text("· 麦克风未开启，不会记下你说的话").foregroundStyle(Ink.caution)
@@ -498,7 +511,7 @@ private struct AnswerColumn: View {
         }
         .padding(Space.s6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Ink.aiSoft)
+        .background(Ink.promptPanel)
     }
 }
 

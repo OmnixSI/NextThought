@@ -7,13 +7,17 @@ import InterviewHackerCore
 /// question bank and reviews, shared by all of its meetings.
 struct WorkspacesView: View {
     @Environment(AppState.self) private var state
+    @AppStorage(AppNavigationBar.foldersSidebarKey) private var isSeriesListHidden = false
 
     var body: some View {
         GeometryReader { proxy in
             let wide = proxy.size.width >= 820
-            HStack(alignment: .top, spacing: 12) {
-                WorkspaceList(compact: !wide)
-                    .frame(width: wide ? 270 : 210)
+            HStack(alignment: .top, spacing: isSeriesListHidden ? 0 : 12) {
+                if !isSeriesListHidden {
+                    WorkspaceList(compact: !wide)
+                        .frame(width: wide ? 270 : 210)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                }
                 WorkspaceEditor()
                     .id(state.activeWorkspace.id)
             }
@@ -101,18 +105,32 @@ private struct WorkspaceList: View {
 
 // MARK: - Editor
 
-private enum EditorTab: String, CaseIterable, Identifiable {
-    case materials = "资料与要求", knowledge = "经验库与题库", review = "复盘"
+private enum WorkspaceEditorSection: String, CaseIterable, Identifiable {
+    case basic, requirements, documents, skills, knowledge, review
+
     var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .basic: "基本信息"
+        case .requirements: "回答要求"
+        case .documents: "资料"
+        case .skills: "技能"
+        case .knowledge: "经验库与题库"
+        case .review: "复盘"
+        }
+    }
+
 }
 
 private struct WorkspaceEditor: View {
     @Environment(AppState.self) private var state
-    @AppStorage("workspaceEditorTab") private var tabRaw = EditorTab.materials.rawValue
+    @AppStorage("workspaceEditorFocusSection") private var sectionRaw = WorkspaceEditorSection.basic.rawValue
+    @Namespace private var sectionIndicator
 
     var body: some View {
         @Bindable var state = state
-        let tab = EditorTab(rawValue: tabRaw) ?? .materials
+        let section = WorkspaceEditorSection(rawValue: sectionRaw) ?? .basic
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: state.sessionMode.symbol)
@@ -128,20 +146,77 @@ private struct WorkspaceEditor: View {
                     .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering)
                     .help("根据资料预测最可能被问到的问题，并给出要点")
             }
-            PillTabs(items: EditorTab.allCases.map { (value: $0.rawValue, title: $0.rawValue) }, selection: $tabRaw)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    switch tab {
-                    case .materials: MaterialsTab()
-                    case .knowledge: KnowledgeTab()
-                    case .review: ReviewTab()
+            ScrollView(.horizontal) {
+                HStack(spacing: 4) {
+                    ForEach(WorkspaceEditorSection.allCases) { item in
+                        let selected = item == section
+                        Button {
+                            withAnimation(Motion.expand) { sectionRaw = item.rawValue }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Text(item.title).lineLimit(1)
+                                if let count = sectionCount(item) {
+                                    Text(count).font(.system(size: 10)).foregroundStyle(Ink.tertiary)
+                                }
+                            }
+                            .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                            .foregroundStyle(selected ? Ink.ink : Ink.secondary)
+                            .padding(.horizontal, 11).padding(.vertical, 10)
+                            .overlay(alignment: .bottom) {
+                                if selected {
+                                    Capsule()
+                                        .fill(Ink.ink)
+                                        .frame(height: 2)
+                                        .matchedGeometryEffect(id: "selected-section", in: sectionIndicator)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .animation(Motion.hover, value: selected)
+                        .accessibilityAddTraits(selected ? .isSelected : [])
                     }
                 }
-                .padding(.bottom, 8)
             }
+            .scrollIndicators(.hidden)
+            .background(alignment: .bottom) {
+                Rectangle().fill(Ink.hairline).frame(height: 1)
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    sectionContent(section)
+                        .id(section)
+                        .transition(.opacity)
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .padding(.bottom, 8)
+                .animation(Motion.phase, value: section)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .card()
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder
+    private func sectionContent(_ section: WorkspaceEditorSection) -> some View {
+        switch section {
+        case .basic: WorkspaceBasicTab()
+        case .requirements: WorkspaceRequirementsTab()
+        case .documents: WorkspaceDocumentsTab()
+        case .skills: WorkspaceSkillsSection()
+        case .knowledge: KnowledgeTab()
+        case .review: ReviewTab()
+        }
+    }
+
+    private func sectionCount(_ section: WorkspaceEditorSection) -> String? {
+        switch section {
+        case .basic, .requirements, .skills, .knowledge: nil
+        case .documents: "\(state.documents.count)"
+        case .review: "\(state.archive.sessions.filter { $0.workspaceID == state.activeWorkspace.id }.count)"
+        }
     }
 }
 
@@ -213,48 +288,46 @@ private struct WorkspaceSkillsSection: View {
     }
 }
 
-private struct MaterialsTab: View {
+private struct WorkspaceBasicTab: View {
     @Environment(AppState.self) private var state
-    @State private var importingCategory: String?
-    @State private var isFileImporterPresented = false
-    @State private var dropTargeted = false
     @State private var showsAllFields = false
-
-    private var allowedTypes: [UTType] { DocumentImporter.supportedExtensions.compactMap { UTType(filenameExtension: $0) } }
 
     var body: some View {
         @Bindable var state = state
         let profile = ModeProfile.for(state.sessionMode)
-        // Inputs specific to the mode.
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("\(state.sessionMode.title)信息", systemImage: "list.bullet.rectangle").font(.system(size: 13, weight: .semibold))
                 Spacer()
-                Text("只有前两项是必填的，其余可以稍后补充")
+                Text("只填写必要信息，其余可稍后补充")
                     .font(.caption2).foregroundStyle(.secondary)
             }
-            // Only the two most important fields are shown first: a scenario that
-            // demands eight inputs before it can be used is a scenario nobody
-            // finishes setting up.
-            ForEach(leadingFields(profile)) { field in
+            ForEach(Array(profile.fields.prefix(2))) { field in
                 FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
                                                         set: { state.activeWorkspace.fields[field.id] = $0 }))
             }
-            if profile.fields.count > leadingFields(profile).count {
+            if profile.fields.count > 2 {
                 DisclosureGroup(isExpanded: $showsAllFields) {
-                    ForEach(trailingFields(profile)) { field in
+                    ForEach(Array(profile.fields.dropFirst(2))) { field in
                         FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
                                                                 set: { state.activeWorkspace.fields[field.id] = $0 }))
                     }
                 } label: {
-                    Text("更多背景（可选）· \(profile.fields.count - leadingFields(profile).count) 项")
+                    Text("更多背景（可选）· \(profile.fields.count - 2) 项")
                         .font(.system(size: 12, weight: .semibold))
                 }
                 .padding(.top, 2)
             }
             FieldEditor(field: ModeField("notes", "其他背景", "任何希望回答时参考的事实：经历、数字、对方偏好…", long: true), text: $state.profile)
         }
-        Divider()
+    }
+}
+
+private struct WorkspaceRequirementsTab: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        @Bindable var state = state
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Label("回答要求", systemImage: "text.badge.checkmark").font(.system(size: 13, weight: .semibold))
@@ -262,14 +335,24 @@ private struct MaterialsTab: View {
                 Button("恢复\(state.sessionMode.title)模板") { state.applyTemplatePreferences() }.buttonStyle(ChipButtonStyle())
             }
             TextEditor(text: $state.answerPreferences)
-                .font(.system(size: 13)).frame(minHeight: 70, maxHeight: 160)
+                .font(.system(size: 13)).frame(minHeight: 120, maxHeight: 260)
                 .scrollContentBackground(.hidden)
                 .padding(6).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             Text("用什么语言、多长、先说什么；与资料正文分开处理，文件内容不能改写这里的要求。").font(.caption).foregroundStyle(.secondary)
         }
-        Divider()
-        WorkspaceSkillsSection()
-        Divider()
+    }
+}
+
+private struct WorkspaceDocumentsTab: View {
+    @Environment(AppState.self) private var state
+    @State private var importingCategory: String?
+    @State private var isFileImporterPresented = false
+    @State private var dropTargeted = false
+
+    private var allowedTypes: [UTType] { DocumentImporter.supportedExtensions.compactMap { UTType(filenameExtension: $0) } }
+
+    var body: some View {
+        let profile = ModeProfile.for(state.sessionMode)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label("资料 \(state.documents.count)", systemImage: "doc.on.doc").font(.system(size: 13, weight: .semibold))
@@ -322,15 +405,6 @@ private struct MaterialsTab: View {
             if !result.contains(category) { result.append(category) }
         }
         return result
-    }
-
-    /// The fields that are always visible; the rest wait behind a disclosure.
-    private func leadingFields(_ profile: ModeProfile) -> [ModeField] {
-        Array(profile.fields.prefix(2))
-    }
-
-    private func trailingFields(_ profile: ModeProfile) -> [ModeField] {
-        Array(profile.fields.dropFirst(2))
     }
 
     private func categorySection(_ category: String) -> some View {
@@ -565,7 +639,8 @@ private struct ReviewTab: View {
                     Spacer()
                     switch meta.summaryState {
                     case .ready: Image(systemName: "sparkles").foregroundStyle(Brand.accent)
-                    case .pending: ProgressView().controlSize(.mini)
+                    case .pending where state.archive.summarizing.contains(meta.id): ProgressView().controlSize(.mini)
+                    case .pending: Image(systemName: "exclamationmark.circle").foregroundStyle(.orange).help("纪要整理已中断 · 可以重试")
                     case .failed: Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
                     case .none: EmptyView()
                     }

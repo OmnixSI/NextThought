@@ -93,8 +93,17 @@ struct DetachedModuleView: View {
                         .buttonStyle(ChipButtonStyle())
                 }
                 .padding(.horizontal, 10).padding(.top, 6)
-                AssistantModuleContent(module: module, detached: true)
-                    .padding(.horizontal, 10).padding(.bottom, 10)
+                if module == .answer {
+                    ScrollView(.vertical) {
+                        AssistantModuleContent(module: module, detached: true)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 10).padding(.bottom, 10)
+                    }
+                    .scrollIndicators(.automatic)
+                } else {
+                    AssistantModuleContent(module: module, detached: true)
+                        .padding(.horizontal, 10).padding(.bottom, 10)
+                }
             }
         }
         .tint(Brand.accent)

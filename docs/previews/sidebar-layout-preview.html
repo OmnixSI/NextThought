@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InterviewHacker · 侧栏布局预览</title>
+<style>
+:root {
+  color-scheme: dark;
+  --page: #111110;
+  --surface: #1c1c1a;
+  --surface-raised: #242422;
+  --field: #292927;
+  --line: #363633;
+  --text: #efeeeb;
+  --muted: #a09e98;
+  --quiet: #777570;
+  --accent: #aaa0ff;
+  --accent-soft: #29253c;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--page); color: var(--text); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.page { max-width: 1580px; margin: 0 auto; padding: 22px 26px 30px; }
+.intro { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 14px; }
+.eyebrow { color: var(--accent); font-size: 11px; letter-spacing: .06em; font-weight: 700; }
+h1 { margin: 5px 0 4px; font-size: 24px; letter-spacing: -.02em; }
+.intro p { margin: 0; color: var(--muted); font-size: 12px; }
+.demo-chip { border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+.window { border: 1px solid #393936; border-radius: 16px; overflow: hidden; background: #141413; box-shadow: 0 22px 70px #0007; }
+.traffic { height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 13px; border-bottom: 1px solid #2c2c29; }
+.traffic i { width: 9px; height: 9px; border-radius: 50%; background: #595752; }
+.traffic span { margin-left: 7px; color: var(--quiet); font-size: 10px; }
+.app { height: min(76vh, 830px); min-height: 620px; display: flex; flex-direction: column; }
+.app-nav { min-height: 54px; display: flex; align-items: center; gap: 8px; padding: 0 18px; border-bottom: 1px solid var(--line); background: #171716; }
+.brand { display: flex; align-items: center; gap: 8px; margin-right: 16px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.brand-mark { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 8px; background: #302d40; color: #d9d2ff; font-size: 13px; }
+.route { border: 0; border-radius: 8px; background: transparent; color: var(--muted); padding: 8px 11px; font-size: 11px; }
+.route:hover { background: #252523; color: var(--text); }
+.route.active { background: #30302e; color: var(--text); font-weight: 650; }
+.nav-spacer { flex: 1; }
+.nav-note { color: var(--quiet); font-size: 10px; }
+.screen { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+.toolbar { min-height: 54px; display: flex; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid #2c2c29; }
+.context-toggle { min-width: 32px; height: 30px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--line); border-radius: 8px; background: #242422; color: #d5d3ce; padding: 0 9px; font-size: 10px; white-space: nowrap; }
+.context-toggle:hover, .button:hover, .select-chip:hover { border-color: #716d68; background-color: #2b2b28; }
+.context-toggle svg { width: 14px; height: 14px; }
+.crumb { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumb b { color: var(--text); font-weight: 600; }
+.toolbar-spacer { flex: 1; }
+.toolbar-actions { display: flex; align-items: center; gap: 7px; }
+.button, .select-chip { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; background: #262624; color: #d9d7d2; padding: 7px 10px; font-size: 10px; white-space: nowrap; }
+.button.primary { color: #181716; background: #f0efed; border-color: #f0efed; font-weight: 650; }
+.layout { position: relative; min-height: 0; flex: 1; display: grid; grid-template-columns: 292px minmax(0, 1fr); transition: grid-template-columns .2s ease; }
+.context-pane { min-width: 0; overflow: hidden; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: #191918; opacity: 1; transition: opacity .16s ease; }
+.layout.collapsed { grid-template-columns: 0 minmax(0, 1fr); }
+.layout.collapsed .context-pane { opacity: 0; border-right: 0; pointer-events: none; }
+.pane-head { padding: 17px 15px 9px; }
+.pane-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pane-title { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: 18px; font-weight: 600; }
+.pane-subtitle { margin: 3px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.search { width: 100%; border: 1px solid #353532; border-radius: 8px; background: #20201e; padding: 8px 10px; outline: none; font-size: 10px; }
+.search:focus, textarea:focus, input:focus, select:focus { border-color: #7268ae; outline: 1px solid #7268ae55; }
+.filters { display: flex; gap: 5px; padding-top: 7px; }
+.filter { min-width: 0; flex: 1; border: 1px solid transparent; border-radius: 7px; background: #292927; padding: 6px 5px; color: #c8c6c0; font-size: 9px; text-align: center; }
+.record-count { margin: 9px 15px 4px; color: var(--quiet); font-size: 10px; }
+.item-list { min-height: 0; overflow-y: auto; padding: 3px 9px 12px; scrollbar-width: thin; scrollbar-color: #585650 transparent; }
+.item-list::-webkit-scrollbar, .detail-scroll::-webkit-scrollbar { width: 8px; }
+.item-list::-webkit-scrollbar-thumb, .detail-scroll::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: #585650; background-clip: padding-box; }
+.meeting-item, .series-item { display: block; width: 100%; border: 0; border-radius: 9px; background: transparent; color: #d4d2cd; padding: 10px 10px; margin: 2px 0; text-align: left; }
+.meeting-item:hover, .series-item:hover { background: #252523; }
+.meeting-item.selected, .series-item.selected { background: #30302e; color: var(--text); }
+.item-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; }
+.item-meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 4px; color: var(--muted); font-size: 9px; }
+.group-label { margin: 10px 8px 4px; color: var(--quiet); font-size: 9px; font-weight: 700; }
+.detail { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.detail-scroll { min-height: 0; flex: 1; overflow-y: auto; padding: 27px clamp(20px, 4vw, 54px) 42px; scrollbar-width: thin; scrollbar-color: #585650 transparent; }
+.meeting-title { max-width: 960px; margin: 0 auto; font-family: Georgia, "Songti SC", serif; font-size: clamp(26px, 3vw, 37px); line-height: 1.24; }
+.meeting-meta { max-width: 960px; margin: 8px auto 22px; color: var(--muted); font-size: 11px; }
+.segment { max-width: 960px; display: flex; gap: 3px; margin: 0 auto 20px; padding: 3px; width: max-content; border-radius: 8px; background: #232321; }
+.segment button { border: 0; border-radius: 6px; background: transparent; color: var(--muted); padding: 6px 11px; font-size: 10px; }
+.segment button.active { background: #30302e; color: var(--text); }
+.summary-card { max-width: 960px; margin: 0 auto 20px; border-radius: 12px; background: #24212f; padding: 18px 20px; }
+.summary-card strong { color: var(--accent); font-size: 11px; }
+.summary-card p { margin: 8px 0 0; font-size: 13px; line-height: 1.65; }
+.transcript-block { max-width: 800px; margin: 0 auto; }
+.transcript-block h3 { margin: 23px 0 9px; font-family: Georgia, "Songti SC", serif; font-size: 19px; }
+.transcript-block p { margin: 0 0 12px; font-size: 13px; line-height: 1.8; }
+.time { margin-left: 8px; color: var(--quiet); font-size: 10px; }
+.folder-head { padding: 19px 24px 13px; }
+.folder-title-row { display: flex; align-items: center; gap: 10px; }
+.folder-symbol { color: var(--accent); font-size: 16px; }
+.folder-title { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: 20px; font-weight: 600; }
+.folder-summary { margin: 5px 0 0 27px; color: var(--muted); font-size: 10px; }
+.section-tabs { display: flex; gap: 3px; overflow-x: auto; margin: 0 24px; border-bottom: 1px solid var(--line); scrollbar-width: thin; }
+.section-tab { flex: 0 0 auto; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); padding: 10px 12px; font-size: 10px; }
+.section-tab:hover { color: var(--text); }
+.section-tab.active { border-bottom-color: #c7c3bb; color: var(--text); font-weight: 650; }
+.folder-scroll { min-height: 0; flex: 1; overflow-y: auto; padding: 18px 24px 32px; scrollbar-width: thin; scrollbar-color: #585650 transparent; }
+.folder-panel { display: none; max-width: 900px; margin: 0 auto; }
+.folder-panel.active { display: block; }
+.section-heading { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font-size: 13px; font-weight: 650; }
+.section-note { margin: 0 0 17px; color: var(--quiet); font-size: 10px; }
+.field { margin: 0 0 14px; }
+.field label { display: block; margin-bottom: 6px; color: #dedcd6; font-size: 10px; font-weight: 600; }
+textarea { width: 100%; min-height: 88px; border: 1px solid #353532; border-radius: 9px; background: var(--field); padding: 10px 11px; resize: vertical; outline: none; font-size: 11px; line-height: 1.55; }
+textarea.short { min-height: 66px; }
+.fold { margin: 11px 0; border: 1px solid var(--line); border-radius: 9px; background: #1b1b19; }
+.fold summary { cursor: pointer; padding: 11px 12px; font-size: 10px; color: #d0cec8; }
+.fold-content { padding: 0 12px 12px; }
+.action-row { display: flex; align-items: center; gap: 7px; margin-top: 12px; }
+.subtle { color: var(--quiet); font-size: 9px; }
+.file-row, .skill-row, .knowledge-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; padding: 10px 11px; border: 1px solid var(--line); border-radius: 9px; background: #1b1b19; }
+.file-icon, .mini-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 8px; background: #292827; color: var(--accent); font-size: 12px; flex: none; }
+.row-copy { min-width: 0; flex: 1; }
+.row-copy strong { display: block; font-size: 10px; }
+.row-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+.remove { border: 0; background: transparent; color: var(--muted); padding: 4px; font-size: 9px; }
+.check { display: flex; align-items: center; gap: 9px; margin: 8px 0; border: 1px solid var(--line); border-radius: 9px; background: #1b1b19; padding: 11px; font-size: 10px; }
+.check input { accent-color: #a99aff; }
+.toast { position: fixed; z-index: 20; left: 50%; bottom: 22px; transform: translate(-50%, 10px); opacity: 0; pointer-events: none; border: 1px solid #55514d; border-radius: 9px; background: #292826; padding: 9px 13px; font-size: 11px; box-shadow: 0 12px 30px #0008; transition: opacity .18s, transform .18s; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+dialog { width: min(430px, calc(100vw - 28px)); border: 1px solid #4b4945; border-radius: 13px; padding: 0; background: #1d1d1b; color: var(--text); box-shadow: 0 24px 70px #000b; }
+dialog::backdrop { background: #0009; backdrop-filter: blur(3px); }
+.dialog-body { padding: 18px; }
+.dialog-body h3 { margin: 0 0 13px; font-size: 15px; }
+.dialog-body label { display: block; margin: 10px 0 5px; font-size: 10px; color: var(--muted); }
+.dialog-body input, .dialog-body select { width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--field); padding: 9px; font-size: 11px; }
+.dialog-actions { display: flex; justify-content: end; gap: 7px; margin-top: 15px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid #9585e7; outline-offset: 2px; }
+@media (max-width: 900px) {
+  .page { padding: 16px; }
+  .app { height: 78vh; }
+  .layout { grid-template-columns: 245px minmax(0, 1fr); }
+  .layout.collapsed { grid-template-columns: 0 minmax(0, 1fr); }
+  .toolbar-actions .button:not(.primary) { display: none; }
+  .nav-note { display: none; }
+}
+@media (max-width: 680px) {
+  .intro { align-items: start; flex-direction: column; gap: 8px; }
+  .app { min-height: 560px; }
+  .brand { margin-right: 4px; }
+  .route { padding: 7px 8px; font-size: 9px; }
+  .app-nav { padding: 0 9px; gap: 2px; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .layout.collapsed { grid-template-columns: minmax(0, 1fr); }
+  .context-pane { position: absolute; z-index: 4; inset: 0 auto 0 0; width: min(292px, 82vw); box-shadow: 12px 0 32px #0007; }
+  .layout.collapsed .context-pane { display: none; }
+  .toolbar { padding: 0 10px; gap: 7px; }
+  .context-toggle { font-size: 0; width: 32px; padding: 0; }
+  .folder-head { padding: 16px 14px 10px; }
+  .section-tabs { margin: 0 12px; }
+  .folder-scroll { padding: 16px 14px 24px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="intro">
+    <div>
+      <div class="eyebrow">INTERVIEWHACKER · NAVIGATION PREVIEW</div>
+      <h1>减少侧栏，只留一个简单的列表开关</h1>
+      <p>顶层导航移到横向工具栏；每个页面只保留一个上下文列表，资料夹栏目改为横向切换。</p>
+    </div>
+    <div class="demo-chip">纯前端预览 · 不连接后端</div>
+  </header>
+
+  <main class="window">
+    <div class="traffic"><i></i><i></i><i></i><span>InterviewHacker · 侧栏布局预览</span></div>
+    <div class="app">
+      <header class="app-nav">
+        <div class="brand"><span class="brand-mark">✦</span>InterviewHacker</div>
+        <nav aria-label="主导航">
+          <button class="route" data-page="home">首页</button>
+          <button class="route active" data-page="meetings" aria-pressed="true">所有会议</button>
+          <button class="route" data-page="folders" aria-pressed="false">资料夹</button>
+        </nav>
+        <div class="nav-spacer"></div>
+        <span class="nav-note">全局导航固定在顶部，不占用左侧内容宽度</span>
+      </header>
+
+      <section class="screen" id="meetingsScreen" data-screen="meetings">
+        <div class="toolbar">
+          <button class="context-toggle" data-toggle-context aria-label="隐藏会议列表" title="隐藏会议列表">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="2" width="13" height="12" rx="1.5" stroke="currentColor"/><path d="M6 2.5v11" stroke="currentColor"/></svg>
+            <span data-toggle-label>隐藏列表</span>
+          </button>
+          <div class="crumb">所有会议　›　<b>英文歌曲跟唱</b>　›　纪要</div>
+          <div class="toolbar-spacer"></div>
+          <div class="toolbar-actions">
+            <button class="button" data-action="template">模板：通用　⌄</button>
+            <button class="button" data-action="more">•••</button>
+            <button class="button primary" data-action="copy">▣　复制纪要</button>
+          </div>
+        </div>
+        <div class="layout" data-layout>
+          <aside class="context-pane">
+            <div class="pane-head">
+              <div class="pane-title-row"><h2 class="pane-title">所有会议</h2><button class="button" data-action="list-menu" aria-label="会议列表选项">•••</button></div>
+              <p class="pane-subtitle">自动保存 · 不保存录音</p>
+              <div class="filters"><button class="filter">全部系列　⌄</button></div>
+              <div style="margin-top:8px"><input class="search" id="meetingSearch" data-meeting-search placeholder="⌕ 搜索标题、系列或问题" aria-label="搜索会议"></div>
+              <div class="filters"><select class="filter" aria-label="时间筛选"><option>全部时间</option><option>今天</option><option>最近 7 天</option></select><select class="filter" aria-label="时长筛选"><option>全部时长</option><option>少于 10 分钟</option><option>10–30 分钟</option></select><select class="filter" aria-label="排序方式"><option>最新优先</option><option>最早优先</option></select></div>
+              <div class="record-count">共 19 条记录</div>
+            </div>
+            <div class="item-list" id="meetingList">
+              <button class="meeting-item selected" data-meeting="英文歌曲跟唱" data-meta="随手记录 · 今天 16:59 · 1 分钟 · 通用" data-summary="本次交流主要是双方跟唱英文歌曲片段。">
+                <span class="item-title">英文歌曲跟唱</span><span class="item-meta">随手记录 · 今天 16:59 · 1 分钟</span>
+              </button>
+              <button class="meeting-item" data-meeting="古诗片段随手记录" data-meta="随手记录 · 今天 16:39 · 通用" data-summary="记录并讨论了几段古诗内容和朗读节奏。">
+                <span class="item-title">古诗片段随手记录</span><span class="item-meta">随手记录 · 今天 16:39 · 通用</span>
+              </button>
+              <button class="meeting-item" data-meeting="同声传译效果试用" data-meta="随手记录 · 今天 16:32 · 通用" data-summary="试用了会议中的中英实时翻译，并记录翻译效果。">
+                <span class="item-title">同声传译效果试用</span><span class="item-meta">随手记录 · 今天 16:32 · 通用</span>
+              </button>
+              <button class="meeting-item" data-meeting="通话声音测试" data-meta="随手记录 · 今天 16:28 · 1 分钟 · 通用" data-summary="检查了通话音量和麦克风收音情况。">
+                <span class="item-title">通话声音测试</span><span class="item-meta">随手记录 · 今天 16:28 · 1 分钟</span>
+              </button>
+              <button class="meeting-item" data-meeting="三分倒转问题随手记录" data-meta="随手记录 · 今天 14:19 · 通用" data-summary="整理了三分倒转问题的思路和后续待办。">
+                <span class="item-title">三分倒转问题随手记录</span><span class="item-meta">随手记录 · 今天 14:19 · 通用</span>
+              </button>
+              <button class="meeting-item" data-meeting="鸟类检测模型选型与实验分工纪要" data-meta="会议 · 10 月 27 日 11:02 · 21 分钟" data-summary="讨论了模型选型、优化实验、人员分工及实拍图片验证安排。">
+                <span class="item-title">鸟类检测模型选型与实验分工纪要</span><span class="item-meta">会议 · 10 月 27 日 11:02 · 21 分钟</span>
+              </button>
+              <button class="meeting-item" data-meeting="小组讨论纪要" data-meta="小组讨论 · 10 月 27 日 10:55 · 18 分钟" data-summary="梳理了小组的讨论结论、分工和下一步计划。">
+                <span class="item-title">小组讨论纪要</span><span class="item-meta">小组讨论 · 10 月 27 日 10:55 · 18 分钟</span>
+              </button>
+            </div>
+          </aside>
+          <main class="detail">
+            <div class="detail-scroll">
+              <h1 class="meeting-title" id="meetingTitle">英文歌曲跟唱</h1>
+              <p class="meeting-meta" id="meetingMeta">10 月 27 日（周二）16:59 · 1 分钟 · 线上 · 已校对 6 处识别错误</p>
+              <div class="segment" role="tablist" aria-label="会议内容">
+                <button class="active" data-meeting-tab="summary">纪要</button><button data-meeting-tab="transcript">转写</button>
+              </div>
+              <section data-meeting-panel="summary">
+                <div class="summary-card"><strong>✦　一句话总结</strong><p id="meetingSummary">本次交流主要是双方跟唱英文歌曲片段。</p></div>
+                <div class="transcript-block">
+                  <h3>要点</h3>
+                  <p id="meetingPoint">对方唱出英文歌词，我跟唱；随后双方唱了 “Shine bright like a diamond” 和 “Find light in the beautiful sea, I choose to be happy” 等句子。<span class="time">[00:53]</span></p>
+                  <h3>后续事项</h3><p>暂无待办事项。</p>
+                </div>
+              </section>
+              <section data-meeting-panel="transcript" hidden>
+                <div class="transcript-block">
+                  <h3>对方 <span class="time">[00:08]</span></h3><p>Shine bright like a diamond.</p>
+                  <h3>我 <span class="time">[00:13]</span></h3><p>Shine bright like a diamond.</p>
+                  <h3>对方 <span class="time">[00:28]</span></h3><p>Find light in the beautiful sea, I choose to be happy.</p>
+                  <h3>我 <span class="time">[00:53]</span></h3><p>Find light in the beautiful sea, I choose to be happy.</p>
+                </div>
+              </section>
+            </div>
+          </main>
+        </div>
+      </section>
+
+      <section class="screen" id="foldersScreen" data-screen="folders" hidden>
+        <div class="toolbar">
+          <button class="context-toggle" data-toggle-context aria-label="隐藏系列列表" title="隐藏系列列表">
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="2" width="13" height="12" rx="1.5" stroke="currentColor"/><path d="M6 2.5v11" stroke="currentColor"/></svg>
+            <span data-toggle-label>隐藏列表</span>
+          </button>
+          <div class="crumb">资料夹　›　<b id="breadcrumbSeries">随手记录</b></div>
+          <div class="toolbar-spacer"></div>
+          <div class="toolbar-actions">
+            <button class="button" data-action="series-type">通用　⌄</button>
+            <button class="button" data-action="answer-style">提词要点　⌄</button>
+            <button class="button primary" data-action="predict">✦　预测问题</button>
+          </div>
+        </div>
+        <div class="layout" data-layout>
+          <aside class="context-pane">
+            <div class="pane-head">
+              <div class="pane-title-row"><h2 class="pane-title">系列</h2><button class="button" data-action="new-series" aria-label="新建系列">＋</button></div>
+              <p class="pane-subtitle">同一件事的多场会议，共享资料、题库和经验</p>
+            </div>
+            <div class="item-list" id="seriesList">
+              <div class="group-label">✦　通用</div>
+              <button class="series-item selected" data-series="随手记录"><span class="item-title">随手记录</span><span class="item-meta">0 份资料 · 0 题 · 5 场会议</span></button>
+              <button class="series-item" data-series="新的通用"><span class="item-title">新的通用</span><span class="item-meta">0 份资料 · 0 题 · 0 场会议</span></button>
+              <div class="group-label">▣　面试</div>
+              <button class="series-item" data-series="我的面试"><span class="item-title">我的面试</span><span class="item-meta">0 份资料 · 43 题 · 11 场会议</span></button>
+              <button class="series-item" data-series="新的面试"><span class="item-title">新的面试</span><span class="item-meta">0 份资料 · 0 题 · 1 场会议</span></button>
+              <div class="group-label">⌘　汇报 / 答辩</div>
+              <button class="series-item" data-series="新的学术会议"><span class="item-title">新的学术会议</span><span class="item-meta">0 份资料 · 0 题 · 0 场会议</span></button>
+            </div>
+          </aside>
+          <main class="detail">
+            <div class="folder-head">
+              <div class="folder-title-row"><span class="folder-symbol">✦</span><h1 class="folder-title" id="seriesTitle">随手记录</h1></div>
+              <p class="folder-summary">自动保存 · 不保存录音 · 系列设置只在需要时展开</p>
+            </div>
+            <nav class="section-tabs" aria-label="系列设置栏目">
+              <button class="section-tab active" data-section="basic" aria-pressed="true">基本信息</button>
+              <button class="section-tab" data-section="requirements" aria-pressed="false">回答要求</button>
+              <button class="section-tab" data-section="files" aria-pressed="false">资料 <span data-file-count>0</span></button>
+              <button class="section-tab" data-section="skills" aria-pressed="false">技能</button>
+              <button class="section-tab" data-section="knowledge" aria-pressed="false">经验库与题库</button>
+              <button class="section-tab" data-section="review" aria-pressed="false">复盘 <span>5</span></button>
+            </nav>
+            <div class="folder-scroll">
+              <section class="folder-panel active" data-panel="basic">
+                <h2 class="section-heading">▤　通用信息</h2><p class="section-note">只填写必要信息，其余可以稍后补充</p>
+                <div class="field"><label>场景说明</label><textarea class="short" data-field="description" placeholder="这是什么场合、对方是谁、我希望达成什么"></textarea></div>
+                <div class="field"><label>其他背景</label><textarea data-field="background" placeholder="任何希望回答时参考的事实：经历、数字、对方偏好…"></textarea></div>
+                <details class="fold"><summary>更多背景（可选）· 2 项</summary><div class="fold-content"><div class="field"><label>关注事项</label><textarea class="short" placeholder="记录需要特别关注的内容"></textarea></div><div class="field"><label>专有名词</label><textarea class="short" placeholder="人名、项目名或术语"></textarea></div></div></details>
+                <div class="action-row"><button class="button primary" data-action="save">保存更改</button><span class="subtle">只保存在当前预览页面</span></div>
+              </section>
+              <section class="folder-panel" data-panel="requirements" hidden>
+                <h2 class="section-heading">☷　回答要求</h2><p class="section-note">告诉 AI 使用什么语言、长度和结构。与资料正文分开处理。</p>
+                <div class="field"><label>回答要求</label><textarea style="min-height:210px" data-field="requirements">先给一句可以说出口的结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。</textarea></div>
+                <div class="action-row"><button class="button" data-action="reset-requirements">恢复默认</button><button class="button primary" data-action="save">保存更改</button></div>
+              </section>
+              <section class="folder-panel" data-panel="files" hidden>
+                <h2 class="section-heading">▧　参考资料 <span class="subtle" data-file-count-label>0 份</span></h2><p class="section-note">文件名只用于本地演示，不会上传文件。</p>
+                <div class="action-row"><button class="button primary" data-action="choose-files">＋ 选择文件</button><span class="subtle">仅在页面显示文件名</span></div>
+                <input type="file" id="filePicker" multiple hidden>
+                <div id="fileList"></div>
+              </section>
+              <section class="folder-panel" data-panel="skills" hidden>
+                <h2 class="section-heading">✧　系列技能</h2><p class="section-note">选择会应用于这个系列的回答技能。</p>
+                <label class="check"><input type="checkbox" checked><span>回答前先列结论，再补充证据</span></label>
+                <label class="check"><input type="checkbox"><span>遇到不确定的内容时先说明限制</span></label>
+                <div class="action-row"><button class="button" data-action="add-skill">＋ 添加技能</button><button class="button" data-action="manage-skills">管理技能</button></div>
+              </section>
+              <section class="folder-panel" data-panel="knowledge" hidden>
+                <h2 class="section-heading">☷　经验库与题库</h2><p class="section-note">会议后的经验和常见问题会在这里累积，并在后续会议中复用。</p>
+                <div class="group-label">共享经验</div>
+                <div class="knowledge-row"><span class="mini-icon">✦</span><div class="row-copy"><strong>涉及数字时，先说明比较口径</strong><small>来自最近一次会议复盘</small></div><button class="remove" data-action="remove-item">移除</button></div>
+                <div class="group-label">常见问题</div>
+                <div class="knowledge-row"><span class="mini-icon">?</span><div class="row-copy"><strong>这场会议最需要达成什么结果？</strong><small>先明确目标、负责人和下一步行动。</small></div><button class="remove" data-action="remove-item">移除</button></div>
+                <div class="action-row"><button class="button" data-action="add-question">＋ 添加问题</button><button class="button" data-action="add-lesson">＋ 添加经验</button></div>
+              </section>
+              <section class="folder-panel" data-panel="review" hidden>
+                <h2 class="section-heading">⌁　复盘设置</h2><p class="section-note">会议结束后如何整理纪要，以及哪些经验会带入本系列。</p>
+                <label class="check"><input type="checkbox" checked><span>会议结束后自动整理纪要</span></label>
+                <label class="check"><input type="checkbox" checked><span>复盘确认后，将经验加入系列</span></label>
+                <div class="field"><label>纪要模板</label><select class="select-chip"><option>简洁纪要</option><option>面试复盘</option><option>工作会议</option></select></div>
+                <div class="action-row"><button class="button primary" data-action="save">保存设置</button></div>
+              </section>
+            </div>
+          </main>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog id="editDialog">
+  <form class="dialog-body" id="editForm">
+    <h3 id="dialogTitle">添加内容</h3>
+    <label for="dialogText" id="dialogLabel">名称</label><input id="dialogText" required autocomplete="off">
+    <div class="dialog-actions"><button type="button" class="button" data-action="close-dialog">取消</button><button type="submit" class="button primary">添加到预览</button></div>
+  </form>
+</dialog>
+<dialog id="seriesDialog">
+  <form class="dialog-body" id="seriesForm">
+    <h3>新建系列</h3><label for="seriesName">系列名称</label><input id="seriesName" required placeholder="例如：产品评审">
+    <div class="dialog-actions"><button type="button" class="button" data-action="close-series">取消</button><button type="submit" class="button primary">创建</button></div>
+  </form>
+</dialog>
+<script>
+const screenButtons = Array.from(document.querySelectorAll("[data-page]"));
+const screens = Array.from(document.querySelectorAll("[data-screen]"));
+const toast = document.getElementById("toast");
+const editDialog = document.getElementById("editDialog");
+const seriesDialog = document.getElementById("seriesDialog");
+const filePicker = document.getElementById("filePicker");
+let toastTimer;
+let editKind = "";
+let fileNames = [];
+
+function showToast(message) {
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+}
+
+function setPage(name) {
+  const pageName = name === "folders" ? "folders" : "meetings";
+  screens.forEach((screen) => screen.hidden = screen.dataset.screen !== pageName);
+  screenButtons.forEach((button) => {
+    const active = button.dataset.page === pageName;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function updateSidebarButton(screen) {
+  const collapsed = screen.querySelector("[data-layout]").classList.contains("collapsed");
+  const name = screen.dataset.screen === "meetings" ? "会议列表" : "系列列表";
+  const label = collapsed ? "显示列表" : "隐藏列表";
+  const button = screen.querySelector("[data-toggle-context]");
+  button.querySelector("[data-toggle-label]").textContent = label;
+  button.setAttribute("aria-label", `${label}${name}`);
+  button.setAttribute("aria-expanded", String(!collapsed));
+  button.title = `${label}${name}`;
+}
+
+function updateMeeting(item) {
+  document.querySelectorAll(".meeting-item").forEach((row) => row.classList.toggle("selected", row === item));
+  document.getElementById("meetingTitle").textContent = item.dataset.meeting;
+  document.getElementById("meetingMeta").textContent = item.dataset.meta;
+  document.getElementById("meetingSummary").textContent = item.dataset.summary;
+  document.getElementById("meetingPoint").textContent = item.dataset.summary;
+  document.querySelector("#meetingsScreen .crumb b").textContent = item.dataset.meeting;
+}
+
+function setMeetingTab(tabName) {
+  document.querySelectorAll("[data-meeting-tab]").forEach((button) => button.classList.toggle("active", button.dataset.meetingTab === tabName));
+  document.querySelectorAll("[data-meeting-panel]").forEach((panel) => panel.hidden = panel.dataset.meetingPanel !== tabName);
+}
+
+function setFolderSection(sectionName) {
+  document.querySelectorAll("[data-section]").forEach((button) => {
+    const active = button.dataset.section === sectionName;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  document.querySelectorAll("[data-panel]").forEach((panel) => {
+    const active = panel.dataset.panel === sectionName;
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
+  });
+}
+
+function renderFiles() {
+  const target = document.getElementById("fileList");
+  target.replaceChildren();
+  fileNames.forEach((name, index) => {
+    const row = document.createElement("div");
+    row.className = "file-row";
+    const icon = document.createElement("span");
+    icon.className = "file-icon";
+    icon.textContent = "▧";
+    const copy = document.createElement("div");
+    copy.className = "row-copy";
+    const title = document.createElement("strong");
+    title.textContent = name;
+    const note = document.createElement("small");
+    note.textContent = "文件名仅保存在当前预览页面，没有上传";
+    copy.append(title, note);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove";
+    remove.dataset.removeFile = String(index);
+    remove.textContent = "移除";
+    row.append(icon, copy, remove);
+    target.append(row);
+  });
+  document.querySelectorAll("[data-file-count], [data-file-count-label]").forEach((item) => {
+    item.textContent = item.hasAttribute("data-file-count-label") ? `${fileNames.length} 份` : String(fileNames.length);
+  });
+}
+
+screenButtons.forEach((button) => button.addEventListener("click", () => {
+  if (button.dataset.page === "home") {
+    showToast("此预览只展示所有会议和资料夹两个页面");
+    return;
+  }
+  setPage(button.dataset.page);
+}));
+
+document.addEventListener("click", (event) => {
+  const toggle = event.target.closest("[data-toggle-context]");
+  if (toggle) {
+    const screen = toggle.closest("[data-screen]");
+    screen.querySelector("[data-layout]").classList.toggle("collapsed");
+    updateSidebarButton(screen);
+    return;
+  }
+
+  const meeting = event.target.closest("[data-meeting]");
+  if (meeting) { updateMeeting(meeting); return; }
+
+  const meetingTab = event.target.closest("[data-meeting-tab]");
+  if (meetingTab) { setMeetingTab(meetingTab.dataset.meetingTab); return; }
+
+  const series = event.target.closest("[data-series]");
+  if (series) {
+    document.querySelectorAll("[data-series]").forEach((row) => row.classList.toggle("selected", row === series));
+    document.getElementById("seriesTitle").textContent = series.dataset.series;
+    document.getElementById("breadcrumbSeries").textContent = series.dataset.series;
+    showToast(`已切换到“${series.dataset.series}”`);
+    return;
+  }
+
+  const section = event.target.closest("[data-section]");
+  if (section) { setFolderSection(section.dataset.section); return; }
+
+  const removeFile = event.target.closest("[data-remove-file]");
+  if (removeFile) {
+    fileNames.splice(Number(removeFile.dataset.removeFile), 1);
+    renderFiles();
+    return;
+  }
+
+  const actionButton = event.target.closest("[data-action]");
+  if (!actionButton) return;
+  const action = actionButton.dataset.action;
+  if (action === "copy") showToast("这是复制操作的界面预览，没有写入系统剪贴板");
+  if (action === "save") showToast("更改已保留在当前页面内存中");
+  if (action === "template" || action === "series-type" || action === "answer-style") showToast("此控件用于展示现有菜单位置");
+  if (action === "more" || action === "list-menu") showToast("列表操作菜单预览");
+  if (action === "predict") showToast("预览模式不会调用模型或后端服务");
+  if (action === "new-series") seriesDialog.showModal();
+  if (action === "close-series") seriesDialog.close();
+  if (action === "close-dialog") editDialog.close();
+  if (action === "choose-files") filePicker.click();
+  if (action === "add-skill" || action === "add-question" || action === "add-lesson") {
+    editKind = action;
+    const titles = { "add-skill": ["添加技能", "技能名称"], "add-question": ["添加常见问题", "问题"], "add-lesson": ["添加经验", "经验标题"] };
+    document.getElementById("dialogTitle").textContent = titles[action][0];
+    document.getElementById("dialogLabel").textContent = titles[action][1];
+    document.getElementById("dialogText").value = "";
+    editDialog.showModal();
+  }
+  if (action === "manage-skills") showToast("技能管理入口示意");
+  if (action === "remove-item") { actionButton.closest(".knowledge-row").remove(); showToast("已从当前预览移除"); }
+  if (action === "reset-requirements") {
+    document.querySelector("[data-field='requirements']").value = "先给一句可以说出口的结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。";
+    showToast("已恢复示例回答要求");
+  }
+});
+
+document.getElementById("meetingSearch").addEventListener("input", (event) => {
+  const query = event.target.value.trim().toLocaleLowerCase();
+  document.querySelectorAll(".meeting-item").forEach((item) => {
+    item.hidden = !item.dataset.meeting.toLocaleLowerCase().includes(query);
+  });
+});
+
+document.querySelectorAll(".filters select").forEach((select) => select.addEventListener("change", () => {
+  showToast(`已选择“${select.value}”筛选条件`);
+}));
+
+document.getElementById("editForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = document.getElementById("dialogText").value.trim();
+  if (name) {
+    let container;
+    let row;
+    if (editKind === "add-skill") {
+      container = document.querySelector("[data-panel='skills']");
+      row = document.createElement("label");
+      row.className = "check";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = true;
+      const text = document.createElement("span");
+      text.textContent = name;
+      row.append(input, text);
+    } else {
+      container = document.querySelector("[data-panel='knowledge']");
+      row = document.createElement("div");
+      row.className = "knowledge-row";
+      const icon = document.createElement("span");
+      icon.className = "mini-icon";
+      icon.textContent = editKind === "add-question" ? "?" : "✦";
+      const copy = document.createElement("div");
+      copy.className = "row-copy";
+      const title = document.createElement("strong");
+      title.textContent = name;
+      const note = document.createElement("small");
+      note.textContent = "刚刚添加 · 当前预览状态";
+      copy.append(title, note);
+      row.append(icon, copy);
+    }
+    const addRow = container.querySelector(".action-row");
+    container.insertBefore(row, addRow);
+    showToast("已添加到当前预览");
+  }
+  editDialog.close();
+});
+
+document.getElementById("seriesForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const name = document.getElementById("seriesName").value.trim();
+  if (!name) return;
+  const row = document.createElement("button");
+  row.className = "series-item";
+  row.dataset.series = name;
+  const title = document.createElement("span");
+  title.className = "item-title";
+  title.textContent = name;
+  const meta = document.createElement("span");
+  meta.className = "item-meta";
+  meta.textContent = "0 份资料 · 0 题 · 0 场会议";
+  row.append(title, meta);
+  document.querySelector("#seriesList .group-label").after(row);
+  row.click();
+  seriesDialog.close();
+  document.getElementById("seriesForm").reset();
+  showToast(`已创建“${name}”的预览条目`);
+});
+
+filePicker.addEventListener("change", () => {
+  for (const file of Array.from(filePicker.files || [])) {
+    if (!fileNames.includes(file.name)) fileNames.push(file.name);
+  }
+  renderFiles();
+  filePicker.value = "";
+  showToast("仅在页面显示文件名，没有上传文件");
+});
+
+document.querySelectorAll("[data-screen]").forEach(updateSidebarButton);
+</script>
+</body>
+</html>

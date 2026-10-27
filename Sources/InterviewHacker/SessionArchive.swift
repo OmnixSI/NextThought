@@ -15,12 +15,20 @@ struct SessionDetail: Equatable {
     var notes: StructuredNotes? = nil
 }
 
+enum SessionStorageInfo: Equatable, Sendable {
+    case available(path: String, bytes: Int64)
+    case missing(path: String)
+    case unavailable(path: String)
+    case demo
+}
+
 /// Local session archive: one folder per session under
 /// `~/Library/Application Support/InterviewHacker/Sessions/<id>/`:
 ///
 ///     meta.json          title, times, counts, summary state
 ///     context.json       mode, answer requirements, background and imported files
 ///     transcript.jsonl   every final transcript line (both channels), appended live
+///     translations.jsonl translated final lines, keyed by transcript line ID
 ///     questions.jsonl    every question the detector saw
 ///     answers.jsonl      every generated answer
 ///     summary.json       model-written summary and question list (after the session)
@@ -55,28 +63,54 @@ final class SessionArchive {
 
     // MARK: Loading
 
-    func load() {
+    func load(onRecoveredSummaries: @escaping @MainActor ([UUID]) -> Void = { _ in }) {
         guard !DemoMode.isEnabled else { return }
         let root = Self.root
+        // A load can also happen after restoring a backup while the app remains
+        // open. Do not mistake work that is genuinely running in this process
+        // for an orphan left by a previous launch.
+        let activeSummaries = summarizing
         Task {
-            let metas = await Task.detached(priority: .utility) { () -> [SessionMeta] in
+            let result = await Task.detached(priority: .utility) { () -> (metas: [SessionMeta], recovered: [UUID]) in
                 Self.migrateLegacySessions(into: root)
                 let folders = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
-                return folders.compactMap { folder -> SessionMeta? in
-                    guard let data = try? Data(contentsOf: folder.appendingPathComponent("meta.json")),
+                var recovered = Set<UUID>()
+                let metas = folders.compactMap { folder -> SessionMeta? in
+                    let metaURL = folder.appendingPathComponent("meta.json")
+                    guard let data = try? Data(contentsOf: metaURL),
                           var meta = try? JSONLines.decoder().decode(SessionMeta.self, from: data) else { return nil }
+                    var changed = false
                     if meta.endedAt == nil {
                         // Interrupted session: end it at the last transcript write.
                         let transcript = folder.appendingPathComponent("transcript.jsonl")
                         let modified = (try? FileManager.default.attributesOfItem(atPath: transcript.path)[.modificationDate]) as? Date
                         meta.endedAt = modified ?? meta.startedAt
-                        if meta.summaryState == .pending { meta.summaryState = .none }
+                        if meta.summaryState == .pending {
+                            meta.summaryState = .none
+                            meta.summaryError = nil
+                            changed = true
+                            if meta.transcriptCount > 0 { recovered.insert(meta.id) }
+                        }
+                        changed = true
+                    } else if meta.summaryState == .pending, !activeSummaries.contains(meta.id) {
+                        // A finished meeting cannot still be generating after a
+                        // relaunch. Clear the stale state and let AppState retry it.
+                        meta.summaryState = .none
+                        meta.summaryError = nil
+                        changed = true
+                        if meta.transcriptCount > 0 { recovered.insert(meta.id) }
                     }
+                    if changed { Self.write(meta, to: metaURL) }
                     return meta
                 }.sorted { $0.startedAt > $1.startedAt }
+                // Process the backlog oldest-first so long-standing meetings are
+                // not continually pushed behind newer ones.
+                let orderedRecovered = metas.filter { recovered.contains($0.id) }.map(\.id).reversed()
+                return (metas, Array(orderedRecovered))
             }.value
-            sessions = metas.filter { $0.id != activeID } + (activeMeta.map { [$0] } ?? [])
+            sessions = result.metas.filter { $0.id != activeID } + (activeMeta.map { [$0] } ?? [])
             sessions.sort { $0.startedAt > $1.startedAt }
+            if !result.recovered.isEmpty { onRecoveredSummaries(result.recovered) }
         }
     }
 
@@ -97,14 +131,51 @@ final class SessionArchive {
             func lines<T: Decodable>(_ name: String, _ type: T.Type) -> [T] {
                 (try? Data(contentsOf: folder.appendingPathComponent(name))).map { JSONLines.decode(T.self, from: $0) } ?? []
             }
+            var transcript = lines("transcript.jsonl", SessionTranscriptLine.self)
+            let translations = Dictionary(lines("translations.jsonl", SessionTranscriptTranslation.self).map { ($0.id, $0.text) },
+                                          uniquingKeysWith: { _, latest in latest })
+            for index in transcript.indices {
+                if let translation = translations[transcript[index].id] {
+                    transcript[index].translatedText = translation
+                }
+            }
             return SessionDetail(
                 meta: meta,
-                lines: lines("transcript.jsonl", SessionTranscriptLine.self),
+                lines: transcript,
                 answers: Self.latestAnswers(lines("answers.jsonl", SessionAnswerEvent.self)),
                 questions: lines("questions.jsonl", SessionQuestionEvent.self),
                 context: (try? Data(contentsOf: folder.appendingPathComponent("context.json"))).flatMap { try? decoder.decode(SessionContextSnapshot.self, from: $0) },
                 summary: (try? Data(contentsOf: folder.appendingPathComponent("summary.json"))).flatMap { try? decoder.decode(SessionSummary.self, from: $0) },
                 notes: (try? Data(contentsOf: folder.appendingPathComponent("notes.json"))).flatMap { try? decoder.decode(StructuredNotes.self, from: $0) })
+        }.value
+    }
+
+    /// Reads the session directory size off the main actor. The reported size is
+    /// the total of regular files in this meeting's folder and subfolders.
+    func storageInfo(_ id: UUID) async -> SessionStorageInfo {
+        guard demoDetails[id] == nil else { return .demo }
+        let sessionFolder = folder(id)
+        return await Task.detached(priority: .utility) {
+            let attributes: [FileAttributeKey: Any]
+            do {
+                attributes = try FileManager.default.attributesOfItem(atPath: sessionFolder.path)
+            } catch let error as NSError {
+                if error.domain == NSCocoaErrorDomain && error.code == NSFileReadNoSuchFileError {
+                    return .missing(path: sessionFolder.path)
+                }
+                return .unavailable(path: sessionFolder.path)
+            } catch {
+                return .unavailable(path: sessionFolder.path)
+            }
+            guard attributes[.type] as? FileAttributeType == .typeDirectory else {
+                return .unavailable(path: sessionFolder.path)
+            }
+            do {
+                let bytes = try Self.directorySize(at: sessionFolder)
+                return .available(path: sessionFolder.path, bytes: bytes)
+            } catch {
+                return .unavailable(path: sessionFolder.path)
+            }
         }.value
     }
 
@@ -151,6 +222,15 @@ final class SessionArchive {
         publishActiveCounts()
         // Keep meta.json reasonably fresh for crash recovery.
         if let meta = activeMeta { saveMeta(meta) }
+    }
+
+    func appendTranslation(sessionID: UUID, lineID: UUID, text: String) {
+        guard sessionID == activeID || sessions.contains(where: { $0.id == sessionID }) else { return }
+        appendLine(SessionTranscriptTranslation(id: lineID, text: text), file: "translations.jsonl", session: sessionID)
+        Task { [weak self] in
+            await self?.flush()
+            self?.notesRevision &+= 1
+        }
     }
 
     /// Copies a screenshot into the session folder and returns its path
@@ -264,6 +344,24 @@ final class SessionArchive {
     private func saveMeta(_ meta: SessionMeta) {
         let url = folder(meta.id).appendingPathComponent("meta.json")
         io.async { Self.write(meta, to: url) }
+    }
+
+    nonisolated private static func directorySize(at directory: URL) throws -> Int64 {
+        let fileManager = FileManager.default
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey, .fileSizeKey]
+        let children = try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: Array(keys), options: [])
+        var total: Int64 = 0
+        for child in children {
+            let values = try child.resourceValues(forKeys: keys)
+            if values.isSymbolicLink == true { continue }
+            if values.isRegularFile == true {
+                guard let fileSize = values.fileSize else { throw CocoaError(.fileReadUnknown) }
+                total += Int64(fileSize)
+            } else if values.isDirectory == true {
+                total += try directorySize(at: child)
+            }
+        }
+        return total
     }
 
     private func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) {

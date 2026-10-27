@@ -3,6 +3,17 @@ import SwiftUI
 
 struct InterviewHackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @AppStorage(AppNavigationBar.meetingsSidebarKey) private var meetingsSidebarHidden = false
+    @AppStorage(AppNavigationBar.foldersSidebarKey) private var foldersSidebarHidden = false
+
+    private var contextSidebarHidden: Bool {
+        AppState.shared.section == .meetings ? meetingsSidebarHidden : foldersSidebarHidden
+    }
+
+    private var hasContextSidebar: Bool {
+        AppState.shared.section == .meetings || AppState.shared.section == .library
+    }
+
     var body: some Scene {
         WindowGroup {
             // Created on first use (after NSApplication exists), not in App.init.
@@ -25,6 +36,17 @@ struct InterviewHackerApp: App {
             CommandGroup(replacing: .appSettings) {
                 Button("设置…") { AppState.shared.openSettingsFromMenu() }
                     .keyboardShortcut(",", modifiers: .command)
+            }
+            CommandGroup(replacing: .sidebar) {
+                Button(contextSidebarHidden ? "显示列表" : "隐藏列表") {
+                    if AppState.shared.section == .meetings {
+                        meetingsSidebarHidden.toggle()
+                    } else if AppState.shared.section == .library {
+                        foldersSidebarHidden.toggle()
+                    }
+                }
+                .keyboardShortcut("b", modifiers: .command)
+                .disabled(AppState.shared.isRunning || !hasContextSidebar)
             }
             CommandGroup(after: .windowSize) {
                 Button("恢复最佳窗口大小") { MainWindowLayout.resetFrontWindow() }

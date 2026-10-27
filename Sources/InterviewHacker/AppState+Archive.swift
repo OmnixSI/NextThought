@@ -40,7 +40,19 @@ extension AppState {
     func recordTranscript(_ entry: TranscriptEntry) {
         guard activeArchiveID != nil else { return }
         archive.append(SessionTranscriptLine(id: entry.id, date: entry.date, speaker: entry.speaker, text: entry.text,
-                                             startedAt: entry.startedAt, endedAt: entry.endedAt))
+                                             translatedText: entry.translatedText, startedAt: entry.startedAt, endedAt: entry.endedAt))
+    }
+
+    func receiveLiveTranslation(_ text: String, job: LiveTranslationJob) {
+        guard job.isFinal, let entryID = job.entryID else { return }
+        let translation = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !translation.isEmpty else { return }
+        if let index = entries.firstIndex(where: { $0.id == entryID }) {
+            entries[index].translatedText = translation
+        }
+        if let sessionID = job.sessionID {
+            archive.appendTranslation(sessionID: sessionID, lineID: entryID, text: translation)
+        }
     }
 
     func recordQuestion(_ candidate: QuestionCandidate, disposition: String) {

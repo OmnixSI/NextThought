@@ -103,7 +103,11 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 
 ## 会话记录
 
-`SessionArchive` 把每次会话写到 `~/Library/Application Support/InterviewHacker/Sessions/<id>/`：`meta.json`、`context.json`、`transcript.jsonl`、`questions.jsonl`、`answers.jsonl`、`summary.json`。JSONL 边发生边追加，最后一行写坏时读取会跳过。会后摘要由 `AppState.generateSummary` 用独立的 API 客户端或一次性 `codex exec` 生成（不占用常驻服务），超过 6 万字的转录先分段整理再合并（`SessionSummaryPrompt`），`SessionSummaryParser` 提取标题与问题清单。
+`SessionArchive` 把每次会话写到 `~/Library/Application Support/InterviewHacker/Sessions/<id>/`：`meta.json`、`context.json`、`transcript.jsonl`、`translations.jsonl`、`questions.jsonl`、`answers.jsonl`、`summary.json`。JSONL 边发生边追加，最后一行写坏时读取会跳过。会后摘要由 `AppState.generateSummary` 用独立的 API 客户端或一次性 `codex exec` 生成（不占用常驻服务），超过 6 万字的转录先分段整理再合并（`SessionSummaryPrompt`），`SessionSummaryParser` 提取标题与问题清单。
+
+## 会中同声传译
+
+`LiveTranslationCoordinator` 根据每段识别文本自动判断中英文并翻译为另一种语言，系统音频与麦克风两路都可双向翻译；语言判断在本机完成，不增加语音识别模型或网络调用。部分识别结果限频合并，最终译文优先提交，并按转写行 ID 写入 `translations.jsonl`，与原始转写分开保存；自动整理仍只读取原文。翻译仅在用户点击会中“同声传译”后启动，两个方向的系统语言资源并行准备；该入口需要 macOS 15 或更新版本。
 
 ## 场景（Workspace）与模式
 

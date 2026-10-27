@@ -5,7 +5,8 @@ struct DocumentModelSettings: View {
     @Environment(AppState.self) private var state
     var body: some View {
         @Bindable var state = state
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
+        SettingsCardRow {
             SettingsSection(title: "现在用什么读取资料", icon: "doc.text.viewfinder") {
                 Label(currentSummary, systemImage: currentReady ? "checkmark.circle.fill" : "exclamationmark.circle")
                     .foregroundStyle(currentReady ? .green : .orange)
@@ -29,6 +30,7 @@ struct DocumentModelSettings: View {
                     Button("先用系统识别") { state.selectDocumentProvider(.system) }.buttonStyle(SecondaryButtonStyle())
                 }
             }
+        } right: {
             SettingsSection(title: "已经在这台 Mac 下载过？", icon: "internaldrive") {
                 Note("先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。")
                 HStack {
@@ -41,6 +43,7 @@ struct DocumentModelSettings: View {
                 if !state.localAssetScanStatus.isEmpty { Note(state.localAssetScanStatus) }
                 Note("扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。")
             }
+        }
             if state.documentSetupFeature != nil || !state.documentSetupStatus.isEmpty {
                 SettingsSection(title: "准备进度", icon: "arrow.down.circle") {
                     Note(state.documentSetupStatus)
@@ -50,6 +53,7 @@ struct DocumentModelSettings: View {
                     }
                 }
             }
+        SettingsCardRow {
             SettingsSection(title: "怎样从资料中找答案", icon: "magnifyingglass") {
                 choice(title: "关键词查找", status: !state.semanticRetrievalEnabled ? "正在使用 · 无需下载" : "始终可用，增强失败时也会使用",
                        detail: "按问题里的关键词挑选片段，准备快、占用少；问法和原文不同，或答案跨多个段落时，可能漏掉相关内容。") {
@@ -68,6 +72,7 @@ struct DocumentModelSettings: View {
                 Note("两种方式都会挑选相关片段放进回答上下文，不会默认发送全部资料。全量发送会增加等待和用量，还可能超过模型的上下文上限；关闭向量检索不等于全文已经被读取。")
                 if !state.semanticIndexStatus.isEmpty { Note(state.semanticIndexStatus) }
             }
+        } right: {
             SettingsSection(title: "Word、Excel 与 PowerPoint", icon: "doc.richtext") {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -82,6 +87,7 @@ struct DocumentModelSettings: View {
                     if !state.runtimeInstalled { featureButton(.office, title: "安装支持") }
                 }
             }
+        }
             AdvancedOptions("document-management") {
                 SettingsSection(title: "组件管理与高级设置", icon: "gearshape") {
                     Note("下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。")

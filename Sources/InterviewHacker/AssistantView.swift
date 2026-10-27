@@ -23,7 +23,8 @@ struct AssistantModuleContent: View {
         case .answer:
             VStack(spacing: 12) {
                 ScreenshotCard()
-                AnswerPanel(fillHeight: true)
+                    .fixedSize(horizontal: false, vertical: true)
+                AnswerPanel(fillHeight: !detached)
             }
         case .history: AnswerHistoryPanel()
         case .insights: InsightsPanel()
@@ -454,7 +455,7 @@ private struct WebSourcesList: View {
 /// Lays its subviews left to right and wraps onto a new line when the row is full.
 /// The answer card uses it so a chip label is never truncated and the buttons
 /// never get squeezed into an unreadable sliver.
-private struct WrappingHStack: Layout {
+private struct AnswerFooterWrappingHStack: Layout {
     var spacing: CGFloat = 8
     var lineSpacing: CGFloat = 6
 
@@ -514,7 +515,7 @@ private struct AnswerFooter: View {
             // The action buttons wrap instead of squeezing each other, and the
             // meta line moved to its own row: that way "重新生成" / "联网查一下"
             // are never clipped and never overlap the timing text.
-            WrappingHStack(spacing: 8, lineSpacing: 6) {
+            AnswerFooterWrappingHStack(spacing: 8, lineSpacing: 6) {
                 Button { state.copyAnswer() } label: { Label("复制", systemImage: "doc.on.doc") }
                     .buttonStyle(ChipButtonStyle()).disabled(state.displayedAnswer.isEmpty)
                     .fixedSize(horizontal: true, vertical: false)

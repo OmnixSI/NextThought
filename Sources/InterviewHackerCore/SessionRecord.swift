@@ -28,12 +28,21 @@ public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable 
     public var date: Date
     public var speaker: SessionSpeaker
     public var text: String
+    public var translatedText: String?
     public var startedAt: Date?
     public var endedAt: Date?
-    public init(id: UUID = UUID(), date: Date, speaker: SessionSpeaker, text: String, startedAt: Date? = nil, endedAt: Date? = nil) {
+    public init(id: UUID = UUID(), date: Date, speaker: SessionSpeaker, text: String, translatedText: String? = nil,
+                startedAt: Date? = nil, endedAt: Date? = nil) {
         self.id = id; self.date = date; self.speaker = speaker; self.text = text
+        self.translatedText = translatedText
         self.startedAt = startedAt; self.endedAt = endedAt
     }
+}
+
+public struct SessionTranscriptTranslation: Codable, Sendable, Identifiable, Equatable {
+    public var id: UUID
+    public var text: String
+    public init(id: UUID, text: String) { self.id = id; self.text = text }
 }
 
 /// A question the detector saw, whether or not it was answered automatically.
@@ -462,7 +471,9 @@ public enum SessionMarkdownExporter {
         out.append("")
         out.append(contentsOf: lines.map { line in
             let offset = Int(max(0, line.date.timeIntervalSince(meta.startedAt)))
-            return String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(line.speaker.label)**：" + line.text
+            let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(line.speaker.label)**：" + line.text
+            guard let translation = line.translatedText, !translation.isEmpty else { return original }
+            return original + "\n  *译文：* " + translation
         })
         return out.joined(separator: "\n") + "\n"
     }
