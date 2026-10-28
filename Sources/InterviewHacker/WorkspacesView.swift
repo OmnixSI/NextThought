@@ -37,8 +37,8 @@ private struct WorkspaceList: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("系列").font(Typo.section)
-                    Text("同一件事的多场会议，共享资料、题库和经验").font(Typo.caption).foregroundStyle(Ink.secondary)
+                    Text("资料夹").font(Typo.section)
+                    Text("\(state.workspaces.visible.count) 个系列").font(Typo.caption).foregroundStyle(Ink.secondary)
                 }
                 Spacer()
                 Menu {
@@ -52,7 +52,7 @@ private struct WorkspaceList: View {
                     .help("新建系列")
             }
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 6) {
+                LazyVStack(alignment: .leading, spacing: 3) {
                     ForEach(SessionMode.allCases) { mode in
                         let items = state.workspaces.visible.filter { $0.mode == mode }
                         if !items.isEmpty {
@@ -77,21 +77,25 @@ private struct WorkspaceList: View {
     private func row(_ workspace: Workspace) -> some View {
         let active = workspace.id == state.activeWorkspace.id
         let sessions = state.archive.sessions.filter { $0.workspaceID == workspace.id }.count
-        return VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
-                Text(workspace.name).font(.system(size: 13, weight: active ? .semibold : .regular)).lineLimit(1)
-                Spacer(minLength: 0)
-                if active { Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.accent) }
-            }
-            if !compact {
+        return Button { state.switchWorkspace(workspace.id) } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(workspace.name).font(.system(size: compact ? 12.5 : 13, weight: active ? .semibold : .regular)).lineLimit(1)
+                    Spacer(minLength: 0)
+                    if active { Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.accent) }
+                }
                 Text("\(workspace.documents.count) 份资料 · \(workspace.questionBank.count) 题 · \(sessions) 场会议")
-                    .font(.system(size: 10.5)).foregroundStyle(.secondary).lineLimit(1)
+                    .font(.system(size: compact ? 10 : 10.5)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85)
             }
+            .padding(.horizontal, 9).padding(.vertical, 7)
+            .background(active ? Brand.accent.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .contentShape(Rectangle())
         }
-        .padding(9)
-        .background(active ? Brand.accent.opacity(0.14) : Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .contentShape(Rectangle())
-        .onTapGesture { state.switchWorkspace(workspace.id) }
+        .buttonStyle(InteractiveRowButtonStyle())
+        .accessibilityLabel("\(workspace.name)，\(workspace.documents.count) 份资料，\(workspace.questionBank.count) 道题，\(sessions) 场会议")
+        .accessibilityHint(active ? "当前系列" : "切换到这个系列")
+        .accessibilityAddTraits(active ? .isSelected : [])
+        .accessibilityIdentifier("library.series.\(workspace.id.uuidString)")
         .contextMenu {
             Button("使用这个系列") { state.switchWorkspace(workspace.id) }
             Button("复制一份") { state.duplicateWorkspace(workspace.id) }
@@ -234,15 +238,20 @@ private extension WorkspaceEditor {
 private struct FieldEditor: View {
     let field: ModeField
     @Binding var text: String
+    var showsLabel = true
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(field.title).font(.system(size: 12, weight: .semibold))
+            if showsLabel {
+                Text(field.title).font(.system(size: 12, weight: .semibold))
+            }
             if field.long {
                 ZStack(alignment: .topLeading) {
                     if text.isEmpty {
                         Text(field.placeholder).font(.system(size: 13)).foregroundStyle(.tertiary).padding(.horizontal, 11).padding(.vertical, 8).allowsHitTesting(false)
                     }
                     TextEditor(text: $text).font(.system(size: 13)).scrollContentBackground(.hidden).frame(minHeight: 60, maxHeight: 140).padding(5)
+                        .accessibilityLabel(field.title)
                 }
                 .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             } else {
@@ -290,36 +299,86 @@ private struct WorkspaceSkillsSection: View {
 
 private struct WorkspaceBasicTab: View {
     @Environment(AppState.self) private var state
-    @State private var showsAllFields = false
+    @State private var showsAdditionalInfo = false
+    @State private var showsStructuredFields = false
 
     var body: some View {
         @Bindable var state = state
         let profile = ModeProfile.for(state.sessionMode)
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label("\(state.sessionMode.title)信息", systemImage: "list.bullet.rectangle").font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Text("只填写必要信息，其余可稍后补充")
-                    .font(.caption2).foregroundStyle(.secondary)
+        let coreFields = Array(profile.fields.prefix(2))
+        let additionalFields = Array(profile.fields.dropFirst(2))
+        let filledAdditionalCount = additionalFields.filter {
+            !(state.activeWorkspace.fields[$0.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }.count
+        let hasBackground = !state.profile.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(state.sessionMode.title)信息")
+                    .font(.system(size: 15, weight: .semibold))
+                Text("先填写核心信息，其他内容可以稍后补充。")
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
             }
-            ForEach(Array(profile.fields.prefix(2))) { field in
-                FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
-                                                        set: { state.activeWorkspace.fields[field.id] = $0 }))
-            }
-            if profile.fields.count > 2 {
-                DisclosureGroup(isExpanded: $showsAllFields) {
-                    ForEach(Array(profile.fields.dropFirst(2))) { field in
-                        FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
-                                                                set: { state.activeWorkspace.fields[field.id] = $0 }))
+
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 14) {
+                    ForEach(coreFields) { field in
+                        fieldEditor(field)
+                            .frame(minWidth: 260, maxWidth: 420, alignment: .leading)
                     }
-                } label: {
-                    Text("更多背景（可选）· \(profile.fields.count - 2) 项")
-                        .font(.system(size: 12, weight: .semibold))
                 }
-                .padding(.top, 2)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(coreFields) { field in
+                        fieldEditor(field)
+                            .frame(maxWidth: 420, alignment: .leading)
+                    }
+                }
             }
-            FieldEditor(field: ModeField("notes", "其他背景", "任何希望回答时参考的事实：经历、数字、对方偏好…", long: true), text: $state.profile)
+
+            DisclosureGroup(isExpanded: $showsAdditionalInfo) {
+                VStack(alignment: .leading, spacing: 12) {
+                    FieldEditor(field: ModeField("notes", "其他背景", "任何希望回答时参考的事实：经历、数字、对方偏好…", long: true),
+                                text: $state.profile, showsLabel: false)
+                        .frame(maxWidth: 760, alignment: .leading)
+
+                    if !additionalFields.isEmpty {
+                        DisclosureGroup(isExpanded: $showsStructuredFields) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                ForEach(additionalFields) { field in
+                                    FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
+                                                                            set: { state.activeWorkspace.fields[field.id] = $0 }))
+                                        .frame(maxWidth: field.long ? 760 : 420, alignment: .leading)
+                                }
+                            }
+                            .padding(.top, 8)
+                        } label: {
+                            HStack(spacing: 7) {
+                                Text("更多信息")
+                                    .font(.system(size: 12, weight: .semibold))
+                                Text("\(filledAdditionalCount)/\(additionalFields.count) 项已填写")
+                                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.top, 2)
+                    }
+                }
+                .padding(.top, 8)
+            } label: {
+                HStack(spacing: 7) {
+                    Text("其他背景")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(hasBackground ? "已填写" : "可选")
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+            }
+            .tint(Ink.secondary)
         }
+    }
+
+    private func fieldEditor(_ field: ModeField) -> some View {
+        FieldEditor(field: field, text: Binding(get: { state.activeWorkspace.fields[field.id] ?? "" },
+                                                set: { state.activeWorkspace.fields[field.id] = $0 }))
     }
 }
 
@@ -358,7 +417,13 @@ private struct WorkspaceDocumentsTab: View {
                 Label("资料 \(state.documents.count)", systemImage: "doc.on.doc").font(.system(size: 13, weight: .semibold))
                 Spacer()
                 if state.isImportingDocuments || state.isIndexingDocuments { ProgressView().controlSize(.small) }
-                Button { importingCategory = nil; isFileImporterPresented = true } label: {
+                Menu {
+                    Button("自动归类") { presentImporter(category: nil) }
+                    Divider()
+                    ForEach(categories(profile), id: \.self) { category in
+                        Button("导入到 \(category)") { presentImporter(category: category) }
+                    }
+                } label: {
                     Label("导入资料", systemImage: "square.and.arrow.down")
                 }
                 .buttonStyle(ChipButtonStyle(prominent: true))
@@ -407,6 +472,11 @@ private struct WorkspaceDocumentsTab: View {
         return result
     }
 
+    private func presentImporter(category: String?) {
+        importingCategory = category
+        isFileImporterPresented = true
+    }
+
     private func categorySection(_ category: String) -> some View {
         let items = state.documents.filter { ($0.category ?? "其他") == category }
         return VStack(alignment: .leading, spacing: 6) {
@@ -414,14 +484,13 @@ private struct WorkspaceDocumentsTab: View {
                 Text(category).font(.system(size: 12, weight: .semibold))
                 Text("\(items.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
-                Button { importingCategory = category; isFileImporterPresented = true } label: { Label("添加", systemImage: "plus") }
-                    .buttonStyle(ChipButtonStyle())
             }
             ForEach(items) { document in
                 HStack(spacing: 8) {
-                    Toggle("", isOn: Binding(get: { state.documents.first(where: { $0.id == document.id })?.enabled ?? false },
-                                             set: { state.setDocumentEnabled(document.id, enabled: $0) }))
-                        .labelsHidden().toggleStyle(.switch).controlSize(.mini).help("是否用于回答")
+                    Toggle("用于回答", isOn: Binding(get: { state.documents.first(where: { $0.id == document.id })?.enabled ?? false },
+                                                       set: { state.setDocumentEnabled(document.id, enabled: $0) }))
+                        .toggleStyle(.switch).controlSize(.mini)
+                        .help("开启后，回答时会参考这份资料。")
                     Image(systemName: icon(for: document.name)).foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(document.name).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
@@ -441,16 +510,28 @@ private struct WorkspaceDocumentsTab: View {
                     Spacer()
                     if let path = document.markdownPath, let archived = MaterialArchive.resolve(path), FileManager.default.fileExists(atPath: archived.path) {
                         Button { NSWorkspace.shared.open(archived) } label: { Image(systemName: "doc.richtext") }
-                            .buttonStyle(.borderless).help("打开归档的 Markdown")
+                            .buttonStyle(.borderless).accessibilityLabel("打开归档 Markdown").help("打开归档的 Markdown")
                     }
                     Menu {
                         ForEach(categories(ModeProfile.for(state.sessionMode)), id: \.self) { target in
-                            Button(target) { state.setDocumentCategory(document.id, category: target) }
+                            Button {
+                                state.setDocumentCategory(document.id, category: target)
+                            } label: {
+                                if target == (document.category ?? "其他") {
+                                    Label(target, systemImage: "checkmark")
+                                } else {
+                                    Text(target)
+                                }
+                            }
                         }
-                    } label: { Image(systemName: "folder") }
-                        .menuStyle(.button).buttonStyle(.borderless).menuIndicator(.hidden).fixedSize().help("移动到其他分类")
-                    Button { state.removeDocument(document.id) } label: { Image(systemName: "trash") }
-                        .buttonStyle(.borderless).foregroundStyle(.red).help("移除")
+                    } label: { Label("移动", systemImage: "folder") }
+                        .menuStyle(.button).buttonStyle(.borderless).menuIndicator(.hidden).fixedSize()
+                        .accessibilityLabel("移动资料分类")
+                        .help("选择这份资料所属的分类")
+                    Button(role: .destructive) { state.removeDocument(document.id) } label: {
+                        Label("移除", systemImage: "trash")
+                    }
+                    .buttonStyle(.borderless).foregroundStyle(.red).help("从当前系列移除这份资料")
                 }
                 .padding(7).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }

@@ -6,6 +6,7 @@ import InterviewHackerCore
 /// navigation on narrow windows).
 struct HistoryView: View {
     @Environment(AppState.self) private var state
+    @FocusState private var focusedSessionID: UUID?
     @State private var showDeleteAll = false
     @AppStorage(AppNavigationBar.meetingsSidebarKey) private var isMeetingListHidden = false
     @State private var isCollectionOverview = false
@@ -24,7 +25,6 @@ struct HistoryView: View {
 
     private var archive: SessionArchive { SessionArchive.shared }
     private var selection: UUID? { state.historySelection }
-
     /// Workspace + date + length filters (no text search): the pool the content
     /// search walks and the pool the list is drawn from.
     private var scoped: [SessionMeta] {
@@ -53,16 +53,31 @@ struct HistoryView: View {
         GeometryReader { proxy in
             let wide = proxy.size.width >= 760
             HStack(alignment: .top, spacing: 0) {
-                if !isMeetingListHidden && (wide || selection == nil) {
-                    sessionList
-                        .frame(width: wide ? 270 : nil)
-                        .padding(.leading, 16).padding(.trailing, wide ? 0 : 16).padding(.top, 4).padding(.bottom, 14)
-                    Rectangle().fill(Ink.hairline).frame(width: 1).padding(.vertical, 14)
-                }
-                if let selection, archive.sessions.contains(where: { $0.id == selection }) {
+                if wide {
+                    if !isMeetingListHidden {
+                        sessionList
+                            .frame(width: 270)
+                            .padding(.leading, 16).padding(.top, 4).padding(.bottom, 14)
+                        Rectangle().fill(Ink.hairline).frame(width: 1).padding(.vertical, 14)
+                    }
+                    if let selection, archive.sessions.contains(where: { $0.id == selection }) {
+                        MeetingPage(
+                            id: selection,
+                            showsBack: false,
+                            onBack: returnToMeetingList,
+                            onShowInfo: showInformation,
+                            onRename: beginRenaming,
+                            onDelete: deleteSession,
+                            onNavigateToAllMeetings: showAllMeetings,
+                            onNavigateToSeries: showSeries)
+                            .id(selection)
+                    } else {
+                        archiveOverview(compact: isMeetingListHidden)
+                    }
+                } else if let selection, archive.sessions.contains(where: { $0.id == selection }) {
                     MeetingPage(
                         id: selection,
-                        showsBack: !wide,
+                        showsBack: true,
                         onBack: returnToMeetingList,
                         onShowInfo: showInformation,
                         onRename: beginRenaming,
@@ -70,8 +85,11 @@ struct HistoryView: View {
                         onNavigateToAllMeetings: showAllMeetings,
                         onNavigateToSeries: showSeries)
                         .id(selection)
-                } else if wide || isMeetingListHidden {
-                    archiveOverview
+                } else if isCollectionOverview || isMeetingListHidden {
+                    archiveOverview(compact: true)
+                } else {
+                    sessionList
+                        .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 14)
                 }
             }
         }
@@ -81,10 +99,10 @@ struct HistoryView: View {
         }
         .onChange(of: archive.sessions.count) { _, _ in selectFirstIfNeeded() }
         .confirmationDialog("删除全部会议记录？", isPresented: $showDeleteAll, titleVisibility: .visible) {
-            Button("删除全部记录", role: .destructive) { archive.deleteAll(); state.historySelection = nil }
+            Button("删除全部会议记录", role: .destructive) { archive.deleteAll(); state.historySelection = nil }
             Button("取消", role: .cancel) { }
         } message: {
-            Text("会删除所有会议的转写、问题、提词和纪要，无法恢复。")
+            Text("将删除全部 \(archive.sessions.count) 场会议的转写、问题、提词和纪要，不限当前系列，且无法恢复。")
         }
         .sheet(item: $informationTarget) { target in
             SessionInfoView(sessionID: target.id)
@@ -104,7 +122,7 @@ struct HistoryView: View {
         .task(id: contentSearchKey) { await runContentSearch() }
     }
 
-    private var archiveOverview: some View {
+    private func archiveOverview(compact: Bool = false) -> some View {
         let isRoot = overviewFolderKey == nil && state.historyWorkspaceFilter == nil
         let folder = selectedOverviewFolder
         let folderSessions = folder.map { folder in
@@ -113,40 +131,46 @@ struct HistoryView: View {
         let title = isRoot ? "所有会议" : (folder?.name ?? "已删除系列")
         let subtitle: String
         if let folder, !isRoot {
-            subtitle = "\(folder.modeTitle ?? "会议系列") · 当前筛选下共 \(folderSessions.count) 场会议"
+            subtitle = "\(folder.modeTitle ?? "会议系列") · 系列共 \(folder.sessions.count) 场会议 · 当前条件匹配 \(folderSessions.count) 场"
         } else if !isRoot {
             subtitle = "系列信息已不可用 · 当前筛选下共 \(folderSessions.count) 场会议"
         } else {
-            subtitle = "会议记录保存在这台 Mac 上 · 当前筛选下共 \(visibleSessions.count) 场会议"
+            subtitle = "本机记录 · 当前匹配 \(visibleSessions.count) 场会议、\(visibleSeriesFolders.count) 个系列 · 系列按最近匹配会议排序"
         }
-        return MeetingArchiveOverview(
+        let overview = MeetingArchiveOverview(
             title: title,
             subtitle: subtitle,
             sessions: isRoot ? visibleSessions : folderSessions,
             folders: isRoot ? visibleSeriesFolders : [],
             isRoot: isRoot,
             selectedFolder: isRoot ? nil : folder,
+            hasUnderlyingRecords: isRoot ? !archive.sessions.isEmpty : !(folder?.sessions.isEmpty ?? true),
+            hasActiveFilters: hasNarrowingFilter,
             onOpenRoot: showAllMeetings,
             onOpenFolder: showFolder,
-            onOpen: openFromOverview)
-            .padding(.leading, 16).padding(.trailing, 16).padding(.bottom, 14)
+            onOpen: openFromOverview,
+            onClearFilters: clearFilters,
+            onReturnHome: { state.section = .home })
+        return Group {
+            if compact {
+                VStack(spacing: 0) {
+                    filterBar
+                        .padding(.horizontal, 16)
+                        .padding(.top, 10)
+                        .padding(.bottom, 6)
+                    overview
+                }
+            } else {
+                overview
+            }
+        }
     }
 
     /// A folder for each saved workspace/series, plus a fallback for legacy sessions
     /// that predate workspace grouping.
     private var seriesFolders: [MeetingSeriesFolder] {
         let workspaces = state.workspaces.workspaces
-        func workspaceID(for session: SessionMeta) -> UUID? {
-            session.workspaceID ?? workspaces.first(where: { $0.name == session.workspaceName })?.id
-        }
-        func key(for session: SessionMeta) -> String {
-            if let id = workspaceID(for: session) { return "workspace:\(id.uuidString)" }
-            let name = session.workspaceName?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let bucket = name?.isEmpty == false ? name ?? "未分类" : "未分类"
-            return "legacy:\(bucket)"
-        }
-
-        var grouped = Dictionary(grouping: archive.sessions, by: key)
+        var grouped = Dictionary(grouping: archive.sessions) { seriesFolderID(for: $0, workspaces: workspaces) }
         for workspace in workspaces where !workspace.archived {
             let workspaceKey = "workspace:\(workspace.id.uuidString)"
             if grouped[workspaceKey] == nil { grouped[workspaceKey] = [] }
@@ -168,6 +192,14 @@ struct HistoryView: View {
         }
     }
 
+    private func seriesFolderID(for session: SessionMeta, workspaces: [Workspace]) -> String {
+        let workspaceID = session.workspaceID ?? workspaces.first(where: { $0.name == session.workspaceName })?.id
+        if let workspaceID { return "workspace:\(workspaceID.uuidString)" }
+        let name = session.workspaceName?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bucket = name?.isEmpty == false ? name ?? "未分类" : "未分类"
+        return "legacy:\(bucket)"
+    }
+
     private var selectedOverviewFolder: MeetingSeriesFolder? {
         if let overviewFolderKey, let folder = seriesFolders.first(where: { $0.id == overviewFolderKey }) { return folder }
         if let workspaceID = state.historyWorkspaceFilter {
@@ -176,14 +208,67 @@ struct HistoryView: View {
         return nil
     }
 
+    private var hasNarrowingFilter: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || dateFilter != .all || lengthFilter != .all
+    }
+
+    private var isScopedToSeries: Bool {
+        overviewFolderKey != nil || state.historyWorkspaceFilter != nil
+    }
+
+    private var currentScopeSessionCount: Int {
+        if let folder = selectedOverviewFolder { return folder.sessions.count }
+        if let workspaceID = state.historyWorkspaceFilter {
+            return archive.sessions.filter { $0.workspaceID == workspaceID }.count
+        }
+        return archive.sessions.count
+    }
+
     private var visibleSeriesFolders: [MeetingSeriesFolder] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return seriesFolders.compactMap { folder in
+        let candidateFolders = isScopedToSeries ? selectedOverviewFolder.map { [$0] } ?? [] : seriesFolders
+        let visible: [MeetingSeriesFolder] = candidateFolders.compactMap { folder -> MeetingSeriesFolder? in
             let matching = ordered(visibleSessions.filter { folder.contains($0, workspaces: state.workspaces.workspaces) })
             let nameMatches = !trimmed.isEmpty && folder.name.localizedCaseInsensitiveContains(trimmed)
             let hasNarrowingFilter = !trimmed.isEmpty || dateFilter != .all || lengthFilter != .all
             guard !matching.isEmpty || nameMatches || !hasNarrowingFilter else { return nil }
             return folder.withSessions(matching)
+        }
+        return visible.sorted { lhs, rhs in
+            let left = lhs.lastMeetingAt ?? .distantPast
+            let right = rhs.lastMeetingAt ?? .distantPast
+            return left == right
+                ? lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+                : left > right
+        }
+    }
+
+    /// Keep each series visible once and order groups by their most recent
+    /// matching meeting; `sortOrder` is applied only within each series.
+    private var visibleSessionGroups: [MeetingSeriesSessionGroup] {
+        let workspaces = state.workspaces.workspaces
+        let foldersByID = Dictionary(uniqueKeysWithValues: seriesFolders.map { ($0.id, $0) })
+        var grouped: [String: [SessionMeta]] = [:]
+
+        for session in visibleSessions {
+            let folderID = seriesFolderID(for: session, workspaces: workspaces)
+            guard foldersByID[folderID] != nil else { continue }
+            grouped[folderID, default: []].append(session)
+        }
+
+        let groups: [MeetingSeriesSessionGroup] = visibleSeriesFolders.compactMap { visibleFolder -> MeetingSeriesSessionGroup? in
+            let id = visibleFolder.id
+            guard let folder = foldersByID[id] else { return nil }
+            let sessions = grouped[id] ?? []
+            return MeetingSeriesSessionGroup(folder: folder.withSessions(sessions), sessions: sessions)
+        }
+        return groups.sorted { lhs, rhs in
+            let left = lhs.sessions.map(\.startedAt).max() ?? .distantPast
+            let right = rhs.sessions.map(\.startedAt).max() ?? .distantPast
+            return left == right
+                ? lhs.folder.name.localizedStandardCompare(rhs.folder.name) == .orderedAscending
+                : left > right
         }
     }
 
@@ -250,10 +335,10 @@ struct HistoryView: View {
     }
 
     private var sessionList: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 9) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(sessionListTitle).font(Typo.section).lineLimit(1)
+                    Text(sessionListTitle).font(Typo.section).lineLimit(2)
                     Text(state.historyWorkspaceFilter == nil
                          ? (overviewFolderKey != nil ? "这个系列中的会议记录" : (state.recordSessions ? "自动保存 · 不保存录音" : "记录已关闭（设置 → 数据）"))
                          : "这个系列中的会议记录")
@@ -261,43 +346,135 @@ struct HistoryView: View {
                         .foregroundStyle(state.historyWorkspaceFilter == nil && !state.recordSessions ? Ink.caution : Ink.secondary)
                 }
                 Spacer()
-                Button { showDeleteAll = true } label: { Image(systemName: "trash") }
-                    .buttonStyle(GlassIconButtonStyle(size: 28))
-                    .disabled(archive.sessions.isEmpty).help("删除全部会议记录")
-            }
-            MenuPicker(selection: Binding(get: { state.historyWorkspaceFilter }, set: { id in
-                if let id { showSeries(id) } else { showAllMeetings() }
-            }),
-                       options: [(UUID?.none, String(localized: "全部系列"))] + state.workspaces.workspaces.map { (Optional($0.id), $0.name) })
-            filterBar
-            if archive.sessions.isEmpty {
-                ContentUnavailableView("还没有会议", systemImage: "clock",
-                                       description: Text("开过的会议会保存在这里；结束时自动整理纪要。"))
-                    .frame(maxHeight: .infinity)
-            } else if visibleSessions.isEmpty {
-                // Records exist, but the current search/filters exclude all of them.
-                ContentUnavailableView {
-                    Label("没有符合条件的记录", systemImage: "line.3.horizontal.decrease.circle")
-                } description: {
-                    Text("当前的搜索或筛选条件下没有记录，可以清除筛选后查看全部。")
-                } actions: {
-                    Button("清除筛选") { clearFilters() }.buttonStyle(ChipButtonStyle(prominent: true))
-                        .help("清除搜索、筛选、排序和场景")
+                Menu {
+                    Button(role: .destructive) {
+                        showDeleteAll = true
+                    } label: {
+                        Label("删除全部会议记录", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
-                .frame(maxHeight: .infinity)
+                .menuStyle(.button)
+                .buttonStyle(GlassIconButtonStyle(size: 28))
+                .menuIndicator(.hidden)
+                .accessibilityLabel("会议记录操作")
+                .disabled(archive.sessions.isEmpty)
+                .help("会议记录操作；删除会影响所有系列")
+            }
+            filterBar
+            if isScopedToSeries && currentScopeSessionCount == 0 {
+                VStack(spacing: 7) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(Ink.tertiary)
+                    Text("这个系列还没有会议")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("开始一场会议后，它会出现在这个系列里。")
+                        .font(.system(size: 11)).foregroundStyle(Ink.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("返回所有会议") { showAllMeetings() }
+                        .buttonStyle(ChipButtonStyle(prominent: true))
+                        .controlSize(.small)
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if archive.sessions.isEmpty {
+                VStack(spacing: 7) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(Ink.tertiary)
+                    Text("还没有会议")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("开过的会议会保存在这里；结束时自动整理纪要。")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Ink.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if visibleSessions.isEmpty && visibleSessionGroups.isEmpty {
+                VStack(spacing: 7) {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 24, weight: .regular))
+                        .foregroundStyle(Ink.tertiary)
+                    Text("没有符合条件的记录")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text(isScopedToSeries
+                         ? "当前系列有 \(currentScopeSessionCount) 场会议；当前搜索或筛选没有匹配项。"
+                         : "当前搜索或筛选条件下没有记录，可以清除条件后查看全部。")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Ink.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("清除搜索与筛选") { clearFilters() }
+                        .buttonStyle(ChipButtonStyle(prominent: true))
+                        .controlSize(.small)
+                        .help("清除搜索、筛选和排序，保留当前系列范围")
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 6) {
-                        ForEach(visibleSessions) { meta in
-                            SessionRow(meta: meta, selected: meta.id == selection, active: meta.id == archive.activeID)
-                                .contentShape(Rectangle())
-                                .onTapGesture { openFromOverview(meta.id) }
-                                .contextMenu {
-                                    MeetingMenuItems(sessionID: meta.id,
-                                                     onShowInfo: showInformation,
-                                                     onRename: beginRenaming,
-                                                     onDelete: deleteSession)
+                    LazyVStack(alignment: .leading, spacing: 10) {
+                        ForEach(visibleSessionGroups) { group in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Button { showFolder(group.folder) } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "folder")
+                                            .font(.system(size: 10, weight: .medium))
+                                        Text(verbatim: group.folder.name)
+                                            .font(.system(size: 11, weight: .medium))
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                        Spacer(minLength: 4)
+                                        Text(group.sessions.count.formatted())
+                                            .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 8, weight: .semibold))
+                                    }
+                                    .foregroundStyle(Ink.secondary)
+                                    .padding(.horizontal, 9)
+                                    .padding(.top, 8)
+                                    .padding(.bottom, 2)
+                                    .contentShape(Rectangle())
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("\(group.folder.name)，\(group.sessions.count) 场会议")
+                                .accessibilityIdentifier("history.seriesGroup.\(group.id)")
+                                .help("查看系列：\(group.folder.name)")
+
+                                ForEach(group.sessions) { meta in
+                                    Button { openFromOverview(meta.id) } label: {
+                                        SessionRow(meta: meta, selected: meta.id == selection,
+                                                   active: meta.id == archive.activeID, showsWorkspace: false)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .buttonStyle(InteractiveRowButtonStyle())
+                                    .focused($focusedSessionID, equals: meta.id)
+                                    .overlay {
+                                        if focusedSessionID == meta.id {
+                                            RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                                                .strokeBorder(Ink.focus, lineWidth: 1.5)
+                                                .padding(1)
+                                        }
+                                    }
+                                    .accessibilityLabel("打开会议：\(meta.displayTitle)，\(MeetingOutcome.when(meta.startedAt))，\(MeetingOutcome.line(for: meta))")
+                                    .accessibilityHint("打开会议纪要和转写")
+                                    .accessibilityAddTraits(meta.id == selection ? .isSelected : [])
+                                    .accessibilityIdentifier("history.session.\(meta.id.uuidString)")
+                                    .contextMenu {
+                                        MeetingMenuItems(sessionID: meta.id,
+                                                         onShowInfo: showInformation,
+                                                         onRename: beginRenaming,
+                                                         onDelete: deleteSession)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -309,23 +486,25 @@ struct HistoryView: View {
 
     // MARK: Search, filter and sort
 
-    /// Compact bar above the list: search, then time, length and sort in one row.
+    /// Search stays visible above the three core controls.
     private var filterBar: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 7) {
             searchField
+            Text("系列按最近匹配的会议排序；以下排序只作用于组内会议。")
+                .font(.system(size: 10))
+                .foregroundStyle(Ink.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 6) {
                 HistoryFilterPicker(selection: $dateFilter, options: SessionDateFilter.allCases.map { ($0, $0.rawValue) })
                 HistoryFilterPicker(selection: $lengthFilter, options: SessionLengthFilter.allCases.map { ($0, $0.rawValue) })
                 HistoryFilterPicker(selection: $sortOrder, options: SessionSort.allCases.map { ($0, $0.rawValue) })
             }
             .frame(maxWidth: .infinity)
-            HStack(spacing: 6) {
+            HStack {
+                Text(searchScopeLabel).font(.system(size: 10)).foregroundStyle(Ink.secondary)
+                Text("·").font(.system(size: 10)).foregroundStyle(Ink.tertiary)
                 Text(resultCount).font(.system(size: 11)).foregroundStyle(.tertiary)
                 Spacer(minLength: 0)
-                if hasActiveFilter {
-                    Button("清除筛选") { clearFilters() }.buttonStyle(ChipButtonStyle())
-                        .help("清除搜索、筛选、排序和场景")
-                }
             }
         }
     }
@@ -337,9 +516,10 @@ struct HistoryView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Color.secondary)
-            TextField("搜索标题、系列或问题", text: $query)
+            TextField(searchPlaceholder, text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12.5))
+                .accessibilityLabel(searchScopeLabel)
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain)
@@ -353,25 +533,31 @@ struct HistoryView: View {
     }
 
     private var resultCount: String {
-        let base = "共 \(visibleSessions.count) 条记录"
+        let base = searchIsScopedToSeries
+            ? "\(visibleSessions.count) 场会议 · 系列共 \(currentScopeSessionCount) 场"
+            : "\(visibleSessions.count) 场会议 · \(visibleSeriesFolders.count) 个系列"
         return isContentSearching ? base + " · 搜索中…" : base
     }
 
-    private var hasActiveFilter: Bool {
-        dateFilter != .all || lengthFilter != .all || sortOrder != .newest
-            || !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private var searchIsScopedToSeries: Bool {
+        overviewFolderKey != nil || state.historyWorkspaceFilter != nil
     }
 
-    /// Back to "show everything": search box, both filters, the order and the
-    /// workspace pick.
+    private var searchScopeLabel: String {
+        searchIsScopedToSeries ? "搜索范围：当前系列" : "搜索范围：全部会议"
+    }
+
+    private var searchPlaceholder: String {
+        searchIsScopedToSeries ? "搜索此系列中的标题、问题或回答" : "搜索全部会议的标题、系列、问题或回答"
+    }
+
+    /// Clear search and filters while keeping the current series scope.
     private func clearFilters() {
         query = ""
         dateFilter = .all
         lengthFilter = .all
         sortOrder = .newest
         contentMatch = []
-        overviewFolderKey = nil
-        state.historyWorkspaceFilter = nil
     }
 
     /// Metadata-only match: always available, no disk access.
@@ -496,6 +682,13 @@ private struct MeetingSeriesFolder: Identifiable {
     }
 }
 
+private struct MeetingSeriesSessionGroup: Identifiable {
+    let folder: MeetingSeriesFolder
+    let sessions: [SessionMeta]
+
+    var id: String { folder.id }
+}
+
 private struct MeetingArchiveOverview: View {
     let title: String
     let subtitle: String
@@ -503,9 +696,15 @@ private struct MeetingArchiveOverview: View {
     let folders: [MeetingSeriesFolder]
     let isRoot: Bool
     let selectedFolder: MeetingSeriesFolder?
+    let hasUnderlyingRecords: Bool
+    let hasActiveFilters: Bool
     let onOpenRoot: () -> Void
     let onOpenFolder: (MeetingSeriesFolder) -> Void
     let onOpen: (UUID) -> Void
+    let onClearFilters: () -> Void
+    let onReturnHome: () -> Void
+    @FocusState private var focusedSessionID: UUID?
+    @FocusState private var focusedFolderID: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -518,7 +717,9 @@ private struct MeetingArchiveOverview: View {
                 Text(selectedFolder?.name ?? title).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
                 Spacer(minLength: Space.s2)
             }
-            .padding(.horizontal, Space.s6)
+            .frame(maxWidth: Space.content, alignment: .leading)
+            .padding(.horizontal, Space.s8)
+            .frame(maxWidth: .infinity)
             .frame(height: 52)
             .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
 
@@ -539,20 +740,66 @@ private struct MeetingArchiveOverview: View {
                     Text(isRoot ? "会议系列" : "系列中的会议").font(Typo.section)
                     if isRoot {
                         if folders.isEmpty {
-                            ContentUnavailableView("还没有会议系列", systemImage: "folder",
-                                                   description: Text("开始一场会议后，它会归入对应系列。"))
+                            if hasUnderlyingRecords {
+                                ContentUnavailableView {
+                                    Label("没有匹配的系列", systemImage: "magnifyingglass")
+                                } description: {
+                                    Text("当前搜索或筛选条件下没有系列。清除条件可恢复全部会议系列。")
+                                } actions: {
+                                    Button("清除搜索与筛选", action: onClearFilters)
+                                        .buttonStyle(ChipButtonStyle(prominent: true))
+                                }
                                 .frame(maxWidth: .infinity, minHeight: 180)
+                            } else {
+                                ContentUnavailableView {
+                                    Label("还没有会议系列", systemImage: "folder")
+                                } description: {
+                                    Text("开始一场会议后，它会归入对应系列。")
+                                } actions: {
+                                    Button("返回首页", action: onReturnHome)
+                                        .buttonStyle(ChipButtonStyle(prominent: true))
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 180)
+                            }
                         } else {
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: Space.s3)],
-                                      alignment: .leading, spacing: Space.s3) {
+                            LazyVStack(alignment: .leading, spacing: 0) {
                                 ForEach(folders) { folder in folderCard(folder) }
                             }
                         }
                     } else {
-                        if sessions.isEmpty {
-                            ContentUnavailableView("这个系列里还没有会议", systemImage: "folder",
-                                                   description: Text("会议记录会显示在这个系列里。"))
-                                .frame(maxWidth: .infinity, minHeight: 180)
+                        if selectedFolder?.sessions.isEmpty == true {
+                            ContentUnavailableView {
+                                Label("这个系列还没有会议", systemImage: "folder")
+                            } description: {
+                                Text("开始一场会议后，它会显示在这个系列里。")
+                            } actions: {
+                                Button("返回所有会议", action: onOpenRoot)
+                                    .buttonStyle(ChipButtonStyle(prominent: true))
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 180)
+                        } else if selectedFolder == nil {
+                            ContentUnavailableView {
+                                Label("系列信息已不可用", systemImage: "folder.badge.questionmark")
+                            } description: {
+                                Text("这个系列可能已被删除。返回所有会议查看仍保留的记录。")
+                            } actions: {
+                                Button("返回所有会议", action: onOpenRoot)
+                                    .buttonStyle(ChipButtonStyle(prominent: true))
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 180)
+                        } else if sessions.isEmpty {
+                            ContentUnavailableView {
+                                Label(hasActiveFilters ? "当前搜索或筛选下没有会议" : "当前条件下没有会议",
+                                      systemImage: "line.3.horizontal.decrease.circle")
+                            } description: {
+                                Text("这个系列共有 \(selectedFolder?.sessions.count ?? 0) 场会议。清除条件可恢复结果。")
+                            } actions: {
+                                Button("清除搜索与筛选", action: onClearFilters)
+                                    .buttonStyle(ChipButtonStyle(prominent: true))
+                                Button("返回所有会议", action: onOpenRoot)
+                                    .buttonStyle(ChipButtonStyle())
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 180)
                         } else {
                             LazyVStack(spacing: 6) {
                                 ForEach(sessions) { meta in
@@ -560,7 +807,18 @@ private struct MeetingArchiveOverview: View {
                                         SessionRow(meta: meta, selected: false, active: false)
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
-                                    .buttonStyle(.plain)
+                                    .buttonStyle(InteractiveRowButtonStyle())
+                                    .focused($focusedSessionID, equals: meta.id)
+                                    .overlay {
+                                        if focusedSessionID == meta.id {
+                                            RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                                                .strokeBorder(Ink.focus, lineWidth: 1.5)
+                                                .padding(1)
+                                        }
+                                    }
+                                    .accessibilityLabel("打开会议：\(meta.displayTitle)，\(MeetingOutcome.when(meta.startedAt))，\(MeetingOutcome.line(for: meta))")
+                                    .accessibilityHint("打开会议纪要和转写")
+                                    .accessibilityIdentifier("history.seriesSession.\(meta.id.uuidString)")
                                 }
                             }
                         }
@@ -570,49 +828,61 @@ private struct MeetingArchiveOverview: View {
                 .padding(.horizontal, Space.s8)
                 .padding(.top, Space.s8)
                 .padding(.bottom, Space.s12)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+                // Center the capped content column just like MeetingPage's notes body.
+                .frame(maxWidth: .infinity)
             }
         }
-        .card()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func folderCard(_ folder: MeetingSeriesFolder) -> some View {
         Button { onOpenFolder(folder) } label: {
-            HStack(alignment: .top, spacing: Space.s3) {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 22, weight: .regular))
+            HStack(alignment: .center, spacing: Space.s3) {
+                Image(systemName: "folder")
+                    .font(.system(size: 17, weight: .regular))
                     .foregroundStyle(Ink.ai)
-                    .frame(width: 28, height: 30)
-                VStack(alignment: .leading, spacing: 5) {
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 4) {
                     Text(verbatim: folder.name)
-                        .font(Typo.section)
+                        .font(Typo.body)
                         .foregroundStyle(Ink.ink)
-                        .lineLimit(1)
-                    Text(folderSummary(folder))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(folder.modeTitle ?? "会议系列")
                         .font(Typo.caption)
                         .foregroundStyle(Ink.secondary)
-                        .lineLimit(2)
                 }
                 Spacer(minLength: 0)
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text("\(folder.sessions.count) 场会议")
+                        .font(.system(size: 11, weight: .medium).monospacedDigit())
+                        .foregroundStyle(Ink.secondary)
+                    Text(folder.lastMeetingAt.map { "最近 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "暂无最近时间")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Ink.tertiary)
+                }
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(Ink.tertiary)
-                    .padding(.top, 4)
             }
-            .padding(Space.s4)
-            .frame(maxWidth: .infinity, minHeight: 78, alignment: .leading)
-            .glassBackground(cornerRadius: Space.radiusMedium)
-            .contentShape(RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
+            .padding(.horizontal, Space.s2)
+            .padding(.vertical, Space.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(InteractiveRowButtonStyle())
+        .focused($focusedFolderID, equals: folder.id)
+        .overlay {
+            if focusedFolderID == folder.id {
+                RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                    .strokeBorder(Ink.focus, lineWidth: 1.5)
+                    .padding(1)
+            }
+        }
+        .accessibilityLabel("打开系列：\(folder.name)，\(folder.sessions.count) 场会议")
+        .accessibilityHint(folder.lastMeetingAt.map { "最近会议 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "这个系列还没有会议")
+        .accessibilityIdentifier("history.series.\(folder.id)")
         .help("打开系列：\(folder.name)")
-    }
-
-    private func folderSummary(_ folder: MeetingSeriesFolder) -> String {
-        let count = "\(folder.sessions.count) 场会议"
-        guard let latest = folder.lastMeetingAt else { return count + " · 暂无会议" }
-        return count + " · 最近 \(latest.formatted(date: .abbreviated, time: .shortened))"
     }
 
 }
@@ -684,6 +954,7 @@ private struct SessionRow: View {
     let meta: SessionMeta
     var selected: Bool
     var active: Bool
+    var showsWorkspace = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -701,7 +972,7 @@ private struct SessionRow: View {
 
     private var details: String {
         var parts = [MeetingOutcome.when(meta.startedAt), MeetingOutcome.line(for: meta)]
-        if let workspace = meta.workspaceName { parts.insert(workspace, at: 0) }
+        if showsWorkspace, let workspace = meta.workspaceName { parts.insert(workspace, at: 0) }
         return parts.joined(separator: " · ")
     }
 

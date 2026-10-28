@@ -265,12 +265,34 @@ private struct TranscriptColumn: View {
                     .padding(.horizontal, Space.s6)
                     .padding(.vertical, Space.s4)
                 }
+                // Keep the footer in the scroll view's measured safe area. SwiftUI
+                // reserves the status strip (and any candidate rows) at their real
+                // height, so the final transcript and translation can scroll above it.
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 0) {
+                        CandidateStrip()
+                        TranscriptStatus()
+                    }
+                    .background(Ink.paper)
+                }
+                .frame(maxHeight: .infinity)
                 .onChange(of: state.entries.count) { _, _ in if follow { proxy.scrollTo("bottom", anchor: .bottom) } }
+                // Final translations arrive after the transcript row was inserted;
+                // follow again when they expand that row, unless the user paused follow.
+                .onChange(of: state.entries.last?.translatedText) { _, _ in
+                    if follow { proxy.scrollTo("bottom", anchor: .bottom) }
+                }
                 .onChange(of: state.partialTranscript.count / 8) { _, _ in if follow { proxy.scrollTo("bottom", anchor: .bottom) } }
+                .onChange(of: state.microphonePartialTranscript.count / 8) { _, _ in if follow { proxy.scrollTo("bottom", anchor: .bottom) } }
+                .onChange(of: state.liveTranslation.systemPartialTranslation) { _, _ in
+                    if follow { proxy.scrollTo("bottom", anchor: .bottom) }
+                }
+                .onChange(of: state.liveTranslation.microphonePartialTranslation) { _, _ in
+                    if follow { proxy.scrollTo("bottom", anchor: .bottom) }
+                }
                 .onChange(of: follow) { _, value in if value { proxy.scrollTo("bottom", anchor: .bottom) } }
             }
-            CandidateStrip()
-            TranscriptStatus()
+            .frame(maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }

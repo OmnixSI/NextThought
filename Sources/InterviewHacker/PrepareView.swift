@@ -100,11 +100,19 @@ private struct TitleBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
+            HStack(spacing: Space.s1) {
+                Text("会议名称").overline()
+                Text("可选").font(Typo.caption).foregroundStyle(Ink.secondary)
+            }
             TextField("这场会议叫什么", text: Binding(get: { state.meetingDraft?.title ?? "" },
                                                 set: { state.updateDraftTitle($0) }), axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(Typo.display)
                 .lineLimit(1...3)
+                .accessibilityLabel("会议名称，可选")
+                .accessibilityHint("用于查找会议，可以会后修改")
+            Text("用于查找会议；可以现在填写，也可以会后再改。")
+                .font(Typo.caption).foregroundStyle(Ink.secondary)
             HStack(spacing: Space.s1) {
                 Image(systemName: state.meetingVenue == .online ? "desktopcomputer" : "person.3")
                 Text(state.meetingVenue == .online ? "线上会议" : "线下会议")

@@ -108,6 +108,7 @@ private struct HomeScreenshotCard: View {
 /// The two latest meetings with what came out of them.
 private struct RecentMeetings: View {
     @Environment(AppState.self) private var state
+    @FocusState private var focusedMeetingID: UUID?
 
     var body: some View {
         let recent = Array(state.archive.sessions.filter { $0.id != state.archive.activeID }.prefix(2))
@@ -124,18 +125,33 @@ private struct RecentMeetings: View {
                     state.historySelection = meta.id
                     state.section = .meetings
                 } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
+                    HStack(alignment: .center, spacing: Space.s3) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(meta.displayTitle).font(Typo.body).foregroundStyle(Ink.ink).lineLimit(1)
+                            Text(meta.displayTitle).font(Typo.body).foregroundStyle(Ink.ink).lineLimit(2)
                             Text(MeetingOutcome.line(for: meta)).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
                         }
                         Spacer(minLength: Space.s3)
                         Text(MeetingOutcome.when(meta.startedAt)).font(Typo.caption).foregroundStyle(Ink.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Ink.tertiary)
                     }
+                    .padding(.horizontal, Space.s2)
                     .padding(.vertical, Space.s3)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(InteractiveRowButtonStyle())
+                .focused($focusedMeetingID, equals: meta.id)
+                .overlay {
+                    if focusedMeetingID == meta.id {
+                        RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                            .strokeBorder(Ink.focus, lineWidth: 1.5)
+                            .padding(1)
+                    }
+                }
+                .accessibilityLabel("打开会议：\(meta.displayTitle)，\(MeetingOutcome.line(for: meta))，\(MeetingOutcome.when(meta.startedAt))")
+                .accessibilityHint("打开会议纪要")
+                .accessibilityIdentifier("home.recentMeeting.\(meta.id.uuidString)")
                 Rectangle().fill(Ink.hairline).frame(height: 1)
             }
         }

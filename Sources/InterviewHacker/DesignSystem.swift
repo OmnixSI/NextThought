@@ -195,6 +195,30 @@ struct GhostButtonStyle: ButtonStyle {
     }
 }
 
+/// Shared hover and press feedback for full-width navigation rows.
+struct InteractiveRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        InteractiveRowBody(configuration: configuration)
+    }
+
+    private struct InteractiveRowBody: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var hovering = false
+
+        var body: some View {
+            configuration.label
+                .background(
+                    (isEnabled && (hovering || configuration.isPressed)) ? Ink.hover : Color.clear,
+                    in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                )
+                .contentShape(Rectangle())
+                .onHover { hovering = $0 }
+                .animation(Motion.hover, value: hovering)
+        }
+    }
+}
+
 /// Segmented control on a sunken track; the selected segment is a raised surface.
 struct InkSegmented<Value: Hashable>: View {
     let items: [(value: Value, title: LocalizedStringKey)]

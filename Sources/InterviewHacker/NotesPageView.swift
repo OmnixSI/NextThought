@@ -97,12 +97,13 @@ struct MeetingPage: View {
 
     private var header: some View {
         HStack(spacing: Space.s2) {
-            navigationControls
+            if showsBack { navigationControls }
             breadcrumbs
             pageActions
         }
-        .padding(.horizontal, Space.s6)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: Space.content, alignment: .leading)
+        .padding(.horizontal, Space.s8)
+        .frame(maxWidth: .infinity)
         .frame(height: 52)
         .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
     }
@@ -150,6 +151,12 @@ struct MeetingPage: View {
 
     private func pageActionRow(compactTemplate: Bool) -> some View {
         HStack(spacing: Space.s2) {
+            if tab != .notes {
+                Text("纪要操作")
+                    .font(Typo.caption)
+                    .foregroundStyle(Ink.secondary)
+                    .help("模板和复制只作用于纪要，不会更改转写或会中提词")
+            }
             TemplateMenu(id: id, detail: detail, compactLabel: compactTemplate)
             MeetingMoreMenu(sessionID: id, onShowInfo: onShowInfo, onRename: onRename, onDelete: onDelete)
             primaryAction
@@ -190,6 +197,7 @@ struct MeetingPage: View {
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(detail == nil)
+            .accessibilityHint("复制会后纪要，不包含转写内容")
         }
     }
 
@@ -296,7 +304,9 @@ private struct TemplateMenu: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .disabled(archive.summarizing.contains(id) || id == archive.activeID || (detail?.lines.isEmpty ?? true))
-        .help("当前模板：\(currentName) · 换个模板重新整理")
+        .accessibilityLabel("纪要模板：\(currentName)")
+        .accessibilityHint("更换模板并重新整理会议纪要，不会更改转写或会中提词")
+        .help("只影响会后纪要，不更改转写或会中提词 · 当前模板：\(currentName)")
     }
 
     private var currentTemplateFallback: String {
