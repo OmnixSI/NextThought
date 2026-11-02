@@ -1,5 +1,9 @@
 # 开发与发布
 
+## 维护文档
+
+本文件是随源码提交到 GitHub 的通用开发、构建和发布说明。机器专属的正式版与测试版工作区、应用数据位置及本机授权状态记录在 `.local/LOCAL-PROJECT-MANAGEMENT.md`；该文件由 `.gitignore` 排除，只存在于维护者的本机，不应提交。新克隆仓库或新建 Git worktree 时没有这份本机文件属于正常情况。
+
 ## 项目结构
 
 ```text
@@ -41,16 +45,18 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 
 ## 发布
 
-`.github/workflows/release.yml` 在 Apple Silicon runner 上运行测试并构建 DMG、ZIP 与 `SHA256SUMS.txt`：
+`.github/workflows/release.yml` 在推送 `v*` 标签或手动执行时运行测试、构建并发布资产。`.github/workflows/verify.yml` 会在指定分支的源码推送时运行验证。执行机器由仓库变量 `MAC_RUNNER` 决定：值为 `github` 时使用 GitHub 托管的 `macos-latest`；其他值使用维护者自己的 Apple Silicon runner。
 
 | 操作 | 结果 |
 | --- | --- |
-| 推送到 `main` | 更新滚动预发布 `main-latest`；提交信息含 `[skip release]` 时跳过 |
-| 提交信息含 `[release v0.3.0]` | 在该提交创建正式版本 |
-| 推送版本标签 | 创建对应版本 |
-| 发布 GitHub Release | 自动构建并附加 DMG / ZIP |
+| 推送源码到 `main` | 触发 Verify；文档及 Markdown-only 改动按工作流规则跳过 |
+| 推送 `v*` 版本标签 | 触发 Release：运行验证、构建正式资产并发布 Release |
+| 手动执行 Release 工作流 | 按输入标签运行同一发布流程 |
+| 手动执行 Screenshots，或推送含 `[screenshots]` 的提交 | 在配置的 macOS runner 上生成演示截图 |
 
-> 私有仓库的 macOS runner 按 10 倍计费分钟数。
+Release 工作流会用 `--clobber` 上传并替换同名资产。要求使用本机生成的正式构建时，先确认发布操作不会触发远端构建或覆盖本机资产；若当前工作流会这样做，应在本机完成构建和核验后暂停发布，不能把云端生成物当成本机构件，也不要自行修改 Actions 配置或绕过仓库保护。
+
+> 私有仓库的 GitHub 托管 macOS runner 按 10 倍计费分钟数。
 
 ### 签名与隐私权限
 
@@ -149,4 +155,4 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 
 ## 构建机
 
-GitHub Actions 的 Verify / Release / Screenshots 默认在维护者自己的 Mac 上运行（self-hosted runner），设置方法见 [SELF-HOSTED-RUNNER.md](SELF-HOSTED-RUNNER.md)。仓库变量 `MAC_RUNNER=github` 可改回 GitHub 的 `macos-latest`。CI 里构建的测试应用使用独立的 bundle id `com.interviewhacker.app.ci`，测试数据放在 `~/.interviewhacker-ci`，钥匙串服务名跟随 bundle id，因此不会读写本机已安装应用的设置与密钥。
+Verify、Release 和 Screenshots 都按仓库变量 `MAC_RUNNER` 选择执行机器。设置维护者自托管 runner 的方法见 [SELF-HOSTED-RUNNER.md](SELF-HOSTED-RUNNER.md)。云端和截图工作流构建的临时 CI 应用使用独立 Bundle ID `com.interviewhacker.app.ci` 与临时数据目录；它们不等同于正式版或本机测试版构件。

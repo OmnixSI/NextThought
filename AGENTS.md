@@ -11,4 +11,4 @@
 - Before touching signing material, follow the persistent identity and recovery rules in `docs/DEVELOPMENT.md`. Never commit or upload a keychain, private key, or keychain password.
 - If the app-support signing directory exists but its identity is incomplete or unusable, treat it as recovery work: do not run `scripts/setup-local-signing.sh` or invoke the app's bind flow. Restore and verify the same existing identity first.
 
-For this Mac's test-build and TCC workflow, also read `docs/LOCAL-MACOS-SIGNING.md` when that local-only file is present. It is intentionally excluded from Git and records machine-specific details and known separation limits.
+For this Mac's formal/test workspace, signing, and TCC workflow, also read `.local/LOCAL-PROJECT-MANAGEMENT.md` when that local-only file is present. It is intentionally excluded from Git and records machine-specific paths and current separation limits. Git worktrees do not inherit ignored files; if it is absent, consult the local copy in the primary source checkout before building or signing.
