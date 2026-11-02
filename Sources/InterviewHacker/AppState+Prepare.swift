@@ -16,6 +16,11 @@ extension AppState {
     /// "新会议" (⌘N): opens the preparation page of a new meeting.
     func beginNewMeeting() {
         guard !isRunning else { return }
+        WorkspaceEditController.shared.requestNewMeeting(state: self)
+    }
+
+    func beginNewMeetingAfterWorkspaceEdit() {
+        guard !isRunning else { return }
         if meetingDraft == nil { meetingDraft = MeetingDraft() }
         section = .home
         MainWindowLayout.bringToFront()

@@ -28,6 +28,11 @@ final class WorkspaceStore {
 
     func workspace(_ id: UUID?) -> Workspace? { id.flatMap { id in workspaces.first { $0.id == id } } }
 
+    func canDelete(_ id: UUID) -> Bool {
+        guard !DemoMode.isEnabled, let workspace = workspace(id), workspaces.count > 1 else { return false }
+        return workspace.archived || visible.count > 1
+    }
+
     // MARK: Loading
 
     /// Loads all workspaces; on first run converts the old single context (mode,
@@ -100,6 +105,38 @@ final class WorkspaceStore {
         scheduleSave(next.id)
     }
 
+    func commit(_ workspace: Workspace) throws {
+        guard let index = workspaces.firstIndex(where: { $0.id == workspace.id }) else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        guard !DemoMode.isEnabled else { throw CocoaError(.fileWriteNoPermission) }
+
+        var next = workspace
+        next.updatedAt = Date()
+        let encoder = JSONLines.encoder()
+        encoder.outputFormatting.insert(.prettyPrinted)
+        let data = try encoder.encode(next)
+        let url = fileURL(next.id)
+
+        saveTask?.cancel()
+        saveTask = nil
+        for dirtyID in dirty {
+            if let pending = self.workspace(dirtyID) { write(pending, synchronously: true) }
+        }
+        io.sync { }
+        do {
+            try io.sync {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try data.write(to: url, options: .atomic)
+            }
+        } catch {
+            if let dirtyID = dirty.first { scheduleSave(dirtyID) }
+            throw error
+        }
+        dirty.removeAll()
+        workspaces[index] = next
+    }
+
     /// Changes the mode; answer requirements that were still the old template follow.
     func setMode(_ mode: SessionMode, for id: UUID) {
         guard var workspace = self.workspace(id), workspace.mode != mode else { return }
@@ -137,17 +174,30 @@ final class WorkspaceStore {
     }
 
     /// Deletion keeps a copy in the backups folder (`Backups/deleted-workspaces`).
-    func delete(_ id: UUID) {
-        guard let workspace = workspace(id), workspaces.count > 1 else { return }
-        workspaces.removeAll { $0.id == id }
+    @discardableResult
+    func delete(_ id: UUID) -> Bool {
+        guard canDelete(id), let workspace = workspace(id) else { return false }
+        flush()
         let file = fileURL(id)
         let trash = AppPaths.backups.appendingPathComponent("deleted-workspaces", isDirectory: true)
-        io.async {
-            try? FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
-            let target = trash.appendingPathComponent("\(workspace.name)-\(Int(Date().timeIntervalSince1970)).json")
-            try? FileManager.default.moveItem(at: file, to: target)
+        let safeName = workspace.name.replacingOccurrences(of: "/", with: "-")
+        let target = trash.appendingPathComponent("\(safeName)-\(Int(Date().timeIntervalSince1970))-\(UUID().uuidString.prefix(8)).json")
+        let moved = io.sync { () -> Bool in
+            do {
+                try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
+                try FileManager.default.moveItem(at: file, to: target)
+                return true
+            } catch {
+                return false
+            }
         }
-        if activeID == id { activate(visible.first?.id ?? workspaces[0].id) }
+        guard moved else {
+            Diagnostics.record("workspace.delete_backup_failed")
+            return false
+        }
+        workspaces.removeAll { $0.id == id }
+        if activeID == id, let next = visible.first?.id ?? workspaces.first?.id { activate(next) }
+        return true
     }
 
     /// Replaces the whole list (backup import); everything is written immediately.

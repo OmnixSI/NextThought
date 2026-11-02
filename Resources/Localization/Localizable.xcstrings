@@ -4000,6 +4000,1206 @@
           }
         }
       }
+    },
+    "%@ 信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ information"
+          }
+        }
+      }
+    },
+    "一次可以选多个文件或整个文件夹：系统转成 Markdown、在后台归档，并按内容自动归类": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select multiple files or a whole folder. Files are converted to Markdown, archived in the background, and categorized by content."
+          }
+        }
+      }
+    },
+    "从当前系列移除这份资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove this material from the current series"
+          }
+        }
+      }
+    },
+    "任何希望回答时参考的事实：经历、数字、对方偏好…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Facts to use when answering, such as experience, figures, or the other person’s preferences…"
+          }
+        }
+      }
+    },
+    "会前准备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pre-meeting preparation"
+          }
+        }
+      }
+    },
+    "会话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sessions"
+          }
+        }
+      }
+    },
+    "例如：先给结论，再补充依据和例子。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: give the conclusion first, then add evidence and examples."
+          }
+        }
+      }
+    },
+    "例如：被问到项目时先报规模和数字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: start with the project’s scale and figures"
+          }
+        }
+      }
+    },
+    "保存到题库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save to question bank"
+          }
+        }
+      }
+    },
+    "保存后继续刚才的操作；放弃更改会丢弃本次草稿。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save and continue, or discard this draft and continue."
+          }
+        }
+      }
+    },
+    "保存失败：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save:"
+          }
+        }
+      }
+    },
+    "先填写核心信息，其他内容可以稍后补充。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fill in the key details first. You can add the rest later."
+          }
+        }
+      }
+    },
+    "先新增经验或题目后即可编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a lesson or question before editing."
+          }
+        }
+      }
+    },
+    "其他": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "其他背景": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Additional background"
+          }
+        }
+      }
+    },
+    "准备好的回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepared answer"
+          }
+        }
+      }
+    },
+    "切换到这个系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to this series"
+          }
+        }
+      }
+    },
+    "删除…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete…"
+          }
+        }
+      }
+    },
+    "删除系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete series"
+          }
+        }
+      }
+    },
+    "删除经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete lesson"
+          }
+        }
+      }
+    },
+    "删除这条经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this lesson"
+          }
+        }
+      }
+    },
+    "删除这条经验？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this lesson?"
+          }
+        }
+      }
+    },
+    "删除这道题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this question"
+          }
+        }
+      }
+    },
+    "删除这道题？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this question?"
+          }
+        }
+      }
+    },
+    "删除题目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete question"
+          }
+        }
+      }
+    },
+    "加入题库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to question bank"
+          }
+        }
+      }
+    },
+    "取消置顶": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unpin"
+          }
+        }
+      }
+    },
+    "取消置顶这条经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unpin this lesson"
+          }
+        }
+      }
+    },
+    "可选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional"
+          }
+        }
+      }
+    },
+    "回答时参考这里的经验和题库（自我迭代）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use these lessons and questions when answering"
+          }
+        }
+      }
+    },
+    "回答要求": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer requirements"
+          }
+        }
+      }
+    },
+    "基本信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic information"
+          }
+        }
+      }
+    },
+    "填写经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a lesson"
+          }
+        }
+      }
+    },
+    "复制一份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicate"
+          }
+        }
+      }
+    },
+    "多行文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multiline text"
+          }
+        }
+      }
+    },
+    "完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "导入到 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import to %@"
+          }
+        }
+      }
+    },
+    "导入并用于此系列…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import for this series…"
+          }
+        }
+      }
+    },
+    "导入资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import materials"
+          }
+        }
+      }
+    },
+    "尚未填写回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No answer entered"
+          }
+        }
+      }
+    },
+    "尚未填写回答要求，点击编辑以添加。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No answer requirements yet. Select Edit to add them."
+          }
+        }
+      }
+    },
+    "尚未填写经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No lesson text yet"
+          }
+        }
+      }
+    },
+    "尚未填写问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No question entered"
+          }
+        }
+      }
+    },
+    "尚未填写，可在编辑系列信息时补充": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not set. Choose Edit series details to add it."
+          }
+        }
+      }
+    },
+    "展开查看问题和回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand to view the question and answer"
+          }
+        }
+      }
+    },
+    "展开问题和回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand question and answer"
+          }
+        }
+      }
+    },
+    "已停用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disabled"
+          }
+        }
+      }
+    },
+    "已填写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filled"
+          }
+        }
+      }
+    },
+    "已转成 Markdown 归档": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archived as Markdown"
+          }
+        }
+      }
+    },
+    "开启后，回答时会参考这份资料。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When enabled, answers can use this material."
+          }
+        }
+      }
+    },
+    "当前系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current series"
+          }
+        }
+      }
+    },
+    "当前系列的回答要求会被模板内容替换；其他系列和资料不会改变。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This replaces the answer instructions for the current series with the template. Other series and materials are unchanged."
+          }
+        }
+      }
+    },
+    "恢复 %@ 模板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore %@ template"
+          }
+        }
+      }
+    },
+    "恢复模板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore template"
+          }
+        }
+      }
+    },
+    "恢复默认回答要求？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore the default answer instructions?"
+          }
+        }
+      }
+    },
+    "所有系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All series"
+          }
+        }
+      }
+    },
+    "打开归档 Markdown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open archived Markdown"
+          }
+        }
+      }
+    },
+    "打开归档的 Markdown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open archived Markdown"
+          }
+        }
+      }
+    },
+    "打开这条经验的编辑器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this lesson editor"
+          }
+        }
+      }
+    },
+    "打开这道题的编辑器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this question editor"
+          }
+        }
+      }
+    },
+    "搜索题库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search questions"
+          }
+        }
+      }
+    },
+    "支持 PDF（含扫描件 OCR）、Word、PowerPoint、Excel、Markdown、TXT、RTF、HTML 与图片。可以一次拖入多个文件甚至整个文件夹：系统会把它们转成结构化 Markdown、在后台静默归档，并按内容自动归类。回答时只把与问题相关的片段交给模型，并标注来源。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supports PDF (including OCR for scans), Word, PowerPoint, Excel, Markdown, TXT, RTF, HTML, and images. Drop in multiple files or a folder to convert and archive them in the background. Materials are categorized automatically; answers only receive relevant excerpts with their sources."
+          }
+        }
+      }
+    },
+    "收起问题和回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse question and answer"
+          }
+        }
+      }
+    },
+    "放弃更改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discard changes"
+          }
+        }
+      }
+    },
+    "新问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New question"
+          }
+        }
+      }
+    },
+    "新问题（例如背过的八股题）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New question (for example, a question you have prepared)"
+          }
+        }
+      }
+    },
+    "更多信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More information"
+          }
+        }
+      }
+    },
+    "最近回答用到的资料片段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Material excerpts used in recent answers"
+          }
+        }
+      }
+    },
+    "有未保存的修改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have unsaved changes"
+          }
+        }
+      }
+    },
+    "查看": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View"
+          }
+        }
+      }
+    },
+    "根据资料预测最可能被问到的问题，并给出要点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predict likely questions from your materials and suggest key points"
+          }
+        }
+      }
+    },
+    "正在生成阶段复盘…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generating stage review…"
+          }
+        }
+      }
+    },
+    "正在编辑回答要求": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editing answer requirements"
+          }
+        }
+      }
+    },
+    "正在编辑条目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editing an entry"
+          }
+        }
+      }
+    },
+    "正在编辑系列信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editing series details"
+          }
+        }
+      }
+    },
+    "正在编辑这条经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editing this lesson"
+          }
+        }
+      }
+    },
+    "正在编辑这道题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editing this question"
+          }
+        }
+      }
+    },
+    "每次会话结束生成摘要后，AI 复盘会把“经验沉淀”和对方问到的问题（附改进后的回答）加入这里；下次回答同类问题时优先采用。可以随时编辑、置顶或删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After each session summary, the review adds lessons and questions with improved answers here. They take priority in similar future answers. You can edit, pin, or delete them at any time."
+          }
+        }
+      }
+    },
+    "没有匹配的问题或回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching questions or answers."
+          }
+        }
+      }
+    },
+    "添加经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add lesson"
+          }
+        }
+      }
+    },
+    "生成阶段复盘": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate stage review"
+          }
+        }
+      }
+    },
+    "用于回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use in answers"
+          }
+        }
+      }
+    },
+    "用什么语言、多长、先说什么；与资料正文分开处理，文件内容不能改写这里的要求。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the response language, length, and order here. These instructions are separate from your materials; imported files cannot change them."
+          }
+        }
+      }
+    },
+    "目前没有可编辑的经验或题目；先新增条目后即可进入编辑模式。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no lessons or questions to edit yet. Add an entry to start editing."
+          }
+        }
+      }
+    },
+    "移动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move"
+          }
+        }
+      }
+    },
+    "移动资料分类": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to a material category"
+          }
+        }
+      }
+    },
+    "移除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "管理技能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage skills"
+          }
+        }
+      }
+    },
+    "系列名称不能为空。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A series name is required."
+          }
+        }
+      }
+    },
+    "经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lessons"
+          }
+        }
+      }
+    },
+    "经验内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lesson"
+          }
+        }
+      }
+    },
+    "经验库与题库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lessons & questions"
+          }
+        }
+      }
+    },
+    "继续编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep editing"
+          }
+        }
+      }
+    },
+    "综合这个场景下所有会话的摘要，找出高频问题、反复出现的薄弱点和已经改进的地方，并给出下一步准备清单；新的经验会加入经验库。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review all session summaries in this series to identify recurring questions, weak areas, progress, and next steps. New lessons will be added to the lesson bank."
+          }
+        }
+      }
+    },
+    "编辑回答要求": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit answer requirements"
+          }
+        }
+      }
+    },
+    "编辑条目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit entries"
+          }
+        }
+      }
+    },
+    "编辑模式：选择一条经验或题目打开编辑器；一次只编辑一条。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit mode: Select a lesson or question to open its editor. Only one entry can be edited at a time."
+          }
+        }
+      }
+    },
+    "编辑此系列的回答要求": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit the answer requirements for this series."
+          }
+        }
+      }
+    },
+    "编辑系列信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit series details"
+          }
+        }
+      }
+    },
+    "编辑系列名称、背景和此类型的基本信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit the series name, background, and details for this type."
+          }
+        }
+      }
+    },
+    "置顶这条经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pin this lesson"
+          }
+        }
+      }
+    },
+    "置顶：总是交给模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinned: always include in answers"
+          }
+        }
+      }
+    },
+    "自动归类": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-categorize"
+          }
+        }
+      }
+    },
+    "请先填写经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a lesson first"
+          }
+        }
+      }
+    },
+    "请先填写问题和回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter both a question and an answer first"
+          }
+        }
+      }
+    },
+    "还没有技能。技能是一份 Markdown 说明（如 SKILL.md）：说话方式、答题套路、领域知识，回答时会遵循。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No skills yet. A skill is a Markdown guide (such as SKILL.md) describing a speaking style, answer approach, or domain knowledge for the assistant to follow."
+          }
+        }
+      }
+    },
+    "这条经验会从当前系列的经验库中移除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This lesson will be removed from the current series."
+          }
+        }
+      }
+    },
+    "进入编辑模式后选择一条经验或题目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter edit mode, then select a lesson or question."
+          }
+        }
+      }
+    },
+    "退出经验和题目的编辑模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exit entry editing mode"
+          }
+        }
+      }
+    },
+    "选择这份资料所属的分类": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a category for this material"
+          }
+        }
+      }
+    },
+    "选择这条经验进行编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select this lesson to edit"
+          }
+        }
+      }
+    },
+    "选择这道题进行编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select this question to edit"
+          }
+        }
+      }
+    },
+    "问题和准备好的回答会从当前系列的题库中移除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The question and prepared answer will be removed from this series’ question bank."
+          }
+        }
+      }
+    },
+    "阶段复盘": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stage review"
+          }
+        }
+      }
+    },
+    "需要至少一次已生成摘要的会话，才能生成阶段复盘。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate a summary for at least one session before creating a stage review."
+          }
+        }
+      }
+    },
+    "需要至少一次带摘要的会话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least one summarized session is required"
+          }
+        }
+      }
+    },
+    "预测问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predict"
+          }
+        }
+      }
+    },
+    "题库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question bank"
+          }
+        }
+      }
+    },
+    "提词要点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concise"
+          }
+        }
+      }
+    },
+    "详细解释": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detailed"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

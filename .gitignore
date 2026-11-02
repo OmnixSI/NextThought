@@ -8,6 +8,7 @@ DerivedData/
 .swiftpm/
 .vscode/
 .local/
+docs/LOCAL-MACOS-SIGNING.md
 __pycache__/
 *.pyc
 

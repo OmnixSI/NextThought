@@ -97,9 +97,71 @@ extension AppState {
         rebuildContextIndex()
     }
 
-    func deleteWorkspace(_ id: UUID) {
-        workspaces.delete(id)
+    func renameWorkspace(_ id: UUID, to name: String) {
+        guard var workspace = workspaces.workspace(id), workspace.name != name else { return }
+        let formerName = workspace.name
+        let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == formerName }.count == 1
+        workspace.name = name
+        workspaces.update(workspace)
+        workspaces.flush()
+        updateWorkspaceNameInArchive(id, from: formerName, to: name, includeLegacyNameOnly: includeLegacyNameOnly)
+    }
+
+    func saveWorkspaceEdit(_ draft: Workspace, target: WorkspaceEditTarget) throws {
+        guard let current = workspaces.workspace(draft.id) else { throw CocoaError(.fileNoSuchFile) }
+        var updated = current
+        switch target {
+        case .basic:
+            updated.name = draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            updated.notes = draft.notes
+            updated.fields = draft.fields
+        case .requirements:
+            updated.preferences = draft.preferences
+        case .lesson(let lessonID):
+            guard let draftLesson = draft.lessons.first(where: { $0.id == lessonID }),
+                  let index = updated.lessons.firstIndex(where: { $0.id == lessonID }) else {
+                throw CocoaError(.fileNoSuchFile)
+            }
+            updated.lessons[index].text = draftLesson.text
+        case .question(let itemID):
+            guard let draftItem = draft.questionBank.first(where: { $0.id == itemID }),
+                  let index = updated.questionBank.firstIndex(where: { $0.id == itemID }) else {
+                throw CocoaError(.fileNoSuchFile)
+            }
+            updated.questionBank[index].question = draftItem.question
+            updated.questionBank[index].answer = draftItem.answer
+            updated.questionBank[index].updatedAt = Date()
+        }
+
+        let formerName = current.name
+        let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == formerName }.count == 1
+        try workspaces.commit(updated)
+        if formerName != updated.name {
+            updateWorkspaceNameInArchive(updated.id, from: formerName, to: updated.name,
+                                         includeLegacyNameOnly: includeLegacyNameOnly)
+        }
+        if updated.id == activeWorkspace.id, target != .requirements {
+            rebuildContextIndex()
+        }
+    }
+
+    private func updateWorkspaceNameInArchive(_ id: UUID, from formerName: String, to name: String,
+                                              includeLegacyNameOnly: Bool) {
+        archive.renameWorkspace(id, from: formerName, to: name, includeLegacyNameOnly: includeLegacyNameOnly)
+    }
+
+    @discardableResult
+    func deleteWorkspace(_ id: UUID) -> Bool {
+        guard !isRunning else {
+            errorMessage = "会议中不能删除系列。请先结束会议。"
+            return false
+        }
+        guard workspaces.delete(id) else {
+            errorMessage = "无法删除这个系列。请确认至少保留一个可用系列，并检查本机备份空间。"
+            return false
+        }
         rebuildContextIndex()
+        return true
     }
 
     /// Pre-session preparation: what the materials say, and likely questions with

@@ -11,7 +11,7 @@ extension AppState {
             SettingsWindow.show()
             return
         }
-        section = target
+        WorkspaceEditController.shared.requestAppSection(target, state: self)
     }
 
     /// ⌘, from the menu bar.
@@ -19,7 +19,7 @@ extension AppState {
         if isRunning {
             SettingsWindow.show()
         } else {
-            section = .settings
+            select(.settings)
             MainWindowLayout.bringToFront()
         }
     }

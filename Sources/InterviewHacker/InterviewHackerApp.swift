@@ -121,19 +121,35 @@ enum MainWindowLayout {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         AppState.shared.prepareForTermination()
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        WorkspaceEditController.shared.shouldTerminateApplication() ? .terminateNow : .terminateCancel
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard MainWindowLayout.isMainWindow(sender) else { return true }
+        return WorkspaceEditController.shared.shouldCloseWindow()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A window reopened from the Dock after closing is a new window: style and size it too.
         NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
             guard let window = note.object as? NSWindow else { return }
-            MainActor.assumeIsolated { MainWindowLayout.configure(window) }
+            MainActor.assumeIsolated {
+                MainWindowLayout.configure(window)
+                if MainWindowLayout.isMainWindow(window) { window.delegate = self }
+            }
         }
         DispatchQueue.main.async {
-            for window in NSApp.windows { MainWindowLayout.configure(window) }
+            for window in NSApp.windows {
+                MainWindowLayout.configure(window)
+                if MainWindowLayout.isMainWindow(window) { window.delegate = self }
+            }
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()

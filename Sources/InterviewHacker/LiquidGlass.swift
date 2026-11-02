@@ -257,6 +257,11 @@ struct MenuPicker<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(Value, String)]
     var placeholder = "请选择"
+    var localizesOptions = false
+
+    private func optionText(_ value: String) -> Text {
+        localizesOptions ? Text(LocalizedStringKey(value)) : Text(verbatim: value)
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -265,12 +270,16 @@ struct MenuPicker<Value: Hashable>: View {
                 ForEach(options.indices, id: \.self) { index in
                     let option = options[index]
                     Button { selection = option.0 } label: {
-                        if option.0 == selection { Label(option.1, systemImage: "checkmark") } else { Text(option.1) }
+                        if option.0 == selection {
+                            Label { optionText(option.1) } icon: { Image(systemName: "checkmark") }
+                        } else {
+                            optionText(option.1)
+                        }
                     }
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Text(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
+                    optionText(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
                         .lineLimit(1)
                         .foregroundStyle(Ink.ink)
                     Image(systemName: "chevron.up.chevron.down")

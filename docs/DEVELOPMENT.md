@@ -55,10 +55,22 @@ IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models
 ### 签名与隐私权限
 
 - CI 默认使用临时 ad-hoc 签名，没有 Apple 账号要求。该签名每个版本都不同，因此 macOS 可能要求重新授予隐私权限。
-- 本机 `scripts/build-app.sh` 使用应用设置中绑定的 **InterviewHacker Local Signing** 证书（`~/Library/Application Support/InterviewHacker/Signing/`）。如果身份缺失或不完整，脚本会停止，不会另建证书；先打开应用完成绑定。不要替换该身份：麦克风、录屏与系统音频权限依赖稳定的 Bundle ID 和签名要求。
+- 本机 `scripts/build-app.sh` 使用应用设置中绑定的 **InterviewHacker Local Signing** 身份（`~/Library/Application Support/InterviewHacker/Signing/`）。首次安装且从未绑定过时，才通过应用设置完成一次绑定。若该目录已存在但身份不完整或不可用，停止构建并恢复原身份；不要再次绑定或创建新证书。麦克风、录屏与系统音频权限依赖稳定的 Bundle ID 和签名要求。
 - 本机 `scripts/install-latest.sh` 会先用同一证书重签下载包，并比较它与当前安装包的 designated requirement；身份不一致时停止安装。本机脚本拒绝 ad-hoc 和其他证书，只有 GitHub Actions 发布流程可使用独立发布身份。
 - GitHub Releases 可运行 `scripts/setup-release-signing.sh`，把独立的固定发布证书写入 Actions Secrets。该密钥与本机 Local Signing 身份分开，本机私钥不会上传到 CI。配置 Developer ID 和公证凭据后，release workflow 会使用 hardened runtime 与 `Resources/InterviewHacker.entitlements` 公证并装订。
 - Bundle ID 保持为 `com.interviewhacker.app`。构建只签应用主程序；Sherpa-ONNX 和 ONNX Runtime 是静态链接，不生成需要单独签名的独立助手进程或动态运行库。
+
+#### 本机身份文件与恢复
+
+- 正式版 app-bound 身份的唯一配置目录是 `~/Library/Application Support/InterviewHacker/Signing/`。其中 `certificate.pem` 是证书，`identity-sha1` 记录该证书的身份值，`signing.keychain-db` 保存可用于签名的私钥，`keychain-password` 是解锁这个专用钥匙串的密码。私钥不以独立 PEM 文件保存在此目录。
+- 保留这组原始文件及其权限，不要拆分、清空、轮换、删除或覆盖。该目录属于本机密钥材料：不得加入 Git、应用包、ZIP、GitHub Release 或 Actions Secrets。需要备份时，备份整组文件到访问受控的加密位置，并验证备份可恢复。
+- `keychain-password` 是本机生成并以仅所有者可读方式保存的专用钥匙串密码；正常构建脚本会在进程内读取并用于解锁。不要 `cat`、打印、复制到聊天或日志，也不要写入 shell 历史。若系统需要交互式认证，让用户在 macOS 提示中自行输入。
+- 构建前验证顺序：确认四个文件都存在且可读；用 `openssl x509 -in "$HOME/Library/Application Support/InterviewHacker/Signing/certificate.pem" -noout -fingerprint -sha1` 核对证书指纹与 `identity-sha1` 一致；使用 `security unlock-keychain` 解锁明确路径的 `signing.keychain-db`；再用 `security find-identity -v -p codesigning "$HOME/Library/Application Support/InterviewHacker/Signing/signing.keychain-db"` 确认该钥匙串里存在匹配的有效证书和私钥。证书文件指纹匹配只校验公钥证书与记录值，不能证明私钥存在或可用。
+- `scripts/sign-app.sh` 是本机正式版构建的签名入口：它从上述目录读取身份，检查证书、私钥和 Bundle ID，使用该身份签名并验证稳定的 designated requirement。身份缺失、钥匙串解锁失败、有效身份数为零、指纹不匹配或 designated requirement 不符时，构建必须停止。保留完整 stderr 和退出状态；不要仅凭数字猜测错误含义。
+- 不要用 `scripts/setup-local-signing.sh` 修复 app-bound 身份。该脚本操作仓库内的 `.local-signing/`，不是 `scripts/sign-app.sh` 使用的 Application Support 目录；在缺少文件时它会新建另一套身份。`.local-signing/` 也可能供分开的发布签名流程使用，不要在两处之间复制、替换或混用钥匙串。
+- 应用的 `LocalSigning.ensureIdentity()` 用于首次绑定；当前实现发现身份未绑定时会尝试删除整个签名目录后重新生成。因此，只要上述目录存在任何身份文件而校验失败，就不得通过设置页“绑定到这台 Mac”、`ensureIdentity()` 或初始化脚本修复。先保全当前文件并从可信备份恢复同一钥匙串和私钥；找不到可验证的原身份时停止并报告，不生成替代证书。
+- `security show-keychain-info` 的参数按本机 `man security` 核对。钥匙串命令失败时记录完整错误文本并区分 CLI 退出码与 Security framework OSStatus；即使 `security error <code>` 显示未知，也不要自行推断身份已损坏或创建新身份。
+- 正式版与测试版 Bundle ID / designated requirement 必须各自保持稳定。当前测试工作区的测试签名逻辑复用正式版的 Application Support 签名目录：权限条目因 Bundle ID 不同而分开，但证书身份并未做到独立。不要把这种状态描述为证书级隔离，也不要为“修复权限”擅自生成测试证书。
 
 ### 本地构建
 

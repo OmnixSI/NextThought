@@ -314,6 +314,24 @@ final class SessionArchive {
         update(meta)
     }
 
+    /// Keeps meetings attached to a renamed workspace and refreshes their searchable name.
+    func renameWorkspace(_ id: UUID, from formerName: String, to newName: String, includeLegacyNameOnly: Bool) {
+        guard !DemoMode.isEnabled else { return }
+        let sessionIDs = sessions.filter { meta in
+            if meta.workspaceID == id { return true }
+            guard includeLegacyNameOnly, meta.workspaceID == nil,
+                  !formerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+            return meta.workspaceName == formerName
+        }.map(\.id)
+        for sessionID in sessionIDs {
+            guard var meta = sessions.first(where: { $0.id == sessionID }) else { continue }
+            meta.workspaceID = id
+            meta.workspaceName = newName
+            update(meta)
+        }
+        io.sync { }
+    }
+
     func delete(_ id: UUID) {
         guard id != activeID else { return }
         sessions.removeAll { $0.id == id }
