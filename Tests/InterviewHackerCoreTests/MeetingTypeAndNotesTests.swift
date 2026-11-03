@@ -24,6 +24,7 @@ struct MeetingTypeAndNotesTests {
     @Test func newTypesRoundTripAndOldValuesStillDecode() throws {
         let encoded = try JSONEncoder().encode(SessionMode.allCases)
         #expect(try JSONDecoder().decode([SessionMode].self, from: encoded) == SessionMode.allCases)
+        #expect(try JSONDecoder().decode(SessionMode.self, from: Data(#""interview""#.utf8)) == .interview)
         let decoded = try JSONDecoder().decode([SessionMode].self,
                                                from: Data(#"["labMeeting","client","discussion","custom","academic","meeting","lesson","fromTheFuture"]"#.utf8))
         #expect(decoded == [.labMeeting, .client, .discussion, .custom, .academic, .meeting, .lesson, .general])
@@ -31,7 +32,8 @@ struct MeetingTypeAndNotesTests {
         #expect(SessionMode.academic.rawValue == "academic" && SessionMode.academic.title == "汇报 / 答辩")
         #expect(SessionMode.meeting.rawValue == "meeting" && SessionMode.meeting.title == "工作会议")
         #expect(SessionMode.lesson.rawValue == "lesson" && SessionMode.lesson.title == "讲座 / 课程")
-        #expect(!SessionMode.builtIn.contains(.custom) && SessionMode.builtIn.count == 8)
+        #expect(!SessionMode.builtIn.contains(.custom) && !SessionMode.builtIn.contains(.interview) && SessionMode.builtIn.count == 7)
+        #expect(!NotesTemplateKind.selectable.contains(.interview))
     }
 
     @Test func customTypeUsesItsBaseAndOldWorkspacesDecode() throws {
@@ -67,7 +69,7 @@ struct MeetingTypeAndNotesTests {
         check(.custom, .notesOnly, .concise, .general)
         #expect(MeetingTypeDefaults.for(.academic).followsSlides)
         // Every built-in template is the default of some type.
-        #expect(Set(SessionMode.builtIn.map { MeetingTypeDefaults.for($0).template }) == Set(NotesTemplateKind.allCases))
+        #expect(Set(SessionMode.builtIn.map { MeetingTypeDefaults.for($0).template }) == Set(NotesTemplateKind.selectable))
         // Every type has a profile with fields and material slots.
         for mode in SessionMode.allCases { #expect(!ModeProfile.for(mode).fields.isEmpty) }
     }

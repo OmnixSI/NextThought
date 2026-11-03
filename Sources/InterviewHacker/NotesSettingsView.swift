@@ -12,7 +12,12 @@ struct NotesSettingsView: View {
         VStack(alignment: .leading, spacing: 12) {
         SettingsCardRow {
             SettingsSection(title: "纪要模型", icon: "doc.text") {
-                Hint("会后整理纪要不赶时间，追求准确和详细，所以用单独的模型：默认是能用到的最强模型，推理强度“高”，不开快速模式。")
+                HStack(spacing: 6) {
+                    Text("会后纪要使用独立模型。")
+                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    Hint("会后整理纪要不赶时间，追求准确和详细，所以用单独的模型：默认是能用到的最强模型，推理强度“高”，不开快速模式。", presentation: .info)
+                        .accessibilityLabel("纪要模型说明")
+                }
                 if state.answerBackend == .openAICompatible {
                     TextField("模型 ID（留空时与回答模型相同）", text: $state.notesModelID)
                         .textFieldStyle(.roundedBorder)
@@ -26,10 +31,16 @@ struct NotesSettingsView: View {
                 Toggle("会议结束后自动整理", isOn: $state.autoSummarize)
                     .disabled(!state.recordSessions)
                     .onChange(of: state.autoSummarize) { _, _ in state.saveNotesSettings() }
+                if !state.recordSessions { Hint("请先在“数据”中开启会话记录。", presentation: .inline) }
                 MenuPicker(title: "纪要语言", selection: $state.notesLanguage,
                            options: [("auto", String(localized: "跟随界面语言")), ("zh", "简体中文"), ("en", "English")])
                     .onChange(of: state.notesLanguage) { _, _ in state.saveNotesSettings() }
-                Hint("整理分三步：校对转写（结合资料里的专有名词纠正识别错误）→ 按模板整理（每条带原话的时间点）→ 核对（去掉没有原话依据的条目，相对日期换成具体日期，不确定的标“待确认”）。不重新识别声音，也不保存录音。整理在后台进行，失败时保留转写，可以重试。")
+                Hint("不重新识别声音、不保存原始录音；整理在后台进行，失败后保留转写并可重试。", presentation: .inline)
+                HStack(spacing: 6) {
+                    Text("整理流程").font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    Hint("整理分三步：结合资料校对转写、按模板生成带时间点的纪要，再核对原话依据和日期。", presentation: .info)
+                        .accessibilityLabel("纪要整理流程说明")
+                }
             }
         } right: {
             SettingsSection(title: "各类型的默认模板", icon: "list.bullet.rectangle") {
@@ -46,7 +57,12 @@ struct NotesSettingsView: View {
             }
         }
             SettingsSection(title: "自定义模板", icon: "square.and.pencil") {
-                Hint("一个模板就是若干部分，每部分有名字和一句给 AI 的要求，例如“风险：列出可能导致延期的事，附原话”。可以从现有模板复制一份再改。")
+                HStack(spacing: 6) {
+                    Text("从现有模板复制后，可以编辑各部分。")
+                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    Hint("一个模板就是若干部分，每部分有名字和一句给 AI 的要求，例如“风险：列出可能导致延期的事，附原话”。可以从现有模板复制一份再改。", presentation: .info)
+                        .accessibilityLabel("自定义模板说明")
+                }
                 ForEach(state.customNotesTemplates) { template in
                     HStack(spacing: 8) {
                         Text(verbatim: template.name).fontWeight(.medium)

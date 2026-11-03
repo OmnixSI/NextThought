@@ -25,6 +25,20 @@ public struct ModeProfile: Sendable {
     /// Extra instructions for the after-session review.
     public var reviewFocus: String
 
+    public func matchesDefaultTemplatePreferences(_ value: String) -> Bool {
+        if value.isEmpty || value == templatePreferences { return true }
+        switch mode {
+        case .meeting:
+            return value == "我是会议参与者。回答聚焦决策、风险和下一步行动，给出可以直接说出口的简短发言；涉及数据时标注来源；守住资料中我方的立场与底线，不确定时建议会后确认。"
+        case .client:
+            return value == "我是我方代表，正在和客户沟通。回答聚焦客户的需求和顾虑，给出可以直接说出口的简短回应；涉及价格、时间和承诺时以资料为准，不确定的说“会后确认”，不替公司做资料里没有的承诺。"
+        case .general, .custom:
+            return value == "直接回答当前问题：先给一句可以说出口的结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。"
+        default:
+            return false
+        }
+    }
+
     public static func `for`(_ mode: SessionMode) -> ModeProfile {
         switch mode {
         case .interview:
@@ -63,7 +77,7 @@ public struct ModeProfile: Sendable {
                     ModeField("numbers", "关键数字", "价格、预算、指标、时间节点", long: true),
                 ],
                 documentCategories: ["公司 / 产品资料", "对方信息", "议程", "报价 / 合同", "会议纪要", "其他"],
-                templatePreferences: "我是会议参与者。回答聚焦决策、风险和下一步行动，给出可以直接说出口的简短发言；涉及数据时标注来源；守住资料中我方的立场与底线，不确定时建议会后确认。",
+                templatePreferences: "我是会议参与者。回答聚焦决策、风险和下一步行动，给出简洁、自然的参考内容；涉及数据时标注来源；守住资料中我方的立场与底线，不确定时建议会后确认。",
                 reviewFocus: "整理决定事项、每个人的承诺与截止时间、未解决的分歧；评价我方谈判表现和下次需要准备的数据。")
         case .lesson:
             return ModeProfile(
@@ -96,7 +110,7 @@ public struct ModeProfile: Sendable {
                     ModeField("concerns", "客户可能的顾虑", "预算、风险、竞品，以及怎么回应", long: true),
                 ],
                 documentCategories: ["产品资料", "报价 / 合同", "客户信息", "会议纪要", "其他"],
-                templatePreferences: "我是我方代表，正在和客户沟通。回答聚焦客户的需求和顾虑，给出可以直接说出口的简短回应；涉及价格、时间和承诺时以资料为准，不确定的说“会后确认”，不替公司做资料里没有的承诺。",
+                templatePreferences: "我是我方代表，正在和客户沟通。回答聚焦客户的需求和顾虑，给出简洁、自然的参考回应；涉及价格、时间和承诺时以资料为准，不确定的说“会后确认”，不替公司做资料里没有的承诺。",
                 reviewFocus: "整理客户的需求和痛点、顾虑与我们的回应、我们答应的事和时间、下一步和需要内部跟进的事项。")
         case .discussion:
             return ModeProfile(
@@ -113,7 +127,7 @@ public struct ModeProfile: Sendable {
                 mode: mode, role: "参与者",
                 fields: [ModeField("context", "场景说明", "这是什么场合、对方是谁、我希望达成什么", long: true)],
                 documentCategories: ["资料", "其他"],
-                templatePreferences: "直接回答当前问题：先给一句可以说出口的结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。",
+                templatePreferences: "直接回答当前问题：先给一句简洁结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。",
                 reviewFocus: "总结讨论要点和对方关心的问题，给出下次可以做得更好的地方。")
         }
     }

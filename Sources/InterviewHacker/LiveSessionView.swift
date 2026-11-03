@@ -3,7 +3,7 @@ import SwiftUI
 import InterviewHackerCore
 
 /// 会中页 (focus mode): a top bar, the live transcript on the left, the suggested
-/// answer (提词) or a quiet notes column (只记录) on the right, and one input row.
+/// automatic answers or a quiet notes column on the right, and one input row.
 /// See 02-scenarios-and-flows.md, "每个功能放在哪".
 struct LiveSessionView: View {
     @Environment(AppState.self) private var state
@@ -52,10 +52,10 @@ private struct LiveTopBar: View {
                     .help("线下会议：只用麦克风")
             }
             Spacer(minLength: Space.s3)
-            InkSegmented(items: [(value: true, title: "提词"), (value: false, title: "只记录")],
+            InkSegmented(items: [(value: true, title: "自动回答"), (value: false, title: "只记录")],
                          selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }))
                 .fixedSize()
-                .help("提词：对方提问时自动给出回答。只记录：不打扰，需要时按 \(state.shortcutLabel(.forceAnswer))。")
+                .help("自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。")
             LiveTranslationToggle()
             HStack(spacing: Space.s1) {
                 if state.insights.screenWatch { ScreenStatusIcon() }
@@ -63,8 +63,9 @@ private struct LiveTopBar: View {
                 AnswerSettingsMenu()
                 Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
                     .buttonStyle(GlassIconButtonStyle(size: 28))
-                    .help("提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
+                    .help("回答浮窗 · \(state.shortcutLabel(.toggleTeleprompter))")
             }
+            if state.isRunning { PauseResumeButton() }
             Button("结束") { Task { await state.stopSession() } }
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(state.isChangingSession)
@@ -81,38 +82,74 @@ private struct LiveTopBar: View {
     }
 }
 
-/// Elapsed time with the recording dot; a click pauses or resumes.
+/// Passive elapsed-time and listening-state display.
 private struct RecordingTimer: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        Button { Task { await state.togglePause() } } label: {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let elapsed = state.sessionStartedAt.map { Self.elapsed(from: $0, to: context.date) }
+            let status = state.isRunning ? (state.isPaused ? "已暂停" : "正在聆听") : "未在聆听"
             HStack(spacing: 6) {
-                Circle().fill(state.isPaused ? Ink.tertiary : Ink.live).frame(width: 7, height: 7)
-                if let started = state.sessionStartedAt {
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
-                        Text(verbatim: Self.elapsed(from: started, to: context.date))
-                            .font(.system(size: 13, weight: .medium).monospacedDigit())
-                            .foregroundStyle(state.isPaused ? Ink.secondary : Ink.ink)
-                    }
+                Circle()
+                    .fill(state.isRunning && !state.isPaused ? Ink.live : Ink.tertiary)
+                    .frame(width: 7, height: 7)
+                    .accessibilityHidden(true)
+                if let elapsed {
+                    Text(verbatim: elapsed)
+                        .font(.system(size: 13, weight: .medium).monospacedDigit())
+                        .foregroundStyle(state.isPaused ? Ink.secondary : Ink.ink)
                 }
-                if state.isPaused {
-                    Text("已暂停").font(Typo.caption).foregroundStyle(Ink.secondary)
-                }
+                Text(verbatim: status)
+                    .font(Typo.caption)
+                    .foregroundStyle(Ink.secondary)
             }
             .padding(.horizontal, 6)
             .frame(height: 28)
-            .contentShape(Rectangle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: "聆听状态：\(status)\(elapsed.map { "，计时 \($0)" } ?? "")"))
+            .accessibilityIdentifier("liveSession.recordingStatus")
         }
-        .buttonStyle(.plain)
-        .disabled(state.isChangingSession)
-        .help(state.isPaused ? "已暂停 · 点按继续 · \(state.shortcutLabel(.togglePause))" : "点按暂停 · \(state.shortcutLabel(.togglePause))")
     }
 
     static func elapsed(from start: Date, to now: Date) -> String {
         let seconds = max(0, Int(now.timeIntervalSince(start)))
         return seconds >= 3_600 ? String(format: "%d:%02d:%02d", seconds / 3_600, seconds / 60 % 60, seconds % 60)
             : String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+/// Always-visible pause and resume action beside the current listening status.
+private struct PauseResumeButton: View {
+    @Environment(AppState.self) private var state
+    @FocusState private var isKeyboardFocused: Bool
+    @State private var isHovering = false
+
+    private var actionLabel: String { state.isPaused ? "继续聆听" : "暂停聆听" }
+    private var title: String { state.isPaused ? "继续" : "暂停" }
+
+    var body: some View {
+        Button { Task { await state.togglePause() } } label: {
+            Label(title, systemImage: state.isPaused ? "play.fill" : "pause.fill")
+        }
+        .buttonStyle(SecondaryButtonStyle())
+        .focusable()
+        .focused($isKeyboardFocused)
+        .onHover { isHovering = $0 }
+        .overlay {
+            RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                .strokeBorder(
+                    isKeyboardFocused ? Ink.focus : (isHovering ? Ink.secondary : Color.clear),
+                    lineWidth: isKeyboardFocused ? 2 : 1
+                )
+                .padding(isKeyboardFocused ? -3 : 0)
+                .allowsHitTesting(false)
+        }
+        .disabled(state.isChangingSession)
+        .accessibilityLabel(Text(verbatim: actionLabel))
+        .accessibilityHint(Text(verbatim: "快捷键 \(state.shortcutLabel(.togglePause))"))
+        .accessibilityIdentifier("liveSession.pauseResume")
+        .help("\(actionLabel) · \(state.shortcutLabel(.togglePause))")
     }
 }
 
@@ -875,7 +912,7 @@ extension AppState {
         return [audio, answer, record].joined(separator: String(localized: "；"))
     }
 
-    /// 提词 / 只记录 during the meeting (replaces the old "自动回答" setting).
+    /// Automatic answers / notes-only during the meeting (replaces the old preference setting).
     func setLiveMode(prompting: Bool) {
         guard automaticAnswers != prompting else { return }
         automaticAnswers = prompting

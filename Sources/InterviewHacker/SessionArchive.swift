@@ -314,12 +314,46 @@ final class SessionArchive {
         update(meta)
     }
 
-    /// Keeps meetings attached to a renamed workspace and refreshes their searchable name.
+    func workspaceSessionIDs(_ id: UUID, formerName: String?, includeLegacyNameOnly: Bool) -> [UUID] {
+        sessions.filter { meta in
+            if meta.workspaceID == id { return true }
+            guard includeLegacyNameOnly, meta.workspaceID == nil, meta.workspaceDeleted != true,
+                  let formerName, !formerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+            return meta.workspaceName == formerName
+        }.map(\.id)
+    }
+
+    /// Permanently deletes every archived meeting folder linked to a workspace.
+    func deleteWorkspaceSessions(_ id: UUID, formerName: String?, includeLegacyNameOnly: Bool) throws {
+        guard !DemoMode.isEnabled else { throw AppFailure.capture("演示资料不可删除。") }
+        let sessionIDs = workspaceSessionIDs(id, formerName: formerName, includeLegacyNameOnly: includeLegacyNameOnly)
+        if let activeID, sessionIDs.contains(activeID) {
+            throw AppFailure.capture("正在记录的会议不能删除。")
+        }
+        guard !sessionIDs.contains(where: { summarizing.contains($0) }) else {
+            throw AppFailure.capture("该系列有纪要正在生成，请完成后再删除。")
+        }
+        let ids = Set(sessionIDs)
+        try io.sync {
+            for sessionID in sessionIDs {
+                let directory = folder(sessionID)
+                if FileManager.default.fileExists(atPath: directory.path) {
+                    try FileManager.default.removeItem(at: directory)
+                }
+            }
+        }
+        sessions.removeAll { ids.contains($0.id) }
+        for sessionID in ids { notesSteps[sessionID] = nil }
+        notesRevision &+= 1
+    }
+
+    /// Keeps a renamed workspace attached to its meetings, including legacy metadata
+    /// that identified the workspace only by its former name.
     func renameWorkspace(_ id: UUID, from formerName: String, to newName: String, includeLegacyNameOnly: Bool) {
         guard !DemoMode.isEnabled else { return }
         let sessionIDs = sessions.filter { meta in
             if meta.workspaceID == id { return true }
-            guard includeLegacyNameOnly, meta.workspaceID == nil,
+            guard includeLegacyNameOnly, meta.workspaceID == nil, meta.workspaceDeleted != true,
                   !formerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
             return meta.workspaceName == formerName
         }.map(\.id)
@@ -327,6 +361,8 @@ final class SessionArchive {
             guard var meta = sessions.first(where: { $0.id == sessionID }) else { continue }
             meta.workspaceID = id
             meta.workspaceName = newName
+            meta.formerWorkspaceName = nil
+            meta.workspaceDeleted = false
             update(meta)
         }
         io.sync { }

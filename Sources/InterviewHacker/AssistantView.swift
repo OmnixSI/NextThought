@@ -164,7 +164,7 @@ private struct TranscriptStatusLine: View {
 private struct EmptyConversationHint: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("开始辅助后，双方的话会实时出现在这里。").font(.system(size: 12))
+            Text("开始记录后，参与者的发言会实时出现在这里。").font(.system(size: 12))
             Text("· 左侧灰色为对方（系统声音），右侧彩色为我（麦克风）\n· 识别为问题的句子会标出；把鼠标移到任意一句上可以“回答这句”\n· 原始音频不保存；转录与回答保存在“记录”里")
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         }

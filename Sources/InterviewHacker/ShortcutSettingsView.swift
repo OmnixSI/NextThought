@@ -9,7 +9,7 @@ struct ShortcutSettingsView: View {
         VStack(spacing: 10) {
             ForEach(HotkeyAction.allCases) { action in
                 HStack {
-                    Text(action.title)
+                    Text(LocalizedStringKey(action.title))
                     Spacer()
                     Button(state.shortcutLabel(action)) { recording = action }.font(.system(.callout, design: .monospaced))
                 }
@@ -18,7 +18,7 @@ struct ShortcutSettingsView: View {
         }
         .sheet(item: $recording, onDismiss: { state.registerHotkeys() }) { action in
             VStack(spacing: 16) {
-                Text("设置快捷键：\(action.title)").font(.headline)
+                Text("设置快捷键：\(String(localized: String.LocalizationValue(action.title)))").font(.headline)
                 Text("按下组合键；至少包含 Command、Option 或 Control。Esc 取消。")
                     .font(.callout).foregroundStyle(.secondary)
                 KeyRecorder { binding in

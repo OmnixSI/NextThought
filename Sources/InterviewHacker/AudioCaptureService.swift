@@ -27,7 +27,7 @@ final class AudioCaptureService: NSObject, SCStreamOutput, SCStreamDelegate {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         var targets: [CaptureTarget] = []
         for display in content.displays {
-            targets.append(CaptureTarget(id: "display:\(display.displayID)", title: "整个屏幕 · \(display.width)×\(display.height)"))
+            targets.append(CaptureTarget(id: "display:\(display.displayID)", title: String(localized: "整个屏幕 · \(display.width)×\(display.height)")))
         }
         for window in content.windows where window.isOnScreen && !(window.title ?? "").isEmpty {
             let app = window.owningApplication?.applicationName ?? "应用窗口"

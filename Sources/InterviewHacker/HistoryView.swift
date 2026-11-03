@@ -7,8 +7,13 @@ import InterviewHackerCore
 struct HistoryView: View {
     @Environment(AppState.self) private var state
     @FocusState private var focusedSessionID: UUID?
+    @State private var workspaceEditor = WorkspaceEditController.shared
     @State private var showDeleteAll = false
-    @AppStorage(AppNavigationBar.meetingsSidebarKey) private var isMeetingListHidden = false
+    @State private var deletingWorkspace: Workspace?
+    @State private var isSelectingSeries = false
+    @State private var selectedWorkspaceIDs = Set<UUID>()
+    @State private var showDeleteSelectedSeries = false
+    @AppStorage(AppNavigationBar.meetingsSidebarKey, store: UserDefaults.standard) private var isMeetingListHidden = false
     @State private var isCollectionOverview = false
     @State private var overviewFolderKey: String?
     @State private var informationTarget: SessionInfoTarget?
@@ -95,14 +100,59 @@ struct HistoryView: View {
         }
         .onAppear { selectFirstIfNeeded() }
         .onChange(of: state.section) { _, section in
-            if section == .meetings { selectFirstIfNeeded() }
+            if section == .meetings {
+                selectFirstIfNeeded()
+            } else {
+                finishSeriesSelection()
+            }
         }
         .onChange(of: archive.sessions.count) { _, _ in selectFirstIfNeeded() }
+        .onChange(of: state.workspaces.workspaces.count) { _, _ in
+            let existingIDs = Set(state.workspaces.workspaces.map(\.id))
+            selectedWorkspaceIDs.formIntersection(existingIDs)
+        }
+        .confirmationDialog("有未保存的修改", isPresented: Binding(
+            get: { workspaceEditor.showUnsavedPrompt }, set: { workspaceEditor.showUnsavedPrompt = $0 }), titleVisibility: .visible) {
+            Button("保存") { workspaceEditor.saveAndContinue(state) }
+            Button("放弃更改", role: .destructive) { workspaceEditor.discardAndContinue(state) }
+            Button("继续编辑", role: .cancel) { workspaceEditor.continueEditing() }
+        } message: {
+            Text("保存后继续刚才的操作；放弃更改会丢弃本次草稿。")
+        }
         .confirmationDialog("删除全部会议记录？", isPresented: $showDeleteAll, titleVisibility: .visible) {
             Button("删除全部会议记录", role: .destructive) { archive.deleteAll(); state.historySelection = nil }
             Button("取消", role: .cancel) { }
         } message: {
-            Text("将删除全部 \(archive.sessions.count) 场会议的转写、问题、提词和纪要，不限当前系列，且无法恢复。")
+            Text("将删除全部 \(archive.sessions.count) 场会议的转写、问题、回答和纪要，不限当前系列，且无法恢复。")
+        }
+        .confirmationDialog("删除系列“\(deletingWorkspace?.name ?? "")”？", isPresented: Binding(
+            get: { deletingWorkspace != nil },
+            set: { if !$0 { deletingWorkspace = nil } }), titleVisibility: .visible) {
+                Button("删除系列", role: .destructive) {
+                    let workspaceID = deletingWorkspace?.id
+                    deletingWorkspace = nil
+                    if let workspaceID {
+                        workspaceEditor.requestDeleteWorkspace(workspaceID, state: state) {
+                            showAllMeetings()
+                        }
+                    }
+                }
+                Button("取消", role: .cancel) { deletingWorkspace = nil }
+            } message: {
+                Text("系列及其会议记录将被永久删除，无法恢复。")
+            }
+        .confirmationDialog("删除所选系列？", isPresented: $showDeleteSelectedSeries, titleVisibility: .visible) {
+            Button("删除所选系列", role: .destructive) { deleteSelectedSeries() }
+            Button("取消", role: .cancel) { }
+        } message: {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("所选系列及其会议记录将被永久删除，无法恢复。")
+                if !selectedSeriesSummary.isEmpty {
+                    Text(verbatim: selectedSeriesSummary)
+                        .font(.caption)
+                        .lineLimit(3)
+                }
+            }
         }
         .sheet(item: $informationTarget) { target in
             SessionInfoView(sessionID: target.id)
@@ -128,14 +178,16 @@ struct HistoryView: View {
         let folderSessions = folder.map { folder in
             ordered(visibleSessions.filter { folder.contains($0, workspaces: state.workspaces.workspaces) })
         } ?? visibleSessions
-        let title = isRoot ? "所有会议" : (folder?.name ?? "已删除系列")
+        let title = isRoot ? "所有会议" : (folder?.name ?? String(localized: "未分类会议"))
         let subtitle: String
         if let folder, !isRoot {
-            subtitle = "\(folder.modeTitle ?? "会议系列") · 系列共 \(folder.sessions.count) 场会议 · 当前条件匹配 \(folderSessions.count) 场"
+            subtitle = folder.workspaceID == nil
+                ? String(localized: "未归入系列的会议")
+                : "\(folder.modeTitle ?? "会议系列") · 系列共 \(folder.sessions.count) 场会议 · 当前条件匹配 \(folderSessions.count) 场"
         } else if !isRoot {
             subtitle = "系列信息已不可用 · 当前筛选下共 \(folderSessions.count) 场会议"
         } else {
-            subtitle = "本机记录 · 当前匹配 \(visibleSessions.count) 场会议、\(visibleSeriesFolders.count) 个系列 · 系列按最近匹配会议排序"
+            subtitle = "本机记录 · 当前匹配 \(visibleSessions.count) 场会议、\(visibleWorkspaceSeriesCount) 个系列 · 系列按最近匹配会议排序"
         }
         let overview = MeetingArchiveOverview(
             title: title,
@@ -143,11 +195,21 @@ struct HistoryView: View {
             sessions: isRoot ? visibleSessions : folderSessions,
             folders: isRoot ? visibleSeriesFolders : [],
             isRoot: isRoot,
+            isSelectingSeries: $isSelectingSeries,
+            selectedWorkspaceIDs: $selectedWorkspaceIDs,
             selectedFolder: isRoot ? nil : folder,
             hasUnderlyingRecords: isRoot ? !archive.sessions.isEmpty : !(folder?.sessions.isEmpty ?? true),
             hasActiveFilters: hasNarrowingFilter,
             onOpenRoot: showAllMeetings,
             onOpenFolder: showFolder,
+            canManageFolder: canManageFolder,
+            canSelectSeries: canDeleteFolder,
+            onToggleSeriesSelection: toggleSeriesSelection,
+            onDeleteSelectedSeries: { showDeleteSelectedSeries = true },
+            onManageFolder: manageFolder,
+            onDeleteFolder: confirmDeleteFolder,
+            deleteDisabledReason: { folder in folder.workspaceID.flatMap { state.workspaceDeletionDisabledReason($0) } },
+            managementDisabled: state.isRunning,
             onOpen: openFromOverview,
             onClearFilters: clearFilters,
             onReturnHome: { state.section = .home })
@@ -179,8 +241,7 @@ struct HistoryView: View {
         return grouped.map { key, sessions in
             let id = key.hasPrefix("workspace:") ? UUID(uuidString: String(key.dropFirst("workspace:".count))) : nil
             let workspace = id.flatMap { state.workspaces.workspace($0) }
-            let fallbackName = sessions.first?.workspaceName
-            let name = workspace?.name ?? fallbackName ?? (id == nil ? String(localized: "未分类") : String(localized: "已删除系列"))
+            let name = workspace?.name ?? String(localized: "未分类会议")
             let modeTitle = workspace?.mode.title ?? sessions.first?.mode.title
             let lastSessionAt = sessions.map(\.startedAt).max()
             let updatedAt = lastSessionAt ?? workspace?.updatedAt ?? .distantPast
@@ -193,11 +254,19 @@ struct HistoryView: View {
     }
 
     private func seriesFolderID(for session: SessionMeta, workspaces: [Workspace]) -> String {
-        let workspaceID = session.workspaceID ?? workspaces.first(where: { $0.name == session.workspaceName })?.id
-        if let workspaceID { return "workspace:\(workspaceID.uuidString)" }
-        let name = session.workspaceName?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let bucket = name?.isEmpty == false ? name ?? "未分类" : "未分类"
-        return "legacy:\(bucket)"
+        if session.workspaceDeleted == true { return "legacy:unclassified" }
+        if let workspaceID = session.workspaceID {
+            if workspaces.contains(where: { $0.id == workspaceID }) { return "workspace:\(workspaceID.uuidString)" }
+            return "legacy:unclassified"
+        }
+        if let workspaceID = workspaces.first(where: { $0.name == session.workspaceName })?.id {
+            return "workspace:\(workspaceID.uuidString)"
+        }
+        return "legacy:unclassified"
+    }
+
+    private var visibleWorkspaceSeriesCount: Int {
+        visibleSeriesFolders.filter { $0.workspaceID != nil }.count
     }
 
     private var selectedOverviewFolder: MeetingSeriesFolder? {
@@ -302,6 +371,7 @@ struct HistoryView: View {
     }
 
     private func showAllMeetings() {
+        finishSeriesSelection()
         isCollectionOverview = true
         overviewFolderKey = nil
         state.historyWorkspaceFilter = nil
@@ -309,6 +379,7 @@ struct HistoryView: View {
     }
 
     private func showSeries(_ id: UUID) {
+        finishSeriesSelection()
         isCollectionOverview = true
         overviewFolderKey = "workspace:\(id.uuidString)"
         state.historyWorkspaceFilter = id
@@ -316,10 +387,126 @@ struct HistoryView: View {
     }
 
     private func showFolder(_ folder: MeetingSeriesFolder) {
+        finishSeriesSelection()
         isCollectionOverview = true
         overviewFolderKey = folder.id
         state.historyWorkspaceFilter = folder.workspaceID
         state.historySelection = nil
+    }
+
+    private func manageFolder(_ folder: MeetingSeriesFolder) {
+        guard !state.isRunning, let id = folder.workspaceID, state.workspaces.workspace(id) != nil else { return }
+        workspaceEditor.requestEditWorkspaceInfo(id, state: state)
+    }
+
+    private func canManageFolder(_ folder: MeetingSeriesFolder) -> Bool {
+        folder.workspaceID.flatMap { state.workspaces.workspace($0) } != nil
+    }
+
+    private func canDeleteFolder(_ folder: MeetingSeriesFolder) -> Bool {
+        guard let id = folder.workspaceID else { return false }
+        return state.workspaceDeletionDisabledReason(id) == nil
+    }
+
+    private func confirmDeleteFolder(_ folder: MeetingSeriesFolder) {
+        guard let id = folder.workspaceID, let workspace = state.workspaces.workspace(id), canDeleteFolder(folder) else { return }
+        deletingWorkspace = workspace
+    }
+
+    private var selectedWorkspaceIDsInStore: [UUID] {
+        state.workspaces.workspaces.filter { selectedWorkspaceIDs.contains($0.id) }.map(\.id)
+    }
+
+    private var selectedSeriesSummary: String {
+        state.workspaces.workspaces
+            .filter { selectedWorkspaceIDs.contains($0.id) }
+            .map(\.name)
+            .joined(separator: "、")
+    }
+
+    private func toggleSeriesSelection(_ id: UUID) {
+        if selectedWorkspaceIDs.contains(id) {
+            selectedWorkspaceIDs.remove(id)
+        } else if state.workspaceDeletionDisabledReason(id) == nil {
+            selectedWorkspaceIDs.insert(id)
+        }
+    }
+
+    private func finishSeriesSelection() {
+        isSelectingSeries = false
+        selectedWorkspaceIDs.removeAll()
+    }
+
+    private func deleteSelectedSeries() {
+        let ids = selectedWorkspaceIDsInStore
+        guard !ids.isEmpty else { finishSeriesSelection(); return }
+        workspaceEditor.requestDeleteWorkspaces(ids, state: state) {
+            finishSeriesSelection()
+            showAllMeetings()
+        }
+    }
+
+    @ViewBuilder
+    private func seriesGroupHeader(_ folder: MeetingSeriesFolder, meetingCount: Int) -> some View {
+        let header = HStack(spacing: 4) {
+            Button { showFolder(folder) } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 10, weight: .medium))
+                    Text(verbatim: folder.name)
+                        .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 4)
+                    Text(meetingCount.formatted())
+                        .font(.system(size: 10, weight: .medium).monospacedDigit())
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 8, weight: .semibold))
+                }
+                .foregroundStyle(Ink.secondary)
+                .padding(.leading, 9)
+                .padding(.top, 8)
+                .padding(.bottom, 2)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(folder.name)，\(meetingCount) 场会议")
+            .accessibilityIdentifier("history.seriesGroup.\(folder.id)")
+            .help("查看系列：\(folder.name)")
+
+            if canManageFolder(folder), !isSelectingSeries {
+                Menu {
+                    SeriesManagementMenuItems(
+                        deleteDisabledReason: folder.workspaceID.flatMap { state.workspaceDeletionDisabledReason($0) },
+                        managementDisabled: state.isRunning,
+                        onEdit: { manageFolder(folder) },
+                        onDelete: { confirmDeleteFolder(folder) })
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 25, height: 25)
+                        .contentShape(Rectangle())
+                }
+                .menuStyle(.button)
+                .buttonStyle(GlassIconButtonStyle(size: 25))
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .accessibilityLabel("管理系列")
+                .accessibilityHint(Text(verbatim: folder.name))
+                .help("管理系列")
+            }
+        }
+
+        if canManageFolder(folder), !isSelectingSeries {
+            header.contextMenu {
+                SeriesManagementMenuItems(
+                    deleteDisabledReason: folder.workspaceID.flatMap { state.workspaceDeletionDisabledReason($0) },
+                    managementDisabled: state.isRunning,
+                    onEdit: { manageFolder(folder) },
+                    onDelete: { confirmDeleteFolder(folder) })
+            }
+        } else {
+            header
+        }
     }
 
     private func returnToMeetingList() {
@@ -331,7 +518,7 @@ struct HistoryView: View {
     private var sessionListTitle: String {
         if let overviewFolder = selectedOverviewFolder { return overviewFolder.name }
         guard let workspaceID = state.historyWorkspaceFilter else { return "所有会议" }
-        return state.workspaces.workspace(workspaceID)?.name ?? "已删除系列"
+        return state.workspaces.workspace(workspaceID)?.name ?? String(localized: "未分类会议")
     }
 
     private var sessionList: some View {
@@ -423,30 +610,7 @@ struct HistoryView: View {
                     LazyVStack(alignment: .leading, spacing: 10) {
                         ForEach(visibleSessionGroups) { group in
                             VStack(alignment: .leading, spacing: 2) {
-                                Button { showFolder(group.folder) } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "folder")
-                                            .font(.system(size: 10, weight: .medium))
-                                        Text(verbatim: group.folder.name)
-                                            .font(.system(size: 11, weight: .medium))
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
-                                        Spacer(minLength: 4)
-                                        Text(group.sessions.count.formatted())
-                                            .font(.system(size: 10, weight: .medium).monospacedDigit())
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 8, weight: .semibold))
-                                    }
-                                    .foregroundStyle(Ink.secondary)
-                                    .padding(.horizontal, 9)
-                                    .padding(.top, 8)
-                                    .padding(.bottom, 2)
-                                    .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("\(group.folder.name)，\(group.sessions.count) 场会议")
-                                .accessibilityIdentifier("history.seriesGroup.\(group.id)")
-                                .help("查看系列：\(group.folder.name)")
+                                seriesGroupHeader(group.folder, meetingCount: group.sessions.count)
 
                                 ForEach(group.sessions) { meta in
                                     Button { openFromOverview(meta.id) } label: {
@@ -535,7 +699,7 @@ struct HistoryView: View {
     private var resultCount: String {
         let base = searchIsScopedToSeries
             ? "\(visibleSessions.count) 场会议 · 系列共 \(currentScopeSessionCount) 场"
-            : "\(visibleSessions.count) 场会议 · \(visibleSeriesFolders.count) 个系列"
+            : "\(visibleSessions.count) 场会议 · \(visibleWorkspaceSeriesCount) 个系列"
         return isContentSearching ? base + " · 搜索中…" : base
     }
 
@@ -562,7 +726,7 @@ struct HistoryView: View {
 
     /// Metadata-only match: always available, no disk access.
     private func matchesMetadata(_ meta: SessionMeta, _ query: String) -> Bool {
-        let fields = [meta.displayTitle, meta.title ?? "", meta.workspaceName ?? "",
+        let fields = [meta.displayTitle, meta.title ?? "", meta.workspaceName ?? "", meta.formerWorkspaceName ?? "",
                       meta.mode.title, meta.audioSource, meta.recognizer]
         return fields.contains { $0.localizedCaseInsensitiveContains(query) }
     }
@@ -674,11 +838,19 @@ private struct MeetingSeriesFolder: Identifiable {
     }
 
     func contains(_ session: SessionMeta, workspaces: [Workspace]) -> Bool {
-        let resolvedID = session.workspaceID ?? workspaces.first(where: { $0.name == session.workspaceName })?.id
+        let isUnclassified = id == "legacy:unclassified"
+        if session.workspaceDeleted == true {
+            return isUnclassified
+        }
+        if let sessionWorkspaceID = session.workspaceID {
+            if workspaces.contains(where: { $0.id == sessionWorkspaceID }) {
+                return workspaceID == sessionWorkspaceID
+            }
+            return isUnclassified
+        }
+        let resolvedID = workspaces.first(where: { $0.name == session.workspaceName })?.id
         if let workspaceID { return resolvedID == workspaceID }
-        guard resolvedID == nil else { return false }
-        let sessionName = session.workspaceName?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (sessionName?.isEmpty == false ? sessionName ?? "未分类" : "未分类") == name
+        return resolvedID == nil && isUnclassified
     }
 }
 
@@ -695,11 +867,21 @@ private struct MeetingArchiveOverview: View {
     let sessions: [SessionMeta]
     let folders: [MeetingSeriesFolder]
     let isRoot: Bool
+    @Binding var isSelectingSeries: Bool
+    @Binding var selectedWorkspaceIDs: Set<UUID>
     let selectedFolder: MeetingSeriesFolder?
     let hasUnderlyingRecords: Bool
     let hasActiveFilters: Bool
     let onOpenRoot: () -> Void
     let onOpenFolder: (MeetingSeriesFolder) -> Void
+    let canManageFolder: (MeetingSeriesFolder) -> Bool
+    let canSelectSeries: (MeetingSeriesFolder) -> Bool
+    let onToggleSeriesSelection: (UUID) -> Void
+    let onDeleteSelectedSeries: () -> Void
+    let onManageFolder: (MeetingSeriesFolder) -> Void
+    let onDeleteFolder: (MeetingSeriesFolder) -> Void
+    let deleteDisabledReason: (MeetingSeriesFolder) -> String?
+    let managementDisabled: Bool
     let onOpen: (UUID) -> Void
     let onClearFilters: () -> Void
     let onReturnHome: () -> Void
@@ -732,12 +914,55 @@ private struct MeetingArchiveOverview: View {
                     HStack(spacing: Space.s2) {
                         MetricPill(symbol: "clock", text: "\(sessions.count) 场会议")
                         if isRoot {
-                            MetricPill(symbol: "folder", text: "\(folders.count) 个系列")
+                            MetricPill(symbol: "folder", text: "\(folders.filter { $0.workspaceID != nil }.count) 个系列")
                         } else {
                             MetricPill(symbol: "sparkles", text: "\(sessions.filter { $0.summaryState == .ready }.count) 篇已整理")
                         }
                     }
-                    Text(isRoot ? "会议系列" : "系列中的会议").font(Typo.section)
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        HStack(spacing: Space.s2) {
+                            Text(isRoot ? "会议系列" : "系列中的会议").font(Typo.section)
+                            Spacer(minLength: 4)
+                            if isRoot && !isSelectingSeries {
+                                Button("批量删除") {
+                                    selectedWorkspaceIDs.removeAll()
+                                    isSelectingSeries = true
+                                }
+                                .buttonStyle(ChipButtonStyle())
+                                .controlSize(.small)
+                                .disabled(managementDisabled || !folders.contains(where: { canSelectSeries($0) }))
+                                .help(managementDisabled ? "会议中不能管理系列" : "选择多个系列后删除")
+                            }
+                        }
+                        if isRoot && isSelectingSeries {
+                            HStack(spacing: Space.s2) {
+                                Text("已选 \(selectedWorkspaceIDs.count) 个系列")
+                                    .font(Typo.caption)
+                                    .foregroundStyle(Ink.secondary)
+                                Spacer(minLength: 2)
+                                Button("全选当前结果") {
+                                    selectedWorkspaceIDs.formUnion(folders.compactMap { folder in
+                                        canSelectSeries(folder) ? folder.workspaceID : nil
+                                    })
+                                }
+                                .buttonStyle(ChipButtonStyle())
+                                .controlSize(.small)
+                                .disabled(!folders.contains(where: { canSelectSeries($0) }))
+                                Button(role: .destructive, action: onDeleteSelectedSeries) {
+                                    Label("删除所选", systemImage: "trash")
+                                }
+                                .buttonStyle(ChipButtonStyle())
+                                .controlSize(.small)
+                                .disabled(selectedWorkspaceIDs.isEmpty || managementDisabled)
+                                Button("完成") {
+                                    selectedWorkspaceIDs.removeAll()
+                                    isSelectingSeries = false
+                                }
+                                .buttonStyle(ChipButtonStyle())
+                                .controlSize(.small)
+                            }
+                        }
+                    }
                     if isRoot {
                         if folders.isEmpty {
                             if hasUnderlyingRecords {
@@ -835,56 +1060,134 @@ private struct MeetingArchiveOverview: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    @ViewBuilder
     private func folderCard(_ folder: MeetingSeriesFolder) -> some View {
-        Button { onOpenFolder(folder) } label: {
-            HStack(alignment: .center, spacing: Space.s3) {
-                Image(systemName: "folder")
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundStyle(Ink.ai)
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(verbatim: folder.name)
-                        .font(Typo.body)
-                        .foregroundStyle(Ink.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(folder.modeTitle ?? "会议系列")
-                        .font(Typo.caption)
-                        .foregroundStyle(Ink.secondary)
+        let hasWorkspace = canManageFolder(folder)
+        let canSelect = canSelectSeries(folder)
+        let isSelected = folder.workspaceID.map { selectedWorkspaceIDs.contains($0) } ?? false
+        let row = HStack(spacing: Space.s2) {
+            Button {
+                if isSelectingSeries, hasWorkspace {
+                    guard canSelect || isSelected, let id = folder.workspaceID else { return }
+                    onToggleSeriesSelection(id)
+                } else {
+                    onOpenFolder(folder)
                 }
-                Spacer(minLength: 0)
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text("\(folder.sessions.count) 场会议")
-                        .font(.system(size: 11, weight: .medium).monospacedDigit())
-                        .foregroundStyle(Ink.secondary)
-                    Text(folder.lastMeetingAt.map { "最近 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "暂无最近时间")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Ink.tertiary)
+            } label: {
+                HStack(alignment: .center, spacing: Space.s3) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 17, weight: .regular))
+                        .foregroundStyle(Ink.ai)
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(verbatim: folder.name)
+                            .font(Typo.body)
+                            .foregroundStyle(Ink.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(folder.modeTitle ?? "会议系列")
+                            .font(Typo.caption)
+                            .foregroundStyle(Ink.secondary)
+                    }
+                    Spacer(minLength: 0)
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text("\(folder.sessions.count) 场会议")
+                            .font(.system(size: 11, weight: .medium).monospacedDigit())
+                            .foregroundStyle(Ink.secondary)
+                        Text(folder.lastMeetingAt.map { "最近 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "暂无最近时间")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Ink.tertiary)
+                    }
+                    if isSelectingSeries && hasWorkspace {
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : (canSelect ? "circle" : "minus.circle"))
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(isSelected ? Ink.ai : (canSelect ? Ink.tertiary : Ink.caution))
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Ink.tertiary)
+                    }
                 }
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Ink.tertiary)
+                .padding(.horizontal, Space.s2)
+                .padding(.vertical, Space.s4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, Space.s2)
-            .padding(.vertical, Space.s4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(InteractiveRowButtonStyle())
-        .focused($focusedFolderID, equals: folder.id)
-        .overlay {
-            if focusedFolderID == folder.id {
-                RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
-                    .strokeBorder(Ink.focus, lineWidth: 1.5)
-                    .padding(1)
+            .buttonStyle(InteractiveRowButtonStyle())
+            .disabled(isSelectingSeries && hasWorkspace && !canSelect && !isSelected)
+            .focused($focusedFolderID, equals: folder.id)
+            .overlay {
+                if focusedFolderID == folder.id {
+                    RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                        .strokeBorder(Ink.focus, lineWidth: 1.5)
+                        .padding(1)
+                }
+            }
+            .accessibilityLabel(isSelectingSeries && hasWorkspace
+                                ? "选择系列"
+                                : "打开系列：\(folder.name)，\(folder.sessions.count) 场会议")
+            .accessibilityHint(isSelectingSeries && hasWorkspace
+                               ? (canSelect ? folder.name : (deleteDisabledReason(folder) ?? folder.name))
+                               : (folder.lastMeetingAt.map { "最近会议 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "这个系列还没有会议"))
+            .accessibilityAddTraits(isSelectingSeries && isSelected ? .isSelected : [])
+            .accessibilityIdentifier("history.series.\(folder.id)")
+            .help(isSelectingSeries && hasWorkspace
+                  ? (canSelect ? "选择系列：\(folder.name)" : (deleteDisabledReason(folder) ?? "这个系列暂时无法删除"))
+                  : "打开系列：\(folder.name)")
+
+            if hasWorkspace && !isSelectingSeries {
+                Menu {
+                    managementItems(for: folder)
+                } label: {
+                    HStack(spacing: 5) {
+                        Text("管理")
+                        Image(systemName: "ellipsis")
+                    }
+                    .font(.system(size: 12, weight: .medium))
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .glassCapsule()
+                }
+                .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                .accessibilityLabel("管理系列")
+                .accessibilityHint(Text(verbatim: folder.name))
+                .help("管理系列")
             }
         }
-        .accessibilityLabel("打开系列：\(folder.name)，\(folder.sessions.count) 场会议")
-        .accessibilityHint(folder.lastMeetingAt.map { "最近会议 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "这个系列还没有会议")
-        .accessibilityIdentifier("history.series.\(folder.id)")
-        .help("打开系列：\(folder.name)")
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+
+        if hasWorkspace && !isSelectingSeries {
+            row.contextMenu { managementItems(for: folder) }
+        } else {
+            row
+        }
     }
 
+    private func managementItems(for folder: MeetingSeriesFolder) -> some View {
+        SeriesManagementMenuItems(
+            deleteDisabledReason: deleteDisabledReason(folder),
+            managementDisabled: managementDisabled,
+            onEdit: { onManageFolder(folder) },
+            onDelete: { onDeleteFolder(folder) })
+    }
+
+}
+
+private struct SeriesManagementMenuItems: View {
+    let deleteDisabledReason: String?
+    let managementDisabled: Bool
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        Button("编辑系列信息", systemImage: "slider.horizontal.3") { onEdit() }
+            .disabled(managementDisabled)
+            .help(managementDisabled ? "会议中不能管理系列" : "编辑系列信息")
+        Divider()
+        Button("删除系列…", systemImage: "trash", role: .destructive) { onDelete() }
+            .disabled(deleteDisabledReason != nil)
+            .help(deleteDisabledReason ?? "删除系列…")
+        if let deleteDisabledReason { Text(deleteDisabledReason) }
+    }
 }
 
 /// Date window a session has to fall into.
@@ -996,7 +1299,7 @@ struct SessionAnswersList: View {
         VStack(alignment: .leading, spacing: 0) {
             LazyVStack(alignment: .leading, spacing: 10) {
                 if detail.answers.isEmpty {
-                    Text("这场会议没有生成提词。").font(.callout).foregroundStyle(.secondary)
+                    Text("这场会议没有生成回答。").font(.callout).foregroundStyle(.secondary)
                 }
                 ForEach(detail.answers) { answer in
                     VStack(alignment: .leading, spacing: 6) {

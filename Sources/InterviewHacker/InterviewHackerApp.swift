@@ -3,8 +3,8 @@ import SwiftUI
 
 struct InterviewHackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    @AppStorage(AppNavigationBar.meetingsSidebarKey) private var meetingsSidebarHidden = false
-    @AppStorage(AppNavigationBar.foldersSidebarKey) private var foldersSidebarHidden = false
+    @AppStorage(AppNavigationBar.meetingsSidebarKey, store: UserDefaults.standard) private var meetingsSidebarHidden = false
+    @AppStorage(AppNavigationBar.foldersSidebarKey, store: UserDefaults.standard) private var foldersSidebarHidden = false
 
     private var contextSidebarHidden: Bool {
         AppState.shared.section == .meetings ? meetingsSidebarHidden : foldersSidebarHidden
@@ -79,8 +79,7 @@ enum MainWindowLayout {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
-        let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
-        window.level = keepOnTop ? .floating : .normal
+        window.level = effectiveWorkspaceLevel
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.minSize = minimum
         window.backgroundColor = Ink.paperNSColor
@@ -88,6 +87,20 @@ enum MainWindowLayout {
         window.isRestorable = false
         window.setFrameAutosaveName("")
         reset(window)
+    }
+
+    static var effectiveWorkspaceLevel: NSWindow.Level {
+        let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
+        return keepOnTop && NSApp.isActive ? .floating : .normal
+    }
+
+    /// Workspace windows float only while InterviewHacker is the active app.
+    static func refreshLevels() {
+        let level = effectiveWorkspaceLevel
+        for window in NSApp.windows where isMainWindow(window) || window.identifier == SettingsWindow.identifier {
+            window.level = level
+        }
+        DetachedModuleController.shared.applyWindowLevel(level)
     }
 
     static func reset(_ window: NSWindow) {
@@ -145,11 +158,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 if MainWindowLayout.isMainWindow(window) { window.delegate = self }
             }
         }
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: NSApp, queue: .main) { _ in
+            MainActor.assumeIsolated { MainWindowLayout.refreshLevels() }
+        }
+        NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: NSApp, queue: .main) { _ in
+            MainActor.assumeIsolated { MainWindowLayout.refreshLevels() }
+        }
         DispatchQueue.main.async {
             for window in NSApp.windows {
                 MainWindowLayout.configure(window)
                 if MainWindowLayout.isMainWindow(window) { window.delegate = self }
             }
+            MainWindowLayout.refreshLevels()
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             DemoMode.apply()

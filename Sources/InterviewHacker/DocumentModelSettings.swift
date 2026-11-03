@@ -8,7 +8,7 @@ struct DocumentModelSettings: View {
         VStack(alignment: .leading, spacing: 12) {
         SettingsCardRow {
             SettingsSection(title: "现在用什么读取资料", icon: "doc.text.viewfinder") {
-                Label(currentSummary, systemImage: currentReady ? "checkmark.circle.fill" : "exclamationmark.circle")
+                Label(LocalizedStringKey(currentSummary), systemImage: currentReady ? "checkmark.circle.fill" : "exclamationmark.circle")
                     .foregroundStyle(currentReady ? .green : .orange)
                 Note("选一种即可。PDF、图片和纯文本可先用系统识别，无需下载文档模型。")
                 provider(.system, title: "系统识别", badge: "Mac 自带 · 可直接用", ready: true,
@@ -18,7 +18,9 @@ struct DocumentModelSettings: View {
                 if state.documentOCRProvider == .paddle {
                     Picker("本机识别模型", selection: $state.localOCRModelID) {
                         ForEach(ModelCatalog.localOCRChoices, id: \.id) { descriptor in
-                            Text(descriptor.name + " · " + descriptor.formattedSize + (state.installedDocumentModels.contains(descriptor.id) ? " · 已安装" : " · 未安装")).tag(descriptor.id)
+                            let installedLabel = String(localized: state.installedDocumentModels.contains(descriptor.id) ? "已安装" : "未安装")
+                            let localizedName = String(localized: String.LocalizationValue(descriptor.name))
+                            Text(localizedName + " · " + descriptor.formattedSize + " · " + installedLabel).tag(descriptor.id)
                         }
                     }.onChange(of: state.localOCRModelID) { _, _ in
                         state.documentProviderSelectionRevision += 1; state.updateSettings()
@@ -32,7 +34,12 @@ struct DocumentModelSettings: View {
             }
         } right: {
             SettingsSection(title: "已经在这台 Mac 下载过？", icon: "internaldrive") {
-                Note("先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。")
+                HStack(spacing: 6) {
+                    Text("扫描并校验已有组件，不会自动启用。")
+                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    Note("先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。", presentation: .info)
+                        .accessibilityLabel("复用已有组件说明")
+                }
                 HStack {
                     Button("扫描本机已有组件") { state.scanLocalDocumentAssets() }
                         .buttonStyle(SecondaryButtonStyle()).disabled(state.documentSetupBusy || !state.documentModelsChecked)
@@ -40,13 +47,15 @@ struct DocumentModelSettings: View {
                         .disabled(state.documentSetupBusy || !state.documentModelsChecked)
                     if state.isScanningLocalAssets { ProgressView().controlSize(.small); Button("取消") { state.localAssetScanTask?.cancel() } }
                 }
-                if !state.localAssetScanStatus.isEmpty { Note(state.localAssetScanStatus) }
+                if !state.documentModelsChecked { Note("正在检查组件状态，完成后可以扫描。") }
+                else if state.documentSetupBusy && !state.isScanningLocalAssets { Note("正在准备其他组件，完成后可以扫描。") }
+                if !state.localAssetScanStatus.isEmpty { Note(state.localAssetScanStatus, presentation: .inline) }
                 Note("扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。")
             }
         }
             if state.documentSetupFeature != nil || !state.documentSetupStatus.isEmpty {
                 SettingsSection(title: "准备进度", icon: "arrow.down.circle") {
-                    Note(state.documentSetupStatus)
+                    Note(state.documentSetupStatus, presentation: .inline)
                     if state.documentSetupFeature != nil {
                         ProgressView(value: state.documentSetupProgress)
                         Button("取消准备") { state.documentSetupTask?.cancel() }
@@ -69,19 +78,25 @@ struct DocumentModelSettings: View {
                         featureButton(.semantic, title: "启用语义增强")
                     }
                 }
-                Note("两种方式都会挑选相关片段放进回答上下文，不会默认发送全部资料。全量发送会增加等待和用量，还可能超过模型的上下文上限；关闭向量检索不等于全文已经被读取。")
-                if !state.semanticIndexStatus.isEmpty { Note(state.semanticIndexStatus) }
+                Note("默认只向回答服务发送相关资料片段；全量发送会增加等待和用量。", presentation: .inline)
+                HStack(spacing: 6) {
+                    Text("查找方式说明").font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    Note("两种方式都会挑选相关片段放进回答上下文，不会默认发送全部资料。全量发送会增加等待和用量，还可能超过模型的上下文上限；关闭向量检索不等于全文已经被读取。", presentation: .info)
+                        .accessibilityLabel("资料查找方式说明")
+                }
+                if !state.semanticIndexStatus.isEmpty { Note(state.semanticIndexStatus, presentation: .inline) }
             }
         } right: {
             SettingsSection(title: "Word、Excel 与 PowerPoint", icon: "doc.richtext") {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(state.runtimeInstalled ? "已安装支持组件 · 可导入 Office 文件" : "需要共用文档组件")
+                        Text(LocalizedStringKey(state.runtimeInstalled ? "已安装支持组件 · 可导入 Office 文件" : "需要共用文档组件"))
                             .foregroundStyle(state.runtimeInstalled ? .green : .secondary)
-                        Note("会前后台提取正文、嵌图、备注和图表。共用组件最多下载约 186 MB。")
+                        Note("共用 Office 组件最多下载约 186 MB。", presentation: .inline)
+                        Note("会前会在后台提取正文、嵌图、备注和图表。")
                         if !LegacyOfficeConverter.available {
                             Link("安装旧版 PPT 支持（LibreOffice）", destination: URL(string: "https://www.libreoffice.org/download/download-libreoffice/")!)
-                        } else { Note("旧版 PPT 本地转换组件已就绪。") }
+                        } else { Note("旧版 PPT 本地转换组件已就绪。", presentation: .inline) }
                     }
                     Spacer(minLength: 12)
                     if !state.runtimeInstalled { featureButton(.office, title: "安装支持") }
@@ -94,9 +109,9 @@ struct DocumentModelSettings: View {
                     ForEach(ModelCatalog.all, id: \.id) { descriptor in
                         ManagedModelRow(descriptor: descriptor, isInstalled: state.installedDocumentModels.contains(descriptor.id))
                     }
-                    if !state.managedModelDownloadStatus.isEmpty { Note(state.managedModelDownloadStatus) }
+                    if !state.managedModelDownloadStatus.isEmpty { Note(state.managedModelDownloadStatus, presentation: .inline) }
                     HStack {
-                        Text(state.runtimeInstalled ? "共用文档组件 · 已安装" : "共用文档组件 · 未安装")
+                        Text(LocalizedStringKey(state.runtimeInstalled ? "共用文档组件 · 已安装" : "共用文档组件 · 未安装"))
                         Spacer()
                         Button(state.runtimeInstalled ? "校验／修复" : "安装") { state.installDocumentRuntime() }
                             .disabled(state.documentSetupBusy || !state.documentModelsChecked)
@@ -104,14 +119,14 @@ struct DocumentModelSettings: View {
                             Button("删除", role: .destructive) { state.deleteDocumentRuntime() }.disabled(state.documentSetupBusy)
                         }
                     }
-                    Note(DocumentRuntimeInstaller.sizeDescription)
+                    Note(DocumentRuntimeInstaller.sizeDescription, presentation: .inline)
                     if state.isInstallingDocumentRuntime {
                         Button("取消下载组件") { state.runtimeDownloadTask?.cancel() }
                     }
-                    if !state.documentRuntimeStatus.isEmpty { Note(state.documentRuntimeStatus) }
+                    if !state.documentRuntimeStatus.isEmpty { Note(state.documentRuntimeStatus, presentation: .inline) }
                     Toggle("本机识别失败时用系统识别补读，并标明降级内容", isOn: $state.ocrFallbackToVision)
                         .onChange(of: state.ocrFallbackToVision) { _, _ in state.updateSettings() }
-                    Note("关闭补读后，识别失败会让该文件导入失败（严格模式）。不会自动改用在线 Codex。")
+                    Note("关闭本机补读后，识别失败会让该文件导入失败；不会自动切到在线 Codex。", presentation: .inline)
                     if state.documentOCRProvider == .codex {
                         TextField("Codex 模型", text: $state.codexOCRModel).onSubmit { state.updateSettings() }
                         Picker("推理强度", selection: $state.codexOCREffort) {
@@ -128,7 +143,7 @@ struct DocumentModelSettings: View {
                         .disabled(!state.documentAvailability.ready(.semantic) || !state.semanticRetrievalEnabled || state.isBuildingSemanticIndex)
                 }
             }
-            Note("资料保留原件、Markdown 与定位信息，原件按内容去重。下载组件或模型不会自动上传资料，只有你选择在线代读或在线回答时才使用对应服务。")
+            Note("资料原件保留在本机。只有选择在线代读或在线回答时，资料才会发送给对应服务。", presentation: .inline)
         }
     }
     private var currentReady: Bool {
@@ -144,21 +159,26 @@ struct DocumentModelSettings: View {
         case .paddle: "本机增强识别"
         case .codex: "Codex 文件代读"
         }
-        return currentReady ? "当前使用：\(name)" : "已选择\(name)，但尚未就绪；请先准备，或改用系统识别。"
+        let localizedName = String(localized: String.LocalizationValue(name))
+        return currentReady
+            ? String(localized: "当前使用：\(localizedName)")
+            : String(localized: "已选择\(localizedName)，但尚未就绪；请先准备，或改用系统识别。")
     }
     private var semanticSummary: String {
-        if !state.semanticRetrievalEnabled { return availability(.semantic) + " · 尚未启用" }
+        if !state.semanticRetrievalEnabled { return availability(.semantic) + String(localized: " · 尚未启用") }
         if !state.documentAvailability.ready(.semantic) { return "尚未就绪，当前仍使用关键词查找" }
         if state.isBuildingSemanticIndex { return "正在更新索引；未就绪部分使用关键词" }
         if state.semanticIndex.isEmpty { return "等待添加资料或建立索引；当前使用关键词" }
         return "已生效 · 按关键词与含义查找相关片段"
     }
     private func availability(_ feature: DocumentFeatureAvailability.Feature) -> String {
-        if !state.documentModelsChecked { return "正在检查本机…" }
-        if state.documentAvailability.ready(feature) { return "本应用已安装 · 可使用" }
-        if feature == .codex, state.checkingCodexStatus { return "正在检查 Codex 登录…" }
-        if feature == .codex, !state.codexReady { return state.codexInstalled ? "需要登录 Codex" : "未检测到 Codex" }
-        return "尚未接入 · 可扫描或下载，最多 " + state.documentDownloadSize(feature)
+        if !state.documentModelsChecked { return String(localized: "正在检查本机…") }
+        if state.documentAvailability.ready(feature) { return String(localized: "本应用已安装 · 可使用") }
+        if feature == .codex, state.checkingCodexStatus { return String(localized: "正在检查 Codex 登录…") }
+        if feature == .codex, !state.codexReady {
+            return String(localized: state.codexInstalled ? "需要登录 Codex" : "未检测到 Codex")
+        }
+        return String(localized: "尚未接入 · 可扫描或下载，最多 \(state.documentDownloadSize(feature))")
     }
     private func provider(_ value: DocumentOCRProvider, title: String, badge: String, ready: Bool, detail: String) -> some View {
         choice(title: title, status: badge, detail: detail) {
@@ -178,20 +198,20 @@ struct DocumentModelSettings: View {
         }
     }
     private func featureButton(_ feature: DocumentFeatureAvailability.Feature, title: String) -> some View {
-        Button(title) { state.prepareDocumentFeature(feature) }
+        Button(LocalizedStringKey(title)) { state.prepareDocumentFeature(feature) }
             .buttonStyle(SecondaryButtonStyle()).disabled(state.documentSetupBusy || !state.documentModelsChecked)
     }
     private func choice<Action: View>(title: String, status: String, detail: String, @ViewBuilder action: () -> Action) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.system(size: 14, weight: .semibold))
-                    Text(status).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    Text(LocalizedStringKey(title)).font(.system(size: 14, weight: .semibold))
+                    Text(LocalizedStringKey(status)).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
                 action().font(.system(size: 12))
             }
-            Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(LocalizedStringKey(detail)).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }.padding(12).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -225,8 +245,8 @@ struct ManagedModelRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(descriptor.name).fontWeight(.medium)
-                    Text(!state.documentModelsChecked ? "检查中…" : isInstalled ? "已安装 · 文件已校验" : "尚未接入 · 可扫描或下载")
+                    Text(LocalizedStringKey(descriptor.name)).fontWeight(.medium)
+                    Text(LocalizedStringKey(!state.documentModelsChecked ? "检查中…" : isInstalled ? "已安装 · 文件已校验" : "尚未接入 · 可扫描或下载"))
                         .font(.caption).foregroundStyle(isInstalled ? .green : .secondary)
                 }
                 Spacer()
@@ -237,11 +257,12 @@ struct ManagedModelRow: View {
                     if isInstalled { Button("删除", role: .destructive) { state.deleteManagedModel(descriptor) }.disabled(state.documentSetupBusy) }
                 }
             }
-            Note("\(descriptor.formattedSize) · \(descriptor.license) · \(descriptor.summary)")
+            let localizedSummary = String(localized: String.LocalizationValue(descriptor.summary))
+            Note("\(descriptor.formattedSize) · \(descriptor.license) · \(localizedSummary)")
             Link("模型来源与版本", destination: URL(string: descriptor.homepage)!)
             if downloading {
                 ProgressView(value: state.managedModelDownloadProgress)
-                if !state.managedModelDownloadStatus.isEmpty { Note(state.managedModelDownloadStatus) }
+                if !state.managedModelDownloadStatus.isEmpty { Note(state.managedModelDownloadStatus, presentation: .inline) }
             }
         }.padding(.vertical, 6)
     }

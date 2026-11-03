@@ -23,6 +23,13 @@ enum MaterialArchive {
             .appendingPathComponent(workspaceID.uuidString, isDirectory: true)
     }
 
+    static func deleteWorkspaceFiles(_ workspaceID: UUID) throws {
+        let directory = folder(for: workspaceID)
+        if FileManager.default.fileExists(atPath: directory.path) {
+            try FileManager.default.removeItem(at: directory)
+        }
+    }
+
     /// Writes the Markdown and returns the file URL. Existing files with the
     /// same name are replaced, so re-importing a file refreshes it.
     @discardableResult

@@ -71,16 +71,47 @@ extension AppState {
     }
     func prepareOnboardingForCurrentVersion() {
         let defaults = UserDefaults.standard
+        let completedVersion = defaults.string(forKey: "onboardingGuideCompletedVersion")
+        if defaults.object(forKey: "onboardingGuideEnabled") == nil {
+            defaults.set(OnboardingVersion.needsGuide(appVersion: currentGuideVersion, completedVersion: completedVersion),
+                         forKey: "onboardingGuideEnabled")
+        }
+        onboardingGuideEnabled = defaults.bool(forKey: "onboardingGuideEnabled")
         if defaults.string(forKey: "onboardingGuideStartedVersion") != currentGuideVersion {
             defaults.set(0, forKey: "quickStartStep")
             defaults.set(currentGuideVersion, forKey: "onboardingGuideStartedVersion")
         }
-        isOnboardingPresented = OnboardingVersion.needsGuide(appVersion: currentGuideVersion, completedVersion: defaults.string(forKey: "onboardingGuideCompletedVersion"))
+        let needsGuide = OnboardingVersion.needsGuide(appVersion: currentGuideVersion, completedVersion: completedVersion)
+        let wasDismissed = defaults.string(forKey: "onboardingGuideDismissedVersion") == currentGuideVersion
+        isOnboardingPresented = onboardingGuideEnabled && needsGuide && !wasDismissed
+    }
+
+    func setOnboardingGuideEnabled(_ enabled: Bool) {
+        let defaults = UserDefaults.standard
+        defaults.set(enabled, forKey: "onboardingGuideEnabled")
+        onboardingGuideEnabled = enabled
+        if enabled {
+            defaults.removeObject(forKey: "onboardingGuideDismissedVersion")
+            // Completed guides can be deliberately replayed from the first page.
+            if defaults.string(forKey: "onboardingGuideCompletedVersion") == currentGuideVersion {
+                defaults.set(0, forKey: "quickStartStep")
+            }
+            withAnimation(.easeOut(duration: 0.2)) { isOnboardingPresented = true }
+        } else {
+            withAnimation(.easeOut(duration: 0.2)) { isOnboardingPresented = false }
+        }
+    }
+
+    func deferOnboarding() {
+        let defaults = UserDefaults.standard
+        defaults.set(currentGuideVersion, forKey: "onboardingGuideDismissedVersion")
+        defaults.set(false, forKey: "onboardingGuideEnabled")
+        onboardingGuideEnabled = false
+        withAnimation(.easeOut(duration: 0.2)) { isOnboardingPresented = false }
     }
 
     func openOnboarding() {
-        UserDefaults.standard.set(0, forKey: "quickStartStep")
-        withAnimation(.easeOut(duration: 0.2)) { isOnboardingPresented = true }
+        setOnboardingGuideEnabled(true)
     }
 
     func finishOnboarding(goTo section: AppSection = .home) {
@@ -169,7 +200,7 @@ extension AppState {
         default:
             let size = missingPackages.reduce(0) { $0 + $1.approximateMegabytes }
             recognitionDetail = isDownloadingModel ? "正在下载 \(Int(modelDownloadProgress * 100))%"
-                : recognitionReady ? "\(localStreamingModel.shortTitle) · 本机离线识别" : "必需：下载本机识别模型（约 \(max(size, 1)) MB，只需一次）"
+                : recognitionReady ? String(localized: "\(localStreamingModel.shortTitle) · 本机离线识别") : "必需：下载本机识别模型（约 \(max(size, 1)) MB，只需一次）"
         }
         items.append(SetupItem(
             id: "asr", icon: "waveform", title: "语音识别", detail: recognitionDetail,
@@ -192,9 +223,11 @@ extension AppState {
             actionTitle: answerEngineReady ? nil : "设置",
             action: { self.openSettings(.answers) }))
         let workspace = activeWorkspace
+        let materialDetail = String(localized: "资料 \(workspace.documents.count)")
+        let materialSuggestion = workspace.documents.isEmpty ? " · \(String(localized: "建议添加议程或背景资料"))" : ""
         items.append(SetupItem(
             id: "workspace", icon: workspace.mode.symbol, title: "当前场景",
-            detail: "\(workspace.name) · \(workspace.mode.title) · 资料 \(workspace.documents.count) 份" + (workspace.documents.isEmpty ? "（建议添加简历、JD 等）" : ""),
+            detail: "\(workspace.name) · \(workspace.mode.displayName) · \(materialDetail)\(materialSuggestion)",
             status: workspace.documents.isEmpty ? .recommended : .done,
             actionTitle: "编辑", action: { self.section = .library }))
         let bound = LocalSigning.isBound || Updater.shared.signature?.isAdHoc == false
@@ -242,16 +275,16 @@ struct SetupRow: View {
                 .background((item.status == .done ? Color.green : Brand.accent).opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(item.title).font(.system(size: 13, weight: .semibold))
+                    Text(LocalizedStringKey(item.title)).font(.system(size: 13, weight: .semibold))
                     badge
                 }
-                Text(item.detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
+                Text(LocalizedStringKey(item.detail)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
             }
             Spacer(minLength: 8)
             if item.status == .working {
                 ProgressView().controlSize(.small)
             } else if let title = item.actionTitle, let action = item.action {
-                Button(title, action: action)
+                Button(LocalizedStringKey(title), action: action)
                     .buttonStyle(ChipButtonStyle(prominent: item.status == .required))
             }
         }
@@ -273,9 +306,9 @@ struct SetupRow: View {
 
 struct OnboardingView: View {
     @Environment(AppState.self) private var state
-    @AppStorage("quickStartStep") private var step = 0
+    @AppStorage("quickStartStep", store: UserDefaults.standard) private var step = 0
     @State private var choseBuiltIn = false
-    private let titles = ["认识助手", "准备语音", "连接对话", "资料可选", "开始辅助"]
+    private let titles = [String(localized: "产品介绍"), String(localized: "准备语音"), String(localized: "连接回答"), String(localized: "资料可选"), String(localized: "开始记录")]
 
     var body: some View {
         GeometryReader { geometry in
@@ -301,7 +334,7 @@ struct OnboardingView: View {
                     }
                     Divider()
                     HStack {
-                        Button("稍后继续") { state.isOnboardingPresented = false }
+                        Button("稍后继续") { state.deferOnboarding() }
                             .buttonStyle(.plain).foregroundStyle(.secondary)
                         Spacer()
                         if step > 0 { Button("上一步") { step -= 1 }.buttonStyle(SecondaryButtonStyle()) }
@@ -309,7 +342,7 @@ struct OnboardingView: View {
                             Button(step == 0 ? "开始" : "下一步") { step += 1 }
                                 .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
                         } else {
-                            Button(state.isChangingSession ? "正在开始…" : !coreReady ? "请先完成核心准备" : !hasAudioSource ? "请先选择会议窗口" : "开始实时辅助") {
+                            Button(state.isChangingSession ? "正在开始…" : !coreReady ? "请先完成核心准备" : !hasAudioSource ? "请先选择会议窗口" : "开始记录") {
                                 Task {
                                     await state.startSession()
                                     if state.isRunning { state.finishOnboarding() }
@@ -334,32 +367,32 @@ struct OnboardingView: View {
     }
     private var overview: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("听到提问，接住对话").font(.system(size: 26, weight: .bold))
-            Text("InterviewHacker 是面试、报告和会议中的实时对话助手：听懂对方的问题，在对话过程中给你可参考的回答。")
+            Text("会议记录、资料整理与知识问答").font(.system(size: 26, weight: .bold))
+            Text("InterviewHacker 是一款原生 macOS 应用，可实时转写会议、整理系列资料、识别问题并生成参考回答，也能在会后整理纪要。")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            journey("1", "听会议里的声音", "选中正在开会的软件窗口，持续转写你和对方的对话。")
-            journey("2", "识别对方的提问", "判断哪句话是在向你提问，结合上下文理解追问。")
-            journey("3", "给出建议回答", "对话服务生成回答，你可以在助手或悬浮提词器里参考。")
-            journey("4", "带上背景，再复盘", "简历、JD、论文等资料能帮助回答贴合场景；会后回看记录。")
-            Label("必须准备：实时语音与对话回答。OCR 增强、向量检索按需启用。", systemImage: "checklist")
+            journey("1", "记录会议声音", "选择会议窗口或麦克风，实时转写参与者的发言。")
+            journey("2", "检索资料与识别问题", "结合系列资料理解上下文，识别提问和讨论重点。")
+            journey("3", "按需生成回答", "自动回答开启时，识别到问题后会生成参考回答；只记录模式下可手动提问。")
+            journey("4", "整理会议知识", "按系列管理资料与经验，会后回看转写并生成结构化纪要。")
+            Label("开始记录需要语音识别与回答服务；资料增强功能可按需启用。", systemImage: "checklist")
                 .font(.system(size: 12)).foregroundStyle(.green)
         }
     }
     private var connection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("连接对话回答服务").font(.system(size: 23, weight: .bold))
-            Text("对话回答是核心功能。可以沿用已登录的 Codex，也可以填写自己的 API 服务；生成建议回答会使用所选服务的网络与额度。")
+            Text("连接回答服务").font(.system(size: 23, weight: .bold))
+            Text("可使用已登录的 Codex，或填写兼容 API 服务。生成会中参考回答、资料问答和会后纪要时会使用所选服务的网络与额度。")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             AnswerEngineForm(foldSecondary: true)
             EngineTestRow()
-            Label(state.answerEngineReady ? "对话设置已就绪，可测试回答" : "尚未连接，开始实时辅助前需要完成", systemImage: state.answerEngineReady ? "checkmark.circle.fill" : "info.circle")
+            Label(state.answerEngineReady ? "回答服务已就绪，可测试回答" : "尚未连接，生成参考回答和纪要前需要完成", systemImage: state.answerEngineReady ? "checkmark.circle.fill" : "info.circle")
                 .foregroundStyle(state.answerEngineReady ? .green : .secondary)
         }
     }
     private var choices: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("资料功能，按需选择").font(.system(size: 23, weight: .bold))
-            Text("语音与对话服务准备好后，资料能力可按需增强。系统识别和关键词查找无需额外下载；下面这些不是开始辅助的必需条件。")
+            Text("语音和回答服务准备好后，可按需增强资料检索。系统识别和关键词查找无需额外下载；其他资料功能也可稍后启用。")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             DocumentChoiceSummary()
             Button("资料采用系统识别 + 关键词（无需额外下载）") {
@@ -378,7 +411,7 @@ struct OnboardingView: View {
     private var voice: some View {
         @Bindable var state = state
         return VStack(alignment: .leading, spacing: 14) {
-            Text("先让助手听到会议").font(.system(size: 23, weight: .bold))
+            Text("设置会议声音").font(.system(size: 23, weight: .bold))
             Text("实时语音是核心功能。需要音频权限和一个可用的识别引擎；推荐本机识别，会议音频留在这台 Mac。")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             readiness("会议声音", state.capturePermissionGranted ? "已允许采集会议窗口声音" : "需要录屏与系统音频权限", ready: state.capturePermissionGranted) {
@@ -410,14 +443,14 @@ struct OnboardingView: View {
     private var startSession: some View {
         @Bindable var state = state
         return VStack(alignment: .leading, spacing: 16) {
-            Text("选中会议窗口，开始辅助").font(.system(size: 23, weight: .bold))
-            Text("打开 Zoom、腾讯会议或正在通话的软件，选择它的窗口。开始后会实时转写对话，并在对方提问时生成建议回答。")
+            Text("选择声音来源，开始记录").font(.system(size: 23, weight: .bold))
+            Text("打开会议软件并选择其窗口，或选择麦克风。开始后会实时转写对话；自动回答开启时，识别到问题后会生成参考回答。")
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             readiness("实时语音", coreVoiceReady ? "识别与音频权限已就绪" : "还有识别或音频权限未准备好", ready: coreVoiceReady) {
                 Button("回到语音设置") { step = 1 }
             }
-            readiness("对话回答", state.answerEngineReady ? "对话服务已配置" : "需要连接回答服务", ready: state.answerEngineReady) {
-                Button("回到对话设置") { step = 2 }
+            readiness("回答服务", state.answerEngineReady ? "已配置" : "需要连接回答服务", ready: state.answerEngineReady) {
+                Button("回到回答设置") { step = 2 }
             }
             HStack {
                 MenuPicker(title: "会议声音来自", selection: $state.selectedTargetID,
@@ -425,7 +458,7 @@ struct OnboardingView: View {
                 Button("刷新") { Task { await state.refreshTargets() } }
             }
             if !hasAudioSource { Note("还没有可用的音频来源。请先打开会议软件，并确认音频权限。", color: .orange) }
-            Note("最简单的一次使用：选窗口 → 开始实时辅助 → 对方提问 → 在“建议回答”里查看结果。悬浮阅读可打开提词器，会后到“记录”里回看。")
+            Note("开始一场会议：选择声音来源并开始记录。开启自动回答后，系统会在识别到问题时生成参考回答；只记录模式仍可输入问题或按快捷键手动请求。回答可在主窗口或回答浮窗查看，会后可回看转写并整理纪要。")
             if let error = state.errorMessage, !error.isEmpty { Note(error, color: .orange) }
         }
     }

@@ -285,7 +285,7 @@ extension AppState {
         companionEnabled = enabled
         if enabled {
             UserDefaults.standard.set(companionPort, forKey: "companionPort")
-            companionStatus = "正在启动…"
+            companionStatus = String(localized: "正在启动…")
             CompanionServer.shared.start(preferredPort: companionPort) { [weak self] status, address in
                 self?.companionStatus = status
                 self?.companionAddress = address
@@ -295,7 +295,7 @@ extension AppState {
         } else {
             CompanionServer.shared.stop()
             companionAddress = nil
-            companionStatus = "未开启"
+            companionStatus = String(localized: "未开启")
         }
     }
 
@@ -303,14 +303,14 @@ extension AppState {
         companionBluetoothEnabled = enabled
         CompanionServer.shared.bluetooth.status = { [weak self] in self?.companionBluetoothStatus = $0 }
         CompanionServer.shared.setBluetooth(enabled: enabled && companionEnabled)
-        if !enabled { companionBluetoothStatus = "未开启" }
+        if !enabled { companionBluetoothStatus = String(localized: "未开启") }
     }
 
     func setCompanionRelay(enabled: Bool) {
         companionRelayTask?.cancel(); companionRelayEnabled = enabled; companionBackupAddress = nil
         CompanionServer.shared.disableRelay()
         companionAddress = CompanionServer.shared.pairingURL?.absoluteString
-        guard enabled else { companionRelayStatus = "未开启"; return }
+        guard enabled else { companionRelayStatus = String(localized: "未开启"); return }
         guard companionEnabled, let url = URL(string: companionRelayURL), url.scheme == "https",
               ["", "/"].contains(url.path) else { companionRelayStatus = "请先开启手机伴侣，并填写 HTTPS 服务根地址"; return }
         UserDefaults.standard.set(companionRelayURL, forKey: "companionRelayURL")

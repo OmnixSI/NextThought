@@ -11,7 +11,7 @@ public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
     public var title: String {
         switch self {
         case .general: "通用"
-        case .interview: "面试"
+        case .interview: "会议"
         case .academic: "汇报 / 答辩"
         case .labMeeting: "组会"
         case .meeting: "工作会议"
@@ -34,8 +34,9 @@ public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
         case .custom: "slider.horizontal.3"
         }
     }
-    /// The types offered as a base for a custom type (every type but custom).
-    public static var builtIn: [SessionMode] { allCases.filter { $0 != .custom } }
+    /// Types offered for new meetings and series. The legacy interview raw value
+    /// remains decodable for existing records, but is no longer offered in the UI.
+    public static var builtIn: [SessionMode] { allCases.filter { $0 != .custom && $0 != .interview } }
     /// Unknown raw values (e.g. from a newer version) fall back to general.
     public init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
@@ -46,7 +47,7 @@ public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
 public enum AnswerStyle: String, Codable, CaseIterable, Sendable, Identifiable {
     case concise, detailed
     public var id: String { rawValue }
-    public var title: String { self == .concise ? "提词要点" : "详细解释" }
+    public var title: String { self == .concise ? "简洁回答" : "详细解释" }
 }
 
 public struct ContextDocument: Identifiable, Codable, Sendable, Equatable {

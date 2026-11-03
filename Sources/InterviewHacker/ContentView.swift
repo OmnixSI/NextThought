@@ -212,7 +212,7 @@ private struct ShareTestSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("共享可见性测试").font(.headline)
-            Text("下面是用 ScreenCaptureKit 截取整个屏幕的结果，与 Zoom / Teams / Meet 等共享整屏时的取图方式相同。如果能看到提词器，说明共享整屏时对方也可能看到；请改为只共享会议窗口或标签页。")
+            Text("下面是 ScreenCaptureKit 截取的整个屏幕，与 Zoom、Teams、Meet 等共享整屏时可能捕获的范围相近。如果能看到回答浮窗，整屏共享时其他参与者也可能看到；实际范围取决于会议软件和共享方式。")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if let image = state.shareTestImage {
                 Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 420)

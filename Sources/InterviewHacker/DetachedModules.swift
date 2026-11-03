@@ -27,7 +27,8 @@ final class DetachedModuleController: NSObject, NSWindowDelegate {
         panel.titlebarAppearsTransparent = true
         panel.titleVisibility = .hidden
         panel.isMovableByWindowBackground = true
-        panel.isFloatingPanel = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
+        panel.isFloatingPanel = MainWindowLayout.effectiveWorkspaceLevel == .floating
+        panel.level = MainWindowLayout.effectiveWorkspaceLevel
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -51,6 +52,13 @@ final class DetachedModuleController: NSObject, NSWindowDelegate {
 
     func applyPrivacy(_ enabled: Bool) {
         for panel in panels.values { panel.sharingType = enabled ? .none : .readOnly }
+    }
+
+    func applyWindowLevel(_ level: NSWindow.Level) {
+        for panel in panels.values {
+            panel.isFloatingPanel = level == .floating
+            panel.level = level
+        }
     }
 
     private static func defaultSize(_ module: AssistantModule) -> NSSize {

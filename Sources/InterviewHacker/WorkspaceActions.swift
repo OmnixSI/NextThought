@@ -150,14 +150,37 @@ extension AppState {
         archive.renameWorkspace(id, from: formerName, to: name, includeLegacyNameOnly: includeLegacyNameOnly)
     }
 
-    @discardableResult
-    func deleteWorkspace(_ id: UUID) -> Bool {
-        guard !isRunning else {
-            errorMessage = "会议中不能删除系列。请先结束会议。"
-            return false
+    func workspaceDeletionDisabledReason(_ id: UUID) -> String? {
+        if DemoMode.isEnabled { return String(localized: "演示资料不可删除。") }
+        if isRunning { return String(localized: "会议中不能管理系列") }
+        guard let workspace = workspaces.workspace(id) else { return String(localized: "系列不存在。") }
+        guard workspaces.canDelete(id) else { return String(localized: "系列不存在。") }
+        let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
+        let sessionIDs = Set(archive.workspaceSessionIDs(id, formerName: workspace.name,
+                                                        includeLegacyNameOnly: includeLegacyNameOnly))
+        if sessionIDs.contains(where: { archive.summarizing.contains($0) }) {
+            return String(localized: "该系列有纪要正在生成，请完成后再删除。")
         }
-        guard workspaces.delete(id) else {
-            errorMessage = "无法删除这个系列。请确认至少保留一个可用系列，并检查本机备份空间。"
+        return documentPreparation.workspaceDeletionBlockReason(id)
+    }
+
+    @discardableResult
+    func deleteWorkspace(_ id: UUID) async -> Bool {
+        if let reason = workspaceDeletionDisabledReason(id) { errorMessage = reason; return false }
+        guard let workspace = workspaces.workspace(id) else { errorMessage = String(localized: "系列不存在。"); return false }
+        let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
+        do {
+            workspaces.flush()
+            let remainingWorkspaces = workspaces.workspaces.filter { $0.id != id }
+            try await documentPreparation.deleteWorkspaceArtifacts(id, remainingWorkspaces: remainingWorkspaces)
+            await archive.flush()
+            try archive.deleteWorkspaceSessions(id, formerName: workspace.name,
+                                                includeLegacyNameOnly: includeLegacyNameOnly)
+            try MaterialArchive.deleteWorkspaceFiles(id)
+            try SemanticIndexStore.removeWorkspace(id)
+            try workspaces.delete(id)
+        } catch {
+            errorMessage = String(localized: "删除失败：") + error.localizedDescription
             return false
         }
         rebuildContextIndex()
@@ -176,7 +199,7 @@ extension AppState {
         let lessons = workspace.experienceNotes(limit: 800)
         let carried = lessons.isEmpty ? "" : "以前的经验（结合上一场提醒我）：\n\(lessons)\n"
         // l10n-ignore: prompt for the model
-        ask("请根据这个系列的资料（\(topic.isEmpty ? "系列信息" : topic)）为本次\(workspace.effectiveMode.title)做会前准备，我是\(who)。\(carried)严格按下面两节输出：\n## 我读到的重点\n3 条，每条一句，写这场会最需要记住的事（例如岗位偏重什么、上一场卡在哪里）。\n## 可能会问\n5 个最可能被问到的问题，每个问题后面用一两句给出可以直接说的回答要点；引用资料时标注来源页码；题库里已有准备的问题优先使用准备好的答案。", screenshot: nil)
+        ask("请根据这个系列的资料（\(topic.isEmpty ? "系列信息" : topic)）为本次\(workspace.effectiveMode.title)做会前准备，我是\(who)。\(carried)严格按下面两节输出：\n## 我读到的重点\n3 条，每条一句，写这场会最需要记住的事（例如岗位偏重什么、上一场卡在哪里）。\n## 可能会问\n5 个最可能被问到的问题，每个问题后面用一两句给出简洁自然的参考回答要点；引用资料时标注来源页码；题库里已有准备的问题优先使用准备好的答案。", screenshot: nil)
     }
 
     // MARK: Knowledge (experience bank and question bank)

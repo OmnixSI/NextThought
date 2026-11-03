@@ -46,8 +46,7 @@ enum SettingsWindow {
         next.isReleasedWhenClosed = false
         next.backgroundColor = Ink.paperNSColor
         next.minSize = NSSize(width: 820, height: 560)
-        // Same level as the main window, so it does not open behind it.
-        next.level = AppState.shared.keepOnTop ? .floating : .normal
+        next.level = MainWindowLayout.effectiveWorkspaceLevel
         next.contentView = NSHostingView(rootView: SettingsView()
             .padding(.top, Space.s3)
             .environment(AppState.shared)
@@ -57,5 +56,6 @@ enum SettingsWindow {
         window = next
         next.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        MainWindowLayout.refreshLevels()
     }
 }

@@ -67,7 +67,7 @@ extension SessionMode {
     var displayName: String {
         switch self {
         case .general: String(localized: "通用")
-        case .interview: String(localized: "面试")
+        case .interview: String(localized: "会议")
         case .academic: String(localized: "汇报 / 答辩")
         case .labMeeting: String(localized: "组会")
         case .meeting: String(localized: "工作会议")
@@ -82,7 +82,7 @@ extension SessionMode {
     var defaultsSummary: String {
         switch self {
         case .general: String(localized: "只记录，需要时 ⌘⇧↩ 回答 · 回答简短 · 纪要：总结、决定、待办")
-        case .interview: String(localized: "会中自动给出回答 · 回答简短 · 会后复盘并存进题库")
+        case .interview: String(localized: "会中自动生成参考回答 · 回答简短 · 会后整理纪要")
         case .academic: String(localized: "会中自动给出回答，跟着讲稿 · 回答简短 · 纪要：听众问了什么、怎么答更好")
         case .labMeeting: String(localized: "只记录，被问到时 ⌘⇧↩ · 回答详细 · 纪要：进展、导师意见、下一步")
         case .meeting: String(localized: "只记录 · 回答简短 · 纪要：决定、待办、风险")
@@ -96,7 +96,7 @@ extension SessionMode {
     /// What to add before this kind of meeting (empty when nothing in particular).
     var preparationHint: String {
         switch self {
-        case .interview: String(localized: "简历、职位描述、公司信息")
+        case .interview: String(localized: "议程、项目资料")
         case .academic: String(localized: "讲稿、PPT、论文")
         case .labMeeting: String(localized: "本周进展、相关论文")
         case .meeting: String(localized: "议程")

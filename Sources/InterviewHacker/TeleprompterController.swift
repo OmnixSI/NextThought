@@ -31,7 +31,7 @@ final class TeleprompterController {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .camera: String(localized: "摄像头下方")
+            case .camera: String(localized: "屏幕顶部居中")
             case .bottom: String(localized: "屏幕底部")
             case .right: String(localized: "右侧")
             }
@@ -52,7 +52,7 @@ final class TeleprompterController {
     func show() {
         if panel == nil {
             let next = OverlayPanel(contentRect: NSRect(x: 0, y: 0, width: 640, height: 300), styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView], backing: .buffered, defer: false)
-            next.title = String(localized: "InterviewHacker 提词器")
+            next.title = String(localized: "InterviewHacker 回答浮窗")
             next.titlebarAppearsTransparent = true
             next.titleVisibility = .hidden
             next.isFloatingPanel = true
@@ -136,7 +136,7 @@ final class TeleprompterController {
         let size = panel.frame.size
         let origin: NSPoint
         switch placement {
-        // Close to the built-in camera so reading looks like eye contact.
+        // Keep the default answer window at the top center of the display.
         case .camera: origin = NSPoint(x: area.midX - size.width / 2, y: area.maxY - size.height - 8)
         case .bottom: origin = NSPoint(x: area.midX - size.width / 2, y: area.minY + 24)
         case .right: origin = NSPoint(x: area.maxX - size.width - 16, y: area.midY - size.height / 2)
@@ -234,7 +234,7 @@ private struct TeleprompterView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         if state.displayedAnswer.isEmpty {
-                            Text(state.isAnswering ? "正在生成…" : "回答会显示在这里。拖到摄像头下方，视线就不用离开对方；\(state.shortcutLabel(.forceAnswer)) 立即回答。")
+                            Text(state.isAnswering ? "正在生成…" : "回答会显示在这里。你也可以按 \(state.shortcutLabel(.forceAnswer)) 手动请求回答。")
                                 .font(.system(size: state.teleprompterFontSize * 0.75))
                                 .foregroundStyle(Ink.secondary)
                         } else {
@@ -309,7 +309,7 @@ private struct TeleprompterView: View {
                 .background(ControlFrameReporter())
                 .help("鼠标穿透 · \(state.shortcutLabel(.toggleClickThrough))")
             Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "xmark") }
-                .buttonStyle(GlassIconButtonStyle(size: 24)).help("隐藏提词器 · \(state.shortcutLabel(.toggleTeleprompter))")
+                .buttonStyle(GlassIconButtonStyle(size: 24)).help("隐藏回答浮窗 · \(state.shortcutLabel(.toggleTeleprompter))")
         }
     }
 

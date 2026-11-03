@@ -26,6 +26,12 @@ enum SemanticIndexStore {
         try encoder.encode(Envelope(workspaceID: workspaceID, modelRevision: ModelCatalog.qwen3Embedding.revision, index: index))
             .write(to: file, options: .atomic)
     }
+    static func removeWorkspace(_ workspaceID: UUID) throws {
+        let directory = AppPaths.index.appendingPathComponent(workspaceID.uuidString, isDirectory: true)
+        if FileManager.default.fileExists(atPath: directory.path) {
+            try FileManager.default.removeItem(at: directory)
+        }
+    }
     static func remove(modelID: String) throws {
         let root = AppPaths.index
         guard FileManager.default.fileExists(atPath: root.path) else { return }

@@ -68,7 +68,7 @@ extension AppState {
     /// Built-in templates in the notes language, then the user's own.
     func allNotesTemplates(english: Bool? = nil) -> [NotesTemplate] {
         let english = english ?? notesUseEnglish
-        return NotesTemplateKind.allCases.map { NotesTemplate.builtIn($0, english: english) } + customNotesTemplates
+        return NotesTemplateKind.selectable.map { NotesTemplate.builtIn($0, english: english) } + customNotesTemplates
     }
 
     func notesTemplate(id: String, english: Bool? = nil) -> NotesTemplate {

@@ -10,8 +10,8 @@ enum WebSearchProvider: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .codex: "Codex 联网搜索（ChatGPT 账号）"
-        case .tavily: "Tavily 搜索 API（任意回答引擎）"
+        case .codex: String(localized: "Codex 联网搜索（ChatGPT 账号）")
+        case .tavily: String(localized: "Tavily 搜索 API（任意回答引擎）")
         }
     }
 }

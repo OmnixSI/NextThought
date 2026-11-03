@@ -21,8 +21,8 @@ enum LocalStreamingModel: String, CaseIterable, Identifiable {
     }
     var shortTitle: String {
         switch self {
-        case .xasr480, .xasr160: "X-ASR 中英模型"
-        case .legacy: "Zipformer 双语模型"
+        case .xasr480, .xasr160: String(localized: "X-ASR 中英模型")
+        case .legacy: String(localized: "Zipformer 双语模型")
         }
     }
     var detail: String {

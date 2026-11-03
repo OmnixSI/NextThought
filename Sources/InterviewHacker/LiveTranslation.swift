@@ -1,4 +1,5 @@
 import Foundation
+import InterviewHackerCore
 import NaturalLanguage
 import Observation
 import SwiftUI
@@ -68,7 +69,7 @@ struct LiveTranslationJob: Sendable {
     let entryID: UUID?
     let sessionID: UUID?
     let meetingID: UUID
-    let revision: Int
+    let revision: LiveTranslationRevision?
 }
 
 private enum LiveTranslationEvent: Sendable {
@@ -89,9 +90,10 @@ final class LiveTranslationCoordinator {
     @ObservationIgnored private var streams: [TranslationDirection: AsyncStream<LiveTranslationEvent>] = [:]
     @ObservationIgnored private var continuations: [TranslationDirection: AsyncStream<LiveTranslationEvent>.Continuation] = [:]
     @ObservationIgnored private var partialTasks: [CaptureSource: Task<Void, Never>] = [:]
+    @ObservationIgnored private var partialTaskIDs: [CaptureSource: UUID] = [:]
     @ObservationIgnored private var partialTexts: [CaptureSource: String] = [:]
     @ObservationIgnored private var partialDirections: [CaptureSource: TranslationDirection] = [:]
-    @ObservationIgnored private var partialRevisions: [CaptureSource: Int] = [:]
+    @ObservationIgnored private var partialRevisions: [CaptureSource: LiveTranslationRevisionGate] = [:]
     @ObservationIgnored private var readyDirections: Set<TranslationDirection> = []
     @ObservationIgnored private var meetingID = UUID()
 
@@ -141,9 +143,10 @@ final class LiveTranslationCoordinator {
     func clearPartial(_ source: CaptureSource) {
         partialTasks[source]?.cancel()
         partialTasks[source] = nil
+        partialTaskIDs[source] = nil
         partialTexts[source] = nil
         partialDirections[source] = nil
-        partialRevisions[source, default: 0] += 1
+        partialRevisions[source, default: LiveTranslationRevisionGate()].invalidate()
         setPartialTranslation("", for: source)
     }
 
@@ -157,34 +160,55 @@ final class LiveTranslationCoordinator {
         if let detected = TranslationDirection.detect(in: text) {
             partialDirections[source] = detected
         }
-        guard let direction = partialDirections[source] else { return }
-
-        let revision = partialRevisions[source, default: 0] + 1
-        partialRevisions[source] = revision
-        partialTasks[source]?.cancel()
-        partialTasks[source] = Task { [weak self] in
-            do { try await Task.sleep(for: .milliseconds(500)) } catch { return }
-            guard let self, self.isEnabled,
-                  self.partialRevisions[source] == revision,
-                  self.partialTexts[source] == text else { return }
-            self.enqueue(LiveTranslationJob(source: source, text: text, direction: direction, isFinal: false,
-                                            entryID: nil, sessionID: nil, meetingID: self.meetingID, revision: revision))
-        }
+        guard partialDirections[source] != nil else { return }
+        partialRevisions[source, default: LiveTranslationRevisionGate()].revise()
+        schedulePartialTranslations(for: source)
     }
 
     func submitFinal(_ source: CaptureSource, text: String, entryID: UUID, sessionID: UUID?) {
         partialTasks[source]?.cancel()
         partialTasks[source] = nil
+        partialTaskIDs[source] = nil
         let direction = TranslationDirection.detect(in: text) ?? partialDirections[source]
-        let revision = partialRevisions[source, default: 0] + 1
-        partialRevisions[source] = revision
+        partialRevisions[source, default: LiveTranslationRevisionGate()].invalidate()
         partialTexts[source] = nil
         partialDirections[source] = nil
         // The last partial has already been copied to the final transcript row.
         setPartialTranslation("", for: source)
         guard isEnabled, let direction else { return }
         enqueue(LiveTranslationJob(source: source, text: text, direction: direction, isFinal: true,
-                                   entryID: entryID, sessionID: sessionID, meetingID: meetingID, revision: revision))
+                                   entryID: entryID, sessionID: sessionID, meetingID: meetingID, revision: nil))
+    }
+
+    private func schedulePartialTranslations(for source: CaptureSource) {
+        guard partialTasks[source] == nil else { return }
+        let taskID = UUID()
+        let meetingID = self.meetingID
+        partialTaskIDs[source] = taskID
+        partialTasks[source] = Task { [weak self] in
+            var throttle = LiveTranslationPartialThrottle(interval: 0.45)
+            var lastQueuedRevision: LiveTranslationRevision?
+            while !Task.isCancelled {
+                guard let self, self.isEnabled, self.meetingID == meetingID,
+                      let text = self.partialTexts[source],
+                      let direction = self.partialDirections[source],
+                      let revision = self.partialRevisions[source]?.current else { break }
+                if Self.isUsefulPartial(text), revision != lastQueuedRevision,
+                   throttle.shouldDispatch(at: ProcessInfo.processInfo.systemUptime) {
+                    self.enqueue(LiveTranslationJob(source: source, text: text, direction: direction, isFinal: false,
+                                                    entryID: nil, sessionID: nil, meetingID: meetingID, revision: revision))
+                    lastQueuedRevision = revision
+                }
+                do { try await Task.sleep(for: .milliseconds(80)) } catch { break }
+            }
+            guard let self, self.partialTaskIDs[source] == taskID else { return }
+            self.partialTasks[source] = nil
+            self.partialTaskIDs[source] = nil
+        }
+    }
+
+    private static func isUsefulPartial(_ text: String) -> Bool {
+        text.filter(\.isLetter).count >= 2
     }
 
     private func enqueue(_ job: LiveTranslationJob) {
@@ -210,7 +234,7 @@ final class LiveTranslationCoordinator {
                 }
             case let .job(job):
                 guard isEnabled else { continue }
-                if !job.isFinal, (job.meetingID != meetingID || partialRevisions[job.source] != job.revision) { continue }
+                if !job.isFinal, !isLatestPartial(job) { continue }
                 do {
                     if !prepared {
                         try await session.prepareTranslation()
@@ -218,14 +242,13 @@ final class LiveTranslationCoordinator {
                         readyDirections.insert(direction)
                         updateReadyStatus()
                     }
+                    if !job.isFinal, !isLatestPartial(job) { continue }
                     let response = try await session.translate(job.text)
                     let translation = response.targetText.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard isEnabled, !translation.isEmpty else { continue }
                     if job.isFinal {
                         AppState.shared.receiveLiveTranslation(translation, job: job)
-                    } else if job.meetingID == meetingID, partialRevisions[job.source] == job.revision {
-                        // Keep the previous visible translation until this replacement
-                        // is complete; empty and stale responses never clear the line.
+                    } else if acceptPartial(job) {
                         setPartialTranslation(translation, for: job.source)
                     }
                 } catch {
@@ -233,6 +256,23 @@ final class LiveTranslationCoordinator {
                 }
             }
         }
+    }
+
+    private func isLatestPartial(_ job: LiveTranslationJob) -> Bool {
+        guard job.meetingID == meetingID, let revision = job.revision,
+              partialDirections[job.source] == job.direction,
+              let gate = partialRevisions[job.source] else { return false }
+        return gate.isLatest(revision)
+    }
+
+    private func acceptPartial(_ job: LiveTranslationJob) -> Bool {
+        guard job.meetingID == meetingID, let revision = job.revision,
+              partialTexts[job.source] != nil,
+              partialDirections[job.source] == job.direction else { return false }
+        var gate = partialRevisions[job.source] ?? LiveTranslationRevisionGate()
+        guard gate.accept(revision) else { return false }
+        partialRevisions[job.source] = gate
+        return true
     }
 
     private func setPartialTranslation(_ value: String, for source: CaptureSource) {

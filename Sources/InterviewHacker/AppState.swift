@@ -268,12 +268,12 @@ final class AppState {
     var companionPort = UserDefaults.standard.object(forKey: "companionPort") as? Int ?? 8_765
     var companionEnabled = false
     var companionAddress: String?
-    var companionStatus = "未开启"
+    var companionStatus = String(localized: "未开启")
     var companionRelayURL = UserDefaults.standard.string(forKey: "companionRelayURL") ?? ""
     var companionBluetoothEnabled = false
-    var companionBluetoothStatus = "未开启"
+    var companionBluetoothStatus = String(localized: "未开启")
     var companionRelayEnabled = false
-    var companionRelayStatus = "未开启"
+    var companionRelayStatus = String(localized: "未开启")
     var companionBackupAddress: String?
     var companionRelayTask: Task<Void, Never>?
 
@@ -308,11 +308,12 @@ final class AppState {
     var captureTargets: [CaptureTarget] = []
     var selectedTargetID = UserDefaults.standard.string(forKey: "selectedTargetID") ?? ""
     var capturePermissionGranted = false
-    var capturePermissionStatus = "正在检查录屏与系统音频权限…"
+    var capturePermissionStatus = String(localized: "正在检查录屏与系统音频权限…")
     var microphoneAccess = MicrophoneAccess.current()
 
     // MARK: Onboarding
     var isOnboardingPresented = false
+    var onboardingGuideEnabled = UserDefaults.standard.bool(forKey: "onboardingGuideEnabled")
     var engineTest = EngineTestState.idle
 
     // MARK: Screenshots
@@ -437,8 +438,9 @@ final class AppState {
         Diagnostics.pruneOldLogs()
         // Demo / screenshot mode shows sample data and never touches devices or models.
         guard !DemoMode.isEnabled else { return }
-        // The guide is no longer shown at launch: permissions are asked for when a
-        // meeting first starts, and the guide stays available in Settings → Basics.
+        // The guide preference is test/user scoped. First launch can open it once;
+        // dismissing it or switching it off preserves progress without repeat popups.
+        prepareOnboardingForCurrentVersion()
         Task { await refreshManagedModelStatus() }
         Updater.shared.start()
         startScreenWatch()
@@ -512,7 +514,7 @@ final class AppState {
         if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
         if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
         if usesMicrophone && microphoneAccess != .granted { return "请先允许麦克风权限" }
-        if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测对话服务…" : "请先连接对话回答服务" }
+        if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测回答服务…" : "请先连接回答服务" }
         if !isOfflineMeeting, !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
         return "可以开始"
     }
@@ -525,12 +527,12 @@ final class AppState {
         guard capturePermissionGranted else {
             captureTargets = []
             selectedTargetID = ""
-            capturePermissionStatus = "请允许当前 InterviewHacker 访问录屏与系统音频。绑定本机签名后，以后更新不必重新授权。"
+            capturePermissionStatus = String(localized: "请允许当前 InterviewHacker 访问录屏与系统音频。绑定本机签名后，以后更新不必重新授权。")
             return
         }
         do {
             captureTargets = try await AudioCaptureService.availableTargets()
-            capturePermissionStatus = "已允许 · 已读取 \(captureTargets.count) 个捕获目标"
+            capturePermissionStatus = String(localized: "已允许 · 已读取 \(captureTargets.count) 个捕获目标")
             Diagnostics.record("capture.targets", ["count": captureTargets.count])
             if captureTargets.contains(where: { $0.id == selectedTargetID }) == false {
                 // "电脑声音": all audio this Mac plays (this app excluded), whatever the meeting app.
@@ -539,7 +541,7 @@ final class AppState {
         } catch {
             captureTargets = []
             selectedTargetID = ""
-            capturePermissionStatus = "系统仍拒绝当前进程。请从固定安装路径重启应用后刷新。"
+            capturePermissionStatus = String(localized: "系统仍拒绝当前进程。请从固定安装路径重启应用后刷新。")
             errorMessage = "读取屏幕与音频目标失败。请在系统设置的“隐私与安全性 → 屏幕与系统音频录制”中允许 InterviewHacker。\n\(error.localizedDescription)"
         }
     }
@@ -599,7 +601,7 @@ final class AppState {
         }
         guard !isRunning, !isChangingSession else { return }
         guard !isDownloadingModel else { return }
-        guard answerEngineReady else { errorMessage = "请先连接对话回答服务，再开始实时辅助。"; openSettings(.answers); return }
+        guard answerEngineReady else { errorMessage = "请先连接回答服务，再开始会议记录。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
         guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
@@ -686,7 +688,7 @@ final class AppState {
             isPreparingModel = false
             audioEpoch = UUID()
             sessionStartedAt = nil
-            errorMessage = "启动辅助失败：\(error.localizedDescription)"
+            errorMessage = "开始记录失败：\(error.localizedDescription)"
             statusText = "启动失败"
         }
     }
@@ -737,7 +739,7 @@ final class AppState {
             audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
             await liveTranscriber?.cancel(); await microphoneTranscriber?.cancel()
             liveTranscriber = nil; microphoneTranscriber = nil
-            errorMessage = "恢复辅助失败：\(error.localizedDescription)"
+            errorMessage = "恢复聆听失败：\(error.localizedDescription)"
         }
     }
 
@@ -1283,9 +1285,7 @@ final class AppState {
         defaults.set(secondPassEnabled, forKey: "secondPassEnabled")
         defaults.set(ocrFallbackToVision, forKey: "ocrFallbackToVision")
         defaults.set(semanticRetrievalEnabled, forKey: "semanticRetrievalEnabled")
-        for window in NSApp.windows where !(window is NSPanel) {
-            window.level = keepOnTop ? .floating : .normal
-        }
+        MainWindowLayout.refreshLevels()
         TeleprompterController.shared.applyPrivacy(capturePrivacy)
     }
 

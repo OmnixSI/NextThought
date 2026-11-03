@@ -60,10 +60,12 @@ Release 工作流会用 `--clobber` 上传并替换同名资产。要求使用�
 
 ### 签名与隐私权限
 
-- CI 默认使用临时 ad-hoc 签名，没有 Apple 账号要求。该签名每个版本都不同，因此 macOS 可能要求重新授予隐私权限。
+- 使用临时 ad-hoc 签名的 CI 构建不需要 Apple 账号；该签名每个版本都不同，因此 macOS 可能要求重新授予隐私权限。当前 Release 工作流的 runner 签名方式见下文。
 - 本机 `scripts/build-app.sh` 使用应用设置中绑定的 **InterviewHacker Local Signing** 身份（`~/Library/Application Support/InterviewHacker/Signing/`）。首次安装且从未绑定过时，才通过应用设置完成一次绑定。若该目录已存在但身份不完整或不可用，停止构建并恢复原身份；不要再次绑定或创建新证书。麦克风、录屏与系统音频权限依赖稳定的 Bundle ID 和签名要求。
-- 本机 `scripts/install-latest.sh` 会先用同一证书重签下载包，并比较它与当前安装包的 designated requirement；身份不一致时停止安装。本机脚本拒绝 ad-hoc 和其他证书，只有 GitHub Actions 发布流程可使用独立发布身份。
-- GitHub Releases 可运行 `scripts/setup-release-signing.sh`，把独立的固定发布证书写入 Actions Secrets。该密钥与本机 Local Signing 身份分开，本机私钥不会上传到 CI。配置 Developer ID 和公证凭据后，release workflow 会使用 hardened runtime 与 `Resources/InterviewHacker.entitlements` 公证并装订。
+- macOS 的隐私授权由系统按应用代码身份管理，不随源码、构建目录或备份迁移。重建会改变可执行文件内容和 cdhash；只要 Bundle ID、签名证书和 designated requirement 保持一致，应用代码更新后仍满足原授权身份，无须每次重新授权。当前本机签名要求由 Bundle ID 与证书叶节点身份组成；不要改用 ad-hoc 签名，也不要轮换证书来处理一般构建问题。
+- Apple 对 designated requirement 与代码签名身份的说明见 [TN3127](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements) 和 [TN2206](https://developer.apple.com/library/archive/technotes/tn2206/)。
+- `.github/workflows/release.yml` 在 GitHub 托管 runner 上明确使用 ad-hoc 签名；自托管 runner 未设置签名覆盖值时，`scripts/sign-app.sh` 会从该 runner 用户的 Application Support 目录读取 app-bound 身份。`scripts/setup-release-signing.sh` 会写入独立 Actions Secrets，但当前 Release 工作流没有读取这些 Secrets，因此它们目前不决定 Release 构件的签名。修改发布签名流程时，应同步更新并核验工作流和本文档。
+- 本机 `scripts/install-latest.sh` 会先用同一证书重签下载包，并比较它与当前安装包的 designated requirement；身份不一致时停止安装。本机脚本拒绝 ad-hoc 和其他证书。
 - Bundle ID 保持为 `com.interviewhacker.app`。构建只签应用主程序；Sherpa-ONNX 和 ONNX Runtime 是静态链接，不生成需要单独签名的独立助手进程或动态运行库。
 
 #### 本机身份文件与恢复
@@ -71,12 +73,19 @@ Release 工作流会用 `--clobber` 上传并替换同名资产。要求使用�
 - 正式版 app-bound 身份的唯一配置目录是 `~/Library/Application Support/InterviewHacker/Signing/`。其中 `certificate.pem` 是证书，`identity-sha1` 记录该证书的身份值，`signing.keychain-db` 保存可用于签名的私钥，`keychain-password` 是解锁这个专用钥匙串的密码。私钥不以独立 PEM 文件保存在此目录。
 - 保留这组原始文件及其权限，不要拆分、清空、轮换、删除或覆盖。该目录属于本机密钥材料：不得加入 Git、应用包、ZIP、GitHub Release 或 Actions Secrets。需要备份时，备份整组文件到访问受控的加密位置，并验证备份可恢复。
 - `keychain-password` 是本机生成并以仅所有者可读方式保存的专用钥匙串密码；正常构建脚本会在进程内读取并用于解锁。不要 `cat`、打印、复制到聊天或日志，也不要写入 shell 历史。若系统需要交互式认证，让用户在 macOS 提示中自行输入。
+- 若本机 shell 沙盒阻止访问 app-bound 钥匙串，应通过已授权的沙盒外主机执行路径运行签名预检和本机构建。沙盒中的解锁错误不能单独证明身份无效；应在沙盒外重跑相同预检并确认匹配的有效身份。SwiftPM 的 `--disable-sandbox` 只影响 SwiftPM 自身，不会解除外层 shell 沙盒。若授权的沙盒外执行不可用或预检仍失败，停止构建，不切换身份。
 - 构建前验证顺序：确认四个文件都存在且可读；用 `openssl x509 -in "$HOME/Library/Application Support/InterviewHacker/Signing/certificate.pem" -noout -fingerprint -sha1` 核对证书指纹与 `identity-sha1` 一致；使用 `security unlock-keychain` 解锁明确路径的 `signing.keychain-db`；再用 `security find-identity -v -p codesigning "$HOME/Library/Application Support/InterviewHacker/Signing/signing.keychain-db"` 确认该钥匙串里存在匹配的有效证书和私钥。证书文件指纹匹配只校验公钥证书与记录值，不能证明私钥存在或可用。
 - `scripts/sign-app.sh` 是本机正式版构建的签名入口：它从上述目录读取身份，检查证书、私钥和 Bundle ID，使用该身份签名并验证稳定的 designated requirement。身份缺失、钥匙串解锁失败、有效身份数为零、指纹不匹配或 designated requirement 不符时，构建必须停止。保留完整 stderr 和退出状态；不要仅凭数字猜测错误含义。
 - 不要用 `scripts/setup-local-signing.sh` 修复 app-bound 身份。该脚本操作仓库内的 `.local-signing/`，不是 `scripts/sign-app.sh` 使用的 Application Support 目录；在缺少文件时它会新建另一套身份。`.local-signing/` 也可能供分开的发布签名流程使用，不要在两处之间复制、替换或混用钥匙串。
 - 应用的 `LocalSigning.ensureIdentity()` 用于首次绑定；当前实现发现身份未绑定时会尝试删除整个签名目录后重新生成。因此，只要上述目录存在任何身份文件而校验失败，就不得通过设置页“绑定到这台 Mac”、`ensureIdentity()` 或初始化脚本修复。先保全当前文件并从可信备份恢复同一钥匙串和私钥；找不到可验证的原身份时停止并报告，不生成替代证书。
 - `security show-keychain-info` 的参数按本机 `man security` 核对。钥匙串命令失败时记录完整错误文本并区分 CLI 退出码与 Security framework OSStatus；即使 `security error <code>` 显示未知，也不要自行推断身份已损坏或创建新身份。
 - 正式版与测试版 Bundle ID / designated requirement 必须各自保持稳定。当前测试工作区的测试签名逻辑复用正式版的 Application Support 签名目录：权限条目因 Bundle ID 不同而分开，但证书身份并未做到独立。不要把这种状态描述为证书级隔离，也不要为“修复权限”擅自生成测试证书。
+
+#### 屏幕录制权限排查
+
+- 系统设置按应用代码身份识别录屏授权；列表显示的应用名称不能区分同名、同 Bundle ID 但 designated requirement 不同的副本。先核对实际启动的 `.app` 绝对路径、Bundle ID 和 `codesign -dr - <app>`，再检查该进程自己的 `CGPreflightScreenCaptureAccess()` 状态。
+- 如果目标 app 的开关已开启但应用仍报告未授权，确认目标路径后，在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”移除旧条目，再用“添加”选择准确的 `.app` 路径、打开开关，并完全退出后重新启动该副本。不要仅凭相同显示名称推断授权已对应到目标副本。
+- 只处理目标版本的授权项；不要重置 TCC、编辑 TCC 数据库或改动另一个版本的权限。应用内权限检查变为允许后，才算确认该运行副本已获得授权。
 
 ### 本地构建
 
@@ -141,11 +150,14 @@ Release 工作流会用 `--clobber` 上传并替换同名资产。要求使用�
 
 `InterviewHacker --self-test data signing update asr --fixtures Tools/Validation/Fixtures` 在应用包内运行真实代码路径（需设置 `INTERVIEWHACKER_DATA_DIR` 指向临时目录）。Verify 工作流的 `selftest` 任务逐项运行；Release 工作流在打包后运行 `data update`。
 
-## 自动更新与本机签名
+## GitHub Release 自动更新
 
-- 发布工作流为每个 Release 上传 `update.json`（tag、版本、构建号 = run number、ZIP 名与 SHA-256）。
-- `Updater` 通过 GitHub API 读取 Releases（私有仓库用钥匙串里的只读令牌，或 `gh auth token`），比较构建号，后台下载 ZIP（重定向到存储时去掉 Authorization），校验 SHA-256、`codesign --verify` 并比较指定要求（designated requirement）。安装时写一个辅助脚本：等应用退出、替换 `.app`、去掉隔离属性、重新打开。
-- `LocalSigning` 用系统 `openssl` 生成自签名代码签名证书，导入专用钥匙串（`Application Support/InterviewHacker/Signing`），以 `identifier "com.interviewhacker.app" and certificate leaf = H"…"` 作为指定要求重新签名。绑定后，下载的新版本若签名不同会先用本机证书重新签名，TCC 权限因此保持。
+- Release 工作流由 `v*` 标签或手动执行触发，构建正式版并上传 `.zip`、`update.json` 等资产。`update.json` 记录 tag、版本、构建号、ZIP 名和 SHA-256。Release 签名方式以 `.github/workflows/release.yml` 实际配置为准；本机开发构建和 GitHub Release 构建是不同路径。
+- 开启自动检查时，应用启动约 20 秒后检查一次，此后每 6 小时检查。正式版本渠道按版本标签选取；main 渠道按发布时间从 `main-latest` 和版本标签中选取。当前仓库没有发布 `main-latest` 的工作流，因此该渠道不会自动获得每个 `main` 提交；没有 `main-latest` 时，它仍可能选择最新发布的正式版本。发现新版本后，应用会在后台下载；这不等于静默安装，用户仍需点击“重启并安装”。安装辅助程序会等应用退出，再替换应用并重新打开。
+- 更新器读取 GitHub Releases，校验 `update.json` 与 ZIP 的对应关系、SHA-256、代码签名以及包内版本和构建号。私有仓库访问使用应用钥匙串中的令牌，必要时回退到已登录的 `gh` CLI。
+- 安装前，更新器比较下载包和当前运行应用的 designated requirement。两者相同则保留原签名；不同时，若本机 **InterviewHacker Local Signing** 身份可用，更新器先用这把本机身份重新签名下载包，再进入安装阶段。若本机身份未绑定，应用会提示新版本可能需要重新授权。GitHub 包本身不会携带或修改本机 TCC 授权。
+- 本机 `scripts/install-latest.sh` 是从 GitHub Release 手动安装正式版的路径：它用同一把本机身份重签下载包，并在覆盖 `/Applications/InterviewHacker.app` 前要求 designated requirement 匹配。它不会从当前工作树构建源码；本机开发构建和正式版与测试版的工作区、命令及数据路径见 `.local/LOCAL-PROJECT-MANAGEMENT.md`。
+- 本机测试工作区使用 `INTERVIEWHACKER_TEST_BUILD=1` 构建的 app 不检查、下载或安装 GitHub Release。要让测试版跟进 GitHub 最新源码，应先同步测试工作区源码，再在本机重新构建。测试版使用独立 Bundle ID、数据目录、偏好域和钥匙串服务；测试构建脚本会在签名前核对 Bundle ID 和测试标记。正式版的 Release 更新流程不变。
 
 ## 音频角色与回答模型
 

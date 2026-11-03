@@ -249,6 +249,8 @@ extension DocumentSelfTest {
         let defaults = UserDefaults.standard
         defaults.set("0.0", forKey: "onboardingGuideStartedVersion")
         defaults.set("0.0", forKey: "onboardingGuideCompletedVersion")
+        defaults.set(true, forKey: "onboardingGuideEnabled")
+        defaults.removeObject(forKey: "onboardingGuideDismissedVersion")
         defaults.set(3, forKey: "quickStartStep")
         state.prepareOnboardingForCurrentVersion()
         guard state.isOnboardingPresented, defaults.integer(forKey: "quickStartStep") == 0 else { throw SelfTest.Failure("feature upgrade did not restart guide") }
@@ -256,6 +258,12 @@ extension DocumentSelfTest {
         state.isOnboardingPresented = false
         state.prepareOnboardingForCurrentVersion()
         guard state.isOnboardingPresented, defaults.integer(forKey: "quickStartStep") == 2 else { throw SelfTest.Failure("interrupted guide did not resume") }
+        state.setOnboardingGuideEnabled(false)
+        guard !state.isOnboardingPresented, !state.onboardingGuideEnabled,
+              !defaults.bool(forKey: "onboardingGuideEnabled"), defaults.integer(forKey: "quickStartStep") == 2 else { throw SelfTest.Failure("disabling guide did not preserve its progress") }
+        state.setOnboardingGuideEnabled(true)
+        guard state.isOnboardingPresented, state.onboardingGuideEnabled,
+              defaults.integer(forKey: "quickStartStep") == 2 else { throw SelfTest.Failure("re-enabling guide did not resume its progress") }
         state.finishOnboarding(); state.prepareOnboardingForCurrentVersion()
         guard !state.isOnboardingPresented else { throw SelfTest.Failure("completed guide repeated") }
         state.openOnboarding()

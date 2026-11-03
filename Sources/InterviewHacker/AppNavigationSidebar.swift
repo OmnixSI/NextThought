@@ -5,8 +5,8 @@ struct AppNavigationBar: View {
     static let foldersSidebarKey = "foldersContextSidebarHidden"
 
     @Environment(AppState.self) private var state
-    @AppStorage(AppNavigationBar.meetingsSidebarKey) private var meetingsSidebarHidden = false
-    @AppStorage(AppNavigationBar.foldersSidebarKey) private var foldersSidebarHidden = false
+    @AppStorage(AppNavigationBar.meetingsSidebarKey, store: UserDefaults.standard) private var meetingsSidebarHidden = false
+    @AppStorage(AppNavigationBar.foldersSidebarKey, store: UserDefaults.standard) private var foldersSidebarHidden = false
     private var updater: Updater { Updater.shared }
 
     private var showsContextSidebarToggle: Bool {

@@ -24,6 +24,7 @@ struct WorkspacesView: View {
                 .map { "\($0.id.uuidString):\($0.name):\($0.documents.count):\($0.questionBank.count)" }
                 .joined(separator: "|")
             let activeWorkspaceID = state.activeWorkspace.id
+            let hasVisibleWorkspaces = !state.workspaces.visible.isEmpty
             HStack(alignment: .top, spacing: isSeriesListHidden ? 0 : 12) {
                 if !isSeriesListHidden {
                     WorkspaceList(compact: !wide, editor: editor)
@@ -31,8 +32,12 @@ struct WorkspacesView: View {
                         .id("\(activeWorkspaceID.uuidString)|\(listRevision)")
                         .transition(.move(edge: .leading).combined(with: .opacity))
                 }
-                WorkspaceEditor(editor: editor)
-                    .id(activeWorkspaceID)
+                if hasVisibleWorkspaces {
+                    WorkspaceEditor(editor: editor)
+                        .id(activeWorkspaceID)
+                } else {
+                    emptyWorkspaceState
+                }
             }
             .padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 4)
         }
@@ -52,6 +57,35 @@ struct WorkspacesView: View {
             Text("当前系列的回答要求会被模板内容替换；其他系列和资料不会改变。")
         }
     }
+
+    private var emptyWorkspaceState: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "folder")
+                .font(.system(size: 28))
+                .foregroundStyle(Ink.tertiary)
+            Text("还没有系列")
+                .font(.system(size: 16, weight: .semibold))
+            Text("新建系列后，资料、回答要求和会议记录会归入该系列。")
+                .font(.system(size: 12))
+                .foregroundStyle(Ink.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 340)
+            Menu {
+                ForEach(SessionMode.builtIn) { mode in
+                    Button { editor.requestCreateWorkspace(mode, state: state) } label: {
+                        Label(mode.displayName, systemImage: mode.symbol)
+                    }
+                }
+            } label: {
+                Label("新建系列", systemImage: "plus")
+            }
+            .buttonStyle(ChipButtonStyle(prominent: true))
+            .disabled(state.isRunning)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .card()
+    }
 }
 
 enum WorkspaceEditTarget: Equatable {
@@ -70,9 +104,11 @@ final class WorkspaceEditController {
         case editorPage(WorkspaceEditorSection)
         case appSection(AppSection)
         case workspace(UUID)
+        case editWorkspaceInfo(UUID)
         case createWorkspace(SessionMode)
         case duplicateWorkspace(UUID)
-        case deleteWorkspace(UUID)
+        case deleteWorkspace(UUID, onDeleted: (() -> Void)?)
+        case deleteWorkspaces([UUID], onDeleted: (() -> Void)?)
         case mode(SessionMode)
         case editEntry(WorkspaceEditTarget)
         case completeEntryEditing
@@ -126,6 +162,11 @@ final class WorkspaceEditController {
         request(.workspace(id), state: state)
     }
 
+    func requestEditWorkspaceInfo(_ id: UUID, state: AppState) {
+        guard !state.isRunning, state.workspaces.workspace(id) != nil else { return }
+        request(.editWorkspaceInfo(id), state: state)
+    }
+
     func requestCreateWorkspace(_ mode: SessionMode, state: AppState) {
         request(.createWorkspace(mode), state: state)
     }
@@ -134,12 +175,24 @@ final class WorkspaceEditController {
         request(.duplicateWorkspace(id), state: state)
     }
 
-    func requestDeleteWorkspace(_ id: UUID, state: AppState) {
-        guard id == state.activeWorkspace.id else {
-            _ = state.deleteWorkspace(id)
+    func requestDeleteWorkspace(_ id: UUID, state: AppState, onDeleted: (() -> Void)? = nil) {
+        guard !state.isRunning, state.workspaces.workspace(id) != nil else { return }
+        request(.deleteWorkspace(id, onDeleted: onDeleted), state: state)
+    }
+
+    func requestDeleteWorkspaces(_ ids: [UUID], state: AppState, onDeleted: (() -> Void)? = nil) {
+        let uniqueIDs = Array(Set(ids)).sorted { $0.uuidString < $1.uuidString }
+        guard !uniqueIDs.isEmpty,
+              uniqueIDs.allSatisfy({ state.workspaces.workspace($0) != nil }) else { return }
+        if state.isRunning {
+            state.errorMessage = String(localized: "会议中不能管理系列")
             return
         }
-        request(.deleteWorkspace(id), state: state)
+        if let reason = uniqueIDs.compactMap({ state.workspaceDeletionDisabledReason($0) }).first {
+            state.errorMessage = reason
+            return
+        }
+        request(.deleteWorkspaces(uniqueIDs, onDeleted: onDeleted), state: state)
     }
 
     func requestMode(_ mode: SessionMode, state: AppState) {
@@ -283,12 +336,27 @@ final class WorkspaceEditController {
             }
         case .workspace(let id):
             state.switchWorkspace(id)
+        case .editWorkspaceInfo(let id):
+            guard !state.isRunning, state.workspaces.workspace(id) != nil else { return }
+            state.switchWorkspace(id)
+            UserDefaults.standard.set(WorkspaceEditorSection.basic.rawValue, forKey: "workspaceEditorFocusSection")
+            state.section = .library
+            begin(.basic, workspace: state.activeWorkspace)
         case .createWorkspace(let mode):
             state.createWorkspace(mode: mode)
         case .duplicateWorkspace(let id):
             state.duplicateWorkspace(id)
-        case .deleteWorkspace(let id):
-            _ = state.deleteWorkspace(id)
+        case .deleteWorkspace(let id, let onDeleted):
+            Task {
+                if await state.deleteWorkspace(id) { onDeleted?() }
+            }
+        case .deleteWorkspaces(let ids, let onDeleted):
+            Task {
+                for id in ids {
+                    guard await state.deleteWorkspace(id) else { return }
+                }
+                onDeleted?()
+            }
         case .mode(let mode):
             state.sessionMode = mode
             state.rebuildContextIndex()
@@ -359,6 +427,13 @@ private struct WorkspaceList: View {
             }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 3) {
+                    if state.workspaces.visible.isEmpty {
+                        Text("还没有系列")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Ink.secondary)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 8)
+                    }
                     ForEach(SessionMode.allCases) { mode in
                         let items = state.workspaces.visible.filter { $0.mode == mode }
                         if !items.isEmpty {
@@ -379,7 +454,7 @@ private struct WorkspaceList: View {
             }
             Button("取消", role: .cancel) { deleting = nil }
         } message: {
-            Text("资料、经验库和题库会一起删除（会在“备份”文件夹留一份副本）。会议记录不受影响。")
+            Text("系列及其会议记录将被永久删除，无法恢复。")
         }
     }
 
@@ -412,7 +487,8 @@ private struct WorkspaceList: View {
             Button("导出系列与会议记录…") { state.exportWorkspace(workspace.id, includeSessions: true) }
             Divider()
             Button("删除…", role: .destructive) { deleting = workspace }
-                .disabled(state.isRunning || !state.workspaces.canDelete(workspace.id))
+                .disabled(state.workspaceDeletionDisabledReason(workspace.id) != nil)
+                .help(state.workspaceDeletionDisabledReason(workspace.id) ?? "永久删除系列和会议记录")
         }
     }
 }
@@ -618,15 +694,17 @@ private struct FieldEditor: View {
     @Binding var text: String
     var isEditing = false
     var showsLabel = true
+    var controlHeight: CGFloat? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if showsLabel { Text(LocalizedStringKey(field.title)).font(.system(size: 12, weight: .semibold)) }
             if isEditing, field.long {
                 WorkspaceTextArea(text: $text, title: field.title, placeholder: field.placeholder,
-                                  minHeight: 104, maxHeight: 190)
+                                  minHeight: controlHeight ?? 104, maxHeight: controlHeight ?? 190)
             } else if isEditing {
-                WorkspaceSingleLineField(text: $text, title: field.title, placeholder: field.placeholder)
+                WorkspaceSingleLineField(text: $text, title: field.title, placeholder: field.placeholder,
+                                          minimumHeight: controlHeight ?? 38)
             } else {
                 if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Text("尚未填写，可在编辑系列信息时补充")
@@ -649,6 +727,7 @@ private struct WorkspaceSingleLineField: View {
     @Binding var text: String
     let title: String
     let placeholder: String
+    var minimumHeight: CGFloat = 38
     var onSubmit: () -> Void = {}
     @FocusState private var isFocused: Bool
 
@@ -657,7 +736,7 @@ private struct WorkspaceSingleLineField: View {
             .textFieldStyle(.plain)
             .font(.system(size: 13))
             .padding(.horizontal, 10).padding(.vertical, 8)
-            .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: minimumHeight, alignment: .topLeading)
             .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -667,6 +746,64 @@ private struct WorkspaceSingleLineField: View {
             .onSubmit(onSubmit)
             .accessibilityLabel(Text(LocalizedStringKey(title)))
             .accessibilityHint(Text(LocalizedStringKey(placeholder)))
+    }
+}
+
+/// Uses the same responsive column width for the series name and its core fields.
+private struct WorkspaceAdaptiveColumns: Layout {
+    var columnSpacing: CGFloat = 14
+    var rowSpacing: CGFloat = 12
+    var minimumColumnWidth: CGFloat = 340
+    var maximumColumnWidth: CGFloat = 420
+
+    private var twoColumnThreshold: CGFloat { minimumColumnWidth * 2 + columnSpacing }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard !subviews.isEmpty else { return .zero }
+        let width = proposal.width.flatMap { $0.isFinite ? max(0, $0) : nil } ?? preferredWidth(for: subviews)
+        let usesColumns = width >= twoColumnThreshold
+        let columnWidth = usesColumns
+            ? min(maximumColumnWidth, max(0, (width - columnSpacing) / 2))
+            : width
+        let sizes = subviews.map { $0.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)) }
+        let height: CGFloat
+        if usesColumns {
+            height = sizes.map(\.height).max() ?? 0
+        } else {
+            height = sizes.reduce(0) { $0 + $1.height } + rowSpacing * CGFloat(max(0, sizes.count - 1))
+        }
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard !subviews.isEmpty else { return }
+        let usesColumns = bounds.width >= twoColumnThreshold
+        let columnWidth = usesColumns
+            ? min(maximumColumnWidth, max(0, (bounds.width - columnSpacing) / 2))
+            : bounds.width
+
+        if usesColumns {
+            for (index, subview) in subviews.enumerated() {
+                subview.place(
+                    at: CGPoint(x: bounds.minX + CGFloat(index) * (columnWidth + columnSpacing), y: bounds.minY),
+                    proposal: ProposedViewSize(width: columnWidth, height: nil)
+                )
+            }
+        } else {
+            var y = bounds.minY
+            for subview in subviews {
+                let size = subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil))
+                subview.place(at: CGPoint(x: bounds.minX, y: y), proposal: ProposedViewSize(width: columnWidth, height: nil))
+                y += size.height + rowSpacing
+            }
+        }
+    }
+
+    private func preferredWidth(for subviews: Subviews) -> CGFloat {
+        guard subviews.count > 1 else { return maximumColumnWidth * 2 + columnSpacing }
+        let idealWidths = subviews.prefix(2).map { $0.sizeThatFits(.unspecified).width }
+        return max(twoColumnThreshold, min(maximumColumnWidth * 2 + columnSpacing,
+                                           idealWidths.reduce(0, +) + columnSpacing))
     }
 }
 
@@ -782,7 +919,7 @@ private struct WorkspaceBasicTab: View {
 
         VStack(alignment: .leading, spacing: 14) {
             ViewThatFits(in: .horizontal) {
-                HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
                     sectionTitle(modeDisplayName)
                     Spacer(minLength: 8)
                     editButton
@@ -794,23 +931,17 @@ private struct WorkspaceBasicTab: View {
             }
 
             if isEditing {
-                WorkspaceSingleLineField(text: nameBinding, title: "系列名称", placeholder: "系列名称")
-                    .frame(maxWidth: 420, alignment: .leading)
+                WorkspaceAdaptiveColumns {
+                    WorkspaceSingleLineField(text: nameBinding, title: "系列名称", placeholder: "系列名称")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
 
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .top, spacing: 14) {
-                    ForEach(coreFields) { field in
-                        fieldEditor(field, editing: isEditing)
-                            .frame(minWidth: 260, maxWidth: 420, alignment: .leading)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(coreFields) { field in
-                        fieldEditor(field, editing: isEditing)
-                            .frame(maxWidth: 420, alignment: .leading)
-                    }
+            WorkspaceAdaptiveColumns {
+                ForEach(coreFields) { field in
+                    fieldEditor(field, editing: isEditing,
+                                controlHeight: coreFields.contains(where: \.long) ? 104 : 38)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
 
@@ -825,7 +956,7 @@ private struct WorkspaceBasicTab: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 ForEach(additionalFields) { field in
                                     fieldEditor(field, editing: isEditing)
-                                        .frame(maxWidth: field.long ? 760 : 420, alignment: .leading)
+                                        .frame(maxWidth: 760, alignment: .leading)
                                 }
                             }
                             .padding(.top, 8)
@@ -908,8 +1039,9 @@ private struct WorkspaceBasicTab: View {
         }
     }
 
-    private func fieldEditor(_ field: ModeField, editing: Bool) -> some View {
-        FieldEditor(field: field, text: fieldBinding(field.id), isEditing: editing)
+    private func fieldEditor(_ field: ModeField, editing: Bool, controlHeight: CGFloat? = nil) -> some View {
+        FieldEditor(field: field, text: fieldBinding(field.id), isEditing: editing,
+                    controlHeight: controlHeight)
     }
 }
 

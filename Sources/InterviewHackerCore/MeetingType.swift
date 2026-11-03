@@ -14,6 +14,9 @@ public enum LiveMode: String, Codable, CaseIterable, Sendable {
 public enum NotesTemplateKind: String, Codable, CaseIterable, Sendable, Identifiable {
     case interview, academic, work, client, lecture, discussion, general
     public var id: String { rawValue }
+    /// Templates offered in settings and meeting notes. Keep the interview case
+    /// decodable for old notes while removing it from new selections.
+    public static var selectable: [NotesTemplateKind] { allCases.filter { $0 != .interview } }
 }
 
 /// The defaults a meeting type sets, so nobody has to touch the switches.

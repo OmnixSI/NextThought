@@ -111,6 +111,31 @@ public actor DocumentJobStore {
         guard sqlite3_step(statement) == SQLITE_DONE else { throw CocoaError(.fileWriteUnknown) }
         latest[job.id] = job.updatedAt
     }
+    public func delete(ids: Set<UUID>) throws {
+        guard !ids.isEmpty else { return }
+        let previous = Dictionary(uniqueKeysWithValues: ids.compactMap { id in latest[id].map { (id, $0) } })
+        for id in ids { latest[id] = .distantFuture }
+        do {
+            try database.execute("BEGIN IMMEDIATE")
+            var statement: OpaquePointer?
+            guard sqlite3_prepare_v2(database.handle, "DELETE FROM jobs WHERE id=?", -1, &statement, nil) == SQLITE_OK else {
+                throw CocoaError(.fileWriteUnknown)
+            }
+            defer { sqlite3_finalize(statement) }
+            let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+            for id in ids {
+                sqlite3_reset(statement)
+                sqlite3_clear_bindings(statement)
+                guard sqlite3_bind_text(statement, 1, id.uuidString, -1, transient) == SQLITE_OK,
+                      sqlite3_step(statement) == SQLITE_DONE else { throw CocoaError(.fileWriteUnknown) }
+            }
+            try database.execute("COMMIT")
+        } catch {
+            try? database.execute("ROLLBACK")
+            for id in ids { latest[id] = previous[id] }
+            throw error
+        }
+    }
     public func all(recoverInterrupted: Bool = false) throws -> [DocumentJob] {
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database.handle, "SELECT body FROM jobs", -1, &statement, nil) == SQLITE_OK else { throw CocoaError(.fileReadUnknown) }

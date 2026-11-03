@@ -956,7 +956,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notes only"
+            "value": "Record only"
           }
         }
       }
@@ -1076,7 +1076,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Answers"
+            "value": "Answer"
           }
         }
       }
@@ -2406,7 +2406,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Checking the answer engine…"
+            "value": "Checking answer service…"
           }
         }
       }
@@ -3046,7 +3046,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Automatic answers"
+            "value": "Auto-answer"
           }
         }
       }
@@ -3286,7 +3286,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Course slides"
+            "value": "Course materials"
           }
         }
       }
@@ -3426,7 +3426,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Meetings of this series appear here."
+            "value": "Meetings in this series will appear here."
           }
         }
       }
@@ -3716,7 +3716,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Question"
+            "value": "Questions"
           }
         }
       }
@@ -5200,7 +5200,6846 @@
           }
         }
       }
+    },
+    "关闭联网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "请先开启会后自动整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable automatic meeting notes first."
+          }
+        }
+      }
+    },
+    "屏幕感知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen awareness"
+          }
+        }
+      }
+    },
+    "会话中每隔几秒读一次屏幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the screen periodically during a session"
+          }
+        }
+      }
+    },
+    "识别结果会发送给当前回答引擎；遇到图表或位置关系时，可能附上当前屏幕图片。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognized text is sent to the current answer engine; a screen image may be included for diagrams or spatial information."
+          }
+        }
+      }
+    },
+    "讲稿跟随需要“屏幕与系统音频录制”权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slide following requires Screen and System Audio Recording permission."
+          }
+        }
+      }
+    },
+    "回答进度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer progress"
+          }
+        }
+      }
+    },
+    "边听你说，勾掉已经讲过的句子，提示下一句": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark spoken sentences and suggest the next one"
+          }
+        }
+      }
+    },
+    "显示提词器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show teleprompter"
+          }
+        }
+      }
+    },
+    "字号": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Font size"
+          }
+        }
+      }
+    },
+    "尽力从屏幕共享中排除本应用窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try to exclude this app's windows from screen sharing"
+          }
+        }
+      }
+    },
+    "外观细节与共享测试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance & sharing test"
+          }
+        }
+      }
+    },
+    "不透明度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacity"
+          }
+        }
+      }
+    },
+    "隐藏背景，只保留文字、边框与按钮": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide background, keeping text, borders and buttons"
+          }
+        }
+      }
+    },
+    "鼠标穿透（点击穿过提词器）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click through the teleprompter"
+          }
+        }
+      }
+    },
+    "仅显示提词器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show only the teleprompter"
+          }
+        }
+      }
+    },
+    "手机显示与遥控在高级设置 → 更多 → 手机伴侣。隐藏背景时，不透明度不会影响文字与按钮。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone display and controls are under Advanced Settings → More → Phone companion. Hiding the background does not reduce text or button opacity."
+          }
+        }
+      }
+    },
+    "现在用什么读取资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to read materials"
+          }
+        }
+      }
+    },
+    "当前使用：系统识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Currently using: System recognition"
+          }
+        }
+      }
+    },
+    "选一种即可。PDF、图片和纯文本可先用系统识别，无需下载文档模型。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one method. System recognition can read PDFs, images and plain text without a model download."
+          }
+        }
+      }
+    },
+    "系统识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System recognition"
+          }
+        }
+      }
+    },
+    "本机增强识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enhanced local recognition"
+          }
+        }
+      }
+    },
+    "Codex 文件代读": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex document reading"
+          }
+        }
+      }
+    },
+    "Mac 自带 · 可直接用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Built into macOS · ready to use"
+          }
+        }
+      }
+    },
+    "正在使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In use"
+          }
+        }
+      }
+    },
+    "离线、无需下载。适合普通文字；复杂表格和公式可能丢失结构，重要数字请核对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offline with no download. Suitable for ordinary text; complex tables and formulas may lose structure, so verify important figures."
+          }
+        }
+      }
+    },
+    "适合扫描件、表格和公式。需下载识别与版面模型，在本机计算、占用内存；仍可能识别出错。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suitable for scans, tables and formulas. Recognition and layout models must be downloaded and use local memory; errors are still possible."
+          }
+        }
+      }
+    },
+    "免 OCR 模型权重，读取原文件。需要已登录的 Codex、共用组件和网络；占账号额度，速度受网络影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reads original files without OCR weights. Requires a signed-in Codex account, shared components and network access; uses account allowance."
+          }
+        }
+      }
+    },
+    "准备并使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare & use"
+          }
+        }
+      }
+    },
+    "已经在这台 Mac 下载过？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already downloaded on this Mac?"
+          }
+        }
+      }
+    },
+    "扫描本机已有组件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan existing components"
+          }
+        }
+      }
+    },
+    "选择其他目录…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose another folder…"
+          }
+        }
+      }
+    },
+    "扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan coverage depends on permissions and file indexing. Select an external disk or missing folder manually. Only models that pass version and file checks can be reused."
+          }
+        }
+      }
+    },
+    "怎样从资料中找答案": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to find answers in materials"
+          }
+        }
+      }
+    },
+    "关键词查找": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyword search"
+          }
+        }
+      }
+    },
+    "语义增强查找（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Semantic search (optional)"
+          }
+        }
+      }
+    },
+    "按问题里的关键词挑选片段，准备快、占用少；问法和原文不同，或答案跨多个段落时，可能漏掉相关内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selects excerpts by keywords. Fast and lightweight, but may miss paraphrases or answers spread across passages."
+          }
+        }
+      }
+    },
+    "增加按含义查找，能帮助匹配同义问法。需下载模型、先建立索引，额外占用存储和内存；也可能漏检，仍保留关键词作为兜底。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds meaning-based matching for paraphrases. Requires a model and index, storage and memory; it can still miss results, so keyword search remains available."
+          }
+        }
+      }
+    },
+    "默认只向回答服务发送相关资料片段；全量发送会增加等待和用量。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only relevant excerpts are sent to the answer service by default; sending all materials increases latency and usage."
+          }
+        }
+      }
+    },
+    "Word、Excel 与 PowerPoint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word, Excel & PowerPoint"
+          }
+        }
+      }
+    },
+    "共用 Office 组件最多下载约 186 MB。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The shared Office component downloads up to about 186 MB."
+          }
+        }
+      }
+    },
+    "组件管理与高级设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Component management & advanced settings"
+          }
+        }
+      }
+    },
+    "资料原件保留在本机。只有选择在线代读或在线回答时，资料才会发送给对应服务。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original files remain on this Mac. Materials are sent to a service only when you choose online reading or online answers."
+          }
+        }
+      }
+    },
+    "技能库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skill library"
+          }
+        }
+      }
+    },
+    "导入 .md 文件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import .md files…"
+          }
+        }
+      }
+    },
+    "新建技能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New skill"
+          }
+        }
+      }
+    },
+    "还没有技能。可以导入现成的 SKILL.md，或点“新建技能”从模板开始。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No skills yet. Import a SKILL.md or create one from a template."
+          }
+        }
+      }
+    },
+    "自动更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic updates"
+          }
+        }
+      }
+    },
+    "更新渠道": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update channel"
+          }
+        }
+      }
+    },
+    "正式版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable release"
+          }
+        }
+      }
+    },
+    "自动检查更新（启动后与每 6 小时；有新版本时在后台下载）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for updates on launch and every six hours; download available updates in the background"
+          }
+        }
+      }
+    },
+    "下载的安装包会校验 SHA-256 和签名；本机签名绑定后，更新会沿用该身份。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloaded packages are checked for SHA-256 and signature. After local signing is bound, updates keep that identity."
+          }
+        }
+      }
+    },
+    "GitHub 访问": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub access"
+          }
+        }
+      }
+    },
+    "仓库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repository"
+          }
+        }
+      }
+    },
+    "粘贴访问令牌（github_pat_…）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste access token (github_pat_…)"
+          }
+        }
+      }
+    },
+    "保存并检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save and check"
+          }
+        }
+      }
+    },
+    "请先填写访问令牌": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter an access token first"
+          }
+        }
+      }
+    },
+    "保存令牌并检查访问": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the token and check access"
+          }
+        }
+      }
+    },
+    "去 GitHub 创建令牌": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a token on GitHub"
+          }
+        }
+      }
+    },
+    "或在终端运行 gh auth login，就不用填令牌": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Or run gh auth login in Terminal; no token is needed"
+          }
+        }
+      }
+    },
+    "创建令牌时这样填：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create the token with these settings:"
+          }
+        }
+      }
+    },
+    "令牌保存在系统钥匙串。组织要求审批时，需要管理员批准后才能用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The token is stored in the system keychain. If the organization requires approval, an administrator must approve it."
+          }
+        }
+      }
+    },
+    "经验库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lessons"
+          }
+        }
+      }
+    },
+    "常用选项放在前面；高级选项仍可随时展开。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common options appear first; advanced settings can be expanded at any time."
+          }
+        }
+      }
+    },
+    "查找设置，例如：麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search settings, e.g. microphone"
+          }
+        }
+      }
+    },
+    "高级设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced settings"
+          }
+        }
+      }
+    },
+    "展开模型参数、联网与技能、备份细项、快捷键和维护工具。关闭只隐藏选项，不修改已有配置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show model parameters, web search, skills, backup options, shortcuts and maintenance. Turning this off only hides options."
+          }
+        }
+      }
+    },
+    "第一次开始会申请录屏和麦克风权限；没有权限时无法读取会议声音或屏幕。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The first session requests screen recording and microphone access. These permissions are required to read meeting audio and the screen."
+          }
+        }
+      }
+    },
+    "这台 Mac 现在能做什么": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What this Mac can do"
+          }
+        }
+      }
+    },
+    "实时语音（必需）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live speech (required)"
+          }
+        }
+      }
+    },
+    "识别与音频权限已就绪；在会中页面选择会议窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognition and audio access are ready; select a meeting window on the meeting page"
+          }
+        }
+      }
+    },
+    "需要语音识别与音频权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech recognition and audio access are required"
+          }
+        }
+      }
+    },
+    "设置语音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech settings"
+          }
+        }
+      }
+    },
+    "对话回答（必需）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggested answers (required)"
+          }
+        }
+      }
+    },
+    "对话服务已配置，可以测试或开始使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The answer service is configured and ready to test or use"
+          }
+        }
+      }
+    },
+    "需要连接回答服务，才能在对话中生成建议回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an answer service to generate suggestions"
+          }
+        }
+      }
+    },
+    "资料增强（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Material enhancement (optional)"
+          }
+        }
+      }
+    },
+    "系统识别与关键词直接可用；OCR 模型和向量模型按需安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System recognition and keyword search are ready; install OCR and embedding models when needed"
+          }
+        }
+      }
+    },
+    "查看取舍": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compare options"
+          }
+        }
+      }
+    },
+    "备份与恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup & restore"
+          }
+        }
+      }
+    },
+    "版本与更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version & updates"
+          }
+        }
+      }
+    },
+    "环境与模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environment & models"
+          }
+        }
+      }
+    },
+    "一键配置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up"
+          }
+        }
+      }
+    },
+    "一键重建环境": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebuild environment"
+          }
+        }
+      }
+    },
+    "使用前检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Readiness checks"
+          }
+        }
+      }
+    },
+    "会议声音与麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting audio & microphone"
+          }
+        }
+      }
+    },
+    "语音识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech recognition"
+          }
+        }
+      }
+    },
+    "会议音频权限已允许": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting audio access allowed"
+          }
+        }
+      }
+    },
+    "需要音频权限，才能听到会议里的声音。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio access is required to hear the meeting."
+          }
+        }
+      }
+    },
+    "会议声音来自": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting audio source"
+          }
+        }
+      }
+    },
+    "引擎": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine"
+          }
+        }
+      }
+    },
+    "本地流式 · 离线（推荐）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local streaming · offline (recommended)"
+          }
+        }
+      }
+    },
+    "Apple Speech · 本地 / macOS 26": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Speech · local / macOS 26"
+          }
+        }
+      }
+    },
+    "云端流式 · 需 API Key": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud streaming · API key required"
+          }
+        }
+      }
+    },
+    "同时识别我说的话（麦克风）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Also recognize my speech (microphone)"
+          }
+        }
+      }
+    },
+    "专业词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vocabulary"
+          }
+        }
+      }
+    },
+    "专业词 / 人名，逗号分隔（提高识别准确度）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Names and technical terms, separated by commas"
+          }
+        }
+      }
+    },
+    "本地模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local model"
+          }
+        }
+      }
+    },
+    "流式模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streaming model"
+          }
+        }
+      }
+    },
+    "X-ASR 中英 · 480 ms（推荐）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "X-ASR Chinese/English · 480 ms (recommended)"
+          }
+        }
+      }
+    },
+    "X-ASR 中英 · 160 ms（出字更快）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "X-ASR Chinese/English · 160 ms (faster)"
+          }
+        }
+      }
+    },
+    "Zipformer 双语 2023（旧版）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zipformer bilingual 2023 (legacy)"
+          }
+        }
+      }
+    },
+    "整句精修：每句说完后用离线模型重新识别整句（推荐）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refine each completed sentence with the offline model (recommended)"
+          }
+        }
+      }
+    },
+    "删除全部模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all models"
+          }
+        }
+      }
+    },
+    "启动与回声": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startup & echo"
+          }
+        }
+      }
+    },
+    "后台预加载识别模型（开始几乎瞬间启动）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preload the recognition model in the background"
+          }
+        }
+      }
+    },
+    "忽略麦克风里的扬声器回声（推荐）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignore speaker echo in the microphone (recommended)"
+          }
+        }
+      }
+    },
+    "麦克风回声消除（Apple 语音处理，实验）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone echo cancellation (Apple voice processing, experimental)"
+          }
+        }
+      }
+    },
+    "回答引擎": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer engine"
+          }
+        }
+      }
+    },
+    "Codex（ChatGPT 账号）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex (ChatGPT account)"
+          }
+        }
+      }
+    },
+    "API Key（任意 OpenAI 兼容服务）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API key (OpenAI-compatible service)"
+          }
+        }
+      }
+    },
+    "Codex 已登录（ChatGPT 账号）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex signed in (ChatGPT account)"
+          }
+        }
+      }
+    },
+    "正在检测 Codex…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking Codex…"
+          }
+        }
+      }
+    },
+    "需要登录 Codex": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to Codex"
+          }
+        }
+      }
+    },
+    "未检测到 Codex": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex not found"
+          }
+        }
+      }
+    },
+    "Fast 模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast mode"
+          }
+        }
+      }
+    },
+    "约 1.5 倍速度 · 用量更多": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About 1.5× faster · higher usage"
+          }
+        }
+      }
+    },
+    "约 1.5 倍速度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About 1.5× faster"
+          }
+        }
+      }
+    },
+    "Fast 回答更快，但会消耗更多 ChatGPT 套餐用量。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast responses use more of your ChatGPT plan allowance."
+          }
+        }
+      }
+    },
+    "测试回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test answer"
+          }
+        }
+      }
+    },
+    "发一句测试问题，确认引擎能正常回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send a test question to check the engine"
+          }
+        }
+      }
+    },
+    "联网搜索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search"
+          }
+        }
+      }
+    },
+    "始终联网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always search"
+          }
+        }
+      }
+    },
+    "搜索方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search provider"
+          }
+        }
+      }
+    },
+    "问题识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question detection"
+          }
+        }
+      }
+    },
+    "不确定的句子交给 API 模型二次判断": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the API model to recheck uncertain sentences"
+          }
+        }
+      }
+    },
+    "Codex 运行方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex run mode"
+          }
+        }
+      }
+    },
+    "运行方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run mode"
+          }
+        }
+      }
+    },
+    "常驻服务 · 流式（推荐）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Persistent service · streaming (recommended)"
+          }
+        }
+      }
+    },
+    "codex exec · 兼容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "codex exec · compatibility"
+          }
+        }
+      }
+    },
+    "不重新识别声音、不保存原始录音；整理在后台进行，失败后保留转写并可重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio is not re-recognized or saved. Notes run in the background; the transcript is retained if processing fails and can be retried."
+          }
+        }
+      }
+    },
+    "会话记录与复盘": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session records & review"
+          }
+        }
+      }
+    },
+    "记录每次会话（转录、识别到的问题、提词与当时的场景资料）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record each session (transcript, detected questions, prompts and series context)"
+          }
+        }
+      }
+    },
+    "把复盘得到的经验和改进回答自动加入场景的经验库与题库（自我迭代）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add lessons and improved answers from reviews to the series"
+          }
+        }
+      }
+    },
+    "转录边说边保存在本机，不保存原始音频。生成摘要与复盘会把本次转录发送给当前回答服务并使用其额度。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcripts are saved locally as you speak; raw audio is not saved. Summaries and reviews send the transcript to the current answer service and use its allowance."
+          }
+        }
+      }
+    },
+    "导出与导入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export & import"
+          }
+        }
+      }
+    },
+    "备份包含系列资料、经验库、题库、阶段复盘、会议记录和设置。导入会合并，不删除现有数据；冲突时保留较新的修改。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups include series materials, lessons, questions, reviews, meeting records and settings. Import merges data and retains the newer changes in a conflict."
+          }
+        }
+      }
+    },
+    "导出全部数据…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export all data…"
+          }
+        }
+      }
+    },
+    "包含 API Key 与访问令牌": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include API keys and access tokens"
+          }
+        }
+      }
+    },
+    "导入…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import…"
+          }
+        }
+      }
+    },
+    "同时导入设置（回答引擎、识别、快捷键等）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Also import settings (engine, recognition, shortcuts, etc.)"
+          }
+        }
+      }
+    },
+    "自动备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic backup"
+          }
+        }
+      }
+    },
+    "会议结束后自动创建恢复点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a restore point after meetings"
+          }
+        }
+      }
+    },
+    "立即备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up now"
+          }
+        }
+      }
+    },
+    "打开数据文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open data folder"
+          }
+        }
+      }
+    },
+    "恢复…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore…"
+          }
+        }
+      }
+    },
+    "场景说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Situation"
+          }
+        }
+      }
+    },
+    "这是什么场合、对方是谁、我希望达成什么": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The situation, who is involved and what you want to achieve"
+          }
+        }
+      }
+    },
+    "应聘公司": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Company"
+          }
+        }
+      }
+    },
+    "公司名称、业务、近期新闻、团队情况": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Company name, business, recent news and team"
+          }
+        }
+      }
+    },
+    "岗位": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Role"
+          }
+        }
+      }
+    },
+    "岗位名称、级别、JD 要点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Role, level and job description"
+          }
+        }
+      }
+    },
+    "面试官 / HR": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interviewer / HR"
+          }
+        }
+      }
+    },
+    "面试官姓名、背景、风格；HR 关注点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interviewer name, background and style; HR priorities"
+          }
+        }
+      }
+    },
+    "我的亮点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My highlights"
+          }
+        }
+      }
+    },
+    "最想让对方记住的 3 个经历或数字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Three experiences or figures to remember"
+          }
+        }
+      }
+    },
+    "期望与底线": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expectations and limits"
+          }
+        }
+      }
+    },
+    "薪资期望、到岗时间、不能接受的条件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salary expectations, availability and non-negotiable conditions"
+          }
+        }
+      }
+    },
+    "报告题目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presentation title"
+          }
+        }
+      }
+    },
+    "论文 / 报告标题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paper or presentation title"
+          }
+        }
+      }
+    },
+    "会议与场次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting and session"
+          }
+        }
+      }
+    },
+    "会议名称、分会场、报告时长、主持人": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting name, session, duration and host"
+          }
+        }
+      }
+    },
+    "核心论点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key points"
+          }
+        }
+      }
+    },
+    "要讲清楚的贡献、方法和关键结果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contributions, methods and key results"
+          }
+        }
+      }
+    },
+    "已知局限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Known limitations"
+          }
+        }
+      }
+    },
+    "实验不足、假设、未来工作；被问到时怎么回应": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limitations, assumptions, future work and how to respond"
+          }
+        }
+      }
+    },
+    "预计会被问的问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Likely questions"
+          }
+        }
+      }
+    },
+    "审稿意见、同行常问的问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reviewer comments and common peer questions"
+          }
+        }
+      }
+    },
+    "对方公司 / 参会人": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organization / attendees"
+          }
+        }
+      }
+    },
+    "公司、职位、决策人、关注点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organization, roles, decision makers and priorities"
+          }
+        }
+      }
+    },
+    "会议目标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting goal"
+          }
+        }
+      }
+    },
+    "这次会议要达成的结果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The desired outcome"
+          }
+        }
+      }
+    },
+    "我方立场与底线": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Our position and limits"
+          }
+        }
+      }
+    },
+    "可以让步的、不能让步的": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where you can and cannot compromise"
+          }
+        }
+      }
+    },
+    "关键数字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key figures"
+          }
+        }
+      }
+    },
+    "价格、预算、指标、时间节点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prices, budget, metrics and dates"
+          }
+        }
+      }
+    },
+    "课程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course"
+          }
+        }
+      }
+    },
+    "课程名称、章节、老师": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Course name, chapter and teacher"
+          }
+        }
+      }
+    },
+    "学习目标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learning goals"
+          }
+        }
+      }
+    },
+    "这节课需要掌握的内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What to learn in this class"
+          }
+        }
+      }
+    },
+    "本周进展": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week's progress"
+          }
+        }
+      }
+    },
+    "做了哪些实验、读了哪些论文、结果如何": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experiments, papers read and results"
+          }
+        }
+      }
+    },
+    "卡住的地方": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blockers"
+          }
+        }
+      }
+    },
+    "想请导师或同学帮忙判断的问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questions for your supervisor or peers"
+          }
+        }
+      }
+    },
+    "下一步计划": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next steps"
+          }
+        }
+      }
+    },
+    "下周打算做什么": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plans for next week"
+          }
+        }
+      }
+    },
+    "客户 / 对方": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Client / counterpart"
+          }
+        }
+      }
+    },
+    "公司、参会人、决策人、关注点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organization, attendees, decision makers and priorities"
+          }
+        }
+      }
+    },
+    "沟通目标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Communication goal"
+          }
+        }
+      }
+    },
+    "这次沟通要达成的结果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The desired outcome"
+          }
+        }
+      }
+    },
+    "产品与报价": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Product and pricing"
+          }
+        }
+      }
+    },
+    "我们能提供什么、价格和时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What you offer, price and timing"
+          }
+        }
+      }
+    },
+    "客户可能的顾虑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Possible client concerns"
+          }
+        }
+      }
+    },
+    "预算、风险、竞品，以及怎么回应": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Budget, risks, competitors and responses"
+          }
+        }
+      }
+    },
+    "要讨论的问题或案例": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question or case to discuss"
+          }
+        }
+      }
+    },
+    "我的观点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My view"
+          }
+        }
+      }
+    },
+    "我想表达的看法和依据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your view and supporting evidence"
+          }
+        }
+      }
+    },
+    "展开问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand question"
+          }
+        }
+      }
+    },
+    "收起问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse question"
+          }
+        }
+      }
+    },
+    "首页点“新会议”或“立即记录” → 会中看建议回答，或者只记录 → 结束后自动整理纪要。新手引导可以随时从这里打开。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Home, choose New Meeting or Record Now. View suggested answers or record only; notes are organized after the meeting. You can reopen the guide here."
+          }
+        }
+      }
+    },
+    "一键检查并配好回答模型、语音模型、音频来源和资料索引；哪一步没成功会直接写在这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check and prepare the answer model, speech model, audio source and document index. Any failed step appears here."
+          }
+        }
+      }
+    },
+    "填入人名、项目名和专有名词，识别时会更准；用逗号分隔。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter names, project names and technical terms, separated by commas, to improve recognition."
+          }
+        }
+      }
+    },
+    "不戴耳机时对方的声音会从扬声器传进麦克风；应用比对两路音频的节奏和文字，回声不记为“我”。戴耳机始终最干净。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without headphones, speaker audio can enter the microphone. The app compares timing and text so echoes are not attributed to you. Headphones provide the cleanest result."
+          }
+        }
+      }
+    },
+    "本地规则逐句判断：区分陈述、未说完、提问、请求（“说一下你对…的理解”“walk me through…”）和追问；去掉口头禅，忽略“能听到吗”这类设备确认。课程场景更严格，避免把讲师的自问自答当成提问。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local rules distinguish statements, unfinished sentences, questions, requests and follow-ups. Filler and equipment checks are ignored. Course mode applies stricter rules to avoid treating a lecturer's rhetorical questions as requests."
+          }
+        }
+      }
+    },
+    "常驻 `codex app-server` 复用进程与登录，逐字流式显示；不可用时自动回退到 codex exec。exec 每次启动一个进程，等完整结果后显示。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The persistent Codex app server reuses its process and login and streams text. If unavailable, it falls back to codex exec, which starts a process for each request and shows the completed result."
+          }
+        }
+      }
+    },
+    "先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A quick answer appears first. For current information, search runs in the background and usually replaces it after 5–20 seconds. You can return to the original answer. Automatic selection uses local rules."
+          }
+        }
+      }
+    },
+    "仅对服务商支持的推理模型有效；不确定时保持默认。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applies only to reasoning models supported by the provider. Keep the default if unsure."
+          }
+        }
+      }
+    },
+    "技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在资料夹的“技能”页按系列勾选。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A skill is a Markdown instruction describing the desired speaking style, answer method or subject knowledge. Global skills apply to every answer; select other skills per series in the library."
+          }
+        }
+      }
+    },
+    "可选窗口、显示器或区域（本应用窗口除外）。系统 OCR 先给快速文字；本机增强会在后台补读复杂画面。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a window, display or region, excluding this app. System OCR provides quick text; local enhancement can read complex images in the background."
+          }
+        }
+      }
+    },
+    "导入 PPT、Keynote 或 PDF 后，放映时会识别当前页并关联这一页的要点与提问。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After importing a PPT, Keynote or PDF, the app identifies the current slide during a presentation and links its notes and questions."
+          }
+        }
+      }
+    },
+    "按你说的话和回答里每一句的文字重合度判断。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress is estimated from the overlap between what you say and each sentence in the answer."
+          }
+        }
+      }
+    },
+    "整理分三步：结合资料校对转写、按模板生成带时间点的纪要，再核对原话依据和日期。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workflow checks the transcript against materials, creates timestamped notes from the template, then checks the source wording and dates."
+          }
+        }
+      }
+    },
+    "先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan for compatible document models and components already on this Mac. Verified files are reused in place; OCR and semantic retrieval are not enabled automatically."
+          }
+        }
+      }
+    },
+    "常规": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "会议与识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meetings & Recognition"
+          }
+        }
+      }
+    },
+    "回答与提词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers & Teleprompter"
+          }
+        }
+      }
+    },
+    "纪要与资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes & Materials"
+          }
+        }
+      }
+    },
+    "数据与更多": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data & More"
+          }
+        }
+      }
+    },
+    "界面、语言与快速准备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance, language and setup"
+          }
+        }
+      }
+    },
+    "选择声音来源与实时识别方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose audio sources and live recognition"
+          }
+        }
+      }
+    },
+    "回答服务与会中提词显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service and teleprompter display"
+          }
+        }
+      }
+    },
+    "会后纪要与资料读取": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting notes and document reading"
+          }
+        }
+      }
+    },
+    "本机记录、技能、更新与维护": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local records, skills, updates and maintenance"
+          }
+        }
+      }
+    },
+    "界面与外观": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interface & Appearance"
+          }
+        }
+      }
+    },
+    "外观": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        }
+      }
+    },
+    "浅色": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "深色": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
+    "管理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage"
+          }
+        }
+      }
+    },
+    "管理系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage series"
+          }
+        }
+      }
+    },
+    "删除系列…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete series…"
+          }
+        }
+      }
+    },
+    "至少保留一个可用系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep at least one available series"
+          }
+        }
+      }
+    },
+    "会议中不能管理系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series cannot be managed during a meeting"
+          }
+        }
+      }
+    },
+    "工作台在本应用前台时置顶": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep workspace on top while this app is active"
+          }
+        }
+      }
+    },
+    "此选项仅在 InterviewHacker 处于前台时提升工作台、设置和分离模块；切换到其他 App 后它们会降回普通层级。回答浮窗保持独立浮窗行为。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace, settings and detached modules float while InterviewHacker is active. They return to the normal level when you switch apps. The answer window remains an independent floating window."
+          }
+        }
+      }
+    },
+    "在会议顶栏选择“提词”或“只记录”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Teleprompter or Record Only in the meeting toolbar."
+          }
+        }
+      }
+    },
+    "需要使用 API Key 回答引擎才能启用二次判断。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an API Key answer engine to enable the second check."
+          }
+        }
+      }
+    },
+    "技能可用于所有系列，或在资料夹中按系列选择。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use skills across all series or choose them per series in the library."
+          }
+        }
+      }
+    },
+    "移动到": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move to"
+          }
+        }
+      }
+    },
+    "会后纪要使用独立模型。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting notes use a separate model."
+          }
+        }
+      }
+    },
+    "整理流程": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes workflow"
+          }
+        }
+      }
+    },
+    "请先在“数据”中开启会话记录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable session recording in Data first."
+          }
+        }
+      }
+    },
+    "从现有模板复制后，可以编辑各部分。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy an existing template to edit its sections."
+          }
+        }
+      }
+    },
+    "扫描并校验已有组件，不会自动启用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan and verify existing components without enabling them."
+          }
+        }
+      }
+    },
+    "正在检查组件状态，完成后可以扫描。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking component status; scanning will be available afterward."
+          }
+        }
+      }
+    },
+    "正在准备其他组件，完成后可以扫描。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another component is being prepared; scan when it finishes."
+          }
+        }
+      }
+    },
+    "查找方式说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retrieval details"
+          }
+        }
+      }
+    },
+    "查看说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show information"
+          }
+        }
+      }
+    },
+    "语言说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language information"
+          }
+        }
+      }
+    },
+    "新手引导说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting started information"
+          }
+        }
+      }
+    },
+    "一键配置说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup information"
+          }
+        }
+      }
+    },
+    "专业词说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vocabulary information"
+          }
+        }
+      }
+    },
+    "流式模型说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Streaming model information"
+          }
+        }
+      }
+    },
+    "回声处理说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Echo handling information"
+          }
+        }
+      }
+    },
+    "自动回答说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic answers information"
+          }
+        }
+      }
+    },
+    "问题识别说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question detection information"
+          }
+        }
+      }
+    },
+    "Codex 运行方式说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex run mode information"
+          }
+        }
+      }
+    },
+    "联网搜索说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search information"
+          }
+        }
+      }
+    },
+    "思考强度说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reasoning effort information"
+          }
+        }
+      }
+    },
+    "技能使用说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skill information"
+          }
+        }
+      }
+    },
+    "屏幕读取说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen reading information"
+          }
+        }
+      }
+    },
+    "讲稿跟随说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slide following information"
+          }
+        }
+      }
+    },
+    "回答进度说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer progress information"
+          }
+        }
+      }
+    },
+    "复用已有组件说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Existing components information"
+          }
+        }
+      }
+    },
+    "资料查找方式说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Document retrieval information"
+          }
+        }
+      }
+    },
+    "纪要模型说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes model information"
+          }
+        }
+      }
+    },
+    "纪要整理流程说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes workflow information"
+          }
+        }
+      }
+    },
+    "自定义模板说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom template information"
+          }
+        }
+      }
+    },
+    "两种方式都会挑选相关片段放进回答上下文，不会默认发送全部资料。全量发送会增加等待和用量，还可能超过模型的上下文上限；关闭向量检索不等于全文已经被读取。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both methods select relevant excerpts for the answer context instead of sending every document by default. Sending everything increases latency and usage and may exceed the model context limit. Disabling semantic retrieval does not mean every document has been read in full."
+          }
+        }
+      }
+    },
+    "选择界面语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the interface language"
+          }
+        }
+      }
+    },
+    "会议声音 · 麦克风 · 语音识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting audio · Microphone · Speech recognition"
+          }
+        }
+      }
+    },
+    "核心准备 · 可选资料增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setup · Optional material enhancement"
+          }
+        }
+      }
+    },
+    "X-ASR 中英模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "X-ASR Chinese/English model"
+          }
+        }
+      }
+    },
+    "Zipformer 双语模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zipformer bilingual model"
+          }
+        }
+      }
+    },
+    "%@已就绪 · 可离线使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is ready · Available offline"
+          }
+        }
+      }
+    },
+    "%@ · 本机离线识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Local offline recognition"
+          }
+        }
+      }
+    },
+    "模型来源：sherpa-onnx X-ASR（Apache-2.0）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model source: sherpa-onnx X-ASR (Apache-2.0)"
+          }
+        }
+      }
+    },
+    "录屏与系统音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen recording & system audio"
+          }
+        }
+      }
+    },
+    "已允许 · 可以听到会议里对方的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed · Meeting audio can be captured"
+          }
+        }
+      }
+    },
+    "必需：用来采集会议窗口里对方的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required to capture the other participants’ audio"
+          }
+        }
+      }
+    },
+    "麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone"
+          }
+        }
+      }
+    },
+    "已允许 · 你说的话标记为“我”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed · Your speech is marked as yours"
+          }
+        }
+      }
+    },
+    "用于识别你自己说的话，并与对方区分": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizes your speech separately from others"
+          }
+        }
+      }
+    },
+    "当前场景": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current series"
+          }
+        }
+      }
+    },
+    "本机签名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local signing"
+          }
+        }
+      }
+    },
+    "已绑定 · 以后更新不用重新授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bound · Future updates retain permissions"
+          }
+        }
+      }
+    },
+    "建议：绑定后，应用内更新不再需要重新授权录屏和麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommended: bind the local signature to retain screen and microphone permissions across updates"
+          }
+        }
+      }
+    },
+    "绑定": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bind"
+          }
+        }
+      }
+    },
+    "%lld 个系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld series"
+          }
+        }
+      }
+    },
+    "技能 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skills %lld"
+          }
+        }
+      }
+    },
+    "%lld/%lld 项已填写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld of %lld filled"
+          }
+        }
+      }
+    },
+    "%lld 块 · %lld 字符": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sections · %lld characters"
+          }
+        }
+      }
+    },
+    "经验库 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lessons %lld"
+          }
+        }
+      }
+    },
+    "题库 %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question bank %lld"
+          }
+        }
+      }
+    },
+    "展开并编辑问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand and edit question"
+          }
+        }
+      }
+    },
+    "被问 %lld 次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asked %lld times"
+          }
+        }
+      }
+    },
+    "综合这个场景的 %lld 次会话：高频问题、薄弱点、进步和下一步准备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review %lld sessions in this series for recurring questions, weak areas, progress, and next steps"
+          }
+        }
+      }
+    },
+    "%@ · %lld 分钟 · %lld 个问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld min · %lld questions"
+          }
+        }
+      }
+    },
+    "%lld 份已就绪": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ready"
+          }
+        }
+      }
+    },
+    "%lld 份待完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pending"
+          }
+        }
+      }
+    },
+    "%lld 份需处理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld need attention"
+          }
+        }
+      }
+    },
+    "%lld 份已取消": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld canceled"
+          }
+        }
+      }
+    },
+    "%lld 份资料需要处理或核对，展开下方列表查看。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld materials need processing or review. Expand the list below to see them."
+          }
+        }
+      }
+    },
+    "更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        }
+      }
+    },
+    "快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts"
+          }
+        }
+      }
+    },
+    "没有匹配的设置分组": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching settings groups"
+          }
+        }
+      }
+    },
+    "技能配置属于高级设置。已有技能仍会生效；打开右上角开关后可以管理。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skill settings are advanced. Existing skills remain active; turn on Advanced settings in the upper right to manage them."
+          }
+        }
+      }
+    },
+    "读取资料 · 免下载或按需增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read materials · no download or optional enhancement"
+          }
+        }
+      }
+    },
+    "对话服务 · 回答模型 · 联网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service · model · web search"
+          }
+        }
+      }
+    },
+    "加载 SKILL.md · 全局或按系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load SKILL.md · global or per series"
+          }
+        }
+      }
+    },
+    "位置 · 字号 · 共享显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position · text size · shared display"
+          }
+        }
+      }
+    },
+    "本机会话记录 · 备份与恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local sessions · backup and restore"
+          }
+        }
+      }
+    },
+    "更新 · 权限 · 快捷键 · 手机伴侣": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates · permissions · shortcuts · phone companion"
+          }
+        }
+      }
+    },
+    "检查回答引擎、选择模型、准备语音识别、刷新音频来源并重建资料索引。缺少本地语音模型时会在后台下载，不影响使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the answer engine, choose a model, prepare speech recognition, refresh audio sources, and rebuild the material index. A missing local speech model downloads in the background."
+          }
+        }
+      }
+    },
+    "重新读取配置、重建资料索引与数据目录，不改变你的选择": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reload configuration and rebuild the material index and data directory without changing your choices."
+          }
+        }
+      }
+    },
+    "重新绑定本机签名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebind local signing"
+          }
+        }
+      }
+    },
+    "绑定本机签名（以后更新不再重新授权）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bind local signing (future updates will not require reauthorization)"
+          }
+        }
+      }
+    },
+    "macOS 把录屏 / 麦克风权限绑定在应用签名上。绑定后应用用本机证书重新签名，之后的自动更新沿用同一签名，权限一直有效。绑定后需要再授权一次。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS ties screen recording and microphone permissions to the app signature. Binding re-signs the app with a local certificate so future updates keep the same identity. You will need to grant these permissions once after binding."
+          }
+        }
+      }
+    },
+    "绑定本机签名并重新打开？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bind local signing and reopen?"
+          }
+        }
+      }
+    },
+    "绑定并重新打开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bind and reopen"
+          }
+        }
+      }
+    },
+    "会在本机生成签名证书（保存在 Application Support/InterviewHacker/Signing），重新签名后重启应用。重启后请再允许一次录屏与麦克风，以后更新不再需要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A local signing certificate will be created in Application Support/InterviewHacker/Signing. The app will be re-signed and reopened. Allow screen recording and microphone access once more after reopening; future updates will keep those permissions."
+          }
+        }
+      }
+    },
+    "手机伴侣": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone companion"
+          }
+        }
+      }
+    },
+    "开启手机显示与遥控": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable phone display and remote control"
+          }
+        }
+      }
+    },
+    "启动失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start"
+          }
+        }
+      }
+    },
+    "连接方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection method"
+          }
+        }
+      }
+    },
+    "手机网页 · 无需安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone webpage · no installation"
+          }
+        }
+      }
+    },
+    "已安装手机 App": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed phone app"
+          }
+        }
+      }
+    },
+    "用手机 App 扫描": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan with the phone app"
+          }
+        }
+      }
+    },
+    "打开 InterviewHacker 手机 App，选择“扫描二维码”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the InterviewHacker phone app and choose “Scan QR code.”"
+          }
+        }
+      }
+    },
+    "复制 App 配对链接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy app pairing link"
+          }
+        }
+      }
+    },
+    "互联网备用入口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Internet fallback"
+          }
+        }
+      }
+    },
+    "用手机相机扫描。此入口使用加密中转；可在手机收藏，供重新打开时使用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan with your phone camera. This option uses an encrypted relay; bookmark it on your phone to reconnect later."
+          }
+        }
+      }
+    },
+    "复制备用入口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy fallback link"
+          }
+        }
+      }
+    },
+    "返回局域网二维码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to local network QR code"
+          }
+        }
+      }
+    },
+    "用手机相机扫描": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan with your phone camera"
+          }
+        }
+      }
+    },
+    "手机与 Mac 连接同一可信网络，在浏览器中打开，无需安装 App。局域网使用明文 HTTP。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your phone and Mac to the same trusted network, then open this link in a browser. No app is needed. Local network traffic uses unencrypted HTTP."
+          }
+        }
+      }
+    },
+    "复制网页链接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy webpage link"
+          }
+        }
+      }
+    },
+    "显示互联网备用二维码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show internet fallback QR code"
+          }
+        }
+      }
+    },
+    "蓝牙备用（仅 App）：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth fallback (app only):"
+          }
+        }
+      }
+    },
+    "加密中转：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted relay:"
+          }
+        }
+      }
+    },
+    "备用连接已开启。已配对的手机需要用新的二维码重新配对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fallback connection is enabled. Paired phones must scan the new QR code to pair again."
+          }
+        }
+      }
+    },
+    "备用连接与高级选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fallback connection and advanced options"
+          }
+        }
+      }
+    },
+    "手机端会显示问题、回答与来源标签，不同步完整转录、资料或截图。配对链接请勿转发；共享手机屏幕时，回答仍可能被看见。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The phone shows questions, answers, and source labels; it does not sync full transcripts, materials, or screenshots. Do not share pairing links. Answers may still be visible when you share your phone screen."
+          }
+        }
+      }
+    },
+    "的配对二维码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " pairing QR code"
+          }
+        }
+      }
+    },
+    "启用原生手机 App 的蓝牙备用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Bluetooth fallback for the native phone app"
+          }
+        }
+      }
+    },
+    "HTTPS 中转服务根地址": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTPS relay service root URL"
+          }
+        }
+      }
+    },
+    "启用互联网加密备用连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable encrypted internet fallback"
+          }
+        }
+      }
+    },
+    "首选端口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferred port"
+          }
+        }
+      }
+    },
+    "重新生成链接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate link"
+          }
+        }
+      }
+    },
+    "重新生成链接后，手机需要重新配对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phones must pair again after you regenerate the link."
+          }
+        }
+      }
+    },
+    "允许录屏与系统音频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow screen recording and system audio"
+          }
+        }
+      }
+    },
+    "选择会议窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a meeting window"
+          }
+        }
+      }
+    },
+    "允许麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow microphone"
+          }
+        }
+      }
+    },
+    "本机识别 · 会议音频不上传": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device recognition · meeting audio is not uploaded"
+          }
+        }
+      }
+    },
+    "系统语音识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System speech recognition"
+          }
+        }
+      }
+    },
+    "云端语音识别 · 会议音频会上传": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud speech recognition · meeting audio is uploaded"
+          }
+        }
+      }
+    },
+    "需要更换引擎或调整参数时，打开右上角的高级设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To change the engine or adjust its parameters, turn on Advanced settings in the upper right."
+          }
+        }
+      }
+    },
+    "Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple speech recognition requires choosing Chinese or English explicitly. It may download language resources the first time."
+          }
+        }
+      }
+    },
+    "最近处理 %.2f s · RTF %.2f": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last processing %.2f s · RTF %.2f"
+          }
+        }
+      }
+    },
+    " · 精修 %.2f s": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · refinement %.2f s"
+          }
+        }
+      }
+    },
+    "删除全部本地识别模型？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all local speech models?"
+          }
+        }
+      }
+    },
+    "上次开始用时 %.1f 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last startup took %.1f seconds"
+          }
+        }
+      }
+    },
+    "需要下载识别模型（约 %lld MB，只需一次）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech model download required (about %lld MB, once only)"
+          }
+        }
+      }
+    },
+    "需要下载识别模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech model download required"
+          }
+        }
+      }
+    },
+    "识别语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognition language"
+          }
+        }
+      }
+    },
+    "自动 / 中英混说": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic / mixed Chinese and English"
+          }
+        }
+      }
+    },
+    "中文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chinese"
+          }
+        }
+      }
+    },
+    "服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Service"
+          }
+        }
+      }
+    },
+    "模型（留空使用 %@）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model (leave blank to use %@)"
+          }
+        }
+      }
+    },
+    "%@ API Key（保存在系统钥匙串）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ API key (stored in the system keychain)"
+          }
+        }
+      }
+    },
+    "我了解：会议音频会实时上传到所选服务商并按其条款处理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I understand: meeting audio is sent to the selected provider in real time and handled under its terms."
+          }
+        }
+      }
+    },
+    "云端语音识别会把会议音频发送给所选服务。请先确认参与者同意录音和转写；Soniox 支持中英混说，Deepgram 需指定单一语言。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud speech recognition sends meeting audio to the selected provider. Confirm participants agree to recording and transcription. Soniox supports mixed Chinese and English; Deepgram requires one language."
+          }
+        }
+      }
+    },
+    "联网搜索选项可在高级设置中查看和调整。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search options are available in Advanced settings."
+          }
+        }
+      }
+    },
+    "重新检测 Codex 登录状态和可用模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh Codex sign-in status and available models"
+          }
+        }
+      }
+    },
+    "未检测到 Codex：安装 ChatGPT / Codex 桌面客户端，或在终端运行 `npm i -g @openai/codex`，然后 `codex login` 用 ChatGPT 账号登录，再点右侧刷新。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex was not found. Install the ChatGPT or Codex desktop app, or run `npm i -g @openai/codex` and then `codex login` in Terminal. Sign in with your ChatGPT account, then select Refresh."
+          }
+        }
+      }
+    },
+    "在终端运行 codex login，用 ChatGPT 账号完成登录，再点右侧刷新。已有桌面登录仍显示未连接时，也可用这条命令连接本机 CLI。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Run `codex login` in Terminal and sign in with your ChatGPT account, then select Refresh. If the desktop app is already signed in but still appears disconnected, this also connects the local CLI."
+          }
+        }
+      }
+    },
+    "请选择模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a model"
+          }
+        }
+      }
+    },
+    "模型 ID（与 Codex 中一致）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model ID (same as in Codex)"
+          }
+        }
+      }
+    },
+    "当前模型默认使用 Fast；关闭后速度较慢、用量较少。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast is enabled by default for this model. Turning it off is slower and uses less allowance."
+          }
+        }
+      }
+    },
+    "当前模型或 Codex 版本不支持 Fast。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This model or Codex version does not support Fast."
+          }
+        }
+      }
+    },
+    "需要安装 Codex 并用 ChatGPT 账号登录（见上方回答引擎）。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Codex and sign in with your ChatGPT account (see Answer engine above)."
+          }
+        }
+      }
+    },
+    "联网搜索会把问题发送给 Codex；搜索结果会按当前场景整理成回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search sends the question to Codex. Search results are tailored to the current scenario and used to form an answer."
+          }
+        }
+      }
+    },
+    "Tavily API Key（保存在系统钥匙串）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tavily API key (stored in the system keychain)"
+          }
+        }
+      }
+    },
+    "获取 Key": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get a key"
+          }
+        }
+      }
+    },
+    "问题文本会发送给 Tavily；它返回的网页摘要由当前回答引擎整理，并在回答中标注来源。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The question text is sent to Tavily. Its web summaries are organized by the current answer engine and cited in the answer."
+          }
+        }
+      }
+    },
+    "预设": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        }
+      }
+    },
+    "新建预设": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New preset"
+          }
+        }
+      }
+    },
+    "选择预设": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a preset"
+          }
+        }
+      }
+    },
+    "重命名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename"
+          }
+        }
+      }
+    },
+    "重命名预设": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rename preset"
+          }
+        }
+      }
+    },
+    "名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "删除预设“%@”？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete preset “%@”?"
+          }
+        }
+      }
+    },
+    "会同时删除保存在钥匙串里的这个 API Key。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This also deletes the API key stored in the keychain."
+          }
+        }
+      }
+    },
+    "API 地址，例如 https://api.openai.com/v1": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API URL, for example https://api.openai.com/v1"
+          }
+        }
+      }
+    },
+    "API Key（保存在系统钥匙串）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API key (stored in the system keychain)"
+          }
+        }
+      }
+    },
+    "转录片段、检索到的资料和截图会发送给这个服务。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript excerpts, retrieved materials, and screenshots are sent to this service."
+          }
+        }
+      }
+    },
+    "模型 ID（与服务商一致）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model ID (as specified by the provider)"
+          }
+        }
+      }
+    },
+    "选择": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose"
+          }
+        }
+      }
+    },
+    "获取模型列表": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fetch model list"
+          }
+        }
+      }
+    },
+    "思考强度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reasoning effort"
+          }
+        }
+      }
+    },
+    "正在请求…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requesting…"
+          }
+        }
+      }
+    },
+    "可以使用 · %.1f 秒 · “%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available · %.1f sec · “%@”"
+          }
+        }
+      }
+    },
+    "删除技能“%@”？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete skill “%@”?"
+          }
+        }
+      }
+    },
+    "%lld 字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld characters"
+          }
+        }
+      }
+    },
+    "还没有场景使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not used by any series"
+          }
+        }
+      }
+    },
+    "%lld 个场景在用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used by %lld series"
+          }
+        }
+      }
+    },
+    "启用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable"
+          }
+        }
+      }
+    },
+    "编辑技能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit skill"
+          }
+        }
+      }
+    },
+    "一句话说明（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One-line description (optional)"
+          }
+        }
+      }
+    },
+    "所有系列都使用这个技能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use this skill in every series"
+          }
+        }
+      }
+    },
+    "%lld 字 · 单个技能最多使用约 6000 字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld characters · each skill can use up to about 6,000 characters"
+          }
+        }
+      }
+    },
+    "显示提词器并移动到%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the teleprompter and move it to %@"
+          }
+        }
+      }
+    },
+    "系统无法保证窗口不被录屏。共享会议窗口或标签页更稳妥；%@ 可隐藏全部窗口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The window may still appear in recordings. Sharing only the meeting window or tab is more reliable; %@ hides all app windows."
+          }
+        }
+      }
+    },
+    "自动复盘已开启，会使用当前对话服务与额度。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic review is on and uses the current answer service and its allowance."
+          }
+        }
+      }
+    },
+    "自动复盘未开启，可在高级设置调整。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic review is off. Change it in Advanced settings."
+          }
+        }
+      }
+    },
+    "导出不包含密钥。导入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export does not include keys. Import"
+          }
+        }
+      }
+    },
+    "会一并恢复备份中的设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings from the backup will also be restored."
+          }
+        }
+      }
+    },
+    "保留当前设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the current settings."
+          }
+        }
+      }
+    },
+    "导出文件里的密钥是明文，请妥善保管，不要发给别人。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keys in the export file are unencrypted. Store the file securely and do not share it."
+          }
+        }
+      }
+    },
+    "会议结束后自动备份；更新和导入前保留恢复点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back up after meetings and keep restore points before updates and imports."
+          }
+        }
+      }
+    },
+    "会议自动备份未开启，可在高级设置调整。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic meeting backups are off. Change this in Advanced settings."
+          }
+        }
+      }
+    },
+    "最近备份：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latest backup:"
+          }
+        }
+      }
+    },
+    "还没有自动备份。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No automatic backups yet."
+          }
+        }
+      }
+    },
+    "数据保存在 %@。恢复点最多保留最近 10 份、软预算 2 GiB，不含模型、索引或密钥。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data is stored at %@. Keeps up to 10 recent restore points with a soft 2 GiB limit; models, indexes, and keys are excluded."
+          }
+        }
+      }
+    },
+    "从这份备份恢复？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore from this backup?"
+          }
+        }
+      }
+    },
+    "合并恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge and restore"
+          }
+        }
+      }
+    },
+    "把备份里的场景和会话记录合并回来；现有数据不会被删除，较新的修改会保留。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge the series and sessions from this backup. Existing data will not be deleted, and newer changes are kept."
+          }
+        }
+      }
+    },
+    "旧每日备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Older daily backup"
+          }
+        }
+      }
+    },
+    "会议结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting ended"
+          }
+        }
+      }
+    },
+    "更新前": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before update"
+          }
+        }
+      }
+    },
+    "导入前": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before import"
+          }
+        }
+      }
+    },
+    "权限与签名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions and signing"
+          }
+        }
+      }
+    },
+    "录屏与系统音频…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen recording and system audio…"
+          }
+        }
+      }
+    },
+    "麦克风…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone…"
+          }
+        }
+      }
+    },
+    "固定签名 · InterviewHacker Local Signing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bound identity · InterviewHacker Local Signing"
+          }
+        }
+      }
+    },
+    "性能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Performance"
+          }
+        }
+      }
+    },
+    "减少视觉特效（更流畅，适合轻薄本 / 省电）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduce visual effects (smoother; suitable for lightweight laptops or battery saving)"
+          }
+        }
+      }
+    },
+    "关闭液态玻璃的实时折射，改用平面半透明效果。系统“降低透明度”开启时会自动使用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off live Liquid Glass refraction and use a flat translucent effect. This is also used automatically when macOS Reduce Transparency is on."
+          }
+        }
+      }
+    },
+    "当前版本 %@（#%lld）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ (#%lld)"
+          }
+        }
+      }
+    },
+    "重启并安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart and install"
+          }
+        }
+      }
+    },
+    "检查更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for updates"
+          }
+        }
+      }
+    },
+    "正在辅助中：停止后再安装，避免打断会议。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The assistant is active. Stop it before installing to avoid interrupting a meeting."
+          }
+        }
+      }
+    },
+    "更新前会自动备份，并校验安装包。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A backup is created before updates, and the installer is verified."
+          }
+        }
+      }
+    },
+    "上次检查 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last checked %@"
+          }
+        }
+      }
+    },
+    "尚未检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not checked yet"
+          }
+        }
+      }
+    },
+    "正在检查…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "已是最新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up to date"
+          }
+        }
+      }
+    },
+    "已是最新 · %@ 检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up to date · checked %@"
+          }
+        }
+      }
+    },
+    "发现新版本 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ is available"
+          }
+        }
+      }
+    },
+    "正在下载 %@ · %lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading %@ · %lld%%"
+          }
+        }
+      }
+    },
+    "%@ 已下载并校验，可以安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ downloaded and verified. Ready to install."
+          }
+        }
+      }
+    },
+    "正在安装并重新打开…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing and reopening…"
+          }
+        }
+      }
+    },
+    "已保存访问令牌": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access token saved"
+          }
+        }
+      }
+    },
+    "未保存访问令牌": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No access token saved"
+          }
+        }
+      }
+    },
+    "清除": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "1. Resource owner must be the organization that owns the repository, %@ (not a personal account).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Resource owner: select the organization that owns the repository, %@ (not a personal account)."
+          }
+        }
+      }
+    },
+    "2. Repository access: choose Only select repositories → %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. Repository access: choose Only select repositories → %@."
+          }
+        }
+      }
+    },
+    "3. Permissions → Contents 选 Read-only，其余不动；生成后复制 github_pat_ 开头的整串粘贴到上面": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Permissions → Contents: choose Read-only and leave the rest unchanged. Copy the full github_pat_ token and paste it above."
+          }
+        }
+      }
+    },
+    "本机识别模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-device recognition models"
+          }
+        }
+      }
+    },
+    " · 已安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Installed"
+          }
+        }
+      }
+    },
+    " · 未安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Not installed"
+          }
+        }
+      }
+    },
+    "先用系统识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use system recognition first"
+          }
+        }
+      }
+    },
+    "准备进度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparation progress"
+          }
+        }
+      }
+    },
+    "取消准备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel preparation"
+          }
+        }
+      }
+    },
+    "正在使用 · 无需下载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In use · no download required"
+          }
+        }
+      }
+    },
+    "始终可用，增强失败时也会使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always available; used if enhanced recognition fails"
+          }
+        }
+      }
+    },
+    "使用关键词查找": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use keyword search"
+          }
+        }
+      }
+    },
+    "正在准备索引…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing index…"
+          }
+        }
+      }
+    },
+    "组件已启用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Component enabled"
+          }
+        }
+      }
+    },
+    "启用语义增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable semantic enhancement"
+          }
+        }
+      }
+    },
+    "已安装支持组件 · 可导入 Office 文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support component installed · Office files can be imported"
+          }
+        }
+      }
+    },
+    "需要共用文档组件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared document component required"
+          }
+        }
+      }
+    },
+    "会前会在后台提取正文、嵌图、备注和图表。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before a meeting, extracts text, embedded images, notes, and charts in the background."
+          }
+        }
+      }
+    },
+    "安装旧版 PPT 支持（LibreOffice）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install legacy PowerPoint support (LibreOffice)"
+          }
+        }
+      }
+    },
+    "旧版 PPT 本地转换组件已就绪。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legacy PowerPoint conversion is ready."
+          }
+        }
+      }
+    },
+    "安装支持": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install support"
+          }
+        }
+      }
+    },
+    "下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actual installation status is shown below. “Installed” means the files were verified; use the selector above to choose whether recognition is enabled."
+          }
+        }
+      }
+    },
+    "共用文档组件 · 已安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared document component · installed"
+          }
+        }
+      }
+    },
+    "共用文档组件 · 未安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared document component · not installed"
+          }
+        }
+      }
+    },
+    "校验／修复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify / repair"
+          }
+        }
+      }
+    },
+    "安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install"
+          }
+        }
+      }
+    },
+    "取消下载组件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel component download"
+          }
+        }
+      }
+    },
+    "本机识别失败时用系统识别补读，并标明降级内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If on-device recognition fails, use system recognition as a fallback and label the downgraded content."
+          }
+        }
+      }
+    },
+    "关闭本机补读后，识别失败会让该文件导入失败；不会自动切到在线 Codex。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With the system fallback off, recognition failures cause the file import to fail. It will not switch to online Codex automatically."
+          }
+        }
+      }
+    },
+    "Codex 模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex model"
+          }
+        }
+      }
+    },
+    "每个文件超时（秒）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timeout per file (seconds)"
+          }
+        }
+      }
+    },
+    "重建语义索引": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rebuild semantic index"
+          }
+        }
+      }
+    },
+    "当前使用：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Currently using: %@"
+          }
+        }
+      }
+    },
+    "已选择 %@，但尚未就绪；请先准备，或改用系统识别。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ is selected but not ready. Prepare it first or use system recognition."
+          }
+        }
+      }
+    },
+    " · 尚未启用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Not enabled"
+          }
+        }
+      }
+    },
+    "尚未就绪，当前仍使用关键词查找": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not ready; keyword search is still in use"
+          }
+        }
+      }
+    },
+    "正在更新索引；未就绪部分使用关键词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating index; keyword search is used for items not ready yet"
+          }
+        }
+      }
+    },
+    "等待添加资料或建立索引；当前使用关键词": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for materials or index creation; keyword search is in use"
+          }
+        }
+      }
+    },
+    "已生效 · 按关键词与含义查找相关片段": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready · finds relevant excerpts by keyword and meaning"
+          }
+        }
+      }
+    },
+    "正在检查本机…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking this Mac…"
+          }
+        }
+      }
+    },
+    "本应用已安装 · 可使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App installed · available"
+          }
+        }
+      }
+    },
+    "正在检查 Codex 登录…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking Codex sign-in…"
+          }
+        }
+      }
+    },
+    "尚未接入 · 可扫描或下载，最多 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected · scan or download up to %@"
+          }
+        }
+      }
+    },
+    "使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use"
+          }
+        }
+      }
+    },
+    "连接 Codex": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Codex"
+          }
+        }
+      }
+    },
+    "读取资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read materials"
+          }
+        }
+      }
+    },
+    "系统识别：Mac 自带、离线、无需下载；复杂表格和公式可能丢失结构。\n本机增强：另下约 1.42 GB（含共用组件），适合复杂版面；占存储与内存，仍可能识别错。\nCodex 代读：免 OCR 权重，另需约 186 MB 共用组件；联网、使用账号额度，耗时受网络影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System recognition: built into macOS, offline, and no download required; complex tables and formulas may lose structure.\nOn-device enhancement: downloads about 1.42 GB including the shared component; handles complex layouts but uses storage and memory and may still make mistakes.\nCodex reading: no OCR model download, but needs about 186 MB of shared components; uses the network and account allowance, and speed depends on the connection."
+          }
+        }
+      }
+    },
+    "查找资料（向量检索可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find materials (optional vector search)"
+          }
+        }
+      }
+    },
+    "不启用：按关键词查找，无需下载或建索引，准备快；同义问法可能漏检。\n启用：模型加共用组件最多约 835 MB，先在本机建索引，额外占内存；能补充按含义查找，但仍可能漏检。\n两者都只把相关片段带入回答，并非“关闭向量就发送全文”。全量发送资料会增加等待与用量，也可能超过上下文上限。共用组件只需安装一次。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off: finds materials by keyword with no download or indexing, so setup is quick; equivalent phrasing may be missed.\nOn: the model and shared components use up to about 835 MB. An index is built on this Mac and uses extra memory. Meaning-based search can help but may still miss results.\nBoth options include only relevant excerpts in answers; turning off vector search does not send full documents. Sending all materials would increase wait time and usage and may exceed context limits. Shared components are installed only once."
+          }
+        }
+      }
+    },
+    "检查中…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        }
+      }
+    },
+    "已安装 · 文件已校验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed · files verified"
+          }
+        }
+      }
+    },
+    "尚未接入 · 可扫描或下载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected · can scan or download"
+          }
+        }
+      }
+    },
+    "模型来源与版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model source and version"
+          }
+        }
+      }
+    },
+    "读取来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read source"
+          }
+        }
+      }
+    },
+    "主显示器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Main display"
+          }
+        }
+      }
+    },
+    "刷新来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh sources"
+          }
+        }
+      }
+    },
+    "立即识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognize now"
+          }
+        }
+      }
+    },
+    "读取完整来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read full source"
+          }
+        }
+      }
+    },
+    "间隔": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interval"
+          }
+        }
+      }
+    },
+    "1 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 second"
+          }
+        }
+      }
+    },
+    "2 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 seconds"
+          }
+        }
+      }
+    },
+    "4 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 seconds"
+          }
+        }
+      }
+    },
+    "8 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8 seconds"
+          }
+        }
+      }
+    },
+    "15 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "15 seconds"
+          }
+        }
+      }
+    },
+    "跟随演示文稿：认出正在讲第几页，给出这一页的讲稿提示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow the presentation: detect the current slide and show its speaker notes"
+          }
+        }
+      }
+    },
+    "当前 API 模型支持图像输入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The current API model supports image input"
+          }
+        }
+      }
+    },
+    "%@，%lld 份资料，%lld 道题，%lld 场会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %lld materials, %lld questions, %lld meetings"
+          }
+        }
+      }
+    },
+    "1. Resource owner: select the organization %@ that owns the repository (not a personal account).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Resource owner: select the organization %@ that owns the repository (not a personal account)."
+          }
+        }
+      }
+    },
+    "隐藏侧栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide"
+          }
+        }
+      }
+    },
+    "显示侧栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show"
+          }
+        }
+      }
+    },
+    "简历": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Résumé"
+          }
+        }
+      }
+    },
+    "岗位 JD": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Job description"
+          }
+        }
+      }
+    },
+    "公司信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Company information"
+          }
+        }
+      }
+    },
+    "HR / 面试官": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HR / interviewer"
+          }
+        }
+      }
+    },
+    "八股 / 面经": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interview Q&A"
+          }
+        }
+      }
+    },
+    "项目资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Project materials"
+          }
+        }
+      }
+    },
+    "论文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paper"
+          }
+        }
+      }
+    },
+    "PPT / 幻灯片": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slides"
+          }
+        }
+      }
+    },
+    "讲稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presentation script"
+          }
+        }
+      }
+    },
+    "补充材料 / 附录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supplementary materials / appendix"
+          }
+        }
+      }
+    },
+    "相关工作": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Related work"
+          }
+        }
+      }
+    },
+    "审稿意见": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reviewer feedback"
+          }
+        }
+      }
+    },
+    "公司 / 产品资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Company / product materials"
+          }
+        }
+      }
+    },
+    "对方信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other party information"
+          }
+        }
+      }
+    },
+    "报价 / 合同": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quotes / contracts"
+          }
+        }
+      }
+    },
+    "会议纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting notes"
+          }
+        }
+      }
+    },
+    "笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "作业 / 题目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assignments / questions"
+          }
+        }
+      }
+    },
+    "教材": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textbook"
+          }
+        }
+      }
+    },
+    "进展 / 讲稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress / presentation script"
+          }
+        }
+      }
+    },
+    "实验数据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Experimental data"
+          }
+        }
+      }
+    },
+    "产品资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Product materials"
+          }
+        }
+      }
+    },
+    "客户信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Client information"
+          }
+        }
+      }
+    },
+    "题目材料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question materials"
+          }
+        }
+      }
+    },
+    "参考资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reference materials"
+          }
+        }
+      }
+    },
+    "隐藏当前栏目侧栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide the current section sidebar"
+          }
+        }
+      }
+    },
+    "显示当前栏目侧栏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the current section sidebar"
+          }
+        }
+      }
+    },
+    "正在检查录屏与系统音频权限…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking screen recording and system audio permissions…"
+          }
+        }
+      }
+    },
+    "请允许当前 InterviewHacker 访问录屏与系统音频。绑定本机签名后，以后更新不必重新授权。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow InterviewHacker to access screen recording and system audio. Bind local signing to keep this permission through future updates."
+          }
+        }
+      }
+    },
+    "已允许 · 已读取 %lld 个捕获目标": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed · %lld capture targets detected"
+          }
+        }
+      }
+    },
+    "系统仍拒绝当前进程。请从固定安装路径重启应用后刷新。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS still denies access to this process. Restart the app from its bound installation path, then refresh."
+          }
+        }
+      }
+    },
+    "临时签名（ad-hoc）· 每个版本签名不同，更新后系统会要求重新授权": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temporary ad-hoc signature · each build has a different identity and macOS will request permission again after updates"
+          }
+        }
+      }
+    },
+    "固定签名 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bound signature · %@"
+          }
+        }
+      }
+    },
+    "自签名证书": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "self-signed certificate"
+          }
+        }
+      }
+    },
+    "窗口截图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture window"
+          }
+        }
+      }
+    },
+    "区域截图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture area"
+          }
+        }
+      }
+    },
+    "开始 / 停止辅助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start / stop assistant"
+          }
+        }
+      }
+    },
+    "重新生成上一题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate previous answer"
+          }
+        }
+      }
+    },
+    "立即回答最新转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer the latest transcript now"
+          }
+        }
+      }
+    },
+    "暂停 / 恢复聆听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause / resume listening"
+          }
+        }
+      }
+    },
+    "显示 / 隐藏提词器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show / hide teleprompter"
+          }
+        }
+      }
+    },
+    "取消当前回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel current answer"
+          }
+        }
+      }
+    },
+    "复制当前回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy current answer"
+          }
+        }
+      }
+    },
+    "提词器鼠标穿透": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle teleprompter click-through"
+          }
+        }
+      }
+    },
+    "立即隐藏所有窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide all windows now"
+          }
+        }
+      }
+    },
+    "上一条回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous answer"
+          }
+        }
+      }
+    },
+    "下一条回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next answer"
+          }
+        }
+      }
+    },
+    "把回答改短": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shorten answer"
+          }
+        }
+      }
+    },
+    "设置快捷键：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set shortcut: %@"
+          }
+        }
+      }
+    },
+    "区域截图失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Area capture failed: %@"
+          }
+        }
+      }
+    },
+    "没有找到可截图的窗口。请确认系统已允许 InterviewHacker 录屏，并先打开要分析的页面。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No window is available to capture. Confirm macOS allows screen recording for InterviewHacker, then open the page you want to analyze."
+          }
+        }
+      }
+    },
+    "整个屏幕 · %lld×%lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entire screen · %lld×%lld"
+          }
+        }
+      }
+    },
+    "未开启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "建议添加简历、JD 等": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consider adding a résumé or job description"
+          }
+        }
+      }
+    },
+    "全局快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Global shortcuts"
+          }
+        }
+      }
+    },
+    "恢复默认快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset shortcuts"
+          }
+        }
+      }
+    },
+    "2026 年 6 月发布，约 100 万小时训练，自带标点与大小写，中英混说准确率明显高于旧版。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Released in June 2026 and trained on about one million hours of audio; it adds punctuation and casing, with much better mixed Chinese-English accuracy than the previous model."
+          }
+        }
+      }
+    },
+    "Codex 联网搜索（ChatGPT 账号）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Codex web search (ChatGPT account)"
+          }
+        }
+      }
+    },
+    "Tavily 搜索 API（任意回答引擎）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tavily Search API (any answer engine)"
+          }
+        }
+      }
+    },
+    "已选择%@，但尚未就绪；请先准备，或改用系统识别。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected %@, but it is not ready. Prepare it first or switch to System recognition."
+          }
+        }
+      }
+    },
+    "按版面区域识别中英正文、表格与公式。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recognizes Chinese and English text, tables, and formulas by page region."
+          }
+        }
+      }
+    },
+    "较小体积的本机 OCR；识别结果需核对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smaller on-device OCR model; verify its results."
+          }
+        }
+      }
+    },
+    "中英语义检索，1024 维向量。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chinese-English semantic search with 1,024-dimensional embeddings."
+          }
+        }
+      }
+    },
+    "识别文字、表格、公式区域和阅读顺序。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detects text, table, and formula regions and reading order."
+          }
+        }
+      }
+    },
+    "PP-DocLayoutV3 版面分析": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PP-DocLayoutV3 layout analysis"
+          }
+        }
+      }
+    },
+    "已安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installed"
+          }
+        }
+      }
+    },
+    "未安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not installed"
+          }
+        }
+      }
+    },
+    "下载 %@ · 安装占用 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download %@ · installed size %@"
+          }
+        }
+      }
+    },
+    "运行包大小见发布清单": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See the release manifest for package size"
+          }
+        }
+      }
+    },
+    "新手引导": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Onboarding"
+          }
+        }
+      }
+    },
+    "开启新手引导": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable onboarding"
+          }
+        }
+      }
+    },
+    "开启后可以进入或继续新手引导；关闭会暂停引导并保留进度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on to start or resume the guide. Turn off to pause and keep your progress."
+          }
+        }
+      }
+    },
+    "尚未填写，点击编辑以添加": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not filled in. Select Edit to add content."
+          }
+        }
+      }
+    },
+    "尚未填写经验，点击编辑以添加。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No experience note yet. Select Edit to add one."
+          }
+        }
+      }
+    },
+    "编辑系列名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit series name"
+          }
+        }
+      }
+    },
+    "修改当前系列的名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the current series name"
+          }
+        }
+      }
+    },
+    "编辑此内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit this content"
+          }
+        }
+      }
+    },
+    "完成编辑": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish editing"
+          }
+        }
+      }
+    },
+    "完成编辑回答要求": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish editing answer requirements"
+          }
+        }
+      }
+    },
+    "完成编辑这条经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish editing this note"
+          }
+        }
+      }
+    },
+    "编辑这条经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit this note"
+          }
+        }
+      }
+    },
+    "完成编辑题目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish editing question"
+          }
+        }
+      }
+    },
+    "编辑题目和回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit question and answer"
+          }
+        }
+      }
+    },
+    "系列名称：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series name: %@"
+          }
+        }
+      }
+    },
+    "选择经验编辑：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select lesson to edit: %@"
+          }
+        }
+      }
+    },
+    "选择题目编辑：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select question to edit: %@"
+          }
+        }
+      }
+    },
+    "系列及其会议记录将被永久删除，无法恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This series and its meeting records will be permanently deleted and cannot be recovered."
+          }
+        }
+      }
+    },
+    "该系列有纪要正在生成，请完成后再删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A meeting summary is being generated for this series. Delete it after the summary finishes."
+          }
+        }
+      }
+    },
+    "该系列仍有资料任务在处理，请完成或取消任务后再删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This series still has document tasks in progress. Complete or cancel them before deleting."
+          }
+        }
+      }
+    },
+    "资料任务队列正在加载，请稍后删除系列。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The document task queue is still loading. Try deleting the series again shortly."
+          }
+        }
+      }
+    },
+    "系列不存在。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The series no longer exists."
+          }
+        }
+      }
+    },
+    "演示资料不可删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo data cannot be deleted."
+          }
+        }
+      }
+    },
+    "正在记录的会议不能删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A meeting in progress cannot be deleted."
+          }
+        }
+      }
+    },
+    "删除失败：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion failed: "
+          }
+        }
+      }
+    },
+    "未分类会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unassigned meetings"
+          }
+        }
+      }
+    },
+    "未归入系列的会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meetings not assigned to a series"
+          }
+        }
+      }
+    },
+    "还没有系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No series yet"
+          }
+        }
+      }
+    },
+    "新建系列后，资料、回答要求和会议记录会归入该系列。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a series to keep its materials, answer requirements, and meetings together."
+          }
+        }
+      }
+    },
+    "会议记录、资料整理与知识问答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting records, materials, and knowledge Q&A"
+          }
+        }
+      }
+    },
+    "产品介绍": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Product overview"
+          }
+        }
+      }
+    },
+    "准备语音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up audio"
+          }
+        }
+      }
+    },
+    "连接回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an answer service"
+          }
+        }
+      }
+    },
+    "资料可选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional materials"
+          }
+        }
+      }
+    },
+    "开始记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start recording"
+          }
+        }
+      }
+    },
+    "InterviewHacker 是一款原生 macOS 应用，可实时转写会议、整理系列资料、识别问题并生成参考回答，也能在会后整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "InterviewHacker is a native macOS app for transcribing meetings, organizing series materials, recognizing questions, generating reference answers, and preparing meeting notes."
+          }
+        }
+      }
+    },
+    "记录会议声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record meeting audio"
+          }
+        }
+      }
+    },
+    "选择会议窗口或麦克风，实时转写参与者的发言。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a meeting window or microphone to transcribe participants in real time."
+          }
+        }
+      }
+    },
+    "检索资料与识别问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search materials and recognize questions"
+          }
+        }
+      }
+    },
+    "结合系列资料理解上下文，识别提问和讨论重点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use series materials for context and identify questions and discussion points."
+          }
+        }
+      }
+    },
+    "按需生成回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate answers when needed"
+          }
+        }
+      }
+    },
+    "自动回答开启时，识别到问题后会生成参考回答；只记录模式下可手动提问。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With auto-answer enabled, a reference answer is generated when a question is recognized. In Record only mode, you can ask manually."
+          }
+        }
+      }
+    },
+    "整理会议知识": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organize meeting knowledge"
+          }
+        }
+      }
+    },
+    "按系列管理资料与经验，会后回看转写并生成结构化纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organize materials and lessons by series, then review the transcript and create structured notes after the meeting."
+          }
+        }
+      }
+    },
+    "连接回答服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an answer service"
+          }
+        }
+      }
+    },
+    "可使用已登录的 Codex，或填写兼容 API 服务。生成会中参考回答、资料问答和会后纪要时会使用所选服务的网络与额度。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use your signed-in Codex account or configure a compatible API service. The selected service and its usage limits apply to live reference answers, material Q&A, and meeting notes."
+          }
+        }
+      }
+    },
+    "尚未连接，生成参考回答和纪要前需要完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected. Connect a service to generate reference answers and meeting notes."
+          }
+        }
+      }
+    },
+    "语音和回答服务准备好后，可按需增强资料检索。系统识别和关键词查找无需额外下载；其他资料功能也可稍后启用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After audio and answer services are ready, you can add richer material search. System recognition and keyword search need no extra downloads; other material features can be enabled later."
+          }
+        }
+      }
+    },
+    "设置会议声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up meeting audio"
+          }
+        }
+      }
+    },
+    "实时语音是核心功能。需要音频权限和一个可用的识别引擎；推荐本机识别，会议音频留在这台 Mac。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Real-time transcription is a core feature. It needs audio access and an available recognition engine. On-device recognition keeps meeting audio on this Mac."
+          }
+        }
+      }
+    },
+    "打开会议软件并选择其窗口，或选择麦克风。开始后会实时转写对话；自动回答开启时，识别到问题后会生成参考回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select the meeting window or a microphone. InterviewHacker transcribes the conversation in real time and generates reference answers for recognized questions when auto-answer is enabled."
+          }
+        }
+      }
+    },
+    "开始一场会议：选择声音来源并开始记录。开启自动回答后，系统会在识别到问题时生成参考回答；只记录模式仍可输入问题或按快捷键手动请求。回答可在主窗口或回答浮窗查看，会后可回看转写并整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To record a meeting, select an audio source and start recording. With auto-answer enabled, recognized questions receive reference answers. In Record only mode, enter a question or use the shortcut to request an answer. View answers in the main window or answer window, then review the transcript and notes afterward."
+          }
+        }
+      }
+    },
+    "回答浮窗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer window"
+          }
+        }
+      }
+    },
+    "回答与浮窗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers & floating window"
+          }
+        }
+      }
+    },
+    "回答服务与会中回答浮窗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service and live answer window"
+          }
+        }
+      }
+    },
+    "会中回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live answers"
+          }
+        }
+      }
+    },
+    "InterviewHacker 回答浮窗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "InterviewHacker Answer Window"
+          }
+        }
+      }
+    },
+    "回答浮窗 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer window · %@"
+          }
+        }
+      }
+    },
+    "隐藏回答浮窗 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide answer window · %@"
+          }
+        }
+      }
+    },
+    "显示回答浮窗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show answer window"
+          }
+        }
+      }
+    },
+    "显示回答浮窗并移动到%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the answer window and move it to %@"
+          }
+        }
+      }
+    },
+    "仅显示回答浮窗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show only the answer window"
+          }
+        }
+      }
+    },
+    "回答浮窗鼠标穿透": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toggle answer window click-through"
+          }
+        }
+      }
+    },
+    "鼠标穿透（点击穿过回答浮窗）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click through the answer window"
+          }
+        }
+      }
+    },
+    "屏幕顶部居中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top center of screen"
+          }
+        }
+      }
+    },
+    "在会议顶栏选择“自动回答”或“只记录”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Auto-answer or Record only in the meeting toolbar."
+          }
+        }
+      }
+    },
+    "开始 / 停止记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start / stop recording"
+          }
+        }
+      }
+    },
+    "自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 %@ 手动请求。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-answer generates a reference answer when a question is recognized. Record only does not answer automatically; enter a question or press %@ to request one."
+          }
+        }
+      }
+    },
+    "回答会显示在这里。你也可以按 %@ 手动请求回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers appear here. You can also press %@ to request one manually."
+          }
+        }
+      }
+    },
+    "下面是 ScreenCaptureKit 截取的整个屏幕，与 Zoom、Teams、Meet 等共享整屏时可能捕获的范围相近。如果能看到回答浮窗，整屏共享时其他参与者也可能看到；实际范围取决于会议软件和共享方式。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is a full-screen capture through ScreenCaptureKit, similar to what Zoom, Teams, Meet, and other apps may capture when you share your screen. If the answer window is visible here, other participants may also see it during full-screen sharing. The exact capture area depends on the meeting app and sharing method."
+          }
+        }
+      }
+    },
+    "建议添加议程或背景资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consider adding an agenda or background materials"
+          }
+        }
+      }
+    },
+    "开始记录后，参与者的发言会实时出现在这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Participants will appear here in real time after recording starts."
+          }
+        }
+      }
+    },
+    "请先连接回答服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an answer service first."
+          }
+        }
+      }
+    },
+    "开始记录失败：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start recording: "
+          }
+        }
+      }
+    },
+    "恢复聆听失败：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not resume listening: "
+          }
+        }
+      }
+    },
+    "回答服务 · 回答模型 · 联网": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service · model · web search"
+          }
+        }
+      }
+    },
+    "回答服务（必需）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service (required)"
+          }
+        }
+      }
+    },
+    "回答服务已配置，可以测试或开始使用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service is ready to test or use"
+          }
+        }
+      }
+    },
+    "自动复盘已开启，会使用当前回答服务与额度。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic review is on and uses the selected answer service and its usage limits."
+          }
+        }
+      }
+    },
+    "正在记录会议：停止后再安装，避免打断会议。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A meeting is being recorded. Stop recording before installing to avoid interrupting it."
+          }
+        }
+      }
+    },
+    "回答服务已就绪，可测试回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service is ready. Test an answer."
+          }
+        }
+      }
+    },
+    "回到回答设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to answer settings"
+          }
+        }
+      }
+    },
+    "建议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggested"
+          }
+        }
+      }
+    },
+    "打开会议纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open meeting notes"
+          }
+        }
+      }
+    },
+    "打开会议纪要和转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open meeting notes and transcript"
+          }
+        }
+      }
+    },
+    "“自动回答”会在识别到问题后生成参考回答；“只记录”不会自动生成，但仍可手动提问。默认模式由会议类型决定（汇报和客户沟通默认自动回答）。明确的问题通常会很快开始回答；不确定的句子会显示为可点击的“可能的问题”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-answer generates a reference answer when a question is recognized. Record only does not answer automatically, but you can still ask manually. The default depends on meeting type (auto-answer is on by default for presentations and client meetings). Clear questions are usually answered quickly; uncertain sentences appear as clickable potential questions."
+          }
+        }
+      }
+    },
+    "联网搜索设置说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search settings information"
+          }
+        }
+      }
+    },
+    "会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting"
+          }
+        }
+      }
+    },
+    "会中自动生成参考回答 · 回答简短 · 会后整理纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generate concise reference answers during the meeting, then organize notes afterward."
+          }
+        }
+      }
+    },
+    "议程、项目资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenda and project materials"
+          }
+        }
+      }
     }
+,
+    "批量删除": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"Batch delete"}}}},
+    "已选 %lld 个系列": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"%lld series selected"}}}},
+    "全选当前结果": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"Select all results"}}}},
+    "删除所选": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"Delete selected"}}}},
+    "删除所选系列？": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"Delete selected series?"}}}},
+    "删除所选系列": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"Delete selected series"}}}},
+    "所选系列及其会议记录将被永久删除，无法恢复。": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"The selected series and their meeting records will be permanently deleted and cannot be recovered."}}}},
+    "选择系列": {"localizations":{"en":{"stringUnit":{"state":"translated","value":"Select series"}}}}
   },
   "version": "1.0"
 }

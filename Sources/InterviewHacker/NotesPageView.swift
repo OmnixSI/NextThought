@@ -75,7 +75,7 @@ struct MeetingPage: View {
 
     private func tabs(_ detail: SessionDetail) -> [(value: MeetingTab, title: LocalizedStringKey)] {
         var items: [(value: MeetingTab, title: LocalizedStringKey)] = [(.notes, isReview ? "复盘" : "纪要"), (.transcript, "转写")]
-        if !detail.answers.isEmpty { items.append((.answers, "会中提词")) }
+        if !detail.answers.isEmpty { items.append((.answers, "会中回答")) }
         return items
     }
 
@@ -155,7 +155,7 @@ struct MeetingPage: View {
                 Text("纪要操作")
                     .font(Typo.caption)
                     .foregroundStyle(Ink.secondary)
-                    .help("模板和复制只作用于纪要，不会更改转写或会中提词")
+                    .help("模板和复制只作用于纪要，不会更改转写或会中回答")
             }
             TemplateMenu(id: id, detail: detail, compactLabel: compactTemplate)
             MeetingMoreMenu(sessionID: id, onShowInfo: onShowInfo, onRename: onRename, onDelete: onDelete)
@@ -167,15 +167,22 @@ struct MeetingPage: View {
     private var seriesID: UUID? { meta?.workspaceID }
 
     private var seriesName: String? {
-        guard let seriesID else { return nil }
-        return state.workspaces.workspace(seriesID)?.name ?? meta?.workspaceName ?? "已删除系列"
+        guard let meta else { return nil }
+        if meta.workspaceDeleted == true { return String(localized: "未分类会议") }
+        if let seriesID {
+            return state.workspaces.workspace(seriesID)?.name ?? String(localized: "未分类会议")
+        }
+        if let name = meta.workspaceName, state.workspaces.workspaces.contains(where: { $0.name == name }) {
+            return name
+        }
+        return String(localized: "未分类会议")
     }
 
     private var currentPageTitle: String {
         switch tab {
-        case .notes: isReview ? "复盘" : "纪要"
-        case .transcript: "转写"
-        case .answers: "会中提词"
+        case .notes: isReview ? String(localized: "复盘") : String(localized: "纪要")
+        case .transcript: String(localized: "转写")
+        case .answers: String(localized: "会中回答")
         }
     }
 
@@ -305,8 +312,8 @@ private struct TemplateMenu: View {
         .fixedSize()
         .disabled(archive.summarizing.contains(id) || id == archive.activeID || (detail?.lines.isEmpty ?? true))
         .accessibilityLabel("纪要模板：\(currentName)")
-        .accessibilityHint("更换模板并重新整理会议纪要，不会更改转写或会中提词")
-        .help("只影响会后纪要，不更改转写或会中提词 · 当前模板：\(currentName)")
+        .accessibilityHint("更换模板并重新整理会议纪要，不会更改转写或会中回答")
+        .help("只影响会后纪要，不更改转写或会中回答 · 当前模板：\(currentName)")
     }
 
     private var currentTemplateFallback: String {

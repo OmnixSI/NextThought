@@ -15,12 +15,14 @@ final class WorkspaceStore {
 
     @ObservationIgnored private var dirty: Set<UUID> = []
     @ObservationIgnored private var saveTask: Task<Void, Never>?
+    @ObservationIgnored private var emptyWorkspace = Workspace(name: "通用", mode: .general)
+    private static let legacyMigrationCompletedKey = "workspaceMigrationCompleted"
     private let io = DispatchQueue(label: "app.interviewhacker.workspaces", qos: .utility)
 
     private init() {}
 
     var active: Workspace {
-        get { workspaces.first { $0.id == activeID } ?? workspaces.first ?? Workspace(name: "通用", mode: .general) }
+        get { workspaces.first { $0.id == activeID } ?? workspaces.first ?? emptyWorkspace }
         set { update(newValue) }
     }
 
@@ -29,8 +31,7 @@ final class WorkspaceStore {
     func workspace(_ id: UUID?) -> Workspace? { id.flatMap { id in workspaces.first { $0.id == id } } }
 
     func canDelete(_ id: UUID) -> Bool {
-        guard !DemoMode.isEnabled, let workspace = workspace(id), workspaces.count > 1 else { return false }
-        return workspace.archived || visible.count > 1
+        !DemoMode.isEnabled && workspace(id) != nil
     }
 
     // MARK: Loading
@@ -52,10 +53,15 @@ final class WorkspaceStore {
                 try? FileManager.default.moveItem(at: file, to: file.appendingPathExtension("unreadable"))
             }
         }
-        if loaded.isEmpty { loaded = migrateLegacyContext() }
+        let preferences = UserDefaults.standard
+        if loaded.isEmpty && !preferences.bool(forKey: Self.legacyMigrationCompletedKey) {
+            loaded = migrateLegacyContext()
+        }
+        if !loaded.isEmpty { preferences.set(true, forKey: Self.legacyMigrationCompletedKey) }
         workspaces = loaded
-        let saved = UserDefaults.standard.string(forKey: "activeWorkspaceID").flatMap(UUID.init(uuidString:))
+        let saved = preferences.string(forKey: "activeWorkspaceID").flatMap(UUID.init(uuidString:))
         activeID = loaded.contains { $0.id == saved } ? saved : visible.first?.id
+        if activeID == nil { preferences.removeObject(forKey: "activeWorkspaceID") }
     }
 
     private func migrateLegacyContext() -> [Workspace] {
@@ -109,7 +115,9 @@ final class WorkspaceStore {
         guard let index = workspaces.firstIndex(where: { $0.id == workspace.id }) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        guard !DemoMode.isEnabled else { throw CocoaError(.fileWriteNoPermission) }
+        guard !DemoMode.isEnabled else {
+            throw CocoaError(.fileWriteNoPermission)
+        }
 
         var next = workspace
         next.updatedAt = Date()
@@ -140,7 +148,7 @@ final class WorkspaceStore {
     /// Changes the mode; answer requirements that were still the old template follow.
     func setMode(_ mode: SessionMode, for id: UUID) {
         guard var workspace = self.workspace(id), workspace.mode != mode else { return }
-        if workspace.preferences.isEmpty || workspace.preferences == ModeProfile.for(workspace.mode).templatePreferences {
+        if ModeProfile.for(workspace.mode).matchesDefaultTemplatePreferences(workspace.preferences) {
             workspace.preferences = ModeProfile.for(mode).templatePreferences
         }
         workspace.mode = mode
@@ -149,6 +157,7 @@ final class WorkspaceStore {
 
     @discardableResult
     func create(mode: SessionMode, name: String? = nil) -> Workspace {
+        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         let base = name ?? "新的\(mode.title)"
         var unique = base, counter = 2
         while workspaces.contains(where: { $0.name == unique }) { unique = "\(base) \(counter)"; counter += 1 }
@@ -162,6 +171,7 @@ final class WorkspaceStore {
     @discardableResult
     func duplicate(_ id: UUID) -> Workspace? {
         guard let source = workspace(id) else { return nil }
+        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         var copy = source
         copy.id = UUID()
         copy.name = source.name + " 副本"
@@ -173,38 +183,40 @@ final class WorkspaceStore {
         return copy
     }
 
-    /// Deletion keeps a copy in the backups folder (`Backups/deleted-workspaces`).
-    @discardableResult
-    func delete(_ id: UUID) -> Bool {
-        guard canDelete(id), let workspace = workspace(id) else { return false }
+    /// Permanently removes the workspace record after its related files are deleted.
+    func delete(_ id: UUID) throws {
+        guard canDelete(id), workspace(id) != nil else {
+            throw AppFailure.capture(String(localized: "系列不存在。"))
+        }
         flush()
         let file = fileURL(id)
-        let trash = AppPaths.backups.appendingPathComponent("deleted-workspaces", isDirectory: true)
-        let safeName = workspace.name.replacingOccurrences(of: "/", with: "-")
-        let target = trash.appendingPathComponent("\(safeName)-\(Int(Date().timeIntervalSince1970))-\(UUID().uuidString.prefix(8)).json")
-        let moved = io.sync { () -> Bool in
-            do {
-                try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
-                try FileManager.default.moveItem(at: file, to: target)
-                return true
-            } catch {
-                return false
+        try io.sync {
+            if FileManager.default.fileExists(atPath: file.path) {
+                try FileManager.default.removeItem(at: file)
             }
         }
-        guard moved else {
-            Diagnostics.record("workspace.delete_backup_failed")
-            return false
-        }
         workspaces.removeAll { $0.id == id }
-        if activeID == id, let next = visible.first?.id ?? workspaces.first?.id { activate(next) }
-        return true
+        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
+        if activeID == id {
+            if let next = visible.first?.id ?? workspaces.first?.id {
+                activate(next)
+            } else {
+                activeID = nil
+                UserDefaults.standard.removeObject(forKey: "activeWorkspaceID")
+            }
+        }
     }
 
     /// Replaces the whole list (backup import); everything is written immediately.
     func replaceAll(_ next: [Workspace]) {
         workspaces = next
+        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         for workspace in next { write(workspace) }
-        if !next.contains(where: { $0.id == activeID }) { activeID = visible.first?.id }
+        if !next.contains(where: { $0.id == activeID }) {
+            activeID = visible.first?.id
+            if let activeID { UserDefaults.standard.set(activeID.uuidString, forKey: "activeWorkspaceID") }
+            else { UserDefaults.standard.removeObject(forKey: "activeWorkspaceID") }
+        }
     }
 
     /// Writes pending edits now (before export, backup, quit or update).

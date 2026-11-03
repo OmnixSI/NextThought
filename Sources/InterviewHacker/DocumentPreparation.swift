@@ -15,6 +15,7 @@ final class DocumentPreparation {
     @ObservationIgnored private var intake: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var loaded = false
+    private(set) var ready = false
     static var root: URL { AppPaths.root.appendingPathComponent("Preparation", isDirectory: true) }
     static var originals: URL { AppPaths.root.appendingPathComponent("Originals", isDirectory: true) }
 
@@ -28,6 +29,7 @@ final class DocumentPreparation {
                 let recovered = try await store!.all(recoverInterrupted: true)
                 let currentIDs = Set(jobs.map(\.id))
                 jobs = recovered.filter { !currentIDs.contains($0.id) } + jobs
+                ready = true
                 for job in jobs where job.stage == .receiving { receive(job, source: nil) }
                 ticker = Task { [weak self] in
                     while !Task.isCancelled {
@@ -117,6 +119,37 @@ final class DocumentPreparation {
     }
     var pendingCount: Int { jobs.filter { !$0.stage.terminal }.count }
     func pendingCount(workspaceID: UUID) -> Int { jobs.filter { $0.workspaceID == workspaceID && !$0.stage.terminal }.count }
+
+    func workspaceDeletionBlockReason(_ workspaceID: UUID) -> String? {
+        guard ready, store != nil else { return String(localized: "资料任务队列正在加载，请稍后删除系列。") }
+        let hasActiveJob = jobs.contains { job in
+            job.workspaceID == workspaceID && (!job.stage.terminal || tasks[job.id] != nil || intake[job.id] != nil)
+        }
+        return hasActiveJob ? String(localized: "该系列仍有资料任务在处理，请完成或取消任务后再删除。") : nil
+    }
+
+    func deleteWorkspaceArtifacts(_ workspaceID: UUID, remainingWorkspaces: [Workspace]) async throws {
+        guard let store, ready else { throw AppFailure.capture("资料任务队列正在加载，请稍后删除系列。") }
+        if let reason = workspaceDeletionBlockReason(workspaceID) { throw AppFailure.capture(reason) }
+        let targetJobs = jobs.filter { $0.workspaceID == workspaceID }
+        guard !targetJobs.isEmpty else { return }
+        let targetIDs = Set(targetJobs.map(\.id))
+        let retainedHashes = Set(jobs.filter { !targetIDs.contains($0.id) }.compactMap(\.sourceHash))
+            .union(remainingWorkspaces.flatMap(\.documents).compactMap { $0.content?.sourceHash })
+        let originalsRoot = Self.originals.standardizedFileURL.path + "/"
+        var artifacts = targetJobs.map { Self.root.appendingPathComponent($0.id.uuidString, isDirectory: true) }
+        for job in targetJobs where !retainedHashes.contains(job.sourceHash ?? "") {
+            guard let path = job.originalPath else { continue }
+            let file = URL(fileURLWithPath: path).standardizedFileURL
+            if file.path.hasPrefix(originalsRoot) { artifacts.append(file) }
+        }
+        var removed = Set<String>()
+        for artifact in artifacts where removed.insert(artifact.standardizedFileURL.path).inserted {
+            if FileManager.default.fileExists(atPath: artifact.path) { try FileManager.default.removeItem(at: artifact) }
+        }
+        try await store.delete(ids: targetIDs)
+        jobs.removeAll { targetIDs.contains($0.id) }
+    }
     private func mutate(_ id: UUID, _ change: (inout DocumentJob) -> Void) {
         guard let i = jobs.firstIndex(where: { $0.id == id }) else { return }
         change(&jobs[i]); jobs[i].updatedAt = Date()

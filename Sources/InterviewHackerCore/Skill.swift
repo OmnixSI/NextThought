@@ -4,8 +4,8 @@ import Foundation
 /// method, domain knowledge. Optional front matter gives the name and description:
 ///
 ///     ---
-///     name: 面试口语化
-///     description: 回答像真人说话
+///     name: 技术讨论表达
+///     description: 结论清楚，依据充分
 ///     ---
 ///     正文…
 public struct Skill: Codable, Identifiable, Sendable, Equatable {

@@ -36,11 +36,13 @@ struct AnswerPromptBuilderTests {
         #expect(AnswerPromptBuilder.instructions.contains("不推测缩进、分支或缺失代码"))
     }
 
-    @Test func answersAreWrittenToBeSpoken() {
+    @Test func answersAreNaturalReferenceContent() {
         let rules = AnswerPromptBuilder.instructions
-        #expect(rules.contains("照着说出口"))
+        #expect(rules.contains("参考回答"))
+        #expect(rules.contains("自然、清晰的表达"))
         #expect(rules.contains("第一人称"))
-        #expect(rules.contains("希望对你有帮助"))   // listed as a phrase to avoid
+        #expect(!rules.contains("照着说出口"))
+        #expect(rules.contains("希望对你有帮助"))
     }
 
     @Test func todaySkillsAndWebResultsTravelInTheInput() throws {

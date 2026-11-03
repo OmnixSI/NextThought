@@ -9,7 +9,9 @@ enum DocumentRuntimeInstaller {
     static var manifestURL:URL { DocumentRuntime.resources.appendingPathComponent("runtime-manifest.json") }
     static var sizeDescription: String {
         guard let m = try? JSONDecoder().decode(Manifest.self, from: Data(contentsOf: manifestURL)) else { return "运行包大小见发布清单" }
-        return "下载 " + ByteCountFormatter.string(fromByteCount: m.downloadBytes, countStyle: .file) + " · 安装占用 " + ByteCountFormatter.string(fromByteCount: m.installedBytes, countStyle: .file)
+        let downloadSize = ByteCountFormatter.string(fromByteCount: m.downloadBytes, countStyle: .file)
+        let installedSize = ByteCountFormatter.string(fromByteCount: m.installedBytes, countStyle: .file)
+        return String(localized: "下载 \(downloadSize) · 安装占用 \(installedSize)")
     }
     static func install(searchLocal: Bool = true, progress:@escaping @Sendable (Double)->Void) async throws {
         let manifest=try JSONDecoder().decode(Manifest.self,from:Data(contentsOf:manifestURL))
