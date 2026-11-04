@@ -164,7 +164,7 @@ private struct SectionEditor: View {
                 case .items, .actions:
                     Toggle("待办格式（谁 · 什么时候）", isOn: Binding(get: { section.kind == .actions },
                                                           set: { section.kind = $0 ? .actions : .items }))
-                        .toggleStyle(.checkbox)
+                        .toggleStyle(.inline)
                         .fixedSize()
                 case .oneLine:
                     Text("一句话").font(Typo.caption).foregroundStyle(Ink.secondary)
@@ -179,7 +179,6 @@ private struct SectionEditor: View {
                 .lineLimit(1...3)
                 .textFieldStyle(.roundedBorder)
             Toggle("这是“不足”的部分（答得不好、没讨论透、风险）", isOn: $section.isGap)
-                .toggleStyle(.checkbox)
                 .font(Typo.caption)
         }
         .paperCard(padding: 12)

@@ -14710,6 +14710,526 @@
           }
         }
       }
+    },
+    "开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        }
+      }
+    },
+    "关": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "按声音区分": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Split by voice"
+          }
+        }
+      }
+    },
+    "区分对方的每个人": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tell the other people apart"
+          }
+        }
+      }
+    },
+    "提纲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outline"
+          }
+        }
+      }
+    },
+    "鱼骨图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fishbone"
+          }
+        }
+      }
+    },
+    "正在整理成提纲…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing the outline…"
+          }
+        }
+      }
+    },
+    "正在整理成鱼骨图…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing the fishbone…"
+          }
+        }
+      }
+    },
+    "正在整理成观点对照…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Writing the viewpoint matrix…"
+          }
+        }
+      }
+    },
+    "复制提纲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy outline"
+          }
+        }
+      }
+    },
+    "复制鱼骨图": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy fishbone"
+          }
+        }
+      }
+    },
+    "复制观点对照": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy viewpoints"
+          }
+        }
+      }
+    },
+    "这次没整理成功，纪要不受影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That didn't work this time. Your notes are unaffected."
+          }
+        }
+      }
+    },
+    "还没有整理过。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not written yet."
+          }
+        }
+      }
+    },
+    "开始整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write it"
+          }
+        }
+      }
+    },
+    "适合这类会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suits this kind of meeting"
+          }
+        }
+      }
+    },
+    "你的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your voice"
+          }
+        }
+      }
+    },
+    "以后再说": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maybe later"
+          }
+        }
+      }
+    },
+    "录入你的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record your voice"
+          }
+        }
+      }
+    },
+    "读 4 句话，约 40 秒。之后会议里你说的话会标成“我”，也更容易分清其他人。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read 4 sentences, about 40 seconds. Afterwards, what you say in meetings is marked “Me”, and other people are easier to tell apart."
+          }
+        }
+      }
+    },
+    "只保存一串数字，不保存录音；只存在这台 Mac 上，不上传，可随时删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only a string of numbers is kept, never the recording. It stays on this Mac, is never uploaded, and can be deleted any time."
+          }
+        }
+      }
+    },
+    "已录入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recorded"
+          }
+        }
+      }
+    },
+    "这个版本没有附带声纹模型，跳过也不影响使用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This version does not include the voiceprint model. Skipping does not affect anything else."
+          }
+        }
+      }
+    },
+    "麦克风还没有允许，录不了。允许后回到这里继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The microphone is not allowed yet, so recording is not possible. Allow it, then come back here."
+          }
+        }
+      }
+    },
+    "开始录入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start recording"
+          }
+        }
+      }
+    },
+    "第一次录音时，macOS 会询问麦克风。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS asks for the microphone the first time you record."
+          }
+        }
+      }
+    },
+    "之后在“准备”页把文件拖进来，或到资料夹添加。需要时也可以到设置 → 资料里安装增强组件。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later, drag files into the Prepare page or add them in the material library. You can also install the enhanced components in Settings → Materials."
+          }
+        }
+      }
+    },
+    "文字识别（OCR）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "text recognition (OCR)"
+          }
+        }
+      }
+    },
+    "语义检索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "semantic search"
+          }
+        }
+      }
+    },
+    "正在查找本机已有的组件…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for components already on this Mac…"
+          }
+        }
+      }
+    },
+    "找到本机已有的：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found on this Mac: %@"
+          }
+        }
+      }
+    },
+    "已经用上，之后导入的资料会按它们来读。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In use. Materials you import next will be read with them."
+          }
+        }
+      }
+    },
+    "用上这些": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use these"
+          }
+        }
+      }
+    },
+    "下载增强组件（可选）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download enhanced components (optional)"
+          }
+        }
+      }
+    },
+    "读扫描件、表格和公式更准": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More accurate for scans, tables and formulas"
+          }
+        }
+      }
+    },
+    "问法和原文不同，也能找到相关段落": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finds related passages even when the question is worded differently"
+          }
+        }
+      }
+    },
+    "下载 · 约 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download · about %@"
+          }
+        }
+      }
+    },
+    "数据与更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data & Updates"
+          }
+        }
+      }
+    },
+    "本机记录、备份与版本更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local records, backups and updates"
+          }
+        }
+      }
+    },
+    "重新设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up again"
+          }
+        }
+      }
+    },
+    "重新打开新手引导": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reopen the guide"
+          }
+        }
+      }
+    },
+    "窗口": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window"
+          }
+        }
+      }
+    },
+    "仅在 InterviewHacker 处于前台时生效；切换到其他 App 后会降回普通层级。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only applies while InterviewHacker is in front; the windows drop back to the normal level when you switch to another app."
+          }
+        }
+      }
+    },
+    "联网搜索已关闭；可在高级设置中打开。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search is off; turn it on in Advanced settings."
+          }
+        }
+      }
+    },
+    "联网搜索已开启；可在高级设置中调整。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search is on; adjust it in Advanced settings."
+          }
+        }
+      }
+    },
+    "位置与外观": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position & appearance"
+          }
+        }
+      }
+    },
+    "会话记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session records"
+          }
+        }
+      }
+    },
+    "导出不含密钥；导入会合并现有数据，不删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exports do not include keys; importing merges with your data and deletes nothing."
+          }
+        }
+      }
+    },
+    "资料读取与查找": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reading & searching materials"
+          }
+        }
+      }
+    },
+    "更改…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change…"
+          }
+        }
+      }
+    },
+    "关键词 + 语义增强": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keywords + semantic search"
+          }
+        }
+      }
+    },
+    "关键词查找 · 无需下载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keyword search · nothing to download"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

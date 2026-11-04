@@ -140,7 +140,7 @@ struct SpeakerStrip: View {
                     }
                 }
                 Spacer(minLength: 0)
-                Text("按声音区分（实验）").font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize()
+                Text("按声音区分").font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize()
             }
         }
     }
@@ -239,7 +239,7 @@ struct SpeakerSettingsSection: View {
     var body: some View {
         let speakers = state.speakers
         SettingsSection(title: "区分说话人", icon: "person.2.wave.2") {
-            Toggle("区分对方的每个人（实验）", isOn: Binding(get: { speakers.enabled }, set: { speakers.setEnabled($0) }))
+            Toggle("区分对方的每个人", isOn: Binding(get: { speakers.enabled }, set: { speakers.setEnabled($0) }))
                 .disabled(!speakers.modelAvailable)
             Note("会议里区分出的声纹只在本机计算，不上传，会议结束就忘；下一场会议起生效。", presentation: .inline)
             if !speakers.modelAvailable {

@@ -323,7 +323,7 @@ private struct SettingsPageHeader: View {
                 state.simplifiedInterface = !$0
                 state.saveAnswerSettings()
             }))
-            .toggleStyle(.switch).controlSize(.small).fixedSize()
+            .toggleStyle(.inline).fixedSize()
             .help("展开模型参数、联网与技能、备份细项、快捷键和维护工具。关闭只隐藏选项，不修改已有配置。")
         }
         .padding(.horizontal, 4).padding(.top, 2).padding(.bottom, 2)
@@ -831,6 +831,7 @@ private struct RecognitionSettings: View {
         }
         }
         AutoEndSettingsSection()
+        SpeakerSettingsSection()
         AdvancedOptions("recognition") {
             VStack(alignment: .leading, spacing: 12) {
             SettingsSection(title: "专业词", icon: "textformat") {
@@ -887,7 +888,6 @@ private struct RecognitionSettings: View {
                     .onChange(of: state.microphoneVoiceProcessing) { _, _ in state.updateSettings() }
             }
             InsightSettings()
-            SpeakerSettingsSection()
             }
         }
         }
@@ -1150,9 +1150,9 @@ private struct SkillSettings: View {
             }
             Spacer()
             Toggle("所有系列", isOn: Binding(get: { skill.global }, set: { var next = skill; next.global = $0; library.update(next) }))
-                .toggleStyle(.checkbox)
+                .toggleStyle(.inline)
             Toggle("启用", isOn: Binding(get: { skill.enabled }, set: { var next = skill; next.enabled = $0; library.update(next) }))
-                .toggleStyle(.switch).controlSize(.small).labelsHidden()
+                .toggleStyle(.inline)
             Button("编辑") { editing = skill }.buttonStyle(ChipButtonStyle())
             Button { deleting = skill } label: { Image(systemName: "trash") }.buttonStyle(.borderless).foregroundStyle(.red)
         }
@@ -1289,8 +1289,8 @@ private struct RecordingSettings: View {
             }
             AdvancedOptions("recording-transfer") {
                 Note("备份包含系列资料、经验库、题库、阶段复盘、会议记录和设置。导入会合并，不删除现有数据；冲突时保留较新的修改。", presentation: .inline)
-                Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets).toggleStyle(.checkbox)
-                Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings).toggleStyle(.checkbox)
+                Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets)
+                Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings)
                 if includeSecrets { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
             }
             if state.isDataBusy { ProgressView().controlSize(.small) }
