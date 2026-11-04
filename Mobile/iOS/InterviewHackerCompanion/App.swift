@@ -143,7 +143,7 @@ struct CompanionView: View {
     }
     func connect(_ value: String) {
         do { try client.start(link: value, enableBluetooth: enableBluetooth); link = ""; error = ""; UIApplication.shared.isIdleTimerDisabled = true }
-        catch { error = error.localizedDescription; showsLink = true }
+        catch { self.error = error.localizedDescription; showsLink = true }
     }
     func command(_ label: String, _ action: String, symbol: String? = nil) -> some View {
         Button { client.action(action) } label: {
