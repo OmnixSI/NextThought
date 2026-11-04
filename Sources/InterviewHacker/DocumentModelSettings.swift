@@ -3,7 +3,60 @@ import InterviewHackerCore
 
 struct DocumentModelSettings: View {
     @Environment(AppState.self) private var state
+    @State private var showingChooser = false
+
+    /// Simple mode: three status lines and one "change" entry. The full choosers
+    /// (reader, retrieval, scan for existing components, Office) open in a sheet;
+    /// advanced mode shows them inline as before.
     var body: some View {
+        if state.simplifiedInterface {
+            summaryCard
+                .sheet(isPresented: $showingChooser) { chooserSheet }
+        } else {
+            details
+        }
+    }
+
+    private var summaryCard: some View {
+        SettingsSection(title: "资料读取与查找", icon: "doc.text.viewfinder") {
+            SettingsStatusRow(tone: currentReady ? .ready : .caution, title: "现在用什么读取资料", detail: currentSummary)
+            SettingsStatusRow(tone: .ready, title: "怎样从资料中找答案", detail: retrievalSummary)
+            SettingsStatusRow(tone: state.runtimeInstalled ? .ready : .idle, title: "Word、Excel 与 PowerPoint",
+                              detail: state.runtimeInstalled ? "已安装支持组件 · 可导入 Office 文件" : "需要共用文档组件")
+            if state.documentSetupFeature != nil || !state.documentSetupStatus.isEmpty {
+                Note(state.documentSetupStatus, presentation: .inline)
+                if state.documentSetupFeature != nil { ProgressView(value: state.documentSetupProgress) }
+            }
+            HStack {
+                Note("资料原件保留在本机。只有选择在线代读或在线回答时，资料才会发送给对应服务。", presentation: .inline)
+                Spacer(minLength: Space.s2)
+                Button("更改…") { showingChooser = true }.buttonStyle(SecondaryButtonStyle())
+            }
+        }
+    }
+
+    private var chooserSheet: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("资料读取与查找").font(Typo.section)
+                Spacer()
+                Button("完成") { showingChooser = false }.buttonStyle(PrimaryButtonStyle())
+            }
+            ScrollView { details.environment(\.settingsColumnCount, 1) }
+        }
+        .padding(20)
+        .frame(width: 640, height: 640)
+        .environment(state)
+    }
+
+    private var retrievalSummary: String {
+        if state.semanticRetrievalEnabled && state.documentAvailability.ready(.semantic) {
+            return String(localized: "关键词 + 语义增强")
+        }
+        return String(localized: "关键词查找 · 无需下载")
+    }
+
+    @ViewBuilder private var details: some View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
         SettingsCardRow {
