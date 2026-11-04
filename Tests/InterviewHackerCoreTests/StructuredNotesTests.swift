@@ -352,7 +352,7 @@ struct StructuredNotesTests {
     // MARK: Storage
 
     @Test func oldSummariesWithoutStructuredFieldsStillDecode() throws {
-        let old = #"{"title":"周会","markdown":"# 标题\n周会","questions":[],"generatedAt":"2026-10-26T10:00:00Z","model":"m"}"#
+        let old = ##"{"title":"周会","markdown":"# 标题\n周会","questions":[],"generatedAt":"2026-10-26T10:00:00Z","model":"m"}"##
         let summary = try JSONLines.decoder().decode(SessionSummary.self, from: Data(old.utf8))
         #expect(summary.title == "周会" && summary.structured == nil && summary.lessons == nil)
     }
