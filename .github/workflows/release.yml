@@ -51,13 +51,39 @@ jobs:
           assert p.stat().st_size==m['downloadBytes']
           PY
           cp Resources/DocumentRuntime/runtime-manifest.json dist/runtime-manifest.json
+      - name: Import the release signing certificate
+        if: ${{ vars.MAC_RUNNER == 'github' }}
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          # The fixed release identity (scripts/setup-release-signing.sh), so macOS keeps privacy
+          # permissions across versions. Without the secrets the build stays ad-hoc signed.
+          if [[ -z "$MACOS_CERTIFICATE_P12_BASE64" || -z "$MACOS_CERTIFICATE_PASSWORD" || -z "$MACOS_SIGNING_IDENTITY" ]]; then
+            echo "No release signing secrets; this build will be ad-hoc signed."
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/release-signing.keychain-db"
+          password="$(openssl rand -hex 16)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$MACOS_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/release-identity.p12"
+          security import "$RUNNER_TEMP/release-identity.p12" -k "$keychain" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/release-identity.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security find-identity -p codesigning "$keychain"
+          echo "INTERVIEWHACKER_SIGNING_IDENTITY=$MACOS_SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          echo "INTERVIEWHACKER_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
       - name: Build signed App, ZIP and DMG
         env:
           INTERVIEWHACKER_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
           INTERVIEWHACKER_MAKE_DMG: '1'
         run: |
           export INTERVIEWHACKER_VERSION="${INTERVIEWHACKER_VERSION#v}"
-          if [[ "$RUNNER_ENVIRONMENT" == github-hosted ]]; then export INTERVIEWHACKER_SIGNING_IDENTITY=-; fi
+          if [[ "$RUNNER_ENVIRONMENT" == github-hosted && -z "${INTERVIEWHACKER_SIGNING_IDENTITY:-}" ]]; then export INTERVIEWHACKER_SIGNING_IDENTITY=-; fi
           scripts/build-app.sh
       - name: Isolated data selftest
         env:

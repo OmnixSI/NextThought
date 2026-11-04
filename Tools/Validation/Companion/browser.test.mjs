@@ -4,12 +4,12 @@ import {webcrypto} from 'node:crypto';
 import assert from 'node:assert/strict';
 const script=readFileSync(new URL('../../../CompanionRelay/src/phone.js',import.meta.url),'utf8').replace(/^import .*$/m,'').replace('export function apply','function apply');
 const elements=new Map(),intervals=[],events={},requests=[];
-const document={hidden:false,querySelectorAll(){return []},getElementById(id){if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',hidden:false});return elements.get(id)},addEventListener(k,f){events[k]=f}};
+const document={documentElement:{},hidden:false,querySelectorAll(){return []},getElementById(id){if(!elements.has(id))elements.set(id,{style:{},textContent:'',innerHTML:'',hidden:false});return elements.get(id)},addEventListener(k,f){events[k]=f}};
 let active;
 class EventSource{constructor(){this.handlers={};active=this}addEventListener(k,f){this.handlers[k]=f}close(){this.closed=true}}
 let now=100000;
 const frame=(n,q,a,extra={})=>({version:1,serverID:'test',sequence:n,snapshot:{question:q,answer:a,answering:!a,status:'正在聆听',position:'',...extra}});
-const context={document,EventSource,Date:{now:()=>now},TextDecoder,URLSearchParams,location:{search:'?t=token',hash:'',protocol:'http:'},crypto:webcrypto,
+const context={navigator:{language:'zh-CN'},document,EventSource,Date:{now:()=>now},TextDecoder,URLSearchParams,location:{search:'?t=token',hash:'',protocol:'http:'},crypto:webcrypto,
  localStorage:{getItem:()=>null,setItem(){}},window:{addEventListener(k,f){events[k]=f}},
  setInterval(f,n){intervals.push({f,n})},setTimeout(){return 1},clearTimeout(){},Math,AbortController,
  async fetch(url,options){requests.push({url,options});return {ok:true,status:200,json:async()=>frame(1,'初始','答案')}}};
@@ -44,7 +44,7 @@ const relayContext={...context,
  unb64:value=>Buffer.from(value,'base64url'),
  open:(_pair,packet)=>packet.value,seal:(_pair,kind,value)=>({kind,value}),
  WebSocket:class{constructor(url){this.url=url;this.readyState=1;relaySocket=this}send(value){relaySends.push(JSON.parse(value))}close(){this.readyState=3}},
- document:{hidden:false,querySelectorAll:()=>[],getElementById(id){if(!relayElements.has(id))relayElements.set(id,{style:{},textContent:'',innerHTML:'',hidden:false});return relayElements.get(id)},addEventListener(){}},
+ document:{documentElement:{},hidden:false,querySelectorAll:()=>[],getElementById(id){if(!relayElements.has(id))relayElements.set(id,{style:{},textContent:'',innerHTML:'',hidden:false});return relayElements.get(id)},addEventListener(){}},
  window:{addEventListener(){}},setInterval(f,n){relayIntervals.push({f,n})},async fetch(url){relayRequests.push(url);throw Error('HTTPS page must never fetch LAN')}
 };
 vm.runInNewContext(script,relayContext);relaySocket.onopen();

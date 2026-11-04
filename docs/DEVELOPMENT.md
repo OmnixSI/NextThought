@@ -64,7 +64,7 @@ Release 工作流会用 `--clobber` 上传并替换同名资产。要求使用�
 - 本机 `scripts/build-app.sh` 使用应用设置中绑定的 **InterviewHacker Local Signing** 身份（`~/Library/Application Support/InterviewHacker/Signing/`）。首次安装且从未绑定过时，才通过应用设置完成一次绑定。若该目录已存在但身份不完整或不可用，停止构建并恢复原身份；不要再次绑定或创建新证书。麦克风、录屏与系统音频权限依赖稳定的 Bundle ID 和签名要求。
 - macOS 的隐私授权由系统按应用代码身份管理，不随源码、构建目录或备份迁移。重建会改变可执行文件内容和 cdhash；只要 Bundle ID、签名证书和 designated requirement 保持一致，应用代码更新后仍满足原授权身份，无须每次重新授权。当前本机签名要求由 Bundle ID 与证书叶节点身份组成；不要改用 ad-hoc 签名，也不要轮换证书来处理一般构建问题。
 - Apple 对 designated requirement 与代码签名身份的说明见 [TN3127](https://developer.apple.com/documentation/technotes/tn3127-inside-code-signing-requirements) 和 [TN2206](https://developer.apple.com/library/archive/technotes/tn2206/)。
-- `.github/workflows/release.yml` 在 GitHub 托管 runner 上明确使用 ad-hoc 签名；自托管 runner 未设置签名覆盖值时，`scripts/sign-app.sh` 会从该 runner 用户的 Application Support 目录读取 app-bound 身份。`scripts/setup-release-signing.sh` 会写入独立 Actions Secrets，但当前 Release 工作流没有读取这些 Secrets，因此它们目前不决定 Release 构件的签名。修改发布签名流程时，应同步更新并核验工作流和本文档。
+- `.github/workflows/release.yml` 在 GitHub 托管 runner 上：配置了 `MACOS_CERTIFICATE_P12_BASE64`、`MACOS_CERTIFICATE_PASSWORD`、`MACOS_SIGNING_IDENTITY` 三个 Actions Secrets（由 `scripts/setup-release-signing.sh` 生成的**独立发布身份**）时，用它签名，各版本签名身份一致，用户只需在首次安装时授权一次；未配置时才退回 ad-hoc 签名（每个版本不同，会要求重新授权）。这个发布身份与本机 app-bound 的 Local Signing 身份是两把不同的证书，互不替代。自托管 runner 未设置签名覆盖值时，`scripts/sign-app.sh` 会从该 runner 用户的 Application Support 目录读取 app-bound 身份。
 - 本机 `scripts/install-latest.sh` 会先用同一证书重签下载包，并比较它与当前安装包的 designated requirement；身份不一致时停止安装。本机脚本拒绝 ad-hoc 和其他证书。
 - Bundle ID 保持为 `com.interviewhacker.app`。构建只签应用主程序；Sherpa-ONNX 和 ONNX Runtime 是静态链接，不生成需要单独签名的独立助手进程或动态运行库。
 
