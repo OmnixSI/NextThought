@@ -256,10 +256,19 @@ public enum LaTeXMath {
             if ch == "(" { depth += 1; continue }
             if ch == ")" { depth -= 1; if depth < 0 { return false }; continue }
             if depth > 0 { continue }
-            if ch.isLetter || ch.isNumber || ch.isMark || ".′″∞°".contains(ch) { continue }
+            if ch.isLetter || ch.isNumber || isCombining(ch) || ".′″∞°".contains(ch) { continue }
             return false
         }
         return depth == 0
+    }
+
+    private static func isCombining(_ ch: Character) -> Bool {
+        ch.unicodeScalars.contains { scalar in
+            switch scalar.properties.generalCategory {
+            case .nonspacingMark, .spacingMark, .enclosingMark: return true
+            default: return false
+            }
+        }
     }
 
     static func wrapped(_ s: String) -> String { isAtomic(s) ? s : "(" + s + ")" }
