@@ -6,9 +6,21 @@ import InterviewHackerCore
 /// Simple mode shows only what is needed after first-run setup (status, a few
 /// switches, one repair entry per area); everything else sits behind 高级设置.
 enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", notes = "纪要", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多"
+    case essentials = "基础", recognition = "识别", answers = "回答", notes = "纪要", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多", shortcuts = "快捷键", companion = "手机伴侣", privacy = "权限与维护"
+    static let navigationOrder: [SettingsGroup] = [.essentials, .recognition, .answers, .notes, .documents, .overlay, .shortcuts, .skills, .companion, .recording, .privacy, .more]
     var id: String { rawValue }
-    var displayTitle: String { self == .overlay ? "回答浮窗" : rawValue }
+    var displayTitle: String {
+        switch self {
+        case .essentials: "通用"
+        case .recognition: "声音与识别"
+        case .answers: "回答服务"
+        case .documents: "资料与模型"
+        case .overlay: "浮窗与字幕"
+        case .recording: "数据与备份"
+        case .more: "版本与更新"
+        default: rawValue
+        }
+    }
     var symbol: String {
         switch self {
         case .essentials: "checklist"
@@ -19,7 +31,10 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .skills: "wand.and.stars"
         case .overlay: "rectangle.topthird.inset.filled"
         case .recording: "tray.full"
-        case .more: "ellipsis.circle"
+        case .more: "arrow.triangle.2.circlepath"
+        case .shortcuts: "keyboard"
+        case .companion: "iphone"
+        case .privacy: "lock.shield"
         }
     }
 
@@ -27,228 +42,77 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     init(stored: String) {
         switch stored {
         case "常规": self = .essentials
-        case "更新", "快捷键": self = .more
+        case "更新": self = .more
+        case "快捷键": self = .shortcuts
         default: self = SettingsGroup(rawValue: stored) ?? .essentials
         }
     }
 }
 
-enum SettingsCategory: String, CaseIterable, Identifiable {
-    case general = "常规"
-    case meeting = "会议与识别"
-    case answers = "回答与提词"
-    case notesAndMaterials = "纪要与资料"
-    case data = "数据与更新"
-
-    var id: String { rawValue }
-    var displayTitle: String { self == .answers ? "回答与浮窗" : rawValue }
-
-    var groups: [SettingsGroup] {
-        switch self {
-        case .general: [.essentials]
-        case .meeting: [.recognition]
-        case .answers: [.answers, .overlay]
-        case .notesAndMaterials: [.notes, .documents]
-        case .data: [.recording, .skills, .more]
-        }
-    }
-
-    /// The group tabs to show. 技能 is an expert area: its tab only appears in
-    /// advanced mode, or while it is the page being viewed (e.g. 资料夹 → 管理技能).
-    func visibleGroups(advanced: Bool, selected: SettingsGroup) -> [SettingsGroup] {
-        groups.filter { advanced || $0 != .skills || $0 == selected }
-    }
-
-    var summary: String {
-        switch self {
-        case .general: "界面、语言与快速准备"
-        case .meeting: "选择声音来源与实时识别方式"
-        case .answers: "回答服务与会中回答浮窗"
-        case .notesAndMaterials: "会后纪要与资料读取"
-        case .data: "本机记录、备份与版本更新"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .general: "slider.horizontal.3"
-        case .meeting: "waveform"
-        case .answers: "sparkles"
-        case .notesAndMaterials: "doc.text"
-        case .data: "tray.full"
-        }
-    }
-}
-
-extension SettingsGroup {
-    var category: SettingsCategory {
-        switch self {
-        case .essentials: .general
-        case .recognition: .meeting
-        case .answers, .overlay: .answers
-        case .notes, .documents: .notesAndMaterials
-        case .recording, .skills, .more: .data
-        }
-    }
-}
-
-/// A compact, category-first settings page. Existing settings remain grouped
-/// below each category, without a second vertical navigation rail.
+/// Every destination has a stable, directly searchable place. No category tabs or global mode.
 struct SettingsView: View {
     @Environment(AppState.self) private var state
     @AppStorage("settingsGroup", store: UserDefaults.standard) private var groupRaw = SettingsGroup.essentials.rawValue
     @State private var query = ""
-
     private var selectedGroup: SettingsGroup { SettingsGroup(stored: groupRaw) }
-    private var selectedCategory: SettingsCategory { selectedGroup.category }
-
-    var body: some View {
-        GeometryReader { proxy in
-            let effectiveWidth = min(max(0, proxy.size.width - 32), 980)
-            let columnCount = effectiveWidth >= 780 ? 2 : 1
-            VStack(alignment: .leading, spacing: 12) {
-                SettingsPageHeader(query: $query)
-                SettingsCategoryBar(selection: selectedCategory, select: selectCategory)
-
-                if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    let tabs = selectedCategory.visibleGroups(advanced: !state.simplifiedInterface, selected: selectedGroup)
-                    if tabs.count > 1 {
-                        SettingsGroupBar(groups: tabs, selection: selectedGroup, select: selectGroup)
-                    }
-                } else {
-                    SettingsSearchResults(query: query, select: selectGroup)
-                }
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        SettingsPaneHeading(category: selectedCategory, group: selectedGroup)
-                        SettingsGroupContent(group: selectedGroup)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 18)
-                }
-                .id(selectedGroup)
-            }
-            .frame(maxWidth: 980, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
-            .environment(\.settingsColumnCount, columnCount)
-            .padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 4)
-        }
-    }
-
-    private func selectCategory(_ category: SettingsCategory) {
-        guard let first = category.groups.first else { return }
-        groupRaw = first.rawValue
-        query = ""
-    }
-
-    private func selectGroup(_ group: SettingsGroup) {
-        groupRaw = group.rawValue
-        query = ""
-    }
-}
-
-private struct SettingsPaneHeading: View {
-    let category: SettingsCategory
-    let group: SettingsGroup
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(LocalizedStringKey(category.displayTitle)).font(.system(size: 16, weight: .semibold))
-            Spacer(minLength: 8)
-            Text(LocalizedStringKey(category.summary)).font(.system(size: 10.5)).foregroundStyle(Ink.tertiary)
-        }
-    }
-}
-
-private struct SettingsCategoryBar: View {
-    let selection: SettingsCategory
-    let select: (SettingsCategory) -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 4) {
-                ForEach(SettingsCategory.allCases) { category in
-                    let isSelected = category == selection
-                    Button { select(category) } label: {
-                        HStack(spacing: 7) {
-                            Image(systemName: category.symbol).font(.system(size: 12))
-                            Text(LocalizedStringKey(category.displayTitle)).font(.system(size: 11.5, weight: isSelected ? .semibold : .medium))
-                        }
-                        .foregroundStyle(isSelected ? Ink.ink : Ink.secondary)
-                        .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 10)
-                        .overlay(alignment: .bottom) {
-                            Capsule().fill(isSelected ? Ink.ink : Color.clear).frame(height: 2)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .help(LocalizedStringKey(category.summary))
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
-                }
-            }
-            .animation(.easeInOut(duration: 0.18), value: selection)
-        }
-        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
-    }
-}
-
-private struct SettingsGroupBar: View {
-    let groups: [SettingsGroup]
-    let selection: SettingsGroup
-    let select: (SettingsGroup) -> Void
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(groups) { group in
-                let isSelected = group == selection
-                Button { select(group) } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: group.symbol).font(.system(size: 11))
-                        Text(LocalizedStringKey(group.displayTitle)).font(.system(size: 11.5, weight: isSelected ? .semibold : .medium))
-                    }
-                    .foregroundStyle(isSelected ? Ink.ink : Ink.secondary)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(isSelected ? Ink.hover : Color.clear, in: Capsule())
-                }
-                .buttonStyle(.plain)
-                    .help(LocalizedStringKey(group.summary))
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-            }
-            Spacer(minLength: 0)
-        }
-        .animation(.easeInOut(duration: 0.18), value: selection)
-    }
-}
-
-private struct SettingsSearchResults: View {
-    let query: String
-    let select: (SettingsGroup) -> Void
-
     private var matches: [SettingsGroup] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !term.isEmpty else { return [] }
-        return SettingsGroup.allCases.filter { group in
-            let translatedName = Bundle.main.localizedString(forKey: group.displayTitle, value: group.displayTitle, table: nil)
-            let translatedSummary = Bundle.main.localizedString(forKey: group.summary, value: group.summary, table: nil)
-            return [group.rawValue, group.displayTitle, group.summary, translatedName, translatedSummary, group.englishSearchTerms]
+        guard !term.isEmpty else { return SettingsGroup.navigationOrder }
+        return SettingsGroup.navigationOrder.filter { group in
+            [group.rawValue, String(localized: String.LocalizationValue(group.displayTitle)),
+             String(localized: String.LocalizationValue(group.summary)), group.englishSearchTerms]
                 .contains { $0.localizedCaseInsensitiveContains(term) }
         }
     }
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 7) {
-                if matches.isEmpty {
-                    Text("没有匹配的设置分组").font(.system(size: 11.5)).foregroundStyle(.secondary)
-                } else {
-                    ForEach(matches) { group in
-                        Button { select(group) } label: {
-                            Label(LocalizedStringKey(group.displayTitle), systemImage: group.symbol)
+        GeometryReader { proxy in
+            HStack(alignment: .top, spacing: 0) {
+                VStack(alignment: .leading, spacing: Space.s3) {
+                    Text("设置").font(Typo.section).padding(.horizontal, 10)
+                    TextField("查找设置，例如：麦克风", text: $query)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("settings.search")
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(matches) { group in
+                                Button { groupRaw = group.rawValue } label: {
+                                    HStack(spacing: 9) {
+                                        Image(systemName: group.symbol).frame(width: 18)
+                                        Text(LocalizedStringKey(group.displayTitle)).font(Typo.label)
+                                        Spacer(minLength: 0)
+                                    }
+                                    .foregroundStyle(group == selectedGroup ? Ink.ink : Ink.secondary)
+                                    .padding(.horizontal, 10).frame(minHeight: 36)
+                                    .background(group == selectedGroup ? Ink.hover : Color.clear,
+                                                in: RoundedRectangle(cornerRadius: 7))
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("settings.destination." + group.id)
+                                .accessibilityAddTraits(group == selectedGroup ? .isSelected : [])
+                            }
+                            if matches.isEmpty { Text("没有匹配的设置分组").font(Typo.caption).foregroundStyle(Ink.secondary) }
                         }
-                        .buttonStyle(ChipButtonStyle())
-                        .help(LocalizedStringKey(group.summary))
                     }
                 }
+                .padding(12).frame(width: proxy.size.width < 650 ? 160 : 190)
+                Divider()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Space.s4) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(LocalizedStringKey(selectedGroup.displayTitle)).font(Typo.section)
+                            Text(LocalizedStringKey(selectedGroup.summary)).font(Typo.caption).foregroundStyle(Ink.secondary)
+                        }
+                        SettingsGroupContent(group: selectedGroup)
+                    }
+                    .frame(maxWidth: 820, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(20)
+                }
+                .id(selectedGroup)
+                .environment(\.settingsColumnCount, 1)
+                .environment(\.settingsShowsFullOptions, true)
             }
         }
     }
@@ -271,7 +135,10 @@ private struct SettingsGroupContent: View {
         case .skills: SkillSettings()
         case .overlay: OverlaySettings()
         case .recording: RecordingSettings()
-        case .more: MoreSettings()
+        case .more: UpdateSettings()
+        case .shortcuts: ShortcutSection()
+        case .companion: CompanionSection()
+        case .privacy: MoreSettings()
         }
     }
 }
@@ -280,14 +147,17 @@ extension SettingsGroup {
     fileprivate var englishSearchTerms: String {
         switch self {
         case .essentials: "general appearance language setup"
-        case .recognition: "meeting audio microphone speech recognition"
-        case .documents: "documents materials OCR retrieval"
+        case .recognition: "meeting audio microphone speech recognition 声音 音频 麦克风 录屏 语音识别 说话人 声纹"
+        case .documents: "documents materials OCR retrieval 模型 下载 资料 语义 向量 OCR 文档"
         case .answers: "answers model engine search"
         case .notes: "notes summary template language"
         case .skills: "skills instructions"
-        case .overlay: "teleprompter overlay font display"
+        case .overlay: "teleprompter overlay font display 字幕条 字号 提词器 屏幕共享"
         case .recording: "data recording backup restore export import"
-        case .more: "updates permissions shortcuts companion"
+        case .more: "version updates github channel 更新 下载 版本 GitHub"
+        case .shortcuts: "keyboard hotkey shortcuts"
+        case .companion: "phone mobile bluetooth relay companion"
+        case .privacy: "permissions privacy signing microphone performance 录屏 麦克风 签名 授权 权限 性能"
         }
     }
 
@@ -301,49 +171,19 @@ extension SettingsGroup {
         case .skills: "加载 SKILL.md · 全局或按系列"
         case .overlay: "位置 · 字号 · 共享显示"
         case .recording: "本机会话记录 · 备份与恢复"
-        case .more: "更新 · 权限 · 快捷键 · 手机伴侣"
+        case .more: "版本检查 · 更新渠道 · 下载与安装"
+        case .shortcuts: "查看与修改键盘快捷键"
+        case .companion: "手机配对 · 局域网与备用连接"
+        case .privacy: "系统权限 · 本机签名 · 运行维护"
         }
     }
 }
 
-private struct SettingsPageHeader: View {
-    @Environment(AppState.self) private var state
-    @Binding var query: String
-
-    var body: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("设置").font(Typo.section)
-                Text("常用选项放在前面；高级选项仍可随时展开。")
-                    .font(.system(size: 11.5)).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 8)
-            searchField.frame(maxWidth: 220)
-            Toggle("高级设置", isOn: Binding(get: { !state.simplifiedInterface }, set: {
-                state.simplifiedInterface = !$0
-                state.saveAnswerSettings()
-            }))
-            .toggleStyle(.inline).fixedSize()
-            .help("展开模型参数、联网与技能、备份细项、快捷键和维护工具。关闭只隐藏选项，不修改已有配置。")
-        }
-        .padding(.horizontal, 4).padding(.top, 2).padding(.bottom, 2)
-    }
-
-    private var searchField: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "magnifyingglass").font(.system(size: 11)).foregroundStyle(.secondary)
-            TextField("查找设置，例如：麦克风", text: $query)
-                .textFieldStyle(.plain).font(.system(size: 11.5))
-            if !query.isEmpty {
-                Button { query = "" } label: {
-                    Image(systemName: "xmark.circle.fill").font(.system(size: 11))
-                }
-                .buttonStyle(.borderless).foregroundStyle(.secondary)
-            }
-        }
-        .padding(.horizontal, 9).padding(.vertical, 7)
-        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Ink.hairline, lineWidth: 1))
+private struct SettingsFullOptionsKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues {
+    var settingsShowsFullOptions: Bool {
+        get { self[SettingsFullOptionsKey.self] }
+        set { self[SettingsFullOptionsKey.self] = newValue }
     }
 }
 
@@ -464,17 +304,31 @@ struct SettingsSection<Content: View>: View {
 
 /// The single global switch hides expert controls without resetting their values.
 struct AdvancedOptions<Content: View>: View {
-    @Environment(AppState.self) private var state
     private let content: Content
     private let alwaysVisible: Bool
-
+    private let title: String
+    @AppStorage private var expanded: Bool
     init(_ id: String, alwaysVisible: Bool = false, @ViewBuilder content: () -> Content) {
         self.content = content()
         self.alwaysVisible = alwaysVisible
+        self.title = [
+            "essentials-tools": "环境检查与修复", "capture-refresh": "刷新声音来源",
+            "apple-speech-note": "系统识别说明", "recognition": "识别模型与音频处理",
+            "answers": "联网搜索与回答参数", "overlay": "浮窗位置与外观",
+            "recording-lessons": "会后经验回写", "recording-transfer": "导入导出选项",
+            "recording-backups": "自动备份与恢复记录", "updates": "GitHub 访问设置",
+            "document-management": "模型与组件管理"
+        ][id] ?? "高级选项"
+        self._expanded = AppStorage(wrappedValue: false, "settings.expanded." + id, store: UserDefaults.standard)
     }
-
     var body: some View {
-        if alwaysVisible || !state.simplifiedInterface { content }
+        if alwaysVisible { content }
+        else {
+            DisclosureGroup(LocalizedStringKey(title), isExpanded: $expanded) {
+                content.padding(.top, Space.s3)
+            }
+            .font(Typo.label)
+        }
     }
 }
 
@@ -567,6 +421,13 @@ private struct EssentialSettings: View {
                 AppearanceSettingsSection()
             }
 
+            SettingsSection(title: "工作台功能", icon: "rectangle.3.group") {
+                Toggle("显示完整工作台功能", isOn: Binding(get: { !state.simplifiedInterface }, set: {
+                    state.simplifiedInterface = !$0
+                    state.saveAnswerSettings()
+                }))
+                Note("只影响工作台的功能展示。设置中的所有项目始终可以访问。", presentation: .inline)
+            }
             AdvancedOptions("essentials-tools") { AdvancedEssentialSettings() }
         }
     }
@@ -808,7 +669,7 @@ private struct RecognitionSettings: View {
         .task { if !state.isRunning && !state.isChangingSession { await state.refreshTargets() } }
         } right: {
         SettingsSection(title: "语音识别", icon: "waveform") {
-            if !state.simplifiedInterface {
+            Group {
             MenuPicker(title: "引擎", selection: $state.transcriptionBackend, options: [
                 ("zipformer", "本地流式 · 离线（推荐）"),
                 ("apple", "Apple Speech · 本地 / macOS 26"),
@@ -816,8 +677,6 @@ private struct RecognitionSettings: View {
             ], localizesOptions: true)
             .disabled(state.isRunning || state.isPreparingModel)
             .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
-            } else {
-                Text(state.transcriptionBackend == "zipformer" ? "本机识别 · 会议音频不上传" : state.transcriptionBackend == "apple" ? "系统语音识别" : "云端语音识别 · 会议音频会上传")
             }
             switch state.transcriptionBackend {
             case "zipformer": ModelDownloadRow()
@@ -966,7 +825,7 @@ private struct AnswerSettings: View {
                 SettingsInfoRow(icon: "text.bubble", title: "自动回答", detail: "在会议顶栏选择“自动回答”或“只记录”。")
                 if state.simplifiedInterface {
                     SettingsInfoRow(icon: "globe", title: "联网搜索",
-                                    detail: state.webSearchMode == .off ? "联网搜索已关闭；可在高级设置中打开。" : "联网搜索已开启；可在高级设置中调整。")
+                                    detail: state.webSearchMode == .off ? "联网搜索已关闭；可在下方高级选项中打开。" : "联网搜索已开启；可在下方高级选项中调整。")
                 }
             }
         }
@@ -1276,19 +1135,13 @@ private struct RecordingSettings: View {
         } right: {
         SettingsSection(title: "备份与恢复", icon: "externaldrive") {
             HStack {
-                Button("导出全部数据…") { state.exportAllData(includeSecrets: includeSecrets && !state.simplifiedInterface) }.buttonStyle(PrimaryButtonStyle()).disabled(state.isDataBusy)
+                Button("导出全部数据…") { state.exportAllData(includeSecrets: includeSecrets) }.buttonStyle(PrimaryButtonStyle()).disabled(state.isDataBusy)
                 Button("导入…") { state.importData(applySettings: applySettings) }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
                 Button("立即备份") { state.backupNow(); refreshSoon() }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy)
             }
-            if state.simplifiedInterface {
-                Note("导出不含密钥；导入会合并现有数据，不删除，并一并恢复备份里的设置。", presentation: .inline)
-                if !state.autoBackup {
-                    Note("会议自动备份未开启，可在高级设置调整。", presentation: .inline)
-                } else if let latest = backups.first {
-                    Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened), presentation: .inline)
-                } else {
-                    Note("会议结束后自动备份；更新和导入前保留恢复点。", presentation: .inline)
-                }
+            Note("导入会合并，不删除现有数据。密钥和设置是否包含，由下方导入导出选项决定。", presentation: .inline)
+            if let latest = backups.first {
+                Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened), presentation: .inline)
             }
             AdvancedOptions("recording-transfer") {
                 Note("备份包含系列资料、经验库、题库、阶段复盘、会议记录和设置。导入会合并，不删除现有数据；冲突时保留较新的修改。", presentation: .inline)
@@ -1362,8 +1215,7 @@ private struct MoreSettings: View {
     var body: some View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
-            UpdateSettings()
-            AdvancedOptions("maintenance") {
+            Group {
                 VStack(alignment: .leading, spacing: 12) {
                     SettingsSection(title: "权限与签名", icon: "lock.shield") {
                         Text(state.capturePermissionStatus).foregroundStyle(state.capturePermissionGranted ? .green : .secondary)
@@ -1374,8 +1226,6 @@ private struct MoreSettings: View {
                         }
                         SignatureStatus()
                     }
-                    ShortcutSection()
-                    CompanionSection()
                     SettingsSection(title: "性能", icon: "gauge.with.dots.needle.33percent") {
                         Toggle("减少视觉特效（更流畅，适合轻薄本 / 省电）", isOn: $state.reducedEffects)
                             .onChange(of: state.reducedEffects) { _, value in UserDefaults.standard.set(value, forKey: "reducedEffects") }
@@ -1416,7 +1266,7 @@ private struct UpdateSettings: View {
             if case let .downloading(fraction) = updater.phase { ProgressView(value: fraction).controlSize(.small) }
             if let note = updater.stagedNote { Note(note, color: .orange) }
             if state.isRunning, updater.phase == .ready { Note("正在辅助中：停止后再安装，避免打断会议。", color: .orange) }
-            if !state.simplifiedInterface {
+            Group {
             Picker("更新渠道", selection: $updater.channel) {
                 ForEach(UpdateChannel.allCases) { Text($0.title).tag($0) }
             }

@@ -17,16 +17,15 @@ struct FishboneView: View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(GeometryReader { proxy in
-                Color.clear.preference(key: MeasuredWidthKey.self, value: proxy.size.width)
+                Color.clear
+                    .onAppear { width = proxy.size.width }
+                    .onChange(of: proxy.size.width) { _, newWidth in width = newWidth }
             })
-            .onPreferenceChange(MeasuredWidthKey.self) { width = $0 }
             .paperCard()
     }
 
     @ViewBuilder private var content: some View {
-        if width <= 0 {
-            Color.clear.frame(height: 160)
-        } else if let geometry = FishboneGeometry.make(head: notes.head, categories: notes.categories, width: width) {
+        if let geometry = FishboneGeometry.make(head: notes.head, categories: notes.categories, width: width) {
             FishboneDiagram(notes: notes, geometry: geometry, onJump: onJump)
         } else {
             FishboneTree(notes: notes, onJump: onJump)

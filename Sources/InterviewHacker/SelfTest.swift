@@ -64,6 +64,7 @@ enum SelfTest {
                 case "model-files": return try await DocumentSelfTest.modelFiles()
                 case "model-delete": return try await DocumentSelfTest.modelDeletion()
                 case "document-backup": return try await DocumentSelfTest.archiveRoundTrip()
+                case "fishbone-rendering": return try await FishboneRenderingSelfTest.run()
                 case "structured-notes": return try await StructuredNotesSelfTest.run()
                 case "document-setup": return try await DocumentSelfTest.setupChoices()
                 case "retrieval-eval": return try await RetrievalSelfTest.run(options)

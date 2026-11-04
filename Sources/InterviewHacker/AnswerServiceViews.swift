@@ -434,13 +434,14 @@ private struct APIEffortRow: View {
 /// Saved providers: switch between them, rename or delete one. Each keeps its own
 /// address, key, model and thinking strength; the key is removed with the preset.
 private struct APIPresetManager: View {
+    @Environment(\.settingsShowsFullOptions) private var showFullSettings
     @Environment(AppState.self) private var state
     @State private var renaming = false
     @State private var newName = ""
     @State private var confirmDelete = false
 
     var body: some View {
-        if !state.simplifiedInterface || state.apiPresets.count > 1 {
+        if showFullSettings || !state.simplifiedInterface || state.apiPresets.count > 1 {
             HStack(spacing: Space.s2) {
                 Text("预设").font(Typo.label).foregroundStyle(Ink.secondary)
                 Menu {
@@ -453,7 +454,7 @@ private struct APIPresetManager: View {
                     Label { Text(verbatim: state.activeAPIPreset?.name ?? String(localized: "选择预设")) } icon: { Image(systemName: "server.rack") }
                 }
                 .menuStyle(.button).buttonStyle(SecondaryButtonStyle()).fixedSize()
-                if !state.simplifiedInterface {
+                if showFullSettings || !state.simplifiedInterface {
                     Button("重命名") { newName = state.activeAPIPreset?.name ?? ""; renaming = true }.buttonStyle(ChipButtonStyle())
                     Button("删除") { confirmDelete = true }.buttonStyle(ChipButtonStyle()).disabled(state.apiPresets.count <= 1)
                 }
@@ -477,6 +478,7 @@ private struct APIPresetManager: View {
 
 /// Codex for people who already have it: status, model, thinking strength.
 struct CodexEngineSection: View {
+    @Environment(\.settingsShowsFullOptions) private var showFullSettings
     @Environment(AppState.self) private var state
 
     var body: some View {
@@ -487,7 +489,7 @@ struct CodexEngineSection: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(LocalizedStringKey(state.checkingCodexStatus ? "正在检测 Codex…" : state.codexReady ? "Codex 已登录（ChatGPT 账号）" : state.codexInstalled ? "需要登录 Codex" : "未检测到 Codex"))
                         .font(Typo.label).lineLimit(2)
-                    if !state.simplifiedInterface {
+                    if showFullSettings || !state.simplifiedInterface {
                         Text("\(state.codexLoginStatus) · \(state.codexVersion)").font(Typo.caption).foregroundStyle(Ink.secondary)
                     }
                 }

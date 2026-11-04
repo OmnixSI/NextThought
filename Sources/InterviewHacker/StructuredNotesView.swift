@@ -2,12 +2,6 @@ import AppKit
 import SwiftUI
 import InterviewHackerCore
 
-/// The width of the view a preference was read in (the fishbone sizes itself from it).
-struct MeasuredWidthKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 /// "[12:41]" beside a node: jumps to that moment in the transcript.
 struct StructuredTimeLink: View {
     let at: Int?

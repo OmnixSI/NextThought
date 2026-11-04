@@ -15250,6 +15250,256 @@
           }
         }
       }
+    },
+    "声音与识别": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio & transcription"
+          }
+        }
+      }
+    },
+    "回答服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer service"
+          }
+        }
+      }
+    },
+    "资料与模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Documents & models"
+          }
+        }
+      }
+    },
+    "浮窗与字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overlay & captions"
+          }
+        }
+      }
+    },
+    "数据与备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data & backups"
+          }
+        }
+      }
+    },
+    "权限与维护": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions & maintenance"
+          }
+        }
+      }
+    },
+    "环境检查与修复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Environment diagnostics"
+          }
+        }
+      }
+    },
+    "刷新声音来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh audio sources"
+          }
+        }
+      }
+    },
+    "系统识别说明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System transcription details"
+          }
+        }
+      }
+    },
+    "识别模型与音频处理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech models & audio processing"
+          }
+        }
+      }
+    },
+    "联网搜索与回答参数": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web search & answer options"
+          }
+        }
+      }
+    },
+    "浮窗位置与外观": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overlay position & appearance"
+          }
+        }
+      }
+    },
+    "会后经验回写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save meeting lessons"
+          }
+        }
+      }
+    },
+    "导入导出选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import & export options"
+          }
+        }
+      }
+    },
+    "自动备份与恢复记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic backups & recovery history"
+          }
+        }
+      }
+    },
+    "GitHub 访问设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GitHub access"
+          }
+        }
+      }
+    },
+    "模型与组件管理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Models & components"
+          }
+        }
+      }
+    },
+    "工作台功能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace features"
+          }
+        }
+      }
+    },
+    "显示完整工作台功能": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all workspace features"
+          }
+        }
+      }
+    },
+    "只影响工作台的功能展示。设置中的所有项目始终可以访问。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes workspace features only. All settings remain accessible."
+          }
+        }
+      }
+    },
+    "导入会合并，不删除现有数据。密钥和设置是否包含，由下方导入导出选项决定。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import merges your data without deleting existing items. Choose whether to include keys and settings below."
+          }
+        }
+      }
+    },
+    "版本检查 · 更新渠道 · 下载与安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version checks · Update channel · Download & install"
+          }
+        }
+      }
+    },
+    "查看与修改键盘快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View and customize keyboard shortcuts"
+          }
+        }
+      }
+    },
+    "手机配对 · 局域网与备用连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone pairing · Local and backup connections"
+          }
+        }
+      }
+    },
+    "系统权限 · 本机签名 · 运行维护": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System permissions · Local signing · Maintenance"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
