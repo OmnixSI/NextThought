@@ -920,6 +920,7 @@ private struct RecognitionSettings: View {
                     .onChange(of: state.microphoneVoiceProcessing) { _, _ in state.updateSettings() }
             }
             InsightSettings()
+            SpeakerSettingsSection()
             }
         }
         }

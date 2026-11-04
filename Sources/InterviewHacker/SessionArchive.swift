@@ -29,6 +29,8 @@ enum SessionStorageInfo: Equatable, Sendable {
 ///     context.json       mode, answer requirements, background and imported files
 ///     transcript.jsonl   every final transcript line (both channels), appended live
 ///     translations.jsonl translated final lines, keyed by transcript line ID
+///     voices.jsonl       which voice said a line (区分对方的每个人), keyed by transcript line ID; the
+///                        latest tag of a line wins, so merging two voices just appends new tags
 ///     questions.jsonl    every question the detector saw
 ///     answers.jsonl      every generated answer
 ///     summary.json       model-written summary and question list (after the session)
@@ -138,6 +140,11 @@ final class SessionArchive {
                 if let translation = translations[transcript[index].id] {
                     transcript[index].translatedText = translation
                 }
+            }
+            let voices = Dictionary(lines("voices.jsonl", SessionVoiceTag.self).map { ($0.id, $0.voice) },
+                                    uniquingKeysWith: { _, latest in latest })
+            for index in transcript.indices {
+                if let voice = voices[transcript[index].id] { transcript[index].voice = voice }
             }
             return SessionDetail(
                 meta: meta,
@@ -418,7 +425,7 @@ final class SessionArchive {
         return total
     }
 
-    private func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) {
+    func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) {
         let url = folder(id).appendingPathComponent(file)
         guard let data = try? JSONLines.line(value) else { return }
         io.async {

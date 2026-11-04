@@ -22,6 +22,8 @@ final class AppState {
     let screenContextService = ScreenContextService()
     let answerCoordinator = AnswerCoordinator()
     let liveTranslation = LiveTranslationCoordinator()
+    /// 区分对方的每个人 (SpeakerID.swift).
+    let speakers = SpeakerVoices()
     var apiVisionEnabled = UserDefaults.standard.bool(forKey: "apiVisionEnabled")
     var preparedWorkspace: Workspace?
     var isImportingDocuments = false
@@ -606,6 +608,7 @@ final class AppState {
         guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
         guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
         liveTranslation.beginMeeting()
+        speakers.beginMeeting(inPerson: isOfflineMeeting)
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
         // In the room people talk face to face: answers stay quiet unless asked for.
         automaticAnswers = typeDefaults.liveMode == .prompting && !isOfflineMeeting
@@ -673,6 +676,7 @@ final class AppState {
             startCandidateTicker()
         } catch {
             isRunning = false
+            speakers.endMeeting()
             // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
             if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
                 rebuildContextIndex()
@@ -783,6 +787,8 @@ final class AppState {
         microphonePartialTranscript = ""
         transcriptionStatus = "已停止"
         finishArchive()
+        // Voices are forgotten with the meeting: nothing about them is kept for the next one.
+        speakers.endMeeting()
         preparedWorkspace = nil
         plannedMeeting = nil
         rebuildContextIndex()
@@ -1471,11 +1477,16 @@ final class AppState {
         }
         // Both channels also feed the echo monitor (loudness envelopes only).
         let monitor = echoMonitor
+        // With 区分对方的每个人 on, the last minute of the channel that carries other people's voices
+        // is also kept in memory, so a finished sentence can be cut out for its voiceprint.
+        let systemWindow = speakers.meeting?.system
+        let roomWindow = speakers.meeting?.microphone
         if offline {
             audio.setPCMHandler(nil)
         } else {
             let systemInput = service.inputHandler()
             audio.setPCMHandler { samples, origin in
+                systemWindow?.append(samples, origin: origin)
                 systemInput(samples, origin)
                 monitor.system(samples)
             }
@@ -1483,6 +1494,7 @@ final class AppState {
         if let micService = microphoneTranscriber {
             let micInput = micService.inputHandler()
             microphone.setPCMHandler { samples, origin in
+                roomWindow?.append(samples, origin: origin)
                 micInput(samples, origin)
                 monitor.microphone(samples)
             }
