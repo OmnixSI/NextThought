@@ -183,6 +183,7 @@ extension AppState {
         let workspace = activeWorkspace
         let context = TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
         let skills = activeSkillSnippets
+        let glossarySection = glossaryPromptSection(for: workspace)
         // With the embedding model the question is turned into a vector first,
         // so the passages are looked up in the background.
         Task { [weak self] in
@@ -191,7 +192,8 @@ extension AppState {
             self.startWebLookup(id: id, question: question) { webSearch, results in
                 AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: [], hasScreenshot: false,
                                               preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: passages,
-                                              experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch)
+                                              experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch,
+                                              glossary: glossarySection)
             }
         }
     }

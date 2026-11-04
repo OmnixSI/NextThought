@@ -892,6 +892,7 @@ final class AppState {
         answerRetrievalTask = retrieval
         let workspace = preparedWorkspace ?? activeWorkspace
         let allSnippets = activeSkills.map { SkillSnippet(name: $0.name, content: $0.content) }
+        let glossarySection = glossaryPromptSection(for: workspace)
         let turns = answerTurns
         let tier = activeServiceTier
         let screenTask = Task { [weak self] () -> QuestionScreenContext in
@@ -906,7 +907,8 @@ final class AppState {
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: image,
                 preferences: workspace.preferences, mode: workspace.effectiveMode, style: workspace.style, excerpts: excerpts,
                 experience: workspace.experienceNotes(), skills: allSnippets, webResults: results, webSearch: webSearch,
-                screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide)
+                screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide,
+                glossary: glossarySection)
         }
         searchDecisionTask = Task { [weak self] in
             guard let self else { return }
@@ -1429,7 +1431,7 @@ final class AppState {
         switch transcriptionBackend {
         case "zipformer":
             guard isModelInstalled else { throw AppFailure.modelMissing }
-            let vocabulary = recognitionVocabulary
+            let vocabulary = recognitionHotwords
             let model = localStreamingModel.onlineModel
             let refiner = refinerModel
             factory = { ZipformerStreamingTranscriber(model: model, refiner: refiner, vocabulary: vocabulary) }

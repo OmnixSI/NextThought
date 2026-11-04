@@ -256,7 +256,11 @@ private struct SettingsGroupContent: View {
         switch group {
         case .essentials: EssentialSettings()
         case .recognition: RecognitionSettings()
-        case .documents: DocumentModelSettings()
+        case .documents:
+            VStack(alignment: .leading, spacing: 12) {
+                DocumentModelSettings()
+                GlossarySettingsEntry()
+            }
         case .answers: AnswerSettings()
         case .notes: NotesSettingsView()
         case .skills:

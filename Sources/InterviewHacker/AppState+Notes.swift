@@ -249,7 +249,7 @@ extension AppState {
             let numbered = NotesPrompt.transcript(detail.lines, start: start, numbered: true, english: english)
             let vocabulary = properNouns(detail: detail, workspace: workspace)
             for chunk in SessionSummaryPrompt.chunks(numbered) {
-                let reply = try await notesRequest(system: NotesPrompt.proofreadSystem(english: english),
+                let reply = try await notesRequest(system: NotesPrompt.proofreadSystem(english: english) + glossaryNotesBlock(workspace: workspace, english: english, proofreading: true),
                                                    user: NotesPrompt.proofreadUser(transcript: chunk, vocabulary: vocabulary), engine: engine)
                 corrections += NotesJSON.corrections(reply)
             }
@@ -269,7 +269,7 @@ extension AppState {
         let transcript = NotesPrompt.transcript(lines, start: start, english: english)
         let chunks = SessionSummaryPrompt.chunks(transcript)
         let system = NotesPrompt.organizeSystem(template: template, english: english, meetingDate: start,
-                                                inPerson: detail.meta.inPerson == true)
+                                                inPerson: detail.meta.inPerson == true) + glossaryNotesBlock(workspace: workspace, english: english)
         let answers = detail.answers.suffix(40).map { "Q：\($0.question.prefix(300))\nA：\($0.answer.prefix(600))" }.joined(separator: "\n\n")
         let reply: String
         if chunks.count == 1 {
@@ -301,6 +301,7 @@ extension AppState {
             words += workspace.documents.map { ($0.name as NSString).deletingPathExtension }
         }
         if let context = detail.context { words += context.documents.map { ($0.name as NSString).deletingPathExtension } }
+        words += glossaryForNotes(workspace: workspace).entries.map(\.canonical)
         var seen = Set<String>()
         return words.filter { !$0.isEmpty && seen.insert($0).inserted }
     }
@@ -348,6 +349,7 @@ extension AppState {
                                                      detected: detail.questions, context: detail.context)
         let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt))
         let system = SessionSummaryPrompt.system(for: detail.meta.mode)
+            + glossaryNotesBlock(workspace: detail.meta.workspaceID.flatMap { workspaces.workspace($0) }, english: false)
         let markdown: String
         if chunks.count == 1 {
             markdown = try await notesRequest(system: system, user: SessionSummaryPrompt.full(material), engine: engine)

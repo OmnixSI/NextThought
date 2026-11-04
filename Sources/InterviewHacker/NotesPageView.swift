@@ -515,15 +515,23 @@ private struct CorrectedTranscript: View {
     @Environment(AppState.self) private var state
     let detail: SessionDetail
     let highlighted: Int?
+    /// Find in the transcript; recorded misheard spellings (术语和人名) match too.
+    @State private var find = ""
+    @State private var findCache = GlossarySearchCache()
+    @State private var glossaryDraft: GlossaryDraft?
 
     var body: some View {
         let corrections = detail.notes?.corrections ?? []
         let byLine = Dictionary(grouping: corrections, by: \.line)
+        let terms: GlossarySearch? = find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : findCache.terms(for: find, state: state)
+        let shown = Array(detail.lines.enumerated()).filter { terms == nil || terms?.appMatch(in: $0.element.text) != nil }
         LazyVStack(alignment: .leading, spacing: Space.s3) {
             if detail.lines.isEmpty {
                 Text("这场会议没有转写。").font(Typo.body).foregroundStyle(Ink.secondary)
+            } else {
+                TranscriptFindField(query: $find, matches: terms == nil ? nil : shown.count)
             }
-            ForEach(Array(detail.lines.enumerated()), id: \.element.id) { index, line in
+            ForEach(shown, id: \.element.id) { index, line in
                 let fixes = byLine[index] ?? []
                 HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                     Text(verbatim: NotesTime.text(Int(max(0, line.date.timeIntervalSince(detail.meta.startedAt)))))
@@ -538,6 +546,9 @@ private struct CorrectedTranscript: View {
                             .font(Typo.body).lineSpacing(5)
                             .textSelection(.enabled)
                             .help(Self.originals(fixes))
+                        if let terms, let hit = terms.appMatch(in: line.text), hit.isMisheard {
+                            MisheardMark(form: hit.form)
+                        }
                         if let translation = line.translatedText, !translation.isEmpty {
                             Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                                 .textSelection(.enabled)
@@ -554,8 +565,12 @@ private struct CorrectedTranscript: View {
                             state.toggleCorrection(fix.id, in: detail.meta.id)
                         }
                     }
+                    Button("加入术语表…") { glossaryDraft = GlossaryDraft(line: line.text) }
                 }
             }
+        }
+        .sheet(item: $glossaryDraft) { draft in
+            AddToGlossarySheet(line: draft.line).environment(state)
         }
     }
 

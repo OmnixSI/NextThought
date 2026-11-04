@@ -12,9 +12,11 @@ enum DataBackup {
         var settingsApplied = 0
         var secretsApplied = 0
         var skillsAdded = 0
+        var glossaryAdded = 0
         var description: String {
             var parts: [String] = []
             if skillsAdded > 0 { parts.append("技能 \(skillsAdded) 个") }
+            if glossaryAdded > 0 { parts.append("术语和人名 \(glossaryAdded) 项") }
             if workspacesAdded + workspacesUpdated > 0 { parts.append("场景 新增 \(workspacesAdded)、更新 \(workspacesUpdated)") }
             if sessionsAdded > 0 { parts.append("会话记录 \(sessionsAdded) 条") }
             if settingsApplied > 0 { parts.append("设置 \(settingsApplied) 项") }
@@ -37,11 +39,12 @@ enum DataBackup {
     // MARK: Export
 
     /// Full export: settings, all workspaces, all sessions (and API keys if asked).
-    static func exportAll(to destination: URL, includeSecrets: Bool, workspaces: [Workspace], skills: [Skill] = []) throws {
+    static func exportAll(to destination: URL, includeSecrets: Bool, workspaces: [Workspace], skills: [Skill] = [], glossary: Glossary = Glossary()) throws {
         let staging = try makeStaging()
         defer { try? FileManager.default.removeItem(at: staging.deletingLastPathComponent()) }
         try writeWorkspaces(workspaces, into: staging)
         try writeSkills(skills, into: staging)
+        try writeGlossary(glossary, into: staging)
         let sessionIDs = try copySessions(into: staging, only: nil)
         try writeSettings(into: staging)
         if includeSecrets { try writeSecrets(into: staging) }
@@ -110,6 +113,10 @@ enum DataBackup {
            let skills = try? JSONLines.decoder().decode([Skill].self, from: data) {
             summary.skillsAdded = SkillLibrary.shared.merge(skills)
         }
+        if let data = try? Data(contentsOf: root.appendingPathComponent("glossary.json")),
+           let glossary = try? JSONLines.decoder().decode(Glossary.self, from: data) {
+            summary.glossaryAdded = GlossaryStore.shared.merge(glossary)
+        }
 
         let sessionsDirectory = root.appendingPathComponent("Sessions", isDirectory: true)
         let incomingSessions = ((try? FileManager.default.contentsOfDirectory(at: sessionsDirectory, includingPropertiesForKeys: nil)) ?? [])
@@ -158,13 +165,14 @@ enum DataBackup {
     static func automaticBackup(reason: String) async throws -> URL {
         WorkspaceStore.shared.flush()
         await SessionArchive.shared.flush()
-        let workspaces = WorkspaceStore.shared.workspaces, skills = SkillLibrary.shared.skills
+        let workspaces = WorkspaceStore.shared.workspaces, skills = SkillLibrary.shared.skills, glossary = GlossaryStore.shared.glossary
         let settings = SettingsSnapshot.filter(UserDefaults.standard.dictionaryRepresentation())
         let settingsData = try PropertyListSerialization.data(fromPropertyList: settings, format: .xml, options: 0)
         let version = appVersion, build = appBuild
         let files = try await Task.detached(priority: .utility) { () -> [String: Data] in
             let encoder = JSONLines.encoder(); encoder.outputFormatting.insert(.sortedKeys)
             var files: [String: Data] = ["settings.plist": settingsData, "skills.json": try encoder.encode(skills)]
+            if !glossary.isEmpty { files["glossary.json"] = try encoder.encode(glossary) }
             for workspace in workspaces { files["Workspaces/\(workspace.id.uuidString).json"] = try encoder.encode(workspace) }
             let sessions = ((try? FileManager.default.contentsOfDirectory(at: AppPaths.sessions, includingPropertiesForKeys: nil)) ?? []).filter { UUID(uuidString: $0.lastPathComponent) != nil }
             var manifest = BackupManifest(kind: .full, appVersion: version, appBuild: build, includesSecrets: false, workspaceCount: workspaces.count, sessionCount: sessions.count)
@@ -234,6 +242,8 @@ enum DataBackup {
         }
         let skills = root.appendingPathComponent("skills.json")
         if fm.fileExists(atPath: skills.path) { _ = try JSONLines.decoder().decode([Skill].self, from: Data(contentsOf: skills)) }
+        let glossary = root.appendingPathComponent("glossary.json")
+        if fm.fileExists(atPath: glossary.path) { _ = try JSONLines.decoder().decode(Glossary.self, from: Data(contentsOf: glossary)) }
         let originals = ((try? fm.contentsOfDirectory(at: root.appendingPathComponent("Originals"), includingPropertiesForKeys: [.isRegularFileKey])) ?? [])
         for file in originals where !file.lastPathComponent.hasPrefix("._") {
             let hash = file.deletingPathExtension().lastPathComponent
@@ -263,6 +273,11 @@ enum DataBackup {
     private static func writeSkills(_ skills: [Skill], into staging: URL) throws {
         guard !skills.isEmpty else { return }
         try JSONLines.encoder().encode(skills).write(to: staging.appendingPathComponent("skills.json"))
+    }
+
+    private static func writeGlossary(_ glossary: Glossary, into staging: URL) throws {
+        guard !glossary.isEmpty else { return }
+        try JSONLines.encoder().encode(glossary).write(to: staging.appendingPathComponent("glossary.json"))
     }
 
     private static func writeWorkspaces(_ workspaces: [Workspace], into staging: URL) throws {
