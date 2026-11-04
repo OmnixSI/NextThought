@@ -1433,6 +1433,7 @@ private struct OverlaySettings: View {
                 .onChange(of: state.capturePrivacy) { _, _ in state.saveAnswerSettings(); state.updateSettings() }
             Note(String(localized: "系统无法保证窗口不被录屏。共享会议窗口或标签页更稳妥；\(state.shortcutLabel(.panicHide)) 可隐藏全部窗口。"), presentation: .inline)
         }
+        SubtitleBarSettingsSection()
         AdvancedOptions("overlay") {
             SettingsSection(title: "外观细节与共享测试", icon: "slider.horizontal.3") {
                 HStack {
