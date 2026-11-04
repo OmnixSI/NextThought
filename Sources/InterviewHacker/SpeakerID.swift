@@ -229,9 +229,12 @@ final class SpeakerTagger: @unchecked Sendable {
 final class SpeakerVoices {
     static let defaultsKey = "speakerVoicesEnabled"
 
-    /// 区分对方的每个人 (experimental, off by default). Takes effect from the next meeting.
-    /// Change it with `setEnabled` (it is saved there).
-    private(set) var enabled = UserDefaults.standard.bool(forKey: SpeakerVoices.defaultsKey)
+    /// 区分对方的每个人 is on unless the person turned it off (nothing saved means on). With no voiceprint
+    /// model in the build it does nothing (`beginMeeting` checks `modelAvailable`).
+    static var storedEnabled: Bool { UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? true }
+
+    /// Takes effect from the next meeting. Change it with `setEnabled` (it is saved there).
+    private(set) var enabled = SpeakerVoices.storedEnabled
     /// Names the user gave to the voices of the meeting in progress, by voice id.
     var names: [String: String] = [:]
     /// Voices of the meeting in progress that are the user: recognised from 我的声音, or marked by hand.

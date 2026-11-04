@@ -350,13 +350,12 @@ private struct GuideDivider: View {
 }
 
 /// First run, in the order a person needs things: what this is, see it work, allow
-/// the sound, connect an answer service, optional materials, start. Nothing is asked
-/// before it is explained, and every step but the sound can be passed.
+/// the sound, record their own voice, connect an answer service, optional materials,
+/// start. Nothing is asked before it is explained, and every step but the sound can be passed.
 struct OnboardingView: View {
     @Environment(AppState.self) private var state
     @AppStorage("quickStartStep", store: UserDefaults.standard) private var stepRaw = 0
     @State private var sampleFinished = false
-    @State private var materialsConfirmed = false
     @State private var starting = false
 
     private var step: OnboardingStep { OnboardingStep.clamped(stepRaw) }
@@ -458,6 +457,7 @@ struct OnboardingView: View {
         case .welcome: "欢迎"
         case .sample: "示例会议"
         case .sound: "允许声音"
+        case .voice: "你的声音"
         case .answers: "连接回答服务"
         case .materials: "资料"
         case .start: "开始"
@@ -473,18 +473,26 @@ struct OnboardingView: View {
         switch step {
         case .sample: sampleFinished
         case .answers: state.answerEngineReady
-        case .materials: materialsConfirmed || usesBuiltInDocuments
+        case .voice: MyVoice.shared.usableProfile != nil
+        case .materials: state.onboardingMaterialsPending.isEmpty
         case .welcome, .sound, .start: true
         }
     }
 
-    private var skipTitle: String { step == .answers ? "稍后再接" : "跳过" }
+    private var skipTitle: String {
+        switch step {
+        case .answers: "稍后再接"
+        case .voice: "以后再说"
+        default: "跳过"
+        }
+    }
 
     @ViewBuilder private var page: some View {
         switch step {
         case .welcome: welcome
         case .sample: sample
         case .sound: sound
+        case .voice: OnboardingVoicePage()
         case .answers: answers
         case .materials: materials
         case .start: start
@@ -523,7 +531,7 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: 3 · Sound
+    // MARK: 3 · Sound (the next page, 你的声音, is OnboardingVoicePage)
 
     private var sound: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
@@ -630,7 +638,7 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: 4 · Answers
+    // MARK: 5 · Answers
 
     private var answers: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
@@ -643,36 +651,13 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: 5 · Materials
-
-    private var usesBuiltInDocuments: Bool { state.documentOCRProvider == .system && !state.semanticRetrievalEnabled }
+    // MARK: 6 · Materials
 
     private var materials: some View {
-        VStack(alignment: .leading, spacing: Space.s6) {
-            pageHeader("有资料，就放进来", "议程、简历、产品文档都可以。会前读一遍，会中的回答才贴合这场会议。可以跳过。")
-            VStack(alignment: .leading, spacing: Space.s3) {
-                if usesBuiltInDocuments {
-                    HStack(spacing: Space.s2) {
-                        StatusDot(tone: .ready)
-                        Text("资料用系统识别和关键词查找，不需要额外下载。").font(Typo.body)
-                    }
-                } else {
-                    Button("用系统识别和关键词查找，不额外下载") {
-                        state.selectDocumentProvider(.system); state.selectSemanticRetrieval(false); materialsConfirmed = true
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
-                Text("之后在“准备”页把文件拖进来，或到资料夹添加。增强识别可以在设置 → 资料里按需安装。")
-                    .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-            DisclosureGroup("了解各种读取方式的取舍") {
-                DocumentChoiceSummary().padding(.top, Space.s2)
-            }
-            .font(Typo.label)
-        }
+        OnboardingMaterialsPage()
     }
 
-    // MARK: 6 · Start
+    // MARK: 7 · Start
 
     private var readiness: RealtimeSetupReadiness { state.liveSetupReadiness }
 
