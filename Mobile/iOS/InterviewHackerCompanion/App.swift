@@ -18,8 +18,12 @@ import UIKit
 }
 struct CompanionView: View {
     @ObservedObject var client: NativeCompanionClient
-    @State private var link = "", error = "", scanning = false, enableBluetooth = true
-    @State private var showsLink = false, fontScale: CGFloat = 1
+    @State private var link = ""
+    @State private var error = ""
+    @State private var scanning = false
+    @State private var enableBluetooth = true
+    @State private var showsLink = false
+    @State private var fontScale: CGFloat = 1
     @ScaledMetric(relativeTo: .body) private var answerSize: CGFloat = 22
     var body: some View {
         NavigationStack {
