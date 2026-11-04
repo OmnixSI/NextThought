@@ -22,6 +22,8 @@ final class AppState {
     let screenContextService = ScreenContextService()
     let answerCoordinator = AnswerCoordinator()
     let liveTranslation = LiveTranslationCoordinator()
+    /// 会议自动收尾 (AppState+AutoEnd.swift).
+    let autoEnd = MeetingAutoEnd()
     var apiVisionEnabled = UserDefaults.standard.bool(forKey: "apiVisionEnabled")
     var preparedWorkspace: Workspace?
     var isImportingDocuments = false
@@ -671,6 +673,7 @@ final class AppState {
             errorMessage = nil
             beginArchive(startedAt: startedAt)
             startCandidateTicker()
+            startAutoEnd()
         } catch {
             isRunning = false
             // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
@@ -755,11 +758,13 @@ final class AppState {
         await resumeSession()
     }
 
-    func stopSession() async {
+    /// `endedAt`: where the meeting really ended, when that was before now (auto-end after silence).
+    func stopSession(endedAt: Date? = nil) async {
         guard (isRunning || isPaused) && !isChangingSession else { return }
         isChangingSession = true
         defer { isChangingSession = false }
         isStopping = true
+        stopAutoEnd()
         statusText = "正在处理最后片段…"
         pendingAutomaticQuestion = nil
         deferredCandidate = nil
@@ -782,7 +787,7 @@ final class AppState {
         partialTranscript = ""
         microphonePartialTranscript = ""
         transcriptionStatus = "已停止"
-        finishArchive()
+        finishArchive(endedAt: endedAt)
         preparedWorkspace = nil
         plannedMeeting = nil
         rebuildContextIndex()

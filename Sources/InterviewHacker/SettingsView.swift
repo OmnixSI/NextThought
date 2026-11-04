@@ -864,6 +864,7 @@ private struct RecognitionSettings: View {
             }
         }
         }
+        AutoEndSettingsSection()
         AdvancedOptions("recognition") {
             VStack(alignment: .leading, spacing: 12) {
             SettingsSection(title: "专业词", icon: "textformat") {
