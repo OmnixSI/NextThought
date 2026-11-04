@@ -154,8 +154,14 @@ enum EnvironmentSetup {
         step = Step(title: "刷新 Codex 状态", status: .running)
         onStep(step)
         await state.refreshCodexStatus()
-        step.status = state.codexInstalled ? .done : .failed
-        step.detail = state.codexInstalled ? state.codexLoginStatus : "没有找到 Codex CLI。"
+        if state.answerBackend == .openAICompatible, !state.codexInstalled {
+            // An API key needs no Codex: not finding it is not a failure.
+            step.status = .skipped
+            step.detail = "当前使用 API Key，不需要 Codex。"
+        } else {
+            step.status = state.codexInstalled ? .done : .failed
+            step.detail = state.codexInstalled ? state.codexLoginStatus : "没有找到 Codex CLI。"
+        }
         onStep(step)
 
         step = Step(title: "刷新回答模型", status: .running)

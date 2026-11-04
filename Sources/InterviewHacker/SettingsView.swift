@@ -998,7 +998,6 @@ private struct AnswerSettings: View {
         SettingsSection(title: "回答引擎", icon: "sparkles") {
             VStack(alignment: .leading, spacing: 12) {
                 AnswerEngineForm(foldSecondary: true)
-                EngineTestRow()
                 Divider()
                 HStack(spacing: 8) {
                     Image(systemName: "text.bubble")
@@ -1048,80 +1047,9 @@ private struct AnswerSettings: View {
     }
 }
 
-/// Engine choice and its fields; shared by settings and onboarding.
-struct AnswerEngineForm: View {
-    @Environment(AppState.self) private var state
-    /// Keep essential connection fields visible; the global switch controls extra parameters.
-    var foldSecondary = false
-
-    var body: some View {
-        @Bindable var state = state
-        MenuPicker(title: "引擎", selection: Binding(get: { state.answerBackend == .openAICompatible ? AnswerBackend.openAICompatible : .codexAppServer },
-                                                       set: { state.selectAnswerBackend($0) }),
-                   options: [(.codexAppServer, String(localized: "Codex（ChatGPT 账号）")),
-                             (.openAICompatible, String(localized: "API Key（任意 OpenAI 兼容服务）"))])
-        .disabled(state.isAnswering)
-        if state.answerBackend == .openAICompatible {
-            APIPresetForm(foldSecondary: foldSecondary)
-        } else {
-            HStack {
-                Image(systemName: state.codexReady ? "checkmark.circle.fill" : "exclamationmark.circle")
-                    .foregroundStyle(state.codexReady ? .green : .orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(LocalizedStringKey(state.checkingCodexStatus ? "正在检测 Codex…" : state.codexReady ? "Codex 已登录（ChatGPT 账号）" : state.codexInstalled ? "需要登录 Codex" : "未检测到 Codex")).font(.system(size: 13, weight: .medium)).lineLimit(2)
-                    if !state.simplifiedInterface { Text("\(state.codexLoginStatus) · \(state.codexVersion)").font(.system(size: 11)).foregroundStyle(.secondary) }
-                }
-                Spacer()
-                Button { Task { await state.refreshCodexStatus() } } label: { Image(systemName: "arrow.clockwise").frame(width: 28, height: 28) }
-                    .buttonStyle(SecondaryButtonStyle()).help("重新检测 Codex 登录状态和可用模型")
-            }
-            if !state.checkingCodexStatus && !state.codexInstalled {
-                Note("未检测到 Codex：安装 ChatGPT / Codex 桌面客户端，或在终端运行 `npm i -g @openai/codex`，然后 `codex login` 用 ChatGPT 账号登录，再点右侧刷新。", color: .orange)
-            } else if !state.checkingCodexStatus && !state.codexReady {
-                Note("在终端运行 codex login，用 ChatGPT 账号完成登录，再点右侧刷新。已有桌面登录仍显示未连接时，也可用这条命令连接本机 CLI。", color: .orange)
-            }
-            if foldSecondary {
-                MenuPicker(title: "模型", selection: $state.codexModelID, options: codexModelOptions, placeholder: "请选择模型")
-                    .disabled(state.isAnswering)
-                    .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
-                if state.codexModels.isEmpty {
-                    TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
-                        .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
-                        .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
-                }
-                AdvancedOptions("answers-codex") {
-                    CodexReasoningPicker()
-                    CodexFastModeToggle()
-                }
-            } else {
-                HStack(spacing: 10) {
-                    MenuPicker(title: "模型", selection: $state.codexModelID, options: codexModelOptions, placeholder: "请选择模型")
-                        .disabled(state.isAnswering)
-                        .onChange(of: state.codexModelID) { _, _ in state.normalizeCodexSelection() }
-                    CodexReasoningPicker()
-                }
-                if state.codexModels.isEmpty {
-                    TextField("模型 ID（与 Codex 中一致）", text: $state.codexModelID)
-                        .textFieldStyle(.roundedBorder).disabled(state.isAnswering)
-                        .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
-                }
-                CodexFastModeToggle()
-            }
-        }
-    }
-
-    private var codexModelOptions: [(String, String)] {
-        var options: [(String, String)] = state.codexModels.map { ($0.id, $0.name) }
-        if !state.codexModelID.isEmpty, !state.codexModels.contains(where: { $0.id == state.codexModelID }) {
-            options.insert((state.codexModelID, state.codexModelID), at: 0)
-        }
-        return options
-    }
-}
-
 /// Reasoning strength of the Codex engine; rarely changed, so the settings page
 /// folds it away.
-private struct CodexReasoningPicker: View {
+struct CodexReasoningPicker: View {
     @Environment(AppState.self) private var state
     var body: some View {
         @Bindable var state = state
@@ -1131,7 +1059,7 @@ private struct CodexReasoningPicker: View {
 }
 
 /// Fast mode of the Codex engine and the notes that explain it.
-private struct CodexFastModeToggle: View {
+struct CodexFastModeToggle: View {
     @Environment(AppState.self) private var state
     var body: some View {
         @Bindable var state = state
@@ -1172,7 +1100,7 @@ struct WebSearchSettings: View {
                 switch state.webSearchProvider {
                 case .codex:
                     if !state.codexReady {
-                        Note("需要安装 Codex 并用 ChatGPT 账号登录（见上方回答引擎）。", color: .orange)
+                        Note("这种搜索方式需要 Codex 并用 ChatGPT 账号登录。只用 API Key 时，请把“搜索方式”改成 Tavily。", color: .orange)
                     } else {
                         Note("联网搜索会把问题发送给 Codex；搜索结果会按当前场景整理成回答。", presentation: .inline)
                     }
@@ -1185,108 +1113,6 @@ struct WebSearchSettings: View {
                     }
                     Note("问题文本会发送给 Tavily；它返回的网页摘要由当前回答引擎整理，并在回答中标注来源。", presentation: .inline)
                 }
-            }
-        }
-    }
-}
-
-/// Saved providers: pick one, or add another from a template; each keeps its own
-/// address, key, model and thinking strength.
-struct APIPresetForm: View {
-    @Environment(AppState.self) private var state
-    /// When true the model fields move into a collapsed “高级选项” block, so the
-    /// settings page only asks for the fields most people actually fill in.
-    var foldSecondary = false
-    @State private var renaming = false
-    @State private var newName = ""
-    @State private var confirmDelete = false
-
-    var body: some View {
-        @Bindable var state = state
-        if !state.simplifiedInterface || state.apiPresets.count > 1 {
-            HStack(spacing: 8) {
-                Text("预设").foregroundStyle(.secondary)
-                Menu {
-                    ForEach(state.apiPresets) { preset in
-                        Button { state.selectAPIPreset(preset.id) } label: {
-                            if preset.id == state.activeAPIPresetID { Label(preset.name, systemImage: "checkmark") } else { Text(preset.name) }
-                        }
-                    }
-                    Divider()
-                    if !state.simplifiedInterface {
-                    Menu("新建预设") {
-                        ForEach(APIPreset.templates, id: \.name) { template in
-                            Button(template.name) { state.addAPIPreset(name: template.name, baseURL: template.url) }
-                        }
-                        Divider()
-                        Button("自定义…") { state.addAPIPreset(name: "自定义", baseURL: "https://") }
-                    }
-                    }
-                } label: {
-                    Label(state.activeAPIPreset?.name ?? "选择预设", systemImage: "server.rack")
-                }
-                .fixedSize()
-                if !state.simplifiedInterface {
-                    Button("重命名") { newName = state.activeAPIPreset?.name ?? ""; renaming = true }.buttonStyle(ChipButtonStyle())
-                    Button("删除") { confirmDelete = true }.buttonStyle(ChipButtonStyle()).disabled(state.apiPresets.count <= 1)
-                }
-                Spacer()
-            }
-            .disabled(state.isAnswering)
-            .alert("重命名预设", isPresented: $renaming) {
-                TextField("名称", text: $newName)
-                Button("保存") { if let id = state.activeAPIPresetID { state.renameAPIPreset(id, to: newName) } }
-                Button("取消", role: .cancel) { }
-            }
-            .confirmationDialog("删除预设“\(state.activeAPIPreset?.name ?? "")”？", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("删除", role: .destructive) { if let id = state.activeAPIPresetID { state.deleteAPIPreset(id) } }
-                Button("取消", role: .cancel) { }
-            } message: { Text("会同时删除保存在钥匙串里的这个 API Key。") }
-        }
-
-        TextField("API 地址，例如 https://api.openai.com/v1", text: $state.apiBaseURL)
-            .textFieldStyle(.roundedBorder)
-            .onChange(of: state.apiBaseURL) { _, _ in state.saveAnswerSettings() }
-        SecureField("API Key（保存在系统钥匙串）", text: $state.apiKey)
-            .textFieldStyle(.roundedBorder)
-            .onSubmit { state.saveAPIKey() }
-            .onChange(of: state.apiKey) { _, _ in state.saveAPIKey() }
-        APIModelDetails(foldSecondary: foldSecondary)
-        Note("转录片段、检索到的资料和截图会发送到这个服务。", presentation: .inline)
-    }
-}
-
-/// Model id, thinking strength and the model list of an OpenAI compatible
-/// service; the settings page folds them away, onboarding shows them.
-private struct APIModelDetails: View {
-    @Environment(AppState.self) private var state
-    var foldSecondary = false
-
-    var body: some View {
-        @Bindable var state = state
-        HStack(spacing: 8) {
-            TextField("模型 ID（与服务商一致）", text: $state.apiModel)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: state.apiModel) { _, _ in state.saveAnswerSettings() }
-            if !state.apiModelChoices.isEmpty {
-                Menu("选择") {
-                    ForEach(state.apiModelChoices, id: \.self) { id in
-                        Button(id) { state.apiModel = id; state.saveAnswerSettings() }
-                    }
-                }
-                .fixedSize()
-            }
-            if !state.simplifiedInterface {
-                Button("获取模型列表") { Task { await state.fetchAPIModels() } }.buttonStyle(ChipButtonStyle())
-            }
-        }
-        if !state.apiModelsStatus.isEmpty { Note(state.apiModelsStatus, presentation: .inline) }
-        if !foldSecondary || !state.simplifiedInterface {
-            HStack(spacing: 8) {
-                MenuPicker(title: "思考强度", selection: $state.apiReasoningEffort, options: APIPreset.efforts)
-                    .onChange(of: state.apiReasoningEffort) { _, _ in state.saveAnswerSettings() }
-                Note("仅对服务商支持的推理模型有效；不确定时保持默认。", presentation: .info)
-                    .accessibilityLabel("思考强度说明")
             }
         }
     }

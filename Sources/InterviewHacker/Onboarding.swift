@@ -41,6 +41,8 @@ extension AppState {
     var checkingCodexStatus: Bool { isRefreshingCodexStatus || codexLoginStatus.hasPrefix("正在") }
     var codexReady: Bool { codexInstalled && codexLoginStatus.lowercased().contains("logged in") }
 
+    /// Answers and notes need a working service: an API address, model and key, or a
+    /// signed-in Codex. Nothing else (such as an installed Codex) is required with an API key.
     var answerEngineReady: Bool {
         switch answerBackend {
         case .openAICompatible:
@@ -158,11 +160,12 @@ extension AppState {
     }
 
     /// One short request through the configured engine (the same path real answers take).
+    /// A failure through an API key is explained in plain words (wrong key, wrong address…).
     func testAnswerEngine() async {
         guard engineTest != .running else { return }
         let model = currentAnswerModel
-        guard !model.isEmpty else { engineTest = .failed("请先选择或填写模型"); return }
-        if answerBackend != .openAICompatible, !codexInstalled { engineTest = .failed("未检测到 Codex"); return }
+        guard !model.isEmpty else { engineTest = .failed(String(localized: "请先选择或填写模型")); return }
+        if answerBackend != .openAICompatible, !codexInstalled { engineTest = .failed(String(localized: "未检测到 Codex")); return }
         engineTest = .running
         let request = AnswerRequest(system: "这是连通性测试。只回复两个字：收到。", user: "测试", model: model, effort: codexEfforts.first ?? codexReasoning,
                                     serviceTier: activeServiceTier)
@@ -170,9 +173,9 @@ extension AppState {
         do {
             let reply = try await runAnswer(request, backend: answerBackend) { _ in }
             let text = reply.trimmingCharacters(in: .whitespacesAndNewlines)
-            engineTest = text.isEmpty ? .failed("模型没有返回文本") : .passed(seconds: Date().timeIntervalSince(started), reply: text)
+            engineTest = text.isEmpty ? .failed(String(localized: "模型没有返回文本")) : .passed(seconds: Date().timeIntervalSince(started), reply: text)
         } catch {
-            engineTest = .failed(error.localizedDescription)
+            engineTest = .failed(answerBackend == .openAICompatible ? AnswerServiceError.explain(error) : error.localizedDescription)
         }
         var passed = false
         if case .passed = engineTest { passed = true }
@@ -189,7 +192,8 @@ extension AppState {
             action: { Task { await self.requestCapturePermission() } }))
         items.append(SetupItem(
             id: "mic", icon: "mic", title: "麦克风",
-            detail: microphoneAccess == .granted ? "已允许 · 你说的话标记为“我”" : "用于识别你自己说的话，并与对方区分",
+            detail: microphoneAccess == .granted ? "已允许 · 你说的话标记为“我”"
+                : microphoneAccess == .undetermined ? "第一次开始记录时才会询问，用于识别你自己说的话" : "未允许 · 只能记录对方的声音",
             status: microphoneAccess == .granted ? .done : (microphoneEnabled ? .required : .recommended),
             actionTitle: microphoneAccess == .granted ? nil : (microphoneAccess == .undetermined ? "允许" : "打开系统设置"),
             action: { Task { await self.requestMicrophoneAccess() } }))
@@ -209,11 +213,11 @@ extension AppState {
             action: { self.transcriptionBackend == "zipformer" ? self.downloadModel() : self.openSettings(.recognition) }))
         let engineDetail: String
         if answerBackend == .openAICompatible {
-            engineDetail = answerEngineReady ? "API · \(apiModel)" : "必需：填写 API 地址、模型和 Key"
+            engineDetail = answerEngineReady ? "API · \(apiModel)" : "必需：选择服务商，粘贴 API Key"
         } else if !codexInstalled {
-            engineDetail = "必需：安装 Codex 并用 ChatGPT 账号登录，或改用 API Key"
+            engineDetail = "必需：选择服务商，粘贴 API Key"
         } else if !codexReady {
-            engineDetail = "必需：在终端运行 codex login 登录后点刷新"
+            engineDetail = "必需：在终端运行 codex login 登录后点刷新，或改用 API Key"
         } else {
             engineDetail = "Codex · \(codexModelID) · \(codexReasoning)" + (codexFastMode && codexFastAvailable ? " · Fast" : "")
         }
@@ -249,7 +253,7 @@ struct SetupChecklist: View {
     @State private var confirmBinding = false
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: Space.s2) {
             ForEach(state.setupItems(confirmBinding: { confirmBinding = true }).filter { !exclude.contains($0.id) }) { item in
                 SetupRow(item: item)
             }
@@ -263,24 +267,21 @@ struct SetupChecklist: View {
     }
 }
 
+/// A quiet row: status dot, title, one gray line, and an action when there is one.
 struct SetupRow: View {
     let item: SetupItem
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: item.icon)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(item.status == .done ? Color.green : Brand.accent)
-                .frame(width: 30, height: 30)
-                .background((item.status == .done ? Color.green : Brand.accent).opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        HStack(spacing: Space.s3) {
+            StatusDot(tone: tone)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
-                    Text(LocalizedStringKey(item.title)).font(.system(size: 13, weight: .semibold))
+                    Text(LocalizedStringKey(item.title)).font(Typo.label)
                     badge
                 }
-                Text(LocalizedStringKey(item.detail)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
+                Text(LocalizedStringKey(item.detail)).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(2)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: Space.s2)
             if item.status == .working {
                 ProgressView().controlSize(.small)
             } else if let title = item.actionTitle, let action = item.action {
@@ -288,199 +289,489 @@ struct SetupRow: View {
                     .buttonStyle(ChipButtonStyle(prominent: item.status == .required))
             }
         }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
+    }
+
+    private var tone: StatusDot.Tone {
+        switch item.status {
+        case .done: .ready
+        case .required: .caution
+        case .recommended, .working: .idle
+        }
     }
 
     @ViewBuilder private var badge: some View {
         switch item.status {
-        case .done: Image(systemName: "checkmark.circle.fill").font(.system(size: 11)).foregroundStyle(.green)
-        case .required: Text("必需").font(.system(size: 10, weight: .semibold)).foregroundStyle(.orange)
-        case .recommended: Text("建议").font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
-        case .working: EmptyView()
+        case .required: Text("必需").font(Typo.caption).foregroundStyle(Ink.caution)
+        case .recommended: Text("建议").font(Typo.caption).foregroundStyle(Ink.secondary)
+        case .done, .working: EmptyView()
         }
     }
 }
 
-// MARK: - Quick start
+// MARK: - First-run guide
 
-struct OnboardingView: View {
-    @Environment(AppState.self) private var state
-    @AppStorage("quickStartStep", store: UserDefaults.standard) private var step = 0
-    @State private var choseBuiltIn = false
-    private let titles = [String(localized: "产品介绍"), String(localized: "准备语音"), String(localized: "连接回答"), String(localized: "资料可选"), String(localized: "开始记录")]
+/// One row of the guide's checks: a status dot, a short label, then whatever the row says.
+private struct GuideRow<Content: View>: View {
+    let tone: StatusDot.Tone
+    let label: LocalizedStringKey
+    let content: () -> Content
+
+    init(tone: StatusDot.Tone, label: LocalizedStringKey, @ViewBuilder content: @escaping () -> Content) {
+        self.tone = tone; self.label = label; self.content = content
+    }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color.black.opacity(0.4).ignoresSafeArea()
-                VStack(spacing: 0) {
-                    HStack {
-                        Text("快速开始").font(.system(size: 17, weight: .semibold))
-                        Spacer()
-                        Text("\(step + 1) / 5 · \(titles[min(max(step, 0), 4)])").foregroundStyle(.secondary)
-                    }.padding(22)
-                    Divider()
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 18) {
-                            switch step {
-                            case 1: voice
-                            case 2: connection
-                            case 3: choices
-                            case 4: startSession
-                            default: overview
-                            }
-                        }.frame(maxWidth: .infinity, alignment: .leading).padding(24)
-                    }
-                    Divider()
-                    HStack {
-                        Button("稍后继续") { state.deferOnboarding() }
-                            .buttonStyle(.plain).foregroundStyle(.secondary)
-                        Spacer()
-                        if step > 0 { Button("上一步") { step -= 1 }.buttonStyle(SecondaryButtonStyle()) }
-                        if step < 4 {
-                            Button(step == 0 ? "开始" : "下一步") { step += 1 }
-                                .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
-                        } else {
-                            Button(state.isChangingSession ? "正在开始…" : !coreReady ? "请先完成核心准备" : !hasAudioSource ? "请先选择会议窗口" : "开始记录") {
-                                Task {
-                                    await state.startSession()
-                                    if state.isRunning { state.finishOnboarding() }
-                                }
-                            }.buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
-                                .disabled(!coreReady || !hasAudioSource || state.isChangingSession)
+        HStack(alignment: .top, spacing: Space.s3) {
+            StatusDot(tone: tone).padding(.top, 5)
+            Text(label).font(Typo.label).foregroundStyle(Ink.secondary).frame(width: 64, alignment: .leading)
+            content().frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
+        .frame(minHeight: 48)
+    }
+}
 
-                        }
-                    }.padding(20)
+/// Rows in one card, a hairline between them.
+private struct GuideList<Content: View>: View {
+    let content: () -> Content
+    init(@ViewBuilder content: @escaping () -> Content) { self.content = content }
+
+    var body: some View {
+        VStack(spacing: 0) { content() }
+            .background(Ink.surface, in: RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 1))
+    }
+}
+
+private struct GuideDivider: View {
+    var body: some View { Rectangle().fill(Ink.hairline).frame(height: 1) }
+}
+
+/// First run, in the order a person needs things: what this is, see it work, allow
+/// the sound, connect an answer service, optional materials, start. Nothing is asked
+/// before it is explained, and every step but the sound can be passed.
+struct OnboardingView: View {
+    @Environment(AppState.self) private var state
+    @AppStorage("quickStartStep", store: UserDefaults.standard) private var stepRaw = 0
+    @State private var sampleFinished = false
+    @State private var materialsConfirmed = false
+    @State private var starting = false
+
+    private var step: OnboardingStep { OnboardingStep.clamped(stepRaw) }
+
+    var body: some View {
+        ZStack {
+            Ink.paper.ignoresSafeArea()
+            VStack(spacing: 0) {
+                header
+                ScrollView {
+                    page
+                        .id(step)
+                        .transition(.opacity)
+                        .frame(maxWidth: step == .sample ? Space.content : 560, alignment: .leading)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, Space.s8)
+                        .padding(.top, Space.s8)
+                        .padding(.bottom, Space.s6)
                 }
-                .frame(width: min(740, geometry.size.width - 40), height: min(step == 1 || step == 3 ? 640 : 560, geometry.size.height - 40))
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
-                .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.primary.opacity(0.12)))
-                .shadow(color: .black.opacity(0.3), radius: 24, y: 10)
+                footer
             }
         }
         // Read-only checks: no audio permission prompts, downloads, or model calls.
         .task {
-            step = min(max(step, 0), 4)
+            stepRaw = step.rawValue
             if !DemoMode.isEnabled { await state.refreshSetupStatus() }
         }
-    }
-    private var overview: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("会议记录、资料整理与知识问答").font(.system(size: 26, weight: .bold))
-            Text("InterviewHacker 是一款原生 macOS 应用，可实时转写会议、整理系列资料、识别问题并生成参考回答，也能在会后整理纪要。")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            journey("1", "记录会议声音", "选择会议窗口或麦克风，实时转写参与者的发言。")
-            journey("2", "检索资料与识别问题", "结合系列资料理解上下文，识别提问和讨论重点。")
-            journey("3", "按需生成回答", "自动回答开启时，识别到问题后会生成参考回答；只记录模式下可手动提问。")
-            journey("4", "整理会议知识", "按系列管理资料与经验，会后回看转写并生成结构化纪要。")
-            Label("开始记录需要语音识别与回答服务；资料增强功能可按需启用。", systemImage: "checklist")
-                .font(.system(size: 12)).foregroundStyle(.green)
+        // Coming back from System Settings: pick up a permission that was just given.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            guard !DemoMode.isEnabled else { return }
+            state.microphoneAccess = .current()
+            Task { await state.refreshTargets() }
         }
     }
-    private var connection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("连接回答服务").font(.system(size: 23, weight: .bold))
-            Text("可使用已登录的 Codex，或填写兼容 API 服务。生成会中参考回答、资料问答和会后纪要时会使用所选服务的网络与额度。")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            AnswerEngineForm(foldSecondary: true)
-            EngineTestRow()
-            Label(state.answerEngineReady ? "回答服务已就绪，可测试回答" : "尚未连接，生成参考回答和纪要前需要完成", systemImage: state.answerEngineReady ? "checkmark.circle.fill" : "info.circle")
-                .foregroundStyle(state.answerEngineReady ? .green : .secondary)
-        }
-    }
-    private var choices: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("资料功能，按需选择").font(.system(size: 23, weight: .bold))
-            Text("语音和回答服务准备好后，可按需增强资料检索。系统识别和关键词查找无需额外下载；其他资料功能也可稍后启用。")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            DocumentChoiceSummary()
-            Button("资料采用系统识别 + 关键词（无需额外下载）") {
-                state.selectDocumentProvider(.system); state.selectSemanticRetrieval(false); choseBuiltIn = true
-            }.buttonStyle(SecondaryButtonStyle())
-            if choseBuiltIn { Label("资料已设为无需额外下载的方案", systemImage: "checkmark.circle.fill").foregroundStyle(.green) }
-            Text("需要时，在设置 → 资料里选择和安装。")
-                .font(.caption).foregroundStyle(.secondary)
-        }
-    }
-    private var coreVoiceReady: Bool {
-        state.liveSetupReadiness.voiceReady
-    }
-    private var coreReady: Bool { state.liveSetupReadiness.coreReady }
-    private var hasAudioSource: Bool { state.liveSetupReadiness.audioSource }
-    private var voice: some View {
-        @Bindable var state = state
-        return VStack(alignment: .leading, spacing: 14) {
-            Text("设置会议声音").font(.system(size: 23, weight: .bold))
-            Text("实时语音是核心功能。需要音频权限和一个可用的识别引擎；推荐本机识别，会议音频留在这台 Mac。")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            readiness("会议声音", state.capturePermissionGranted ? "已允许采集会议窗口声音" : "需要录屏与系统音频权限", ready: state.capturePermissionGranted) {
-                Button("允许") { Task { await state.requestCapturePermission() } }
-            }
-            if state.microphoneEnabled {
-                readiness("麦克风", state.microphoneAccess == .granted ? "已允许，用于区分你和对方的话" : "需要麦克风权限，用于识别你说的话", ready: state.microphoneAccess == .granted) {
-                    Button("允许") { Task { await state.requestMicrophoneAccess() } }
+
+    // MARK: Frame
+
+    private var header: some View {
+        HStack(spacing: Space.s3) {
+            HStack(spacing: 4) {
+                ForEach(OnboardingStep.allCases, id: \.self) { item in
+                    Capsule()
+                        .fill(item == step ? Ink.ink : (item.rawValue < step.rawValue ? Ink.secondary : Ink.hairline))
+                        .frame(width: 22, height: 2)
                 }
             }
-            Divider()
-            Text("语音识别").font(.headline)
-            if state.transcriptionBackend == "zipformer" { ModelDownloadRow() }
-            else if state.transcriptionBackend == "apple" {
-                Text(state.recognitionReady ? "系统语音识别已就绪" : "系统语音识别需 macOS 26，并明确选择一种语言")
+            .accessibilityHidden(true)
+            Text(verbatim: "\(step.position) / \(OnboardingStep.count)")
+                .font(Typo.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
+            Text(LocalizedStringKey(title(of: step))).font(Typo.label)
+            Text(verbatim: timeText(step.estimatedSeconds)).font(Typo.caption).foregroundStyle(Ink.secondary)
+            Spacer(minLength: 0)
+            Button("稍后继续") { state.deferOnboarding() }.buttonStyle(GhostButtonStyle())
+        }
+        .padding(.horizontal, Space.s8)
+        .padding(.top, Space.s8)
+        .padding(.bottom, Space.s3)
+    }
+
+    private var footer: some View {
+        HStack(spacing: Space.s3) {
+            if let previous = step.previous {
+                Button("上一步") { go(previous) }.buttonStyle(GhostButtonStyle(height: Space.controlLarge))
+            }
+            Spacer(minLength: 0)
+            if step.isLast {
+                Button("进入首页") { state.finishOnboarding() }.buttonStyle(GhostButtonStyle(height: Space.controlLarge))
+                Button { startMeeting() } label: {
+                    Text(LocalizedStringKey(starting || state.isChangingSession ? "正在开始…" : "开始记录"))
+                }
+                .buttonStyle(PrimaryButtonStyle(height: Space.controlLarge))
+                .keyboardShortcut(.defaultAction)
+                .disabled(!canStart || starting || state.isChangingSession)
+            } else if step.isSkippable && !isDone {
+                Button { advance() } label: { Text(LocalizedStringKey(skipTitle)) }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .keyboardShortcut(.defaultAction)
+            } else {
+                Button { advance() } label: { Text(LocalizedStringKey(step == .welcome ? "看示例会议" : "下一步")) }
+                    .buttonStyle(PrimaryButtonStyle(height: Space.controlLarge))
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(.horizontal, Space.s8)
+        .padding(.vertical, Space.s4)
+        .overlay(alignment: .top) { GuideDivider() }
+    }
+
+    private func go(_ target: OnboardingStep) {
+        withAnimation(Motion.phase) { stepRaw = target.rawValue }
+    }
+
+    private func advance() {
+        if let next = step.next { go(next) }
+    }
+
+    private func title(of step: OnboardingStep) -> String {
+        switch step {
+        case .welcome: "欢迎"
+        case .sample: "示例会议"
+        case .sound: "允许声音"
+        case .answers: "连接回答服务"
+        case .materials: "资料"
+        case .start: "开始"
+        }
+    }
+
+    private func timeText(_ seconds: Int) -> String {
+        seconds < 60 ? String(localized: "约 \(seconds) 秒") : String(localized: "约 \(seconds / 60) 分钟")
+    }
+
+    /// Whether an optional step has nothing left to do (the button then says 下一步, not 跳过).
+    private var isDone: Bool {
+        switch step {
+        case .sample: sampleFinished
+        case .answers: state.answerEngineReady
+        case .materials: materialsConfirmed || usesBuiltInDocuments
+        case .welcome, .sound, .start: true
+        }
+    }
+
+    private var skipTitle: String { step == .answers ? "稍后再接" : "跳过" }
+
+    @ViewBuilder private var page: some View {
+        switch step {
+        case .welcome: welcome
+        case .sample: sample
+        case .sound: sound
+        case .answers: answers
+        case .materials: materials
+        case .start: start
+        }
+    }
+
+    private func pageHeader(_ title: LocalizedStringKey, _ subtitle: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text(title).font(Typo.display).fixedSize(horizontal: false, vertical: true)
+            Text(subtitle).font(Typo.body).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: 1 · Welcome
+
+    private var welcome: some View {
+        VStack(alignment: .leading, spacing: Space.s8) {
+            Text("开会时，坐在你身边的助手").font(Typo.display).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: Space.s4) {
+                Text("会前，帮你读懂资料。")
+                Text("会中，听到对方的问题，递上一句话。")
+                Text("会后，留下一份能直接发出去的纪要。")
+            }
+            .font(Typo.section)
+            Text("默认在这台 Mac 上识别声音，不保存录音。先看一场示例，再决定要不要设置。")
+                .font(Typo.body).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: 2 · Sample meeting
+
+    private var sample: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            pageHeader("一场会议，这样被记下来", "对话是预先写好的：没有录音，不需要任何权限，也不调用模型。")
+            OnboardingSampleMeeting(finished: $sampleFinished)
+        }
+    }
+
+    // MARK: 3 · Sound
+
+    private var sound: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            pageHeader("允许听到会议的声音", "声音只在这台 Mac 上识别，不保存录音。需要哪项权限，才在这里问哪项。")
+            GuideList {
+                GuideRow(tone: state.capturePermissionGranted ? .ready : .caution, label: "系统音频") {
+                    HStack(alignment: .top, spacing: Space.s3) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(LocalizedStringKey(state.capturePermissionGranted ? "已允许 · 可以听到会议里对方的声音" : "用来听到电脑里播放的会议声音"))
+                                .font(Typo.body)
+                            if !state.capturePermissionGranted {
+                                Text("macOS 把它叫“屏幕与系统音频录制”。允许后，系统可能要求重新打开应用，引导会保留进度。")
+                                    .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        Spacer(minLength: Space.s2)
+                        if !state.capturePermissionGranted {
+                            Button("允许") { Task { await state.requestCapturePermission() } }.buttonStyle(SecondaryButtonStyle())
+                        }
+                    }
+                }
+                GuideDivider()
+                GuideRow(tone: microphoneTone, label: "麦克风") {
+                    HStack(alignment: .top, spacing: Space.s3) {
+                        Text(LocalizedStringKey(microphoneLine)).font(Typo.body).fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: Space.s2)
+                        if state.microphoneAccess == .denied {
+                            Button("打开系统设置") { Task { await state.requestMicrophoneAccess() } }.buttonStyle(SecondaryButtonStyle())
+                        }
+                    }
+                }
+                GuideDivider()
+                GuideRow(tone: state.recognitionReady ? .ready : .caution, label: "语音识别") { recognition }
+            }
+            Text("暂时不允许也没关系：看示例、整理资料、改设置都不受影响。线下会议只需要麦克风。")
+                .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var microphoneTone: StatusDot.Tone {
+        switch state.microphoneAccess {
+        case .granted: .ready
+        case .undetermined: .idle
+        case .denied: .caution
+        }
+    }
+
+    private var microphoneLine: String {
+        switch state.microphoneAccess {
+        case .granted: "已允许 · 你说的话会标为“我”"
+        case .undetermined: "现在不用允许。第一次开始记录时才会询问，用来标出“我”说的话。"
+        case .denied: "未允许 · 只能记录对方的声音。需要时到系统设置里打开。"
+        }
+    }
+
+    @ViewBuilder private var recognition: some View {
+        @Bindable var state = state
+        VStack(alignment: .leading, spacing: Space.s2) {
+            switch state.transcriptionBackend {
+            case "zipformer":
+                if state.isDownloadingModel {
+                    HStack(spacing: Space.s3) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("正在下载 \(Int(state.modelDownloadProgress * 100))%").font(Typo.body)
+                            ProgressView(value: state.modelDownloadProgress).controlSize(.small)
+                        }
+                        Button("取消") { state.cancelModelDownload() }.buttonStyle(SecondaryButtonStyle())
+                    }
+                } else if state.isModelInstalled && state.missingPackages.isEmpty {
+                    Text("\(state.localStreamingModel.shortTitle) · 本机离线识别").font(Typo.body)
+                } else {
+                    let size = max(state.missingPackages.reduce(0) { $0 + $1.approximateMegabytes }, 1)
+                    HStack(alignment: .top, spacing: Space.s3) {
+                        Text("需要下载本机识别模型，约 \(size) MB，只需一次。下载时可以先看后面的步骤。")
+                            .font(Typo.body).fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: Space.s2)
+                        Button("下载") { state.downloadModel() }
+                            .buttonStyle(SecondaryButtonStyle()).disabled(state.modelControlsDisabled)
+                    }
+                }
+                if !state.modelDownloadStatus.isEmpty {
+                    Text(LocalizedStringKey(state.modelDownloadStatus)).font(Typo.caption).foregroundStyle(Ink.secondary)
+                }
+            case "apple":
+                Text(LocalizedStringKey(state.recognitionReady ? "系统语音识别已就绪" : "系统语音识别需 macOS 26，并明确选择一种语言")).font(Typo.body)
                 MenuPicker(title: "语言", selection: $state.recognitionLanguage, options: [("zh", "中文"), ("en", "English")])
                     .onChange(of: state.recognitionLanguage) { _, _ in state.updateSettings() }
-            } else { CloudSettings() }
-            DisclosureGroup("更换语音识别方式") {
-                MenuPicker(title: "识别引擎", selection: $state.transcriptionBackend, options: [("zipformer", "本机识别（推荐）"), ("apple", "系统识别 · 需 macOS 26"), ("cloud", "云端识别 · 需 API Key")])
-                    .disabled(state.modelControlsDisabled)
-                    .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.refreshModelStatus() } }
-                Note("本机模型需要下载并占内存；系统语音受系统版本与语言限制；云端识别会上传会议音频并使用服务额度。")
+            default:
+                CloudSettings()
             }
-            Text("下载中也可以先看后面的步骤。允许音频权限后，macOS 可能要求重新打开应用；引导会保留进度。")
-                .font(.caption).foregroundStyle(.secondary)
+            DisclosureGroup("换一种识别方式") {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    MenuPicker(title: "识别引擎", selection: $state.transcriptionBackend,
+                               options: [("zipformer", String(localized: "本机识别（推荐）")), ("apple", String(localized: "系统识别 · 需 macOS 26")),
+                                         ("cloud", String(localized: "云端识别 · 需 API Key"))])
+                        .disabled(state.modelControlsDisabled)
+                        .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.refreshModelStatus() } }
+                    Text("本机模型需要下载并占内存；系统语音受系统版本与语言限制；云端识别会上传会议音频并使用服务额度。")
+                        .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.top, Space.s2)
+            }
+            .font(Typo.caption)
         }
     }
-    private var startSession: some View {
-        @Bindable var state = state
-        return VStack(alignment: .leading, spacing: 16) {
-            Text("选择声音来源，开始记录").font(.system(size: 23, weight: .bold))
-            Text("打开会议软件并选择其窗口，或选择麦克风。开始后会实时转写对话；自动回答开启时，识别到问题后会生成参考回答。")
-                .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            readiness("实时语音", coreVoiceReady ? "识别与音频权限已就绪" : "还有识别或音频权限未准备好", ready: coreVoiceReady) {
-                Button("回到语音设置") { step = 1 }
+
+    // MARK: 4 · Answers
+
+    private var answers: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            pageHeader("接上一个回答服务", "会中的参考回答、会后的纪要，都由它来写。选一个服务商，粘贴 Key，点一下检查。")
+            AnswerEngineForm()
+            if !state.answerEngineReady {
+                Text("先不接也可以继续看完引导；开始记录前需要接上。")
+                    .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            readiness("回答服务", state.answerEngineReady ? "已配置" : "需要连接回答服务", ready: state.answerEngineReady) {
-                Button("回到回答设置") { step = 2 }
-            }
-            HStack {
-                MenuPicker(title: "会议声音来自", selection: $state.selectedTargetID,
-                           options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择会议窗口")
-                Button("刷新") { Task { await state.refreshTargets() } }
-            }
-            if !hasAudioSource { Note("还没有可用的音频来源。请先打开会议软件，并确认音频权限。", color: .orange) }
-            Note("开始一场会议：选择声音来源并开始记录。开启自动回答后，系统会在识别到问题时生成参考回答；只记录模式仍可输入问题或按快捷键手动请求。回答可在主窗口或回答浮窗查看，会后可回看转写并整理纪要。")
-            if let error = state.errorMessage, !error.isEmpty { Note(error, color: .orange) }
         }
     }
-    private func readiness<Action: View>(_ title: String, _ detail: String, ready: Bool, @ViewBuilder action: () -> Action) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: ready ? "checkmark.circle.fill" : "exclamationmark.circle").foregroundStyle(ready ? .green : .orange)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).fontWeight(.semibold)
-                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+
+    // MARK: 5 · Materials
+
+    private var usesBuiltInDocuments: Bool { state.documentOCRProvider == .system && !state.semanticRetrievalEnabled }
+
+    private var materials: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            pageHeader("有资料，就放进来", "议程、简历、产品文档都可以。会前读一遍，会中的回答才贴合这场会议。可以跳过。")
+            VStack(alignment: .leading, spacing: Space.s3) {
+                if usesBuiltInDocuments {
+                    HStack(spacing: Space.s2) {
+                        StatusDot(tone: .ready)
+                        Text("资料用系统识别和关键词查找，不需要额外下载。").font(Typo.body)
+                    }
+                } else {
+                    Button("用系统识别和关键词查找，不额外下载") {
+                        state.selectDocumentProvider(.system); state.selectSemanticRetrieval(false); materialsConfirmed = true
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                }
+                Text("之后在“准备”页把文件拖进来，或到资料夹添加。增强识别可以在设置 → 资料里按需安装。")
+                    .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 8)
-            if !ready { action().buttonStyle(SecondaryButtonStyle()) }
-        }.padding(12).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+            DisclosureGroup("了解各种读取方式的取舍") {
+                DocumentChoiceSummary().padding(.top, Space.s2)
+            }
+            .font(Typo.label)
+        }
     }
-    private func journey(_ number: String, _ title: String, _ detail: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(number).font(.system(size: 13, weight: .bold)).foregroundStyle(Brand.accent)
-                .frame(width: 28, height: 28).background(Brand.accent.opacity(0.12), in: Circle())
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.system(size: 14, weight: .semibold))
-                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+
+    // MARK: 6 · Start
+
+    private var readiness: RealtimeSetupReadiness { state.liveSetupReadiness }
+
+    /// The microphone is asked for when recording starts, so only a refusal blocks.
+    private var microphoneBlocks: Bool { state.microphoneEnabled && state.microphoneAccess == .denied }
+
+    private var canStart: Bool {
+        readiness.speech && readiness.capture && readiness.answers && readiness.audioSource && !microphoneBlocks
+    }
+
+    private var start: some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            pageHeader("选个声音来源，开始", "默认听这台 Mac 播放的所有声音。打开会议软件后，点“开始记录”。")
+            GuideList {
+                GuideRow(tone: readiness.capture && readiness.audioSource ? .ready : .caution, label: "声音") {
+                    HStack(spacing: Space.s3) {
+                        if readiness.capture {
+                            AudioSourceMenu()
+                            if !readiness.audioSource {
+                                Text("没有找到可用的声音来源").font(Typo.caption).foregroundStyle(Ink.caution)
+                            }
+                        } else {
+                            Text("还没有允许听会议的声音").font(Typo.body).foregroundStyle(Ink.caution)
+                        }
+                        Spacer(minLength: 0)
+                        if !readiness.capture {
+                            Button("去允许") { go(.sound) }.buttonStyle(GhostButtonStyle(height: 28))
+                        }
+                    }
+                }
+                GuideDivider()
+                GuideRow(tone: readiness.speech ? .ready : .caution, label: "识别") {
+                    HStack(spacing: Space.s3) {
+                        Text(LocalizedStringKey(readiness.speech ? "语音识别已就绪" : "语音识别还没准备好"))
+                            .font(Typo.body).foregroundStyle(readiness.speech ? Ink.ink : Ink.caution)
+                        Spacer(minLength: 0)
+                        if !readiness.speech {
+                            Button("去准备") { go(.sound) }.buttonStyle(GhostButtonStyle(height: 28))
+                        }
+                    }
+                }
+                GuideDivider()
+                GuideRow(tone: microphoneBlocks ? .caution : (state.microphoneAccess == .granted ? .ready : .idle), label: "麦克风") {
+                    HStack(spacing: Space.s3) {
+                        Text(LocalizedStringKey(startMicrophoneLine)).font(Typo.body)
+                            .foregroundStyle(microphoneBlocks ? Ink.caution : Ink.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                        if microphoneBlocks {
+                            Button("只记录对方") { state.microphoneEnabled = false; state.updateSettings() }
+                                .buttonStyle(GhostButtonStyle(height: 28))
+                        }
+                    }
+                }
+                GuideDivider()
+                GuideRow(tone: readiness.answers ? .ready : .caution, label: "回答") {
+                    HStack(spacing: Space.s3) {
+                        if readiness.answers {
+                            Text(verbatim: answerLine).font(Typo.body).lineLimit(1)
+                        } else {
+                            Text("回答服务还没连上").font(Typo.body).foregroundStyle(Ink.caution)
+                        }
+                        Spacer(minLength: 0)
+                        Button(LocalizedStringKey(readiness.answers ? "更换" : "去连接")) { go(.answers) }
+                            .buttonStyle(GhostButtonStyle(height: 28))
+                    }
+                }
             }
+            if let error = state.errorMessage, !error.isEmpty {
+                Text(verbatim: error).font(Typo.caption).foregroundStyle(Ink.caution).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var startMicrophoneLine: String {
+        if !state.microphoneEnabled { return "不使用麦克风 · 只记录对方的声音" }
+        switch state.microphoneAccess {
+        case .granted: return "已允许 · 你说的话会标为“我”"
+        case .undetermined: return "点“开始记录”时会询问，用来标出“我”说的话"
+        case .denied: return "未允许，无法记录你说的话"
+        }
+    }
+
+    private var answerLine: String {
+        state.answerBackend == .openAICompatible ? "API · \(state.apiModel)" : "Codex · \(state.codexModelID)"
+    }
+
+    private func startMeeting() {
+        guard canStart, !starting else { return }
+        starting = true
+        Task {
+            defer { starting = false }
+            // The microphone prompt appears here, when recording is about to start.
+            if state.microphoneEnabled, MicrophoneAccess.current() == .undetermined {
+                await state.requestMicrophoneAccess()
+            }
+            guard !microphoneBlocks else { return }
+            await state.startSession()
+            if state.isRunning { state.finishOnboarding() }
         }
     }
 }

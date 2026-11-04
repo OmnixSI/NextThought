@@ -98,7 +98,7 @@ jobs:
             capture "$appearance" settings document-options "settingsGroup=资料"
             capture "$appearance" assistant onboarding-realtime "demoOnboarding=1;quickStartStep=0"
             capture "$appearance" assistant onboarding-welcome "demoOnboarding=1;quickStartStep=0"
-            capture "$appearance" assistant onboarding-engine "demoOnboarding=1;quickStartStep=2"
+            capture "$appearance" assistant onboarding-engine "demoOnboarding=1;quickStartStep=3"
           done
           ls -la shots
       - name: Commit screenshots to docs/screenshots

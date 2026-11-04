@@ -142,12 +142,15 @@ extension AppState {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            guard (200..<300).contains(status) else { apiModelsStatus = "获取失败：HTTP \(status)"; return }
+            guard (200..<300).contains(status) else {
+                apiModelsStatus = String(localized: String.LocalizationValue(APIFailureExplainer.modelListMessage(status: status)))
+                return
+            }
             let ids = ModelListParser.ids(from: data)
             apiModelChoices = ids
             apiModelsStatus = ids.isEmpty ? "服务没有返回模型列表，请手动填写模型 ID" : "共 \(ids.count) 个模型"
         } catch {
-            apiModelsStatus = "获取失败：\(error.localizedDescription)"
+            apiModelsStatus = AnswerServiceError.explain(error)
         }
     }
 }
