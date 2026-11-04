@@ -50,6 +50,7 @@ enum SettingsWindow {
         next.contentView = NSHostingView(rootView: SettingsView()
             .padding(.top, Space.s3)
             .environment(AppState.shared)
+            .wideHitTargets()
             .preferredColorScheme(AppState.shared.colorScheme)
             .background(Ink.paper))
         next.center()

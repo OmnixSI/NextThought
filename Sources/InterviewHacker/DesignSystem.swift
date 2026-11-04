@@ -185,7 +185,8 @@ struct GhostButtonStyle: ButtonStyle {
                 .lineLimit(1)
                 .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary)
                 .padding(.horizontal, horizontalPadding)
-                .frame(height: height)
+                .frame(minWidth: Hit.minHeight)
+                .frame(height: max(height, Hit.minHeight))
                 .background((hovering || configuration.isPressed) && isEnabled ? Ink.hover : Color.clear,
                             in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
                 .contentShape(Rectangle())
@@ -208,6 +209,7 @@ struct InteractiveRowButtonStyle: ButtonStyle {
 
         var body: some View {
             configuration.label
+                .frame(minHeight: Hit.minHeight)
                 .background(
                     (isEnabled && (hovering || configuration.isPressed)) ? Ink.hover : Color.clear,
                     in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
@@ -223,10 +225,10 @@ struct InteractiveRowButtonStyle: ButtonStyle {
 struct InkSegmented<Value: Hashable>: View {
     let items: [(value: Value, title: LocalizedStringKey)]
     @Binding var selection: Value
-    var height: CGFloat = 28
+    var height: CGFloat = Hit.minHeight
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 let selected = item.value == selection
                 Button { selection = item.value } label: {
@@ -235,7 +237,7 @@ struct InkSegmented<Value: Hashable>: View {
                         .lineLimit(1).fixedSize()
                         .foregroundStyle(selected ? Ink.ink : Ink.secondary)
                         .padding(.horizontal, 14)
-                        .frame(height: height - 4)
+                        .frame(minWidth: Hit.minHeight, minHeight: max(height, Hit.minHeight) - 4)
                         .background {
                             if selected {
                                 RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Ink.surface)

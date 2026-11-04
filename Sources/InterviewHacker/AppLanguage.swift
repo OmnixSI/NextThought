@@ -167,7 +167,7 @@ struct Hint: View {
                     Image(systemName: "info.circle")
                         .font(.system(size: 12))
                         .foregroundStyle(color)
-                        .frame(width: 28, height: 28)
+                        .frame(width: Hit.minHeight, height: Hit.minHeight)
                         .background(isHovering || infoFocused ? Ink.hover : Color.clear, in: Circle())
                         .overlay(Circle().strokeBorder(infoFocused ? Ink.focus : Color.clear, lineWidth: 1.5))
                         .contentShape(Rectangle())

@@ -50,7 +50,7 @@ private struct PrepareHeader: View {
     var body: some View {
         HStack(spacing: Space.s2) {
             Button("首页") { state.cancelDraft() }
-                .buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.secondary)
+                .buttonStyle(.tapText).font(Typo.caption).foregroundStyle(Ink.secondary)
             Image(systemName: "chevron.right").font(.system(size: 9, weight: .medium)).foregroundStyle(Ink.tertiary)
             Text("准备").font(.system(size: 12, weight: .medium)).foregroundStyle(Ink.ink)
             Spacer()
@@ -191,7 +191,8 @@ struct TagButtonStyle: ButtonStyle {
             .lineLimit(1)
             .foregroundStyle(selected ? Ink.onInk : Ink.ink)
             .padding(.horizontal, 12)
-            .frame(height: 30)
+            .frame(minWidth: Hit.minHeight)
+            .frame(height: Hit.minHeight)
             .background(selected ? Ink.ink : (configuration.isPressed ? Ink.hover : Ink.surface),
                         in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .overlay {
@@ -199,6 +200,7 @@ struct TagButtonStyle: ButtonStyle {
                     RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 1)
                 }
             }
+            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .animation(Motion.hover, value: selected)
     }
 }
@@ -293,7 +295,7 @@ private struct CarryRow: View {
                 Text(verbatim: detail).font(Typo.caption).foregroundStyle(Ink.secondary)
             }
         }
-        .toggleStyle(.checkbox)
+        .toggleStyle(.wide)
     }
 }
 

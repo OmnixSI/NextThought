@@ -86,8 +86,8 @@ enum UI {
     static let barHeight: CGFloat = 32
     /// Standard button height (primary / secondary).
     static let controlHeight: CGFloat = 32
-    /// Chips and compact buttons.
-    static let chipHeight: CGFloat = 28
+    /// Chips and compact buttons; never below the clickable minimum (HitTargets.swift).
+    static let chipHeight: CGFloat = Hit.minHeight
 }
 
 // MARK: Buttons
@@ -102,8 +102,10 @@ struct PrimaryButtonStyle: ButtonStyle {
             .lineLimit(1)
             .foregroundStyle(isEnabled ? Ink.onInk : Ink.tertiary)
             .padding(.horizontal, height >= Space.controlLarge ? 20 : 14)
-            .frame(height: height)
+            .frame(minWidth: Hit.minHeight)
+            .frame(height: max(height, Hit.minHeight))
             .background(isEnabled ? Ink.ink : Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .opacity(configuration.isPressed ? 0.85 : 1)
             .animation(Motion.hover, value: configuration.isPressed)
     }
@@ -118,8 +120,10 @@ struct SecondaryButtonStyle: ButtonStyle {
             .lineLimit(1)
             .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary)
             .padding(.horizontal, 12)
-            .frame(height: UI.controlHeight)
+            .frame(minWidth: Hit.minHeight)
+            .frame(height: max(UI.controlHeight, Hit.minHeight))
             .background(configuration.isPressed ? Ink.hover : Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .animation(Motion.hover, value: configuration.isPressed)
     }
 }
@@ -135,17 +139,20 @@ struct ChipButtonStyle: ButtonStyle {
             .font(.system(size: 12.5, weight: .medium))
             .lineLimit(1)
             .padding(.horizontal, 10)
-            .frame(minHeight: UI.chipHeight)
+            .frame(minWidth: Hit.minHeight, minHeight: max(UI.chipHeight, Hit.minHeight))
             .foregroundStyle(isEnabled ? (prominent ? Ink.onInk : Ink.ink) : Ink.tertiary)
             .modifier(ChipSurface(prominent: prominent && isEnabled, pressed: configuration.isPressed))
+            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .animation(Motion.hover, value: configuration.isPressed)
     }
 }
 
 /// Square icon button: no fill until hovered; `tint` draws the ink fill (an "on" state).
+/// The button is never smaller than `Hit.icon`, whatever `size` asks for: the hover fill
+/// shows how far the clickable area reaches.
 struct GlassIconButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
-    var size: CGFloat = 32
+    var size: CGFloat = Hit.icon
     var tint: Color? = nil
     /// Kept for source compatibility.
     var opaque = false
@@ -162,7 +169,7 @@ struct GlassIconButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 13, weight: .regular))
-                .frame(width: size, height: size)
+                .frame(width: max(size, Hit.icon), height: max(size, Hit.icon))
                 .foregroundStyle(isEnabled ? (on ? Ink.onInk : Ink.secondary) : Ink.tertiary)
                 .background(fill, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
                 .contentShape(Rectangle())
@@ -189,7 +196,7 @@ struct PillTabs<Value: Hashable>: View {
     @Binding var selection: Value
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 0) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 let selected = item.value == selection
                 Button { selection = item.value } label: {
@@ -198,7 +205,7 @@ struct PillTabs<Value: Hashable>: View {
                         .lineLimit(1).fixedSize()
                         .foregroundStyle(selected ? Ink.ink : Ink.secondary)
                         .padding(.horizontal, 12)
-                        .frame(height: UI.chipHeight - 4)
+                        .frame(minWidth: Hit.minHeight, minHeight: UI.chipHeight - 4)
                         .background {
                             if selected {
                                 RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Ink.surface)
@@ -288,6 +295,7 @@ struct MenuPicker<Value: Hashable>: View {
                 }
                 .font(.system(size: 12.5, weight: .medium))
                 .padding(.horizontal, 10).padding(.vertical, 6)
+                .frame(minHeight: Hit.minHeight)
                 .glassCapsule()
                 .contentShape(Rectangle())
             }

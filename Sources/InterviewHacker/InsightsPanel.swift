@@ -94,7 +94,7 @@ private struct SlideSection: View {
                         Button { state.ask(question, screenshot: nil) } label: {
                             Label(question, systemImage: "questionmark.bubble").font(.system(size: 12)).multilineTextAlignment(.leading)
                         }
-                        .buttonStyle(.plain).foregroundStyle(Brand.accent)
+                        .buttonStyle(.tapText).foregroundStyle(Brand.accent)
                     }
                 }
             } else if let error = insights.slideNotesError, !insights.generatingNotes.contains(slide.key) {
@@ -127,7 +127,7 @@ private struct ScreenSection: View {
                 }
                 if !screen.text.isEmpty {
                     Text(screen.text).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(expanded ? 30 : 3).textSelection(.enabled)
-                    Button(expanded ? "收起" : "展开识别的文字") { expanded.toggle() }.buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Brand.accent)
+                    Button(expanded ? "收起" : "展开识别的文字") { expanded.toggle() }.buttonStyle(.tapText).font(.system(size: 11)).foregroundStyle(Brand.accent)
                 }
             }
         }

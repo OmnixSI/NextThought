@@ -892,7 +892,7 @@ private struct WorkspaceSkillsSection: View {
                             if !skill.summary.isEmpty { Text(skill.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1) }
                         }
                     }
-                    .toggleStyle(.checkbox)
+                    .toggleStyle(.wide)
                     .disabled(skill.global)
                 }
             }
@@ -1192,7 +1192,7 @@ private struct WorkspaceDocumentsTab: View {
                 HStack(spacing: 8) {
                     Toggle("用于回答", isOn: Binding(get: { state.documents.first(where: { $0.id == document.id })?.enabled ?? false },
                                                        set: { state.setDocumentEnabled(document.id, enabled: $0) }))
-                        .toggleStyle(.switch).controlSize(.mini)
+                        .toggleStyle(.inline)
                         .help("开启后，回答时会参考这份资料。")
                     Image(systemName: icon(for: document.name)).foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 1) {
@@ -1213,7 +1213,7 @@ private struct WorkspaceDocumentsTab: View {
                     Spacer()
                     if let path = document.markdownPath, let archived = MaterialArchive.resolve(path), FileManager.default.fileExists(atPath: archived.path) {
                         Button { NSWorkspace.shared.open(archived) } label: { Image(systemName: "doc.richtext") }
-                            .buttonStyle(.borderless).accessibilityLabel("打开归档 Markdown").help("打开归档的 Markdown")
+                            .buttonStyle(.tap).accessibilityLabel("打开归档 Markdown").help("打开归档的 Markdown")
                     }
                     Menu {
                         ForEach(categories(ModeProfile.for(state.sessionMode)), id: \.self) { target in
@@ -1228,13 +1228,13 @@ private struct WorkspaceDocumentsTab: View {
                             }
                         }
                     } label: { Label("移动", systemImage: "folder") }
-                        .menuStyle(.button).buttonStyle(.borderless).menuIndicator(.hidden).fixedSize()
+                        .menuStyle(.button).buttonStyle(TapButtonStyle(minWidth: Hit.minHeight, minHeight: Hit.minHeight)).menuIndicator(.hidden).fixedSize()
                         .accessibilityLabel("移动资料分类")
                         .help("选择这份资料所属的分类")
                     Button(role: .destructive) { state.removeDocument(document.id) } label: {
                         Label("移除", systemImage: "trash")
                     }
-                    .buttonStyle(.borderless).foregroundStyle(.red).help("从当前系列移除这份资料")
+                    .buttonStyle(TapButtonStyle(minWidth: Hit.minHeight, minHeight: Hit.minHeight)).foregroundStyle(.red).help("从当前系列移除这份资料")
                 }
                 .padding(7).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
@@ -1406,7 +1406,7 @@ private struct ExperienceLessonRow: View {
                     .foregroundStyle(lesson.pinned ? Brand.accent : .secondary)
                     .frame(width: 18, height: 24)
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.tap)
             .help(lesson.pinned ? "取消置顶" : "置顶：总是交给模型")
             .accessibilityLabel(lesson.pinned ? "取消置顶这条经验" : "置顶这条经验")
 
@@ -1429,7 +1429,7 @@ private struct ExperienceLessonRow: View {
             Button(action: onDelete) {
                 Image(systemName: "xmark").frame(width: 22, height: 24)
             }
-            .buttonStyle(.borderless).foregroundStyle(.secondary)
+            .buttonStyle(.tap).foregroundStyle(.secondary)
             .help("删除这条经验")
             .accessibilityLabel("删除这条经验")
         }
@@ -1477,7 +1477,7 @@ private struct BankRow: View {
             HStack(alignment: .top) {
                 Button { withAnimation(.easeOut(duration: 0.15)) { expanded.toggle() } } label: {
                     Image(systemName: expanded ? "chevron.down" : "chevron.right").foregroundStyle(.secondary)
-                }.buttonStyle(.borderless)
+                }.buttonStyle(.tap)
                     .accessibilityLabel(expanded ? "收起问题和回答" : "展开问题和回答")
                     .help(expanded ? "收起问题和回答" : "展开查看问题和回答")
                 if editor.isEntryEditing && !isSelected {
@@ -1498,7 +1498,7 @@ private struct BankRow: View {
                         .padding(.horizontal, 6).padding(.vertical, 2).background(Color.primary.opacity(0.06), in: Capsule())
                 }
                 Button { confirmDelete = true } label: { Image(systemName: "trash") }
-                    .buttonStyle(.borderless).foregroundStyle(.red)
+                    .buttonStyle(.tap).foregroundStyle(.red)
                     .help("删除这道题").accessibilityLabel("删除这道题")
             }
             if isSelected {

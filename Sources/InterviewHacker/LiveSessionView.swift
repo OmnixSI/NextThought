@@ -377,7 +377,7 @@ private struct TranscriptLine: View {
                 Text(verbatim: entry.text).font(Typo.caption).foregroundStyle(Ink.tertiary).lineLimit(1)
                     .strikethrough(color: Ink.tertiary)
                 Button("是我说的") { state.markNotEcho(entry.id) }
-                    .buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .buttonStyle(.tapText).font(Typo.caption).foregroundStyle(Ink.secondary)
             }
             .help("这句和对方刚说的话很像，当作扬声器回声忽略了，不参与回答。如果是你说的，点“是我说的”。")
         } else {
@@ -497,7 +497,7 @@ private struct TranscriptStatus: View {
                 Text("· 麦克风未开启，不会记下你说的话").foregroundStyle(Ink.caution)
             } else if state.microphoneAccess == .denied {
                 Button("· 麦克风未授权，打开系统设置") { state.openMicrophoneSettings() }
-                    .buttonStyle(.plain).foregroundStyle(Ink.caution)
+                    .buttonStyle(.tapText).foregroundStyle(Ink.caution)
             }
             Spacer(minLength: 0)
             Image(systemName: "lock")
@@ -749,7 +749,7 @@ private struct EvidenceLine: View {
                 .font(Typo.caption)
                 .foregroundStyle(evidence.notes.isEmpty ? Ink.secondary : Ink.caution)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tapText)
             .popover(isPresented: $showsDetails, arrowEdge: .bottom) {
                 EvidenceDetails(evidence: evidence).frame(width: 380)
             }

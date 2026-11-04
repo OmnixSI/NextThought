@@ -36,6 +36,9 @@ struct ContentView: View {
         .animation(Motion.phase, value: state.isRunning)
         .frame(minWidth: MainWindowLayout.minimum.width, minHeight: MainWindowLayout.minimum.height)
         .tint(Brand.accent)
+        // Every switch and disclosure header in the window (sheets, onboarding and the
+        // settings page included) is clickable along its whole row.
+        .wideHitTargets()
         .foregroundStyle(Ink.ink)
         .preferredColorScheme(state.colorScheme)
         // A hard switch between light and dark flashes the whole window. The

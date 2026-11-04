@@ -116,7 +116,7 @@ struct GlossaryView: View {
                 Image(systemName: "magnifyingglass").font(.system(size: 11)).foregroundStyle(Ink.secondary)
                 TextField("查找", text: $filter).textFieldStyle(.plain).font(.system(size: 12.5))
             }
-            .padding(.horizontal, 10).frame(height: 28).frame(maxWidth: 200)
+            .padding(.horizontal, 10).frame(height: Hit.minHeight).frame(maxWidth: 200)
             .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             Spacer(minLength: 0)
             if !status.isEmpty { Text(verbatim: status).font(Typo.caption).foregroundStyle(Ink.secondary) }
@@ -131,7 +131,7 @@ struct GlossaryView: View {
             } label: {
                 Image(systemName: "ellipsis")
             }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .menuStyle(.button).buttonStyle(GlassIconButtonStyle()).menuIndicator(.hidden).fixedSize()
             .accessibilityLabel("更多")
         }
     }
@@ -249,7 +249,7 @@ struct GlossaryView: View {
             Button { draft.variants.removeAll { $0 == variant } } label: {
                 Image(systemName: "xmark").font(.system(size: 8, weight: .semibold))
             }
-            .buttonStyle(.plain).foregroundStyle(Ink.secondary)
+            .buttonStyle(TapButtonStyle(minWidth: 24, minHeight: 24)).foregroundStyle(Ink.secondary)
             .accessibilityLabel("移除")
         }
         .padding(.horizontal, 8).padding(.vertical, 3)
@@ -416,7 +416,7 @@ struct TranscriptFindField: View {
             }
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-                    .buttonStyle(.plain).font(.system(size: 11)).foregroundStyle(Ink.secondary)
+                    .buttonStyle(TapButtonStyle(minWidth: 30, minHeight: 28)).font(.system(size: 11)).foregroundStyle(Ink.secondary)
                     .accessibilityLabel("清空搜索")
             }
         }
@@ -465,7 +465,7 @@ struct AddToGlossarySheet: View {
                              selection: $kind)
                     .fixedSize()
                 if !state.workspaces.workspaces.isEmpty {
-                    Toggle("只用于当前系列", isOn: $seriesOnly).toggleStyle(.checkbox)
+                    Toggle("只用于当前系列", isOn: $seriesOnly).toggleStyle(.inline)
                 }
             }
             HStack {

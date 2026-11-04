@@ -691,7 +691,7 @@ struct HistoryView: View {
                 .accessibilityLabel(searchScopeLabel)
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
-                    .buttonStyle(.plain)
+                    .buttonStyle(TapButtonStyle(minWidth: 30, minHeight: 28))
                     .font(.system(size: 11))
                     .foregroundStyle(Color.secondary)
                     .help("清空搜索")
@@ -830,6 +830,7 @@ private struct HistoryFilterPicker<Value: Hashable>: View {
             }
             .font(.system(size: 11, weight: .medium))
             .padding(.horizontal, 7).padding(.vertical, 6)
+            .frame(minHeight: Hit.minHeight)
             .glassCapsule()
             .contentShape(Rectangle())
         }
@@ -913,7 +914,7 @@ private struct MeetingArchiveOverview: View {
             HStack(spacing: Space.s2) {
                 if !isRoot {
                     Button("所有会议") { onOpenRoot() }
-                        .buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.secondary)
+                        .buttonStyle(.tapText).font(Typo.caption).foregroundStyle(Ink.secondary)
                     Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
                 }
                 Text(selectedFolder?.name ?? title).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
@@ -1164,7 +1165,9 @@ private struct MeetingArchiveOverview: View {
                     }
                     .font(.system(size: 12, weight: .medium))
                     .padding(.horizontal, 10).padding(.vertical, 6)
+                    .frame(minHeight: Hit.minHeight)
                     .glassCapsule()
+                    .contentShape(Rectangle())
                 }
                 .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
                 .accessibilityLabel("管理系列")

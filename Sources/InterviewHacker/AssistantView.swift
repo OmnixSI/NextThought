@@ -148,7 +148,7 @@ private struct TranscriptStatusLine: View {
                     .help("在“准备开始”卡片里点麦克风按钮，或在 设置 → 基础 → 音频来源 打开")
             } else if state.microphoneAccess == .denied {
                 Button("· 麦克风未授权，点此打开系统设置") { state.openMicrophoneSettings() }
-                    .buttonStyle(.plain).foregroundStyle(.orange)
+                    .buttonStyle(.tapText).foregroundStyle(.orange)
             }
             if state.echoDroppedCount > 0 {
                 Text("· \(state.echoDroppedCount) 句疑似回声").help("和对方刚说的话几乎一样的麦克风文字被当作扬声器回声，灰色显示、不参与回答；如果是你说的，点那一行的“是我说的”")
@@ -188,7 +188,7 @@ private struct ConversationBubble: View {
             Image(systemName: "speaker.wave.2").font(.system(size: 10)).foregroundStyle(.tertiary)
             Text(entry.text).font(.system(size: 11.5)).foregroundStyle(.tertiary).lineLimit(1).strikethrough(color: .secondary.opacity(0.4))
             Button("是我说的") { state.markNotEcho(entry.id) }
-                .buttonStyle(.plain).font(.system(size: 11, weight: .medium)).foregroundStyle(Brand.accent)
+                .buttonStyle(.tapText).font(.system(size: 11, weight: .medium)).foregroundStyle(Brand.accent)
         }
         .help("这句和对方刚说的话很像，被当作扬声器回声忽略了（不参与回答）。如果是你说的，点“是我说的”。")
     }
@@ -288,7 +288,7 @@ struct DetectionStrip: View {
                         Spacer(minLength: 0)
                         Button("回答") { state.answerCandidate(candidate) }.buttonStyle(ChipButtonStyle())
                         Button { state.dismissCandidate(candidate) } label: { Image(systemName: "xmark") }
-                            .buttonStyle(.borderless).foregroundStyle(.secondary)
+                            .buttonStyle(.tap).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -596,7 +596,7 @@ private struct AnswerEvidenceDetails: View {
                     Label("本次回答有 \(evidence.notes.count) 项限制 · 查看说明", systemImage: "exclamationmark.triangle")
                         .font(.system(size: 12)).foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
-                }.buttonStyle(.plain)
+                }.buttonStyle(.tapText)
             }
             DisclosureGroup(summary, isExpanded: $expanded) {
                 VStack(alignment: .leading, spacing: 8) {
