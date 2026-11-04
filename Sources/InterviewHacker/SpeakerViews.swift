@@ -313,25 +313,6 @@ struct MyVoiceSettings: View {
     }
 
     @ViewBuilder private func setup(_ voice: MyVoice) -> some View {
-        let index = min(voice.takes.count, MyVoice.prompts.count - 1)
-        Text("第 \(index + 1) / \(MyVoice.prompts.count) 句，点“开始”后用平时开会的声音读出来").font(Typo.caption).foregroundStyle(Ink.secondary)
-        Text(verbatim: voice.currentPrompt)
-            .font(Typo.body).foregroundStyle(Ink.ink)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(Space.s3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Ink.sunken, in: RoundedRectangle(cornerRadius: 8))
-        if voice.isRecording {
-            ProgressView(value: voice.progress).progressViewStyle(.linear)
-        }
-        HStack(spacing: Space.s2) {
-            Spacer(minLength: 0)
-            Button("取消") { voice.cancelSetup() }.buttonStyle(GhostButtonStyle(height: 28))
-            Button(LocalizedStringKey(voice.isRecording ? "正在听…" : (voice.isWorking ? "处理中…" : "开始"))) {
-                Task { await voice.recordTake() }
-            }
-            .buttonStyle(PrimaryButtonStyle(height: 28))
-            .disabled(voice.isRecording || voice.isWorking)
-        }
+        MyVoiceSetupPanel()
     }
 }

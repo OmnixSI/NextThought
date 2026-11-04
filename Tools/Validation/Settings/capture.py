@@ -11,7 +11,7 @@ assert '.ci.' in info['CFBundleIdentifier'], 'Use an isolated CI bundle identity
 out = pathlib.Path(a.output).resolve(); out.mkdir(parents=True, exist_ok=True)
 data = pathlib.Path(a.data).resolve(); data.mkdir(parents=True, exist_ok=True)
 cases = []
-for index, title in enumerate(['welcome', 'sample', 'sound', 'answers', 'materials', 'start']):
+for index, title in enumerate(['welcome', 'sample', 'sound', 'voice', 'answers', 'materials', 'start']):
     cases.append((f'guide-{title}', 'assistant', f'quickStartStep={index}', False, True, {}))
 for title in ['基础', '识别', '回答', '资料', '提词器', '数据', '更多']:
     cases.append((f'basic-{title}', 'settings', f'settingsGroup={title}', False, False, {}))
@@ -21,7 +21,7 @@ cases += [
     ('documents-installed', 'settings', 'settingsGroup=资料', False, False,
      {'INTERVIEWHACKER_DEMO_DOCUMENTS_READY':'1', 'INTERVIEWHACKER_DEMO_DOCUMENT_PROVIDER':'paddle', 'INTERVIEWHACKER_DEMO_SEMANTIC':'1'}),
     ('basic-api', 'settings', 'settingsGroup=回答', False, False, {'INTERVIEWHACKER_DEMO_API':'1'}),
-    ('guide-missing-core', 'assistant', 'quickStartStep=5', False, True, {'INTERVIEWHACKER_DEMO_VOICE_READY':'0'}),
+    ('guide-missing-core', 'assistant', 'quickStartStep=6', False, True, {'INTERVIEWHACKER_DEMO_VOICE_READY':'0'}),
 ]
 results = []
 for name, section, defaults, advanced, guide, extra in cases:
