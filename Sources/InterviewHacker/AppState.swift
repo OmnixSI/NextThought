@@ -102,7 +102,7 @@ final class AppState {
     var shortcutErrors: [String] = []
 
     // MARK: Answer engines
-    var answerBackend = AnswerBackend(rawValue: UserDefaults.standard.string(forKey: "answerBackend") ?? "") ?? .codexAppServer
+    var answerBackend = AnswerBackend.initialChoice()
     var apiBaseURL = UserDefaults.standard.string(forKey: "apiBaseURL") ?? "https://api.openai.com/v1"
     var apiModel = UserDefaults.standard.string(forKey: "apiModel") ?? ""
     var apiKey = KeychainStore.read("answer.api")
