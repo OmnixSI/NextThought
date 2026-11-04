@@ -19,6 +19,13 @@ struct MarkdownText: View, Equatable {
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                case let .math(latex):
+                    // A display formula (`$$…$$`, `\[…\]`), as Unicode text in a serif face.
+                    Text(verbatim: LaTeXMath.unicode(latex))
+                        .font(.system(size: size * 1.1, design: .serif))
+                        .multilineTextAlignment(.center)
+                        .padding(.vertical, 2)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 case let .heading(line):
                     Text(Self.inline(line)).font(.system(size: size * 1.05, weight: .semibold))
                 case let .bullet(line, level):
@@ -35,12 +42,37 @@ struct MarkdownText: View, Equatable {
         .textSelection(.enabled)
     }
 
-    enum Block { case paragraph(String), bullet(String, Int), heading(String), code(String) }
+    enum Block { case paragraph(String), bullet(String, Int), heading(String), code(String), math(String) }
 
     static func blocks(_ text: String) -> [Block] {
         var result: [Block] = []
         var code: [String]?
+        // A display formula in progress: the marker that ends it and the lines so far.
+        var math: (closer: String, lines: [String])?
         for raw in text.components(separatedBy: "\n") {
+            if var open = math {
+                if let end = LaTeXMath.displayClosing(in: raw, closer: open.closer) {
+                    open.lines.append(end.before)
+                    result.append(.math(open.lines.joined(separator: "\n")))
+                    let after = end.after.trimmingCharacters(in: .whitespaces)
+                    if !after.isEmpty { result.append(.paragraph(after)) }
+                    math = nil
+                } else {
+                    open.lines.append(raw)
+                    math = open
+                }
+                continue
+            }
+            if code == nil, let opening = LaTeXMath.displayOpening(raw.trimmingCharacters(in: .whitespaces)) {
+                if let end = LaTeXMath.displayClosing(in: opening.rest, closer: opening.closer) {
+                    result.append(.math(end.before))
+                    let after = end.after.trimmingCharacters(in: .whitespaces)
+                    if !after.isEmpty { result.append(.paragraph(after)) }
+                } else {
+                    math = (opening.closer, [opening.rest])
+                }
+                continue
+            }
             if raw.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
                 if let lines = code { result.append(.code(lines.joined(separator: "\n"))); code = nil } else { code = [] }
                 continue
@@ -61,11 +93,16 @@ struct MarkdownText: View, Equatable {
         }
         // Unterminated fence while streaming: show what we have.
         if let lines = code, !lines.isEmpty { result.append(.code(lines.joined(separator: "\n"))) }
+        if let open = math, !open.lines.joined().trimmingCharacters(in: .whitespaces).isEmpty {
+            result.append(.math(open.lines.joined(separator: "\n")))
+        }
         return result
     }
 
     static func inline(_ line: String) -> AttributedString {
-        (try? AttributedString(markdown: line, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(line)
+        // Formulas ($x^2$, \(x^2\)) become Unicode text before Markdown is read.
+        let line = LaTeXMath.replacingInlineMath(in: line)
+        return (try? AttributedString(markdown: line, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(line)
     }
 }
 
