@@ -413,11 +413,13 @@ public enum NotesCorrections {
 
 public enum NotesPrompt {
     /// "[12:41] 对方：…" lines; numbered when the proofreading step needs to point at them.
-    public static func transcript(_ lines: [SessionTranscriptLine], start: Date, numbered: Bool = false, english: Bool = false) -> String {
+    /// `speakerLabels`: a person's name or "说话人 N" for lines whose voice was told apart (SpeakerLabels.promptLabels).
+    public static func transcript(_ lines: [SessionTranscriptLine], start: Date, numbered: Bool = false, english: Bool = false,
+                                  speakerLabels: [UUID: String] = [:]) -> String {
         lines.enumerated().map { index, line in
             let offset = Int(max(0, line.date.timeIntervalSince(start)))
             let stamp = NotesTime.text(offset)
-            let speaker = english ? line.speaker.englishLabel : line.speaker.label
+            let speaker = speakerLabels[line.id] ?? (english ? line.speaker.englishLabel : line.speaker.label)
             return (numbered ? "#\(index) " : "") + "[\(stamp)] \(speaker)：\(line.text)"
         }.joined(separator: "\n")
     }
