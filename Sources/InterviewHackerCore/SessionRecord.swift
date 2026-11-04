@@ -206,13 +206,53 @@ public struct SessionSummary: Codable, Sendable, Equatable {
     public var appliedToWorkspace: Bool?
     /// A fishbone, outline or viewpoint matrix written beside the Markdown (absent in older
     /// summaries, and when the notes use the plain text format).
+    /// Since v2.3 it means "the one written last"; every view the user asked for is kept in
+    /// `structuredAll` (read them with `payload(for:)`, write with `store(_:)`).
     public var structured: StructuredNotesPayload?
+    /// Every fishbone, outline and viewpoint matrix written for this meeting, one per format
+    /// (absent in older summaries, which only have `structured`).
+    public var structuredAll: [StructuredNotesPayload]?
     public init(title: String, markdown: String, questions: [SummaryQuestion], generatedAt: Date, model: String,
                 lessons: [String]? = nil, bank: [BankEntry]? = nil, appliedToWorkspace: Bool? = nil,
-                structured: StructuredNotesPayload? = nil) {
+                structured: StructuredNotesPayload? = nil, structuredAll: [StructuredNotesPayload]? = nil) {
         self.title = title; self.markdown = markdown; self.questions = questions; self.generatedAt = generatedAt; self.model = model
         self.lessons = lessons; self.bank = bank; self.appliedToWorkspace = appliedToWorkspace
-        self.structured = structured
+        self.structured = structured; self.structuredAll = structuredAll
+    }
+
+    /// The saved view of a format that has something to draw (failure markers and the plain
+    /// format never count). Summaries from before `structuredAll` still answer for the
+    /// format of their single `structured` view.
+    public func payload(for format: NotesFormat) -> StructuredNotesPayload? {
+        guard format.isStructured else { return nil }
+        if let found = structuredAll?.first(where: { $0.format == format && $0.hasContent }) { return found }
+        if let single = structured, single.format == format, single.hasContent { return single }
+        return nil
+    }
+
+    /// The formats that have a saved view, in the order of `NotesFormat.allCases`.
+    public var storedFormats: [NotesFormat] {
+        NotesFormat.allCases.filter { payload(for: $0) != nil }
+    }
+
+    /// Saves a view: a newer one of the same format replaces the older one (in place), the
+    /// others stay, and `structured` points at it. A view without content is ignored, so a
+    /// failed try never replaces one that works.
+    public mutating func store(_ payload: StructuredNotesPayload) {
+        guard payload.format.isStructured, payload.hasContent else { return }
+        var all = structuredAll ?? []
+        // A single view saved by an older version joins the list before it can be overwritten.
+        if let single = structured, single.format.isStructured, single.hasContent,
+           !all.contains(where: { $0.format == single.format }) {
+            all.append(single)
+        }
+        if let index = all.firstIndex(where: { $0.format == payload.format }) {
+            all[index] = payload
+        } else {
+            all.append(payload)
+        }
+        structuredAll = all
+        structured = payload
     }
 }
 

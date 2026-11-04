@@ -24,72 +24,109 @@ struct StructuredTimeLink: View {
     }
 }
 
-private enum StructuredPaneMode: Hashable { case structured, text }
-
-/// The notes tab of a meeting: when a fishbone, outline or viewpoint matrix was written,
-/// a small switch "结构图 / 文字纪要" (the structured view first); otherwise only the text
-/// notes, as before. A failed structured pass only leaves one quiet line under the text.
+/// The body of the notes tab for the view picked on the format bar: the text notes (always
+/// there) or one of the fishbone, outline and viewpoint views. A view that was never written
+/// shows its progress while it is written; one that failed says so in one quiet line and
+/// offers 重试. The text notes are never replaced by any of them.
 struct StructuredNotesPane<TextBody: View>: View {
     let detail: SessionDetail
+    let format: NotesFormat
     let onJump: (Int) -> Void
     private let textBody: TextBody
-    @State private var mode: StructuredPaneMode = .structured
-    @State private var copied = false
 
-    init(detail: SessionDetail, onJump: @escaping (Int) -> Void, @ViewBuilder textBody: () -> TextBody) {
+    init(detail: SessionDetail, format: NotesFormat, onJump: @escaping (Int) -> Void, @ViewBuilder textBody: () -> TextBody) {
         self.detail = detail
+        self.format = format
         self.onJump = onJump
         self.textBody = textBody()
     }
 
-    private var prefs: NotesFormatPrefs { NotesFormatPrefs.shared }
+    var body: some View {
+        if format.isStructured {
+            StructuredFormatPane(detail: detail, format: format, onJump: onJump)
+        } else {
+            textBody
+        }
+    }
+}
+
+private struct StructuredFormatPane: View {
+    @Environment(AppState.self) private var state
+    let detail: SessionDetail
+    let format: NotesFormat
+    let onJump: (Int) -> Void
+    @State private var copied = false
+
+    private var jobs: StructuredNotesJobs { StructuredNotesJobs.shared }
 
     var body: some View {
         let id = detail.meta.id
-        let payload = detail.summary?.structured
+        let key = StructuredJobKey(id: id, format: format)
+        let running = jobs.isRunning(key)
+        let payload = detail.summary?.payload(for: format)
         VStack(alignment: .leading, spacing: Space.s6) {
-            if prefs.generating.contains(id) {
-                HStack(spacing: Space.s2) {
-                    ProgressView().controlSize(.small)
-                    Text("正在生成结构图…").font(Typo.caption).foregroundStyle(Ink.secondary)
-                }
+            if running {
+                progress(id)
             }
-            if let payload, payload.hasContent {
-                toolbar(payload)
-                if mode == .structured {
-                    StructuredNotesContent(payload: payload, onJump: onJump)
-                } else {
-                    textBody
+            if let payload {
+                HStack {
+                    Spacer(minLength: 0)
+                    menu(payload, id: id, running: running)
                 }
-            } else {
-                textBody
-                if payload?.failed == true || prefs.failed.contains(id) {
-                    Text("结构图未能生成，已显示文字纪要").font(Typo.caption).foregroundStyle(Ink.secondary)
+                StructuredNotesContent(payload: payload, onJump: onJump)
+            } else if !running {
+                if jobs.hasFailed(key) {
+                    notice(String(localized: "这次没整理成功，纪要不受影响。"), action: String(localized: "重试"), id: id)
+                } else {
+                    notice(String(localized: "还没有整理过。"), action: String(localized: "开始整理"), id: id)
                 }
             }
         }
     }
 
-    private func toolbar(_ payload: StructuredNotesPayload) -> some View {
-        let items: [(value: StructuredPaneMode, title: LocalizedStringKey)] = [(.structured, "结构图"), (.text, "文字纪要")]
-        return HStack(spacing: Space.s2) {
-            InkSegmented(items: items, selection: $mode).fixedSize()
+    /// "正在整理成鱼骨图…" with 取消; long meetings take a while, the text notes stay usable.
+    private func progress(_ id: UUID) -> some View {
+        HStack(spacing: Space.s2) {
+            ProgressView().controlSize(.small)
+            Text(verbatim: format.progressTitle).font(Typo.body)
             Spacer(minLength: Space.s2)
-            if mode == .structured {
-                Button {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(StructuredNotesMarkdown.render(payload), forType: .string)
-                    copied = true
-                    Task { try? await Task.sleep(for: .seconds(2)); copied = false }
-                } label: {
-                    Label(copied ? "已复制" : "复制结构图", systemImage: copied ? "checkmark" : "doc.on.doc")
-                        .font(Typo.caption)
-                        .foregroundStyle(Ink.secondary)
-                }
-                .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
-                .help("复制为 Markdown")
-            }
+            Button("取消") { state.cancelStructuredNotes(for: id, format: format) }
+                .buttonStyle(GhostButtonStyle(height: 32, horizontalPadding: 10))
         }
+        .paperCard()
+    }
+
+    private func notice(_ message: String, action: String, id: UUID) -> some View {
+        HStack(spacing: Space.s2) {
+            Text(verbatim: message).font(Typo.caption).foregroundStyle(Ink.secondary)
+            Spacer(minLength: Space.s2)
+            Button(action) { state.generateStructuredNotes(for: id, format: format) }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(detail.lines.isEmpty)
+        }
+        .paperCard()
+    }
+
+    /// "…": write this view again, or copy it.
+    private func menu(_ payload: StructuredNotesPayload, id: UUID, running: Bool) -> some View {
+        Menu {
+            Button("重新生成") { state.generateStructuredNotes(for: id, format: format) }
+                .disabled(running)
+            Button(copied ? String(localized: "已复制") : String(localized: "复制为 Markdown")) {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(StructuredNotesMarkdown.render(payload), forType: .string)
+                copied = true
+                Task { try? await Task.sleep(for: .seconds(2)); copied = false }
+            }
+        } label: {
+            Image(systemName: "ellipsis").font(.system(size: 13, weight: .medium)).foregroundStyle(Ink.secondary)
+        }
+        .menuStyle(.button)
+        .buttonStyle(GhostButtonStyle(height: 32, horizontalPadding: 10))
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .accessibilityLabel("更多")
+        .help("更多")
     }
 }
 

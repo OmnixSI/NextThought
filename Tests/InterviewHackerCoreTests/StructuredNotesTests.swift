@@ -383,4 +383,88 @@ struct StructuredNotesTests {
         let failed = try JSONLines.decoder().decode(StructuredNotesPayload.self, from: Data(#"{"format":"outline","failed":true,"language":"en"}"#.utf8))
         #expect(failed.format == .outline && failed.failed == true && failed.isEnglish && !failed.hasContent)
     }
+
+    // MARK: Several views per meeting
+
+    private func fishbonePayload(head: String = "上线延期", model: String = "m") -> StructuredNotesPayload {
+        StructuredNotesPayload(format: .fishbone,
+                               fishbone: FishboneNotes(head: head, categories: [FishboneCategory(name: "人员", causes: [TimedText(text: "后端缺人", at: 130)])]),
+                               generatedAt: Date(timeIntervalSince1970: 1_790_000_000), model: model)
+    }
+
+    private func outlinePayload() -> StructuredNotesPayload {
+        StructuredNotesPayload(format: .outline,
+                               outline: OutlineNotes(sections: [OutlineSection(title: "导数", at: 5, points: [OutlinePoint(text: "定义", at: 6)])]),
+                               generatedAt: Date(timeIntervalSince1970: 1_790_000_000), model: "m")
+    }
+
+    private func blankSummary() -> SessionSummary {
+        SessionSummary(title: "t", markdown: "m", questions: [], generatedAt: Date(timeIntervalSince1970: 1_790_000_000), model: "m")
+    }
+
+    @Test func oldSummaryWithOnlyStructuredStillAnswersForItsFormat() throws {
+        let json = ##"{"title":"组会","markdown":"m","questions":[],"generatedAt":"2026-10-26T10:00:00Z","model":"m","structured":{"format":"fishbone","fishbone":{"head":"延期","categories":[{"name":"人员","causes":[{"text":"缺人","at":130}]}]},"language":"zh","droppedCount":0,"generatedAt":"2026-10-26T10:00:00Z","model":"m"}}"##
+        let summary = try JSONLines.decoder().decode(SessionSummary.self, from: Data(json.utf8))
+        #expect(summary.structuredAll == nil)
+        #expect(summary.payload(for: .fishbone)?.fishbone?.head == "延期")
+        #expect(summary.payload(for: .outline) == nil && summary.payload(for: .viewpoints) == nil)
+        #expect(summary.storedFormats == [.fishbone])
+    }
+
+    @Test func storingKeepsOneViewPerFormatAndNewerReplacesOlder() {
+        var summary = blankSummary()
+        summary.store(fishbonePayload(head: "第一版"))
+        summary.store(outlinePayload())
+        #expect(summary.storedFormats == [.fishbone, .outline])
+        #expect(summary.structured?.format == .outline)
+        // Same format again: replaced in place, the other view stays, the order does not change.
+        summary.store(fishbonePayload(head: "第二版"))
+        #expect(summary.structuredAll?.count == 2)
+        #expect(summary.structuredAll?.map(\.format) == [.fishbone, .outline])
+        #expect(summary.payload(for: .fishbone)?.fishbone?.head == "第二版")
+        #expect(summary.payload(for: .outline)?.outline?.sections.first?.title == "导数")
+        #expect(summary.structured?.format == .fishbone)
+    }
+
+    @Test func aSingleViewFromAnOlderVersionIsKeptWhenAnotherIsStored() throws {
+        var summary = blankSummary()
+        summary.structured = fishbonePayload(head: "旧版自动生成")
+        summary.store(outlinePayload())
+        #expect(summary.structuredAll?.map(\.format) == [.fishbone, .outline])
+        #expect(summary.payload(for: .fishbone)?.fishbone?.head == "旧版自动生成")
+        #expect(summary.payload(for: .outline) != nil)
+        // The old single view of the same format is simply replaced.
+        var again = blankSummary()
+        again.structured = fishbonePayload(head: "旧")
+        again.store(fishbonePayload(head: "新"))
+        #expect(again.structuredAll?.count == 1 && again.payload(for: .fishbone)?.fishbone?.head == "新")
+    }
+
+    @Test func failuresAndThePlainFormatAreNeverStored() {
+        var summary = blankSummary()
+        summary.store(.failure(format: .fishbone, english: false))
+        summary.store(.plain(english: false))
+        #expect(summary.structured == nil && summary.structuredAll == nil && summary.storedFormats.isEmpty)
+        // A failed try does not replace a working view, and a failure marker never answers a lookup.
+        summary.store(fishbonePayload())
+        summary.store(.failure(format: .fishbone, english: false))
+        #expect(summary.payload(for: .fishbone)?.fishbone?.head == "上线延期")
+        var marked = blankSummary()
+        marked.structured = .failure(format: .outline, english: true)
+        #expect(marked.payload(for: .outline) == nil)
+        #expect(blankSummary().payload(for: .standard) == nil)
+    }
+
+    @Test func severalViewsRoundTripAndOlderReadersIgnoreThem() throws {
+        var summary = blankSummary()
+        summary.store(fishbonePayload())
+        summary.store(outlinePayload())
+        let data = try JSONLines.encoder().encode(summary)
+        let decoded = try JSONLines.decoder().decode(SessionSummary.self, from: data)
+        #expect(decoded == summary)
+        #expect(decoded.storedFormats == [.fishbone, .outline])
+        // Nothing saved: the key is not written, so files stay as they were.
+        let plain = try JSONLines.encoder().encode(blankSummary())
+        #expect(!String(decoding: plain, as: UTF8.self).contains("structuredAll"))
+    }
 }

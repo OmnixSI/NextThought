@@ -56,7 +56,6 @@ struct NotesSettingsView: View {
                 Hint("纪要页的“模板”菜单可以给单场会议换个模板重新整理。")
             }
         }
-            NotesFormatSettingsView()
             SettingsSection(title: "自定义模板", icon: "square.and.pencil") {
                 HStack(spacing: 6) {
                     Text("从现有模板复制后，可以编辑各部分。")

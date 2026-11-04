@@ -18,6 +18,9 @@ struct MeetingPage: View {
     let onNavigateToSeries: (UUID) -> Void
     @State private var detail: SessionDetail?
     @State private var tab: MeetingTab = .notes
+    /// Which view of the notes is shown: the text notes (always the one a meeting opens with)
+    /// or a fishbone, outline or viewpoint matrix the user picked. Not saved.
+    @State private var format: NotesFormat = .standard
     @State private var jumpLine: Int?
     @State private var copied = false
 
@@ -36,7 +39,12 @@ struct MeetingPage: View {
                             InkSegmented(items: tabs(detail), selection: $tab).fixedSize()
                             switch tab {
                             case .notes:
-                                StructuredNotesPane(detail: detail, onJump: { seconds in jump(to: seconds, in: detail) }) {
+                                if showsFormatBar(detail) {
+                                    NotesFormatBar(id: id, firstTitle: isReview ? String(localized: "复盘") : String(localized: "纪要"),
+                                                   recommended: recommendedFormat(detail), selection: $format,
+                                                   onPick: { picked in pick(picked, in: detail) })
+                                }
+                                StructuredNotesPane(detail: detail, format: shownFormat(detail), onJump: { seconds in jump(to: seconds, in: detail) }) {
                                     NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
                                 }
                             case .transcript:
@@ -83,6 +91,49 @@ struct MeetingPage: View {
 
     private var isReview: Bool {
         detail?.notes?.sections.contains { $0.kind == .questions } == true
+    }
+
+    // MARK: Notes formats
+
+    /// The format bar needs finished text notes to sit beside; while they are written (or the
+    /// meeting is still running) only the text notes show.
+    private func showsFormatBar(_ detail: SessionDetail) -> Bool {
+        detail.summary != nil && !detail.lines.isEmpty && id != archive.activeID && !archive.summarizing.contains(id)
+    }
+
+    /// The view on screen: the picked one, or the text notes when the bar is not there.
+    private func shownFormat(_ detail: SessionDetail) -> NotesFormat {
+        showsFormatBar(detail) ? format : .standard
+    }
+
+    /// The view that suits this kind of meeting (marked with a dot, never written by itself).
+    private func recommendedFormat(_ detail: SessionDetail) -> NotesFormat? {
+        let mode = detail.meta.workspaceID.flatMap { state.workspaces.workspace($0)?.effectiveMode } ?? detail.meta.mode
+        let suggested = NotesFormat.recommended(for: mode)
+        return suggested.isStructured ? suggested : nil
+    }
+
+    /// A click on the bar: a view that is saved shows at once, a new one is written now.
+    private func pick(_ picked: NotesFormat, in detail: SessionDetail) {
+        guard picked.isStructured, detail.summary?.payload(for: picked) == nil,
+              !StructuredNotesJobs.shared.isRunning(StructuredJobKey(id: id, format: picked)) else { return }
+        state.generateStructuredNotes(for: id, format: picked)
+    }
+
+    /// What the copy button copies: the structured view on screen, otherwise the text notes.
+    private func copiedFormat(_ detail: SessionDetail) -> NotesFormat {
+        let shown = shownFormat(detail)
+        return tab == .notes && detail.summary?.payload(for: shown) != nil ? shown : .standard
+    }
+
+    private func copyShown(_ detail: SessionDetail) {
+        let shown = copiedFormat(detail)
+        if shown.isStructured, let payload = detail.summary?.payload(for: shown) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(StructuredNotesMarkdown.render(payload), forType: .string)
+        } else {
+            state.copyNotes(detail)
+        }
     }
 
     private func jump(to seconds: Int, in detail: SessionDetail) {
@@ -198,11 +249,12 @@ struct MeetingPage: View {
             .help("待改进的题和更好的答法存进这个系列的题库，下一场自动带入")
         } else {
             Button {
-                if let detail { state.copyNotes(detail) }
+                if let detail { copyShown(detail) }
                 copied = true
                 Task { try? await Task.sleep(for: .seconds(2)); copied = false }
             } label: {
-                Label(copied ? "已复制" : "复制纪要", systemImage: copied ? "checkmark" : "doc.on.doc")
+                Label(copied ? String(localized: "已复制") : (detail.map { copiedFormat($0).copyTitle } ?? String(localized: "复制纪要")),
+                      systemImage: copied ? "checkmark" : "doc.on.doc")
             }
             .buttonStyle(PrimaryButtonStyle())
             .disabled(detail == nil)
@@ -289,8 +341,6 @@ private struct TemplateMenu: View {
                     if template.id == currentID { Label(template.name, systemImage: "checkmark") } else { Text(verbatim: template.name) }
                 }
             }
-            Divider()
-            NotesFormatMenuItems(id: id, detail: detail)
         } label: {
             Group {
                 if compactLabel {
