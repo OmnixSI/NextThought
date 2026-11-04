@@ -176,10 +176,12 @@ extension AppState {
                 notes.model = engine.model
                 notes.generatedAt = Date()
                 archive.saveNotes(notes, for: id)
-                let summary = notesSummary(from: notes, template: template, detail: detail)
+                var summary = notesSummary(from: notes, template: template, detail: detail)
+                // The fishbone / outline / viewpoint views the user asked for read the transcript, not
+                // these notes: they stay. None is written here; the notes page writes one when it is picked.
+                summary.structured = detail.summary?.structured
+                summary.structuredAll = detail.summary?.structuredAll
                 archive.saveSummary(summary, for: id)
-                // The meeting type's fishbone / outline / viewpoint view follows in the background.
-                scheduleStructuredNotes(detail: detail, notes: notes, summary: summary, mode: mode, english: useEnglish, engine: engine)
                 if var latest = archive.sessions.first(where: { $0.id == id }) {
                     latest.actionItemCount = notes.actionItemCount
                     latest.improveCount = notes.improveCount
@@ -196,7 +198,9 @@ extension AppState {
                 Diagnostics.record("notes.unreadable")
                 do {
                     guard let detail = loaded else { throw NotesError.unreadable }
-                    let summary = try await markdownSummary(detail: detail, engine: engine)
+                    var summary = try await markdownSummary(detail: detail, engine: engine)
+                    summary.structured = detail.summary?.structured
+                    summary.structuredAll = detail.summary?.structuredAll
                     archive.saveSummary(summary, for: id)
                     if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
                 } catch {

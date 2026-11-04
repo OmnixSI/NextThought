@@ -4,60 +4,117 @@ import Observation
 import SwiftUI
 import InterviewHackerCore
 
-/// The notes format of each meeting type ("纪要格式") and the sessions whose fishbone,
-/// outline or viewpoint matrix is being written. The text notes are always written; a
-/// format only adds one more view, at the cost of one more request to the notes model,
-/// so Settings → 纪要 can turn it off (`enabled`) or pick the plain text format per type.
+/// One structured view of one meeting (a meeting can have a fishbone, an outline and a
+/// viewpoint matrix at the same time).
+struct StructuredJobKey: Hashable {
+    let id: UUID
+    let format: NotesFormat
+}
+
+/// The fishbone, outline or viewpoint matrix passes that are running or have just failed.
+/// The notes page reads this to show progress, "取消" and "重试". Nothing here is saved: the
+/// finished views live in `SessionSummary.structuredAll`.
+/// (The old keys `notesFormatByType` and `notesStructuredEnabled` are no longer read: the
+/// user picks the view on the notes page, nothing is written automatically.)
 @MainActor
 @Observable
-final class NotesFormatPrefs {
-    static let shared = NotesFormatPrefs()
+final class StructuredNotesJobs {
+    static let shared = StructuredNotesJobs()
 
-    /// SessionMode raw value → NotesFormat raw value, only for the types the user changed.
-    private(set) var byType: [String: String]
-    /// Off: no extra model call, the notes stay text only.
-    private(set) var enabled: Bool
-    /// Sessions whose structured view is being written right now.
-    var generating: Set<UUID> = []
-    /// Sessions whose last attempt did not produce a view (the page says so quietly).
-    var failed: Set<UUID> = []
+    /// Views being written right now (the value tells a job from an older one of the same view).
+    private(set) var running: [StructuredJobKey: UUID] = [:]
+    /// Views whose last attempt did not produce anything (the page says so quietly).
+    private(set) var failed: Set<StructuredJobKey> = []
+    @ObservationIgnored private var tasks: [StructuredJobKey: Task<Void, Never>] = [:]
+    @ObservationIgnored private var committing = false
 
-    private init() {
-        byType = UserDefaults.standard.dictionary(forKey: "notesFormatByType") as? [String: String] ?? [:]
-        enabled = UserDefaults.standard.object(forKey: "notesStructuredEnabled") as? Bool ?? true
+    private init() {}
+
+    func isRunning(_ key: StructuredJobKey) -> Bool { running[key] != nil }
+
+    /// Any view of this meeting is being written.
+    func isRunning(_ id: UUID) -> Bool { running.keys.contains { $0.id == id } }
+
+    func hasFailed(_ key: StructuredJobKey) -> Bool { failed.contains(key) }
+
+    func start(_ key: StructuredJobKey) -> UUID {
+        let token = UUID()
+        running[key] = token
+        failed.remove(key)
+        return token
     }
 
-    func format(for mode: SessionMode) -> NotesFormat {
-        NotesFormat.resolve(for: mode, overrides: byType)
+    func attach(_ task: Task<Void, Never>, to key: StructuredJobKey, token: UUID) {
+        guard running[key] == token else { task.cancel(); return }
+        tasks[key] = task
     }
 
-    func setFormat(_ format: NotesFormat, for mode: SessionMode) {
-        byType[mode.rawValue] = format.rawValue
-        UserDefaults.standard.set(byType, forKey: "notesFormatByType")
+    func markFailed(_ key: StructuredJobKey) { failed.insert(key) }
+
+    /// The job is over (finished, failed or cancelled); a newer job of the same view is left alone.
+    func finish(_ key: StructuredJobKey, token: UUID) {
+        guard running[key] == token else { return }
+        running[key] = nil
+        tasks[key] = nil
     }
 
-    func setEnabled(_ value: Bool) {
-        enabled = value
-        UserDefaults.standard.set(value, forKey: "notesStructuredEnabled")
+    /// "取消": stops the request and clears the progress right away.
+    func cancel(_ key: StructuredJobKey) {
+        tasks[key]?.cancel()
+        tasks[key] = nil
+        running[key] = nil
+    }
+
+    /// Runs `body` alone: two views finishing together must not write the summary over each other.
+    func exclusive(_ body: () async -> Void) async {
+        while committing {
+            if Task.isCancelled { return }
+            try? await Task.sleep(for: .milliseconds(40))
+        }
+        committing = true
+        await body()
+        committing = false
     }
 }
 
 extension NotesFormat {
-    /// Name for the interface (follows the app language; `title(english:)` follows the notes).
-    var displayName: String {
+    /// The short name on the format bar (follows the app language; `title(english:)` follows the notes).
+    var barTitle: String {
         switch self {
-        case .standard: String(localized: "文字纪要（原有）")
-        case .fishbone: String(localized: "因果鱼骨图")
-        case .outline: String(localized: "要点大纲")
+        case .standard: String(localized: "纪要")
+        case .outline: String(localized: "提纲")
+        case .fishbone: String(localized: "鱼骨图")
         case .viewpoints: String(localized: "观点对照")
+        }
+    }
+
+    /// "正在整理成鱼骨图…" while the view is being written.
+    var progressTitle: String {
+        switch self {
+        case .standard: ""
+        case .outline: String(localized: "正在整理成提纲…")
+        case .fishbone: String(localized: "正在整理成鱼骨图…")
+        case .viewpoints: String(localized: "正在整理成观点对照…")
+        }
+    }
+
+    /// "复制鱼骨图" on the page's copy button while that view is shown.
+    var copyTitle: String {
+        switch self {
+        case .standard: String(localized: "复制纪要")
+        case .outline: String(localized: "复制提纲")
+        case .fishbone: String(localized: "复制鱼骨图")
+        case .viewpoints: String(localized: "复制观点对照")
         }
     }
 }
 
-/// After the text notes: one more pass over the transcript that writes the meeting as a
-/// fishbone, an outline or a viewpoint matrix. Every node carries a time; nodes without
-/// transcript support are dropped (same check as the template notes). When the pass fails
-/// the text notes stay as they are and the page only says "结构图未能生成".
+/// On demand, never by itself: one pass over the transcript that writes the meeting as a
+/// fishbone, an outline or a viewpoint matrix, when the user picks that view on the notes
+/// page. Every node carries a time; nodes without transcript support are dropped (same check
+/// as the template notes). Each finished view is saved beside the others and beside the
+/// text notes, which are never touched. When the pass fails the page says so quietly and
+/// offers 重试.
 @MainActor
 extension AppState {
     // MARK: Small pieces other features add to
@@ -74,78 +131,75 @@ extension AppState {
 
     // MARK: Entry points
 
-    /// Called right after the text notes are saved: writes the format of the meeting type in the
-    /// background (the meeting's earlier choice wins when it is written again).
-    func scheduleStructuredNotes(detail: SessionDetail, notes: StructuredNotes, summary: SessionSummary,
-                                 mode: SessionMode, english: Bool, engine: NotesEngine) {
-        let prefs = NotesFormatPrefs.shared
-        let previous = detail.summary?.structured
-        let format = previous?.format ?? prefs.format(for: mode)
-        guard prefs.enabled, format.isStructured || previous != nil else { return }
-        Task {
-            await runStructuredNotes(detail: detail, notes: notes, baseSummary: summary, format: format,
-                                     english: english, engine: engine)
+    /// Writes one view of a meeting in the background (the page shows progress and 取消). One
+    /// view of a meeting is written at most once at a time; a view that is already saved is
+    /// written again only when the user asks for 重新生成.
+    func generateStructuredNotes(for id: UUID, format: NotesFormat) {
+        guard format.isStructured else { return }
+        let jobs = StructuredNotesJobs.shared
+        let key = StructuredJobKey(id: id, format: format)
+        guard !jobs.isRunning(key), !archive.summarizing.contains(id), id != archive.activeID else { return }
+        let engine = notesEngine
+        guard !engine.model.isEmpty else {
+            jobs.markFailed(key)
+            return
         }
+        let token = jobs.start(key)
+        let task = Task {
+            await runStructuredNotes(key, token: token, engine: engine)
+        }
+        jobs.attach(task, to: key, token: token)
     }
 
-    /// "换一种格式重新整理": rewrites only the structured view; the text notes stay.
-    func regenerateStructuredNotes(for id: UUID, format: NotesFormat) {
-        let prefs = NotesFormatPrefs.shared
-        guard !prefs.generating.contains(id), !archive.summarizing.contains(id), id != archive.activeID else { return }
-        let engine = notesEngine
-        guard format == .standard || !engine.model.isEmpty else { return }
-        Task {
-            await archive.flush()
-            guard let detail = await archive.detail(id), !detail.lines.isEmpty else { return }
-            let english = detail.notes.map { $0.language == "en" } ?? notesUseEnglish
-            let base = detail.summary ?? SessionSummary(title: detail.meta.displayTitle, markdown: "", questions: [],
-                                                        generatedAt: Date(), model: engine.model)
-            await runStructuredNotes(detail: detail, notes: detail.notes, baseSummary: base, format: format,
-                                     english: english, engine: engine)
-        }
+    /// "取消" on the progress line.
+    func cancelStructuredNotes(for id: UUID, format: NotesFormat) {
+        StructuredNotesJobs.shared.cancel(StructuredJobKey(id: id, format: format))
     }
 
     // MARK: Writing
 
-    private func runStructuredNotes(detail: SessionDetail, notes: StructuredNotes?, baseSummary: SessionSummary,
-                                    format: NotesFormat, english: Bool, engine: NotesEngine) async {
-        let id = detail.meta.id
-        let prefs = NotesFormatPrefs.shared
-        guard !prefs.generating.contains(id) else { return }
-        prefs.generating.insert(id)
-        prefs.failed.remove(id)
-        defer { prefs.generating.remove(id) }
-
-        let payload: StructuredNotesPayload
-        if format == .standard {
-            payload = .plain(english: english)
-        } else {
-            do {
-                payload = try await writeStructuredNotes(detail: detail, notes: notes, format: format, english: english, engine: engine,
-                                                         fallbackTitle: baseSummary.title)
-                Diagnostics.record("notes.structured", ["session_id": id.uuidString, "format": format.rawValue,
-                                                        "dropped": payload.droppedCount])
-            } catch is CancellationError {
-                return
-            } catch {
-                Diagnostics.record("notes.structured_failed", ["session_id": id.uuidString, "format": format.rawValue])
-                payload = .failure(format: format, english: english, model: engine.model)
-            }
-        }
-
-        // The text notes may have been rewritten while this ran: write onto what is saved now,
-        // and leave it to that run to start its own structured pass.
-        guard !archive.summarizing.contains(id) else { return }
+    private func runStructuredNotes(_ key: StructuredJobKey, token: UUID, engine: NotesEngine) async {
+        let jobs = StructuredNotesJobs.shared
+        defer { jobs.finish(key, token: token) }
+        let id = key.id
         await archive.flush()
-        var summary = await archive.detail(id)?.summary ?? baseSummary
-        if payload.failed == true, summary.structured?.hasContent == true {
-            // A failed second try never replaces a view that works.
-            prefs.failed.insert(id)
+        guard let detail = await archive.detail(id), !detail.lines.isEmpty, let base = detail.summary else {
+            if !Task.isCancelled { jobs.markFailed(key) }
             return
         }
-        summary.structured = payload
-        archive.saveSummary(summary, for: id)
-        archive.notesRevision += 1
+        let english = detail.notes.map { $0.language == "en" } ?? notesUseEnglish
+
+        let payload: StructuredNotesPayload
+        do {
+            payload = try await writeStructuredNotes(detail: detail, notes: detail.notes, format: key.format, english: english,
+                                                     engine: engine, fallbackTitle: base.title)
+            Diagnostics.record("notes.structured", ["session_id": id.uuidString, "format": key.format.rawValue,
+                                                    "dropped": payload.droppedCount])
+        } catch {
+            // Cancelled by the user (the page already cleared its progress): nothing to report.
+            if Task.isCancelled || error is CancellationError { return }
+            Diagnostics.record("notes.structured_failed", ["session_id": id.uuidString, "format": key.format.rawValue])
+            jobs.markFailed(key)
+            return
+        }
+        if Task.isCancelled { return }
+
+        // The text notes may be rewritten while this ran: write onto what is saved after that.
+        while archive.summarizing.contains(id) {
+            try? await Task.sleep(for: .milliseconds(500))
+            if Task.isCancelled { return }
+        }
+        var saved = false
+        await jobs.exclusive {
+            await archive.flush()
+            guard var summary = await archive.detail(id)?.summary else { return }
+            summary.store(payload)
+            archive.saveSummary(summary, for: id)
+            await archive.flush()
+            archive.notesRevision += 1
+            saved = true
+        }
+        if !saved && !Task.isCancelled { jobs.markFailed(key) }
     }
 
     /// Proofread transcript → one request (or parts, then a merge) → tolerant parse → check.
