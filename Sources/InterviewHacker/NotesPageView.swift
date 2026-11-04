@@ -36,7 +36,9 @@ struct MeetingPage: View {
                             InkSegmented(items: tabs(detail), selection: $tab).fixedSize()
                             switch tab {
                             case .notes:
-                                NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
+                                StructuredNotesPane(detail: detail, onJump: { seconds in jump(to: seconds, in: detail) }) {
+                                    NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
+                                }
                             case .transcript:
                                 CorrectedTranscript(detail: detail, highlighted: jumpLine)
                             case .answers:
@@ -287,6 +289,8 @@ private struct TemplateMenu: View {
                     if template.id == currentID { Label(template.name, systemImage: "checkmark") } else { Text(verbatim: template.name) }
                 }
             }
+            Divider()
+            NotesFormatMenuItems(id: id, detail: detail)
         } label: {
             Group {
                 if compactLabel {
