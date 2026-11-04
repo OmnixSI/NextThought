@@ -61,3 +61,10 @@ Codex CLI is an independently installed application using the user's existing lo
 InterviewHacker does not redistribute Codex CLI or acquire new OpenAI API credentials.
 
 Phone companion uses @noble/ciphers and @noble/hashes (MIT). Full licenses: Companion/LICENSES.txt.
+
+Speaker separation (optional, off by default; runs only on this Mac):
+SpeakerEmbedding.mlpackage is the WeSpeaker ResNet34-LM speaker model trained on VoxCeleb
+(https://github.com/wenet-e2e/wespeaker), licensed CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/), converted to Core ML by
+scripts/convert-voiceprint.py. The conversion script, the log-mel filterbank and the voiceprint
+grouping rules are adapted from cicada (Apache-2.0), https://github.com/wquguru/cicada.
