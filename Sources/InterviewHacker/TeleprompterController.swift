@@ -116,14 +116,21 @@ final class TeleprompterController {
     }
 
     func showOnlyTeleprompter() {
+        // In a meeting the live window mode owns the page and the subtitle bar.
+        AppState.shared.liveWindow.set(.hidden)
         show()
         NSApp.windows.filter { !($0 is NSPanel) && $0.isVisible }.forEach { $0.orderOut(nil) }
     }
 
+    /// Brings the main window back (from the subtitle bar or hidden mode too).
+    /// Not `first(where: !NSPanel)`: that could be the settings window.
     func showWorkbench() {
-        NSApp.windows.first(where: { !($0 is NSPanel) })?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        AppState.shared.liveWindow.set(.notes)
+        MainWindowLayout.bringToFront()
     }
+
+    /// The emergency "hide everything" shortcut is on.
+    var isPanicHidden: Bool { !panicHidden.isEmpty }
 
     func move(to placement: Placement) {
         show()
@@ -161,6 +168,7 @@ final class TeleprompterController {
     func applyPrivacy(_ enabled: Bool) {
         for window in NSApp.windows { window.sharingType = enabled ? .none : .readOnly }
         panel?.sharingType = enabled ? .none : .readOnly
+        SubtitleBarController.shared.applyPrivacy(enabled)
     }
 
     /// Click-through, with one exception: the button that turns it off.

@@ -64,6 +64,7 @@ private struct LiveTopBar: View {
                 Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
                     .buttonStyle(GlassIconButtonStyle(size: 28))
                     .help("回答浮窗 · \(state.shortcutLabel(.toggleTeleprompter))")
+                LiveWindowMenu()
             }
             if state.isRunning { PauseResumeButton() }
             Button("结束") { Task { await state.stopSession() } }

@@ -5,6 +5,8 @@ import InterviewHackerCore
 enum HotkeyAction: UInt32, CaseIterable, Identifiable {
     case captureWindow = 1, captureRegion, toggleSession, regenerate, forceAnswer, togglePause, toggleTeleprompter, cancelAnswer
     case copyAnswer, toggleClickThrough, panicHide, previousAnswer, nextAnswer, refineShorter
+    /// Explicit raw value: a stored shortcut is keyed by it, so it must not shift when other actions are added.
+    case toggleLiveWindow = 40
     var id: UInt32 { rawValue }
     var title: String {
         switch self {
@@ -22,6 +24,7 @@ enum HotkeyAction: UInt32, CaseIterable, Identifiable {
         case .previousAnswer: "上一条回答"
         case .nextAnswer: "下一条回答"
         case .refineShorter: "把回答改短"
+        case .toggleLiveWindow: "切换会中窗口（纪要 / 字幕条 / 隐藏）"
         }
     }
     var defaultBinding: ShortcutBinding {
@@ -41,6 +44,8 @@ enum HotkeyAction: UInt32, CaseIterable, Identifiable {
         case .previousAnswer: return ShortcutBinding(keyCode: 123, command: true, shift: false, control: true)
         case .nextAnswer: return ShortcutBinding(keyCode: 124, command: true, shift: false, control: true)
         case .refineShorter: return ShortcutBinding(keyCode: 18)
+        // ⌃⌥S: no ⌘, so it cannot collide with the ⌘⇧ defaults above.
+        case .toggleLiveWindow: return ShortcutBinding(keyCode: 1, command: false, shift: false, option: true, control: true)
         }
     }
 }

@@ -22,6 +22,7 @@ final class AppState {
     let screenContextService = ScreenContextService()
     let answerCoordinator = AnswerCoordinator()
     let liveTranslation = LiveTranslationCoordinator()
+    let liveWindow = LiveWindowController()
     var apiVisionEnabled = UserDefaults.standard.bool(forKey: "apiVisionEnabled")
     var preparedWorkspace: Workspace?
     var isImportingDocuments = false
@@ -1380,7 +1381,8 @@ final class AppState {
             .panicHide: { TeleprompterController.shared.panicHide() },
             .previousAnswer: { [weak self] in self?.showPreviousAnswer() },
             .nextAnswer: { [weak self] in self?.showNextAnswer() },
-            .refineShorter: { [weak self] in self?.refine(.shorter) }
+            .refineShorter: { [weak self] in self?.refine(.shorter) },
+            .toggleLiveWindow: { [weak self] in self?.liveWindow.cycle() }
         ], overrides: customShortcuts)
     }
 
