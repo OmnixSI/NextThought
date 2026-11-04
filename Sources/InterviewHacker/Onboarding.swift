@@ -740,6 +740,10 @@ struct OnboardingView: View {
                             .buttonStyle(GhostButtonStyle(height: 28))
                     }
                 }
+                GuideDivider()
+                GuideRow(tone: .idle, label: "收尾") {
+                    AutoEndGuideChoice()
+                }
             }
             if let error = state.errorMessage, !error.isEmpty {
                 Text(verbatim: error).font(Typo.caption).foregroundStyle(Ink.caution).fixedSize(horizontal: false, vertical: true)
@@ -773,5 +777,32 @@ struct OnboardingView: View {
             await state.startSession()
             if state.isRunning { state.finishOnboarding() }
         }
+    }
+}
+
+/// 引导最后一步的一行：会议没人说话时怎么办。选择和 设置 → 会议自动收尾 是同一份。
+private struct AutoEndGuideChoice: View {
+    @AppStorage(MeetingAutoEnd.modeKey, store: UserDefaults.standard) private var mode = MeetingEndWatch.Mode.prompt.rawValue
+
+    var body: some View {
+        HStack(spacing: Space.s3) {
+            Text(LocalizedStringKey(line)).font(Typo.body).foregroundStyle(Ink.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Picker("会议没人说话时", selection: $mode) {
+                Text("提醒后结束").tag(MeetingEndWatch.Mode.prompt.rawValue)
+                Text("直接结束").tag(MeetingEndWatch.Mode.end.rawValue)
+                Text("不自动结束").tag(MeetingEndWatch.Mode.off.rawValue)
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .fixedSize()
+        }
+    }
+
+    private var line: String {
+        mode == MeetingEndWatch.Mode.off.rawValue
+            ? "会议结束后需要自己点“结束”"
+            : "没人说话时自动收尾，可在设置里改时长"
     }
 }

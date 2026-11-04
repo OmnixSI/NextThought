@@ -14440,6 +14440,36 @@
           }
         }
       }
+    },
+    "收尾": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wrap-up"
+          }
+        }
+      }
+    },
+    "会议结束后需要自己点“结束”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You'll need to press End yourself when the meeting is over"
+          }
+        }
+      }
+    },
+    "没人说话时自动收尾，可在设置里改时长": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wraps up on its own when no one is talking; change the time in Settings"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
