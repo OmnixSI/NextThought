@@ -16,6 +16,9 @@ struct TranscriptEntry: Identifiable, Codable, Equatable {
     var suspectedEcho: Bool?
     /// In-person meeting: the microphone heard everyone in the room ("现场").
     var onSite: Bool?
+    /// Which voice said it (the other side or the room), when 区分对方的每个人 is on; a
+    /// meeting-local id. Never set for the user's own lines.
+    var voice: Int?
     var roleLabel: String {
         if onSite == true { return "现场 · 麦克风" }
         return source == CaptureSource.microphone.rawValue ? "我 · 麦克风" : "对方 · 系统声音"

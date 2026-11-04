@@ -269,6 +269,9 @@ private struct TranscriptColumn: View {
     @State private var follow = true
 
     var body: some View {
+        // 区分对方的每个人: people appear only once the voices have been told apart.
+        let layout = state.speakers.isActive && state.entries.contains(where: { $0.voice != nil })
+            ? SpeakerLayout(lines: state.liveSpeakerLines, voiceNames: state.voiceNames(for: nil)) : nil
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("实时对话").overline()
@@ -287,6 +290,13 @@ private struct TranscriptColumn: View {
                     .padding(.horizontal, Space.s4)
                     .padding(.top, Space.s3)
             }
+            if let layout, layout.isShown {
+                SpeakerStrip(layout: layout,
+                             rename: { state.renameVoice($0, to: $1, in: nil) },
+                             merge: { state.mergeVoices($0, into: $1, in: nil) })
+                    .padding(.horizontal, Space.s6)
+                    .padding(.top, Space.s2)
+            }
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: Space.s3) {
@@ -296,7 +306,7 @@ private struct TranscriptColumn: View {
                                 .padding(.top, Space.s2)
                         }
                         ForEach(state.entries) { entry in
-                            TranscriptLine(entry: entry).id(entry.id)
+                            TranscriptLine(entry: entry, layout: layout).id(entry.id)
                         }
                         PartialLines()
                         Color.clear.frame(height: 1).id("bottom")
@@ -340,17 +350,23 @@ private struct TranscriptColumn: View {
 /// Speaker label column: 对方 / 我 / 现场.
 private struct SpeakerLabel: View {
     let speaker: SessionSpeaker
+    /// Keeps the column (and the baseline) but shows nothing: the speaker tag above the text names the person.
+    var hidden = false
     var body: some View {
         Text(speaker.displayName)
             .font(.system(size: 12, weight: speaker == .me ? .semibold : .regular))
             .foregroundStyle(speaker == .me ? Ink.ink : Ink.secondary)
             .frame(width: 40, alignment: .leading)
+            .opacity(hidden ? 0 : 1)
+            .accessibilityHidden(hidden)
     }
 }
 
 private struct TranscriptLine: View {
     @Environment(AppState.self) private var state
     let entry: TranscriptEntry
+    /// Set once people are told apart (区分对方的每个人).
+    var layout: SpeakerLayout? = nil
     @State private var hovering = false
 
     var body: some View {
@@ -366,8 +382,11 @@ private struct TranscriptLine: View {
         } else {
             let isQuestion = !entry.isMe && state.isQuestionText(entry.text)
             HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
-                SpeakerLabel(speaker: entry.speaker)
+                SpeakerLabel(speaker: entry.speaker, hidden: layout?.hidesRoleLabel(for: entry.speaker) == true)
                 VStack(alignment: .leading, spacing: Space.s1) {
+                    if let layout, layout.hidesRoleLabel(for: entry.speaker), layout.starts.contains(entry.id) {
+                        SpeakerTag(layout: layout, lineID: entry.id, speaker: entry.speaker)
+                    }
                     lineText(isQuestion: isQuestion)
                     if let translation = entry.translatedText, !translation.isEmpty {
                         Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)

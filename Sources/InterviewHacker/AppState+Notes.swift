@@ -267,8 +267,13 @@ extension AppState {
         archive.notesSteps[detail.meta.id] = .organizing
         let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: lines, answers: detail.answers,
                                                      detected: detail.questions, context: detail.context)
-        let header = SessionSummaryPrompt.header(material)
-        let transcript = NotesPrompt.transcript(lines, start: start, english: english)
+        // Voices told apart (区分对方的每个人): names or "说话人 N" in the transcript, and a note so that
+        // action items say who.
+        let speakerLabels = SpeakerLabels.promptLabels(lines, voiceNames: detail.meta.voiceNames, english: english)
+        let speakerNote = SpeakerLabels.promptNote(lines, voiceNames: detail.meta.voiceNames, english: english,
+                                                   inPerson: detail.meta.inPerson == true)
+        let header = SessionSummaryPrompt.header(material) + (speakerNote.map { "\n" + $0 } ?? "")
+        let transcript = NotesPrompt.transcript(lines, start: start, english: english, speakerLabels: speakerLabels)
         let chunks = SessionSummaryPrompt.chunks(transcript)
         let system = NotesPrompt.organizeSystem(template: template, english: english, meetingDate: start,
                                                 inPerson: detail.meta.inPerson == true) + glossaryNotesBlock(workspace: workspace, english: english)
@@ -349,7 +354,8 @@ extension AppState {
     private func markdownSummary(detail: SessionDetail, engine: NotesEngine) async throws -> SessionSummary {
         let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: detail.lines, answers: detail.answers,
                                                      detected: detail.questions, context: detail.context)
-        let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt))
+        let speakerLabels = SpeakerLabels.promptLabels(detail.lines, voiceNames: detail.meta.voiceNames, english: false)
+        let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt, speakerLabels: speakerLabels))
         let system = SessionSummaryPrompt.system(for: detail.meta.mode)
             + glossaryNotesBlock(workspace: detail.meta.workspaceID.flatMap { workspaces.workspace($0) }, english: false)
         let markdown: String

@@ -31,11 +31,15 @@ public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable 
     public var translatedText: String?
     public var startedAt: Date?
     public var endedAt: Date?
+    /// Which voice said it (the other side or the room), when "区分对方的每个人" was on.
+    /// A meeting-local id from `VoiceClusterer`; nil for the user's own lines and for older records.
+    public var voice: Int?
     public init(id: UUID = UUID(), date: Date, speaker: SessionSpeaker, text: String, translatedText: String? = nil,
-                startedAt: Date? = nil, endedAt: Date? = nil) {
+                startedAt: Date? = nil, endedAt: Date? = nil, voice: Int? = nil) {
         self.id = id; self.date = date; self.speaker = speaker; self.text = text
         self.translatedText = translatedText
         self.startedAt = startedAt; self.endedAt = endedAt
+        self.voice = voice
     }
 }
 
@@ -145,6 +149,9 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
     public var typeName: String?
     /// In-person meeting: one microphone for the room, lines labelled 现场.
     public var inPerson: Bool?
+    /// Names the user gave to voices of this meeting, keyed by voice id as a string.
+    /// A voice without a key shows as "说话人 N".
+    public var voiceNames: [String: String]?
     /// Outcome counts written with the notes (for one-line results in lists).
     public var actionItemCount: Int?
     public var improveCount: Int?
@@ -293,10 +300,11 @@ public enum SessionSummaryPrompt {
         }
     }
 
-    public static func transcriptText(_ lines: [SessionTranscriptLine], start: Date) -> String {
+    /// `speakerLabels`: names or "说话人 N" for lines told apart by voice (SpeakerLabels.promptLabels).
+    public static func transcriptText(_ lines: [SessionTranscriptLine], start: Date, speakerLabels: [UUID: String] = [:]) -> String {
         lines.map { line in
             let offset = Int(max(0, line.date.timeIntervalSince(start)))
-            return String(format: "[%02d:%02d] ", offset / 60, offset % 60) + "\(line.speaker.label)：\(line.text)"
+            return String(format: "[%02d:%02d] ", offset / 60, offset % 60) + "\(speakerLabels[line.id] ?? line.speaker.label)：\(line.text)"
         }.joined(separator: "\n")
     }
 
@@ -331,7 +339,8 @@ public enum SessionSummaryPrompt {
 
     /// Single request when the transcript fits; otherwise `partial(...)` per chunk and `merge(...)`.
     public static func full(_ material: Material) -> String {
-        let transcript = transcriptText(material.lines, start: material.meta.startedAt)
+        let labels = SpeakerLabels.promptLabels(material.lines, voiceNames: material.meta.voiceNames, english: false)
+        let transcript = transcriptText(material.lines, start: material.meta.startedAt, speakerLabels: labels)
         var sections = [header(material), "## 完整转录\n" + transcript]
         if !material.detected.isEmpty {
             sections.append("## 实时检测到的问题（供参考，可能有遗漏或误判）\n" + material.detected.map { "- " + ($0.leadIn.map { $0 + " " } ?? "") + $0.text }.joined(separator: "\n"))
@@ -480,9 +489,10 @@ public enum SessionMarkdownExporter {
         }
         out.append("## 完整转录")
         out.append("")
+        let labels = SpeakerLabels.promptLabels(lines, voiceNames: meta.voiceNames, english: false)
         out.append(contentsOf: lines.map { line in
             let offset = Int(max(0, line.date.timeIntervalSince(meta.startedAt)))
-            let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(line.speaker.label)**：" + line.text
+            let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(labels[line.id] ?? line.speaker.label)**：" + line.text
             guard let translation = line.translatedText, !translation.isEmpty else { return original }
             return original + "\n  *译文：* " + translation
         })

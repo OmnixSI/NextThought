@@ -529,6 +529,13 @@ private struct CorrectedTranscript: View {
         let byLine = Dictionary(grouping: corrections, by: \.line)
         let terms: GlossarySearch? = find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : findCache.terms(for: find, state: state)
         let shown = Array(detail.lines.enumerated()).filter { terms == nil || terms?.appMatch(in: $0.element.text) != nil }
+        let layout = SpeakerLayout(lines: detail.lines, voiceNames: detail.meta.voiceNames)
+        VStack(alignment: .leading, spacing: Space.s3) {
+        if layout.isShown {
+            SpeakerStrip(layout: layout,
+                         rename: { state.renameVoice($0, to: $1, in: detail.meta.id) },
+                         merge: { state.mergeVoices($0, into: $1, in: detail.meta.id) })
+        }
         LazyVStack(alignment: .leading, spacing: Space.s3) {
             if detail.lines.isEmpty {
                 Text("这场会议没有转写。").font(Typo.body).foregroundStyle(Ink.secondary)
@@ -545,7 +552,11 @@ private struct CorrectedTranscript: View {
                         .font(.system(size: 12, weight: line.speaker == .me ? .semibold : .regular))
                         .foregroundStyle(line.speaker == .me ? Ink.ink : Ink.secondary)
                         .frame(width: 40, alignment: .leading)
+                        .opacity(layout.hidesRoleLabel(for: line.speaker) ? 0 : 1)
                     VStack(alignment: .leading, spacing: Space.s1) {
+                        if layout.hidesRoleLabel(for: line.speaker), layout.starts.contains(line.id) {
+                            SpeakerTag(layout: layout, lineID: line.id, speaker: line.speaker)
+                        }
                         Text(Self.text(line.text, fixes: fixes))
                             .font(Typo.body).lineSpacing(5)
                             .textSelection(.enabled)
@@ -575,6 +586,7 @@ private struct CorrectedTranscript: View {
         }
         .sheet(item: $glossaryDraft) { draft in
             AddToGlossarySheet(line: draft.line).environment(state)
+        }
         }
     }
 

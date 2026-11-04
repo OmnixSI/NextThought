@@ -172,6 +172,7 @@ extension AppState {
             if entry.suspectedEcho != true {
                 autoEnd.heard(text: text, end: end)
                 recordTranscript(entry)
+                identifySpeaker(of: entry)
                 insightsDidReceive(entry)
                 liveTranslation.submitFinal(source, text: text, entryID: entry.id, sessionID: activeArchiveID)
             } else {
