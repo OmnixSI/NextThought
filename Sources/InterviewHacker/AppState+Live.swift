@@ -170,6 +170,7 @@ extension AppState {
             }
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
             if entry.suspectedEcho != true {
+                autoEnd.heard(text: text, end: end)
                 recordTranscript(entry)
                 insightsDidReceive(entry)
                 liveTranslation.submitFinal(source, text: text, entryID: entry.id, sessionID: activeArchiveID)

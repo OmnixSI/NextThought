@@ -11,6 +11,7 @@ struct LiveSessionView: View {
     var body: some View {
         VStack(spacing: 0) {
             LiveTopBar()
+            AutoEndBanner()
             GeometryReader { proxy in
                 if proxy.size.width >= 760 {
                     HStack(spacing: 0) {
