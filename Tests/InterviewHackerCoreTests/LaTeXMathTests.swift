@@ -22,7 +22,8 @@ struct LaTeXMathTests {
         #expect(u("x^{-1}") == "x⁻¹")
         // Not every letter has a Unicode script form: fall back to ^( ).
         #expect(u("e^{i\\pi}") == "e^(iπ)")
-        #expect(u("x_{\\max}") == "x_(max)")
+        #expect(u("x_{\\max}") == "xₘₐₓ")
+        #expect(u("x_{good}") == "x_(good)")
         #expect(u("30^\\circ") == "30°")
     }
 
@@ -105,7 +106,7 @@ struct LaTeXMathTests {
 
     @Test func markdownSyntaxInAFormulaIsEscaped() {
         #expect(LaTeXMath.replacingInlineMath(in: "$a*b$") == "a\\*b")
-        #expect(LaTeXMath.replacingInlineMath(in: "$x_{\\max}$") == "x\\_(max)")
+        #expect(LaTeXMath.replacingInlineMath(in: "$x_{good}$") == "x\\_(good)")
     }
 
     @Test func displayFormulaMarkers() {
