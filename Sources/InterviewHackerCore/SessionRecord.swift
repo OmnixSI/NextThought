@@ -195,10 +195,15 @@ public struct SessionSummary: Codable, Sendable, Equatable {
     public var bank: [BankEntry]?
     /// Whether lessons and bank entries were merged into the workspace.
     public var appliedToWorkspace: Bool?
+    /// A fishbone, outline or viewpoint matrix written beside the Markdown (absent in older
+    /// summaries, and when the notes use the plain text format).
+    public var structured: StructuredNotesPayload?
     public init(title: String, markdown: String, questions: [SummaryQuestion], generatedAt: Date, model: String,
-                lessons: [String]? = nil, bank: [BankEntry]? = nil, appliedToWorkspace: Bool? = nil) {
+                lessons: [String]? = nil, bank: [BankEntry]? = nil, appliedToWorkspace: Bool? = nil,
+                structured: StructuredNotesPayload? = nil) {
         self.title = title; self.markdown = markdown; self.questions = questions; self.generatedAt = generatedAt; self.model = model
         self.lessons = lessons; self.bank = bank; self.appliedToWorkspace = appliedToWorkspace
+        self.structured = structured
     }
 }
 

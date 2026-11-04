@@ -634,8 +634,7 @@ public enum NotesVerifier {
                 // One-line summaries sum up the meeting; they need no single time.
                 if kind != .oneLine {
                     guard let seconds = NotesTime.seconds(item.time),
-                          Double(seconds) <= max(duration, 0) + 90,
-                          lineOffsets.isEmpty || lineOffsets.contains(where: { abs($0 - seconds) <= tolerance }) else {
+                          isSupported(seconds, lineOffsets: lineOffsets, duration: duration, tolerance: tolerance) else {
                         dropped += 1
                         return nil
                     }
@@ -653,6 +652,14 @@ public enum NotesVerifier {
             }
         }
         notes.droppedCount += dropped
+    }
+
+    /// Whether a time cited by the model has words behind it: inside the meeting (plus 90 s of
+    /// slack) and, when the transcript's line times are known, within `tolerance` seconds of a line.
+    /// Structured formats (fishbone, outline…) use the same test as the template notes.
+    public static func isSupported(_ seconds: Int, lineOffsets: [Int], duration: TimeInterval, tolerance: Int = 45) -> Bool {
+        Double(seconds) <= max(duration, 0) + 90
+            && (lineOffsets.isEmpty || lineOffsets.contains(where: { abs($0 - seconds) <= tolerance }))
     }
 
     static func resolve(_ phrase: String, meetingDate: Date, calendar: Calendar) -> Date? {
