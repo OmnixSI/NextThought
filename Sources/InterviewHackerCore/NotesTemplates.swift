@@ -413,11 +413,13 @@ public enum NotesCorrections {
 
 public enum NotesPrompt {
     /// "[12:41] 对方：…" lines; numbered when the proofreading step needs to point at them.
-    public static func transcript(_ lines: [SessionTranscriptLine], start: Date, numbered: Bool = false, english: Bool = false) -> String {
+    /// `speakerLabels`: a person's name or "说话人 N" for lines whose voice was told apart (SpeakerLabels.promptLabels).
+    public static func transcript(_ lines: [SessionTranscriptLine], start: Date, numbered: Bool = false, english: Bool = false,
+                                  speakerLabels: [UUID: String] = [:]) -> String {
         lines.enumerated().map { index, line in
             let offset = Int(max(0, line.date.timeIntervalSince(start)))
             let stamp = NotesTime.text(offset)
-            let speaker = english ? line.speaker.englishLabel : line.speaker.label
+            let speaker = speakerLabels[line.id] ?? (english ? line.speaker.englishLabel : line.speaker.label)
             return (numbered ? "#\(index) " : "") + "[\(stamp)] \(speaker)：\(line.text)"
         }.joined(separator: "\n")
     }
@@ -634,8 +636,7 @@ public enum NotesVerifier {
                 // One-line summaries sum up the meeting; they need no single time.
                 if kind != .oneLine {
                     guard let seconds = NotesTime.seconds(item.time),
-                          Double(seconds) <= max(duration, 0) + 90,
-                          lineOffsets.isEmpty || lineOffsets.contains(where: { abs($0 - seconds) <= tolerance }) else {
+                          isSupported(seconds, lineOffsets: lineOffsets, duration: duration, tolerance: tolerance) else {
                         dropped += 1
                         return nil
                     }
@@ -653,6 +654,14 @@ public enum NotesVerifier {
             }
         }
         notes.droppedCount += dropped
+    }
+
+    /// Whether a time cited by the model has words behind it: inside the meeting (plus 90 s of
+    /// slack) and, when the transcript's line times are known, within `tolerance` seconds of a line.
+    /// Structured formats (fishbone, outline…) use the same test as the template notes.
+    public static func isSupported(_ seconds: Int, lineOffsets: [Int], duration: TimeInterval, tolerance: Int = 45) -> Bool {
+        Double(seconds) <= max(duration, 0) + 90
+            && (lineOffsets.isEmpty || lineOffsets.contains(where: { abs($0 - seconds) <= tolerance }))
     }
 
     static func resolve(_ phrase: String, meetingDate: Date, calendar: Calendar) -> Date? {

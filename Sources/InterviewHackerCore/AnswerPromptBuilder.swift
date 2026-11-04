@@ -57,6 +57,7 @@ public enum AnswerPromptBuilder {
     12. skills 是用户加载的技能说明（Markdown），描述回答风格、方法或领域知识，按其中适用的部分执行；与真实性和安全约束冲突时以本说明为准。
     13. today 是今天的日期，“现在”“最近”“今年”按它理解。你的知识可能过时：web_results 存在时，时效性事实以其为准，并用 [1]、[2] 标注对应结果；没有 web_results 而问题依赖最新信息（价格、新闻、版本、现任人员等）时，简短说明信息可能不是最新的。
     14. screen_text 是此刻屏幕上识别出的文字（OCR，可能不完整），只在判断与当前对话相关时提供；问题涉及“这一页、这个图、这里”等指代时，以本题冻结的屏幕上下文为准；没有屏幕上下文或可用图片时，不能推测当前画面。文字 OCR 不足以判断图形和位置关系时要说明不确定，并提出具体澄清。current_slide 是我此刻正在展示的幻灯片（来自导入的演示文稿），回答听众提问时优先关联这一页，并标注来源及提供的 locator（真实页码、幻灯片或章节）；旧分段不能冒充页码。
+    15. term_glossary 是用户维护的术语与人名对照：规范写法 ← 语音识别常听错的写法。转录、问题里出现这些听错的写法时，按规范写法理解；回答里一律写规范写法，不要写出听错的写法。它只说明名称怎么写，不是事实来源。
 
     转录中 [我 · 麦克风] 表示用户自己的发言，[对方 · 系统声音] 表示对方通过系统音频的发言，[现场 · 麦克风] 表示线下会议里同一个麦克风收到的所有人的发言（无法区分是谁）。区分双方角色，不把用户自己的回答当成对方的新问题。角色标签仅标记采集通道，不代表声纹身份鉴定。
 
@@ -80,6 +81,7 @@ public enum AnswerPromptBuilder {
         var web_results: [WebResult]?
         var screen_text: String?
         var current_slide: ContextExcerpt?
+        var term_glossary: String?
     }
 
     /// "2026-10-16 星期五"
@@ -93,17 +95,17 @@ public enum AnswerPromptBuilder {
     /// System/user split for chat-style APIs. `make` keeps the single-prompt form.
     public static func makeParts(question: String, context: String, profile: String, turns: [AnswerTurn], hasScreenshot: Bool, preferences: String = "", mode: SessionMode = .meeting, style: AnswerStyle = .concise, excerpts: [ContextExcerpt] = [], experience: String = "",
                                  skills: [SkillSnippet] = [], webResults: [WebResult]? = nil, webSearch: Bool = false, today: Date = Date(),
-                                 screen: String? = nil, currentSlide: ContextExcerpt? = nil) -> (system: String, user: String) {
+                                 screen: String? = nil, currentSlide: ContextExcerpt? = nil, glossary: String = "") -> (system: String, user: String) {
         let system = instructions(webSearch: webSearch)
         let full = make(question: question, context: context, profile: profile, turns: turns, hasScreenshot: hasScreenshot, preferences: preferences, mode: mode, style: style, excerpts: excerpts, experience: experience,
                         skills: skills, webResults: webResults, webSearch: webSearch, today: today,
-                        screen: screen, currentSlide: currentSlide)
+                        screen: screen, currentSlide: currentSlide, glossary: glossary)
         return (system, String(full.dropFirst(system.count + 2)))
     }
 
     public static func make(question: String, context: String, profile: String, turns: [AnswerTurn], hasScreenshot: Bool, preferences: String = "", mode: SessionMode = .meeting, style: AnswerStyle = .concise, excerpts: [ContextExcerpt] = [], experience: String = "",
                             skills: [SkillSnippet] = [], webResults: [WebResult]? = nil, webSearch: Bool = false, today: Date = Date(),
-                            screen: String? = nil, currentSlide: ContextExcerpt? = nil) -> String {
+                            screen: String? = nil, currentSlide: ContextExcerpt? = nil, glossary: String = "") -> String {
         var recent: [AnswerTurn] = []
         for turn in turns.suffix(6) {
             recent.append(AnswerTurn(question: limit(turn.question, count: 1_000), answer: limit(turn.answer, count: 2_000)))
@@ -122,7 +124,8 @@ public enum AnswerPromptBuilder {
             skills: skillBudget(skills),
             web_results: webResults.map { Array($0.prefix(8)).map { .init(title: limit($0.title, count: 200), url: limit($0.url, count: 300), snippet: limit($0.snippet, count: 1_200), publishedAt: $0.publishedAt, retrievedAt: $0.retrievedAt) } },
             screen_text: screen.flatMap { $0.isEmpty ? nil : limit($0, count: 2_500) },
-            current_slide: currentSlide)
+            current_slide: currentSlide,
+            term_glossary: glossary.isEmpty ? nil : limit(glossary, count: 2_500))
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
         let data = try! encoder.encode(input)

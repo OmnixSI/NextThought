@@ -36,7 +36,9 @@ struct MeetingPage: View {
                             InkSegmented(items: tabs(detail), selection: $tab).fixedSize()
                             switch tab {
                             case .notes:
-                                NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
+                                StructuredNotesPane(detail: detail, onJump: { seconds in jump(to: seconds, in: detail) }) {
+                                    NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
+                                }
                             case .transcript:
                                 CorrectedTranscript(detail: detail, highlighted: jumpLine)
                             case .answers:
@@ -287,6 +289,8 @@ private struct TemplateMenu: View {
                     if template.id == currentID { Label(template.name, systemImage: "checkmark") } else { Text(verbatim: template.name) }
                 }
             }
+            Divider()
+            NotesFormatMenuItems(id: id, detail: detail)
         } label: {
             Group {
                 if compactLabel {
@@ -515,15 +519,31 @@ private struct CorrectedTranscript: View {
     @Environment(AppState.self) private var state
     let detail: SessionDetail
     let highlighted: Int?
+    /// Find in the transcript; recorded misheard spellings (术语和人名) match too.
+    @State private var find = ""
+    @State private var findCache = GlossarySearchCache()
+    @State private var glossaryDraft: GlossaryDraft?
 
     var body: some View {
         let corrections = detail.notes?.corrections ?? []
         let byLine = Dictionary(grouping: corrections, by: \.line)
+        let terms: GlossarySearch? = find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : findCache.terms(for: find, state: state)
+        let shown = Array(detail.lines.enumerated()).filter { terms == nil || terms?.appMatch(in: $0.element.text) != nil }
+        let layout = SpeakerLayout(lines: detail.lines, voiceNames: detail.meta.voiceNames, meVoices: Set(detail.meta.meVoices ?? []))
+        VStack(alignment: .leading, spacing: Space.s3) {
+        if layout.isShown {
+            SpeakerStrip(layout: layout,
+                         rename: { state.renameVoice($0, to: $1, in: detail.meta.id) },
+                         merge: { state.mergeVoices($0, into: $1, in: detail.meta.id) },
+                         mark: { state.markVoice($0, isMe: $1, in: detail.meta.id) })
+        }
         LazyVStack(alignment: .leading, spacing: Space.s3) {
             if detail.lines.isEmpty {
                 Text("这场会议没有转写。").font(Typo.body).foregroundStyle(Ink.secondary)
+            } else {
+                TranscriptFindField(query: $find, matches: terms == nil ? nil : shown.count)
             }
-            ForEach(Array(detail.lines.enumerated()), id: \.element.id) { index, line in
+            ForEach(shown, id: \.element.id) { index, line in
                 let fixes = byLine[index] ?? []
                 HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                     Text(verbatim: NotesTime.text(Int(max(0, line.date.timeIntervalSince(detail.meta.startedAt)))))
@@ -533,11 +553,18 @@ private struct CorrectedTranscript: View {
                         .font(.system(size: 12, weight: line.speaker == .me ? .semibold : .regular))
                         .foregroundStyle(line.speaker == .me ? Ink.ink : Ink.secondary)
                         .frame(width: 40, alignment: .leading)
+                        .opacity(layout.hidesRoleLabel(for: line.speaker) ? 0 : 1)
                     VStack(alignment: .leading, spacing: Space.s1) {
+                        if layout.hidesRoleLabel(for: line.speaker), layout.starts.contains(line.id) {
+                            SpeakerTag(layout: layout, lineID: line.id, speaker: line.speaker)
+                        }
                         Text(Self.text(line.text, fixes: fixes))
                             .font(Typo.body).lineSpacing(5)
                             .textSelection(.enabled)
                             .help(Self.originals(fixes))
+                        if let terms, let hit = terms.appMatch(in: line.text), hit.isMisheard {
+                            MisheardMark(form: hit.form)
+                        }
                         if let translation = line.translatedText, !translation.isEmpty {
                             Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                                 .textSelection(.enabled)
@@ -554,8 +581,13 @@ private struct CorrectedTranscript: View {
                             state.toggleCorrection(fix.id, in: detail.meta.id)
                         }
                     }
+                    Button("加入术语表…") { glossaryDraft = GlossaryDraft(line: line.text) }
                 }
             }
+        }
+        .sheet(item: $glossaryDraft) { draft in
+            AddToGlossarySheet(line: draft.line).environment(state)
+        }
         }
     }
 

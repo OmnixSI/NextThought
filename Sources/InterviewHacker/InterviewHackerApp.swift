@@ -144,6 +144,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         WorkspaceEditController.shared.shouldTerminateApplication() ? .terminateNow : .terminateCancel
     }
 
+    /// A click on the Dock icon while the page is hidden by the subtitle bar or hidden
+    /// mode brings the page back (and nothing else opens a second window).
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        let live = AppState.shared.liveWindow
+        guard live.mode != .notes else { return true }
+        live.set(.notes)
+        return false
+    }
+
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard MainWindowLayout.isMainWindow(sender) else { return true }
         return WorkspaceEditController.shared.shouldCloseWindow()

@@ -192,6 +192,8 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var customTypeName: String?
     /// The built-in type a custom type takes its defaults from.
     public var customBaseMode: SessionMode?
+    /// Names and terms of this series only; added to the global glossary (“术语和人名”).
+    public var glossary: Glossary?
 
     public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle = .concise, preferences: String? = nil,
                 notes: String = "", fields: [String: String] = [:], documents: [ContextDocument] = [],
@@ -212,7 +214,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id, name, mode, style, preferences, notes, fields, documents, lessons, questionBank, useKnowledge
         case stageReview, stageReviewAt, createdAt, updatedAt, archived, skillIDs
-        case customTypeName, customBaseMode
+        case customTypeName, customBaseMode, glossary
     }
 
     public init(from decoder: Decoder) throws {
@@ -236,6 +238,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         skillIDs = try c.decodeIfPresent([UUID].self, forKey: .skillIDs) ?? []
         customTypeName = try c.decodeIfPresent(String.self, forKey: .customTypeName)
         customBaseMode = try c.decodeIfPresent(SessionMode.self, forKey: .customBaseMode)
+        glossary = try? c.decodeIfPresent(Glossary.self, forKey: .glossary)
     }
 
     /// The type whose defaults apply: a custom type behaves like its base type.

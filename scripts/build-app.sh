@@ -28,6 +28,8 @@ cp -R "$project_root/Resources/Companion" "$app_path/Contents/Resources/Companio
 "$project_root/scripts/compile-strings.sh" "$app_path/Contents/Resources"
 cp "$project_root/Resources/ThirdPartyNotices.txt" "$app_path/Contents/Resources/ThirdPartyNotices.txt"
 rsync -a --exclude=__pycache__ --exclude='*.pyc' "$project_root/Resources/DocumentRuntime/" "$app_path/Contents/Resources/DocumentRuntime/"
+mkdir -p "$app_path/Contents/Resources/models"
+cp -R "$project_root/Resources/models/SpeakerEmbedding.mlpackage" "$app_path/Contents/Resources/models/SpeakerEmbedding.mlpackage"
 printf 'APPL????' > "$app_path/Contents/PkgInfo"
 
 icon_set="$build_root/AppIcon.iconset"

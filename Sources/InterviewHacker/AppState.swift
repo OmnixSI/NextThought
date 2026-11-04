@@ -22,6 +22,11 @@ final class AppState {
     let screenContextService = ScreenContextService()
     let answerCoordinator = AnswerCoordinator()
     let liveTranslation = LiveTranslationCoordinator()
+    /// 会议自动收尾 (AppState+AutoEnd.swift).
+    let autoEnd = MeetingAutoEnd()
+    let liveWindow = LiveWindowController()
+    /// 区分对方的每个人 (SpeakerID.swift).
+    let speakers = SpeakerVoices()
     var apiVisionEnabled = UserDefaults.standard.bool(forKey: "apiVisionEnabled")
     var preparedWorkspace: Workspace?
     var isImportingDocuments = false
@@ -102,7 +107,7 @@ final class AppState {
     var shortcutErrors: [String] = []
 
     // MARK: Answer engines
-    var answerBackend = AnswerBackend(rawValue: UserDefaults.standard.string(forKey: "answerBackend") ?? "") ?? .codexAppServer
+    var answerBackend = AnswerBackend.initialChoice()
     var apiBaseURL = UserDefaults.standard.string(forKey: "apiBaseURL") ?? "https://api.openai.com/v1"
     var apiModel = UserDefaults.standard.string(forKey: "apiModel") ?? ""
     var apiKey = KeychainStore.read("answer.api")
@@ -606,6 +611,7 @@ final class AppState {
         guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
         guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
         liveTranslation.beginMeeting()
+        speakers.beginMeeting(inPerson: isOfflineMeeting)
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
         // In the room people talk face to face: answers stay quiet unless asked for.
         automaticAnswers = typeDefaults.liveMode == .prompting && !isOfflineMeeting
@@ -671,8 +677,10 @@ final class AppState {
             errorMessage = nil
             beginArchive(startedAt: startedAt)
             startCandidateTicker()
+            startAutoEnd()
         } catch {
             isRunning = false
+            speakers.endMeeting()
             // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
             if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
                 rebuildContextIndex()
@@ -755,11 +763,13 @@ final class AppState {
         await resumeSession()
     }
 
-    func stopSession() async {
+    /// `endedAt`: where the meeting really ended, when that was before now (auto-end after silence).
+    func stopSession(endedAt: Date? = nil) async {
         guard (isRunning || isPaused) && !isChangingSession else { return }
         isChangingSession = true
         defer { isChangingSession = false }
         isStopping = true
+        stopAutoEnd()
         statusText = "正在处理最后片段…"
         pendingAutomaticQuestion = nil
         deferredCandidate = nil
@@ -782,7 +792,9 @@ final class AppState {
         partialTranscript = ""
         microphonePartialTranscript = ""
         transcriptionStatus = "已停止"
-        finishArchive()
+        finishArchive(endedAt: endedAt)
+        // Voices are forgotten with the meeting: nothing about them is kept for the next one.
+        speakers.endMeeting()
         preparedWorkspace = nil
         plannedMeeting = nil
         rebuildContextIndex()
@@ -892,6 +904,7 @@ final class AppState {
         answerRetrievalTask = retrieval
         let workspace = preparedWorkspace ?? activeWorkspace
         let allSnippets = activeSkills.map { SkillSnippet(name: $0.name, content: $0.content) }
+        let glossarySection = glossaryPromptSection(for: workspace)
         let turns = answerTurns
         let tier = activeServiceTier
         let screenTask = Task { [weak self] () -> QuestionScreenContext in
@@ -906,7 +919,8 @@ final class AppState {
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: image,
                 preferences: workspace.preferences, mode: workspace.effectiveMode, style: workspace.style, excerpts: excerpts,
                 experience: workspace.experienceNotes(), skills: allSnippets, webResults: results, webSearch: webSearch,
-                screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide)
+                screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide,
+                glossary: glossarySection)
         }
         searchDecisionTask = Task { [weak self] in
             guard let self else { return }
@@ -1380,7 +1394,8 @@ final class AppState {
             .panicHide: { TeleprompterController.shared.panicHide() },
             .previousAnswer: { [weak self] in self?.showPreviousAnswer() },
             .nextAnswer: { [weak self] in self?.showNextAnswer() },
-            .refineShorter: { [weak self] in self?.refine(.shorter) }
+            .refineShorter: { [weak self] in self?.refine(.shorter) },
+            .toggleLiveWindow: { [weak self] in self?.liveWindow.cycle() }
         ], overrides: customShortcuts)
     }
 
@@ -1429,7 +1444,7 @@ final class AppState {
         switch transcriptionBackend {
         case "zipformer":
             guard isModelInstalled else { throw AppFailure.modelMissing }
-            let vocabulary = recognitionVocabulary
+            let vocabulary = recognitionHotwords
             let model = localStreamingModel.onlineModel
             let refiner = refinerModel
             factory = { ZipformerStreamingTranscriber(model: model, refiner: refiner, vocabulary: vocabulary) }
@@ -1471,11 +1486,16 @@ final class AppState {
         }
         // Both channels also feed the echo monitor (loudness envelopes only).
         let monitor = echoMonitor
+        // With 区分对方的每个人 on, the last minute of the channel that carries other people's voices
+        // is also kept in memory, so a finished sentence can be cut out for its voiceprint.
+        let systemWindow = speakers.meeting?.system
+        let roomWindow = speakers.meeting?.microphone
         if offline {
             audio.setPCMHandler(nil)
         } else {
             let systemInput = service.inputHandler()
             audio.setPCMHandler { samples, origin in
+                systemWindow?.append(samples, origin: origin)
                 systemInput(samples, origin)
                 monitor.system(samples)
             }
@@ -1483,6 +1503,7 @@ final class AppState {
         if let micService = microphoneTranscriber {
             let micInput = micService.inputHandler()
             microphone.setPCMHandler { samples, origin in
+                roomWindow?.append(samples, origin: origin)
                 micInput(samples, origin)
                 monitor.microphone(samples)
             }

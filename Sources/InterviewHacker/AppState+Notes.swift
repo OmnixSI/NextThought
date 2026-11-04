@@ -178,6 +178,8 @@ extension AppState {
                 archive.saveNotes(notes, for: id)
                 let summary = notesSummary(from: notes, template: template, detail: detail)
                 archive.saveSummary(summary, for: id)
+                // The meeting type's fishbone / outline / viewpoint view follows in the background.
+                scheduleStructuredNotes(detail: detail, notes: notes, summary: summary, mode: mode, english: useEnglish, engine: engine)
                 if var latest = archive.sessions.first(where: { $0.id == id }) {
                     latest.actionItemCount = notes.actionItemCount
                     latest.improveCount = notes.improveCount
@@ -249,7 +251,7 @@ extension AppState {
             let numbered = NotesPrompt.transcript(detail.lines, start: start, numbered: true, english: english)
             let vocabulary = properNouns(detail: detail, workspace: workspace)
             for chunk in SessionSummaryPrompt.chunks(numbered) {
-                let reply = try await notesRequest(system: NotesPrompt.proofreadSystem(english: english),
+                let reply = try await notesRequest(system: NotesPrompt.proofreadSystem(english: english) + glossaryNotesBlock(workspace: workspace, english: english, proofreading: true),
                                                    user: NotesPrompt.proofreadUser(transcript: chunk, vocabulary: vocabulary), engine: engine)
                 corrections += NotesJSON.corrections(reply)
             }
@@ -265,11 +267,17 @@ extension AppState {
         archive.notesSteps[detail.meta.id] = .organizing
         let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: lines, answers: detail.answers,
                                                      detected: detail.questions, context: detail.context)
-        let header = SessionSummaryPrompt.header(material)
-        let transcript = NotesPrompt.transcript(lines, start: start, english: english)
+        // Voices told apart (区分对方的每个人): names or "说话人 N" in the transcript, and a note so that
+        // action items say who.
+        let meVoices = Set(detail.meta.meVoices ?? [])
+        let speakerLabels = SpeakerLabels.promptLabels(lines, voiceNames: detail.meta.voiceNames, meVoices: meVoices, english: english)
+        let speakerNote = SpeakerLabels.promptNote(lines, voiceNames: detail.meta.voiceNames, meVoices: meVoices, english: english,
+                                                   inPerson: detail.meta.inPerson == true)
+        let header = SessionSummaryPrompt.header(material) + (speakerNote.map { "\n" + $0 } ?? "")
+        let transcript = NotesPrompt.transcript(lines, start: start, english: english, speakerLabels: speakerLabels)
         let chunks = SessionSummaryPrompt.chunks(transcript)
         let system = NotesPrompt.organizeSystem(template: template, english: english, meetingDate: start,
-                                                inPerson: detail.meta.inPerson == true)
+                                                inPerson: detail.meta.inPerson == true) + glossaryNotesBlock(workspace: workspace, english: english)
         let answers = detail.answers.suffix(40).map { "Q：\($0.question.prefix(300))\nA：\($0.answer.prefix(600))" }.joined(separator: "\n\n")
         let reply: String
         if chunks.count == 1 {
@@ -301,6 +309,7 @@ extension AppState {
             words += workspace.documents.map { ($0.name as NSString).deletingPathExtension }
         }
         if let context = detail.context { words += context.documents.map { ($0.name as NSString).deletingPathExtension } }
+        words += glossaryForNotes(workspace: workspace).entries.map(\.canonical)
         var seen = Set<String>()
         return words.filter { !$0.isEmpty && seen.insert($0).inserted }
     }
@@ -346,8 +355,11 @@ extension AppState {
     private func markdownSummary(detail: SessionDetail, engine: NotesEngine) async throws -> SessionSummary {
         let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: detail.lines, answers: detail.answers,
                                                      detected: detail.questions, context: detail.context)
-        let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt))
+        let speakerLabels = SpeakerLabels.promptLabels(detail.lines, voiceNames: detail.meta.voiceNames,
+                                                       meVoices: Set(detail.meta.meVoices ?? []), english: false)
+        let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt, speakerLabels: speakerLabels))
         let system = SessionSummaryPrompt.system(for: detail.meta.mode)
+            + glossaryNotesBlock(workspace: detail.meta.workspaceID.flatMap { workspaces.workspace($0) }, english: false)
         let markdown: String
         if chunks.count == 1 {
             markdown = try await notesRequest(system: system, user: SessionSummaryPrompt.full(material), engine: engine)

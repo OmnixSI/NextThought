@@ -25,10 +25,11 @@ extension AppState {
         activeArchiveID = meta.id
     }
 
-    func finishArchive() {
+    /// `endedAt`: the end of the last words when the meeting ended by itself after silence.
+    func finishArchive(endedAt: Date? = nil) {
         guard activeArchiveID != nil else { return }
         activeArchiveID = nil
-        guard let meta = archive.finish() else { return }
+        guard let meta = archive.finish(at: endedAt ?? Date()) else { return }
         DataBackup.afterSession()
         // 结束就是纪要: the same meeting, now as its notes page.
         historyWorkspaceFilter = nil
