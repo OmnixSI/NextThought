@@ -14470,6 +14470,246 @@
           }
         }
       }
+    },
+    "我的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My voice"
+          }
+        }
+      }
+    },
+    "删除已录入的声音？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete your saved voice?"
+          }
+        }
+      }
+    },
+    "删除后，会议里不会再自动认出你；也可以随时重新录入。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meetings will no longer recognise you automatically. You can record again at any time."
+          }
+        }
+      }
+    },
+    "已录入 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved · %@"
+          }
+        }
+      }
+    },
+    "重新录入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record again"
+          }
+        }
+      }
+    },
+    "录入我的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record my voice"
+          }
+        }
+      }
+    },
+    "还没有录入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not recorded yet"
+          }
+        }
+      }
+    },
+    "这份声音来自旧版本的模型，需要重新录入。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This voice was made with an older model and needs to be recorded again."
+          }
+        }
+      }
+    },
+    "读 4 句话，约 40 秒。只保存一串数字，不保存录音；只存在这台 Mac 上，不上传、不进备份，可随时删除。录入后，线下会议里你的发言会标为“我”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read 4 sentences, about 40 seconds. Only a string of numbers is kept, not the recording; it stays on this Mac, is never uploaded or backed up, and can be deleted any time. After that, your lines in in-person meetings are labelled “Me”."
+          }
+        }
+      }
+    },
+    "会议进行中不能录入。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't record while a meeting is running."
+          }
+        }
+      }
+    },
+    "第 %lld / %lld 句，点“开始”后用平时开会的声音读出来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sentence %lld of %lld. Press Start, then read it in your usual meeting voice."
+          }
+        }
+      }
+    },
+    "正在听…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listening…"
+          }
+        }
+      }
+    },
+    "处理中…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working…"
+          }
+        }
+      }
+    },
+    "没听清，声音有点小或太短。靠近麦克风，再读一次。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't hear that — too quiet or too short. Move closer to the microphone and read it again."
+          }
+        }
+      }
+    },
+    "没听清，再读一次。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't hear that. Read it again."
+          }
+        }
+      }
+    },
+    "保存失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save: %@"
+          }
+        }
+      }
+    },
+    "录到的声音不够，请重新来一遍。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough usable recordings. Please start again."
+          }
+        }
+      }
+    },
+    "几次录音听起来不像同一个人，请在安静的地方，只由你一个人重新来一遍。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recordings didn't sound like one person. Please start again in a quiet place, with only you speaking."
+          }
+        }
+      }
+    },
+    "这是我": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is me"
+          }
+        }
+      }
+    },
+    "不是我": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not me"
+          }
+        }
+      }
+    },
+    "这是你自己的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is your own voice"
+          }
+        }
+      }
+    },
+    "这个声音被当作你自己。认错了的话，可以取消。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This voice is treated as you. If that's wrong, you can undo it."
+          }
+        }
+      }
+    },
+    "好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "会议里区分出的声纹只在本机计算，不上传，会议结束就忘；下一场会议起生效。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voices told apart in a meeting are computed on this Mac only, never uploaded, and forgotten when the meeting ends. Takes effect from the next meeting."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

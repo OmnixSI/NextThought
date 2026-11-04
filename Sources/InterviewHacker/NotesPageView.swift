@@ -529,12 +529,13 @@ private struct CorrectedTranscript: View {
         let byLine = Dictionary(grouping: corrections, by: \.line)
         let terms: GlossarySearch? = find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : findCache.terms(for: find, state: state)
         let shown = Array(detail.lines.enumerated()).filter { terms == nil || terms?.appMatch(in: $0.element.text) != nil }
-        let layout = SpeakerLayout(lines: detail.lines, voiceNames: detail.meta.voiceNames)
+        let layout = SpeakerLayout(lines: detail.lines, voiceNames: detail.meta.voiceNames, meVoices: Set(detail.meta.meVoices ?? []))
         VStack(alignment: .leading, spacing: Space.s3) {
         if layout.isShown {
             SpeakerStrip(layout: layout,
                          rename: { state.renameVoice($0, to: $1, in: detail.meta.id) },
-                         merge: { state.mergeVoices($0, into: $1, in: detail.meta.id) })
+                         merge: { state.mergeVoices($0, into: $1, in: detail.meta.id) },
+                         mark: { state.markVoice($0, isMe: $1, in: detail.meta.id) })
         }
         LazyVStack(alignment: .leading, spacing: Space.s3) {
             if detail.lines.isEmpty {

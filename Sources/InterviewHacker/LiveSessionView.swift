@@ -271,7 +271,7 @@ private struct TranscriptColumn: View {
     var body: some View {
         // 区分对方的每个人: people appear only once the voices have been told apart.
         let layout = state.speakers.isActive && state.entries.contains(where: { $0.voice != nil })
-            ? SpeakerLayout(lines: state.liveSpeakerLines, voiceNames: state.voiceNames(for: nil)) : nil
+            ? SpeakerLayout(lines: state.liveSpeakerLines, voiceNames: state.voiceNames(for: nil), meVoices: state.speakers.meVoices) : nil
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("实时对话").overline()
@@ -293,7 +293,8 @@ private struct TranscriptColumn: View {
             if let layout, layout.isShown {
                 SpeakerStrip(layout: layout,
                              rename: { state.renameVoice($0, to: $1, in: nil) },
-                             merge: { state.mergeVoices($0, into: $1, in: nil) })
+                             merge: { state.mergeVoices($0, into: $1, in: nil) },
+                             mark: { state.markVoice($0, isMe: $1, in: nil) })
                     .padding(.horizontal, Space.s6)
                     .padding(.top, Space.s2)
             }

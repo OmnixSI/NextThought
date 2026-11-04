@@ -14,8 +14,10 @@ import Observation
 //
 // Privacy, on purpose: everything runs on this Mac; the audio window lives in memory for about a
 // minute; a voiceprint is only a 256-number vector held while the meeting runs. Nothing about a
-// voice is saved or reused across meetings: when a meeting ends the grouping is dropped, and only
-// the meeting-local voice number of each line (and any name the user typed) stays in the record.
+// voice of a meeting is saved or reused across meetings: when a meeting ends the grouping is dropped, and
+// only the meeting-local voice number of each line (and any name the user typed) stays in the record.
+// The one exception is 我的声音 (MyVoice.swift): the user's own voiceprint, recorded on purpose, kept in
+// one local file and deletable; a voice of a meeting close to it is shown as "我".
 
 /// Kaldi log-mel filterbank, as `torchaudio.compliance.kaldi.fbank` computes it with the settings the
 /// model was trained on: 16 kHz, 25 ms Povey windows every 10 ms, DC removed, pre-emphasis 0.97,
@@ -167,10 +169,13 @@ final class VoiceMeeting: @unchecked Sendable {
     /// The room microphone (in-person meetings); nil online, where the microphone is "我" and is never told apart.
     let microphone: AudioTimeline?
     var clusterer = VoiceClusterer()
+    /// The user's saved voiceprint (我的声音), read when the meeting began; nil when none is saved.
+    let profile: VoiceProfile?
 
-    init(inPerson: Bool) {
+    init(inPerson: Bool, profile: VoiceProfile?) {
         system = inPerson ? nil : AudioTimeline()
         microphone = inPerson ? AudioTimeline() : nil
+        self.profile = profile
     }
 }
 
@@ -181,23 +186,29 @@ final class SpeakerTagger: @unchecked Sendable {
     private var loadFailure: String?
 
     /// Cuts the sentence out of `channel`, computes its voiceprint and groups it. `done` runs on a
-    /// background queue with the voice, or nil when unsure (too short, too little audio, no model).
+    /// background queue with the voice (nil when unsure: too short, too little audio, no model) and
+    /// whether that voice is the user according to the saved voiceprint.
     func tag(_ meeting: VoiceMeeting, channel: AudioTimeline, start: Date, end: Date,
-             failed: @escaping @Sendable (String) -> Void, done: @escaping @Sendable (Int?) -> Void) {
+             failed: @escaping @Sendable (String) -> Void, done: @escaping @Sendable (Int?, Bool) -> Void) {
         queue.async { [self] in
-            guard let clip = channel.clip(from: start, to: end) else { return done(nil) }
+            guard let clip = channel.clip(from: start, to: end) else { return done(nil, false) }
             let samples = AudioTimeline.trimmingSilence(clip)
-            guard !samples.isEmpty else { return done(nil) }
+            guard !samples.isEmpty else { return done(nil, false) }
             if model == nil, loadFailure == nil {
                 do { model = try Voiceprints.load() } catch {
                     loadFailure = error.localizedDescription
                     Diagnostics.record("voiceprint.load_failed")
                 }
             }
-            if let loadFailure { failed(loadFailure); return done(nil) }
+            if let loadFailure { failed(loadFailure); return done(nil, false) }
             let seconds = Double(samples.count) / Double(AudioTimeline.sampleRate)
             let voice = model.flatMap { $0.embed(samples) }.flatMap { meeting.clusterer.label($0, seconds: seconds) }
-            done(voice)
+            // The whole voice is compared with the saved voiceprint, not just this sentence: its sum has
+            // every sentence that joined it, so one noisy sentence cannot flip the answer.
+            let mine = voice.flatMap { v in
+                meeting.clusterer.sums.indices.contains(v) ? meeting.profile?.recognises(clusterSum: meeting.clusterer.sums[v]) : nil
+            } ?? false
+            done(voice, mine)
         }
     }
 
@@ -223,6 +234,10 @@ final class SpeakerVoices {
     private(set) var enabled = UserDefaults.standard.bool(forKey: SpeakerVoices.defaultsKey)
     /// Names the user gave to the voices of the meeting in progress, by voice id.
     var names: [String: String] = [:]
+    /// Voices of the meeting in progress that are the user: recognised from 我的声音, or marked by hand.
+    var meVoices: Set<Int> = []
+    /// Voices the user said are not them; the saved voiceprint no longer marks these.
+    @ObservationIgnored var notMe: Set<Int> = []
     /// Why the model could not be used, for the settings page.
     var lastFailure: String?
 
@@ -244,8 +259,11 @@ final class SpeakerVoices {
     /// A new meeting: forget the voices of the last one.
     func beginMeeting(inPerson: Bool) {
         names = [:]
+        meVoices = []
+        notMe = []
         lastFailure = nil
-        meeting = enabled && modelAvailable ? VoiceMeeting(inPerson: inPerson) : nil
+        let profile = MyVoice.shared.usableProfile
+        meeting = enabled && modelAvailable ? VoiceMeeting(inPerson: inPerson, profile: profile) : nil
     }
 
     /// The meeting ended: drop its voices (sentences still being worked on keep their own reference
@@ -255,7 +273,7 @@ final class SpeakerVoices {
     }
 
     /// Computes the voice of a finished sentence; `apply` runs on the main actor with the voice.
-    func identify(_ entry: TranscriptEntry, apply: @escaping @MainActor (Int) -> Void) {
+    func identify(_ entry: TranscriptEntry, apply: @escaping @MainActor (_ voice: Int, _ isMe: Bool) -> Void) {
         guard let meeting, let start = entry.startedAt, let end = entry.endedAt else { return }
         let channel: AudioTimeline?
         if entry.source == CaptureSource.system.rawValue { channel = meeting.system }
@@ -264,9 +282,9 @@ final class SpeakerVoices {
         guard let channel else { return }
         tagger.tag(meeting, channel: channel, start: start, end: end, failed: { [weak self] message in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.lastFailure = message } }
-        }, done: { voice in
+        }, done: { voice, mine in
             guard let voice else { return }
-            DispatchQueue.main.async { MainActor.assumeIsolated { apply(voice) } }
+            DispatchQueue.main.async { MainActor.assumeIsolated { apply(voice, mine) } }
         })
     }
 
@@ -284,9 +302,12 @@ extension AppState {
     func identifySpeaker(of entry: TranscriptEntry) {
         guard speakers.isActive else { return }
         let sessionID = activeArchiveID
-        speakers.identify(entry) { [weak self] voice in
+        speakers.identify(entry) { [weak self] voice, mine in
             guard let self else { return }
             if let index = self.entries.firstIndex(where: { $0.id == entry.id }) { self.entries[index].voice = voice }
+            if mine, !self.speakers.meVoices.contains(voice), !self.speakers.notMe.contains(voice) {
+                self.markVoice(voice, isMe: true, in: nil)
+            }
             // The transcript line was appended before its voice was known; the voice follows
             // as its own record (voices.jsonl), merged into the line when the meeting is read back.
             if let sessionID { self.archive.appendVoice(sessionID: sessionID, lineID: entry.id, voice: voice) }
@@ -297,6 +318,22 @@ extension AppState {
     func voiceNames(for sessionID: UUID?) -> [String: String]? {
         if let sessionID, sessionID != activeArchiveID { return archive.sessions.first { $0.id == sessionID }?.voiceNames }
         return speakers.names.isEmpty ? nil : speakers.names
+    }
+
+    /// Voices that are the user, for the meeting in progress or a saved one.
+    func meVoices(for sessionID: UUID?) -> Set<Int> {
+        if let sessionID, sessionID != activeArchiveID { return Set(archive.sessions.first { $0.id == sessionID }?.meVoices ?? []) }
+        return speakers.meVoices
+    }
+
+    /// Says a voice is (or is not) the user. `sessionID` nil means the meeting in progress.
+    func markVoice(_ voice: Int, isMe: Bool, in sessionID: UUID?) {
+        let id = sessionID ?? activeArchiveID
+        if sessionID == nil || sessionID == activeArchiveID {
+            if isMe { speakers.meVoices.insert(voice); speakers.notMe.remove(voice) }
+            else { speakers.meVoices.remove(voice); speakers.notMe.insert(voice) }
+        }
+        if let id { archive.setMeVoice(id, voice: voice, isMe: isMe) }
     }
 
     /// Gives a voice a name (nil or empty: back to "说话人 N"). `sessionID` nil means the meeting in progress.
@@ -317,6 +354,7 @@ extension AppState {
             for index in entries.indices where entries[index].voice == from { entries[index].voice = into }
             speakers.mergeInGrouping(from, into: into)
             speakers.names = SpeakerLabels.merged(speakers.names, from: from, into: into) ?? [:]
+            speakers.meVoices = Set(SpeakerLabels.mergedMe(Array(speakers.meVoices), from: from, into: into) ?? [])
         }
         if let id { Task { await archive.mergeVoice(id, from: from, into: into) } }
     }
@@ -347,6 +385,16 @@ extension SessionArchive {
         notesRevision &+= 1
     }
 
+    /// Marks a voice of the meeting as the user, or takes the mark off.
+    func setMeVoice(_ id: UUID, voice: Int, isMe: Bool) {
+        guard var meta = sessions.first(where: { $0.id == id }) else { return }
+        var voices = Set(meta.meVoices ?? [])
+        if isMe { voices.insert(voice) } else { voices.remove(voice) }
+        meta.meVoices = voices.isEmpty ? nil : voices.sorted()
+        update(meta)
+        notesRevision &+= 1
+    }
+
     /// Moves every line of voice `from` to `into` (new tags win over the old), and the name with it.
     func mergeVoice(_ id: UUID, from: Int, into: Int) async {
         await flush()
@@ -356,6 +404,7 @@ extension SessionArchive {
         }
         if var meta = sessions.first(where: { $0.id == id }) {
             meta.voiceNames = SpeakerLabels.merged(meta.voiceNames, from: from, into: into)
+            meta.meVoices = SpeakerLabels.mergedMe(meta.meVoices, from: from, into: into)
             update(meta)
         }
         notesRevision &+= 1

@@ -101,11 +101,13 @@ public enum SpeakerLabels {
     }
 
     /// Voice id → 1-based speaker number, for the voices on show.
-    public static func voiceNumbers(_ lines: [SessionTranscriptLine]) -> [Int: Int] {
+    /// `meVoices`: voices recognised as the user ("我"); they are never numbered and don't count towards
+    /// the two people needed.
+    public static func voiceNumbers(_ lines: [SessionTranscriptLine], meVoices: Set<Int> = []) -> [Int: Int] {
         var count: [Int: Int] = [:]
         var reached: [Int: Int] = [:]
         for (index, line) in lines.enumerated() where line.speaker != .me {
-            guard let voice = line.voice, substantive(line.text) else { continue }
+            guard let voice = line.voice, !meVoices.contains(voice), substantive(line.text) else { continue }
             count[voice, default: 0] += 1
             if count[voice] == shownAfter { reached[voice] = index }
         }
@@ -117,8 +119,8 @@ public enum SpeakerLabels {
     }
 
     /// Line id → 1-based speaker number; lines without one keep showing as 对方 / 现场.
-    public static func numbers(_ lines: [SessionTranscriptLine]) -> [UUID: Int] {
-        let number = voiceNumbers(lines)
+    public static func numbers(_ lines: [SessionTranscriptLine], meVoices: Set<Int> = []) -> [UUID: Int] {
+        let number = voiceNumbers(lines, meVoices: meVoices)
         var out: [UUID: Int] = [:]
         for line in lines where line.speaker != .me {
             if let voice = line.voice, let n = number[voice] { out[line.id] = n }
@@ -127,22 +129,38 @@ public enum SpeakerLabels {
     }
 
     /// Speaker number → the name the user gave (empty names are ignored).
-    public static func names(_ voiceNames: [String: String]?, lines: [SessionTranscriptLine]) -> [Int: String] {
+    public static func names(_ voiceNames: [String: String]?, lines: [SessionTranscriptLine], meVoices: Set<Int> = []) -> [Int: String] {
         guard let voiceNames, !voiceNames.isEmpty else { return [:] }
         var out: [Int: String] = [:]
-        for (voice, n) in voiceNumbers(lines) {
+        for (voice, n) in voiceNumbers(lines, meVoices: meVoices) {
             if let name = voiceNames[String(voice)], !name.isEmpty { out[n] = name }
         }
         return out
     }
 
+    /// Lines of the other side or the room that are in a voice recognised as the user.
+    public static func meLines(_ lines: [SessionTranscriptLine], meVoices: Set<Int>) -> Set<UUID> {
+        guard !meVoices.isEmpty else { return [] }
+        return Set(lines.compactMap { line in
+            guard line.speaker != .me, let voice = line.voice, meVoices.contains(voice) else { return nil }
+            return line.id
+        })
+    }
+
+    /// The user marked or unmarked a voice as themselves; `into` keeps the mark when either had it.
+    public static func mergedMe(_ meVoices: [Int]?, from: Int, into: Int) -> [Int]? {
+        guard var set = meVoices.map(Set.init) else { return nil }
+        if set.remove(from) != nil { set.insert(into) }
+        return set.isEmpty ? nil : set.sorted()
+    }
+
     /// Lines where the speaker changes: the transcript shows the name there only, as chat apps
-    /// do. Keys compared: me, a speaker number, or "not on show".
-    public static func runStarts(_ lines: [SessionTranscriptLine], _ numbers: [UUID: Int]) -> Set<UUID> {
+    /// do. Keys compared: me (including lines in `mine`), a speaker number, or "not on show".
+    public static func runStarts(_ lines: [SessionTranscriptLine], _ numbers: [UUID: Int], mine: Set<UUID> = []) -> Set<UUID> {
         var out: Set<UUID> = []
         var last: String?
         for line in lines {
-            let key = line.speaker == .me ? "me" : (numbers[line.id].map { "n\($0)" } ?? "?")
+            let key = line.speaker == .me || mine.contains(line.id) ? "me" : (numbers[line.id].map { "n\($0)" } ?? "?")
             if key != last { out.insert(line.id) }
             last = key
         }
@@ -177,35 +195,47 @@ public enum SpeakerLabels {
 
     /// Line id → the speaker as the notes model reads it: the user's name, else "说话人 N" /
     /// "Speaker N". Only lines whose voice is on show; others keep 对方 / 现场.
-    public static func promptLabels(_ lines: [SessionTranscriptLine], voiceNames: [String: String]?, english: Bool) -> [UUID: String] {
-        let shown = numbers(lines)
-        guard !shown.isEmpty else { return [:] }
-        let named = names(voiceNames, lines: lines).compactMapValues(cleanName)
-        return shown.mapValues { label($0, named, english: english) }
+    /// Lines in a voice recognised as the user (`meVoices`) read "我" / "Me", always.
+    public static func promptLabels(_ lines: [SessionTranscriptLine], voiceNames: [String: String]?, meVoices: Set<Int> = [],
+                                    english: Bool) -> [UUID: String] {
+        let shown = numbers(lines, meVoices: meVoices)
+        let named = names(voiceNames, lines: lines, meVoices: meVoices).compactMapValues(cleanName)
+        var out = shown.mapValues { label($0, named, english: english) }
+        for id in meLines(lines, meVoices: meVoices) { out[id] = english ? "Me" : "我" }
+        return out
     }
 
     /// A paragraph for the notes prompt when voices are on show; nil otherwise. It tells the
     /// model how to read the labels and to name people on action items.
-    public static func promptNote(_ lines: [SessionTranscriptLine], voiceNames: [String: String]?, english: Bool, inPerson: Bool) -> String? {
-        let labels = promptLabels(lines, voiceNames: voiceNames, english: english)
+    public static func promptNote(_ lines: [SessionTranscriptLine], voiceNames: [String: String]?, meVoices: Set<Int> = [],
+                                  english: Bool, inPerson: Bool) -> String? {
+        let labels = promptLabels(lines, voiceNames: voiceNames, meVoices: meVoices, english: english)
         guard !labels.isEmpty else { return nil }
-        let shown = numbers(lines)
+        let shown = numbers(lines, meVoices: meVoices)
+        let hasMe = !meLines(lines, meVoices: meVoices).isEmpty
+        if shown.isEmpty {
+            // Only the user was recognised: say so, nothing else was told apart.
+            return english
+                ? "Lines labelled \"Me\" are the user's own words, recognised by voice (occasionally wrong)."
+                : "转写里标着“我”的行是用户自己的发言，按声音认出，偶尔会有误判。"
+        }
         var seen: [Int: String] = [:]
         for (id, text) in labels { if let n = shown[id] { seen[n] = text } }
         let people = seen.keys.sorted().compactMap { seen[$0] }.joined(separator: english ? ", " : "、")
         let unknown = inPerson ? (english ? "Room" : "现场") : (english ? "Them" : "对方")
+        let meNote = hasMe ? (english ? " Lines labelled \"Me\" are the user's own words." : "标着“我”的行是用户自己的发言。") : ""
         if english {
             return """
             Speakers (this paragraph overrides what the system instructions say about not telling people apart): lines labelled with a person's name \
             or "Speaker N" were told apart by voice, which is occasionally wrong. Lines labelled "\(unknown)" are speech that could not be matched to a person. \
             People in this meeting: \(people). Where the transcript makes it clear, say who is responsible on action items (owner) and who made each point. \
-            "Speaker N" is not a real name: never guess a name from it; use a name only when the words themselves give it.
+            "Speaker N" is not a real name: never guess a name from it; use a name only when the words themselves give it.\(meNote)
             """
         }
         return """
         说话人区分（本段优先于系统说明里“无法区分说话人”的描述）：转写里标着人名或“说话人 N”的行，是按声音区分出的不同的人，偶尔会有误判；\
         标着“\(unknown)”的行是没能认出是谁的发言。本场出现的人：\(people)。在转写能看清的情况下，待办的 owner 和各条要点都写明是谁；\
-        “说话人 N”不是真名，不要凭它猜名字，只有原话里点了名才用名字。
+        “说话人 N”不是真名，不要凭它猜名字，只有原话里点了名才用名字。\(meNote)
         """
     }
 }

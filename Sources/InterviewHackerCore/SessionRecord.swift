@@ -152,6 +152,8 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
     /// Names the user gave to voices of this meeting, keyed by voice id as a string.
     /// A voice without a key shows as "说话人 N".
     public var voiceNames: [String: String]?
+    /// Voices of this meeting that are the user ("我"): recognised from their saved voiceprint, or marked by hand.
+    public var meVoices: [Int]?
     /// Outcome counts written with the notes (for one-line results in lists).
     public var actionItemCount: Int?
     public var improveCount: Int?
@@ -339,7 +341,7 @@ public enum SessionSummaryPrompt {
 
     /// Single request when the transcript fits; otherwise `partial(...)` per chunk and `merge(...)`.
     public static func full(_ material: Material) -> String {
-        let labels = SpeakerLabels.promptLabels(material.lines, voiceNames: material.meta.voiceNames, english: false)
+        let labels = SpeakerLabels.promptLabels(material.lines, voiceNames: material.meta.voiceNames, meVoices: Set(material.meta.meVoices ?? []), english: false)
         let transcript = transcriptText(material.lines, start: material.meta.startedAt, speakerLabels: labels)
         var sections = [header(material), "## 完整转录\n" + transcript]
         if !material.detected.isEmpty {
@@ -489,7 +491,7 @@ public enum SessionMarkdownExporter {
         }
         out.append("## 完整转录")
         out.append("")
-        let labels = SpeakerLabels.promptLabels(lines, voiceNames: meta.voiceNames, english: false)
+        let labels = SpeakerLabels.promptLabels(lines, voiceNames: meta.voiceNames, meVoices: Set(meta.meVoices ?? []), english: false)
         out.append(contentsOf: lines.map { line in
             let offset = Int(max(0, line.date.timeIntervalSince(meta.startedAt)))
             let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(labels[line.id] ?? line.speaker.label)**：" + line.text

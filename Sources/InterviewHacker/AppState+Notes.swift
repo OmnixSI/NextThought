@@ -269,8 +269,9 @@ extension AppState {
                                                      detected: detail.questions, context: detail.context)
         // Voices told apart (区分对方的每个人): names or "说话人 N" in the transcript, and a note so that
         // action items say who.
-        let speakerLabels = SpeakerLabels.promptLabels(lines, voiceNames: detail.meta.voiceNames, english: english)
-        let speakerNote = SpeakerLabels.promptNote(lines, voiceNames: detail.meta.voiceNames, english: english,
+        let meVoices = Set(detail.meta.meVoices ?? [])
+        let speakerLabels = SpeakerLabels.promptLabels(lines, voiceNames: detail.meta.voiceNames, meVoices: meVoices, english: english)
+        let speakerNote = SpeakerLabels.promptNote(lines, voiceNames: detail.meta.voiceNames, meVoices: meVoices, english: english,
                                                    inPerson: detail.meta.inPerson == true)
         let header = SessionSummaryPrompt.header(material) + (speakerNote.map { "\n" + $0 } ?? "")
         let transcript = NotesPrompt.transcript(lines, start: start, english: english, speakerLabels: speakerLabels)
@@ -354,7 +355,8 @@ extension AppState {
     private func markdownSummary(detail: SessionDetail, engine: NotesEngine) async throws -> SessionSummary {
         let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: detail.lines, answers: detail.answers,
                                                      detected: detail.questions, context: detail.context)
-        let speakerLabels = SpeakerLabels.promptLabels(detail.lines, voiceNames: detail.meta.voiceNames, english: false)
+        let speakerLabels = SpeakerLabels.promptLabels(detail.lines, voiceNames: detail.meta.voiceNames,
+                                                       meVoices: Set(detail.meta.meVoices ?? []), english: false)
         let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt, speakerLabels: speakerLabels))
         let system = SessionSummaryPrompt.system(for: detail.meta.mode)
             + glossaryNotesBlock(workspace: detail.meta.workspaceID.flatMap { workspaces.workspace($0) }, english: false)

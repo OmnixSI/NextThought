@@ -11,6 +11,7 @@
 | 术语与人名表 | 设置 → 资料；转写里右键“加入术语表…” | `Glossary.swift`、`GlossaryStore.swift`、`GlossaryView.swift` |
 | 纪要格式（提纲 / 鱼骨图 / 观点对照表） | 纪要页格式菜单；设置 → 纪要 | `StructuredNotes.swift`、`FishboneView.swift` 等 |
 | 区分说话人（声纹） | 设置里的开关，默认关闭 | `SpeakerID.swift`、`SpeakerClustering.swift`、`Resources/models/` |
+| 我的声音（自动认出“我”） | 设置 → 区分说话人 → 录入我的声音 | `VoiceProfile.swift`、`MyVoice.swift`；声纹存于 `Voiceprint/me.json`（0600），不进备份 |
 | 引导改版 + API 接入 | 首次启动；设置 → 回答 | `Onboarding.swift`、`AnswerServiceViews.swift`、`AnswerServiceSupport.swift` |
 
 ## 没有做（建议另开）
@@ -39,3 +40,4 @@ swift test
 6. 旧安装保存的 `quickStartStep` 因步骤从 5 变 6 可能落在不同页（已限制范围，未迁移）。
 7. 截图工作流 `screenshots.yml`、`capture.py` 的步骤序号已改，未运行。
 8. 新增英文文案是机器写的，需要有人通读一遍。
+9. 我的声音：判定阈值 0.55 是按 cicada 的分组阈值（0.5）略提高的经验值，没有用真实录音调过；误认别人为“我”比漏认更糟，所以偏保守。录入 4 句各 7 秒用 `MicrophoneCaptureService` 单独采集，会议进行中不允许录入。`MyVoice.recordTake` 里 `Task.detached` 返回元组、`try loaded ?? Voiceprints.load()` 的写法也没编译过。
