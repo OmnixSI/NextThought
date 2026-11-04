@@ -75,11 +75,10 @@ struct OnboardingMaterialsPage: View {
     /// reusing, and can be cancelled; a scan that already ran (here or in settings) is not repeated.
     private func scanIfNeeded() async {
         guard !DemoMode.isEnabled else { return }
-        var waited = 0
-        while !state.documentModelsChecked, waited < 100 {
+        // The check can take a while (it hashes installed models); wait until it is done or the page closes.
+        while !state.documentModelsChecked {
             if Task.isCancelled { return }
             try? await Task.sleep(nanoseconds: 100_000_000)
-            waited += 1
         }
         guard state.documentModelsChecked, !Task.isCancelled else { return }
         guard !state.onboardingMaterialsOffer.missing.isEmpty, state.localAssetScanStatus.isEmpty,

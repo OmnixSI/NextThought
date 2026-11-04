@@ -122,6 +122,8 @@ final class MyVoice {
             message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             return
         }
+        // The page may have been closed while the microphone was starting.
+        guard isSettingUp else { _ = service.stopCapture(); return }
         recorder = service
         isRecording = true
         let started = Date()
@@ -151,6 +153,7 @@ final class MyVoice {
             }
         }.value
         if let model = embedding.model { self.model = model }
+        guard isSettingUp else { return }   // closed while the voiceprint was being computed
         if let failure = embedding.failure {
             message = String(localized: "声纹模型无法使用：\(failure)")
             return

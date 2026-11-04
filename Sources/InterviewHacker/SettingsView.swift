@@ -1211,6 +1211,8 @@ private struct OverlaySettings: View {
                 .onChange(of: state.capturePrivacy) { _, _ in state.saveAnswerSettings(); state.updateSettings() }
             Note(String(localized: "系统无法保证窗口不被录屏。共享会议窗口或标签页更稳妥；\(state.shortcutLabel(.panicHide)) 可隐藏全部窗口。"), presentation: .inline)
         }
+        // Kept out of 高级设置: its "恢复默认位置" is the way back for a bar dragged off-screen.
+        SubtitleBarSettingsSection()
         AdvancedOptions("overlay") {
             VStack(alignment: .leading, spacing: 12) {
                 SettingsSection(title: "位置与外观", icon: "slider.horizontal.3") {
@@ -1237,7 +1239,6 @@ private struct OverlaySettings: View {
                     }
                     Note("手机显示与遥控在高级设置 → 更多 → 手机伴侣。隐藏背景时，不透明度不会影响文字与按钮。")
                 }
-                SubtitleBarSettingsSection()
             }
         }
         }
@@ -1278,7 +1279,7 @@ private struct RecordingSettings: View {
                 Button("立即备份") { state.backupNow(); refreshSoon() }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy)
             }
             if state.simplifiedInterface {
-                Note("导出不含密钥；导入会合并现有数据，不删除。", presentation: .inline)
+                Note("导出不含密钥；导入会合并现有数据，不删除，并一并恢复备份里的设置。", presentation: .inline)
                 if !state.autoBackup {
                     Note("会议自动备份未开启，可在高级设置调整。", presentation: .inline)
                 } else if let latest = backups.first {

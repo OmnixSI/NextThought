@@ -204,6 +204,7 @@ private struct AnswerSettingsMenu: View {
                 Toggle(isOn: Binding(get: { state.codexFastMode }, set: { state.codexFastMode = $0; state.updateSettings() })) {
                     Text("快速模式 ⚡ · \(state.codexFastLabel)")
                 }
+                .toggleStyle(.automatic)
             }
             Section("联网") {
                 Picker("联网", selection: Binding(get: { state.webSearchMode }, set: { state.webSearchMode = $0; state.saveWebSearchSettings() })) {

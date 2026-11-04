@@ -67,6 +67,7 @@ struct OnboardingVoicePage: View {
         }
         // The first recording asks for the microphone; pick up the answer.
         .onChange(of: voice.isRecording) { _, _ in state.microphoneAccess = .current() }
+        .onChange(of: voice.message) { _, _ in state.microphoneAccess = .current() }
         .onDisappear { if voice.isSettingUp { voice.cancelSetup() } }
     }
 

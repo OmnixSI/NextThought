@@ -15230,6 +15230,16 @@
           }
         }
       }
+    },
+    "导出不含密钥；导入会合并现有数据，不删除，并一并恢复备份里的设置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export leaves out keys; import merges with existing data, deletes nothing, and restores the settings in the backup."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
