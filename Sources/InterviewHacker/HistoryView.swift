@@ -26,6 +26,9 @@ struct HistoryView: View {
     /// Sessions whose question/answer text contains the query. Filled in by the
     /// debounced content search, because that needs a disk read per session.
     @State private var contentMatch: Set<UUID> = []
+    /// Sessions found only through a recorded misheard spelling (术语和人名), with that spelling.
+    @State private var misheardMatch: [UUID: String] = [:]
+    @State private var searchCache = GlossarySearchCache()
     @State private var isContentSearching = false
 
     private var archive: SessionArchive { SessionArchive.shared }
@@ -49,7 +52,8 @@ struct HistoryView: View {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         var items = scoped
         if !trimmed.isEmpty {
-            items = items.filter { matchesMetadata($0, trimmed) || contentMatch.contains($0.id) }
+            let terms = searchCache.terms(for: trimmed, state: state)
+            items = items.filter { matchesMetadata($0, terms) || contentMatch.contains($0.id) }
         }
         return ordered(items)
     }
@@ -615,7 +619,8 @@ struct HistoryView: View {
                                 ForEach(group.sessions) { meta in
                                     Button { openFromOverview(meta.id) } label: {
                                         SessionRow(meta: meta, selected: meta.id == selection,
-                                                   active: meta.id == archive.activeID, showsWorkspace: false)
+                                                   active: meta.id == archive.activeID, showsWorkspace: false,
+                                                   misheardForm: misheardMatch[meta.id])
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     .buttonStyle(InteractiveRowButtonStyle())
@@ -722,13 +727,14 @@ struct HistoryView: View {
         lengthFilter = .all
         sortOrder = .newest
         contentMatch = []
+        misheardMatch = [:]
     }
 
     /// Metadata-only match: always available, no disk access.
-    private func matchesMetadata(_ meta: SessionMeta, _ query: String) -> Bool {
+    private func matchesMetadata(_ meta: SessionMeta, _ terms: GlossarySearch) -> Bool {
         let fields = [meta.displayTitle, meta.title ?? "", meta.workspaceName ?? "", meta.formerWorkspaceName ?? "",
                       meta.mode.title, meta.audioSource, meta.recognizer]
-        return fields.contains { $0.localizedCaseInsensitiveContains(query) }
+        return fields.contains { terms.appMatch(in: $0) != nil }
     }
 
     /// Sort is applied after filtering. Rows that compare equal keep their
@@ -756,10 +762,12 @@ struct HistoryView: View {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             contentMatch = []
+            misheardMatch = [:]
             isContentSearching = false
             return
         }
         contentMatch = []
+        misheardMatch = [:]
         isContentSearching = true
         // A cancelled run must not leave the "搜索中…" label behind.
         defer { isContentSearching = false }
@@ -770,19 +778,31 @@ struct HistoryView: View {
             return
         }
         guard !Task.isCancelled else { return }
+        // The typed text plus the spellings the glossary knows for it (misheard ones count as hits).
+        let terms = searchCache.terms(for: trimmed, state: state)
         var matches: Set<UUID> = []
+        var misheard: [UUID: String] = [:]
         for meta in scoped.prefix(200) {
             if Task.isCancelled { return }
             guard let detail = await archive.detail(meta.id) else { continue }
-            let hit = detail.questions.contains { $0.text.localizedCaseInsensitiveContains(trimmed) }
-                || detail.answers.contains {
-                    $0.question.localizedCaseInsensitiveContains(trimmed)
-                        || $0.answer.localizedCaseInsensitiveContains(trimmed)
-                }
-            if hit { matches.insert(meta.id) }
+            let texts = detail.questions.map(\.text) + detail.answers.flatMap { [$0.question, $0.answer] }
+            var plainHit = false
+            var misheardForm: String?
+            for text in texts {
+                guard let hit = terms.appMatch(in: text) else { continue }
+                if !hit.isMisheard { plainHit = true; break }
+                if misheardForm == nil { misheardForm = hit.form }
+            }
+            if plainHit {
+                matches.insert(meta.id)
+            } else if let misheardForm {
+                matches.insert(meta.id)
+                misheard[meta.id] = misheardForm
+            }
         }
         guard !Task.isCancelled else { return }
         contentMatch = matches
+        misheardMatch = misheard
         isContentSearching = false
     }
 }
@@ -1258,6 +1278,8 @@ private struct SessionRow: View {
     var selected: Bool
     var active: Bool
     var showsWorkspace = true
+    /// Set when the search found this meeting through a recorded misheard spelling.
+    var misheardForm: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -1268,6 +1290,7 @@ private struct SessionRow: View {
                 summaryIcon
             }
             Text(verbatim: details).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
+            if let misheardForm { MisheardMark(form: misheardForm) }
         }
         .padding(10)
         .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))

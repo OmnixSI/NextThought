@@ -304,8 +304,9 @@ extension AppState {
         workspaces.flush()
         let items = workspaces.workspaces
         let skills = SkillLibrary.shared.skills
+        let glossary = GlossaryStore.shared.glossary
         runDataTask("正在导出…") {
-            try await Task.detached(priority: .userInitiated) { try DataBackup.exportAll(to: url, includeSecrets: includeSecrets, workspaces: items, skills: skills) }.value
+            try await Task.detached(priority: .userInitiated) { try DataBackup.exportAll(to: url, includeSecrets: includeSecrets, workspaces: items, skills: skills, glossary: glossary) }.value
             return "已导出到 \(url.lastPathComponent)。"
         }
     }

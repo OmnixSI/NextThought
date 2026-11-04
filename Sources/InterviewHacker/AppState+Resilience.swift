@@ -61,9 +61,10 @@ extension AppState {
             guard isModelInstalled else { return }
             let started = Date()
             do {
-                try await ZipformerRuntime.shared.configure(model: localStreamingModel.onlineModel, hotwords: recognitionVocabulary)
+                let hotwords = recognitionHotwords
+                try await ZipformerRuntime.shared.configure(model: localStreamingModel.onlineModel, hotwords: hotwords)
                 if let refiner = refinerModel {
-                    try await OfflineSegmentRecognizer.shared.configure(model: refiner, hotwords: recognitionVocabulary)
+                    try await OfflineSegmentRecognizer.shared.configure(model: refiner, hotwords: hotwords)
                 }
                 Diagnostics.record("zipformer.prewarmed", ["seconds": Date().timeIntervalSince(started)])
             } catch {
