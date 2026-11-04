@@ -49,9 +49,12 @@ struct AutoEndSettingsSection: View {
                 (MeetingEndWatch.Mode.end.rawValue, "直接结束"),
                 (MeetingEndWatch.Mode.off.rawValue, "不自动结束"),
             ], localizesOptions: true)
-            MenuPicker(title: "多久没人说话算结束", selection: $minutes,
-                       options: MeetingEndWatch.Config.minuteChoices.map { ($0, String(localized: "\($0) 分钟")) })
-                .disabled(mode == MeetingEndWatch.Mode.off.rawValue)
+            // The wait time has a good default (see MeetingEndWatch.Config); changing it is for experts.
+            AdvancedOptions("auto-end-minutes") {
+                MenuPicker(title: "多久没人说话算结束", selection: $minutes,
+                           options: MeetingEndWatch.Config.minuteChoices.map { ($0, String(localized: "\($0) 分钟")) })
+                    .disabled(mode == MeetingEndWatch.Mode.off.rawValue)
+            }
             Hint("只数识别到的文字，背景音乐不算；结束时会截掉末尾的空白。", presentation: .inline)
         }
     }

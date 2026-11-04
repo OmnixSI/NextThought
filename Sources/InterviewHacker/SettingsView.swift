@@ -3,6 +3,8 @@ import SwiftUI
 import InterviewHackerCore
 
 /// Nine settings groups, arranged beneath five simple top-level categories.
+/// Simple mode shows only what is needed after first-run setup (status, a few
+/// switches, one repair entry per area); everything else sits behind 高级设置.
 enum SettingsGroup: String, CaseIterable, Identifiable {
     case essentials = "基础", recognition = "识别", answers = "回答", notes = "纪要", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多"
     var id: String { rawValue }
@@ -36,7 +38,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case meeting = "会议与识别"
     case answers = "回答与提词"
     case notesAndMaterials = "纪要与资料"
-    case data = "数据与更多"
+    case data = "数据与更新"
 
     var id: String { rawValue }
     var displayTitle: String { self == .answers ? "回答与浮窗" : rawValue }
@@ -51,13 +53,19 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The group tabs to show. 技能 is an expert area: its tab only appears in
+    /// advanced mode, or while it is the page being viewed (e.g. 资料夹 → 管理技能).
+    func visibleGroups(advanced: Bool, selected: SettingsGroup) -> [SettingsGroup] {
+        groups.filter { advanced || $0 != .skills || $0 == selected }
+    }
+
     var summary: String {
         switch self {
         case .general: "界面、语言与快速准备"
         case .meeting: "选择声音来源与实时识别方式"
         case .answers: "回答服务与会中回答浮窗"
         case .notesAndMaterials: "会后纪要与资料读取"
-        case .data: "本机记录、技能、更新与维护"
+        case .data: "本机记录、备份与版本更新"
         }
     }
 
@@ -87,6 +95,7 @@ extension SettingsGroup {
 /// A compact, category-first settings page. Existing settings remain grouped
 /// below each category, without a second vertical navigation rail.
 struct SettingsView: View {
+    @Environment(AppState.self) private var state
     @AppStorage("settingsGroup", store: UserDefaults.standard) private var groupRaw = SettingsGroup.essentials.rawValue
     @State private var query = ""
 
@@ -102,8 +111,9 @@ struct SettingsView: View {
                 SettingsCategoryBar(selection: selectedCategory, select: selectCategory)
 
                 if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    if selectedCategory.groups.count > 1 {
-                        SettingsGroupBar(groups: selectedCategory.groups, selection: selectedGroup, select: selectGroup)
+                    let tabs = selectedCategory.visibleGroups(advanced: !state.simplifiedInterface, selected: selectedGroup)
+                    if tabs.count > 1 {
+                        SettingsGroupBar(groups: tabs, selection: selectedGroup, select: selectGroup)
                     }
                 } else {
                     SettingsSearchResults(query: query, select: selectGroup)
@@ -147,10 +157,6 @@ private struct SettingsPaneHeading: View {
             Text(LocalizedStringKey(category.displayTitle)).font(.system(size: 16, weight: .semibold))
             Spacer(minLength: 8)
             Text(LocalizedStringKey(category.summary)).font(.system(size: 10.5)).foregroundStyle(Ink.tertiary)
-            if group == .answers {
-                Note("联网搜索选项可在高级设置中查看和调整。", presentation: .info)
-                    .accessibilityLabel("联网搜索设置说明")
-            }
         }
     }
 }
@@ -249,7 +255,6 @@ private struct SettingsSearchResults: View {
 }
 
 private struct SettingsGroupContent: View {
-    @Environment(AppState.self) private var state
     let group: SettingsGroup
 
     @ViewBuilder var body: some View {
@@ -263,12 +268,7 @@ private struct SettingsGroupContent: View {
             }
         case .answers: AnswerSettings()
         case .notes: NotesSettingsView()
-        case .skills:
-            if state.simplifiedInterface {
-                SettingsSection(title: "技能", icon: "wand.and.stars") {
-                    Note("技能配置属于高级设置。已有技能仍会生效；打开右上角开关后可以管理。")
-                }
-            } else { SkillSettings() }
+        case .skills: SkillSettings()
         case .overlay: OverlaySettings()
         case .recording: RecordingSettings()
         case .more: MoreSettings()
@@ -530,86 +530,43 @@ struct Note: View {
 
 // MARK: - Essentials
 
-/// Sparse preferences share a compact row instead of occupying two half-width cards.
-private struct GeneralPreferenceControls: View {
-    let state: AppState
-
-    var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 20) {
-                onboardingControl
-                Rectangle()
-                    .fill(Ink.hairline)
-                    .frame(width: 1, height: 26)
-                    .accessibilityHidden(true)
-                LanguageSettingsSection(compact: true)
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                onboardingControl
-                LanguageSettingsSection(compact: true)
-            }
-        }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 4)
-    }
-
-    private var onboardingControl: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 13, weight: .regular))
-                .foregroundStyle(Ink.secondary)
-                .frame(width: 18)
-            Toggle("开启新手引导", isOn: Binding(
-                get: { state.onboardingGuideEnabled },
-                set: { state.setOnboardingGuideEnabled($0) }
-            ))
-            .toggleStyle(.switch)
-            .controlSize(.small)
-            .fixedSize()
-            .accessibilityLabel("开启新手引导")
-            .accessibilityHint("开启后可以进入或继续新手引导；关闭会暂停引导并保留进度")
-        }
-    }
-}
-
+/// Simple mode: what this Mac can do right now, each with one way to fix it,
+/// beside language and appearance. Everything else lives behind 高级设置.
 private struct EssentialSettings: View {
     @Environment(AppState.self) private var state
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SettingsCardRow(leftFraction: 0.42) {
-                AppearanceSettingsSection()
-            } right: {
+            SettingsCardRow(leftFraction: 0.6) {
                 SettingsSection(title: "这台 Mac 现在能做什么", icon: "checklist") {
-                    capability("实时语音（必需）", state.liveSetupReadiness.voiceReady ? "识别与音频权限已就绪；在会中页面选择会议窗口" : "需要语音识别与音频权限", ready: state.liveSetupReadiness.voiceReady, action: "设置语音") { state.openSettings(.recognition) }
-                    Divider()
-                    capability("回答服务（必需）", state.answerEngineReady ? "回答服务已配置，可以测试或开始使用" : "需要连接回答服务，才能在对话中生成建议回答", ready: state.answerEngineReady, action: "回答设置") { state.openSettings(.answers) }
-                    Divider()
-                    capability("资料增强（可选）", "系统识别与关键词直接可用；OCR 模型和向量模型按需安装", ready: true, action: "查看取舍") { state.openSettings(.documents) }
+                    SettingsStatusRow(
+                        tone: state.liveSetupReadiness.voiceReady ? .ready : .caution,
+                        title: "实时语音（必需）",
+                        detail: state.liveSetupReadiness.voiceReady ? "识别与音频权限已就绪；在会中页面选择会议窗口" : "需要语音识别与音频权限",
+                        actionTitle: state.liveSetupReadiness.voiceReady ? "重新设置" : "设置语音"
+                    ) { state.openSettings(.recognition) }
+                    SettingsStatusRow(
+                        tone: state.answerEngineReady ? .ready : .caution,
+                        title: "回答服务（必需）",
+                        detail: state.answerEngineReady ? "回答服务已配置，可以测试或开始使用" : "需要连接回答服务，才能在对话中生成建议回答",
+                        actionTitle: state.answerEngineReady ? "重新设置" : "回答设置"
+                    ) { state.openSettings(.answers) }
+                    SettingsStatusRow(
+                        tone: .ready,
+                        title: "资料增强（可选）",
+                        detail: "系统识别与关键词直接可用；OCR 模型和向量模型按需安装",
+                        actionTitle: "重新设置"
+                    ) { state.openSettings(.documents) }
+                    HStack {
+                        Spacer(minLength: 0)
+                        Button("重新打开新手引导") { state.openOnboarding() }.buttonStyle(ChipButtonStyle())
+                    }
                 }
+            } right: {
+                AppearanceSettingsSection()
             }
-
-            HStack {
-                Button("备份与恢复") { state.openSettings(.recording) }.buttonStyle(.plain)
-                Text("·").foregroundStyle(.tertiary)
-                Button("版本与更新") { state.openSettings(.more) }.buttonStyle(.plain)
-            }
-            .font(.system(size: 12)).foregroundStyle(.secondary).padding(.horizontal, 4)
 
             AdvancedOptions("essentials-tools") { AdvancedEssentialSettings() }
         }
-    }
-    private func capability(_ title: String, _ detail: String, ready: Bool, action: String, perform: @escaping () -> Void) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: ready ? "checkmark.circle.fill" : "circle.dashed")
-                .foregroundStyle(ready ? .green : .secondary)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(LocalizedStringKey(title)).fontWeight(.semibold)
-                Text(LocalizedStringKey(detail)).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 8)
-            Button(LocalizedStringKey(action), action: perform).buttonStyle(SecondaryButtonStyle())
-        }.padding(.vertical, 4)
     }
 }
 
@@ -618,6 +575,11 @@ private struct AdvancedEssentialSettings: View {
 
     var body: some View {
         @Bindable var state = state
+        SettingsSection(title: "窗口", icon: "macwindow") {
+            Toggle("工作台在本应用前台时置顶", isOn: $state.keepOnTop)
+                .onChange(of: state.keepOnTop) { _, _ in state.updateSettings() }
+            Note("仅在 InterviewHacker 处于前台时生效；切换到其他 App 后会降回普通层级。", presentation: .inline)
+        }
         SettingsSection(title: "环境与模型", icon: "wrench.and.screwdriver") {
             HStack(spacing: 8) {
                 Button { Task { await state.runQuickEnvironmentSetup() } } label: {
@@ -688,16 +650,11 @@ private struct AppearanceSettingsSection: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        @Bindable var state = state
         SettingsSection(title: "界面与外观", icon: "paintbrush") {
-            GeneralPreferenceControls(state: state)
-            Divider()
+            LanguageSettingsSection(compact: true)
             MenuPicker(title: "外观", selection: Binding(get: { state.appearance }, set: { state.setAppearance($0) }),
                        options: [("system", String(localized: "跟随系统")),
                                  ("light", String(localized: "浅色")), ("dark", String(localized: "深色"))])
-            Toggle("工作台在本应用前台时置顶", isOn: $state.keepOnTop)
-                .onChange(of: state.keepOnTop) { _, _ in state.updateSettings() }
-            Note("此选项仅在 InterviewHacker 处于前台时提升工作台、设置和分离模块；切换到其他 App 后它们会降回普通层级。回答浮窗保持独立浮窗行为。", presentation: .inline)
         }
     }
 }
@@ -834,7 +791,10 @@ private struct RecognitionSettings: View {
                            options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择会议窗口")
                     .disabled(state.isRunning || state.isChangingSession)
                     .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
-                Button("刷新") { Task { await state.refreshTargets() } }
+                // The list refreshes itself whenever this page opens; the manual button is for experts.
+                AdvancedOptions("capture-refresh") {
+                    Button("刷新") { Task { await state.refreshTargets() } }
+                }
             }
             Toggle("同时识别我说的话（麦克风）", isOn: $state.microphoneEnabled)
                 .disabled(state.isRunning || state.isChangingSession)
@@ -843,6 +803,7 @@ private struct RecognitionSettings: View {
                 Button("允许麦克风") { Task { await state.requestMicrophoneAccess() } }
             }
         }
+        .task { if !state.isRunning && !state.isChangingSession { await state.refreshTargets() } }
         } right: {
         SettingsSection(title: "语音识别", icon: "waveform") {
             if !state.simplifiedInterface {
@@ -855,13 +816,14 @@ private struct RecognitionSettings: View {
             .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
             } else {
                 Text(state.transcriptionBackend == "zipformer" ? "本机识别 · 会议音频不上传" : state.transcriptionBackend == "apple" ? "系统语音识别" : "云端语音识别 · 会议音频会上传")
-                Note("需要更换引擎或调整参数时，打开右上角的高级设置。")
             }
             switch state.transcriptionBackend {
             case "zipformer": ModelDownloadRow()
             case "apple":
                 LanguagePicker()
-                Note("Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。")
+                AdvancedOptions("apple-speech-note") {
+                    Note("Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。")
+                }
             default:
                 LanguagePicker()
                 CloudSettings()
@@ -999,19 +961,10 @@ private struct AnswerSettings: View {
             VStack(alignment: .leading, spacing: 12) {
                 AnswerEngineForm(foldSecondary: true)
                 Divider()
-                HStack(spacing: 8) {
-                    Image(systemName: "text.bubble")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(Ink.secondary)
-                        .frame(width: 18)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("自动回答").font(.system(size: 13, weight: .semibold))
-                        Text("在会议顶栏选择“自动回答”或“只记录”。")
-                            .font(.system(size: 12)).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Hint("“自动回答”会在识别到问题后生成参考回答；“只记录”不会自动生成，但仍可手动提问。默认模式由会议类型决定（汇报和客户沟通默认自动回答）。明确的问题通常会很快开始回答；不确定的句子会显示为可点击的“可能的问题”。", presentation: .info)
-                        .accessibilityLabel("自动回答说明")
+                SettingsInfoRow(icon: "text.bubble", title: "自动回答", detail: "在会议顶栏选择“自动回答”或“只记录”。")
+                if state.simplifiedInterface {
+                    SettingsInfoRow(icon: "globe", title: "联网搜索",
+                                    detail: state.webSearchMode == .off ? "联网搜索已关闭；可在高级设置中打开。" : "联网搜索已开启；可在高级设置中调整。")
                 }
             }
         }
@@ -1245,14 +1198,8 @@ private struct OverlaySettings: View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
         SettingsSection(title: "回答浮窗", icon: "rectangle.topthird.inset.filled") {
+            // The window remembers where you last put it, so position is an expert option.
             Button("显示回答浮窗") { TeleprompterController.shared.show() }.buttonStyle(PrimaryButtonStyle())
-            HStack {
-                Text("移动到")
-                ForEach(TeleprompterController.Placement.allCases) { placement in
-                    Button(placement.title) { TeleprompterController.shared.move(to: placement) }.buttonStyle(ChipButtonStyle())
-                        .help("显示回答浮窗并移动到\(placement.title)")
-                }
-            }
             HStack {
                 Text("字号")
                 Slider(value: $state.teleprompterFontSize, in: 14...44, step: 1)
@@ -1264,24 +1211,33 @@ private struct OverlaySettings: View {
                 .onChange(of: state.capturePrivacy) { _, _ in state.saveAnswerSettings(); state.updateSettings() }
             Note(String(localized: "系统无法保证窗口不被录屏。共享会议窗口或标签页更稳妥；\(state.shortcutLabel(.panicHide)) 可隐藏全部窗口。"), presentation: .inline)
         }
-        SubtitleBarSettingsSection()
         AdvancedOptions("overlay") {
-            SettingsSection(title: "外观细节与共享测试", icon: "slider.horizontal.3") {
-                HStack {
-                    Text("不透明度")
-                    Slider(value: $state.teleprompterOpacity, in: 0.35...1).disabled(state.teleprompterHideBackground)
-                        .frame(maxWidth: 320)
-                        .onChange(of: state.teleprompterOpacity) { _, _ in state.saveAnswerSettings() }
-                    Text("\(Int(state.teleprompterOpacity * 100))%").font(.caption.monospacedDigit()).frame(width: 36)
+            VStack(alignment: .leading, spacing: 12) {
+                SettingsSection(title: "位置与外观", icon: "slider.horizontal.3") {
+                    HStack {
+                        Text("移动到")
+                        ForEach(TeleprompterController.Placement.allCases) { placement in
+                            Button(placement.title) { TeleprompterController.shared.move(to: placement) }.buttonStyle(ChipButtonStyle())
+                                .help("显示回答浮窗并移动到\(placement.title)")
+                        }
+                    }
+                    HStack {
+                        Text("不透明度")
+                        Slider(value: $state.teleprompterOpacity, in: 0.35...1).disabled(state.teleprompterHideBackground)
+                            .frame(maxWidth: 320)
+                            .onChange(of: state.teleprompterOpacity) { _, _ in state.saveAnswerSettings() }
+                        Text("\(Int(state.teleprompterOpacity * 100))%").font(.caption.monospacedDigit()).frame(width: 36)
+                    }
+                    Toggle("隐藏背景，只保留文字、边框与按钮", isOn: $state.teleprompterHideBackground)
+                        .onChange(of: state.teleprompterHideBackground) { _, _ in state.saveAnswerSettings() }
+                    Toggle("鼠标穿透（点击穿过回答浮窗）", isOn: Binding(get: { state.clickThrough }, set: { _ in state.toggleClickThrough() }))
+                    HStack {
+                        Button("共享可见性测试") { state.runShareVisibilityTest() }.buttonStyle(SecondaryButtonStyle())
+                        Button("仅显示回答浮窗") { TeleprompterController.shared.showOnlyTeleprompter() }.buttonStyle(SecondaryButtonStyle())
+                    }
+                    Note("手机显示与遥控在高级设置 → 更多 → 手机伴侣。隐藏背景时，不透明度不会影响文字与按钮。")
                 }
-                Toggle("隐藏背景，只保留文字、边框与按钮", isOn: $state.teleprompterHideBackground)
-                    .onChange(of: state.teleprompterHideBackground) { _, _ in state.saveAnswerSettings() }
-                Toggle("鼠标穿透（点击穿过回答浮窗）", isOn: Binding(get: { state.clickThrough }, set: { _ in state.toggleClickThrough() }))
-                HStack {
-                    Button("共享可见性测试") { state.runShareVisibilityTest() }.buttonStyle(SecondaryButtonStyle())
-                    Button("仅显示回答浮窗") { TeleprompterController.shared.showOnlyTeleprompter() }.buttonStyle(SecondaryButtonStyle())
-                }
-                Note("手机显示与遥控在高级设置 → 更多 → 手机伴侣。隐藏背景时，不透明度不会影响文字与按钮。")
+                SubtitleBarSettingsSection()
             }
         }
         }
@@ -1301,56 +1257,55 @@ private struct RecordingSettings: View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
         SettingsCardRow {
-        SettingsSection(title: "会话记录与复盘", icon: "tray.full") {
+        SettingsSection(title: "会话记录", icon: "tray.full") {
             Toggle("记录每次会话（转录、识别到的问题、会中回答与当时的系列资料）", isOn: $state.recordSessions)
                 .disabled(state.isRunning)
                 .onChange(of: state.recordSessions) { _, _ in state.updateSettings() }
-            if !state.simplifiedInterface {
-            Toggle("会议结束后自动整理纪要（设置 → 纪要）", isOn: $state.autoSummarize)
-                .disabled(!state.recordSessions)
-                .onChange(of: state.autoSummarize) { _, _ in state.updateSettings() }
-            if !state.recordSessions { Note("请先在“数据”中开启会话记录。") }
-            Toggle("把复盘得到的经验和改进回答自动加入场景的经验库与题库（自我迭代）", isOn: $state.autoApplyLessons)
-                .disabled(!state.autoSummarize)
-                .onChange(of: state.autoApplyLessons) { _, _ in state.updateSettings() }
-            if !state.autoSummarize { Note("请先开启会后自动整理纪要。") }
-            }
-            if state.simplifiedInterface { Note(state.autoSummarize ? "自动复盘已开启，会使用当前回答服务与额度。" : "自动复盘未开启，可在高级设置调整。", presentation: .inline) }
             Note("转录边说边保存在本机，不保存原始音频。生成摘要与复盘会把本次转录发送给当前回答服务并使用其额度。", presentation: .inline)
+            AdvancedOptions("recording-lessons") {
+                // 会后自动整理 lives in 纪要; this one only decides whether lessons flow back into the series.
+                Toggle("把复盘得到的经验和改进回答自动加入场景的经验库与题库（自我迭代）", isOn: $state.autoApplyLessons)
+                    .disabled(!state.autoSummarize)
+                    .onChange(of: state.autoApplyLessons) { _, _ in state.updateSettings() }
+                if !state.autoSummarize { Note("请先开启会后自动整理纪要。") }
+            }
         }
         } right: {
-        SettingsSection(title: "导出与导入", icon: "externaldrive") {
-            Note("备份包含系列资料、经验库、题库、阶段复盘、会议记录和设置。导入会合并，不删除现有数据；冲突时保留较新的修改。", presentation: .inline)
+        SettingsSection(title: "备份与恢复", icon: "externaldrive") {
             HStack {
                 Button("导出全部数据…") { state.exportAllData(includeSecrets: includeSecrets && !state.simplifiedInterface) }.buttonStyle(PrimaryButtonStyle()).disabled(state.isDataBusy)
-                if !state.simplifiedInterface { Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets).toggleStyle(.checkbox) }
-            }
-            HStack {
                 Button("导入…") { state.importData(applySettings: applySettings) }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
-                if !state.simplifiedInterface { Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings).toggleStyle(.checkbox) }
+                Button("立即备份") { state.backupNow(); refreshSoon() }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy)
             }
-            if state.simplifiedInterface { Note("导出不包含密钥。导入" + (applySettings ? "会一并恢复备份中的设置。" : "保留当前设置。"), presentation: .inline) }
-            if includeSecrets && !state.simplifiedInterface { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
+            if state.simplifiedInterface {
+                Note("导出不含密钥；导入会合并现有数据，不删除。", presentation: .inline)
+                if !state.autoBackup {
+                    Note("会议自动备份未开启，可在高级设置调整。", presentation: .inline)
+                } else if let latest = backups.first {
+                    Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened), presentation: .inline)
+                } else {
+                    Note("会议结束后自动备份；更新和导入前保留恢复点。", presentation: .inline)
+                }
+            }
+            AdvancedOptions("recording-transfer") {
+                Note("备份包含系列资料、经验库、题库、阶段复盘、会议记录和设置。导入会合并，不删除现有数据；冲突时保留较新的修改。", presentation: .inline)
+                Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets).toggleStyle(.checkbox)
+                Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings).toggleStyle(.checkbox)
+                if includeSecrets { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
+            }
             if state.isDataBusy { ProgressView().controlSize(.small) }
             if !state.dataStatus.isEmpty { Note(state.dataStatus, color: .green) }
         }
         }
+        AdvancedOptions("recording-backups") {
         SettingsSection(title: "自动备份", icon: "clock.arrow.circlepath") {
-            if !state.simplifiedInterface {
             Toggle("会议结束后自动创建恢复点", isOn: $state.autoBackup)
                 .onChange(of: state.autoBackup) { _, _ in state.updateSettings() }
-            }
-            HStack {
-                Button("立即备份") { state.backupNow(); refreshSoon() }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy)
-                Button("打开数据文件夹") {
-                    try? FileManager.default.createDirectory(at: AppPaths.root, withIntermediateDirectories: true)
-                    NSWorkspace.shared.open(AppPaths.root)
-                }.buttonStyle(SecondaryButtonStyle())
-            }
-            if state.simplifiedInterface {
-                Note(state.autoBackup ? "会议结束后自动备份；更新和导入前保留恢复点。" : "会议自动备份未开启，可在高级设置调整。", presentation: .inline)
-                if let latest = backups.first { Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened), presentation: .inline) }
-            } else if backups.isEmpty {
+            Button("打开数据文件夹") {
+                try? FileManager.default.createDirectory(at: AppPaths.root, withIntermediateDirectories: true)
+                NSWorkspace.shared.open(AppPaths.root)
+            }.buttonStyle(SecondaryButtonStyle())
+            if backups.isEmpty {
                 Note("还没有自动备份。", presentation: .inline)
             } else {
                 ForEach(backups.prefix(10)) { backup in
@@ -1367,6 +1322,9 @@ private struct RecordingSettings: View {
             }
             Note(String(localized: "数据保存在 \(AppPaths.root.path)。恢复点最多保留最近 10 份、软预算 2 GiB，不含模型、索引或密钥。"), presentation: .inline)
         }
+        }
+        }
+        // Attached to the stack, not to the advanced card, so the list also loads in simple mode.
         .onAppear { backups = DataBackup.listBackups() }
         .onChange(of: state.section) { _, section in if section == .settings { backups = DataBackup.listBackups() } }
         .confirmationDialog("从这份备份恢复？", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }), titleVisibility: .visible) {
@@ -1374,7 +1332,6 @@ private struct RecordingSettings: View {
             Button("取消", role: .cancel) { restoring = nil }
         } message: {
             Text("把备份里的场景和会话记录合并回来；现有数据不会被删除，较新的修改会保留。")
-        }
         }
     }
 
