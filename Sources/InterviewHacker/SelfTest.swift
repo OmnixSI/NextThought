@@ -64,6 +64,7 @@ enum SelfTest {
                 case "model-files": return try await DocumentSelfTest.modelFiles()
                 case "model-delete": return try await DocumentSelfTest.modelDeletion()
                 case "document-backup": return try await DocumentSelfTest.archiveRoundTrip()
+                case "structured-notes": return try await StructuredNotesSelfTest.run()
                 case "document-setup": return try await DocumentSelfTest.setupChoices()
                 case "retrieval-eval": return try await RetrievalSelfTest.run(options)
                 case "screen-context": return try await ScreenSelfTest.run(options)
@@ -108,6 +109,16 @@ enum SelfTest {
 
     @MainActor
     private static func testData() async throws -> String {
+        guard !DemoMode.isEnabled else { throw Failure("run data selftest without INTERVIEWHACKER_DEMO") }
+        let defaults = UserDefaults.standard
+        let keys = ["workspaceMigrationCompleted", "sessionMode", "answerPreferences", "activeWorkspaceID"]
+        let previous = keys.map { defaults.object(forKey: $0) }
+        defer {
+            for (key, value) in zip(keys, previous) {
+                if let value { defaults.set(value, forKey: key) } else { defaults.removeObject(forKey: key) }
+            }
+        }
+        defaults.removeObject(forKey: "workspaceMigrationCompleted")
         let store = WorkspaceStore.shared
         let archive = SessionArchive.shared
         try? FileManager.default.removeItem(at: AppPaths.workspaces)

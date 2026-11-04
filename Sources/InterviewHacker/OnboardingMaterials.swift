@@ -52,6 +52,14 @@ struct OnboardingMaterialsPage: View {
             }
             VStack(alignment: .leading, spacing: Space.s3) {
                 status
+                Button("扫描本机已有组件") { state.scanLocalDocumentAssets() }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(!state.documentModelsChecked || state.documentSetupBusy || DemoMode.isEnabled)
+                Text("仅在点击后查找本机文件；系统可能询问文件夹访问权限。")
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                if !state.localAssetScanStatus.isEmpty {
+                    Text(verbatim: state.localAssetScanStatus).font(Typo.caption).foregroundStyle(Ink.secondary)
+                }
                 if !state.onboardingMaterialsOffer.missing.isEmpty, state.documentModelsChecked {
                     downloads
                 }
@@ -63,28 +71,9 @@ struct OnboardingMaterialsPage: View {
             }
             .font(Typo.label)
         }
-        .task { await scanIfNeeded() }
         .onChange(of: state.documentSetupFeature) { _, feature in
             if feature != nil { showDownloads = true }
         }
-    }
-
-    // MARK: Scan
-
-    /// Looks for components already on this Mac when the page opens. It reads only, verifies before
-    /// reusing, and can be cancelled; a scan that already ran (here or in settings) is not repeated.
-    private func scanIfNeeded() async {
-        guard !DemoMode.isEnabled else { return }
-        // The check can take a while (it hashes installed models); wait until it is done or the page closes.
-        while !state.documentModelsChecked {
-            if Task.isCancelled { return }
-            try? await Task.sleep(nanoseconds: 100_000_000)
-        }
-        guard state.documentModelsChecked, !Task.isCancelled else { return }
-        guard !state.onboardingMaterialsOffer.missing.isEmpty, state.localAssetScanStatus.isEmpty,
-              !state.documentSetupBusy else { return }
-        state.scanLocalDocumentAssets()
-        await state.localAssetScanTask?.value
     }
 
     // MARK: Status

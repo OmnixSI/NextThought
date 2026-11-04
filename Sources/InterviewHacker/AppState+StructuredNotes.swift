@@ -25,6 +25,7 @@ final class StructuredNotesJobs {
     private(set) var running: [StructuredJobKey: UUID] = [:]
     /// Views whose last attempt did not produce anything (the page says so quietly).
     private(set) var failed: Set<StructuredJobKey> = []
+    private(set) var completed: [StructuredJobKey: StructuredNotesPayload] = [:]
     @ObservationIgnored private var tasks: [StructuredJobKey: Task<Void, Never>] = [:]
     @ObservationIgnored private var committing = false
 
@@ -47,6 +48,18 @@ final class StructuredNotesJobs {
     func attach(_ task: Task<Void, Never>, to key: StructuredJobKey, token: UUID) {
         guard running[key] == token else { task.cancel(); return }
         tasks[key] = task
+    }
+
+    func complete(_ payload: StructuredNotesPayload, for key: StructuredJobKey, token: UUID) {
+        guard running[key] == token else { return }
+        completed[key] = payload
+    }
+
+    /// Release the display cache only after the page has loaded the same persisted result.
+    func acknowledge(_ summary: SessionSummary?, for id: UUID) {
+        for key in completed.keys.filter({ $0.id == id }) {
+            if summary?.payload(for: key.format) == completed[key] { completed[key] = nil }
+        }
     }
 
     func markFailed(_ key: StructuredJobKey) { failed.insert(key) }
@@ -134,7 +147,7 @@ extension AppState {
     /// Writes one view of a meeting in the background (the page shows progress and 取消). One
     /// view of a meeting is written at most once at a time; a view that is already saved is
     /// written again only when the user asks for 重新生成.
-    func generateStructuredNotes(for id: UUID, format: NotesFormat) {
+    func generateStructuredNotes(for id: UUID, format: NotesFormat, regenerate: Bool = false) {
         guard format.isStructured else { return }
         let jobs = StructuredNotesJobs.shared
         let key = StructuredJobKey(id: id, format: format)
@@ -146,7 +159,7 @@ extension AppState {
         }
         let token = jobs.start(key)
         let task = Task {
-            await runStructuredNotes(key, token: token, engine: engine)
+            await runStructuredNotes(key, token: token, engine: engine, regenerate: regenerate)
         }
         jobs.attach(task, to: key, token: token)
     }
@@ -158,13 +171,18 @@ extension AppState {
 
     // MARK: Writing
 
-    private func runStructuredNotes(_ key: StructuredJobKey, token: UUID, engine: NotesEngine) async {
+    private func runStructuredNotes(_ key: StructuredJobKey, token: UUID, engine: NotesEngine, regenerate: Bool) async {
         let jobs = StructuredNotesJobs.shared
         defer { jobs.finish(key, token: token) }
         let id = key.id
         await archive.flush()
         guard let detail = await archive.detail(id), !detail.lines.isEmpty, let base = detail.summary else {
             if !Task.isCancelled { jobs.markFailed(key) }
+            return
+        }
+        // A stale page must not start another paid request after the previous result was saved.
+        if !regenerate, let existing = base.payload(for: key.format) {
+            jobs.complete(existing, for: key, token: token)
             return
         }
         let english = detail.notes.map { $0.language == "en" } ?? notesUseEnglish
@@ -193,9 +211,11 @@ extension AppState {
         await jobs.exclusive {
             await archive.flush()
             guard var summary = await archive.detail(id)?.summary else { return }
+            guard !Task.isCancelled, jobs.running[key] == token else { return }
             summary.store(payload)
             archive.saveSummary(summary, for: id)
             await archive.flush()
+            jobs.complete(payload, for: key, token: token)
             archive.notesRevision += 1
             saved = true
         }

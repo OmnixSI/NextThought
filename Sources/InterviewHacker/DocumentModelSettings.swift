@@ -13,7 +13,7 @@ struct DocumentModelSettings: View {
             summaryCard
                 .sheet(isPresented: $showingChooser) { chooserSheet }
         } else {
-            details
+            details()
         }
     }
 
@@ -42,7 +42,7 @@ struct DocumentModelSettings: View {
                 Spacer()
                 Button("完成") { showingChooser = false }.buttonStyle(PrimaryButtonStyle())
             }
-            ScrollView { details.environment(\.settingsColumnCount, 1) }
+            ScrollView { details(showManagement: true).environment(\.settingsColumnCount, 1) }
         }
         .padding(20)
         .frame(width: 640, height: 640)
@@ -56,7 +56,7 @@ struct DocumentModelSettings: View {
         return String(localized: "关键词查找 · 无需下载")
     }
 
-    @ViewBuilder private var details: some View {
+    @ViewBuilder private func details(showManagement: Bool = false) -> some View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
         SettingsCardRow {
@@ -156,7 +156,7 @@ struct DocumentModelSettings: View {
                 }
             }
         }
-            AdvancedOptions("document-management") {
+            AdvancedOptions("document-management", alwaysVisible: showManagement) {
                 SettingsSection(title: "组件管理与高级设置", icon: "gearshape") {
                     Note("下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。")
                     ForEach(ModelCatalog.all, id: \.id) { descriptor in

@@ -466,13 +466,15 @@ struct SettingsSection<Content: View>: View {
 struct AdvancedOptions<Content: View>: View {
     @Environment(AppState.self) private var state
     private let content: Content
+    private let alwaysVisible: Bool
 
-    init(_ id: String, @ViewBuilder content: () -> Content) {
+    init(_ id: String, alwaysVisible: Bool = false, @ViewBuilder content: () -> Content) {
         self.content = content()
+        self.alwaysVisible = alwaysVisible
     }
 
     var body: some View {
-        if !state.simplifiedInterface { content }
+        if alwaysVisible || !state.simplifiedInterface { content }
     }
 }
 

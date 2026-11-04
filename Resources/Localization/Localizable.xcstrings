@@ -15240,6 +15240,16 @@
           }
         }
       }
+    },
+    "仅在点击后查找本机文件；系统可能询问文件夹访问权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local files are searched only after you click. macOS may ask for folder access."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

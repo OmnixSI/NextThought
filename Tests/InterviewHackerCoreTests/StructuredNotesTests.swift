@@ -402,6 +402,29 @@ struct StructuredNotesTests {
         SessionSummary(title: "t", markdown: "m", questions: [], generatedAt: Date(timeIntervalSince1970: 1_790_000_000), model: "m")
     }
 
+    @Test func textRewriteKeepsDiagramsCompletedAfterItsSnapshot() {
+        var latest = blankSummary()
+        latest.store(fishbonePayload(head: "旧版"))
+        var rewritten = latest
+        rewritten.markdown = "重新整理后的文字"
+        // Both a new format and a regenerated format finish while the text request is in flight.
+        latest.store(outlinePayload())
+        latest.store(fishbonePayload(head: "新版"))
+        rewritten.preserveStructuredViews(from: latest)
+        #expect(rewritten.markdown == "重新整理后的文字")
+        #expect(rewritten.payload(for: .fishbone)?.fishbone?.head == "新版")
+        #expect(rewritten.payload(for: .outline) == latest.payload(for: .outline))
+    }
+
+    @Test func textRewritePreservesLegacySingleView() {
+        var legacy = blankSummary()
+        legacy.structured = fishbonePayload()
+        var rewritten = blankSummary()
+        rewritten.preserveStructuredViews(from: legacy)
+        #expect(rewritten.payload(for: .fishbone) == legacy.structured)
+        #expect(rewritten.structuredAll == nil)
+    }
+
     @Test func oldSummaryWithOnlyStructuredStillAnswersForItsFormat() throws {
         let json = ##"{"title":"组会","markdown":"m","questions":[],"generatedAt":"2026-10-26T10:00:00Z","model":"m","structured":{"format":"fishbone","fishbone":{"head":"延期","categories":[{"name":"人员","causes":[{"text":"缺人","at":130}]}]},"language":"zh","droppedCount":0,"generatedAt":"2026-10-26T10:00:00Z","model":"m"}}"##
         let summary = try JSONLines.decoder().decode(SessionSummary.self, from: Data(json.utf8))

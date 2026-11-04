@@ -71,9 +71,16 @@ struct MeetingPage: View {
                 }
             }
         }
+        .onChange(of: archive.summarizing.contains(id)) { _, writing in
+            if writing { format = .standard }
+        }
+        .onChange(of: id) { _, _ in format = .standard }
         .task(id: reloadKey) {
             await archive.flush()
-            detail = await archive.detail(id)
+            let loaded = await archive.detail(id)
+            guard !Task.isCancelled else { return }
+            detail = loaded
+            StructuredNotesJobs.shared.acknowledge(loaded?.summary, for: id)
         }
     }
 

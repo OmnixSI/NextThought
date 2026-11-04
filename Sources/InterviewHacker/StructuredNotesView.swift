@@ -63,10 +63,21 @@ private struct StructuredFormatPane: View {
         let id = detail.meta.id
         let key = StructuredJobKey(id: id, format: format)
         let running = jobs.isRunning(key)
-        let payload = detail.summary?.payload(for: format)
+        let payload = jobs.completed[key] ?? detail.summary?.payload(for: format)
         VStack(alignment: .leading, spacing: Space.s6) {
             if running {
                 progress(id)
+            }
+            if !running, jobs.hasFailed(key) {
+                if state.notesEngine.model.isEmpty {
+                    HStack {
+                        Text("没有可用的纪要模型。请在 设置 → 纪要 里选择。").font(Typo.caption)
+                        Spacer(minLength: Space.s2)
+                        Button("设置") { state.openSettings(.notes) }.buttonStyle(SecondaryButtonStyle())
+                    }.paperCard()
+                } else {
+                    notice(String(localized: "这次没整理成功，纪要不受影响。"), action: String(localized: "重试"), id: id)
+                }
             }
             if let payload {
                 HStack {
@@ -74,12 +85,8 @@ private struct StructuredFormatPane: View {
                     menu(payload, id: id, running: running)
                 }
                 StructuredNotesContent(payload: payload, onJump: onJump)
-            } else if !running {
-                if jobs.hasFailed(key) {
-                    notice(String(localized: "这次没整理成功，纪要不受影响。"), action: String(localized: "重试"), id: id)
-                } else {
-                    notice(String(localized: "还没有整理过。"), action: String(localized: "开始整理"), id: id)
-                }
+            } else if !running, !jobs.hasFailed(key) {
+                notice(String(localized: "还没有整理过。"), action: String(localized: "开始整理"), id: id)
             }
         }
     }
@@ -100,9 +107,9 @@ private struct StructuredFormatPane: View {
         HStack(spacing: Space.s2) {
             Text(verbatim: message).font(Typo.caption).foregroundStyle(Ink.secondary)
             Spacer(minLength: Space.s2)
-            Button(action) { state.generateStructuredNotes(for: id, format: format) }
+            Button(action) { state.generateStructuredNotes(for: id, format: format, regenerate: true) }
                 .buttonStyle(SecondaryButtonStyle())
-                .disabled(detail.lines.isEmpty)
+                .disabled(detail.lines.isEmpty || state.archive.summarizing.contains(id))
         }
         .paperCard()
     }
@@ -110,7 +117,7 @@ private struct StructuredFormatPane: View {
     /// "…": write this view again, or copy it.
     private func menu(_ payload: StructuredNotesPayload, id: UUID, running: Bool) -> some View {
         Menu {
-            Button("重新生成") { state.generateStructuredNotes(for: id, format: format) }
+            Button("重新生成") { state.generateStructuredNotes(for: id, format: format, regenerate: true) }
                 .disabled(running)
             Button(copied ? String(localized: "已复制") : String(localized: "复制为 Markdown")) {
                 NSPasteboard.general.clearContents()

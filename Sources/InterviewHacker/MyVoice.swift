@@ -93,14 +93,16 @@ final class MyVoice {
 
     // MARK: Setup
 
+    private var setupGeneration = UUID()
+
     func beginSetup() {
-        takes = []
-        message = nil
-        progress = 0
+        cancelSetup()
         isSettingUp = true
     }
 
     func cancelSetup() {
+        setupGeneration = UUID()
+        isWorking = false
         recorder.map { _ = $0.stopCapture() }
         recorder = nil
         isRecording = false
@@ -114,24 +116,28 @@ final class MyVoice {
     /// sentence done, builds and saves the profile.
     func recordTake() async {
         guard isSettingUp, !isRecording, !isWorking, modelAvailable else { return }
+        let generation = setupGeneration
+        isWorking = true
+        defer { if setupGeneration == generation { isWorking = false } }
         message = nil
         let collector = TakeCollector()
         let service = MicrophoneCaptureService()
         service.setPCMHandler { samples, _ in collector.append(samples) }
         do { try await service.startCapture() } catch {
+            guard setupGeneration == generation else { return }
             message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             return
         }
         // The page may have been closed while the microphone was starting.
-        guard isSettingUp else { _ = service.stopCapture(); return }
+        guard isSettingUp, setupGeneration == generation else { _ = service.stopCapture(); return }
         recorder = service
         isRecording = true
         let started = Date()
-        while isRecording, Date().timeIntervalSince(started) < Self.takeSeconds {
+        while isRecording, setupGeneration == generation, Date().timeIntervalSince(started) < Self.takeSeconds {
             progress = min(1, Date().timeIntervalSince(started) / Self.takeSeconds)
             try? await Task.sleep(nanoseconds: 100_000_000)
         }
-        guard isRecording else { return }   // cancelled while recording
+        guard isRecording, setupGeneration == generation else { return }   // cancelled while recording
         _ = service.stopCapture()
         recorder = nil
         isRecording = false
@@ -141,8 +147,6 @@ final class MyVoice {
             message = String(localized: "没听清，声音有点小或太短。靠近麦克风，再读一次。")
             return
         }
-        isWorking = true
-        defer { isWorking = false }
         let loaded = model
         let embedding: (voiceprint: [Float]?, model: Voiceprints?, failure: String?) = await Task.detached(priority: .userInitiated) {
             do {
@@ -153,7 +157,7 @@ final class MyVoice {
             }
         }.value
         if let model = embedding.model { self.model = model }
-        guard isSettingUp else { return }   // closed while the voiceprint was being computed
+        guard isSettingUp, setupGeneration == generation else { return }   // ignore an older enrollment
         if let failure = embedding.failure {
             message = String(localized: "声纹模型无法使用：\(failure)")
             return

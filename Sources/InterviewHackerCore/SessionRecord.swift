@@ -220,6 +220,12 @@ public struct SessionSummary: Codable, Sendable, Equatable {
         self.structured = structured; self.structuredAll = structuredAll
     }
 
+    /// A text rewrite keeps the latest saved diagrams, including results completed while it ran.
+    public mutating func preserveStructuredViews(from latest: SessionSummary?) {
+        structured = latest?.structured
+        structuredAll = latest?.structuredAll
+    }
+
     /// The saved view of a format that has something to draw (failure markers and the plain
     /// format never count). Summaries from before `structuredAll` still answer for the
     /// format of their single `structured` view.

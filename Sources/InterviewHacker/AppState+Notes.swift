@@ -175,13 +175,8 @@ extension AppState {
                 var notes = try await writeNotes(detail: detail, workspace: workspace, template: template, english: useEnglish, engine: engine)
                 notes.model = engine.model
                 notes.generatedAt = Date()
-                archive.saveNotes(notes, for: id)
-                var summary = notesSummary(from: notes, template: template, detail: detail)
-                // The fishbone / outline / viewpoint views the user asked for read the transcript, not
-                // these notes: they stay. None is written here; the notes page writes one when it is picked.
-                summary.structured = detail.summary?.structured
-                summary.structuredAll = detail.summary?.structuredAll
-                archive.saveSummary(summary, for: id)
+                let summary = await saveGeneratedSummary(notesSummary(from: notes, template: template, detail: detail),
+                                                         notes: notes, for: id)
                 if var latest = archive.sessions.first(where: { $0.id == id }) {
                     latest.actionItemCount = notes.actionItemCount
                     latest.improveCount = notes.improveCount
@@ -198,10 +193,8 @@ extension AppState {
                 Diagnostics.record("notes.unreadable")
                 do {
                     guard let detail = loaded else { throw NotesError.unreadable }
-                    var summary = try await markdownSummary(detail: detail, engine: engine)
-                    summary.structured = detail.summary?.structured
-                    summary.structuredAll = detail.summary?.structuredAll
-                    archive.saveSummary(summary, for: id)
+                    let generated = try await markdownSummary(detail: detail, engine: engine)
+                    let summary = await saveGeneratedSummary(generated, notes: nil, for: id)
                     if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
                 } catch {
                     markSummaryFailed(id, error)
@@ -210,6 +203,20 @@ extension AppState {
                 markSummaryFailed(id, error)
             }
         }
+    }
+
+    /// Text and structured passes share one commit lock and read the newest saved views.
+    private func saveGeneratedSummary(_ generated: SessionSummary, notes: StructuredNotes?, for id: UUID) async -> SessionSummary {
+        var summary = generated
+        await StructuredNotesJobs.shared.exclusive {
+            await archive.flush()
+            summary.preserveStructuredViews(from: await archive.detail(id)?.summary)
+            if let notes { archive.saveNotes(notes, for: id) }
+            archive.saveSummary(summary, for: id)
+            await archive.flush()
+            archive.notesRevision += 1
+        }
+        return summary
     }
 
     private func markSummaryFailed(_ id: UUID, _ error: Error) {
