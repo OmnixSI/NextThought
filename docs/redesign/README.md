@@ -1,6 +1,6 @@
-# InterviewHacker 重新设计（2026-10）
+# NextThought 重新设计（2026-10）
 
-这一组文档是 InterviewHacker 新版界面和交互的完整设计，包括视觉语言、使用流程、中英文和实现计划。**代码还没有按它修改**，改代码时以这里为准。
+这一组文档是 NextThought 新版界面和交互的完整设计，包括视觉语言、使用流程、中英文和实现计划。**代码还没有按它修改**，改代码时以这里为准。
 
 ## 先读哪个
 
@@ -36,4 +36,4 @@
 
 ## 在线版
 
-claude.ai 上的设计系统 artifact “InterviewHacker”与这里的内容同步，默认只有所有者能看。
+claude.ai 上的设计系统 artifact “NextThought”与这里的内容同步，默认只有所有者能看。

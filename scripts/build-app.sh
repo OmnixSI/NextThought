@@ -3,8 +3,9 @@ set -euo pipefail
 
 project_root="$(cd "$(dirname "$0")/.." && pwd)"
 build_root="$project_root/.build"
-app_path="$project_root/dist/InterviewHacker.app"
-archive_path="$project_root/dist/InterviewHacker-macOS.zip"
+bundle_id="com.nextthought.app"
+app_path="$project_root/dist/NextThought.app"
+archive_path="$project_root/dist/NextThought-macOS.zip"
 clang_cache="$build_root/clang-module-cache"
 swift_cache="$build_root/swift-module-cache"
 
@@ -14,16 +15,21 @@ export SWIFT_MODULE_CACHE_PATH="$swift_cache"
 
 cd "$project_root"
 swift build --disable-sandbox -c release --scratch-path "$build_root/swift"
-binary_path="$(swift build --disable-sandbox --show-bin-path -c release --scratch-path "$build_root/swift")/InterviewHacker"
+binary_path="$(swift build --disable-sandbox --show-bin-path -c release --scratch-path "$build_root/swift")/NextThought"
 if [[ ! -x "$binary_path" ]]; then
-    echo "Could not find the compiled InterviewHacker executable." >&2
+    echo "Could not find the compiled NextThought executable." >&2
     exit 1
 fi
 
 rm -rf "$app_path"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
-cp "$binary_path" "$app_path/Contents/MacOS/InterviewHacker"
+cp "$binary_path" "$app_path/Contents/MacOS/NextThought"
 cp "$project_root/Resources/Info.plist" "$app_path/Contents/Info.plist"
+actual_bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app_path/Contents/Info.plist")"
+if [[ "$actual_bundle_id" != "$bundle_id" ]]; then
+    echo "Unexpected bundle identifier: expected $bundle_id, found $actual_bundle_id." >&2
+    exit 1
+fi
 cp -R "$project_root/Resources/Companion" "$app_path/Contents/Resources/Companion"
 "$project_root/scripts/compile-strings.sh" "$app_path/Contents/Resources"
 cp "$project_root/Resources/ThirdPartyNotices.txt" "$app_path/Contents/Resources/ThirdPartyNotices.txt"
@@ -40,17 +46,19 @@ else
     echo "warning: could not generate the app icon" >&2
 fi
 
-if [[ -n "${INTERVIEWHACKER_VERSION:-}" ]]; then
-    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $INTERVIEWHACKER_VERSION" "$app_path/Contents/Info.plist"
+version="${NEXTTHOUGHT_VERSION:-${INTERVIEWHACKER_VERSION:-}}"
+build_number="${NEXTTHOUGHT_BUILD_NUMBER:-${INTERVIEWHACKER_BUILD_NUMBER:-}}"
+if [[ -n "$version" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" "$app_path/Contents/Info.plist"
 fi
-if [[ -n "${INTERVIEWHACKER_BUILD_NUMBER:-}" ]]; then
-    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $INTERVIEWHACKER_BUILD_NUMBER" "$app_path/Contents/Info.plist"
+if [[ -n "$build_number" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build_number" "$app_path/Contents/Info.plist"
 fi
 
 xattr -cr "$app_path"
 "$project_root/scripts/sign-app.sh" "$app_path"
 codesign --verify --deep --strict "$app_path"
-lipo "$app_path/Contents/MacOS/InterviewHacker" -verify_arch arm64
+lipo "$app_path/Contents/MacOS/NextThought" -verify_arch arm64
 
 if find "$app_path" -type f -iname '*whisper*' -print -quit | grep -q .; then
     echo "The application bundle still contains a Whisper-named file." >&2
@@ -61,13 +69,13 @@ rm -f "$archive_path"
 ditto -c -k --sequesterRsrc --keepParent "$app_path" "$archive_path"
 echo "Built arm64 macOS 14+ app: $app_path"
 echo "Created archive: $archive_path"
-if [[ "${INTERVIEWHACKER_MAKE_DMG:-0}" == 1 ]]; then
+if [[ "${NEXTTHOUGHT_MAKE_DMG:-${INTERVIEWHACKER_MAKE_DMG:-0}}" == 1 ]]; then
     dmg_root="$build_root/dmg-root"
     rm -rf "$dmg_root" && mkdir -p "$dmg_root"
     cp -R "$app_path" "$dmg_root/"
     ln -s /Applications "$dmg_root/Applications"
-    rm -f "$project_root/dist/InterviewHacker.dmg"
-    hdiutil create -volname "InterviewHacker" -srcfolder "$dmg_root" -ov -format UDZO "$project_root/dist/InterviewHacker.dmg"
-    echo "Created disk image: $project_root/dist/InterviewHacker.dmg"
+    rm -f "$project_root/dist/NextThought.dmg"
+    hdiutil create -volname "NextThought" -srcfolder "$dmg_root" -ov -format UDZO "$project_root/dist/NextThought.dmg"
+    echo "Created disk image: $project_root/dist/NextThought.dmg"
 fi
-echo "Distribution: ${INTERVIEWHACKER_SIGNING_IDENTITY:+signed with $INTERVIEWHACKER_SIGNING_IDENTITY}${INTERVIEWHACKER_SIGNING_IDENTITY:-local development build}; not notarized unless the release workflow notarized it."
+echo "Distribution: ${NEXTTHOUGHT_SIGNING_IDENTITY:+signed with $NEXTTHOUGHT_SIGNING_IDENTITY}${NEXTTHOUGHT_SIGNING_IDENTITY:-local development build}; not notarized unless the release workflow notarized it."

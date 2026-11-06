@@ -66,16 +66,16 @@ jobs:
       - name: Build app bundle
         run: |
           swift build --disable-sandbox -c release
-          bin="$(swift build --disable-sandbox -c release --show-bin-path)/InterviewHacker"
-          app="$RUNNER_TEMP/InterviewHacker.app"
+          bin="$(swift build --disable-sandbox -c release --show-bin-path)/NextThought"
+          app="$RUNNER_TEMP/NextThought.app"
           mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-          cp "$bin" "$app/Contents/MacOS/InterviewHacker"
+          cp "$bin" "$app/Contents/MacOS/NextThought"
           cp Resources/Info.plist "$app/Contents/Info.plist"
           cp -R Resources/Companion "$app/Contents/Resources/Companion"
           cp -R Resources/DocumentRuntime "$app/Contents/Resources/DocumentRuntime"
           # Own identity: the test app never touches the installed app's settings or keychain.
-          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
-          codesign --force --sign - --identifier com.interviewhacker.app.ci "$app"
+          plutil -replace CFBundleIdentifier -string com.nextthought.app.ci "$app/Contents/Info.plist"
+          codesign --force --sign - --identifier com.nextthought.app.ci "$app"
           echo "APP=$app" >> "$GITHUB_ENV"
           # Test data (and the downloaded models, kept between runs) in one folder.
           echo "IH_DATA=$RUNNER_TEMP/ih-selftest" >> "$GITHUB_ENV"
@@ -87,30 +87,30 @@ jobs:
           key: xasr-zh-en-2026-06-v1
       - name: Self-test · data round trip
         timeout-minutes: 5
-        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}" }
+        env: { NEXTTHOUGHT_DATA_DIR: "${{ env.IH_DATA }}" }
         run: |
-          mkdir -p "$INTERVIEWHACKER_DATA_DIR"
-          "$APP/Contents/MacOS/InterviewHacker" --self-test data
+          mkdir -p "$NEXTTHOUGHT_DATA_DIR"
+          "$APP/Contents/MacOS/NextThought" --self-test data
       - name: Self-test · optional document setup and versioned guide (offline)
-        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}", INTERVIEWHACKER_DEMO: "1" }
-        run: '"$APP/Contents/MacOS/InterviewHacker" --self-test document-setup'
+        env: { NEXTTHOUGHT_DATA_DIR: "${{ env.IH_DATA }}", NEXTTHOUGHT_DEMO: "1" }
+        run: '"$APP/Contents/MacOS/NextThought" --self-test document-setup'
       - name: Self-test · local signing
         if: success() || failure()
         timeout-minutes: 5
-        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}", INTERVIEWHACKER_SKIP_CERT_TRUST: "1" }
-        run: '"$APP/Contents/MacOS/InterviewHacker" --self-test signing'
+        env: { NEXTTHOUGHT_DATA_DIR: "${{ env.IH_DATA }}", NEXTTHOUGHT_SKIP_CERT_TRUST: "1" }
+        run: '"$APP/Contents/MacOS/NextThought" --self-test signing'
       - name: Self-test · updater
         if: success() || failure()
         timeout-minutes: 8
         env:
-          INTERVIEWHACKER_DATA_DIR: ${{ env.IH_DATA }}
+          NEXTTHOUGHT_DATA_DIR: ${{ env.IH_DATA }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: '"$APP/Contents/MacOS/InterviewHacker" --self-test update --repo "${{ github.repository }}"'
+        run: '"$APP/Contents/MacOS/NextThought" --self-test update --repo "${{ github.repository }}"'
       - name: Self-test · X-ASR two-pass recognition
         if: success() || failure()
         timeout-minutes: 12
-        env: { INTERVIEWHACKER_DATA_DIR: "${{ env.IH_DATA }}" }
-        run: '"$APP/Contents/MacOS/InterviewHacker" --self-test asr --fixtures Tools/Validation/Fixtures'
+        env: { NEXTTHOUGHT_DATA_DIR: "${{ env.IH_DATA }}" }
+        run: '"$APP/Contents/MacOS/NextThought" --self-test asr --fixtures Tools/Validation/Fixtures'
       - name: Restore keychain search list
         if: always()
         run: |

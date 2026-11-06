@@ -19,7 +19,7 @@ func render(_ name: String, title: String, body: String, code: String) throws {
     (code as NSString).draw(in: NSRect(x: 95, y: 145, width: 1_400, height: 585), withAttributes: [
         .font: NSFont.monospacedSystemFont(ofSize: 33, weight: .regular), .foregroundColor: NSColor.black
     ])
-    ("InterviewHacker • Synthetic validation fixture • No private data" as NSString).draw(
+    ("NextThought • Synthetic validation fixture • No private data" as NSString).draw(
         at: NSPoint(x: 80, y: 60), withAttributes: [.font: NSFont.systemFont(ofSize: 23), .foregroundColor: NSColor.darkGray])
     image.unlockFocus()
     let bitmap = NSBitmapImageRep(data: image.tiffRepresentation!)!

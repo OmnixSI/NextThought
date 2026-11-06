@@ -221,12 +221,12 @@
         }
       }
     },
-    "InterviewHacker 提词器": {
+    "NextThought 提词器": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker teleprompter"
+            "value": "NextThought teleprompter"
           }
         }
       }
@@ -7531,12 +7531,12 @@
         }
       }
     },
-    "此选项仅在 InterviewHacker 处于前台时提升工作台、设置和分离模块；切换到其他 App 后它们会降回普通层级。回答浮窗保持独立浮窗行为。": {
+    "此选项仅在 NextThought 处于前台时提升工作台、设置和分离模块；切换到其他 App 后它们会降回普通层级。回答浮窗保持独立浮窗行为。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The workspace, settings and detached modules float while InterviewHacker is active. They return to the normal level when you switch apps. The answer window remains an independent floating window."
+            "value": "The workspace, settings and detached modules float while NextThought is active. They return to the normal level when you switch apps. The answer window remains an independent floating window."
           }
         }
       }
@@ -8391,12 +8391,12 @@
         }
       }
     },
-    "会在本机生成签名证书（保存在 Application Support/InterviewHacker/Signing），重新签名后重启应用。重启后请再允许一次录屏与麦克风，以后更新不再需要。": {
+    "会使用此 Mac 上绑定的本机签名身份，重新签名后重启应用。重启后请再允许一次录屏与麦克风，之后更新会继续使用该身份。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A local signing certificate will be created in Application Support/InterviewHacker/Signing. The app will be re-signed and reopened. Allow screen recording and microphone access once more after reopening; future updates will keep those permissions."
+            "value": "The app will use this Mac’s bound local signing identity, then reopen. Allow screen recording and microphone access once more; future updates will continue using that identity."
           }
         }
       }
@@ -8471,12 +8471,12 @@
         }
       }
     },
-    "打开 InterviewHacker 手机 App，选择“扫描二维码”。": {
+    "打开 NextThought 手机 App，选择“扫描二维码”。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open the InterviewHacker phone app and choose “Scan QR code.”"
+            "value": "Open the NextThought phone app and choose “Scan QR code.”"
           }
         }
       }
@@ -9531,12 +9531,12 @@
         }
       }
     },
-    "固定签名 · InterviewHacker Local Signing": {
+    "固定签名": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bound identity · InterviewHacker Local Signing"
+            "value": "Stable local signature"
           }
         }
       }
@@ -10721,12 +10721,12 @@
         }
       }
     },
-    "请允许当前 InterviewHacker 访问录屏与系统音频。绑定本机签名后，以后更新不必重新授权。": {
+    "请允许当前 NextThought 访问录屏与系统音频。绑定本机签名后，以后更新不必重新授权。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow InterviewHacker to access screen recording and system audio. Bind local signing to keep this permission through future updates."
+            "value": "Allow NextThought to access screen recording and system audio. Bind local signing to keep this permission through future updates."
           }
         }
       }
@@ -10941,12 +10941,12 @@
         }
       }
     },
-    "没有找到可截图的窗口。请确认系统已允许 InterviewHacker 录屏，并先打开要分析的页面。": {
+    "没有找到可截图的窗口。请确认系统已允许 NextThought 录屏，并先打开要分析的页面。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No window is available to capture. Confirm macOS allows screen recording for InterviewHacker, then open the page you want to analyze."
+            "value": "No window is available to capture. Confirm macOS allows screen recording for NextThought, then open the page you want to analyze."
           }
         }
       }
@@ -11481,12 +11481,12 @@
         }
       }
     },
-    "InterviewHacker 是一款原生 macOS 应用，可实时转写会议、整理系列资料、识别问题并生成参考回答，也能在会后整理纪要。": {
+    "NextThought 是一款原生 macOS 应用，可实时转写会议、整理系列资料、识别问题并生成参考回答，也能在会后整理纪要。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker is a native macOS app for transcribing meetings, organizing series materials, recognizing questions, generating reference answers, and preparing meeting notes."
+            "value": "NextThought is a native macOS app for transcribing meetings, organizing series materials, recognizing questions, generating reference answers, and preparing meeting notes."
           }
         }
       }
@@ -11636,7 +11636,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select the meeting window or a microphone. InterviewHacker transcribes the conversation in real time and generates reference answers for recognized questions when auto-answer is enabled."
+            "value": "Select the meeting window or a microphone. NextThought transcribes the conversation in real time and generates reference answers for recognized questions when auto-answer is enabled."
           }
         }
       }
@@ -11691,12 +11691,12 @@
         }
       }
     },
-    "InterviewHacker 回答浮窗": {
+    "NextThought 回答浮窗": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker Answer Window"
+            "value": "NextThought Answer Window"
           }
         }
       }
@@ -14301,12 +14301,12 @@
         }
       }
     },
-    "InterviewHacker 字幕条": {
+    "NextThought 字幕条": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker Subtitle Bar"
+            "value": "NextThought Subtitle Bar"
           }
         }
       }
@@ -15131,12 +15131,12 @@
         }
       }
     },
-    "仅在 InterviewHacker 处于前台时生效；切换到其他 App 后会降回普通层级。": {
+    "仅在 NextThought 处于前台时生效；切换到其他 App 后会降回普通层级。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Only applies while InterviewHacker is in front; the windows drop back to the normal level when you switch to another app."
+            "value": "Only applies while NextThought is in front; the windows drop back to the normal level when you switch to another app."
           }
         }
       }

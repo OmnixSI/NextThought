@@ -1,4 +1,4 @@
-# InterviewHacker 设计与交互审查
+# NextThought 设计与交互审查
 
 审查日期：2026-10-23。审查者：Astra 设计审查代理。范围：macOS 会前准备、会中回答与依据、屏幕来源、手机配对，以及 iOS / Android / 网页伴侣。
 
@@ -12,7 +12,7 @@
 
 ### P1-01 会前准备摘要会把失败描述成“0 项未完成”
 
-证据：`Sources/InterviewHacker/WorkspacesView.swift:278` 使用默认折叠的 `DisclosureGroup`，标题只展示 `pendingCount`。`DocumentPreparation.swift:119` 排除 terminal 阶段；`Sources/InterviewHackerCore/DocumentJobs.swift:30` 将 warning、failed、cancelled 都视为 terminal。故队列没有进行中的任务时，失败或待核对仍可得到“0 项未完成”。详细失败与重试藏在折叠区中。
+证据：`Sources/NextThought/WorkspacesView.swift:278` 使用默认折叠的 `DisclosureGroup`，标题只展示 `pendingCount`。`DocumentPreparation.swift:119` 排除 terminal 阶段；`Sources/NextThoughtCore/DocumentJobs.swift:30` 将 warning、failed、cancelled 都视为 terminal。故队列没有进行中的任务时，失败或待核对仍可得到“0 项未完成”。详细失败与重试藏在折叠区中。
 
 修改：标题使用“会前准备 · 4 份可用 · 1 份处理中 · 1 份需处理”；存在 failed / warning 时默认展开，常驻显示异常数和“查看待处理”。取消单独记为“已取消”，不计为就绪，也不必持续作为红色错误。等待组件和会议中暂停用说明加恢复入口，不伪装为进度停止。列表每行保持文件名、阶段、说明、动作的稳定顺序。
 

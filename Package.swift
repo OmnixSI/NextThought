@@ -2,28 +2,28 @@
 import PackageDescription
 
 let package = Package(
-    name: "InterviewHacker",
+    name: "NextThought",
     // Interface strings are written in Simplified Chinese and translated through
     // Resources/Localization/Localizable.xcstrings (compiled by scripts/build-app.sh).
     defaultLocalization: "zh-Hans",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "InterviewHacker", targets: ["InterviewHacker"]),
-        .library(name: "InterviewHackerCore", targets: ["InterviewHackerCore"])
+        .executable(name: "NextThought", targets: ["NextThought"]),
+        .library(name: "NextThoughtCore", targets: ["NextThoughtCore"])
     ],
     dependencies: [
         .package(url: "https://github.com/k2-fsa/sherpa-onnx.git", exact: "1.13.8")
     ],
     targets: [
         .target(
-            name: "InterviewHackerCore",
+            name: "NextThoughtCore",
             dependencies: [.product(name: "sherpa-onnx", package: "sherpa-onnx")],
-            path: "Sources/InterviewHackerCore"),
+            path: "Sources/NextThoughtCore"),
         .executableTarget(
-            name: "InterviewHacker",
-            dependencies: ["InterviewHackerCore"],
-            path: "Sources/InterviewHacker",
+            name: "NextThought",
+            dependencies: ["NextThoughtCore"],
+            path: "Sources/NextThought",
             swiftSettings: [.swiftLanguageMode(.v5)]),
-        .testTarget(name: "InterviewHackerCoreTests", dependencies: ["InterviewHackerCore"], path: "Tests/InterviewHackerCoreTests", exclude: ["Fixtures"])
+        .testTarget(name: "NextThoughtCoreTests", dependencies: ["NextThoughtCore"], path: "Tests/NextThoughtCoreTests", exclude: ["Fixtures"])
     ]
 )

@@ -46,7 +46,7 @@ def main():
             parts.append(f'            ManagedModelFile(path: "{path}", sha256: "{digest}", size: {size}, weight: {max(1, size)}),\n')
         parts.append(f'        ], summary: "{summary}", license: "Apache-2.0",\n        homepage: "https://huggingface.co/{repo}",\n        note: "{note}", minimumOS: "macOS 14")\n')
     parts.append('    static let localOCRChoices = [paddleOCR, paddleOCRQ4]\n    static let all = [paddleOCR, paddleOCRQ4, qwen3Embedding, layout]\n    static func descriptor(for id: String) -> ManagedModelDescriptor? { all.first { $0.id == id } }\n}\n')
-    (ROOT / "Sources/InterviewHacker/ModelStore/ModelCatalog.swift").write_text("".join(parts))
+    (ROOT / "Sources/NextThought/ModelStore/ModelCatalog.swift").write_text("".join(parts))
 
 
 if __name__ == "__main__":

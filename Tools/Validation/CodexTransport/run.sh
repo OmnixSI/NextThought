@@ -6,10 +6,10 @@ root="$(cd "$(dirname "$0")/../../.." && pwd)"
 probe="$(mktemp -d "${TMPDIR:-/tmp}/ih-codex-transport.XXXXXX")"
 trap 'rm -rf "$probe"' EXIT
 for file in AnswerEngines CodexBridge; do
-  sed '/^import InterviewHackerCore$/d' "$root/Sources/InterviewHacker/$file.swift" > "$probe/$file.swift"
+  sed '/^import NextThoughtCore$/d' "$root/Sources/NextThought/$file.swift" > "$probe/$file.swift"
 done
 for file in AnswerStreaming CodexEventParser ProcessLineReader CancellableTaskValue; do
-  cp "$root/Sources/InterviewHackerCore/$file.swift" "$probe/$file.swift"
+  cp "$root/Sources/NextThoughtCore/$file.swift" "$probe/$file.swift"
 done
 cp "$root/Tools/Validation/CodexTransport/Probe.swift" "$probe/Probe.swift"
 cp "$root/Tools/Validation/CodexTransport/fake-codex.py" "$probe/codex"

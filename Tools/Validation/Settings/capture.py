@@ -19,24 +19,24 @@ for title in ['基础', '识别', '回答', '资料', '提词器', '技能', '�
     cases.append((f'advanced-{title}', 'settings', f'settingsGroup={title}', True, False, {}))
 cases += [
     ('documents-installed', 'settings', 'settingsGroup=资料', False, False,
-     {'INTERVIEWHACKER_DEMO_DOCUMENTS_READY':'1', 'INTERVIEWHACKER_DEMO_DOCUMENT_PROVIDER':'paddle', 'INTERVIEWHACKER_DEMO_SEMANTIC':'1'}),
-    ('basic-api', 'settings', 'settingsGroup=回答', False, False, {'INTERVIEWHACKER_DEMO_API':'1'}),
-    ('guide-missing-core', 'assistant', 'quickStartStep=6', False, True, {'INTERVIEWHACKER_DEMO_VOICE_READY':'0'}),
+     {'NEXTTHOUGHT_DEMO_DOCUMENTS_READY':'1', 'NEXTTHOUGHT_DEMO_DOCUMENT_PROVIDER':'paddle', 'NEXTTHOUGHT_DEMO_SEMANTIC':'1'}),
+    ('basic-api', 'settings', 'settingsGroup=回答', False, False, {'NEXTTHOUGHT_DEMO_API':'1'}),
+    ('guide-missing-core', 'assistant', 'quickStartStep=6', False, True, {'NEXTTHOUGHT_DEMO_VOICE_READY':'0'}),
 ]
 results = []
 for name, section, defaults, advanced, guide, extra in cases:
     image = out / (name + '.png')
     if image.exists(): image.unlink()
     env = os.environ.copy()
-    env.update(INTERVIEWHACKER_DEMO='1', INTERVIEWHACKER_DEMO_IDLE='1', INTERVIEWHACKER_DEMO_HIDDEN='1',
-               INTERVIEWHACKER_DATA_DIR=str(data), INTERVIEWHACKER_DEMO_SECTION=section,
-               INTERVIEWHACKER_DEMO_DEFAULTS=defaults, INTERVIEWHACKER_DEMO_FRAME='80,80,1120,820',
-               INTERVIEWHACKER_DEMO_SNAPSHOT=str(image), INTERVIEWHACKER_DEMO_ONBOARDING='1' if guide else '0',
-               INTERVIEWHACKER_DEMO_ADVANCED='1' if advanced else '0', INTERVIEWHACKER_DEMO_DOCUMENT_PROVIDER='system',
-               INTERVIEWHACKER_DEMO_SEMANTIC='0', INTERVIEWHACKER_DEMO_VOICE_READY='1')
+    env.update(NEXTTHOUGHT_DEMO='1', NEXTTHOUGHT_DEMO_IDLE='1', NEXTTHOUGHT_DEMO_HIDDEN='1',
+               NEXTTHOUGHT_DATA_DIR=str(data), NEXTTHOUGHT_DEMO_SECTION=section,
+               NEXTTHOUGHT_DEMO_DEFAULTS=defaults, NEXTTHOUGHT_DEMO_FRAME='80,80,1120,820',
+               NEXTTHOUGHT_DEMO_SNAPSHOT=str(image), NEXTTHOUGHT_DEMO_ONBOARDING='1' if guide else '0',
+               NEXTTHOUGHT_DEMO_ADVANCED='1' if advanced else '0', NEXTTHOUGHT_DEMO_DOCUMENT_PROVIDER='system',
+               NEXTTHOUGHT_DEMO_SEMANTIC='0', NEXTTHOUGHT_DEMO_VOICE_READY='1')
     env.update(extra)
     with (out / (name + '.log')).open('wb') as log:
-        child = subprocess.Popen([str(app / 'Contents/MacOS/InterviewHacker')], env=env, stdout=log, stderr=log)
+        child = subprocess.Popen([str(app / 'Contents/MacOS/NextThought')], env=env, stdout=log, stderr=log)
         try:
             for _ in range(100):
                 if image.exists() and image.stat().st_size > 10000: break

@@ -1,20 +1,20 @@
-# InterviewHacker 公测授权方案调研报告
+# NextThought 公测授权方案调研报告
 
 调研日期：2026 年 10 月 24 日（Australia/Sydney）。
 
-**后续讨论更新。** 用户现已选择“邮件交付、App 只输入一个限时 Key、授权可完全离线”，并接受专业逆向的剩余风险。当前方案见 [邮件交付限时 Key 文档](/Users/spdor/Desktop/CodeSpace/InterviewHacker/docs/OFFLINE-LICENSE-KEY-PLAN-2026-10-24.md)。下文保留原联网方案的调研与比较；其中每五分钟连接 Cloudflare、短期续验和核心服务上云的建议不再作为当前默认实施要求。新文档区分持 Key 授权与发码前设备绑定，并明确完全离线无法自动实现全球唯一的首次绑定。
+**后续讨论更新。** 用户现已选择“邮件交付、App 只输入一个限时 Key、授权可完全离线”，并接受专业逆向的剩余风险。当前方案见 [邮件交付限时 Key 文档](/Users/spdor/Desktop/CodeSpace/NextThought/docs/OFFLINE-LICENSE-KEY-PLAN-2026-10-24.md)。下文保留原联网方案的调研与比较；其中每五分钟连接 Cloudflare、短期续验和核心服务上云的建议不再作为当前默认实施要求。新文档区分持 Key 授权与发码前设备绑定，并明确完全离线无法自动实现全球唯一的首次绑定。
 
 业务前提：少于 100 位公测用户；用户通过邮件申请；人工审核、人工发送激活码；后台可设置 3 天或 7 天、延期、撤销和设备限制；优先使用 Cloudflare 免费服务；希望中国大陆和海外用户均能直接使用。
 
-研究范围：阅读 GitHub 授权项目的文档、部分授权和数据库代码，以及 Cloudflare、Apple、OWASP 官方资料；检查本地 InterviewHacker 的调用路径。本报告是一份设计和选型结果。下文的验收项目尚未执行，候选仓库的测试结果与安全审计声明也未经本次独立复现。
+研究范围：阅读 GitHub 授权项目的文档、部分授权和数据库代码，以及 Cloudflare、Apple、OWASP 官方资料；检查本地 NextThought 的调用路径。本报告是一份设计和选型结果。下文的验收项目尚未执行，候选仓库的测试结果与安全审计声明也未经本次独立复现。
 
 **建议与保护范围。** 使用 Cloudflare Workers、D1 和 Access 建立人工发码与授权后台是可行的。推荐采用“设备申请码预绑定、一次性激活码、首次激活计时、短期签名授权、服务端逐次检查关键操作”的设计。
 
 对“万无一失、绝不能免费破解”无法作出保证：用户掌控自己的电脑，可以修改客户端。服务端能够可靠控制其管理的授权和远端资源；完全存在于用户电脑上的功能仍可能被修改后运行。OWASP 要求关键授权在服务端执行，并在每次请求时验证权限；混淆和反调试只能增加逆向难度。[OWASP 授权指南](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html) · [OWASP 防逆向与篡改说明](https://mas.owasp.org/MASVS/11-MASVS-RESILIENCE/)
 
-**本项目目前最重要的约束。** 本地基线为提交 `06a6d1256798a9ba96b3294a834944d0c340c200`，提交日期 2026-10-23。GitHub 连接器确认项目目前位于 `OmnixSI/InterviewHacker`，仓库为私有。
+**本项目目前最重要的约束。** 本地基线为提交 `06a6d1256798a9ba96b3294a834944d0c340c200`，提交日期 2026-10-23。GitHub 连接器确认项目目前位于 `OmnixSI/NextThought`，仓库为私有。
 
-当前回答客户端直接向用户指定的模型服务发送请求；还支持本机 Codex 和本地模型路径。问题组织、提示构造等逻辑也在本地。对 Swift 源码的关键词检查未发现现有的兑换码或商业许可证控制模块。相关证据见 [AnswerEngines.swift:363](/Users/spdor/Desktop/CodeSpace/InterviewHacker/Sources/InterviewHacker/AnswerEngines.swift:363)、[AnswerEngines.swift:172](/Users/spdor/Desktop/CodeSpace/InterviewHacker/Sources/InterviewHacker/AnswerEngines.swift:172)、[AnswerPromptBuilder.swift:36](/Users/spdor/Desktop/CodeSpace/InterviewHacker/Sources/InterviewHackerCore/AnswerPromptBuilder.swift:36)。
+当前回答客户端直接向用户指定的模型服务发送请求；还支持本机 Codex 和本地模型路径。问题组织、提示构造等逻辑也在本地。对 Swift 源码的关键词检查未发现现有的兑换码或商业许可证控制模块。相关证据见 [AnswerEngines.swift:363](/Users/spdor/Desktop/CodeSpace/NextThought/Sources/NextThought/AnswerEngines.swift:363)、[AnswerEngines.swift:172](/Users/spdor/Desktop/CodeSpace/NextThought/Sources/NextThought/AnswerEngines.swift:172)、[AnswerPromptBuilder.swift:36](/Users/spdor/Desktop/CodeSpace/NextThought/Sources/NextThoughtCore/AnswerPromptBuilder.swift:36)。
 
 因此，增加授权后台可以管理正常客户端的访问期限，但仅在启动时调用一次授权 API，无法建立完整的防绕过边界。已经交到用户手中的旧版本，如果能直接使用用户自己的 API Key 或本机 Codex，也不会因为新版本增加激活功能而自动失效。服务器拒绝旧版本请求、客户端自检签名和更新提示，都无法远程收回旧版本已有的完整本地能力。
 
@@ -128,11 +128,11 @@ Access 当前支持直接保护整个 Worker，覆盖其自定义域、`workers.
 
 **核心功能如何落实服务端控制。** 推荐把远端核心处理与授权服务使用统一鉴权入口，每次请求检查数据库当前期限、撤销状态、设备和具体功能权限。单纯验证一枚尚未到期的 JWT，不足以即时感知其签发后的撤销。
 
-对 InterviewHacker，应列出实时回答、手动回答、截图回答、重新生成、复盘、后台任务和手机伴侣等入口，逐项确认它们最终调用的受保护资源。长时间不关闭 App 也必须受期限限制。若一条入口仍可直接调用本地已有的完整核心实现，就应在验收中明确记为可绕过，不能用“主按钮已经加锁”替代检查。
+对 NextThought，应列出实时回答、手动回答、截图回答、重新生成、复盘、后台任务和手机伴侣等入口，逐项确认它们最终调用的受保护资源。长时间不关闭 App 也必须受期限限制。若一条入口仍可直接调用本地已有的完整核心实现，就应在验收中明确记为可绕过，不能用“主按钮已经加锁”替代检查。
 
 可以把有价值的专有处理留在服务端，并只返回结果。若选择由我们的网关调用模型，要另外设计模型费用上限、单用户额度、并发控制和新隐私数据流；Cloudflare 免费授权额度不包含第三方模型费用。完整保留当前本机 Codex、用户直连 API 和离线实现时，应接受这些本地能力存在被修改后继续运行的风险。
 
-macOS 的发行签名、完整性检查、去除调试信息和适量混淆可作为附加措施。它们无法替代服务器资源控制。本项目已有的 `InterviewHacker Local Signing` 身份、Bundle ID `com.interviewhacker.app` 和 designated requirement 必须稳定；授权签名密钥与应用签名证书分别管理。后续本机构建严格遵循 [AGENTS.md](/Users/spdor/Desktop/CodeSpace/InterviewHacker/AGENTS.md)，避免授权开发导致 TCC 权限丢失。
+macOS 的发行签名、完整性检查、去除调试信息和适量混淆可作为附加措施。它们无法替代服务器资源控制。本项目已有的 `NextThought Local Signing` 身份、Bundle ID `com.nextthought.app` 和 designated requirement 必须稳定；授权签名密钥与应用签名证书分别管理。后续本机构建严格遵循 [AGENTS.md](/Users/spdor/Desktop/CodeSpace/NextThought/AGENTS.md)，避免授权开发导致 TCC 权限丢失。
 
 **免费额度与可用性。** 截至调研日期，官方公布的主要额度如下。它们是产品限额，不是本项目实测结果。
 

@@ -13,7 +13,7 @@
 
 ## 0. 设计变量（纸与墨）
 
-文件：`Sources/InterviewHacker/LiquidGlass.swift`（建议改名为 `DesignSystem.swift`，或者新建文件后让旧名字的类型转调新实现）。
+文件：`Sources/NextThought/LiquidGlass.swift`（建议改名为 `DesignSystem.swift`，或者新建文件后让旧名字的类型转调新实现）。
 
 - 按 `design-system/tokens.json` 定义颜色。用动态颜色，浅色、深色各一套，可以用 `NSColor(name:dynamicProvider:)` 包一个 `Color.dynamic(light:dark:)`：
   - `paper` `surface` `surfaceRaised` `sunken` `hover`
@@ -75,7 +75,7 @@
 
 ## 3. 会议类型与系列
 
-文件：`Sources/InterviewHackerCore/SessionContext.swift`（`SessionMode`）、`Workspace.swift`。
+文件：`Sources/NextThoughtCore/SessionContext.swift`（`SessionMode`）、`Workspace.swift`。
 
 - **`SessionMode` 增加 case**：`labMeeting`（组会）、`client`（客户沟通）、`discussion`（小组讨论）、`custom`（自定义）。
   - 已有的 `academic` 标题改为“汇报 / 答辩”，`meeting` 改为“工作会议”，`lesson` 改为“讲座 / 课程”。

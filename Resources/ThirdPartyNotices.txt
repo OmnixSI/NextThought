@@ -1,4 +1,4 @@
-InterviewHacker uses the Sherpa-ONNX C API and ONNX Runtime for offline streaming speech recognition.
+NextThought uses the Sherpa-ONNX C API and ONNX Runtime for offline streaming speech recognition.
 
 Sherpa-ONNX v1.13.8 is licensed under Apache License 2.0:
 https://github.com/k2-fsa/sherpa-onnx/blob/v1.13.8/LICENSE
@@ -58,7 +58,7 @@ https://huggingface.co/PaddlePaddle/PP-DocLayoutV3_onnx
 revision 46bbdf188bb0a772c08aed74882ce7e51a8f1ea6
 
 Codex CLI is an independently installed application using the user's existing login.
-InterviewHacker does not redistribute Codex CLI or acquire new OpenAI API credentials.
+NextThought does not redistribute Codex CLI or acquire new OpenAI API credentials.
 
 Phone companion uses @noble/ciphers and @noble/hashes (MIT). Full licenses: Companion/LICENSES.txt.
 

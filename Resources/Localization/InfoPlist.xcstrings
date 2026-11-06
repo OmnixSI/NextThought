@@ -7,13 +7,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker captures system audio from the selected meeting or lesson window for on-device transcription."
+            "value": "NextThought captures system audio from the selected meeting or lesson window for on-device transcription."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker 采集会议或课程的系统声音，在本机转写，不保存录音。"
+            "value": "NextThought 采集会议或课程的系统声音，在本机转写，不保存录音。"
           }
         }
       }
@@ -24,13 +24,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker uses Bluetooth only when you enable the paired native phone backup connection."
+            "value": "NextThought uses Bluetooth only when you enable the paired native phone backup connection."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "只有在你开启手机 App 的蓝牙备用连接时，InterviewHacker 才会使用蓝牙。"
+            "value": "只有在你开启手机 App 的蓝牙备用连接时，NextThought 才会使用蓝牙。"
           }
         }
       }
@@ -41,13 +41,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker serves the optional phone companion page on your local network when you turn it on."
+            "value": "NextThought serves the optional phone companion page on your local network when you turn it on."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "开启手机伴侣后，InterviewHacker 会在局域网内提供手机页面。"
+            "value": "开启手机伴侣后，NextThought 会在局域网内提供手机页面。"
           }
         }
       }
@@ -58,13 +58,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker uses your microphone for local transcription, labelled as your voice separately from system audio."
+            "value": "NextThought uses your microphone for local transcription, labelled as your voice separately from system audio."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker 在本机识别麦克风里你的声音，并和系统声音分开标注。"
+            "value": "NextThought 在本机识别麦克风里你的声音，并和系统声音分开标注。"
           }
         }
       }
@@ -75,13 +75,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker captures the selected screen area or window when you request screenshot assistance."
+            "value": "NextThought captures the selected screen area or window when you request screenshot assistance."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker 采集电脑播放的声音，并在你请求截图提问时截取所选区域或窗口。"
+            "value": "NextThought 采集电脑播放的声音，并在你请求截图提问时截取所选区域或窗口。"
           }
         }
       }
@@ -92,13 +92,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker uses on-device speech recognition for the system audio you select."
+            "value": "NextThought uses on-device speech recognition for the system audio you select."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "InterviewHacker 在本机识别你选择的系统声音。"
+            "value": "NextThought 在本机识别你选择的系统声音。"
           }
         }
       }

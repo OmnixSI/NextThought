@@ -1,4 +1,4 @@
-/* InterviewHacker 设计系统 v3「纸与墨」— 组件与页面示意（App 里用 SwiftUI 实现）。数值全部来自 tokens.css。 */
+/* NextThought 设计系统 v3「纸与墨」— 组件与页面示意（App 里用 SwiftUI 实现）。数值全部来自 tokens.css。 */
 
 .x { font-family: var(--font-sans); color: var(--ink); background: var(--paper); font-size: 14px; line-height: 22px; -webkit-font-smoothing: antialiased; padding: var(--space-8); display: flex; flex-direction: column; gap: var(--space-4); min-height: 100%; box-sizing: border-box; }
 .x * { box-sizing: border-box; }

@@ -20,16 +20,16 @@ jobs:
       - name: Build app bundle (static Zipformer runtime)
         run: |
           swift build --disable-sandbox -c release
-          bin="$(swift build --disable-sandbox -c release --show-bin-path)/InterviewHacker"
-          app="$RUNNER_TEMP/InterviewHacker.app"
+          bin="$(swift build --disable-sandbox -c release --show-bin-path)/NextThought"
+          app="$RUNNER_TEMP/NextThought.app"
           mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-          cp "$bin" "$app/Contents/MacOS/InterviewHacker"
+          cp "$bin" "$app/Contents/MacOS/NextThought"
           cp Resources/Info.plist "$app/Contents/Info.plist"
           cp -R Resources/Companion "$app/Contents/Resources/Companion"
           scripts/compile-strings.sh "$app/Contents/Resources"
           cp -R Resources/DocumentRuntime "$app/Contents/Resources/DocumentRuntime"
           # Demo mode writes tab choices to UserDefaults: keep them out of the installed app.
-          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
+          plutil -replace CFBundleIdentifier -string com.nextthought.app.ci "$app/Contents/Info.plist"
           swift scripts/make-icon.swift "$RUNNER_TEMP/AppIcon.iconset" && iconutil -c icns "$RUNNER_TEMP/AppIcon.iconset" -o "$app/Contents/Resources/AppIcon.icns" || true
           codesign --force --sign - "$app"
           echo "APP=$app" >> "$GITHUB_ENV"
@@ -41,10 +41,10 @@ jobs:
             local appearance="$1" section="$2" out="$RUNNER_TEMP/windows-$1-$2.json"
             local name="${3:-$section}"
             rm -f "$out"
-            INTERVIEWHACKER_DEMO=1 INTERVIEWHACKER_DEMO_APPEARANCE="$appearance" INTERVIEWHACKER_DEMO_SECTION="$section" \
-              INTERVIEWHACKER_DEMO_DEFAULTS="${4:-}" \
-              INTERVIEWHACKER_DEMO_ADVANCED="${5:-0}" \
-              INTERVIEWHACKER_DEMO_OUT="$out" "$APP/Contents/MacOS/InterviewHacker" >"$RUNNER_TEMP/app-$1-$2.log" 2>&1 &
+            NEXTTHOUGHT_DEMO=1 NEXTTHOUGHT_DEMO_APPEARANCE="$appearance" NEXTTHOUGHT_DEMO_SECTION="$section" \
+              NEXTTHOUGHT_DEMO_DEFAULTS="${4:-}" \
+              NEXTTHOUGHT_DEMO_ADVANCED="${5:-0}" \
+              NEXTTHOUGHT_DEMO_OUT="$out" "$APP/Contents/MacOS/NextThought" >"$RUNNER_TEMP/app-$1-$2.log" 2>&1 &
             local pid=$!
             for _ in $(seq 1 40); do [[ -s "$out" ]] && break; sleep 0.5; done
             sleep 1.5
@@ -60,7 +60,7 @@ jobs:
               echo "demo window list not written for $appearance/$section"
               tail -n 40 "$RUNNER_TEMP/app-$appearance-$section.log" || true
               # Crash reports explain a trap (fatal error, exclusivity violation…).
-              report=$(ls -t ~/Library/Logs/DiagnosticReports/InterviewHacker*.ips 2>/dev/null | head -1)
+              report=$(ls -t ~/Library/Logs/DiagnosticReports/NextThought*.ips 2>/dev/null | head -1)
               if [[ -n "$report" ]]; then
                 python3 - "$report" <<'PY' || head -c 6000 "$report"
           import json, sys

@@ -28,5 +28,5 @@ body:
     id: logs
     attributes:
       label: 诊断信息（可选）
-      description: "~/Library/Application Support/InterviewHacker/diagnostics/ 下最新的 events-*.jsonl 中相关几行。日志不含转录正文，但请自行检查后再粘贴。"
+      description: "~/Library/Application Support/NextThought/diagnostics/ 下最新的 events-*.jsonl 中相关几行。日志不含转录正文，但请自行检查后再粘贴。"
       render: text

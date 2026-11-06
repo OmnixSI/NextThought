@@ -1,6 +1,6 @@
 """Repository-local foreground Actions runner, always unregistered on exit. No service."""
 import pathlib,subprocess,json,hashlib,tarfile,os,sys,signal
-ROOT=pathlib.Path(__file__).resolve().parents[2];DIR=ROOT/'.local/actions-runner';REPO='OmnixSI/InterviewHacker'
+ROOT=pathlib.Path(__file__).resolve().parents[2];DIR=ROOT/'.local/actions-runner';REPO='OmnixSI/NextThought'
 def api(path,post=False):
  args=['gh','api']+(['-X','POST'] if post else [])+[path]
  return json.loads(subprocess.check_output(args))
@@ -22,7 +22,7 @@ if not (DIR/'config.sh').exists():
  (DIR/'release.json').write_text(json.dumps({'tag':release['tag_name'],'sha256':sha},indent=2))
 if not (DIR/'.runner').exists():
  token=api(f'repos/{REPO}/actions/runners/registration-token',True)['token']
- subprocess.run([str(DIR/'config.sh'),'--url',f'https://github.com/{REPO}','--token',token,'--name','interviewhacker-document-validation','--labels','interviewhacker-documents','--work','_work','--unattended','--disableupdate'],cwd=DIR,check=True)
+ subprocess.run([str(DIR/'config.sh'),'--url',f'https://github.com/{REPO}','--token',token,'--name','nextthought-document-validation','--labels','nextthought-documents','--work','_work','--unattended','--disableupdate'],cwd=DIR,check=True)
 process=None
 try:
  process=subprocess.Popen([str(DIR/'run.sh')],cwd=DIR,start_new_session=True);process.wait()
