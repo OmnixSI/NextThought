@@ -1,0 +1,43 @@
+param([switch]$Publish)
+$ErrorActionPreference = 'Stop'
+$projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$dotnet = Join-Path $projectRoot '.tools\dotnet\dotnet.exe'
+if (-not (Test-Path -LiteralPath $dotnet)) {
+    throw 'Run py -3.12 scripts/bootstrap_sdk.py first, or install the pinned SDK into .tools/dotnet.'
+}
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+$env:DOTNET_NOLOGO = '1'
+function Invoke-Dotnet {
+    & $dotnet @args
+    if ($LASTEXITCODE -ne 0) { throw "dotnet failed (exit $LASTEXITCODE)" }
+}
+Push-Location -LiteralPath $projectRoot
+try {
+    Invoke-Dotnet restore NextThought.Windows.sln --locked-mode --verbosity minimal
+    Invoke-Dotnet build NextThought.Windows.sln -c Release --no-restore --verbosity minimal
+    Invoke-Dotnet test tests/NextThought.Tests -c Release --no-build --no-restore --logger 'trx;LogFileName=regression.trx' --results-directory artifacts/tests --verbosity minimal
+    if ($Publish) {
+        $artifactRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot 'artifacts'))
+        $output = [IO.Path]::GetFullPath((Join-Path $artifactRoot 'NextThought-win-x64'))
+        if (-not $output.StartsWith($artifactRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid publish directory.' }
+        if (Test-Path -LiteralPath $output) {
+            $running = Get-Process -Name NextThought -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($output + '\', [StringComparison]::OrdinalIgnoreCase) }
+            if ($running) { throw 'Close the published NextThought application before rebuilding.' }
+            Remove-Item -LiteralPath $output -Recurse -Force
+        }
+        Invoke-Dotnet publish src/NextThought.Windows -c Release --self-contained true '-p:PublishSingleFile=false' '-p:RestoreLockedMode=true' -o $output --verbosity minimal
+        Invoke-Dotnet publish src/NextThought.Cli -c Release --self-contained true '-p:PublishSingleFile=false' '-p:RestoreLockedMode=true' -o (Join-Path $output 'tools') --verbosity minimal
+        Copy-Item -LiteralPath README.md -Destination (Join-Path $output 'README.md')
+        Copy-Item -LiteralPath PORTING_STATUS.md -Destination (Join-Path $output 'PORTING_STATUS.md')
+        Copy-Item -LiteralPath 'scripts\Launch.cmd' -Destination (Join-Path $output 'Launch.cmd')
+        Copy-Item -LiteralPath '..\Resources\ThirdPartyNotices.txt' -Destination (Join-Path $output 'UPSTREAM_NOTICES.txt')
+        Copy-Item -LiteralPath 'licenses' -Destination (Join-Path $output 'licenses') -Recurse
+        $zip = Join-Path $artifactRoot 'NextThought-Windows-preview-0.1.0-win-x64.zip'
+        Compress-Archive -LiteralPath $output -DestinationPath $zip -Force
+        $digest = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+        [IO.File]::WriteAllText($zip + '.sha256', "$digest  $([IO.Path]::GetFileName($zip))`n", [Text.UTF8Encoding]::new($false))
+        Write-Output "Published: $output"
+        Write-Output "Archive: $zip"
+        Write-Output "SHA256: $digest"
+    }
+} finally { Pop-Location }

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "xasr480",
+    "title": "X-ASR 480ms 中英流式",
+    "archive": "sherpa-onnx-x-asr-480ms-streaming-zipformer-transducer-zh-en-punct-int8-2026-06-05",
+    "sha256": "fa5f63d618e5a01526e275a358bb7772e403f84808a4769fba52cffd8160bf74",
+    "vocabularySha256": "a6f0b22ef6c0e6d766c41f5d8e888355c2d1a6ca394711fbc18b0aa0424315dc",
+    "files": {
+      "encoder.int8.onnx": 155278641,
+      "decoder.onnx": 11309084,
+      "joiner.int8.onnx": 2581422,
+      "tokens.txt": 58806
+    }
+  },
+  {
+    "id": "xasr160",
+    "title": "X-ASR 160ms 中英流式",
+    "archive": "sherpa-onnx-x-asr-160ms-streaming-zipformer-transducer-zh-en-punct-int8-2026-06-05",
+    "sha256": "8a6fca056e1a342546edd78be4d50274e2c01898e7b8ae8fc336f6410319c399",
+    "vocabularySha256": "a6f0b22ef6c0e6d766c41f5d8e888355c2d1a6ca394711fbc18b0aa0424315dc",
+    "files": {
+      "encoder.int8.onnx": 155278641,
+      "decoder.onnx": 11309084,
+      "joiner.int8.onnx": 2581422,
+      "tokens.txt": 58806
+    }
+  },
+  {
+    "id": "xasrOffline",
+    "title": "X-ASR 整句精修",
+    "archive": "sherpa-onnx-x-asr-zipformer-transducer-zh-en-punct-int8-2026-06-03",
+    "sha256": "5d02c36d7b44e886b7c8f0d8e051f8713acab96c264bb6ef9e718be39a6a2224",
+    "vocabularySha256": "a6f0b22ef6c0e6d766c41f5d8e888355c2d1a6ca394711fbc18b0aa0424315dc",
+    "files": {
+      "encoder-epoch-99-avg-1.int8.onnx": 161015713,
+      "decoder-epoch-99-avg-1.onnx": 11309084,
+      "joiner-epoch-99-avg-1.int8.onnx": 2581422,
+      "tokens.txt": 58806
+    }
+  }
+]

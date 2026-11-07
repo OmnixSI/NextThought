@@ -1,0 +1,33 @@
+name: Windows preview
+on:
+  workflow_dispatch:
+  push:
+    paths: ['Windows/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['Windows/**', '.github/workflows/windows.yml']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: Windows
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare pinned SDK
+        run: python scripts/bootstrap_sdk.py
+      - name: Build, test and publish
+        run: ./scripts/build.ps1 -Publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NextThought-Windows-preview
+          path: |
+            Windows/artifacts/NextThought-Windows-preview-*.zip
+            Windows/artifacts/NextThought-Windows-preview-*.sha256
+            Windows/artifacts/tests/*.trx
+          retention-days: 14

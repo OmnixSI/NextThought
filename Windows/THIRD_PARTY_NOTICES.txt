@@ -1,0 +1,11 @@
+NextThought Windows Preview
+Upstream snapshot: OmnixSI/NextThought af60a4def90c750872197f81ac8b91c726d05b63.
+The upstream application has no top-level open-source license. This local port does not change its licensing.
+
+Sherpa-ONNX 1.13.8: Apache-2.0, https://github.com/k2-fsa/sherpa-onnx
+ONNX Runtime distributed with Sherpa-ONNX: MIT, https://github.com/microsoft/onnxruntime
+NAudio.Core / NAudio.Wasapi 2.2.1: MIT, https://github.com/naudio/NAudio
+Microsoft .NET: MIT, https://github.com/dotnet/runtime
+X-ASR models: Apache-2.0, https://github.com/Gilgamesh-J/X-ASR
+Models are downloaded separately from official sherpa-onnx releases and checked against the upstream SHA-256 values.
+Additional upstream notices: ../Resources/ThirdPartyNotices.txt in the source tree.

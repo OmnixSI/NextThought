@@ -1,0 +1,27 @@
+[
+  {
+    "file": "sherpa-onnx-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/v1.13.8/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "file": "NAudio-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/naudio/NAudio/v2.2.1/license.txt",
+    "sha256": "303e01786b271eb464b3f43d18a375f2f17d37bc708a37c2fdf45b289fb5bfaa"
+  },
+  {
+    "file": "X-ASR-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/Gilgamesh-J/X-ASR/main/LICENSE",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  {
+    "file": "ONNX-Runtime-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/main/LICENSE",
+    "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+  },
+  {
+    "file": "dotnet-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/dotnet/runtime/v10.0.14/LICENSE.TXT",
+    "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+  }
+]
