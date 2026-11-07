@@ -9,3 +9,7 @@ Microsoft .NET: MIT, https://github.com/dotnet/runtime
 X-ASR models: Apache-2.0, https://github.com/Gilgamesh-J/X-ASR
 Models are downloaded separately from official sherpa-onnx releases and checked against the upstream SHA-256 values.
 Additional upstream notices: ../Resources/ThirdPartyNotices.txt in the source tree.
+
+PdfPig 0.1.16: Apache-2.0, https://github.com/UglyToad/PdfPig
+Windows PDF rendering and OCR use installed Windows APIs and language capabilities.
+Codex is invoked as a separately installed CLI; it is not redistributed in this package.

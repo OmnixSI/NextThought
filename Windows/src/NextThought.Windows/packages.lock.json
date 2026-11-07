@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net10.0-windows7.0": {
+    "net10.0-windows10.0.19041": {
       "NAudio.Core": {
         "type": "Transitive",
         "resolved": "2.2.1",
@@ -20,6 +20,11 @@
         "resolved": "1.13.8",
         "contentHash": "qQS9IQTRet05fl82IlM93XLNnuhW50lhepOBR2qzbjxWKjSXFTvx8SlALAoCLDGyURrQ5iOgl97JZFEeIG9A9g=="
       },
+      "PdfPig": {
+        "type": "Transitive",
+        "resolved": "0.1.16",
+        "contentHash": "qQcbsNMYVY+K5ELptax2S8thNMk0+rSQq3H/KdYj3LLcko8yTCz8y5KIvsKxIyAuTN0ZYNnfsZkM+0EvxTwHVA=="
+      },
       "nextthought.core": {
         "type": "Project"
       },
@@ -29,11 +34,12 @@
           "NAudio.Core": "[2.2.1, )",
           "NAudio.Wasapi": "[2.2.1, )",
           "NextThought.Core": "[1.0.0, )",
+          "PdfPig": "[0.1.16, )",
           "org.k2fsa.sherpa.onnx.runtime.win-x64": "[1.13.8, )"
         }
       }
     },
-    "net10.0-windows7.0/win-x64": {
+    "net10.0-windows10.0.19041/win-x64": {
       "org.k2fsa.sherpa.onnx.runtime.win-x64": {
         "type": "Transitive",
         "resolved": "1.13.8",

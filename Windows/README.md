@@ -1,3 +1,24 @@
+# Windows P2 预览版 0.2.0
+
+P2-1 至 P2-5 的实现、验收和明确边界见 [P2_VALIDATION.md](P2_VALIDATION.md)。
+
+- 左侧“资料库”导入资料；回答区勾选“参考资料库”，完成后选择引用并点击“查看来源”。
+- 设置中勾选“使用本机 Codex CLI 账号”切换后端；先在终端安装并登录 Codex。模型留空采用账号默认模型。取消勾选后沿用已有 API 配置。
+- 系统声音设置可选整个设备或具体应用进程树；麦克风开关独立。每次开始前重新选择应用，PID 不跨重启保存。
+- Ctrl+Alt+N 恢复主窗，Ctrl+Alt+O 悬浮窗，Ctrl+Alt+R 开始/结束记录。快捷键冲突时使用界面按钮。主窗关闭仍正常退出；点击“收起到托盘”才隐藏。
+- 左侧导出/导入 `.ntbackup`；导入前自动保留安全备份，相同 ID 保留现有项。Mac 专属字段和原文件保存在 Migration 原始档案，不等于全部 Mac 功能已实现。
+
+验收 CLI 示例（在 Windows 源码目录运行，先生成合成样本并发布）：
+
+```powershell
+.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe documents-test --fixtures artifacts\p2\fixtures --data-root artifacts\p2\qa-data --json artifacts\p2\documents.json
+.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe retrieval-test --fixtures artifacts\p2\fixtures --data-root artifacts\p2\qa-data --json artifacts\p2\retrieval.json --live
+.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe codex-test --json artifacts\p2\codex.json
+.\artifacts\NextThought-win-x64-0.2.0\tools\NextThought.Cli.exe process-audio-test --json artifacts\p2\process-audio.json
+```
+
+下面保留 P0/P1 使用说明与历史版本记录。
+
 # NextThought Windows 预览版 0.1.1
 
 原生 Windows 实现，基于上游 `af60a4def90c750872197f81ac8b91c726d05b63`。已通过 HECATE 实际单路/双路采音、DeepSeek 回答、分段纪要与重试，以及中断归档恢复验证。30 分钟受控回放单列记录，完整功能差异见 [PORTING_STATUS.md](PORTING_STATUS.md)。

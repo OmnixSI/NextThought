@@ -26,6 +26,7 @@ public sealed record AnswerRecord
     public string Model { get; init; } = "";
     public double? Seconds { get; init; }
     public bool Automatic { get; init; }
+    public IReadOnlyList<SourceCitation>? Sources { get; init; }
 }
 public sealed record SessionMeta
 {
@@ -68,6 +69,11 @@ public sealed record AppSettings
     public string LastMeetingTitle { get; set; } = "";
     public bool AutomaticAnswers { get; set; }
     public bool AutoSummarize { get; set; }
+    public bool UseMaterials { get; set; }
+    public bool UseCodex { get; set; }
+    public string CodexModel { get; set; } = "";
+    [JsonIgnore] public int CaptureProcessId { get; set; }
+    [JsonIgnore] public long CaptureProcessStartTicks { get; set; }
 }
 
 public static class JsonDefaults

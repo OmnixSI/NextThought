@@ -59,7 +59,11 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
         lifetime = new(); microphoneGain = settings.MicrophoneGain; sample = 0; failed = stopping = 0; LastError = null;
         try
         {
-            if (settings.CaptureSystem) Add(AudioSource.System, settings.SystemDeviceId);
+            if (settings.CaptureSystem)
+            {
+                if (settings.CaptureProcessId > 0) pipes.Add(new CapturePipe(AudioSource.System, new ProcessLoopbackCapture(settings.CaptureProcessId, settings.CaptureProcessStartTicks), null, ReportFailure));
+                else Add(AudioSource.System, settings.SystemDeviceId);
+            }
             if (settings.CaptureMicrophone) Add(AudioSource.Microphone, settings.MicrophoneDeviceId);
             monitor = new MMDeviceEnumerator();
             notifications = new DeviceNotifications(pipes.Select(p => p.DeviceId).ToHashSet(StringComparer.OrdinalIgnoreCase), ReportFailure);
@@ -152,19 +156,20 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
     private sealed class CapturePipe : IDisposable
     {
         private readonly object sync = new();
-        private readonly MMDevice device;
-        private readonly WasapiCapture capture;
+        private readonly MMDevice? device;
+        private readonly IWaveIn capture;
         private readonly BufferedWaveProvider buffer;
         private readonly ISampleProvider samples;
         private readonly float[] frame = new float[1600];
         private bool disposed, stopped;
         public AudioSource Source { get; }
-        public string DeviceId => device.ID;
+        public string DeviceId => device?.ID ?? "process-loopback";
         public bool HasBufferedAudio { get { lock (sync) return buffer.BufferedBytes > 0; } }
         public CapturePipe(AudioSource source, MMDevice endpoint, Action<string> failure)
+            : this(source, source == AudioSource.System ? new WasapiLoopbackCapture(endpoint) : new WasapiCapture(endpoint, true, 30), endpoint, failure) { }
+        public CapturePipe(AudioSource source, IWaveIn input, MMDevice? endpoint, Action<string> failure)
         {
-            Source = source; device = endpoint;
-            capture = source == AudioSource.System ? new WasapiLoopbackCapture(endpoint) : new WasapiCapture(endpoint, true, 30);
+            Source = source; device = endpoint; capture = input;
             buffer = new(capture.WaveFormat) { BufferDuration = TimeSpan.FromSeconds(3), ReadFully = false, DiscardOnBufferOverflow = false };
             ISampleProvider mono = new MonoSampleProvider(buffer.ToSampleProvider());
             samples = mono.WaveFormat.SampleRate == 16000 ? mono : new WdlResamplingSampleProvider(mono, 16000);
@@ -189,6 +194,6 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
             if (stopped || disposed) return; stopped = true;
             try { capture.StopRecording(); } catch (System.Runtime.InteropServices.COMException) { }
         }
-        public void Dispose() { if (disposed) return; Stop(); lock (sync) disposed = true; capture.Dispose(); device.Dispose(); }
+        public void Dispose() { if (disposed) return; Stop(); lock (sync) disposed = true; capture.Dispose(); device?.Dispose(); }
     }
 }

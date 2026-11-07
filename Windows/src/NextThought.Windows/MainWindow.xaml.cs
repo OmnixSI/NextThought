@@ -15,6 +15,8 @@ namespace NextThought.Windows;
 
 public partial class MainWindow : Window
 {
+    private DesktopFeatures? desktop;
+    private sealed record ProcessChoice(int Id, long StartTicks, string Title) { public override string ToString() => Title; }
     private readonly AppPaths paths = new();
     private readonly SettingsStore settingsStore;
     private readonly SessionStore sessions;
@@ -59,11 +61,14 @@ public partial class MainWindow : Window
     {
         try
         {
+            desktop = new DesktopFeatures(this, () => $"{PageTitle.Text}\n{AudioSourceText.Text}\n\n{currentLines.LastOrDefault()?.Text}\n\n{AnswerText.Text}", () => { if (recording) _ = StopRecordingAsync(); else Start_Click(this, new RoutedEventArgs()); });
+            RefreshProcesses_Click(this, new RoutedEventArgs());
             var settings = settingsStore.Load();
             MeetingTitleBox.Text = string.IsNullOrWhiteSpace(settings.LastMeetingTitle) ? "新会议" : settings.LastMeetingTitle;
+            UseCodexBox.IsChecked = settings.UseCodex; CodexModelBox.Text = settings.CodexModel;
             BaseUrlBox.Text = settings.BaseUrl; ModelBox.Text = settings.Model; NotesModelBox.Text = settings.NotesModel;
             try { ApiKeyBox.Password = settingsStore.ReadApiKey(); } catch (System.Security.Cryptography.CryptographicException) { SetStatus("原凭据无法由当前用户解密，请重新输入 API Key。"); }
-            AutomaticBox.IsChecked = settings.AutomaticAnswers; AutoSummaryBox.IsChecked = settings.AutoSummarize;
+            UseMaterialsBox.IsChecked = settings.UseMaterials; AutomaticBox.IsChecked = settings.AutomaticAnswers; AutoSummaryBox.IsChecked = settings.AutoSummarize;
             SystemEnabledBox.IsChecked = settings.CaptureSystem; MicEnabledBox.IsChecked = settings.CaptureMicrophone; RefineBox.IsChecked = settings.SecondPass;
             MicGainSlider.Value = double.IsFinite(settings.MicrophoneGain) ? Math.Clamp(settings.MicrophoneGain, 1, 8) : 1;
             LocalModelBox.SelectedIndex = settings.LocalModel == "xasr160" ? 1 : 0;
@@ -78,13 +83,15 @@ public partial class MainWindow : Window
     }
     private AppSettings ReadSettings() => new()
     {
+        UseCodex = UseCodexBox.IsChecked == true, CodexModel = CodexModelBox.Text.Trim(),
         BaseUrl = BaseUrlBox.Text.Trim(), Model = ModelBox.Text.Trim(), NotesModel = NotesModelBox.Text.Trim(),
         ReasoningEffort = (EffortBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "",
         LocalModel = (LocalModelBox.SelectedItem as ModelChoice)?.Id ?? "xasr480", SecondPass = RefineBox.IsChecked == true,
+        CaptureProcessId = (ProcessBox.SelectedItem as ProcessChoice)?.Id ?? 0, CaptureProcessStartTicks = (ProcessBox.SelectedItem as ProcessChoice)?.StartTicks ?? 0,
         CaptureSystem = SystemEnabledBox.IsChecked == true, CaptureMicrophone = MicEnabledBox.IsChecked == true,
         MicrophoneGain = MicGainSlider.Value,
         SystemDeviceId = (SystemDeviceBox.SelectedItem as AudioDeviceInfo)?.Id, MicrophoneDeviceId = (MicDeviceBox.SelectedItem as AudioDeviceInfo)?.Id,
-        Vocabulary = VocabularyBox.Text, AutomaticAnswers = AutomaticBox.IsChecked == true, AutoSummarize = AutoSummaryBox.IsChecked == true,
+        UseMaterials = UseMaterialsBox.IsChecked == true, Vocabulary = VocabularyBox.Text, AutomaticAnswers = AutomaticBox.IsChecked == true, AutoSummarize = AutoSummaryBox.IsChecked == true,
         LastMeetingTitle = MeetingTitleBox.Text.Trim()
     };
     private async Task SaveSettingsAsync()
@@ -127,10 +134,12 @@ public partial class MainWindow : Window
         NewButton.IsEnabled = idle && !answering; HistoryList.IsEnabled = idle && !answering; PrepareButton.IsEnabled = idle && !answering;
         SaveButton.IsEnabled = idle; CheckServiceButton.IsEnabled = idle && !answering;
         MeetingTitleBox.IsReadOnly = !idle; SystemEnabledBox.IsEnabled = idle; MicEnabledBox.IsEnabled = idle;
-        SystemDeviceBox.IsEnabled = idle; MicDeviceBox.IsEnabled = idle; LocalModelBox.IsEnabled = idle; RefineBox.IsEnabled = idle; VocabularyBox.IsReadOnly = !idle;
+        ProcessBox.IsEnabled = idle; SystemDeviceBox.IsEnabled = idle; MicDeviceBox.IsEnabled = idle; LocalModelBox.IsEnabled = idle; RefineBox.IsEnabled = idle; VocabularyBox.IsReadOnly = !idle;
         MicGainSlider.IsEnabled = idle;
+        UseCodexBox.IsEnabled = idle; CodexModelBox.IsReadOnly = !idle;
         BaseUrlBox.IsReadOnly = !idle; ModelBox.IsReadOnly = !idle; NotesModelBox.IsReadOnly = !idle; ApiKeyBox.IsEnabled = idle; EffortBox.IsEnabled = idle;
         AskButton.IsEnabled = !busy && !stopping && !summarizing; SummaryButton.IsEnabled = idle && !answering && currentSession != null && currentLines.Count > 0;
+        BackupButton.IsEnabled = RestoreButton.IsEnabled = idle && !answering;
         ExportButton.IsEnabled = !busy && !recording && currentSession != null;
         CancelButton.IsEnabled = busy || answering; WorkProgress.IsIndeterminate = answering;
         StatsText.Text = recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(currentSession?.AnswerCount ?? 0)} 条回答";
@@ -156,10 +165,36 @@ public partial class MainWindow : Window
             SetStatus("模型已下载并校验，可以离线记录。");
         });
     }
+    private async void Backup_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog { Filter = "NextThought 备份|*.ntbackup", FileName = "NextThought-" + DateTime.Now.ToString("yyyyMMdd-HHmm") + ".ntbackup" };
+        if (dialog.ShowDialog(this) != true) return;
+        await RunWorkAsync(async ct => { await Task.WhenAll(writes.ToArray()); await Task.Run(() => new BackupService(paths).ExportAsync(dialog.FileName, ct)); SetStatus("备份已导出：包含会议与资料；不包含 API Key、语音模型和设备设置。"); });
+    }
+    private async void Restore_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog { Filter = "NextThought 备份|*.ntbackup;*.ihbackup" };
+        if (dialog.ShowDialog(this) != true) return;
+        await RunWorkAsync(async ct => { var result = await Task.Run(() => new BackupService(paths).ImportAsync(dialog.FileName, ct)); RefreshHistory(); SetStatus($"已导入 {result.SessionsAdded} 场会议、{result.MaterialsAdded} 份资料；{result.ConflictsSkipped} 个重复项保留现有版本。导入前备份：{result.SafetyBackup}。Mac 其余数据保存在 Migration 原始备份中；连接设置沿用本机。"); });
+    }
+    private void Tray_Click(object sender, RoutedEventArgs e) { if (desktop != null) Hide(); }
+    private void Overlay_Click(object sender, RoutedEventArgs e) => desktop?.ToggleOverlay();
+    private void RefreshProcesses_Click(object sender, RoutedEventArgs e)
+    {
+        var choices = new List<ProcessChoice> { new(0, 0, "整个输出设备混音") };
+        foreach (var process in Process.GetProcesses())
+        {
+            using (process) try { if (process.Id != Environment.ProcessId && process.MainWindowHandle != IntPtr.Zero && process.MainWindowTitle.Length > 0) choices.Add(new(process.Id, process.StartTime.ToUniversalTime().Ticks, process.ProcessName + " · " + process.MainWindowTitle)); } catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception) { }
+        }
+        ProcessBox.ItemsSource = choices; ProcessBox.SelectedIndex = 0;
+    }
+    private void Materials_Click(object sender, RoutedEventArgs e) => new MaterialWindow(paths) { Owner = this }.ShowDialog();
+    private void ViewSource_Click(object sender, RoutedEventArgs e)
+    { if (SourcesBox.SelectedItem is SourceCitation source) new MaterialWindow(paths, source) { Owner = this }.ShowDialog(); else SetStatus("当前回答尚无资料引用。"); }
     private void ResetDisplay()
     {
         ++selectionEpoch; transcript.Clear(); currentLines.Clear(); writes.Clear(); SystemPartial.Text = MicrophonePartial.Text = "";
-        AnswerText.Text = ""; SummaryText.Text = "结束会议后，按转写整理总结、决定、待办和未决问题。";
+        SourcesBox.ItemsSource = null; AnswerText.Text = ""; SummaryText.Text = "结束会议后，按转写整理总结、决定、待办和未决问题。";
         DetectedQuestion.Text = "手动提问，或开启自动回答。"; tracker = new(); automaticScheduler = new();
         lastMicrophoneSpeech = default; systemLevel = microphoneLevel = 0; LevelText.Text = "";
     }
@@ -171,7 +206,7 @@ public partial class MainWindow : Window
     private SessionMeta NewMeta(AppSettings settings, string? title = null) => new()
     {
         Title = string.IsNullOrWhiteSpace(title ?? settings.LastMeetingTitle) ? "会议 " + DateTime.Now.ToString("MM-dd HH:mm") : (title ?? settings.LastMeetingTitle),
-        AudioSource = settings.CaptureSystem ? (settings.CaptureMicrophone ? "system+microphone" : "system") : "microphone",
+        AudioSource = settings.CaptureSystem && settings.CaptureProcessId > 0 ? (settings.CaptureMicrophone ? "process-tree+microphone" : "process-tree") : settings.CaptureSystem ? (settings.CaptureMicrophone ? "system+microphone" : "system") : "microphone",
         InPerson = !settings.CaptureSystem, Recognizer = settings.LocalModel + (settings.SecondPass ? "+refine" : ""), AnswerModel = settings.Model
     };
     private async void Start_Click(object sender, RoutedEventArgs e)
@@ -205,7 +240,8 @@ public partial class MainWindow : Window
             if (capture.LastError is { } captureError) throw new IOException(captureError);
             recording = true; candidateTimer.Start();
             PageTitle.Text = meta.Title; PageSubtitle.Text = "进行中 · 转写持续保存在本机"; RefreshHistory(meta.Id);
-            SetStatus("正在记录。系统声音为所选输出设备混音。");
+            AudioSourceText.Text = settings.CaptureProcessId > 0 ? "应用进程树声音" + (settings.CaptureMicrophone ? " + 麦克风" : " · 不采集麦克风") : AudioSourceText.Text;
+            SetStatus(settings.CaptureProcessId > 0 ? "正在记录所选应用及其子进程的声音。" : "正在记录。系统声音为所选输出设备混音。");
         }
         catch (Exception ex)
         {
@@ -305,8 +341,10 @@ public partial class MainWindow : Window
     private void CancelRequest() { ++requestEpoch; var previous = requestCancellation; requestCancellation = null; previous?.Cancel(); answering = false; }
     private AnswerOptions AnswerOptions(bool notes = false)
     {
-        var settings = ReadSettings(); return new(settings.BaseUrl, notes && settings.NotesModel.Length > 0 ? settings.NotesModel : settings.Model, ApiKeyBox.Password.Trim(), settings.ReasoningEffort);
+        var settings = ReadSettings(); if (settings.UseCodex) return new("https://codex.local", settings.CodexModel.Length > 0 ? settings.CodexModel : "default", "");
+        return new(settings.BaseUrl, notes && settings.NotesModel.Length > 0 ? settings.NotesModel : settings.Model, ApiKeyBox.Password.Trim(), settings.ReasoningEffort);
     }
+    private IAnswerClient CurrentClient() => UseCodexBox.IsChecked == true ? new CodexAnswerClient() : api;
     private async void Ask_Click(object sender, RoutedEventArgs e)
     { var question = QuestionInput.Text.Trim(); if (question.Length == 0) { SetStatus("请先输入问题。"); QuestionInput.Focus(); return; } await AnswerAsync(question, false); }
     private async Task AnswerAsync(string question, bool automatic, bool check = false)
@@ -322,11 +360,24 @@ public partial class MainWindow : Window
             if (context.Length > 18000) context = context[^18000..];
             SetStatus(check ? "正在检查回答服务…" : "正在生成参考回答…");
             var progress = new Progress<string>(text => { if (generation == requestEpoch && !check) { AnswerText.Text = text; AnswerText.ScrollToEnd(); } });
-            var result = await api.AnswerAsync(options,
+            var sources = !check && UseMaterialsBox.IsChecked == true
+                ? await Task.Run(() => new KeywordIndex(new MaterialStore(paths).List()).Search(question), cancellation.Token) : [];
+            if (!check) SourcesBox.ItemsSource = null;
+            var result = await CurrentClient().AnswerAsync(options,
                 check ? "严格按用户要求回复。" : "你是会议中的参考助手。根据已提供的转写回答当前问题，使用简洁中文；问题为英文时可用英文。区分事实与建议，不编造未提供的文件、数据、决定或经历。",
-                check ? question : $"最近的会议转写：\n{context}\n\n当前问题：{question}", text => ((IProgress<string>)progress).Report(text), cancellation.Token);
+                check ? question : $"最近的会议转写：\n{context}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n\n当前问题：{question}", text => ((IProgress<string>)progress).Report(text), cancellation.Token);
             if (generation != requestEpoch) return;
-            if (!check && meta != null) await sessions.AppendAnswerAsync(meta, new AnswerRecord { Question = question, Answer = result, Model = options.Model, Seconds = clock.Elapsed.TotalSeconds, Automatic = automatic });
+            if (!check)
+            {
+                var cited = KeywordIndex.Cited(result, sources); SourcesBox.ItemsSource = cited; SourcesBox.SelectedIndex = 0;
+                if (meta is null)
+                {
+                    meta = NewMeta(ReadSettings(), question.Length > 40 ? question[..40] : question);
+                    meta.AudioSource = "text-question"; await sessions.CreateAsync(meta); await sessions.EndAsync(meta); currentSession = meta;
+                }
+                await sessions.AppendAnswerAsync(meta, new AnswerRecord { Question = question, Answer = result, Model = options.Model, Seconds = clock.Elapsed.TotalSeconds, Automatic = automatic, Sources = cited });
+                RefreshHistory();
+            }
             tracker.HasPriorAnswer = true; SetStatus(check ? "回答服务连接成功：" + result : "回答已完成。会议内的回答已归档。");
         }
         catch (OperationCanceledException) { if (generation == requestEpoch) SetStatus("回答已取消。"); }
@@ -347,7 +398,7 @@ public partial class MainWindow : Window
                 if (generation != requestEpoch) return;
                 SummaryText.Text = p.Text; SetStatus($"{p.Stage} · {p.Completed}/{p.Total}");
             });
-            var markdown = await new SummaryService(sessions, api).GenerateAsync(meta.Id, options,
+            var markdown = await new SummaryService(sessions, CurrentClient()).GenerateAsync(meta.Id, options,
                 p => ((IProgress<SummaryProgress>)progress).Report(p), cancellation.Token);
             if (generation == requestEpoch) { SummaryText.Text = markdown; SetStatus("纪要已保存，可导出 Markdown。"); }
         }
@@ -377,6 +428,7 @@ public partial class MainWindow : Window
             foreach (var line in data.Lines.TakeLast(400)) transcript.Add(Row(line));
             SystemPartial.Text = MicrophonePartial.Text = ""; MeetingTitleBox.Text = data.Meta.Title; PageTitle.Text = data.Meta.Title;
             PageSubtitle.Text = "会议归档 · " + data.Meta.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+            SourcesBox.ItemsSource = data.Answers.LastOrDefault()?.Sources; SourcesBox.SelectedIndex = 0;
             AnswerText.Text = data.Answers.LastOrDefault()?.Answer ?? ""; DetectedQuestion.Text = data.Answers.LastOrDefault()?.Question ?? "可以继续对这场会议提问。";
             SummaryText.Text = data.Summary.Length > 0 ? data.Summary : "这场会议还没有纪要，点击上方整理。";
             UpdateState();
@@ -404,6 +456,6 @@ public partial class MainWindow : Window
         if (recording) await StopRecordingAsync();
         if (workTask != null) { try { await workTask; } catch { } }
         try { await Task.WhenAll(writes.ToArray()); await SaveSettingsAsync(); } catch { }
-        allowClose = true; Close();
+        desktop?.Dispose(); desktop = null; allowClose = true; Close();
     }
 }

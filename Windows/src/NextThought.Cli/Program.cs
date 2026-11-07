@@ -14,6 +14,16 @@ try
     var paths = new AppPaths(Option("--data-root")); var models = new ModelStore(paths);
     switch (arguments.FirstOrDefault())
     {
+        case "test-tone":
+            return await ProcessAudioDiagnostics.ToneAsync(Option, cancellation.Token);
+        case "process-audio-test":
+            return await ProcessAudioDiagnostics.RunAsync(Option, cancellation.Token);
+        case "codex-test":
+            return await CodexDiagnostics.RunAsync(Option, cancellation.Token);
+        case "retrieval-test":
+            return await RetrievalDiagnostics.RunAsync(paths, Option, arguments.Contains("--live"), cancellation.Token);
+        case "documents-test":
+            return await DocumentDiagnostics.RunAsync(paths, Option, cancellation.Token);
         case "devices":
             Console.WriteLine(JsonSerializer.Serialize(new { system = AudioCaptureService.Devices(true), microphone = AudioCaptureService.Devices(false) }, JsonDefaults.Options)); break;
         case "wait-device":

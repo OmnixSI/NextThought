@@ -23,5 +23,10 @@
     "file": "dotnet-LICENSE.txt",
     "source": "https://raw.githubusercontent.com/dotnet/runtime/v10.0.14/LICENSE.TXT",
     "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+  },
+  {
+    "file": "PdfPig-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/UglyToad/PdfPig/a7bb35662bbbf405efddad50aedc9bcdcf515afc/LICENSE",
+    "sha256": "4c510e162f896ea43b4b1cf1b743641d7c756f1004d0e5eaf0615b28b7ded409"
   }
 ]

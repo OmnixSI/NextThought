@@ -1,3 +1,7 @@
+# P2 更新 · 0.2.0
+
+P2 五步已完成基础实现与本机验收，49 项回归通过。详细结果、证据与 Mac 迁移限制见 [P2_VALIDATION.md](P2_VALIDATION.md)。P3 尚未开始。
+
 # Windows 移植状态：2026-11-07
 
 版本：Windows 预览 0.1.1。P1 的单/双路实采、回答、纪要和异常恢复已验证；完整会议的 30 分钟受控回放单独记录。上游快照 `af60a4def90c750872197f81ac8b91c726d05b63`；分支 `port/windows-native`。所有新实现位于 `Windows/`，并增加独立 Windows CI。Mac 源码及签名资料保持原状。最新逐步进度同步到用户指定的 `D:\md Vault\NextThought移植路线.md`。

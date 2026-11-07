@@ -1,4 +1,4 @@
-"""Update only the managed P1 status block; keep all user-authored route text."""
+"""Update one managed phase block; preserve other phases and user-authored text."""
 import argparse
 import datetime
 import hashlib
@@ -12,21 +12,27 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.stdout.reconfigure(encoding='utf-8')
 START = '<!-- NEXTTHOUGHT-P1-STATUS:BEGIN -->'
 END = '<!-- NEXTTHOUGHT-P1-STATUS:END -->'
-STEPS = {'P1-1': '单路与双路采音', 'P1-2': '音频异常处理', 'P1-3': '回答服务联调',
+P1_STEPS = {'P1-1': '单路与双路采音', 'P1-2': '音频异常处理', 'P1-3': '回答服务联调',
          'P1-4': '纪要联调', 'P1-5': '完整会议验收'}
+P2_STEPS = {'P2-1': '基础资料读取', 'P2-2': '关键词检索与引用', 'P2-3': 'Codex 后端',
+            'P2-4': '桌面操作与应用采音', 'P2-5': '备份与迁移'}
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--document', type=Path, default=Path(r'D:\md Vault\NextThought移植路线.md'))
-    parser.add_argument('--step', choices=STEPS, required=True)
+    parser.add_argument('--step', choices=P1_STEPS | P2_STEPS, required=True)
     parser.add_argument('--state', required=True)
     parser.add_argument('--detail', required=True)
     parser.add_argument('--evidence', default='')
     parser.add_argument('--version')
     parser.add_argument('--revision')
     args = parser.parse_args()
-    artifact = ROOT / 'artifacts/p1'
+    phase = args.step.split('-')[0]
+    steps = P1_STEPS if phase == 'P1' else P2_STEPS
+    start = f'<!-- NEXTTHOUGHT-{phase}-STATUS:BEGIN -->'
+    end_marker = f'<!-- NEXTTHOUGHT-{phase}-STATUS:END -->'
+    artifact = ROOT / 'artifacts' / phase.lower()
     artifact.mkdir(parents=True, exist_ok=True)
     original = args.document.read_bytes()
     digest = hashlib.sha256(original).hexdigest()
@@ -43,8 +49,9 @@ def main():
         progress['version'] = args.version
     if args.revision:
         progress['revision'] = args.revision
-    lines = [START, '## 本轮 P1 执行状态', '', f'更新时间：{now}', '',
-             'P0-4 已完成；本轮已复测系统声、HECATE 麦克风、双路采音及 DeepSeek 真实流式请求与取消，证据见下表。',
+    intro = ('P0-4 已完成；本轮已复测系统声、HECATE 麦克风、双路采音及 DeepSeek 真实流式请求与取消，证据见下表。' if phase == 'P1' else
+             'P0、P1 已完成；本轮推进资料、检索引用、Codex、Windows 桌面操作和备份迁移。HECATE 4 倍麦克风增益沿用，按用户要求不测试 USB 插拔。')
+    lines = [start, f'## 本轮 {phase} 执行状态', '', f'更新时间：{now}', '', intro,
              '本节为最新执行状态；后续章节保留原路线基线，历史待验收描述以本节更新为准。', '',
              '| 步骤 | 工作 | 最新状态 | 结果 |', '|---|---|---|---|']
     if progress.get('version'):
@@ -52,7 +59,7 @@ def main():
         lines[5:5] = [f"当前软件：[NextThought Windows {progress['version']}](<{executable}>)", '']
     if progress.get('revision'):
         lines[5:5] = [f"本轮代码提交：`{progress['revision']}`", '']
-    for step, title in STEPS.items():
+    for step, title in steps.items():
         row = progress['steps'].get(step, {'state': '待开始', 'detail': '尚未执行本轮验收'})
         detail = row['detail'].replace('|', '／').replace('\n', ' ')
         lines.append(f"| {step} | {title} | {row['state']} | {detail} |")
@@ -61,16 +68,16 @@ def main():
         lines.append(f"- **{item['updatedAt']} · {item['step']} · {item['state']}**：{item['detail']}")
         if item['evidence']:
             lines.append(f"  - 证据：`{item['evidence']}`")
-    lines += ['', END]
+    lines += ['', end_marker]
     text = original.decode('utf-8-sig')
     newline = '\r\n' if '\r\n' in text else '\n'
     block = newline.join(lines)
-    if START in text:
-        begin = text.index(START)
-        end = text.index(END, begin) + len(END)
+    if start in text:
+        begin = text.index(start)
+        end = text.index(end_marker, begin) + len(end_marker)
         updated = text[:begin] + block + text[end:]
     else:
-        position = text.find('## 1. 当前进度')
+        position = text.find(START) if phase == 'P2' else text.find('## 1. 当前进度')
         if position < 0:
             raise ValueError('Cannot locate the route insertion point')
         updated = text[:position] + block + newline * 2 + text[position:]
@@ -80,7 +87,7 @@ def main():
     if progress.get('revision'):
         updated = re.sub(r'(?m)^当前提交：[^\r\n]*', f"当前提交：`{progress['revision']}`  ", updated, count=1)
     data = (b'\xef\xbb\xbf' if original.startswith(b'\xef\xbb\xbf') else b'') + updated.encode('utf-8')
-    temporary = args.document.with_name('.' + args.document.name + '.p1.tmp')
+    temporary = args.document.with_name('.' + args.document.name + '.' + phase.lower() + '.tmp')
     try:
         temporary.write_bytes(data)
         if hashlib.sha256(args.document.read_bytes()).hexdigest() != digest:

@@ -120,7 +120,11 @@ public sealed class SessionStore(AppPaths paths)
         foreach (var line in data.Lines)
             builder.AppendLine($"- [{line.Date.ToLocalTime():HH:mm:ss}] {(line.Speaker == "me" ? "我" : line.Speaker == "room" ? "现场" : "对方")}：{line.Text}");
         if (data.Answers.Count > 0) builder.AppendLine().AppendLine("## 问答");
-        foreach (var answer in data.Answers) builder.AppendLine().AppendLine("### " + answer.Question).AppendLine().AppendLine(answer.Answer);
+        foreach (var answer in data.Answers)
+        {
+            builder.AppendLine().AppendLine("### " + answer.Question).AppendLine().AppendLine(answer.Answer);
+            foreach (var source in answer.Sources ?? []) builder.AppendLine().AppendLine($"[{source.Label}] {source.DocumentName} · {source.Location}  ").AppendLine($"SHA-256: {source.Sha256}").AppendLine().AppendLine("> " + source.Quote.Replace("\n", "\n> "));
+        }
         await File.WriteAllTextAsync(destination, builder.ToString(), new UTF8Encoding(false), ct);
     }
     private Task WriteMetaAsync(SessionMeta meta, CancellationToken ct = default) => AppPaths.AtomicWriteAsync(Path.Combine(Folder(meta.Id), "meta.json"), JsonSerializer.Serialize(meta, JsonDefaults.ArchiveOptions), ct);
