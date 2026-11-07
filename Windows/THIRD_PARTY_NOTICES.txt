@@ -13,3 +13,8 @@ Additional upstream notices: ../Resources/ThirdPartyNotices.txt in the source tr
 PdfPig 0.1.16: Apache-2.0, https://github.com/UglyToad/PdfPig
 Windows PDF rendering and OCR use installed Windows APIs and language capabilities.
 Codex is invoked as a separately installed CLI; it is not redistributed in this package.
+
+Qwen3-Embedding-0.6B: Apache-2.0, Qwen/Qwen3-Embedding-0.6B.
+Optional ONNX Q8 conversion: onnx-community/Qwen3-Embedding-0.6B-ONNX, revision c25a394dd583836952667c12f008335071b3f43d.
+Microsoft.ML.OnnxRuntime.Managed 1.28.0: MIT, uses the existing Sherpa native ORT 1.28.2 DLL.
+Model weights are separately downloaded and verified; not included in the application ZIP.

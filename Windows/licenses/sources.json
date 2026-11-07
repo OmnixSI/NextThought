@@ -28,5 +28,11 @@
     "file": "PdfPig-LICENSE.txt",
     "source": "https://raw.githubusercontent.com/UglyToad/PdfPig/a7bb35662bbbf405efddad50aedc9bcdcf515afc/LICENSE",
     "sha256": "4c510e162f896ea43b4b1cf1b743641d7c756f1004d0e5eaf0615b28b7ded409"
+  },
+  {
+    "file": "Qwen3-Embedding-LICENSE.txt",
+    "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+    "modelLicense": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
   }
 ]

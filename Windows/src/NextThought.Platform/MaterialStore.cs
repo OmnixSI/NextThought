@@ -11,7 +11,8 @@ public sealed class MaterialStore(AppPaths paths)
     public IReadOnlyList<MaterialDocument> List()
     {
         if (!Directory.Exists(Root)) return [];
-        return Directory.EnumerateFiles(Root, "document.json", SearchOption.AllDirectories)
+        return Directory.EnumerateDirectories(Root).Where(folder => Guid.TryParse(Path.GetFileName(folder), out _))
+            .Select(folder => Path.Combine(folder, "document.json")).Where(File.Exists)
             .Select(file => { try { return JsonSerializer.Deserialize<MaterialDocument>(File.ReadAllText(file), JsonDefaults.Options); } catch (JsonException) { return null; } })
             .Where(x => x is not null).Cast<MaterialDocument>().OrderBy(x => x.Name).ToArray();
     }

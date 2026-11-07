@@ -69,6 +69,7 @@ public sealed record AppSettings
     public string LastMeetingTitle { get; set; } = "";
     public bool AutomaticAnswers { get; set; }
     public bool AutoSummarize { get; set; }
+    public bool UseSemanticRetrieval { get; set; }
     public bool UseMaterials { get; set; }
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";

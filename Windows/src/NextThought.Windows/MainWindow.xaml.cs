@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private readonly SettingsStore settingsStore;
     private readonly SessionStore sessions;
     private readonly ModelStore models;
+    private readonly RetrievalService retrieval;
     private readonly ChatCompletionClient api = new();
     private readonly ObservableCollection<TranscriptRow> transcript = [];
     private readonly List<Task> writes = [];
@@ -45,7 +46,7 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        InitializeComponent(); settingsStore = new(paths); sessions = new(paths); models = new(paths);
+        InitializeComponent(); settingsStore = new(paths); sessions = new(paths); models = new(paths); retrieval = new(paths);
         TranscriptList.ItemsSource = transcript;
         LocalModelBox.ItemsSource = new[]{new ModelChoice("xasr480", "X-ASR 中英 · 480 ms（推荐）"), new ModelChoice("xasr160", "X-ASR 中英 · 160 ms")};
         candidateTimer.Tick += (_, _) =>
@@ -65,6 +66,7 @@ public partial class MainWindow : Window
             RefreshProcesses_Click(this, new RoutedEventArgs());
             var settings = settingsStore.Load();
             MeetingTitleBox.Text = string.IsNullOrWhiteSpace(settings.LastMeetingTitle) ? "新会议" : settings.LastMeetingTitle;
+            SemanticBox.IsChecked = settings.UseSemanticRetrieval;
             UseCodexBox.IsChecked = settings.UseCodex; CodexModelBox.Text = settings.CodexModel;
             BaseUrlBox.Text = settings.BaseUrl; ModelBox.Text = settings.Model; NotesModelBox.Text = settings.NotesModel;
             try { ApiKeyBox.Password = settingsStore.ReadApiKey(); } catch (System.Security.Cryptography.CryptographicException) { SetStatus("原凭据无法由当前用户解密，请重新输入 API Key。"); }
@@ -91,7 +93,7 @@ public partial class MainWindow : Window
         CaptureSystem = SystemEnabledBox.IsChecked == true, CaptureMicrophone = MicEnabledBox.IsChecked == true,
         MicrophoneGain = MicGainSlider.Value,
         SystemDeviceId = (SystemDeviceBox.SelectedItem as AudioDeviceInfo)?.Id, MicrophoneDeviceId = (MicDeviceBox.SelectedItem as AudioDeviceInfo)?.Id,
-        UseMaterials = UseMaterialsBox.IsChecked == true, Vocabulary = VocabularyBox.Text, AutomaticAnswers = AutomaticBox.IsChecked == true, AutoSummarize = AutoSummaryBox.IsChecked == true,
+        UseSemanticRetrieval = SemanticBox.IsChecked == true, UseMaterials = UseMaterialsBox.IsChecked == true, Vocabulary = VocabularyBox.Text, AutomaticAnswers = AutomaticBox.IsChecked == true, AutoSummarize = AutoSummaryBox.IsChecked == true,
         LastMeetingTitle = MeetingTitleBox.Text.Trim()
     };
     private async Task SaveSettingsAsync()
@@ -135,7 +137,7 @@ public partial class MainWindow : Window
         SaveButton.IsEnabled = idle; CheckServiceButton.IsEnabled = idle && !answering;
         MeetingTitleBox.IsReadOnly = !idle; SystemEnabledBox.IsEnabled = idle; MicEnabledBox.IsEnabled = idle;
         ProcessBox.IsEnabled = idle; SystemDeviceBox.IsEnabled = idle; MicDeviceBox.IsEnabled = idle; LocalModelBox.IsEnabled = idle; RefineBox.IsEnabled = idle; VocabularyBox.IsReadOnly = !idle;
-        MicGainSlider.IsEnabled = idle;
+        MicGainSlider.IsEnabled = idle; SemanticBox.IsEnabled = idle; PrepareRetrievalButton.IsEnabled = idle && !answering;
         UseCodexBox.IsEnabled = idle; CodexModelBox.IsReadOnly = !idle;
         BaseUrlBox.IsReadOnly = !idle; ModelBox.IsReadOnly = !idle; NotesModelBox.IsReadOnly = !idle; ApiKeyBox.IsEnabled = idle; EffortBox.IsEnabled = idle;
         AskButton.IsEnabled = !busy && !stopping && !summarizing; SummaryButton.IsEnabled = idle && !answering && currentSession != null && currentLines.Count > 0;
@@ -164,6 +166,10 @@ public partial class MainWindow : Window
             if (settings.SecondPass) await models.InstallAsync("xasrOffline", progress, ct);
             SetStatus("模型已下载并校验，可以离线记录。");
         });
+    }
+    private async void PrepareRetrieval_Click(object sender, RoutedEventArgs e)
+    {
+        await RunWorkAsync(async ct => { var progress = new Progress<ModelProgress>(p => { WorkProgress.Value = p.Fraction; SetStatus(p.Message); }); await new EmbeddingModelStore(paths).InstallAsync(progress, ct); SetStatus("语义检索模型已准备，勾选语义检索并保存设置后使用。"); });
     }
     private async void Backup_Click(object sender, RoutedEventArgs e)
     {
@@ -194,7 +200,7 @@ public partial class MainWindow : Window
     private void ResetDisplay()
     {
         ++selectionEpoch; transcript.Clear(); currentLines.Clear(); writes.Clear(); SystemPartial.Text = MicrophonePartial.Text = "";
-        SourcesBox.ItemsSource = null; AnswerText.Text = ""; SummaryText.Text = "结束会议后，按转写整理总结、决定、待办和未决问题。";
+        RetrievalInfoText.Text = ""; SourcesBox.ItemsSource = null; AnswerText.Text = ""; SummaryText.Text = "结束会议后，按转写整理总结、决定、待办和未决问题。";
         DetectedQuestion.Text = "手动提问，或开启自动回答。"; tracker = new(); automaticScheduler = new();
         lastMicrophoneSpeech = default; systemLevel = microphoneLevel = 0; LevelText.Text = "";
     }
@@ -360,11 +366,19 @@ public partial class MainWindow : Window
             if (context.Length > 18000) context = context[^18000..];
             SetStatus(check ? "正在检查回答服务…" : "正在生成参考回答…");
             var progress = new Progress<string>(text => { if (generation == requestEpoch && !check) { AnswerText.Text = text; AnswerText.ScrollToEnd(); } });
-            var sources = !check && UseMaterialsBox.IsChecked == true
-                ? await Task.Run(() => new KeywordIndex(new MaterialStore(paths).List()).Search(question), cancellation.Token) : [];
+            RetrievalResult? retrieved = null;
+            if (!check && UseMaterialsBox.IsChecked == true)
+            {
+                SetStatus("正在检索相关资料；首次使用时生成本地索引…");
+                retrieved = await retrieval.SearchAsync(question, SemanticBox.IsChecked == true, cancellation.Token);
+                if (generation != requestEpoch) return;
+                RetrievalInfoText.Text = $"{retrieved.Method} · {retrieved.Sources.Count} 段 · {retrieved.Seconds:F2} 秒" + (retrieved.Warning is null ? "" : " · " + retrieved.Warning);
+            }
+            else if (!check) RetrievalInfoText.Text = "未使用资料库";
+            var sources = retrieved?.Sources ?? [];
             if (!check) SourcesBox.ItemsSource = null;
             var result = await CurrentClient().AnswerAsync(options,
-                check ? "严格按用户要求回复。" : "你是会议中的参考助手。根据已提供的转写回答当前问题，使用简洁中文；问题为英文时可用英文。区分事实与建议，不编造未提供的文件、数据、决定或经历。",
+                check ? "严格按用户要求回复。" : "你是会议中的参考助手。根据已提供的转写回答当前问题，使用简洁中文；问题为英文时可用英文。区分事实与建议，不编造未提供的文件、数据、决定或经历。参考资料库中的具体事实必须有对应摘录支持并标注引用；资料和转写均未提供所需事实时，明确说明资料不足，不猜测金额、日期、人员或参数。",
                 check ? question : $"最近的会议转写：\n{context}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n\n当前问题：{question}", text => ((IProgress<string>)progress).Report(text), cancellation.Token);
             if (generation != requestEpoch) return;
             if (!check)
@@ -429,6 +443,7 @@ public partial class MainWindow : Window
             SystemPartial.Text = MicrophonePartial.Text = ""; MeetingTitleBox.Text = data.Meta.Title; PageTitle.Text = data.Meta.Title;
             PageSubtitle.Text = "会议归档 · " + data.Meta.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
             SourcesBox.ItemsSource = data.Answers.LastOrDefault()?.Sources; SourcesBox.SelectedIndex = 0;
+            RetrievalInfoText.Text = data.Answers.LastOrDefault()?.Sources?.Count > 0 ? "历史回答的引用已保存，可查看来源。" : "";
             AnswerText.Text = data.Answers.LastOrDefault()?.Answer ?? ""; DetectedQuestion.Text = data.Answers.LastOrDefault()?.Question ?? "可以继续对这场会议提问。";
             SummaryText.Text = data.Summary.Length > 0 ? data.Summary : "这场会议还没有纪要，点击上方整理。";
             UpdateState();
@@ -456,6 +471,6 @@ public partial class MainWindow : Window
         if (recording) await StopRecordingAsync();
         if (workTask != null) { try { await workTask; } catch { } }
         try { await Task.WhenAll(writes.ToArray()); await SaveSettingsAsync(); } catch { }
-        desktop?.Dispose(); desktop = null; allowClose = true; Close();
+        retrieval.Dispose(); desktop?.Dispose(); desktop = null; allowClose = true; Close();
     }
 }

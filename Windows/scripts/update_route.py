@@ -16,12 +16,14 @@ P1_STEPS = {'P1-1': '单路与双路采音', 'P1-2': '音频异常处理', 'P1-3
          'P1-4': '纪要联调', 'P1-5': '完整会议验收'}
 P2_STEPS = {'P2-1': '基础资料读取', 'P2-2': '关键词检索与引用', 'P2-3': 'Codex 后端',
             'P2-4': '桌面操作与应用采音', 'P2-5': '备份与迁移'}
+P3_STEPS = {'P3-0': '评测基线与索引准备', 'P3-1': '语义检索', 'P3-2': '增强 OCR',
+            'P3-3': '声纹识别', 'P3-4': '翻译', 'P3-5': '手机伴侣', 'P3-6': '性能优化'}
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--document', type=Path, default=Path(r'D:\md Vault\NextThought移植路线.md'))
-    parser.add_argument('--step', choices=P1_STEPS | P2_STEPS, required=True)
+    parser.add_argument('--step', choices=P1_STEPS | P2_STEPS | P3_STEPS, required=True)
     parser.add_argument('--state', required=True)
     parser.add_argument('--detail', required=True)
     parser.add_argument('--evidence', default='')
@@ -29,7 +31,7 @@ def main():
     parser.add_argument('--revision')
     args = parser.parse_args()
     phase = args.step.split('-')[0]
-    steps = P1_STEPS if phase == 'P1' else P2_STEPS
+    steps = {'P1': P1_STEPS, 'P2': P2_STEPS, 'P3': P3_STEPS}[phase]
     start = f'<!-- NEXTTHOUGHT-{phase}-STATUS:BEGIN -->'
     end_marker = f'<!-- NEXTTHOUGHT-{phase}-STATUS:END -->'
     artifact = ROOT / 'artifacts' / phase.lower()
@@ -51,6 +53,8 @@ def main():
         progress['revision'] = args.revision
     intro = ('P0-4 已完成；本轮已复测系统声、HECATE 麦克风、双路采音及 DeepSeek 真实流式请求与取消，证据见下表。' if phase == 'P1' else
              'P0、P1 已完成；本轮推进资料、检索引用、Codex、Windows 桌面操作和备份迁移。HECATE 4 倍麦克风增益沿用，按用户要求不测试 USB 插拔。')
+    if phase == 'P3':
+        intro = '基于 Windows 0.2.0 开展 P3，先建立固定评测、索引缓存及版本管理，再逐项验证本地增强能力。P1/P2 未验事项仍保留；麦克风实采需用户确认且保留测试弹窗，不测试 USB 插拔。'
     lines = [start, f'## 本轮 {phase} 执行状态', '', f'更新时间：{now}', '', intro,
              '本节为最新执行状态；后续章节保留原路线基线，历史待验收描述以本节更新为准。', '',
              '| 步骤 | 工作 | 最新状态 | 结果 |', '|---|---|---|---|']
@@ -77,7 +81,7 @@ def main():
         end = text.index(end_marker, begin) + len(end_marker)
         updated = text[:begin] + block + text[end:]
     else:
-        position = text.find(START) if phase == 'P2' else text.find('## 1. 当前进度')
+        position = text.find('<!-- NEXTTHOUGHT-P2-STATUS:BEGIN -->') if phase == 'P3' else text.find(START) if phase == 'P2' else text.find('## 1. 当前进度')
         if position < 0:
             raise ValueError('Cannot locate the route insertion point')
         updated = text[:position] + block + newline * 2 + text[position:]

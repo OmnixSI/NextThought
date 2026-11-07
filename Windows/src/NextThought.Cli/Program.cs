@@ -14,6 +14,16 @@ try
     var paths = new AppPaths(Option("--data-root")); var models = new ModelStore(paths);
     switch (arguments.FirstOrDefault())
     {
+        case "semantic-asr-test":
+            return await SemanticAsrDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "semantic-workflow-test":
+            return await SemanticWorkflowDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "semantic-evaluate":
+            return await SemanticEvaluation.RunAsync(paths, Option, cancellation.Token);
+        case "embedding-test":
+            return await EmbeddingDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "retrieval-evaluate":
+            return await RetrievalEvaluation.RunAsync(Option, cancellation.Token);
         case "test-tone":
             return await ProcessAudioDiagnostics.ToneAsync(Option, cancellation.Token);
         case "process-audio-test":
