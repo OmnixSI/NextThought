@@ -17,8 +17,11 @@ try {
     Invoke-Dotnet build NextThought.Windows.sln -c Release --no-restore --verbosity minimal
     Invoke-Dotnet test tests/NextThought.Tests -c Release --no-build --no-restore --logger 'trx;LogFileName=regression.trx' --results-directory artifacts/tests --verbosity minimal
     if ($Publish) {
+        [xml]$appProject = Get-Content -LiteralPath 'src\NextThought.Windows\NextThought.Windows.csproj'
+        $version = [string]($appProject.Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1)
+        if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid application version.' }
         $artifactRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot 'artifacts'))
-        $output = [IO.Path]::GetFullPath((Join-Path $artifactRoot 'NextThought-win-x64'))
+        $output = [IO.Path]::GetFullPath((Join-Path $artifactRoot ('NextThought-win-x64-' + $version)))
         if (-not $output.StartsWith($artifactRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Invalid publish directory.' }
         if (Test-Path -LiteralPath $output) {
             $running = Get-Process -Name NextThought -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($output + '\', [StringComparison]::OrdinalIgnoreCase) }
@@ -29,10 +32,11 @@ try {
         Invoke-Dotnet publish src/NextThought.Cli -c Release --self-contained true '-p:PublishSingleFile=false' '-p:RestoreLockedMode=true' -o (Join-Path $output 'tools') --verbosity minimal
         Copy-Item -LiteralPath README.md -Destination (Join-Path $output 'README.md')
         Copy-Item -LiteralPath PORTING_STATUS.md -Destination (Join-Path $output 'PORTING_STATUS.md')
+        if (Test-Path -LiteralPath 'P1_VALIDATION.md') { Copy-Item -LiteralPath 'P1_VALIDATION.md' -Destination (Join-Path $output 'P1_VALIDATION.md') }
         Copy-Item -LiteralPath 'scripts\Launch.cmd' -Destination (Join-Path $output 'Launch.cmd')
         Copy-Item -LiteralPath '..\Resources\ThirdPartyNotices.txt' -Destination (Join-Path $output 'UPSTREAM_NOTICES.txt')
         Copy-Item -LiteralPath 'licenses' -Destination (Join-Path $output 'licenses') -Recurse
-        $zip = Join-Path $artifactRoot 'NextThought-Windows-preview-0.1.0-win-x64.zip'
+        $zip = Join-Path $artifactRoot ('NextThought-Windows-preview-' + $version + '-win-x64.zip')
         Compress-Archive -LiteralPath $output -DestinationPath $zip -Force
         $digest = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
         [IO.File]::WriteAllText($zip + '.sha256', "$digest  $([IO.Path]::GetFileName($zip))`n", [Text.UTF8Encoding]::new($false))

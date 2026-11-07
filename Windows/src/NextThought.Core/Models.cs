@@ -50,7 +50,7 @@ public sealed record SessionMeta
 }
 public sealed record SessionData(SessionMeta Meta, IReadOnlyList<TranscriptLine> Lines, IReadOnlyList<AnswerRecord> Answers, string Summary);
 public sealed record ModelProgress(double Fraction, string Message);
-public sealed record AnswerOptions(string BaseUrl, string Model, string ApiKey, string ReasoningEffort = "");
+public sealed record AnswerOptions(string BaseUrl, string Model, string ApiKey, string ReasoningEffort = "", int? MaxOutputTokens = null);
 public sealed record AppSettings
 {
     public string BaseUrl { get; set; } = "https://api.openai.com/v1";
@@ -61,6 +61,7 @@ public sealed record AppSettings
     public bool SecondPass { get; set; } = true;
     public bool CaptureSystem { get; set; } = true;
     public bool CaptureMicrophone { get; set; } = true;
+    public double MicrophoneGain { get; set; } = 1;
     public string? SystemDeviceId { get; set; }
     public string? MicrophoneDeviceId { get; set; }
     public string Vocabulary { get; set; } = "";

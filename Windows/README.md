@@ -1,6 +1,6 @@
-# NextThought Windows 预览版 0.1.0
+# NextThought Windows 预览版 0.1.1
 
-第一阶段的原生 Windows 实现，基于上游 `af60a4def90c750872197f81ac8b91c726d05b63`。当前打通录音导入、本地中英转写、会议归档及导出；系统声音与麦克风采集、在线回答和纪要代码已接入，仍需实际会议验收。完整功能差异见 [PORTING_STATUS.md](PORTING_STATUS.md)。
+原生 Windows 实现，基于上游 `af60a4def90c750872197f81ac8b91c726d05b63`。已通过 HECATE 实际单路/双路采音、DeepSeek 回答、分段纪要与重试，以及中断归档恢复验证。30 分钟受控回放单列记录，完整功能差异见 [PORTING_STATUS.md](PORTING_STATUS.md)。
 
 ## 直接运行
 
@@ -11,6 +11,10 @@
 5. 需要回答或纪要时，填写兼容 Chat Completions 的 API 地址、模型名称和自己的 Key，保存后检查连接。可使用支持此接口的本机服务。程序不含预付费服务或模型 Key；远程服务的费用由相应服务方收取。
 
 “系统输出设备混音”包含所选设备上其他应用的声音。当前没有按会议进程筛选；应在会议前选对输出设备。设备拔插、睡眠和长时会议恢复仍待实机验收。自动回答及会后自动整理默认关闭。
+
+HECATE 麦克风在本机验收时声音偏低，已使用软件内 4 倍增益完成固定句及句尾识别。在“设置 → 声音来源”可以调整 1–8 倍增益；其他设备从 1 倍开始调整。采音停止时会排空设备缓存再结束识别。自动问题会等本地发言结束后再回答；手动提问会清除待触发的自动问题。
+
+回答服务现已按本机配置选择 DeepSeek 官方 `deepseek-flash`，推理强度为 `none`。纪要失败后再次整理会复用已完成片段；重新生成被取消时保留旧纪要。程序启动时会检查由本版本留下的中断会话，恢复完整行并保留修复前备份。另一台机器仍需自行填写服务与 Key。
 
 ## 数据和隐私
 
@@ -40,7 +44,7 @@ py -3.12 scripts/bootstrap_sdk.py
 .\scripts\build.ps1 -Publish
 ```
 
-第一次构建需要网络。SDK 由微软官方下载并校验 SHA-512，放在项目 `.tools\dotnet`，不修改系统 PATH。脚本使用锁定的 NuGet 依赖，构建和测试通过后生成 `artifacts\NextThought-win-x64` 以及 ZIP 和 SHA-256 文件。若系统已有匹配 SDK，也可使用它运行解决方案；`global.json` 固定 SDK 版本。
+第一次构建需要网络。SDK 由微软官方下载并校验 SHA-512，放在项目 `.tools\dotnet`，不修改系统 PATH。脚本使用锁定的 NuGet 依赖，构建和测试通过后生成带版本号的 `artifacts\NextThought-win-x64-0.1.1` 以及 ZIP 和 SHA-256 文件。若系统已有匹配 SDK，也可使用它运行解决方案；`global.json` 固定 SDK 版本。
 
 开发依赖：.NET SDK 10.0.403；C# 14 / WPF；Sherpa-ONNX 1.13.8；其 Windows 包中的 ONNX Runtime 1.28.2；NAudio.Core / Wasapi 2.2.1。所有识别模型与上游 SHA-256 保持一致。`xasr-bpe.vocab` 直接保留上游内嵌词表。
 
@@ -72,9 +76,9 @@ py -3.12 scripts/prepare_test_models.py --data-root .cache/validation-data
 
 ## 当前验收与后续
 
-已完成：Release 构建、自动回归、4 段官方模型测试音频的真实 ONNX 推理、模型安装器、设备枚举、桌面 WAV 导入、历史重载、Markdown 导出。测试 JSON、TRX 和样例导出在源码的 `artifacts` 下；具体记录见移植状态文档。
+已完成：Release 构建、37 项自动回归、4 段官方音频推理、模型安装、HECATE 单路/双路实采、真实 DeepSeek 回答和纪要、分段恢复、WASAPI 暂停故障注入及重新启动、独立进程异常退出后恢复、桌面 WAV 导入、历史与导出。测试报告在源码的 `artifacts/p1` 下。
 
-待验收：真实双路采音与回声、长时间会议、160 ms 模型、真实服务 Key 的回答及纪要、另一台干净 Windows 机器、DPI 和无障碍完整测试。
+验收范围限制：USB 物理拔插按用户要求跳过；真实系统休眠/唤醒、连续长时间硬件采音、其他麦克风与扬声器组合、160 ms 模型、干净 Windows 机器及完整 DPI/无障碍专项仍待验收。30 分钟受控 PCM 回放不能替代这些硬件测试。
 
 待移植：Codex 后端、文档 OCR 与检索、声纹、翻译、手机伴侣、进程级声音过滤、备份迁移、托盘与悬浮窗、安装器与签名升级。当前 ZIP 为本地预览交付。
 

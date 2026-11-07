@@ -25,10 +25,14 @@ public partial class MainWindow : Window
     private readonly List<TranscriptLine> currentLines = [];
     private readonly DispatcherTimer candidateTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private QuestionCandidateTracker tracker = new();
+    private AutomaticAnswerScheduler automaticScheduler = new();
+    private bool lastRequestAutomatic;
+    private DateTimeOffset lastMicrophoneSpeech;
     private AudioCaptureService? capture;
     private LiveSpeechEngine? engine;
     private SessionMeta? currentSession;
     private SessionMeta? recordingSession;
+    private FileStream? sessionLease;
     private CancellationTokenSource? workCancellation, requestCancellation;
     private Task? workTask, startupTask;
     private bool ready, busy, recording, stopping, answering, summarizing, closing, allowClose, modelReady;
@@ -42,7 +46,14 @@ public partial class MainWindow : Window
         InitializeComponent(); settingsStore = new(paths); sessions = new(paths); models = new(paths);
         TranscriptList.ItemsSource = transcript;
         LocalModelBox.ItemsSource = new[]{new ModelChoice("xasr480", "X-ASR 中英 · 480 ms（推荐）"), new ModelChoice("xasr160", "X-ASR 中英 · 160 ms")};
-        candidateTimer.Tick += (_, _) => ApplyCandidate(tracker.Tick(DateTimeOffset.UtcNow));
+        candidateTimer.Tick += (_, _) =>
+        {
+            var now = DateTimeOffset.UtcNow; ApplyCandidate(tracker.Tick(now));
+            if (AutomaticBox.IsChecked != true || !recording || stopping) { automaticScheduler.Clear(); return; }
+            if (answering && !lastRequestAutomatic) return;
+            var speaking = microphoneLevel >= .012 || now - lastMicrophoneSpeech < TimeSpan.FromMilliseconds(600);
+            if (automaticScheduler.Tick(now, speaking) is { } question) _ = AnswerAsync(question.FullText, true);
+        };
     }
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
@@ -54,11 +65,14 @@ public partial class MainWindow : Window
             try { ApiKeyBox.Password = settingsStore.ReadApiKey(); } catch (System.Security.Cryptography.CryptographicException) { SetStatus("原凭据无法由当前用户解密，请重新输入 API Key。"); }
             AutomaticBox.IsChecked = settings.AutomaticAnswers; AutoSummaryBox.IsChecked = settings.AutoSummarize;
             SystemEnabledBox.IsChecked = settings.CaptureSystem; MicEnabledBox.IsChecked = settings.CaptureMicrophone; RefineBox.IsChecked = settings.SecondPass;
+            MicGainSlider.Value = double.IsFinite(settings.MicrophoneGain) ? Math.Clamp(settings.MicrophoneGain, 1, 8) : 1;
             LocalModelBox.SelectedIndex = settings.LocalModel == "xasr160" ? 1 : 0;
             VocabularyBox.Text = settings.Vocabulary;
             EffortBox.SelectedItem = EffortBox.Items.Cast<ComboBoxItem>().FirstOrDefault(x => (x.Tag as string) == settings.ReasoningEffort) ?? EffortBox.Items[0];
+            var recovered = await sessions.RecoverInterruptedAsync();
             await RefreshDevicesAsync(settings); RefreshHistory(); ready = true; RefreshModelState(); UpdateState();
-            SetStatus(modelReady ? "语音已就绪。可以开始记录，或先导入 WAV 验证。" : "先到设置准备语音组件；未连接回答服务时也可以只记录。");
+            SetStatus(recovered.Count > 0 ? $"已处理 {recovered.Count} 场中断会议；可在历史中继续查看或整理纪要。" :
+                modelReady ? "语音已就绪。可以开始记录，或先导入 WAV 验证。" : "先到设置准备语音组件；未连接回答服务时也可以只记录。");
         }
         catch (Exception ex) { ready = true; SetStatus(ex.Message, true); UpdateState(); }
     }
@@ -68,6 +82,7 @@ public partial class MainWindow : Window
         ReasoningEffort = (EffortBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "",
         LocalModel = (LocalModelBox.SelectedItem as ModelChoice)?.Id ?? "xasr480", SecondPass = RefineBox.IsChecked == true,
         CaptureSystem = SystemEnabledBox.IsChecked == true, CaptureMicrophone = MicEnabledBox.IsChecked == true,
+        MicrophoneGain = MicGainSlider.Value,
         SystemDeviceId = (SystemDeviceBox.SelectedItem as AudioDeviceInfo)?.Id, MicrophoneDeviceId = (MicDeviceBox.SelectedItem as AudioDeviceInfo)?.Id,
         Vocabulary = VocabularyBox.Text, AutomaticAnswers = AutomaticBox.IsChecked == true, AutoSummarize = AutoSummaryBox.IsChecked == true,
         LastMeetingTitle = MeetingTitleBox.Text.Trim()
@@ -113,11 +128,12 @@ public partial class MainWindow : Window
         SaveButton.IsEnabled = idle; CheckServiceButton.IsEnabled = idle && !answering;
         MeetingTitleBox.IsReadOnly = !idle; SystemEnabledBox.IsEnabled = idle; MicEnabledBox.IsEnabled = idle;
         SystemDeviceBox.IsEnabled = idle; MicDeviceBox.IsEnabled = idle; LocalModelBox.IsEnabled = idle; RefineBox.IsEnabled = idle; VocabularyBox.IsReadOnly = !idle;
+        MicGainSlider.IsEnabled = idle;
         BaseUrlBox.IsReadOnly = !idle; ModelBox.IsReadOnly = !idle; NotesModelBox.IsReadOnly = !idle; ApiKeyBox.IsEnabled = idle; EffortBox.IsEnabled = idle;
         AskButton.IsEnabled = !busy && !stopping && !summarizing; SummaryButton.IsEnabled = idle && !answering && currentSession != null && currentLines.Count > 0;
         ExportButton.IsEnabled = !busy && !recording && currentSession != null;
         CancelButton.IsEnabled = busy || answering; WorkProgress.IsIndeterminate = answering;
-        StatsText.Text = recording ? $"正在记录 · {currentSession?.TranscriptCount ?? 0} 条转写" : $"{currentLines.Count} 条转写 · {(currentSession?.AnswerCount ?? 0)} 条回答";
+        StatsText.Text = recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(currentSession?.AnswerCount ?? 0)} 条回答";
         TranscriptEmpty.Visibility = transcript.Count == 0 && !recording ? Visibility.Visible : Visibility.Collapsed;
     }
     private async Task RunWorkAsync(Func<CancellationToken, Task> operation)
@@ -144,7 +160,8 @@ public partial class MainWindow : Window
     {
         ++selectionEpoch; transcript.Clear(); currentLines.Clear(); writes.Clear(); SystemPartial.Text = MicrophonePartial.Text = "";
         AnswerText.Text = ""; SummaryText.Text = "结束会议后，按转写整理总结、决定、待办和未决问题。";
-        DetectedQuestion.Text = "手动提问，或开启自动回答。"; tracker = new(); LevelText.Text = "";
+        DetectedQuestion.Text = "手动提问，或开启自动回答。"; tracker = new(); automaticScheduler = new();
+        lastMicrophoneSpeech = default; systemLevel = microphoneLevel = 0; LevelText.Text = "";
     }
     private void NewMeeting_Click(object sender, RoutedEventArgs e)
     {
@@ -170,6 +187,7 @@ public partial class MainWindow : Window
         {
             await SaveSettingsAsync(); var settings = ReadSettings(); CancelRequest(); ResetDisplay();
             meta = NewMeta(settings); await sessions.CreateAsync(meta); currentSession = recordingSession = meta;
+            sessionLease = sessions.AcquireLease(meta.Id);
             var generation = ++epoch; SetStatus("正在加载本地语音模型…");
             engine = await Task.Run(() => new LiveSpeechEngine(models, settings));
             if (closing) throw new OperationCanceledException("程序正在退出，已取消开始记录。");
@@ -183,7 +201,9 @@ public partial class MainWindow : Window
                 if (source == AudioSource.System) systemLevel = level; else microphoneLevel = level;
                 LevelText.Text = $"系统 {systemLevel*100:F0} · 麦克风 {microphoneLevel*100:F0}";
             });
-            await Task.Run(() => capture.Start(settings)); recording = true; candidateTimer.Start();
+            await Task.Run(() => capture.Start(settings));
+            if (capture.LastError is { } captureError) throw new IOException(captureError);
+            recording = true; candidateTimer.Start();
             PageTitle.Text = meta.Title; PageSubtitle.Text = "进行中 · 转写持续保存在本机"; RefreshHistory(meta.Id);
             SetStatus("正在记录。系统声音为所选输出设备混音。");
         }
@@ -194,7 +214,11 @@ public partial class MainWindow : Window
             if (meta != null) await sessions.EndAsync(meta);
             recordingSession = null; SetStatus(ex.Message, true);
         }
-        finally { busy = false; UpdateState(); }
+        finally
+        {
+            if (!recording) { sessionLease?.Dispose(); sessionLease = null; recordingSession = null; }
+            busy = false; UpdateState();
+        }
     }
     private void HandleAudioFailure(string message)
     {
@@ -205,7 +229,7 @@ public partial class MainWindow : Window
     private async Task StopRecordingAsync(string? reason = null)
     {
         if (stopping || recordingSession == null) return;
-        stopping = true; candidateTimer.Stop(); UpdateState(); var meta = recordingSession;
+        stopping = true; candidateTimer.Stop(); automaticScheduler.Clear(); UpdateState(); var meta = recordingSession;
         try
         {
             if (capture != null) { await capture.DisposeAsync(); capture = null; }
@@ -216,11 +240,12 @@ public partial class MainWindow : Window
             PageSubtitle.Text = "已结束 · 会议已归档"; SetStatus(reason == null ? "会议已保存，可以整理纪要。" : reason + "；已经记录的内容已保存。", reason != null);
         }
         catch (Exception ex) { SetStatus("会议结束时遇到问题：" + ex.Message, true); }
-        finally { recording = stopping = false; recordingSession = null; RefreshHistory(meta.Id); UpdateState(); }
+        finally { sessionLease?.Dispose(); sessionLease = null; recording = stopping = false; recordingSession = null; RefreshHistory(meta.Id); UpdateState(); }
         if (reason == null && !closing && AutoSummaryBox.IsChecked == true && currentSession?.Id == meta.Id) await SummarizeAsync(meta);
     }
     private void ReceiveTranscript(SessionMeta meta, TranscriptUpdate update, bool automatic)
     {
+        if (update.Source == AudioSource.Microphone && update.Text.Length > 0) lastMicrophoneSpeech = DateTimeOffset.UtcNow;
         if (!update.IsFinal)
         {
             if (update.Source == AudioSource.System) { SystemPartial.Text = "系统 · " + update.Text; if (automatic && recording && !stopping) ApplyCandidate(tracker.Ingest(update.Text, false, update.Id, DateTimeOffset.UtcNow)); }
@@ -228,9 +253,7 @@ public partial class MainWindow : Window
             return;
         }
         if (update.Source == AudioSource.System) SystemPartial.Text = ""; else MicrophonePartial.Text = "";
-        var normalized = QuestionCandidateTracker.Normalize(update.Text);
-        var echo = update.Source == AudioSource.Microphone && !meta.InPerson && normalized.Length >= 8 && currentLines.TakeLast(12)
-            .Any(line => line.Speaker == "remote" && Math.Abs((update.End-line.Date).TotalSeconds) < 8 && QuestionCandidateTracker.Normalize(line.Text) == normalized);
+        var echo = EchoDetector.IsLikelyEcho(update, currentLines, meta.InPerson);
         var line = new TranscriptLine { Id = update.Id, Date = update.Start, StartedAt = update.Start, EndedAt = update.End,
             Speaker = update.Source == AudioSource.System ? "remote" : meta.InPerson ? "room" : "me", Text = update.Text, SuspectedEcho = echo ? true : null };
         currentLines.Add(line); transcript.Add(Row(line)); if (transcript.Count > 400) transcript.RemoveAt(0);
@@ -245,8 +268,11 @@ public partial class MainWindow : Window
     {
         if (decision.Candidate is not { } candidate || decision.Kind is CandidateKind.None or CandidateKind.Updated) return;
         DetectedQuestion.Text = candidate.FullText;
-        if (decision.Kind == CandidateKind.Trigger && AutomaticBox.IsChecked == true && recording && !stopping
-            && (microphoneLevel < .012 || candidate.Supersedes.HasValue)) _ = AnswerAsync(candidate.FullText, true);
+        if (decision.Kind == CandidateKind.Trigger && AutomaticBox.IsChecked == true && recording && !stopping)
+        {
+            automaticScheduler.Enqueue(candidate, DateTimeOffset.UtcNow);
+            if (candidate.Supersedes.HasValue && answering && lastRequestAutomatic) CancelRequest();
+        }
     }
     private async void ImportWave_Click(object sender, RoutedEventArgs e)
     {
@@ -256,7 +282,7 @@ public partial class MainWindow : Window
         {
             await SaveSettingsAsync(); var settings = ReadSettings(); CancelRequest(); ResetDisplay();
             var meta = NewMeta(settings, Path.GetFileNameWithoutExtension(picker.FileName)); meta.AudioSource = "imported-wav";
-            await sessions.CreateAsync(meta); currentSession = meta; var generation = ++epoch;
+            await sessions.CreateAsync(meta); using var lease = sessions.AcquireLease(meta.Id); currentSession = meta; var generation = ++epoch;
             PageTitle.Text = meta.Title; PageSubtitle.Text = "正在本机读取录音…"; SetStatus("正在加载模型并转写 WAV…");
             try
             {
@@ -285,7 +311,9 @@ public partial class MainWindow : Window
     { var question = QuestionInput.Text.Trim(); if (question.Length == 0) { SetStatus("请先输入问题。"); QuestionInput.Focus(); return; } await AnswerAsync(question, false); }
     private async Task AnswerAsync(string question, bool automatic, bool check = false)
     {
+        if (!automatic && !check) automaticScheduler.Clear();
         CancelRequest(); var generation = ++requestEpoch; var cancellation = new CancellationTokenSource(); requestCancellation = cancellation; answering = true; UpdateState();
+        lastRequestAutomatic = automatic;
         var meta = currentSession; var options = AnswerOptions(); var clock = Stopwatch.StartNew();
         try
         {
@@ -312,46 +340,26 @@ public partial class MainWindow : Window
         CancelRequest(); var generation = ++requestEpoch; var cancellation = new CancellationTokenSource(); requestCancellation = cancellation; answering = summarizing = true; UpdateState(); MainTabs.SelectedIndex = 1;
         try
         {
-            await Task.WhenAll(writes.ToArray()); var data = await Task.Run(() => sessions.Load(meta.Id));
-            var content = string.Join("\n", data.Lines.Where(x => x.SuspectedEcho != true).Select(x => $"[{(x.Date-meta.StartedAt).TotalSeconds:F0}s] {x.Speaker}：{x.Text}"));
-            if (content.Length == 0) throw new InvalidOperationException("这场会议还没有可整理的转写。");
-            var options = AnswerOptions(true); await sessions.SetSummaryStateAsync(meta, "pending");
-            var chunks = SplitText(content, 24000); var parts = new List<string>();
-            var system = "请依据会议转写整理 Markdown 纪要，包括：总结、讨论要点、决定、待办（执行人和时间只写明确提及的内容）、未决问题。为重要结论保留原文时间点；不清楚的内容标为待确认，不编造事实。";
-            for (var i = 0; i < chunks.Count; i++)
+            await Task.WhenAll(writes.ToArray());
+            var options = AnswerOptions(true);
+            var progress = new Progress<SummaryProgress>(p =>
             {
-                SetStatus($"正在整理纪要 · {i+1}/{chunks.Count}");
-                var progress = new Progress<string>(text => { if (generation == requestEpoch) SummaryText.Text = text; });
-                parts.Add(await api.AnswerAsync(options, system, $"会议：{meta.Title}\n时间：{meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm}\n转写片段 {i+1}/{chunks.Count}：\n{chunks[i]}", text => ((IProgress<string>)progress).Report(text), cancellation.Token, 180));
-            }
-            var markdown = parts[0];
-            if (parts.Count > 1) markdown = await api.AnswerAsync(options, system + "合并以下分段纪要，消除重复，保留时间引用。", string.Join("\n\n", parts), ct: cancellation.Token, timeoutSeconds: 180);
-            cancellation.Token.ThrowIfCancellationRequested(); await sessions.SaveSummaryAsync(meta, markdown, options.Model);
+                if (generation != requestEpoch) return;
+                SummaryText.Text = p.Text; SetStatus($"{p.Stage} · {p.Completed}/{p.Total}");
+            });
+            var markdown = await new SummaryService(sessions, api).GenerateAsync(meta.Id, options,
+                p => ((IProgress<SummaryProgress>)progress).Report(p), cancellation.Token);
             if (generation == requestEpoch) { SummaryText.Text = markdown; SetStatus("纪要已保存，可导出 Markdown。"); }
         }
         catch (OperationCanceledException)
         {
-            await TrySetSummaryStateAsync(meta, "none");
-            if (generation == requestEpoch) SetStatus("纪要整理已取消，原始转写已保留。");
+            if (generation == requestEpoch) SetStatus("纪要整理已取消；原始转写和已完成片段已保留，可继续整理。");
         }
         catch (Exception ex)
         {
-            await TrySetSummaryStateAsync(meta, "failed", ex.Message);
             if (generation == requestEpoch) SetStatus(ex.Message, true);
         }
         finally { cancellation.Dispose(); summarizing = false; if (generation == requestEpoch) { requestCancellation = null; answering = false; UpdateState(); RefreshHistory(meta.Id); } }
-    }
-    private async Task TrySetSummaryStateAsync(SessionMeta meta, string state, string? error = null)
-    {
-        try { await sessions.SetSummaryStateAsync(meta, state, error); }
-        catch (IOException ex) { SetStatus("纪要状态写入失败：" + ex.Message, true); }
-        catch (UnauthorizedAccessException ex) { SetStatus("纪要状态写入失败：" + ex.Message, true); }
-    }
-    private static IReadOnlyList<string> SplitText(string text, int limit)
-    {
-        var chunks = new List<string>(); var builder = new StringBuilder();
-        foreach (var line in text.Split('\n')) { if (builder.Length+line.Length > limit && builder.Length > 0) { chunks.Add(builder.ToString()); builder.Clear(); } builder.AppendLine(line); }
-        if (builder.Length > 0) chunks.Add(builder.ToString()); return chunks;
     }
     private void RefreshHistory(Guid? select = null)
     {
