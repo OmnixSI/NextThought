@@ -2,13 +2,15 @@ import Testing
 @testable import NextThoughtCore
 
 struct RealtimeSetupReadinessTests {
-    @Test func coreVoiceAndConversationCannotBeBypassed() {
+    @Test func recordingRequiresVoiceAndAudioButNotAnswerService() {
         for mask in 0..<64 {
             let speech = mask & 1 != 0, capture = mask & 2 != 0, micRequired = mask & 4 != 0
             let mic = mask & 8 != 0, answers = mask & 16 != 0, source = mask & 32 != 0
             let setup = RealtimeSetupReadiness(speech: speech, capture: capture, microphoneRequired: micRequired, microphone: mic, answers: answers, audioSource: source)
             #expect(setup.voiceReady == (speech && capture && (!micRequired || mic)))
-            #expect(setup.canStart == (speech && capture && (!micRequired || mic) && answers && source))
+            #expect(setup.canRecord == (speech && capture && (!micRequired || mic) && source))
+            #expect(setup.canStart == setup.canRecord)
+            #expect(setup.canAnswer == answers)
         }
     }
     @Test func optionalDocumentModelsAreNotNeededToStartRealtimeAssistance() {
@@ -16,5 +18,24 @@ struct RealtimeSetupReadinessTests {
         let documents = DocumentFeatureAvailability(checking: false, runtime: false, ocr: false, layout: false, embedding: false, codexConnected: false)
         #expect(!documents.ready(.paddle) && !documents.ready(.semantic))
         #expect(setup.canStart)
+    }
+
+    @Test func startCanRequestPendingMicrophonePermissionButOfflineCannotSkipDenial() {
+        let permissionCanBeRequested = RealtimeSetupReadiness.microphonePermissionAllowsStart(
+            isGranted: false, isUndetermined: true)
+        let deniedPermissionBlocks = RealtimeSetupReadiness.microphonePermissionAllowsStart(
+            isGranted: false, isUndetermined: false)
+        let deniedRequiredMicrophone = RealtimeSetupReadiness(
+            speech: true, capture: true, microphoneRequired: true, microphone: deniedPermissionBlocks, answers: true, audioSource: true)
+        let optionalOnlineMicrophoneDisabled = RealtimeSetupReadiness(
+            speech: true, capture: true, microphoneRequired: false, microphone: false, answers: false, audioSource: true)
+
+        #expect(permissionCanBeRequested)
+        #expect(RealtimeSetupReadiness(speech: true, capture: true, microphoneRequired: true, microphone: permissionCanBeRequested,
+                                        answers: false, audioSource: true).canRecord)
+        #expect(!deniedRequiredMicrophone.canRecord)
+        #expect(optionalOnlineMicrophoneDisabled.canRecord)
+        #expect(RealtimeSetupReadiness.microphoneRequired(microphoneEnabled: false, isOfflineMeeting: true))
+        #expect(!RealtimeSetupReadiness.microphoneRequired(microphoneEnabled: false, isOfflineMeeting: false))
     }
 }

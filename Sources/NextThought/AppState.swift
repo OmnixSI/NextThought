@@ -336,6 +336,7 @@ final class AppState {
 
     // MARK: Not observed (services, tasks, bookkeeping)
     @ObservationIgnored var contextIndex = HybridContextIndex()
+    @ObservationIgnored var meetingContextTask: Task<Void, Never>?
     @ObservationIgnored var documentRevision = UUID()
     @ObservationIgnored var importTask: Task<Void, Never>?
     @ObservationIgnored var microphoneTranscriber: (any LiveTranscribing)?
@@ -522,7 +523,6 @@ final class AppState {
         if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
         if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
         if usesMicrophone && microphoneAccess != .granted { return "请先允许麦克风权限" }
-        if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测回答服务…" : "请先连接回答服务" }
         if !isOfflineMeeting, !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
         return "可以开始"
     }
@@ -609,10 +609,8 @@ final class AppState {
         }
         guard !isRunning, !isChangingSession else { return }
         guard !isDownloadingModel else { return }
-        guard answerEngineReady else { errorMessage = "请先连接回答服务，再开始会议记录。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
-        guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
         liveTranslation.beginMeeting()
         speakers.beginMeeting(inPerson: isOfflineMeeting)
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
@@ -628,11 +626,14 @@ final class AppState {
         selectedExcerpts = []; lastASRSeconds = nil; lastRTF = nil; lastRefineSeconds = nil; lastAnswerSeconds = nil
         droppedAudioSegments = 0; echoDroppedCount = 0
         audioEpoch = UUID()
+        meetingContextTask?.cancel(); meetingContextTask = nil
         isChangingSession = true
         defer { isChangingSession = false }
         do {
             let startupBegan = Date()
-            if semanticRetrievalReady { await SemanticRetrievalService.shared.prepare() }
+            if semanticRetrievalReady {
+                Task.detached(priority: .utility) { await SemanticRetrievalService.shared.prepare() }
+            }
             recognizerIdleTask?.cancel(); recognizerIdleTask = nil
             if usesMicrophone { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
@@ -654,9 +655,13 @@ final class AppState {
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
-            preparedWorkspace = await meetingWorkspaceForStart()
+            let startPlan = plannedMeeting
+            let startWorkspace = meetingWorkspaceForStart()
+            preparedWorkspace = startWorkspace
             isRunning = true
             documentPreparation.pauseForMeeting()
+            beginArchive(startedAt: startedAt)
+            prepareMeetingContextForStart(workspace: startWorkspace, plan: startPlan, epoch: audioEpoch)
             if !isOfflineMeeting {
                 do {
                     try await audio.startCapture(targetID: selectedTargetID)
@@ -678,11 +683,11 @@ final class AppState {
             transcriptionStatus = isOfflineMeeting ? "等待麦克风" : "等待系统音频"
             pendingAutomaticQuestion = nil
             errorMessage = nil
-            beginArchive(startedAt: startedAt)
             startCandidateTicker()
             startAutoEnd()
         } catch {
             isRunning = false
+            meetingContextTask?.cancel(); meetingContextTask = nil
             speakers.endMeeting()
             // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
             if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
@@ -699,6 +704,7 @@ final class AppState {
             isPreparingModel = false
             audioEpoch = UUID()
             sessionStartedAt = nil
+            finishArchive()
             errorMessage = "开始记录失败：\(error.localizedDescription)"
             statusText = "启动失败"
         }
@@ -772,6 +778,7 @@ final class AppState {
         isChangingSession = true
         defer { isChangingSession = false }
         isStopping = true
+        meetingContextTask?.cancel(); meetingContextTask = nil
         stopAutoEnd()
         statusText = "正在处理最后片段…"
         pendingAutomaticQuestion = nil
@@ -869,6 +876,13 @@ final class AppState {
         if isAutomatic && isAnswering && !supersede {
             pendingAutomaticQuestion = (question, recentContext ?? "", candidateID)
             Diagnostics.record("answer.queued")
+            return
+        }
+        guard answerEngineReady else {
+            if !isAutomatic {
+                errorMessage = "连接回答服务后才能生成回答；当前会议记录会继续。"
+                openSettings(.answers)
+            }
             return
         }
         let backend = answerBackend
