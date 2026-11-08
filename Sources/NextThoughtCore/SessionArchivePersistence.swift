@@ -11,19 +11,32 @@ public struct SessionPersistenceSnapshot: Sendable, Equatable {
     public var pendingBytes: Int
     public var lastPersistedAt: Date?
     public var lastFailure: String?
+    /// Writes rejected after the bounded queue filled. These bytes were never accepted
+    /// and therefore cannot be represented as saved by a later receipt.
+    public var unqueuedWriteCount: Int
+    public var acknowledgedUnqueuedWriteCount: Int
+    public var canAcknowledgeDataLoss: Bool
+    public var hasUnacknowledgedDataLoss: Bool { unqueuedWriteCount > acknowledgedUnqueuedWriteCount }
+    public var dataLossAcknowledged: Bool {
+        unqueuedWriteCount > 0 && acknowledgedUnqueuedWriteCount >= unqueuedWriteCount
+    }
     public var state: State {
         if lastFailure != nil { return .blocked }
         return pendingEvents == 0 && submittedRevision == persistedRevision ? .saved : .saving
     }
 
     public init(submittedRevision: Int, persistedRevision: Int, pendingEvents: Int, pendingBytes: Int,
-                lastPersistedAt: Date?, lastFailure: String?) {
+                lastPersistedAt: Date?, lastFailure: String?, unqueuedWriteCount: Int = 0,
+                acknowledgedUnqueuedWriteCount: Int = 0, canAcknowledgeDataLoss: Bool = false) {
         self.submittedRevision = submittedRevision
         self.persistedRevision = persistedRevision
         self.pendingEvents = pendingEvents
         self.pendingBytes = pendingBytes
         self.lastPersistedAt = lastPersistedAt
         self.lastFailure = lastFailure
+        self.unqueuedWriteCount = unqueuedWriteCount
+        self.acknowledgedUnqueuedWriteCount = acknowledgedUnqueuedWriteCount
+        self.canAcknowledgeDataLoss = canAcknowledgeDataLoss
     }
 }
 
@@ -59,6 +72,8 @@ public struct SessionArchiveWriteQueue: Sendable {
     public private(set) var pendingBytes = 0
     public private(set) var lastPersistedAt: Date?
     public private(set) var lastFailure: String?
+    public private(set) var unqueuedWriteCount = 0
+    public private(set) var acknowledgedUnqueuedWriteCount = 0
     private var overflowed = false
     private var permanentFailure = false
     private var permanentFailureMessage: String?
@@ -69,22 +84,38 @@ public struct SessionArchiveWriteQueue: Sendable {
     }
 
     public var hasPermanentFailure: Bool { permanentFailure }
+    /// The user can acknowledge the missing writes only after every accepted write is safely saved.
+    public var canAcknowledgeDataLoss: Bool { overflowed && entries.isEmpty }
 
     @discardableResult
     public mutating func enqueue(fileName: String, data: Data, mode: SessionArchiveWriteMode = .append) -> EnqueueResult {
-        guard !overflowed else { return .full }
+        guard !overflowed else {
+            recordUnqueuedWrite()
+            return .full
+        }
         guard entries.count < maximumPendingEvents,
               data.count <= maximumPendingBytes - pendingBytes else {
-            overflowed = true
-            permanentFailure = true
-            permanentFailureMessage = "本机待保存队列已满；请结束记录并检查磁盘空间。"
-            lastFailure = permanentFailureMessage
+            recordUnqueuedWrite()
             return .full
         }
         submittedRevision += 1
         entries.append(Entry(revision: submittedRevision, fileName: fileName, data: data, mode: mode))
         pendingBytes += data.count
         return .queued(revision: submittedRevision)
+    }
+
+    /// Accepts the recorded loss explicitly and reopens the queue for future writes.
+    /// The count remains in every later snapshot so the archive never appears to have
+    /// saved the writes that were rejected during overflow.
+    @discardableResult
+    public mutating func acknowledgeDataLossAndResume() -> Bool {
+        guard canAcknowledgeDataLoss else { return false }
+        overflowed = false
+        permanentFailure = false
+        permanentFailureMessage = nil
+        lastFailure = nil
+        acknowledgedUnqueuedWriteCount = unqueuedWriteCount
+        return true
     }
 
     /// Acknowledge only a completed prefix; entries after a partial batch failure remain.
@@ -114,16 +145,59 @@ public struct SessionArchiveWriteQueue: Sendable {
         entries.removeAll()
         pendingBytes = 0
         submittedRevision = persistedRevision
-        overflowed = false
-        permanentFailure = false
-        permanentFailureMessage = nil
-        lastFailure = nil
+        if unqueuedWriteCount > acknowledgedUnqueuedWriteCount {
+            overflowed = true
+            permanentFailure = true
+            permanentFailureMessage = "待保存队列已满；部分新写入没有入队。"
+            lastFailure = permanentFailureMessage
+        } else {
+            overflowed = false
+            permanentFailure = false
+            permanentFailureMessage = nil
+            lastFailure = nil
+        }
     }
 
     public var snapshot: SessionPersistenceSnapshot {
         SessionPersistenceSnapshot(submittedRevision: submittedRevision, persistedRevision: persistedRevision,
                                   pendingEvents: entries.count, pendingBytes: pendingBytes,
-                                  lastPersistedAt: lastPersistedAt, lastFailure: lastFailure)
+                                  lastPersistedAt: lastPersistedAt, lastFailure: lastFailure,
+                                  unqueuedWriteCount: unqueuedWriteCount,
+                                  acknowledgedUnqueuedWriteCount: acknowledgedUnqueuedWriteCount,
+                                  canAcknowledgeDataLoss: canAcknowledgeDataLoss)
+    }
+
+    private mutating func recordUnqueuedWrite() {
+        unqueuedWriteCount += 1
+        overflowed = true
+        permanentFailure = true
+        permanentFailureMessage = "待保存队列已满；新写入没有入队。"
+        lastFailure = permanentFailureMessage
+    }
+}
+
+/// Tracks translation write revisions that should refresh a session after a successful receipt.
+/// The archive keeps one tracker per session and only acknowledges revisions reported persisted
+/// by `SessionArchiveWriteQueue`.
+public struct SessionTranslationWriteReceipts: Sendable, Equatable {
+    private var pendingRevisions: Set<Int> = []
+
+    public init() {}
+
+    public var hasPending: Bool { !pendingRevisions.isEmpty }
+
+    public mutating func recordSubmittedRevision(_ revision: Int) {
+        guard revision > 0 else { return }
+        pendingRevisions.insert(revision)
+    }
+
+    /// Returns true when this receipt acknowledges one or more tracked translation writes.
+    @discardableResult
+    public mutating func acknowledge(persistedRevision: Int) -> Bool {
+        let persisted = pendingRevisions.filter { $0 <= persistedRevision }
+        guard !persisted.isEmpty else { return false }
+        pendingRevisions.subtract(persisted)
+        return true
     }
 }
 
@@ -140,6 +214,15 @@ public struct SessionArchiveFileAppender: Sendable {
             if mode == .append { try append(data, url) }
             else { try Self.replace(data, at: url) }
         }
+    }
+
+    /// Internal low-level hook for exercising rollback after a file handle has
+    /// written only part of an append. Production callers should use `live`.
+    static func usingFileHandleAppend(_ writeData: @escaping @Sendable (Data, FileHandle) throws -> Void) -> Self {
+        Self(write: { data, url, mode in
+            if mode == .append { try Self.append(data, to: url, writeData: writeData) }
+            else { try Self.replace(data, at: url) }
+        })
     }
 
     public func append(_ data: Data, to url: URL) throws {
@@ -167,7 +250,8 @@ public struct SessionArchiveFileAppender: Sendable {
         }
     }
 
-    public static let live = SessionArchiveFileAppender(append: { data, url in
+    private static func append(_ data: Data, to url: URL,
+                              writeData: @Sendable (Data, FileHandle) throws -> Void) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if !FileManager.default.fileExists(atPath: url.path) {
             guard FileManager.default.createFile(atPath: url.path, contents: nil) else {
@@ -187,7 +271,7 @@ public struct SessionArchiveFileAppender: Sendable {
                     try handle.write(contentsOf: Data([0x0A]))
                 }
             }
-            try handle.write(contentsOf: data)
+            try writeData(data, handle)
             try handle.synchronize()
             try handle.close()
         } catch {
@@ -196,5 +280,9 @@ public struct SessionArchiveFileAppender: Sendable {
             catch { throw CocoaError(.fileWriteUnknown, userInfo: [NSUnderlyingErrorKey: error]) }
             throw error
         }
-    })
+    }
+
+    public static let live = SessionArchiveFileAppender.usingFileHandleAppend { data, handle in
+        try handle.write(contentsOf: data)
+    }
 }

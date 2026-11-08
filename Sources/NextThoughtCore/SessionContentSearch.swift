@@ -21,9 +21,17 @@ public struct SessionSearchField: Sendable, Equatable {
     public let lineID: UUID?
     public let sourceRevision: String?
     public let isStale: Bool?
+    public let sourceStatus: SessionDerivedContentStatus?
+    public let alternateID: String?
+    public let alternateKind: SessionSearchFieldKind?
+    public let alternateLineID: UUID?
+    public let alternateSourceRevision: String?
 
     public init(kind: SessionSearchFieldKind, text: String, location: String? = nil, alternateText: String? = nil,
-                id: String? = nil, lineID: UUID? = nil, sourceRevision: String? = nil, isStale: Bool? = nil) {
+                id: String? = nil, lineID: UUID? = nil, sourceRevision: String? = nil, isStale: Bool? = nil,
+                sourceStatus: SessionDerivedContentStatus? = nil, alternateID: String? = nil,
+                alternateKind: SessionSearchFieldKind? = nil, alternateLineID: UUID? = nil,
+                alternateSourceRevision: String? = nil) {
         self.kind = kind
         self.text = text
         self.alternateText = alternateText
@@ -32,6 +40,11 @@ public struct SessionSearchField: Sendable, Equatable {
         self.lineID = lineID
         self.sourceRevision = sourceRevision
         self.isStale = isStale
+        self.sourceStatus = sourceStatus
+        self.alternateID = alternateID
+        self.alternateKind = alternateKind
+        self.alternateLineID = alternateLineID
+        self.alternateSourceRevision = alternateSourceRevision
     }
 }
 
@@ -46,9 +59,11 @@ public struct SessionSearchHit: Sendable, Equatable {
     public let lineID: UUID?
     public let sourceRevision: String?
     public let isStale: Bool?
+    public let sourceStatus: SessionDerivedContentStatus?
 
     public init(kind: SessionSearchFieldKind, excerpt: String, location: String?, matchedForm: String, isMisheard: Bool,
-                id: String? = nil, lineID: UUID? = nil, sourceRevision: String? = nil, isStale: Bool? = nil) {
+                id: String? = nil, lineID: UUID? = nil, sourceRevision: String? = nil, isStale: Bool? = nil,
+                sourceStatus: SessionDerivedContentStatus? = nil) {
         self.kind = kind
         self.excerpt = excerpt
         self.location = location
@@ -58,6 +73,7 @@ public struct SessionSearchHit: Sendable, Equatable {
         self.lineID = lineID
         self.sourceRevision = sourceRevision
         self.isStale = isStale
+        self.sourceStatus = sourceStatus
     }
 }
 
@@ -105,14 +121,11 @@ public enum SessionContentSearch {
     public static func fields(meta: SessionMeta, lines: [SessionTranscriptLine], questions: [SessionQuestionEvent],
                               answers: [SessionAnswerEvent], summary: SessionSummary?, notes: StructuredNotes?) -> [SessionSearchField] {
         var fields: [SessionSearchField] = []
-        func append(_ kind: SessionSearchFieldKind, _ text: String?, at location: String? = nil) {
-            guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-            fields.append(SessionSearchField(kind: kind, text: text, location: location))
-        }
-
         let projection = SessionProjectionBuilder.build(meta: meta, lines: lines, answers: answers, detected: questions,
                                                         summary: summary, notes: notes)
-        for item in projection.searchableText where item.lineID != nil {
+        let structuredPayloads = structuredPayloads(in: summary)
+        let structuredIDs = Set(structuredPayloads.map { "summary:\(meta.id.uuidString):structured:\($0.format.rawValue)" })
+        for item in projection.searchableText where !structuredIDs.contains(item.id) {
             let kind: SessionSearchFieldKind
             switch item.kind {
             case .transcript: kind = .transcript
@@ -122,83 +135,65 @@ public enum SessionContentSearch {
             case .answer: kind = .answer
             case .summary, .notes: kind = .notes
             }
+            let lineID = item.lineID ?? nearestTranscriptLineID(at: item.location, in: projection.transcript)
             fields.append(SessionSearchField(kind: kind, text: item.text, location: item.location,
-                                             alternateText: item.alternateText, id: item.id, lineID: item.lineID,
-                                             sourceRevision: item.sourceRevision, isStale: item.isStale))
+                                             alternateText: item.alternateText, id: item.id, lineID: lineID,
+                                             sourceRevision: item.sourceRevision, isStale: item.isStale,
+                                             sourceStatus: item.sourceStatus,
+                                             alternateID: item.kind == .correctedTranscript
+                                                ? "line:\(item.lineID?.uuidString ?? ""):original" : nil,
+                                             alternateKind: item.kind == .correctedTranscript ? .transcript : nil,
+                                             alternateLineID: item.kind == .correctedTranscript ? item.lineID : nil,
+                                             alternateSourceRevision: item.kind == .correctedTranscript
+                                                ? projection.transcript.first(where: { $0.id == item.lineID })?.originalRevision : nil))
         }
-        if let notes {
-            append(.notes, notes.title)
-            for section in notes.sections {
-                append(.notes, section.title)
-                for item in section.items {
-                    let location = item.time.flatMap { NotesTime.seconds($0) }.map(NotesTime.text)
-                    append(.notes, item.text, at: location)
-                    append(.notes, item.owner, at: location)
-                    append(.notes, item.due, at: location)
-                    append(.notes, item.answer, at: location)
-                    append(.notes, item.verdict, at: location)
-                    append(.notes, item.better, at: location)
-                    append(.notes, item.quote, at: location)
-                }
-            }
-        }
-        for question in questions {
-            let location = NotesTime.text(max(0, Int(question.date.timeIntervalSince(meta.startedAt))))
-            append(.question, question.text, at: location)
-            append(.question, question.leadIn, at: location)
-        }
-        for answer in answers {
-            let location = NotesTime.text(max(0, Int(answer.date.timeIntervalSince(meta.startedAt))))
-            append(.question, answer.question, at: location)
-            append(.answer, answer.answer, at: location)
-            append(.answer, answer.webAnswer, at: location)
-        }
-        if let summary {
-            append(.notes, summary.title)
-            append(.notes, summary.markdown)
-            for question in summary.questions {
-                append(.question, question.text)
-                append(.answer, question.answerGist)
-            }
-            for lesson in summary.lessons ?? [] { append(.notes, lesson) }
-            for entry in summary.bank ?? [] {
-                append(.question, entry.question)
-                append(.answer, entry.answer)
-            }
-            var structured = summary.structuredAll ?? []
-            if let latest = summary.structured, !structured.contains(where: { $0.format == latest.format }) {
-                structured.append(latest)
-            }
-            for payload in structured { appendStructured(payload, append: append) }
+        for payload in structuredPayloads where payload.hasContent {
+            let status = payload.transcriptSourceRevision.map {
+                $0 == projection.transcriptSourceRevision ? SessionDerivedContentStatus.current : .stale
+            } ?? .unknown
+            fields.append(contentsOf: structuredFields(payload, sourceStatus: status,
+                                                       transcript: projection.transcript))
         }
         return fields
     }
 
     public static func firstHit(in fields: [SessionSearchField], terms: GlossarySearch) -> SessionSearchHit? {
-        for field in fields {
+        hits(in: fields, terms: terms).first
+    }
+
+    /// Returns one hit for every matching source field, in document order. The history UI uses
+    /// this list for a per-meeting result counter and next/previous navigation.
+    public static func hits(in fields: [SessionSearchField], terms: GlossarySearch) -> [SessionSearchHit] {
+        var seenIDs = Set<String>()
+        return fields.compactMap { field in
             let matchedText: String
             let match: GlossarySearchHit
+            let usesAlternate: Bool
             if let directMatch = terms.firstMatch(in: field.text) {
                 matchedText = field.text
                 match = directMatch
+                usesAlternate = false
             } else if let alternateText = field.alternateText, let alternateMatch = terms.firstMatch(in: alternateText) {
                 matchedText = alternateText
                 match = alternateMatch
+                usesAlternate = true
             } else {
-                continue
+                return nil
             }
             let range = matchedText.range(of: match.form, options: [.caseInsensitive, .widthInsensitive])
-            return SessionSearchHit(kind: field.kind,
-                                    excerpt: excerpt(matchedText, around: range),
-                                    location: field.location,
-                                    matchedForm: match.form,
-                                    isMisheard: match.isMisheard,
-                                    id: field.id,
-                                    lineID: field.lineID,
-                                    sourceRevision: field.sourceRevision,
-                                    isStale: field.isStale)
+            let hit = SessionSearchHit(kind: usesAlternate ? (field.alternateKind ?? field.kind) : field.kind,
+                                       excerpt: excerpt(matchedText, around: range),
+                                       location: field.location,
+                                       matchedForm: match.form,
+                                       isMisheard: match.isMisheard,
+                                       id: usesAlternate ? (field.alternateID ?? field.id) : field.id,
+                                       lineID: usesAlternate ? (field.alternateLineID ?? field.lineID) : field.lineID,
+                                       sourceRevision: usesAlternate ? (field.alternateSourceRevision ?? field.sourceRevision) : field.sourceRevision,
+                                       isStale: usesAlternate ? false : field.isStale,
+                                       sourceStatus: usesAlternate ? nil : field.sourceStatus)
+            guard let id = hit.id else { return hit }
+            return seenIDs.insert(id).inserted ? hit : nil
         }
-        return nil
     }
 
     /// Searches every supplied document and returns one first hit per meeting, preserving the
@@ -219,45 +214,80 @@ public enum SessionContentSearch {
         return before + String(text[context]) + after
     }
 
-    private static func appendStructured(_ payload: StructuredNotesPayload,
-                                         append: (SessionSearchFieldKind, String?, String?) -> Void) {
+    private static func structuredPayloads(in summary: SessionSummary?) -> [StructuredNotesPayload] {
+        guard let summary else { return [] }
+        var payloads = summary.structuredAll ?? []
+        if let latest = summary.structured, !payloads.contains(where: { $0.format == latest.format }) {
+            payloads.append(latest)
+        }
+        return payloads
+    }
+
+    /// Keep precise timestamps for structured formats while carrying the same freshness
+    /// contract as the projection's combined Markdown field.
+    private static func structuredFields(_ payload: StructuredNotesPayload,
+                                         sourceStatus: SessionDerivedContentStatus,
+                                         transcript: [SessionProjectedTranscriptLine]) -> [SessionSearchField] {
+        var fields: [SessionSearchField] = []
+        var ordinal = 0
+        func append(_ kind: SessionSearchFieldKind = .notes, _ text: String?, at location: String? = nil) {
+            guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            ordinal += 1
+            fields.append(SessionSearchField(kind: kind, text: text, location: location,
+                                             id: "summary:structured:\(payload.format.rawValue):\(ordinal)",
+                                             lineID: nearestTranscriptLineID(at: location, in: transcript),
+                                             sourceRevision: payload.transcriptSourceRevision,
+                                             isStale: sourceStatus == .stale, sourceStatus: sourceStatus))
+        }
         switch payload.format {
-        case .standard: break
+        case .standard:
+            break
         case .fishbone:
-            guard let notes = payload.fishbone else { return }
-            append(.notes, notes.head, notes.headAt.map(NotesTime.text))
+            guard let notes = payload.fishbone else { return [] }
+            append(.notes, notes.head, at: notes.headAt.map(NotesTime.text))
             for category in notes.categories {
-                append(.notes, category.name, nil)
-                for cause in category.causes { append(.notes, cause.text, cause.at.map(NotesTime.text)) }
+                append(.notes, category.name)
+                for cause in category.causes { append(.notes, cause.text, at: cause.at.map(NotesTime.text)) }
             }
         case .outline:
-            guard let notes = payload.outline else { return }
+            guard let notes = payload.outline else { return [] }
             for section in notes.sections {
-                append(.notes, section.title, section.at.map(NotesTime.text))
+                append(.notes, section.title, at: section.at.map(NotesTime.text))
                 for point in section.points {
-                    append(.notes, point.text, point.at.map(NotesTime.text))
-                    for child in point.children { append(.notes, child.text, child.at.map(NotesTime.text)) }
+                    append(.notes, point.text, at: point.at.map(NotesTime.text))
+                    for child in point.children { append(.notes, child.text, at: child.at.map(NotesTime.text)) }
                 }
             }
             for concept in notes.concepts {
-                append(.notes, concept.term, concept.at.map(NotesTime.text))
-                append(.notes, concept.meaning, concept.at.map(NotesTime.text))
+                append(.notes, concept.term, at: concept.at.map(NotesTime.text))
+                append(.notes, concept.meaning, at: concept.at.map(NotesTime.text))
             }
-            for item in notes.review { append(.notes, item.text, item.at.map(NotesTime.text)) }
+            for item in notes.review { append(.notes, item.text, at: item.at.map(NotesTime.text)) }
         case .viewpoints:
-            guard let notes = payload.viewpoints else { return }
-            append(.notes, notes.topic, notes.topicAt.map(NotesTime.text))
+            guard let notes = payload.viewpoints else { return [] }
+            append(.notes, notes.topic, at: notes.topicAt.map(NotesTime.text))
             for issue in notes.issues {
-                append(.notes, issue.title, nil)
+                append(.notes, issue.title)
                 for position in issue.positions {
-                    append(.notes, position.party + "：" + position.text, position.at.map(NotesTime.text))
+                    append(.notes, position.party + "：" + position.text, at: position.at.map(NotesTime.text))
                 }
             }
-            for item in notes.consensus { append(.notes, item.text, item.at.map(NotesTime.text)) }
-            for item in notes.disagreements { append(.notes, item.text, item.at.map(NotesTime.text)) }
+            for item in notes.consensus { append(.notes, item.text, at: item.at.map(NotesTime.text)) }
+            for item in notes.disagreements { append(.notes, item.text, at: item.at.map(NotesTime.text)) }
             for owner in notes.owners {
-                append(.notes, [owner.who, owner.task, owner.due].compactMap { $0 }.joined(separator: " · "), owner.at.map(NotesTime.text))
+                append(.notes, [owner.who, owner.task, owner.due].compactMap { $0 }.joined(separator: " · "),
+                       at: owner.at.map(NotesTime.text))
             }
         }
+        return fields
     }
+
+    private static func nearestTranscriptLineID(at location: String?,
+                                                in transcript: [SessionProjectedTranscriptLine]) -> UUID? {
+        guard let seconds = location.flatMap(NotesTime.seconds), !transcript.isEmpty,
+              let nearest = transcript.min(by: { abs($0.offset - seconds) < abs($1.offset - seconds) }),
+              abs(nearest.offset - seconds) <= 45 else { return nil }
+        return nearest.id
+    }
+
 }

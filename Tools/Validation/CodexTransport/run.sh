@@ -11,6 +11,8 @@ done
 for file in AnswerStreaming CodexEventParser ProcessLineReader CancellableTaskValue; do
   cp "$root/Sources/NextThoughtCore/$file.swift" "$probe/$file.swift"
 done
+cp "$root/Sources/NextThought/AppIdentity.swift" "$probe/AppIdentity.swift"
+cp "$root/Sources/NextThought/AppEnvironment.swift" "$probe/AppEnvironment.swift"
 cp "$root/Tools/Validation/CodexTransport/Probe.swift" "$probe/Probe.swift"
 cp "$root/Tools/Validation/CodexTransport/fake-codex.py" "$probe/codex"
 chmod +x "$probe/codex"

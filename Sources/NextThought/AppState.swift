@@ -9,7 +9,23 @@ import UniformTypeIdentifiers
 
 struct SessionTranscriptNavigationTarget: Equatable {
     let sessionID: UUID
-    let hit: SessionSearchHit
+    let hits: [SessionSearchHit]
+    let selectedIndex: Int
+
+    var hit: SessionSearchHit { hits[selectedIndex] }
+
+    init(sessionID: UUID, hit: SessionSearchHit) {
+        self.sessionID = sessionID
+        self.hits = [hit]
+        self.selectedIndex = 0
+    }
+
+    init(sessionID: UUID, hits: [SessionSearchHit], selectedIndex: Int = 0) {
+        precondition(!hits.isEmpty)
+        self.sessionID = sessionID
+        self.hits = hits
+        self.selectedIndex = min(max(selectedIndex, 0), hits.count - 1)
+    }
 }
 
 /// App-wide state. Uses the Observation framework: a view re-renders only when a
@@ -51,6 +67,8 @@ final class AppState {
     var historySelection: UUID?
     /// A history content hit to reveal after its meeting detail has loaded.
     var pendingTranscriptNavigation: SessionTranscriptNavigationTarget?
+    /// Frozen archive detail awaiting a format and transcript-version choice.
+    var sessionExportRequest: SessionExportRequest?
     /// nil shows sessions of all workspaces.
     var historyWorkspaceFilter: UUID?
 

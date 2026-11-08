@@ -178,6 +178,24 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
 
     public var duration: TimeInterval { max(0, (endedAt ?? startedAt).timeIntervalSince(startedAt)) }
 
+    /// Reconciles an interrupted recording from its durable transcript before recovery.
+    /// Returns true only when an interrupted summary can be retried from saved lines.
+    @discardableResult
+    public mutating func recoverInterruptedRecording(transcriptData: Data?, lastTranscriptWrite: Date?) -> Bool {
+        guard endedAt == nil else { return false }
+        endedAt = lastTranscriptWrite ?? startedAt
+        let transcriptCount = transcriptData.map {
+            JSONLines.decodeReport(SessionTranscriptLine.self, from: $0).records.count
+        }
+        if let transcriptCount { self.transcriptCount = transcriptCount }
+        let shouldRecoverSummary = summaryState == .pending && transcriptCount.map { $0 > 0 } == true
+        if summaryState == .pending {
+            summaryState = .none
+            summaryError = nil
+        }
+        return shouldRecoverSummary
+    }
+
     public var displayTitle: String {
         if let title, !title.trimmingCharacters(in: .whitespaces).isEmpty { return title }
         return "\(mode.title) · " + startedAt.formatted(date: .abbreviated, time: .shortened)
@@ -219,18 +237,32 @@ public struct SessionSummary: Codable, Sendable, Equatable {
     /// Every fishbone, outline and viewpoint matrix written for this meeting, one per format
     /// (absent in older summaries, which only have `structured`).
     public var structuredAll: [StructuredNotesPayload]?
+    /// Transcript snapshot used to generate this summary. Nil for older archives.
+    public var transcriptSourceRevision: String?
+    /// Structured-notes snapshot used to generate this summary's rendered note text.
+    /// Nil for summaries written before note-content freshness was tracked.
+    public var structuredNotesSourceRevision: String?
+    /// Explicit per-item evidence reviews, bound to both the claim and current transcript.
+    public var evidenceReviews: [String: SessionEvidenceReview]?
     public init(title: String, markdown: String, questions: [SummaryQuestion], generatedAt: Date, model: String,
                 lessons: [String]? = nil, bank: [BankEntry]? = nil, appliedToWorkspace: Bool? = nil,
-                structured: StructuredNotesPayload? = nil, structuredAll: [StructuredNotesPayload]? = nil) {
+                structured: StructuredNotesPayload? = nil, structuredAll: [StructuredNotesPayload]? = nil,
+                transcriptSourceRevision: String? = nil,
+                structuredNotesSourceRevision: String? = nil,
+                evidenceReviews: [String: SessionEvidenceReview]? = nil) {
         self.title = title; self.markdown = markdown; self.questions = questions; self.generatedAt = generatedAt; self.model = model
         self.lessons = lessons; self.bank = bank; self.appliedToWorkspace = appliedToWorkspace
         self.structured = structured; self.structuredAll = structuredAll
+        self.transcriptSourceRevision = transcriptSourceRevision
+        self.structuredNotesSourceRevision = structuredNotesSourceRevision
+        self.evidenceReviews = evidenceReviews
     }
 
     /// A text rewrite keeps the latest saved diagrams, including results completed while it ran.
     public mutating func preserveStructuredViews(from latest: SessionSummary?) {
         structured = latest?.structured
         structuredAll = latest?.structuredAll
+        evidenceReviews = latest?.evidenceReviews ?? evidenceReviews
     }
 
     /// The saved view of a format that has something to draw (failure markers and the plain
@@ -559,7 +591,22 @@ public enum SessionMarkdownExporter {
         if !meta.audioSource.isEmpty { facts.append(meta.audioSource) }
         out.append("> " + facts.joined(separator: " · "))
         out.append("")
-        if let summary = projection.summary {
+        switch projection.derivedContentStatus {
+        case .current:
+            break
+        case .stale:
+            out.append("> 提示：部分纪要内容来自较旧的转写版本；请核对当前原话后再转发。")
+            out.append("")
+        case .unknown:
+            out.append("> 提示：旧纪要未记录转写版本，无法确认它是否与当前原话一致。")
+            out.append("")
+        }
+        if let notes = projection.notes {
+            out.append("## 纪要")
+            out.append("")
+            out.append(renderNotes(notes))
+            out.append("")
+        } else if let summary = projection.summary {
             // The model's own document, minus its title section (already the heading).
             var body = summary.markdown
             if let range = body.range(of: "## ") { body = String(body[range.lowerBound...]) }
@@ -584,13 +631,43 @@ public enum SessionMarkdownExporter {
         out.append("")
         out.append(contentsOf: projection.transcript.map { line in
             let offset = line.offset
-            let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(line.speakerLabel)**：" + line.displayText
+            let timestamp = String(format: "- `%02d:%02d` ", offset / 60, offset % 60)
+            let speaker = "**\(line.speakerLabel)**："
+            if line.languageView == .translated, line.translationIsStale,
+               let translation = line.translationText,
+               !translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return timestamp + speaker + "译文（待更新）：" + translation
+            }
+            let original = timestamp + speaker + line.displayText
             guard line.languageView == .bilingual,
                   let translation = line.translationText, !translation.isEmpty else { return original }
             let label = line.translationIsStale ? "译文（待更新）" : "译文"
             return original + "\n  *\(label)：* " + translation
         })
         return out.joined(separator: "\n") + "\n"
+    }
+
+    /// Render the same structured note fields the meeting page reads, rather than the
+    /// original generated Markdown, which cannot include edits made after generation.
+    private static func renderNotes(_ notes: StructuredNotes) -> String {
+        let english = notes.language == "en"
+        var sections: [String] = []
+        for section in notes.sections where !section.items.isEmpty {
+            var lines = ["### \(section.title)"]
+            for item in section.items {
+                lines.append(NotesMarkdown.line(item, kind: section.kind, english: english))
+                if section.kind == .questions {
+                    if let answer = item.answer, !answer.isEmpty {
+                        lines.append("  - \(english ? "My answer: " : "我答：")\(answer)")
+                    }
+                    if item.improves, let better = item.better, !better.isEmpty {
+                        lines.append("  - \(english ? "Better: " : "更好的答法：")\(better)")
+                    }
+                }
+            }
+            sections.append(lines.joined(separator: "\n"))
+        }
+        return sections.isEmpty ? "这场会议没有整理出内容。" : sections.joined(separator: "\n\n")
     }
 }
 

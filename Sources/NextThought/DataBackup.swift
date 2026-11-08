@@ -162,11 +162,14 @@ enum DataBackup {
     /// recovery-point maintenance runs away from the main actor.
     @MainActor
     @discardableResult
-    static func automaticBackup(reason: String) async throws -> URL {
+    static func automaticBackup(reason: String, waitForFinalTranslationDrainOf sessionID: UUID? = nil) async throws -> URL {
         guard SessionArchive.shared.activeID == nil else {
             throw AppFailure.capture("请先结束当前会议，再创建完整恢复点。")
         }
         WorkspaceStore.shared.flush()
+        if let sessionID, !(await SessionArchive.shared.waitForFinalTranslationDrain(sessionID: sessionID)) {
+            throw AppFailure.capture("会议最终翻译尚未全部保存，未创建恢复点。")
+        }
         guard await SessionArchive.shared.flush() else {
             let failure = SessionArchive.shared.persistenceBySession.values.first(where: { $0.lastFailure != nil })?.lastFailure
             throw AppFailure.capture("会议归档尚未全部保存，未创建恢复点。" + (failure.map { "\n" + $0 } ?? "请重试保存后再试。"))
@@ -198,11 +201,15 @@ enum DataBackup {
     }
 
     @MainActor
-    static func afterSession() {
-        guard UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true else { return }
-        Task {
-            do { _ = try await automaticBackup(reason: "session") }
-            catch { AppState.shared.dataStatus = "会议归档或恢复点创建失败：" + error.localizedDescription }
+    @discardableResult
+    static func afterSession(sessionID: UUID) -> Task<URL?, Never>? {
+        guard UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true else { return nil }
+        return Task {
+            do { return try await automaticBackup(reason: "session", waitForFinalTranslationDrainOf: sessionID) }
+            catch {
+                AppState.shared.dataStatus = "会议归档或恢复点创建失败：" + error.localizedDescription
+                return nil
+            }
         }
     }
 

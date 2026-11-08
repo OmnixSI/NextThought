@@ -296,16 +296,19 @@ public struct StructuredNotes: Codable, Sendable, Equatable {
     public var droppedCount: Int
     public var generatedAt: Date
     public var model: String
+    /// Transcript snapshot used to generate these notes. Nil for older archives.
+    public var transcriptSourceRevision: String?
 
     public init(templateID: String, templateName: String, language: String, title: String, sections: [NotesSectionResult],
-                corrections: [TranscriptCorrection] = [], droppedCount: Int = 0, generatedAt: Date = Date(), model: String = "") {
+                corrections: [TranscriptCorrection] = [], droppedCount: Int = 0, generatedAt: Date = Date(), model: String = "",
+                transcriptSourceRevision: String? = nil) {
         self.templateID = templateID; self.templateName = templateName; self.language = language; self.title = title
         self.sections = sections; self.corrections = corrections; self.droppedCount = droppedCount
-        self.generatedAt = generatedAt; self.model = model
+        self.generatedAt = generatedAt; self.model = model; self.transcriptSourceRevision = transcriptSourceRevision
     }
 
     enum CodingKeys: String, CodingKey {
-        case templateID, templateName, language, title, sections, corrections, droppedCount, generatedAt, model
+        case templateID, templateName, language, title, sections, corrections, droppedCount, generatedAt, model, transcriptSourceRevision
     }
 
     public init(from decoder: Decoder) throws {
@@ -319,6 +322,7 @@ public struct StructuredNotes: Codable, Sendable, Equatable {
         droppedCount = try c.decodeIfPresent(Int.self, forKey: .droppedCount) ?? 0
         generatedAt = try c.decodeIfPresent(Date.self, forKey: .generatedAt) ?? Date()
         model = try c.decodeIfPresent(String.self, forKey: .model) ?? ""
+        transcriptSourceRevision = try c.decodeIfPresent(String.self, forKey: .transcriptSourceRevision)
     }
 
     public var activeCorrections: [TranscriptCorrection] { corrections.filter { !$0.reverted } }

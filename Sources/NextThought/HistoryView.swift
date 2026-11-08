@@ -35,6 +35,8 @@ struct HistoryView: View {
     @State private var sortOrder: SessionSort = .newest
     /// First content hit per meeting. Filled in by a cancellable, batched archive search.
     @State private var contentHits: [UUID: SessionSearchHit] = [:]
+    /// All matching source fields per meeting, used by the result counter and previous/next controls.
+    @State private var contentHitLists: [UUID: [SessionSearchHit]] = [:]
     /// Meetings with unreadable sections stay visible as possible results.
     @State private var contentSearchIssues: [UUID: String] = [:]
     /// Sessions found only through a recorded misheard spelling (术语和人名), with that spelling.
@@ -118,6 +120,7 @@ struct HistoryView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) { searchHitNavigator }
         .onAppear { selectFirstIfNeeded() }
         .onChange(of: state.section) { _, section in
             if section == .meetings {
@@ -190,6 +193,41 @@ struct HistoryView: View {
         // Re-runs the content search whenever the query or the filter scope changes;
         // `.task(id:)` cancels the previous run automatically.
         .task(id: contentSearchKey) { await runContentSearch() }
+    }
+
+    @ViewBuilder
+    private var searchHitNavigator: some View {
+        if let target = state.pendingTranscriptNavigation, target.sessionID == selection {
+            HStack(spacing: Space.s2) {
+                Text("搜索命中 \(target.selectedIndex + 1)/\(target.hits.count) · \(searchHitKindLabel(target.hit.kind))")
+                    .font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
+                Text(verbatim: target.hit.excerpt)
+                    .font(Typo.caption).foregroundStyle(Ink.ink).lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button { moveSearchHit(by: -1) } label: { Image(systemName: "chevron.up") }
+                    .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 7))
+                    .disabled(target.hits.count < 2)
+                    .help("上一个搜索命中")
+                Button { moveSearchHit(by: 1) } label: { Image(systemName: "chevron.down") }
+                    .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 7))
+                    .disabled(target.hits.count < 2)
+                    .help("下一个搜索命中")
+            }
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s2)
+            .background(Ink.surface)
+            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("搜索结果导航，共 \(target.hits.count) 个命中")
+        }
+    }
+
+    private func moveSearchHit(by offset: Int) {
+        guard let target = state.pendingTranscriptNavigation, target.sessionID == selection,
+              target.hits.count > 1 else { return }
+        let next = (target.selectedIndex + offset + target.hits.count) % target.hits.count
+        state.pendingTranscriptNavigation = SessionTranscriptNavigationTarget(
+            sessionID: target.sessionID, hits: target.hits, selectedIndex: next)
     }
 
     private func archiveOverview(compact: Bool = false) -> some View {
@@ -375,8 +413,8 @@ struct HistoryView: View {
 
     private func openFromOverview(_ id: UUID) {
         isCollectionOverview = false
-        if let hit = contentHits[id], hit.lineID != nil {
-            state.pendingTranscriptNavigation = SessionTranscriptNavigationTarget(sessionID: id, hit: hit)
+        if let hits = contentHitLists[id], !hits.isEmpty {
+            state.pendingTranscriptNavigation = SessionTranscriptNavigationTarget(sessionID: id, hits: hits)
         } else {
             state.pendingTranscriptNavigation = nil
         }
@@ -780,8 +818,10 @@ struct HistoryView: View {
         lengthFilter = .all
         sortOrder = .newest
         contentHits = [:]
+        contentHitLists = [:]
         contentSearchIssues = [:]
         misheardMatch = [:]
+        state.pendingTranscriptNavigation = nil
     }
 
     /// Metadata-only match: always available, no disk access.
@@ -835,16 +875,20 @@ struct HistoryView: View {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             contentHits = [:]
+            contentHitLists = [:]
             contentSearchIssues = [:]
             misheardMatch = [:]
+            state.pendingTranscriptNavigation = nil
             isContentSearching = false
             searchProgress = 0
             searchTotal = 0
             return
         }
         contentHits = [:]
+        contentHitLists = [:]
         contentSearchIssues = [:]
         misheardMatch = [:]
+        state.pendingTranscriptNavigation = nil
         isContentSearching = true
         // Search finalized records only. The active session joins the archive automatically when
         // it ends, at which point the task identity changes and this scan runs again.
@@ -863,19 +907,35 @@ struct HistoryView: View {
         }
         guard !Task.isCancelled else { return }
         var hits: [UUID: SessionSearchHit] = [:]
+        var hitLists: [UUID: [SessionSearchHit]] = [:]
         var readIssues: [UUID: String] = [:]
         let publishEvery = 16
         for (index, meta) in sessionsToSearch.enumerated() {
             if Task.isCancelled { return }
+            if archive.persistenceBySession[meta.id]?.pendingEvents ?? 0 > 0 {
+                // A just-finished session becomes searchable before its queued transcript
+                // writes necessarily reach disk. Wait for that receipt before taking the
+                // search snapshot; a failed flush remains visible as an archive issue.
+                let saved = await archive.flush(sessionID: meta.id)
+                guard !Task.isCancelled else { return }
+                if !saved, let failure = archive.persistenceBySession[meta.id]?.lastFailure {
+                    readIssues[meta.id] = failure
+                }
+            }
             if let detail = await archive.detail(meta.id) {
-                if let issue = detail.readIssues.first { readIssues[meta.id] = issue.message }
+                if let issue = detail.readIssues.first {
+                    let previous = readIssues[meta.id].map { $0 + "\n" } ?? ""
+                    readIssues[meta.id] = previous + issue.message
+                }
                 // The typed text plus spellings from this meeting's global and series glossaries.
                 let terms = searchCache.terms(for: trimmed, state: state,
                                               workspaceID: glossaryWorkspaceID(for: detail.meta), includeAllWorkspaces: false)
                 let fields = SessionContentSearch.fields(meta: detail.meta, lines: detail.lines, questions: detail.questions,
                                                          answers: detail.answers, summary: detail.summary, notes: detail.notes)
-                if let hit = SessionContentSearch.firstHit(in: fields, terms: terms) {
+                let sessionHits = SessionContentSearch.hits(in: fields, terms: terms)
+                if let hit = sessionHits.first {
                     hits[meta.id] = hit
+                    hitLists[meta.id] = sessionHits
                 }
             } else {
                 readIssues[meta.id] = "无法读取会议归档。"
@@ -884,6 +944,7 @@ struct HistoryView: View {
             if completed.isMultiple(of: publishEvery) || completed == sessionsToSearch.count {
                 guard !Task.isCancelled else { return }
                 contentHits = hits
+                contentHitLists = hitLists
                 contentSearchIssues = readIssues
                 misheardMatch = Dictionary(uniqueKeysWithValues: hits.compactMap { id, hit in
                     hit.isMisheard ? (id, hit.matchedForm) : nil
@@ -893,6 +954,7 @@ struct HistoryView: View {
         }
         guard !Task.isCancelled else { return }
         contentHits = hits
+        contentHitLists = hitLists
         contentSearchIssues = readIssues
         misheardMatch = Dictionary(uniqueKeysWithValues: hits.compactMap { id, hit in
             hit.isMisheard ? (id, hit.matchedForm) : nil
@@ -904,21 +966,30 @@ struct HistoryView: View {
 
 @MainActor
 private func historyRowAccessibilityLabel(_ meta: SessionMeta, hit: SessionSearchHit?) -> String {
-    let meeting = "打开会议：\(meta.displayTitle)，\(MeetingOutcome.when(meta.startedAt))，\(MeetingOutcome.line(for: meta))"
+    let meeting = String(localized: "打开会议：\(meta.displayTitle)，\(MeetingOutcome.when(meta.startedAt))，\(MeetingOutcome.line(for: meta))")
     guard let hit else { return meeting }
     let location = hit.location.map { " · \($0)" } ?? ""
-    let stale = hit.isStale == true ? "，译文可能已过期" : ""
-    return "\(meeting)，命中\(searchHitKindLabel(hit.kind))\(location)\(stale)：\(hit.excerpt)"
+    let freshness = searchHitFreshnessLabel(hit).map { "，\($0)" } ?? ""
+    return String(localized: "\(meeting)，命中\(searchHitKindLabel(hit.kind))\(location)\(freshness)：\(hit.excerpt)")
+}
+
+private func searchHitFreshnessLabel(_ hit: SessionSearchHit) -> String? {
+    if hit.kind == .translation && hit.isStale == true { return String(localized: "译文可能已过期") }
+    switch hit.sourceStatus {
+    case .some(.stale): return String(localized: "纪要内容可能已过期")
+    case .some(.unknown): return String(localized: "纪要内容的来源版本不明")
+    case .some(.current), .none: return nil
+    }
 }
 
 private func searchHitKindLabel(_ kind: SessionSearchFieldKind) -> String {
     switch kind {
-    case .transcript: "原话"
-    case .correctedTranscript: "校正原话"
-    case .translation: "译文"
-    case .question: "问题"
-    case .answer: "回答"
-    case .notes: "纪要"
+    case .transcript: String(localized: "原话")
+    case .correctedTranscript: String(localized: "校正原话")
+    case .translation: String(localized: "译文")
+    case .question: String(localized: "问题")
+    case .answer: String(localized: "回答")
+    case .notes: String(localized: "纪要")
     }
 }
 
@@ -1416,8 +1487,8 @@ private struct SessionRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     let kind = searchHitKindLabel(contentHit.kind)
                     let location = contentHit.location.map { " · \($0)" } ?? ""
-                    let stale = contentHit.isStale == true ? " · 译文可能已过期" : ""
-                    Text("\(kind)\(location)\(stale)")
+                    let freshness = searchHitFreshnessLabel(contentHit).map { " · \($0)" } ?? ""
+                    Text("\(kind)\(location)\(freshness)")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(Ink.secondary)
                     Text(verbatim: contentHit.excerpt)

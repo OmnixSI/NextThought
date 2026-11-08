@@ -90,6 +90,44 @@ struct SessionTextProjectionTests {
         #expect(text.contains("*译文（待更新）：* Cache failure"))
     }
 
+    @Test func markdownExportUsesEditedStructuredNotesInsteadOfOlderGeneratedText() {
+        let meta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(30), mode: .meeting)
+        let line = SessionTranscriptLine(date: start.addingTimeInterval(5), speaker: .remote, text: "会议里确认继续观察。")
+        let editedNotes = StructuredNotes(templateID: "general", templateName: "会议", language: "zh", title: "交付安排",
+                                          sections: [NotesSectionResult(id: "decisions", title: "决定", kind: .items,
+                                                                        items: [NotesItem(text: "用户改过的最终措辞")])],
+                                          transcriptSourceRevision: SessionProjectionBuilder.transcriptSourceRevision(meta: meta,
+                                                                                                                     lines: [line]))
+        let olderSummary = SessionSummary(title: "交付安排", markdown: "## 决定\n模型原先写的措辞",
+                                          questions: [], generatedAt: start, model: "test")
+        let projection = SessionProjectionBuilder.build(meta: meta, lines: [line], summary: olderSummary, notes: editedNotes)
+
+        let text = SessionMarkdownExporter.export(meta: meta, projection: projection)
+
+        #expect(projection.notes == editedNotes)
+        #expect(text.contains("用户改过的最终措辞"))
+        #expect(!text.contains("模型原先写的措辞"))
+        #expect(text.contains("会议里确认继续观察。"))
+    }
+
+    @Test func noteAndSummarySearchHitsExposeTheirStaleSourceRevision() {
+        let meta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(30), mode: .meeting)
+        let line = SessionTranscriptLine(date: start.addingTimeInterval(5), speaker: .remote, text: "周一提交")
+        let notes = StructuredNotes(templateID: "general", templateName: "会议", language: "zh", title: "安排",
+                                    sections: [NotesSectionResult(id: "decisions", title: "决定", kind: .items,
+                                                                  items: [NotesItem(text: "周五提交")])],
+                                    transcriptSourceRevision: "previous-transcript")
+        let summary = SessionSummary(title: "旧摘要", markdown: "周五提交", questions: [], generatedAt: start,
+                                     model: "test", transcriptSourceRevision: "previous-transcript")
+
+        let projection = SessionProjectionBuilder.build(meta: meta, lines: [line], summary: summary, notes: notes)
+
+        #expect(projection.searchableText.contains { $0.kind == .notes && $0.text == "周五提交" && $0.isStale })
+        #expect(projection.searchableText.contains { $0.kind == .summary && $0.text == "周五提交" && $0.isStale })
+        #expect(projection.summary?.sourceStatus == .stale)
+        #expect(SessionMarkdownExporter.export(meta: meta, projection: projection).contains("较旧的转写版本"))
+    }
+
     @Test func projectionSearchHitKeepsLineIdentityAcrossReordering() {
         let target = SessionTranscriptLine(id: UUID(), date: start.addingTimeInterval(8), speaker: .remote, text: "目标句子")
         let other = SessionTranscriptLine(id: UUID(), date: start, speaker: .me, text: "另一句")

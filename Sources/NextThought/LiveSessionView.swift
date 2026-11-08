@@ -203,13 +203,26 @@ private struct LiveTopBar: View {
         if let sessionID = state.activeArchiveID,
            let snapshot = SessionArchive.shared.persistenceBySession[sessionID] {
             HStack(spacing: Space.s1) {
-                Image(systemName: archiveSaveSymbol(snapshot.state))
+                Image(systemName: snapshot.unqueuedWriteCount > 0 ? "exclamationmark.triangle.fill" : archiveSaveSymbol(snapshot.state))
                 if snapshot.state != .saved {
                     Text(snapshot.state == .saving ? "保存中" : "保存受阻")
                         .font(Typo.caption)
                         .lineLimit(1)
                 }
-                if snapshot.state == .blocked, snapshot.pendingEvents > 0 {
+                if snapshot.unqueuedWriteCount > 0 {
+                    Text(snapshot.dataLossAcknowledged
+                         ? "已确认：有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。"
+                         : "有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。")
+                        .font(Typo.caption)
+                        .lineLimit(2)
+                }
+                if snapshot.canAcknowledgeDataLoss {
+                    Button("确认缺失") {
+                        SessionArchive.shared.acknowledgeDataLossAndResume(sessionID)
+                    }
+                    .buttonStyle(.plain)
+                    .help("确认这些写入未保存，并继续保存后续内容。")
+                } else if snapshot.state == .blocked, snapshot.pendingEvents > 0 {
                     Button { SessionArchive.shared.retryPersistence(sessionID) } label: {
                         Image(systemName: "arrow.clockwise")
                     }
@@ -217,9 +230,13 @@ private struct LiveTopBar: View {
                     .help(snapshot.lastFailure ?? "重试保存")
                 }
             }
-            .foregroundStyle(snapshot.state == .blocked ? Ink.caution : Ink.secondary)
+            .foregroundStyle(snapshot.state == .blocked || snapshot.unqueuedWriteCount > 0 ? Ink.caution : Ink.secondary)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(Text(verbatim: snapshot.lastFailure ?? (snapshot.state == .saved ? "会议归档已保存" : snapshot.state == .saving ? "会议归档正在保存" : "会议归档保存受阻")))
+            .accessibilityLabel(Text(verbatim: snapshot.unqueuedWriteCount > 0
+                ? (snapshot.dataLossAcknowledged
+                   ? "已确认：有 \(snapshot.unqueuedWriteCount) 项会议内容未保存。"
+                   : "有 \(snapshot.unqueuedWriteCount) 项会议内容未保存，需要确认缺失并继续保存。")
+                : (snapshot.lastFailure ?? (snapshot.state == .saved ? "会议归档已保存" : snapshot.state == .saving ? "会议归档正在保存" : "会议归档保存受阻"))))
         }
     }
 

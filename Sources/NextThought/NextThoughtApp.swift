@@ -175,8 +175,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     state.historySelection = pendingSessionID
                     state.section = .meetings
                 }
-                let failure = state.archive.persistenceBySession.values.first(where: { $0.lastFailure != nil })?.lastFailure
-                state.errorMessage = "会议归档尚未全部保存。请重试保存后再退出。" + (failure.map { "\n" + $0 } ?? "")
+                let snapshots = Array(state.archive.persistenceBySession.values)
+                let failure = snapshots.first(where: { $0.lastFailure != nil })?.lastFailure
+                let hasUnacknowledgedLoss = snapshots.contains(where: \.hasUnacknowledgedDataLoss)
+                state.errorMessage = hasUnacknowledgedLoss
+                    ? "有会议内容未能入队，因此没有保存。请到会议归档确认缺失并继续保存后，再退出。" + (failure.map { "\n" + $0 } ?? "")
+                    : "会议归档尚未全部保存。请重试保存后再退出。" + (failure.map { "\n" + $0 } ?? "")
                 state.resumeAfterFailedTermination()
                 sender.reply(toApplicationShouldTerminate: false)
             }

@@ -20,6 +20,12 @@ struct MeetingCarryTests {
         #expect(next.questionBank.isEmpty)
         #expect(!next.retrievalDocuments.contains { $0.name == "题库（历次复盘）" })
         #expect(carry.transcript)
+
+        let archivedContext = SessionContextSnapshot(mode: next.mode, style: next.style,
+                                                     preferences: next.preferences, profile: next.materialText,
+                                                     documents: next.documents.filter(\.enabled))
+        #expect(archivedContext.documents.map(\.id) == [addedDuringPreparation.id])
+        #expect(!archivedContext.documents.contains { $0.name == baseline.name })
     }
 
     @Test func standardCarryKeepsTheWholeWorkspace() {

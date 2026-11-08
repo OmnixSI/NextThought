@@ -68,6 +68,13 @@ public enum BackupMerge {
                 var merged = primary
                 merged.lessons = mergeLessons(primary.lessons, secondary.lessons)
                 merged.questionBank = mergeQuestionBank(primary.questionBank, secondary.questionBank)
+                let seriesItems = mergeSeriesItems(primary.seriesItems ?? [], secondary.seriesItems ?? [])
+                merged.seriesItems = seriesItems.isEmpty && primary.seriesItems == nil && secondary.seriesItems == nil
+                    ? nil : seriesItems
+                let seriesCandidates = mergeSeriesCandidates(primary.seriesChangeCandidates ?? [],
+                                                              secondary.seriesChangeCandidates ?? [])
+                merged.seriesChangeCandidates = seriesCandidates.isEmpty && primary.seriesChangeCandidates == nil && secondary.seriesChangeCandidates == nil
+                    ? nil : seriesCandidates
                 let candidates = mergeCandidates(primary.knowledgeCandidates ?? [], secondary.knowledgeCandidates ?? [])
                 merged.knowledgeCandidates = candidates.isEmpty && primary.knowledgeCandidates == nil && secondary.knowledgeCandidates == nil
                     ? nil : candidates
@@ -130,6 +137,9 @@ public enum BackupMerge {
             var historyIDs = Set(history.map(\.id))
             history.append(contentsOf: (fallback.answerHistory ?? []).filter { historyIDs.insert($0.id).inserted })
             if current.answer != fallback.answer {
+                // Preserve the winning answer's legacy source before the revision below
+                // makes `knownAnswerSourceSessionID` stop consulting sourceSessionID.
+                item.answerSourceSessionID = current.knownAnswerSourceSessionID
                 // The losing current answer may not yet be in its history. Preserve it, but
                 // compare its content, timestamp, and attribution so re-import is idempotent.
                 let losingAnswer = WorkspaceAnswerRevision(answer: fallback.answer, recordedAt: fallback.updatedAt,
@@ -143,13 +153,85 @@ public enum BackupMerge {
             history.sort { $0.recordedAt == $1.recordedAt ? $0.id.uuidString < $1.id.uuidString : $0.recordedAt < $1.recordedAt }
             item.answerHistory = history.isEmpty ? nil : history
             if current.answer == fallback.answer {
-                item.answerSourceSessionID = current.knownAnswerSourceSessionID ?? fallback.knownAnswerSourceSessionID
+                // A missing source on a revised answer is meaningful: it can be a
+                // manual edit. Do not resurrect provenance from an older duplicate
+                // just because its answer text happens to be identical.
+                item.answerSourceSessionID = (current.answerRevision ?? 0) > 0
+                    ? current.answerSourceSessionID
+                    : current.knownAnswerSourceSessionID ?? fallback.knownAnswerSourceSessionID
             }
 
             let contentDiverged = current.question != fallback.question || current.answer != fallback.answer
             let revision = max(existingRevision, incomingRevision)
             item.answerRevision = contentDiverged ? revision + 1 : (existing.answerRevision == nil && incoming.answerRevision == nil ? nil : revision)
             result[index] = item
+        }
+        return result
+    }
+
+    private static func mergeSeriesItems(_ preferred: [WorkspaceSeriesItem],
+                                         _ other: [WorkspaceSeriesItem]) -> [WorkspaceSeriesItem] {
+        var result = preferred
+        for incoming in other {
+            guard let index = result.firstIndex(where: { $0.id == incoming.id }) else {
+                result.append(incoming)
+                continue
+            }
+            let existing = result[index]
+            let current = incoming.revision > existing.revision ||
+                (incoming.revision == existing.revision && incoming.updatedAt > existing.updatedAt) ? incoming : existing
+            let fallback = current.id == existing.id && current.revision == existing.revision && current.updatedAt == existing.updatedAt
+                ? incoming : existing
+            var item = current
+            var history = current.history
+            var historyIDs = Set(history.map(\.id))
+            history.append(contentsOf: fallback.history.filter { historyIDs.insert($0.id).inserted })
+            if fallback.revision < current.revision {
+                let losingCurrent = fallback.currentRevision
+                let alreadyPreserved = history.contains {
+                    $0.revision == losingCurrent.revision && $0.text == losingCurrent.text
+                        && $0.sourceSessionID == losingCurrent.sourceSessionID
+                        && $0.sourceRevision == losingCurrent.sourceRevision
+                }
+                if !alreadyPreserved { history.append(losingCurrent) }
+            } else if fallback.revision == current.revision && fallback.currentRevision != current.currentRevision {
+                // Concurrent same-revision edits cannot be silently discarded; retain the
+                // non-selected snapshot as history and keep the preferred workspace winner.
+                let losingCurrent = fallback.currentRevision
+                let alreadyPreserved = history.contains {
+                    $0.revision == losingCurrent.revision && $0.text == losingCurrent.text
+                        && $0.sourceSessionID == losingCurrent.sourceSessionID
+                        && $0.sourceRevision == losingCurrent.sourceRevision
+                }
+                if !alreadyPreserved { history.append(losingCurrent) }
+            }
+            item.history = history.sorted {
+                $0.revision == $1.revision ? $0.recordedAt < $1.recordedAt : $0.revision < $1.revision
+            }
+            result[index] = item
+        }
+        return result
+    }
+
+    private static func mergeSeriesCandidates(_ preferred: [WorkspaceSeriesChangeCandidate],
+                                              _ other: [WorkspaceSeriesChangeCandidate]) -> [WorkspaceSeriesChangeCandidate] {
+        var result = preferred
+        for incoming in other {
+            guard let index = result.firstIndex(where: { $0.id == incoming.id }) else {
+                result.append(incoming)
+                continue
+            }
+            let existing = result[index]
+            switch (existing.receipt, incoming.receipt) {
+            case let (left?, right?) where right.reviewedAt > left.reviewedAt:
+                result[index] = incoming
+            case (nil, .some):
+                result[index] = incoming
+            case (nil, nil) where incoming.status == .superseded && existing.status == .pending:
+                result[index] = incoming
+            default:
+                break
+            }
         }
         return result
     }

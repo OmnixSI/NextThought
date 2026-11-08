@@ -31,8 +31,8 @@ public struct MeetingCarry: Equatable, Sendable {
         if !materials {
             workspace.documents.removeAll { baselineDocumentIDs.contains($0.id) }
         }
-        if !review { workspace.questionBank = [] }
-        if !lessons { workspace.lessons = [] }
+        if !series.useKnowledge || !review { workspace.questionBank = [] }
+        if !series.useKnowledge || !lessons { workspace.lessons = [] }
         return workspace
     }
 }

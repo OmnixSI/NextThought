@@ -3,6 +3,7 @@ import SwiftUI
 import NextThoughtCore
 
 private enum MeetingTab: Hashable { case notes, transcript, answers }
+private enum TranscriptVersion: Hashable { case corrected, original }
 
 /// One meeting in 所有会议, after it ended: the notes (纪要 / 复盘) written from the
 /// transcript, the corrected transcript and the answers given during the meeting.
@@ -18,7 +19,11 @@ struct MeetingPage: View {
     let onNavigateToSeries: (UUID) -> Void
     @State private var detail: SessionDetail?
     @State private var projection: SessionTextProjection?
+    @State private var evidenceReferences: [SessionEvidenceReference] = []
+    @State private var selectedEvidenceID: String?
+    @State private var editingEvidence: SessionEvidenceReference?
     @State private var tab: MeetingTab = .notes
+    @State private var transcriptVersion: TranscriptVersion = .corrected
     /// Which view of the notes is shown: the text notes (always the one a meeting opens with)
     /// or a fishbone, outline or viewpoint matrix the user picked. Not saved.
     @State private var format: NotesFormat = .standard
@@ -38,6 +43,13 @@ struct MeetingPage: View {
                         titleBlock
                         archiveStatus
                         NotesProgressLine(id: id)
+                        if let sourceNotice = sourceFreshnessNotice {
+                            Label(sourceNotice.text, systemImage: sourceNotice.isWarning ? "exclamationmark.triangle.fill" : "questionmark.circle")
+                                .font(Typo.caption)
+                                .foregroundStyle(sourceNotice.isWarning ? Ink.caution : Ink.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         if let detail {
                             if let issue = detail.readIssues.first {
                                 HStack(alignment: .top, spacing: Space.s2) {
@@ -50,26 +62,29 @@ struct MeetingPage: View {
                                 .foregroundStyle(Ink.caution)
                             }
                             InkSegmented(items: tabs(detail), selection: $tab).fixedSize()
+                            if let navigationNotice {
+                                Text(verbatim: navigationNotice)
+                                    .font(Typo.caption).foregroundStyle(Ink.caution)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                             switch tab {
                             case .notes:
-                                if showsFormatBar(detail) {
-                                    NotesFormatBar(id: id, firstTitle: isReview ? String(localized: "复盘") : String(localized: "纪要"),
-                                                   recommended: recommendedFormat(detail), selection: $format,
-                                                   onPick: { picked in pick(picked, in: detail) })
-                                }
-                                StructuredNotesPane(detail: detail, format: shownFormat(detail), onJump: { seconds in jump(to: seconds, in: detail) }) {
-                                    NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
+                                ViewThatFits(in: .horizontal) {
+                                    HStack(alignment: .top, spacing: Space.s6) {
+                                        notesContent(detail).frame(minWidth: 480, maxWidth: .infinity, alignment: .leading)
+                                        evidencePane(detail).frame(width: 300)
+                                    }
+                                    VStack(alignment: .leading, spacing: Space.s6) {
+                                        notesContent(detail)
+                                        evidencePane(detail)
+                                    }
                                 }
                                 if let workspaceID = detail.meta.workspaceID {
                                     KnowledgeReviewSection(workspaceID: workspaceID, sessionID: id, summary: detail.summary)
                                 }
                             case .transcript:
-                                if let navigationNotice {
-                                    Text(verbatim: navigationNotice)
-                                        .font(Typo.caption).foregroundStyle(Ink.caution)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                }
-                                CorrectedTranscript(detail: detail, projection: projection, highlighted: jumpLineID)
+                                CorrectedTranscript(detail: detail, projection: projection, highlighted: jumpLineID,
+                                                   version: $transcriptVersion)
                             case .answers:
                                 SessionAnswersList(detail: detail)
                             }
@@ -95,7 +110,10 @@ struct MeetingPage: View {
         .onChange(of: archive.summarizing.contains(id)) { _, writing in
             if writing { format = .standard }
         }
-        .onChange(of: id) { _, _ in format = .standard }
+        .onChange(of: id) { _, _ in
+            format = .standard
+            transcriptVersion = .corrected
+        }
         .task(id: reloadKey) {
             _ = await archive.flush(sessionID: id)
             let loaded = await archive.detail(id)
@@ -106,6 +124,11 @@ struct MeetingPage: View {
                                                detected: detail.questions, summary: detail.summary, notes: detail.notes)
             }
             projection = loadedProjection
+            evidenceReferences = loaded.map {
+                SessionEvidenceBuilder.build(meta: $0.meta, lines: $0.lines, notes: $0.notes, summary: $0.summary)
+            } ?? []
+            if !evidenceReferences.contains(where: { $0.id == selectedEvidenceID }) { selectedEvidenceID = nil }
+            if selectedEvidenceID == nil { selectedEvidenceID = evidenceReferences.first?.id }
             StructuredNotesJobs.shared.acknowledge(loaded?.summary, for: id)
             if let target = state.pendingTranscriptNavigation, target.sessionID == id,
                loaded != nil, let loadedProjection {
@@ -116,29 +139,103 @@ struct MeetingPage: View {
             guard let target, target.sessionID == id, detail != nil, let projection else { return }
             revealTranscriptHit(target, using: projection)
         }
+        .sheet(item: $editingEvidence) { reference in
+            NotesItemEditSheet(title: reference.notesItemID == nil ? "编辑结构化纪要条目" : "编辑纪要条目",
+                               text: reference.claim) { text, completion in
+                if let itemID = reference.notesItemID {
+                    archive.updateNotes(id, { notes in
+                        for sectionIndex in notes.sections.indices {
+                            guard let itemIndex = notes.sections[sectionIndex].items.firstIndex(where: { $0.id == itemID }) else { continue }
+                            notes.sections[sectionIndex].items[itemIndex].text = text
+                            return true
+                        }
+                        return false
+                    }, completion: completion)
+                } else if let target = reference.structuredTarget {
+                    archive.updateSummary(id, { summary in
+                        SessionEvidenceEditor.updateStructuredNote(in: &summary, target: target, text: text)
+                    }, completion: completion)
+                } else {
+                    completion(.staleTarget)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func notesContent(_ detail: SessionDetail) -> some View {
+        if showsFormatBar(detail) {
+            NotesFormatBar(id: id, firstTitle: isReview ? String(localized: "复盘") : String(localized: "纪要"),
+                           recommended: recommendedFormat(detail), selection: $format,
+                           onPick: { picked in pick(picked, in: detail) })
+        }
+        StructuredNotesPane(detail: detail, format: shownFormat(detail), onJump: { seconds in jump(to: seconds, in: detail) }) {
+            NotesBody(detail: detail, selectedEvidenceID: $selectedEvidenceID) { seconds in jump(to: seconds, in: detail) }
+        }
+    }
+
+    private func evidencePane(_ detail: SessionDetail) -> some View {
+        SessionEvidencePane(references: evidenceReferences, selectedID: $selectedEvidenceID,
+                            onJump: { lineID, variant in jump(to: lineID, variant: variant) },
+                            editingEnabled: !archive.summarizing.contains(id),
+                            onReview: { reference, decision in
+                                guard let claimRevision = reference.claimRevision,
+                                      let sourceRevision = reference.sourceRevision else { return }
+                                state.reviewSessionEvidence(sessionID: id, evidenceID: reference.id,
+                                                            expectedClaimRevision: claimRevision,
+                                                            expectedTranscriptRevision: reference.transcriptSourceRevision,
+                                                            expectedLineRevision: sourceRevision,
+                                                            decision: decision)
+                            },
+                            onEdit: { reference in
+                                editingEvidence = reference
+                            })
+    }
+
+    private var sourceFreshnessNotice: (text: String, isWarning: Bool)? {
+        let statuses = evidenceReferences.map(\.sourceStatus)
+        if projection?.summary?.sourceStatus == .stale || statuses.contains(.stale) {
+            return ("部分纪要或结构化内容可能已过期；核对依据前请查看当前原话和纪要。", true)
+        }
+        if projection?.summary?.sourceStatus == .unknown || statuses.contains(.unknown) {
+            return ("部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。", false)
+        }
+        return nil
     }
 
     /// Reload when the notes finish, change, or the live meeting adds lines.
     private var reloadKey: String {
         guard let meta else { return id.uuidString }
-        return "\(id)-\(meta.summaryState.rawValue)-\(meta.transcriptCount / 10)-\(meta.answerCount)-\(meta.title ?? "")-\(archive.notesRevision)"
+        return "\(id)-\(meta.summaryState.rawValue)-\(meta.transcriptCount / 10)-\(meta.answerCount)-\(meta.title ?? "")-\(archive.notesRevision)-\(archive.searchableContentRevision)-\(archive.translationRevision(for: id))"
     }
 
     private var archiveStatus: some View {
         Group {
             if let snapshot = archive.persistenceBySession[id] {
-                HStack(spacing: Space.s2) {
-                    Image(systemName: archiveStatusIcon(snapshot.state))
-                    Text(archiveStatusText(snapshot))
-                        .textSelection(.enabled)
-                    Spacer(minLength: 0)
-                    if snapshot.state == .blocked, snapshot.pendingEvents > 0 {
-                        Button("重试保存") { archive.retryPersistence(id) }
-                            .buttonStyle(SecondaryButtonStyle())
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    HStack(spacing: Space.s2) {
+                        Image(systemName: snapshot.unqueuedWriteCount > 0 ? "exclamationmark.triangle.fill" : archiveStatusIcon(snapshot.state))
+                        Text(archiveStatusText(snapshot))
+                            .textSelection(.enabled)
+                        Spacer(minLength: 0)
+                        if snapshot.canAcknowledgeDataLoss {
+                            Button("确认缺失并继续保存") { archive.acknowledgeDataLossAndResume(id) }
+                                .buttonStyle(SecondaryButtonStyle())
+                        } else if snapshot.state == .blocked, snapshot.pendingEvents > 0 {
+                            Button("重试保存") { archive.retryPersistence(id) }
+                                .buttonStyle(SecondaryButtonStyle())
+                        }
+                    }
+                    if snapshot.unqueuedWriteCount > 0 {
+                        Text(snapshot.dataLossAcknowledged
+                             ? "已确认：有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。"
+                             : "有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。确认后可继续保存新内容。")
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .font(Typo.caption)
-                .foregroundStyle(archiveStatusColor(snapshot.state))
+                .foregroundStyle(snapshot.unqueuedWriteCount > 0 ? Ink.caution : archiveStatusColor(snapshot.state))
                 .padding(.horizontal, Space.s3)
                 .padding(.vertical, Space.s2)
                 .background(archiveStatusColor(snapshot.state).opacity(0.08), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
@@ -150,13 +247,13 @@ struct MeetingPage: View {
         switch snapshot.state {
         case .saved:
             if let date = snapshot.lastPersistedAt {
-                return "归档已保存 · \(date.formatted(date: .omitted, time: .shortened))"
+                return String(localized: "归档已保存 · \(date.formatted(date: .omitted, time: .shortened))")
             }
-            return "归档已保存"
+            return String(localized: "归档已保存")
         case .saving:
-            return "正在保存会议内容 · \(snapshot.pendingEvents) 项待写入"
+            return String(localized: "正在保存会议内容 · \(snapshot.pendingEvents) 项待写入")
         case .blocked:
-            return snapshot.lastFailure ?? "会议内容保存受阻"
+            return snapshot.lastFailure ?? String(localized: "会议内容保存受阻")
         }
     }
 
@@ -178,7 +275,9 @@ struct MeetingPage: View {
 
     private func tabs(_ detail: SessionDetail) -> [(value: MeetingTab, title: LocalizedStringKey)] {
         var items: [(value: MeetingTab, title: LocalizedStringKey)] = [(.notes, isReview ? "复盘" : "纪要"), (.transcript, "转写")]
-        if !detail.answers.isEmpty { items.append((.answers, "会中回答")) }
+        if !detail.answers.isEmpty || !detail.questions.isEmpty || !(detail.summary?.questions.isEmpty ?? true) {
+            items.append((.answers, "会中回答"))
+        }
         return items
     }
 
@@ -235,25 +334,63 @@ struct MeetingPage: View {
             abs(Int(lhs.date.timeIntervalSince(start)) - seconds) < abs(Int(rhs.date.timeIntervalSince(start)) - seconds)
         }
         tab = .transcript
+        transcriptVersion = .corrected
         navigationNotice = nil
         jumpLineID = nil
         DispatchQueue.main.async { jumpLineID = nearest?.id }
     }
 
+    private func jump(to lineID: UUID, variant: SessionEvidenceSourceVariant? = nil) {
+        tab = .transcript
+        transcriptVersion = variant == .original ? .original : .corrected
+        navigationNotice = nil
+        jumpLineID = nil
+        DispatchQueue.main.async { jumpLineID = lineID }
+    }
+
     private func revealTranscriptHit(_ target: SessionTranscriptNavigationTarget, using projection: SessionTextProjection) {
-        guard let lineID = target.hit.lineID,
-              let line = projection.transcript.first(where: { $0.id == lineID }) else {
+        let currentHit = target.hit.id.flatMap { id in projection.searchableText.first(where: { $0.id == id }) }
+        let currentSourceRevision = currentHit?.sourceRevision
+            ?? (target.hit.kind == .notes ? projection.transcriptSourceRevision : nil)
+        let notice: String?
+        if let savedRevision = target.hit.sourceRevision, let currentSourceRevision,
+           savedRevision != currentSourceRevision {
+            notice = "这句已更新，显示的是当前版本。"
+        } else {
+            notice = nil
+        }
+        if target.hit.kind == .notes, let hitID = target.hit.id,
+           let reference = evidenceReferences.first(where: { hitID == $0.id || hitID.hasPrefix($0.id + ":") }) {
+            selectedEvidenceID = reference.id
+        }
+        guard let lineID = target.hit.lineID else {
+            jumpLineID = nil
+            switch target.hit.kind {
+            case .notes:
+                navigationNotice = notice
+                tab = .notes
+            case .question, .answer:
+                navigationNotice = nil
+                tab = .answers
+            default:
+                state.pendingTranscriptNavigation = nil
+                navigationNotice = "这条搜索结果已不存在，请重新搜索。"
+            }
+            return
+        }
+        guard let line = projection.transcript.first(where: { $0.id == lineID }) else {
             state.pendingTranscriptNavigation = nil
+            jumpLineID = nil
             navigationNotice = "这条搜索结果已不存在，请重新搜索。"
             return
         }
-        let currentHit = target.hit.id.flatMap { id in projection.searchableText.first(where: { $0.id == id }) }
-        navigationNotice = currentHit?.sourceRevision == target.hit.sourceRevision
-            ? nil : "这句已更新，显示的是当前版本。"
-        tab = .transcript
-        jumpLineID = nil
-        DispatchQueue.main.async { jumpLineID = line.id }
-        state.pendingTranscriptNavigation = nil
+        let variant: SessionEvidenceSourceVariant? = switch target.hit.kind {
+        case .transcript: .original
+        case .correctedTranscript: .corrected
+        default: nil
+        }
+        jump(to: line.id, variant: variant)
+        navigationNotice = notice
     }
 
     // MARK: Header
@@ -483,6 +620,7 @@ private struct TemplateMenu: View {
 private struct NotesBody: View {
     @Environment(AppState.self) private var state
     let detail: SessionDetail
+    @Binding var selectedEvidenceID: String?
     let onJump: (Int) -> Void
     private var archive: SessionArchive { SessionArchive.shared }
 
@@ -490,7 +628,7 @@ private struct NotesBody: View {
         if let notes = detail.notes {
             VStack(alignment: .leading, spacing: Space.s10) {
                 ForEach(notes.sections.filter { !$0.items.isEmpty }) { section in
-                    NotesSectionView(section: section, onJump: onJump)
+                    NotesSectionView(section: section, selectedEvidenceID: $selectedEvidenceID, onJump: onJump)
                 }
                 if notes.sections.allSatisfy({ $0.items.isEmpty }) {
                     Text("这场会议没有整理出内容。").font(Typo.body).foregroundStyle(Ink.secondary)
@@ -526,6 +664,7 @@ private struct NotesBody: View {
 
 private struct NotesSectionView: View {
     let section: NotesSectionResult
+    @Binding var selectedEvidenceID: String?
     let onJump: (Int) -> Void
 
     var body: some View {
@@ -536,6 +675,7 @@ private struct NotesSectionView: View {
                 ForEach(section.items) { item in
                     HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                         Text(verbatim: item.text).font(Typo.body).lineSpacing(6).textSelection(.enabled)
+                        evidenceButton(item)
                         if item.uncertain { ConfirmBadge() }
                     }
                 }
@@ -548,6 +688,7 @@ private struct NotesSectionView: View {
                     HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                         Text(verbatim: item.text).font(Typo.body).lineSpacing(6).textSelection(.enabled)
                         TimeLink(time: item.time, onJump: onJump)
+                        evidenceButton(item)
                         if item.uncertain { ConfirmBadge() }
                     }
                 }
@@ -561,6 +702,7 @@ private struct NotesSectionView: View {
                         HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                             Text(verbatim: item.text).font(Typo.body).textSelection(.enabled)
                             TimeLink(time: item.time, onJump: onJump)
+                            evidenceButton(item)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         Text(verbatim: item.owner ?? "—").font(Typo.body).foregroundStyle(Ink.secondary)
@@ -586,6 +728,7 @@ private struct NotesSectionView: View {
                             HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                                 Text(verbatim: item.text).font(.system(size: 14, weight: .semibold)).textSelection(.enabled)
                                 TimeLink(time: item.time, onJump: onJump)
+                                evidenceButton(item)
                                 VerdictBadge(item: item)
                                 if item.uncertain { ConfirmBadge() }
                             }
@@ -605,6 +748,232 @@ private struct NotesSectionView: View {
                 }
             }
         }
+    }
+
+    private func evidenceButton(_ item: NotesItem) -> some View {
+        let evidenceID = "notes:\(section.id):\(item.id.uuidString)"
+        return Button {
+            selectedEvidenceID = evidenceID
+        } label: {
+            Image(systemName: "quote.bubble")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Ink.secondary)
+        }
+        .buttonStyle(.plain)
+        .help("查看这条内容的原话依据")
+        .accessibilityLabel("查看“\(item.text)”的原话依据")
+    }
+}
+
+private struct SessionEvidencePane: View {
+    let references: [SessionEvidenceReference]
+    @Binding var selectedID: String?
+    let onJump: (UUID, SessionEvidenceSourceVariant?) -> Void
+    let editingEnabled: Bool
+    let onReview: (SessionEvidenceReference, SessionEvidenceDecision?) -> Void
+    let onEdit: (SessionEvidenceReference) -> Void
+
+    private var selected: SessionEvidenceReference? {
+        references.first(where: { $0.id == selectedID })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(spacing: Space.s2) {
+                Image(systemName: "text.quote").foregroundStyle(Ink.secondary)
+                Text("原话依据").font(Typo.section)
+                Spacer(minLength: 0)
+            }
+            Text("引文匹配只说明原话中出现过这些词，不代表结论已确认。只有时间点的内容仍需核对。")
+                .font(Typo.caption).foregroundStyle(Ink.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if references.isEmpty {
+                Text("这份纪要没有可逐项定位的内容。原话仍可在“转写”中查看。")
+                    .font(Typo.caption).foregroundStyle(Ink.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: Space.s1) {
+                        ForEach(references) { reference in
+                            Button { selectedID = reference.id } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    HStack(spacing: Space.s1) {
+                                        Text(verbatim: reference.title).font(.system(size: 10, weight: .semibold))
+                                            .foregroundStyle(Ink.secondary).lineLimit(1)
+                                        Spacer(minLength: 0)
+                                        if let location = reference.location {
+                                            Text(verbatim: location).font(.system(size: 10).monospacedDigit())
+                                                .foregroundStyle(Ink.tertiary)
+                                        }
+                                    }
+                                    Text(verbatim: reference.claim).font(.system(size: 11)).foregroundStyle(Ink.ink)
+                                        .lineLimit(2).multilineTextAlignment(.leading)
+                                    Text(supportLabel(reference)).font(.system(size: 9, weight: .medium))
+                                        .foregroundStyle(reference.needsConfirmation || reference.support != .quoted ? Ink.caution : Ink.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(Space.s2)
+                                .background(selectedID == reference.id ? Ink.hover : Color.clear,
+                                            in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(reference.title)：\(reference.claim)，\(supportLabel(reference))")
+                        }
+                    }
+                }
+                .frame(maxHeight: 230)
+                .background(Ink.sunken.opacity(0.45), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+
+                if let selected {
+                    Rectangle().fill(Ink.hairline).frame(height: 1)
+                    Text(verbatim: selected.claim).font(Typo.body).textSelection(.enabled)
+                    Text(supportLabel(selected))
+                        .font(Typo.caption).foregroundStyle(selected.needsConfirmation || selected.support != .quoted ? Ink.caution : Ink.secondary)
+                    Text(reviewLabel(selected))
+                        .font(Typo.caption)
+                        .foregroundStyle(selected.reviewIsStale ? Ink.caution : Ink.secondary)
+                    if let quote = selected.quote, !quote.isEmpty {
+                        Text("引用").font(Typo.label).foregroundStyle(Ink.secondary)
+                        Text(verbatim: quote).font(Typo.body).textSelection(.enabled)
+                    }
+                    if let sourceText = selected.sourceText {
+                        Text(sourceLabel(selected))
+                            .font(Typo.label).foregroundStyle(Ink.secondary)
+                        Text(verbatim: sourceText).font(Typo.caption).textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack(spacing: Space.s2) {
+                        if let lineID = selected.lineID {
+                            Button(jumpLabel(selected)) { onJump(lineID, selected.sourceVariant) }
+                                .buttonStyle(SecondaryButtonStyle())
+                        }
+                        if selected.notesItemID != nil || selected.structuredTarget != nil {
+                            Button("编辑条目") { onEdit(selected) }
+                                .buttonStyle(GhostButtonStyle(height: 32, horizontalPadding: 10))
+                                .disabled(!editingEnabled)
+                        }
+                    }
+                    if canReview(selected) {
+                        Text("请先读上面的转写，再明确判断它是否支持这条内容。核对会绑定当前文本版本；文字变化后需要重新核对。")
+                            .font(Typo.caption).foregroundStyle(Ink.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: Space.s2) {
+                            Button(selected.reviewDecision == .supported ? "已确认支持" : "确认原话支持") {
+                                onReview(selected, .supported)
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
+                            .disabled(!editingEnabled || selected.reviewDecision == .supported)
+                            Button(selected.reviewDecision == .unsupported ? "已标记不支持" : "标记原话不支持") {
+                                onReview(selected, .unsupported)
+                            }
+                            .buttonStyle(GhostButtonStyle(height: 32, horizontalPadding: 10))
+                            .disabled(!editingEnabled || selected.reviewDecision == .unsupported)
+                            if selected.reviewDecision != nil || selected.reviewIsStale {
+                                Button("撤销核对") { onReview(selected, nil) }
+                                    .buttonStyle(.plain)
+                                    .font(Typo.caption)
+                                    .disabled(!editingEnabled)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Ink.surface, in: RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 1))
+    }
+
+    private func supportLabel(_ reference: SessionEvidenceReference) -> String {
+        var label = reference.support.label
+        if reference.sourceStatus == .stale { label += String(localized: " · 来源版本已变化") }
+        if reference.sourceStatus == .unknown { label += String(localized: " · 来源版本未知") }
+        return reference.needsConfirmation ? String(localized: "模型标记待确认 · \(label)") : label
+    }
+
+    private func reviewLabel(_ reference: SessionEvidenceReference) -> String {
+        if reference.reviewIsStale { return String(localized: "之前的人工核对已失效，需要重新检查。") }
+        return switch reference.reviewDecision {
+        case .supported: String(localized: "人工已确认：当前原话支持这条内容。")
+        case .unsupported: String(localized: "人工已确认：当前原话不支持这条内容。")
+        case nil: String(localized: "尚未由你确认内容是否受原话支持。")
+        }
+    }
+
+    private func sourceLabel(_ reference: SessionEvidenceReference) -> String {
+        return switch reference.sourceVariant {
+        case .original: String(localized: "匹配的原始转写")
+        case .corrected: reference.support == .quoted ? String(localized: "匹配的校正转写") : String(localized: "附近的校正转写（仅供核对）")
+        case nil: String(localized: "附近转写（仅供核对）")
+        }
+    }
+
+    private func jumpLabel(_ reference: SessionEvidenceReference) -> String {
+        return switch reference.sourceVariant {
+        case .original: String(localized: "查看原始转写")
+        case .corrected: reference.support == .quoted ? String(localized: "查看校正转写") : String(localized: "查看附近转写")
+        case nil: String(localized: "查看附近转写")
+        }
+    }
+
+    private func canReview(_ reference: SessionEvidenceReference) -> Bool {
+        reference.lineID != nil && reference.sourceText != nil
+            && reference.sourceRevision != nil && reference.claimRevision != nil
+            && !reference.transcriptSourceRevision.isEmpty
+    }
+}
+
+private struct NotesItemEditSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let title: LocalizedStringKey
+    let text: String
+    let onSave: (String, @escaping @MainActor (SessionArchiveEditResult) -> Void) -> Void
+    @State private var draft: String
+    @State private var saveFailure: String?
+    @State private var saving = false
+
+    init(title: LocalizedStringKey, text: String,
+         onSave: @escaping (String, @escaping @MainActor (SessionArchiveEditResult) -> Void) -> Void) {
+        self.title = title
+        self.text = text
+        self.onSave = onSave
+        _draft = State(initialValue: text)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s4) {
+            Text(title).font(Typo.section)
+            TextEditor(text: $draft)
+                .font(Typo.body)
+                .frame(minWidth: 440, minHeight: 150)
+                .overlay(RoundedRectangle(cornerRadius: Space.radiusSmall).strokeBorder(Ink.hairline, lineWidth: 1))
+            if let saveFailure {
+                Label(saveFailure, systemImage: "exclamationmark.triangle.fill")
+                    .font(Typo.caption).foregroundStyle(Ink.caution)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack {
+                Spacer()
+                Button("取消") { dismiss() }.buttonStyle(GhostButtonStyle()).disabled(saving)
+                Button(LocalizedStringKey(saving ? "保存中…" : "保存")) {
+                    saving = true
+                    saveFailure = nil
+                    onSave(draft.trimmingCharacters(in: .whitespacesAndNewlines)) { result in
+                        saving = false
+                        if result == .saved {
+                            dismiss()
+                        } else {
+                            saveFailure = result.failureMessage
+                        }
+                    }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(saving || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(Space.s6)
     }
 }
 
@@ -671,6 +1040,7 @@ private struct CorrectedTranscript: View {
     let detail: SessionDetail
     let projection: SessionTextProjection?
     let highlighted: UUID?
+    @Binding var version: TranscriptVersion
     /// Find in the transcript; recorded misheard spellings (术语和人名) match too.
     @State private var find = ""
     @State private var findCache = GlossarySearchCache()
@@ -680,7 +1050,7 @@ private struct CorrectedTranscript: View {
         let projectedLines = projection?.transcript ?? []
         let terms: GlossarySearch? = find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : findCache.terms(for: find, state: state)
         let shown = projectedLines.filter {
-            terms == nil || terms?.appMatch(in: $0.displayText) != nil || terms?.appMatch(in: $0.originalText) != nil
+            terms == nil || terms?.appMatch(in: $0.correctedText) != nil || terms?.appMatch(in: $0.originalText) != nil
         }
         let layout = SpeakerLayout(lines: detail.lines, voiceNames: detail.meta.voiceNames, meVoices: Set(detail.meta.meVoices ?? []))
         VStack(alignment: .leading, spacing: Space.s3) {
@@ -694,6 +1064,13 @@ private struct CorrectedTranscript: View {
             if projectedLines.isEmpty {
                 Text("这场会议没有转写。").font(Typo.body).foregroundStyle(Ink.secondary)
             } else {
+                HStack(spacing: Space.s2) {
+                    Text("转写版本").font(Typo.caption).foregroundStyle(Ink.secondary)
+                    InkSegmented(items: [(value: TranscriptVersion.corrected, title: "校正转写"),
+                                         (value: TranscriptVersion.original, title: "原始转写")],
+                                 selection: $version)
+                        .fixedSize()
+                }
                 TranscriptFindField(query: $find, matches: terms == nil ? nil : shown.count)
             }
             ForEach(shown) { line in
@@ -710,10 +1087,10 @@ private struct CorrectedTranscript: View {
                         if layout.hidesRoleLabel(for: line.speaker), layout.starts.contains(line.id) {
                             SpeakerTag(layout: layout, lineID: line.id, speaker: line.speaker)
                         }
-                        Text(Self.text(line))
+                        Text(Self.text(line, version: version))
                             .font(Typo.body).lineSpacing(5)
                             .textSelection(.enabled)
-                            .help(Self.originals(line.appliedCorrections))
+                            .help(version == .corrected ? Self.originals(line.appliedCorrections) : "")
                         if let terms, let hit = terms.appMatch(in: line.originalText), hit.isMisheard {
                             MisheardMark(form: hit.form)
                         }
@@ -733,9 +1110,12 @@ private struct CorrectedTranscript: View {
                 .background(highlighted == line.id ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
                 .id("line-\(line.id.uuidString)")
                 .contextMenu {
-                    ForEach(line.appliedCorrections) { fix in
-                        Button(fix.reverted ? "恢复校对：\(fix.original) → \(fix.corrected)" : "撤销校对：\(fix.corrected) → \(fix.original)") {
-                            state.toggleCorrection(fix.id, in: detail.meta.id)
+                    if version == .corrected {
+                        ForEach(line.appliedCorrections) { fix in
+                            Button(fix.reverted ? "恢复校对：\(fix.original) → \(fix.corrected)" : "撤销校对：\(fix.corrected) → \(fix.original)") {
+                                state.toggleCorrection(fix.id, in: detail.meta.id)
+                            }
+                            .disabled(state.archive.summarizing.contains(detail.meta.id))
                         }
                     }
                     Button("加入术语表…") { glossaryDraft = GlossaryDraft(line: line.originalText) }
@@ -749,8 +1129,10 @@ private struct CorrectedTranscript: View {
     }
 
     /// The line with active corrections applied and underlined with dots.
-    static func text(_ line: SessionProjectedTranscriptLine) -> AttributedString {
-        var attributed = AttributedString(line.displayText)
+    static func text(_ line: SessionProjectedTranscriptLine, version: TranscriptVersion) -> AttributedString {
+        let text = version == .original ? line.originalText : line.correctedText
+        var attributed = AttributedString(text)
+        guard version == .corrected else { return attributed }
         for fix in line.appliedCorrections {
             if let range = attributed.range(of: fix.corrected) {
                 attributed[range][AttributeScopes.SwiftUIAttributes.UnderlineStyleAttribute.self] = Text.LineStyle(pattern: .dot)

@@ -16,8 +16,14 @@ enum AppFailure: Error { case capture(String) }
         let slow = try source("slow")
         let conversion = Task { try await LegacyOfficeConverter.convert(slow, into: root.appendingPathComponent("cancel-output"), executable: fake) }
         let until = Date().addingTimeInterval(3)
-        while !FileManager.default.fileExists(atPath: pidFile.path), Date() < until { try await Task.sleep(for: .milliseconds(20)) }
-        guard let pid = Int32(try String(contentsOf: pidFile, encoding: .utf8)) else { fatalError("child PID missing") }
+        var childPID: Int32?
+        while childPID == nil, Date() < until {
+            if let contents = try? String(contentsOf: pidFile, encoding: .utf8) {
+                childPID = Int32(contents.trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            if childPID == nil { try await Task.sleep(for: .milliseconds(20)) }
+        }
+        guard let pid = childPID else { fatalError("child PID missing") }
         let cancelled = Date(); conversion.cancel()
         do { _ = try await conversion.value; fatalError("cancelled conversion succeeded") } catch is CancellationError { }
         guard Date().timeIntervalSince(cancelled) < 1 else { fatalError("cancellation delayed") }

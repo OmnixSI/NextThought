@@ -16,6 +16,24 @@ struct SessionDetail: Equatable {
     var readIssues: [SessionArchiveReadIssue] = []
 }
 
+enum SessionArchiveEditResult: Equatable {
+    case saved
+    case busy
+    case staleTarget
+    case unavailable
+    case persistenceBlocked
+
+    var failureMessage: String? {
+        switch self {
+        case .saved: nil
+        case .busy: String(localized: "纪要正在重新整理，本次编辑没有保存。完成后请重新打开再试。")
+        case .staleTarget: String(localized: "纪要内容已更新，本次编辑没有保存。请重新打开后再试。")
+        case .unavailable: String(localized: "无法读取这份纪要，本次编辑没有保存。请刷新后重试。")
+        case .persistenceBlocked: String(localized: "归档保存受阻，本次编辑没有保存。请先重试保存。")
+        }
+    }
+}
+
 enum SessionArchiveReadIssue: Equatable {
     case missingFile(String)
     case unreadableFile(String, String)
@@ -69,6 +87,8 @@ final class SessionArchive {
     var notesSteps: [UUID: NotesStep] = [:]
     /// Bumped when notes change on disk, so open pages reload them.
     var notesRevision = 0
+    /// Per-session revision for saved translations, so only that meeting page reloads.
+    private(set) var translationRevisionBySession: [UUID: Int] = [:]
     private(set) var persistenceBySession: [UUID: SessionPersistenceSnapshot] = [:]
     /// Bumped when finalized, searchable content is durably saved.
     private(set) var searchableContentRevision = 0
@@ -87,6 +107,7 @@ final class SessionArchive {
     @ObservationIgnored private let fileAppender = SessionArchiveFileAppender.live
     @ObservationIgnored private var pendingSearchableTranslationSessionIDs: Set<UUID> = []
     @ObservationIgnored private var completedTranslationDrainSessionIDs: Set<UUID> = []
+    @ObservationIgnored private var translationWriteReceipts: [UUID: SessionTranslationWriteReceipts] = [:]
 
     static var root: URL { AppPaths.sessions }
 
@@ -116,13 +137,11 @@ final class SessionArchive {
                     if meta.endedAt == nil {
                         // Interrupted session: end it at the last transcript write.
                         let transcript = folder.appendingPathComponent("transcript.jsonl")
+                        let transcriptData = try? Data(contentsOf: transcript)
                         let modified = (try? FileManager.default.attributesOfItem(atPath: transcript.path)[.modificationDate]) as? Date
-                        meta.endedAt = modified ?? meta.startedAt
-                        if meta.summaryState == .pending {
-                            meta.summaryState = .none
-                            meta.summaryError = nil
-                            changed = true
-                            if meta.transcriptCount > 0 { recovered.insert(meta.id) }
+                        if meta.recoverInterruptedRecording(transcriptData: transcriptData,
+                                                            lastTranscriptWrite: modified) {
+                            recovered.insert(meta.id)
                         }
                         changed = true
                     } else if meta.summaryState == .pending, !activeSummaries.contains(meta.id) {
@@ -274,6 +293,11 @@ final class SessionArchive {
 
     func begin(_ meta: SessionMeta, context: SessionContextSnapshot) {
         discardedSessions.remove(meta.id)
+        translationRevisionBySession[meta.id] = nil
+        translationWriteReceipts[meta.id] = nil
+        pendingSearchableTranslationSessionIDs.remove(meta.id)
+        pendingTranslationSearchSessionIDs.remove(meta.id)
+        completedTranslationDrainSessionIDs.remove(meta.id)
         activeID = meta.id
         activeAnswerIDs = []
         activeMeta = meta
@@ -283,6 +307,18 @@ final class SessionArchive {
         persistenceBySession[meta.id] = writeQueues[meta.id]?.snapshot
         _ = enqueueSnapshot(meta, file: "meta.json", session: meta.id)
         _ = enqueueSnapshot(context, file: "context.json", session: meta.id)
+    }
+
+    /// Replaces the session's initial context snapshot after optional carry material has loaded.
+    @discardableResult
+    func updateContext(_ context: SessionContextSnapshot, for id: UUID) -> Bool {
+        if var detail = demoDetails[id] {
+            detail.context = context
+            demoDetails[id] = detail
+            return true
+        }
+        guard sessions.contains(where: { $0.id == id }) else { return false }
+        return enqueueSnapshot(context, file: "context.json", session: id)
     }
 
     @discardableResult func append(_ line: SessionTranscriptLine) -> Bool {
@@ -313,22 +349,21 @@ final class SessionArchive {
 
     func appendTranslation(sessionID: UUID, lineID: UUID, text: String, inputRevision: String? = nil) {
         guard sessionID == activeID || sessions.contains(where: { $0.id == sessionID }) else { return }
-        let wasArchivedWhenAppended = sessionID != activeID
         guard appendLine(SessionTranscriptTranslation(id: lineID, text: text, inputRevision: inputRevision),
                          file: "translations.jsonl", session: sessionID) else { return }
+        var receipts = translationWriteReceipts[sessionID] ?? SessionTranslationWriteReceipts()
+        receipts.recordSubmittedRevision(persistenceBySession[sessionID]?.submittedRevision ?? 0)
+        translationWriteReceipts[sessionID] = receipts
         if pendingTranslationSearchSessionIDs.contains(sessionID) {
             pendingSearchableTranslationSessionIDs.insert(sessionID)
-            return
-        }
-        Task { [weak self] in
-            guard let self, await self.flush(sessionID: sessionID) else { return }
-            self.notesRevision &+= 1
-            if wasArchivedWhenAppended { self.searchableContentRevision &+= 1 }
         }
     }
 
     func beginFinalTranslationDrain(for sessionID: UUID) {
         pendingTranslationSearchSessionIDs.insert(sessionID)
+        if translationWriteReceipts[sessionID]?.hasPending == true {
+            pendingSearchableTranslationSessionIDs.insert(sessionID)
+        }
     }
 
     /// Wait for this session's final translations and archive writes before exposing it to search.
@@ -338,13 +373,36 @@ final class SessionArchive {
         completeFinalTranslationDrain(for: sessionID)
     }
 
+    /// Wait until the final-translation drain has also received a durable archive receipt.
+    /// This is async so a session backup can wait without blocking the main actor.
+    func waitForFinalTranslationDrain(sessionID: UUID) async -> Bool {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(120))
+        while pendingTranslationSearchSessionIDs.contains(sessionID) {
+            guard !Task.isCancelled else { return false }
+            if ContinuousClock.now >= deadline {
+                return !pendingTranslationSearchSessionIDs.contains(sessionID)
+            }
+            do { try await Task.sleep(for: .milliseconds(50)) }
+            catch { return false }
+        }
+        return true
+    }
+
     private func completeFinalTranslationDrain(for sessionID: UUID) {
         guard completedTranslationDrainSessionIDs.remove(sessionID) != nil else { return }
         if pendingSearchableTranslationSessionIDs.remove(sessionID) != nil {
-            notesRevision &+= 1
+            publishTranslationRevision(for: sessionID)
             if sessionID != activeID { searchableContentRevision &+= 1 }
         }
         pendingTranslationSearchSessionIDs.remove(sessionID)
+    }
+
+    func translationRevision(for sessionID: UUID) -> Int {
+        translationRevisionBySession[sessionID, default: 0]
+    }
+
+    private func publishTranslationRevision(for sessionID: UUID) {
+        translationRevisionBySession[sessionID, default: 0] &+= 1
     }
 
     /// Copies a screenshot into the session folder and returns its path
@@ -394,19 +452,73 @@ final class SessionArchive {
         saveMeta(meta)
     }
 
-    func saveSummary(_ summary: SessionSummary, for id: UUID) {
-        guard var meta = sessions.first(where: { $0.id == id }) else { return }
+    @discardableResult
+    func saveSummary(_ summary: SessionSummary, for id: UUID) -> Bool {
+        guard var meta = sessions.first(where: { $0.id == id }) else { return false }
         // A title the user gave the meeting stays; otherwise the summary names it.
         if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty {
             meta.title = summary.title
         }
         meta.summaryState = .ready
         meta.summaryError = nil
-        _ = enqueueSnapshot(summary, file: "summary.json", session: id)
+        let queued = enqueueSnapshot(summary, file: "summary.json", session: id)
         update(meta)
         Task { [weak self] in
             guard let self, await self.flush(sessionID: id), id != self.activeID else { return }
             self.searchableContentRevision &+= 1
+        }
+        return queued
+    }
+
+    /// Edits one generated structured-notes node on top of the newest queued summary.
+    func updateSummary(_ id: UUID, _ change: @escaping (inout SessionSummary) -> Bool,
+                       completion: @escaping @MainActor (SessionArchiveEditResult) -> Void) {
+        Task {
+            guard !summarizing.contains(id) else {
+                completion(.busy)
+                return
+            }
+            if var demo = demoDetails[id], var summary = demo.summary {
+                guard change(&summary) else {
+                    completion(.staleTarget)
+                    return
+                }
+                demo.summary = summary
+                demoDetails[id] = demo
+                searchableContentRevision &+= 1
+                completion(.saved)
+                return
+            }
+            var summary = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
+                .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
+            if summary == nil {
+                guard await flush(sessionID: id) else {
+                    completion(.persistenceBlocked)
+                    return
+                }
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
+                summary = await detail(id)?.summary
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
+            }
+            guard var summary else {
+                completion(.unavailable)
+                return
+            }
+            guard change(&summary) else {
+                completion(.staleTarget)
+                return
+            }
+            guard saveSummary(summary, for: id) else {
+                completion(.persistenceBlocked)
+                return
+            }
+            completion(await flush(sessionID: id) ? .saved : .persistenceBlocked)
         }
     }
 
@@ -417,24 +529,94 @@ final class SessionArchive {
     }
 
     /// Edits saved notes in place (undoing a correction).
-    func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Void) {
+    func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Bool,
+                     completion: @escaping @MainActor (SessionArchiveEditResult) -> Void = { _ in }) {
         Task {
+            guard !summarizing.contains(id) else {
+                completion(.busy)
+                return
+            }
+            if var demo = demoDetails[id], var notes = demo.notes {
+                let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
+                guard change(&notes) else {
+                    completion(.staleTarget)
+                    return
+                }
+                if demo.summary?.structuredNotesSourceRevision == nil {
+                    demo.summary?.structuredNotesSourceRevision = originalNotesRevision
+                }
+                demo.notes = notes
+                demoDetails[id] = demo
+                notesRevision += 1
+                completion(.saved)
+                return
+            }
             // Start from the newest queued edit when an earlier write could not
             // be acknowledged. This lets a new correction build on, and remain
             // recoverable with, that pending snapshot.
             var notes = pendingArchiveData(file: "notes.json", sessionID: id, mode: .replace)
                 .last.flatMap { try? JSONLines.decoder().decode(StructuredNotes.self, from: $0) }
             if notes == nil {
-                _ = await flush(sessionID: id)
+                guard await flush(sessionID: id) else {
+                    completion(.persistenceBlocked)
+                    return
+                }
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
                 notes = await detail(id)?.notes
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
             }
-            guard var notes else { return }
-            change(&notes)
-            guard saveNotes(notes, for: id) else { return }
-            if demoDetails[id] != nil { return }
+            guard var notes else {
+                completion(.unavailable)
+                return
+            }
+            let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
+            guard change(&notes) else {
+                completion(.staleTarget)
+                return
+            }
+            // Older summaries did not record the structured-notes revision. Seed it
+            // with the pre-edit snapshot so a manual note edit makes their rendered
+            // wording explicitly stale instead of leaving its freshness unknown.
+            if let originalNotesRevision {
+                var summary = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
+                    .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
+                if summary == nil {
+                    summary = await detail(id)?.summary
+                    guard !summarizing.contains(id) else {
+                        completion(.busy)
+                        return
+                    }
+                }
+                // A summary can be queued while detail() is suspended. Prefer that newer
+                // snapshot before applying the compatibility stamp.
+                if let queued = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
+                    .last.flatMap({ try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }) {
+                    summary = queued
+                }
+                if var summary, summary.structuredNotesSourceRevision == nil {
+                    summary.structuredNotesSourceRevision = originalNotesRevision
+                    guard enqueueSnapshot(summary, file: "summary.json", session: id) else {
+                        completion(.persistenceBlocked)
+                        return
+                    }
+                }
+            }
+            guard saveNotes(notes, for: id) else {
+                completion(.persistenceBlocked)
+                return
+            }
             if await flush(sessionID: id) {
                 notesRevision += 1
                 if id != activeID { searchableContentRevision &+= 1 }
+                completion(.saved)
+            } else {
+                completion(.persistenceBlocked)
             }
         }
     }
@@ -590,6 +772,16 @@ final class SessionArchive {
         drainWrites(id)
     }
 
+    /// Reopens an overflowed queue only after all accepted writes have been saved.
+    /// The snapshot retains the count of writes that were never queued.
+    @discardableResult
+    func acknowledgeDataLossAndResume(_ id: UUID) -> Bool {
+        guard var queue = writeQueues[id], queue.acknowledgeDataLossAndResume() else { return false }
+        writeQueues[id] = queue
+        persistenceBySession[id] = queue.snapshot
+        return true
+    }
+
     private func enqueueSnapshot<T: Encodable>(_ value: T, file: String, session id: UUID) -> Bool {
         let encoder = JSONLines.encoder(); encoder.outputFormatting.insert(.prettyPrinted)
         do { return enqueueWrite(try encoder.encode(value), file: file, session: id, mode: .replace) }
@@ -626,6 +818,12 @@ final class SessionArchive {
                 do { try appender.write(entry.data, to: directory.appendingPathComponent(entry.fileName), mode: entry.mode); completed = entry.revision }
                 catch { failure = error.localizedDescription; break }
             }
+            let persistedSearchableContent = completed.map { completedRevision in
+                batch.contains {
+                    $0.revision <= completedRevision
+                        && ["transcript.jsonl", "questions.jsonl", "answers.jsonl"].contains($0.fileName)
+                }
+            } ?? false
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.drainingWrites.remove(id)
@@ -635,6 +833,12 @@ final class SessionArchive {
                 if let failure { latest.fail("保存受阻：\(failure)") }
                 self.writeQueues[id] = latest
                 self.persistenceBySession[id] = latest.snapshot
+                if id != self.activeID && persistedSearchableContent {
+                    self.searchableContentRevision &+= 1
+                }
+                if completed != nil {
+                    self.acknowledgeTranslationWrites(for: id, persistedRevision: latest.persistedRevision)
+                }
                 if failure != nil { self.scheduleRetry(id) }
                 else {
                     self.retryAttempts[id] = 0
@@ -646,6 +850,18 @@ final class SessionArchive {
                 }
             }
         }
+    }
+
+    private func acknowledgeTranslationWrites(for sessionID: UUID, persistedRevision: Int) {
+        guard var receipts = translationWriteReceipts[sessionID],
+              receipts.acknowledge(persistedRevision: persistedRevision) else { return }
+        translationWriteReceipts[sessionID] = receipts.hasPending ? receipts : nil
+        if pendingTranslationSearchSessionIDs.contains(sessionID) {
+            pendingSearchableTranslationSessionIDs.insert(sessionID)
+            return
+        }
+        publishTranslationRevision(for: sessionID)
+        if sessionID != activeID { searchableContentRevision &+= 1 }
     }
 
     private func scheduleRetry(_ id: UUID) {
@@ -667,6 +883,11 @@ final class SessionArchive {
         retryAttempts[id] = nil
         writeQueues[id] = nil
         persistenceBySession[id] = nil
+        translationWriteReceipts[id] = nil
+        translationRevisionBySession[id] = nil
+        pendingSearchableTranslationSessionIDs.remove(id)
+        pendingTranslationSearchSessionIDs.remove(id)
+        completedTranslationDrainSessionIDs.remove(id)
     }
 
     nonisolated private static func write<T: Encodable>(_ value: T, to url: URL) {

@@ -402,6 +402,89 @@ struct WorkspaceTests {
         #expect(preservedRevisions.first?.sourceSessionID == nil)
     }
 
+    @Test func backupMergeDoesNotRestoreSourceForSameTextManualAnswer() throws {
+        let workspaceID = UUID(), questionID = UUID(), oldSourceSessionID = UUID()
+        var current = Workspace(id: workspaceID, name: "面试", mode: .interview, updatedAt: now)
+        current.questionBank = [QuestionBankItem(id: questionID, question: "如何处理缓存击穿", answer: "手动维护的答法",
+                                                  sourceSessionID: oldSourceSessionID, answerRevision: 1,
+                                                  updatedAt: now)]
+        var backup = Workspace(id: workspaceID, name: "面试备份", mode: .interview,
+                               updatedAt: now.addingTimeInterval(-10))
+        backup.questionBank = [QuestionBankItem(id: questionID, question: "如何处理缓存击穿", answer: "手动维护的答法",
+                                                 sourceSessionID: oldSourceSessionID,
+                                                 answerSourceSessionID: oldSourceSessionID,
+                                                 updatedAt: now.addingTimeInterval(-20))]
+
+        let merged = BackupMerge.workspaces(existing: [current], incoming: [backup])
+        let question = try #require(merged.merged.first?.questionBank.first)
+
+        #expect(question.answer == "手动维护的答法")
+        #expect(question.answerRevision == 1)
+        #expect(question.answerSourceSessionID == nil)
+        #expect(question.knownAnswerSourceSessionID == nil)
+    }
+
+    @Test func editingOnlyLegacyQuestionWordingKeepsAnswerAttribution() {
+        let sourceSession = UUID()
+        var item = QuestionBankItem(question: "如何处理缓存击穿", answer: "先加互斥锁",
+                                    sourceSessionID: sourceSession, updatedAt: now)
+        let answer = item.answer
+
+        KnowledgeMerger.editQuestionBankItem(&item, question: "缓存击穿如何处理", answer: answer,
+                                             now: now.addingTimeInterval(1))
+
+        #expect(item.answerRevision == 1)
+        #expect(item.answerHistory == nil)
+        #expect(item.answerSourceSessionID == sourceSession)
+        #expect(item.knownAnswerSourceSessionID == sourceSession)
+    }
+
+    @Test func backupMergePreservesWinningLegacyAnswerAttributionWhenAnswersDiverge() throws {
+        let workspaceID = UUID(), questionID = UUID()
+        let currentSource = UUID(), backupSource = UUID()
+        let current = Workspace(id: workspaceID, name: "面试", mode: .interview,
+                                questionBank: [QuestionBankItem(id: questionID, question: "如何处理缓存击穿",
+                                                                answer: "当前答法", sourceSessionID: currentSource,
+                                                                updatedAt: now)],
+                                updatedAt: now)
+        let backup = Workspace(id: workspaceID, name: "面试备份", mode: .interview,
+                               questionBank: [QuestionBankItem(id: questionID, question: "如何处理缓存击穿",
+                                                               answer: "旧答法", sourceSessionID: backupSource,
+                                                               updatedAt: now.addingTimeInterval(-20))],
+                               updatedAt: now.addingTimeInterval(-10))
+
+        let merged = try #require(BackupMerge.workspaces(existing: [current], incoming: [backup]).merged.first)
+        let question = try #require(merged.questionBank.first)
+        let preserved = try #require(question.answerHistory?.first)
+
+        #expect(question.answer == "当前答法")
+        #expect(question.answerRevision == 1)
+        #expect(question.answerSourceSessionID == currentSource)
+        #expect(question.knownAnswerSourceSessionID == currentSource)
+        #expect(preserved.answer == "旧答法")
+        #expect(preserved.sourceSessionID == backupSource)
+    }
+
+    @Test func currentSeriesRevisionHasStableIdentityAndDuplicateBackupDoesNotAddHistory() throws {
+        let workspaceID = UUID(), itemID = UUID(), sessionID = UUID()
+        let item = WorkspaceSeriesItem(id: itemID, kind: .decision, text: "按周发布",
+                                       sourceSessionID: sessionID, evidenceID: "decision-1",
+                                       claimRevision: "claim-1", sourceRevision: "line-1",
+                                       confirmedAt: now, updatedAt: now)
+
+        #expect(item.currentRevision == item.currentRevision)
+
+        let current = Workspace(id: workspaceID, name: "系列", mode: .meeting,
+                                seriesItems: [item], updatedAt: now)
+        let backup = Workspace(id: workspaceID, name: "系列", mode: .meeting,
+                               seriesItems: [item], updatedAt: now.addingTimeInterval(-1))
+        let merged = try #require(BackupMerge.workspaces(existing: [current], incoming: [backup]).merged.first)
+        let mergedItem = try #require(merged.seriesItems?.first)
+
+        #expect(mergedItem == item)
+        #expect(mergedItem.history.isEmpty)
+    }
+
     @Test func manifestValidationAndSettingsFilter() throws {
         let manifest = BackupManifest(kind: .full, appVersion: "1.3.0", appBuild: "20", includesSecrets: false, workspaceCount: 1, sessionCount: 2)
         try manifest.validate()

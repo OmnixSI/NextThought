@@ -152,7 +152,7 @@ Workspace JSON 以可选字段增加知识候选收据、不同会议来源和�
 
 ## 自检（self-test）
 
-`NextThought --self-test data signing update asr --fixtures Tools/Validation/Fixtures` 在应用包内运行真实代码路径（需设置 `NEXTTHOUGHT_DATA_DIR` 指向临时目录）。Verify 工作流的 `selftest` 任务逐项运行；Release 工作流在打包后运行 `data update`。
+`NextThought --self-test data signing update session-export asr --fixtures Tools/Validation/Fixtures` 在应用包内运行真实代码路径（需设置 `NEXTTHOUGHT_DATA_DIR` 指向临时目录）。`session-export` 会实际生成并读取 Markdown、DOCX、PDF、SRT 与 WebVTT。Release 工作流会在隔离数据目录中运行 `data`、`session-export`、`session-backup-drain`、`session-edit-receipts` 和 `session-carry-context`，然后用演示资料运行 `document-setup`。
 
 ## GitHub Release 自动更新
 

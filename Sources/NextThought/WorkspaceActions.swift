@@ -294,6 +294,112 @@ extension AppState {
         }
     }
 
+    /// Queue only note entries whose current transcript evidence was explicitly supported.
+    /// The review pane is deliberately not trusted as the source of truth; rebuild the
+    /// references from the persisted session snapshot before committing proposals.
+    func collectSeriesChangeCandidates(sessionID: UUID, workspaceID: UUID) async -> Int {
+        guard !isPreparingForTermination,
+              let meta = archive.sessions.first(where: { $0.id == sessionID }),
+              meta.workspaceID == workspaceID, meta.workspaceDeleted != true else { return 0 }
+        guard await archive.flush(sessionID: sessionID) else {
+            errorMessage = "本场纪要尚未保存，无法收集系列事项。请等待保存完成后重试。"
+            return 0
+        }
+        guard !isPreparingForTermination,
+              let detail = await archive.detail(sessionID),
+              detail.meta.workspaceID == workspaceID, detail.meta.workspaceDeleted != true,
+              archive.sessions.contains(where: { $0.id == sessionID && $0.workspaceID == workspaceID && $0.workspaceDeleted != true }),
+              var workspace = workspaces.workspace(workspaceID) else { return 0 }
+        let evidence = SessionEvidenceBuilder.build(meta: detail.meta, lines: detail.lines,
+                                                    notes: detail.notes, summary: detail.summary)
+        let added = WorkspaceSeriesChangeMerger.collectCandidates(from: evidence, sessionID: sessionID,
+                                                                  into: &workspace)
+        guard !added.isEmpty else { return 0 }
+        do { try workspaces.commit(workspace) }
+        catch {
+            errorMessage = "保存系列事项候选失败：\(error.localizedDescription)"
+            return 0
+        }
+        return added.count
+    }
+
+    /// Review one proposed series item. Replace is guarded by the revision shown in the
+    /// card, and the proposal's evidence must still be current and explicitly supported.
+    func reviewSeriesChangeCandidate(_ candidateID: String, decision: WorkspaceSeriesChangeDecision,
+                                     workspaceID: UUID, targetItemID: UUID? = nil,
+                                     expectedRevision: Int? = nil,
+                                     reviewedDetails: WorkspaceSeriesChangeReviewDetails? = nil,
+                                     operationID: UUID = UUID()) async {
+        guard !isPreparingForTermination,
+              let initialWorkspace = workspaces.workspace(workspaceID),
+              let initialCandidate = initialWorkspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }) else { return }
+        // A receipt is the durable result of the user's first click. Replays remain
+        // successful even if the source is later edited or removed.
+        if initialCandidate.receipt != nil || initialCandidate.status != .pending { return }
+        var currentEvidence: SessionEvidenceReference?
+        if decision != .reject {
+            guard let meta = archive.sessions.first(where: { $0.id == initialCandidate.sourceSessionID }),
+                  meta.workspaceID == workspaceID, meta.workspaceDeleted != true,
+                  await archive.flush(sessionID: initialCandidate.sourceSessionID) else {
+                errorMessage = "本场纪要尚未保存，无法确认系列依据。请等待保存完成后重试。"
+                return
+            }
+            guard !isPreparingForTermination,
+                  let detail = await archive.detail(initialCandidate.sourceSessionID),
+                  detail.meta.workspaceID == workspaceID, detail.meta.workspaceDeleted != true,
+                  archive.sessions.contains(where: {
+                      $0.id == initialCandidate.sourceSessionID && $0.workspaceID == workspaceID && $0.workspaceDeleted != true
+                  }),
+                  let current = SessionEvidenceBuilder.build(meta: detail.meta, lines: detail.lines,
+                                                             notes: detail.notes, summary: detail.summary)
+                    .first(where: { $0.id == initialCandidate.evidenceID }) else {
+                errorMessage = "这条系列建议的依据已变化或不可用，请重新核对后再接受。"
+                return
+            }
+            currentEvidence = current
+        }
+
+        // `archive.detail` suspends this main-actor method. Rebase on the latest workspace
+        // after that suspension so a concurrent review or action-state change is not lost.
+        guard !isPreparingForTermination,
+              var workspace = workspaces.workspace(workspaceID),
+              let candidate = workspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }) else { return }
+        if candidate.receipt != nil { return }
+        if decision != .reject {
+            guard let currentEvidence,
+                  WorkspaceSeriesChangeMerger.matchesCurrentEvidence(candidate, reference: currentEvidence) else {
+                errorMessage = "这条系列建议的依据已变化或不可用，请重新核对后再接受。"
+                return
+            }
+        }
+        guard let receipt = WorkspaceSeriesChangeMerger.applyCandidate(candidateID, decision: decision,
+                                                                        operationID: operationID,
+                                                                        targetItemID: targetItemID,
+                                                                        expectedRevision: expectedRevision,
+                                                                        reviewedDetails: reviewedDetails,
+                                                                        into: &workspace) else {
+            errorMessage = "系列内容刚刚有变化，请刷新后核对当前版本。"
+            return
+        }
+        do {
+            try workspaces.commit(workspace)
+            Diagnostics.record("series.change.reviewed", ["decision": receipt.decision.rawValue,
+                                                             "kind": candidate.kind.rawValue])
+        } catch {
+            errorMessage = "保存系列变更失败：\(error.localizedDescription)"
+        }
+    }
+
+    func updateSeriesActionState(_ status: WorkspaceSeriesItem.ActionState, itemID: UUID,
+                                 expectedRevision: Int, workspaceID: UUID) {
+        guard !isPreparingForTermination, var workspace = workspaces.workspace(workspaceID),
+              WorkspaceSeriesChangeMerger.setActionState(status, itemID: itemID,
+                                                          expectedRevision: expectedRevision,
+                                                          into: &workspace) else { return }
+        do { try workspaces.commit(workspace) }
+        catch { errorMessage = "保存事项进度失败：\(error.localizedDescription)" }
+    }
+
     // MARK: Stage review
 
     /// Reviews every summarized session of a workspace together: trends, recurring

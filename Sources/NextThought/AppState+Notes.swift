@@ -220,9 +220,19 @@ extension AppState {
         var saved: SessionSummary?
         await StructuredNotesJobs.shared.exclusive {
             guard await archive.flush(sessionID: id), !isPreparingForTermination else { return }
-            summary.preserveStructuredViews(from: await archive.detail(id)?.summary)
+            guard let detail = await archive.detail(id) else { return }
+            summary.preserveStructuredViews(from: detail.summary)
+            let sourceRevision = summary.transcriptSourceRevision
+                ?? notes?.transcriptSourceRevision
+                ?? SessionProjectionBuilder.transcriptSourceRevision(meta: detail.meta, lines: detail.lines,
+                                                                       notes: notes ?? detail.notes)
+            summary.transcriptSourceRevision = sourceRevision
             guard !isPreparingForTermination else { return }
-            if let notes { archive.saveNotes(notes, for: id) }
+            if var notes {
+                notes.transcriptSourceRevision = sourceRevision
+                summary.structuredNotesSourceRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
+                archive.saveNotes(notes, for: id)
+            }
             archive.saveSummary(summary, for: id)
             guard await archive.flush(sessionID: id), !isPreparingForTermination else { return }
             archive.notesRevision += 1
@@ -330,9 +340,12 @@ extension AppState {
         if let workspace {
             words.append(workspace.name)
             words += workspace.fields.values.filter { $0.count <= 40 }
-            words += workspace.documents.map { ($0.name as NSString).deletingPathExtension }
         }
-        if let context = detail.context { words += context.documents.map { ($0.name as NSString).deletingPathExtension } }
+        // A session context, when present, is the carry-filtered snapshot from
+        // the meeting's start. Don't reintroduce baseline files that the user
+        // chose to exclude by reading today's full workspace document list.
+        let documents = detail.context?.documents ?? workspace?.documents ?? []
+        words += documents.filter(\.enabled).map { ($0.name as NSString).deletingPathExtension }
         words += glossaryForNotes(workspace: workspace).entries.map(\.canonical)
         var seen = Set<String>()
         return words.filter { !$0.isEmpty && seen.insert($0).inserted }
@@ -358,9 +371,11 @@ extension AppState {
         let title = !given.isEmpty ? given : (notes.title.isEmpty ? detail.meta.displayTitle : notes.title)
         let questions = notes.sections.filter { $0.kind == .questions }.flatMap(\.items)
             .map { SummaryQuestion(text: $0.text, answerGist: $0.answer) }
+        let sourceRevision = SessionProjectionBuilder.transcriptSourceRevision(meta: detail.meta, lines: detail.lines, notes: notes)
         return SessionSummary(title: title, markdown: NotesMarkdown.render(notes, title: title, facts: notesFacts(detail.meta, notes: notes)),
                               questions: questions, generatedAt: Date(), model: notes.model,
-                              lessons: notes.lessons(template: template), bank: notes.bankEntries, appliedToWorkspace: false)
+                              lessons: notes.lessons(template: template), bank: notes.bankEntries, appliedToWorkspace: false,
+                              transcriptSourceRevision: sourceRevision)
     }
 
     /// "10 月 27 日（周一）10:00 · 38 分钟 · 线上 · 已校对 4 处识别错误".
@@ -397,16 +412,20 @@ extension AppState {
         let parsed = SessionSummaryParser.parseAll(markdown)
         return SessionSummary(title: parsed.title ?? detail.meta.displayTitle, markdown: markdown,
                               questions: parsed.questions, generatedAt: Date(), model: engine.model,
-                              lessons: parsed.lessons, bank: parsed.bank, appliedToWorkspace: false)
+                              lessons: parsed.lessons, bank: parsed.bank, appliedToWorkspace: false,
+                              transcriptSourceRevision: SessionProjectionBuilder.transcriptSourceRevision(
+                                meta: detail.meta, lines: detail.lines))
     }
 
     // MARK: On the notes page
 
     /// Undo or redo one proofreading correction (the transcript file never changes).
     func toggleCorrection(_ correctionID: UUID, in sessionID: UUID) {
+        guard !archive.summarizing.contains(sessionID) else { return }
         archive.updateNotes(sessionID) { notes in
-            guard let index = notes.corrections.firstIndex(where: { $0.id == correctionID }) else { return }
+            guard let index = notes.corrections.firstIndex(where: { $0.id == correctionID }) else { return false }
             notes.corrections[index].reverted.toggle()
+            return true
         }
     }
 

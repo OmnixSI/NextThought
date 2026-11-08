@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 // MARK: - Mode profiles
@@ -193,6 +194,152 @@ public struct QuestionBankItem: Codable, Sendable, Equatable, Identifiable {
     }
 }
 
+/// A user-confirmed decision or commitment that remains current across meetings.
+/// Source details point to the meeting and reviewed evidence used for this revision.
+public struct WorkspaceSeriesItem: Codable, Sendable, Equatable, Identifiable {
+    public enum Kind: String, Codable, Sendable { case decision, action }
+    public enum ActionState: String, Codable, Sendable { case open, inProgress, done, cancelled, superseded }
+
+    public var id: UUID
+    public var kind: Kind
+    public var text: String
+    public var owner: String?
+    public var due: String?
+    public var dueDate: Date?
+    /// Nil for decisions; actions begin open and can be updated independently of evidence review.
+    public var actionState: ActionState?
+    /// Evidence anchor for the current revision.
+    public var sourceSessionID: UUID
+    public var evidenceID: String
+    public var claimRevision: String
+    public var sourceRevision: String
+    public var sourceQuote: String?
+    public var location: String?
+    public var revision: Int
+    public var history: [WorkspaceSeriesItemRevision]
+    public var confirmedAt: Date
+    public var updatedAt: Date
+
+    public init(id: UUID = UUID(), kind: Kind, text: String, owner: String? = nil, due: String? = nil,
+                dueDate: Date? = nil, actionState: ActionState? = nil, sourceSessionID: UUID,
+                evidenceID: String, claimRevision: String, sourceRevision: String,
+                sourceQuote: String? = nil, location: String? = nil, revision: Int = 1,
+                history: [WorkspaceSeriesItemRevision] = [], confirmedAt: Date = Date(), updatedAt: Date = Date()) {
+        self.id = id; self.kind = kind; self.text = text; self.owner = owner; self.due = due; self.dueDate = dueDate
+        self.actionState = kind == .action ? (actionState ?? .open) : nil
+        self.sourceSessionID = sourceSessionID; self.evidenceID = evidenceID; self.claimRevision = claimRevision
+        self.sourceRevision = sourceRevision; self.sourceQuote = sourceQuote; self.location = location
+        self.revision = max(1, revision); self.history = history; self.confirmedAt = confirmedAt; self.updatedAt = updatedAt
+    }
+
+    public var currentRevision: WorkspaceSeriesItemRevision {
+        WorkspaceSeriesItemRevision(id: revisionIdentifier(itemID: id, revision: revision),
+                                    revision: revision, kind: kind, text: text, owner: owner, due: due,
+                                    dueDate: dueDate, actionState: actionState, sourceSessionID: sourceSessionID,
+                                    evidenceID: evidenceID, claimRevision: claimRevision, sourceRevision: sourceRevision,
+                                    sourceQuote: sourceQuote, location: location, recordedAt: updatedAt)
+    }
+
+    private func revisionIdentifier(itemID: UUID, revision: Int) -> UUID {
+        var bytes = Array(SHA256.hash(data: Data("series-item-revision|\(itemID.uuidString.lowercased())|\(revision)".utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0F) | 0x50
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                           bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+    }
+}
+
+/// Immutable snapshot retained when a confirmed decision or action changes.
+public struct WorkspaceSeriesItemRevision: Codable, Sendable, Equatable, Identifiable {
+    public var id: UUID
+    public var revision: Int
+    public var kind: WorkspaceSeriesItem.Kind
+    public var text: String
+    public var owner: String?
+    public var due: String?
+    public var dueDate: Date?
+    public var actionState: WorkspaceSeriesItem.ActionState?
+    public var sourceSessionID: UUID
+    public var evidenceID: String
+    public var claimRevision: String
+    public var sourceRevision: String
+    public var sourceQuote: String?
+    public var location: String?
+    public var recordedAt: Date
+
+    public init(id: UUID = UUID(), revision: Int, kind: WorkspaceSeriesItem.Kind, text: String,
+                owner: String? = nil, due: String? = nil, dueDate: Date? = nil,
+                actionState: WorkspaceSeriesItem.ActionState? = nil, sourceSessionID: UUID,
+                evidenceID: String, claimRevision: String, sourceRevision: String,
+                sourceQuote: String? = nil, location: String? = nil, recordedAt: Date = Date()) {
+        self.id = id; self.revision = revision; self.kind = kind; self.text = text; self.owner = owner
+        self.due = due; self.dueDate = dueDate; self.actionState = actionState; self.sourceSessionID = sourceSessionID
+        self.evidenceID = evidenceID; self.claimRevision = claimRevision; self.sourceRevision = sourceRevision
+        self.sourceQuote = sourceQuote; self.location = location; self.recordedAt = recordedAt
+    }
+}
+
+public enum WorkspaceSeriesChangeDecision: String, Codable, Sendable { case add, replace, reject }
+
+/// Optional user edits confirmed alongside an evidence-backed series proposal.
+/// A non-nil value can intentionally clear an extracted owner or deadline.
+public struct WorkspaceSeriesChangeReviewDetails: Sendable, Equatable {
+    public var owner: String?
+    /// Preserve the deadline as spoken, including relative wording and any named time zone.
+    public var due: String?
+
+    public init(owner: String?, due: String?) {
+        self.owner = owner
+        self.due = due
+    }
+}
+
+public struct WorkspaceSeriesChangeReceipt: Codable, Sendable, Equatable {
+    public var operationID: UUID
+    public var candidateID: String
+    public var decision: WorkspaceSeriesChangeDecision
+    public var reviewedAt: Date
+    public var resultItemID: UUID?
+
+    public init(operationID: UUID, candidateID: String, decision: WorkspaceSeriesChangeDecision,
+                reviewedAt: Date, resultItemID: UUID?) {
+        self.operationID = operationID; self.candidateID = candidateID; self.decision = decision
+        self.reviewedAt = reviewedAt; self.resultItemID = resultItemID
+    }
+}
+
+/// A reviewed-evidence proposal stays separate from active series state until accepted.
+public struct WorkspaceSeriesChangeCandidate: Codable, Sendable, Equatable, Identifiable {
+    public enum Status: String, Codable, Sendable { case pending, accepted, rejected, superseded }
+
+    public var id: String
+    public var kind: WorkspaceSeriesItem.Kind
+    public var text: String
+    public var owner: String?
+    public var due: String?
+    public var dueDate: Date?
+    public var sourceSessionID: UUID
+    public var evidenceID: String
+    public var claimRevision: String
+    public var sourceRevision: String
+    public var sourceQuote: String?
+    public var location: String?
+    public var status: Status
+    public var receipt: WorkspaceSeriesChangeReceipt?
+    public var createdAt: Date
+
+    public init(id: String, kind: WorkspaceSeriesItem.Kind, text: String, owner: String? = nil,
+                due: String? = nil, dueDate: Date? = nil, sourceSessionID: UUID,
+                evidenceID: String, claimRevision: String, sourceRevision: String,
+                sourceQuote: String? = nil, location: String? = nil, status: Status = .pending,
+                receipt: WorkspaceSeriesChangeReceipt? = nil, createdAt: Date = Date()) {
+        self.id = id; self.kind = kind; self.text = text; self.owner = owner; self.due = due; self.dueDate = dueDate
+        self.sourceSessionID = sourceSessionID; self.evidenceID = evidenceID; self.claimRevision = claimRevision
+        self.sourceRevision = sourceRevision; self.sourceQuote = sourceQuote; self.location = location
+        self.status = status; self.receipt = receipt; self.createdAt = createdAt
+    }
+}
+
 public enum WorkspaceKnowledgeKind: String, Codable, Sendable { case lesson, question }
 
 public enum WorkspaceKnowledgeDecision: String, Codable, Sendable {
@@ -263,6 +410,10 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var questionBank: [QuestionBankItem]
     /// Review queue and receipts live beside the knowledge they can change.
     public var knowledgeCandidates: [WorkspaceKnowledgeCandidate]?
+    /// Confirmed decisions and action items used by the local next-meeting briefing.
+    public var seriesItems: [WorkspaceSeriesItem]?
+    /// Reviewed evidence proposals are inert until a user accepts or rejects them.
+    public var seriesChangeCandidates: [WorkspaceSeriesChangeCandidate]?
     /// Feed lessons and the question bank back into answers.
     public var useKnowledge: Bool
     /// Latest review across all sessions of this workspace.
@@ -284,11 +435,14 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
                 notes: String = "", fields: [String: String] = [:], documents: [ContextDocument] = [],
                 lessons: [WorkspaceLesson] = [], questionBank: [QuestionBankItem] = [], useKnowledge: Bool = true,
                 knowledgeCandidates: [WorkspaceKnowledgeCandidate]? = nil,
+                seriesItems: [WorkspaceSeriesItem]? = nil,
+                seriesChangeCandidates: [WorkspaceSeriesChangeCandidate]? = nil,
                 stageReview: String? = nil, stageReviewAt: Date? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), archived: Bool = false, skillIDs: [UUID] = []) {
         self.id = id; self.name = name; self.mode = mode; self.style = style
         self.preferences = preferences ?? ModeProfile.for(mode).templatePreferences
         self.notes = notes; self.fields = fields; self.documents = documents; self.lessons = lessons
         self.questionBank = questionBank; self.knowledgeCandidates = knowledgeCandidates; self.useKnowledge = useKnowledge
+        self.seriesItems = seriesItems; self.seriesChangeCandidates = seriesChangeCandidates
         self.stageReview = stageReview; self.stageReviewAt = stageReviewAt
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.archived = archived
         self.skillIDs = skillIDs
@@ -299,6 +453,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     // Tolerant decoding: fields added in later versions get defaults.
     enum CodingKeys: String, CodingKey {
         case id, name, mode, style, preferences, notes, fields, documents, lessons, questionBank, knowledgeCandidates, useKnowledge
+        case seriesItems, seriesChangeCandidates
         case stageReview, stageReviewAt, createdAt, updatedAt, archived, skillIDs
         case customTypeName, customBaseMode, glossary
     }
@@ -316,6 +471,8 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         lessons = try c.decodeIfPresent([WorkspaceLesson].self, forKey: .lessons) ?? []
         questionBank = try c.decodeIfPresent([QuestionBankItem].self, forKey: .questionBank) ?? []
         knowledgeCandidates = try c.decodeIfPresent([WorkspaceKnowledgeCandidate].self, forKey: .knowledgeCandidates)
+        seriesItems = try c.decodeIfPresent([WorkspaceSeriesItem].self, forKey: .seriesItems)
+        seriesChangeCandidates = try c.decodeIfPresent([WorkspaceSeriesChangeCandidate].self, forKey: .seriesChangeCandidates)
         useKnowledge = try c.decodeIfPresent(Bool.self, forKey: .useKnowledge) ?? true
         stageReview = try c.decodeIfPresent(String.self, forKey: .stageReview)
         stageReviewAt = try c.decodeIfPresent(Date.self, forKey: .stageReviewAt)
@@ -524,6 +681,11 @@ public enum KnowledgeMerger {
                                             now: Date = Date()) {
         let questionChanged = item.question != question
         let answerChanged = item.answer != answer
+        if questionChanged && !answerChanged {
+            // A legacy item used sourceSessionID as its only answer source. Make that
+            // source explicit before advancing the revision disables the legacy fallback.
+            item.answerSourceSessionID = item.knownAnswerSourceSessionID
+        }
         if answerChanged {
             var history = item.answerHistory ?? []
             history.append(WorkspaceAnswerRevision(answer: item.answer, recordedAt: item.updatedAt,

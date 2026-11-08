@@ -167,7 +167,7 @@ extension AppState {
             let documents = prepared.retrievalDocuments
             guard documents != seriesDocuments else {
                 self.contextIndex = seriesIndex
-                self.preparedWorkspace = prepared
+                self.publishPreparedWorkspace(prepared)
                 return
             }
             let index = await Task.detached(priority: .utility) {
@@ -175,8 +175,15 @@ extension AppState {
             }.value
             guard !Task.isCancelled, self.audioEpoch == epoch, self.isRunning, !self.isStopping else { return }
             self.contextIndex = index
-            self.preparedWorkspace = prepared
+            self.publishPreparedWorkspace(prepared)
             Diagnostics.record("meeting.carry_applied", ["documents": documents.count])
+        }
+    }
+
+    private func publishPreparedWorkspace(_ workspace: Workspace) {
+        preparedWorkspace = workspace
+        if let sessionID = activeArchiveID {
+            _ = updateArchiveContext(workspace, sessionID: sessionID)
         }
     }
 }

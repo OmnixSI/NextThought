@@ -259,6 +259,8 @@ extension AppState {
         }
         cleaned.generatedAt = Date()
         cleaned.model = engine.model
+        cleaned.transcriptSourceRevision = SessionProjectionBuilder.transcriptSourceRevision(
+            meta: detail.meta, lines: detail.lines, notes: notes)
         return cleaned
     }
 }

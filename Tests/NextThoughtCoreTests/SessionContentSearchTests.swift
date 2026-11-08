@@ -92,6 +92,35 @@ struct SessionContentSearchTests {
         #expect(translated?.isStale == true)
     }
 
+    @Test func alternateTextHitUsesTheOriginalSourceIdentity() {
+        let lineID = UUID()
+        let field = SessionSearchField(kind: .correctedTranscript, text: "王小明负责周一提交。",
+                                       alternateText: "王小明负责周五提交。", id: "line:corrected",
+                                       lineID: lineID, sourceRevision: "corrected-revision",
+                                       alternateID: "line:original", alternateKind: .transcript,
+                                       alternateLineID: lineID, alternateSourceRevision: "original-revision")
+
+        let hit = SessionContentSearch.firstHit(in: [field], terms: Glossary().search(for: "周五提交"))
+
+        #expect(hit?.kind == .transcript)
+        #expect(hit?.id == "line:original")
+        #expect(hit?.lineID == lineID)
+        #expect(hit?.sourceRevision == "original-revision")
+        #expect(hit?.excerpt.contains("周五提交") == true)
+    }
+
+    @Test func returnsEveryMatchingSourceFieldForPerMeetingNavigation() {
+        let terms = Glossary().search(for: "发布计划")
+        let first = SessionSearchField(kind: .transcript, text: "发布计划先等数据", id: "line-1")
+        let second = SessionSearchField(kind: .notes, text: "发布计划改到周一", id: "note-1")
+
+        let hits = SessionContentSearch.hits(in: [first, second], terms: terms)
+
+        #expect(hits.count == 2)
+        #expect(hits.map(\.id) == ["line-1", "note-1"])
+        #expect(hits.map(\.kind) == [.transcript, .notes])
+    }
+
     @Test func includesQuestionsAnswersAndStructuredNotes() {
         let start = Date(timeIntervalSince1970: 1_800_000_000)
         let meta = SessionMeta(startedAt: start, mode: .meeting)
@@ -112,6 +141,101 @@ struct SessionContentSearchTests {
         #expect(SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "海鸥团队"))?.location == "02:15")
         #expect(SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "缓存策略"))?.kind == .notes)
         #expect(SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "蜂鸟回滚"))?.location == "05:50")
+    }
+
+    @Test func timedNoteAndStructuredSearchHitsNavigateToNearbyTranscriptLine() {
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let line = SessionTranscriptLine(date: start.addingTimeInterval(32), speaker: .remote, text: "原话所在行")
+        let meta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(90), mode: .meeting)
+        let notes = StructuredNotes(templateID: "general", templateName: "会议", language: "zh", title: "纪要",
+                                    sections: [NotesSectionResult(id: "actions", title: "待办", kind: .actions,
+                                                                  items: [NotesItem(text: "联系外部数据团队", time: "00:32")])])
+        let payload = StructuredNotesPayload(format: .outline,
+                                             outline: OutlineNotes(sections: [OutlineSection(title: "决定", at: 32,
+                                                                                            points: [OutlinePoint(text: "周一提交结果", at: 32)])]))
+        let summary = SessionSummary(title: "会议", markdown: "", questions: [], generatedAt: start, model: "test",
+                                     structured: payload, structuredAll: [payload])
+        let fields = SessionContentSearch.fields(meta: meta, lines: [line], questions: [], answers: [],
+                                                 summary: summary, notes: notes)
+
+        let noteHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "外部数据团队"))
+        let structuredHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "周一提交结果"))
+
+        #expect(noteHit?.kind == .notes)
+        #expect(noteHit?.lineID == line.id)
+        #expect(structuredHit?.kind == .notes)
+        #expect(structuredHit?.lineID == line.id)
+        #expect(structuredHit?.location == "00:32")
+    }
+
+    @Test func notesAndSummarySearchHitsPreserveStaleSourceStatus() {
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let meta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(30), mode: .meeting)
+        let line = SessionTranscriptLine(date: start.addingTimeInterval(5), speaker: .remote, text: "当前会议内容")
+        let notes = StructuredNotes(templateID: "general", templateName: "会议", language: "zh", title: "待核对纪要",
+                                    sections: [NotesSectionResult(id: "actions", title: "待办", kind: .items,
+                                                                  items: [NotesItem(text: "旧版本待办词")])],
+                                    transcriptSourceRevision: "older-transcript-revision")
+        let summary = SessionSummary(title: "旧版总结", markdown: "旧版本摘要词", questions: [], generatedAt: start,
+                                     model: "test", transcriptSourceRevision: "older-transcript-revision")
+
+        let fields = SessionContentSearch.fields(meta: meta, lines: [line], questions: [], answers: [],
+                                                 summary: summary, notes: notes)
+        let noteHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "旧版本待办词"))
+        let summaryHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "旧版本摘要词"))
+
+        #expect(noteHit?.kind == .notes)
+        #expect(noteHit?.sourceStatus == .stale)
+        #expect(noteHit?.isStale == true)
+        #expect(summaryHit?.kind == .notes)
+        #expect(summaryHit?.sourceStatus == .stale)
+        #expect(summaryHit?.isStale == true)
+    }
+
+    @Test func editedNotesMarkTheirPreviouslyRenderedSummaryAsStaleInSearch() {
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let line = SessionTranscriptLine(date: start.addingTimeInterval(5), speaker: .remote, text: "当前会议内容")
+        let meta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(30), mode: .meeting)
+        var notes = StructuredNotes(templateID: "general", templateName: "会议", language: "zh", title: "纪要",
+                                   sections: [NotesSectionResult(id: "actions", title: "待办", kind: .actions,
+                                                                 items: [NotesItem(text: "原始待办措辞")])])
+        let transcriptRevision = SessionProjectionBuilder.transcriptSourceRevision(meta: meta, lines: [line], notes: notes)
+        notes.transcriptSourceRevision = transcriptRevision
+        let summary = SessionSummary(title: "纪要", markdown: "## 待办\n\n原始待办措辞", questions: [],
+                                     generatedAt: start, model: "test", transcriptSourceRevision: transcriptRevision,
+                                     structuredNotesSourceRevision: SessionProjectionBuilder.structuredNotesRevision(notes))
+        notes.sections[0].items[0].text = "更新后的待办措辞"
+
+        let fields = SessionContentSearch.fields(meta: meta, lines: [line], questions: [], answers: [],
+                                                 summary: summary, notes: notes)
+        let oldHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "原始待办措辞"))
+        let currentHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "更新后的待办措辞"))
+
+        #expect(oldHit?.kind == .notes)
+        #expect(oldHit?.sourceStatus == .stale)
+        #expect(oldHit?.isStale == true)
+        #expect(currentHit?.kind == .notes)
+        #expect(currentHit?.sourceStatus == .current)
+        #expect(currentHit?.isStale == false)
+    }
+
+    @Test func legacyNoteAndSummarySearchHitsKeepUnknownFreshnessDistinctFromStale() {
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let meta = SessionMeta(startedAt: start, mode: .meeting)
+        let notes = StructuredNotes(templateID: "general", templateName: "会议", language: "zh", title: "旧纪要",
+                                    sections: [NotesSectionResult(id: "decisions", title: "决定", kind: .items,
+                                                                  items: [NotesItem(text: "未标记版本的决定")])])
+        let summary = SessionSummary(title: "旧摘要", markdown: "未标记版本的摘要", questions: [], generatedAt: start, model: "test")
+        let fields = SessionContentSearch.fields(meta: meta, lines: [], questions: [], answers: [],
+                                                 summary: summary, notes: notes)
+
+        let noteHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "未标记版本的决定"))
+        let summaryHit = SessionContentSearch.firstHit(in: fields, terms: Glossary().search(for: "未标记版本的摘要"))
+
+        #expect(noteHit?.sourceStatus == .unknown)
+        #expect(noteHit?.isStale == false)
+        #expect(summaryHit?.sourceStatus == .unknown)
+        #expect(summaryHit?.isStale == false)
     }
 
     @Test func glossaryVariantsRemainSearchableAndMarkedAsMisheard() {
