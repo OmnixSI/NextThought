@@ -321,7 +321,7 @@ private struct TranscriptColumn: View {
                     .padding(.vertical, Space.s4)
                     .background(ScrollFollowObserver(
                         onScrollAway: { follow.userScrolledAway() },
-                        onReachedLatest: { follow.returnToLatest() },
+                        onReachedLatest: { follow.reachedLatest() },
                         onTextSelection: { follow.userSelectedText() }
                     ))
                 }
@@ -643,7 +643,7 @@ private struct AnswerText: View {
                     }
                     .background(ScrollFollowObserver(
                         onScrollAway: { follow.userScrolledAway() },
-                        onReachedLatest: { follow.returnToLatest() },
+                        onReachedLatest: { follow.reachedLatest() },
                         onTextSelection: { follow.userSelectedText() }
                     ))
                 }

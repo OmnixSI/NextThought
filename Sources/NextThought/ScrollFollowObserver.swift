@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import NextThoughtCore
 
 /// Observes only user-driven movement in a SwiftUI scroll view. Content layout
 /// changes and ScrollViewReader jumps do not pause following.
@@ -48,6 +49,8 @@ struct ScrollFollowObserver: NSViewRepresentable {
         private var selectionObserver: NSObjectProtocol?
         private var scrollWheelMonitor: Any?
         private var dragMonitor: Any?
+        private var scrollerClickMonitor: Any?
+        private var keyboardScrollMonitor: Any?
         private var lastVisibleRect: NSRect?
         private var pendingUserScroll = false
 
@@ -105,6 +108,14 @@ struct ScrollFollowObserver: NSViewRepresentable {
                 self?.markUserScroll(for: event)
                 return event
             }
+            scrollerClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+                self?.markVerticalScrollerAction(for: event)
+                return event
+            }
+            keyboardScrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                self?.markKeyboardScroll(for: event)
+                return event
+            }
         }
 
         func detach() {
@@ -112,6 +123,8 @@ struct ScrollFollowObserver: NSViewRepresentable {
             if let selectionObserver { NotificationCenter.default.removeObserver(selectionObserver) }
             if let scrollWheelMonitor { NSEvent.removeMonitor(scrollWheelMonitor) }
             if let dragMonitor { NSEvent.removeMonitor(dragMonitor) }
+            if let scrollerClickMonitor { NSEvent.removeMonitor(scrollerClickMonitor) }
+            if let keyboardScrollMonitor { NSEvent.removeMonitor(keyboardScrollMonitor) }
             if let scrollView {
                 scrollView.contentView.postsBoundsChangedNotifications = previousBoundsNotifications
             }
@@ -119,6 +132,8 @@ struct ScrollFollowObserver: NSViewRepresentable {
             selectionObserver = nil
             scrollWheelMonitor = nil
             dragMonitor = nil
+            scrollerClickMonitor = nil
+            keyboardScrollMonitor = nil
             scrollView = nil
             lastVisibleRect = nil
             pendingUserScroll = false
@@ -128,6 +143,29 @@ struct ScrollFollowObserver: NSViewRepresentable {
             guard let scrollView,
                   event.window === scrollView.window,
                   scrollView.bounds.contains(scrollView.convert(event.locationInWindow, from: nil)) else { return }
+            markPendingUserScroll()
+        }
+
+        private func markVerticalScrollerAction(for event: NSEvent) {
+            guard let scrollView,
+                  event.window === scrollView.window,
+                  let scroller = scrollView.verticalScroller else { return }
+            let point = scrollView.convert(event.locationInWindow, from: nil)
+            let scrollerFrame = scroller.convert(scroller.bounds, to: scrollView)
+            guard ScrollFollowInputClassifier.isPoint(point, inside: scrollerFrame) else { return }
+            markPendingUserScroll()
+        }
+
+        private func markKeyboardScroll(for event: NSEvent) {
+            guard let scrollView,
+                  event.window === scrollView.window,
+                  ScrollFollowInputClassifier.isScrollNavigationKeyCode(event.keyCode),
+                  let firstResponder = scrollView.window?.firstResponder as? NSView,
+                  firstResponder === scrollView || firstResponder.isDescendant(of: scrollView) else { return }
+            markPendingUserScroll()
+        }
+
+        private func markPendingUserScroll() {
             pendingUserScroll = true
             // Bounds notifications are normally sent synchronously while AppKit
             // handles the event. Clear the marker if the gesture was at an edge.

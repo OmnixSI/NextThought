@@ -24,8 +24,14 @@ public struct ScrollFollowState: Equatable, Sendable {
     /// Selecting text also pins the viewport so streaming updates cannot move
     /// the text under the selection.
     public mutating func userSelectedText() {
-        guard isFollowing else { return }
         mode = .selectingText
+    }
+
+    /// Scrolling the reading history back to the live edge resumes following.
+    /// A text selection stays pinned until the user explicitly returns.
+    public mutating func reachedLatest() {
+        guard mode == .readingHistory else { return }
+        returnToLatest()
     }
 
     /// Counts completed transcript items or coarse answer updates while paused.
