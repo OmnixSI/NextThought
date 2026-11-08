@@ -285,10 +285,40 @@ public enum JSONLines {
         return data
     }
 
-    /// Decodes every well-formed line; a torn last line (crash mid-write) is skipped.
+    /// Decodes every well-formed line; a torn last line is skipped and reported by
+    /// `decodeReport` so callers can distinguish a partial archive from an empty one.
     public static func decode<T: Decodable>(_ type: T.Type, from data: Data) -> [T] {
+        decodeReport(type, from: data).records
+    }
+
+    public static func decodeReport<T: Decodable>(_ type: T.Type, from data: Data) -> JSONLinesDecodeReport<T> {
         let decoder = decoder()
-        return data.split(separator: 0x0A).compactMap { try? decoder.decode(T.self, from: Data($0)) }
+        guard !data.isEmpty else { return JSONLinesDecodeReport(records: [], malformedLineNumbers: [], truncatedFinalLine: false) }
+        let terminated = data.last == 0x0A
+        let rawLines = data.split(separator: 0x0A, omittingEmptySubsequences: false)
+        let lineCount = terminated ? max(0, rawLines.count - 1) : rawLines.count
+        var records: [T] = []
+        var malformed: [Int] = []
+        for index in 0..<lineCount {
+            let line = rawLines[index]
+            guard !line.isEmpty else { continue }
+            do { records.append(try decoder.decode(T.self, from: Data(line))) }
+            catch { malformed.append(index + 1) }
+        }
+        let truncated = !terminated && lineCount > 0 && malformed.last == lineCount
+        return JSONLinesDecodeReport(records: records, malformedLineNumbers: malformed, truncatedFinalLine: truncated)
+    }
+}
+
+public struct JSONLinesDecodeReport<Record> {
+    public var records: [Record]
+    public var malformedLineNumbers: [Int]
+    public var truncatedFinalLine: Bool
+
+    public init(records: [Record], malformedLineNumbers: [Int], truncatedFinalLine: Bool) {
+        self.records = records
+        self.malformedLineNumbers = malformedLineNumbers
+        self.truncatedFinalLine = truncatedFinalLine
     }
 }
 

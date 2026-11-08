@@ -288,11 +288,23 @@ final class Updater {
                                     currentVersion: currentVersion, currentBuild: currentBuild) else { return }
         phase = .installing
         Task {
+            let state = AppState.shared
             do {
+                guard !state.isChangingSession else { throw AppFailure.capture("会议正在切换，稍后重试更新。") }
+                state.beginTerminationPreparation()
+                if state.isRunning || state.isPaused { await state.stopSession(preparingForTermination: true) }
+                guard !state.isRunning, !state.isPaused else { throw AppFailure.capture("会议尚未结束，暂不能更新。") }
+                guard await state.archive.flush() else {
+                    let reason = state.archive.persistenceBySession.values.first(where: { $0.lastFailure != nil })?.lastFailure
+                    throw AppFailure.capture("会议归档尚未全部保存，暂不能更新。" + (reason.map { "\n" + $0 } ?? "请重试保存后再试。"))
+                }
                 _ = try await DataBackup.automaticBackup(reason: "update")
-                AppState.shared.prepareForTermination()
+                state.prepareForTermination()
                 try Self.replaceAndRelaunch(with: stagedApp)
-            } catch { phase = .failed(error.localizedDescription) }
+            } catch {
+                state.resumeAfterFailedTermination()
+                phase = .failed(error.localizedDescription)
+            }
         }
     }
 

@@ -170,9 +170,17 @@ extension AppState {
         let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
         do {
             workspaces.flush()
+            for sessionID in archive.workspaceSessionIDs(id, formerName: workspace.name,
+                                                         includeLegacyNameOnly: includeLegacyNameOnly) {
+                guard await archive.flush(sessionID: sessionID) else {
+                    let reason = archive.persistenceBySession[sessionID]?.lastFailure
+                    errorMessage = "系列会议内容尚未全部保存，未删除系列或会议记录。" +
+                        (reason.map { "\n" + $0 } ?? "请重试保存后再删除。")
+                    return false
+                }
+            }
             let remainingWorkspaces = workspaces.workspaces.filter { $0.id != id }
             try await documentPreparation.deleteWorkspaceArtifacts(id, remainingWorkspaces: remainingWorkspaces)
-            await archive.flush()
             try archive.deleteWorkspaceSessions(id, formerName: workspace.name,
                                                 includeLegacyNameOnly: includeLegacyNameOnly)
             try MaterialArchive.deleteWorkspaceFiles(id)
@@ -247,17 +255,23 @@ extension AppState {
     /// knowledge until the user makes a per-candidate decision.
     @discardableResult
     func collectReviewCandidates(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> Int {
+        guard !isPreparingForTermination else { return 0 }
         guard summary.appliedToWorkspace != true, let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return 0 }
         let ids = KnowledgeMerger.collectCandidates(lessons: summary.lessons ?? [], bank: summary.bank ?? [],
                                                     into: &workspace, session: sessionID, originID: sessionID)
         guard !ids.isEmpty else { return 0 }
-        workspaces.update(workspace)
+        do { try workspaces.commit(workspace) }
+        catch {
+            errorMessage = "保存知识候选失败：\(error.localizedDescription)"
+            return 0
+        }
         Diagnostics.record("knowledge.candidates.collected", ["count": ids.count])
         return ids.count
     }
 
     func reviewKnowledgeCandidate(_ candidateID: String, decision: WorkspaceKnowledgeDecision,
                                   workspaceID: UUID, operationID: UUID = UUID()) {
+        guard !isPreparingForTermination else { return }
         guard var workspace = workspaces.workspace(workspaceID) else { return }
         guard let receipt = KnowledgeMerger.applyCandidate(candidateID, decision: decision,
                                                             operationID: operationID, into: &workspace) else {
@@ -310,13 +324,13 @@ extension AppState {
                 case .codexExec, .codexAppServer:
                     markdown = try await summaryCodex.run(prompt: request.fullPrompt, model: model, reasoning: reasoning, timeout: 600) { _ in }
                 }
-                guard var latest = workspaces.workspace(workspaceID) else { return }
+                guard !isPreparingForTermination, var latest = workspaces.workspace(workspaceID) else { return }
                 latest.stageReview = markdown
                 latest.stageReviewAt = Date()
                 let parsed = SessionSummaryParser.parseAll(markdown)
                 _ = KnowledgeMerger.collectCandidates(lessons: parsed.lessons, bank: parsed.bank,
                                                        into: &latest, session: nil, originID: workspaceID)
-                workspaces.update(latest)
+                try workspaces.commit(latest)
                 Diagnostics.record("stage_review.completed", ["sessions": digests.count])
             } catch {
                 errorMessage = "阶段复盘生成失败：\(error.localizedDescription)"

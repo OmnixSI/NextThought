@@ -34,8 +34,19 @@ struct MeetingPage: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s6) {
                         titleBlock
+                        archiveStatus
                         NotesProgressLine(id: id)
                         if let detail {
+                            if let issue = detail.readIssues.first {
+                                HStack(alignment: .top, spacing: Space.s2) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                    Text(issue.message).textSelection(.enabled)
+                                    Spacer(minLength: 0)
+                                    Button("详情") { onShowInfo(id) }.buttonStyle(SecondaryButtonStyle())
+                                }
+                                .font(Typo.caption)
+                                .foregroundStyle(Ink.caution)
+                            }
                             InkSegmented(items: tabs(detail), selection: $tab).fixedSize()
                             switch tab {
                             case .notes:
@@ -79,7 +90,7 @@ struct MeetingPage: View {
         }
         .onChange(of: id) { _, _ in format = .standard }
         .task(id: reloadKey) {
-            await archive.flush()
+            _ = await archive.flush(sessionID: id)
             let loaded = await archive.detail(id)
             guard !Task.isCancelled else { return }
             detail = loaded
@@ -91,6 +102,58 @@ struct MeetingPage: View {
     private var reloadKey: String {
         guard let meta else { return id.uuidString }
         return "\(id)-\(meta.summaryState.rawValue)-\(meta.transcriptCount / 10)-\(meta.answerCount)-\(meta.title ?? "")-\(archive.notesRevision)"
+    }
+
+    private var archiveStatus: some View {
+        Group {
+            if let snapshot = archive.persistenceBySession[id] {
+                HStack(spacing: Space.s2) {
+                    Image(systemName: archiveStatusIcon(snapshot.state))
+                    Text(archiveStatusText(snapshot))
+                        .textSelection(.enabled)
+                    Spacer(minLength: 0)
+                    if snapshot.state == .blocked, snapshot.pendingEvents > 0 {
+                        Button("重试保存") { archive.retryPersistence(id) }
+                            .buttonStyle(SecondaryButtonStyle())
+                    }
+                }
+                .font(Typo.caption)
+                .foregroundStyle(archiveStatusColor(snapshot.state))
+                .padding(.horizontal, Space.s3)
+                .padding(.vertical, Space.s2)
+                .background(archiveStatusColor(snapshot.state).opacity(0.08), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+            }
+        }
+    }
+
+    private func archiveStatusText(_ snapshot: SessionPersistenceSnapshot) -> String {
+        switch snapshot.state {
+        case .saved:
+            if let date = snapshot.lastPersistedAt {
+                return "归档已保存 · \(date.formatted(date: .omitted, time: .shortened))"
+            }
+            return "归档已保存"
+        case .saving:
+            return "正在保存会议内容 · \(snapshot.pendingEvents) 项待写入"
+        case .blocked:
+            return snapshot.lastFailure ?? "会议内容保存受阻"
+        }
+    }
+
+    private func archiveStatusIcon(_ state: SessionPersistenceSnapshot.State) -> String {
+        switch state {
+        case .saved: "checkmark.circle.fill"
+        case .saving: "arrow.triangle.2.circlepath"
+        case .blocked: "exclamationmark.triangle.fill"
+        }
+    }
+
+    private func archiveStatusColor(_ state: SessionPersistenceSnapshot.State) -> Color {
+        switch state {
+        case .saved: Ink.tertiary
+        case .saving: Ink.secondary
+        case .blocked: Ink.caution
+        }
     }
 
     private func tabs(_ detail: SessionDetail) -> [(value: MeetingTab, title: LocalizedStringKey)] {

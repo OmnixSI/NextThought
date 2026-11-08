@@ -359,7 +359,15 @@ extension AppState {
             speakers.names = SpeakerLabels.merged(speakers.names, from: from, into: into) ?? [:]
             speakers.meVoices = Set(SpeakerLabels.mergedMe(Array(speakers.meVoices), from: from, into: into) ?? [])
         }
-        if let id { Task { await archive.mergeVoice(id, from: from, into: into) } }
+        if let id {
+            Task {
+                guard await archive.mergeVoice(id, from: from, into: into) else {
+                    let reason = archive.persistenceBySession[id]?.lastFailure
+                    errorMessage = "说话人修改尚未收到保存回执。" + (reason.map { "\n" + $0 } ?? "请查看会议归档状态并重试。")
+                    return
+                }
+            }
+        }
     }
 
     /// The lines of the meeting in progress as archive lines, for numbering and labels.
@@ -399,17 +407,37 @@ extension SessionArchive {
     }
 
     /// Moves every line of voice `from` to `into` (new tags win over the old), and the name with it.
-    func mergeVoice(_ id: UUID, from: Int, into: Int) async {
-        await flush()
-        guard let detail = await detail(id) else { return }
-        for line in detail.lines where line.voice == from {
-            appendLine(SessionVoiceTag(id: line.id, voice: into), file: "voices.jsonl", session: id)
+    func mergeVoice(_ id: UUID, from: Int, into: Int) async -> Bool {
+        guard from != into else { return true }
+        // Flush first when possible, then overlay still-pending transcript and
+        // voice events so a blocked write does not make this user edit disappear.
+        _ = await flush(sessionID: id)
+        guard let detail = await detail(id) else { return false }
+        var lines = detail.lines
+        var lineIndex = Dictionary(uniqueKeysWithValues: lines.enumerated().map { ($0.element.id, $0.offset) })
+        for data in pendingArchiveData(file: "transcript.jsonl", sessionID: id, mode: .append) {
+            for line in JSONLines.decode(SessionTranscriptLine.self, from: data) {
+                if let index = lineIndex[line.id] { lines[index] = line }
+                else { lineIndex[line.id] = lines.count; lines.append(line) }
+            }
+        }
+        var voices = Dictionary(lines.compactMap { line in line.voice.map { (line.id, $0) } }, uniquingKeysWith: { _, latest in latest })
+        for data in pendingArchiveData(file: "voices.jsonl", sessionID: id, mode: .append) {
+            for tag in JSONLines.decode(SessionVoiceTag.self, from: data) { voices[tag.id] = tag.voice }
+        }
+        var queuedAllVoiceChanges = true
+        for line in lines where (voices[line.id] ?? line.voice) == from {
+            if !appendLine(SessionVoiceTag(id: line.id, voice: into), file: "voices.jsonl", session: id) {
+                queuedAllVoiceChanges = false
+            }
         }
         if var meta = sessions.first(where: { $0.id == id }) {
             meta.voiceNames = SpeakerLabels.merged(meta.voiceNames, from: from, into: into)
             meta.meVoices = SpeakerLabels.mergedMe(meta.meVoices, from: from, into: into)
             update(meta)
         }
-        notesRevision &+= 1
+        let received = await flush(sessionID: id)
+        if received && queuedAllVoiceChanges { notesRevision &+= 1 }
+        return received && queuedAllVoiceChanges
     }
 }

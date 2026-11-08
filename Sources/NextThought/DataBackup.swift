@@ -163,8 +163,14 @@ enum DataBackup {
     @MainActor
     @discardableResult
     static func automaticBackup(reason: String) async throws -> URL {
+        guard SessionArchive.shared.activeID == nil else {
+            throw AppFailure.capture("请先结束当前会议，再创建完整恢复点。")
+        }
         WorkspaceStore.shared.flush()
-        await SessionArchive.shared.flush()
+        guard await SessionArchive.shared.flush() else {
+            let failure = SessionArchive.shared.persistenceBySession.values.first(where: { $0.lastFailure != nil })?.lastFailure
+            throw AppFailure.capture("会议归档尚未全部保存，未创建恢复点。" + (failure.map { "\n" + $0 } ?? "请重试保存后再试。"))
+        }
         let workspaces = WorkspaceStore.shared.workspaces, skills = SkillLibrary.shared.skills, glossary = GlossaryStore.shared.glossary
         let settings = SettingsSnapshot.filter(UserDefaults.standard.dictionaryRepresentation())
         let settingsData = try PropertyListSerialization.data(fromPropertyList: settings, format: .xml, options: 0)
@@ -196,7 +202,7 @@ enum DataBackup {
         guard UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true else { return }
         Task {
             do { _ = try await automaticBackup(reason: "session") }
-            catch { AppState.shared.dataStatus = "会议已保存，恢复点创建失败：" + error.localizedDescription }
+            catch { AppState.shared.dataStatus = "会议归档或恢复点创建失败：" + error.localizedDescription }
         }
     }
 

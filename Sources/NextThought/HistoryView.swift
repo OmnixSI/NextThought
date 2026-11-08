@@ -26,6 +26,9 @@ struct HistoryView: View {
     /// Sessions whose question/answer text contains the query. Filled in by the
     /// debounced content search, because that needs a disk read per session.
     @State private var contentMatch: Set<UUID> = []
+    /// Records whose question/answer data could not be read completely. They are
+    /// included as possible results so search never turns corruption into a false miss.
+    @State private var contentSearchIssues: [UUID: String] = [:]
     /// Sessions found only through a recorded misheard spelling (术语和人名), with that spelling.
     @State private var misheardMatch: [UUID: String] = [:]
     @State private var searchCache = GlossarySearchCache()
@@ -675,6 +678,20 @@ struct HistoryView: View {
                 Text(resultCount).font(.system(size: 11)).foregroundStyle(.tertiary)
                 Spacer(minLength: 0)
             }
+            if let affected = scoped.first(where: { contentSearchIssues[$0.id] != nil }) {
+                HStack(alignment: .top, spacing: 7) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    Text("有 \(contentSearchIssues.count) 场会议内容无法完整读取，搜索结果可能不全。")
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                    Button("查看会议") { openFromOverview(affected.id) }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .fixedSize()
+                }
+                .font(Typo.caption)
+                .foregroundStyle(Ink.caution)
+                .accessibilityElement(children: .contain)
+            }
         }
     }
 
@@ -727,6 +744,7 @@ struct HistoryView: View {
         lengthFilter = .all
         sortOrder = .newest
         contentMatch = []
+        contentSearchIssues = [:]
         misheardMatch = [:]
     }
 
@@ -762,11 +780,13 @@ struct HistoryView: View {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             contentMatch = []
+            contentSearchIssues = [:]
             misheardMatch = [:]
             isContentSearching = false
             return
         }
         contentMatch = []
+        contentSearchIssues = [:]
         misheardMatch = [:]
         isContentSearching = true
         // A cancelled run must not leave the "搜索中…" label behind.
@@ -781,10 +801,17 @@ struct HistoryView: View {
         // The typed text plus the spellings the glossary knows for it (misheard ones count as hits).
         let terms = searchCache.terms(for: trimmed, state: state)
         var matches: Set<UUID> = []
+        var readIssues: [UUID: String] = [:]
         var misheard: [UUID: String] = [:]
         for meta in scoped.prefix(200) {
             if Task.isCancelled { return }
             guard let detail = await archive.detail(meta.id) else { continue }
+            if let issue = detail.readIssues.first {
+                readIssues[meta.id] = issue.message
+                // The unread portion could contain this query, so keep the session
+                // discoverable and explain why the result is only a possible hit.
+                matches.insert(meta.id)
+            }
             let texts = detail.questions.map(\.text) + detail.answers.flatMap { [$0.question, $0.answer] }
             var plainHit = false
             var misheardForm: String?
@@ -802,6 +829,7 @@ struct HistoryView: View {
         }
         guard !Task.isCancelled else { return }
         contentMatch = matches
+        contentSearchIssues = readIssues
         misheardMatch = misheard
         isContentSearching = false
     }
