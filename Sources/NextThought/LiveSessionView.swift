@@ -267,7 +267,7 @@ private struct AnswerSettingsMenu: View {
 
 private struct TranscriptColumn: View {
     @Environment(AppState.self) private var state
-    @State private var follow = true
+    @State private var follow = ScrollFollowState()
 
     var body: some View {
         // 区分对方的每个人: people appear only once the voices have been told apart.
@@ -277,11 +277,15 @@ private struct TranscriptColumn: View {
             HStack {
                 Text("实时对话").overline()
                 Spacer()
-                Button { follow.toggle() } label: {
-                    Image(systemName: follow ? "arrow.down.to.line" : "pause")
+                Button {
+                    if follow.isFollowing { follow.userScrolledAway() }
+                    else { follow.returnToLatest() }
+                } label: {
+                    Image(systemName: follow.isFollowing ? "arrow.down.to.line" : "pause")
                 }
                 .buttonStyle(GlassIconButtonStyle(size: 24))
-                .help(follow ? "自动滚动到最新（点按暂停）" : "已暂停自动滚动（点按恢复）")
+                .help(follow.isFollowing ? "自动跟随最新内容（点按暂停）" : "已暂停跟随（点按回到现场）")
+                .accessibilityLabel(follow.isFollowing ? "暂停跟随最新内容" : "回到现场并恢复跟随")
             }
             .padding(.horizontal, Space.s6)
             .padding(.top, Space.s4)
@@ -315,33 +319,53 @@ private struct TranscriptColumn: View {
                     }
                     .padding(.horizontal, Space.s6)
                     .padding(.vertical, Space.s4)
+                    .background(ScrollFollowObserver(
+                        onScrollAway: { follow.userScrolledAway() },
+                        onReachedLatest: { follow.reachedLatest() },
+                        onTextSelection: { follow.userSelectedText() }
+                    ))
                 }
                 // Keep the footer in the scroll view's measured safe area. SwiftUI
                 // reserves the status strip (and any candidate rows) at their real
                 // height, so the final transcript and translation can scroll above it.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     VStack(spacing: 0) {
+                        if follow.hasNewContent {
+                            Button {
+                                withAnimation(Motion.expand) {
+                                    follow.returnToLatest()
+                                    proxy.scrollTo("bottom", anchor: .bottom)
+                                }
+                            } label: {
+                                Label("新增 \(follow.pendingItemCount) 句 · 回到现场", systemImage: "arrow.down.to.line.compact")
+                            }
+                            .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 10))
+                            .padding(.vertical, Space.s2)
+                        }
                         CandidateStrip()
                         TranscriptStatus()
                     }
                     .background(Ink.paper)
                 }
                 .frame(maxHeight: .infinity)
-                .onChange(of: state.entries.count) { _, _ in if follow { proxy.scrollTo("bottom", anchor: .bottom) } }
+                .onChange(of: state.entries.count) { oldCount, newCount in
+                    if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) }
+                    else { follow.receivedNewContent(count: newCount - oldCount) }
+                }
                 // Final translations arrive after the transcript row was inserted;
                 // follow again when they expand that row, unless the user paused follow.
                 .onChange(of: state.entries.last?.translatedText) { _, _ in
-                    if follow { proxy.scrollTo("bottom", anchor: .bottom) }
+                    if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) }
                 }
-                .onChange(of: state.partialTranscript.count / 8) { _, _ in if follow { proxy.scrollTo("bottom", anchor: .bottom) } }
-                .onChange(of: state.microphonePartialTranscript.count / 8) { _, _ in if follow { proxy.scrollTo("bottom", anchor: .bottom) } }
+                .onChange(of: state.partialTranscript.count / 8) { _, _ in if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) } }
+                .onChange(of: state.microphonePartialTranscript.count / 8) { _, _ in if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) } }
                 .onChange(of: state.liveTranslation.systemPartialTranslation) { _, _ in
-                    if follow { proxy.scrollTo("bottom", anchor: .bottom) }
+                    if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) }
                 }
                 .onChange(of: state.liveTranslation.microphonePartialTranslation) { _, _ in
-                    if follow { proxy.scrollTo("bottom", anchor: .bottom) }
+                    if follow.isFollowing { proxy.scrollTo("bottom", anchor: .bottom) }
                 }
-                .onChange(of: follow) { _, value in if value { proxy.scrollTo("bottom", anchor: .bottom) } }
+                .onChange(of: follow.isFollowing) { _, value in if value { proxy.scrollTo("bottom", anchor: .bottom) } }
             }
             .frame(maxHeight: .infinity)
         }
@@ -600,27 +624,56 @@ private struct AnswerColumn: View {
 /// The answer text, at "prompt" size for a glance. Only this view redraws per delta.
 private struct AnswerText: View {
     @Environment(AppState.self) private var state
+    @State private var follow = ScrollFollowState()
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    let text = state.displayedAnswer
-                    if text.isEmpty {
-                        Text(state.isAnswering ? "正在生成…" : "对方提问时，这里会自动给出建议回答。也可以在下方输入问题，或按 \(state.shortcutLabel(.forceAnswer)) 立即回答。")
-                            .font(Typo.body).foregroundStyle(Ink.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        MarkdownText(text: text, size: 20, lineSpacing: 9).equatable()
+        ZStack(alignment: .bottomTrailing) {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        let text = state.displayedAnswer
+                        if text.isEmpty {
+                            Text(state.isAnswering ? "正在生成…" : "对方提问时，这里会自动给出建议回答。也可以在下方输入问题，或按 \(state.shortcutLabel(.forceAnswer)) 立即回答。")
+                                .font(Typo.body).foregroundStyle(Ink.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        } else {
+                            MarkdownText(text: text, size: 20, lineSpacing: 9).equatable()
+                        }
+                        Color.clear.frame(height: 1).id("answer-end")
                     }
-                    Color.clear.frame(height: 1).id("answer-end")
+                    .background(ScrollFollowObserver(
+                        onScrollAway: { follow.userScrolledAway() },
+                        onReachedLatest: { follow.reachedLatest() },
+                        onTextSelection: { follow.userSelectedText() }
+                    ))
+                }
+                .frame(maxHeight: .infinity)
+                .onChange(of: state.answerDraft) { oldText, newText in
+                    guard state.isAnswering, state.historyCursor == nil, oldText != newText else { return }
+                    if follow.isFollowing {
+                        if oldText.count / 40 != newText.count / 40 {
+                            proxy.scrollTo("answer-end", anchor: .bottom)
+                        }
+                    } else {
+                        follow.receivedNewContent()
+                    }
+                }
+                .onChange(of: follow.isFollowing) { _, value in
+                    if value { proxy.scrollTo("answer-end", anchor: .bottom) }
                 }
             }
-            .frame(maxHeight: .infinity)
-            .onChange(of: state.answerDraft.count / 40) { _, _ in
-                if state.isAnswering, state.historyCursor == nil { proxy.scrollTo("answer-end", anchor: .bottom) }
+
+            if !follow.isFollowing {
+                Button {
+                    withAnimation(Motion.expand) { follow.returnToLatest() }
+                } label: {
+                    Label(follow.hasNewContent ? "有新回答 · 回到最新" : "回到最新", systemImage: "arrow.down.to.line.compact")
+                }
+                .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 10))
+                .padding(Space.s2)
             }
         }
+        .frame(maxHeight: .infinity)
     }
 }
 
