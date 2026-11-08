@@ -139,7 +139,8 @@ extension AppState {
     /// answer). `templateID` / `english` re-run it with another template or language.
     func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil,
                          onCompletion: (@MainActor () -> Void)? = nil) {
-        guard !archive.summarizing.contains(id), var meta = archive.sessions.first(where: { $0.id == id }) else {
+        guard !isPreparingForTermination,
+              !archive.summarizing.contains(id), var meta = archive.sessions.first(where: { $0.id == id }) else {
             onCompletion?()
             return
         }
@@ -166,7 +167,9 @@ extension AppState {
             }
             var loaded: SessionDetail?
             do {
-                await archive.flush()
+                guard await archive.flush(sessionID: id) else {
+                    throw SummaryError.archiveNotSaved(archive.persistenceBySession[id]?.lastFailure)
+                }
                 guard let detail = await archive.detail(id), !detail.lines.isEmpty else { throw SummaryError.emptyTranscript }
                 loaded = detail
                 let workspace = detail.meta.workspaceID.flatMap { workspaces.workspace($0) }
@@ -175,8 +178,10 @@ extension AppState {
                 var notes = try await writeNotes(detail: detail, workspace: workspace, template: template, english: useEnglish, engine: engine)
                 notes.model = engine.model
                 notes.generatedAt = Date()
-                let summary = await saveGeneratedSummary(notesSummary(from: notes, template: template, detail: detail),
-                                                         notes: notes, for: id)
+                guard let summary = await saveGeneratedSummary(notesSummary(from: notes, template: template, detail: detail),
+                                                               notes: notes, for: id) else {
+                    throw SummaryError.archiveNotSaved(archive.persistenceBySession[id]?.lastFailure)
+                }
                 if var latest = archive.sessions.first(where: { $0.id == id }) {
                     latest.actionItemCount = notes.actionItemCount
                     latest.improveCount = notes.improveCount
@@ -194,7 +199,9 @@ extension AppState {
                 do {
                     guard let detail = loaded else { throw NotesError.unreadable }
                     let generated = try await markdownSummary(detail: detail, engine: engine)
-                    let summary = await saveGeneratedSummary(generated, notes: nil, for: id)
+                    guard let summary = await saveGeneratedSummary(generated, notes: nil, for: id) else {
+                        throw SummaryError.archiveNotSaved(archive.persistenceBySession[id]?.lastFailure)
+                    }
                     if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
                 } catch {
                     markSummaryFailed(id, error)
@@ -206,20 +213,25 @@ extension AppState {
     }
 
     /// Text and structured passes share one commit lock and read the newest saved views.
-    private func saveGeneratedSummary(_ generated: SessionSummary, notes: StructuredNotes?, for id: UUID) async -> SessionSummary {
+    private func saveGeneratedSummary(_ generated: SessionSummary, notes: StructuredNotes?, for id: UUID) async -> SessionSummary? {
+        guard !isPreparingForTermination else { return nil }
         var summary = generated
+        var saved: SessionSummary?
         await StructuredNotesJobs.shared.exclusive {
-            await archive.flush()
+            guard await archive.flush(sessionID: id), !isPreparingForTermination else { return }
             summary.preserveStructuredViews(from: await archive.detail(id)?.summary)
+            guard !isPreparingForTermination else { return }
             if let notes { archive.saveNotes(notes, for: id) }
             archive.saveSummary(summary, for: id)
-            await archive.flush()
+            guard await archive.flush(sessionID: id), !isPreparingForTermination else { return }
             archive.notesRevision += 1
+            saved = summary
         }
-        return summary
+        return saved
     }
 
     private func markSummaryFailed(_ id: UUID, _ error: Error) {
+        guard !isPreparingForTermination else { return }
         if var failed = archive.sessions.first(where: { $0.id == id }) {
             failed.summaryState = .failed
             failed.summaryError = error.localizedDescription

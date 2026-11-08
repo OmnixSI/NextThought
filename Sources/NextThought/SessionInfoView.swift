@@ -46,6 +46,19 @@ struct SessionInfoView: View {
                             Text("大小按本会议存储目录及其子目录中的普通文件总字节数统计。")
                                 .font(.system(size: 11)).foregroundStyle(Ink.tertiary)
                         }
+                        infoGroup("归档") {
+                            infoRow("写入状态", persistenceDescription)
+                            if let snapshot = archive.persistenceBySession[sessionID],
+                               snapshot.state == .blocked, snapshot.pendingEvents > 0 {
+                                Button("重试保存") { archive.retryPersistence(sessionID) }
+                                    .buttonStyle(SecondaryButtonStyle())
+                            }
+                            if let detail, !detail.readIssues.isEmpty {
+                                ForEach(Array(detail.readIssues.enumerated()), id: \.offset) { item in
+                                    infoRow("读取提醒", item.element.message)
+                                }
+                            }
+                        }
                     }
                     .frame(maxWidth: 520, alignment: .leading)
                     .padding(Space.s6)
@@ -59,7 +72,7 @@ struct SessionInfoView: View {
         .frame(width: 500, height: 540)
         .background(Ink.paper)
         .task(id: sessionID) {
-            await archive.flush()
+            _ = await archive.flush(sessionID: sessionID)
             async let loadedDetail = archive.detail(sessionID)
             async let loadedStorage = archive.storageInfo(sessionID)
             detail = await loadedDetail
@@ -122,6 +135,24 @@ struct SessionInfoView: View {
         case .none:
             infoRow("存储位置", "正在读取…")
             infoRow("存储大小", "正在统计…")
+        }
+    }
+
+    private var persistenceDescription: String {
+        if case .some(.demo) = storage { return "演示数据没有实际存储目录。" }
+        guard let snapshot = archive.persistenceBySession[sessionID] else {
+            return "归档已读取；当前没有待写入项。"
+        }
+        switch snapshot.state {
+        case .saved:
+            if let date = snapshot.lastPersistedAt {
+                return "已保存 · 最近 \(date.formatted(date: .omitted, time: .shortened))"
+            }
+            return "已保存"
+        case .saving:
+            return "正在保存 · 还有 \(snapshot.pendingEvents) 项（\(ByteCountFormatter.string(fromByteCount: Int64(snapshot.pendingBytes), countStyle: .file))）"
+        case .blocked:
+            return snapshot.lastFailure ?? "保存受阻"
         }
     }
 

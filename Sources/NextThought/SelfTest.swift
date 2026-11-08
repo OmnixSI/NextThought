@@ -146,7 +146,7 @@ enum SelfTest {
         archive.append(SessionTranscriptLine(date: Date(), speaker: .me, text: "我负责订单缓存层"))
         archive.append(SessionQuestionEvent(date: Date(), text: "介绍一下你的项目", intent: "explanationRequest", score: 0.9, disposition: "auto"))
         archive.finish()
-        await archive.flush()
+        guard await archive.flush(sessionID: meta.id) else { throw Failure("session writes did not receive a save receipt") }
         guard let saved = await archive.detail(meta.id) else { throw Failure("session not readable after writing") }
         try expect(saved.lines.count == 2 && saved.questions.count == 1, "session content \(saved.lines.count)/\(saved.questions.count)")
 

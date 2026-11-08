@@ -45,6 +45,7 @@ private struct LiveTopBar: View {
             // Room for the window's traffic-light buttons (hidden title bar).
             Color.clear.frame(width: 62, height: 1)
             RecordingTimer()
+            archiveSaveStatus
             Text(verbatim: title)
                 .font(Typo.caption).foregroundStyle(Ink.secondary)
                 .lineLimit(1)
@@ -81,6 +82,39 @@ private struct LiveTopBar: View {
     private var title: String {
         if let planned = state.plannedMeeting?.title?.trimmingCharacters(in: .whitespacesAndNewlines), !planned.isEmpty { return planned }
         return state.activeWorkspace.name
+    }
+
+    @ViewBuilder
+    private var archiveSaveStatus: some View {
+        if let sessionID = state.activeArchiveID,
+           let snapshot = SessionArchive.shared.persistenceBySession[sessionID] {
+            HStack(spacing: Space.s1) {
+                Image(systemName: archiveSaveSymbol(snapshot.state))
+                if snapshot.state != .saved {
+                    Text(snapshot.state == .saving ? "保存中" : "保存受阻")
+                        .font(Typo.caption)
+                        .lineLimit(1)
+                }
+                if snapshot.state == .blocked, snapshot.pendingEvents > 0 {
+                    Button { SessionArchive.shared.retryPersistence(sessionID) } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .buttonStyle(GlassIconButtonStyle(size: 24))
+                    .help(snapshot.lastFailure ?? "重试保存")
+                }
+            }
+            .foregroundStyle(snapshot.state == .blocked ? Ink.caution : Ink.secondary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(verbatim: snapshot.lastFailure ?? (snapshot.state == .saved ? "会议归档已保存" : snapshot.state == .saving ? "会议归档正在保存" : "会议归档保存受阻")))
+        }
+    }
+
+    private func archiveSaveSymbol(_ state: SessionPersistenceSnapshot.State) -> String {
+        switch state {
+        case .saved: "checkmark.circle.fill"
+        case .saving: "arrow.triangle.2.circlepath"
+        case .blocked: "exclamationmark.triangle.fill"
+        }
     }
 }
 

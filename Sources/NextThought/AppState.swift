@@ -305,6 +305,7 @@ final class AppState {
     var isRunning = false
     var isPaused = false
     var isChangingSession = false
+    var isPreparingForTermination = false
     var statusText = "就绪"
     var errorMessage: String?
     var entries: [TranscriptEntry] = []
@@ -602,6 +603,10 @@ final class AppState {
     // MARK: Session lifecycle
 
     func startSession() async {
+        guard !isPreparingForTermination else {
+            errorMessage = "会议归档正在保存，请稍后再开始。"
+            return
+        }
         if DemoMode.isEnabled {
             liveTranslation.beginMeeting()
             isRunning = true; isPaused = false; statusText = "演示：正在聆听"
@@ -767,7 +772,7 @@ final class AppState {
     }
 
     /// `endedAt`: where the meeting really ended, when that was before now (auto-end after silence).
-    func stopSession(endedAt: Date? = nil) async {
+    func stopSession(endedAt: Date? = nil, preparingForTermination: Bool = false) async {
         guard (isRunning || isPaused) && !isChangingSession else { return }
         isChangingSession = true
         defer { isChangingSession = false }
@@ -795,7 +800,7 @@ final class AppState {
         partialTranscript = ""
         microphonePartialTranscript = ""
         transcriptionStatus = "已停止"
-        finishArchive(endedAt: endedAt)
+        finishArchive(endedAt: endedAt, summarize: !preparingForTermination)
         // Voices are forgotten with the meeting: nothing about them is kept for the next one.
         speakers.endMeeting()
         preparedWorkspace = nil
@@ -1337,6 +1342,7 @@ final class AppState {
     }
 
     func prepareForTermination() {
+        beginTerminationPreparation()
         localAssetScanTask?.cancel()
         documentSetupTask?.cancel(); managedDownloadTask?.cancel(); runtimeDownloadTask?.cancel()
         importTask?.cancel()
@@ -1367,6 +1373,16 @@ final class AppState {
         slideCodex.cancel()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
+    }
+
+    func beginTerminationPreparation() {
+        isPreparingForTermination = true
+        summaryCodex.cancel()
+        StructuredNotesJobs.shared.cancelAll()
+    }
+
+    func resumeAfterFailedTermination() {
+        isPreparingForTermination = false
     }
 
     // MARK: Hotkeys

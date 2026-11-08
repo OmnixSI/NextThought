@@ -13,6 +13,24 @@ struct SessionDetail: Equatable {
     var summary: SessionSummary?
     /// Structured notes (notes.json); nil for sessions summarized before them.
     var notes: StructuredNotes? = nil
+    var readIssues: [SessionArchiveReadIssue] = []
+}
+
+enum SessionArchiveReadIssue: Equatable {
+    case missingFile(String)
+    case unreadableFile(String, String)
+    case malformedLines(String, firstLine: Int, count: Int, truncatedTail: Bool)
+    case countMismatch(String, expected: Int, actual: Int)
+
+    var message: String {
+        switch self {
+        case .missingFile(let file): "归档文件缺失：\(file)"
+        case .unreadableFile(let file, let reason): "无法读取 \(file)：\(reason)"
+        case .malformedLines(let file, let firstLine, let count, let truncatedTail):
+            "\(file) 有 \(count) 行无法解析（从第 \(firstLine) 行开始）" + (truncatedTail ? "；最后一行可能未写完。" : "。")
+        case .countMismatch(let file, let expected, let actual): "\(file) 只读到 \(actual) 条，记录中应有 \(expected) 条。"
+        }
+    }
 }
 
 enum SessionStorageInfo: Equatable, Sendable {
@@ -51,11 +69,18 @@ final class SessionArchive {
     var notesSteps: [UUID: NotesStep] = [:]
     /// Bumped when notes change on disk, so open pages reload them.
     var notesRevision = 0
+    private(set) var persistenceBySession: [UUID: SessionPersistenceSnapshot] = [:]
 
     private let io = DispatchQueue(label: "app.nextthought.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
     @ObservationIgnored private var activeAnswerIDs: Set<UUID> = []
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
+    @ObservationIgnored private var writeQueues: [UUID: SessionArchiveWriteQueue] = [:]
+    @ObservationIgnored private var drainingWrites: Set<UUID> = []
+    @ObservationIgnored private var discardedSessions: Set<UUID> = []
+    @ObservationIgnored private var retryTasks: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var retryAttempts: [UUID: Int] = [:]
+    @ObservationIgnored private let fileAppender = SessionArchiveFileAppender.live
 
     static var root: URL { AppPaths.sessions }
 
@@ -128,12 +153,46 @@ final class SessionArchive {
         let fallback = sessions.first { $0.id == id }
         return await Task.detached(priority: .userInitiated) { () -> SessionDetail? in
             let decoder = JSONLines.decoder()
-            let meta = (try? Data(contentsOf: folder.appendingPathComponent("meta.json"))).flatMap { try? decoder.decode(SessionMeta.self, from: $0) } ?? fallback
-            guard let meta else { return nil }
-            func lines<T: Decodable>(_ name: String, _ type: T.Type) -> [T] {
-                (try? Data(contentsOf: folder.appendingPathComponent(name))).map { JSONLines.decode(T.self, from: $0) } ?? []
+            var issues: [SessionArchiveReadIssue] = []
+            func data(_ name: String, required: Bool = false) -> Data? {
+                let url = folder.appendingPathComponent(name)
+                do { return try Data(contentsOf: url) }
+                catch {
+                    let exists = FileManager.default.fileExists(atPath: url.path)
+                    if required {
+                        let cocoaError = error as NSError
+                        if cocoaError.domain == NSCocoaErrorDomain && cocoaError.code == NSFileReadNoSuchFileError {
+                            issues.append(.missingFile(name))
+                        } else {
+                            issues.append(.unreadableFile(name, error.localizedDescription))
+                        }
+                    } else if exists {
+                        issues.append(.unreadableFile(name, error.localizedDescription))
+                    }
+                    return nil
+                }
             }
-            var transcript = lines("transcript.jsonl", SessionTranscriptLine.self)
+            let decodedMeta: SessionMeta?
+            if let bytes = data("meta.json", required: true) {
+                do { decodedMeta = try decoder.decode(SessionMeta.self, from: bytes) }
+                catch { issues.append(.unreadableFile("meta.json", error.localizedDescription)); decodedMeta = nil }
+            } else { decodedMeta = nil }
+            let meta = decodedMeta ?? fallback
+            guard let meta else { return nil }
+            func lines<T: Decodable>(_ name: String, _ type: T.Type, expected: Int? = nil, required: Bool? = nil) -> [T] {
+                guard let bytes = data(name, required: required ?? ((expected ?? 0) > 0)) else { return [] }
+                let report = JSONLines.decodeReport(type, from: bytes)
+                if let firstLine = report.malformedLineNumbers.first {
+                    issues.append(.malformedLines(name, firstLine: firstLine,
+                                                  count: report.malformedLineNumbers.count,
+                                                  truncatedTail: report.truncatedFinalLine))
+                }
+                if let expected, report.records.count != expected {
+                    issues.append(.countMismatch(name, expected: expected, actual: report.records.count))
+                }
+                return report.records
+            }
+            var transcript = lines("transcript.jsonl", SessionTranscriptLine.self, expected: meta.transcriptCount)
             let translations = Dictionary(lines("translations.jsonl", SessionTranscriptTranslation.self).map { ($0.id, $0.text) },
                                           uniquingKeysWith: { _, latest in latest })
             for index in transcript.indices {
@@ -146,14 +205,26 @@ final class SessionArchive {
             for index in transcript.indices {
                 if let voice = voices[transcript[index].id] { transcript[index].voice = voice }
             }
+            let rawAnswers = lines("answers.jsonl", SessionAnswerEvent.self, required: meta.answerCount > 0)
+            let answers = Self.latestAnswers(rawAnswers)
+            if answers.count != meta.answerCount && !issues.contains(.missingFile("answers.jsonl")) {
+                issues.append(.countMismatch("answers.jsonl", expected: meta.answerCount, actual: answers.count))
+            }
+            let questions = lines("questions.jsonl", SessionQuestionEvent.self, expected: meta.questionCount)
+            func snapshot<T: Decodable>(_ name: String, _ type: T.Type, required: Bool = false) -> T? {
+                guard let bytes = data(name, required: required) else { return nil }
+                do { return try decoder.decode(type, from: bytes) }
+                catch { issues.append(.unreadableFile(name, error.localizedDescription)); return nil }
+            }
             return SessionDetail(
                 meta: meta,
                 lines: transcript,
-                answers: Self.latestAnswers(lines("answers.jsonl", SessionAnswerEvent.self)),
-                questions: lines("questions.jsonl", SessionQuestionEvent.self),
-                context: (try? Data(contentsOf: folder.appendingPathComponent("context.json"))).flatMap { try? decoder.decode(SessionContextSnapshot.self, from: $0) },
-                summary: (try? Data(contentsOf: folder.appendingPathComponent("summary.json"))).flatMap { try? decoder.decode(SessionSummary.self, from: $0) },
-                notes: (try? Data(contentsOf: folder.appendingPathComponent("notes.json"))).flatMap { try? decoder.decode(StructuredNotes.self, from: $0) })
+                answers: answers,
+                questions: questions,
+                context: snapshot("context.json", SessionContextSnapshot.self),
+                summary: snapshot("summary.json", SessionSummary.self, required: meta.summaryState == .ready),
+                notes: snapshot("notes.json", StructuredNotes.self),
+                readIssues: issues)
         }.value
     }
 
@@ -195,48 +266,50 @@ final class SessionArchive {
     // MARK: Recording
 
     func begin(_ meta: SessionMeta, context: SessionContextSnapshot) {
+        discardedSessions.remove(meta.id)
         activeID = meta.id
         activeAnswerIDs = []
         activeMeta = meta
         sessions.removeAll { $0.id == meta.id }
         sessions.insert(meta, at: 0)
-        let folder = folder(meta.id)
-        io.async {
-            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            Self.write(meta, to: folder.appendingPathComponent("meta.json"))
-            Self.write(context, to: folder.appendingPathComponent("context.json"))
-        }
+        writeQueues[meta.id] = SessionArchiveWriteQueue()
+        persistenceBySession[meta.id] = writeQueues[meta.id]?.snapshot
+        _ = enqueueSnapshot(meta, file: "meta.json", session: meta.id)
+        _ = enqueueSnapshot(context, file: "context.json", session: meta.id)
     }
 
-    func append(_ line: SessionTranscriptLine) {
-        guard let id = activeID else { return }
+    @discardableResult func append(_ line: SessionTranscriptLine) -> Bool {
+        guard let id = activeID else { return false }
         activeMeta?.transcriptCount += 1
-        appendLine(line, file: "transcript.jsonl", session: id)
+        let saved = appendLine(line, file: "transcript.jsonl", session: id)
         publishActiveCounts()
+        return saved
     }
 
-    func append(_ question: SessionQuestionEvent) {
-        guard let id = activeID else { return }
+    @discardableResult func append(_ question: SessionQuestionEvent) -> Bool {
+        guard let id = activeID else { return false }
         activeMeta?.questionCount += 1
-        appendLine(question, file: "questions.jsonl", session: id)
+        let saved = appendLine(question, file: "questions.jsonl", session: id)
         publishActiveCounts()
+        return saved
     }
 
-    func append(_ answer: SessionAnswerEvent) {
-        guard let id = activeID else { return }
+    @discardableResult func append(_ answer: SessionAnswerEvent) -> Bool {
+        guard let id = activeID else { return false }
         if activeAnswerIDs.insert(answer.id).inserted { activeMeta?.answerCount += 1 }
-        appendLine(answer, file: "answers.jsonl", session: id)
+        let saved = appendLine(answer, file: "answers.jsonl", session: id)
         publishActiveCounts()
         // Keep meta.json reasonably fresh for crash recovery.
         if let meta = activeMeta { saveMeta(meta) }
+        return saved
     }
 
     func appendTranslation(sessionID: UUID, lineID: UUID, text: String) {
         guard sessionID == activeID || sessions.contains(where: { $0.id == sessionID }) else { return }
         appendLine(SessionTranscriptTranslation(id: lineID, text: text), file: "translations.jsonl", session: sessionID)
         Task { [weak self] in
-            await self?.flush()
-            self?.notesRevision &+= 1
+            guard let self, await self.flush(sessionID: sessionID) else { return }
+            self.notesRevision &+= 1
         }
     }
 
@@ -273,6 +346,7 @@ final class SessionArchive {
         if meta.transcriptCount == 0 && meta.answerCount == 0 {
             sessions.removeAll { $0.id == meta.id }
             let folder = folder(meta.id)
+            discardPersistence(meta.id)
             io.async { try? FileManager.default.removeItem(at: folder) }
             return nil
         }
@@ -294,25 +368,42 @@ final class SessionArchive {
         }
         meta.summaryState = .ready
         meta.summaryError = nil
-        let folder = folder(id)
-        io.async { Self.write(summary, to: folder.appendingPathComponent("summary.json")) }
+        _ = enqueueSnapshot(summary, file: "summary.json", session: id)
         update(meta)
     }
 
-    func saveNotes(_ notes: StructuredNotes, for id: UUID) {
-        if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return }
-        let folder = folder(id)
-        io.async { Self.write(notes, to: folder.appendingPathComponent("notes.json")) }
-        notesRevision += 1
+    @discardableResult
+    func saveNotes(_ notes: StructuredNotes, for id: UUID) -> Bool {
+        if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return true }
+        return enqueueSnapshot(notes, file: "notes.json", session: id)
     }
 
     /// Edits saved notes in place (undoing a correction).
     func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Void) {
         Task {
-            guard var notes = await detail(id)?.notes else { return }
+            // Start from the newest queued edit when an earlier write could not
+            // be acknowledged. This lets a new correction build on, and remain
+            // recoverable with, that pending snapshot.
+            var notes = pendingArchiveData(file: "notes.json", sessionID: id, mode: .replace)
+                .last.flatMap { try? JSONLines.decoder().decode(StructuredNotes.self, from: $0) }
+            if notes == nil {
+                _ = await flush(sessionID: id)
+                notes = await detail(id)?.notes
+            }
+            guard var notes else { return }
             change(&notes)
-            saveNotes(notes, for: id)
+            guard saveNotes(notes, for: id) else { return }
+            if demoDetails[id] != nil { return }
+            if await flush(sessionID: id) { notesRevision += 1 }
         }
+    }
+
+    /// Pending serialized archive data, including writes that failed before receipt.
+    /// Callers use it to build a new user edit on top of the newest queued version.
+    func pendingArchiveData(file: String, sessionID: UUID, mode: SessionArchiveWriteMode) -> [Data] {
+        writeQueues[sessionID]?.entries
+            .filter { $0.fileName == file && $0.mode == mode }
+            .map(\.data) ?? []
     }
 
     func rename(_ id: UUID, to title: String) {
@@ -349,6 +440,7 @@ final class SessionArchive {
                 }
             }
         }
+        for sessionID in ids { discardPersistence(sessionID) }
         sessions.removeAll { ids.contains($0.id) }
         for sessionID in ids { notesSteps[sessionID] = nil }
         notesRevision &+= 1
@@ -379,6 +471,7 @@ final class SessionArchive {
         guard id != activeID else { return }
         sessions.removeAll { $0.id == id }
         let folder = folder(id)
+        discardPersistence(id)
         io.async { try? FileManager.default.removeItem(at: folder) }
     }
 
@@ -391,8 +484,28 @@ final class SessionArchive {
     }
 
     /// Waits until queued writes are on disk (before reading a session back).
-    func flush() async {
-        await withCheckedContinuation { continuation in io.async { continuation.resume() } }
+    @discardableResult
+    func flush() async -> Bool {
+        let ids = Array(writeQueues.keys)
+        return await flush(sessionIDs: ids)
+    }
+
+    @discardableResult
+    func flush(sessionID id: UUID) async -> Bool {
+        await flush(sessionIDs: [id])
+    }
+
+    private func flush(sessionIDs ids: [UUID]) async -> Bool {
+        for id in ids { drainWrites(id) }
+        for _ in 0..<500 {
+            let states = ids.compactMap { persistenceBySession[$0] }
+            if states.allSatisfy({ $0.pendingEvents == 0 }) {
+                return states.allSatisfy { $0.lastFailure == nil }
+            }
+            if states.contains(where: { $0.state == .blocked }) { return false }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return false
     }
 
     // MARK: Private
@@ -403,8 +516,7 @@ final class SessionArchive {
     }
 
     private func saveMeta(_ meta: SessionMeta) {
-        let url = folder(meta.id).appendingPathComponent("meta.json")
-        io.async { Self.write(meta, to: url) }
+        _ = enqueueSnapshot(meta, file: "meta.json", session: meta.id)
     }
 
     nonisolated private static func directorySize(at directory: URL) throws -> Int64 {
@@ -425,19 +537,91 @@ final class SessionArchive {
         return total
     }
 
-    func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) {
-        let url = folder(id).appendingPathComponent(file)
-        guard let data = try? JSONLines.line(value) else { return }
-        io.async {
-            if !FileManager.default.fileExists(atPath: url.path) {
-                try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-                FileManager.default.createFile(atPath: url.path, contents: nil)
-            }
-            guard let handle = try? FileHandle(forWritingTo: url) else { return }
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
+    @discardableResult
+    func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) -> Bool {
+        do { return enqueueWrite(try JSONLines.line(value), file: file, session: id) }
+        catch { return recordEncodingFailure(error, session: id) }
+    }
+
+    func retryPersistence(_ id: UUID) {
+        retryTasks[id]?.cancel(); retryTasks[id] = nil
+        retryAttempts[id] = 0
+        drainWrites(id)
+    }
+
+    private func enqueueSnapshot<T: Encodable>(_ value: T, file: String, session id: UUID) -> Bool {
+        let encoder = JSONLines.encoder(); encoder.outputFormatting.insert(.prettyPrinted)
+        do { return enqueueWrite(try encoder.encode(value), file: file, session: id, mode: .replace) }
+        catch { return recordEncodingFailure(error, session: id) }
+    }
+
+    private func recordEncodingFailure(_ error: Error, session id: UUID) -> Bool {
+        var queue = writeQueues[id] ?? SessionArchiveWriteQueue()
+        queue.fail("编码归档内容失败：\(error.localizedDescription)", permanent: true)
+        writeQueues[id] = queue; persistenceBySession[id] = queue.snapshot
+        return false
+    }
+
+    private func enqueueWrite(_ data: Data, file: String, session id: UUID, mode: SessionArchiveWriteMode = .append) -> Bool {
+        guard !discardedSessions.contains(id) else { return false }
+        var queue = writeQueues[id] ?? SessionArchiveWriteQueue()
+        let result = queue.enqueue(fileName: file, data: data, mode: mode)
+        writeQueues[id] = queue; persistenceBySession[id] = queue.snapshot
+        switch result {
+        case .queued: drainWrites(id); return true
+        case .full: drainWrites(id); return false
         }
+    }
+
+    private func drainWrites(_ id: UUID) {
+        guard !drainingWrites.contains(id), let queue = writeQueues[id], !queue.entries.isEmpty else { return }
+        drainingWrites.insert(id)
+        let batch = Array(queue.entries.prefix(32))
+        let directory = folder(id), appender = fileAppender
+        io.async { [weak self] in
+            var completed: Int?
+            var failure: String?
+            for entry in batch {
+                do { try appender.write(entry.data, to: directory.appendingPathComponent(entry.fileName), mode: entry.mode); completed = entry.revision }
+                catch { failure = error.localizedDescription; break }
+            }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.drainingWrites.remove(id)
+                guard !self.discardedSessions.contains(id) else { return }
+                var latest = self.writeQueues[id] ?? SessionArchiveWriteQueue()
+                if let completed { latest.acknowledge(through: completed) }
+                if let failure { latest.fail("保存受阻：\(failure)") }
+                self.writeQueues[id] = latest
+                self.persistenceBySession[id] = latest.snapshot
+                if failure != nil { self.scheduleRetry(id) }
+                else {
+                    self.retryAttempts[id] = 0
+                    if !latest.entries.isEmpty { self.drainWrites(id) }
+                }
+            }
+        }
+    }
+
+    private func scheduleRetry(_ id: UUID) {
+        guard retryTasks[id] == nil, !discardedSessions.contains(id) else { return }
+        let attempt = retryAttempts[id, default: 0]
+        retryAttempts[id] = attempt + 1
+        let delay = min(30, 1 << min(attempt, 5))
+        retryTasks[id] = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard let self, !Task.isCancelled else { return }
+            self.retryTasks[id] = nil
+            self.drainWrites(id)
+        }
+    }
+
+    private func discardPersistence(_ id: UUID) {
+        discardedSessions.insert(id)
+        retryTasks[id]?.cancel(); retryTasks[id] = nil
+        retryAttempts[id] = nil
+        writeQueues[id] = nil
+        persistenceBySession[id] = nil
     }
 
     nonisolated private static func write<T: Encodable>(_ value: T, to url: URL) {

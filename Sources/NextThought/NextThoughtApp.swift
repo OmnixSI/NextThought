@@ -136,12 +136,52 @@ enum MainWindowLayout {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    private var terminationCheckInProgress = false
+
     func applicationWillTerminate(_ notification: Notification) {
         AppState.shared.prepareForTermination()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        WorkspaceEditController.shared.shouldTerminateApplication() ? .terminateNow : .terminateCancel
+        guard WorkspaceEditController.shared.shouldTerminateApplication() else { return .terminateCancel }
+        guard !terminationCheckInProgress else { return .terminateLater }
+        terminationCheckInProgress = true
+        let state = AppState.shared
+        Task { @MainActor in
+            guard !state.isChangingSession else {
+                state.errorMessage = "会议正在切换，稍后再试一次退出。"
+                terminationCheckInProgress = false
+                sender.reply(toApplicationShouldTerminate: false)
+                return
+            }
+            state.beginTerminationPreparation()
+            if state.isRunning || state.isPaused { await state.stopSession(preparingForTermination: true) }
+            guard !state.isRunning, !state.isPaused, !state.isChangingSession else {
+                state.errorMessage = "会议正在切换，稍后再试一次退出。"
+                state.resumeAfterFailedTermination()
+                terminationCheckInProgress = false
+                sender.reply(toApplicationShouldTerminate: false)
+                return
+            }
+            let saved = await state.archive.flush()
+            terminationCheckInProgress = false
+            if saved {
+                state.prepareForTermination()
+                sender.reply(toApplicationShouldTerminate: true)
+            } else {
+                if let pendingSessionID = state.archive.persistenceBySession.first(where: {
+                    $0.value.pendingEvents > 0 || $0.value.lastFailure != nil
+                })?.key {
+                    state.historySelection = pendingSessionID
+                    state.section = .meetings
+                }
+                let failure = state.archive.persistenceBySession.values.first(where: { $0.lastFailure != nil })?.lastFailure
+                state.errorMessage = "会议归档尚未全部保存。请重试保存后再退出。" + (failure.map { "\n" + $0 } ?? "")
+                state.resumeAfterFailedTermination()
+                sender.reply(toApplicationShouldTerminate: false)
+            }
+        }
+        return .terminateLater
     }
 
     /// A click on the Dock icon while the page is hidden by the subtitle bar or hidden

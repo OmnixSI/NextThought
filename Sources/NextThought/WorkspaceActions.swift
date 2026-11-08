@@ -171,9 +171,17 @@ extension AppState {
         let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
         do {
             workspaces.flush()
+            for sessionID in archive.workspaceSessionIDs(id, formerName: workspace.name,
+                                                         includeLegacyNameOnly: includeLegacyNameOnly) {
+                guard await archive.flush(sessionID: sessionID) else {
+                    let reason = archive.persistenceBySession[sessionID]?.lastFailure
+                    errorMessage = "系列会议内容尚未全部保存，未删除系列或会议记录。" +
+                        (reason.map { "\n" + $0 } ?? "请重试保存后再删除。")
+                    return false
+                }
+            }
             let remainingWorkspaces = workspaces.workspaces.filter { $0.id != id }
             try await documentPreparation.deleteWorkspaceArtifacts(id, remainingWorkspaces: remainingWorkspaces)
-            await archive.flush()
             try archive.deleteWorkspaceSessions(id, formerName: workspace.name,
                                                 includeLegacyNameOnly: includeLegacyNameOnly)
             try MaterialArchive.deleteWorkspaceFiles(id)
@@ -238,6 +246,7 @@ extension AppState {
     /// Merges a session review's lessons and improved answers into its workspace.
     @discardableResult
     func applyReview(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> (lessons: Int, questions: Int)? {
+        guard !isPreparingForTermination else { return nil }
         guard let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return nil }
         let result = KnowledgeMerger.merge(lessons: summary.lessons ?? [], bank: (summary.bank ?? []).map { ($0.question, $0.answer) },
                                            into: &workspace, session: sessionID)

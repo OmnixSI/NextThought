@@ -78,6 +78,10 @@ final class StructuredNotesJobs {
         running[key] = nil
     }
 
+    func cancelAll() {
+        for key in Array(tasks.keys) { cancel(key) }
+    }
+
     /// Runs `body` alone: two views finishing together must not write the summary over each other.
     func exclusive(_ body: () async -> Void) async {
         while committing {
@@ -175,7 +179,11 @@ extension AppState {
         let jobs = StructuredNotesJobs.shared
         defer { jobs.finish(key, token: token) }
         let id = key.id
-        await archive.flush()
+        guard await archive.flush(sessionID: id) else {
+            if !Task.isCancelled { jobs.markFailed(key) }
+            return
+        }
+        guard !Task.isCancelled, !isPreparingForTermination else { return }
         guard let detail = await archive.detail(id), !detail.lines.isEmpty, let base = detail.summary else {
             if !Task.isCancelled { jobs.markFailed(key) }
             return
@@ -209,12 +217,12 @@ extension AppState {
         }
         var saved = false
         await jobs.exclusive {
-            await archive.flush()
+            guard await archive.flush(sessionID: id), !Task.isCancelled, !isPreparingForTermination else { return }
             guard var summary = await archive.detail(id)?.summary else { return }
             guard !Task.isCancelled, jobs.running[key] == token else { return }
             summary.store(payload)
             archive.saveSummary(summary, for: id)
-            await archive.flush()
+            guard await archive.flush(sessionID: id), !Task.isCancelled, !isPreparingForTermination else { return }
             jobs.complete(payload, for: key, token: token)
             archive.notesRevision += 1
             saved = true

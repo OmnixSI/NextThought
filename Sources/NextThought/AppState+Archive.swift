@@ -26,7 +26,7 @@ extension AppState {
     }
 
     /// `endedAt`: the end of the last words when the meeting ended by itself after silence.
-    func finishArchive(endedAt: Date? = nil) {
+    func finishArchive(endedAt: Date? = nil, summarize: Bool = true) {
         guard activeArchiveID != nil else { return }
         activeArchiveID = nil
         guard let meta = archive.finish(at: endedAt ?? Date()) else { return }
@@ -35,7 +35,7 @@ extension AppState {
         historyWorkspaceFilter = nil
         historySelection = meta.id
         section = .meetings
-        if autoSummarize { generateSummary(for: meta.id) }
+        if autoSummarize && summarize { generateSummary(for: meta.id) }
     }
 
     func recordTranscript(_ entry: TranscriptEntry) {
@@ -92,7 +92,11 @@ extension AppState {
 
     func exportSession(_ id: UUID) {
         Task {
-            await archive.flush()
+            guard await archive.flush(sessionID: id) else {
+                let reason = archive.persistenceBySession[id]?.lastFailure
+                errorMessage = "导出失败：会议内容尚未全部保存。" + (reason.map { "\n" + $0 } ?? "请重试保存后再导出。")
+                return
+            }
             guard let detail = await archive.detail(id) else { return }
             let panel = NSSavePanel()
             panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
@@ -116,5 +120,13 @@ extension AppState {
 
 enum SummaryError: LocalizedError {
     case emptyTranscript
-    var errorDescription: String? { "这次会话没有转录内容，无法生成摘要。" }
+    case archiveNotSaved(String?)
+    var errorDescription: String? {
+        switch self {
+        case .emptyTranscript:
+            "这次会话没有转录内容，无法生成摘要。"
+        case .archiveNotSaved(let reason):
+            "会议归档尚未全部保存，暂时无法生成已保存的纪要。" + (reason.map { "\n" + $0 } ?? "")
+        }
+    }
 }
