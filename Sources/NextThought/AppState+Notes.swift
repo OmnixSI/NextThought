@@ -182,8 +182,9 @@ extension AppState {
                     latest.improveCount = notes.improveCount
                     archive.update(latest)
                 }
-                // The series keeps what the next meeting needs (question bank, lessons).
-                if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
+                // The series may collect suggestions, but they remain pending until
+                // the user reviews each item in the notes page.
+                if autoCollectKnowledgeCandidates { collectReviewCandidates(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
                 Diagnostics.record("notes.completed", ["session_id": id.uuidString, "template": template.id,
                                                        "items": notes.sections.reduce(0) { $0 + $1.items.count },
                                                        "corrections": notes.corrections.count, "dropped": notes.droppedCount])
@@ -195,7 +196,7 @@ extension AppState {
                     guard let detail = loaded else { throw NotesError.unreadable }
                     let generated = try await markdownSummary(detail: detail, engine: engine)
                     let summary = await saveGeneratedSummary(generated, notes: nil, for: id)
-                    if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
+                    if autoCollectKnowledgeCandidates { collectReviewCandidates(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
                 } catch {
                     markSummaryFailed(id, error)
                 }

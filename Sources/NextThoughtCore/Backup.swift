@@ -63,23 +63,16 @@ public enum BackupMerge {
         for var item in incoming {
             if let index = result.firstIndex(where: { $0.id == item.id }) {
                 let current = result[index]
-                if item.updatedAt > current.updatedAt {
-                    item.lessons = union(item.lessons, current.lessons)
-                    item.questionBank = union(item.questionBank, current.questionBank)
-                    result[index] = item
-                    updated += 1
-                } else {
-                    var kept = current
-                    let lessons = union(current.lessons, item.lessons)
-                    let bank = union(current.questionBank, item.questionBank)
-                    if lessons.count != current.lessons.count || bank.count != current.questionBank.count {
-                        kept.lessons = lessons; kept.questionBank = bank
-                        result[index] = kept
-                        updated += 1
-                    } else {
-                        skipped += 1
-                    }
-                }
+                let primary = item.updatedAt > current.updatedAt ? item : current
+                let secondary = item.updatedAt > current.updatedAt ? current : item
+                var merged = primary
+                merged.lessons = mergeLessons(primary.lessons, secondary.lessons)
+                merged.questionBank = mergeQuestionBank(primary.questionBank, secondary.questionBank)
+                let candidates = mergeCandidates(primary.knowledgeCandidates ?? [], secondary.knowledgeCandidates ?? [])
+                merged.knowledgeCandidates = candidates.isEmpty && primary.knowledgeCandidates == nil && secondary.knowledgeCandidates == nil
+                    ? nil : candidates
+                if merged != current { result[index] = merged; updated += 1 }
+                else { skipped += 1 }
             } else {
                 // Same name from another machine: keep both, mark the import.
                 if result.contains(where: { $0.name == item.name }) { item.name += "（导入）" }
@@ -88,6 +81,104 @@ public enum BackupMerge {
             }
         }
         return WorkspaceResult(merged: result, added: added, updated: updated, skipped: skipped)
+    }
+
+    private static func mergeLessons(_ preferred: [WorkspaceLesson], _ other: [WorkspaceLesson]) -> [WorkspaceLesson] {
+        var result = preferred
+        for incoming in other {
+            guard let index = result.firstIndex(where: { $0.id == incoming.id }) else { result.append(incoming); continue }
+            var item = result[index]
+            var sources = Set(item.sourceSessionIDs ?? [])
+            var fallbackSources = Set(incoming.sourceSessionIDs ?? [])
+            if let source = item.sourceSessionID { sources.insert(source) }
+            if let source = incoming.sourceSessionID { fallbackSources.insert(source) }
+            sources.formUnion(fallbackSources)
+            item.sourceSessionID = item.sourceSessionID ?? incoming.sourceSessionID
+            item.sourceSessionIDs = sources.isEmpty ? nil : sources.sorted { $0.uuidString < $1.uuidString }
+            item.createdAt = min(item.createdAt, incoming.createdAt)
+            result[index] = item
+        }
+        return result
+    }
+
+    private static func mergeQuestionBank(_ preferred: [QuestionBankItem], _ other: [QuestionBankItem]) -> [QuestionBankItem] {
+        var result = preferred
+        for incoming in other {
+            guard let index = result.firstIndex(where: { $0.id == incoming.id }) else { result.append(incoming); continue }
+            let existing = result[index]
+            let existingRevision = existing.answerRevision ?? 0
+            let incomingRevision = incoming.answerRevision ?? 0
+            let current: QuestionBankItem
+            let fallback: QuestionBankItem
+            if existing.updatedAt > incoming.updatedAt ||
+                (existing.updatedAt == incoming.updatedAt && existingRevision >= incomingRevision) {
+                current = existing; fallback = incoming
+            } else {
+                current = incoming; fallback = existing
+            }
+            var item = current
+            var sources = Set(current.sourceSessionIDs ?? [])
+            var fallbackSources = Set(fallback.sourceSessionIDs ?? [])
+            if let source = current.sourceSessionID { sources.insert(source) }
+            if let source = fallback.sourceSessionID { fallbackSources.insert(source) }
+            sources.formUnion(fallbackSources)
+            item.sourceSessionID = current.sourceSessionID ?? fallback.sourceSessionID
+            item.sourceSessionIDs = sources.isEmpty ? nil : sources.sorted { $0.uuidString < $1.uuidString }
+            item.timesAsked = max(max(current.timesAsked, fallback.timesAsked), sources.count)
+
+            var history = current.answerHistory ?? []
+            var historyIDs = Set(history.map(\.id))
+            history.append(contentsOf: (fallback.answerHistory ?? []).filter { historyIDs.insert($0.id).inserted })
+            if current.answer != fallback.answer {
+                // The losing current answer may not yet be in its history. Preserve it, but
+                // compare its content, timestamp, and attribution so re-import is idempotent.
+                let losingAnswer = WorkspaceAnswerRevision(answer: fallback.answer, recordedAt: fallback.updatedAt,
+                                                           sourceSessionID: fallback.knownAnswerSourceSessionID)
+                let alreadyPreserved = history.contains {
+                    $0.answer == losingAnswer.answer && $0.recordedAt == losingAnswer.recordedAt
+                        && $0.sourceSessionID == losingAnswer.sourceSessionID
+                }
+                if !alreadyPreserved { history.append(losingAnswer) }
+            }
+            history.sort { $0.recordedAt == $1.recordedAt ? $0.id.uuidString < $1.id.uuidString : $0.recordedAt < $1.recordedAt }
+            item.answerHistory = history.isEmpty ? nil : history
+            if current.answer == fallback.answer {
+                item.answerSourceSessionID = current.knownAnswerSourceSessionID ?? fallback.knownAnswerSourceSessionID
+            }
+
+            let contentDiverged = current.question != fallback.question || current.answer != fallback.answer
+            let revision = max(existingRevision, incomingRevision)
+            item.answerRevision = contentDiverged ? revision + 1 : (existing.answerRevision == nil && incoming.answerRevision == nil ? nil : revision)
+            result[index] = item
+        }
+        return result
+    }
+
+    private static func mergeCandidates(_ preferred: [WorkspaceKnowledgeCandidate],
+                                        _ other: [WorkspaceKnowledgeCandidate]) -> [WorkspaceKnowledgeCandidate] {
+        var result = preferred
+        for incoming in other {
+            guard let index = result.firstIndex(where: { $0.id == incoming.id }) else { result.append(incoming); continue }
+            let existing = result[index]
+            let hasAcceptance = [existing, incoming].contains {
+                $0.status == .accepted || ($0.receipt?.decision != nil && $0.receipt?.decision != .reject)
+            }
+            if hasAcceptance {
+                let accepted = [existing, incoming].filter { $0.status == .accepted || ($0.receipt?.decision != nil && $0.receipt?.decision != .reject) }
+                result[index] = accepted.max { ($0.receipt?.reviewedAt ?? $0.createdAt) < ($1.receipt?.reviewedAt ?? $1.createdAt) } ?? existing
+            } else if existing.status == .rejected || incoming.status == .rejected {
+                let rejected = [existing, incoming].filter { $0.status == .rejected }
+                result[index] = rejected.max { ($0.receipt?.reviewedAt ?? $0.createdAt) < ($1.receipt?.reviewedAt ?? $1.createdAt) } ?? existing
+            } else {
+                var pending = existing
+                if existing.baseQuestionID != incoming.baseQuestionID || existing.baseAnswerRevision != incoming.baseAnswerRevision {
+                    pending.baseQuestionID = nil
+                    pending.baseAnswerRevision = nil
+                }
+                result[index] = pending
+            }
+        }
+        return result
     }
 
     private static func union<T: Identifiable>(_ primary: [T], _ secondary: [T]) -> [T] where T.ID == UUID {
@@ -106,7 +197,7 @@ public enum BackupMerge {
 public enum SettingsSnapshot {
     public static let exportedKeys: [String] = [
         "apiVisionEnabled", "answerBackend", "apiBaseURL", "apiModel", "codexModelID", "codexReasoning", "verifyUncertainWithModel",
-        "automaticAnswers", "recordSessions", "autoSummarize", "autoApplyLessons",
+        "automaticAnswers", "recordSessions", "autoSummarize", "autoCollectKnowledgeCandidates", "autoApplyLessons",
         "transcriptionBackend", "localStreamingModel", "secondPassEnabled", "recognitionLanguage", "recognitionVocabulary",
         "cloudProvider", "cloudModel", "cloudConsent",
         "echoSuppression", "microphoneVoiceProcessing", "microphoneEnabled",
@@ -132,5 +223,17 @@ public enum SettingsSnapshot {
 
     public static func filter(_ values: [String: Any]) -> [String: Any] {
         values.filter { exportedKeys.contains($0.key) }
+    }
+
+    /// Map the renamed preference when restoring a backup made before per-item review.
+    /// A value from the backup takes precedence over the installed app's newer key.
+    public static func valuesForRestore(_ values: [String: Any]) -> [String: Any] {
+        var restored = filter(values)
+        if restored["autoCollectKnowledgeCandidates"] == nil,
+           let legacy = restored["autoApplyLessons"] {
+            restored["autoCollectKnowledgeCandidates"] = legacy
+        }
+        restored.removeValue(forKey: "autoApplyLessons")
+        return restored
     }
 }

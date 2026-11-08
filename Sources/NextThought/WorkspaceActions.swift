@@ -128,9 +128,8 @@ extension AppState {
                   let index = updated.questionBank.firstIndex(where: { $0.id == itemID }) else {
                 throw CocoaError(.fileNoSuchFile)
             }
-            updated.questionBank[index].question = draftItem.question
-            updated.questionBank[index].answer = draftItem.answer
-            updated.questionBank[index].updatedAt = Date()
+            KnowledgeMerger.editQuestionBankItem(&updated.questionBank[index],
+                                                 question: draftItem.question, answer: draftItem.answer)
         }
 
         let formerName = current.name
@@ -225,7 +224,16 @@ extension AppState {
 
     func updateBankItem(_ item: QuestionBankItem) {
         guard let index = activeWorkspace.questionBank.firstIndex(where: { $0.id == item.id }) else { return }
-        var next = item; next.updatedAt = Date()
+        var next = activeWorkspace.questionBank[index]
+        KnowledgeMerger.editQuestionBankItem(&next, question: item.question, answer: item.answer)
+        activeWorkspace.questionBank[index] = next
+        rebuildContextIndex()
+    }
+
+    func restoreBankAnswer(itemID: UUID, revisionID: UUID) {
+        guard let index = activeWorkspace.questionBank.firstIndex(where: { $0.id == itemID }) else { return }
+        var next = activeWorkspace.questionBank[index]
+        guard KnowledgeMerger.restoreAnswerRevision(revisionID, on: &next) else { return }
         activeWorkspace.questionBank[index] = next
         rebuildContextIndex()
     }
@@ -235,19 +243,41 @@ extension AppState {
         rebuildContextIndex()
     }
 
-    /// Merges a session review's lessons and improved answers into its workspace.
+    /// Generated review output is queued as suggestions. It never changes reusable
+    /// knowledge until the user makes a per-candidate decision.
     @discardableResult
-    func applyReview(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> (lessons: Int, questions: Int)? {
-        guard let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return nil }
-        let result = KnowledgeMerger.merge(lessons: summary.lessons ?? [], bank: (summary.bank ?? []).map { ($0.question, $0.answer) },
-                                           into: &workspace, session: sessionID)
+    func collectReviewCandidates(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> Int {
+        guard summary.appliedToWorkspace != true, let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return 0 }
+        let ids = KnowledgeMerger.collectCandidates(lessons: summary.lessons ?? [], bank: summary.bank ?? [],
+                                                    into: &workspace, session: sessionID, originID: sessionID)
+        guard !ids.isEmpty else { return 0 }
         workspaces.update(workspace)
-        if workspaceID == activeWorkspace.id { rebuildContextIndex() }
-        var applied = summary
-        applied.appliedToWorkspace = true
-        archive.saveSummary(applied, for: sessionID)
-        Diagnostics.record("knowledge.applied", ["lessons": result.lessons, "questions": result.questions])
-        return result
+        Diagnostics.record("knowledge.candidates.collected", ["count": ids.count])
+        return ids.count
+    }
+
+    func reviewKnowledgeCandidate(_ candidateID: String, decision: WorkspaceKnowledgeDecision,
+                                  workspaceID: UUID, operationID: UUID = UUID()) {
+        guard var workspace = workspaces.workspace(workspaceID) else { return }
+        guard let receipt = KnowledgeMerger.applyCandidate(candidateID, decision: decision,
+                                                            operationID: operationID, into: &workspace) else {
+            if KnowledgeMerger.refreshCandidateBase(candidateID, in: &workspace) {
+                do { try workspaces.commit(workspace) }
+                catch { errorMessage = "保存候选状态失败：\(error.localizedDescription)"; return }
+                errorMessage = "这个问题的现有答法刚刚有变化。请核对当前答案后再选择。"
+            } else {
+                errorMessage = "这个候选已变化或不再可用，请重新打开后核对。"
+            }
+            return
+        }
+        do {
+            try workspaces.commit(workspace)
+            if workspaceID == activeWorkspace.id { rebuildContextIndex() }
+            Diagnostics.record("knowledge.candidate.reviewed", ["decision": decision.rawValue,
+                                                                   "source_counted": String(receipt.sourceCounted)])
+        } catch {
+            errorMessage = "保存知识更新失败：\(error.localizedDescription)"
+        }
     }
 
     // MARK: Stage review
@@ -283,9 +313,9 @@ extension AppState {
                 guard var latest = workspaces.workspace(workspaceID) else { return }
                 latest.stageReview = markdown
                 latest.stageReviewAt = Date()
-                if autoApplyLessons {
-                    _ = KnowledgeMerger.merge(lessons: SessionSummaryParser.parseAll(markdown).lessons, bank: [], into: &latest, session: nil)
-                }
+                let parsed = SessionSummaryParser.parseAll(markdown)
+                _ = KnowledgeMerger.collectCandidates(lessons: parsed.lessons, bank: parsed.bank,
+                                                       into: &latest, session: nil, originID: workspaceID)
                 workspaces.update(latest)
                 Diagnostics.record("stage_review.completed", ["sessions": digests.count])
             } catch {

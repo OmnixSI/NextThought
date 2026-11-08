@@ -357,7 +357,7 @@ enum DataBackup {
     private static func applySettingsFile(_ url: URL) -> Int {
         guard let data = try? Data(contentsOf: url),
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else { return 0 }
-        let filtered = SettingsSnapshot.filter(values)
+        let filtered = SettingsSnapshot.valuesForRestore(values)
         for (key, value) in filtered { UserDefaults.standard.set(value, forKey: key) }
         return filtered.count
     }
