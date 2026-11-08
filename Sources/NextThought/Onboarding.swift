@@ -645,7 +645,7 @@ struct OnboardingView: View {
             pageHeader("接上一个回答服务", "会中的参考回答、会后的纪要，都由它来写。选一个服务商，粘贴 Key，点一下检查。")
             AnswerEngineForm()
             if !state.answerEngineReady {
-                Text("先不接也可以继续看完引导；开始记录前需要接上。")
+                Text("可以先开始本机记录；连接后才能生成会中回答和会后纪要。")
                     .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -665,7 +665,7 @@ struct OnboardingView: View {
     private var microphoneBlocks: Bool { state.microphoneEnabled && state.microphoneAccess == .denied }
 
     private var canStart: Bool {
-        readiness.speech && readiness.capture && readiness.answers && readiness.audioSource && !microphoneBlocks
+        readiness.canRecord && !microphoneBlocks
     }
 
     private var start: some View {

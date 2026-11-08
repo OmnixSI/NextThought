@@ -250,7 +250,7 @@ extension AppState {
     }
 
     /// Asks for screen-and-audio permission in place (instead of an onboarding
-    /// step), waits for a series switch to finish indexing, then starts.
+    /// step), then starts without waiting for optional material indexing.
     private func startWithPermissions() async {
         if !capturePermissionGranted, meetingVenue == .online {
             await requestCapturePermission()
@@ -261,9 +261,6 @@ extension AppState {
         }
         if microphoneEnabled || meetingVenue == .offline, MicrophoneAccess.current() == .undetermined {
             await requestMicrophoneAccess()
-        }
-        for _ in 0..<100 where isIndexingDocuments {
-            try? await Task.sleep(for: .milliseconds(100))
         }
         await startSession()
     }

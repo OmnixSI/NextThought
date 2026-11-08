@@ -2,13 +2,15 @@ import Testing
 @testable import NextThoughtCore
 
 struct RealtimeSetupReadinessTests {
-    @Test func coreVoiceAndConversationCannotBeBypassed() {
+    @Test func recordingRequiresVoiceAndAudioButNotAnswerService() {
         for mask in 0..<64 {
             let speech = mask & 1 != 0, capture = mask & 2 != 0, micRequired = mask & 4 != 0
             let mic = mask & 8 != 0, answers = mask & 16 != 0, source = mask & 32 != 0
             let setup = RealtimeSetupReadiness(speech: speech, capture: capture, microphoneRequired: micRequired, microphone: mic, answers: answers, audioSource: source)
             #expect(setup.voiceReady == (speech && capture && (!micRequired || mic)))
-            #expect(setup.canStart == (speech && capture && (!micRequired || mic) && answers && source))
+            #expect(setup.canRecord == (speech && capture && (!micRequired || mic) && source))
+            #expect(setup.canStart == setup.canRecord)
+            #expect(setup.canAnswer == answers)
         }
     }
     @Test func optionalDocumentModelsAreNotNeededToStartRealtimeAssistance() {

@@ -522,7 +522,6 @@ final class AppState {
         if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
         if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
         if usesMicrophone && microphoneAccess != .granted { return "请先允许麦克风权限" }
-        if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测回答服务…" : "请先连接回答服务" }
         if !isOfflineMeeting, !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
         return "可以开始"
     }
@@ -609,10 +608,8 @@ final class AppState {
         }
         guard !isRunning, !isChangingSession else { return }
         guard !isDownloadingModel else { return }
-        guard answerEngineReady else { errorMessage = "请先连接回答服务，再开始会议记录。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
-        guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
         liveTranslation.beginMeeting()
         speakers.beginMeeting(inPerson: isOfflineMeeting)
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
@@ -869,6 +866,13 @@ final class AppState {
         if isAutomatic && isAnswering && !supersede {
             pendingAutomaticQuestion = (question, recentContext ?? "", candidateID)
             Diagnostics.record("answer.queued")
+            return
+        }
+        guard answerEngineReady else {
+            if !isAutomatic {
+                errorMessage = "连接回答服务后才能生成回答；当前会议记录会继续。"
+                openSettings(.answers)
+            }
             return
         }
         let backend = answerBackend
