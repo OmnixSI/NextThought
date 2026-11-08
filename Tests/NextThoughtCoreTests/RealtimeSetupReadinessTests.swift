@@ -19,4 +19,23 @@ struct RealtimeSetupReadinessTests {
         #expect(!documents.ready(.paddle) && !documents.ready(.semantic))
         #expect(setup.canStart)
     }
+
+    @Test func startCanRequestPendingMicrophonePermissionButOfflineCannotSkipDenial() {
+        let permissionCanBeRequested = RealtimeSetupReadiness.microphonePermissionAllowsStart(
+            isGranted: false, isUndetermined: true)
+        let deniedPermissionBlocks = RealtimeSetupReadiness.microphonePermissionAllowsStart(
+            isGranted: false, isUndetermined: false)
+        let deniedRequiredMicrophone = RealtimeSetupReadiness(
+            speech: true, capture: true, microphoneRequired: true, microphone: deniedPermissionBlocks, answers: true, audioSource: true)
+        let optionalOnlineMicrophoneDisabled = RealtimeSetupReadiness(
+            speech: true, capture: true, microphoneRequired: false, microphone: false, answers: false, audioSource: true)
+
+        #expect(permissionCanBeRequested)
+        #expect(RealtimeSetupReadiness(speech: true, capture: true, microphoneRequired: true, microphone: permissionCanBeRequested,
+                                        answers: false, audioSource: true).canRecord)
+        #expect(!deniedRequiredMicrophone.canRecord)
+        #expect(optionalOnlineMicrophoneDisabled.canRecord)
+        #expect(RealtimeSetupReadiness.microphoneRequired(microphoneEnabled: false, isOfflineMeeting: true))
+        #expect(!RealtimeSetupReadiness.microphoneRequired(microphoneEnabled: false, isOfflineMeeting: false))
+    }
 }

@@ -336,6 +336,7 @@ final class AppState {
 
     // MARK: Not observed (services, tasks, bookkeeping)
     @ObservationIgnored var contextIndex = HybridContextIndex()
+    @ObservationIgnored var meetingContextTask: Task<Void, Never>?
     @ObservationIgnored var documentRevision = UUID()
     @ObservationIgnored var importTask: Task<Void, Never>?
     @ObservationIgnored var microphoneTranscriber: (any LiveTranscribing)?
@@ -625,11 +626,14 @@ final class AppState {
         selectedExcerpts = []; lastASRSeconds = nil; lastRTF = nil; lastRefineSeconds = nil; lastAnswerSeconds = nil
         droppedAudioSegments = 0; echoDroppedCount = 0
         audioEpoch = UUID()
+        meetingContextTask?.cancel(); meetingContextTask = nil
         isChangingSession = true
         defer { isChangingSession = false }
         do {
             let startupBegan = Date()
-            if semanticRetrievalReady { await SemanticRetrievalService.shared.prepare() }
+            if semanticRetrievalReady {
+                Task.detached(priority: .utility) { await SemanticRetrievalService.shared.prepare() }
+            }
             recognizerIdleTask?.cancel(); recognizerIdleTask = nil
             if usesMicrophone { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
@@ -651,9 +655,13 @@ final class AppState {
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
-            preparedWorkspace = await meetingWorkspaceForStart()
+            let startPlan = plannedMeeting
+            let startWorkspace = meetingWorkspaceForStart()
+            preparedWorkspace = startWorkspace
             isRunning = true
             documentPreparation.pauseForMeeting()
+            beginArchive(startedAt: startedAt)
+            prepareMeetingContextForStart(workspace: startWorkspace, plan: startPlan, epoch: audioEpoch)
             if !isOfflineMeeting {
                 do {
                     try await audio.startCapture(targetID: selectedTargetID)
@@ -675,11 +683,11 @@ final class AppState {
             transcriptionStatus = isOfflineMeeting ? "等待麦克风" : "等待系统音频"
             pendingAutomaticQuestion = nil
             errorMessage = nil
-            beginArchive(startedAt: startedAt)
             startCandidateTicker()
             startAutoEnd()
         } catch {
             isRunning = false
+            meetingContextTask?.cancel(); meetingContextTask = nil
             speakers.endMeeting()
             // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
             if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
@@ -696,6 +704,7 @@ final class AppState {
             isPreparingModel = false
             audioEpoch = UUID()
             sessionStartedAt = nil
+            finishArchive()
             errorMessage = "开始记录失败：\(error.localizedDescription)"
             statusText = "启动失败"
         }
@@ -769,6 +778,7 @@ final class AppState {
         isChangingSession = true
         defer { isChangingSession = false }
         isStopping = true
+        meetingContextTask?.cancel(); meetingContextTask = nil
         stopAutoEnd()
         statusText = "正在处理最后片段…"
         pendingAutomaticQuestion = nil
