@@ -100,13 +100,13 @@ internal static class MeetingReplayDiagnostics
         await store.ExportMarkdownAsync(meta.Id, Path.ChangeExtension(output, ".md"));
         Console.WriteLine($"Replay {(passed ? "PASS" : "FAIL")}: session {meta.Id}"); return passed ? 0 : 2;
     }
-    private static short[] Slice(short[] samples, int position)
+    internal static short[] Slice(short[] samples, int position)
     {
         var output = new short[1600];
         if (position >= 0 && position < samples.Length) Array.Copy(samples, position, output, 0, Math.Min(1600, samples.Length - position));
         return output;
     }
-    private static short[] ReadMono(string path)
+    internal static short[] ReadMono(string path)
     {
         using var file = new WaveFileReader(path); ISampleProvider samples = file.ToSampleProvider();
         if (samples.WaveFormat.Channels != 1) throw new InvalidDataException("Replay fixtures must be mono WAV.");
