@@ -70,6 +70,10 @@ final class SessionArchive {
     /// Bumped when notes change on disk, so open pages reload them.
     var notesRevision = 0
     private(set) var persistenceBySession: [UUID: SessionPersistenceSnapshot] = [:]
+    /// Bumped when finalized, searchable content is durably saved.
+    private(set) var searchableContentRevision = 0
+    /// Newly finalized meetings stay out of history search until final translations have drained.
+    private(set) var pendingTranslationSearchSessionIDs: Set<UUID> = []
 
     private let io = DispatchQueue(label: "app.nextthought.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
@@ -81,6 +85,8 @@ final class SessionArchive {
     @ObservationIgnored private var retryTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var retryAttempts: [UUID: Int] = [:]
     @ObservationIgnored private let fileAppender = SessionArchiveFileAppender.live
+    @ObservationIgnored private var pendingSearchableTranslationSessionIDs: Set<UUID> = []
+    @ObservationIgnored private var completedTranslationDrainSessionIDs: Set<UUID> = []
 
     static var root: URL { AppPaths.sessions }
 
@@ -307,11 +313,38 @@ final class SessionArchive {
 
     func appendTranslation(sessionID: UUID, lineID: UUID, text: String, inputRevision: String? = nil) {
         guard sessionID == activeID || sessions.contains(where: { $0.id == sessionID }) else { return }
-        appendLine(SessionTranscriptTranslation(id: lineID, text: text, inputRevision: inputRevision), file: "translations.jsonl", session: sessionID)
+        let wasArchivedWhenAppended = sessionID != activeID
+        guard appendLine(SessionTranscriptTranslation(id: lineID, text: text, inputRevision: inputRevision),
+                         file: "translations.jsonl", session: sessionID) else { return }
+        if pendingTranslationSearchSessionIDs.contains(sessionID) {
+            pendingSearchableTranslationSessionIDs.insert(sessionID)
+            return
+        }
         Task { [weak self] in
             guard let self, await self.flush(sessionID: sessionID) else { return }
             self.notesRevision &+= 1
+            if wasArchivedWhenAppended { self.searchableContentRevision &+= 1 }
         }
+    }
+
+    func beginFinalTranslationDrain(for sessionID: UUID) {
+        pendingTranslationSearchSessionIDs.insert(sessionID)
+    }
+
+    /// Wait for this session's final translations and archive writes before exposing it to search.
+    func finishFinalTranslationDrain(for sessionID: UUID) async {
+        completedTranslationDrainSessionIDs.insert(sessionID)
+        guard await flush(sessionID: sessionID) else { return }
+        completeFinalTranslationDrain(for: sessionID)
+    }
+
+    private func completeFinalTranslationDrain(for sessionID: UUID) {
+        guard completedTranslationDrainSessionIDs.remove(sessionID) != nil else { return }
+        if pendingSearchableTranslationSessionIDs.remove(sessionID) != nil {
+            notesRevision &+= 1
+            if sessionID != activeID { searchableContentRevision &+= 1 }
+        }
+        pendingTranslationSearchSessionIDs.remove(sessionID)
     }
 
     /// Copies a screenshot into the session folder and returns its path
@@ -371,6 +404,10 @@ final class SessionArchive {
         meta.summaryError = nil
         _ = enqueueSnapshot(summary, file: "summary.json", session: id)
         update(meta)
+        Task { [weak self] in
+            guard let self, await self.flush(sessionID: id), id != self.activeID else { return }
+            self.searchableContentRevision &+= 1
+        }
     }
 
     @discardableResult
@@ -395,7 +432,10 @@ final class SessionArchive {
             change(&notes)
             guard saveNotes(notes, for: id) else { return }
             if demoDetails[id] != nil { return }
-            if await flush(sessionID: id) { notesRevision += 1 }
+            if await flush(sessionID: id) {
+                notesRevision += 1
+                if id != activeID { searchableContentRevision &+= 1 }
+            }
         }
     }
 
@@ -598,7 +638,11 @@ final class SessionArchive {
                 if failure != nil { self.scheduleRetry(id) }
                 else {
                     self.retryAttempts[id] = 0
-                    if !latest.entries.isEmpty { self.drainWrites(id) }
+                    if !latest.entries.isEmpty {
+                        self.drainWrites(id)
+                    } else if self.completedTranslationDrainSessionIDs.contains(id) {
+                        self.completeFinalTranslationDrain(for: id)
+                    }
                 }
             }
         }

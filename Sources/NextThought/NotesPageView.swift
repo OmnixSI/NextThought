@@ -247,9 +247,8 @@ struct MeetingPage: View {
             navigationNotice = "这条搜索结果已不存在，请重新搜索。"
             return
         }
-        let currentHit = projection.searchableText.first(where: { $0.id == target.hit.id })
-        let selectedTranscriptChanged = target.hit.kind == .transcript && line.sourceRevision != target.hit.sourceRevision
-        navigationNotice = currentHit?.sourceRevision == target.hit.sourceRevision && !selectedTranscriptChanged
+        let currentHit = target.hit.id.flatMap { id in projection.searchableText.first(where: { $0.id == id }) }
+        navigationNotice = currentHit?.sourceRevision == target.hit.sourceRevision
             ? nil : "这句已更新，显示的是当前版本。"
         tab = .transcript
         jumpLineID = nil

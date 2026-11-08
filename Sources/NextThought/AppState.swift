@@ -9,7 +9,7 @@ import UniformTypeIdentifiers
 
 struct SessionTranscriptNavigationTarget: Equatable {
     let sessionID: UUID
-    let hit: SessionProjectedText
+    let hit: SessionSearchHit
 }
 
 /// App-wide state. Uses the Observation framework: a view re-renders only when a
@@ -800,7 +800,7 @@ final class AppState {
         _ = await audio.stopCapture()
         _ = microphone.stopCapture()
         await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
-        liveTranslation.finishMeeting()
+        liveTranslation.finishMeeting(sessionID: activeArchiveID)
         audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         audioEpoch = UUID()
         liveTranscriber = nil
