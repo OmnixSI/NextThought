@@ -193,11 +193,12 @@ final class SessionArchive {
                 return report.records
             }
             var transcript = lines("transcript.jsonl", SessionTranscriptLine.self, expected: meta.transcriptCount)
-            let translations = Dictionary(lines("translations.jsonl", SessionTranscriptTranslation.self).map { ($0.id, $0.text) },
+            let translations = Dictionary(lines("translations.jsonl", SessionTranscriptTranslation.self).map { ($0.id, $0) },
                                           uniquingKeysWith: { _, latest in latest })
             for index in transcript.indices {
                 if let translation = translations[transcript[index].id] {
-                    transcript[index].translatedText = translation
+                    transcript[index].translatedText = translation.text
+                    transcript[index].translationInputRevision = translation.inputRevision
                 }
             }
             let voices = Dictionary(lines("voices.jsonl", SessionVoiceTag.self).map { ($0.id, $0.voice) },
@@ -304,9 +305,9 @@ final class SessionArchive {
         return saved
     }
 
-    func appendTranslation(sessionID: UUID, lineID: UUID, text: String) {
+    func appendTranslation(sessionID: UUID, lineID: UUID, text: String, inputRevision: String? = nil) {
         guard sessionID == activeID || sessions.contains(where: { $0.id == sessionID }) else { return }
-        appendLine(SessionTranscriptTranslation(id: lineID, text: text), file: "translations.jsonl", session: sessionID)
+        appendLine(SessionTranscriptTranslation(id: lineID, text: text, inputRevision: inputRevision), file: "translations.jsonl", session: sessionID)
         Task { [weak self] in
             guard let self, await self.flush(sessionID: sessionID) else { return }
             self.notesRevision &+= 1

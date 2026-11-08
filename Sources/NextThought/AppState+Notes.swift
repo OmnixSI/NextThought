@@ -418,7 +418,7 @@ extension AppState {
             text = NotesMarkdown.render(notes, title: title, facts: notesFacts(detail.meta, notes: notes))
         } else {
             text = SessionMarkdownExporter.export(meta: detail.meta, summary: detail.summary, lines: detail.lines,
-                                                  answers: detail.answers, detected: detail.questions)
+                                                  answers: detail.answers, detected: detail.questions, notes: detail.notes)
         }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)

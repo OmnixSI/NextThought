@@ -227,20 +227,32 @@ public struct NotesSectionResult: Codable, Sendable, Equatable, Identifiable {
 
 /// One fix the proofreading step made ("缓存鸡穿" → "缓存击穿"). The transcript on
 /// disk never changes; corrections are applied when showing and organizing.
+public enum TranscriptCorrectionSource: String, Codable, Sendable, Equatable {
+    case model
+    case user
+}
+
 public struct TranscriptCorrection: Codable, Sendable, Equatable, Identifiable {
     public var id: UUID
     /// Index of the line in the session transcript.
     public var line: Int
+    /// Stable anchor added after the original index-based format.
+    public var lineID: UUID?
+    /// Source-text fingerprint the correction was reviewed against.
+    public var baseRevision: String?
+    public var source: TranscriptCorrectionSource
     public var original: String
     public var corrected: String
     /// The user undid this correction.
     public var reverted: Bool
 
-    public init(id: UUID = UUID(), line: Int, original: String, corrected: String, reverted: Bool = false) {
-        self.id = id; self.line = line; self.original = original; self.corrected = corrected; self.reverted = reverted
+    public init(id: UUID = UUID(), line: Int, lineID: UUID? = nil, baseRevision: String? = nil,
+                source: TranscriptCorrectionSource = .model, original: String, corrected: String, reverted: Bool = false) {
+        self.id = id; self.line = line; self.lineID = lineID; self.baseRevision = baseRevision; self.source = source
+        self.original = original; self.corrected = corrected; self.reverted = reverted
     }
 
-    enum CodingKeys: String, CodingKey { case id, line, original, corrected, reverted, from, to }
+    enum CodingKeys: String, CodingKey { case id, line, lineID, baseRevision, source, original, corrected, reverted, from, to }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -250,6 +262,9 @@ public struct TranscriptCorrection: Codable, Sendable, Equatable, Identifiable {
         } else {
             line = Int((try? c.decodeIfPresent(String.self, forKey: .line)) ?? "") ?? -1
         }
+        lineID = try? c.decodeIfPresent(UUID.self, forKey: .lineID)
+        baseRevision = try? c.decodeIfPresent(String.self, forKey: .baseRevision)
+        source = (try? c.decodeIfPresent(TranscriptCorrectionSource.self, forKey: .source)) ?? .model
         original = (try? c.decodeIfPresent(String.self, forKey: .original)) ?? (try? c.decodeIfPresent(String.self, forKey: .from)) ?? ""
         corrected = (try? c.decodeIfPresent(String.self, forKey: .corrected)) ?? (try? c.decodeIfPresent(String.self, forKey: .to)) ?? ""
         reverted = (try? c.decodeIfPresent(Bool.self, forKey: .reverted)) ?? false
@@ -259,6 +274,9 @@ public struct TranscriptCorrection: Codable, Sendable, Equatable, Identifiable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encode(line, forKey: .line)
+        try c.encodeIfPresent(lineID, forKey: .lineID)
+        try c.encodeIfPresent(baseRevision, forKey: .baseRevision)
+        try c.encode(source, forKey: .source)
         try c.encode(original, forKey: .original)
         try c.encode(corrected, forKey: .corrected)
         try c.encode(reverted, forKey: .reverted)
@@ -385,10 +403,21 @@ public enum NotesCorrections {
     /// The transcript with the active corrections applied (the stored one is unchanged).
     public static func apply(_ corrections: [TranscriptCorrection], to lines: [SessionTranscriptLine]) -> [SessionTranscriptLine] {
         var result = lines
-        for correction in corrections where !correction.reverted && result.indices.contains(correction.line) {
-            let text = result[correction.line].text
+        for correction in corrections where !correction.reverted {
+            let index: Int?
+            if let lineID = correction.lineID {
+                index = result.firstIndex(where: { $0.id == lineID })
+            } else if result.indices.contains(correction.line) {
+                index = correction.line
+            } else {
+                index = nil
+            }
+            guard let index, result.indices.contains(index) else { continue }
+            let text = result[index].text
+            if let baseRevision = correction.baseRevision,
+               baseRevision != SessionProjectionBuilder.transcriptRevision(id: result[index].id, text: lines[index].text) { continue }
             guard text.contains(correction.original) else { continue }
-            result[correction.line].text = text.replacingOccurrences(of: correction.original, with: correction.corrected)
+            result[index].text = text.replacingOccurrences(of: correction.original, with: correction.corrected)
         }
         return result
     }
@@ -397,10 +426,22 @@ public enum NotesCorrections {
     public static func valid(_ corrections: [TranscriptCorrection], lines: [SessionTranscriptLine], limit: Int = 120) -> [TranscriptCorrection] {
         var result: [TranscriptCorrection] = []
         for var correction in corrections {
-            if lines.indices.contains(correction.line), lines[correction.line].text.contains(correction.original) {
-                result.append(correction)
-            } else if let index = lines.firstIndex(where: { $0.text.contains(correction.original) }) {
+            let index: Int?
+            if let lineID = correction.lineID {
+                index = lines.firstIndex(where: { $0.id == lineID && $0.text.contains(correction.original) })
+            } else if lines.indices.contains(correction.line), lines[correction.line].text.contains(correction.original) {
+                index = correction.line
+            } else {
+                let matches = lines.indices.filter { lines[$0].text.contains(correction.original) }
+                index = matches.count == 1 ? matches.first : nil
+            }
+            if let index {
+                let line = lines[index]
+                let sourceRevision = SessionProjectionBuilder.transcriptRevision(id: line.id, text: line.text)
+                if let baseRevision = correction.baseRevision, baseRevision != sourceRevision { continue }
                 correction.line = index
+                correction.lineID = line.id
+                correction.baseRevision = sourceRevision
                 result.append(correction)
             }
             if result.count >= limit { break }

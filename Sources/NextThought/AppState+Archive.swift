@@ -48,11 +48,13 @@ extension AppState {
         guard job.isFinal, let entryID = job.entryID else { return }
         let translation = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !translation.isEmpty else { return }
+        let inputRevision = entries.first(where: { $0.id == entryID })
+            .map { SessionProjectionBuilder.transcriptRevision(id: $0.id, text: $0.text) }
         if let index = entries.firstIndex(where: { $0.id == entryID }) {
             entries[index].translatedText = translation
         }
         if let sessionID = job.sessionID {
-            archive.appendTranslation(sessionID: sessionID, lineID: entryID, text: translation)
+            archive.appendTranslation(sessionID: sessionID, lineID: entryID, text: translation, inputRevision: inputRevision)
         }
     }
 
@@ -104,7 +106,7 @@ extension AppState {
             panel.nameFieldStringValue = "\(name).md"
             guard panel.runModal() == .OK, let url = panel.url else { return }
             let text = SessionMarkdownExporter.export(meta: detail.meta, summary: detail.summary, lines: detail.lines,
-                                                      answers: detail.answers, detected: detail.questions)
+                                                      answers: detail.answers, detected: detail.questions, notes: detail.notes)
             do { try text.write(to: url, atomically: true, encoding: .utf8) }
             catch { errorMessage = "导出失败：\(error.localizedDescription)" }
         }
@@ -112,7 +114,7 @@ extension AppState {
 
     func copySessionMarkdown(_ detail: SessionDetail) {
         let text = SessionMarkdownExporter.export(meta: detail.meta, summary: detail.summary, lines: detail.lines,
-                                                  answers: detail.answers, detected: detail.questions)
+                                                  answers: detail.answers, detected: detail.questions, notes: detail.notes)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }

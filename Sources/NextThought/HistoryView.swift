@@ -23,9 +23,8 @@ struct HistoryView: View {
     @State private var dateFilter: SessionDateFilter = .all
     @State private var lengthFilter: SessionLengthFilter = .all
     @State private var sortOrder: SessionSort = .newest
-    /// Sessions whose question/answer text contains the query. Filled in by the
-    /// debounced content search, because that needs a disk read per session.
-    @State private var contentMatch: Set<UUID> = []
+    /// First content hit per meeting, including a stable line anchor when the hit is transcript text.
+    @State private var contentSearchHit: [UUID: SessionProjectedText] = [:]
     /// Records whose question/answer data could not be read completely. They are
     /// included as possible results so search never turns corruption into a false miss.
     @State private var contentSearchIssues: [UUID: String] = [:]
@@ -56,7 +55,9 @@ struct HistoryView: View {
         var items = scoped
         if !trimmed.isEmpty {
             let terms = searchCache.terms(for: trimmed, state: state)
-            items = items.filter { matchesMetadata($0, terms) || contentMatch.contains($0.id) }
+            items = items.filter {
+                matchesMetadata($0, terms) || contentSearchHit[$0.id] != nil || contentSearchIssues[$0.id] != nil
+            }
         }
         return ordered(items)
     }
@@ -361,6 +362,11 @@ struct HistoryView: View {
 
     private func openFromOverview(_ id: UUID) {
         isCollectionOverview = false
+        if let hit = contentSearchHit[id], hit.lineID != nil {
+            state.pendingTranscriptNavigation = SessionTranscriptNavigationTarget(sessionID: id, hit: hit)
+        } else {
+            state.pendingTranscriptNavigation = nil
+        }
         state.historySelection = id
     }
 
@@ -734,7 +740,7 @@ struct HistoryView: View {
     }
 
     private var searchPlaceholder: String {
-        searchIsScopedToSeries ? "搜索此系列中的标题、问题或回答" : "搜索全部会议的标题、系列、问题或回答"
+        searchIsScopedToSeries ? "搜索此系列中的转写、纪要、译文、问题或回答" : "搜索全部会议的标题、转写、纪要、译文、问题或回答"
     }
 
     /// Clear search and filters while keeping the current series scope.
@@ -743,7 +749,7 @@ struct HistoryView: View {
         dateFilter = .all
         lengthFilter = .all
         sortOrder = .newest
-        contentMatch = []
+        contentSearchHit = [:]
         contentSearchIssues = [:]
         misheardMatch = [:]
     }
@@ -769,7 +775,7 @@ struct HistoryView: View {
 
     /// Re-runs the content search when the query or the filter scope changes.
     private var contentSearchKey: String {
-        "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")"
+        "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")|\(archive.notesRevision)"
     }
 
     /// Content search: the question and answer text lives in the session files,
@@ -779,13 +785,13 @@ struct HistoryView: View {
     private func runContentSearch() async {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            contentMatch = []
+            contentSearchHit = [:]
             contentSearchIssues = [:]
             misheardMatch = [:]
             isContentSearching = false
             return
         }
-        contentMatch = []
+        contentSearchHit = [:]
         contentSearchIssues = [:]
         misheardMatch = [:]
         isContentSearching = true
@@ -800,35 +806,39 @@ struct HistoryView: View {
         guard !Task.isCancelled else { return }
         // The typed text plus the spellings the glossary knows for it (misheard ones count as hits).
         let terms = searchCache.terms(for: trimmed, state: state)
-        var matches: Set<UUID> = []
+        var matches: [UUID: SessionProjectedText] = [:]
         var readIssues: [UUID: String] = [:]
         var misheard: [UUID: String] = [:]
-        for meta in scoped.prefix(200) {
+        for meta in scoped {
             if Task.isCancelled { return }
             guard let detail = await archive.detail(meta.id) else { continue }
             if let issue = detail.readIssues.first {
                 readIssues[meta.id] = issue.message
-                // The unread portion could contain this query, so keep the session
-                // discoverable and explain why the result is only a possible hit.
-                matches.insert(meta.id)
             }
-            let texts = detail.questions.map(\.text) + detail.answers.flatMap { [$0.question, $0.answer] }
-            var plainHit = false
-            var misheardForm: String?
-            for text in texts {
-                guard let hit = terms.appMatch(in: text) else { continue }
-                if !hit.isMisheard { plainHit = true; break }
-                if misheardForm == nil { misheardForm = hit.form }
+            let projection = SessionProjectionBuilder.build(meta: detail.meta, lines: detail.lines, answers: detail.answers,
+                                                            detected: detail.questions, summary: detail.summary, notes: detail.notes)
+            var selectedHit: SessionProjectedText?
+            var selectedMatch: GlossarySearchHit?
+            for item in projection.searchableText {
+                let match = terms.appMatch(in: item.text) ?? item.alternateText.flatMap { terms.appMatch(in: $0) }
+                guard let match else { continue }
+                if !match.isMisheard {
+                    selectedHit = item
+                    selectedMatch = match
+                    break
+                }
+                if selectedHit == nil {
+                    selectedHit = item
+                    selectedMatch = match
+                }
             }
-            if plainHit {
-                matches.insert(meta.id)
-            } else if let misheardForm {
-                matches.insert(meta.id)
-                misheard[meta.id] = misheardForm
+            if let selectedHit, let selectedMatch {
+                matches[meta.id] = selectedHit
+                if selectedMatch.isMisheard { misheard[meta.id] = selectedMatch.form }
             }
         }
         guard !Task.isCancelled else { return }
-        contentMatch = matches
+        contentSearchHit = matches
         contentSearchIssues = readIssues
         misheardMatch = misheard
         isContentSearching = false

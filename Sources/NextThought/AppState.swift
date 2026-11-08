@@ -7,6 +7,11 @@ import NextThoughtCore
 import Observation
 import UniformTypeIdentifiers
 
+struct SessionTranscriptNavigationTarget: Equatable {
+    let sessionID: UUID
+    let hit: SessionProjectedText
+}
+
 /// App-wide state. Uses the Observation framework: a view re-renders only when a
 /// property it actually read changes, so a partial transcript arriving 4×/s or an
 /// answer streaming 15×/s redraws only the few views that show them.
@@ -44,6 +49,8 @@ final class AppState {
     var isDataBusy = false
     /// Session selected in the history page (also set when jumping from a workspace review).
     var historySelection: UUID?
+    /// A history content hit to reveal after its meeting detail has loaded.
+    var pendingTranscriptNavigation: SessionTranscriptNavigationTarget?
     /// nil shows sessions of all workspaces.
     var historyWorkspaceFilter: UUID?
 

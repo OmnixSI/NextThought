@@ -7,6 +7,7 @@ import NextThoughtCore
 /// See 02-scenarios-and-flows.md, "每个功能放在哪".
 struct LiveSessionView: View {
     @Environment(AppState.self) private var state
+    @State private var showsTranscriptInCompactLayout = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -14,18 +15,29 @@ struct LiveSessionView: View {
             AutoEndBanner()
             GeometryReader { proxy in
                 if proxy.size.width >= 760 {
-                    HStack(spacing: 0) {
+                    HSplitView {
                         TranscriptColumn()
-                            .frame(width: max(320, proxy.size.width * 0.46))
-                        Rectangle().fill(Ink.hairline).frame(width: 1)
+                            .frame(minWidth: 320, idealWidth: proxy.size.width * 0.55, maxWidth: .infinity)
                         RightColumn()
+                            .frame(minWidth: 300, idealWidth: proxy.size.width * 0.45, maxWidth: .infinity)
                     }
                 } else {
                     VStack(spacing: 0) {
-                        RightColumn()
-                            .frame(height: proxy.size.height * 0.55)
-                        Rectangle().fill(Ink.hairline).frame(height: 1)
-                        TranscriptColumn()
+                        HStack {
+                            InkSegmented(items: [(value: true, title: "实时转写"), (value: false, title: "辅助")],
+                                         selection: $showsTranscriptInCompactLayout)
+                                .fixedSize()
+                                .accessibilityLabel("会中内容")
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, Space.s4)
+                        .frame(height: 44)
+                        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+                        if showsTranscriptInCompactLayout {
+                            TranscriptColumn()
+                        } else {
+                            RightColumn()
+                        }
                     }
                 }
             }
@@ -41,42 +53,144 @@ private struct LiveTopBar: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
+        GeometryReader { proxy in
+            Group {
+                if proxy.size.width < 1_080 {
+                    compactControls
+                } else {
+                    expandedControls
+                }
+            }
+            .padding(.horizontal, Space.s4)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(height: 52)
+        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+    }
+
+    private var expandedControls: some View {
         HStack(spacing: Space.s3) {
-            // Room for the window's traffic-light buttons (hidden title bar).
-            Color.clear.frame(width: 62, height: 1)
+            trafficLightSpace
             RecordingTimer()
             archiveSaveStatus
-            Text(verbatim: title)
-                .font(Typo.caption).foregroundStyle(Ink.secondary)
-                .lineLimit(1)
-            if state.isOfflineMeeting {
-                Label("现场", systemImage: "person.3").font(Typo.caption).foregroundStyle(Ink.secondary)
-                    .help("线下会议：只用麦克风")
-            }
+            titleBlock.frame(maxWidth: 190, alignment: .leading).layoutPriority(1)
+            if state.isOfflineMeeting { offlineMeetingLabel }
             Spacer(minLength: Space.s3)
-            InkSegmented(items: [(value: true, title: "自动回答"), (value: false, title: "只记录")],
-                         selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }))
-                .fixedSize()
-                .help("自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。")
+            answerModePicker
             LiveTranslationToggle()
             HStack(spacing: Space.s1) {
                 if state.insights.screenWatch { ScreenStatusIcon() }
                 if state.companionEnabled { PhoneStatusIcon() }
                 AnswerSettingsMenu()
-                Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
-                    .buttonStyle(GlassIconButtonStyle(size: 28))
-                    .help("回答浮窗 · \(state.shortcutLabel(.toggleTeleprompter))")
+                teleprompterButton
                 LiveWindowMenu()
             }
             if state.isRunning { PauseResumeButton() }
-            Button("结束") { Task { await state.stopSession() } }
-                .buttonStyle(SecondaryButtonStyle())
-                .disabled(state.isChangingSession)
-                .help("结束并整理纪要 · \(state.shortcutLabel(.toggleSession))")
+            endSessionButton
         }
-        .padding(.horizontal, Space.s4)
-        .frame(height: 52)
-        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+    }
+
+    private var compactControls: some View {
+        HStack(spacing: Space.s2) {
+            trafficLightSpace
+            RecordingTimer()
+            archiveSaveStatus
+            titleBlock.frame(maxWidth: 170, alignment: .leading).layoutPriority(1)
+            Spacer(minLength: 0)
+            compactMenu
+            if state.isRunning { PauseResumeButton() }
+            endSessionButton
+        }
+    }
+
+    private var trafficLightSpace: some View {
+        // Room for the window's traffic-light buttons (hidden title bar).
+        Color.clear.frame(width: 62, height: 1)
+    }
+
+    private var titleBlock: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(verbatim: title)
+                .font(Typo.label).foregroundStyle(Ink.ink)
+                .lineLimit(1).truncationMode(.middle)
+            if state.activeWorkspace.name != title {
+                Text(verbatim: state.activeWorkspace.name)
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .lineLimit(1).truncationMode(.middle)
+            }
+        }
+    }
+
+    private var answerModePicker: some View {
+        InkSegmented(items: [(value: true, title: "自动回答"), (value: false, title: "只记录")],
+                     selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }))
+            .fixedSize()
+            .help("自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。")
+    }
+
+    private var offlineMeetingLabel: some View {
+        Label("现场", systemImage: "person.3").font(Typo.caption).foregroundStyle(Ink.secondary)
+            .help("线下会议：只用麦克风")
+    }
+
+    private var teleprompterButton: some View {
+        Button { TeleprompterController.shared.toggle() } label: { Image(systemName: "rectangle.topthird.inset.filled") }
+            .buttonStyle(GlassIconButtonStyle(size: 28))
+            .help("回答浮窗 · \(state.shortcutLabel(.toggleTeleprompter))")
+    }
+
+    private var endSessionButton: some View {
+        Button("结束") { Task { await state.stopSession() } }
+            .buttonStyle(SecondaryButtonStyle())
+            .disabled(state.isChangingSession)
+            .help("结束并整理纪要 · \(state.shortcutLabel(.toggleSession))")
+    }
+
+    private var compactMenu: some View {
+        Menu {
+            Section("会中模式") {
+                Picker("会中模式", selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) })) {
+                    Text("自动回答").tag(true)
+                    Text("只记录").tag(false)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+            Section("工具") {
+                Button(state.liveTranslation.isEnabled ? "关闭同声传译" : "开启同声传译") {
+                    state.liveTranslation.setEnabled(!state.liveTranslation.isEnabled)
+                }
+                .disabled(!supportsLiveTranslation)
+                if state.isOfflineMeeting { offlineMeetingLabel }
+                if state.insights.screenWatch { Label("屏幕感知已开启", systemImage: "display") }
+                if state.companionEnabled { Label(state.companionConnectionText, systemImage: "iphone") }
+                Button { TeleprompterController.shared.toggle() } label: {
+                    Label("回答浮窗", systemImage: "rectangle.topthird.inset.filled")
+                }
+                Picker("会中窗口", selection: Binding(get: { state.liveWindow.mode }, set: { state.liveWindow.set($0) })) {
+                    ForEach(LiveWindowMode.allCases) { mode in
+                        Text(LocalizedStringKey(mode.title)).tag(mode)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+            Section("回答设置") { AnswerSettingsMenu() }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: 16, weight: .medium))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.button)
+        .buttonStyle(GlassIconButtonStyle(size: 28))
+        .menuIndicator(.hidden)
+        .accessibilityLabel("会中设置和工具")
+        .help("会中设置和工具")
+    }
+
+    private var supportsLiveTranslation: Bool {
+        if #available(macOS 15.0, *) { true } else { false }
     }
 
     private var title: String {
@@ -428,6 +542,7 @@ private struct TranscriptLine: View {
     /// Set once people are told apart (区分对方的每个人).
     var layout: SpeakerLayout? = nil
     @State private var hovering = false
+    @FocusState private var answerButtonFocused: Bool
 
     var body: some View {
         if entry.suspectedEcho == true {
@@ -451,14 +566,22 @@ private struct TranscriptLine: View {
                     if let translation = entry.translatedText, !translation.isEmpty {
                         Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                     }
-                    if hovering && entry.speaker != .me {
-                        Button { state.answerEntry(entry) } label: { Label("回答这句", systemImage: "bolt") }
-                            .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 6))
-                    }
                 }
                 .lineSpacing(5)
                 .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 Spacer(minLength: 0)
+                if entry.speaker != .me {
+                    Button { state.answerEntry(entry) } label: { Image(systemName: "bolt") }
+                        .buttonStyle(GlassIconButtonStyle(size: 24))
+                        .opacity(hovering || answerButtonFocused ? 1 : 0)
+                        .allowsHitTesting(hovering || answerButtonFocused)
+                        .focused($answerButtonFocused)
+                        .accessibilityLabel("回答这句")
+                        .help("回答这句")
+                } else {
+                    Color.clear.frame(width: 24, height: 24).accessibilityHidden(true)
+                }
             }
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
@@ -542,7 +665,9 @@ private struct TranscriptStatus: View {
 
     var body: some View {
         HStack(spacing: Space.s1) {
+            Text(state.isOfflineMeeting ? "现场麦克风" : state.audioSourceTitle(for: state.selectedTargetID))
             Text(engine)
+            if state.usesMicrophone && !state.isOfflineMeeting { Text("· 麦克风") }
             if state.echoDroppedCount > 0 && !state.isOfflineMeeting {
                 Text("· \(state.echoDroppedCount) 句回声已忽略")
             }
