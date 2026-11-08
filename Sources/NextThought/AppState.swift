@@ -257,8 +257,10 @@ final class AppState {
     var recordSessions = UserDefaults.standard.object(forKey: "recordSessions") as? Bool ?? true
     /// Ask the answer model for a summary and question list when a session ends.
     var autoSummarize = UserDefaults.standard.object(forKey: "autoSummarize") as? Bool ?? true
-    /// Add the review's lessons and improved answers to the workspace automatically.
-    var autoApplyLessons = UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
+    /// Automatically collect review suggestions into the pending queue. Applying them
+    /// always requires an explicit per-item decision.
+    var autoCollectKnowledgeCandidates = UserDefaults.standard.object(forKey: "autoCollectKnowledgeCandidates") as? Bool
+        ?? UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
     // MARK: Notes (会后纪要), separate from live answers
     /// "" picks automatically (see `notesEngine`).
     var notesModelID = UserDefaults.standard.string(forKey: "notesModelID") ?? ""
@@ -1300,7 +1302,8 @@ final class AppState {
         defaults.set(recordSessions, forKey: "recordSessions")
         defaults.set(autoSummarize, forKey: "autoSummarize")
         resumeRecoveredSummariesIfNeeded()
-        defaults.set(autoApplyLessons, forKey: "autoApplyLessons")
+        defaults.set(autoCollectKnowledgeCandidates, forKey: "autoCollectKnowledgeCandidates")
+        defaults.removeObject(forKey: "autoApplyLessons")
         defaults.set(autoBackup, forKey: "autoBackup")
         defaults.set(keepOnTop, forKey: "keepOnTop")
         defaults.set(appearance, forKey: "appearance")

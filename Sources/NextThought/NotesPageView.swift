@@ -47,6 +47,9 @@ struct MeetingPage: View {
                                 StructuredNotesPane(detail: detail, format: shownFormat(detail), onJump: { seconds in jump(to: seconds, in: detail) }) {
                                     NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
                                 }
+                                if let workspaceID = detail.meta.workspaceID {
+                                    KnowledgeReviewSection(workspaceID: workspaceID, sessionID: id, summary: detail.summary)
+                                }
                             case .transcript:
                                 CorrectedTranscript(detail: detail, highlighted: jumpLine)
                             case .answers:
@@ -247,26 +250,17 @@ struct MeetingPage: View {
     }
 
     @ViewBuilder private var primaryAction: some View {
-        if let detail, let summary = detail.summary, isReview, summary.appliedToWorkspace != true,
-           let bank = summary.bank, !bank.isEmpty, detail.meta.workspaceID != nil {
-            Button("存进题库 · \(bank.count) 题") {
-                state.applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID)
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .help("待改进的题和更好的答法存进这个系列的题库，下一场自动带入")
-        } else {
-            Button {
-                if let detail { copyShown(detail) }
-                copied = true
-                Task { try? await Task.sleep(for: .seconds(2)); copied = false }
-            } label: {
-                Label(copied ? String(localized: "已复制") : (detail.map { copiedFormat($0).copyTitle } ?? String(localized: "复制纪要")),
-                      systemImage: copied ? "checkmark" : "doc.on.doc")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(detail == nil)
-            .accessibilityHint("复制会后纪要，不包含转写内容")
+        Button {
+            if let detail { copyShown(detail) }
+            copied = true
+            Task { try? await Task.sleep(for: .seconds(2)); copied = false }
+        } label: {
+            Label(copied ? String(localized: "已复制") : (detail.map { copiedFormat($0).copyTitle } ?? String(localized: "复制纪要")),
+                  systemImage: copied ? "checkmark" : "doc.on.doc")
         }
+        .buttonStyle(PrimaryButtonStyle())
+        .disabled(detail == nil)
+        .accessibilityHint("复制会后纪要，不包含转写内容")
     }
 
     // MARK: Title

@@ -1126,9 +1126,9 @@ private struct RecordingSettings: View {
             Note("转录边说边保存在本机，不保存原始音频。生成摘要与复盘会把本次转录发送给当前回答服务并使用其额度。", presentation: .inline)
             AdvancedOptions("recording-lessons") {
                 // 会后自动整理 lives in 纪要; this one only decides whether lessons flow back into the series.
-                Toggle("把复盘得到的经验和改进回答自动加入场景的经验库与题库（自我迭代）", isOn: $state.autoApplyLessons)
+                Toggle("自动收集经验与答法候选（逐项确认后才加入系列）", isOn: $state.autoCollectKnowledgeCandidates)
                     .disabled(!state.autoSummarize)
-                    .onChange(of: state.autoApplyLessons) { _, _ in state.updateSettings() }
+                    .onChange(of: state.autoCollectKnowledgeCandidates) { _, _ in state.updateSettings() }
                 if !state.autoSummarize { Note("请先开启会后自动整理纪要。") }
             }
         }
