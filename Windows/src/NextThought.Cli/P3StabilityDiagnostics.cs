@@ -9,14 +9,14 @@ internal static class P3StabilityDiagnostics
 {
     // Diagnostic-only bounded retries simulate explicitly retrying a failed request.
     // This does not change the product's request policy.
-    private sealed class RetryingProbeClient(IAnswerClient inner, ConcurrentQueue<string> retries) : IAnswerClient
+    private sealed class RetryingProbeClient(IAnswerClient inner, ConcurrentQueue<string> retries, int attempts) : IAnswerClient
     {
         public async Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90)
         {
             for (var attempt = 0; ; attempt++)
             {
                 try { return await inner.AnswerAsync(options, system, user, update, ct, timeoutSeconds); }
-                catch (Exception ex) when (attempt < 2 && !ct.IsCancellationRequested && ex is HttpRequestException or IOException or TimeoutException)
+                catch (Exception ex) when (attempt + 1 < attempts && !ct.IsCancellationRequested && ex is HttpRequestException or IOException or TimeoutException)
                 {
                     var detail = ex.GetType().Name + ": " + ex.GetBaseException().Message;
                     if (options.ApiKey.Length > 0) detail = detail.Replace(options.ApiKey, "[key]");
@@ -29,6 +29,9 @@ internal static class P3StabilityDiagnostics
     {
         var seconds = int.Parse(option("--seconds") ?? "3600", CultureInfo.InvariantCulture);
         if (seconds is < 60 or > 7200) throw new ArgumentOutOfRangeException("--seconds");
+        var label = option("--label") ?? "P3";
+        var attempts = int.Parse(option("--network-attempts") ?? "3", CultureInfo.InvariantCulture);
+        if (attempts is < 1 or > 3) throw new ArgumentOutOfRangeException("--network-attempts");
         var output = Path.GetFullPath(option("--json")!); Directory.CreateDirectory(Path.GetDirectoryName(output)!);
         var paths = new AppPaths(option("--session-root")!); var store = new SessionStore(paths);
         var fixture = JsonSerializer.Deserialize<RetrievalBenchmark>(await File.ReadAllTextAsync(option("--benchmark")!, ct), JsonDefaults.Options)!;
@@ -36,14 +39,15 @@ internal static class P3StabilityDiagnostics
         var configStore = new SettingsStore(components); var config = configStore.Load();
         var answerOptions = new AnswerOptions(config.BaseUrl, config.Model, configStore.ReadApiKey(), config.ReasoningEffort, 800);
         var retries = new ConcurrentQueue<string>();
-        IAnswerClient client = new RetryingProbeClient(new ChatCompletionClient(), retries); using var translator = new MeetingTranslator(client, answerOptions);
+        IAnswerClient client = new RetryingProbeClient(new ChatCompletionClient(), retries, attempts); using var translator = new MeetingTranslator(client, answerOptions);
         using var retrieval = new RetrievalService(paths, new EmbeddingModelStore(components));
         using var voice = new MeetingVoiceTagger(components, AudioSource.System);
         await retrieval.SearchAsync("谁负责确认曙光桥能安全使用？", true, ct, fixture.Documents);
-        var meta = new SessionMeta { Title = $"P3 · {seconds / 60} 分钟受控双路稳定性验收", AudioSource = "controlled-public-pcm-replay", Recognizer = "xasr480+refine", AnswerModel = config.Model };
+        var meta = new SessionMeta { Title = $"{label} · {seconds / 60} 分钟受控双路稳定性验收", AudioSource = "controlled-public-pcm-replay", Recognizer = "xasr480+refine", AnswerModel = config.Model };
         await store.CreateAsync(meta, ct);
         var errors = new ConcurrentQueue<string>(); var tasks = new ConcurrentBag<Task>();
         var rows = new ConcurrentQueue<TranscriptLine>(); int remote = 0, voices = 0, translations = 0, queries = 0;
+        var finalLags = new ConcurrentQueue<double>(); int maxQueuedFrames = 0, maxPendingTasks = 0;
         bool retrievalCanceled = false, translationCanceled = false, retrievalRecovered = false, translationRecovered = false;
         bool ocrPassed = option("--ocr-image") is null; double? ocrSeconds = null;
         async Task Guard(Func<Task> work, string name)
@@ -104,6 +108,7 @@ internal static class P3StabilityDiagnostics
         engine.Updated += update =>
         {
             if (!update.IsFinal) return;
+            finalLags.Enqueue(Math.Max(0, (DateTimeOffset.UtcNow - update.End).TotalSeconds));
             var line = new TranscriptLine { Id = update.Id, Date = update.Start, StartedAt = update.Start, EndedAt = update.End, Text = update.Text,
                 Speaker = update.Source == AudioSource.System ? "remote" : "me" };
             rows.Enqueue(line); tasks.Add(Guard(() => SaveLine(line), "line"));
@@ -125,6 +130,8 @@ internal static class P3StabilityDiagnostics
                     voice.Add(system); engine.Accept(system);
                     engine.Accept(new(AudioSource.Microphone, MeetingReplayDiagnostics.Slice(waves[1], position - 80000), step * 1600L, origin)); step++;
                 }
+                maxQueuedFrames = Math.Max(maxQueuedFrames, engine.QueuedFrames);
+                maxPendingTasks = Math.Max(maxPendingTasks, tasks.Count(t => !t.IsCompleted));
                 if (!firstAnswer && step >= 200) { firstAnswer = true; tasks.Add(Guard(Answer, "answer-1")); }
                 if (!secondAnswer && step >= seconds * 7.5) { secondAnswer = true; tasks.Add(Guard(Answer, "answer-2")); }
                 if (!cancelR && step >= seconds * 2.5) { cancelR = true; tasks.Add(Guard(CancelRetrieval, "retrieval-cancel")); }
@@ -142,9 +149,10 @@ internal static class P3StabilityDiagnostics
                     minute = step / 600; tasks.Add(Guard(Search, "retrieval")); process.Refresh();
                     var time = watch.Elapsed.TotalSeconds; memory.Add((time, process.PrivateMemorySize64));
                     var sample = new { seconds = time, framesPerChannel = step, lines = rows.Count, voices, translations, queries,
-                        pendingTasks = tasks.Count(t => !t.IsCompleted), workingSetBytes = process.WorkingSet64, privateBytes = process.PrivateMemorySize64, cpuSeconds = process.TotalProcessorTime.TotalSeconds, errors = errors.Count };
+                        pendingTasks = tasks.Count(t => !t.IsCompleted), queuedFrames = engine.QueuedFrames, maxQueuedFrames, maxPendingTasks,
+                        finalLagP95Seconds = Percentile(finalLags, .95), workingSetBytes = process.WorkingSet64, privateBytes = process.PrivateMemorySize64, cpuSeconds = process.TotalProcessorTime.TotalSeconds, errors = errors.Count };
                     samples.Add(sample); await File.WriteAllTextAsync(Path.Combine(paths.Root, "heartbeat.json"), JsonSerializer.Serialize(sample, JsonDefaults.Options), ct);
-                    Console.WriteLine($"P3 {time:F0}/{seconds}s | lines={rows.Count} voices={voices} translations={translations} queries={queries} RAM={process.WorkingSet64 / 1048576}MiB errors={errors.Count}");
+                    Console.WriteLine($"{label} {time:F0}/{seconds}s | lines={rows.Count} voices={voices} translations={translations} queries={queries} queue={engine.QueuedFrames} RAM={process.WorkingSet64 / 1048576}MiB errors={errors.Count}");
                 }
                 if (!errors.IsEmpty) break;
             }
@@ -169,13 +177,23 @@ internal static class P3StabilityDiagnostics
         var passed = step == seconds * 10 && errors.IsEmpty && timeline && data.Meta.TranscriptCount == data.Lines.Count
             && data.Lines.Select(l => l.Id).Distinct().Count() == data.Lines.Count && voices > 0 && translations > 0 && queries > 0
             && retrievalCanceled && retrievalRecovered && translationCanceled && translationRecovered && ocrPassed && summaryPassed && backupPassed
-            && data.Answers.Count >= 2 && (seconds < 600 || growth <= 256);
+            && data.Answers.Count >= 2 && (seconds < 600 || growth <= 256) && maxQueuedFrames < 100 && engine.QueuedFrames == 0
+            && Percentile(finalLags, .95) <= 5;
         var report = new { testedAt = DateTimeOffset.Now, passed, kind = "real-time public PCM replay; not hardware capture or a long desktop session", seconds,
             elapsedSeconds = watch.Elapsed.TotalSeconds, framesPerChannel = step, lines = data.Lines.Count, voices, translations, queries, answers = data.Answers.Count,
             timeline, retrievalCanceled, retrievalRecovered, translationCanceled, translationRecovered, ocrRequested = option("--ocr-image") is not null, ocrPassed, ocrSeconds,
             summaryPassed, backupPassed, parentPrivateGrowthAfterWarmupMiB = growth, memoryScope = "Parent process; separate OCR worker is not included",
-            retryPolicy = "Diagnostic-only: at most 3 attempts; simulates explicit retry, not product auto-retry", transientNetworkRetries = retries.ToArray(), meta.Id, failures = errors.ToArray(), samples };
+            label, maxQueuedFrames, maxPendingTasks, drainedQueuedFrames = engine.QueuedFrames,
+            finalLagP50Seconds = Percentile(finalLags, .5), finalLagP95Seconds = Percentile(finalLags, .95), finalLagMaxSeconds = Percentile(finalLags, 1),
+            latencyScope = "Final event delivery minus utterance end timestamp; includes silence endpointing and refinement, excludes remote translation latency",
+            logicalProcessors = Environment.ProcessorCount,
+            retryPolicy = $"Diagnostic-only: at most {attempts} attempts; not product auto-retry", transientNetworkRetries = retries.ToArray(), meta.Id, failures = errors.ToArray(), samples };
         await File.WriteAllTextAsync(output, JsonSerializer.Serialize(report, JsonDefaults.Options), ct);
-        Console.WriteLine("P3 stability: " + (passed ? "PASS" : "FAIL")); return passed ? 0 : 2;
+        Console.WriteLine(label + " stability: " + (passed ? "PASS" : "FAIL")); return passed ? 0 : 2;
+    }
+    private static double Percentile(IEnumerable<double> values, double quantile)
+    {
+        var sorted = values.Order().ToArray();
+        return sorted.Length == 0 ? 0 : sorted[(int)Math.Ceiling((sorted.Length - 1) * quantile)];
     }
 }

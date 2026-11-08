@@ -139,6 +139,7 @@ public sealed class LiveSpeechEngine : IAsyncDisposable
     private readonly Channel<AudioFrame> channel = Channel.CreateBounded<AudioFrame>(new BoundedChannelOptions(100) { SingleReader = true, SingleWriter = true, FullMode = BoundedChannelFullMode.Wait });
     private readonly SpeechRecognizerSession session;
     private readonly Task processing;
+    public int QueuedFrames => channel.Reader.Count;
     public event Action<TranscriptUpdate>? Updated;
     public event Action<string>? Failed;
     public event Action<string>? Warning;
