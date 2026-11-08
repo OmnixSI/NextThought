@@ -14,6 +14,10 @@ try
     var paths = new AppPaths(Option("--data-root")); var models = new ModelStore(paths);
     switch (arguments.FirstOrDefault())
     {
+        case "doctor": return await DoctorDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "deployment-verify":
+        case "deployment-activate":
+        case "deployment-rollback": return await DeploymentDiagnostics.RunAsync(arguments[0], Option, cancellation.Token);
         case "hotspot-status": return HotspotStatusDiagnostics.Run();
         case "p3-stability-test": return await P3StabilityDiagnostics.RunAsync(paths, Option, cancellation.Token);
         case "companion-network-test": return await CompanionNetworkDiagnostics.RunAsync(Option, cancellation.Token);

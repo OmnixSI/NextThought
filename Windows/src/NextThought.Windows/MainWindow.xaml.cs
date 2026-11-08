@@ -43,12 +43,16 @@ public partial class MainWindow : Window
     private bool ready, busy, recording, stopping, answering, summarizing, closing, allowClose, modelReady;
     private long epoch, requestEpoch, selectionEpoch;
     private double systemLevel, microphoneLevel;
+    internal bool ReadyForDiagnostics => ready;
+    internal bool RecordingForDiagnostics => recording;
+    internal string? StartupError { get; private set; }
     private sealed record ModelChoice(string Id, string Title) { public override string ToString() => Title; }
     private sealed record TranscriptRow(string Label, string Text, string Translation = "");
 
     public MainWindow()
     {
-        InitializeComponent(); settingsStore = new(paths); sessions = new(paths); models = new(paths); retrieval = new(paths);
+        InitializeComponent(); VersionText.Text = "WINDOWS 预览  " + typeof(MainWindow).Assembly.GetName().Version!.ToString(3);
+        settingsStore = new(paths); sessions = new(paths); models = new(paths); retrieval = new(paths);
         TranscriptList.ItemsSource = transcript;
         LocalModelBox.ItemsSource = new[]{new ModelChoice("xasr480", "X-ASR 中英 · 480 ms（推荐）"), new ModelChoice("xasr160", "X-ASR 中英 · 160 ms")};
         candidateTimer.Tick += (_, _) =>
@@ -85,7 +89,7 @@ public partial class MainWindow : Window
             SetStatus(recovered.Count > 0 ? $"已处理 {recovered.Count} 场中断会议；可在历史中继续查看或整理纪要。" :
                 modelReady ? "语音已就绪。可以开始记录，或先导入 WAV 验证。" : "先到设置准备语音组件；未连接回答服务时也可以只记录。");
         }
-        catch (Exception ex) { ready = true; SetStatus(ex.Message, true); UpdateState(); }
+        catch (Exception ex) { StartupError = ex.Message; ready = true; SetStatus(ex.Message, true); UpdateState(); }
     }
     private AppSettings ReadSettings() => new()
     {
@@ -380,7 +384,7 @@ public partial class MainWindow : Window
             await SaveSettingsAsync(); var settings = ReadSettings(); CancelRequest(); ResetDisplay();
             var meta = NewMeta(settings, Path.GetFileNameWithoutExtension(picker.FileName)); meta.AudioSource = "imported-wav";
             await sessions.CreateAsync(meta); using var lease = sessions.AcquireLease(meta.Id); currentSession = meta; var generation = ++epoch;
-            PageTitle.Text = meta.Title; PageSubtitle.Text = "正在本机读取录音…"; SetStatus("正在加载模型并转写 WAV…");
+            MeetingTitleBox.Text = meta.Title; PageTitle.Text = meta.Title; PageSubtitle.Text = "正在本机读取录音…"; SetStatus("正在加载模型并转写 WAV…");
             try
             {
                 if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(paths, AudioSource.System), ct);
