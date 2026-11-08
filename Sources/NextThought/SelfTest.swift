@@ -640,7 +640,13 @@ enum SelfTest {
         let token = AppEnvironment.values["GITHUB_TOKEN"].flatMap { $0.isEmpty ? nil : $0 }
         let channel = UpdateChannel(rawValue: options["channel"] ?? "stable") ?? .stable
         let staged = try await updater.stageForSelfTest(channel: channel, token: token)
-        try expect(FileManager.default.fileExists(atPath: staged.app.appendingPathComponent("Contents/MacOS/NextThought").path), "staged app has no executable")
+        guard let executableName = Bundle(url: staged.app)?.object(forInfoDictionaryKey: "CFBundleExecutable") as? String else {
+            throw Failure("staged app has no executable declaration")
+        }
+        let executableURL = staged.app.appendingPathComponent("Contents/MacOS", isDirectory: true)
+            .appendingPathComponent(executableName)
+        try expect(FileManager.default.isExecutableFile(atPath: executableURL.path),
+                   "staged app executable \(executableName) is missing or not executable")
 
         // Rehearse the swap on a scratch copy (a dead pid, no relaunch).
         let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("selftest-swap-\(UUID().uuidString)", isDirectory: true)
