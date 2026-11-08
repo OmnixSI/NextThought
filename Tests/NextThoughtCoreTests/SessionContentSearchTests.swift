@@ -22,6 +22,50 @@ struct SessionContentSearchTests {
         #expect(results[1].hit.excerpt.contains("meeting-501"))
     }
 
+    @Test func liveSessionUpdatesDoNotChangeTheArchiveSearchStamp() {
+        let activeID = UUID()
+        var active = SessionMeta(id: activeID, startedAt: Date(timeIntervalSince1970: 1_800_000_000), mode: .meeting)
+        let before = SessionSearchArchiveStamp(sessions: [active], activeSessionID: activeID, searchableContentRevision: 0)
+
+        active.transcriptCount += 1
+        active.questionCount += 1
+        active.answerCount += 1
+        let whileRecording = SessionSearchArchiveStamp(sessions: [active], activeSessionID: activeID, searchableContentRevision: 0)
+        let afterFinalizing = SessionSearchArchiveStamp(sessions: [active], activeSessionID: nil, searchableContentRevision: 0)
+
+        #expect(whileRecording == before)
+        #expect(afterFinalizing != whileRecording)
+    }
+
+    @Test func savedArchivedContentChangesTheArchiveSearchStamp() {
+        let session = SessionMeta(startedAt: Date(timeIntervalSince1970: 1_800_000_000), endedAt: Date(timeIntervalSince1970: 1_800_000_100), mode: .meeting)
+        let before = SessionSearchArchiveStamp(sessions: [session], activeSessionID: nil, searchableContentRevision: 0)
+        var updated = session
+        updated.summaryState = .ready
+        let metadataChange = SessionSearchArchiveStamp(sessions: [updated], activeSessionID: nil, searchableContentRevision: 0)
+        let savedContentChange = SessionSearchArchiveStamp(sessions: [session], activeSessionID: nil, searchableContentRevision: 1)
+
+        #expect(metadataChange != before)
+        #expect(savedContentChange != before)
+    }
+
+    @Test func finalizedSessionStaysOutOfSearchUntilFinalTranslationsDrain() {
+        let sessionID = UUID()
+        let active = SessionMeta(id: sessionID, startedAt: Date(timeIntervalSince1970: 1_800_000_000), mode: .meeting)
+        let beforeStop = SessionSearchArchiveStamp(sessions: [active], activeSessionID: sessionID,
+                                                   searchableContentRevision: 0)
+        var finalized = active
+        finalized.endedAt = Date(timeIntervalSince1970: 1_800_000_100)
+        let whileTranslationsDrain = SessionSearchArchiveStamp(sessions: [finalized], activeSessionID: nil,
+                                                               pendingTranslationSessionIDs: [sessionID],
+                                                               searchableContentRevision: 0)
+        let afterDrain = SessionSearchArchiveStamp(sessions: [finalized], activeSessionID: nil,
+                                                   searchableContentRevision: 0)
+
+        #expect(whileTranslationsDrain == beforeStop)
+        #expect(afterDrain != whileTranslationsDrain)
+    }
+
     @Test func searchesOriginalCorrectedAndTranslatedTranscriptAsDistinctSources() {
         let start = Date(timeIntervalSince1970: 1_800_000_000)
         let line = SessionTranscriptLine(date: start.addingTimeInterval(81), speaker: .remote, text: "缓存鸡穿", translatedText: "cache penetration")

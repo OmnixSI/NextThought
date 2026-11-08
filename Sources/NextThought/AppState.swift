@@ -779,7 +779,7 @@ final class AppState {
         _ = await audio.stopCapture()
         _ = microphone.stopCapture()
         await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
-        liveTranslation.finishMeeting()
+        liveTranslation.finishMeeting(sessionID: activeArchiveID)
         audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         audioEpoch = UUID()
         liveTranscriber = nil

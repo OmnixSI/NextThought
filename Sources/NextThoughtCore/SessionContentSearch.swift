@@ -61,6 +61,21 @@ public struct SessionSearchResult: Sendable, Equatable {
     }
 }
 
+/// The archive portion of a history-search task identity. The active meeting is excluded because
+/// its counts and transcript change while recording; it becomes searchable when it is finalized.
+public struct SessionSearchArchiveStamp: Sendable, Equatable {
+    private let searchableContentRevision: Int
+    private let archivedSessions: [SessionMeta]
+
+    public init(sessions: [SessionMeta], activeSessionID: UUID?,
+                pendingTranslationSessionIDs: Set<UUID> = [], searchableContentRevision: Int) {
+        self.searchableContentRevision = searchableContentRevision
+        self.archivedSessions = sessions.filter {
+            $0.id != activeSessionID && !pendingTranslationSessionIDs.contains($0.id)
+        }
+    }
+}
+
 /// Stateless lexical matching for archived meeting text. It deliberately does not impose a
 /// corpus-size limit; the caller can load and present documents in cancellable batches.
 public enum SessionContentSearch {

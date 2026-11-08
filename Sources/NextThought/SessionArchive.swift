@@ -51,11 +51,18 @@ final class SessionArchive {
     var notesSteps: [UUID: NotesStep] = [:]
     /// Bumped when notes change on disk, so open pages reload them.
     var notesRevision = 0
+    /// Bumped only when searchable, finalized content is saved. Live recording updates do not
+    /// invalidate a full history search.
+    private(set) var searchableContentRevision = 0
+    /// Newly finalized meetings stay out of history search until final translations have drained.
+    private(set) var pendingTranslationSearchSessionIDs: Set<UUID> = []
 
     private let io = DispatchQueue(label: "app.nextthought.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
     @ObservationIgnored private var activeAnswerIDs: Set<UUID> = []
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
+    @ObservationIgnored private var pendingSearchableTranslationSessionIDs: Set<UUID> = []
+    @ObservationIgnored private var sessionLineWriteGroups: [UUID: DispatchGroup] = [:]
 
     static var root: URL { AppPaths.sessions }
 
@@ -112,6 +119,7 @@ final class SessionArchive {
             }.value
             sessions = result.metas.filter { $0.id != activeID } + (activeMeta.map { [$0] } ?? [])
             sessions.sort { $0.startedAt > $1.startedAt }
+            searchableContentRevision &+= 1
             if !result.recovered.isEmpty { onRecoveredSummaries(result.recovered) }
         }
     }
@@ -234,10 +242,31 @@ final class SessionArchive {
     func appendTranslation(sessionID: UUID, lineID: UUID, text: String) {
         guard sessionID == activeID || sessions.contains(where: { $0.id == sessionID }) else { return }
         appendLine(SessionTranscriptTranslation(id: lineID, text: text), file: "translations.jsonl", session: sessionID)
-        Task { [weak self] in
-            await self?.flush()
-            self?.notesRevision &+= 1
+        if pendingTranslationSearchSessionIDs.contains(sessionID) {
+            pendingSearchableTranslationSessionIDs.insert(sessionID)
+            return
         }
+        let wasArchivedWhenAppended = sessionID != activeID
+        Task { [weak self] in
+            guard let self else { return }
+            await self.flush()
+            self.notesRevision &+= 1
+            if wasArchivedWhenAppended { self.searchableContentRevision &+= 1 }
+        }
+    }
+
+    func beginFinalTranslationDrain(for sessionID: UUID) {
+        pendingTranslationSearchSessionIDs.insert(sessionID)
+    }
+
+    /// Called after both translation lanes have processed every final job queued for this session.
+    /// One session-scoped flush publishes the complete transcript state to history search.
+    func finishFinalTranslationDrain(for sessionID: UUID) async {
+        await flush(sessionID: sessionID)
+        if pendingSearchableTranslationSessionIDs.remove(sessionID) != nil {
+            notesRevision &+= 1
+        }
+        pendingTranslationSearchSessionIDs.remove(sessionID)
     }
 
     /// Copies a screenshot into the session folder and returns its path
@@ -297,13 +326,28 @@ final class SessionArchive {
         let folder = folder(id)
         io.async { Self.write(summary, to: folder.appendingPathComponent("summary.json")) }
         update(meta)
+        Task { [weak self] in
+            guard let self else { return }
+            await self.flush()
+            if id != self.activeID { self.searchableContentRevision &+= 1 }
+        }
     }
 
     func saveNotes(_ notes: StructuredNotes, for id: UUID) {
-        if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return }
+        if demoDetails[id] != nil {
+            demoDetails[id]?.notes = notes
+            notesRevision += 1
+            if id != activeID { searchableContentRevision &+= 1 }
+            return
+        }
         let folder = folder(id)
         io.async { Self.write(notes, to: folder.appendingPathComponent("notes.json")) }
         notesRevision += 1
+        Task { [weak self] in
+            guard let self else { return }
+            await self.flush()
+            if id != self.activeID { self.searchableContentRevision &+= 1 }
+        }
     }
 
     /// Edits saved notes in place (undoing a correction).
@@ -395,6 +439,17 @@ final class SessionArchive {
         await withCheckedContinuation { continuation in io.async { continuation.resume() } }
     }
 
+    /// Waits for this session's transcript-line writes without waiting for other sessions.
+    func flush(sessionID: UUID) async {
+        guard let group = sessionLineWriteGroups[sessionID] else { return }
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                group.wait()
+                continuation.resume()
+            }
+        }
+    }
+
     // MARK: Private
 
     private func publishActiveCounts() {
@@ -428,7 +483,11 @@ final class SessionArchive {
     func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) {
         let url = folder(id).appendingPathComponent(file)
         guard let data = try? JSONLines.line(value) else { return }
+        let group = sessionLineWriteGroups[id] ?? DispatchGroup()
+        sessionLineWriteGroups[id] = group
+        group.enter()
         io.async {
+            defer { group.leave() }
             if !FileManager.default.fileExists(atPath: url.path) {
                 try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
                 FileManager.default.createFile(atPath: url.path, contents: nil)

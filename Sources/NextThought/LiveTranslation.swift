@@ -75,6 +75,7 @@ struct LiveTranslationJob: Sendable {
 private enum LiveTranslationEvent: Sendable {
     case prepare
     case job(LiveTranslationJob)
+    case drain(UUID)
 }
 
 /// Coordinates two local Translation sessions. Audio channels stay independent
@@ -96,6 +97,7 @@ final class LiveTranslationCoordinator {
     @ObservationIgnored private var partialRevisions: [CaptureSource: LiveTranslationRevisionGate] = [:]
     @ObservationIgnored private var readyDirections: Set<TranslationDirection> = []
     @ObservationIgnored private var meetingID = UUID()
+    @ObservationIgnored private var drainedTranslationDirections: [UUID: Set<TranslationDirection>] = [:]
 
     init() {
         for direction in TranslationDirection.allCases {
@@ -130,9 +132,20 @@ final class LiveTranslationCoordinator {
         if isEnabled { status = readyDirections.count == TranslationDirection.allCases.count ? "自动识别 · 中英互译" : "正在准备中英互译…" }
     }
 
-    func finishMeeting() {
+    func finishMeeting(sessionID: UUID?) {
         clearPartial(.system)
         clearPartial(.microphone)
+        if let sessionID {
+            AppState.shared.archive.beginFinalTranslationDrain(for: sessionID)
+            if isEnabled {
+                drainedTranslationDirections[sessionID] = []
+                for direction in TranslationDirection.allCases {
+                    continuations[direction]?.yield(.drain(sessionID))
+                }
+            } else {
+                Task { await AppState.shared.archive.finishFinalTranslationDrain(for: sessionID) }
+            }
+        }
         if isEnabled, readyDirections.count == TranslationDirection.allCases.count { status = "自动识别 · 中英互译" }
     }
 
@@ -254,8 +267,21 @@ final class LiveTranslationCoordinator {
                 } catch {
                     status = "翻译暂不可用：\(error.localizedDescription)"
                 }
+            case let .drain(sessionID):
+                markTranslationLaneDrained(sessionID, direction: direction)
             }
         }
+    }
+
+    private func markTranslationLaneDrained(_ sessionID: UUID, direction: TranslationDirection) {
+        guard var drained = drainedTranslationDirections[sessionID] else { return }
+        drained.insert(direction)
+        guard drained.count == TranslationDirection.allCases.count else {
+            drainedTranslationDirections[sessionID] = drained
+            return
+        }
+        drainedTranslationDirections[sessionID] = nil
+        Task { await AppState.shared.archive.finishFinalTranslationDrain(for: sessionID) }
     }
 
     private func isLatestPartial(_ job: LiveTranslationJob) -> Bool {

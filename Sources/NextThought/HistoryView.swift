@@ -2,6 +2,16 @@ import AppKit
 import SwiftUI
 import NextThoughtCore
 
+private struct HistoryContentSearchKey: Equatable {
+    let query: String
+    let dateFilter: String
+    let lengthFilter: String
+    let workspaceFilterID: UUID?
+    let overviewFolderKey: String?
+    let glossaryRevision: String
+    let archive: SessionSearchArchiveStamp
+}
+
 /// 所有会议: the list on the left, the selected meeting's notes on the right (stacked
 /// navigation on narrow windows).
 struct HistoryView: View {
@@ -772,14 +782,17 @@ struct HistoryView: View {
     }
 
     /// Re-runs the content search when the query or the filter scope changes.
-    private var contentSearchKey: String {
-        let archiveContent = archive.sessions.map { meta in
-            let title = meta.title ?? ""
-            let workspaceID = meta.workspaceID?.uuidString ?? ""
-            let workspace = meta.workspaceName ?? meta.formerWorkspaceName ?? ""
-            return "\(meta.id.uuidString):\(meta.startedAt.timeIntervalSince1970):\(meta.duration):\(meta.transcriptCount):\(meta.questionCount):\(meta.answerCount):\(meta.summaryState.rawValue):\(workspaceID):\(workspace):\(title)"
-        }.joined(separator: ",")
-        return "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")|\(archive.notesRevision)|\(state.glossaryRevision)|\(archiveContent)"
+    private var contentSearchKey: HistoryContentSearchKey {
+        HistoryContentSearchKey(query: query,
+                                dateFilter: dateFilter.rawValue,
+                                lengthFilter: lengthFilter.rawValue,
+                                workspaceFilterID: state.historyWorkspaceFilter,
+                                overviewFolderKey: overviewFolderKey,
+                                glossaryRevision: state.glossaryRevision,
+                                archive: SessionSearchArchiveStamp(sessions: archive.sessions,
+                                                                  activeSessionID: archive.activeID,
+                                                                  pendingTranslationSessionIDs: archive.pendingTranslationSearchSessionIDs,
+                                                                  searchableContentRevision: archive.searchableContentRevision))
     }
 
     /// Archived corrections and aliases belong to the session's own series. An unclassified or
@@ -809,7 +822,11 @@ struct HistoryView: View {
         contentHits = [:]
         misheardMatch = [:]
         isContentSearching = true
-        let sessionsToSearch = scoped
+        // Search finalized records only. The active session joins the archive automatically when
+        // it ends, at which point the task identity changes and this scan runs again.
+        let sessionsToSearch = scoped.filter {
+            $0.id != archive.activeID && !archive.pendingTranslationSearchSessionIDs.contains($0.id)
+        }
         searchProgress = 0
         searchTotal = sessionsToSearch.count
         // A cancelled old run must not clear progress owned by the newer query.
