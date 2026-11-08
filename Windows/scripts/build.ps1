@@ -7,6 +7,7 @@ if (-not (Test-Path -LiteralPath $dotnet)) {
 }
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
+$sourceRevision = (& git -C $projectRoot rev-parse HEAD).Trim()
 if ($Installer -and -not $Publish) { throw 'Use -Publish -Installer together.' }
 if ($Unsigned -and $CertificateThumbprint) { throw 'Choose unsigned preview or a real signing certificate.' }
 if ($Installer -and -not $Unsigned -and -not $CertificateThumbprint) { throw 'Installer requires a real certificate or explicit -Unsigned for validation.' }
@@ -57,6 +58,7 @@ try {
             & (Join-Path $PSScriptRoot 'sign_release.ps1') -Directory $output -CertificateThumbprint $CertificateThumbprint -SignToolPath $SignToolPath
             $signing = 'authenticode:' + $CertificateThumbprint.ToLowerInvariant()
         }
+        if ((& git -C $projectRoot rev-parse HEAD).Trim() -ne $sourceRevision) { throw 'Source commit changed during the build; rerun to keep the release traceable.' }
         $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
         if ($pythonCommand -and $pythonCommand.Source -notlike '*WindowsApps*') {
             & $pythonCommand.Source scripts/write_release_manifest.py --directory $output --version $version --signing $signing
