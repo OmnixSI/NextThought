@@ -1,0 +1,28 @@
+NextThought Windows Preview
+Upstream snapshot: OmnixSI/NextThought af60a4def90c750872197f81ac8b91c726d05b63.
+The upstream application has no top-level open-source license. This local port does not change its licensing.
+
+Sherpa-ONNX 1.13.8: Apache-2.0, https://github.com/k2-fsa/sherpa-onnx
+ONNX Runtime distributed with Sherpa-ONNX: MIT, https://github.com/microsoft/onnxruntime
+NAudio.Core / NAudio.Wasapi 2.2.1: MIT, https://github.com/naudio/NAudio
+Microsoft .NET: MIT, https://github.com/dotnet/runtime
+X-ASR models: Apache-2.0, https://github.com/Gilgamesh-J/X-ASR
+Models are downloaded separately from official sherpa-onnx releases and checked against the upstream SHA-256 values.
+Additional upstream notices: ../Resources/ThirdPartyNotices.txt in the source tree.
+
+PdfPig 0.1.16: Apache-2.0, https://github.com/UglyToad/PdfPig
+Windows PDF rendering and OCR use installed Windows APIs and language capabilities.
+Codex is invoked as a separately installed CLI; it is not redistributed in this package.
+
+Qwen3-Embedding-0.6B: Apache-2.0, Qwen/Qwen3-Embedding-0.6B.
+Optional ONNX Q8 conversion: onnx-community/Qwen3-Embedding-0.6B-ONNX, revision c25a394dd583836952667c12f008335071b3f43d.
+Microsoft.ML.OnnxRuntime.Managed 1.28.0: MIT, uses the existing Sherpa native ORT 1.28.2 DLL.
+Model weights are separately downloaded and verified; not included in the application ZIP.
+
+Optional WeSpeaker VoxCeleb ResNet34-LM ONNX model: CC BY 4.0, WeSpeaker contributors.
+https://huggingface.co/Wespeaker/wespeaker-resnet34-LM (revision f0c48c298fd835726c27956a5d617bad7115627e).
+Unmodified model; Windows feature extraction and meeting-local grouping implemented separately.
+License text: licenses/WeSpeaker-CC-BY-4.0.txt. Model downloaded separately.
+QRCoder 1.7.0: MIT, https://github.com/Shane32/QRCoder/tree/v1.7.0; licenses/QRCoder-LICENSE.txt.
+Companion page adapted from the same private upstream snapshot (Mac labels changed to Windows; unavailable history controls hidden).
+Bundled noble packages: MIT, see licenses/Companion-LICENSES.txt.

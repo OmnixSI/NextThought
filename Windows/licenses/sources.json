@@ -1,0 +1,48 @@
+[
+  {
+    "file": "sherpa-onnx-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/v1.13.8/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "file": "NAudio-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/naudio/NAudio/v2.2.1/license.txt",
+    "sha256": "303e01786b271eb464b3f43d18a375f2f17d37bc708a37c2fdf45b289fb5bfaa"
+  },
+  {
+    "file": "X-ASR-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/Gilgamesh-J/X-ASR/main/LICENSE",
+    "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  },
+  {
+    "file": "ONNX-Runtime-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/microsoft/onnxruntime/main/LICENSE",
+    "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+  },
+  {
+    "file": "dotnet-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/dotnet/runtime/v10.0.14/LICENSE.TXT",
+    "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310"
+  },
+  {
+    "file": "PdfPig-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/UglyToad/PdfPig/a7bb35662bbbf405efddad50aedc9bcdcf515afc/LICENSE",
+    "sha256": "4c510e162f896ea43b4b1cf1b743641d7c756f1004d0e5eaf0615b28b7ded409"
+  },
+  {
+    "file": "Qwen3-Embedding-LICENSE.txt",
+    "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+    "modelLicense": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "file": "WeSpeaker-CC-BY-4.0.txt",
+    "source": "https://raw.githubusercontent.com/creativecommons/cc-legal-tools-data/main/legacy/legalcode/by_4.0.txt",
+    "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+  },
+  {
+    "file": "QRCoder-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/Shane32/QRCoder/v1.7.0/LICENSE.txt",
+    "sha256": "22e4c25e35c416b15f655a62378d964597c15c6c27fe2ff123444491eec0649b"
+  }
+]

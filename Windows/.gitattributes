@@ -1,0 +1,3 @@
+# These files have pinned byte-level digests. Keep LF and the exact final byte.
+src/NextThought.Platform/Resources/xasr-bpe.vocab -text
+licenses/*.txt -text

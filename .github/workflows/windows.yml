@@ -1,0 +1,53 @@
+name: Windows preview and installer validation
+on:
+  workflow_dispatch:
+  push:
+    paths: ['Windows/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['Windows/**', '.github/workflows/windows.yml']
+permissions:
+  contents: read
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: Windows
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Prepare pinned SDK
+        run: python scripts/bootstrap_sdk.py
+      - name: Build, test and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/build.ps1 -Publish -Installer -Unsigned
+      - name: Self-contained runtime and WPF startup
+        run: |
+          [xml]$project = Get-Content src/NextThought.Windows/NextThought.Windows.csproj
+          $version = [string]$project.Project.PropertyGroup.Version
+          ./scripts/test_release_smoke.ps1 -Payload "artifacts/NextThought-win-x64-$version" -OutputRoot "${{ runner.temp }}/NextThought-中文验证" -Headless
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: NextThought-Windows-preview-${{ github.sha }}
+          path: |
+            Windows/artifacts/NextThought-Windows-preview-*.zip
+            Windows/artifacts/NextThought-Windows-preview-*.sha256
+            Windows/artifacts/NextThought-Windows-preview-*-setup-*.exe
+            Windows/artifacts/NextThought-Windows-preview-*-setup-*.exe.sha256
+            Windows/artifacts/tests/*.trx
+            ${{ runner.temp }}/NextThought-中文验证/smoke.json
+            ${{ runner.temp }}/NextThought-中文验证/基础自检.json
+            ${{ runner.temp }}/NextThought-中文验证/基础自检.md
+            ${{ runner.temp }}/NextThought-中文验证/隔离 用户资料/startup.json
+          retention-days: 14

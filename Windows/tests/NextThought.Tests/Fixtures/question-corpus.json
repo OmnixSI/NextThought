@@ -1,0 +1,242 @@
+[
+  {
+    "text": "How does a database index improve lookup speed",
+    "expected": true
+  },
+  {
+    "text": "What are the trade-offs between Redis and Memcached?",
+    "expected": true
+  },
+  {
+    "text": "Why did you choose Kafka over RabbitMQ",
+    "expected": true
+  },
+  {
+    "text": "Can you walk me through your last project",
+    "expected": true
+  },
+  {
+    "text": "Have you ever dealt with a production outage",
+    "expected": true
+  },
+  {
+    "text": "Is there a way to make this query faster",
+    "expected": true
+  },
+  {
+    "text": "So how would you scale this service to ten million users",
+    "expected": true
+  },
+  {
+    "text": "Tell me about a time you disagreed with your manager",
+    "expected": true
+  },
+  {
+    "text": "Could you explain the CAP theorem",
+    "expected": true
+  },
+  {
+    "text": "Which data structure would you use here?",
+    "expected": true
+  },
+  {
+    "text": "数据库索引有什么缺点",
+    "expected": true
+  },
+  {
+    "text": "你为什么离开上一家公司",
+    "expected": true
+  },
+  {
+    "text": "这个方案的瓶颈在哪里",
+    "expected": true
+  },
+  {
+    "text": "你能不能讲一下 Redis 的持久化机制",
+    "expected": true
+  },
+  {
+    "text": "介绍一下你自己",
+    "expected": true
+  },
+  {
+    "text": "请解释一下进程和线程的区别",
+    "expected": true
+  },
+  {
+    "text": "这个 database index 是怎么提升 lookup speed 的",
+    "expected": true
+  },
+  {
+    "text": "你们团队是怎么做 code review 的",
+    "expected": true
+  },
+  {
+    "text": "如果流量突然翻倍你会怎么处理",
+    "expected": true
+  },
+  {
+    "text": "你对我们公司有了解吗",
+    "expected": true
+  },
+  {
+    "text": "这个结论成立吗",
+    "expected": true
+  },
+  {
+    "text": "哪种排序算法是稳定的",
+    "expected": true
+  },
+  {
+    "text": "说说你对微服务的理解",
+    "expected": true
+  },
+  {
+    "text": "举个例子说明一下",
+    "expected": true
+  },
+  {
+    "text": "线程池的核心参数有哪些",
+    "expected": true
+  },
+  {
+    "text": "你觉得这个设计合理吗",
+    "expected": true
+  },
+  {
+    "text": "大家有没有问题",
+    "expected": true
+  },
+  {
+    "text": "这道题的时间复杂度是多少",
+    "expected": true
+  },
+  {
+    "text": "那缺点呢",
+    "expected": true
+  },
+  {
+    "text": "为什么",
+    "expected": true
+  },
+  {
+    "text": "然后呢",
+    "expected": true
+  },
+  {
+    "text": "What about the cost",
+    "expected": true
+  },
+  {
+    "text": "why not",
+    "expected": true
+  },
+  {
+    "text": "Compare TCP and UDP for me",
+    "expected": true
+  },
+  {
+    "text": "下一步我们是不是应该先上线灰度",
+    "expected": true
+  },
+  {
+    "text": "The database index improves lookup speed",
+    "expected": false
+  },
+  {
+    "text": "这个 database index 会提升 lookup speed",
+    "expected": false
+  },
+  {
+    "text": "我来介绍一下今天的议程",
+    "expected": false
+  },
+  {
+    "text": "Let me explain how the cache works",
+    "expected": false
+  },
+  {
+    "text": "为什么呢？因为哈希表的查询是常数时间",
+    "expected": false
+  },
+  {
+    "text": "怎么说呢，这个项目其实挺复杂的",
+    "expected": false
+  },
+  {
+    "text": "没什么问题，我们继续",
+    "expected": false
+  },
+  {
+    "text": "I don't know why the build failed yesterday",
+    "expected": false
+  },
+  {
+    "text": "今天我们讲一下动态规划",
+    "expected": false
+  },
+  {
+    "text": "我们先看一下这个图",
+    "expected": false
+  },
+  {
+    "text": "Okay thanks everyone",
+    "expected": false
+  },
+  {
+    "text": "下周三之前把文档发给我",
+    "expected": false
+  },
+  {
+    "text": "好的，没问题",
+    "expected": false
+  },
+  {
+    "text": "This is the final version of the design",
+    "expected": false
+  },
+  {
+    "text": "Let's move on to the next item",
+    "expected": false
+  },
+  {
+    "text": "我觉得这个方案可以",
+    "expected": false
+  },
+  {
+    "text": "嗯，对，就是这样",
+    "expected": false
+  },
+  {
+    "text": "The answer is forty two",
+    "expected": false
+  },
+  {
+    "text": "上次会议的结论是先做性能测试",
+    "expected": false
+  },
+  {
+    "text": "We will ship it next sprint",
+    "expected": false
+  },
+  {
+    "text": "我给大家讲讲这个算法的思路",
+    "expected": false
+  },
+  {
+    "text": "So the key insight is that we cache aggressively",
+    "expected": false
+  },
+  {
+    "text": "不管怎么样，先把它跑起来",
+    "expected": false
+  },
+  {
+    "text": "Thanks for having me today",
+    "expected": false
+  },
+  {
+    "text": "这个函数返回一个列表",
+    "expected": false
+  }
+]

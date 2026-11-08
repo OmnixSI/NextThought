@@ -1,0 +1,27 @@
+{
+  "id": "qwen3-embedding-0.6b-onnx-q8",
+  "repository": "onnx-community/Qwen3-Embedding-0.6B-ONNX",
+  "revision": "c25a394dd583836952667c12f008335071b3f43d",
+  "originalModel": "Qwen/Qwen3-Embedding-0.6B",
+  "dimension": 1024,
+  "maxTokens": 512,
+  "queryInstruction": "Given a question, retrieve relevant document passages that answer the question",
+  "files": [
+    {
+      "name": "config.json",
+      "size": 1576,
+      "sha256": "66a10929782f3c9a3cd5dec90e2a95c60e05736134a63cd54479eeae80bed175"
+    },
+    {
+      "name": "tokenizer.json",
+      "size": 11423705,
+      "sha256": "def76fb086971c7867b829c23a26261e38d9d74e02139253b38aeb9df8b4b50a"
+    },
+    {
+      "name": "model.onnx",
+      "remote": "onnx/model_quantized.onnx",
+      "size": 613527631,
+      "sha256": "87cd124e0ef1fd1f223ebc283efccbaeac386d0b08344701c46975d0657b591f"
+    }
+  ]
+}
