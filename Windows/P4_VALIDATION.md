@@ -1,13 +1,13 @@
 # P4 正式发布准备与长时间验证
 
-基线：Windows 0.3.1，P3 收尾提交 `9e4c65a`。本阶段进行中，不能据此宣称已经正式签名发布。
+基线：Windows 0.3.1，P3 收尾提交 `9e4c65a`。本轮可在本机执行的发布准备与验证已完成；第二台客户端实测由用户延期，可信签名无证书，P4 不标为全部验收完成。
 
 | 步骤 | 本轮工作 | 状态 |
 |---|---|---|
-| P4-1 长会议 | 7200 秒公开 PCM 实时双路回放，CPU/内存、队列、最终句延迟、远程请求及归档检查 | 预跑通过，7200 秒测试进行中 |
-| P4-2 干净机器 | 用户提供另一台 Windows 电脑；交付自带运行环境的安装包、一键自检及结果文件 | 待生成验收包及实机报告 |
+| P4-1 长会议 | 7200 秒公开 PCM 实时双路回放，CPU/内存、队列、最终句延迟、远程请求及归档检查 | 7200 秒完整回放及独立归档/导出/备份复核通过 |
+| P4-2 干净机器 | 用户提供另一台 Windows 电脑；交付自带运行环境的安装包、一键自检及结果文件 | 0.4.0 验收包已交付；用户选择稍后测试，实机报告待回收 |
 | P4-3 安装升级 | 每用户安装、独立版本目录、升级与回退、卸载保留数据 | 未签名生命周期 20 项检查通过；可信签名无证书，未验 |
-| P4-4 自动构建 | 源码/版本/依赖/校验和清单、打包及 Windows CI 实际运行 | 待实施，不能把已有 YAML 当作运行成功 |
+| P4-4 自动构建 | 源码/版本/依赖/校验和清单、打包及 Windows CI 实际运行 | 私有验收分支的远程 Windows CI 全部成功，79 项回归及实际 WPF 启动通过 |
 | P4-5 功能对照 | 按 Mac 功能、数据格式、平台能力列出通过证据及差异 | FEATURE_PARITY.md 对照审计完成；ARM64、BLE 等单独保留 |
 
 ## 既有约定
@@ -47,6 +47,24 @@
 
 首版内部启动自检曾将 WPF StartupUri 赋空，触发 ArgumentNullException；已改为显式创建窗口。失败证据 `release-smoke-v1/smoke.json` 保留，修复后的实际 WPF 检查通过。
 
-Windows CI 已准备固定的 windows-2025、只读内容权限和官方 Actions 的提交 SHA，执行锁定 SDK/依赖、回归、便携包、未签名安装器及自包含/WPF 冒烟，并保存版本、源码提交、逐文件哈希及校验信息。此时尚未上传验收分支或取得远程运行结果，不能将本机脚本通过计作远程 CI 通过。
+冻结源码 `65256ff` 重建后的最终交付目录又完成同一自包含 CLI/WPF 检查，证据为 `artifacts/p4/release-smoke-final/smoke.json`；最终发布清单、79 项回归、安装生命周期和 ZIP/安装器/验收包一致性由 `artifacts/p4/release-verification.json` 汇总复核。前述 v1/v2 保留为缺陷发现及修复过程记录。
+
+Windows CI 固定 windows-2025、只读内容权限和官方 Actions 的提交 SHA，执行锁定 SDK/依赖、回归、便携包、未签名安装器及自包含/WPF 冒烟，并保存版本、源码提交、逐文件哈希及校验信息。用户明确授权后，私有验收分支 `windows/p4-validation-20261108` 的实际运行 [42467935366](https://github.com/OmnixSI/NextThought/actions/runs/42467935366) 于 2026-11-08 17:40（北京时间）全部成功：79 项测试、0 失败/跳过，Release 0 警告/错误，自包含 CLI 和实际 WPF 启动通过，870 文件发布清单 sourceDirty=false，便携包和未签名安装器上传成功。主分支和 Mac 工作流未改动，未合并或创建 Release。
+
+本机发布源码固定 `65256ff515ab5f3ee5a93d7f3ca99dd3a404f5ff`，独立远程检出基于上游主分支，提交为 `183a677529c33184e1d0136136970ff43b09dbce`；两者 Windows 源码树及 Windows 工作流逐对象核对一致。源码映射与 CI 日志摘要分别见 `artifacts/p4/ci-source-equivalence.json` 和 `remote-ci-success.json`。CI 产物 ID `13611624324`，保留 14 天；其存在和运行成功不替代第二台客户端验收。
+
+完整 CI ZIP 取回本机时发生断流，后续三次有界下载均超时，已停止重试，保留局部文件及 `artifacts/p4/remote-ci-42467935366/download-verification.json`。目前对 CI 产物只保存服务端摘要与运行证据，未完成完整 ZIP 的本地独立哈希检查；本地交付包另已通过 CRC、SHA-256、发布清单、源码冻结及包间文件一致性检查，见 `artifacts/p4/release-verification.json`。没有因此改变系统代理、热点或防火墙。
+
+交付的 `artifacts/NextThought-P4-第二台电脑验收-0.4.0.zip` 包含未签名安装器、校验和和验收说明，SHA-256 为 `4e429f423e113425fdf7ea6340d9f2cb0e85b8747d182e41f436c137a55bb735`。用户已选择稍后实测，结果回收目录为 `D:\md Vault\NextThought第二台电脑报告`；当前没有第二台电脑的安装、语音模型下载及硬件运行报告。包冻结后不再改写；后续状态以本文件和指定路线文档为准，不能将包内交付时的“CI 进行中”等记录视为最新状态。
 
 参考：[官方下载](https://jrsoftware.org/isdl.php)、[权限模式](https://jrsoftware.org/ishelp/topic_setup_privilegesrequired.htm)、[稳定 AppId](https://jrsoftware.org/ishelp/topic_setup_appid.htm)、[签名接口](https://jrsoftware.org/ishelp/topic_setup_signtool.htm)、[许可证](https://raw.githubusercontent.com/jrsoftware/issrc/is-7_1_1/license.txt)。
+
+## 两小时最终结果与复核
+
+7200 秒公开 PCM 实时双路组合回放通过，72,000 帧/路、720 条转写、480 次声纹、160 条译文、122 次检索、2 次引用回答；终止错误 0、网络重试 0。ASR 队列峰值 12 帧、结束 0 帧，最终句延迟 p95 0.445 秒，热身后主进程私有提交变化 -8.11 MiB。检索/翻译取消后恢复、并发增强 OCR、末尾纪要、Markdown 导出和备份往返均通过。独立检查重新核对双通道时间顺序、唯一 ID、声纹引用、译文源文本哈希、实际回答引用、导出条数，以及原件/恢复件的转写、声纹、译文、回答、纪要字节一致；诊断进程正常结束，无对应 OCR 工作进程遗留。证据 `artifacts/p4/stability-2h.json`、`stability-2h.md`、`stability-2h.ntbackup`、`final-acceptance.json`。
+
+主进程采样工作集峰值 1503.5 MiB，私有提交峰值 1510.8 MiB；在本机 32 个逻辑处理器上，采样区间累计 CPU 时间折算的整机平均占比约 10.4%。这些数值不含独立 OCR 子进程，也不代表其他机器上的性能。
+
+长测固定诊断源码 `fabef51`；它包含后来发布于 `65256ff` 的同一长测指标代码，未在测试中途替换运行程序。受控流量为每 30 秒播放约 10 秒公开片段，麦克风通道错开 5 秒；不是两小时物理采音、任意密集连续语音压力测试或两小时桌面交互。最终句延迟不含远程译文等待；主进程内存不含独立 OCR 子进程，既有 P3 OCR 独立资源记录仍单列。
+
+已交付的 0.4.0 包保持冻结，源码为 `65256ff`，远程 CI 的等价 Windows 树为 `183a677`；本轮后续提交只汇总验收文档，不重新签名、替换原包、合并 main 或发布 Release。第二台电脑安装与模型/硬件报告、可信签名证书及签名端到端验证仍待完成；手机、USB、ARM64 和完整 Mac 功能差异按原约定单列。
