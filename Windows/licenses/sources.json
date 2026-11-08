@@ -34,5 +34,15 @@
     "source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
     "modelLicense": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B",
     "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "file": "WeSpeaker-CC-BY-4.0.txt",
+    "source": "https://raw.githubusercontent.com/creativecommons/cc-legal-tools-data/main/legacy/legalcode/by_4.0.txt",
+    "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+  },
+  {
+    "file": "QRCoder-LICENSE.txt",
+    "source": "https://raw.githubusercontent.com/Shane32/QRCoder/v1.7.0/LICENSE.txt",
+    "sha256": "22e4c25e35c416b15f655a62378d964597c15c6c27fe2ff123444491eec0649b"
   }
 ]

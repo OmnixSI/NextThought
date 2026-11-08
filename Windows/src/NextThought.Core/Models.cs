@@ -16,7 +16,11 @@ public sealed record TranscriptLine
     public DateTimeOffset? StartedAt { get; init; }
     public DateTimeOffset? EndedAt { get; init; }
     public bool? SuspectedEcho { get; init; }
+    public int? Voice { get; init; }
+    public SessionTranslation? Translation { get; init; }
 }
+public sealed record SessionVoiceTag(Guid Id, int Voice);
+public sealed record SessionTranslation(Guid Id, int Revision, string SourceHash, string Direction, string Text, string Model, DateTimeOffset Date);
 public sealed record AnswerRecord
 {
     public Guid Id { get; init; } = Guid.NewGuid();
@@ -70,6 +74,8 @@ public sealed record AppSettings
     public bool AutomaticAnswers { get; set; }
     public bool AutoSummarize { get; set; }
     public bool UseSemanticRetrieval { get; set; }
+    public bool SeparateSpeakers { get; set; }
+    public bool TranslateSpeech { get; set; }
     public bool UseMaterials { get; set; }
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";

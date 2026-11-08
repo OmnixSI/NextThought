@@ -90,7 +90,7 @@ public sealed class BackupService(AppPaths paths)
                 if (!Guid.TryParse(Path.GetFileName(folder), out var id)) throw new InvalidDataException("会议 ID 无效。");
                 var meta = JsonSerializer.Deserialize<SessionMeta>(await File.ReadAllTextAsync(Path.Combine(folder, "meta.json"), ct).ConfigureAwait(false), JsonDefaults.Options)!;
                 if (meta.Id != id) throw new InvalidDataException("会议目录与元数据 ID 不一致。");
-                foreach (var name in new[] { "transcript.jsonl", "answers.jsonl" })
+                foreach (var name in new[] { "transcript.jsonl", "answers.jsonl", "voices.jsonl", "translations.jsonl" })
                     if (File.Exists(Path.Combine(folder, name))) foreach (var line in File.ReadLines(Path.Combine(folder, name))) if (!string.IsNullOrWhiteSpace(line)) { using var valid = JsonDocument.Parse(line); }
             }
             foreach (var file in workspaces) { using var workspace = JsonDocument.Parse(await File.ReadAllTextAsync(file, ct)); if (!Guid.TryParse(workspace.RootElement.GetProperty("id").GetString(), out _)) throw new InvalidDataException("Mac 场景 ID 无效。"); }

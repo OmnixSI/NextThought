@@ -14,6 +14,14 @@ try
     var paths = new AppPaths(Option("--data-root")); var models = new ModelStore(paths);
     switch (arguments.FirstOrDefault())
     {
+        case "companion-network-test": return await CompanionNetworkDiagnostics.RunAsync(Option, cancellation.Token);
+        case "ocr-import-test": return await OcrDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "p3-performance-test": return await P3PerformanceDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "translation-test": return await TranslationDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "speaker-timeline-test":
+            return await SpeakerTimelineDiagnostics.RunAsync(paths, Option, cancellation.Token);
+        case "speaker-test":
+            return await SpeakerDiagnostics.RunAsync(paths, Option, cancellation.Token);
         case "semantic-asr-test":
             return await SemanticAsrDiagnostics.RunAsync(paths, Option, cancellation.Token);
         case "semantic-workflow-test":

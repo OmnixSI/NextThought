@@ -53,6 +53,13 @@ public sealed class SessionStore(AppPaths paths)
         }
         finally { gate.Release(); }
     }
+    public async Task AppendVoiceTagAsync(Guid session, Guid line, int voice, CancellationToken ct = default)
+    {
+        if (voice is < 0 or > 15) throw new ArgumentOutOfRangeException(nameof(voice));
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try { await AppendAsync(Path.Combine(Folder(session), "voices.jsonl"), new SessionVoiceTag(line, voice), ct).ConfigureAwait(false); }
+        finally { gate.Release(); }
+    }
     public async Task SaveSummaryAsync(SessionMeta meta, string markdown, string model, CancellationToken ct = default)
     {
         await gate.WaitAsync(ct).ConfigureAwait(false);
@@ -62,6 +69,20 @@ public sealed class SessionStore(AppPaths paths)
             await AppPaths.AtomicWriteAsync(Path.Combine(Folder(meta.Id), "summary.json"), JsonSerializer.Serialize(summary, JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
             var current = ReadMeta(meta.Id); current.SummaryState = "ready"; current.SummaryError = null;
             await WriteMetaAsync(current, ct).ConfigureAwait(false); CopyState(current, meta);
+        }
+        finally { gate.Release(); }
+    }
+    public async Task AppendTranslationAsync(Guid session, SessionTranslation translation, CancellationToken ct = default)
+    {
+        if (translation.Revision < 1 || translation.Direction is not ("zh-en" or "en-zh") || translation.Text.Length > 32000)
+            throw new InvalidDataException("译文格式无效。");
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            // A late completion must not attach to a revised or missing source line.
+            var line = ReadLines<TranscriptLine>(Path.Combine(Folder(session), "transcript.jsonl")).LastOrDefault(l => l.Id == translation.Id);
+            if (line is null || MeetingTranslator.SourceHash(line.Text) != translation.SourceHash) return;
+            await AppendAsync(Path.Combine(Folder(session), "translations.jsonl"), translation, ct).ConfigureAwait(false);
         }
         finally { gate.Release(); }
     }
@@ -104,7 +125,11 @@ public sealed class SessionStore(AppPaths paths)
         var meta = JsonSerializer.Deserialize<SessionMeta>(File.ReadAllText(Path.Combine(folder, "meta.json")), JsonDefaults.Options) ?? throw new InvalidDataException("会议信息无法读取。");
         var summary = ""; var summaryPath = Path.Combine(folder, "summary.json");
         if (File.Exists(summaryPath)) { using var doc = JsonDocument.Parse(File.ReadAllText(summaryPath)); summary = doc.RootElement.GetProperty("markdown").GetString() ?? ""; }
-        return new(meta, ReadLines<TranscriptLine>(Path.Combine(folder, "transcript.jsonl")), ReadLines<AnswerRecord>(Path.Combine(folder, "answers.jsonl")), summary);
+        var voices = ReadLines<SessionVoiceTag>(Path.Combine(folder, "voices.jsonl")).Where(v => v.Voice is >= 0 and < 16).GroupBy(v => v.Id).ToDictionary(g => g.Key, g => g.Last().Voice);
+        var lines = ReadLines<TranscriptLine>(Path.Combine(folder, "transcript.jsonl")).Select(l => voices.TryGetValue(l.Id, out var voice) ? l with { Voice = voice } : l).ToArray();
+        var translations = ReadLines<SessionTranslation>(Path.Combine(folder, "translations.jsonl")).GroupBy(t => (t.Id, t.SourceHash)).ToDictionary(g => g.Key, g => g.Last());
+        lines = lines.Select(l => translations.TryGetValue((l.Id, MeetingTranslator.SourceHash(l.Text)), out var translation) ? l with { Translation = translation } : l).ToArray();
+        return new(meta, lines, ReadLines<AnswerRecord>(Path.Combine(folder, "answers.jsonl")), summary);
     }
     private SessionMeta ReadMeta(Guid id) => JsonSerializer.Deserialize<SessionMeta>(
         File.ReadAllText(Path.Combine(Folder(id), "meta.json")), JsonDefaults.Options) ?? throw new InvalidDataException("会议信息无法读取。");
@@ -118,7 +143,10 @@ public sealed class SessionStore(AppPaths paths)
         var data = Load(id); var builder = new StringBuilder().AppendLine("# " + data.Meta.Title).AppendLine().AppendLine(data.Summary);
         builder.AppendLine().AppendLine("## 转写");
         foreach (var line in data.Lines)
-            builder.AppendLine($"- [{line.Date.ToLocalTime():HH:mm:ss}] {(line.Speaker == "me" ? "我" : line.Speaker == "room" ? "现场" : "对方")}：{line.Text}");
+        {
+            builder.AppendLine($"- [{line.Date.ToLocalTime():HH:mm:ss}] {(line.Speaker == "me" ? "我" : line.Voice is { } voice ? $"说话人{voice + 1}" : line.Speaker == "room" ? "现场" : "对方")}：{line.Text}");
+            if (line.Translation is { } t) builder.AppendLine($"  - {(t.Direction == "zh-en" ? "英译文" : "中译文")}：{t.Text}");
+        }
         if (data.Answers.Count > 0) builder.AppendLine().AppendLine("## 问答");
         foreach (var answer in data.Answers)
         {
@@ -160,7 +188,9 @@ public sealed class SessionStore(AppPaths paths)
                     try
                     {
                         var repaired = RepairFinalAppend<TranscriptLine>(Path.Combine(Folder(meta.Id), "transcript.jsonl"))
-                            + RepairFinalAppend<AnswerRecord>(Path.Combine(Folder(meta.Id), "answers.jsonl"));
+                            + RepairFinalAppend<AnswerRecord>(Path.Combine(Folder(meta.Id), "answers.jsonl"))
+                            + RepairFinalAppend<SessionVoiceTag>(Path.Combine(Folder(meta.Id), "voices.jsonl"))
+                            + RepairFinalAppend<SessionTranslation>(Path.Combine(Folder(meta.Id), "translations.jsonl"));
                         var data = LoadCore(meta.Id); meta.TranscriptCount = data.Lines.Count; meta.AnswerCount = data.Answers.Count;
                         if (!meta.EndedAt.HasValue) meta.EndedAt = data.Lines.Count > 0 ? data.Lines.Max(l => l.EndedAt ?? l.Date) : meta.StartedAt;
                         if (meta.SummaryState == "pending") { meta.SummaryState = "failed"; meta.SummaryError = "上次纪要整理中断，可继续整理并复用已完成片段。"; }

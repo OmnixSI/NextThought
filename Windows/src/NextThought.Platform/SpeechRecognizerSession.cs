@@ -16,6 +16,7 @@ public sealed class SpeechRecognizerSession : IDisposable
     private readonly Dictionary<AudioSource, State> states = [];
     private bool disposed;
     public event Action<TranscriptUpdate>? Updated;
+    public event Action<AudioFrame>? FrameObserved;
     public event Action<string>? Warning;
     public double InferenceSeconds { get; private set; }
     public double AudioSeconds { get; private set; }
@@ -76,6 +77,7 @@ public sealed class SpeechRecognizerSession : IDisposable
     public void Accept(AudioFrame frame)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
+        FrameObserved?.Invoke(frame);
         if (!states.TryGetValue(frame.Source, out var state)) { state = new(online.CreateStream()) { Origin = frame.Origin, StartSample = frame.StartSample }; states[frame.Source] = state; }
         var clock = Stopwatch.StartNew();
         var segment = state.Vad.Append(frame.Samples);

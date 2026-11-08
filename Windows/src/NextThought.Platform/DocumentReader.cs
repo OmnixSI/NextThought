@@ -15,7 +15,7 @@ using Windows.Storage.Streams;
 namespace NextThought.Platform;
 
 /// <summary>Local, bounded readers. Office is parsed as data; macros and external links are never executed.</summary>
-public sealed class DocumentReader
+public sealed class DocumentReader(EnhancedOcrService? enhancedOcr = null)
 {
     public static readonly string[] Extensions = [".pdf", ".docx", ".pptx", ".xlsx", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".txt", ".md"];
     private const int MaxBlocks = 40000;
@@ -30,6 +30,7 @@ public sealed class DocumentReader
         {
             using var pdf = UglyToad.PdfPig.PdfDocument.Open(path);
             if (pdf.NumberOfPages > 1500) throw new InvalidDataException("PDF 超过 1500 页，请拆分导入。");
+            if (enhancedOcr != null && pdf.NumberOfPages > 10) throw new InvalidDataException("增强 OCR 的 CPU 模式每次最多 10 页，请拆分 PDF，或取消增强选项后使用系统 OCR。");
             global::Windows.Data.Pdf.PdfDocument? rendered = null;
             for (var i = 1; i <= pdf.NumberOfPages; i++)
             {
@@ -42,9 +43,18 @@ public sealed class DocumentReader
                     using var stream = new InMemoryRandomAccessStream();
                     var scale = Math.Min(2.5, 2400 / Math.Max(page.Size.Width, page.Size.Height));
                     await page.RenderToStreamAsync(stream, new PdfPageRenderOptions { DestinationWidth = (uint)(page.Size.Width * scale), DestinationHeight = (uint)(page.Size.Height * scale) }).AsTask(ct);
-                    text = await OcrAsync(stream, ct);
-                    warnings.Add($"第 {i} 页使用系统 OCR；请对照原页核对。");
-                    Add($"第 {i} 页", text, i, "ocr");
+                    if (enhancedOcr != null)
+                    {
+                        var temporary = Path.Combine(Path.GetTempPath(), "nt-ocr-page-" + Guid.NewGuid().ToString("N") + ".png");
+                        try
+                        {
+                            stream.Seek(0); await using (var file = File.Create(temporary)) await stream.AsStreamForRead().CopyToAsync(file, ct);
+                            blocks.AddRange(await enhancedOcr.ReadAsync(temporary, i, ct));
+                            warnings.Add($"第 {i} 页使用 PaddleOCR-VL CPU 增强识别；结果可能有误，请对照原页。");
+                        }
+                        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+                    }
+                    else { text = await OcrAsync(stream, ct); warnings.Add($"第 {i} 页使用系统 OCR；请对照原页核对。"); Add($"第 {i} 页", text, i, "ocr"); }
                 }
                 else Add($"第 {i} 页", text, i);
             }
@@ -125,8 +135,9 @@ public sealed class DocumentReader
         }
         else
         {
-            using var input = await (await StorageFile.GetFileFromPathAsync(path).AsTask(ct)).OpenReadAsync().AsTask(ct);
-            Add("图片 1", await OcrAsync(input, ct), 1, "ocr"); warnings.Add("使用 Windows 系统 OCR，复杂版面、手写或低清图片需人工核对；多页 TIFF 仅读取首帧。");
+            if (enhancedOcr != null) { blocks.AddRange(await enhancedOcr.ReadAsync(path, 1, ct)); warnings.Add("PaddleOCR-VL CPU 增强识别，仅处理首帧；表格保留 HTML、公式保留 LaTeX，结果需对照原图。"); }
+            else { using var input = await (await StorageFile.GetFileFromPathAsync(path).AsTask(ct)).OpenReadAsync().AsTask(ct);
+                Add("图片 1", await OcrAsync(input, ct), 1, "ocr"); warnings.Add("使用 Windows 系统 OCR，复杂版面、手写或低清图片需人工核对；多页 TIFF 仅读取首帧。"); }
         }
         if (blocks.Count == 0) warnings.Add("未提取到可读文字；可能是空文件、缺少 OCR 语言包或受保护内容。");
         return (blocks, warnings);

@@ -17,12 +17,13 @@ public sealed class MaterialWindow : Window
     private readonly Image preview = new() { Stretch = System.Windows.Media.Stretch.Uniform, MaxHeight = 650 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8) };
     private readonly Button import = new() { Content = "导入资料" }, cancel = new() { Content = "取消导入", IsEnabled = false };
+    private readonly CheckBox enhancedOcr = new() { Content = "增强 OCR（CPU 慢速，每页数分钟）", ToolTip = "仅对图片和扫描 PDF 生效，需要独立 Paddle 环境；可取消，最多 10 页/文件，结果需对照原页。", VerticalAlignment = VerticalAlignment.Center };
     private CancellationTokenSource? importing, rendering;
     public MaterialWindow(AppPaths paths, SourceCitation? source = null)
     {
         store = new(paths); Title = "资料库与来源定位"; Width = 1120; Height = 790; MinWidth = 880; MinHeight = 620;
         var root = new DockPanel { Margin = new Thickness(16) }; Content = root;
-        var controls = new StackPanel { Orientation = Orientation.Horizontal }; controls.Children.Add(import); controls.Children.Add(cancel);
+        var controls = new StackPanel { Orientation = Orientation.Horizontal }; controls.Children.Add(import); controls.Children.Add(cancel); controls.Children.Add(enhancedOcr);
         var open = new Button { Content = "打开原文件" }; controls.Children.Add(open); DockPanel.SetDock(controls, Dock.Top); root.Children.Add(controls);
         DockPanel.SetDock(status, Dock.Bottom); root.Children.Add(status);
         var grid = new Grid(); grid.ColumnDefinitions.Add(new() { Width = new GridLength(230) }); grid.ColumnDefinitions.Add(new() { Width = new GridLength(170) }); grid.ColumnDefinitions.Add(new()); root.Children.Add(grid);
@@ -47,19 +48,19 @@ public sealed class MaterialWindow : Window
     {
         var dialog = new OpenFileDialog { Multiselect = true, Filter = "支持的资料|*.pdf;*.docx;*.pptx;*.xlsx;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.txt;*.md" };
         if (dialog.ShowDialog(this) != true) return;
-        import.IsEnabled = false; cancel.IsEnabled = true; importing = new();
+        import.IsEnabled = enhancedOcr.IsEnabled = false; cancel.IsEnabled = true; importing = new(); var enhanced = enhancedOcr.IsChecked == true;
         try
         {
             foreach (var path in dialog.FileNames)
             {
                 status.Text = "正在读取 " + Path.GetFileName(path) + "…";
-                await Task.Run(() => store.ImportAsync(path, importing.Token));
+                await Task.Run(() => store.ImportAsync(path, importing.Token, enhanced));
             }
             status.Text = "已导入并保存原文件。PDF/图片可预览原页，Office 按段落、幻灯片或单元格定位。";
         }
         catch (OperationCanceledException) { status.Text = "已取消；本批次已经完成的资料保留。"; }
         catch (Exception ex) { status.Text = ex.Message; }
-        finally { importing.Dispose(); importing = null; import.IsEnabled = true; cancel.IsEnabled = false; documents.ItemsSource = store.List(); documents.SelectedIndex = 0; }
+        finally { importing.Dispose(); importing = null; import.IsEnabled = enhancedOcr.IsEnabled = true; cancel.IsEnabled = false; documents.ItemsSource = store.List(); documents.SelectedIndex = 0; }
     }
     private async Task ShowBlockAsync()
     {

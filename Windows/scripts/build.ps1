@@ -32,6 +32,10 @@ try {
         Invoke-Dotnet publish src/NextThought.Cli -c Release --self-contained true '-p:PublishSingleFile=false' '-p:RestoreLockedMode=true' -o (Join-Path $output 'tools') --verbosity minimal
         Copy-Item -LiteralPath P2_VALIDATION.md -Destination (Join-Path $output 'P2_VALIDATION.md')
         if (Test-Path -LiteralPath 'P3_VALIDATION.md') { Copy-Item -LiteralPath P3_VALIDATION.md -Destination (Join-Path $output 'P3_VALIDATION.md') }
+        $ocrHelpers = Join-Path $output 'tools\ocr'
+        New-Item -Path $ocrHelpers -ItemType Directory -Force | Out-Null
+        foreach ($helper in @('prepare_enhanced_ocr.py','prepare_native_ocr_model.py','prepare_layout_model.py')) { Copy-Item -LiteralPath (Join-Path 'scripts' $helper) -Destination $ocrHelpers }
+        Copy-Item -LiteralPath 'validation\p3\ocr-requirements-lock.txt' -Destination $ocrHelpers
         Copy-Item -LiteralPath README.md -Destination (Join-Path $output 'README.md')
         Copy-Item -LiteralPath PORTING_STATUS.md -Destination (Join-Path $output 'PORTING_STATUS.md')
         if (Test-Path -LiteralPath 'P1_VALIDATION.md') { Copy-Item -LiteralPath 'P1_VALIDATION.md' -Destination (Join-Path $output 'P1_VALIDATION.md') }
