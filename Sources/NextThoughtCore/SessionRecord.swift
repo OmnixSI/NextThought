@@ -29,15 +29,18 @@ public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable 
     public var speaker: SessionSpeaker
     public var text: String
     public var translatedText: String?
+    /// Content fingerprint of the source text sent to translation. Nil in older archives.
+    public var translationInputRevision: String?
     public var startedAt: Date?
     public var endedAt: Date?
     /// Which voice said it (the other side or the room), when "区分对方的每个人" was on.
     /// A meeting-local id from `VoiceClusterer`; nil for the user's own lines and for older records.
     public var voice: Int?
     public init(id: UUID = UUID(), date: Date, speaker: SessionSpeaker, text: String, translatedText: String? = nil,
-                startedAt: Date? = nil, endedAt: Date? = nil, voice: Int? = nil) {
+                translationInputRevision: String? = nil, startedAt: Date? = nil, endedAt: Date? = nil, voice: Int? = nil) {
         self.id = id; self.date = date; self.speaker = speaker; self.text = text
         self.translatedText = translatedText
+        self.translationInputRevision = translationInputRevision
         self.startedAt = startedAt; self.endedAt = endedAt
         self.voice = voice
     }
@@ -46,7 +49,11 @@ public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable 
 public struct SessionTranscriptTranslation: Codable, Sendable, Identifiable, Equatable {
     public var id: UUID
     public var text: String
-    public init(id: UUID, text: String) { self.id = id; self.text = text }
+    /// Content fingerprint of the transcript text used to produce this translation.
+    public var inputRevision: String?
+    public init(id: UUID, text: String, inputRevision: String? = nil) {
+        self.id = id; self.text = text; self.inputRevision = inputRevision
+    }
 }
 
 /// A question the detector saw, whether or not it was answered automatically.
@@ -505,29 +512,37 @@ public enum SessionSummaryParser {
 
 public enum SessionMarkdownExporter {
     public static func export(meta: SessionMeta, summary: SessionSummary?, lines: [SessionTranscriptLine],
-                              answers: [SessionAnswerEvent], detected: [SessionQuestionEvent]) -> String {
+                              answers: [SessionAnswerEvent], detected: [SessionQuestionEvent], notes: StructuredNotes? = nil,
+                              transcriptVariant: SessionTranscriptVariant = .corrected) -> String {
+        let projection = SessionProjectionBuilder.build(meta: meta, lines: lines, answers: answers, detected: detected,
+                                                       summary: summary, notes: notes,
+                                                       options: SessionProjectionOptions(transcriptVariant: transcriptVariant))
+        return export(meta: meta, projection: projection)
+    }
+
+    public static func export(meta: SessionMeta, projection: SessionTextProjection) -> String {
         var out: [String] = []
-        out.append("# " + (summary?.title ?? meta.displayTitle))
+        out.append("# " + (projection.summary?.title ?? meta.displayTitle))
         out.append("")
         var facts = ["\(meta.mode.title)", meta.startedAt.formatted(date: .abbreviated, time: .shortened)]
         if meta.duration > 0 { facts.append("\(Int(meta.duration / 60)) 分钟") }
         if !meta.audioSource.isEmpty { facts.append(meta.audioSource) }
         out.append("> " + facts.joined(separator: " · "))
         out.append("")
-        if let summary {
+        if let summary = projection.summary {
             // The model's own document, minus its title section (already the heading).
             var body = summary.markdown
             if let range = body.range(of: "## ") { body = String(body[range.lowerBound...]) }
             out.append(body.trimmingCharacters(in: .whitespacesAndNewlines))
             out.append("")
-        } else if !detected.isEmpty {
+        } else if !projection.detectedQuestions.isEmpty {
             out.append("## 检测到的问题")
-            out.append(contentsOf: detected.enumerated().map { "\($0.offset + 1). \($0.element.text)" })
+            out.append(contentsOf: projection.detectedQuestions.enumerated().map { "\($0.offset + 1). \($0.element.text)" })
             out.append("")
         }
-        if !answers.isEmpty {
+        if !projection.answers.isEmpty {
             out.append("## 会中回答")
-            for answer in answers {
+            for answer in projection.answers {
                 out.append("")
                 out.append("### \(answer.question.replacingOccurrences(of: "\n", with: " ").prefix(200))")
                 out.append("")
@@ -537,12 +552,13 @@ public enum SessionMarkdownExporter {
         }
         out.append("## 完整转录")
         out.append("")
-        let labels = SpeakerLabels.promptLabels(lines, voiceNames: meta.voiceNames, meVoices: Set(meta.meVoices ?? []), english: false)
-        out.append(contentsOf: lines.map { line in
-            let offset = Int(max(0, line.date.timeIntervalSince(meta.startedAt)))
-            let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(labels[line.id] ?? line.speaker.label)**：" + line.text
-            guard let translation = line.translatedText, !translation.isEmpty else { return original }
-            return original + "\n  *译文：* " + translation
+        out.append(contentsOf: projection.transcript.map { line in
+            let offset = line.offset
+            let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(line.speakerLabel)**：" + line.displayText
+            guard line.languageView == .bilingual,
+                  let translation = line.translationText, !translation.isEmpty else { return original }
+            let label = line.translationIsStale ? "译文（待更新）" : "译文"
+            return original + "\n  *\(label)：* " + translation
         })
         return out.joined(separator: "\n") + "\n"
     }

@@ -17,11 +17,13 @@ struct MeetingPage: View {
     let onNavigateToAllMeetings: () -> Void
     let onNavigateToSeries: (UUID) -> Void
     @State private var detail: SessionDetail?
+    @State private var projection: SessionTextProjection?
     @State private var tab: MeetingTab = .notes
     /// Which view of the notes is shown: the text notes (always the one a meeting opens with)
     /// or a fishbone, outline or viewpoint matrix the user picked. Not saved.
     @State private var format: NotesFormat = .standard
-    @State private var jumpLine: Int?
+    @State private var jumpLineID: UUID?
+    @State private var navigationNotice: String?
     @State private var copied = false
 
     private var archive: SessionArchive { SessionArchive.shared }
@@ -48,7 +50,12 @@ struct MeetingPage: View {
                                     NotesBody(detail: detail) { seconds in jump(to: seconds, in: detail) }
                                 }
                             case .transcript:
-                                CorrectedTranscript(detail: detail, highlighted: jumpLine)
+                                if let navigationNotice {
+                                    Text(verbatim: navigationNotice)
+                                        .font(Typo.caption).foregroundStyle(Ink.caution)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                CorrectedTranscript(detail: detail, projection: projection, highlighted: jumpLineID)
                             case .answers:
                                 SessionAnswersList(detail: detail)
                             }
@@ -62,11 +69,11 @@ struct MeetingPage: View {
                     .padding(.bottom, Space.s12)
                     .frame(maxWidth: .infinity)
                 }
-                .onChange(of: jumpLine) { _, line in
-                    guard let line else { return }
+                .onChange(of: jumpLineID) { _, lineID in
+                    guard let lineID else { return }
                     // Wait for the transcript tab to be laid out.
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        withAnimation(Motion.expand) { proxy.scrollTo("line-\(line)", anchor: .center) }
+                        withAnimation(Motion.expand) { proxy.scrollTo("line-\(lineID.uuidString)", anchor: .center) }
                     }
                 }
             }
@@ -80,7 +87,20 @@ struct MeetingPage: View {
             let loaded = await archive.detail(id)
             guard !Task.isCancelled else { return }
             detail = loaded
+            let loadedProjection = loaded.map { detail in
+                SessionProjectionBuilder.build(meta: detail.meta, lines: detail.lines, answers: detail.answers,
+                                               detected: detail.questions, summary: detail.summary, notes: detail.notes)
+            }
+            projection = loadedProjection
             StructuredNotesJobs.shared.acknowledge(loaded?.summary, for: id)
+            if let target = state.pendingTranscriptNavigation, target.sessionID == id,
+               loaded != nil, let loadedProjection {
+                revealTranscriptHit(target, using: loadedProjection)
+            }
+        }
+        .onChange(of: state.pendingTranscriptNavigation) { _, target in
+            guard let target, target.sessionID == id, detail != nil, let projection else { return }
+            revealTranscriptHit(target, using: projection)
         }
     }
 
@@ -145,12 +165,30 @@ struct MeetingPage: View {
 
     private func jump(to seconds: Int, in detail: SessionDetail) {
         let start = detail.meta.startedAt
-        let nearest = detail.lines.indices.min { lhs, rhs in
-            abs(Int(detail.lines[lhs].date.timeIntervalSince(start)) - seconds) < abs(Int(detail.lines[rhs].date.timeIntervalSince(start)) - seconds)
+        let nearest = detail.lines.min { lhs, rhs in
+            abs(Int(lhs.date.timeIntervalSince(start)) - seconds) < abs(Int(rhs.date.timeIntervalSince(start)) - seconds)
         }
         tab = .transcript
-        jumpLine = nil
-        jumpLine = nearest
+        navigationNotice = nil
+        jumpLineID = nil
+        DispatchQueue.main.async { jumpLineID = nearest?.id }
+    }
+
+    private func revealTranscriptHit(_ target: SessionTranscriptNavigationTarget, using projection: SessionTextProjection) {
+        guard let lineID = target.hit.lineID,
+              let line = projection.transcript.first(where: { $0.id == lineID }) else {
+            state.pendingTranscriptNavigation = nil
+            navigationNotice = "这条搜索结果已不存在，请重新搜索。"
+            return
+        }
+        let currentHit = projection.searchableText.first(where: { $0.id == target.hit.id })
+        let selectedTranscriptChanged = target.hit.kind == .transcript && line.sourceRevision != target.hit.sourceRevision
+        navigationNotice = currentHit?.sourceRevision == target.hit.sourceRevision && !selectedTranscriptChanged
+            ? nil : "这句已更新，显示的是当前版本。"
+        tab = .transcript
+        jumpLineID = nil
+        DispatchQueue.main.async { jumpLineID = line.id }
+        state.pendingTranscriptNavigation = nil
     }
 
     // MARK: Header
@@ -575,17 +613,19 @@ private struct VerdictBadge: View {
 private struct CorrectedTranscript: View {
     @Environment(AppState.self) private var state
     let detail: SessionDetail
-    let highlighted: Int?
+    let projection: SessionTextProjection?
+    let highlighted: UUID?
     /// Find in the transcript; recorded misheard spellings (术语和人名) match too.
     @State private var find = ""
     @State private var findCache = GlossarySearchCache()
     @State private var glossaryDraft: GlossaryDraft?
 
     var body: some View {
-        let corrections = detail.notes?.corrections ?? []
-        let byLine = Dictionary(grouping: corrections, by: \.line)
+        let projectedLines = projection?.transcript ?? []
         let terms: GlossarySearch? = find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : findCache.terms(for: find, state: state)
-        let shown = Array(detail.lines.enumerated()).filter { terms == nil || terms?.appMatch(in: $0.element.text) != nil }
+        let shown = projectedLines.filter {
+            terms == nil || terms?.appMatch(in: $0.displayText) != nil || terms?.appMatch(in: $0.originalText) != nil
+        }
         let layout = SpeakerLayout(lines: detail.lines, voiceNames: detail.meta.voiceNames, meVoices: Set(detail.meta.meVoices ?? []))
         VStack(alignment: .leading, spacing: Space.s3) {
         if layout.isShown {
@@ -595,15 +635,14 @@ private struct CorrectedTranscript: View {
                          mark: { state.markVoice($0, isMe: $1, in: detail.meta.id) })
         }
         LazyVStack(alignment: .leading, spacing: Space.s3) {
-            if detail.lines.isEmpty {
+            if projectedLines.isEmpty {
                 Text("这场会议没有转写。").font(Typo.body).foregroundStyle(Ink.secondary)
             } else {
                 TranscriptFindField(query: $find, matches: terms == nil ? nil : shown.count)
             }
-            ForEach(shown, id: \.element.id) { index, line in
-                let fixes = byLine[index] ?? []
+            ForEach(shown) { line in
                 HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
-                    Text(verbatim: NotesTime.text(Int(max(0, line.date.timeIntervalSince(detail.meta.startedAt)))))
+                    Text(verbatim: NotesTime.text(line.offset))
                         .font(.system(size: 11).monospacedDigit()).foregroundStyle(Ink.tertiary)
                         .frame(width: 52, alignment: .leading)
                     Text(line.speaker.displayName)
@@ -615,30 +654,35 @@ private struct CorrectedTranscript: View {
                         if layout.hidesRoleLabel(for: line.speaker), layout.starts.contains(line.id) {
                             SpeakerTag(layout: layout, lineID: line.id, speaker: line.speaker)
                         }
-                        Text(Self.text(line.text, fixes: fixes))
+                        Text(Self.text(line))
                             .font(Typo.body).lineSpacing(5)
                             .textSelection(.enabled)
-                            .help(Self.originals(fixes))
-                        if let terms, let hit = terms.appMatch(in: line.text), hit.isMisheard {
+                            .help(Self.originals(line.appliedCorrections))
+                        if let terms, let hit = terms.appMatch(in: line.originalText), hit.isMisheard {
                             MisheardMark(form: hit.form)
                         }
-                        if let translation = line.translatedText, !translation.isEmpty {
-                            Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
+                        if let translation = line.translationText, !translation.isEmpty {
+                            HStack(alignment: .firstTextBaseline, spacing: Space.s1) {
+                                Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
+                                if line.translationIsStale {
+                                    Text("待更新").font(.system(size: 10, weight: .medium)).foregroundStyle(Ink.caution)
+                                }
+                            }
                                 .textSelection(.enabled)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.vertical, 2)
-                .background(highlighted == index ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
-                .id("line-\(index)")
+                .background(highlighted == line.id ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .id("line-\(line.id.uuidString)")
                 .contextMenu {
-                    ForEach(fixes) { fix in
+                    ForEach(line.appliedCorrections) { fix in
                         Button(fix.reverted ? "恢复校对：\(fix.original) → \(fix.corrected)" : "撤销校对：\(fix.corrected) → \(fix.original)") {
                             state.toggleCorrection(fix.id, in: detail.meta.id)
                         }
                     }
-                    Button("加入术语表…") { glossaryDraft = GlossaryDraft(line: line.text) }
+                    Button("加入术语表…") { glossaryDraft = GlossaryDraft(line: line.originalText) }
                 }
             }
         }
@@ -649,13 +693,9 @@ private struct CorrectedTranscript: View {
     }
 
     /// The line with active corrections applied and underlined with dots.
-    static func text(_ original: String, fixes: [TranscriptCorrection]) -> AttributedString {
-        var corrected = original
-        for fix in fixes where !fix.reverted {
-            corrected = corrected.replacingOccurrences(of: fix.original, with: fix.corrected)
-        }
-        var attributed = AttributedString(corrected)
-        for fix in fixes where !fix.reverted {
+    static func text(_ line: SessionProjectedTranscriptLine) -> AttributedString {
+        var attributed = AttributedString(line.displayText)
+        for fix in line.appliedCorrections {
             if let range = attributed.range(of: fix.corrected) {
                 attributed[range][AttributeScopes.SwiftUIAttributes.UnderlineStyleAttribute.self] = Text.LineStyle(pattern: .dot)
             }
