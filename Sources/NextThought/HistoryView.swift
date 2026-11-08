@@ -23,13 +23,14 @@ struct HistoryView: View {
     @State private var dateFilter: SessionDateFilter = .all
     @State private var lengthFilter: SessionLengthFilter = .all
     @State private var sortOrder: SessionSort = .newest
-    /// Sessions whose question/answer text contains the query. Filled in by the
-    /// debounced content search, because that needs a disk read per session.
-    @State private var contentMatch: Set<UUID> = []
+    /// First content hit per meeting. Filled in by a cancellable, batched archive search.
+    @State private var contentHits: [UUID: SessionSearchHit] = [:]
     /// Sessions found only through a recorded misheard spelling (术语和人名), with that spelling.
     @State private var misheardMatch: [UUID: String] = [:]
     @State private var searchCache = GlossarySearchCache()
     @State private var isContentSearching = false
+    @State private var searchProgress = 0
+    @State private var searchTotal = 0
 
     private var archive: SessionArchive { SessionArchive.shared }
     private var selection: UUID? { state.historySelection }
@@ -52,8 +53,11 @@ struct HistoryView: View {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         var items = scoped
         if !trimmed.isEmpty {
-            let terms = searchCache.terms(for: trimmed, state: state)
-            items = items.filter { matchesMetadata($0, terms) || contentMatch.contains($0.id) }
+            items = items.filter { meta in
+                let terms = searchCache.terms(for: trimmed, state: state,
+                                              workspaceID: glossaryWorkspaceID(for: meta), includeAllWorkspaces: false)
+                return matchesMetadata(meta, terms) || contentHits[meta.id] != nil
+            }
         }
         return ordered(items)
     }
@@ -216,7 +220,8 @@ struct HistoryView: View {
             managementDisabled: state.isRunning,
             onOpen: openFromOverview,
             onClearFilters: clearFilters,
-            onReturnHome: { state.section = .home })
+            onReturnHome: { state.section = .home },
+            searchHits: contentHits)
         return Group {
             if compact {
                 VStack(spacing: 0) {
@@ -589,26 +594,42 @@ struct HistoryView: View {
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if visibleSessions.isEmpty && visibleSessionGroups.isEmpty {
-                VStack(spacing: 7) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 24, weight: .regular))
-                        .foregroundStyle(Ink.tertiary)
-                    Text("没有符合条件的记录")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text(isScopedToSeries
-                         ? "当前系列有 \(currentScopeSessionCount) 场会议；当前搜索或筛选没有匹配项。"
-                         : "当前搜索或筛选条件下没有记录，可以清除条件后查看全部。")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Ink.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Button("清除搜索与筛选") { clearFilters() }
-                        .buttonStyle(ChipButtonStyle(prominent: true))
-                        .controlSize(.small)
-                        .help("清除搜索、筛选和排序，保留当前系列范围")
+                if isContentSearching {
+                    VStack(spacing: 8) {
+                        ProgressView(value: Double(searchProgress), total: Double(max(searchTotal, 1)))
+                            .frame(maxWidth: 220)
+                        Text(searchIsScopedToSeries ? "正在搜索当前系列内容" : "正在搜索全部会议内容")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("已检查 \(searchProgress) / \(searchTotal) 场；完成后才会确定没有匹配项。")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Ink.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    VStack(spacing: 7) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 24, weight: .regular))
+                            .foregroundStyle(Ink.tertiary)
+                        Text("没有符合条件的记录")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(isScopedToSeries
+                             ? "当前系列有 \(currentScopeSessionCount) 场会议；当前搜索或筛选没有匹配项。"
+                             : "当前搜索或筛选条件下没有记录，可以清除条件后查看全部。")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Ink.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("清除搜索与筛选") { clearFilters() }
+                            .buttonStyle(ChipButtonStyle(prominent: true))
+                            .controlSize(.small)
+                            .help("清除搜索、筛选和排序，保留当前系列范围")
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10) {
@@ -620,7 +641,8 @@ struct HistoryView: View {
                                     Button { openFromOverview(meta.id) } label: {
                                         SessionRow(meta: meta, selected: meta.id == selection,
                                                    active: meta.id == archive.activeID, showsWorkspace: false,
-                                                   misheardForm: misheardMatch[meta.id])
+                                                   misheardForm: misheardMatch[meta.id],
+                                                   contentHit: contentHits[meta.id])
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     .buttonStyle(InteractiveRowButtonStyle())
@@ -632,7 +654,7 @@ struct HistoryView: View {
                                                 .padding(1)
                                         }
                                     }
-                                    .accessibilityLabel("打开会议：\(meta.displayTitle)，\(MeetingOutcome.when(meta.startedAt))，\(MeetingOutcome.line(for: meta))")
+                                    .accessibilityLabel(historyRowAccessibilityLabel(meta, hit: contentHits[meta.id]))
                                     .accessibilityHint("打开会议纪要和转写")
                                     .accessibilityAddTraits(meta.id == selection ? .isSelected : [])
                                     .accessibilityIdentifier("history.session.\(meta.id.uuidString)")
@@ -705,7 +727,7 @@ struct HistoryView: View {
         let base = searchIsScopedToSeries
             ? "\(visibleSessions.count) 场会议 · 系列共 \(currentScopeSessionCount) 场"
             : "\(visibleSessions.count) 场会议 · \(visibleWorkspaceSeriesCount) 个系列"
-        return isContentSearching ? base + " · 搜索中…" : base
+        return isContentSearching ? base + " · 扫描 \(searchProgress)/\(searchTotal) 场" : base
     }
 
     private var searchIsScopedToSeries: Bool {
@@ -717,7 +739,7 @@ struct HistoryView: View {
     }
 
     private var searchPlaceholder: String {
-        searchIsScopedToSeries ? "搜索此系列中的标题、问题或回答" : "搜索全部会议的标题、系列、问题或回答"
+        searchIsScopedToSeries ? "搜索此系列的标题、原话、译文、纪要、问题或回答" : "搜索会议、系列、原话、译文、纪要、问题或回答"
     }
 
     /// Clear search and filters while keeping the current series scope.
@@ -726,7 +748,7 @@ struct HistoryView: View {
         dateFilter = .all
         lengthFilter = .all
         sortOrder = .newest
-        contentMatch = []
+        contentHits = [:]
         misheardMatch = [:]
     }
 
@@ -751,26 +773,47 @@ struct HistoryView: View {
 
     /// Re-runs the content search when the query or the filter scope changes.
     private var contentSearchKey: String {
-        "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")"
+        let archiveContent = archive.sessions.map { meta in
+            let title = meta.title ?? ""
+            let workspaceID = meta.workspaceID?.uuidString ?? ""
+            let workspace = meta.workspaceName ?? meta.formerWorkspaceName ?? ""
+            return "\(meta.id.uuidString):\(meta.startedAt.timeIntervalSince1970):\(meta.duration):\(meta.transcriptCount):\(meta.questionCount):\(meta.answerCount):\(meta.summaryState.rawValue):\(workspaceID):\(workspace):\(title)"
+        }.joined(separator: ",")
+        return "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")|\(archive.notesRevision)|\(state.glossaryRevision)|\(archiveContent)"
     }
 
-    /// Content search: the question and answer text lives in the session files,
-    /// so it costs a disk read per session. Debounced, limited to the first 200
-    /// sessions and cancelled as soon as the query changes again.
+    /// Archived corrections and aliases belong to the session's own series. An unclassified or
+    /// deleted series uses only the global table, avoiding unrelated series aliases.
+    private func glossaryWorkspaceID(for meta: SessionMeta) -> UUID? {
+        guard meta.workspaceDeleted != true else { return nil }
+        if let id = meta.workspaceID, state.workspaces.workspaces.contains(where: { $0.id == id }) { return id }
+        for name in [meta.workspaceName, meta.formerWorkspaceName].compactMap({ $0 }) {
+            if let workspace = state.workspaces.workspaces.first(where: { $0.name == name }) { return workspace.id }
+        }
+        return nil
+    }
+
+    /// Content text lives in the session files, so it is loaded off the main thread one meeting
+    /// at a time. Results are published in small batches; changing the query cancels the old scan.
     @MainActor
     private func runContentSearch() async {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            contentMatch = []
+            contentHits = [:]
             misheardMatch = [:]
             isContentSearching = false
+            searchProgress = 0
+            searchTotal = 0
             return
         }
-        contentMatch = []
+        contentHits = [:]
         misheardMatch = [:]
         isContentSearching = true
-        // A cancelled run must not leave the "搜索中…" label behind.
-        defer { isContentSearching = false }
+        let sessionsToSearch = scoped
+        searchProgress = 0
+        searchTotal = sessionsToSearch.count
+        // A cancelled old run must not clear progress owned by the newer query.
+        defer { if !Task.isCancelled { isContentSearching = false } }
         do {
             try await Task.sleep(nanoseconds: 350_000_000)
         } catch {
@@ -778,32 +821,56 @@ struct HistoryView: View {
             return
         }
         guard !Task.isCancelled else { return }
-        // The typed text plus the spellings the glossary knows for it (misheard ones count as hits).
-        let terms = searchCache.terms(for: trimmed, state: state)
-        var matches: Set<UUID> = []
-        var misheard: [UUID: String] = [:]
-        for meta in scoped.prefix(200) {
+        var hits: [UUID: SessionSearchHit] = [:]
+        let publishEvery = 16
+        for (index, meta) in sessionsToSearch.enumerated() {
             if Task.isCancelled { return }
-            guard let detail = await archive.detail(meta.id) else { continue }
-            let texts = detail.questions.map(\.text) + detail.answers.flatMap { [$0.question, $0.answer] }
-            var plainHit = false
-            var misheardForm: String?
-            for text in texts {
-                guard let hit = terms.appMatch(in: text) else { continue }
-                if !hit.isMisheard { plainHit = true; break }
-                if misheardForm == nil { misheardForm = hit.form }
+            if let detail = await archive.detail(meta.id) {
+                // The typed text plus spellings from this meeting's global and series glossaries.
+                let terms = searchCache.terms(for: trimmed, state: state,
+                                              workspaceID: glossaryWorkspaceID(for: detail.meta), includeAllWorkspaces: false)
+                let fields = SessionContentSearch.fields(meta: detail.meta, lines: detail.lines, questions: detail.questions,
+                                                         answers: detail.answers, summary: detail.summary, notes: detail.notes)
+                if let hit = SessionContentSearch.firstHit(in: fields, terms: terms) {
+                    hits[meta.id] = hit
+                }
             }
-            if plainHit {
-                matches.insert(meta.id)
-            } else if let misheardForm {
-                matches.insert(meta.id)
-                misheard[meta.id] = misheardForm
+            let completed = index + 1
+            if completed.isMultiple(of: publishEvery) || completed == sessionsToSearch.count {
+                guard !Task.isCancelled else { return }
+                contentHits = hits
+                misheardMatch = Dictionary(uniqueKeysWithValues: hits.compactMap { id, hit in
+                    hit.isMisheard ? (id, hit.matchedForm) : nil
+                })
+                searchProgress = completed
             }
         }
         guard !Task.isCancelled else { return }
-        contentMatch = matches
-        misheardMatch = misheard
+        contentHits = hits
+        misheardMatch = Dictionary(uniqueKeysWithValues: hits.compactMap { id, hit in
+            hit.isMisheard ? (id, hit.matchedForm) : nil
+        })
+        searchProgress = sessionsToSearch.count
         isContentSearching = false
+    }
+}
+
+@MainActor
+private func historyRowAccessibilityLabel(_ meta: SessionMeta, hit: SessionSearchHit?) -> String {
+    let meeting = "打开会议：\(meta.displayTitle)，\(MeetingOutcome.when(meta.startedAt))，\(MeetingOutcome.line(for: meta))"
+    guard let hit else { return meeting }
+    let location = hit.location.map { " · \($0)" } ?? ""
+    return "\(meeting)，命中\(searchHitKindLabel(hit.kind))\(location)：\(hit.excerpt)"
+}
+
+private func searchHitKindLabel(_ kind: SessionSearchFieldKind) -> String {
+    switch kind {
+    case .transcript: "原话"
+    case .correctedTranscript: "校正原话"
+    case .translation: "译文"
+    case .question: "问题"
+    case .answer: "回答"
+    case .notes: "纪要"
     }
 }
 
@@ -906,6 +973,7 @@ private struct MeetingArchiveOverview: View {
     let onOpen: (UUID) -> Void
     let onClearFilters: () -> Void
     let onReturnHome: () -> Void
+    let searchHits: [UUID: SessionSearchHit]
     @FocusState private var focusedSessionID: UUID?
     @FocusState private var focusedFolderID: String?
 
@@ -1050,7 +1118,8 @@ private struct MeetingArchiveOverview: View {
                             LazyVStack(spacing: 6) {
                                 ForEach(sessions) { meta in
                                     Button { onOpen(meta.id) } label: {
-                                        SessionRow(meta: meta, selected: false, active: false)
+                                        SessionRow(meta: meta, selected: false, active: false,
+                                                   contentHit: searchHits[meta.id])
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     .buttonStyle(InteractiveRowButtonStyle())
@@ -1062,7 +1131,7 @@ private struct MeetingArchiveOverview: View {
                                                 .padding(1)
                                         }
                                     }
-                                    .accessibilityLabel("打开会议：\(meta.displayTitle)，\(MeetingOutcome.when(meta.startedAt))，\(MeetingOutcome.line(for: meta))")
+                                    .accessibilityLabel(historyRowAccessibilityLabel(meta, hit: searchHits[meta.id]))
                                     .accessibilityHint("打开会议纪要和转写")
                                     .accessibilityIdentifier("history.seriesSession.\(meta.id.uuidString)")
                                 }
@@ -1283,6 +1352,7 @@ private struct SessionRow: View {
     var showsWorkspace = true
     /// Set when the search found this meeting through a recorded misheard spelling.
     var misheardForm: String? = nil
+    var contentHit: SessionSearchHit? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -1294,6 +1364,18 @@ private struct SessionRow: View {
             }
             Text(verbatim: details).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
             if let misheardForm { MisheardMark(form: misheardForm) }
+            if let contentHit {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(contentHit.location.map { "\(searchHitKindLabel(contentHit.kind)) · \($0)" } ?? searchHitKindLabel(contentHit.kind))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(Ink.secondary)
+                    Text(verbatim: contentHit.excerpt)
+                        .font(.system(size: 10))
+                        .foregroundStyle(Ink.secondary)
+                        .lineLimit(2)
+                        .textSelection(.enabled)
+                }
+            }
         }
         .padding(10)
         .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))

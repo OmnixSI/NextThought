@@ -134,9 +134,13 @@ extension AppState {
 extension AppState {
     /// Every table there is: the global one and all series' own. Searches across meetings use it,
     /// because a meeting's series is not necessarily the active one.
-    func searchGlossary() -> Glossary {
+    func searchGlossary(workspaceID: UUID? = nil, includeAllWorkspaces: Bool = true) -> Glossary {
         var entries = GlossaryStore.shared.glossary.entries
-        for workspace in workspaces.workspaces { entries += workspace.glossary?.entries ?? [] }
+        if let workspaceID {
+            entries += workspaces.workspaces.first(where: { $0.id == workspaceID })?.glossary?.entries ?? []
+        } else if includeAllWorkspaces {
+            for workspace in workspaces.workspaces { entries += workspace.glossary?.entries ?? [] }
+        }
         return Glossary(entries: entries).normalized()
     }
 
@@ -151,16 +155,21 @@ extension AppState {
 /// (and of one search over hundreds of meetings) share it.
 final class GlossarySearchCache {
     private var stamp = ""
-    private var value: GlossarySearch?
+    private var values: [String: GlossarySearch] = [:]
 
     @MainActor
-    func terms(for query: String, state: AppState) -> GlossarySearch {
+    func terms(for query: String, state: AppState, workspaceID: UUID? = nil,
+               includeAllWorkspaces: Bool = true) -> GlossarySearch {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let key = trimmed + "\u{1}" + state.glossaryRevision
-        if key == stamp, let value { return value }
-        let result = state.searchGlossary().search(for: trimmed)
-        stamp = key
-        value = result
+        if key != stamp {
+            stamp = key
+            values = [:]
+        }
+        let scope = workspaceID?.uuidString ?? (includeAllWorkspaces ? "all" : "none")
+        if let value = values[scope] { return value }
+        let result = state.searchGlossary(workspaceID: workspaceID, includeAllWorkspaces: includeAllWorkspaces).search(for: trimmed)
+        values[scope] = result
         return result
     }
 }
