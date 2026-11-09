@@ -36,13 +36,13 @@ release() {
     asset=$(python3 -c 'import json; print(json.load(open("Resources/DocumentRuntime/runtime-manifest.json"))["asset"])') &&
     gh release download v1.7.0 --pattern "$asset" --dir dist --clobber &&
     cp Resources/DocumentRuntime/runtime-manifest.json dist/runtime-manifest.json &&
-    INTERVIEWHACKER_VERSION="$version" INTERVIEWHACKER_MAKE_DMG=1 scripts/build-app.sh &&
+    NEXTTHOUGHT_VERSION="$version" NEXTTHOUGHT_MAKE_DMG=1 scripts/build-app.sh &&
     python3 Tools/DocumentRuntime/release_assets.py --tag "$tag" --commit "$(git rev-parse HEAD)" &&
     { git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag "$tag"; } &&
     git push -q origin "$tag" &&
     { gh release view "$tag" >/dev/null 2>&1 ||
-      gh release create "$tag" --draft --target "$(git rev-parse HEAD)" --title "InterviewHacker $tag" --notes-file "docs/releases/$tag.md"; } &&
-    gh release upload "$tag" dist/InterviewHacker-*-macOS-arm64.* dist/SHA256SUMS.txt dist/update.json dist/runtime-manifest.json --clobber &&
+      gh release create "$tag" --draft --target "$(git rev-parse HEAD)" --title "NextThought $tag" --notes-file "docs/releases/$tag.md"; } &&
+    gh release upload "$tag" dist/NextThought-*-macOS-arm64.* dist/SHA256SUMS.txt dist/update.json dist/runtime-manifest.json --clobber &&
     rm -rf .ih-loop/verify && mkdir -p .ih-loop/verify &&
     gh release download "$tag" --dir .ih-loop/verify --clobber &&
     (cd .ih-loop/verify && shasum -a 256 -c SHA256SUMS.txt) &&

@@ -1,1 +1,1 @@
-../../../../Sources/InterviewHackerCore/CompanionBLEProtocol.swift
+../../../../Sources/NextThoughtCore/CompanionBLEProtocol.swift

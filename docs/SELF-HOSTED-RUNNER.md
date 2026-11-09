@@ -16,8 +16,8 @@
 
 1. 检查 Xcode / Swift 6，缺 GitHub CLI 时用 Homebrew 安装 `gh`，没登录就打开浏览器让你登录；
 2. 用 `gh` 自动获取注册令牌（没有管理员权限时，提示你从 仓库 Settings → Actions → Runners → New self-hosted runner 页面复制令牌）；
-3. 下载 GitHub 官方的 Actions Runner 到 `~/actions-runner-interviewhacker`；
-4. 以“这台电脑名-interviewhacker”注册到仓库；
+3. 下载 GitHub 官方的 Actions Runner 到 `~/actions-runner-nextthought`；
+4. 以“这台电脑名-nextthought”注册到仓库；
 5. 设为登录后自动在后台运行（launchd 用户服务）。
 
 完成后打开 仓库 Settings → Actions → Runners，应能看到这台 Mac 显示 **Idle**（空闲）。之前排队的任务会自动开始。
@@ -43,20 +43,20 @@
 
 **睡眠**：Mac 睡眠或关机时任务会排队等待，醒来后继续（排队超过 24 小时会被 GitHub 取消，重新推送即可）。插电时可以在 系统设置 → 电池 → 选项 里打开“显示器关闭时防止自动睡眠”。
 
-## 会不会影响我自己的 InterviewHacker？
+## 会不会影响我自己的 NextThought？
 
 不会。工作流专门做了隔离：
 
-- 测试用的应用使用独立身份 `com.interviewhacker.app.ci`：设置（UserDefaults）和钥匙串条目与你安装的 InterviewHacker 完全分开，不会读写你的 API Key、场景或记录。
-- 所有测试数据（场景、记录、下载的识别模型、测试用签名证书）都在 `~/.interviewhacker-ci`，可以随时删除。
+- 测试用的应用使用独立身份 `com.nextthought.app.ci`：设置（UserDefaults）和钥匙串条目与你安装的 NextThought 完全分开，不会读写你的 API Key、场景或记录。
+- 所有测试数据（场景、记录、下载的识别模型、测试用签名证书）都在 `~/.nextthought-ci`，可以随时删除。
 - 签名测试会临时把测试钥匙串加入钥匙串搜索列表，任务结束时自动移除；发布用的临时钥匙串也会在结束时删除。不会使用 `sudo`，不会改动系统钥匙串。
 - 来自 fork 的 PR **不会**在你的 Mac 上运行（只在 GitHub 的机器上运行）。如果以后把仓库改成公开，建议改回 GitHub 的机器（见下）。
 
-占用空间：Runner 本身约 200 MB，构建缓存 1–3 GB（在 `~/actions-runner-interviewhacker/_work`），识别模型约 270 MB。
+占用空间：Runner 本身约 200 MB，构建缓存 1–3 GB（在 `~/actions-runner-nextthought/_work`），识别模型约 270 MB。
 
 ## 截图工作流需要屏幕录制权限
 
-截图会启动演示模式的应用并用 `screencapture` 截取窗口。第一次运行时 macOS 可能弹出权限请求；如果截图没有生成（日志里出现 `window capture failed`），到 系统设置 → 隐私与安全性 → 屏幕与系统音频录制，点 ＋ 添加 `~/actions-runner-interviewhacker/bin/Runner.Worker` 和 `Runner.Listener`，然后 `--stop` 再 `--start`。只跑构建、测试和发布不需要这个权限。
+截图会启动演示模式的应用并用 `screencapture` 截取窗口。第一次运行时 macOS 可能弹出权限请求；如果截图没有生成（日志里出现 `window capture failed`），到 系统设置 → 隐私与安全性 → 屏幕与系统音频录制，点 ＋ 添加 `~/actions-runner-nextthought/bin/Runner.Worker` 和 `Runner.Listener`，然后 `--stop` 再 `--start`。只跑构建、测试和发布不需要这个权限。
 
 ## 改回 GitHub 的机器
 
@@ -66,7 +66,7 @@
 
 - **任务一直显示 Queued / Waiting for a runner**：Runner 没在运行。运行 `--status` 看看；Mac 在睡眠或已注销时也会这样。
 - **`swift: error: ... requires Xcode`**：安装完整的 Xcode 并运行 `sudo xcode-select -s /Applications/Xcode.app`。
-- **发布时 `gh: command not found`**：Runner 服务启动时的 PATH 里没有 Homebrew。运行 `--stop`，在 `~/actions-runner-interviewhacker/.path` 末尾加上 `:/opt/homebrew/bin`，再 `--start`。
+- **发布时 `gh: command not found`**：Runner 服务启动时的 PATH 里没有 Homebrew。运行 `--stop`，在 `~/actions-runner-nextthought/.path` 末尾加上 `:/opt/homebrew/bin`，再 `--start`。
 
 ## v1.7.0 临时 runner
 

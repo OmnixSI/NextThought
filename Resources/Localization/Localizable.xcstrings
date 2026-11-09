@@ -11646,7 +11646,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select the meeting window or a microphone. InterviewHacker transcribes the conversation in real time and generates reference answers for recognized questions when auto-answer is enabled."
+            "value": "Select the meeting window or a microphone. NextThought transcribes the conversation in real time and generates reference answers for recognized questions when auto-answer is enabled."
           }
         }
       }
@@ -15806,7 +15806,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Source transcript"
+            "value": "Transcript evidence"
           }
         }
       }
@@ -15976,7 +15976,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Retry saving"
+            "value": "Retry save"
           }
         }
       }
@@ -17797,6 +17797,2736 @@
           "stringUnit": {
             "state": "translated",
             "value": "This source passage could not be located. Your notes are preserved; check the full transcript."
+          }
+        }
+      }
+    },
+    "NextThought 提词器": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NextThought teleprompter"
+          }
+        }
+      }
+    },
+    "此选项仅在 NextThought 处于前台时提升工作台、设置和分离模块；切换到其他 App 后它们会降回普通层级。回答浮窗保持独立浮窗行为。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The workspace, settings and detached modules float while NextThought is active. They return to the normal level when you switch apps. The answer window remains an independent floating window."
+          }
+        }
+      }
+    },
+    "会使用此 Mac 上绑定的本机签名身份，重新签名后重启应用。重启后请再允许一次录屏与麦克风，之后更新会继续使用该身份。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The app will use this Mac’s bound local signing identity, then reopen. Allow screen recording and microphone access once more; future updates will continue using that identity."
+          }
+        }
+      }
+    },
+    "打开 NextThought 手机 App，选择“扫描二维码”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the NextThought phone app and choose “Scan QR code.”"
+          }
+        }
+      }
+    },
+    "固定签名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable local signature"
+          }
+        }
+      }
+    },
+    "请允许当前 NextThought 访问录屏与系统音频。绑定本机签名后，以后更新不必重新授权。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow NextThought to access screen recording and system audio. Bind local signing to keep this permission through future updates."
+          }
+        }
+      }
+    },
+    "没有找到可截图的窗口。请确认系统已允许 NextThought 录屏，并先打开要分析的页面。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No window is available to capture. Confirm macOS allows screen recording for NextThought, then open the page you want to analyze."
+          }
+        }
+      }
+    },
+    "NextThought 是一款原生 macOS 应用，可实时转写会议、整理系列资料、识别问题并生成参考回答，也能在会后整理纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NextThought is a native macOS app for transcribing meetings, organizing series materials, recognizing questions, generating reference answers, and preparing meeting notes."
+          }
+        }
+      }
+    },
+    "NextThought 回答浮窗": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NextThought Answer Window"
+          }
+        }
+      }
+    },
+    "NextThought 字幕条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NextThought Subtitle Bar"
+          }
+        }
+      }
+    },
+    "仅在 NextThought 处于前台时生效；切换到其他 App 后会降回普通层级。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only applies while NextThought is in front; the windows drop back to the normal level when you switch to another app."
+          }
+        }
+      }
+    },
+    "纪要可能基于较旧原话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The summary may be based on an older transcript"
+          }
+        }
+      }
+    },
+    "纪要来源版本不明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The summary's source version is unknown"
+          }
+        }
+      }
+    },
+    "译文可能已过期": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The translation may be outdated"
+          }
+        }
+      }
+    },
+    "编辑结构化纪要条目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit structured note item"
+          }
+        }
+      }
+    },
+    "转写版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript version"
+          }
+        }
+      }
+    },
+    "校正转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corrected transcript"
+          }
+        }
+      }
+    },
+    "原始转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original transcript"
+          }
+        }
+      }
+    },
+    " · 来源版本已变化": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Source version changed"
+          }
+        }
+      }
+    },
+    " · 来源版本未知": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · Source version unknown"
+          }
+        }
+      }
+    },
+    "· 麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· Microphone"
+          }
+        }
+      }
+    },
+    "上一个搜索命中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous search result"
+          }
+        }
+      }
+    },
+    "下一个搜索命中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next search result"
+          }
+        }
+      }
+    },
+    "之前的人工核对已失效，需要重新检查。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The previous review is no longer valid. Check again."
+          }
+        }
+      }
+    },
+    "人工已确认：当前原话不支持这条内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You confirmed that the current transcript does not support this item."
+          }
+        }
+      }
+    },
+    "人工已确认：当前原话支持这条内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You confirmed that the current transcript supports this item."
+          }
+        }
+      }
+    },
+    "仅关联时间 · 内容待核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Timestamp linked only · content needs review"
+          }
+        }
+      }
+    },
+    "会中内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting"
+          }
+        }
+      }
+    },
+    "会中模式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting mode"
+          }
+        }
+      }
+    },
+    "会中设置和工具": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting settings and tools"
+          }
+        }
+      }
+    },
+    "会议内容保存受阻": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting content save is blocked"
+          }
+        }
+      }
+    },
+    "会议尚未结束，暂不能更新。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish the meeting before updating."
+          }
+        }
+      }
+    },
+    "会议归档保存受阻": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting archive save is blocked"
+          }
+        }
+      }
+    },
+    "会议归档尚未全部保存。请重试保存后再退出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting archive hasn't finished saving. Retry saving before quitting."
+          }
+        }
+      }
+    },
+    "会议归档尚未全部保存，暂不能更新。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting archive hasn't finished saving, so updating is unavailable."
+          }
+        }
+      }
+    },
+    "会议归档尚未全部保存，暂时无法生成已保存的纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting archive hasn't finished saving, so saved notes can't be generated yet."
+          }
+        }
+      }
+    },
+    "会议归档尚未全部保存，未创建恢复点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting archive wasn't fully saved, so no restore point was created."
+          }
+        }
+      }
+    },
+    "会议归档已保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting archive saved"
+          }
+        }
+      }
+    },
+    "会议归档或恢复点创建失败：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't create the meeting archive or restore point:"
+          }
+        }
+      }
+    },
+    "会议归档正在保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving meeting archive"
+          }
+        }
+      }
+    },
+    "会议归档正在保存，请稍后再开始。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting archive is still saving. Try starting again in a moment."
+          }
+        }
+      }
+    },
+    "会议正在切换，稍后再试一次退出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting is changing. Try quitting again in a moment."
+          }
+        }
+      }
+    },
+    "会议正在切换，稍后重试更新。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting is changing. Try updating again in a moment."
+          }
+        }
+      }
+    },
+    "保存中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving"
+          }
+        }
+      }
+    },
+    "保存受阻": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save blocked"
+          }
+        }
+      }
+    },
+    "保留当前答法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep current answer"
+          }
+        }
+      }
+    },
+    "保留现有经验并记下来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the existing lesson and record its source"
+          }
+        }
+      }
+    },
+    "候选先保留在待审阅区；确认后才会影响后续回答。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestions stay pending review and affect future answers only after you accept them."
+          }
+        }
+      }
+    },
+    "关闭同声传译": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off live translation"
+          }
+        }
+      }
+    },
+    "写入状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Write status"
+          }
+        }
+      }
+    },
+    "决定建议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decision suggestion"
+          }
+        }
+      }
+    },
+    "加入经验库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to lessons"
+          }
+        }
+      }
+    },
+    "匹配的原始转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matching original transcript"
+          }
+        }
+      }
+    },
+    "匹配的校正转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matching corrected transcript"
+          }
+        }
+      }
+    },
+    "原话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcript"
+          }
+        }
+      }
+    },
+    "原话或纪要刚刚有变化，请刷新后重新核对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The transcript or notes just changed. Refresh and review again."
+          }
+        }
+      }
+    },
+    "原话或负责人/期限已变化；此建议不能接受。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The transcript or owner/deadline has changed. This suggestion can no longer be accepted."
+          }
+        }
+      }
+    },
+    "可以先开始本机记录；连接后才能生成会中回答和会后纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can start local recording first. Connect a service to generate live answers and post-meeting notes."
+          }
+        }
+      }
+    },
+    "回到现场并恢复跟随": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return to live and resume following"
+          }
+        }
+      }
+    },
+    "复制会后纪要，不包含转写内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy meeting notes without the transcript"
+          }
+        }
+      }
+    },
+    "导出失败：会议内容尚未全部保存。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export failed: not all meeting content has been saved."
+          }
+        }
+      }
+    },
+    "尚未由你确认内容是否受原话支持。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You haven't confirmed whether the transcript supports this item."
+          }
+        }
+      }
+    },
+    "屏幕感知已开启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen awareness is on"
+          }
+        }
+      }
+    },
+    "工具": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tools"
+          }
+        }
+      }
+    },
+    "已保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved"
+          }
+        }
+      }
+    },
+    "已允许 · 线下声音会标为“现场”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed · Nearby speech will be labeled “In person”"
+          }
+        }
+      }
+    },
+    "已完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed"
+          }
+        }
+      }
+    },
+    "已暂停跟随（点按回到现场）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following is paused (click to return to live)"
+          }
+        }
+      }
+    },
+    "已替代": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Superseded"
+          }
+        }
+      }
+    },
+    "已标记不支持": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marked as unsupported"
+          }
+        }
+      }
+    },
+    "已确认支持": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed as supported"
+          }
+        }
+      }
+    },
+    "已确认的答法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed answers"
+          }
+        }
+      }
+    },
+    "已确认的经验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirmed lessons"
+          }
+        }
+      }
+    },
+    "已结束": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ended"
+          }
+        }
+      }
+    },
+    "建议答法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggested answer"
+          }
+        }
+      }
+    },
+    "开启同声传译": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on live translation"
+          }
+        }
+      }
+    },
+    "引文匹配只说明原话中出现过这些词，不代表结论已确认。只有时间点的内容仍需核对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A matching quote means only that these words appear in the transcript; it does not confirm the conclusion. Items linked only by time still need review."
+          }
+        }
+      }
+    },
+    "引文在所选转写版本中找到": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quote found in the selected transcript version"
+          }
+        }
+      }
+    },
+    "引用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quote"
+          }
+        }
+      }
+    },
+    "归档": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive"
+          }
+        }
+      }
+    },
+    "归档已保存": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive saved"
+          }
+        }
+      }
+    },
+    "归档已读取；当前没有待写入项。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive loaded; nothing is waiting to be written."
+          }
+        }
+      }
+    },
+    "当前决定": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current decisions"
+          }
+        }
+      }
+    },
+    "当前搜索或筛选条件下没有记录，可以清除条件后查看全部。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No sessions match the current search or filters. Clear them to view all sessions."
+          }
+        }
+      }
+    },
+    "待更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Out of date"
+          }
+        }
+      }
+    },
+    "忽略": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
+          }
+        }
+      }
+    },
+    "忽略过期建议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss outdated suggestion"
+          }
+        }
+      }
+    },
+    "恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        }
+      }
+    },
+    "恢复这版答法；当前答法会留在旧答法记录中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore this answer; the current answer will be kept in version history"
+          }
+        }
+      }
+    },
+    "打开产生这条已确认内容的会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open the meeting where this item was confirmed"
+          }
+        }
+      }
+    },
+    "打开这场会议的归档和原话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open this meeting's archive and transcript"
+          }
+        }
+      }
+    },
+    "搜索会议、系列、原话、译文、纪要、问题或回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search meetings, series, transcripts, translations, notes, questions, or answers"
+          }
+        }
+      }
+    },
+    "搜索此系列的标题、原话、译文、纪要、问题或回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search titles, transcripts, translations, notes, questions, or answers in this series"
+          }
+        }
+      }
+    },
+    "撤销核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo review"
+          }
+        }
+      }
+    },
+    "收集已核实的决定与行动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collect verified decisions and actions"
+          }
+        }
+      }
+    },
+    "收集本场候选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collect suggestions from this meeting"
+          }
+        }
+      }
+    },
+    "无法读取会议归档。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't read the meeting archive."
+          }
+        }
+      }
+    },
+    "无法读取这场会议，暂时不能导出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This meeting couldn't be read, so it can't be exported yet."
+          }
+        }
+      }
+    },
+    "旧内容未记录转写版本，无法确认它是否与当前原话一致。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Older content has no recorded transcript version, so it can't be checked against the current transcript."
+          }
+        }
+      }
+    },
+    "旧答法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous answers"
+          }
+        }
+      }
+    },
+    "暂停跟随最新内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause following the latest content"
+          }
+        }
+      }
+    },
+    "更新已有内容（保留旧版本）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update existing item (keep the previous version)"
+          }
+        }
+      }
+    },
+    "有新回答 · 回到最新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New answer · Back to latest"
+          }
+        }
+      }
+    },
+    "期限原话（例如：下周一，悉尼时间）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deadline as stated (for example, next Monday, Sydney time)"
+          }
+        }
+      }
+    },
+    "未允许 · 只记录对方的声音": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed · Only remote audio will be recorded"
+          }
+        }
+      }
+    },
+    "未允许 · 线下记录需要在系统设置中开启麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed · Enable microphone access in System Settings for in-person recording"
+          }
+        }
+      }
+    },
+    "未允许 · 线下记录需要麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed · In-person recording requires microphone access"
+          }
+        }
+      }
+    },
+    "未允许 · 线下记录需要麦克风，请在系统设置中开启。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed · In-person recording requires microphone access. Enable it in System Settings."
+          }
+        }
+      }
+    },
+    "未允许 · 请允许，或关闭麦克风采集": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed · Grant access or turn off microphone capture"
+          }
+        }
+      }
+    },
+    "未完成事项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open actions"
+          }
+        }
+      }
+    },
+    "未找到所引原话 · 内容待核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quote not found · content needs review"
+          }
+        }
+      }
+    },
+    "本场纪要尚未保存，无法收集系列事项。请等待保存完成后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This meeting's notes aren't saved yet, so its series items can't be collected. Wait for saving to finish and try again."
+          }
+        }
+      }
+    },
+    "本场纪要尚未保存，无法确认系列依据。请等待保存完成后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This meeting's notes aren't saved yet, so its series evidence can't be confirmed. Wait for saving to finish and try again."
+          }
+        }
+      }
+    },
+    "本机 · 已保存内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On this Mac · Saved content"
+          }
+        }
+      }
+    },
+    "本机待保存队列已满；请结束记录并检查磁盘空间。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The local save queue is full. Stop recording and check available disk space."
+          }
+        }
+      }
+    },
+    "本次建议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This suggestion"
+          }
+        }
+      }
+    },
+    "来源": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source"
+          }
+        }
+      }
+    },
+    "查看会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View meeting"
+          }
+        }
+      }
+    },
+    "查看原始转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View original transcript"
+          }
+        }
+      }
+    },
+    "查看校正转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View corrected transcript"
+          }
+        }
+      }
+    },
+    "查看这条内容的原话依据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View transcript evidence for this item"
+          }
+        }
+      }
+    },
+    "查看附近转写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View nearby transcript"
+          }
+        }
+      }
+    },
+    "标记原话不支持": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mark as unsupported"
+          }
+        }
+      }
+    },
+    "校正原话": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Corrected transcript"
+          }
+        }
+      }
+    },
+    "核对结果暂未保存；请重试保存后再离开此页。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The review hasn't been saved yet. Retry saving before leaving this page."
+          }
+        }
+      }
+    },
+    "正在搜索全部会议内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searching all meeting content"
+          }
+        }
+      }
+    },
+    "正在搜索当前系列内容": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Searching this series"
+          }
+        }
+      }
+    },
+    "正在核对本机原话和版本…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking the local transcript and version…"
+          }
+        }
+      }
+    },
+    "没有原话定位 · 内容待核对": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No transcript location · content needs review"
+          }
+        }
+      }
+    },
+    "没有符合条件的记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching sessions"
+          }
+        }
+      }
+    },
+    "清除搜索、筛选和排序，保留当前系列范围": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search, filters, and sorting while keeping this series selected"
+          }
+        }
+      }
+    },
+    "演示数据没有实际存储目录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo data has no storage directory."
+          }
+        }
+      }
+    },
+    "现场麦克风": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live microphone"
+          }
+        }
+      }
+    },
+    "知识候选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knowledge suggestions"
+          }
+        }
+      }
+    },
+    "确认原话支持": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm transcript support"
+          }
+        }
+      }
+    },
+    "确认负责人和期限；期限会保留原话，不会自动改写相对日期。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm the owner and deadline. The original wording is kept; relative dates are not converted automatically."
+          }
+        }
+      }
+    },
+    "答法建议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer suggestion"
+          }
+        }
+      }
+    },
+    "系列会议内容尚未全部保存，未删除系列或会议记录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series meeting content hasn't finished saving. No series or meeting records were deleted."
+          }
+        }
+      }
+    },
+    "系列内容刚刚有变化，请刷新后核对当前版本。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series content just changed. Refresh and review the current version."
+          }
+        }
+      }
+    },
+    "系列当前答法": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current series answer"
+          }
+        }
+      }
+    },
+    "系列当前问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current series question"
+          }
+        }
+      }
+    },
+    "系列知识已关闭；本简报不会带入经验或答法。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series knowledge is off; this briefing won't include lessons or answers."
+          }
+        }
+      }
+    },
+    "系列知识已关闭；经验和答法不会带入。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series knowledge is off; lessons and answers won't be included."
+          }
+        }
+      }
+    },
+    "系列简报": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series briefing"
+          }
+        }
+      }
+    },
+    "线下会议需要麦克风；开始记录时会询问。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In-person meetings need microphone access; you'll be asked when recording starts."
+          }
+        }
+      }
+    },
+    "线下记录需要麦克风 · 点“开始记录”时会询问": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In-person recording needs microphone access · you'll be asked when you click “Start recording”"
+          }
+        }
+      }
+    },
+    "线下记录需要麦克风；开始时会询问": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In-person recording needs microphone access; you'll be asked when it starts."
+          }
+        }
+      }
+    },
+    "经验建议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lesson suggestion"
+          }
+        }
+      }
+    },
+    "综合这个系列的会话摘要，整理高频问题、反复出现的薄弱点、进步和下一步准备；经验与答法会先进入待审阅区。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review this series' meeting summaries for common questions, recurring weaknesses, progress, and next steps. Suggested lessons and answers stay pending until reviewed."
+          }
+        }
+      }
+    },
+    "编辑纪要条目": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit note item"
+          }
+        }
+      }
+    },
+    "自动收集经验与答法候选（逐项确认后才加入系列）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically collect lesson and answer suggestions (review each before adding it to the series)"
+          }
+        }
+      }
+    },
+    "自动跟随最新内容（点按暂停）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically following the latest content (click to pause)"
+          }
+        }
+      }
+    },
+    "行动建议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Action suggestion"
+          }
+        }
+      }
+    },
+    "详情": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        }
+      }
+    },
+    "说话人修改尚未收到保存回执。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No save confirmation was received for the speaker changes."
+          }
+        }
+      }
+    },
+    "请先结束当前会议，再创建完整恢复点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End the current meeting before creating a complete restore point."
+          }
+        }
+      }
+    },
+    "请先读上面的转写，再明确判断它是否支持这条内容。核对会绑定当前文本版本；文字变化后需要重新核对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the transcript above and decide whether it supports this item. Your review is tied to this text version and must be repeated if the text changes."
+          }
+        }
+      }
+    },
+    "请查看会议归档状态并重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the meeting archive status and try again."
+          }
+        }
+      }
+    },
+    "请重试保存后再删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry saving before deleting."
+          }
+        }
+      }
+    },
+    "请重试保存后再导出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry saving before exporting."
+          }
+        }
+      }
+    },
+    "请重试保存后再试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry saving and try again."
+          }
+        }
+      }
+    },
+    "读取提醒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read warning"
+          }
+        }
+      }
+    },
+    "负责人（未确认可留空）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Owner (leave blank if unconfirmed)"
+          }
+        }
+      }
+    },
+    "辅助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assist"
+          }
+        }
+      }
+    },
+    "还没有已确认的系列内容。新建议会先等待你审核。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no confirmed series items yet. New suggestions will stay pending until you review them."
+          }
+        }
+      }
+    },
+    "这个候选已变化或不再可用，请重新打开后核对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This suggestion has changed or is no longer available. Reopen it and review again."
+          }
+        }
+      }
+    },
+    "这个系列还没有已归档的会议。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This series has no archived meetings yet."
+          }
+        }
+      }
+    },
+    "这个问题的现有答法刚刚有变化。请核对当前答案后再选择。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The current answer to this question just changed. Review it before choosing."
+          }
+        }
+      }
+    },
+    "这份纪要没有可逐项定位的内容。原话仍可在“转写”中查看。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These notes don't contain items that can be linked individually. You can still view the transcript under “Transcript.”"
+          }
+        }
+      }
+    },
+    "这句已更新，显示的是当前版本。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This line has changed. The current version is shown."
+          }
+        }
+      }
+    },
+    "这条搜索结果已不存在，请重新搜索。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This search result is no longer available. Search again."
+          }
+        }
+      }
+    },
+    "这条系列建议的依据已变化或不可用，请重新核对后再接受。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The evidence for this series suggestion has changed or is unavailable. Review it again before accepting."
+          }
+        }
+      }
+    },
+    "这次会话没有转录内容，无法生成摘要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This session has no transcript to summarize."
+          }
+        }
+      }
+    },
+    "进行中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In progress"
+          }
+        }
+      }
+    },
+    "连接回答服务后才能生成回答；当前会议记录会继续。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect an answer service to generate responses; meeting recording will continue."
+          }
+        }
+      }
+    },
+    "部分纪要或结构化内容来自较旧的转写版本；核对依据前请查看当前原话。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some notes or structured content came from an older transcript version. Check the current transcript before reviewing the evidence."
+          }
+        }
+      }
+    },
+    "采用建议并保留旧版": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept suggestion and keep the previous version"
+          }
+        }
+      }
+    },
+    "附近的校正转写（仅供核对）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nearby corrected transcript (for review only)"
+          }
+        }
+      }
+    },
+    "附近转写（仅供核对）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nearby transcript (for review only)"
+          }
+        }
+      }
+    },
+    "存储": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        }
+      }
+    },
+    "开始时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start time"
+          }
+        }
+      }
+    },
+    "时长": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duration"
+          }
+        }
+      }
+    },
+    "发言人": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speakers"
+          }
+        }
+      }
+    },
+    "状态": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        }
+      }
+    },
+    "存储位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage location"
+          }
+        }
+      }
+    },
+    "存储大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage size"
+          }
+        }
+      }
+    },
+    "归档已保存 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive saved · %@"
+          }
+        }
+      }
+    },
+    "正在保存会议内容 · %lld 项待写入": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving meeting content · %lld pending writes"
+          }
+        }
+      }
+    },
+    "已确认：有 %lld 项内容未能入队，因此未保存。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acknowledged: %lld item(s) could not be queued and were not saved."
+          }
+        }
+      }
+    },
+    "有 %lld 项内容未能入队，因此未保存。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld item(s) could not be queued and were not saved."
+          }
+        }
+      }
+    },
+    "进行中 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In progress · %@"
+          }
+        }
+      }
+    },
+    "不可用（会议尚未结束）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable (meeting has not ended)"
+          }
+        }
+      }
+    },
+    "正在读取…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading…"
+          }
+        }
+      }
+    },
+    "不可用（转写数据无法读取）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable (transcript could not be read)"
+          }
+        }
+      }
+    },
+    "暂无可识别发言人": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No speakers identified"
+          }
+        }
+      }
+    },
+    "已有纪要（结构化内容）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Structured notes are available"
+          }
+        }
+      }
+    },
+    "已有纪要（Markdown 内容）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markdown notes are available"
+          }
+        }
+      }
+    },
+    "没有纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No notes"
+          }
+        }
+      }
+    },
+    "整理已中断，可重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note generation was interrupted. You can retry."
+          }
+        }
+      }
+    },
+    "整理失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note generation failed: %@"
+          }
+        }
+      }
+    },
+    "原因不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reason unavailable"
+          }
+        }
+      }
+    },
+    "不可用（状态显示已完成，但纪要内容无法读取）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable (status says complete, but notes could not be read)"
+          }
+        }
+      }
+    },
+    "%@（目录不存在）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (directory not found)"
+          }
+        }
+      }
+    },
+    "不可用（会议目录不存在）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable (meeting directory not found)"
+          }
+        }
+      }
+    },
+    "%@（无法读取）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (unreadable)"
+          }
+        }
+      }
+    },
+    "不可用（无权限或读取失败）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable (permission denied or read failed)"
+          }
+        }
+      }
+    },
+    "演示数据没有实际存储目录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo data has no storage directory"
+          }
+        }
+      }
+    },
+    "不可用（演示数据没有实际文件）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable (demo data has no files)"
+          }
+        }
+      }
+    },
+    "正在统计…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculating…"
+          }
+        }
+      }
+    },
+    "已保存 · 最近 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved · last at %@"
+          }
+        }
+      }
+    },
+    "正在保存 · 还有 %lld 项（%@）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving · %lld remaining (%@)"
+          }
+        }
+      }
+    },
+    "%lld 小时 %lld 分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld hr %lld min"
+          }
+        }
+      }
+    },
+    "%lld 分钟 %lld 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min %lld sec"
+          }
+        }
+      }
+    },
+    "%lld 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sec"
+          }
+        }
+      }
+    },
+    "决定": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decision"
+          }
+        }
+      }
+    },
+    "行动": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Action"
+          }
+        }
+      }
+    },
+    "作为新%@加入系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add as a new %@ to the series"
+          }
+        }
+      }
+    },
+    "Word 文档": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Word document"
+          }
+        }
+      }
+    },
+    "SRT 字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SRT subtitles"
+          }
+        }
+      }
+    },
+    "WebVTT 字幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebVTT subtitles"
+          }
+        }
+      }
+    },
+    "预览使用同一版转写投影；字幕时间来自语句起止时间，缺少结束时间时会标明估算。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The preview uses the same transcript projection as export. Subtitle timing uses utterance start and end times; estimated end times are marked."
+          }
+        }
+      }
+    },
+    "页面预览与导出使用同一版校正、译文和纪要内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The page preview and export use the same corrections, translations, and notes."
+          }
+        }
+      }
+    },
+    "已导出：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exported: %@"
+          }
+        }
+      }
+    },
+    "导出失败：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export failed: %@"
+          }
+        }
+      }
+    },
+    "打开会议：%@，%@，%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open meeting: %@, %@, %@"
+          }
+        }
+      }
+    },
+    "%@，命中%@%@%@：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, match %@%@%@: %@"
+          }
+        }
+      }
+    },
+    "有会议内容未能入队，因此没有保存。请到会议归档确认缺失并继续保存后，再退出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some meeting content could not be queued and was not saved. Open the meeting archive, acknowledge the missing items, and resume saving before quitting."
+          }
+        }
+      }
+    },
+    "纪要内容已更新，本次编辑没有保存。请重新打开后再试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notes changed; this edit was not saved. Reopen the item and try again."
+          }
+        }
+      }
+    },
+    "纪要正在重新整理，本次编辑没有保存。完成后请重新打开再试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notes are being regenerated, so this edit was not saved. Reopen the item when generation finishes and try again."
+          }
+        }
+      }
+    },
+    "无法读取这份纪要，本次编辑没有保存。请刷新后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These notes could not be read, so the edit was not saved. Refresh and try again."
+          }
+        }
+      }
+    },
+    "归档保存受阻，本次编辑没有保存。请先重试保存。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Archive saving is blocked, so the edit was not saved. Retry saving first."
+          }
+        }
+      }
+    },
+    "搜索命中 %lld/%lld · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search result %lld/%lld · %@"
+          }
+        }
+      }
+    },
+    "搜索结果导航，共 %lld 个命中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search result navigation, %lld matches"
+          }
+        }
+      }
+    },
+    "Markdown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markdown"
+          }
+        }
+      }
+    },
+    "PDF": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF"
+          }
+        }
+      }
+    },
+    "导出会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export meeting"
+          }
+        }
+      }
+    },
+    "格式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format"
+          }
+        }
+      }
+    },
+    "当前校正版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current corrected version"
+          }
+        }
+      }
+    },
+    "原始记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original transcript"
+          }
+        }
+      }
+    },
+    "原文与译文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source and translation"
+          }
+        }
+      }
+    },
+    "仅原文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source only"
+          }
+        }
+      }
+    },
+    "译文优先": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Translation first"
+          }
+        }
+      }
+    },
+    "归档有缺失或读取错误，导出已暂停。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export is paused because the archive has missing content or read errors."
+          }
+        }
+      }
+    },
+    "纪要或手记来自较旧的转写版本；导出预览已附上核对提示。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notes or summary are based on an older transcript; the export preview includes a review warning."
+          }
+        }
+      }
+    },
+    "旧纪要没有来源版本；导出预览会说明无法确认新旧。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These notes have no source version, so the export preview will say that their age is unknown."
+          }
+        }
+      }
+    },
+    "%lld 段结束时间为估算值": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End times for %lld subtitle cues are estimated."
+          }
+        }
+      }
+    },
+    "%lld 条译文可能已过期": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld translations may be outdated."
+          }
+        }
+      }
+    },
+    "导出…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export…"
+          }
+        }
+      }
+    },
+    "按页排版的文档预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paginated document preview"
+          }
+        }
+      }
+    },
+    "分页预览暂不可用，以下显示导出源文本。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page preview is unavailable; showing the export source text."
+          }
+        }
+      }
+    },
+    "正在生成分页预览…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generating paginated preview…"
+          }
+        }
+      }
+    },
+    "没有可导出的内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to export."
+          }
+        }
+      }
+    },
+    "纪要内容可能已过期": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summary content may be out of date"
+          }
+        }
+      }
+    },
+    "纪要内容的来源版本不明": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The source version of the summary is unknown"
+          }
+        }
+      }
+    },
+    "部分纪要或结构化内容可能已过期；核对依据前请查看当前原话和纪要。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some notes or structured content may be out of date. Review the current transcript and notes before checking their evidence."
+          }
+        }
+      }
+    },
+    "部分旧内容未记录来源版本；无法确认是否与当前原话和纪要一致。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some older content has no recorded source version, so its consistency with the current transcript and notes cannot be confirmed."
+          }
+        }
+      }
+    },
+    "纪要或手记可能已过期；导出预览已附上核对提示。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The notes or summary may be out of date; the export preview includes a review warning."
+          }
+        }
+      }
+    },
+    "旧纪要未记录来源版本；导出预览会说明无法确认是否过期。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These notes have no recorded source version, so the export preview will say that their age is unknown."
+          }
+        }
+      }
+    },
+    "声音与记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio & recording"
+          }
+        }
+      }
+    },
+    "AI 与资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI & materials"
+          }
+        }
+      }
+    },
+    "浮窗与快捷键": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overlay & shortcuts"
+          }
+        }
+      }
+    },
+    "数据与隐私": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data & privacy"
+          }
+        }
+      }
+    },
+    "搜索设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search settings"
+          }
+        }
+      }
+    },
+    "清除搜索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search"
+          }
+        }
+      }
+    },
+    "设置搜索结果": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings search results"
+          }
+        }
+      }
+    },
+    "试试麦克风、模板或备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try microphone, templates or backup"
+          }
+        }
+      }
+    },
+    "设置分区": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings section"
+          }
+        }
+      }
+    },
+    "语言、外观与工作台": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language, appearance and workspace"
+          }
+        }
+      }
+    },
+    "设置（⌘,）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings (⌘,)"
+          }
+        }
+      }
+    },
+    "有内容尚未保存，未恢复备份。请重试保存后再恢复。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some content has not been saved. Retry saving before restoring a backup."
+          }
+        }
+      }
+    },
+    "请先结束记录，再导出完整备份。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End the recording before exporting a complete backup."
+          }
+        }
+      }
+    },
+    "有内容尚未保存，未导出备份。请重试保存后再导出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some content has not been saved. Retry saving before exporting a backup."
+          }
+        }
+      }
+    },
+    "正在备份或恢复数据，完成后即可开始记录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data is being backed up or restored. You can start recording when it finishes."
           }
         }
       }

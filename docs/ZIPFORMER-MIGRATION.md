@@ -43,7 +43,7 @@
 运行同样的本机验证：
 
 ```sh
-IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/InterviewHacker/models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20" \
+IH_ZIPFORMER_MODEL_DIR="$HOME/Library/Application Support/NextThought/models/sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20" \
   swift test --disable-sandbox --filter ZipformerStreamingIntegrationTests
 ```
 

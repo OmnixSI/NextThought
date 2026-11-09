@@ -1,1 +1,1 @@
-../../../../Sources/InterviewHackerCore/CompanionCrypto.swift
+../../../../Sources/NextThoughtCore/CompanionCrypto.swift

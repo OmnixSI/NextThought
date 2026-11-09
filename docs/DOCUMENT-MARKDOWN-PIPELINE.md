@@ -47,4 +47,4 @@ Qwen3-Embedding-0.6B Q8 通过真实 tokenizer、官方检索 query instruction�
 
 候选文件先核对大小，再逐文件核对固定 SHA-256。可复用不完整快照中的有效文件，导入暂存文件后再次校验再提交；完整模型才写入当前 revision 标记。原缓存不变，应用拥有自己可删除的模型副本。运行包还通过原有归档哈希、Python 签名、可重定位检查与安装流程。仅扫描绝不调用网络下载或改变用户接口选择。扫描／哈希在后台且可取消；删除模型和运行包会先等待扫描取消，避免晚到写回。已安装状态仍使用现有启动检查与内存缓存，不在每次提问或界面刷新遍历磁盘。
 
-隔离集成自检：`INTERVIEWHACKER_DATA_DIR=<scratch> InterviewHacker --self-test local-models --input <existing-model-root> --archive-directory <runtime-archive-directory>`。该自检只复用显式目录，无在线调用；可随后运行 models 和 documents 自检验证真实推理。
+隔离集成自检：`NEXTTHOUGHT_DATA_DIR=<scratch> NextThought --self-test local-models --input <existing-model-root> --archive-directory <runtime-archive-directory>`。该自检只复用显式目录，无在线调用；可随后运行 models 和 documents 自检验证真实推理。

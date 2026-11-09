@@ -5,7 +5,7 @@ Android 使用 Kotlin/Compose + Bluetooth GATT；iOS 使用 SwiftUI + Core Bluet
 ## 配对与使用
 
 1. Mac 设置 → 高级设置 → 更多 → 手机伴侣，开启局域网服务；需要蓝牙时开启“原生手机 App 的蓝牙备用”。需要互联网备用时先配置自己的 HTTPS 中转并开启，再配对。
-2. 在手机 App 扫描“原生手机 App 配对”二维码，或粘贴其链接；也支持 `interviewhacker-companion://pair#p=…` 深链。配对密钥保留在进程内，结束进程后重新配对。
+2. 在手机 App 扫描“原生手机 App 配对”二维码，或粘贴其链接；也支持 `nextthought-companion://pair#p=…` 深链。配对密钥保留在进程内，结束进程后重新配对。
 3. 给 App 授予本地网络、蓝牙权限；扫码需要相机权限，也可粘贴链接。Android 11 及更早版本的 BLE 扫描由系统要求位置权限；不采集位置。
 4. App 显示实际接收通道。网络失联后显示离线；恢复时补齐完整最新状态，不把旧答案挂在新问题下。可调整字号、显示核查更新、触发回答/更简短/举例/英文版/前后/停止生成。连接状态和操作确认分开；操作未确认时可重试，四分钟内沿用原 UUID，普通心跳不会清除该提示。
 5. 当前面向前台使用。锁屏、进程被系统终止、两种真实手机各 60 分钟及切网行为尚未验收。蓝牙不会承载图片和文件。
@@ -25,10 +25,10 @@ ANDROID_SERIAL=emulator-5556 ./gradlew connectedDebugAndroidTest
 
 调试 APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。正式发布需用户自己的签名配置；本仓库不提交签名密钥。开发缓存可通过 `GRADLE_USER_HOME`、`ANDROID_HOME`、`ANDROID_USER_HOME` 指向项目内目录。
 
-iOS 需要 Xcode 和 iOS 16+ SDK：打开 `iOS/InterviewHackerCompanion.xcodeproj`，选择自己的开发团队及设备后运行。项目文件可用 `python3 iOS/generate_project.py` 确定性重建，无须 XcodeGen。模拟器构建：
+iOS 需要 Xcode 和 iOS 16+ SDK：打开 `iOS/NextThoughtCompanion.xcodeproj`，选择自己的开发团队及设备后运行。项目文件可用 `python3 iOS/generate_project.py` 确定性重建，无须 XcodeGen。模拟器构建：
 
 ```sh
-xcodebuild -project Mobile/iOS/InterviewHackerCompanion.xcodeproj -scheme InterviewHackerCompanion -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project Mobile/iOS/NextThoughtCompanion.xcodeproj -scheme NextThoughtCompanion -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
 `Shared` 是独立 Swift 包；符号链接复用仓库中的协议/密码/分片源文件，不引入桌面 ASR 依赖。可在 macOS 上运行 `swift test --package-path Mobile/Shared`，覆盖真实 TCP SSE/操作/静默恢复与加密向量。当前机器只有 CLT，没有 iOS SDK，因此没有提供可安装 IPA，也没有宣称 iOS UI 已编译或真机通过。手动 GitHub Actions 工作流可在有 Xcode 的 runner 构建两端；未自动触发付费构建。

@@ -39,8 +39,8 @@ jobs:
         run: |
           mkdir -p dist
           asset=$(python3 -c 'import json; print(json.load(open("Resources/DocumentRuntime/runtime-manifest.json"))["asset"])')
-          if [[ -n "${INTERVIEWHACKER_RUNTIME_ASSET:-}" && -f "$INTERVIEWHACKER_RUNTIME_ASSET" ]]; then
-            cp "$INTERVIEWHACKER_RUNTIME_ASSET" "dist/$asset"
+          if [[ -n "${NEXTTHOUGHT_RUNTIME_ASSET:-}" && -f "$NEXTTHOUGHT_RUNTIME_ASSET" ]]; then
+            cp "$NEXTTHOUGHT_RUNTIME_ASSET" "dist/$asset"
           else
             gh release download v1.7.0 --pattern "$asset" --dir dist --clobber
           fi
@@ -75,39 +75,64 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
           security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
           security find-identity -p codesigning "$keychain"
-          echo "INTERVIEWHACKER_SIGNING_IDENTITY=$MACOS_SIGNING_IDENTITY" >> "$GITHUB_ENV"
-          echo "INTERVIEWHACKER_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          echo "NEXTTHOUGHT_SIGNING_IDENTITY=$MACOS_SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          echo "NEXTTHOUGHT_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
       - name: Build signed App, ZIP and DMG
         env:
-          INTERVIEWHACKER_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
-          INTERVIEWHACKER_MAKE_DMG: '1'
+          NEXTTHOUGHT_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
+          NEXTTHOUGHT_MAKE_DMG: '1'
         run: |
-          export INTERVIEWHACKER_VERSION="${INTERVIEWHACKER_VERSION#v}"
-          if [[ "$RUNNER_ENVIRONMENT" == github-hosted && -z "${INTERVIEWHACKER_SIGNING_IDENTITY:-}" ]]; then export INTERVIEWHACKER_SIGNING_IDENTITY=-; fi
+          export NEXTTHOUGHT_VERSION="${NEXTTHOUGHT_VERSION#v}"
+          if [[ "$RUNNER_ENVIRONMENT" == github-hosted && -z "${NEXTTHOUGHT_SIGNING_IDENTITY:-}" ]]; then export NEXTTHOUGHT_SIGNING_IDENTITY=-; fi
           scripts/build-app.sh
       - name: Isolated data selftest
         env:
-          INTERVIEWHACKER_DATA_DIR: ${{ runner.temp }}/ih-release-selftest
+          NEXTTHOUGHT_DATA_DIR: ${{ runner.temp }}/ih-release-selftest
         run: |
-          ci="$RUNNER_TEMP/InterviewHacker-ci.app"
-          cp -R dist/InterviewHacker.app "$ci"
-          plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$ci/Contents/Info.plist"
-          codesign --force --sign - --identifier com.interviewhacker.app.ci "$ci"
-          "$ci/Contents/MacOS/InterviewHacker" --self-test data
-          INTERVIEWHACKER_DEMO=1 "$ci/Contents/MacOS/InterviewHacker" --self-test document-setup
+          ci="$RUNNER_TEMP/NextThought-ci.app"
+          cp -R dist/NextThought.app "$ci"
+          plutil -replace CFBundleIdentifier -string com.nextthought.app.ci "$ci/Contents/Info.plist"
+          codesign --force --sign - --identifier com.nextthought.app.ci "$ci"
+          "$ci/Contents/MacOS/NextThought" --self-test data
+          "$ci/Contents/MacOS/NextThought" --self-test session-export
+          "$ci/Contents/MacOS/NextThought" --self-test session-backup-drain
+          "$ci/Contents/MacOS/NextThought" --self-test session-edit-receipts
+          "$ci/Contents/MacOS/NextThought" --self-test session-carry-context
+          "$ci/Contents/MacOS/NextThought" --self-test meeting-content
+          "$ci/Contents/MacOS/NextThought" --self-test archive-ux
+          "$ci/Contents/MacOS/NextThought" --self-test large-pdf
+          NEXTTHOUGHT_DEMO=1 "$ci/Contents/MacOS/NextThought" --self-test settings-navigation
+          NEXTTHOUGHT_DEMO=1 "$ci/Contents/MacOS/NextThought" --self-test document-setup
       - name: Stage and validate all release assets
         env:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: python3 Tools/DocumentRuntime/release_assets.py --tag "$RELEASE_TAG" --commit "$(git rev-parse HEAD)"
+      - name: Test release checksum manifest
+        run: python3 -m unittest discover -s Tools/Validation/ReleaseAssets -p 'test_*.py'
       - name: Upload to draft, verify, then publish
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "Interview Hacker $RELEASE_TAG" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "NextThought $RELEASE_TAG" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
-          gh release upload "$RELEASE_TAG" dist/InterviewHacker-*-macOS-arm64.* dist/SHA256SUMS.txt dist/update.json dist/runtime-manifest.json --clobber
+          assets=()
+          while IFS= read -r asset; do
+            [[ -n "$asset" ]] && assets+=("dist/$asset")
+          done < dist/release-assets.txt
+          if [[ ${#assets[@]} -eq 0 ]]; then echo "The release asset list is empty." >&2; exit 1; fi
+          gh release upload "$RELEASE_TAG" \
+            "${assets[@]}" \
+            dist/SHA256SUMS.txt --clobber
+          expected_assets="$(cat dist/release-assets.txt; printf '%s\n' SHA256SUMS.txt)"
+          expected_assets="$(printf '%s\n' "$expected_assets" | LC_ALL=C sort)"
+          actual_assets="$(gh release view "$RELEASE_TAG" --json assets --jq '[.assets[].name] | sort | .[]')"
+          if [[ "$actual_assets" != "$expected_assets" ]]; then
+            echo "Attached release assets differ from the generated upload list." >&2
+            diff -u <(printf '%s\n' "$expected_assets") <(printf '%s\n' "$actual_assets") || true
+            exit 1
+          fi
           verify="$RUNNER_TEMP/release-verification"
           mkdir -p "$verify"
           gh release download "$RELEASE_TAG" --dir "$verify" --clobber

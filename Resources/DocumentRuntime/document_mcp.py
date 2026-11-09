@@ -76,7 +76,7 @@ def main():
         m=None
         try:
             m=json.loads(line);method=m.get('method');ident=m.get('id');result={}
-            if method=='initialize':result={'protocolVersion':'2024-11-05','capabilities':{'tools':{}},'serverInfo':{'name':'interviewhacker-document','version':'1.7.0'}}
+            if method=='initialize':result={'protocolVersion':'2024-11-05','capabilities':{'tools':{}},'serverInfo':{'name':'nextthought-document','version':'1.7.0'}}
             elif method=='tools/list':result={'tools':[{'name':n,'description':d,'inputSchema':{'type':'object','properties':p,'additionalProperties':False},'annotations':{'readOnlyHint':True,'destructiveHint':False,'openWorldHint':False}} for n,d,p in TOOLS]}
             elif method=='tools/call':
                 p=m['params']

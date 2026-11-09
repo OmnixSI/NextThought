@@ -1,6 +1,6 @@
 <div align="center">
 
-# Interview Hacker
+# NextThought
 
 **会议记录、资料整理与知识问答 · 原生 macOS**
 
@@ -20,6 +20,24 @@
 </div>
 
 ---
+
+## v2.5.0：独立设置窗口与学术记录闭环
+
+主工作区使用三个轻量导航入口，设置独立成窗，按六类任务组织。补齐个人笔记、重点与人工纪要版本，优化大型文字 PDF 读取，备份恢复先预览冲突，并保留已有归档和来源保护。
+
+[v2.5.0 发布说明](docs/releases/v2.5.0.md) · [更新日志](CHANGELOG.md)。
+
+## v2.4.1：归档安全、系列来源可追溯、会中布局稳定
+
+归档读取和删除失败会保留可恢复状态；备份合并继续追踪已确认经验的来源；会中长转写增长时保持输入与主要操作稳定。
+
+[v2.4.1 发布说明](docs/releases/v2.4.1.md) · [更新日志](CHANGELOG.md)。
+
+## v2.4.0：会议记录可查、纪要可核对、系列能接续
+
+从无回答服务时立即开始本机记录，到搜索完整历史、暂停会中滚动跟随、检查纪要原话依据，再到预览导出和准备下一场，关键步骤都更容易核实。系列简报只引用本机已保存的会议与已确认知识，待审建议单独显示。
+
+[v2.4.0 发布说明](docs/releases/v2.4.0.md) · [更新日志](CHANGELOG.md)。
 
 ## v2.3.1：设置层级重构与鱼骨图显示修复
 
@@ -206,16 +224,16 @@ Qwen3-Embedding-0.6B Q8 为资料增加本地语义检索。全部模型约 **1.
 
 ## 数据与备份
 
-- 所有数据都在 `~/Library/Application Support/InterviewHacker`：`Workspaces/`（系列）、`Sessions/`（会议记录与纪要）、`Backups/`（自动备份）、`models/`（识别模型）。更新应用、更换识别模型或回答接口都不会改动它们。
+- 所有数据都在 `~/Library/Application Support/NextThought`：`Workspaces/`（系列）、`Sessions/`（会议记录与纪要）、`Backups/`（自动备份）、`models/`（识别模型）。更新应用、更换识别模型或回答接口都不会改动它们。
 - **自动备份**：每天一次，安装更新前、导入前各一次，保留最近 10 份。删除系列时会按确认范围永久删除相关系列资料和会议记录。
-- **导出 / 导入**：设置 → 数据 →“导出全部”生成一个 `.ihbackup` 文件（可选是否包含 API Key）；换电脑或重装后“导入”即可。导入只合并、不删除，同一系列以较新的修改为准。
-- 从 v1.x 升级到 v2.0 不需要迁移：资料、题库、记录和模型直接沿用。
+- **导出 / 导入**：设置 → 数据 →“导出全部”生成一个 `.ntbackup` 文件（可选是否包含 API Key）；旧 `.ihbackup` 备份仍可导入。导入只合并、不删除，同一系列以较新的修改为准。
+- 首次启动 NextThought 时会迁移原有资料、会议记录、模型和备份，并保留偏好；应用会尝试复制已保存凭据，若 macOS 不允许读取旧钥匙串项，可在设置中重新输入。Bundle ID 已更改，系统会要求重新确认录音、麦克风和录屏权限。
 
 ## 安装
 
-1. 到 **[Releases](../../releases)** 下载 `InterviewHacker-<版本>-macOS-arm64.dmg`，打开后把 Interview Hacker 拖进“应用程序”。（正式版本使用版本号 Release；旧的 `main-latest` 保留为历史构建。）
+1. 到 **[Releases](../../releases)** 下载 `NextThought-<版本>-macOS-arm64.dmg`，打开后把 NextThought 拖进“应用程序”。（正式版本使用版本号 Release；旧的 `main-latest` 保留为历史构建。）
 2. 第一次打开：应用未经 Apple 公证，macOS 会拦截。打开 **系统设置 → 隐私与安全性**，在页面底部点 **“仍要打开”**。
-   也可以在终端执行：`xattr -dr com.apple.quarantine /Applications/InterviewHacker.app`
+   也可以在终端执行：`xattr -dr com.apple.quarantine /Applications/NextThought.app`
 3. 按提示允许 **屏幕与系统音频录制** 和 **麦克风**。授权后如系统要求重启应用，照做即可。
 
 > 需要 Apple Silicon（M 系列芯片）和 macOS 14 或更新版本。Apple Speech 流式识别需要 macOS 26。
@@ -226,7 +244,7 @@ Qwen3-Embedding-0.6B Q8 为资料增加本地语义检索。全部模型约 **1.
 
 **绑定本机签名（一次即可）**：设置 → 基础（打开“高级设置”）→ 使用前检查 → 本机签名 “绑定”（或 设置 → 更多 → 权限与签名）。应用会在本机生成一个只属于这台 Mac 的代码签名证书并重新签名自己；之后自动更新下载的每个新版本都会用同一证书重新签名，macOS 认为它是同一个应用，录屏和麦克风权限一直有效。绑定后需要再授权一次，系统可能请求一次登录密码以信任该证书。
 
-本机源码构建 `./scripts/build-app.sh` 使用这台 Mac 在应用设置中绑定的 **InterviewHacker Local Signing** 证书（位于 `~/Library/Application Support/InterviewHacker/Signing/`）。如果尚未绑定或身份文件不完整，构建会停止；请先打开应用完成绑定。不要为本机构建另建证书，这样已授予的系统权限才能继续对应同一签名身份。
+本机源码构建 `./scripts/build-app.sh` 使用这台 Mac 上已有的 app-bound 本机签名身份。若身份文件不完整或不可用，构建会停止；不要为本机构建另建证书或替换现有身份。
 
 也可以用命令行更新（需要已登录的 [GitHub CLI](https://cli.github.com)）：
 
@@ -234,7 +252,7 @@ Qwen3-Embedding-0.6B Q8 为资料增加本地语义检索。全部模型约 **1.
 ./scripts/install-latest.sh
 ```
 
-它通过 `gh` 下载最新版、校验 SHA-256，再用这台 Mac 已绑定的 Local Signing 证书重签后替换 `/Applications/InterviewHacker.app`。如果当前安装包使用了不同签名身份，脚本会停止，避免更新后丢失系统权限。安装后会重新打开应用；这样下载的文件不带浏览器的“来自互联网”标记，**不会再弹“仍要打开”**。
+它通过 `gh` 下载最新版、校验 SHA-256，再用这台 Mac 已绑定的 Local Signing 证书重签后替换 `/Applications/NextThought.app`。如果当前安装包使用了不同签名身份，脚本会停止，避免更新后丢失系统权限。安装后会重新打开应用；这样下载的文件不带浏览器的“来自互联网”标记，**不会再弹“仍要打开”**。
 
 **为什么浏览器下载的版本每次都要重新授权？** macOS 的录屏 / 麦克风权限绑定在应用的**签名身份**上。没有固定证书时，CI 只能临时（ad-hoc）签名，每个版本的签名都不同，系统就把它当成新应用。在自己的 Mac 上运行一次：
 
@@ -286,7 +304,7 @@ Qwen3-Embedding-0.6B Q8 为资料增加本地语义检索。全部模型约 **1.
 | 导入的资料 | 在本机解析，随所属系列保存在本机 |
 | API Key（每个预设、Tavily） | 系统钥匙串 |
 | 手机伴侣 | 默认关闭；只同步当前问题、回答与来源。局域网连接使用 HTTP；互联网备用中转采用端到端加密。配对链接含随机凭据，请勿转发 |
-| 会议记录、系列、备份 | 全部在本机 `~/Library/Application Support/InterviewHacker`（不含音频）；可在 设置 → 数据 关闭记录、导出 / 导入或删除 |
+| 会议记录、系列、备份 | 全部在本机 `~/Library/Application Support/NextThought`（不含音频）；可在 设置 → 数据 关闭记录、导出 / 导入或删除 |
 | 会后纪要 | 默认开启：会议结束后将本次转写和相关资料片段发送给 设置 → 纪要 中选择的模型进行整理；可在 设置 → 纪要 关闭“会议结束后自动整理” |
 | 更新检查 | 访问 api.github.com 读取本仓库的 Releases；访问令牌保存在钥匙串 |
 
@@ -349,8 +367,8 @@ macOS 把权限绑定在应用的签名身份上。最简单：在 设置 → �
 
 ```sh
 swift test --disable-sandbox     # 运行测试
-./scripts/build-app.sh           # 生成 dist/InterviewHacker.app 与 ZIP（会编译中英文界面文字）
-open dist/InterviewHacker.app
+./scripts/build-app.sh           # 生成 dist/NextThought.app 与 ZIP（会编译中英文界面文字）
+open dist/NextThought.app
 ./scripts/capture-screenshots.sh # 可选：用演示模式重新生成 README 截图
 ```
 

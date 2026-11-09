@@ -2,16 +2,20 @@
 set -euo pipefail
 
 ih_root="$(cd "$(dirname "$0")/.." && pwd)"
-ih_app="${1:-$ih_root/dist/InterviewHacker.app}"
-ih_identity="${INTERVIEWHACKER_SIGNING_IDENTITY:-}"
-ih_bundle_id="com.interviewhacker.app"
+ih_app="${1:-$ih_root/dist/NextThought.app}"
+ih_identity="${NEXTTHOUGHT_SIGNING_IDENTITY:-${INTERVIEWHACKER_SIGNING_IDENTITY:-}}"
+ih_bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$ih_app/Contents/Info.plist" 2>/dev/null || true)"
 ih_signing_dir="${HOME}/Library/Application Support/InterviewHacker/Signing"
 ih_args=()
 ih_local=0
-ih_entitlements="$ih_root/Resources/InterviewHacker.entitlements"
+ih_entitlements="$ih_root/Resources/NextThought.entitlements"
 
-if [[ ! -d "$ih_app" || ! -f "$ih_app/Contents/MacOS/InterviewHacker" ]]; then
-    echo "The InterviewHacker app bundle is incomplete: $ih_app" >&2
+if [[ ! -d "$ih_app" || ! -f "$ih_app/Contents/MacOS/NextThought" ]]; then
+    echo "The NextThought app bundle is incomplete: $ih_app" >&2
+    exit 1
+fi
+if [[ "$ih_bundle_id" != "com.nextthought.app" ]]; then
+    echo "Refusing to sign an unexpected bundle identifier: ${ih_bundle_id:-missing}." >&2
     exit 1
 fi
 
@@ -40,7 +44,7 @@ if [[ "$ih_identity" == "-" ]]; then
         echo "Ad-hoc signing is only allowed in GitHub Actions; local builds must use Local Signing." >&2
         exit 1
     fi
-    codesign --force --sign - --identifier com.interviewhacker.app "$ih_app"
+    codesign --force --sign - --identifier "$ih_bundle_id" "$ih_app"
     codesign --verify --deep --strict "$ih_app"
     echo "Signature: ad-hoc (not notarized)"
     exit 0
@@ -81,11 +85,11 @@ if [[ -z "$ih_identity" ]]; then
     fi
     ih_args=(--keychain "$ih_keychain" --timestamp=none)
     ih_local=1
-elif [[ -n "${INTERVIEWHACKER_SIGNING_KEYCHAIN:-}" ]]; then
-    ih_args=(--keychain "$INTERVIEWHACKER_SIGNING_KEYCHAIN")
+elif [[ -n "${NEXTTHOUGHT_SIGNING_KEYCHAIN:-${INTERVIEWHACKER_SIGNING_KEYCHAIN:-}}" ]]; then
+    ih_args=(--keychain "${NEXTTHOUGHT_SIGNING_KEYCHAIN:-$INTERVIEWHACKER_SIGNING_KEYCHAIN}")
 fi
 
-if [[ "${INTERVIEWHACKER_HARDENED_RUNTIME:-0}" == 1 ]]; then
+if [[ "${NEXTTHOUGHT_HARDENED_RUNTIME:-${INTERVIEWHACKER_HARDENED_RUNTIME:-0}}" == 1 ]]; then
     ih_args+=(--options runtime --timestamp)
 fi
 
@@ -95,7 +99,7 @@ if [[ "$ih_local" == 1 ]]; then
         --identifier "$ih_bundle_id" \
         --requirements "=designated => identifier \"$ih_bundle_id\" and certificate leaf = H\"$ih_requirement_identity\"" \
         "$ih_app"
-elif [[ "${INTERVIEWHACKER_HARDENED_RUNTIME:-0}" == 1 ]]; then
+elif [[ "${NEXTTHOUGHT_HARDENED_RUNTIME:-${INTERVIEWHACKER_HARDENED_RUNTIME:-0}}" == 1 ]]; then
     codesign --force --sign "$ih_identity" "${ih_args[@]}" \
         --identifier "$ih_bundle_id" --entitlements "$ih_entitlements" "$ih_app"
 else

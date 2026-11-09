@@ -4,7 +4,7 @@ p=argparse.ArgumentParser();p.add_argument('--runtime',required=True);p.add_argu
 ROOT=pathlib.Path(__file__).resolve().parents[3];runtime=pathlib.Path(args.runtime).resolve();app=pathlib.Path(args.app).resolve();python=runtime/'python/bin/python3'
 with tempfile.TemporaryDirectory(dir=ROOT/'.local',prefix='document-security-') as td:
  job=pathlib.Path(td);(job/'input').mkdir();source=job/'input/source.pdf';shutil.copy(ROOT/'Tools/Validation/Documents/Fixtures/02-english-jd.pdf',source)
- manifest=job/'manifest.json';manifest.write_text(json.dumps({'source':str(source),'sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'name':'test.pdf','app':str(app/'Contents/MacOS/InterviewHacker')}))
+ manifest=job/'manifest.json';manifest.write_text(json.dumps({'source':str(source),'sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'name':'test.pdf','app':str(app/'Contents/MacOS/NextThought')}))
  proc=subprocess.Popen([str(python),'-I',str(app/'Contents/Resources/DocumentRuntime/document_mcp.py'),str(manifest)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
  def request(method,params={}):
   request.i+=1;proc.stdin.write(json.dumps({'jsonrpc':'2.0','id':request.i,'method':method,'params':params})+'\n');proc.stdin.flush();return json.loads(proc.stdout.readline())
@@ -39,7 +39,7 @@ for color in ['red','blue']:
 presentation.save(sys.argv[2])
 """
  subprocess.run([str(python),'-I','-c',code,str(runtime/'site-packages'),str(source)],check=True)
- manifest.write_text(json.dumps({'source':str(source),'sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'name':'test.pptx','app':str(app/'Contents/MacOS/InterviewHacker')}))
+ manifest.write_text(json.dumps({'source':str(source),'sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'name':'test.pptx','app':str(app/'Contents/MacOS/NextThought')}))
  proc=subprocess.Popen([str(python),'-I',str(app/'Contents/Resources/DocumentRuntime/document_mcp.py'),str(manifest)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
  request('initialize')
  response=request('tools/call',{'name':'office_structure','arguments':{}})
@@ -60,7 +60,7 @@ presentation.save(sys.argv[2])
  code="import sys;sys.path.insert(0,sys.argv[1]);from PIL import Image;a=Image.new('RGB',(40,40),'white');b=Image.new('RGB',(40,40),'black');a.save(sys.argv[2],save_all=True,append_images=[b])"
  subprocess.run([str(python),'-I','-c',code,str(runtime/'site-packages'),str(tiff)],check=True)
  for path,tool,arguments,expected in [(rtf,'read_text',{},'Native RTF original file'),(heic,'view_page',{'page':1},None),(tiff,'view_page',{'page':2},None)]:
-  manifest.write_text(json.dumps({'source':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'name':path.name,'app':str(app/'Contents/MacOS/InterviewHacker')}))
+  manifest.write_text(json.dumps({'source':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'name':path.name,'app':str(app/'Contents/MacOS/NextThought')}))
   proc=subprocess.Popen([str(python),'-I',str(app/'Contents/Resources/DocumentRuntime/document_mcp.py'),str(manifest)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
   request('initialize');response=request('tools/call',{'name':tool,'arguments':arguments})
   assert 'result' in response,response
@@ -70,9 +70,9 @@ presentation.save(sys.argv[2])
    info=request('tools/call',{'name':'file_info','arguments':{}})
    assert json.loads(info['result']['content'][0]['text'])['pages']==2
   proc.terminate();proc.wait(timeout=5)
- env=dict(os.environ,INTERVIEWHACKER_DATA_DIR=str(job/'isolated-data'))
+ env=dict(os.environ,NEXTTHOUGHT_DATA_DIR=str(job/'isolated-data'))
  output=job/'tiff-output'
- subprocess.run([str(app/'Contents/MacOS/InterviewHacker'),'--self-test','documents','--provider','system','--input',str(tiff),'--output',str(output)],env=env,check=True,stdout=subprocess.DEVNULL)
+ subprocess.run([str(app/'Contents/MacOS/NextThought'),'--self-test','documents','--provider','system','--input',str(tiff),'--output',str(output)],env=env,check=True,stdout=subprocess.DEVNULL)
  converted=json.loads((output/'source.tiff.json').read_text())
  assert {block['locator']['page'] for block in converted['blocks']}=={1,2}
  subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict',str(app)],check=True)

@@ -10,21 +10,21 @@
 		<string>en</string>
 	</array>
 	<key>CFBundleDisplayName</key>
-	<string>Interview Hacker</string>
+	<string>NextThought</string>
 	<key>CFBundleExecutable</key>
-	<string>InterviewHacker</string>
+	<string>NextThought</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.interviewhacker.app</string>
+	<string>com.nextthought.app</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Interview Hacker</string>
+	<string>NextThought</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.3.1</string>
+	<string>2.5.0</string>
 	<key>CFBundleVersion</key>
-	<string>2301</string>
+	<string>2500</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>LSMinimumSystemVersion</key>
@@ -40,16 +40,16 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>InterviewHacker uses Bluetooth only when you enable the paired native phone backup connection.</string>
+	<string>NextThought uses Bluetooth only when you enable the paired native phone backup connection.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>InterviewHacker serves the optional phone companion page on your local network when you turn it on.</string>
+	<string>NextThought serves the optional phone companion page on your local network when you turn it on.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>InterviewHacker uses on-device speech recognition for the system audio you select.</string>
+	<string>NextThought uses on-device speech recognition for the system audio you select.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>InterviewHacker uses your microphone for local transcription, labelled as your voice separately from system audio.</string>
+	<string>NextThought uses your microphone for local transcription, labelled as your voice separately from system audio.</string>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>InterviewHacker captures system audio from the selected meeting or lesson window for on-device transcription.</string>
+	<string>NextThought captures system audio from the selected meeting or lesson window for on-device transcription.</string>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>InterviewHacker captures the selected screen area or window when you request screenshot assistance.</string>
+	<string>NextThought captures the selected screen area or window when you request screenshot assistance.</string>
 </dict>
 </plist>

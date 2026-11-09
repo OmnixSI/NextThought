@@ -24,12 +24,12 @@ trap 'rm -rf "$ih_tmp"' EXIT
 
 ih_p12_password="$(/usr/bin/openssl rand -hex 16)"
 security unlock-keychain -p "$ih_keychain_password" "$ih_keychain"
-# Exports only the InterviewHacker identity from the dedicated signing keychain.
+# Exports only the release identity from the dedicated signing keychain.
 security export -k "$ih_keychain" -t identities -f pkcs12 -P "$ih_p12_password" -o "$ih_tmp/identity.p12"
 ih_p12_base64="$(base64 -i "$ih_tmp/identity.p12")"
 
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-    repo="${INTERVIEWHACKER_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
+    repo="${NEXTTHOUGHT_REPO:-${INTERVIEWHACKER_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}}"
     printf '%s' "$ih_p12_base64" | gh secret set MACOS_CERTIFICATE_P12_BASE64 --repo "$repo"
     printf '%s' "$ih_p12_password" | gh secret set MACOS_CERTIFICATE_PASSWORD --repo "$repo"
     printf '%s' "$ih_identity" | gh secret set MACOS_SIGNING_IDENTITY --repo "$repo"

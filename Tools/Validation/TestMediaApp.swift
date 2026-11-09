@@ -11,7 +11,7 @@ final class MediaDelegate: NSObject, NSApplicationDelegate, AVAudioPlayerDelegat
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         window = NSWindow(contentRect: NSRect(x: 40, y: 160, width: 940, height: 750), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "InterviewHacker 测试媒体 · 合成问题"
+        window.title = "NextThought 测试媒体 · 合成问题"
         let content = NSStackView()
         content.orientation = .vertical
         content.spacing = 10

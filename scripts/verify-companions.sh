@@ -15,7 +15,7 @@ git diff --exit-code -- Resources/Companion/phone.js
 swift test --package-path Mobile/Shared --disable-sandbox
 if [[ "$ih_companion_mode" == --require-ios ]]; then
   xcodebuild -version
-  xcodebuild -project Mobile/iOS/InterviewHackerCompanion.xcodeproj -scheme InterviewHackerCompanion \
+  xcodebuild -project Mobile/iOS/NextThoughtCompanion.xcodeproj -scheme NextThoughtCompanion \
     -destination 'generic/platform=iOS Simulator' -derivedDataPath .build/companion-ios \
     CODE_SIGNING_ALLOWED=NO build
 else

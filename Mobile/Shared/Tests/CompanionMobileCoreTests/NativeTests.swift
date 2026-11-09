@@ -5,8 +5,10 @@ import Testing
 @Suite struct NativeTests {
     @Test @MainActor func pairingAndMonotonicState() throws {
         let p = CompanionPairing(lan: "http://127.0.0.1:8765", token: "local-token", ble: "uuid-1234")
-        let link = try p.url(base: URL(string: "interviewhacker-companion://pair")!).absoluteString
-        #expect(try NativeCompanionClient.parse(link) == p)
+        for scheme in ["nextthought-companion", "interviewhacker-companion"] {
+            let link = try p.url(base: URL(string: "\(scheme)://pair")!).absoluteString
+            #expect(try NativeCompanionClient.parse(link) == p)
+        }
         #expect(throws: (any Error).self) { try NativeCompanionClient.parse("https://invalid.example") }
         let client = NativeCompanionClient()
         func e(_ id: String, _ seq: UInt64, _ question: String, _ answer: String) -> CompanionEnvelope {

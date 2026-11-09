@@ -1,7 +1,7 @@
 // Original vector artwork; no platform symbol is embedded in the asset.
 import AppKit
 import Foundation
-let output = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "Mobile/iOS/InterviewHackerCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
+let output = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "Mobile/iOS/NextThoughtCompanion/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
 let size = 1024
 let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
 NSGraphicsContext.saveGraphicsState(); NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)

@@ -1,4 +1,4 @@
-# InterviewHacker 邮件交付限时 Key 方案
+# NextThought 邮件交付限时 Key 方案
 
 整理日期：2026 年 10 月 24 日（Australia/Sydney）。状态：方案文档，尚未实现或部署。
 
@@ -84,7 +84,7 @@ Apple 的 ContinuousClock 包含系统睡眠期间的计时，但其时间点只
 
 这些措施保护的是正版客户端的正常行为和许可证真实性，无法保证用户永远不能修改本地判断。本次按用户选择保留本地能力，核心功能迁到云端不作为本方案前提。用户自己的模型密钥和登录凭证继续留在原有安全存储中。
 
-应用签名与授权签名分别管理。后续本机构建沿用既有 `InterviewHacker Local Signing` 身份、Bundle ID `com.interviewhacker.app` 和 designated requirement；不因增加授权功能而轮换应用证书或重置隐私权限。完整性校验需兼容项目现有的本机重新签名更新流程。[项目签名约束](/Users/spdor/Desktop/CodeSpace/InterviewHacker/AGENTS.md)
+应用签名与授权签名分别管理。后续本机构建沿用既有 `NextThought Local Signing` 身份、Bundle ID `com.nextthought.app` 和 designated requirement；不因增加授权功能而轮换应用证书或重置隐私权限。完整性校验需兼容项目现有的本机重新签名更新流程。[项目签名约束](/Users/spdor/Desktop/CodeSpace/NextThought/AGENTS.md)
 
 **Cloudflare 管理后台。** 后台可由受 Access 保护的 Worker 与 D1 组成；只允许管理员进入，覆盖生产和预览入口。数据库记录申请、采用的方案、许可证 ID、设备摘要（若有）、固定期限、签发人、签发版本、补发和延期关系；签名私钥放在 Worker Secret，并作受控加密备份。[Worker Access](https://developers.cloudflare.com/workers/configuration/cloudflare-access/) · [Worker Secrets](https://developers.cloudflare.com/workers/configuration/secrets/)
 

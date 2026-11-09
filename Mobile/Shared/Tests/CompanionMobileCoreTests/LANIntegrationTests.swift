@@ -53,7 +53,7 @@ private final class LANFixture: @unchecked Sendable {
         let fixture = try LANFixture(frame(1,"first","first answer")); let port = try await fixture.start(); defer { fixture.stop() }
         let client = NativeCompanionClient(); defer { client.stop() }
         let pairing = CompanionPairing(lan: "http://127.0.0.1:\(port)", token: "fixture-token")
-        try client.start(link: pairing.url(base: URL(string: "interviewhacker-companion://pair")!).absoluteString, enableBluetooth: false)
+        try client.start(link: pairing.url(base: URL(string: "nextthought-companion://pair")!).absoluteString, enableBluetooth: false)
         func wait(_ condition: () -> Bool, timeout: TimeInterval = 3) async throws {
             let start = Date()
             while !condition(), Date().timeIntervalSince(start) < timeout { try await Task.sleep(for: .milliseconds(50)) }

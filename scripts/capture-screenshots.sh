@@ -3,8 +3,8 @@
 # no audio, no network, no model calls). The app draws its own window into PNG files,
 # so no Screen Recording permission is needed.
 #
-# Usage: scripts/capture-screenshots.sh [path/to/InterviewHacker.app]
-#        (defaults to dist/InterviewHacker.app from scripts/build-app.sh)
+# Usage: scripts/capture-screenshots.sh [path/to/NextThought.app]
+#        (defaults to dist/NextThought.app from scripts/build-app.sh)
 # Output: docs/screenshots/v2/<page>-<light|dark>[-en].png, at most 1600 px wide.
 #
 # The capture runs a copy with a separate bundle identifier and a temporary data
@@ -12,17 +12,17 @@
 set -euo pipefail
 
 project_root="$(cd "$(dirname "$0")/.." && pwd)"
-source_app="${1:-$project_root/dist/InterviewHacker.app}"
+source_app="${1:-$project_root/dist/NextThought.app}"
 [[ -d "$source_app" ]] || { echo "No app at $source_app — run scripts/build-app.sh first" >&2; exit 1; }
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-app="$work/InterviewHacker-ci.app"
+app="$work/NextThought-ci.app"
 cp -R "$source_app" "$app"
-plutil -replace CFBundleIdentifier -string com.interviewhacker.app.ci "$app/Contents/Info.plist"
-codesign --force --sign - --identifier com.interviewhacker.app.ci "$app" >/dev/null 2>&1
+plutil -replace CFBundleIdentifier -string com.nextthought.app.ci "$app/Contents/Info.plist"
+codesign --force --sign - --identifier com.nextthought.app.ci "$app" >/dev/null 2>&1
 
-defaults delete com.interviewhacker.app.ci >/dev/null 2>&1 || true
+defaults delete com.nextthought.app.ci >/dev/null 2>&1 || true
 out="$project_root/docs/screenshots/v2"
 mkdir -p "$out"
 
@@ -37,18 +37,18 @@ capture() {
     for attempt in 1 2 3; do
     # A sleeping display draws nothing; declare the user active to wake it.
     caffeinate -u -t 3 >/dev/null 2>&1 &
-    pkill -9 -f "InterviewHacker-ci.app/Contents/MacOS" 2>/dev/null || true
+    pkill -9 -f "NextThought-ci.app/Contents/MacOS" 2>/dev/null || true
     # Every capture ends with a kill; without this the next launch tries to restore
     # windows after an "unexpected quit" and never draws the demo window.
-    rm -rf "$HOME/Library/Saved Application State/com.interviewhacker.app.ci.savedState"
-    INTERVIEWHACKER_DEMO=1 \
-    INTERVIEWHACKER_DATA_DIR="$work/data" \
-    INTERVIEWHACKER_DEMO_SECTION="$section" \
-    INTERVIEWHACKER_DEMO_APPEARANCE="$appearance" \
-    INTERVIEWHACKER_DEMO_DEFAULTS="$defaults" \
-    INTERVIEWHACKER_DEMO_VOICE_READY=1 \
-    INTERVIEWHACKER_DEMO_SNAPSHOT="$png" \
-    "$app/Contents/MacOS/InterviewHacker" -AppleLanguages "($language)" \
+    rm -rf "$HOME/Library/Saved Application State/com.nextthought.app.ci.savedState"
+    NEXTTHOUGHT_DEMO=1 \
+    NEXTTHOUGHT_DATA_DIR="$work/data" \
+    NEXTTHOUGHT_DEMO_SECTION="$section" \
+    NEXTTHOUGHT_DEMO_APPEARANCE="$appearance" \
+    NEXTTHOUGHT_DEMO_DEFAULTS="$defaults" \
+    NEXTTHOUGHT_DEMO_VOICE_READY=1 \
+    NEXTTHOUGHT_DEMO_SNAPSHOT="$png" \
+    "$app/Contents/MacOS/NextThought" -AppleLanguages "($language)" \
         -ApplePersistenceIgnoreState YES -NSQuitAlwaysKeepsWindows NO >"$work/$name.log" 2>&1 &
     local pid=$!
     for _ in $(seq 1 60); do [[ -s "$png" ]] && break; sleep 0.5; done
@@ -65,9 +65,9 @@ capture() {
         echo "ok   $(basename "$png")"
     else
         echo "FAIL $(basename "$png")"; tail -n 20 "$work/$name.log" || true
-        report="$(ls -t "$HOME"/Library/Logs/DiagnosticReports/InterviewHacker* 2>/dev/null | head -1 || true)"
+        report="$(ls -t "$HOME"/Library/Logs/DiagnosticReports/NextThought* 2>/dev/null | head -1 || true)"
         [[ -n "$report" ]] && echo "     latest crash report: $report" && head -n 40 "$report"
-        pgrep -fl "InterviewHacker" || true
+        pgrep -fl "NextThought" || true
     fi
     sleep 0.5
 }
