@@ -126,3 +126,25 @@ private struct NavigationTopButtonStyle: ButtonStyle {
         }
     }
 }
+
+/// Native selection rows expose one accessible destination per row.
+struct AppNavigationSidebar: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        List(selection: Binding<AppSection?>(
+            get: { state.section },
+            set: { if let section = $0 { state.select(section) } }
+        )) {
+            ForEach(AppSection.allCases) { section in
+                Label(section.title, systemImage: section.symbol)
+                    .font(Typo.label)
+                    .frame(minHeight: 32)
+                    .tag(section)
+                    .accessibilityLabel(section.title)
+                    .accessibilityIdentifier("appNavigation.\(section.rawValue)")
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("InterviewHacker")
+    }
+}

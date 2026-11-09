@@ -55,15 +55,10 @@ struct SettingsView: View {
     @AppStorage("settingsGroup", store: UserDefaults.standard) private var groupRaw = SettingsGroup.essentials.rawValue
     @State private var query = ""
     private var selectedGroup: SettingsGroup { SettingsGroup(stored: groupRaw) }
-    private var matches: [SettingsGroup] {
-        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !term.isEmpty else { return SettingsGroup.navigationOrder }
-        return SettingsGroup.navigationOrder.filter { group in
-            [group.rawValue, String(localized: String.LocalizationValue(group.displayTitle)),
-             String(localized: String.LocalizationValue(group.summary)), group.englishSearchTerms]
-                .contains { $0.localizedCaseInsensitiveContains(term) }
-        }
-    }
+    @State private var searchTarget: SettingsSearchItem?
+    @State private var searchNavigationRevision = UUID()
+    @State private var highlightTarget: String?
+    private var searchItems: [SettingsSearchItem] { SettingsSearchItem.matching(query) }
 
     var body: some View {
         GeometryReader { proxy in
@@ -75,29 +70,37 @@ struct SettingsView: View {
                         .accessibilityIdentifier("settings.search")
                     ScrollView {
                         VStack(alignment: .leading, spacing: 4) {
-                            ForEach(matches) { group in
-                                Button { groupRaw = group.rawValue } label: {
-                                    HStack(spacing: 9) {
-                                        Image(systemName: group.symbol).frame(width: 18)
-                                        Text(LocalizedStringKey(group.displayTitle)).font(Typo.label)
-                                        Spacer(minLength: 0)
-                                    }
-                                    .foregroundStyle(group == selectedGroup ? Ink.ink : Ink.secondary)
-                                    .padding(.horizontal, 10).frame(minHeight: 36)
-                                    .background(group == selectedGroup ? Ink.hover : Color.clear,
-                                                in: RoundedRectangle(cornerRadius: 7))
-                                    .contentShape(Rectangle())
+                            if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                ForEach(SettingsGroup.navigationOrder) { group in
+                                    Button { groupRaw = group.rawValue; searchTarget = nil } label: {
+                                        Label(LocalizedStringKey(group.displayTitle), systemImage: group.symbol)
+                                            .font(Typo.label).frame(maxWidth: .infinity, alignment: .leading)
+                                            .padding(10).background(group == selectedGroup ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: 7))
+                                    }.buttonStyle(.plain)
+                                        .accessibilityIdentifier("settings.destination." + group.id)
+                                        .accessibilityAddTraits(group == selectedGroup ? .isSelected : [])
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("settings.destination." + group.id)
-                                .accessibilityAddTraits(group == selectedGroup ? .isSelected : [])
+                            } else {
+                                ForEach(searchItems) { item in
+                                    Button {
+                                        groupRaw = item.group.rawValue; searchTarget = item; highlightTarget = item.anchor
+                                        searchNavigationRevision = UUID()
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(LocalizedStringKey(item.title)).font(Typo.label)
+                                            Text(LocalizedStringKey(item.group.displayTitle)).font(Typo.caption).foregroundStyle(Ink.secondary)
+                                        }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
+                                            .background(searchTarget?.id == item.id ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: 7))
+                                    }.buttonStyle(.plain).accessibilityIdentifier("settings.result." + item.id)
+                                }
                             }
-                            if matches.isEmpty { Text("没有匹配的设置分组").font(Typo.caption).foregroundStyle(Ink.secondary) }
+                            if !query.isEmpty && searchItems.isEmpty { Text("没有匹配的设置项").font(Typo.caption).foregroundStyle(Ink.secondary) }
                         }
                     }
                 }
                 .padding(12).frame(width: proxy.size.width < 650 ? 160 : 190)
                 Divider()
+                ScrollViewReader { scroll in
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s4) {
                         VStack(alignment: .leading, spacing: 5) {
@@ -113,6 +116,17 @@ struct SettingsView: View {
                 .id(selectedGroup)
                 .environment(\.settingsColumnCount, 1)
                 .environment(\.settingsShowsFullOptions, true)
+                .environment(\.settingsSearchHighlight, highlightTarget)
+                .environment(\.settingsSearchDestination, searchTarget?.anchor)
+                .task(id: searchNavigationRevision) {
+                    guard let target = searchTarget else { return }
+                    try? await Task.sleep(for: .milliseconds(180))
+                    guard !Task.isCancelled else { return }
+                    withAnimation(Motion.expand) { scroll.scrollTo(target.anchor, anchor: .top) }
+                    try? await Task.sleep(for: .seconds(3))
+                    if !Task.isCancelled { highlightTarget = nil }
+                }
+                }
             }
         }
     }
@@ -284,6 +298,7 @@ struct SettingsSection<Content: View>: View {
     let title: String
     let icon: String
     @Environment(\.settingsRowAligned) private var rowAligned
+    @Environment(\.settingsSearchHighlight) private var searchHighlight
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -299,11 +314,15 @@ struct SettingsSection<Content: View>: View {
         .font(.system(size: 13))
         .frame(maxHeight: rowAligned ? .infinity : nil, alignment: .topLeading)
         .card()
+        .id(title)
+        .overlay(RoundedRectangle(cornerRadius: Space.radiusMedium).stroke(searchHighlight == title ? Ink.focus : Color.clear, lineWidth: 2))
+        .animation(Motion.hover, value: searchHighlight == title)
     }
 }
 
 /// The single global switch hides expert controls without resetting their values.
 struct AdvancedOptions<Content: View>: View {
+    @Environment(\.settingsSearchDestination) private var searchDestination
     private let content: Content
     private let alwaysVisible: Bool
     private let title: String
@@ -328,6 +347,7 @@ struct AdvancedOptions<Content: View>: View {
                 content.padding(.top, Space.s3)
             }
             .font(Typo.label)
+            .onChange(of: searchDestination, initial: true) { _, target in if target != nil { expanded = true } }
         }
     }
 }
@@ -401,10 +421,10 @@ private struct EssentialSettings: View {
                         actionTitle: state.liveSetupReadiness.voiceReady ? "重新设置" : "设置语音"
                     ) { state.openSettings(.recognition) }
                     SettingsStatusRow(
-                        tone: state.answerEngineReady ? .ready : .caution,
-                        title: "回答服务（必需）",
-                        detail: state.answerEngineReady ? "回答服务已配置，可以测试或开始使用" : "需要连接回答服务，才能在对话中生成建议回答",
-                        actionTitle: state.answerEngineReady ? "重新设置" : "回答设置"
+                        tone: state.answerEngineReady ? .ready : .idle,
+                        title: "回答服务（可选）",
+                        detail: state.answerEngineReady ? "回答服务已配置，可以测试或开始使用" : "可稍后连接；转写和个人笔记现在即可使用",
+                        actionTitle: state.answerEngineReady ? "重新设置" : "连接服务"
                     ) { state.openSettings(.answers) }
                     SettingsStatusRow(
                         tone: .ready,
@@ -1098,7 +1118,7 @@ private struct OverlaySettings: View {
                         Button("共享可见性测试") { state.runShareVisibilityTest() }.buttonStyle(SecondaryButtonStyle())
                         Button("仅显示回答浮窗") { TeleprompterController.shared.showOnlyTeleprompter() }.buttonStyle(SecondaryButtonStyle())
                     }
-                    Note("手机显示与遥控在高级设置 → 更多 → 手机伴侣。隐藏背景时，不透明度不会影响文字与按钮。")
+                    Note("手机显示与遥控在设置 → 手机伴侣。隐藏背景时，不透明度不会影响文字与按钮。")
                 }
             }
         }
@@ -1144,7 +1164,7 @@ private struct RecordingSettings: View {
                 Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened), presentation: .inline)
             }
             AdvancedOptions("recording-transfer") {
-                Note("备份包含系列资料、经验库、题库、阶段复盘、会议记录和设置。导入会合并，不删除现有数据；冲突时保留较新的修改。", presentation: .inline)
+                Note("备份包含项目资料、研究积累、会议记录、个人笔记、模板和设置。先预览再恢复；项目按修改时间合并，记录与模板冲突由你选择。", presentation: .inline)
                 Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets)
                 Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings)
                 if includeSecrets { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
@@ -1184,10 +1204,10 @@ private struct RecordingSettings: View {
         .onAppear { backups = DataBackup.listBackups() }
         .onChange(of: state.section) { _, section in if section == .settings { backups = DataBackup.listBackups() } }
         .confirmationDialog("从这份备份恢复？", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }), titleVisibility: .visible) {
-            Button("合并恢复") { if let restoring { state.importArchive(restoring.url, applySettings: false) }; restoring = nil; refreshSoon() }
+            Button("查看恢复预览") { if let restoring { state.importArchive(restoring.url, applySettings: false) }; restoring = nil; refreshSoon() }
             Button("取消", role: .cancel) { restoring = nil }
         } message: {
-            Text("把备份里的场景和会话记录合并回来；现有数据不会被删除，较新的修改会保留。")
+            Text("先查看新增、相同和冲突内容；确认所选内容后才会应用。冲突默认保留本机，应用前创建恢复点。")
         }
     }
 

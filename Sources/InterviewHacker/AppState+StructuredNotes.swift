@@ -187,10 +187,11 @@ extension AppState {
         }
         let english = detail.notes.map { $0.language == "en" } ?? notesUseEnglish
 
-        let payload: StructuredNotesPayload
+        var payload: StructuredNotesPayload
         do {
-            payload = try await writeStructuredNotes(detail: detail, notes: detail.notes, format: key.format, english: english,
+            payload = try await writeStructuredNotes(detail: detail, notes: detail.effectiveNotes, format: key.format, english: english,
                                                      engine: engine, fallbackTitle: base.title)
+            payload.sourceRevision = detail.userContent.revision
             Diagnostics.record("notes.structured", ["session_id": id.uuidString, "format": key.format.rawValue,
                                                     "dropped": payload.droppedCount])
         } catch {
@@ -213,11 +214,11 @@ extension AppState {
             guard var summary = await archive.detail(id)?.summary else { return }
             guard !Task.isCancelled, jobs.running[key] == token else { return }
             summary.store(payload)
-            archive.saveSummary(summary, for: id)
-            await archive.flush()
-            jobs.complete(payload, for: key, token: token)
-            archive.notesRevision += 1
-            saved = true
+            do {
+                try await archive.saveDerivedSummary(summary, for: id)
+                jobs.complete(payload, for: key, token: token)
+                saved = true
+            } catch { jobs.markFailed(key) }
         }
         if !saved && !Task.isCancelled { jobs.markFailed(key) }
     }
@@ -226,9 +227,14 @@ extension AppState {
     private func writeStructuredNotes(detail: SessionDetail, notes: StructuredNotes?, format: NotesFormat, english: Bool,
                                       engine: NotesEngine, fallbackTitle: String) async throws -> StructuredNotesPayload {
         let start = detail.meta.startedAt
-        let lines = NotesCorrections.apply(notes?.corrections ?? [], to: detail.lines)
+        let lines = detail.effectiveLines
         let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: lines, answers: [], detected: [], context: detail.context)
-        let header = SessionSummaryPrompt.header(material)
+        var header = SessionSummaryPrompt.header(material)
+        if let edited = detail.userContent.editedNotes {
+            header += "\n用户修订的纪要（作为整理重点，原话与时间引用仍以转写为准）：\n" + NotesMarkdown.render(edited, title: detail.meta.displayTitle, facts: "").prefix(8_000)
+        } else if let edited = detail.userContent.editedMarkdown {
+            header += "\n用户修订的纪要（原话与时间仍以转写为准）：\n" + edited.prefix(8_000)
+        }
         let transcript = structuredTranscript(lines: lines, start: start, english: english)
         let chunks = SessionSummaryPrompt.chunks(transcript)
         let system = structuredSystemPrompt(format: format, english: english)

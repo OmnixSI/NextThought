@@ -47,6 +47,23 @@ public struct BackupManifest: Codable, Sendable, Equatable {
 }
 
 public enum BackupMerge {
+    public struct TemplateResult: Sendable {
+        public var templates: [NotesTemplate]
+        public var added: Int
+        public var replaced: Int
+        public var kept: Int
+    }
+    public static func notesTemplates(existing: [NotesTemplate], incoming: [NotesTemplate], useIncoming: Set<String> = []) -> TemplateResult {
+        var result = existing, added = 0, replaced = 0, kept = 0
+        for template in incoming where !template.isBuiltIn {
+            if let index = result.firstIndex(where: { $0.id == template.id }) {
+                if result[index] == template { continue }
+                if useIncoming.contains(template.id) { result[index] = template; replaced += 1 }
+                else { kept += 1 }
+            } else { result.append(template); added += 1 }
+        }
+        return .init(templates: result, added: added, replaced: replaced, kept: kept)
+    }
     public struct WorkspaceResult: Sendable, Equatable {
         public var merged: [Workspace]
         public var added: Int
@@ -119,6 +136,8 @@ public enum SettingsSnapshot {
         "globalSkillIDs", "assistantLayout",
         "documentOCRProvider", "documentProviderWasSelected", "ocrFallbackToVision", "semanticRetrievalEnabled",
         "localOCRModelID", "codexOCRModel", "codexOCREffort", "codexOCRTimeout",
+        "notesModelID", "notesReasoning", "notesLanguage", "notesTemplateByType", "customNotesTemplates",
+        "pinnedWorkspaceIDs", "projectLibrarySort",
     ]
 
     /// Keychain accounts exported only on request.

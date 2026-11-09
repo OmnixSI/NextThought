@@ -4,34 +4,10 @@ import InterviewHackerCore
 
 // MARK: - Meeting plan
 
-/// What to bring from the previous meeting of the series ("接着上一场").
-struct MeetingCarry: Equatable {
-    /// Materials the series already had before this meeting.
-    var materials = true
-    /// The question bank: reviewed questions with improved answers.
-    var review = true
-    /// Lessons ("经验").
-    var lessons = true
-    /// The full transcript of the previous meeting (long, so off by default).
-    var transcript = false
-
-    static let standard = MeetingCarry()
-}
-
-/// What the next start uses: set by the preparation page, cleared when the meeting ends.
-struct MeetingPlan: Equatable {
-    var title: String?
-    var carry: MeetingCarry = .standard
-    /// Materials of the series before this meeting; `carry.materials == false` leaves them out.
-    var baselineDocumentIDs: Set<UUID> = []
-    /// The meeting this one continues (for the transcript carry).
-    var previousSessionID: UUID?
-}
-
 /// The meeting on the preparation page, before it starts (kept in memory only).
 struct MeetingDraft: Equatable {
     var title = ""
-    var mode: SessionMode = .general
+    var mode: SessionMode = .labMeeting
     /// Name and base type of a custom type ("自定义…").
     var customTypeName = ""
     var customBaseMode: SessionMode = .general
@@ -48,6 +24,8 @@ struct MeetingDraft: Equatable {
     var carry = MeetingCarry.standard
     /// Materials the bound series had before this meeting.
     var baselineDocumentIDs: Set<UUID> = []
+    /// Preserve the exact meeting chosen by "prepare the next meeting".
+    var previousSessionID: UUID?
     /// When the page opened (files added since then are "这次新加的资料").
     var startedAt = Date()
 }
@@ -139,7 +117,28 @@ extension AppState {
     }
 
     /// The default live mode of the active series' type.
-    var typeDefaults: MeetingTypeDefaults { MeetingTypeDefaults.for(activeWorkspace.effectiveMode) }
+    var typeDefaults: MeetingTypeDefaults { MeetingTypeDefaults.for((preparedWorkspace ?? activeWorkspace).effectiveMode) }
+
+    var draftMeetingPlan: MeetingPlan? {
+        guard let draft = meetingDraft else { return nil }
+        let series = draftSeries
+        return MeetingPlan(title: draft.title, mode: draft.mode, customTypeName: draft.customTypeName,
+                           customBaseMode: draft.customBaseMode, carry: draft.carry,
+                           baselineDocumentIDs: draft.seriesID == nil ? Set(series?.documents.map(\.id) ?? []) : draft.baselineDocumentIDs,
+                           previousSessionID: draft.previousSessionID ?? series.flatMap { lastSession(inSeries: $0.id)?.id })
+    }
+
+    /// Shared by the preparation preview, material pre-read and the actual start.
+    func meetingWorkspace(for plan: MeetingPlan, in series: Workspace) async -> Workspace {
+        var previousTranscript: ContextDocument?
+        if plan.carry.transcript, let previous = plan.previousSessionID,
+           let detail = await archive.detail(previous), !detail.lines.isEmpty {
+            let text = SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt)
+            previousTranscript = ContextDocument(name: detail.meta.displayTitle,
+                pages: SessionSummaryPrompt.chunks(text, limit: 4_000), category: "上一场转写") // l10n-ignore: model context
+        }
+        return plan.preparedWorkspace(from: series, previousTranscript: previousTranscript)
+    }
 
     /// The workspace a starting meeting answers from: the series, minus what the
     /// preparation page left unchecked, plus the previous transcript when asked for.
@@ -147,26 +146,24 @@ extension AppState {
     /// that set (keyword search only: the vector index belongs to the full series).
     func meetingWorkspaceForStart() async -> Workspace {
         let series = activeWorkspace
-        guard let plan = plannedMeeting, plan.carry != .standard else { return series }
-        var workspace = series
-        if !plan.carry.materials {
-            workspace.documents.removeAll { plan.baselineDocumentIDs.contains($0.id) }
-        }
-        if !plan.carry.review { workspace.questionBank = [] }
-        if !plan.carry.lessons { workspace.lessons = [] }
-        if plan.carry.transcript, let previous = plan.previousSessionID, let detail = await archive.detail(previous), !detail.lines.isEmpty {
-            let text = SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt)
-            workspace.documents.append(ContextDocument(name: detail.meta.displayTitle,
-                                                       pages: SessionSummaryPrompt.chunks(text, limit: 4_000),
-                                                       category: "上一场转写")) // l10n-ignore: label for the model
-        }
+        guard let plan = plannedMeeting else { return series }
+        let workspace = await meetingWorkspace(for: plan, in: series)
         let documents = workspace.retrievalDocuments
-        if documents != series.retrievalDocuments {
-            contextIndex = await Task.detached(priority: .userInitiated) {
-                HybridContextIndex(documents: documents, semantic: SemanticIndex())
+        // Freeze one index revision, but do not make a meeting wait for document
+        // indexing. AI actions explain that their index is still being prepared.
+        let revision = UUID()
+        documentRevision = revision
+        isIndexingDocuments = true
+        let semantic = documents == series.retrievalDocuments ? semanticIndex : SemanticIndex()
+        Task {
+            let index = await Task.detached(priority: .utility) {
+                HybridContextIndex(documents: documents, semantic: semantic)
             }.value
-            Diagnostics.record("meeting.carry_applied", ["documents": documents.count])
+            guard documentRevision == revision else { return }
+            contextIndex = index
+            isIndexingDocuments = false
         }
+        Diagnostics.record("meeting.carry_applied", ["documents": documents.count])
         return workspace
     }
 }

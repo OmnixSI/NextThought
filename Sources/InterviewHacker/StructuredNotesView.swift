@@ -74,6 +74,15 @@ private struct StructuredFormatPane: View {
                 }
             }
             if let payload {
+                if payload.sourceRevision != detail.userContent.revision {
+                    HStack(spacing: Space.s2) {
+                        Text(payload.sourceRevision == nil ? "此视图的来源版本未知，可按最新内容重新整理。" : "笔记或校对已更新，此视图保留上一次的结果。")
+                            .font(Typo.caption).foregroundStyle(Ink.caution)
+                        Spacer(minLength: Space.s2)
+                        Button("更新视图") { state.generateStructuredNotes(for: id, format: format, regenerate: true) }
+                            .buttonStyle(SecondaryButtonStyle()).disabled(running)
+                    }
+                }
                 HStack {
                     Spacer(minLength: 0)
                     menu(payload, id: id, running: running)

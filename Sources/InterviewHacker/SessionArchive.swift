@@ -13,6 +13,39 @@ struct SessionDetail: Equatable {
     var summary: SessionSummary?
     /// Structured notes (notes.json); nil for sessions summarized before them.
     var notes: StructuredNotes? = nil
+    var userContent: SessionUserContent = .init()
+    var userContentError: String? = nil
+
+    var effectiveNotes: StructuredNotes? {
+        var result = userContent.editedNotes ?? notes
+        result?.corrections = userContent.corrections(generated: notes?.corrections ?? [], lines: lines)
+        return result
+    }
+
+    var effectiveLines: [SessionTranscriptLine] {
+        NotesCorrections.apply(userContent.corrections(generated: notes?.corrections ?? [], lines: lines), to: lines)
+    }
+
+    var effectiveSummary: SessionSummary? {
+        guard var result = summary else { return nil }
+        result.title = meta.displayTitle
+        if let edited = userContent.editedNotes {
+            result.markdown = NotesMarkdown.render(edited, title: meta.displayTitle, facts: "")
+        } else if let markdown = userContent.editedMarkdown {
+            result.markdown = markdown
+        }
+        return result
+    }
+
+    var fullMarkdown: String {
+        var result = SessionMarkdownExporter.export(meta: meta, summary: effectiveSummary, lines: effectiveLines,
+                                                    answers: answers, detected: questions)
+        if !userContent.personalNotes.isEmpty { result += "\n\n## 我的笔记\n\n" + userContent.personalNotes }
+        if !userContent.highlights.isEmpty {
+            result += "\n\n## 重点标记\n\n" + userContent.highlights.map { "- [\(NotesTime.text($0.offsetSeconds))] \($0.quote)" }.joined(separator: "\n")
+        }
+        return result
+    }
 }
 
 enum SessionStorageInfo: Equatable, Sendable {
@@ -51,11 +84,20 @@ final class SessionArchive {
     var notesSteps: [UUID: NotesStep] = [:]
     /// Bumped when notes change on disk, so open pages reload them.
     var notesRevision = 0
+    /// Search readers observe this only after a content write has reached disk.
+    var searchRevision = 0
 
     private let io = DispatchQueue(label: "app.interviewhacker.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
     @ObservationIgnored private var activeAnswerIDs: Set<UUID> = []
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
+    @ObservationIgnored private var cachedUserContent: [UUID: SessionUserContent] = [:]
+    @ObservationIgnored private var userSaveTasks: [UUID: Task<Void, Never>] = [:]
+    private(set) var userContentDrafts: [UUID: String] = [:]
+    private(set) var userSaveErrors: [UUID: String] = [:]
+    private(set) var savingUserContent: Set<UUID> = []
+    /// Sticky until acknowledged: a later successful write must not hide an earlier missing segment.
+    private(set) var storageErrors: [UUID: String] = [:]
 
     static var root: URL { AppPaths.sessions }
 
@@ -112,6 +154,8 @@ final class SessionArchive {
             }.value
             sessions = result.metas.filter { $0.id != activeID } + (activeMeta.map { [$0] } ?? [])
             sessions.sort { $0.startedAt > $1.startedAt }
+            cachedUserContent.removeAll()
+            contentDidChange()
             if !result.recovered.isEmpty { onRecoveredSummaries(result.recovered) }
         }
     }
@@ -146,6 +190,10 @@ final class SessionArchive {
             for index in transcript.indices {
                 if let voice = voices[transcript[index].id] { transcript[index].voice = voice }
             }
+            var content = SessionUserContent()
+            var contentError: String?
+            do { content = try SessionUserContentStore.load(from: folder) }
+            catch { contentError = error.localizedDescription }
             return SessionDetail(
                 meta: meta,
                 lines: transcript,
@@ -153,7 +201,8 @@ final class SessionArchive {
                 questions: lines("questions.jsonl", SessionQuestionEvent.self),
                 context: (try? Data(contentsOf: folder.appendingPathComponent("context.json"))).flatMap { try? decoder.decode(SessionContextSnapshot.self, from: $0) },
                 summary: (try? Data(contentsOf: folder.appendingPathComponent("summary.json"))).flatMap { try? decoder.decode(SessionSummary.self, from: $0) },
-                notes: (try? Data(contentsOf: folder.appendingPathComponent("notes.json"))).flatMap { try? decoder.decode(StructuredNotes.self, from: $0) })
+                notes: (try? Data(contentsOf: folder.appendingPathComponent("notes.json"))).flatMap { try? decoder.decode(StructuredNotes.self, from: $0) },
+                userContent: content, userContentError: contentError)
         }.value
     }
 
@@ -270,7 +319,10 @@ final class SessionArchive {
         activeID = nil
         activeMeta = nil
         meta.endedAt = date
-        if meta.transcriptCount == 0 && meta.answerCount == 0 {
+        let hasUserContent = cachedUserContent[meta.id]?.hasContent == true
+            || !(userContentDrafts[meta.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || ((try? SessionUserContentStore.load(from: folder(meta.id)).hasContent) ?? false)
+        if meta.transcriptCount == 0 && meta.answerCount == 0 && !hasUserContent {
             sessions.removeAll { $0.id == meta.id }
             let folder = folder(meta.id)
             io.async { try? FileManager.default.removeItem(at: folder) }
@@ -295,15 +347,22 @@ final class SessionArchive {
         meta.summaryState = .ready
         meta.summaryError = nil
         let folder = folder(id)
-        io.async { Self.write(summary, to: folder.appendingPathComponent("summary.json")) }
+        io.async {
+            if Self.write(summary, to: folder.appendingPathComponent("summary.json")) {
+                Task { @MainActor in self.contentDidChange(id) }
+            }
+        }
         update(meta)
     }
 
     func saveNotes(_ notes: StructuredNotes, for id: UUID) {
         if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return }
         let folder = folder(id)
-        io.async { Self.write(notes, to: folder.appendingPathComponent("notes.json")) }
-        notesRevision += 1
+        io.async {
+            if Self.write(notes, to: folder.appendingPathComponent("notes.json")) {
+                Task { @MainActor in self.contentDidChange(id) }
+            }
+        }
     }
 
     /// Edits saved notes in place (undoing a correction).
@@ -351,7 +410,7 @@ final class SessionArchive {
         }
         sessions.removeAll { ids.contains($0.id) }
         for sessionID in ids { notesSteps[sessionID] = nil }
-        notesRevision &+= 1
+        contentDidChange()
     }
 
     /// Keeps a renamed workspace attached to its meetings, including legacy metadata
@@ -377,9 +436,16 @@ final class SessionArchive {
 
     func delete(_ id: UUID) {
         guard id != activeID else { return }
+        userSaveTasks[id]?.cancel(); userSaveTasks[id] = nil
+        cachedUserContent[id] = nil; userContentDrafts[id] = nil; userSaveErrors[id] = nil
         sessions.removeAll { $0.id == id }
         let folder = folder(id)
-        io.async { try? FileManager.default.removeItem(at: folder) }
+        io.async {
+            do {
+                if FileManager.default.fileExists(atPath: folder.path) { try FileManager.default.removeItem(at: folder) }
+                Task { @MainActor in self.contentDidChange(id) }
+            } catch { }
+        }
     }
 
     func deleteAll() {
@@ -395,7 +461,142 @@ final class SessionArchive {
         await withCheckedContinuation { continuation in io.async { continuation.resume() } }
     }
 
+    func contentDidChange(_ id: UUID? = nil) {
+        notesRevision &+= 1
+        searchRevision &+= 1
+    }
+
+    func acknowledgeStorageErrors() { storageErrors.removeAll() }
+
+    func userContent(_ id: UUID) async throws -> SessionUserContent {
+        if let content = demoDetails[id]?.userContent { return content }
+        let directory = folder(id)
+        let result: SessionUserContent = try await withCheckedThrowingContinuation { continuation in
+            io.async {
+                do { continuation.resume(returning: try SessionUserContentStore.load(from: directory)) }
+                catch { continuation.resume(throwing: error) }
+            }
+        }
+        cachedUserContent[id] = result
+        return result
+    }
+
+    @discardableResult
+    func saveUserContent(_ content: SessionUserContent, for id: UUID) async throws -> SessionUserContent {
+        try await updateUserContent(for: id) { current in
+            guard content.revision == current.revision else { throw SessionUserContentStore.Failure.changedElsewhere }
+            current = content
+        }
+    }
+
+    /// A field edit reads and commits on one queue, so typing and marking a line cannot overwrite each other.
+    @discardableResult
+    func updateUserContent(for id: UUID, _ change: @escaping @Sendable (inout SessionUserContent) throws -> Void) async throws -> SessionUserContent {
+        guard sessions.contains(where: { $0.id == id }) else { throw CocoaError(.fileNoSuchFile) }
+        if var demo = demoDetails[id] {
+            try change(&demo.userContent)
+            demo.userContent.revision += 1; demo.userContent.updatedAt = Date()
+            demoDetails[id] = demo; cachedUserContent[id] = demo.userContent; contentDidChange(id)
+            return demo.userContent
+        }
+        let directory = folder(id)
+        let committed: SessionUserContent = try await withCheckedThrowingContinuation { continuation in
+            io.async {
+                do {
+                    var current = try SessionUserContentStore.load(from: directory)
+                    try change(&current)
+                    continuation.resume(returning: try SessionUserContentStore.save(current, to: directory))
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+        cachedUserContent[id] = committed
+        contentDidChange(id)
+        return committed
+    }
+
+    func personalNotes(for id: UUID) -> String { userContentDrafts[id] ?? cachedUserContent[id]?.personalNotes ?? demoDetails[id]?.userContent.personalNotes ?? "" }
+
+    func isHighlighted(_ lineID: UUID, in id: UUID) -> Bool {
+        _ = notesRevision
+        return (cachedUserContent[id] ?? demoDetails[id]?.userContent)?.highlights.contains(where: { $0.lineID == lineID }) == true
+    }
+
+    func primeUserContent(_ content: SessionUserContent, for id: UUID) {
+        if (cachedUserContent[id]?.revision ?? -1) <= content.revision { cachedUserContent[id] = content }
+    }
+
+    func editPersonalNotes(_ text: String, for id: UUID) {
+        userContentDrafts[id] = text
+        userSaveErrors[id] = nil
+        userSaveTasks[id]?.cancel()
+        userSaveTasks[id] = Task {
+            do { try await Task.sleep(for: .milliseconds(350)); try Task.checkCancellation() }
+            catch { return }
+            await persistPersonalNotes(for: id)
+        }
+    }
+
+    func persistPersonalNotes(for id: UUID) async {
+        guard let draft = userContentDrafts[id] else { return }
+        savingUserContent.insert(id)
+        defer { savingUserContent.remove(id) }
+        do {
+            _ = try await updateUserContent(for: id) { $0.personalNotes = draft }
+            if userContentDrafts[id] == draft { userContentDrafts[id] = nil }
+            userSaveErrors[id] = nil
+        } catch { userSaveErrors[id] = "笔记尚未保存：\(error.localizedDescription)" }
+    }
+
+    /// Called before leaving or finishing a meeting. Failed drafts remain in memory for retry.
+    func flushUserContent() async {
+        for task in userSaveTasks.values { task.cancel() }
+        userSaveTasks.removeAll()
+        for id in Array(userContentDrafts.keys) { await persistPersonalNotes(for: id) }
+        await flush()
+    }
+
     // MARK: Private
+
+    func saveGeneratedContent(_ summary: SessionSummary, notes: StructuredNotes?, for id: UUID) async throws {
+        guard var meta = sessions.first(where: { $0.id == id }) else { throw CocoaError(.fileNoSuchFile) }
+        if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty { meta.title = summary.title }
+        meta.summaryState = .ready; meta.summaryError = nil
+        if let notes { meta.actionItemCount = notes.actionItemCount; meta.improveCount = notes.improveCount }
+        if var demo = demoDetails[id] {
+            demo.summary = summary; if let notes { demo.notes = notes }; demo.meta = meta
+            demo.userContent.revision += 1
+            demoDetails[id] = demo; cachedUserContent[id] = demo.userContent
+        } else {
+            let directory = folder(id)
+            let savedMeta = meta
+            let content: SessionUserContent = try await withCheckedThrowingContinuation { continuation in
+                io.async {
+                    do {
+                        if let notes { try JSONLines.encoder().encode(notes).write(to: directory.appendingPathComponent("notes.json"), options: .atomic) }
+                        try JSONLines.encoder().encode(summary).write(to: directory.appendingPathComponent("summary.json"), options: .atomic)
+                        let content = try SessionUserContentStore.save(SessionUserContentStore.load(from: directory), to: directory)
+                        try JSONLines.encoder().encode(savedMeta).write(to: directory.appendingPathComponent("meta.json"), options: .atomic)
+                        continuation.resume(returning: content)
+                    } catch { continuation.resume(throwing: error) }
+                }
+            }
+            cachedUserContent[id] = content
+        }
+        if let index = sessions.firstIndex(where: { $0.id == id }) { sessions[index] = meta }
+        contentDidChange(id)
+    }
+
+    func saveDerivedSummary(_ summary: SessionSummary, for id: UUID) async throws {
+        if demoDetails[id] != nil { demoDetails[id]?.summary = summary; contentDidChange(id); return }
+        let url = folder(id).appendingPathComponent("summary.json")
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            io.async {
+                do { try JSONLines.encoder().encode(summary).write(to: url, options: .atomic); continuation.resume() }
+                catch { continuation.resume(throwing: error) }
+            }
+        }
+        contentDidChange(id)
+    }
 
     private func publishActiveCounts() {
         guard let meta = activeMeta, let index = sessions.firstIndex(where: { $0.id == meta.id }) else { return }
@@ -404,7 +605,9 @@ final class SessionArchive {
 
     private func saveMeta(_ meta: SessionMeta) {
         let url = folder(meta.id).appendingPathComponent("meta.json")
-        io.async { Self.write(meta, to: url) }
+        io.async {
+            if Self.write(meta, to: url) { Task { @MainActor in self.searchRevision &+= 1 } }
+        }
     }
 
     nonisolated private static func directorySize(at directory: URL) throws -> Int64 {
@@ -427,25 +630,35 @@ final class SessionArchive {
 
     func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) {
         let url = folder(id).appendingPathComponent(file)
-        guard let data = try? JSONLines.line(value) else { return }
+        let data: Data
+        do { data = try JSONLines.line(value) }
+        catch { storageErrors[id] = "记录写入失败，部分内容尚未保存：\(error.localizedDescription)"; return }
         io.async {
-            if !FileManager.default.fileExists(atPath: url.path) {
-                try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-                FileManager.default.createFile(atPath: url.path, contents: nil)
+            do {
+                if !FileManager.default.fileExists(atPath: url.path) {
+                    try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try Data().write(to: url, options: .atomic)
+                }
+                let handle = try FileHandle(forWritingTo: url)
+                defer { try? handle.close() }
+                _ = try handle.seekToEnd()
+                try handle.write(contentsOf: data)
+            } catch {
+                Task { @MainActor in self.storageErrors[id] = "记录写入失败，部分内容尚未保存：\(error.localizedDescription)" }
             }
-            guard let handle = try? FileHandle(forWritingTo: url) else { return }
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
         }
     }
 
-    nonisolated private static func write<T: Encodable>(_ value: T, to url: URL) {
+    @discardableResult
+    nonisolated private static func write<T: Encodable>(_ value: T, to url: URL) -> Bool {
         let encoder = JSONLines.encoder()
         encoder.outputFormatting.insert(.prettyPrinted)
-        guard let data = try? encoder.encode(value) else { return }
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? data.write(to: url, options: .atomic)
+        do {
+            let data = try encoder.encode(value)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try data.write(to: url, options: .atomic)
+            return true
+        } catch { return false }
     }
 
     /// Converts the single `sessions.json` written by earlier versions, once.

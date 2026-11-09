@@ -8,6 +8,9 @@ public enum DocumentLimits {
 }
 
 public struct DocumentJob: Codable, Sendable, Equatable, Identifiable {
+    public enum WaitingReason: String, Codable, Sendable {
+        case runtime, ocrModels, codexConnection, legacyOffice, semantic
+    }
     public enum Stage: String, Codable, Sendable {
         case receiving, queued, parsing, ocr, validating, lexical, embedding, ready, warning, waiting, paused, failed, cancelled
         public var title: String {
@@ -47,6 +50,7 @@ public struct DocumentJob: Codable, Sendable, Equatable, Identifiable {
     public var completed: Int
     public var total: Int?
     public var message: String
+    public var waitingReason: WaitingReason?
     public var documentID: UUID?
     public var createdAt: Date
     public var updatedAt: Date
@@ -57,6 +61,15 @@ public struct DocumentJob: Codable, Sendable, Equatable, Identifiable {
         stage = .receiving; completed = 0; message = ""; createdAt = Date(); updatedAt = createdAt
     }
     public var progressText: String { stage.title + (total.map { " \(completed)/\($0)" } ?? "") }
+}
+
+/// Conversion discovers dependencies lazily, so a text-only PDF never needs an
+/// OCR runtime merely because an enhanced reader is selected.
+public struct DocumentDependencyError: LocalizedError, Sendable {
+    public var reason: DocumentJob.WaitingReason
+    public var message: String
+    public init(reason: DocumentJob.WaitingReason, message: String) { self.reason = reason; self.message = message }
+    public var errorDescription: String? { message }
 }
 
 public struct DocumentJobEvent: Sendable {

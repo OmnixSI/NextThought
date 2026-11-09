@@ -58,6 +58,7 @@ struct AnswerRecord: Identifiable, Codable, Equatable {
     var webAnswer: String? = nil
     var webSources: [WebResult]? = nil
     var evidence: EvidenceBundle? = nil
+    var completion: AnswerCompletion? = nil
 }
 
 struct CaptureTarget: Identifiable, Hashable {
@@ -91,8 +92,8 @@ enum AppSection: String, CaseIterable, Identifiable {
     var title: LocalizedStringKey {
         switch self {
         case .home: "首页"
-        case .meetings: "所有会议"
-        case .library: "资料夹"
+        case .meetings: "所有记录"
+        case .library: "项目与课程"
         case .settings: "设置"
         }
     }

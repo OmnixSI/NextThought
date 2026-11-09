@@ -42,15 +42,15 @@ enum Ink {
     static let onInk = Color.dynamic(light: .hex(0xffffff), dark: .hex(0x131312))
     static let secondary = Color.dynamic(light: .hex(0x6b6963), dark: .hex(0xa3a19b))
     /// Placeholders and decoration only; never for text that has to be read.
-    static let tertiary = Color.dynamic(light: .hex(0x8e8c86), dark: .hex(0x75736e))
+    static let tertiary = Color.dynamic(light: .hex(0x706e68), dark: .hex(0x95938c))
     static let hairline = Color.dynamic(light: .hex(0xe7e5e0), dark: .hex(0x2c2b28))
     /// Neutral gray marks AI-written content; the interface stays grayscale.
     static let ai = Color.dynamic(light: .hex(0x595751), dark: .hex(0xb8b6af))
     static let aiSoft = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.045), dark: .hex(0xecebe8, alpha: 0.07))
     static let promptPanel = Color.dynamic(light: .hex(0xf0efec), dark: .hex(0x242422))
-    static let live = Color.dynamic(light: .hex(0xd93a3a), dark: .hex(0xff6b63))
-    static let ready = Color.dynamic(light: .hex(0x2f9e5b), dark: .hex(0x4cc38a))
-    static let caution = Color.dynamic(light: .hex(0xc27c0e), dark: .hex(0xf0b24a))
+    static let live = Color.dynamic(light: .hex(0xb82e2e), dark: .hex(0xff6b63))
+    static let ready = Color.dynamic(light: .hex(0x237542), dark: .hex(0x4cc38a))
+    static let caution = Color.dynamic(light: .hex(0x8a5707), dark: .hex(0xf0b24a))
     static let focus = ai
     static let floatShadow = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.12), dark: .hex(0x000000, alpha: 0.5))
 }
@@ -61,7 +61,7 @@ enum Typo {
     static let display = Font.system(size: 30, weight: .medium, design: .serif)
     static let section = Font.system(size: 19, weight: .medium, design: .serif)
     static let prompt = Font.system(size: 22, weight: .medium)
-    static let body = Font.system(size: 14)
+    static let body = Font.system(size: 15)
     static let label = Font.system(size: 13, weight: .medium)
     static let caption = Font.system(size: 12)
     static let overline = Font.system(size: 11, weight: .semibold)

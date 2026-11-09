@@ -234,6 +234,7 @@ private final class ControlOverlayView: NSView {
 
 private struct TeleprompterView: View {
     @Environment(AppState.self) private var state
+    @State private var follow = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -250,9 +251,16 @@ private struct TeleprompterView: View {
                         }
                         Color.clear.frame(height: 1).id("end")
                     }
+                    .background(ReadingScrollMonitor(follows: $follow))
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    if !follow {
+                        Button("回到最新") { follow = true; proxy.scrollTo("end", anchor: .bottom) }
+                            .buttonStyle(SecondaryButtonStyle())
+                    }
                 }
                 .onChange(of: state.answerDraft) { _, _ in
-                    if state.isAnswering { proxy.scrollTo("end", anchor: .bottom) }
+                    if follow, state.isAnswering, state.historyCursor == nil { proxy.scrollTo("end", anchor: .bottom) }
                 }
             }
             // In click-through mode the panel ignores the mouse, so the footer

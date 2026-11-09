@@ -10,7 +10,7 @@ extension AppState {
 
     func beginArchive(startedAt: Date) {
         guard recordSessions else { activeArchiveID = nil; return }
-        let workspace = activeWorkspace
+        let workspace = preparedWorkspace ?? activeWorkspace
         var meta = SessionMeta(startedAt: startedAt, mode: workspace.mode,
                                title: plannedMeeting?.title.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 },
                                audioSource: isOfflineMeeting ? String(localized: "线下 · 麦克风") : audioSourceTitle(for: selectedTargetID),
@@ -20,7 +20,10 @@ extension AppState {
         if workspace.mode == .custom { meta.typeName = workspace.typeDisplayName }
         if isOfflineMeeting { meta.inPerson = true }
         let context = SessionContextSnapshot(mode: workspace.mode, style: workspace.style, preferences: workspace.preferences,
-                                             profile: workspace.materialText, documents: workspace.documents.filter(\.enabled))
+                                             profile: workspace.materialText, documents: workspace.retrievalDocuments.filter(\.enabled),
+                                             effectiveMode: workspace.effectiveMode, typeName: workspace.typeDisplayName,
+                                             experience: workspace.experienceNotes(), previousSessionID: plannedMeeting?.previousSessionID,
+                                             glossary: workspace.glossary)
         archive.begin(meta, context: context)
         activeArchiveID = meta.id
     }
@@ -35,7 +38,7 @@ extension AppState {
         historyWorkspaceFilter = nil
         historySelection = meta.id
         section = .meetings
-        if autoSummarize { generateSummary(for: meta.id) }
+        if autoSummarize && meta.transcriptCount > 0 { generateSummary(for: meta.id) }
     }
 
     func recordTranscript(_ entry: TranscriptEntry) {
@@ -74,7 +77,7 @@ extension AppState {
         guard activeArchiveID != nil else { return }
         archive.append(SessionAnswerEvent(id: record.id, date: record.date, question: record.question, answer: record.answer, model: record.model,
                                           seconds: record.seconds, firstTokenSeconds: record.firstTokenSeconds, automatic: record.automatic,
-                                          screenshotPath: record.screenshotPath, webAnswer: record.webAnswer, webSources: record.webSources, evidence: record.evidence))
+                                          screenshotPath: record.screenshotPath, webAnswer: record.webAnswer, webSources: record.webSources, evidence: record.evidence, completion: record.completion))
     }
 
     private var recognizerDescription: String {
@@ -99,16 +102,14 @@ extension AppState {
             let name = (detail.summary?.title ?? detail.meta.displayTitle).replacingOccurrences(of: "/", with: "-")
             panel.nameFieldStringValue = "\(name).md"
             guard panel.runModal() == .OK, let url = panel.url else { return }
-            let text = SessionMarkdownExporter.export(meta: detail.meta, summary: detail.summary, lines: detail.lines,
-                                                      answers: detail.answers, detected: detail.questions)
+            let text = detail.fullMarkdown
             do { try text.write(to: url, atomically: true, encoding: .utf8) }
             catch { errorMessage = "导出失败：\(error.localizedDescription)" }
         }
     }
 
     func copySessionMarkdown(_ detail: SessionDetail) {
-        let text = SessionMarkdownExporter.export(meta: detail.meta, summary: detail.summary, lines: detail.lines,
-                                                  answers: detail.answers, detected: detail.questions)
+        let text = detail.fullMarkdown
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }

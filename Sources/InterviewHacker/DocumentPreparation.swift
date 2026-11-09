@@ -152,7 +152,9 @@ final class DocumentPreparation {
     }
     private func mutate(_ id: UUID, _ change: (inout DocumentJob) -> Void) {
         guard let i = jobs.firstIndex(where: { $0.id == id }) else { return }
-        change(&jobs[i]); jobs[i].updatedAt = Date()
+        change(&jobs[i])
+        if jobs[i].stage != .waiting { jobs[i].waitingReason = nil }
+        jobs[i].updatedAt = Date()
         let value = jobs[i], store = store
         Task { [weak self] in do { try await store?.save(value) } catch { self?.error = "队列保存失败：" + error.localizedDescription } }
     }
@@ -163,7 +165,20 @@ final class DocumentPreparation {
     private func pump() {
         guard let state = loaded ? AppState.shared : nil, !state.isRunning, !state.isChangingSession else { return }
         for job in jobs where job.stage == .paused { mutate(job.id) { $0.stage = $0.documentID == nil ? .queued : .embedding; $0.message = "会议已结束，继续准备。" } }
-        for job in jobs where job.stage == .waiting && Date().timeIntervalSince(job.updatedAt) > 5 { mutate(job.id) { $0.stage = .queued } }
+        for job in jobs where job.stage == .waiting && Date().timeIntervalSince(job.updatedAt) > 5 {
+            let available: Bool = switch job.waitingReason {
+            case .runtime: state.runtimeInstalled
+            case .ocrModels:
+                DocumentRuntime.installed
+                    && (ModelCatalog.descriptor(for: job.localModelID ?? ModelCatalog.paddleOCR.id).map(ManagedModelStore.isInstalled) ?? false)
+                    && ManagedModelStore.isInstalled(ModelCatalog.layout)
+            case .codexConnection: state.codexReady
+            case .legacyOffice: LegacyOfficeConverter.available
+            case .semantic: state.documentAvailability.ready(.semantic)
+            case nil: true // Older queues acquire a typed reason on their next attempt.
+            }
+            if available { mutate(job.id) { $0.stage = $0.documentID == nil ? .queued : .embedding } }
+        }
         let activeJobs = jobs.filter { tasks[$0.id] != nil }
         var light = activeJobs.filter { Self.isLight($0) }.count, heavy = activeJobs.count - light
         for job in jobs where [.queued, .embedding].contains(job.stage) && tasks[job.id] == nil {
@@ -185,18 +200,18 @@ final class DocumentPreparation {
                 guard let path = job.originalPath else { throw AppFailure.capture("原文件尚未接收。") }
                 guard AppState.shared.workspaces.workspace(job.workspaceID) != nil else { throw AppFailure.capture("所属场景已删除。") }
                 let ext = (path as NSString).pathExtension.lowercased()
-                if (["docx", "pptx", "xlsx"].contains(ext) || job.provider != "system"), !DocumentRuntime.installed {
-                    mutate(job.id) { $0.stage = .waiting; $0.message = "请在设置 → 资料准备共用文档组件。" }; return
+                if ext != "pdf", (["docx", "pptx", "xlsx"].contains(ext) || job.provider != "system"), !DocumentRuntime.installed {
+                    mutate(job.id) { $0.stage = .waiting; $0.waitingReason = .runtime; $0.message = "需要准备共用文档组件，已接收的文件会保留。" }; return
                 }
-                if job.provider == "paddle", let model = ModelCatalog.descriptor(for: job.localModelID ?? ModelCatalog.paddleOCR.id),
+                if ext != "pdf", job.provider == "paddle", let model = ModelCatalog.descriptor(for: job.localModelID ?? ModelCatalog.paddleOCR.id),
                    (!ManagedModelStore.isInstalled(model) || !ManagedModelStore.isInstalled(ModelCatalog.layout)) {
-                    mutate(job.id) { $0.stage = .waiting; $0.message = "所选 OCR 模型尚未就绪，请到设置准备组件。" }; return
+                    mutate(job.id) { $0.stage = .waiting; $0.waitingReason = .ocrModels; $0.message = "所选 OCR 模型尚未就绪，请准备组件后继续。" }; return
                 }
-                if job.provider == "codex", !AppState.shared.codexReady {
-                    mutate(job.id) { $0.stage = .waiting; $0.message = "等待连接 Codex。" }; return
+                if ext != "pdf", job.provider == "codex", !AppState.shared.codexReady {
+                    mutate(job.id) { $0.stage = .waiting; $0.waitingReason = .codexConnection; $0.message = "等待连接 Codex。" }; return
                 }
                 if ext == "ppt", !LegacyOfficeConverter.available {
-                    mutate(job.id) { $0.stage = .waiting; $0.message = "旧版 PPT 需要 LibreOffice。安装后会自动继续。" }; return
+                    mutate(job.id) { $0.stage = .waiting; $0.waitingReason = .legacyOffice; $0.message = "旧版 PPT 需要 LibreOffice。可先转换为 PPTX 或 PDF 后重新添加。" }; return
                 }
                 var documentID = job.documentID
                 if let id = documentID, !AppState.shared.workspaces.workspace(job.workspaceID)!.documents.contains(where: { $0.id == id }) { documentID = nil }
@@ -240,7 +255,7 @@ final class DocumentPreparation {
                 try Task.checkCancellation()
                 if AppState.shared.semanticRetrievalEnabled {
                     guard AppState.shared.embeddingModelInstalled, AppState.shared.runtimeInstalled else {
-                        mutate(job.id) { $0.stage = .waiting; $0.message = "文字检索已可用；等待语义查找组件。" }; return
+                        mutate(job.id) { $0.stage = .waiting; $0.waitingReason = .semantic; $0.message = "文字检索已可用；语义查找组件尚未准备。" }; return
                     }
                     try await AppState.shared.prepareSemanticWorkspace(job.workspaceID) { [weak self] completed, total in
                         Task { @MainActor in self?.progress(job.id, .init(.embedding, completed: completed, total: total, message: "文字检索已可用，正在生成向量。")) }
@@ -248,6 +263,8 @@ final class DocumentPreparation {
                 }
                 let warnings = AppState.shared.workspaces.workspace(job.workspaceID)?.documents.first(where: { $0.id == documentID })?.content?.warnings ?? []
                 mutate(job.id) { $0.stage = warnings.isEmpty ? .ready : .warning; $0.completed = $0.total ?? $0.completed; $0.message = warnings.isEmpty ? (AppState.shared.semanticRetrievalEnabled ? "Embedding 已完成，资料已就绪。" : "文字检索已就绪，语义查找未启用。") : warnings.joined(separator: "\n") }
+            } catch let dependency as DocumentDependencyError {
+                mutate(job.id) { $0.stage = .waiting; $0.waitingReason = dependency.reason; $0.message = dependency.message }
             } catch is CancellationError {
                 if jobs.first(where: { $0.id == job.id })?.stage != .cancelled { mutate(job.id) { $0.stage = .paused; $0.message = "已保存检查点，稍后继续。" } }
             } catch { mutate(job.id) { $0.stage = .failed; $0.message = error.localizedDescription } }

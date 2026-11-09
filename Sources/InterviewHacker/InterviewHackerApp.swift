@@ -136,12 +136,29 @@ enum MainWindowLayout {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    private var terminating = false
+    private var closing = false
     func applicationWillTerminate(_ notification: Notification) {
         AppState.shared.prepareForTermination()
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        WorkspaceEditController.shared.shouldTerminateApplication() ? .terminateNow : .terminateCancel
+        guard !terminating else { return .terminateLater }
+        guard WorkspaceEditController.shared.shouldTerminateApplication() else { return .terminateCancel }
+        terminating = true
+        Task {
+            let state = AppState.shared
+            if state.isRunning || state.isPaused { await state.stopSession() }
+            await SessionArchive.shared.flushUserContent()
+            let saved = SessionArchive.shared.userContentDrafts.isEmpty && SessionArchive.shared.userSaveErrors.isEmpty
+            if !saved {
+                state.errorMessage = "笔记尚未保存，已保留窗口。请重试保存后再退出。"
+                MainWindowLayout.bringToFront()
+            }
+            terminating = false
+            sender.reply(toApplicationShouldTerminate: saved)
+        }
+        return .terminateLater
     }
 
     /// A click on the Dock icon while the page is hidden by the subtitle bar or hidden
@@ -155,7 +172,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard MainWindowLayout.isMainWindow(sender) else { return true }
-        return WorkspaceEditController.shared.shouldCloseWindow()
+        guard WorkspaceEditController.shared.shouldCloseWindow() else { return false }
+        guard !SessionArchive.shared.userContentDrafts.isEmpty else { return true }
+        guard !closing else { return false }
+        closing = true
+        Task {
+            await SessionArchive.shared.flushUserContent()
+            closing = false
+            if SessionArchive.shared.userContentDrafts.isEmpty && SessionArchive.shared.userSaveErrors.isEmpty {
+                sender.close()
+            } else {
+                AppState.shared.errorMessage = "笔记尚未保存，已保留窗口。请重试保存。"
+            }
+        }
+        return false
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

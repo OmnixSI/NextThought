@@ -7,6 +7,7 @@ import InterviewHackerCore
 /// See 02-scenarios-and-flows.md, "每个功能放在哪".
 struct LiveSessionView: View {
     @Environment(AppState.self) private var state
+    @State private var highlightedLineID: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -15,17 +16,17 @@ struct LiveSessionView: View {
             GeometryReader { proxy in
                 if proxy.size.width >= 760 {
                     HStack(spacing: 0) {
-                        TranscriptColumn()
+                        TranscriptColumn(jumpTo: $highlightedLineID)
                             .frame(width: max(320, proxy.size.width * 0.46))
                         Rectangle().fill(Ink.hairline).frame(width: 1)
-                        RightColumn()
+                        RightColumn(onOpenHighlight: { highlightedLineID = nil; highlightedLineID = $0.lineID })
                     }
                 } else {
                     VStack(spacing: 0) {
-                        RightColumn()
+                        RightColumn(onOpenHighlight: { highlightedLineID = nil; highlightedLineID = $0.lineID })
                             .frame(height: proxy.size.height * 0.55)
                         Rectangle().fill(Ink.hairline).frame(height: 1)
-                        TranscriptColumn()
+                        TranscriptColumn(jumpTo: $highlightedLineID)
                     }
                 }
             }
@@ -91,7 +92,7 @@ private struct RecordingTimer: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let elapsed = state.sessionStartedAt.map { Self.elapsed(from: $0, to: context.date) }
-            let status = state.isRunning ? (state.isPaused ? "已暂停" : "正在聆听") : "未在聆听"
+            let status = state.isStopping ? "正在保存最后片段…" : (state.isRunning ? (state.isPaused ? "已暂停" : "正在聆听") : "未在聆听")
             HStack(spacing: 6) {
                 Circle()
                     .fill(state.isRunning && !state.isPaused ? Ink.live : Ink.tertiary)
@@ -267,6 +268,7 @@ private struct AnswerSettingsMenu: View {
 
 private struct TranscriptColumn: View {
     @Environment(AppState.self) private var state
+    @Binding var jumpTo: UUID?
     @State private var follow = true
 
     var body: some View {
@@ -277,6 +279,9 @@ private struct TranscriptColumn: View {
             HStack {
                 Text("实时对话").overline()
                 Spacer()
+                if !follow {
+                    Button("回到最新") { follow = true }.buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+                }
                 Button { follow.toggle() } label: {
                     Image(systemName: follow ? "arrow.down.to.line" : "pause")
                 }
@@ -315,6 +320,7 @@ private struct TranscriptColumn: View {
                     }
                     .padding(.horizontal, Space.s6)
                     .padding(.vertical, Space.s4)
+                    .background(ReadingScrollMonitor(follows: $follow))
                 }
                 // Keep the footer in the scroll view's measured safe area. SwiftUI
                 // reserves the status strip (and any candidate rows) at their real
@@ -342,6 +348,9 @@ private struct TranscriptColumn: View {
                     if follow { proxy.scrollTo("bottom", anchor: .bottom) }
                 }
                 .onChange(of: follow) { _, value in if value { proxy.scrollTo("bottom", anchor: .bottom) } }
+                .onChange(of: jumpTo) { _, line in
+                    if let line { follow = false; withAnimation(Motion.expand) { proxy.scrollTo(line, anchor: .center) } }
+                }
             }
             .frame(maxHeight: .infinity)
         }
@@ -401,9 +410,28 @@ private struct TranscriptLine: View {
                 .lineSpacing(5)
                 .textSelection(.enabled)
                 Spacer(minLength: 0)
+                if let sessionID = state.activeArchiveID {
+                    Button {
+                        state.toggleHighlight(lineID: entry.id, text: entry.text,
+                                              offsetSeconds: Int(max(0, entry.date.timeIntervalSince(state.sessionStartedAt ?? entry.date))), sessionID: sessionID)
+                    } label: { Image(systemName: state.archive.isHighlighted(entry.id, in: sessionID) ? "star.fill" : "star") }
+                        .buttonStyle(GlassIconButtonStyle(size: 28))
+                        .accessibilityLabel("标记或取消重点")
+                        .help("标记这句话，稍后在笔记里查看")
+                }
             }
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
+            .accessibilityAction(named: Text("回答这句")) { state.answerEntry(entry) }
+            .contextMenu {
+                Button("回答这句") { state.answerEntry(entry) }
+                if let sessionID = state.activeArchiveID {
+                    Button("标记或取消重点") {
+                        state.toggleHighlight(lineID: entry.id, text: entry.text,
+                                              offsetSeconds: Int(max(0, entry.date.timeIntervalSince(state.sessionStartedAt ?? entry.date))), sessionID: sessionID)
+                    }
+                }
+            }
             .animation(Motion.hover, value: hovering)
         }
     }
@@ -485,6 +513,9 @@ private struct TranscriptStatus: View {
     var body: some View {
         HStack(spacing: Space.s1) {
             Text(engine)
+            if let id = state.activeArchiveID, let error = state.archive.storageErrors[id] {
+                Label("写入失败 · 部分记录未保存", systemImage: "exclamationmark.triangle").foregroundStyle(Ink.caution).help(error)
+            }
             if state.echoDroppedCount > 0 && !state.isOfflineMeeting {
                 Text("· \(state.echoDroppedCount) 句回声已忽略")
             }
@@ -525,13 +556,31 @@ private struct TranscriptStatus: View {
 
 private struct RightColumn: View {
     @Environment(AppState.self) private var state
+    let onOpenHighlight: (SessionHighlight) -> Void
+    @State private var showsAnswer = false
+    @State private var highlights: [SessionHighlight] = []
 
     var body: some View {
-        // 只记录 stays quiet until an answer is asked for.
-        if state.automaticAnswers || state.isAnswering || !state.displayedAnswer.isEmpty {
-            AnswerColumn()
-        } else {
-            NotesOnlyColumn()
+        VStack(spacing: 0) {
+            HStack {
+                InkSegmented(items: [(value: false, title: "我的笔记"), (value: true, title: "问答")], selection: $showsAnswer)
+                Spacer(minLength: Space.s2)
+                if state.isAnswering && !showsAnswer { Label("回答生成中", systemImage: "sparkles").font(Typo.caption).foregroundStyle(Ink.ai) }
+            }.padding(.horizontal, Space.s6).padding(.top, Space.s4)
+            if showsAnswer {
+                AnswerColumn()
+            } else if let id = state.activeArchiveID {
+                MeetingUserNotes(sessionID: id, highlights: highlights, onOpenHighlight: onOpenHighlight)
+                    .padding(Space.s6)
+            } else {
+                Text("此场未保存记录，个人笔记需要开启记录保存。").font(Typo.body).foregroundStyle(Ink.caution).padding(Space.s6)
+                Spacer()
+            }
+        }
+        .onAppear { showsAnswer = state.automaticAnswers }
+        .onChange(of: state.currentAnswerID) { _, _ in if !state.currentAnswerAutomatic { showsAnswer = true } }
+        .task(id: state.archive.notesRevision) {
+            if let id = state.activeArchiveID, let content = try? await state.archive.userContent(id) { highlights = content.highlights }
         }
     }
 }
@@ -580,6 +629,11 @@ private struct AnswerColumn: View {
                 }
             }
             WebStatusLine()
+            if !state.isAnswering, let id = state.displayedRecordID,
+               let record = state.answerHistory.first(where: { $0.id == id }), let completion = record.completion, completion != .complete {
+                Label("未完成的回答片段，请核实后使用", systemImage: "exclamationmark.circle")
+                    .font(Typo.caption).foregroundStyle(Ink.caution)
+            }
             let question = state.displayedQuestion
             if !question.isEmpty {
                 Text(verbatim: AnswerRefinement.originalQuestion(of: question))
@@ -600,6 +654,7 @@ private struct AnswerColumn: View {
 /// The answer text, at "prompt" size for a glance. Only this view redraws per delta.
 private struct AnswerText: View {
     @Environment(AppState.self) private var state
+    @State private var follow = true
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -615,10 +670,17 @@ private struct AnswerText: View {
                     }
                     Color.clear.frame(height: 1).id("answer-end")
                 }
+                .background(ReadingScrollMonitor(follows: $follow))
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if !follow {
+                    Button("回到最新") { follow = true; proxy.scrollTo("answer-end", anchor: .bottom) }
+                        .buttonStyle(SecondaryButtonStyle()).padding(Space.s2)
+                }
             }
             .frame(maxHeight: .infinity)
             .onChange(of: state.answerDraft.count / 40) { _, _ in
-                if state.isAnswering, state.historyCursor == nil { proxy.scrollTo("answer-end", anchor: .bottom) }
+                if follow, state.isAnswering, state.historyCursor == nil { proxy.scrollTo("answer-end", anchor: .bottom) }
             }
         }
     }
@@ -828,6 +890,10 @@ private struct LiveComposer: View {
                         .focused($focused)
                         .onSubmit { submit() }
                     ShortcutHint(text: "⌘L")
+                    Button { submit() } label: { Image(systemName: "arrow.up.circle.fill") }
+                        .buttonStyle(GlassIconButtonStyle(size: 30))
+                        .disabled(state.questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && state.screenshotPreview == nil)
+                        .accessibilityLabel("发送问题")
                 }
                 .padding(.horizontal, Space.s3)
                 .frame(minHeight: 36)

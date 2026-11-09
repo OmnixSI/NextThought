@@ -30,6 +30,12 @@ struct HistoryView: View {
     @State private var misheardMatch: [UUID: String] = [:]
     @State private var searchCache = GlossarySearchCache()
     @State private var isContentSearching = false
+    @State private var contentHits: [UUID: SessionSearchHit] = [:]
+    @State private var searchChecked = 0
+    @State private var searchTotal = 0
+    @State private var searchUnreadable = 0
+    @State private var searchGeneration = UUID()
+    private static let fullTextSearch = SessionSearch(root: AppPaths.sessions)
 
     private var archive: SessionArchive { SessionArchive.shared }
     private var selection: UUID? { state.historySelection }
@@ -63,7 +69,7 @@ struct HistoryView: View {
             let wide = proxy.size.width >= 760
             HStack(alignment: .top, spacing: 0) {
                 if wide {
-                    if !isMeetingListHidden {
+                    if !isMeetingListHidden && !archive.sessions.isEmpty {
                         sessionList
                             .frame(width: 270)
                             .padding(.leading, 16).padding(.top, 4).padding(.bottom, 14)
@@ -78,10 +84,11 @@ struct HistoryView: View {
                             onRename: beginRenaming,
                             onDelete: deleteSession,
                             onNavigateToAllMeetings: showAllMeetings,
-                            onNavigateToSeries: showSeries)
+                            onNavigateToSeries: showSeries,
+                            initialTarget: contentHits[selection]?.target)
                             .id(selection)
                     } else {
-                        archiveOverview(compact: isMeetingListHidden)
+                        archiveOverview(compact: isMeetingListHidden || archive.sessions.isEmpty)
                     }
                 } else if let selection, archive.sessions.contains(where: { $0.id == selection }) {
                     MeetingPage(
@@ -92,7 +99,8 @@ struct HistoryView: View {
                         onRename: beginRenaming,
                         onDelete: deleteSession,
                         onNavigateToAllMeetings: showAllMeetings,
-                        onNavigateToSeries: showSeries)
+                        onNavigateToSeries: showSeries,
+                            initialTarget: contentHits[selection]?.target)
                         .id(selection)
                 } else if isCollectionOverview || isMeetingListHidden {
                     archiveOverview(compact: true)
@@ -182,7 +190,7 @@ struct HistoryView: View {
         let folderSessions = folder.map { folder in
             ordered(visibleSessions.filter { folder.contains($0, workspaces: state.workspaces.workspaces) })
         } ?? visibleSessions
-        let title = isRoot ? "所有会议" : (folder?.name ?? String(localized: "未分类会议"))
+        let title = isRoot ? "所有记录" : (folder?.name ?? String(localized: "未分类会议"))
         let subtitle: String
         if let folder, !isRoot {
             subtitle = folder.workspaceID == nil
@@ -218,7 +226,9 @@ struct HistoryView: View {
             onClearFilters: clearFilters,
             onReturnHome: { state.section = .home })
         return Group {
-            if compact {
+            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                searchResults(compact: compact)
+            } else if compact {
                 VStack(spacing: 0) {
                     filterBar
                         .padding(.horizontal, 16)
@@ -521,7 +531,7 @@ struct HistoryView: View {
 
     private var sessionListTitle: String {
         if let overviewFolder = selectedOverviewFolder { return overviewFolder.name }
-        guard let workspaceID = state.historyWorkspaceFilter else { return "所有会议" }
+        guard let workspaceID = state.historyWorkspaceFilter else { return "所有记录" }
         return state.workspaces.workspace(workspaceID)?.name ?? String(localized: "未分类会议")
     }
 
@@ -566,7 +576,7 @@ struct HistoryView: View {
                     Text("开始一场会议后，它会出现在这个系列里。")
                         .font(.system(size: 11)).foregroundStyle(Ink.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    Button("返回所有会议") { showAllMeetings() }
+                    Button("返回所有记录") { showAllMeetings() }
                         .buttonStyle(ChipButtonStyle(prominent: true))
                         .controlSize(.small)
                 }
@@ -588,6 +598,9 @@ struct HistoryView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if isContentSearching && visibleSessions.isEmpty {
+                ProgressView("正在搜索 \(searchChecked)/\(searchTotal) 场…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if visibleSessions.isEmpty && visibleSessionGroups.isEmpty {
                 VStack(spacing: 7) {
                     Image(systemName: "line.3.horizontal.decrease.circle")
@@ -620,7 +633,7 @@ struct HistoryView: View {
                                     Button { openFromOverview(meta.id) } label: {
                                         SessionRow(meta: meta, selected: meta.id == selection,
                                                    active: meta.id == archive.activeID, showsWorkspace: false,
-                                                   misheardForm: misheardMatch[meta.id])
+                                                   misheardForm: misheardMatch[meta.id], searchHit: contentHits[meta.id])
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     .buttonStyle(InteractiveRowButtonStyle())
@@ -705,7 +718,7 @@ struct HistoryView: View {
         let base = searchIsScopedToSeries
             ? "\(visibleSessions.count) 场会议 · 系列共 \(currentScopeSessionCount) 场"
             : "\(visibleSessions.count) 场会议 · \(visibleWorkspaceSeriesCount) 个系列"
-        return isContentSearching ? base + " · 搜索中…" : base
+        return isContentSearching ? base + " · 已搜索 \(searchChecked)/\(searchTotal) 场" : base
     }
 
     private var searchIsScopedToSeries: Bool {
@@ -713,11 +726,11 @@ struct HistoryView: View {
     }
 
     private var searchScopeLabel: String {
-        searchIsScopedToSeries ? "搜索范围：当前系列" : "搜索范围：全部会议"
+        searchIsScopedToSeries ? String(localized: "搜索范围：当前项目") : String(localized: "搜索范围：全部记录")
     }
 
     private var searchPlaceholder: String {
-        searchIsScopedToSeries ? "搜索此系列中的标题、问题或回答" : "搜索全部会议的标题、系列、问题或回答"
+        searchIsScopedToSeries ? "搜索此项目的转写、纪要、笔记或回答" : "搜索全部记录的转写、纪要、笔记或回答"
     }
 
     /// Clear search and filters while keeping the current series scope.
@@ -727,6 +740,7 @@ struct HistoryView: View {
         lengthFilter = .all
         sortOrder = .newest
         contentMatch = []
+        contentHits = [:]
         misheardMatch = [:]
     }
 
@@ -751,60 +765,85 @@ struct HistoryView: View {
 
     /// Re-runs the content search when the query or the filter scope changes.
     private var contentSearchKey: String {
-        "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")"
+        "\(query)|\(dateFilter.rawValue)|\(lengthFilter.rawValue)|\(state.historyWorkspaceFilter?.uuidString ?? "-")|\(overviewFolderKey ?? "-")|\(archive.searchRevision)|\(state.glossaryRevision)"
     }
 
-    /// Content search: the question and answer text lives in the session files,
-    /// so it costs a disk read per session. Debounced, limited to the first 200
-    /// sessions and cancelled as soon as the query changes again.
     @MainActor
     private func runContentSearch() async {
+        let generation = UUID(); searchGeneration = generation
+        contentMatch = []; contentHits = [:]; misheardMatch = [:]
+        searchUnreadable = 0; searchChecked = 0
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            contentMatch = []
-            misheardMatch = [:]
-            isContentSearching = false
-            return
-        }
-        contentMatch = []
-        misheardMatch = [:]
-        isContentSearching = true
-        // A cancelled run must not leave the "搜索中…" label behind.
-        defer { isContentSearching = false }
+        guard !trimmed.isEmpty else { isContentSearching = false; return }
+        let ids = scoped.map(\.id)
+        searchTotal = ids.count; isContentSearching = true
+        defer { if searchGeneration == generation { isContentSearching = false } }
         do {
-            try await Task.sleep(nanoseconds: 350_000_000)
-        } catch {
-            // Cancelled: a newer query took over and owns the state now.
-            return
-        }
-        guard !Task.isCancelled else { return }
-        // The typed text plus the spellings the glossary knows for it (misheard ones count as hits).
-        let terms = searchCache.terms(for: trimmed, state: state)
-        var matches: Set<UUID> = []
-        var misheard: [UUID: String] = [:]
-        for meta in scoped.prefix(200) {
-            if Task.isCancelled { return }
-            guard let detail = await archive.detail(meta.id) else { continue }
-            let texts = detail.questions.map(\.text) + detail.answers.flatMap { [$0.question, $0.answer] }
-            var plainHit = false
-            var misheardForm: String?
-            for text in texts {
-                guard let hit = terms.appMatch(in: text) else { continue }
-                if !hit.isMisheard { plainHit = true; break }
-                if misheardForm == nil { misheardForm = hit.form }
+            try await Task.sleep(for: .milliseconds(350))
+            try Task.checkCancellation()
+            let terms = searchCache.terms(for: trimmed, state: state)
+            var demo: [UUID: SessionSearchSnapshot] = [:]
+            if DemoMode.isEnabled {
+                for id in ids {
+                    if let detail = await archive.detail(id) {
+                        demo[id] = SessionSearchSnapshot(lines: detail.lines, questions: detail.questions, answers: detail.answers,
+                            notes: detail.notes, summary: detail.summary, user: detail.userContent)
+                    }
+                }
             }
-            if plainHit {
-                matches.insert(meta.id)
-            } else if let misheardForm {
-                matches.insert(meta.id)
-                misheard[meta.id] = misheardForm
+            let result = try await Self.fullTextSearch.search(ids: ids, terms: terms, revision: archive.searchRevision, demo: demo) { result in
+                Task { @MainActor in
+                    guard searchGeneration == generation else { return }
+                    acceptSearch(result)
+                }
             }
-        }
-        guard !Task.isCancelled else { return }
-        contentMatch = matches
-        misheardMatch = misheard
-        isContentSearching = false
+            guard !Task.isCancelled, searchGeneration == generation else { return }
+            acceptSearch(result)
+        } catch is CancellationError { }
+        catch { if searchGeneration == generation { searchUnreadable = ids.count } }
     }
+
+    private func acceptSearch(_ result: SessionSearchProgress) {
+        // Progress arrives through main-actor tasks; a late partial batch must
+        // never replace a newer batch or the completed result.
+        guard result.checked >= searchChecked else { return }
+        searchChecked = result.checked; searchTotal = result.total; searchUnreadable = result.unreadable
+        contentHits = result.hits; contentMatch = Set(result.hits.keys)
+        misheardMatch = result.hits.compactMapValues(\.misheardForm)
+    }
+
+    private func searchResults(compact: Bool) -> some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            if compact { filterBar }
+            Text("搜索结果").font(Typo.section)
+            Text(isContentSearching ? String(localized: "正在搜索：\(searchChecked)/\(searchTotal) 场") : String(localized: "找到 \(visibleSessions.count) 场记录"))
+                .font(Typo.caption).foregroundStyle(Ink.secondary)
+            if searchUnreadable > 0 {
+                Label("\(searchUnreadable) 场记录未能读取，结果可能不完整。", systemImage: "exclamationmark.triangle")
+                    .font(Typo.caption).foregroundStyle(Ink.caution)
+            }
+            if visibleSessions.isEmpty {
+                if isContentSearching { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+                else {
+                    ContentUnavailableView("没有匹配的内容", systemImage: "magnifyingglass", description: Text("可换一个词，或清除日期和时长筛选。"))
+                    Button("清除搜索与筛选") { clearFilters() }.buttonStyle(ChipButtonStyle())
+                }
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: Space.s2) {
+                        ForEach(visibleSessions) { meta in
+                            Button { openFromOverview(meta.id) } label: {
+                                SessionRow(meta: meta, selected: false, active: meta.id == archive.activeID,
+                                    misheardForm: misheardMatch[meta.id], searchHit: contentHits[meta.id])
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }.buttonStyle(InteractiveRowButtonStyle())
+                        }
+                    }
+                }
+            }
+        }.padding(Space.s6).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
 }
 
 private struct HistoryFilterPicker<Value: Hashable>: View {
@@ -913,7 +952,7 @@ private struct MeetingArchiveOverview: View {
         VStack(spacing: 0) {
             HStack(spacing: Space.s2) {
                 if !isRoot {
-                    Button("所有会议") { onOpenRoot() }
+                    Button("所有记录") { onOpenRoot() }
                         .buttonStyle(.tapText).font(Typo.caption).foregroundStyle(Ink.secondary)
                     Image(systemName: "chevron.right").font(.system(size: 9)).foregroundStyle(Ink.tertiary)
                 }
@@ -1019,7 +1058,7 @@ private struct MeetingArchiveOverview: View {
                             } description: {
                                 Text("开始一场会议后，它会显示在这个系列里。")
                             } actions: {
-                                Button("返回所有会议", action: onOpenRoot)
+                                Button("返回所有记录", action: onOpenRoot)
                                     .buttonStyle(ChipButtonStyle(prominent: true))
                             }
                             .frame(maxWidth: .infinity, minHeight: 180)
@@ -1027,9 +1066,9 @@ private struct MeetingArchiveOverview: View {
                             ContentUnavailableView {
                                 Label("系列信息已不可用", systemImage: "folder.badge.questionmark")
                             } description: {
-                                Text("这个系列可能已被删除。返回所有会议查看仍保留的记录。")
+                                Text("这个系列可能已被删除。返回所有记录查看仍保留的记录。")
                             } actions: {
-                                Button("返回所有会议", action: onOpenRoot)
+                                Button("返回所有记录", action: onOpenRoot)
                                     .buttonStyle(ChipButtonStyle(prominent: true))
                             }
                             .frame(maxWidth: .infinity, minHeight: 180)
@@ -1042,7 +1081,7 @@ private struct MeetingArchiveOverview: View {
                             } actions: {
                                 Button("清除搜索与筛选", action: onClearFilters)
                                     .buttonStyle(ChipButtonStyle(prominent: true))
-                                Button("返回所有会议", action: onOpenRoot)
+                                Button("返回所有记录", action: onOpenRoot)
                                     .buttonStyle(ChipButtonStyle())
                             }
                             .frame(maxWidth: .infinity, minHeight: 180)
@@ -1276,13 +1315,14 @@ private enum SessionSort: String, CaseIterable, Identifiable {
     }
 }
 
-private struct SessionRow: View {
+struct SessionRow: View {
     let meta: SessionMeta
     var selected: Bool
     var active: Bool
     var showsWorkspace = true
     /// Set when the search found this meeting through a recorded misheard spelling.
     var misheardForm: String? = nil
+    var searchHit: SessionSearchHit? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -1293,6 +1333,10 @@ private struct SessionRow: View {
                 summaryIcon
             }
             Text(verbatim: details).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
+            if let searchHit {
+                Text(LocalizedStringKey(searchHit.label)).font(Typo.caption).foregroundStyle(Ink.ai)
+                Text(searchHit.snippet).font(Typo.body).foregroundStyle(Ink.secondary).lineLimit(3)
+            }
             if let misheardForm { MisheardMark(form: misheardForm) }
         }
         .padding(10)
@@ -1329,6 +1373,10 @@ struct SessionAnswersList: View {
                 }
                 ForEach(detail.answers) { answer in
                     VStack(alignment: .leading, spacing: 6) {
+                        if !answer.isComplete {
+                            Label("未完成的回答片段", systemImage: "exclamationmark.circle")
+                                .font(Typo.caption).foregroundStyle(Ink.caution)
+                        }
                         HStack {
                             Text(answer.question).font(.system(size: 13, weight: .semibold)).lineLimit(3).textSelection(.enabled)
                             Spacer()
@@ -1341,6 +1389,7 @@ struct SessionAnswersList: View {
                         Text(meta(answer)).font(.system(size: 10)).foregroundStyle(.tertiary)
                     }
                     .aiBlock(padding: 12)
+                    .id("answer-\(answer.id)")
                 }
             }
         }

@@ -21,6 +21,26 @@ public enum OnboardingStep: Int, CaseIterable, Sendable {
 
     public static var count: Int { allCases.count }
 
+    /// Keep the stored seven-step raw values decodable while the main guide now
+    /// has three steps. Optional AI, voice and document setup live in Settings.
+    public static var guidedSteps: [OnboardingStep] { [.sample, .sound, .start] }
+    public var guideStep: OnboardingStep {
+        switch self {
+        case .welcome, .sample: .sample
+        case .sound: .sound
+        case .voice, .answers, .materials, .start: .start
+        }
+    }
+    public var guidePosition: Int { (Self.guidedSteps.firstIndex(of: guideStep) ?? 0) + 1 }
+    public var guideNext: OnboardingStep? {
+        let index = guidePosition
+        return index < Self.guidedSteps.count ? Self.guidedSteps[index] : nil
+    }
+    public var guidePrevious: OnboardingStep? {
+        let index = guidePosition - 2
+        return index >= 0 ? Self.guidedSteps[index] : nil
+    }
+
     /// A stored step, clamped into range (an old or damaged value opens the guide at a valid page).
     public static func clamped(_ raw: Int) -> OnboardingStep {
         OnboardingStep(rawValue: min(max(raw, 0), count - 1)) ?? .welcome

@@ -135,6 +135,17 @@ extension AppState {
 
     // MARK: Writing the notes
 
+    /// A finished meeting uses its frozen context, never files later added to its series.
+    func notesWorkspace(for detail: SessionDetail) -> Workspace? {
+        guard let context = detail.context else { return nil }
+        var workspace = Workspace(id: detail.meta.workspaceID ?? detail.meta.id,
+                                  name: detail.meta.workspaceName ?? detail.meta.displayTitle,
+                                  mode: context.effectiveMode ?? context.mode, style: context.style,
+                                  preferences: context.preferences, notes: context.profile, documents: context.documents)
+        workspace.glossary = context.glossary
+        return workspace
+    }
+
     /// Writes the notes of a session in the background (never interrupts a live
     /// answer). `templateID` / `english` re-run it with another template or language.
     func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil,
@@ -169,13 +180,13 @@ extension AppState {
                 await archive.flush()
                 guard let detail = await archive.detail(id), !detail.lines.isEmpty else { throw SummaryError.emptyTranscript }
                 loaded = detail
-                let workspace = detail.meta.workspaceID.flatMap { workspaces.workspace($0) }
-                let mode = workspace?.effectiveMode ?? detail.meta.mode
+                let workspace = notesWorkspace(for: detail)
+                let mode = detail.context?.effectiveMode ?? detail.context?.mode ?? detail.meta.mode
                 let template = notesTemplate(id: templateID ?? detail.notes?.templateID ?? defaultNotesTemplateID(for: mode), english: useEnglish)
                 var notes = try await writeNotes(detail: detail, workspace: workspace, template: template, english: useEnglish, engine: engine)
                 notes.model = engine.model
                 notes.generatedAt = Date()
-                let summary = await saveGeneratedSummary(notesSummary(from: notes, template: template, detail: detail),
+                let summary = try await saveGeneratedSummary(notesSummary(from: notes, template: template, detail: detail),
                                                          notes: notes, for: id)
                 if var latest = archive.sessions.first(where: { $0.id == id }) {
                     latest.actionItemCount = notes.actionItemCount
@@ -194,7 +205,7 @@ extension AppState {
                 do {
                     guard let detail = loaded else { throw NotesError.unreadable }
                     let generated = try await markdownSummary(detail: detail, engine: engine)
-                    let summary = await saveGeneratedSummary(generated, notes: nil, for: id)
+                    let summary = try await saveGeneratedSummary(generated, notes: nil, for: id)
                     if autoApplyLessons { applyReview(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
                 } catch {
                     markSummaryFailed(id, error)
@@ -206,16 +217,16 @@ extension AppState {
     }
 
     /// Text and structured passes share one commit lock and read the newest saved views.
-    private func saveGeneratedSummary(_ generated: SessionSummary, notes: StructuredNotes?, for id: UUID) async -> SessionSummary {
+    private func saveGeneratedSummary(_ generated: SessionSummary, notes: StructuredNotes?, for id: UUID) async throws -> SessionSummary {
         var summary = generated
+        var failure: Error?
         await StructuredNotesJobs.shared.exclusive {
             await archive.flush()
             summary.preserveStructuredViews(from: await archive.detail(id)?.summary)
-            if let notes { archive.saveNotes(notes, for: id) }
-            archive.saveSummary(summary, for: id)
-            await archive.flush()
-            archive.notesRevision += 1
+            do { try await archive.saveGeneratedContent(summary, notes: notes, for: id) }
+            catch { failure = error }
         }
+        if let failure { throw failure }
         return summary
     }
 
@@ -272,6 +283,7 @@ extension AppState {
         } catch {
             Diagnostics.record("notes.proofread_failed")
         }
+        corrections = detail.userContent.corrections(generated: corrections, lines: detail.lines)
         let lines = NotesCorrections.apply(corrections, to: detail.lines)
 
         // 2. Organize with the template; long meetings in parts, then merged.
@@ -289,7 +301,7 @@ extension AppState {
         let chunks = SessionSummaryPrompt.chunks(transcript)
         let system = NotesPrompt.organizeSystem(template: template, english: english, meetingDate: start,
                                                 inPerson: detail.meta.inPerson == true) + glossaryNotesBlock(workspace: workspace, english: english)
-        let answers = detail.answers.suffix(40).map { "Q：\($0.question.prefix(300))\nA：\($0.answer.prefix(600))" }.joined(separator: "\n\n")
+        let answers = detail.answers.filter(\.isComplete).suffix(40).map { "Q：\($0.question.prefix(300))\nA：\($0.answer.prefix(600))" }.joined(separator: "\n\n")
         let reply: String
         if chunks.count == 1 {
             reply = try await notesRequest(system: system, user: NotesPrompt.organizeUser(header: header, transcript: transcript, answers: answers), engine: engine)
@@ -364,13 +376,13 @@ extension AppState {
 
     /// The former Markdown summary (used when the notes model does not return JSON).
     private func markdownSummary(detail: SessionDetail, engine: NotesEngine) async throws -> SessionSummary {
-        let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: detail.lines, answers: detail.answers,
+        let material = SessionSummaryPrompt.Material(meta: detail.meta, lines: detail.effectiveLines, answers: detail.answers,
                                                      detected: detail.questions, context: detail.context)
         let speakerLabels = SpeakerLabels.promptLabels(detail.lines, voiceNames: detail.meta.voiceNames,
                                                        meVoices: Set(detail.meta.meVoices ?? []), english: false)
         let chunks = SessionSummaryPrompt.chunks(SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt, speakerLabels: speakerLabels))
-        let system = SessionSummaryPrompt.system(for: detail.meta.mode)
-            + glossaryNotesBlock(workspace: detail.meta.workspaceID.flatMap { workspaces.workspace($0) }, english: false)
+        let system = SessionSummaryPrompt.system(for: detail.context?.effectiveMode ?? detail.context?.mode ?? detail.meta.mode)
+            + glossaryNotesBlock(workspace: notesWorkspace(for: detail), english: false)
         let markdown: String
         if chunks.count == 1 {
             markdown = try await notesRequest(system: system, user: SessionSummaryPrompt.full(material), engine: engine)
@@ -391,21 +403,30 @@ extension AppState {
 
     /// Undo or redo one proofreading correction (the transcript file never changes).
     func toggleCorrection(_ correctionID: UUID, in sessionID: UUID) {
-        archive.updateNotes(sessionID) { notes in
-            guard let index = notes.corrections.firstIndex(where: { $0.id == correctionID }) else { return }
-            notes.corrections[index].reverted.toggle()
+        Task {
+            guard let detail = await archive.detail(sessionID),
+                  let correction = detail.effectiveNotes?.corrections.first(where: { $0.id == correctionID }),
+                  detail.lines.indices.contains(correction.line) else { return }
+            let lineID = detail.lines[correction.line].id
+            do {
+                _ = try await archive.updateUserContent(for: sessionID) { content in
+                    content.correctionDecisions.removeAll { $0.lineID == lineID && $0.original == correction.original }
+                    content.correctionDecisions.append(.init(lineID: lineID, original: correction.original, corrected: correction.corrected, reverted: !correction.reverted))
+                }
+            } catch { errorMessage = "校对决定尚未保存：\(error.localizedDescription)" }
         }
     }
 
     /// "复制纪要": Markdown of the notes (or of the older summary).
     func copyNotes(_ detail: SessionDetail) {
         let text: String
-        if let notes = detail.notes {
-            let title = detail.summary?.title ?? detail.meta.displayTitle
+        if let markdown = detail.userContent.editedMarkdown {
+            text = markdown
+        } else if let notes = detail.effectiveNotes {
+            let title = detail.meta.displayTitle
             text = NotesMarkdown.render(notes, title: title, facts: notesFacts(detail.meta, notes: notes))
         } else {
-            text = SessionMarkdownExporter.export(meta: detail.meta, summary: detail.summary, lines: detail.lines,
-                                                  answers: detail.answers, detected: detail.questions)
+            text = detail.fullMarkdown
         }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)

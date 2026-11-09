@@ -80,7 +80,7 @@ final class Updater {
 
     var currentVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0" }
     var currentBuild: Int { Int(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "") ?? 0 }
-    var canInstall: Bool { Bundle.main.bundleURL.pathExtension == "app" }
+    var canInstall: Bool { Bundle.main.bundleURL.pathExtension == "app" && Bundle.main.object(forInfoDictionaryKey: "InterviewHackerReviewMode") as? Bool != true }
 
     // MARK: Scheduling
 
@@ -91,7 +91,7 @@ final class Updater {
 
     private func scheduleChecks() {
         checkLoop?.cancel()
-        guard automaticChecks, !DemoMode.isEnabled else { return }
+        guard automaticChecks, !DemoMode.isEnabled, Bundle.main.object(forInfoDictionaryKey: "InterviewHackerReviewMode") as? Bool != true else { return }
         checkLoop = Task { [weak self] in
             try? await Task.sleep(for: .seconds(20))
             while !Task.isCancelled {

@@ -18,14 +18,22 @@ import SwiftUI
 /// - `INTERVIEWHACKER_DEMO_SNAPSHOT`: PNG the app renders its own main window into
 ///   (no Screen Recording permission needed)
 enum DemoMode {
-    static var isEnabled: Bool { ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO"] == "1" }
+    static var isEnabled: Bool {
+        if let override = ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO"] { return override == "1" }
+        return Bundle.main.object(forInfoDictionaryKey: "InterviewHackerReviewMode") as? Bool == true
+            && Bundle.main.object(forInfoDictionaryKey: "InterviewHackerReviewDemo") as? Bool == true
+    }
 
-    static var speechReady: Bool { isEnabled && ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO_VOICE_READY"] == "1" }
+    static var speechReady: Bool { isEnabled && (ProcessInfo.processInfo.environment["INTERVIEWHACKER_DEMO_VOICE_READY"] == "1" || Bundle.main.object(forInfoDictionaryKey: "InterviewHackerReviewDemo") as? Bool == true) }
 
     @MainActor
     static func apply() {
         guard isEnabled else { return }
-        let environment = ProcessInfo.processInfo.environment
+        var environment = ProcessInfo.processInfo.environment
+        if Bundle.main.object(forInfoDictionaryKey: "InterviewHackerReviewDemo") as? Bool == true {
+            environment["INTERVIEWHACKER_DEMO_SECTION"] = environment["INTERVIEWHACKER_DEMO_SECTION"] ?? "home"
+            environment["INTERVIEWHACKER_DEMO_VOICE_READY"] = environment["INTERVIEWHACKER_DEMO_VOICE_READY"] ?? "1"
+        }
         // Each capture starts from the default tabs; earlier captures must not leak in.
         for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep", "demoNotes"] {
             UserDefaults.standard.removeObject(forKey: key)

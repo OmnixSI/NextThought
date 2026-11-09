@@ -12,6 +12,7 @@ final class WorkspaceStore {
 
     private(set) var workspaces: [Workspace] = []
     private(set) var activeID: UUID?
+    private(set) var archiveRepairIssue: String?
 
     @ObservationIgnored private var dirty: Set<UUID> = []
     @ObservationIgnored private var saveTask: Task<Void, Never>?
@@ -59,6 +60,8 @@ final class WorkspaceStore {
         }
         if !loaded.isEmpty { preferences.set(true, forKey: Self.legacyMigrationCompletedKey) }
         workspaces = loaded
+        do { try repairArchives() }
+        catch { archiveRepairIssue = "资料归档修复未完成：\(error.localizedDescription)" }
         let saved = preferences.string(forKey: "activeWorkspaceID").flatMap(UUID.init(uuidString:))
         activeID = loaded.contains { $0.id == saved } ? saved : visible.first?.id
         if activeID == nil { preferences.removeObject(forKey: "activeWorkspaceID") }
@@ -115,12 +118,12 @@ final class WorkspaceStore {
         guard let index = workspaces.firstIndex(where: { $0.id == workspace.id }) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        guard !DemoMode.isEnabled else {
-            throw CocoaError(.fileWriteNoPermission)
-        }
-
         var next = workspace
         next.updatedAt = Date()
+        if DemoMode.isEnabled {
+            workspaces[index] = next
+            return
+        }
         let encoder = JSONLines.encoder()
         encoder.outputFormatting.insert(.prettyPrinted)
         let data = try encoder.encode(next)
@@ -169,7 +172,7 @@ final class WorkspaceStore {
     }
 
     @discardableResult
-    func duplicate(_ id: UUID) -> Workspace? {
+    func duplicate(_ id: UUID) throws -> Workspace? {
         guard let source = workspace(id) else { return nil }
         UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         var copy = source
@@ -177,10 +180,37 @@ final class WorkspaceStore {
         copy.name = source.name + " 副本"
         copy.createdAt = Date(); copy.updatedAt = Date()
         copy.stageReview = nil; copy.stageReviewAt = nil
+        if DemoMode.isEnabled {
+            workspaces.append(copy)
+            activeID = copy.id
+            return copy
+        }
+        do {
+            copy = try WorkspaceArchiveOwnership.repair(copy, dataRoot: AppPaths.root)
+            let data = try JSONLines.encoder().encode(copy)
+            try FileManager.default.createDirectory(at: AppPaths.workspaces, withIntermediateDirectories: true)
+            try data.write(to: fileURL(copy.id), options: .atomic)
+        } catch {
+            try? FileManager.default.removeItem(at: MaterialArchive.folder(for: copy.id))
+            throw error
+        }
         workspaces.append(copy)
-        write(copy)
         activate(copy.id)
         return copy
+    }
+
+    /// Repairs old copies without changing their user-visible modification dates.
+    func repairArchives() throws {
+        guard !DemoMode.isEnabled else { return }
+        io.sync { }
+        for index in workspaces.indices {
+            let next = try WorkspaceArchiveOwnership.repair(workspaces[index], dataRoot: AppPaths.root)
+            guard next != workspaces[index] else { continue }
+            let data = try JSONLines.encoder().encode(next)
+            try data.write(to: fileURL(next.id), options: .atomic)
+            workspaces[index] = next
+        }
+        archiveRepairIssue = nil
     }
 
     /// Permanently removes the workspace record after its related files are deleted.

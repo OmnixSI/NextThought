@@ -23,6 +23,13 @@ enum EngineTestState: Equatable {
     case failed(String)
 }
 
+struct AIServiceReadiness {
+    var configured: Bool
+    var verification: EngineTestState
+    var notesModelSelected: Bool
+    var canGenerateNotes: Bool { configured && notesModelSelected }
+}
+
 /// One line of the “使用前检查” list.
 struct SetupItem: Identifiable {
     enum Status { case done, required, recommended, working }
@@ -59,14 +66,57 @@ extension AppState {
         switch transcriptionBackend {
         case "apple": LiveTranscriberFactory.supported && recognitionLanguage != "auto"
         case "cloud": cloudConsent && !cloudKey.isEmpty
-        default: isModelInstalled && missingPackages.isEmpty
+        default: isModelInstalled
         }
     }
 
     var liveSetupReadiness: RealtimeSetupReadiness {
-        .init(speech: recognitionReady, capture: capturePermissionGranted, microphoneRequired: microphoneEnabled,
+        .init(speech: recognitionReady, capture: capturePermissionGranted, microphoneRequired: usesMicrophone,
               microphone: microphoneAccess == .granted, answers: answerEngineReady,
-              audioSource: captureTargets.contains { $0.id == selectedTargetID })
+              audioSource: captureTargets.contains { $0.id == selectedTargetID },
+              systemAudioRequired: !isOfflineMeeting)
+    }
+    var recordingReadiness: RecordingReadiness {
+        let permission: RecordingPermission = switch microphoneAccess {
+        case .granted: .granted
+        case .denied: .denied
+        case .undetermined: .undetermined
+        }
+        return .init(speech: recognitionReady, capture: capturePermissionGranted,
+                     audioSource: captureTargets.contains { $0.id == selectedTargetID },
+                     systemAudioRequired: !isOfflineMeeting, microphoneRequired: usesMicrophone,
+                     microphone: permission)
+    }
+    var aiServiceReadiness: AIServiceReadiness {
+        .init(configured: answerEngineReady, verification: engineTest, notesModelSelected: !notesEngine.model.isEmpty)
+    }
+    var recordingReadinessMessage: String {
+        guard let issue = recordingReadiness.issues.first else { return String(localized: "可以开始记录") }
+        switch issue {
+        case .recognition:
+            if transcriptionBackend == "cloud" { return String(localized: "请先配置云端语音识别并确认音频上传说明") }
+            if transcriptionBackend == "apple" { return String(localized: "系统语音识别需要 macOS 26，并选择中文或 English") }
+            return String(localized: "需要先准备本机语音识别模型")
+        case .systemAudioPermission: return String(localized: "允许系统音频权限后即可记录")
+        case .audioSource: return String(localized: "请选择有效的声音来源，或刷新后再试")
+        case .microphonePermission:
+            return microphoneAccess == .undetermined ? String(localized: "开始时会询问麦克风权限") : String(localized: "请在系统设置中允许麦克风")
+        }
+    }
+    /// The same description is shown at the moment of starting and during setup.
+    /// It describes this application's behavior, without promising a provider's retention policy.
+    var recordingDataRouteSummary: String {
+        let audio: String
+        switch transcriptionBackend {
+        case "cloud":
+            audio = String(localized: "声音会实时发送给 \(cloudProvider.title) 识别，并按该服务的条款处理。应用不保存原始录音。")
+        case "apple":
+            audio = String(localized: "声音由系统语音识别处理。应用不保存原始录音。")
+        default:
+            audio = String(localized: "声音在这台 Mac 上识别。应用不保存原始录音。")
+        }
+        guard answerEngineReady else { return audio }
+        return audio + "\n" + String(localized: "使用 AI 时，转写、相关资料片段或你选择的截图会发送给所选回答服务。")
     }
     var currentGuideVersion: String {
         OnboardingVersion.guideVersion(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.8.0")
@@ -358,7 +408,7 @@ struct OnboardingView: View {
     @State private var sampleFinished = false
     @State private var starting = false
 
-    private var step: OnboardingStep { OnboardingStep.clamped(stepRaw) }
+    private var step: OnboardingStep { OnboardingStep.clamped(stepRaw).guideStep }
 
     var body: some View {
         ZStack {
@@ -396,14 +446,14 @@ struct OnboardingView: View {
     private var header: some View {
         HStack(spacing: Space.s3) {
             HStack(spacing: 4) {
-                ForEach(OnboardingStep.allCases, id: \.self) { item in
+                ForEach(OnboardingStep.guidedSteps, id: \.self) { item in
                     Capsule()
                         .fill(item == step ? Ink.ink : (item.rawValue < step.rawValue ? Ink.secondary : Ink.hairline))
                         .frame(width: 22, height: 2)
                 }
             }
             .accessibilityHidden(true)
-            Text(verbatim: "\(step.position) / \(OnboardingStep.count)")
+            Text(verbatim: "\(step.guidePosition) / \(OnboardingStep.guidedSteps.count)")
                 .font(Typo.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
             Text(LocalizedStringKey(title(of: step))).font(Typo.label)
             Text(verbatim: timeText(step.estimatedSeconds)).font(Typo.caption).foregroundStyle(Ink.secondary)
@@ -417,11 +467,11 @@ struct OnboardingView: View {
 
     private var footer: some View {
         HStack(spacing: Space.s3) {
-            if let previous = step.previous {
+            if let previous = step.guidePrevious {
                 Button("上一步") { go(previous) }.buttonStyle(GhostButtonStyle(height: Space.controlLarge))
             }
             Spacer(minLength: 0)
-            if step.isLast {
+            if step == .start {
                 Button("进入首页") { state.finishOnboarding() }.buttonStyle(GhostButtonStyle(height: Space.controlLarge))
                 Button { startMeeting() } label: {
                     Text(LocalizedStringKey(starting || state.isChangingSession ? "正在开始…" : "开始记录"))
@@ -429,12 +479,8 @@ struct OnboardingView: View {
                 .buttonStyle(PrimaryButtonStyle(height: Space.controlLarge))
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canStart || starting || state.isChangingSession)
-            } else if step.isSkippable && !isDone {
-                Button { advance() } label: { Text(LocalizedStringKey(skipTitle)) }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.defaultAction)
             } else {
-                Button { advance() } label: { Text(LocalizedStringKey(step == .welcome ? "看示例会议" : "下一步")) }
+                Button { advance() } label: { Text(LocalizedStringKey(step == .sample ? "准备声音" : "开始前确认")) }
                     .buttonStyle(PrimaryButtonStyle(height: Space.controlLarge))
                     .keyboardShortcut(.defaultAction)
             }
@@ -449,13 +495,13 @@ struct OnboardingView: View {
     }
 
     private func advance() {
-        if let next = step.next { go(next) }
+        if let next = step.guideNext { go(next) }
     }
 
     private func title(of step: OnboardingStep) -> String {
         switch step {
         case .welcome: "欢迎"
-        case .sample: "示例会议"
+        case .sample: "看看组会如何被记下来"
         case .sound: "允许声音"
         case .voice: "你的声音"
         case .answers: "连接回答服务"
@@ -526,7 +572,7 @@ struct OnboardingView: View {
 
     private var sample: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
-            pageHeader("一场会议，这样被记下来", "对话是预先写好的：没有录音，不需要任何权限，也不调用模型。")
+            pageHeader("专注讨论，留下研究的下一步", "这是一段组会示例：进展、导师反馈和待验证的问题会保留下来。示例不录音、不申请权限、不调用模型。")
             OnboardingSampleMeeting(finished: $sampleFinished)
         }
     }
@@ -535,8 +581,10 @@ struct OnboardingView: View {
 
     private var sound: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
-            pageHeader("允许听到会议的声音", "声音只在这台 Mac 上识别，不保存录音。需要哪项权限，才在这里问哪项。")
+            pageHeader("准备好声音，就能开始", "先选线上或线下；语音识别准备好即可记录，不需要先配置 AI。")
+            OnboardingVenuePicker()
             GuideList {
+              if !state.isOfflineMeeting {
                 GuideRow(tone: state.capturePermissionGranted ? .ready : .caution, label: "系统音频") {
                     HStack(alignment: .top, spacing: Space.s3) {
                         VStack(alignment: .leading, spacing: 2) {
@@ -554,9 +602,10 @@ struct OnboardingView: View {
                     }
                 }
                 GuideDivider()
+              }
                 GuideRow(tone: microphoneTone, label: "麦克风") {
                     HStack(alignment: .top, spacing: Space.s3) {
-                        Text(LocalizedStringKey(microphoneLine)).font(Typo.body).fixedSize(horizontal: false, vertical: true)
+                        Text(LocalizedStringKey(state.isOfflineMeeting ? startMicrophoneLine : microphoneLine)).font(Typo.body).fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: Space.s2)
                         if state.microphoneAccess == .denied {
                             Button("打开系统设置") { Task { await state.requestMicrophoneAccess() } }.buttonStyle(SecondaryButtonStyle())
@@ -567,6 +616,8 @@ struct OnboardingView: View {
                 GuideRow(tone: state.recognitionReady ? .ready : .caution, label: "语音识别") { recognition }
             }
             Text("暂时不允许也没关系：看示例、整理资料、改设置都不受影响。线下会议只需要麦克风。")
+                .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(verbatim: state.recordingDataRouteSummary)
                 .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -600,8 +651,12 @@ struct OnboardingView: View {
                         }
                         Button("取消") { state.cancelModelDownload() }.buttonStyle(SecondaryButtonStyle())
                     }
-                } else if state.isModelInstalled && state.missingPackages.isEmpty {
+                } else if state.isModelInstalled {
                     Text("\(state.localStreamingModel.shortTitle) · 本机离线识别").font(Typo.body)
+                    if !state.missingPackages.isEmpty {
+                        Text("本机识别已就绪；可选精修组件可稍后下载，不影响开始记录。")
+                            .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
                 } else {
                     let size = max(state.missingPackages.reduce(0) { $0 + $1.approximateMegabytes }, 1)
                     HStack(alignment: .top, spacing: Space.s3) {
@@ -662,19 +717,23 @@ struct OnboardingView: View {
     private var readiness: RealtimeSetupReadiness { state.liveSetupReadiness }
 
     /// The microphone is asked for when recording starts, so only a refusal blocks.
-    private var microphoneBlocks: Bool { state.microphoneEnabled && state.microphoneAccess == .denied }
+    /// In-person meetings always use it, even if the online microphone toggle is off.
+    private var microphoneBlocks: Bool { state.usesMicrophone && state.microphoneAccess == .denied }
 
-    private var canStart: Bool {
-        readiness.speech && readiness.capture && readiness.answers && readiness.audioSource && !microphoneBlocks
-    }
+    private var canStart: Bool { state.recordingReadiness.canRequestStart }
 
     private var start: some View {
         VStack(alignment: .leading, spacing: Space.s6) {
-            pageHeader("选个声音来源，开始", "默认听这台 Mac 播放的所有声音。打开会议软件后，点“开始记录”。")
+            pageHeader("选个声音来源，开始",
+                       state.isOfflineMeeting ? "线下会议只用麦克风，转写会标为“现场”。" : "默认听这台 Mac 播放的所有声音。打开会议软件后，点“开始记录”。")
             GuideList {
-                GuideRow(tone: readiness.capture && readiness.audioSource ? .ready : .caution, label: "声音") {
+                GuideRow(tone: readiness.systemAudioReady ? .ready : .caution, label: "声音") {
                     HStack(spacing: Space.s3) {
-                        if readiness.capture {
+                        OnboardingVenuePicker()
+                        if state.isOfflineMeeting {
+                            Label("线下会议：只用麦克风", systemImage: "mic")
+                                .font(Typo.body).foregroundStyle(Ink.ink)
+                        } else if readiness.capture {
                             AudioSourceMenu()
                             if !readiness.audioSource {
                                 Text("没有找到可用的声音来源").font(Typo.caption).foregroundStyle(Ink.caution)
@@ -683,7 +742,7 @@ struct OnboardingView: View {
                             Text("还没有允许听会议的声音").font(Typo.body).foregroundStyle(Ink.caution)
                         }
                         Spacer(minLength: 0)
-                        if !readiness.capture {
+                        if !state.isOfflineMeeting && !readiness.capture {
                             Button("去允许") { go(.sound) }.buttonStyle(GhostButtonStyle(height: 28))
                         }
                     }
@@ -706,22 +765,25 @@ struct OnboardingView: View {
                             .foregroundStyle(microphoneBlocks ? Ink.caution : Ink.ink)
                             .fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: 0)
-                        if microphoneBlocks {
+                        if microphoneBlocks && state.isOfflineMeeting {
+                            Button("打开系统设置") { Task { await state.requestMicrophoneAccess() } }
+                                .buttonStyle(GhostButtonStyle(height: 28))
+                        } else if microphoneBlocks {
                             Button("只记录对方") { state.microphoneEnabled = false; state.updateSettings() }
                                 .buttonStyle(GhostButtonStyle(height: 28))
                         }
                     }
                 }
                 GuideDivider()
-                GuideRow(tone: readiness.answers ? .ready : .caution, label: "回答") {
+                GuideRow(tone: .idle, label: "AI 可选") {
                     HStack(spacing: Space.s3) {
                         if readiness.answers {
                             Text(verbatim: answerLine).font(Typo.body).lineLimit(1)
                         } else {
-                            Text("回答服务还没连上").font(Typo.body).foregroundStyle(Ink.caution)
+                            Text("未配置 · 不影响记录").font(Typo.body).foregroundStyle(Ink.secondary)
                         }
                         Spacer(minLength: 0)
-                        Button(LocalizedStringKey(readiness.answers ? "更换" : "去连接")) { go(.answers) }
+                        Button("设置 AI（可选）") { state.finishOnboarding(); state.openSettings(.answers) }
                             .buttonStyle(GhostButtonStyle(height: 28))
                     }
                 }
@@ -730,6 +792,10 @@ struct OnboardingView: View {
                     AutoEndGuideChoice()
                 }
             }
+            Text(verbatim: state.recordingDataRouteSummary).font(Typo.caption)
+                .foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+            Text("声纹、术语、资料增强与更多设置，可在需要时再开启。")
+                .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
             if let error = state.errorMessage, !error.isEmpty {
                 Text(verbatim: error).font(Typo.caption).foregroundStyle(Ink.caution).fixedSize(horizontal: false, vertical: true)
             }
@@ -737,6 +803,13 @@ struct OnboardingView: View {
     }
 
     private var startMicrophoneLine: String {
+        if state.isOfflineMeeting {
+            switch state.microphoneAccess {
+            case .granted: return "已允许 · 麦克风已准备好记录现场声音"
+            case .undetermined: return "开始记录时会询问麦克风权限"
+            case .denied: return "未允许 · 线下会议需要麦克风权限"
+            }
+        }
         if !state.microphoneEnabled { return "不使用麦克风 · 只记录对方的声音" }
         switch state.microphoneAccess {
         case .granted: return "已允许 · 你说的话会标为“我”"
@@ -754,14 +827,25 @@ struct OnboardingView: View {
         starting = true
         Task {
             defer { starting = false }
-            // The microphone prompt appears here, when recording is about to start.
-            if state.microphoneEnabled, MicrophoneAccess.current() == .undetermined {
-                await state.requestMicrophoneAccess()
-            }
-            guard !microphoneBlocks else { return }
-            await state.startSession()
-            if state.isRunning { state.finishOnboarding() }
+            // Finish before showing the shared first-recording notice, whose
+            // pending start survives dismissing the onboarding overlay.
+            state.finishOnboarding()
+            state.beginNewMeetingAfterWorkspaceEdit()
+            state.setDraftType(.labMeeting)
+            await state.startPreparedMeeting()
         }
+    }
+}
+
+/// The onboarding flow can start either kind of session, so make its audio mode
+/// explicit before showing the online system-audio controls.
+private struct OnboardingVenuePicker: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        InkSegmented(items: MeetingVenue.allCases.map { (value: $0, title: $0.title) },
+                     selection: Binding(get: { state.meetingVenue }, set: { state.setMeetingVenue($0) }))
+            .fixedSize()
     }
 }
 

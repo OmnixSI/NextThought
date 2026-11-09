@@ -16,7 +16,7 @@ extension MarkdownConverter {
             result.name = url.deletingPathExtension().lastPathComponent; result.format = "ppt"
             return result
         }
-        if options.provider == .codex { return try await CodexDocumentReader.read(url, options: options) }
+        if options.provider == .codex && url.pathExtension.lowercased() != "pdf" { return try await CodexDocumentReader.read(url, options: options) }
         let job = DocumentRuntime.temporary.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: job, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: job) }
@@ -25,28 +25,64 @@ extension MarkdownConverter {
         let checkpoint = DocumentCheckpoint(options: options, sourceHash: sourceHash)
         var rawPages: [String: String] = [:]
         var blocks: [DocumentBlock] = [], warnings: [String] = []
+        var codexAccessChecked = false
         func add(_ text: String, _ locator: DocumentLocator) { blocks += DocumentStructure.parse(text, locator: locator) }
         func waitForForeground() async throws {
             while await options.isPaused() { try await Task.sleep(for: .milliseconds(200)); try Task.checkCancellation() }
         }
         func ocr(_ image: CGImage, locator: DocumentLocator) async throws -> String {
             try await waitForForeground()
+            try Task.checkCancellation()
+            if options.provider == .codex {
+                guard DocumentRuntime.installed else {
+                    throw DocumentDependencyError(reason: .runtime, message: String(localized: "Codex 文件代读需要文档组件，请准备后继续。"))
+                }
+                if !codexAccessChecked {
+                    guard CodexBridge.executableURL() != nil else {
+                        throw DocumentDependencyError(reason: .codexConnection, message: String(localized: "未检测到 Codex，连接后可继续读取扫描页面。"))
+                    }
+                    let status = await CodexBridge.loginStatus()
+                    try Task.checkCancellation()
+                    guard status.lowercased().contains("logged in") || status == "Codex 已登录" else {
+                        throw DocumentDependencyError(reason: .codexConnection, message: String(localized: "需要登录 Codex 后才能读取扫描页面。"))
+                    }
+                    codexAccessChecked = true
+                }
+                let file = job.appendingPathComponent(UUID().uuidString + ".png")
+                guard let bytes = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
+                    throw AppFailure.capture("页面图像编码失败。")
+                }
+                try bytes.write(to: file)
+                defer { try? FileManager.default.removeItem(at: file) }
+                var pageOptions = options
+                pageOptions.sourceHash = nil
+                pageOptions.checkpointDirectory = nil
+                let result = try await CodexDocumentReader.read(file, options: pageOptions)
+                warnings += (result.content?.warnings ?? []).map { locator.label + "：" + $0 }
+                return result.markdown
+            }
             if options.provider == .paddle {
                 do {
                     let ocrModel = ModelCatalog.localOCRChoices.first { $0.id == options.localModelID } ?? ModelCatalog.paddleOCR
                     guard ManagedModelStore.isInstalled(ocrModel), ManagedModelStore.isInstalled(ModelCatalog.layout) else {
-                        throw AppFailure.capture("Paddle 或版面模型尚未完整安装。")
+                        throw DocumentDependencyError(reason: .ocrModels, message: "Paddle 或版面模型尚未完整安装。")
                     }
+                    guard DocumentRuntime.installed else { throw DocumentDependencyError(reason: .runtime, message: "需要准备文档运行组件。") }
                     let file = job.appendingPathComponent(UUID().uuidString+".png")
-                    try NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!.write(to: file)
+                    defer { try? FileManager.default.removeItem(at: file) }
+                    guard let encoded = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else {
+                        throw AppFailure.capture("页面图像编码失败。")
+                    }
+                    try encoded.write(to: file)
                     let result = try await DocumentWorker.shared.request("ocr", ["image":file.path,
                         "model_directory":ocrModel.directory.path,
-                        "layout_directory":ModelCatalog.layout.directory.path], timeout: options.timeout, onProgress: { completed, total in
+                        "layout_directory":ModelCatalog.layout.directory.path], timeout: min(options.timeout, 90), onProgress: { completed, total in
                         options.onProgress(.init(.ocr, completed: completed, total: total, message: locator.label + " · 识别区域"))
                     })
                     guard let text = result["markdown"] as? String, !text.isEmpty else { throw AppFailure.capture("模型未返回文字。") }
                     return text
                 } catch is CancellationError { throw CancellationError() }
+                catch let dependency as DocumentDependencyError { throw dependency }
                 catch {
                     guard options.fallback else { throw error }
                     warnings.append("\(locator.label)：Paddle 失败，由系统 OCR 补读；\(error.localizedDescription)")
@@ -65,20 +101,42 @@ extension MarkdownConverter {
                     options.onProgress(.init(.parsing, completed: index + 1, total: pdf.pageCount, message: "已复用完成页面。")); continue
                 }
                 guard let page = pdf.page(at: index) else { throw AppFailure.capture("PDF 第 \(index+1) 页无法读取。") }
-                let locator = DocumentLocator(page:index+1), text = page.string ?? ""
+                let locator = DocumentLocator(page:index+1), text = autoreleasepool { page.string ?? "" }
                 rawPages[unit] = text
                 let firstBlock = blocks.count, firstWarning = warnings.count
-                let complex = isComplex(page)
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).count >= 8 && !complex { add(text, locator) }
+                // Read the text layer directly. Math and columns do not require
+                // whole-page OCR, but a header alone must not hide a scanned body.
+                let textCount = text.trimmingCharacters(in: .whitespacesAndNewlines).count
+                let hasImage = hasLargeEmbeddedImage(page)
+                if textCount >= 8 && !(hasImage && textCount < 512) {
+                    add(text, locator)
+                    if hasImage {
+                        warnings.append(String(localized: "p.\(index+1)：已提取原生文字；页内图像中的文字、图表或公式尚未读取，请核对原件。"))
+                    }
+                }
                 else {
                     options.onProgress(.init(.ocr, completed: index, total: pdf.pageCount, message: "正在识别 p.\(index+1)"))
-                    let recognized = try await ocr(try pageImage(page), locator: locator)
+                    let recognized: String
+                    do {
+                        recognized = try await ocr(try autoreleasepool { try pageImage(page) }, locator: locator)
+                    } catch is CancellationError { throw CancellationError() }
+                    catch let dependency as DocumentDependencyError { throw dependency }
+                    catch {
+                        // Keep completed pages usable. This page remains uncached so a
+                        // retry resumes here instead of repeating the whole document.
+                        if !text.isEmpty { add(text, locator) }
+                        else { add("[此页识别失败，请重试或查看原件]", locator) }
+                        warnings.append("p.\(index+1)：识别失败，其他页面已保留；\(error.localizedDescription)")
+                        options.onProgress(.init(.parsing, completed: index + 1, total: pdf.pageCount, message: "此页未完成，继续读取其余页面。"))
+                        continue
+                    }
                     if recognized.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
                         if !text.isEmpty { add(text, locator); warnings.append("p.\(index+1)：OCR 未提取内容，保留原始文字层，请核对图像区域。") }
                         else { add("[空白页或未识别到文字]", locator); warnings.append("p.\(index+1)：未识别到文字，请核对原件。") }
-                    } else if text.count >= 80, recognized.count < text.count / 2 {
+                    } else if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        // OCR can misread even a correct header or equation. Keep
+                        // the exact native layer alongside the image transcription.
                         add(text, locator); add(recognized, .init(page: index+1, headingPath: ["图像识别补充"]))
-                        warnings.append("p.\(index+1)：识别结果少于原文字层，原文与补充识别均已保留。")
                     } else { add(recognized, locator) }
                 }
                 try checkpoint.save(unit, blocks: Array(blocks.dropFirst(firstBlock)), warnings: Array(warnings.dropFirst(firstWarning)), rawText: text)
@@ -132,7 +190,7 @@ extension MarkdownConverter {
             add(converted.markdown,.init())
         }
         var content = DocumentContent(pipeline:options.provider.rawValue,sourceHash:sourceHash,blocks:blocks,warnings:warnings,
-            components:["pipeline":"2","ocrModelID":options.localModelID,"paddle":options.provider == .paddle ? (ModelCatalog.descriptor(for: options.localModelID)?.revision ?? "unknown") : "unused"])
+            components:["pipeline":"4","ocrModelID":options.localModelID,"paddle":options.provider == .paddle ? (ModelCatalog.descriptor(for: options.localModelID)?.revision ?? "unknown") : "unused"])
         content.rawPages = rawPages.isEmpty ? nil : rawPages
         options.onProgress(.init(.validating, completed: blocks.count, total: blocks.count, message: "OCR / 解析已完成。"))
         return Result(name:url.deletingPathExtension().lastPathComponent,markdown:content.markdown,
@@ -150,6 +208,58 @@ extension MarkdownConverter {
         guard let cg=page.thumbnail(of:NSSize(width:rect.width*scale,height:rect.height*scale),for:.mediaBox)
             .cgImage(forProposedRect:nil,context:nil,hints:nil) else { throw AppFailure.capture("页面渲染失败。") }
         return cg
+    }
+
+    /// Inspect resource dictionaries without decoding pixels or walking every
+    /// character. Nested Form XObjects and inherited page resources are common
+    /// in scanner/exporter PDFs. Bounded traversal also handles cyclic resources.
+    static func hasLargeEmbeddedImage(_ page: PDFPage) -> Bool {
+        guard let reference = page.pageRef else { return false }
+        var visited = Set<OpaquePointer>()
+        func scan(_ resources: CGPDFDictionaryRef, depth: Int) -> Bool {
+            // An unusually deep form graph is uncertain coverage, never proof
+            // that no image exists. Prefer OCR/a visible warning in this case.
+            guard depth < 16 else { return true }
+            var objects: CGPDFDictionaryRef?
+            guard CGPDFDictionaryGetDictionary(resources, "XObject", &objects), let objects,
+                  visited.insert(objects).inserted else { return false }
+            var found = false
+            CGPDFDictionaryApplyBlock(objects, { _, object, _ in
+                var stream: CGPDFStreamRef?
+                guard CGPDFObjectGetValue(object, .stream, &stream), let stream else { return true }
+                guard let dictionary = CGPDFStreamGetDictionary(stream) else { return true }
+                var subtype: UnsafePointer<CChar>?
+                guard CGPDFDictionaryGetName(dictionary, "Subtype", &subtype), let subtype else { return true }
+                switch String(cString: subtype) {
+                case "Image":
+                    var width: CGPDFInteger = 0, height: CGPDFInteger = 0
+                    if CGPDFDictionaryGetInteger(dictionary, "Width", &width),
+                       CGPDFDictionaryGetInteger(dictionary, "Height", &height), width >= 256, height >= 128 {
+                        found = true
+                    }
+                case "Form":
+                    var nested: CGPDFDictionaryRef?
+                    if CGPDFDictionaryGetDictionary(dictionary, "Resources", &nested), let nested {
+                        found = scan(nested, depth: depth + 1)
+                    }
+                default: break
+                }
+                return !found
+            }, nil)
+            return found
+        }
+        var dictionary: CGPDFDictionaryRef? = reference.dictionary
+        for _ in 0..<32 {
+            guard let current = dictionary else { return false }
+            var resources: CGPDFDictionaryRef?
+            if CGPDFDictionaryGetDictionary(current, "Resources", &resources), let resources {
+                return scan(resources, depth: 0)
+            }
+            var parent: CGPDFDictionaryRef?
+            guard CGPDFDictionaryGetDictionary(current, "Parent", &parent) else { return false }
+            dictionary = parent
+        }
+        return true
     }
     static func isComplex(_ page: PDFPage) -> Bool {
         let text = page.string ?? ""

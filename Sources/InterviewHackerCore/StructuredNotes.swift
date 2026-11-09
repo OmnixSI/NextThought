@@ -179,15 +179,18 @@ public struct StructuredNotesPayload: Codable, Sendable, Equatable {
     public var model: String
     /// The structured pass ran and failed (nothing to show): the page says so quietly.
     public var failed: Bool?
+    /// Revision of the effective transcript and human-edited notes used for this view.
+    public var sourceRevision: Int?
 
     public init(format: NotesFormat, fishbone: FishboneNotes? = nil, outline: OutlineNotes? = nil, viewpoints: ViewpointMatrix? = nil,
-                language: String = "zh", droppedCount: Int = 0, generatedAt: Date = Date(), model: String = "", failed: Bool? = nil) {
+                language: String = "zh", droppedCount: Int = 0, generatedAt: Date = Date(), model: String = "", failed: Bool? = nil, sourceRevision: Int? = nil) {
         self.format = format; self.fishbone = fishbone; self.outline = outline; self.viewpoints = viewpoints
         self.language = language; self.droppedCount = droppedCount; self.generatedAt = generatedAt; self.model = model
         self.failed = failed
+        self.sourceRevision = sourceRevision
     }
 
-    enum CodingKeys: String, CodingKey { case format, fishbone, outline, viewpoints, language, droppedCount, generatedAt, model, failed }
+    enum CodingKeys: String, CodingKey { case format, fishbone, outline, viewpoints, language, droppedCount, generatedAt, model, failed, sourceRevision }
 
     /// Lenient: every part is optional and a part that does not decode is left out.
     public init(from decoder: Decoder) throws {
@@ -201,6 +204,7 @@ public struct StructuredNotesPayload: Codable, Sendable, Equatable {
         generatedAt = (try? c.decodeIfPresent(Date.self, forKey: .generatedAt)) ?? Date()
         model = (try? c.decodeIfPresent(String.self, forKey: .model)) ?? ""
         failed = try? c.decodeIfPresent(Bool.self, forKey: .failed)
+        sourceRevision = try? c.decodeIfPresent(Int.self, forKey: .sourceRevision)
     }
 
     /// A marker for "the structured pass failed" (no content).

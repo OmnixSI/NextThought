@@ -80,15 +80,18 @@ public struct SessionAnswerEvent: Codable, Sendable, Identifiable, Equatable {
     public var webAnswer: String?
     public var webSources: [WebResult]?
     public var evidence: EvidenceBundle?
-    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool, screenshotPath: String? = nil, webAnswer: String? = nil, webSources: [WebResult]? = nil, evidence: EvidenceBundle? = nil) {
+    public var completion: AnswerCompletion?
+    public var isComplete: Bool { completion == nil || completion == .complete }
+    public init(id: UUID = UUID(), date: Date, question: String, answer: String, model: String, seconds: Double? = nil, firstTokenSeconds: Double? = nil, automatic: Bool, screenshotPath: String? = nil, webAnswer: String? = nil, webSources: [WebResult]? = nil, evidence: EvidenceBundle? = nil, completion: AnswerCompletion? = nil) {
         self.id = id; self.date = date; self.question = question; self.answer = answer; self.model = model
         self.seconds = seconds; self.firstTokenSeconds = firstTokenSeconds; self.automatic = automatic
         self.screenshotPath = screenshotPath; self.webAnswer = webAnswer; self.webSources = webSources; self.evidence = evidence
+        self.completion = completion
     }
 
     // Tolerant decoding: answers saved before screenshot archiving have no path.
     enum CodingKeys: String, CodingKey {
-        case id, date, question, answer, model, seconds, firstTokenSeconds, automatic, screenshotPath, webAnswer, webSources, evidence
+        case id, date, question, answer, model, seconds, firstTokenSeconds, automatic, screenshotPath, webAnswer, webSources, evidence, completion
     }
 
     public init(from decoder: Decoder) throws {
@@ -105,6 +108,7 @@ public struct SessionAnswerEvent: Codable, Sendable, Identifiable, Equatable {
         webAnswer = try c.decodeIfPresent(String.self, forKey: .webAnswer)
         webSources = try c.decodeIfPresent([WebResult].self, forKey: .webSources)
         evidence = try c.decodeIfPresent(EvidenceBundle.self, forKey: .evidence)
+        completion = try c.decodeIfPresent(AnswerCompletion.self, forKey: .completion)
     }
 }
 
@@ -115,8 +119,15 @@ public struct SessionContextSnapshot: Codable, Sendable, Equatable {
     public var preferences: String
     public var profile: String
     public var documents: [ContextDocument]
-    public init(mode: SessionMode, style: AnswerStyle, preferences: String, profile: String, documents: [ContextDocument]) {
+    public var effectiveMode: SessionMode?
+    public var typeName: String?
+    public var experience: String?
+    public var previousSessionID: UUID?
+    public var glossary: Glossary?
+    public init(mode: SessionMode, style: AnswerStyle, preferences: String, profile: String, documents: [ContextDocument], effectiveMode: SessionMode? = nil, typeName: String? = nil, experience: String? = nil, previousSessionID: UUID? = nil, glossary: Glossary? = nil) {
         self.mode = mode; self.style = style; self.preferences = preferences; self.profile = profile; self.documents = documents
+        self.effectiveMode = effectiveMode; self.typeName = typeName; self.experience = experience; self.previousSessionID = previousSessionID
+        self.glossary = glossary
     }
 }
 
@@ -344,7 +355,7 @@ public enum SessionSummaryPrompt {
         public var detected: [SessionQuestionEvent]
         public var context: SessionContextSnapshot?
         public init(meta: SessionMeta, lines: [SessionTranscriptLine], answers: [SessionAnswerEvent], detected: [SessionQuestionEvent], context: SessionContextSnapshot?) {
-            self.meta = meta; self.lines = lines; self.answers = answers; self.detected = detected; self.context = context
+            self.meta = meta; self.lines = lines; self.answers = answers.filter(\.isComplete); self.detected = detected; self.context = context
         }
     }
 
@@ -373,7 +384,7 @@ public enum SessionSummaryPrompt {
 
     public static func header(_ material: Material) -> String {
         var parts: [String] = []
-        parts.append("场景：\(material.meta.mode.title)")
+        parts.append("场景：\(material.context?.typeName ?? (material.context?.effectiveMode ?? material.context?.mode ?? material.meta.mode).title)")
         parts.append("开始时间：\(material.meta.startedAt.formatted(date: .abbreviated, time: .shortened))")
         if material.meta.duration > 0 { parts.append("时长：\(Int(material.meta.duration / 60)) 分钟") }
         if let workspace = material.meta.workspaceName, !workspace.isEmpty { parts.append("场景分区：\(workspace)") }
@@ -531,6 +542,7 @@ public enum SessionMarkdownExporter {
                 out.append("")
                 out.append("### \(answer.question.replacingOccurrences(of: "\n", with: " ").prefix(200))")
                 out.append("")
+                if !answer.isComplete { out.append("> 未完成的回答片段，请核实后使用。\n") }
                 out.append(answer.answer)
             }
             out.append("")

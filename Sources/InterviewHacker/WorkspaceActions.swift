@@ -49,14 +49,30 @@ extension AppState {
         if semanticRetrievalEnabled, embeddingModelInstalled, documentPreparation.pendingCount == 0 { rebuildSemanticIndex() }
     }
 
-    func removeDocument(_ id: UUID) {
-        guard !isRunning else { errorMessage = "请在会议结束后移除资料。"; return }
-        if let path = documents.first(where: { $0.id == id })?.markdownPath, let url = MaterialArchive.resolve(path),
-           workspaces.workspaces.flatMap(\.documents).filter({ $0.markdownPath == path }).count <= 1 {
-            try? FileManager.default.removeItem(at: url)
-            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("json"))
+    @discardableResult
+    func removeDocument(_ id: UUID) -> Bool {
+        guard !isRunning else { errorMessage = "请在会议结束后移除资料。"; return false }
+        // Keep the extracted file until the project itself is deleted, so removal
+        // can be undone without re-reading a potentially large original.
+        var workspace = activeWorkspace
+        guard let index = workspace.documents.firstIndex(where: { $0.id == id }) else { return false }
+        let document = workspace.documents.remove(at: index)
+        do { try workspaces.commit(workspace) }
+        catch { errorMessage = "移除未完成：\(error.localizedDescription)"; return false }
+        let workspaceID = workspace.id
+        NSApp.keyWindow?.undoManager?.registerUndo(withTarget: self) { target in
+            Task { @MainActor in target.restoreDocument(document, in: workspaceID, at: index) }
         }
-        documents.removeAll { $0.id == id }; rebuildContextIndex()
+        NSApp.keyWindow?.undoManager?.setActionName("移除资料")
+        rebuildContextIndex(); return true
+    }
+
+    func restoreDocument(_ document: ContextDocument, in workspaceID: UUID, at index: Int) {
+        guard !isRunning, var workspace = workspaces.workspace(workspaceID) else { errorMessage = "原项目暂不可恢复资料，请先结束记录或检查项目是否存在。"; return }
+        guard !workspace.documents.contains(where: { $0.id == document.id }) else { return }
+        workspace.documents.insert(document, at: min(index, workspace.documents.count))
+        do { try workspaces.commit(workspace); rebuildContextIndex() }
+        catch { errorMessage = "恢复资料失败：\(error.localizedDescription)" }
     }
 
     func setDocumentEnabled(_ id: UUID, enabled: Bool) {
@@ -93,7 +109,8 @@ extension AppState {
     }
 
     func duplicateWorkspace(_ id: UUID) {
-        workspaces.duplicate(id)
+        do { _ = try workspaces.duplicate(id) }
+        catch { errorMessage = "复制未完成，原项目已保留：\(error.localizedDescription)"; return }
         rebuildContextIndex()
     }
 
@@ -171,6 +188,7 @@ extension AppState {
         let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
         do {
             workspaces.flush()
+            try workspaces.repairArchives()
             let remainingWorkspaces = workspaces.workspaces.filter { $0.id != id }
             try await documentPreparation.deleteWorkspaceArtifacts(id, remainingWorkspaces: remainingWorkspaces)
             await archive.flush()
@@ -337,10 +355,11 @@ extension AppState {
 
     func importArchive(_ url: URL, applySettings: Bool) {
         guard !isRunning else { errorMessage = "请先停止辅助再导入数据。"; return }
-        runDataTask("正在校验并恢复…") {
-            let summary = try await DataBackup.importArchive(url, applySettings: applySettings)
-            self.archive.load(); self.rebuildContextIndex()
-            return summary.description + (applySettings && summary.settingsApplied > 0 ? " 设置在重新打开应用后完全生效。" : "")
+        guard !isDataBusy else { return }
+        runDataTask("正在校验备份并准备预览…") {
+            let prepared = try await DataBackup.prepareImport(url)
+            BackupRestoreReview.present(prepared, applySettings: applySettings, state: self)
+            return "预览已就绪；确认前不会修改本机数据。"
         }
     }
 

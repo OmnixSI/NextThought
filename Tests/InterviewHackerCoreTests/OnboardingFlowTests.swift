@@ -2,6 +2,17 @@ import Testing
 @testable import InterviewHackerCore
 
 struct OnboardingFlowTests {
+    @Test func threeStepGuidePreservesLegacyProgress() {
+        #expect(OnboardingStep.guidedSteps == [.sample, .sound, .start])
+        #expect(OnboardingStep.welcome.guideStep == .sample)
+        #expect(OnboardingStep.sound.guideStep == .sound)
+        for old in [OnboardingStep.voice, .answers, .materials, .start] { #expect(old.guideStep == .start) }
+        #expect(OnboardingStep.sample.guidePrevious == nil)
+        #expect(OnboardingStep.sample.guideNext == .sound)
+        #expect(OnboardingStep.sound.guideNext == .start)
+        #expect(OnboardingStep.start.guideNext == nil)
+        #expect(OnboardingStep.start.guidePosition == 3)
+    }
     @Test func stepsRunInTheDesignedOrder() {
         #expect(OnboardingStep.allCases == [.welcome, .sample, .sound, .voice, .answers, .materials, .start])
         #expect(OnboardingStep.count == 7)

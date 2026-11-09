@@ -373,6 +373,7 @@ private struct AnswerHeader: View {
 /// The streaming text: the only part of the panel that redraws per delta.
 private struct AnswerBody: View {
     @Environment(AppState.self) private var state
+    @State private var follow = true
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -387,9 +388,16 @@ private struct AnswerBody: View {
                     }
                     Color.clear.frame(height: 1).id("answer-end")
                 }
+                .background(ReadingScrollMonitor(follows: $follow))
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if !follow {
+                    Button("回到最新") { follow = true; proxy.scrollTo("answer-end", anchor: .bottom) }
+                        .buttonStyle(SecondaryButtonStyle())
+                }
             }
             .onChange(of: state.answerDraft.count / 40) { _, _ in
-                if state.isAnswering, state.historyCursor == nil { proxy.scrollTo("answer-end", anchor: .bottom) }
+                if follow, state.isAnswering, state.historyCursor == nil { proxy.scrollTo("answer-end", anchor: .bottom) }
             }
         }
     }
