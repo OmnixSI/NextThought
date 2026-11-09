@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import Foundation
 import PDFKit
 import NextThoughtCore
@@ -36,7 +37,11 @@ enum Launcher {
         }
         if let index = arguments.firstIndex(of: "--self-test") {
             let code = SelfTest.run(Array(arguments.dropFirst(index + 1)))
-            exit(code)
+            // Suites await their persistence receipts before returning. Do not run
+            // process-global AppKit teardown while background framework tasks live:
+            // headless runners have no NSApplication termination lifecycle.
+            fflush(nil)
+            _exit(code)
         }
         NextThoughtApp.main()
     }
