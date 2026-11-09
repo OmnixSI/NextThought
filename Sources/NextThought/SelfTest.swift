@@ -121,6 +121,8 @@ enum SelfTest {
     private static func runAsync(_ work: @escaping @MainActor () async throws -> String) -> Result<String, Error> {
         var result: Result<String, Error>?
         Task { @MainActor in
+            // Archive/restore paths may create AppKit-backed model state even in CLI tests.
+            _ = NSApplication.shared
             do { result = .success(try await work()) } catch { result = .failure(error) }
         }
         while result == nil { RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.05)) }
