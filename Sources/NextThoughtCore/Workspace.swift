@@ -136,6 +136,27 @@ public struct ModeProfile: Sendable {
 
 // MARK: - Knowledge (self-iteration)
 
+/// An immutable version of an accepted lesson. It keeps the text and source IDs
+/// needed for audit or restore without needing to reopen the meeting transcript.
+public struct WorkspaceLessonRevision: Codable, Sendable, Equatable, Identifiable {
+    public var id: UUID
+    public var revision: Int
+    public var text: String
+    public var sourceSessionID: UUID?
+    public var sourceSessionIDs: [UUID]?
+    /// Meeting IDs whose source content was deleted while this version was retained.
+    public var sourceMissingSessionIDs: [UUID]?
+    public var recordedAt: Date
+
+    public init(id: UUID = UUID(), revision: Int, text: String, sourceSessionID: UUID? = nil,
+                sourceSessionIDs: [UUID]? = nil, sourceMissingSessionIDs: [UUID]? = nil,
+                recordedAt: Date = Date()) {
+        self.id = id; self.revision = max(1, revision); self.text = text
+        self.sourceSessionID = sourceSessionID; self.sourceSessionIDs = sourceSessionIDs
+        self.sourceMissingSessionIDs = sourceMissingSessionIDs; self.recordedAt = recordedAt
+    }
+}
+
 /// A lesson learned in a review (“结论先行”“缓存一致性要画时序”…).
 public struct WorkspaceLesson: Codable, Sendable, Equatable, Identifiable {
     public var id: UUID
@@ -143,12 +164,136 @@ public struct WorkspaceLesson: Codable, Sendable, Equatable, Identifiable {
     public var sourceSessionID: UUID?
     /// All meetings that independently support this lesson. Older workspaces may omit it.
     public var sourceSessionIDs: [UUID]?
+    /// Deleted source IDs are retained only as provenance tombstones, never as transcript links.
+    public var sourceMissingSessionIDs: [UUID]?
     public var createdAt: Date
+    public var updatedAt: Date
     public var pinned: Bool
+    public var revision: Int
+    public var history: [WorkspaceLessonRevision]
+    /// True only when the user explicitly chose to keep this accepted text after deleting its source.
+    public var independentlyRetained: Bool
+
     public init(id: UUID = UUID(), text: String, sourceSessionID: UUID? = nil, sourceSessionIDs: [UUID]? = nil,
-                createdAt: Date = Date(), pinned: Bool = false) {
+                sourceMissingSessionIDs: [UUID]? = nil, createdAt: Date = Date(), updatedAt: Date? = nil,
+                pinned: Bool = false, revision: Int = 1, history: [WorkspaceLessonRevision] = [],
+                independentlyRetained: Bool = false) {
         self.id = id; self.text = text; self.sourceSessionID = sourceSessionID
-        self.sourceSessionIDs = sourceSessionIDs; self.createdAt = createdAt; self.pinned = pinned
+        self.sourceSessionIDs = sourceSessionIDs; self.sourceMissingSessionIDs = sourceMissingSessionIDs
+        self.createdAt = createdAt; self.updatedAt = updatedAt ?? createdAt; self.pinned = pinned
+        self.revision = max(1, revision); self.history = history; self.independentlyRetained = independentlyRetained
+    }
+
+    public var currentRevision: WorkspaceLessonRevision {
+        WorkspaceLessonRevision(id: revisionIdentifier(), revision: revision,
+                                text: text, sourceSessionID: sourceSessionID,
+                                sourceSessionIDs: sourceSessionIDs,
+                                sourceMissingSessionIDs: sourceMissingSessionIDs, recordedAt: updatedAt)
+    }
+
+    private func revisionIdentifier() -> UUID {
+        let components = [id.uuidString.lowercased(), String(revision), text,
+                          sourceSessionID?.uuidString.lowercased() ?? "",
+                          (sourceSessionIDs ?? []).map { $0.uuidString.lowercased() }.sorted().joined(separator: ","),
+                          (sourceMissingSessionIDs ?? []).map { $0.uuidString.lowercased() }.sorted().joined(separator: ","),
+                          String(updatedAt.timeIntervalSince1970.bitPattern, radix: 16)]
+        let material = components.map { "\($0.utf8.count):\($0)" }.joined(separator: "|")
+        var bytes = Array(SHA256.hash(data: Data("workspace-lesson-revision|\(material)".utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0F) | 0x50
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                           bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, text, sourceSessionID, sourceSessionIDs, sourceMissingSessionIDs
+        case createdAt, updatedAt, pinned, revision, history, independentlyRetained
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let createdAt = try c.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date(timeIntervalSince1970: 0)
+        self.init(id: try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID(),
+                  text: try c.decode(String.self, forKey: .text),
+                  sourceSessionID: try c.decodeIfPresent(UUID.self, forKey: .sourceSessionID),
+                  sourceSessionIDs: try c.decodeIfPresent([UUID].self, forKey: .sourceSessionIDs),
+                  sourceMissingSessionIDs: try c.decodeIfPresent([UUID].self, forKey: .sourceMissingSessionIDs),
+                  createdAt: createdAt,
+                  updatedAt: try c.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt,
+                  pinned: try c.decodeIfPresent(Bool.self, forKey: .pinned) ?? false,
+                  revision: try c.decodeIfPresent(Int.self, forKey: .revision) ?? 1,
+                  history: try c.decodeIfPresent([WorkspaceLessonRevision].self, forKey: .history) ?? [],
+                  independentlyRetained: try c.decodeIfPresent(Bool.self, forKey: .independentlyRetained) ?? false)
+    }
+}
+
+/// Applies lesson changes while keeping the complete accepted text and provenance history.
+public enum WorkspaceLessonHistory {
+    @discardableResult
+    public static func editText(_ text: String, on lesson: inout WorkspaceLesson,
+                                now: Date = Date()) -> Bool {
+        guard lesson.text != text else { return false }
+        appendCurrentRevision(to: &lesson)
+        lesson.text = text
+        lesson.revision += 1
+        lesson.updatedAt = now
+        lesson.independentlyRetained = false
+        return true
+    }
+
+    @discardableResult
+    public static func addSources(_ newSources: Set<UUID>, to lesson: inout WorkspaceLesson,
+                                  now: Date = Date()) -> Bool {
+        guard !newSources.isEmpty else { return false }
+        let existing = allSourceIDs(lesson)
+        let additions = newSources.subtracting(existing)
+        guard !additions.isEmpty else { return false }
+        appendCurrentRevision(to: &lesson)
+        let sources = existing.union(additions)
+        lesson.sourceSessionIDs = sorted(sources)
+        lesson.sourceSessionID = lesson.sourceSessionID.flatMap { sources.contains($0) ? $0 : nil } ?? sorted(sources).first
+        lesson.revision += 1
+        lesson.updatedAt = now
+        lesson.independentlyRetained = false
+        return true
+    }
+
+    /// Restore an immutable old text/source snapshot, keeping the replaced version in history.
+    @discardableResult
+    public static func restore(_ revisionID: UUID, on lesson: inout WorkspaceLesson,
+                               now: Date = Date()) -> Bool {
+        guard let revision = lesson.history.first(where: { $0.id == revisionID }),
+              lesson.text != revision.text || lesson.sourceSessionID != revision.sourceSessionID
+                || lesson.sourceSessionIDs != revision.sourceSessionIDs
+                || lesson.sourceMissingSessionIDs != revision.sourceMissingSessionIDs else { return false }
+        appendCurrentRevision(to: &lesson)
+        lesson.text = revision.text
+        lesson.sourceSessionID = revision.sourceSessionID
+        lesson.sourceSessionIDs = revision.sourceSessionIDs
+        lesson.sourceMissingSessionIDs = revision.sourceMissingSessionIDs
+        lesson.revision += 1
+        lesson.updatedAt = now
+        lesson.independentlyRetained = allSourceIDs(revision).isEmpty
+            && !(revision.sourceMissingSessionIDs ?? []).isEmpty
+        return true
+    }
+
+    static func appendCurrentRevision(to lesson: inout WorkspaceLesson) {
+        let current = lesson.currentRevision
+        guard !lesson.history.contains(where: { $0.id == current.id }) else { return }
+        lesson.history.append(current)
+    }
+
+    static func allSourceIDs(_ lesson: WorkspaceLesson) -> Set<UUID> {
+        Set(lesson.sourceSessionIDs ?? []).union(lesson.sourceSessionID.map { [$0] } ?? [])
+    }
+
+    static func allSourceIDs(_ revision: WorkspaceLessonRevision) -> Set<UUID> {
+        Set(revision.sourceSessionIDs ?? []).union(revision.sourceSessionID.map { [$0] } ?? [])
+    }
+
+    static func sorted(_ ids: Set<UUID>) -> [UUID] {
+        ids.sorted { $0.uuidString < $1.uuidString }
     }
 }
 
@@ -215,6 +360,13 @@ public struct WorkspaceSeriesItem: Codable, Sendable, Equatable, Identifiable {
     public var sourceRevision: String
     public var sourceQuote: String?
     public var location: String?
+    /// The full transcript snapshot used to verify this accepted revision.
+    public var transcriptSourceRevision: String?
+    /// True when the meeting anchoring the current revision was deleted. The
+    /// confirmed text stays visible for re-confirmation, but its quote is scrubbed.
+    public var sourceMissing: Bool?
+    /// True only when the user explicitly chose to keep this text as independent context.
+    public var independentlyRetained: Bool?
     public var revision: Int
     public var history: [WorkspaceSeriesItemRevision]
     public var confirmedAt: Date
@@ -223,29 +375,29 @@ public struct WorkspaceSeriesItem: Codable, Sendable, Equatable, Identifiable {
     public init(id: UUID = UUID(), kind: Kind, text: String, owner: String? = nil, due: String? = nil,
                 dueDate: Date? = nil, actionState: ActionState? = nil, sourceSessionID: UUID,
                 evidenceID: String, claimRevision: String, sourceRevision: String,
-                sourceQuote: String? = nil, location: String? = nil, revision: Int = 1,
+                sourceQuote: String? = nil, location: String? = nil,
+                transcriptSourceRevision: String? = nil, sourceMissing: Bool? = false,
+                independentlyRetained: Bool? = false, revision: Int = 1,
                 history: [WorkspaceSeriesItemRevision] = [], confirmedAt: Date = Date(), updatedAt: Date = Date()) {
         self.id = id; self.kind = kind; self.text = text; self.owner = owner; self.due = due; self.dueDate = dueDate
         self.actionState = kind == .action ? (actionState ?? .open) : nil
         self.sourceSessionID = sourceSessionID; self.evidenceID = evidenceID; self.claimRevision = claimRevision
         self.sourceRevision = sourceRevision; self.sourceQuote = sourceQuote; self.location = location
+        self.transcriptSourceRevision = transcriptSourceRevision; self.sourceMissing = sourceMissing
+        self.independentlyRetained = independentlyRetained
         self.revision = max(1, revision); self.history = history; self.confirmedAt = confirmedAt; self.updatedAt = updatedAt
     }
 
     public var currentRevision: WorkspaceSeriesItemRevision {
-        WorkspaceSeriesItemRevision(id: revisionIdentifier(itemID: id, revision: revision),
-                                    revision: revision, kind: kind, text: text, owner: owner, due: due,
-                                    dueDate: dueDate, actionState: actionState, sourceSessionID: sourceSessionID,
-                                    evidenceID: evidenceID, claimRevision: claimRevision, sourceRevision: sourceRevision,
-                                    sourceQuote: sourceQuote, location: location, recordedAt: updatedAt)
-    }
-
-    private func revisionIdentifier(itemID: UUID, revision: Int) -> UUID {
-        var bytes = Array(SHA256.hash(data: Data("series-item-revision|\(itemID.uuidString.lowercased())|\(revision)".utf8)).prefix(16))
-        bytes[6] = (bytes[6] & 0x0F) | 0x50
-        bytes[8] = (bytes[8] & 0x3F) | 0x80
-        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-                           bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+        var snapshot = WorkspaceSeriesItemRevision(revision: revision, kind: kind, text: text, owner: owner,
+                                                   due: due, dueDate: dueDate, actionState: actionState,
+                                                   sourceSessionID: sourceSessionID, evidenceID: evidenceID,
+                                                   claimRevision: claimRevision, sourceRevision: sourceRevision,
+                                                   sourceQuote: sourceQuote, location: location,
+                                                   transcriptSourceRevision: transcriptSourceRevision,
+                                                   sourceMissing: sourceMissing, recordedAt: updatedAt)
+        snapshot.id = snapshot.stableID(itemID: id)
+        return snapshot
     }
 }
 
@@ -265,17 +417,57 @@ public struct WorkspaceSeriesItemRevision: Codable, Sendable, Equatable, Identif
     public var sourceRevision: String
     public var sourceQuote: String?
     public var location: String?
+    public var transcriptSourceRevision: String?
+    /// True when this historical revision's meeting was deleted. The accepted
+    /// decision remains in history, while its private evidence is removed.
+    public var sourceMissing: Bool?
     public var recordedAt: Date
 
     public init(id: UUID = UUID(), revision: Int, kind: WorkspaceSeriesItem.Kind, text: String,
                 owner: String? = nil, due: String? = nil, dueDate: Date? = nil,
                 actionState: WorkspaceSeriesItem.ActionState? = nil, sourceSessionID: UUID,
                 evidenceID: String, claimRevision: String, sourceRevision: String,
-                sourceQuote: String? = nil, location: String? = nil, recordedAt: Date = Date()) {
+                sourceQuote: String? = nil, location: String? = nil,
+                transcriptSourceRevision: String? = nil, sourceMissing: Bool? = false,
+                recordedAt: Date = Date()) {
         self.id = id; self.revision = revision; self.kind = kind; self.text = text; self.owner = owner
         self.due = due; self.dueDate = dueDate; self.actionState = actionState; self.sourceSessionID = sourceSessionID
         self.evidenceID = evidenceID; self.claimRevision = claimRevision; self.sourceRevision = sourceRevision
-        self.sourceQuote = sourceQuote; self.location = location; self.recordedAt = recordedAt
+        self.sourceQuote = sourceQuote; self.location = location
+        self.transcriptSourceRevision = transcriptSourceRevision; self.sourceMissing = sourceMissing
+        self.recordedAt = recordedAt
+    }
+
+    func stableID(itemID: UUID) -> UUID {
+        let values = [
+            Optional(itemID.uuidString.lowercased()), Optional(String(revision)), Optional(kind.rawValue), Optional(text),
+            owner, due, dueDate.map { String($0.timeIntervalSince1970.bitPattern, radix: 16) },
+            actionState?.rawValue, Optional(sourceSessionID.uuidString.lowercased()), Optional(evidenceID),
+            Optional(claimRevision), Optional(sourceRevision), sourceQuote, location, transcriptSourceRevision,
+            sourceMissing.map { String($0) }, Optional(String(recordedAt.timeIntervalSince1970.bitPattern, radix: 16))
+        ]
+        let material = values.map { value in
+            guard let value else { return "0:" }
+            return "1\(value.utf8.count):\(value)"
+        }.joined(separator: "|")
+        var bytes = Array(SHA256.hash(data: Data("series-item-revision-v2|\(material)".utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0F) | 0x50
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                           bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+    }
+}
+
+/// Minimal deletion metadata that prevents a backup from restoring source content
+/// for a removed series item or historical revision. It contains no accepted text
+/// or evidence details.
+public struct WorkspaceSeriesItemSourceTombstone: Codable, Sendable, Equatable, Hashable {
+    public var itemID: UUID
+    public var sourceSessionID: UUID
+
+    public init(itemID: UUID, sourceSessionID: UUID) {
+        self.itemID = itemID
+        self.sourceSessionID = sourceSessionID
     }
 }
 
@@ -324,19 +516,30 @@ public struct WorkspaceSeriesChangeCandidate: Codable, Sendable, Equatable, Iden
     public var sourceRevision: String
     public var sourceQuote: String?
     public var location: String?
+    /// The full transcript snapshot used to verify this proposal.
+    public var transcriptSourceRevision: String?
+    /// Decision receipts survive source deletion, while deleted-source content is scrubbed.
+    public var sourceMissing: Bool?
     public var status: Status
     public var receipt: WorkspaceSeriesChangeReceipt?
+    /// Receipts from concurrent devices that reviewed the same candidate. The
+    /// current receipt is the deterministic winner; older receipts remain replayable.
+    public var receiptHistory: [WorkspaceSeriesChangeReceipt]?
     public var createdAt: Date
 
     public init(id: String, kind: WorkspaceSeriesItem.Kind, text: String, owner: String? = nil,
                 due: String? = nil, dueDate: Date? = nil, sourceSessionID: UUID,
                 evidenceID: String, claimRevision: String, sourceRevision: String,
-                sourceQuote: String? = nil, location: String? = nil, status: Status = .pending,
+                sourceQuote: String? = nil, location: String? = nil,
+                transcriptSourceRevision: String? = nil, sourceMissing: Bool? = false,
+                status: Status = .pending, receiptHistory: [WorkspaceSeriesChangeReceipt]? = nil,
                 receipt: WorkspaceSeriesChangeReceipt? = nil, createdAt: Date = Date()) {
         self.id = id; self.kind = kind; self.text = text; self.owner = owner; self.due = due; self.dueDate = dueDate
         self.sourceSessionID = sourceSessionID; self.evidenceID = evidenceID; self.claimRevision = claimRevision
         self.sourceRevision = sourceRevision; self.sourceQuote = sourceQuote; self.location = location
-        self.status = status; self.receipt = receipt; self.createdAt = createdAt
+        self.transcriptSourceRevision = transcriptSourceRevision
+        self.sourceMissing = sourceMissing
+        self.status = status; self.receipt = receipt; self.receiptHistory = receiptHistory; self.createdAt = createdAt
     }
 }
 
@@ -361,6 +564,26 @@ public struct WorkspaceKnowledgeReceipt: Codable, Sendable, Equatable {
     }
 }
 
+/// The archived snapshots that contributed to a series-wide review suggestion.
+/// The transcript revision ties the suggestion to the transcript, while the
+/// projection revision also detects edits to the saved summary or meeting view.
+public struct WorkspaceKnowledgeCandidateSource: Codable, Sendable, Equatable, Identifiable {
+    public var sessionID: UUID
+    public var startedAt: Date
+    public var transcriptSourceRevision: String
+    public var projectionRevision: String
+
+    public var id: UUID { sessionID }
+
+    public init(sessionID: UUID, startedAt: Date, transcriptSourceRevision: String,
+                projectionRevision: String) {
+        self.sessionID = sessionID
+        self.startedAt = startedAt
+        self.transcriptSourceRevision = transcriptSourceRevision
+        self.projectionRevision = projectionRevision
+    }
+}
+
 /// A generated suggestion remains inert until the user accepts, keeps, replaces, or rejects it.
 public struct WorkspaceKnowledgeCandidate: Codable, Sendable, Equatable, Identifiable {
     /// Deterministic content ID: repeating the same summary cannot enqueue it twice.
@@ -372,6 +595,11 @@ public struct WorkspaceKnowledgeCandidate: Codable, Sendable, Equatable, Identif
     public var text: String
     public var proposedAnswer: String?
     public var sourceSessionID: UUID?
+    /// Transcript snapshot from the archived summary that produced this candidate.
+    public var transcriptSourceRevision: String?
+    /// Full session snapshots behind a series-wide review candidate. Such a
+    /// candidate remains pending only while every contributing meeting is intact.
+    public var contributingSources: [WorkspaceKnowledgeCandidateSource]?
     public var baseQuestionID: UUID?
     public var baseAnswerRevision: Int?
     public var status: Status
@@ -380,12 +608,26 @@ public struct WorkspaceKnowledgeCandidate: Codable, Sendable, Equatable, Identif
 
     public enum Status: String, Codable, Sendable { case pending, accepted, rejected }
 
+    public var contributingSessionIDs: [UUID] {
+        var ids = Set(contributingSources?.map(\.sessionID) ?? [])
+        if let sourceSessionID { ids.insert(sourceSessionID) }
+        return ids.sorted { $0.uuidString < $1.uuidString }
+    }
+
+    public var primarySourceSessionID: UUID? {
+        sourceSessionID ?? contributingSources?.map(\.sessionID).min { $0.uuidString < $1.uuidString }
+    }
+
     public init(id: String, logicalItemID: String, kind: WorkspaceKnowledgeKind, text: String,
                 proposedAnswer: String? = nil, sourceSessionID: UUID? = nil,
+                transcriptSourceRevision: String? = nil,
+                contributingSources: [WorkspaceKnowledgeCandidateSource]? = nil,
                 baseQuestionID: UUID? = nil, baseAnswerRevision: Int? = nil,
                 status: Status = .pending, receipt: WorkspaceKnowledgeReceipt? = nil, createdAt: Date = Date()) {
         self.id = id; self.logicalItemID = logicalItemID; self.kind = kind; self.text = text
         self.proposedAnswer = proposedAnswer; self.sourceSessionID = sourceSessionID
+        self.transcriptSourceRevision = transcriptSourceRevision
+        self.contributingSources = contributingSources
         self.baseQuestionID = baseQuestionID; self.baseAnswerRevision = baseAnswerRevision
         self.status = status; self.receipt = receipt; self.createdAt = createdAt
     }
@@ -414,6 +656,12 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var seriesItems: [WorkspaceSeriesItem]?
     /// Reviewed evidence proposals are inert until a user accepts or rejects them.
     public var seriesChangeCandidates: [WorkspaceSeriesChangeCandidate]?
+    /// Redacted source-deletion markers retained so importing an older backup
+    /// cannot restore deleted series text or evidence.
+    public var seriesItemSourceTombstones: [WorkspaceSeriesItemSourceTombstone]?
+    /// Session IDs deleted from this workspace. Kept so older backups cannot
+    /// reintroduce lessons or other accepted content sourced only from them.
+    public var sourceDeletionTombstones: [UUID]?
     /// Feed lessons and the question bank back into answers.
     public var useKnowledge: Bool
     /// Latest review across all sessions of this workspace.
@@ -437,12 +685,16 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
                 knowledgeCandidates: [WorkspaceKnowledgeCandidate]? = nil,
                 seriesItems: [WorkspaceSeriesItem]? = nil,
                 seriesChangeCandidates: [WorkspaceSeriesChangeCandidate]? = nil,
+                seriesItemSourceTombstones: [WorkspaceSeriesItemSourceTombstone]? = nil,
+                sourceDeletionTombstones: [UUID]? = nil,
                 stageReview: String? = nil, stageReviewAt: Date? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), archived: Bool = false, skillIDs: [UUID] = []) {
         self.id = id; self.name = name; self.mode = mode; self.style = style
         self.preferences = preferences ?? ModeProfile.for(mode).templatePreferences
         self.notes = notes; self.fields = fields; self.documents = documents; self.lessons = lessons
         self.questionBank = questionBank; self.knowledgeCandidates = knowledgeCandidates; self.useKnowledge = useKnowledge
         self.seriesItems = seriesItems; self.seriesChangeCandidates = seriesChangeCandidates
+        self.seriesItemSourceTombstones = seriesItemSourceTombstones
+        self.sourceDeletionTombstones = sourceDeletionTombstones
         self.stageReview = stageReview; self.stageReviewAt = stageReviewAt
         self.createdAt = createdAt; self.updatedAt = updatedAt; self.archived = archived
         self.skillIDs = skillIDs
@@ -453,7 +705,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     // Tolerant decoding: fields added in later versions get defaults.
     enum CodingKeys: String, CodingKey {
         case id, name, mode, style, preferences, notes, fields, documents, lessons, questionBank, knowledgeCandidates, useKnowledge
-        case seriesItems, seriesChangeCandidates
+        case seriesItems, seriesChangeCandidates, seriesItemSourceTombstones, sourceDeletionTombstones
         case stageReview, stageReviewAt, createdAt, updatedAt, archived, skillIDs
         case customTypeName, customBaseMode, glossary
     }
@@ -473,6 +725,8 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         knowledgeCandidates = try c.decodeIfPresent([WorkspaceKnowledgeCandidate].self, forKey: .knowledgeCandidates)
         seriesItems = try c.decodeIfPresent([WorkspaceSeriesItem].self, forKey: .seriesItems)
         seriesChangeCandidates = try c.decodeIfPresent([WorkspaceSeriesChangeCandidate].self, forKey: .seriesChangeCandidates)
+        seriesItemSourceTombstones = try c.decodeIfPresent([WorkspaceSeriesItemSourceTombstone].self, forKey: .seriesItemSourceTombstones)
+        sourceDeletionTombstones = try c.decodeIfPresent([UUID].self, forKey: .sourceDeletionTombstones)
         useKnowledge = try c.decodeIfPresent(Bool.self, forKey: .useKnowledge) ?? true
         stageReview = try c.decodeIfPresent(String.self, forKey: .stageReview)
         stageReviewAt = try c.decodeIfPresent(Date.self, forKey: .stageReviewAt)
@@ -528,11 +782,293 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     /// Documents for retrieval, including the question bank as one searchable file.
     public var retrievalDocuments: [ContextDocument] {
         var result = documents
-        if useKnowledge, !questionBank.isEmpty {
-            let pages = questionBank.map { "问题：\($0.question)\n准备的回答：\($0.answer)" }
+        let reviewedAnswers = questionBank.filter {
+            !$0.question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && !$0.answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        if useKnowledge, !reviewedAnswers.isEmpty {
+            let pages = reviewedAnswers.map { "问题：\($0.question)\n准备的回答：\($0.answer)" }
             result.append(ContextDocument(id: id, name: "题库（历次复盘）", pages: pages, enabled: true, category: "题库"))
         }
         return result
+    }
+}
+
+/// Removes knowledge that depends on deleted meetings while preserving the other
+/// meeting sources of shared items. Confirmed lessons and series text whose only
+/// source is being deleted are removed unless the user explicitly opts to keep it.
+public enum WorkspaceSourceIntegrity {
+    public static func hasRetainableAcceptedContent(in workspace: Workspace,
+                                                    from deletedSessionIDs: Set<UUID>) -> Bool {
+        guard !deletedSessionIDs.isEmpty else { return false }
+        if workspace.lessons.contains(where: {
+            !WorkspaceLessonHistory.allSourceIDs($0).isDisjoint(with: deletedSessionIDs)
+                || $0.history.contains {
+                    !WorkspaceLessonHistory.allSourceIDs($0).isDisjoint(with: deletedSessionIDs)
+                }
+        }) { return true }
+        return (workspace.seriesItems ?? []).contains { item in
+            deletedSessionIDs.contains(item.sourceSessionID)
+                || item.history.contains(where: { deletedSessionIDs.contains($0.sourceSessionID) })
+        }
+    }
+
+    @discardableResult
+    public static func removeMeetings(_ deletedSessionIDs: Set<UUID>, from workspace: inout Workspace,
+                                     retainAcceptedContent: Bool = false,
+                                     now: Date = Date()) -> Bool {
+        guard !deletedSessionIDs.isEmpty else { return false }
+        var changed = false
+
+        let sourceDeletionTombstones = Set(workspace.sourceDeletionTombstones ?? []).union(deletedSessionIDs)
+            .sorted { $0.uuidString.lowercased() < $1.uuidString.lowercased() }
+        if sourceDeletionTombstones != (workspace.sourceDeletionTombstones ?? []) { changed = true }
+
+        let lessons = workspace.lessons.compactMap { lesson -> WorkspaceLesson? in
+            var updated = lesson
+            let originalSources = WorkspaceLessonHistory.allSourceIDs(lesson)
+            let removed = originalSources.intersection(deletedSessionIDs)
+            let remaining = originalSources.subtracting(deletedSessionIDs)
+            if !removed.isEmpty && remaining.isEmpty && !retainAcceptedContent {
+                changed = true
+                return nil
+            }
+
+            var historyChanged = false
+            updated.history = lesson.history.compactMap { revision in
+                guard !WorkspaceLessonHistory.allSourceIDs(revision).isDisjoint(with: deletedSessionIDs) else {
+                    return revision
+                }
+                let revisionSources = WorkspaceLessonHistory.allSourceIDs(revision)
+                let revisionRemaining = revisionSources.subtracting(deletedSessionIDs)
+                if revisionRemaining.isEmpty && !retainAcceptedContent {
+                    historyChanged = true
+                    return nil
+                }
+                var cleaned = revision
+                cleaned.sourceSessionIDs = revisionRemaining.isEmpty ? nil : sorted(revisionRemaining)
+                cleaned.sourceSessionID = revision.sourceSessionID.flatMap {
+                    revisionRemaining.contains($0) ? $0 : nil
+                } ?? sorted(revisionRemaining).first
+                cleaned.sourceMissingSessionIDs = sorted(Set(revision.sourceMissingSessionIDs ?? []).union(deletedSessionIDs.intersection(revisionSources)))
+                historyChanged = historyChanged || cleaned != revision
+                return cleaned
+            }
+
+            if !removed.isEmpty {
+                // Keep the previous accepted version before recording the source-only change.
+                WorkspaceLessonHistory.appendCurrentRevision(to: &updated)
+                updated.history = updated.history.compactMap { revision in
+                    guard !WorkspaceLessonHistory.allSourceIDs(revision).isDisjoint(with: deletedSessionIDs) else {
+                        return revision
+                    }
+                    let revisionSources = WorkspaceLessonHistory.allSourceIDs(revision)
+                    var cleaned = revision
+                    let revisionRemaining = revisionSources.subtracting(deletedSessionIDs)
+                    cleaned.sourceSessionIDs = revisionRemaining.isEmpty ? nil : sorted(revisionRemaining)
+                    cleaned.sourceSessionID = revision.sourceSessionID.flatMap {
+                        revisionRemaining.contains($0) ? $0 : nil
+                    } ?? sorted(revisionRemaining).first
+                    cleaned.sourceMissingSessionIDs = sorted(Set(revision.sourceMissingSessionIDs ?? []).union(deletedSessionIDs.intersection(revisionSources)))
+                    return cleaned
+                }
+                updated.sourceSessionIDs = remaining.isEmpty ? nil : sorted(remaining)
+                updated.sourceSessionID = lesson.sourceSessionID.flatMap { remaining.contains($0) ? $0 : nil } ?? sorted(remaining).first
+                updated.sourceMissingSessionIDs = sorted(Set(lesson.sourceMissingSessionIDs ?? []).union(removed))
+                updated.revision += 1
+                updated.updatedAt = now
+                updated.independentlyRetained = remaining.isEmpty && retainAcceptedContent
+                changed = true
+            } else if historyChanged {
+                changed = true
+            }
+            return updated
+        }
+
+        let questionBank = workspace.questionBank.compactMap { item -> QuestionBankItem? in
+            let originalSources = sourceIDs(legacy: item.sourceSessionID, all: item.sourceSessionIDs)
+            let removedQuestionSources = originalSources.intersection(deletedSessionIDs)
+            var updated = item
+
+            if !removedQuestionSources.isEmpty {
+                let remaining = originalSources.subtracting(deletedSessionIDs)
+                changed = true
+                // A question learned only from the deleted meeting is no longer reusable.
+                guard !remaining.isEmpty else { return nil }
+                updated.sourceSessionIDs = sorted(remaining)
+                updated.sourceSessionID = item.sourceSessionID.flatMap { remaining.contains($0) ? $0 : nil } ?? sorted(remaining).first
+                updated.timesAsked = max(remaining.count, max(0, item.timesAsked - removedQuestionSources.count))
+                updated.updatedAt = now
+            }
+
+            if let answerSource = item.knownAnswerSourceSessionID, deletedSessionIDs.contains(answerSource) {
+                // Keep a multiply-sourced question, but never retrieve an answer
+                // whose only provenance was removed.
+                updated.answer = ""
+                updated.answerSourceSessionID = nil
+                updated.answerRevision = (item.answerRevision ?? 0) + 1
+                updated.updatedAt = now
+                changed = true
+            }
+
+            if let history = item.answerHistory {
+                let retained = history.filter { $0.sourceSessionID.map { !deletedSessionIDs.contains($0) } ?? true }
+                if retained != history {
+                    updated.answerHistory = retained
+                    changed = true
+                }
+            }
+            return updated
+        }
+
+        var seriesItemSourceTombstones = Set(workspace.seriesItemSourceTombstones ?? [])
+        for item in workspace.seriesItems ?? [] {
+            if deletedSessionIDs.contains(item.sourceSessionID) {
+                seriesItemSourceTombstones.insert(.init(itemID: item.id, sourceSessionID: item.sourceSessionID))
+            }
+            for revision in item.history where deletedSessionIDs.contains(revision.sourceSessionID) {
+                seriesItemSourceTombstones.insert(.init(itemID: item.id, sourceSessionID: revision.sourceSessionID))
+            }
+        }
+        let sortedSeriesItemSourceTombstones = seriesItemSourceTombstones.sorted {
+            let leftItem = $0.itemID.uuidString.lowercased()
+            let rightItem = $1.itemID.uuidString.lowercased()
+            if leftItem != rightItem { return leftItem < rightItem }
+            return $0.sourceSessionID.uuidString.lowercased() < $1.sourceSessionID.uuidString.lowercased()
+        }
+        if sortedSeriesItemSourceTombstones != (workspace.seriesItemSourceTombstones ?? []) {
+            changed = true
+        }
+
+        let seriesItems = (workspace.seriesItems ?? []).compactMap { item -> WorkspaceSeriesItem? in
+            let alreadyRetained = item.sourceMissing == true && item.independentlyRetained == true
+            let sourceIsDeleted = deletedSessionIDs.contains(item.sourceSessionID) && !alreadyRetained
+            if sourceIsDeleted && !retainAcceptedContent {
+                changed = true
+                return nil
+            }
+            var updated = item
+            if sourceIsDeleted {
+                updated.sourceMissing = true
+                updated.independentlyRetained = true
+                updated.evidenceID = ""
+                updated.claimRevision = ""
+                updated.sourceRevision = ""
+                updated.sourceQuote = nil
+                updated.location = nil
+                updated.transcriptSourceRevision = nil
+                updated.updatedAt = now
+                changed = true
+            }
+            let retainedHistory = updated.history.compactMap { revision -> WorkspaceSeriesItemRevision? in
+                guard deletedSessionIDs.contains(revision.sourceSessionID), revision.sourceMissing != true else { return revision }
+                changed = true
+                guard retainAcceptedContent else { return nil }
+                var tombstone = revision
+                tombstone.sourceMissing = true
+                tombstone.evidenceID = ""
+                tombstone.claimRevision = ""
+                tombstone.sourceRevision = ""
+                tombstone.sourceQuote = nil
+                tombstone.location = nil
+                tombstone.transcriptSourceRevision = nil
+                tombstone.id = tombstone.stableID(itemID: item.id)
+                return tombstone
+            }
+            updated.history = retainedHistory
+            return updated
+        }
+
+        let knowledgeCandidates = workspace.knowledgeCandidates?.compactMap { candidate -> WorkspaceKnowledgeCandidate? in
+            let sources = Set(candidate.contributingSessionIDs)
+            // Older stage-review candidates did not retain provenance. Once any
+            // meeting is removed, discard unverifiable pending proposals.
+            if sources.isEmpty { return candidate.status == .pending ? nil : candidate }
+            guard !sources.isDisjoint(with: deletedSessionIDs) else { return candidate }
+            changed = true
+
+            // Keep the durable decision receipt for audit/idempotent replay, but
+            // scrub the proposal text and deleted evidence. The accepted lesson or
+            // answer above is independently retained, revised, or removed according
+            // to its remaining source set.
+            guard candidate.status != .pending else { return nil }
+            var retained = candidate
+            retained.text = ""
+            retained.proposedAnswer = nil
+            retained.sourceSessionID = candidate.sourceSessionID.flatMap {
+                deletedSessionIDs.contains($0) ? nil : $0
+            }
+            retained.transcriptSourceRevision = nil
+            retained.contributingSources = candidate.contributingSources?.filter {
+                !deletedSessionIDs.contains($0.sessionID)
+            }
+            retained.baseQuestionID = nil
+            retained.baseAnswerRevision = nil
+            return retained
+        }
+        let seriesCandidates = workspace.seriesChangeCandidates?.compactMap { candidate -> WorkspaceSeriesChangeCandidate? in
+            guard deletedSessionIDs.contains(candidate.sourceSessionID) else { return candidate }
+            // Keep a redacted tombstone even for an unreviewed candidate so an older
+            // backup cannot reintroduce its deleted quote or make it reviewable again.
+            if candidate.status == .pending {
+                changed = true
+                var tombstone = candidate
+                tombstone.text = ""
+                tombstone.owner = nil
+                tombstone.due = nil
+                tombstone.dueDate = nil
+                tombstone.evidenceID = ""
+                tombstone.claimRevision = ""
+                tombstone.sourceRevision = ""
+                tombstone.sourceQuote = nil
+                tombstone.location = nil
+                tombstone.transcriptSourceRevision = nil
+                tombstone.sourceMissing = true
+                tombstone.status = .superseded
+                return tombstone
+            }
+            let requiresScrub = candidate.sourceMissing != true || !candidate.text.isEmpty
+                || candidate.owner != nil || candidate.due != nil || candidate.dueDate != nil
+                || !candidate.evidenceID.isEmpty || !candidate.claimRevision.isEmpty
+                || !candidate.sourceRevision.isEmpty || candidate.sourceQuote != nil
+                || candidate.location != nil || candidate.transcriptSourceRevision != nil
+            guard requiresScrub else { return candidate }
+            changed = true
+            var retained = candidate
+            retained.text = ""
+            retained.owner = nil
+            retained.due = nil
+            retained.dueDate = nil
+            retained.evidenceID = ""
+            retained.claimRevision = ""
+            retained.sourceRevision = ""
+            retained.sourceQuote = nil
+            retained.location = nil
+            retained.transcriptSourceRevision = nil
+            retained.sourceMissing = true
+            return retained
+        }
+        if knowledgeCandidates != workspace.knowledgeCandidates { changed = true }
+        if seriesCandidates != workspace.seriesChangeCandidates { changed = true }
+
+        guard changed else { return false }
+        workspace.lessons = lessons
+        workspace.questionBank = questionBank
+        if workspace.seriesItems != nil { workspace.seriesItems = seriesItems }
+        workspace.seriesItemSourceTombstones = sortedSeriesItemSourceTombstones.isEmpty ? nil : sortedSeriesItemSourceTombstones
+        workspace.sourceDeletionTombstones = sourceDeletionTombstones
+        workspace.knowledgeCandidates = knowledgeCandidates
+        workspace.seriesChangeCandidates = seriesCandidates
+        workspace.updatedAt = now
+        return true
+    }
+
+    private static func sourceIDs(legacy: UUID?, all: [UUID]?) -> Set<UUID> {
+        Set(all ?? []).union(legacy.map { [$0] } ?? [])
+    }
+
+    private static func sorted(_ ids: Set<UUID>) -> [UUID] {
+        ids.sorted { $0.uuidString < $1.uuidString }
     }
 }
 
@@ -544,8 +1080,12 @@ public enum KnowledgeMerger {
     @discardableResult
     public static func collectCandidates(lessons newLessons: [String], bank newItems: [BankEntry],
                                          into workspace: inout Workspace, session: UUID?,
-                                         originID: UUID? = nil, now: Date = Date()) -> [String] {
+                                         originID: UUID? = nil, transcriptSourceRevision: String? = nil,
+                                         contributingSources: [WorkspaceKnowledgeCandidateSource]? = nil,
+                                         now: Date = Date()) -> [String] {
         let originID = originID ?? session ?? workspace.id
+        let sourceSnapshots = canonicalSources(contributingSources)
+        let sourceManifest = sourceManifest(for: sourceSnapshots)
         var candidates = workspace.knowledgeCandidates ?? []
         var knownIDs = Set(candidates.map(\.id))
         var added: [String] = []
@@ -555,10 +1095,14 @@ public enum KnowledgeMerger {
             guard text.count >= 4 else { continue }
             let logicalID = logicalItemID(kind: .lesson, text: text)
             let id = candidateID(originID: originID, session: session, kind: .lesson,
-                                 logicalID: logicalID, answer: "")
+                                 logicalID: logicalID, answer: "", transcriptSourceRevision: transcriptSourceRevision,
+                                 sourceManifest: sourceManifest)
             guard knownIDs.insert(id).inserted else { continue }
             candidates.append(WorkspaceKnowledgeCandidate(id: id, logicalItemID: logicalID, kind: .lesson,
-                                                           text: text, sourceSessionID: session, createdAt: now))
+                                                           text: text, sourceSessionID: session,
+                                                           transcriptSourceRevision: transcriptSourceRevision,
+                                                           contributingSources: sourceSnapshots.isEmpty ? nil : sourceSnapshots,
+                                                           createdAt: now))
             added.append(id)
         }
 
@@ -568,11 +1112,14 @@ public enum KnowledgeMerger {
             guard question.count >= 3, !answer.isEmpty else { continue }
             let logicalID = logicalItemID(kind: .question, text: question)
             let id = candidateID(originID: originID, session: session, kind: .question,
-                                 logicalID: logicalID, answer: answer)
+                                 logicalID: logicalID, answer: answer, transcriptSourceRevision: transcriptSourceRevision,
+                                 sourceManifest: sourceManifest)
             guard knownIDs.insert(id).inserted else { continue }
             let match = workspace.questionBank.first { similarQuestion($0.question, question) }
             candidates.append(WorkspaceKnowledgeCandidate(id: id, logicalItemID: logicalID, kind: .question,
                                                            text: question, proposedAnswer: answer, sourceSessionID: session,
+                                                           transcriptSourceRevision: transcriptSourceRevision,
+                                                           contributingSources: sourceSnapshots.isEmpty ? nil : sourceSnapshots,
                                                            baseQuestionID: match?.id, baseAnswerRevision: match.map { $0.answerRevision ?? 0 },
                                                            createdAt: now))
             added.append(id)
@@ -583,6 +1130,23 @@ public enum KnowledgeMerger {
             workspace.updatedAt = now
         }
         return added
+    }
+
+    /// Verify that a queued proposal still exists in the current archived summary
+    /// and that the transcript snapshot used to derive it is unchanged.
+    public static func matchesCurrentSummary(_ candidate: WorkspaceKnowledgeCandidate,
+                                             summary: SessionSummary, sessionID: UUID,
+                                             liveTranscriptSourceRevision: String) -> Bool {
+        guard candidate.sourceSessionID == sessionID,
+              let revision = candidate.transcriptSourceRevision,
+              !revision.isEmpty,
+              revision == summary.transcriptSourceRevision,
+              revision == liveTranscriptSourceRevision else { return false }
+        var generated = Workspace(name: "候选核验", mode: .general)
+        let ids = collectCandidates(lessons: summary.lessons ?? [], bank: summary.bank ?? [], into: &generated,
+                                    session: sessionID, originID: sessionID,
+                                    transcriptSourceRevision: revision)
+        return ids.contains(candidate.id)
     }
 
     /// Apply one explicitly reviewed candidate. Knowledge and its receipt are committed
@@ -596,6 +1160,10 @@ public enum KnowledgeMerger {
         let candidate = candidates[candidateIndex]
         if let receipt = candidate.receipt { return receipt }
         guard candidate.status == .pending else { return nil }
+
+        let sourceSessionIDs = candidate.contributingSessionIDs
+        guard decision == .reject || !sourceSessionIDs.isEmpty else { return nil }
+        let primarySourceSessionID = candidate.primarySourceSessionID
 
         if decision == .reject {
             let receipt = WorkspaceKnowledgeReceipt(operationID: operationID, candidateID: candidate.id,
@@ -614,16 +1182,16 @@ public enum KnowledgeMerger {
             if let index = workspace.lessons.firstIndex(where: { similarity($0.text, candidate.text) >= 0.6 }) {
                 guard decision == .add || decision == .keepExisting else { return nil }
                 resultItemID = workspace.lessons[index].id
-                sourceCounted = addSource(candidate.sourceSessionID, to: &workspace.lessons[index].sourceSessionIDs,
-                                          legacySource: workspace.lessons[index].sourceSessionID)
+                sourceCounted = WorkspaceLessonHistory.addSources(Set(sourceSessionIDs), to: &workspace.lessons[index], now: now)
             } else {
                 guard decision == .add else { return nil }
                 let id = UUID()
                 workspace.lessons.append(WorkspaceLesson(id: id, text: candidate.text,
-                                                          sourceSessionID: candidate.sourceSessionID,
-                                                          sourceSessionIDs: candidate.sourceSessionID.map { [$0] }, createdAt: now))
+                                                          sourceSessionID: primarySourceSessionID,
+                                                          sourceSessionIDs: sourceSessionIDs.isEmpty ? nil : sourceSessionIDs,
+                                                          createdAt: now, updatedAt: now))
                 resultItemID = id
-                sourceCounted = candidate.sourceSessionID != nil
+                sourceCounted = !sourceSessionIDs.isEmpty
             }
 
         case .question:
@@ -640,25 +1208,25 @@ public enum KnowledgeMerger {
                                                                sourceSessionID: item.knownAnswerSourceSessionID))
                         item.answerHistory = history
                         item.answer = proposed
-                        item.answerSourceSessionID = candidate.sourceSessionID
+                        item.answerSourceSessionID = primarySourceSessionID
                         item.answerRevision = (item.answerRevision ?? 0) + 1
                         item.updatedAt = now
                     }
                 }
-                sourceCounted = recordQuestionSource(candidate.sourceSessionID, on: &item)
+                sourceCounted = recordQuestionSources(sourceSessionIDs, on: &item)
                 workspace.questionBank[index] = item
                 resultItemID = item.id
             } else {
                 guard decision == .add else { return nil }
                 let id = UUID()
                 workspace.questionBank.append(QuestionBankItem(id: id, question: candidate.text, answer: proposed,
-                                                                 timesAsked: candidate.sourceSessionID == nil ? 0 : 1,
-                                                                 sourceSessionID: candidate.sourceSessionID,
-                                                                 sourceSessionIDs: candidate.sourceSessionID.map { [$0] },
-                                                                 answerSourceSessionID: candidate.sourceSessionID,
+                                                                 timesAsked: sourceSessionIDs.count,
+                                                                 sourceSessionID: primarySourceSessionID,
+                                                                 sourceSessionIDs: sourceSessionIDs.isEmpty ? nil : sourceSessionIDs,
+                                                                 answerSourceSessionID: primarySourceSessionID,
                                                                  answerRevision: 0, updatedAt: now))
                 resultItemID = id
-                sourceCounted = candidate.sourceSessionID != nil
+                sourceCounted = !sourceSessionIDs.isEmpty
             }
         }
 
@@ -764,25 +1332,30 @@ public enum KnowledgeMerger {
         return earliest?.intent
     }
 
-    private static func recordQuestionSource(_ session: UUID?, on item: inout QuestionBankItem) -> Bool {
-        guard let session else { return false }
+    private static func recordQuestionSources(_ sessions: [UUID], on item: inout QuestionBankItem) -> Bool {
+        guard !sessions.isEmpty else { return false }
         var sources = Set(item.sourceSessionIDs ?? [])
         if let legacy = item.sourceSessionID { sources.insert(legacy) }
-        guard sources.insert(session).inserted else {
+        let oldCount = sources.count
+        sources.formUnion(sessions)
+        let addedCount = sources.count - oldCount
+        guard addedCount > 0 else {
             item.sourceSessionIDs = sources.sorted { $0.uuidString < $1.uuidString }
             return false
         }
         item.sourceSessionIDs = sources.sorted { $0.uuidString < $1.uuidString }
-        if item.sourceSessionID == nil { item.sourceSessionID = session }
-        item.timesAsked += 1
+        if item.sourceSessionID == nil { item.sourceSessionID = sessions.first }
+        item.timesAsked += addedCount
         return true
     }
 
-    private static func addSource(_ session: UUID?, to sourcesValue: inout [UUID]?, legacySource: UUID?) -> Bool {
-        guard let session else { return false }
+    private static func addSources(_ sessions: [UUID], to sourcesValue: inout [UUID]?, legacySource: UUID?) -> Bool {
+        guard !sessions.isEmpty else { return false }
         var sources = Set(sourcesValue ?? [])
         if let legacySource { sources.insert(legacySource) }
-        let inserted = sources.insert(session).inserted
+        let oldCount = sources.count
+        sources.formUnion(sessions)
+        let inserted = sources.count > oldCount
         sourcesValue = sources.sorted { $0.uuidString < $1.uuidString }
         return inserted
     }
@@ -794,8 +1367,23 @@ public enum KnowledgeMerger {
     }
 
     private static func candidateID(originID: UUID, session: UUID?, kind: WorkspaceKnowledgeKind,
-                                     logicalID: String, answer: String) -> String {
-        stableDigest("\(originID.uuidString.lowercased())|\(session?.uuidString.lowercased() ?? "")|\(kind.rawValue)|\(logicalID)|\(normalized(answer))")
+                                     logicalID: String, answer: String, transcriptSourceRevision: String?,
+                                     sourceManifest: String) -> String {
+        let base = "\(originID.uuidString.lowercased())|\(session?.uuidString.lowercased() ?? "")|\(kind.rawValue)|\(logicalID)|\(normalized(answer))|\(transcriptSourceRevision ?? "")"
+        return stableDigest(sourceManifest.isEmpty ? base : "\(base)|sources:\(sourceManifest)")
+    }
+
+    private static func canonicalSources(_ sources: [WorkspaceKnowledgeCandidateSource]?) -> [WorkspaceKnowledgeCandidateSource] {
+        var byID: [UUID: WorkspaceKnowledgeCandidateSource] = [:]
+        for source in sources ?? [] { byID[source.sessionID] = source }
+        return byID.values.sorted { $0.sessionID.uuidString < $1.sessionID.uuidString }
+    }
+
+    private static func sourceManifest(for sources: [WorkspaceKnowledgeCandidateSource]) -> String {
+        sources.map { source in
+            let dateBits = source.startedAt.timeIntervalSince1970.bitPattern
+            return "\(source.sessionID.uuidString.lowercased()):\(String(dateBits, radix: 16)):\(source.transcriptSourceRevision):\(source.projectionRevision)"
+        }.joined(separator: "|")
     }
 
     private static func normalized(_ text: String) -> String {

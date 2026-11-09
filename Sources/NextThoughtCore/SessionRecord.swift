@@ -695,7 +695,25 @@ public enum StageReviewPrompt {
         public var title: String
         public var date: Date
         public var summary: String
-        public init(title: String, date: Date, summary: String) { self.title = title; self.date = date; self.summary = summary }
+        public var source: WorkspaceKnowledgeCandidateSource?
+        public init(title: String, date: Date, summary: String,
+                    source: WorkspaceKnowledgeCandidateSource? = nil) {
+            self.title = title; self.date = date; self.summary = summary; self.source = source
+        }
+    }
+
+    /// The sessions that actually fit in the stage-review prompt. Their snapshots
+    /// are the only archived sources a resulting candidate claims to depend on.
+    public static func includedSessions(_ sessions: [SessionDigest], limit: Int = 90_000) -> [SessionDigest] {
+        var budget = limit
+        var included: [SessionDigest] = []
+        for session in sessions.sorted(by: { $0.date > $1.date }) {
+            let block = "### \(session.title)（\(session.date.formatted(date: .abbreviated, time: .shortened))）\n\(session.summary)"
+            guard budget - block.count > 0 else { break }
+            included.append(session)
+            budget -= block.count
+        }
+        return included.reversed()
     }
 
     public static func make(workspace: Workspace, sessions: [SessionDigest], limit: Int = 90_000) -> String {
@@ -704,15 +722,10 @@ public enum StageReviewPrompt {
         if !material.isEmpty { parts.append("资料要点：\n" + String(material.prefix(3_000))) }
         let experience = workspace.experienceNotes(limit: 2_000)
         if !experience.isEmpty { parts.append("已有经验：\n" + experience) }
-        var budget = limit
-        var blocks: [String] = []
-        // Newest first when trimming, then shown in chronological order.
-        for session in sessions.sorted(by: { $0.date > $1.date }) {
-            let block = "### \(session.title)（\(session.date.formatted(date: .abbreviated, time: .shortened))）\n\(session.summary)"
-            guard budget - block.count > 0 else { break }
-            blocks.append(String(block)); budget -= block.count
+        let blocks = includedSessions(sessions, limit: limit).map {
+            "### \($0.title)（\($0.date.formatted(date: .abbreviated, time: .shortened))）\n\($0.summary)"
         }
-        parts.append("## 各次会话记录\n" + blocks.reversed().joined(separator: "\n\n"))
+        parts.append("## 各次会话记录\n" + blocks.joined(separator: "\n\n"))
         return parts.joined(separator: "\n\n")
     }
 }

@@ -155,6 +155,8 @@ final class SessionArchive {
     @ObservationIgnored private var writeQueues: [UUID: SessionArchiveWriteQueue] = [:]
     @ObservationIgnored private var drainingWrites: Set<UUID> = []
     @ObservationIgnored private var discardedSessions: Set<UUID> = []
+    @ObservationIgnored private var deletedSessionIDs: Set<UUID> = []
+    @ObservationIgnored var summaryTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var retryTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var retryAttempts: [UUID: Int] = [:]
     /// In-memory failure/retry receipts used by the native acceptance renderer.
@@ -303,6 +305,7 @@ final class SessionArchive {
                 result.legacyFallbacks.map { ($0.meta.id, $0.detail) },
                 uniquingKeysWith: { _, latest in latest })
             let fallbackMetas = result.legacyFallbacks.map(\.meta)
+                .filter { !deletedSessionIDs.contains($0.id) }
             let fallbackIDs = Set(fallbackMetas.map(\.id))
             if let loadedMetas = result.metas {
                 let failedFolders = Set(result.issues.compactMap { issue -> String? in
@@ -313,21 +316,26 @@ final class SessionArchive {
                     default: nil
                     }
                 })
-                let visibleMetas = loadedMetas.filter { !fallbackIDs.contains($0.id) }
+                let visibleMetas = loadedMetas.filter {
+                    !fallbackIDs.contains($0.id) && !deletedSessionIDs.contains($0.id)
+                }
                 let loadedIDs = Set(visibleMetas.map(\.id))
                 let preservedMetas = sessions.filter {
                     failedFolders.contains($0.id.uuidString) && !loadedIDs.contains($0.id)
                         && !fallbackIDs.contains($0.id) && $0.id != activeID
+                        && !deletedSessionIDs.contains($0.id)
                 }
-                sessions = visibleMetas.filter { $0.id != activeID } + preservedMetas + fallbackMetas + (activeMeta.map { [$0] } ?? [])
+                sessions = visibleMetas.filter { $0.id != activeID } + preservedMetas + fallbackMetas
+                    + (activeMeta.map { [$0] } ?? [])
             } else if !fallbackMetas.isEmpty {
-                sessions = sessions.filter { !fallbackIDs.contains($0.id) && $0.id != activeID }
-                    + fallbackMetas + (activeMeta.map { [$0] } ?? [])
+                sessions = sessions.filter {
+                    !fallbackIDs.contains($0.id) && $0.id != activeID && !deletedSessionIDs.contains($0.id)
+                } + fallbackMetas + (activeMeta.map { [$0] } ?? [])
             } else {
                 // A missing root is a valid empty archive only on first use. If
                 // known sessions or an active session existed, keep them visible
                 // while the read issue blocks destructive operations.
-                var preserved = sessions.filter { $0.id != activeID }
+                var preserved = sessions.filter { $0.id != activeID && !deletedSessionIDs.contains($0.id) }
                 if let activeMeta, !preserved.contains(where: { $0.id == activeMeta.id }) {
                     preserved.append(activeMeta)
                 }
@@ -368,11 +376,12 @@ final class SessionArchive {
     }
 
     func detail(_ id: UUID) async -> SessionDetail? {
+        guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { return nil }
         if let demo = demoDetails[id] { return demo }
         if let fallback = legacyFallbackDetails[id] { return fallback }
         let folder = folder(id)
         let fallback = sessions.first { $0.id == id }
-        return await Task.detached(priority: .userInitiated) { () -> SessionDetail? in
+        let result = await Task.detached(priority: .userInitiated) { () -> SessionDetail? in
             let decoder = JSONLines.decoder()
             var issues: [SessionArchiveReadIssue] = []
             func data(_ name: String, required: Bool = false) -> Data? {
@@ -448,6 +457,8 @@ final class SessionArchive {
                 notes: snapshot("notes.json", StructuredNotes.self),
                 readIssues: issues)
         }.value
+        guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { return nil }
+        return result
     }
 
     /// Reads the session directory size off the main actor. The reported size is
@@ -489,6 +500,7 @@ final class SessionArchive {
 
     func begin(_ meta: SessionMeta, context: SessionContextSnapshot) {
         recordArchivePresence()
+        deletedSessionIDs.remove(meta.id)
         discardedSessions.remove(meta.id)
         translationRevisionBySession[meta.id] = nil
         translationWriteReceipts[meta.id] = nil
@@ -644,7 +656,7 @@ final class SessionArchive {
     }
 
     func update(_ meta: SessionMeta) {
-        guard !isReadOnlyFallback(meta.id) else { return }
+        guard !isReadOnlyFallback(meta.id), !deletedSessionIDs.contains(meta.id) else { return }
         if let index = sessions.firstIndex(where: { $0.id == meta.id }) { sessions[index] = meta } else { sessions.insert(meta, at: 0) }
         if activeID == meta.id { activeMeta = meta }
         saveMeta(meta)
@@ -652,8 +664,8 @@ final class SessionArchive {
 
     @discardableResult
     func saveSummary(_ summary: SessionSummary, for id: UUID) -> Bool {
-        guard !isReadOnlyFallback(id) else { return false }
-        guard var meta = sessions.first(where: { $0.id == id }) else { return false }
+        guard !isReadOnlyFallback(id), !deletedSessionIDs.contains(id),
+              var meta = sessions.first(where: { $0.id == id }) else { return false }
         // A title the user gave the meeting stays; otherwise the summary names it.
         if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty {
             meta.title = summary.title
@@ -664,6 +676,7 @@ final class SessionArchive {
         update(meta)
         Task { [weak self] in
             guard let self, await self.flush(sessionID: id), id != self.activeID else { return }
+            guard !self.deletedSessionIDs.contains(id), self.sessions.contains(where: { $0.id == id }) else { return }
             self.searchableContentRevision &+= 1
         }
         return queued
@@ -675,6 +688,10 @@ final class SessionArchive {
         Task {
             guard !isReadOnlyFallback(id) else {
                 completion(.readOnlyFallback)
+                return
+            }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                completion(.unavailable)
                 return
             }
             guard !summarizing.contains(id) else {
@@ -699,11 +716,19 @@ final class SessionArchive {
                     completion(.persistenceBlocked)
                     return
                 }
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
                 }
                 summary = await detail(id)?.summary
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
@@ -727,7 +752,8 @@ final class SessionArchive {
 
     @discardableResult
     func saveNotes(_ notes: StructuredNotes, for id: UUID) -> Bool {
-        guard !isReadOnlyFallback(id) else { return false }
+        guard !isReadOnlyFallback(id), !deletedSessionIDs.contains(id),
+              sessions.contains(where: { $0.id == id }) else { return false }
         if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return true }
         return enqueueSnapshot(notes, file: "notes.json", session: id)
     }
@@ -738,6 +764,10 @@ final class SessionArchive {
         Task {
             guard !isReadOnlyFallback(id) else {
                 completion(.readOnlyFallback)
+                return
+            }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                completion(.unavailable)
                 return
             }
             guard !summarizing.contains(id) else {
@@ -769,11 +799,19 @@ final class SessionArchive {
                     completion(.persistenceBlocked)
                     return
                 }
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
                 }
                 notes = await detail(id)?.notes
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
@@ -796,6 +834,10 @@ final class SessionArchive {
                     .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
                 if summary == nil {
                     summary = await detail(id)?.summary
+                    guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                        completion(.unavailable)
+                        return
+                    }
                     guard !summarizing.contains(id) else {
                         completion(.busy)
                         return
@@ -820,6 +862,10 @@ final class SessionArchive {
                 return
             }
             if await flush(sessionID: id) {
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 notesRevision += 1
                 if id != activeID { searchableContentRevision &+= 1 }
                 completion(.saved)
@@ -873,10 +919,14 @@ final class SessionArchive {
                 }
             }
         }
+        deletedSessionIDs.formUnion(ids)
+        for sessionID in ids { summaryTasks[sessionID]?.cancel() }
         for sessionID in ids { discardPersistence(sessionID) }
+        for sessionID in ids { summarizing.remove(sessionID); summaryTasks[sessionID] = nil }
         sessions.removeAll { ids.contains($0.id) }
         for sessionID in ids { notesSteps[sessionID] = nil }
         notesRevision &+= 1
+        searchableContentRevision &+= 1
     }
 
     /// Updates only live archive state after the transaction journal has
@@ -909,20 +959,45 @@ final class SessionArchive {
         io.sync { }
     }
 
+    func isTombstoned(_ id: UUID) -> Bool { deletedSessionIDs.contains(id) }
+
+    /// Mark the source unavailable before asynchronous summary work can finish.
+    /// A prepared deletion can be retried after a file-system failure.
     @discardableResult
-    func delete(_ id: UUID) -> Bool {
-        guard destructiveOperationDisabledReason == nil, !isReadOnlyFallback(id), id != activeID else { return false }
-        sessions.removeAll { $0.id == id }
-        let folder = folder(id)
-        discardPersistence(id)
-        io.async { try? FileManager.default.removeItem(at: folder) }
+    func prepareForDeletion(_ id: UUID) -> Bool {
+        guard !DemoMode.isEnabled, destructiveOperationDisabledReason == nil,
+              !isReadOnlyFallback(id), id != activeID,
+              sessions.contains(where: { $0.id == id }) else { return false }
+        deletedSessionIDs.insert(id)
+        summaryTasks[id]?.cancel()
         return true
     }
 
+    func cancelPreparedDeletion(_ id: UUID) {
+        guard sessions.contains(where: { $0.id == id }) else { return }
+        deletedSessionIDs.remove(id)
+    }
+
     @discardableResult
-    func deleteAll() -> Bool {
-        guard destructiveOperationDisabledReason == nil else { return false }
-        for meta in sessions where meta.id != activeID { delete(meta.id) }
+    func delete(_ id: UUID) throws -> Bool {
+        guard !DemoMode.isEnabled, destructiveOperationDisabledReason == nil,
+              !isReadOnlyFallback(id), id != activeID,
+              sessions.contains(where: { $0.id == id }) else { return false }
+        guard prepareForDeletion(id) else { return false }
+        let directory = folder(id)
+        try io.sync {
+            if FileManager.default.fileExists(atPath: directory.path) {
+                try FileManager.default.removeItem(at: directory)
+            }
+        }
+        sessions.removeAll { $0.id == id }
+        discardPersistence(id)
+        summaryTasks[id]?.cancel()
+        summaryTasks[id] = nil
+        summarizing.remove(id)
+        notesSteps[id] = nil
+        notesRevision &+= 1
+        searchableContentRevision &+= 1
         return true
     }
 
@@ -1024,7 +1099,7 @@ final class SessionArchive {
     }
 
     private func enqueueWrite(_ data: Data, file: String, session id: UUID, mode: SessionArchiveWriteMode = .append) -> Bool {
-        guard !discardedSessions.contains(id) else { return false }
+        guard !discardedSessions.contains(id), !deletedSessionIDs.contains(id) else { return false }
         var queue = writeQueues[id] ?? SessionArchiveWriteQueue()
         let result = queue.enqueue(fileName: file, data: data, mode: mode)
         writeQueues[id] = queue; persistenceBySession[id] = queue.snapshot

@@ -91,7 +91,7 @@ enum MainWindowLayout {
 
     static var effectiveWorkspaceLevel: NSWindow.Level {
         let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
-        return keepOnTop && NSApp.isActive ? .floating : .normal
+        return keepOnTop && NSApp?.isActive == true ? .floating : .normal
     }
 
     /// Workspace windows float only while NextThought is the active app.

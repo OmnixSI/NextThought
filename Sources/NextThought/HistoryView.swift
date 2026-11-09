@@ -19,6 +19,7 @@ struct HistoryView: View {
     @FocusState private var focusedSessionID: UUID?
     @State private var workspaceEditor = WorkspaceEditController.shared
     @State private var showDeleteAll = false
+    @State private var deletingSessionID: UUID?
     @State private var deletingWorkspace: Workspace?
     @State private var isSelectingSeries = false
     @State private var selectedWorkspaceIDs = Set<UUID>()
@@ -153,13 +154,37 @@ struct HistoryView: View {
             Text("保存后继续刚才的操作；放弃更改会丢弃本次草稿。")
         }
         .confirmationDialog("删除全部会议记录？", isPresented: $showDeleteAll, titleVisibility: .visible) {
-            Button("删除全部会议记录", role: .destructive) {
-                if archive.deleteAll() { state.historySelection = nil }
+            Button("删除会议和依赖内容", role: .destructive) {
+                state.deleteAllArchivedMeetings()
+                state.historySelection = nil
             }
             .disabled(archive.destructiveOperationDisabledReason != nil)
+            if hasRetainableAcceptedContent(from: deleteAllSessionIDs) {
+                Button("删除会议，保留已确认的系列内容", role: .destructive) {
+                    state.deleteAllArchivedMeetings(retainAcceptedContent: true)
+                    state.historySelection = nil
+                }
+                .disabled(archive.destructiveOperationDisabledReason != nil)
+            }
             Button("取消", role: .cancel) { }
         } message: {
-            Text("将删除全部 \(archive.sessions.count) 场会议的转写、问题、回答和纪要，不限当前系列，且无法恢复。")
+            Text("将永久删除所有归档会议的转写、音频、手记、索引、问题、回答和纪要。默认同时删除只依赖这些会议的已确认经验、决定和行动。若选择保留，内容会作为独立经验保存并标记原来源已删除，不保留会议原话。")
+        }
+        .confirmationDialog("删除这场会议？", isPresented: Binding(
+            get: { deletingSessionID != nil }, set: { if !$0 { deletingSessionID = nil } }), titleVisibility: .visible) {
+                if let id = deletingSessionID {
+                    Button("删除会议和依赖内容", role: .destructive) { confirmDeleteSession(id, retainAcceptedContent: false) }
+                        .disabled(archive.destructiveOperationDisabledReason != nil)
+                    if hasRetainableAcceptedContent(from: [id]) {
+                        Button("删除会议，保留已确认的系列内容", role: .destructive) {
+                            confirmDeleteSession(id, retainAcceptedContent: true)
+                        }
+                        .disabled(archive.destructiveOperationDisabledReason != nil)
+                    }
+                }
+                Button("取消", role: .cancel) { deletingSessionID = nil }
+            } message: {
+                Text("将永久删除这场会议的转写、音频、手记、索引、问题、回答和纪要。默认同时删除只依赖它的已确认经验、决定和行动。若选择保留，内容会作为独立经验保存并标记原来源已删除，不保留会议原话。")
         }
         .confirmationDialog("删除系列“\(deletingWorkspace?.name ?? "")”？", isPresented: Binding(
             get: { deletingWorkspace != nil },
@@ -442,8 +467,24 @@ struct HistoryView: View {
     }
 
     private func deleteSession(_ id: UUID) {
-        let deleted = archive.delete(id)
-        if deleted && state.historySelection == id {
+        deletingSessionID = id
+    }
+
+    private var deleteAllSessionIDs: [UUID] {
+        archive.sessions.filter { $0.id != archive.activeID }.map(\.id)
+    }
+
+    private func hasRetainableAcceptedContent(from sessionIDs: [UUID]) -> Bool {
+        let deletedIDs = Set(sessionIDs)
+        return state.workspaces.workspaces.contains {
+            WorkspaceSourceIntegrity.hasRetainableAcceptedContent(in: $0, from: deletedIDs)
+        }
+    }
+
+    private func confirmDeleteSession(_ id: UUID, retainAcceptedContent: Bool) {
+        state.deleteArchivedMeeting(id, retainAcceptedContent: retainAcceptedContent)
+        deletingSessionID = nil
+        if state.historySelection == id {
             isCollectionOverview = true
             state.historySelection = nil
         }
