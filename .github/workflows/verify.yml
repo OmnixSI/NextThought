@@ -34,6 +34,8 @@ jobs:
           ./Tools/Validation/LegacyOffice/run.sh
       - name: Document normalization regression (offline)
         run: python3 -m unittest discover -s Tools/Validation/Documents -p 'test_*.py'
+      - name: Release asset manifest regression
+        run: python3 -m unittest discover -s Tools/Validation/ReleaseAssets -p 'test_*.py'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
