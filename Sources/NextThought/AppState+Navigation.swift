@@ -1,13 +1,12 @@
 import AppKit
 import SwiftUI
 
-/// Sidebar navigation and the separate settings window used during a meeting.
+/// Workspace navigation and the independent settings window.
 @MainActor
 extension AppState {
-    /// Selects a sidebar section. During a meeting the sidebar is hidden; settings
-    /// then open in their own window instead of replacing the meeting.
+    /// Settings never replace the workspace or interrupt an editor draft.
     func select(_ target: AppSection) {
-        if isRunning, target == .settings {
+        if target == .settings {
             SettingsWindow.show()
             return
         }
@@ -16,21 +15,16 @@ extension AppState {
 
     /// ⌘, from the menu bar.
     func openSettingsFromMenu() {
-        if isRunning {
-            SettingsWindow.show()
-        } else {
-            select(.settings)
-            MainWindowLayout.bringToFront()
-        }
+        SettingsWindow.show()
     }
 }
 
-/// Settings in a small window of their own (⌘, during a meeting), so the meeting page
-/// is never replaced.
+/// One reusable, resizable settings window, shared by all entry points.
 @MainActor
 enum SettingsWindow {
     static let identifier = NSUserInterfaceItemIdentifier("NextThought.SettingsWindow")
     private static var window: NSWindow?
+    static var isVisible: Bool { window?.isVisible == true }
 
     static func show() {
         if let window {
@@ -38,25 +32,38 @@ enum SettingsWindow {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        let next = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 920, height: 660),
+        let next = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
                             styleMask: [.titled, .closable, .miniaturizable, .resizable],
                             backing: .buffered, defer: false)
         next.identifier = identifier
         next.title = String(localized: "设置")
         next.isReleasedWhenClosed = false
         next.backgroundColor = Ink.paperNSColor
-        next.minSize = NSSize(width: 820, height: 560)
         next.level = MainWindowLayout.effectiveWorkspaceLevel
-        next.contentView = NSHostingView(rootView: SettingsView()
-            .padding(.top, Space.s3)
-            .environment(AppState.shared)
-            .wideHitTargets()
-            .preferredColorScheme(AppState.shared.colorScheme)
-            .background(Ink.paper))
+        next.setFrameAutosaveName("NextThought.Settings")
+        let content = NSHostingView(rootView: SettingsWindowContent())
+        // The scrollable form's intrinsic minimum is smaller than its usable
+        // layout. Keep hosting from replacing our window constraints on SDKs
+        // that update minSize when the root view is installed.
+        content.sizingOptions = []
+        next.contentView = content
+        next.contentMinSize = NSSize(width: 880, height: 600)
         next.center()
         window = next
         next.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         MainWindowLayout.refreshLevels()
+    }
+}
+
+/// Observe appearance in the root view so changes apply immediately in this window.
+private struct SettingsWindowContent: View {
+    @State private var state = AppState.shared
+    var body: some View {
+        SettingsView()
+            .environment(state)
+            .wideHitTargets()
+            .preferredColorScheme(state.colorScheme)
+            .background(Ink.paper)
     }
 }

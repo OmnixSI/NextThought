@@ -96,6 +96,13 @@ jobs:
       - name: Self-test · optional document setup and versioned guide (offline)
         env: { NEXTTHOUGHT_DATA_DIR: "${{ env.IH_DATA }}", NEXTTHOUGHT_DEMO: "1" }
         run: '"$APP/Contents/MacOS/NextThought" --self-test document-setup'
+      - name: Self-test · academic content, restore and large PDFs (offline)
+        env: { NEXTTHOUGHT_DATA_DIR: "${{ env.IH_DATA }}" }
+        run: |
+          "$APP/Contents/MacOS/NextThought" --self-test meeting-content
+          "$APP/Contents/MacOS/NextThought" --self-test archive-ux
+          "$APP/Contents/MacOS/NextThought" --self-test large-pdf
+          NEXTTHOUGHT_DEMO=1 "$APP/Contents/MacOS/NextThought" --self-test settings-navigation
       - name: Self-test · local signing
         if: success() || failure()
         timeout-minutes: 5

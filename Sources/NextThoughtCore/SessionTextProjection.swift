@@ -130,13 +130,16 @@ public struct SessionProjectedAnswer: Sendable, Equatable, Identifiable {
     public let question: String
     public let answer: String
     public let sourceRevision: String
+    public let completion: AnswerCompletion?
+    public var isComplete: Bool { completion == nil || completion == .complete }
 
-    public init(id: UUID, date: Date, question: String, answer: String, sourceRevision: String) {
+    public init(id: UUID, date: Date, question: String, answer: String, sourceRevision: String, completion: AnswerCompletion? = nil) {
         self.id = id
         self.date = date
         self.question = question
         self.answer = answer
         self.sourceRevision = sourceRevision
+        self.completion = completion
     }
 }
 
@@ -287,7 +290,8 @@ public enum SessionProjectionBuilder {
 
         let projectedAnswers = answers.map { answer in
             SessionProjectedAnswer(id: answer.id, date: answer.date, question: answer.question, answer: answer.answer,
-                                   sourceRevision: digest([answer.id.uuidString, answer.question, answer.answer]))
+                                   sourceRevision: digest([answer.id.uuidString, answer.question, answer.answer, answer.completion?.rawValue ?? "complete"]),
+                                   completion: answer.completion)
         }
         for question in detected {
             let location = NotesTime.text(max(0, Int(question.date.timeIntervalSince(meta.startedAt))))
@@ -327,7 +331,7 @@ public enum SessionProjectionBuilder {
         }
         for answer in projectedAnswers {
             revisionParts.append(contentsOf: [answer.id.uuidString, dateRevision(answer.date), answer.question,
-                                               answer.answer, answer.sourceRevision])
+                                               answer.answer, answer.sourceRevision, answer.completion?.rawValue ?? "complete"])
         }
         for question in detected {
             revisionParts.append(contentsOf: [question.id.uuidString, dateRevision(question.date),

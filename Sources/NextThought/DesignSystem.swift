@@ -38,19 +38,20 @@ enum Ink {
     static let surfaceRaised = Color.dynamic(light: .hex(0xffffff), dark: .hex(0x242422))
     static let sunken = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.04), dark: .hex(0xecebe8, alpha: 0.05))
     static let hover = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.06), dark: .hex(0xecebe8, alpha: 0.08))
+    static let pressed = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.11), dark: .hex(0xecebe8, alpha: 0.14))
     static let ink = Color.dynamic(light: .hex(0x1c1b19), dark: .hex(0xecebe8))
     static let onInk = Color.dynamic(light: .hex(0xffffff), dark: .hex(0x131312))
     static let secondary = Color.dynamic(light: .hex(0x6b6963), dark: .hex(0xa3a19b))
     /// Placeholders and decoration only; never for text that has to be read.
-    static let tertiary = Color.dynamic(light: .hex(0x8e8c86), dark: .hex(0x75736e))
+    static let tertiary = Color.dynamic(light: .hex(0x706e68), dark: .hex(0x95938c))
     static let hairline = Color.dynamic(light: .hex(0xe7e5e0), dark: .hex(0x2c2b28))
     /// Neutral gray marks AI-written content; the interface stays grayscale.
     static let ai = Color.dynamic(light: .hex(0x595751), dark: .hex(0xb8b6af))
     static let aiSoft = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.045), dark: .hex(0xecebe8, alpha: 0.07))
     static let promptPanel = Color.dynamic(light: .hex(0xf0efec), dark: .hex(0x242422))
-    static let live = Color.dynamic(light: .hex(0xd93a3a), dark: .hex(0xff6b63))
-    static let ready = Color.dynamic(light: .hex(0x2f9e5b), dark: .hex(0x4cc38a))
-    static let caution = Color.dynamic(light: .hex(0xc27c0e), dark: .hex(0xf0b24a))
+    static let live = Color.dynamic(light: .hex(0xb82e2e), dark: .hex(0xff6b63))
+    static let ready = Color.dynamic(light: .hex(0x237542), dark: .hex(0x4cc38a))
+    static let caution = Color.dynamic(light: .hex(0x8a5707), dark: .hex(0xf0b24a))
     static let focus = ai
     static let floatShadow = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.12), dark: .hex(0x000000, alpha: 0.5))
 }
@@ -61,7 +62,7 @@ enum Typo {
     static let display = Font.system(size: 30, weight: .medium, design: .serif)
     static let section = Font.system(size: 19, weight: .medium, design: .serif)
     static let prompt = Font.system(size: 22, weight: .medium)
-    static let body = Font.system(size: 14)
+    static let body = Font.system(size: 15)
     static let label = Font.system(size: 13, weight: .medium)
     static let caption = Font.system(size: 12)
     static let overline = Font.system(size: 11, weight: .semibold)
@@ -166,46 +167,12 @@ struct StatusDot: View {
 
 /// Borderless button that shows the hover color under the pointer.
 struct GhostButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.liveSessionAcceptanceButtonInteraction) private var acceptanceInteraction
     var height: CGFloat = Space.control
     var horizontalPadding: CGFloat = 10
     var scalesWithDynamicType = false
     func makeBody(configuration: Configuration) -> some View {
-        GhostBody(configuration: configuration, isEnabled: isEnabled, height: height,
-                  horizontalPadding: horizontalPadding, scalesWithDynamicType: scalesWithDynamicType,
-                  acceptanceInteraction: acceptanceInteraction)
-    }
-
-    private struct GhostBody: View {
-        let configuration: ButtonStyleConfiguration
-        let isEnabled: Bool
-        let height: CGFloat
-        let horizontalPadding: CGFloat
-        let scalesWithDynamicType: Bool
-        let acceptanceInteraction: LiveSessionAcceptanceButtonInteraction
-        @State private var hovering = false
-        var body: some View {
-            configuration.label
-                .font(scalesWithDynamicType ? Font.body.weight(.medium) : Typo.label)
-                .lineLimit(1)
-                .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary)
-                .padding(.horizontal, horizontalPadding)
-                .frame(minWidth: Hit.minHeight)
-                .frame(minHeight: scalesWithDynamicType ? max(height, Hit.minHeight) : nil)
-                .frame(height: scalesWithDynamicType ? nil : max(height, Hit.minHeight))
-                .background((hovering || configuration.isPressed || acceptanceInteraction == .hover
-                             || acceptanceInteraction == .pressed) && isEnabled ? Ink.hover : Color.clear,
-                            in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
-                        .strokeBorder(acceptanceInteraction == .focused ? Ink.focus : Color.clear, lineWidth: 2)
-                        .allowsHitTesting(false)
-                }
-                .contentShape(Rectangle())
-                .onHover { hovering = $0 }
-                .animation(Motion.hover, value: hovering)
-        }
+        ControlButtonBody(configuration: configuration, emphasis: .quiet, height: height,
+                          horizontalPadding: horizontalPadding, scalesWithDynamicType: scalesWithDynamicType)
     }
 }
 
@@ -240,6 +207,8 @@ struct InkSegmented<Value: Hashable>: View {
     @Binding var selection: Value
     var height: CGFloat = Hit.minHeight
     var scalesWithDynamicType = false
+    @Environment(\.layoutDirection) private var layoutDirection
+    @FocusState private var focusedValue: Value?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -261,8 +230,31 @@ struct InkSegmented<Value: Hashable>: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .focused($focusedValue, equals: item.value)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+                .overlay {
+                    RoundedRectangle(cornerRadius: Space.radiusSmall)
+                        .strokeBorder(focusedValue == item.value ? Ink.focus : Color.clear, lineWidth: 2)
+                        .allowsHitTesting(false)
+                }
+                .onKeyPress(keys: [.leftArrow, .rightArrow, .home, .end]) { key in
+                    guard key.modifiers.intersection([.command, .option, .control, .shift]).isEmpty,
+                          let index = items.firstIndex(where: { $0.value == item.value }) else { return .ignored }
+                    let next: Int
+                    switch key.key {
+                    case .home: next = 0
+                    case .end: next = items.count - 1
+                    case .leftArrow, .rightArrow:
+                        let forward = (key.key == .rightArrow) == (layoutDirection == .leftToRight)
+                        next = (index + (forward ? 1 : items.count - 1)) % items.count
+                    default: return .ignored
+                    }
+                    selection = items[next].value; focusedValue = items[next].value
+                    return .handled
+                }
             }
         }
+        .accessibilityElement(children: .contain)
         .padding(2)
         .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
         .animation(Motion.expand, value: selection)

@@ -62,6 +62,10 @@ final class AppState {
     var stageReviewing: Set<UUID> = []
     /// Result line of the last export / import / backup.
     var dataStatus = ""
+    var dataStatusTone: OperationTone = .progress
+    var dataStatusCanRetryBackup = false
+    var backupIssue: String?
+    var recoveryPointWarning: String?
     var isDataBusy = false
     /// Session selected in the history page (also set when jumping from a workspace review).
     var historySelection: UUID?
@@ -209,6 +213,9 @@ final class AppState {
     var pendingQuestion = ""
     var answer = ""
     var answerDraft = ""
+    @ObservationIgnored var currentAnswerAutomatic = false
+    @ObservationIgnored var currentAnswerModelSnapshot = ""
+    @ObservationIgnored var lastAnswerCheckpointAt = Date.distantPast
     var isAnswering = false
     var questionInput = ""
 
@@ -550,24 +557,8 @@ final class AppState {
 
     // MARK: Readiness
 
-    var readinessText: String {
-        if !isOfflineMeeting, !capturePermissionGranted { return "需要允许录屏与系统音频" }
-        if transcriptionBackend == "apple" {
-            if !LiveTranscriberFactory.supported { return "Apple 流式识别需要 macOS 26" }
-            if recognitionLanguage == "auto" { return "请为 Apple 识别选择中文或 English" }
-        }
-        if transcriptionBackend == "cloud" {
-            if !cloudConsent { return "请在设置中确认云端识别的数据说明" }
-            if cloudKey.isEmpty { return "请填写云端识别 API Key" }
-        }
-        if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
-        if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
-        if usesMicrophone && microphoneAccess != .granted { return "请先允许麦克风权限" }
-        if !isOfflineMeeting, !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
-        return "可以开始"
-    }
-
-    var isReadyToStart: Bool { readinessText == "可以开始" }
+    var readinessText: String { recordingReadinessMessage }
+    var isReadyToStart: Bool { recordingReadiness.canStartRecording }
 
     func refreshTargets() async {
         capturePermissionGranted = CGPreflightScreenCaptureAccess()
@@ -651,15 +642,28 @@ final class AppState {
             isRunning = true; isPaused = false; statusText = "演示：正在聆听"
             return
         }
+        guard !isDataBusy else {
+            errorMessage = String(localized: "正在备份或恢复数据，完成后即可开始记录。")
+            return
+        }
         guard !isRunning, !isChangingSession else { return }
-        guard !isDownloadingModel else { return }
-        guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
-        guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
+        if !UserDefaults.standard.bool(forKey: "recordingNoticeShown") { recordingNoticePending = .direct; return }
+        isChangingSession = true
+        defer { isChangingSession = false }
+        guard recognitionReady else { errorMessage = recordingReadinessMessage; return }
+        if !isOfflineMeeting {
+            if !capturePermissionGranted { await requestCapturePermission() }
+            else { await refreshTargets() }
+        }
+        if usesMicrophone, MicrophoneAccess.current() == .undetermined { await requestMicrophoneAccess() }
+        microphoneAccess = .current()
+        guard recordingReadiness.canStartRecording else { errorMessage = recordingReadinessMessage; return }
         liveTranslation.beginMeeting()
         speakers.beginMeeting(inPerson: isOfflineMeeting)
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
         // In the room people talk face to face: answers stay quiet unless asked for.
-        automaticAnswers = typeDefaults.liveMode == .prompting && !isOfflineMeeting
+        let meetingMode = plannedMeeting?.effectiveMode ?? activeWorkspace.effectiveMode
+        automaticAnswers = answerEngineReady && MeetingTypeDefaults.for(meetingMode).liveMode == .prompting && !isOfflineMeeting
         documentPreparation.pauseForMeeting()
         Task { await SemanticWorkspacePreparation.shared.cancelAll() }
         cancelAnswer()
@@ -671,8 +675,6 @@ final class AppState {
         droppedAudioSegments = 0; echoDroppedCount = 0
         audioEpoch = UUID()
         meetingContextTask?.cancel(); meetingContextTask = nil
-        isChangingSession = true
-        defer { isChangingSession = false }
         do {
             let startupBegan = Date()
             if semanticRetrievalReady {
@@ -685,19 +687,22 @@ final class AppState {
                 statusText = "正在加载本地识别模型…"
             }
             modelLoadSeconds = try await prepareTranscriber()
+            if isOfflineMeeting && microphoneTranscriber == nil {
+                throw AppFailure.capture(String(localized: "麦克风识别未能启动，请检查识别服务后重试。"))
+            }
             Diagnostics.record("session.transcriber_ready", ["backend": transcriptionBackend, "seconds": Date().timeIntervalSince(startupBegan)])
             isPreparingModel = false
             let startedAt = Date()
             sessionStartedAt = startedAt
             entries = []
-            tracker = QuestionCandidateTracker(mode: activeWorkspace.effectiveMode)
+            tracker = QuestionCandidateTracker(mode: meetingMode)
             liveCandidate = nil; suggestedQuestions = []; questionTexts = []; appleUtteranceCounter = [:]
             deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
             answerHistory = []; historyCursor = nil; webLookups = [:]; showOriginalAnswer = []; currentAnswerID = nil; webLookupTask?.cancel()
             answerTurns.removeAll()
             insights.resetSession()
             echoMonitor.reset()
-            if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
+            if answerEngineReady && answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
             let startPlan = plannedMeeting
             let startWorkspace = meetingWorkspaceForStart()
@@ -716,7 +721,10 @@ final class AppState {
             if usesMicrophone {
                 microphone.voiceProcessing = microphoneVoiceProcessing
                 do { try await microphone.startCapture() }
-                catch { microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)") }
+                catch {
+                    if isOfflineMeeting { throw error }
+                    microphoneUnavailable("麦克风启动失败：\(error.localizedDescription)")
+                }
             }
             isRunning = true
             isPaused = false
@@ -825,6 +833,7 @@ final class AppState {
         meetingContextTask?.cancel(); meetingContextTask = nil
         stopAutoEnd()
         statusText = "正在处理最后片段…"
+        await archive.flushUserContent()
         pendingAutomaticQuestion = nil
         deferredCandidate = nil
         _ = await audio.stopCapture()
@@ -838,6 +847,7 @@ final class AppState {
         candidateTicker?.cancel(); candidateTicker = nil
         liveCandidate = nil
         cancelAnswer()
+        await archive.flush()
         // Keep the model loaded so the next start is instant; unload after idling.
         scheduleRecognizerIdleShutdown()
         isRunning = false
@@ -888,6 +898,7 @@ final class AppState {
     }
 
     func cancelAnswer() {
+        if isAnswering { persistAnswerCheckpoint(completion: .interrupted) }
         answerCoordinator.cancel()
         searchDecisionTask?.cancel(); searchDecisionTask = nil
         decisionAppServer.cancelActiveTurn(); decisionCodex.cancel()
@@ -904,6 +915,28 @@ final class AppState {
         answeringCandidateID = nil
         Diagnostics.record("answer.cancelled")
         statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
+    }
+
+    /// A checkpoint is an upsert by request ID; only complete answers enter conversational memory.
+    func persistAnswerCheckpoint(text: String? = nil, completion: AnswerCompletion = .interrupted) {
+        guard let id = currentAnswerID else { return }
+        let previous = answerHistory.first { $0.id == id }
+        let streamed = text ?? (answerCoordinator.state?.id == id ? answerCoordinator.state?.text : nil) ?? answerDraft
+        let fragment = (previous?.answer.count ?? 0) > streamed.count ? previous!.answer : streamed
+        guard !fragment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        var record = previous ?? AnswerRecord(id: id, question: currentQuestion, answer: fragment,
+                                             model: currentAnswerModelSnapshot, automatic: currentAnswerAutomatic)
+        record.answer = fragment; record.completion = completion
+        record.evidence = answerCoordinator.evidenceHistory[id]
+        if let index = answerHistory.firstIndex(where: { $0.id == id }) { answerHistory[index] = record }
+        else { answerHistory.append(record) }
+        if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
+        recordAnswer(record)
+        lastAnswerCheckpointAt = Date()
+        if completion != .complete {
+            answer = fragment
+            answerCoordinator.update(id: id) { $0.text = fragment }
+        }
     }
 
     /// - Parameters:
@@ -936,7 +969,7 @@ final class AppState {
         }
         if isIndexingDocuments { errorMessage = "资料索引正在更新，请完成后再生成回答。"; return }
         let selectedModel = currentAnswerModel
-        guard !selectedModel.isEmpty else { errorMessage = "请在设置中选择回答模型。"; section = .settings; return }
+        guard !selectedModel.isEmpty else { errorMessage = "请在设置中选择回答模型。"; openSettings(.answers); return }
         let selectedReasoning = codexReasoning
         cancelAnswer()
         historyCursor = nil
@@ -944,6 +977,9 @@ final class AppState {
         currentQuestion = question
         answer = ""
         isAnswering = true
+        currentAnswerAutomatic = isAutomatic
+        currentAnswerModelSnapshot = selectedModel
+        lastAnswerCheckpointAt = .distantPast
         answeringCandidateID = candidateID
         firstTokenAt = nil
         statusText = backend == .openAICompatible ? "正在流式生成回答…" : "Codex 正在整理回答…"
@@ -1038,6 +1074,9 @@ final class AppState {
                             self.firstTokenAt = Date()
                             self.lastFirstTokenSeconds = Date().timeIntervalSince(answerStartedAt)
                         }
+                        if Date().timeIntervalSince(self.lastAnswerCheckpointAt) >= 2 {
+                            self.persistAnswerCheckpoint(text: text)
+                        }
                         // Deltas carry the full text so far; never step backwards. Coalesced to
                         // ~15 UI updates/s to keep window-server compositing light.
                         self.draftThrottle.run { [weak self] in
@@ -1070,8 +1109,9 @@ final class AppState {
                 answeringCandidateID = nil
                 Diagnostics.record("answer.completed", ["request_id": id.uuidString, "answer_characters": result.count, "model": selectedModel, "reasoning": selectedReasoning, "service_tier": request.serviceTier ?? "standard", "backend": backend.rawValue, "first_token_seconds": lastFirstTokenSeconds ?? -1, "seconds": lastAnswerSeconds ?? -1])
                 statusText = isRunning ? (isPaused ? "已暂停" : "正在聆听") : "就绪"
-                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic, screenshotPath: archive.archiveScreenshot(image), webAnswer: webLookups[id]?.status == .done ? webLookups[id]?.answer : nil, webSources: webLookups[id]?.sources, evidence: answerCoordinator.evidenceHistory[id])
-                answerHistory.append(record)
+                let record = AnswerRecord(id: id, question: question, answer: result, model: selectedModel, seconds: lastAnswerSeconds, firstTokenSeconds: lastFirstTokenSeconds, automatic: isAutomatic, screenshotPath: archive.archiveScreenshot(image), webAnswer: webLookups[id]?.status == .done ? webLookups[id]?.answer : nil, webSources: webLookups[id]?.sources, evidence: answerCoordinator.evidenceHistory[id], completion: .complete)
+                if let index = answerHistory.firstIndex(where: { $0.id == id }) { answerHistory[index] = record }
+                else { answerHistory.append(record) }
                 insights.beginAnswer(id: id, text: result, since: answerStartedAt)
                 if answerHistory.count > 100 { answerHistory.removeFirst(answerHistory.count - 100) }
                 tracker.noteAnswered()
@@ -1091,10 +1131,12 @@ final class AppState {
                 }
             } catch is CancellationError {
                 guard requestID == id else { return }
+                persistAnswerCheckpoint(completion: .interrupted)
                 isAnswering = false
                 pendingQuestion = ""
             } catch {
                 guard requestID == id else { return }
+                persistAnswerCheckpoint(completion: .failed)
                 isAnswering = false
                 pendingQuestion = ""
                 answerCoordinator.update(id: id) { $0.phase = .failed; $0.error = error.localizedDescription }

@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import Foundation
 import PDFKit
 import NextThoughtCore
@@ -36,7 +37,11 @@ enum Launcher {
         }
         if let index = arguments.firstIndex(of: "--self-test") {
             let code = SelfTest.run(Array(arguments.dropFirst(index + 1)))
-            exit(code)
+            // Suites await their persistence receipts before returning. Do not run
+            // process-global AppKit teardown while background framework tasks live:
+            // headless runners have no NSApplication termination lifecycle.
+            fflush(nil)
+            _exit(code)
         }
         NextThoughtApp.main()
     }
@@ -79,6 +84,10 @@ enum SelfTest {
                 case "model-files": return try await DocumentSelfTest.modelFiles()
                 case "model-delete": return try await DocumentSelfTest.modelDeletion()
                 case "document-backup": return try await DocumentSelfTest.archiveRoundTrip()
+                case "settings-navigation": return try await SettingsNavigationSelfTest.run(options)
+                case "meeting-content": return try await MeetingContentSelfTest.run()
+                case "archive-ux": return try await ArchiveUXSelfTest.run()
+                case "large-pdf": return try await LargePDFSelfTest.run(options)
                 case "fishbone-rendering": return try await FishboneRenderingSelfTest.run()
                 case "structured-notes": return try await StructuredNotesSelfTest.run()
                 case "document-setup": return try await DocumentSelfTest.setupChoices()
@@ -117,6 +126,8 @@ enum SelfTest {
     private static func runAsync(_ work: @escaping @MainActor () async throws -> String) -> Result<String, Error> {
         var result: Result<String, Error>?
         Task { @MainActor in
+            // Archive/restore paths may create AppKit-backed model state even in CLI tests.
+            _ = NSApplication.shared
             do { result = .success(try await work()) } catch { result = .failure(error) }
         }
         while result == nil { RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.05)) }
@@ -241,7 +252,7 @@ enum SelfTest {
         archive.appendTranslation(sessionID: meta.id, lineID: lineID, text: "最终翻译已保存")
         await archive.finishFinalTranslationDrain(for: meta.id)
         guard let backupURL = await backupTask.value else {
-            throw Failure("after-session backup failed: \(AppState.shared.dataStatus)")
+            throw Failure("after-session backup failed: \(AppState.shared.backupIssue ?? AppState.shared.dataStatus)")
         }
         await observer.value
         guard await backupFinished.isFinished() else { throw Failure("backup completion was not observed") }
@@ -285,14 +296,20 @@ enum SelfTest {
         guard archive.saveNotes(notes, for: meta.id), await archive.flush(sessionID: meta.id) else {
             throw Failure("notes fixture did not receive a save receipt")
         }
-        let legacySummary = SessionSummary(
+        var legacySummary = SessionSummary(
             title: "Receipt test", markdown: "## Main\n\nbefore", questions: [], generatedAt: Date(), model: "selftest",
             transcriptSourceRevision: SessionProjectionBuilder.transcriptSourceRevision(meta: meta, lines: [transcriptLine]))
+        legacySummary.store(StructuredNotesPayload(format: .outline,
+            outline: OutlineNotes(sections: [OutlineSection(title: "Main", points: [OutlinePoint(text: "original structured node")])]),
+            transcriptSourceRevision: legacySummary.transcriptSourceRevision))
         guard legacySummary.structuredNotesSourceRevision == nil,
               archive.saveSummary(legacySummary, for: meta.id), await archive.flush(sessionID: meta.id) else {
             throw Failure("legacy summary fixture did not receive a save receipt")
         }
-        let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
+        let notesURL = archive.folder(meta.id).appendingPathComponent("notes.json")
+        let summaryURL = archive.folder(meta.id).appendingPathComponent("summary.json")
+        let originalNotesBytes = try Data(contentsOf: notesURL)
+        let originalSummaryBytes = try Data(contentsOf: summaryURL)
         archive.summarizing.insert(meta.id)
         let busyNoteEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
             archive.updateNotes(meta.id, { current in
@@ -322,19 +339,22 @@ enum SelfTest {
         }
         try expect(noteEdit == .saved, "text-note edit returned \(noteEdit), expected saved")
         guard let afterNoteEdit = await archive.detail(meta.id),
-              afterNoteEdit.notes?.sections.first?.items.first?.text == "after" else {
+              afterNoteEdit.effectiveNotes?.sections.first?.items.first?.text == "after" else {
             throw Failure("text-note save receipt arrived before the edited value was readable")
         }
-        guard afterNoteEdit.summary?.structuredNotesSourceRevision == originalNotesRevision else {
-            throw Failure("editing legacy notes did not seed the summary's old source revision")
+        guard afterNoteEdit.notes?.sections.first?.items.first?.text == "before",
+              afterNoteEdit.summary?.markdown == legacySummary.markdown,
+              try Data(contentsOf: notesURL) == originalNotesBytes,
+              try Data(contentsOf: summaryURL) == originalSummaryBytes else {
+            throw Failure("editing text notes replaced the saved AI originals")
         }
         let legacySummaryHit = SessionContentSearch.firstHit(
             in: SessionContentSearch.fields(meta: afterNoteEdit.meta, lines: afterNoteEdit.lines,
                                             questions: afterNoteEdit.questions, answers: afterNoteEdit.answers,
-                                            summary: afterNoteEdit.summary, notes: afterNoteEdit.notes),
+                                            summary: afterNoteEdit.effectiveSummary, notes: afterNoteEdit.effectiveNotes),
             terms: Glossary().search(for: "before"))
-        try expect(legacySummaryHit?.kind == .notes && legacySummaryHit?.isStale == true,
-                   "legacy summary search hit did not become stale after editing notes")
+        try expect(legacySummaryHit == nil || legacySummaryHit?.isStale == true,
+                   "canonical search returned superseded text as current content")
 
         let staleNoteEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
             archive.updateNotes(meta.id, { _ in false }, completion: { continuation.resume(returning: $0) })
@@ -343,19 +363,53 @@ enum SelfTest {
 
         let summaryEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
             archive.updateSummary(meta.id, { current in
-                current.markdown = "after"
+                guard var payload = current.payload(for: .outline),
+                      payload.outline?.sections.first?.points.first != nil else { return false }
+                payload.outline?.sections[0].points[0].text = "structured after"
+                current.store(payload)
+                current.markdown = "summary after"
                 return true
             }, completion: { continuation.resume(returning: $0) })
         }
         try expect(summaryEdit == .saved, "structured-note edit returned \(summaryEdit), expected saved")
-        guard let afterSummaryEdit = await archive.detail(meta.id), afterSummaryEdit.summary?.markdown == "after" else {
-            throw Failure("structured-note save receipt arrived before the edited value was readable")
+        guard let afterSummaryEdit = await archive.detail(meta.id),
+              afterSummaryEdit.effectiveSummary?.markdown == "summary after",
+              afterSummaryEdit.effectiveSummary?.payload(for: .outline)?.outline?.sections.first?.points.first?.text == "structured after",
+              afterSummaryEdit.userContent.editedSummary != nil else {
+            throw Failure("structured-note save receipt arrived before the full edited summary was readable")
+        }
+        guard afterSummaryEdit.notes?.sections.first?.items.first?.text == "before",
+              afterSummaryEdit.summary?.payload(for: .outline)?.outline?.sections.first?.points.first?.text == "original structured node",
+              try Data(contentsOf: notesURL) == originalNotesBytes,
+              try Data(contentsOf: summaryURL) == originalSummaryBytes else {
+            throw Failure("structured-note editing replaced an AI original instead of the user version")
         }
         let staleSummaryEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
             archive.updateSummary(meta.id, { _ in false }, completion: { continuation.resume(returning: $0) })
         }
         try expect(staleSummaryEdit == .staleTarget, "missing structured-note target returned \(staleSummaryEdit)")
-        return "text and structured note edits wait for durable receipts; stale targets and edits during regeneration are rejected"
+        var regeneratedNotes = notes
+        regeneratedNotes.sections[0].items[0].text = "new AI notes"
+        var regeneratedSummary = legacySummary
+        regeneratedSummary.markdown = "new AI summary"
+        regeneratedSummary.generatedAt = Date()
+        try await archive.saveGeneratedContent(regeneratedSummary, notes: regeneratedNotes, for: meta.id)
+        guard await archive.flush(sessionID: meta.id), let reopened = await archive.detail(meta.id),
+              reopened.notes?.sections.first?.items.first?.text == "new AI notes",
+              reopened.summary?.markdown == "new AI summary",
+              reopened.effectiveNotes?.sections.first?.items.first?.text == "after",
+              reopened.effectiveSummary?.markdown == "summary after",
+              reopened.effectiveSummary?.payload(for: .outline)?.outline?.sections.first?.points.first?.text == "structured after" else {
+            throw Failure("regeneration replaced a durable user-authored notes or summary version")
+        }
+        let oldStructuredHit = SessionContentSearch.firstHit(
+            in: SessionContentSearch.fields(meta: reopened.meta, lines: reopened.lines,
+                                            questions: reopened.questions, answers: reopened.answers,
+                                            summary: reopened.effectiveSummary, notes: reopened.effectiveNotes),
+            terms: Glossary().search(for: "original structured node"))
+        try expect(oldStructuredHit == nil || oldStructuredHit?.isStale == true,
+                   "canonical search returned the old structured AI text as current")
+        return "text and full structured-summary edits wait for durable user-version receipts; AI originals, stale/busy guards, canonical search and regeneration protection passed"
     }
 
     @MainActor
@@ -396,6 +450,7 @@ enum SelfTest {
 
     @MainActor
     private static func testDeletedMeetingBlocksLateSummaryCandidates() async throws -> String {
+        _ = NSApplication.shared
         guard AppEnvironment.values["NEXTTHOUGHT_DATA_DIR"] != nil else {
             throw Failure("source-integrity requires NEXTTHOUGHT_DATA_DIR scratch storage")
         }

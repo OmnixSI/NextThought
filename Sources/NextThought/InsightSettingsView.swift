@@ -22,10 +22,13 @@ struct InsightSettings: View {
                     .accessibilityLabel("屏幕读取说明")
             }
             if insights.screenWatch {
-                Picker("读取来源", selection: Binding(get: { state.screenTargetID }, set: { insights.screenTarget = $0; insights.screenRegion = nil; insights.save(); state.startScreenWatch() })) {
-                    if state.captureTargets.isEmpty { Text("主显示器").tag("") }
-                    ForEach(state.captureTargets) { target in Text(target.title).tag(target.id) }
-                }
+                MenuPicker(title: "读取来源",
+                           selection: Binding(get: { state.screenTargetID }, set: {
+                               insights.screenTarget = $0; insights.screenRegion = nil
+                               insights.save(); state.startScreenWatch()
+                           }),
+                           options: state.captureTargets.isEmpty ? [("", String(localized: "主显示器"))]
+                               : state.captureTargets.map { ($0.id, $0.title) })
                 HStack {
                     Button("刷新来源") { Task { await state.refreshTargets() } }
                     Button("立即识别") { Task { await state.readScreen() } }.disabled(insights.isReadingScreen)

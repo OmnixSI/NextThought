@@ -1,0 +1,195 @@
+<div class="viz-carousel" aria-label="设置导航方案" data-previous-label="上一方案" data-next-label="下一方案">
+  <section data-variant="独立设置窗 · 推荐" aria-label="独立设置窗口方案">
+    <div id="academic-settings-window" class="p-demo" aria-label="独立设置窗口设计">
+      <div class="p-workspace">
+        <header class="p-chrome"><span class="p-dots" aria-hidden="true"><b></b><b></b><b></b></span><span class="p-brand">InterviewHacker</span><nav aria-label="主导航"><button type="button" class="p-toplink" aria-current="page" data-route="首页">首页</button><button type="button" class="p-toplink" data-route="记录">记录</button><button type="button" class="p-toplink" data-route="项目与课程">项目与课程</button></nav><button type="button" class="p-icon" data-open aria-label="打开设置" data-tooltip="设置 · ⌘,"><i data-lucide="settings-2" aria-hidden="true"></i></button></header>
+        <main class="p-home" data-home><span class="p-eyebrow">研究工作区</span><h2>讨论之后，知道下一步</h2><p>记录进展、导师反馈，以及值得继续验证的问题。</p><button type="button" class="p-primary" data-prepare>开始记录 <i data-lucide="arrow-right" aria-hidden="true"></i></button><div class="p-recent"><span class="p-eyebrow">继续研究</span><div><i data-lucide="folder" aria-hidden="true"></i><span>检索增强生成 · 每周组会</span><span class="p-muted">上周五</span></div><div><i data-lucide="file-text" aria-hidden="true"></i><span>消融实验与导师反馈</span><span class="p-muted">3 项待验证</span></div></div></main>
+      </div>
+      <section class="p-settings" data-settings aria-label="设置窗口">
+        <header class="p-setting-title"><span class="p-dots" aria-hidden="true"><b></b><b></b><b></b></span><span>设置</span><button type="button" class="p-icon" data-close aria-label="关闭设置，回到工作区"><i data-lucide="x" aria-hidden="true"></i></button></header>
+        <div class="p-settings-body"><nav class="p-categories" aria-label="设置分类"></nav><main class="p-setting-content" aria-live="polite"></main></div>
+      </section>
+    </div>
+  </section>
+  <section data-variant="单栏设置页" aria-label="单栏替换导航方案" hidden>
+    <div id="academic-settings-page" class="p-demo" aria-label="单栏设置设计">
+      <section class="p-single-window" aria-label="应用窗口">
+        <header class="p-setting-title"><span class="p-dots" aria-hidden="true"><b></b><b></b><b></b></span><button type="button" class="p-back" data-back><i data-lucide="arrow-left" aria-hidden="true"></i>返回工作区</button><span class="p-window-name">设置</span><button type="button" class="p-icon" data-open aria-label="打开设置" hidden><i data-lucide="settings-2" aria-hidden="true"></i></button></header>
+        <div class="p-settings-body" data-settings><nav class="p-categories" aria-label="设置分类"></nav><main class="p-setting-content" aria-live="polite"></main></div>
+        <main class="p-home" data-home hidden><span class="p-eyebrow">研究工作区</span><h2>讨论之后，知道下一步</h2><p>记录进展、导师反馈，以及值得继续验证的问题。</p><button type="button" class="p-primary" data-open>打开设置 <i data-lucide="settings-2" aria-hidden="true"></i></button><div class="p-recent"><span class="p-eyebrow">最近记录</span><div><i data-lucide="file-text" aria-hidden="true"></i><span>检索增强生成 · 每周组会</span><span class="p-muted">上周五</span></div></div></main>
+      </section>
+    </div>
+  </section>
+</div>
+<style>
+.p-demo { --p-paper:light-dark(#f6f5f2,#161615);--p-surface:light-dark(#ffffff,#21211f);--p-sidebar:light-dark(#efeeeb,#1c1c1a);--p-text:light-dark(#252420,#efeeea);--p-muted:light-dark(#6b6963,#b0aea7);--p-line:light-dark(#e4e2dc,#3b3a35);--p-hover:light-dark(#e4e2dc,#35342f);--p-on:light-dark(#ffffff,#181816);--p-ink:light-dark(#292824,#ecebe5);--p-green:light-dark(#277342,#78cf95);--p-shadow:light-dark(#20201828,#00000070);--p-nav-width:158px;--p-dialog-width:760px;color:var(--p-text);font:400 14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;position:relative;min-height:760px;isolation:isolate; }
+.p-demo * { box-sizing:border-box; }
+.p-demo [hidden] { display:none!important; }
+.p-demo button,.p-demo select,.p-demo input,.p-demo textarea { font:inherit;color:inherit; }
+.p-demo button { cursor:pointer; }
+.p-demo h2,.p-demo h3,.p-demo p { margin:0; }
+.p-workspace,.p-single-window { background:var(--p-paper);border:1px solid var(--p-line);border-radius:15px;min-height:760px; }
+.p-workspace { position:absolute;inset:0;overflow:hidden; }
+.p-chrome { display:flex;align-items:center;gap:18px;min-height:62px;padding:10px 20px;border-bottom:1px solid var(--p-line); }
+.p-dots { display:flex;align-items:center;gap:6px; }
+.p-dots b { display:block;width:9px;height:9px;border-radius:50%;background:light-dark(#e16057,#d56b62); }
+.p-dots b:nth-child(2) { background:light-dark(#deb447,#b99b51); }
+.p-dots b:nth-child(3) { background:light-dark(#70a878,#6eac84); }
+.p-brand { font-weight:500; }
+.p-chrome nav { display:flex;gap:5px;margin-left:auto; }
+.p-toplink { border:0;background:transparent;padding:7px 11px;border-radius:7px;color:var(--p-muted)!important; }
+.p-toplink[aria-current="page"] { background:var(--p-hover);color:var(--p-text)!important; }
+.p-icon { display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;border-radius:7px;background:transparent;flex:none; }
+.p-icon:hover,.p-back:hover { background:var(--p-hover); }
+.p-demo svg { width:17px;height:17px;flex:none; }
+.p-home { padding:62px 8%;max-width:900px;margin:auto; }
+.p-home h2 { font:500 30px/1.3 ui-serif,Georgia,"Songti SC",serif;margin:12px 0; }
+.p-home p { color:var(--p-muted);margin-bottom:26px; }
+.p-eyebrow { font-size:12px;color:var(--p-muted);font-weight:500; }
+.p-primary { background:var(--p-ink);color:var(--p-on)!important;border:0;border-radius:8px;padding:11px 17px;display:inline-flex;align-items:center;gap:14px; }
+.p-recent { margin-top:58px; }
+.p-recent>div { display:flex;align-items:center;gap:12px;padding:18px 0;border-bottom:1px solid var(--p-line); }
+.p-recent>div>span:last-child { margin-left:auto;font-size:12px; }
+.p-muted { color:var(--p-muted); }
+.p-settings { position:relative;width:min(var(--p-dialog-width),calc(100% - 64px));margin:96px auto 32px;background:var(--p-surface);border:1px solid var(--p-line);border-radius:13px;box-shadow:0 18px 50px var(--p-shadow); }
+.p-setting-title { display:flex;gap:15px;align-items:center;padding:9px 15px;min-height:49px;border-bottom:1px solid var(--p-line);font-weight:500; }
+.p-setting-title>span:nth-child(2) { margin:auto; }
+.p-setting-title>.p-icon { margin-left:auto; }
+.p-settings-body { display:grid;grid-template-columns:var(--p-nav-width) minmax(0,1fr);min-height:535px; }
+.p-categories { padding:18px 10px;background:var(--p-sidebar);border-right:1px solid var(--p-line);border-radius:0 0 0 13px; }
+.p-search { display:flex;align-items:center;gap:7px;border:1px solid var(--p-line);border-radius:7px;background:var(--p-surface);padding:7px 9px;margin:0 2px 16px; }
+.p-search svg { width:14px;height:14px;color:var(--p-muted); }
+.p-search input { width:100%;min-width:0;padding:0;border:0;background:transparent; }
+.p-category { display:flex;align-items:center;gap:9px;width:100%;border:0;background:transparent;padding:10px 9px;margin:3px 0;border-radius:7px;text-align:left;white-space:nowrap; }
+.p-category[aria-pressed="true"] { background:var(--p-hover);font-weight:500; }
+.p-category:hover { background:var(--p-hover); }
+.p-setting-content { padding:28px 30px 24px;min-width:0; }
+.p-setting-content h2 { font-size:23px;line-height:1.3;font-weight:500; }
+.p-setting-content>p { color:var(--p-muted);font-size:12px;margin-top:7px; }
+.p-fieldset { margin-top:28px; }
+.p-fieldset h3 { font-size:12px;color:var(--p-muted);font-weight:500;padding-bottom:5px; }
+.p-row { display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 0;min-height:58px;border-bottom:1px solid var(--p-line); }
+.p-row>div { min-width:0; }
+.p-row small { display:block;color:var(--p-muted);font-size:12px;margin-top:3px; }
+.p-row select { max-width:55%;min-width:0;border:1px solid var(--p-line);border-radius:6px;background:var(--p-surface);padding:6px 24px 6px 9px; }
+.p-row input[type="checkbox"] { width:17px;height:17px;accent-color:var(--p-ink);flex:none; }
+.p-secondary { background:var(--p-surface);border:1px solid var(--p-line);border-radius:7px;padding:6px 11px;white-space:nowrap; }
+.p-link { padding:0;border:0;background:transparent;text-align:left;text-decoration:underline;text-underline-offset:3px; }
+.p-footer { display:flex;align-items:center;gap:10px;justify-content:space-between;margin-top:26px;color:var(--p-muted);font-size:12px; }
+.p-footer .p-link { font-size:12px; }
+.p-setting-content details { margin-top:24px; }
+.p-setting-content summary { cursor:pointer;color:var(--p-muted); }
+.p-setting-content details p { margin-top:12px;color:var(--p-muted);font-size:12px; }
+.p-local-status { color:var(--p-green);min-height:20px;font-size:12px;margin-top:13px; }
+.p-back { display:flex;align-items:center;gap:6px;border:0;border-radius:7px;background:transparent;padding:5px 9px; }
+.p-window-name { margin:auto; }
+.p-single-window .p-settings-body { min-height:710px; }
+.p-single-window .p-setting-content { padding:36px 7%; }
+.p-empty-search { color:var(--p-muted);padding:9px;font-size:12px; }
+@media(max-width:760px) { .p-brand { display:none; }.p-chrome { gap:9px;padding:10px 12px; }.p-chrome nav { margin-left:auto; }.p-toplink { padding:7px; }.p-settings { width:calc(100% - 32px); }.p-setting-content { padding:23px 20px; }.p-demo { --p-nav-width:145px; } }
+@media(max-width:560px) { .p-demo,.p-workspace,.p-single-window { min-height:1000px; }.p-settings { width:calc(100% - 16px);margin-top:82px; }.p-settings-body { grid-template-columns:minmax(0,1fr); }.p-categories { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;padding:12px;border-right:0;border-bottom:1px solid var(--p-line);border-radius:0; }.p-search { grid-column:1/-1;margin:0 0 6px; }.p-category { padding:9px 6px;font-size:13px;white-space:normal; }.p-category svg { width:15px; }.p-setting-content { padding:24px 18px; }.p-single-window .p-setting-content { padding:24px 18px; }.p-single-window .p-settings-body { min-height:0; }.p-home { padding:42px 20px; }.p-home h2 { font-size:25px; }.p-dots { gap:4px; }.p-dots b { width:7px;height:7px; }.p-toplink { font-size:12px;padding:6px; }.p-chrome { gap:6px; }.p-row { gap:10px; }.p-row select { max-width:52%; }.p-recent>div { flex-wrap:wrap; }.p-recent>div>span:last-child { margin-left:29px; }.p-window-name { display:none; } }
+@media(prefers-reduced-motion:no-preference) { .p-category,.p-toplink,.p-icon { transition:background-color .15s ease; } }
+</style>
+<script>
+(() => {
+  const groups = [
+    { id:'general', name:'通用', icon:'sliders-horizontal', intro:'语言、外观和应用更新', sections:[{title:'界面',rows:[{label:'语言',select:['简体中文','English','跟随系统']},{label:'外观',select:['跟随系统','浅色','深色']} ]},{title:'关于',rows:[{label:'InterviewHacker',detail:'版本 2.3.1',action:'检查更新'}]}], advanced:'使用指南、版本说明和诊断入口都可以从帮助菜单找到。' },
+    { id:'recording',name:'声音与记录',icon:'audio-lines',intro:'决定听取哪些声音，以及如何留下记录',sections:[{title:'声音',rows:[{label:'声音来源',select:['电脑声音和麦克风','仅电脑声音','现场麦克风']},{label:'识别语言',select:['自动识别中英文','中文','English']},{label:'识别方式',detail:'在本机识别，无需连接 AI',select:['本机识别','系统识别','云端识别']}]},{title:'记录习惯',rows:[{label:'区分说话人',check:true},{label:'无人说话时提醒结束',check:true}]}],advanced:'可在这里准备语音组件、录入自己的声音，或调整识别精度。' },
+    { id:'ai',name:'AI 与资料',icon:'sparkles',intro:'需要回答或整理资料时，再进行配置',sections:[{title:'AI 回答',rows:[{label:'回答服务',detail:'可稍后连接，不影响记录',action:'连接服务'},{label:'回答长度',select:['简洁','详细']},{label:'需要最新信息时联网',check:false}]},{title:'资料',rows:[{label:'读取方式',detail:'优先读取文字，扫描页按需识别',select:['自动','本机增强识别']},{label:'术语与人名',action:'管理'}]}],advanced:'高级：服务地址、模型参数、自定义指令与技能。本机组件仅在需要时准备。' },
+    { id:'notes',name:'纪要',icon:'notebook-pen',intro:'把讨论整理成可以核对和继续推进的内容',sections:[{title:'整理方式',rows:[{label:'结束后自动整理',check:true},{label:'纪要语言',select:['跟随界面','中文','English']},{label:'组会默认模板',select:['研究进展与反馈','通用纪要','自定义模板']}]},{title:'模板',rows:[{label:'研究进展与反馈',detail:'进展、导师意见、待验证问题、下一步实验',action:'编辑模板'}]}],advanced:'可分别设置课程、汇报和讨论的模板。更换模板不会覆盖个人笔记。' },
+    { id:'display',name:'浮窗与快捷键',icon:'captions',intro:'在会中以舒服的方式查看和操作',sections:[{title:'会中显示',rows:[{label:'回答浮窗',check:false},{label:'字幕条字号',select:['标准','较大','大']},{label:'手机伴侣',detail:'按需连接手机查看当前内容',action:'连接'}]},{title:'键盘操作',rows:[{label:'全局快捷键',detail:'暂停、回答、截图等操作',action:'查看'}]}],advanced:'更多显示选项：浮窗位置、鼠标穿透、共享可见性与字幕条外观。' },
+    { id:'data',name:'数据与隐私',icon:'shield-check',intro:'知道内容存在哪里，以及如何恢复',sections:[{title:'保存与恢复',rows:[{label:'自动备份',check:true},{label:'备份与恢复',detail:'导入前预览内容冲突，默认保留本机',action:'打开'}]},{title:'隐私',rows:[{label:'系统权限',detail:'麦克风、系统音频与截图权限',action:'查看'},{label:'资料与录音',detail:'本机保存转写与笔记，不保留原始录音'}]}],advanced:'诊断与修复：组件检查、本机签名、日志与环境维护。' }
+  ];
+  const saved = globalThis.openai?.widgetState;
+  const defaults = { windowGroup:saved?.modelContent?.windowGroup || 'general', pageGroup:saved?.modelContent?.pageGroup || 'general' };
+  function setup(id, mode) {
+    const root = document.getElementById(id);
+    const state = { category:defaults[mode+'Group'], open:true, navWidth:160 };
+    const formValues = {};
+    const sidebar = root.querySelector('.p-categories');
+    const content = root.querySelector('.p-setting-content');
+    const settings = root.querySelector('[data-settings]');
+    const home = root.querySelector('[data-home]');
+    sidebar.innerHTML = '<label class="p-search"><i data-lucide="search" aria-hidden="true"></i><input type="search" aria-label="搜索设置" placeholder="搜索设置"></label><div data-category-list style="display:contents"></div>';
+    function remember() {
+      if (!globalThis.openai?.setWidgetState) return;
+      const modelContent = { ...(globalThis.openai.widgetState?.modelContent || {}), [mode+'Group']:state.category };
+      globalThis.openai.setWidgetState({modelContent,privateContent:null}).catch(()=>{});
+    }
+    const escape = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function renderNav(filter='') {
+      const list = sidebar.querySelector('[data-category-list]');
+      const term=filter.trim().toLowerCase();
+      const matches=groups.filter(g=>!term || (g.name+g.intro+g.sections.map(s=>s.rows.map(r=>r.label).join('')).join('')+g.advanced).toLowerCase().includes(term));
+      list.innerHTML=matches.length ? matches.map(g=>'<button type="button" class="p-category" data-group="'+g.id+'" aria-pressed="'+(g.id===state.category)+'"><i data-lucide="'+g.icon+'" aria-hidden="true"></i><span>'+g.name+'</span></button>').join('') : '<span class="p-empty-search">没有找到相关设置</span>';
+      if(globalThis.lucide) lucide.createIcons({attrs:{width:17,height:17}});
+    }
+    function renderContent() {
+      const group = groups.find(g=>g.id===state.category) || groups[0];
+      content.innerHTML='<h2>'+group.name+'</h2><p>'+group.intro+'</p>'+group.sections.map(section=>'<section class="p-fieldset"><h3>'+section.title+'</h3>'+section.rows.map((row,index)=>{
+        const key=group.id+'-'+section.title+'-'+index;
+        let control='';
+        if(row.select) control='<select data-field="'+key+'" aria-label="'+row.label+'">'+row.select.map(v=>'<option'+(formValues[key]===v?' selected':'')+'>'+escape(v)+'</option>').join('')+'</select>';
+        if('check' in row) control='<input type="checkbox" data-field="'+key+'" aria-label="'+row.label+'" '+((key in formValues?formValues[key]:row.check)?'checked':'')+'>';
+        if(row.action) control='<button type="button" class="p-secondary" data-action="'+escape(row.label)+'">'+row.action+'</button>';
+        return '<div class="p-row"><div><span>'+row.label+'</span>'+(row.detail?'<small>'+row.detail+'</small>':'')+'</div>'+control+'</div>';
+      }).join('')+'</section>').join('')+'<details><summary>更多选项</summary><p>'+group.advanced+'</p></details><div class="p-local-status" role="status"></div><footer class="p-footer"><button type="button" class="p-link" data-help>帮助与使用指南</button><span>更改自动保存</span></footer>';
+    }
+    renderNav();renderContent();
+    sidebar.addEventListener('input',e=>{ if(e.target.type==='search') renderNav(e.target.value); });
+    sidebar.addEventListener('click',e=>{const button=e.target.closest('[data-group]');if(!button)return;state.category=button.dataset.group;renderNav(sidebar.querySelector('input').value);renderContent();remember();});
+    content.addEventListener('change',event=>{
+      if(event.target.dataset.field) formValues[event.target.dataset.field]=event.target.type==='checkbox'?event.target.checked:event.target.value;
+      if(event.target.dataset.field==='general-界面-1') root.style.colorScheme=event.target.value==='浅色'?'light':event.target.value==='深色'?'dark':'';
+      content.querySelector('[role="status"]').textContent='已更新此设置';
+    });
+    content.addEventListener('click',e=>{
+      const button=e.target.closest('[data-action], [data-help]');if(!button)return;
+      const status=content.querySelector('[role="status"]');
+      if(button.dataset.action==='InterviewHacker') status.textContent='当前版本已是最新';
+      else if(button.dataset.action==='回答服务') {
+        const detail=content.querySelector('details');detail.open=true;
+        status.textContent='可通过 API 或已有账号连接服务';
+      } else if(button.hasAttribute('data-help')) {content.querySelector('details').open=true;status.textContent='已展开本页的更多说明';}
+      else {content.querySelector('details').open=true;status.textContent='已展开相关选项';}
+    });
+    function setOpen(value) {
+      state.open=value;settings.hidden=!value;
+      if(mode==='page') {
+        home.hidden=value;
+        root.querySelector('[data-back]').hidden=!value;
+        root.querySelector('.p-window-name').textContent=value?'设置':'研究工作区';
+        root.querySelector('.p-setting-title [data-open]').hidden=value;
+      }
+    }
+    root.querySelectorAll('[data-open]').forEach(button=>button.addEventListener('click',()=>setOpen(true)));
+    root.querySelectorAll('[data-close],[data-back]').forEach(button=>button.addEventListener('click',()=>setOpen(false)));
+    root.querySelectorAll('[data-route]').forEach(button=>button.addEventListener('click',()=>{
+      setOpen(false);
+      root.querySelectorAll('[data-route]').forEach(b=>b.removeAttribute('aria-current'));
+      button.setAttribute('aria-current','page');
+      const route=button.dataset.route;
+      home.querySelector('h2').textContent=route==='首页'?'讨论之后，知道下一步':route==='记录'?'找回讨论中的原话与笔记':'让同一项研究接着往下走';
+    }));
+    root.querySelectorAll('[data-prepare]').forEach(button=>button.addEventListener('click',()=>{home.querySelector('h2').textContent='准备下一场组会';home.querySelector('p').textContent='选择声音来源与本场资料，即可开始。';button.textContent='声音与记录设置';button.onclick=()=>{state.category='recording';renderNav();renderContent();setOpen(true);};}));
+    if(globalThis.Tweak) {
+      const tweak = new Tweak({container:root,onChange:()=>root.style.setProperty('--p-nav-width',state.navWidth+'px')});
+      tweak.addSlider(state,'navWidth',{label:'设置目录宽度',min:145,max:190,step:5,unit:'px'});
+    }
+    return { restore(category) {
+      if (!groups.some(group=>group.id===category)) return;
+      state.category=category;
+      renderNav(sidebar.querySelector('input').value);
+      renderContent();
+    } };
+  }
+  const a=setup('academic-settings-window','window');
+  const b=setup('academic-settings-page','page');
+  window.addEventListener('openai:set_globals',event=>{
+    const restored=event.detail?.globals?.widgetState?.modelContent;
+    if(!restored)return;
+    if(restored.windowGroup) a.restore(restored.windowGroup);
+    if(restored.pageGroup) b.restore(restored.pageGroup);
+  });
+})();
+</script>

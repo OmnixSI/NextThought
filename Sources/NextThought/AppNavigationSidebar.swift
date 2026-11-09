@@ -5,8 +5,8 @@ struct AppNavigationBar: View {
     static let foldersSidebarKey = "foldersContextSidebarHidden"
 
     @Environment(AppState.self) private var state
-    @AppStorage(AppNavigationBar.meetingsSidebarKey, store: UserDefaults.standard) private var meetingsSidebarHidden = false
-    @AppStorage(AppNavigationBar.foldersSidebarKey, store: UserDefaults.standard) private var foldersSidebarHidden = false
+    @AppStorage(AppNavigationBar.meetingsSidebarKey, store: AppPreferences.standard) private var meetingsSidebarHidden = false
+    @AppStorage(AppNavigationBar.foldersSidebarKey, store: AppPreferences.standard) private var foldersSidebarHidden = false
     private var updater: Updater { Updater.shared }
 
     private var showsContextSidebarToggle: Bool {
@@ -60,11 +60,8 @@ struct AppNavigationBar: View {
                     .accessibilityIdentifier("appNavigation.toggleContextSidebar")
                     .help(contextSidebarHidden ? "显示当前栏目侧栏" : "隐藏当前栏目侧栏")
                     .disabled(state.isRunning)
-                } else {
-                    Color.clear.frame(height: 36).accessibilityHidden(true)
                 }
             }
-            .frame(width: 108, alignment: .trailing)
 
             if updater.phase == .ready, let available = updater.available {
                 Button { updater.installAndRelaunch() } label: {
@@ -75,7 +72,15 @@ struct AppNavigationBar: View {
                 .help(state.isRunning ? "停止辅助后再安装 \(available.displayVersion)" : "安装 \(available.displayVersion) 并重新打开")
             }
 
-            navigationButton(.settings)
+            Button { state.openSettingsFromMenu() } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 15)).frame(width: 36, height: 36)
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(NavigationTopButtonStyle())
+            .accessibilityLabel("设置")
+            .accessibilityIdentifier("appNavigation.settings")
+            .help("设置（⌘,）")
         }
         .padding(.horizontal, 18)
         .frame(maxWidth: .infinity, minHeight: 54, maxHeight: 54, alignment: .leading)
@@ -124,5 +129,27 @@ private struct NavigationTopButtonStyle: ButtonStyle {
                 .onHover { hovering = $0 }
                 .animation(Motion.hover, value: hovering)
         }
+    }
+}
+
+/// Native selection rows expose one accessible destination per row.
+struct AppNavigationSidebar: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        List(selection: Binding<AppSection?>(
+            get: { state.section },
+            set: { if let section = $0 { state.select(section) } }
+        )) {
+            ForEach(AppSection.allCases) { section in
+                Label(section.title, systemImage: section.symbol)
+                    .font(Typo.label)
+                    .frame(minHeight: 32)
+                    .tag(section)
+                    .accessibilityLabel(section.title)
+                    .accessibilityIdentifier("appNavigation.\(section.rawValue)")
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("NextThought")
     }
 }

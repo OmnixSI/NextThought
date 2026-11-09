@@ -94,112 +94,40 @@ enum UI {
 
 /// Primary action: ink fill, on-ink text, radius 6. One per area at most.
 struct PrimaryButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.liveSessionAcceptanceButtonInteraction) private var acceptanceInteraction
     var height: CGFloat = UI.controlHeight
     var scalesWithDynamicType = false
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(scalesWithDynamicType
-                  ? Font.body.weight(.medium)
-                  : .system(size: height >= Space.controlLarge ? 14 : 13, weight: .medium))
-            .lineLimit(1)
-            .foregroundStyle(isEnabled ? Ink.onInk : Ink.tertiary)
-            .padding(.horizontal, height >= Space.controlLarge ? 20 : 14)
-            .frame(minWidth: Hit.minHeight)
-            .frame(minHeight: scalesWithDynamicType ? max(height, Hit.minHeight) : nil)
-            .frame(height: scalesWithDynamicType ? nil : max(height, Hit.minHeight))
-            .background(isEnabled ? Ink.ink : Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .opacity(configuration.isPressed || acceptanceInteraction == .pressed ? 0.85 : 1)
-            .overlay {
-                RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
-                    .strokeBorder(acceptanceInteraction == .focused ? Ink.focus : Color.clear, lineWidth: 2)
-                    .allowsHitTesting(false)
-            }
-            .animation(Motion.hover, value: configuration.isPressed)
+        ControlButtonBody(configuration: configuration,
+                          emphasis: configuration.role == .destructive ? .destructive : .primary,
+                          height: height, horizontalPadding: height >= Space.controlLarge ? 20 : 14,
+                          scalesWithDynamicType: scalesWithDynamicType)
     }
 }
 
-/// Secondary action: sunken fill, ink text.
 struct SecondaryButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.liveSessionAcceptanceButtonInteraction) private var acceptanceInteraction
     var scalesWithDynamicType = false
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(scalesWithDynamicType ? Font.body.weight(.medium) : Typo.label)
-            .lineLimit(1)
-            .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary)
-            .padding(.horizontal, 12)
-            .frame(minWidth: Hit.minHeight)
-            .frame(minHeight: scalesWithDynamicType ? max(UI.controlHeight, Hit.minHeight) : nil)
-            .frame(height: scalesWithDynamicType ? nil : max(UI.controlHeight, Hit.minHeight))
-            .background(configuration.isPressed || acceptanceInteraction == .hover || acceptanceInteraction == .pressed
-                        ? Ink.hover : Ink.sunken,
-                        in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
-                    .strokeBorder(acceptanceInteraction == .focused ? Ink.focus : Color.clear, lineWidth: 2)
-                    .allowsHitTesting(false)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .animation(Motion.hover, value: configuration.isPressed)
+        ControlButtonBody(configuration: configuration, emphasis: .secondary,
+                          height: UI.controlHeight, scalesWithDynamicType: scalesWithDynamicType)
     }
 }
 
-/// Compact button; `prominent` uses the ink fill.
 struct ChipButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
     var prominent = false
-    /// Kept for source compatibility (every chip is opaque now).
     var opaque = false
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 12.5, weight: .medium))
-            .lineLimit(1)
-            .padding(.horizontal, 10)
-            .frame(minWidth: Hit.minHeight, minHeight: max(UI.chipHeight, Hit.minHeight))
-            .foregroundStyle(isEnabled ? (prominent ? Ink.onInk : Ink.ink) : Ink.tertiary)
-            .modifier(ChipSurface(prominent: prominent && isEnabled, pressed: configuration.isPressed))
-            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .animation(Motion.hover, value: configuration.isPressed)
+        ControlButtonBody(configuration: configuration, emphasis: prominent ? .primary : .quiet,
+                          height: UI.chipHeight, horizontalPadding: 10)
     }
 }
 
-/// Square icon button: no fill until hovered; `tint` draws the ink fill (an "on" state).
-/// The button is never smaller than `Hit.icon`, whatever `size` asks for: the hover fill
-/// shows how far the clickable area reaches.
 struct GlassIconButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
     var size: CGFloat = Hit.icon
     var tint: Color? = nil
-    /// Kept for source compatibility.
     var opaque = false
     func makeBody(configuration: Configuration) -> some View {
-        IconBody(configuration: configuration, isEnabled: isEnabled, size: size, on: tint != nil)
-    }
-
-    private struct IconBody: View {
-        let configuration: ButtonStyleConfiguration
-        let isEnabled: Bool
-        let size: CGFloat
-        let on: Bool
-        @State private var hovering = false
-        var body: some View {
-            configuration.label
-                .font(.system(size: 13, weight: .regular))
-                .frame(width: max(size, Hit.icon), height: max(size, Hit.icon))
-                .foregroundStyle(isEnabled ? (on ? Ink.onInk : Ink.secondary) : Ink.tertiary)
-                .background(fill, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-                .contentShape(Rectangle())
-                .onHover { hovering = $0 }
-                .animation(Motion.hover, value: hovering)
-        }
-        private var fill: Color {
-            if on && isEnabled { return Ink.ink }
-            return (hovering || configuration.isPressed) && isEnabled ? Ink.hover : Color.clear
-        }
+        ControlButtonBody(configuration: configuration, emphasis: tint == nil ? .quiet : .primary,
+                          height: size, iconOnly: true)
     }
 }
 
@@ -214,33 +142,7 @@ struct AnyButtonStyle: ButtonStyle {
 struct PillTabs<Value: Hashable>: View {
     let items: [(value: Value, title: String)]
     @Binding var selection: Value
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                let selected = item.value == selection
-                Button { selection = item.value } label: {
-                    Text(LocalizedStringKey(item.title))
-                        .font(Typo.label)
-                        .lineLimit(1).fixedSize()
-                        .foregroundStyle(selected ? Ink.ink : Ink.secondary)
-                        .padding(.horizontal, 12)
-                        .frame(minWidth: Hit.minHeight, minHeight: UI.chipHeight - 4)
-                        .background {
-                            if selected {
-                                RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Ink.surface)
-                                    .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 0.5))
-                            }
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(2)
-        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-        .animation(Motion.expand, value: selection)
-    }
+    var body: some View { UnderlineTabs(items: items, selection: $selection) }
 }
 
 /// Soft scroll edge: content fades into the paper under a bar.
@@ -280,17 +182,57 @@ private struct ChipSurface: ViewModifier {
 /// Drop-down picker built on `Menu`, with our own label so text colors follow the
 /// paper theme in both appearances.
 struct MenuPicker<Value: Hashable>: View {
+    @Environment(\.settingsNativeControls) private var settingsNativeControls
     var title: String? = nil
     @Binding var selection: Value
     let options: [(Value, String)]
     var placeholder = "请选择"
     var localizesOptions = false
+    var accessibilityTitle: String? = nil
 
     private func optionText(_ value: String) -> Text {
         localizesOptions ? Text(LocalizedStringKey(value)) : Text(verbatim: value)
     }
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if settingsNativeControls {
+            HStack(spacing: 16) {
+                if let title {
+                    Text(LocalizedStringKey(title)).font(Typo.label)
+                    Spacer(minLength: 16)
+                }
+                Menu {
+                    ForEach(options.indices, id: \.self) { index in
+                        let option = options[index]
+                        Button { selection = option.0 } label: {
+                            if option.0 == selection {
+                                Label { optionText(option.1) } icon: { Image(systemName: "checkmark") }
+                            } else { optionText(option.1) }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        optionText(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
+                            .lineLimit(1).truncationMode(.middle)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .medium)).foregroundStyle(Ink.secondary)
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .contentShape(RoundedRectangle(cornerRadius: ControlMetrics.radius))
+                }
+                .menuStyle(.button).buttonStyle(SettingsValueMenuStyle())
+                .menuIndicator(.hidden)
+                .disabled(options.isEmpty)
+                .frame(maxWidth: 260, alignment: .trailing)
+                .accessibilityLabel(Text(LocalizedStringKey(accessibilityTitle ?? title ?? placeholder)))
+                .accessibilityValue(Text(options.first(where: { $0.0 == selection })?.1 ?? placeholder))
+            }
+        } else {
+            legacyPicker
+        }
+    }
+
+    private var legacyPicker: some View {
         HStack(spacing: 8) {
             if let title { Text(LocalizedStringKey(title)) }
             Menu {
@@ -309,21 +251,27 @@ struct MenuPicker<Value: Hashable>: View {
                     optionText(options.first(where: { $0.0 == selection })?.1 ?? placeholder)
                         .lineLimit(1)
                         .foregroundStyle(Ink.ink)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(Ink.secondary)
                 }
-                .font(.system(size: 12.5, weight: .medium))
-                .padding(.horizontal, 10).padding(.vertical, 6)
-                .frame(minHeight: Hit.minHeight)
-                .glassCapsule()
+                .font(.system(size: 13, weight: .medium))
                 .contentShape(Rectangle())
             }
             .menuStyle(.button)
-            .buttonStyle(.plain)
+            .buttonStyle(SecondaryButtonStyle())
             .menuIndicator(.hidden)
+            .disabled(options.isEmpty)
+            .accessibilityLabel(Text(LocalizedStringKey(accessibilityTitle ?? title ?? placeholder)))
             .fixedSize()
         }
+    }
+}
+
+/// Quiet value selectors: the setting stays readable; chrome appears on interaction.
+private struct SettingsValueMenuStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        ControlButtonBody(configuration: configuration, emphasis: .quiet, horizontalPadding: 10)
     }
 }
 

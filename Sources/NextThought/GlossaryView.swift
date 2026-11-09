@@ -53,6 +53,7 @@ struct GlossaryView: View {
     @State private var pasteKind: GlossaryKind = .term
     @State private var status = ""
     @FocusState private var canonicalFocused: Bool
+    @FocusState private var variantsFocused: Bool
 
     private var entries: [GlossaryEntry] { state.glossaryEntries(in: scope) }
 
@@ -83,7 +84,7 @@ struct GlossaryView: View {
         .padding(Space.s6)
         .frame(minWidth: 780, idealWidth: 820, minHeight: 540, idealHeight: 580)
         .background(Ink.paper)
-        .onDisappear { state.tidyGlossaries() }
+        .onDisappear { finishVariants(); state.tidyGlossaries() }
         .onChange(of: draft) { _, next in commit(next) }
         .onChange(of: scope) { _, _ in
             selectedID = nil; mode = .edit; filter = ""; status = ""
@@ -97,7 +98,10 @@ struct GlossaryView: View {
             HStack {
                 Text("术语和人名").font(Typo.section)
                 Spacer()
-                Button("完成") { dismiss() }.buttonStyle(PrimaryButtonStyle())
+                Button("完成") {
+                    if mode == .paste, !pasteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { importPasted() }
+                    finishVariants(); dismiss()
+                }.buttonStyle(PrimaryButtonStyle())
                     .keyboardShortcut(.defaultAction)
             }
             Text("名字和术语在转写、回答、纪要里写法统一；记下听错的写法，搜索时一并找出来。原始转写不会被改写。")
@@ -108,8 +112,8 @@ struct GlossaryView: View {
     private var toolbar: some View {
         HStack(spacing: Space.s2) {
             if !state.workspaces.workspaces.isEmpty {
-                InkSegmented(items: [(value: GlossaryScope.global, title: "全局"), (value: GlossaryScope.series, title: "当前系列")],
-                             selection: $scope)
+                InkSegmented(items: [(value: GlossaryScope.global, title: LocalizedStringKey("全局")), (value: GlossaryScope.series, title: LocalizedStringKey("当前系列"))],
+                             selection: Binding(get: { scope }, set: { next in finishVariants(); scope = next }))
                     .fixedSize()
             }
             HStack(spacing: 6) {
@@ -213,7 +217,9 @@ struct GlossaryView: View {
                         }
                         TextField("识别出来的错误写法，回车或逗号分隔后加入", text: $variantInput)
                             .textFieldStyle(.plain).fieldSurface()
+                            .focused($variantsFocused)
                             .onSubmit { addVariants() }
+                            .onChange(of: variantsFocused) { _, focused in if !focused { finishVariants() } }
                             .onChange(of: variantInput) { _, text in
                                 if text.contains(where: { ",，、;；".contains($0) }) { addVariants() }
                             }
@@ -292,6 +298,7 @@ struct GlossaryView: View {
     // MARK: Actions
 
     private func select(_ entry: GlossaryEntry) {
+        finishVariants()
         mode = .edit
         selectedID = entry.id
         draft = entry
@@ -300,6 +307,7 @@ struct GlossaryView: View {
     }
 
     private func startNew() {
+        finishVariants()
         let entry = GlossaryEntry(canonical: "")
         mode = .edit
         selectedID = entry.id
@@ -329,6 +337,12 @@ struct GlossaryView: View {
             .filter { $0.count >= 2 && $0 != draft.canonical }
         for part in parts where !draft.variants.contains(part) { draft.variants.append(part) }
         variantInput = ""
+    }
+
+    private func finishVariants() {
+        guard selectedID != nil else { return }
+        addVariants()
+        commit(draft)
     }
 
     private func deleteSelected() {

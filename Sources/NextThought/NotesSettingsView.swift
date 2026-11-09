@@ -6,6 +6,7 @@ import NextThoughtCore
 struct NotesSettingsView: View {
     @Environment(AppState.self) private var state
     @State private var editing: NotesTemplate?
+    @State private var deleting: NotesTemplate?
 
     var body: some View {
         @Bindable var state = state
@@ -20,7 +21,7 @@ struct NotesSettingsView: View {
                 }
                 if state.answerBackend == .openAICompatible {
                     TextField("模型 ID（留空时与回答模型相同）", text: $state.notesModelID)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(PaperTextFieldStyle())
                         .onChange(of: state.notesModelID) { _, _ in state.saveNotesSettings() }
                 } else {
                     MenuPicker(title: "模型", selection: $state.notesModelID, options: modelOptions)
@@ -44,13 +45,19 @@ struct NotesSettingsView: View {
             }
         } right: {
             SettingsSection(title: "各类型的默认模板", icon: "list.bullet.rectangle") {
-                ForEach(SessionMode.builtIn) { mode in
-                    HStack(spacing: 12) {
-                        Text(verbatim: mode.displayName).frame(width: 150, alignment: .leading)
-                        MenuPicker(selection: Binding(get: { state.defaultNotesTemplateID(for: mode) },
-                                                      set: { state.setDefaultNotesTemplate($0, for: mode) }),
-                                   options: state.allNotesTemplates().map { ($0.id, $0.name) })
-                        Spacer(minLength: 0)
+                VStack(spacing: 0) {
+                    ForEach(SessionMode.builtIn) { mode in
+                        if mode != SessionMode.builtIn.first { Divider() }
+                        HStack(spacing: 20) {
+                            Text(verbatim: mode.displayName).font(Typo.label)
+                            Spacer(minLength: 12)
+                            MenuPicker(selection: Binding(get: { state.defaultNotesTemplateID(for: mode) },
+                                                          set: { state.setDefaultNotesTemplate($0, for: mode) }),
+                                       options: state.allNotesTemplates().map { ($0.id, $0.name) })
+                                .accessibilityLabel(Text(mode.displayName + " · " + String(localized: "默认模板")))
+                                .accessibilityIdentifier("settings.template." + mode.rawValue)
+                        }
+                        .frame(minHeight: 42)
                     }
                 }
                 Hint("纪要页的“模板”菜单可以给单场会议换个模板重新整理。")
@@ -68,8 +75,12 @@ struct NotesSettingsView: View {
                         Text(verbatim: template.name).fontWeight(.medium)
                         Text("\(template.sections.count) 个部分").foregroundStyle(Ink.secondary)
                         Spacer()
-                        Button("编辑") { editing = template }.buttonStyle(ChipButtonStyle())
-                        Button("删除") { state.deleteNotesTemplate(template.id) }.buttonStyle(ChipButtonStyle())
+                        Button("编辑") { editing = template }.buttonStyle(SecondaryButtonStyle())
+                        Button(role: .destructive) { deleting = template } label: {
+                            Text("删除").foregroundStyle(Ink.live)
+                        }
+                        .buttonStyle(GhostButtonStyle())
+                        .accessibilityLabel(Text("删除模板“\(template.name)”"))
                     }
                 }
                 Menu("从模板复制…") {
@@ -84,10 +95,25 @@ struct NotesSettingsView: View {
             NotesTemplateEditor(template: template)
                 .environment(state)
         }
+        .confirmationDialog("删除模板“\(deleting?.name ?? "")”？", isPresented: Binding(
+            get: { deleting != nil },
+            set: { if !$0 { deleting = nil } }
+        ), titleVisibility: .visible) {
+            Button("删除模板", role: .destructive) {
+                if let deleting { state.deleteNotesTemplate(deleting.id) }
+                deleting = nil
+            }
+            Button("取消", role: .cancel) { deleting = nil }
+                .keyboardShortcut(.defaultAction)
+        } message: {
+            Text("删除后不能再选择此模板。使用它的默认设置将恢复为各类型的内置模板，已经生成的纪要不会被删除。")
+        }
     }
 
     private var modelOptions: [(String, String)] {
-        var options: [(String, String)] = [("", String(localized: "自动 · \(state.notesEngine.model)"))]
+        let automaticTitle = state.notesEngine.model.isEmpty ? String(localized: "自动选择可用模型")
+            : String(localized: "自动 · \(state.notesEngine.model)")
+        var options: [(String, String)] = [("", automaticTitle)]
         options += state.codexModels.map { ($0.id, $0.name) }
         if !state.notesModelID.isEmpty, !state.codexModels.contains(where: { $0.id == state.notesModelID }) {
             options.append((state.notesModelID, state.notesModelID))
@@ -98,49 +124,121 @@ struct NotesSettingsView: View {
     private var effortOptions: [(String, String)] {
         let model = state.notesEngine.model
         let efforts = state.codexModels.first { $0.id == model }?.efforts ?? ["low", "medium", "high"]
-        var options = efforts.map { ($0, $0) }
+        var options = efforts.map { value in
+            let title: String = switch value {
+            case "low": String(localized: "低")
+            case "medium": String(localized: "中")
+            case "high": String(localized: "高")
+            case "xhigh": String(localized: "更高")
+            default: value
+            }
+            return (value, title)
+        }
         if !efforts.contains(state.notesReasoning) { options.append((state.notesReasoning, state.notesReasoning)) }
         return options
     }
 }
 
 /// Edits a custom template: its name and, per section, a name and one requirement.
+private enum NotesTemplateEditorField: Hashable {
+    case name
+    case sectionTitle(String)
+    case addSection
+}
+
 private struct NotesTemplateEditor: View {
     @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
     @State var template: NotesTemplate
+    @State private var attemptedSave = false
+    @State private var saveFailure: String?
+    @FocusState private var focusedField: NotesTemplateEditorField?
+
+    private var nameIsEmpty: Bool { template.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("编辑模板").font(Typo.section)
-            TextField("模板名称", text: $template.name).textFieldStyle(.roundedBorder)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(template.sections) { section in
-                        SectionEditor(section: binding(for: section.id)) {
-                            template.sections.removeAll { $0.id == section.id }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("模板名称").font(Typo.label)
+                TextField("例如：每周组会", text: $template.name)
+                    .textFieldStyle(PaperTextFieldStyle())
+                    .accessibilityLabel("模板名称")
+                    .accessibilityHint(attemptedSave && nameIsEmpty ? Text("请填写模板名称。") : Text(""))
+                    .accessibilityIdentifier("notes.template.name")
+                    .focused($focusedField, equals: .name)
+                if attemptedSave && nameIsEmpty {
+                    validationMessage("请填写模板名称。")
+                }
+            }
+            ScrollViewReader { scroll in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(template.sections) { section in
+                            SectionEditor(section: binding(for: section.id), validatesTitle: attemptedSave,
+                                          focusedField: $focusedField) {
+                                template.sections.removeAll { $0.id == section.id }
+                            }
+                            .id(section.id)
                         }
                     }
                 }
+                .onChange(of: focusedField) { _, field in
+                    if case let .sectionTitle(id)? = field { scroll.scrollTo(id, anchor: .center) }
+                }
+            }
+            if attemptedSave && template.sections.isEmpty {
+                validationMessage("请至少添加一个部分。")
+            }
+            if let saveFailure {
+                Text(verbatim: saveFailure).font(Typo.caption).foregroundStyle(Ink.caution)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 Button("添加一部分") {
-                    template.sections.append(NotesSectionSpec(id: UUID().uuidString, title: "", instruction: ""))
+                    let section = NotesSectionSpec(id: UUID().uuidString, title: "", instruction: "")
+                    template.sections.append(section)
+                    focusedField = .sectionTitle(section.id)
                 }
                 .buttonStyle(SecondaryButtonStyle())
+                .focused($focusedField, equals: .addSection)
                 Spacer()
-                Button("取消") { dismiss() }.buttonStyle(SecondaryButtonStyle())
-                Button("保存") {
-                    template.sections.removeAll { $0.title.trimmingCharacters(in: .whitespaces).isEmpty }
-                    state.updateNotesTemplate(template)
-                    dismiss()
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(template.name.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button("取消", role: .cancel) { dismiss() }
+                    .buttonStyle(GhostButtonStyle()).keyboardShortcut(.cancelAction)
+                Button("保存", action: save)
+                    .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
             }
         }
         .padding(20)
         .frame(width: 600, height: 560)
+    }
+
+    private func validationMessage(_ message: LocalizedStringKey) -> some View {
+        Text(message).font(Typo.caption).foregroundStyle(Ink.caution)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func save() {
+        attemptedSave = true
+        saveFailure = nil
+        guard !nameIsEmpty else { focusedField = .name; return }
+        guard !template.sections.isEmpty else { focusedField = .addSection; return }
+        if let section = template.sections.first(where: { $0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+            focusedField = .sectionTitle(section.id)
+            return
+        }
+        // updateNotesTemplate ignores a missing template. Keep this draft open
+        // unless the existing settings API actually accepts the full edit.
+        guard state.customNotesTemplates.contains(where: { $0.id == template.id }) else {
+            saveFailure = String(localized: "此模板已不存在，你的编辑仍保留在这里。请取消后重新选择模板。")
+            return
+        }
+        state.updateNotesTemplate(template)
+        guard state.customNotesTemplates.first(where: { $0.id == template.id }) == template else {
+            saveFailure = String(localized: "未能保存模板，你的编辑仍保留在这里。请重试。")
+            return
+        }
+        dismiss()
     }
 
     /// Looks the section up by id, so removing one never leaves a dangling binding.
@@ -154,12 +252,17 @@ private struct NotesTemplateEditor: View {
 
 private struct SectionEditor: View {
     @Binding var section: NotesSectionSpec
+    let validatesTitle: Bool
+    let focusedField: FocusState<NotesTemplateEditorField?>.Binding
     let onDelete: () -> Void
+
+    private var titleIsEmpty: Bool { section.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                TextField("部分名称，例如：风险", text: $section.title).textFieldStyle(.roundedBorder)
+                Text("部分名称").font(Typo.label)
+                Spacer(minLength: 8)
                 switch section.kind {
                 case .items, .actions:
                     Toggle("待办格式（谁 · 什么时候）", isOn: Binding(get: { section.kind == .actions },
@@ -171,13 +274,29 @@ private struct SectionEditor: View {
                 case .questions:
                     Text("逐题回放").font(Typo.caption).foregroundStyle(Ink.secondary)
                 }
-                Button(action: onDelete) { Image(systemName: "minus.circle") }
-                    .buttonStyle(.borderless)
+                Button(role: .destructive, action: onDelete) {
+                    Image(systemName: "minus.circle").foregroundStyle(Ink.live)
+                }
+                    .buttonStyle(GhostButtonStyle())
+                    .accessibilityLabel(titleIsEmpty ? Text("删除这一部分") : Text("删除部分“\(section.title)”"))
                     .help("删除这一部分")
             }
-            TextField("给 AI 的要求，例如：列出可能导致延期的事，附原话", text: $section.instruction, axis: .vertical)
+            TextField("例如：下一步实验", text: $section.title)
+                .textFieldStyle(PaperTextFieldStyle())
+                .accessibilityLabel("部分名称")
+                .accessibilityHint(validatesTitle && titleIsEmpty ? Text("请填写部分名称；已写的要求会保留。") : Text(""))
+                .accessibilityIdentifier("notes.template.section.\(section.id).title")
+                .focused(focusedField, equals: .sectionTitle(section.id))
+            if validatesTitle && titleIsEmpty {
+                Text("请填写部分名称；已写的要求会保留。")
+                    .font(Typo.caption).foregroundStyle(Ink.caution)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Text("给 AI 的要求").font(Typo.label)
+            TextField("例如：列出下一步实验、对照与所需数据", text: $section.instruction, axis: .vertical)
                 .lineLimit(1...3)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(PaperTextFieldStyle())
+                .accessibilityLabel("给 AI 的要求")
             Toggle("这是“不足”的部分（答得不好、没讨论透、风险）", isOn: $section.isGap)
                 .font(Typo.caption)
         }

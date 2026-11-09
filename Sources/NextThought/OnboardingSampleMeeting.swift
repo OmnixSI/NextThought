@@ -30,35 +30,35 @@ enum OnboardingSample {
         let at: Double
     }
 
-    static let title = "Launch sync · 周四产品同步"
+    static var title: String { String(localized: "检索实验 · 周组会") }
     static let duration: Double = 34
 
-    static let lines: [Line] = [
-        Line(id: 0, speaker: .other, text: "OK, let's start with the onboarding revamp. 上周 beta 的数据你们看了吗？", at: 0.8),
-        Line(id: 1, speaker: .me, text: "看了。第一天留存 41%，比上一版高 6 个点，主要是权限那一步少掉了一半的人。", at: 5.0),
-        Line(id: 2, speaker: .other, text: "That's great. 那这周能把 API Key 的步骤也简化吗？客服一半的工单都是配置问题。", at: 10.5),
-        Line(id: 3, speaker: .me, text: "可以，我周三前给一版 prototype。Pricing page 要不要一起改？", at: 16.0),
-        Line(id: 4, speaker: .other, text: "先不动 pricing，Q4 review 之后再说。Can you send me the draft by Friday?", at: 21.0),
-        Line(id: 5, speaker: .me, text: "没问题，周五中午前发你。", at: 26.5),
-        Line(id: 6, speaker: .other, text: "Perfect. 下周二我们再 sync 一下 rollout 的节奏。", at: 29.5),
-    ]
+    static var lines: [Line] { [
+        Line(id: 0, speaker: .other, text: String(localized: "今天先看检索实验。上周加入重排之后，结果怎么样？"), at: 0.8),
+        Line(id: 1, speaker: .me, text: String(localized: "这组验证集上，Recall@10 从 72% 到了 78%，但候选数量也同时增加了。"), at: 5.0),
+        Line(id: 2, speaker: .other, text: String(localized: "那提升来自重排，还是更多候选？需要怎样的对照才能判断？"), at: 10.5),
+        Line(id: 3, speaker: .me, text: String(localized: "现在还不能确定。我会固定候选数量，再做一组去掉重排的消融。"), at: 16.0),
+        Line(id: 4, speaker: .other, text: String(localized: "好，还要记录延迟分布。平均值可能会掩盖长尾，别只报一个数字。"), at: 21.0),
+        Line(id: 5, speaker: .me, text: String(localized: "我周五前补齐消融和 P95 延迟，下次组会带上失败样例。"), at: 26.5),
+        Line(id: 6, speaker: .other, text: String(localized: "下一步再看结论能不能迁移到另一组数据，先别把这次提升写成确定结论。"), at: 29.5),
+    ] }
 
     /// The notes grow while the call goes on. Written in the interface language.
     static var takeaways: [Takeaway] {
         [
-            Takeaway(id: 0, kind: .decision, text: String(localized: "新手引导上线后，第一天留存 41%，比上一版高 6 个点"), at: 8.5),
-            Takeaway(id: 1, kind: .decision, text: String(localized: "配置步骤是客服工单的主要来源，约占一半"), at: 14.0),
-            Takeaway(id: 2, kind: .todo, text: String(localized: "我：周三前给出简化 API 步骤的原型"), at: 19.0),
-            Takeaway(id: 3, kind: .decision, text: String(localized: "定价页本季度不改，Q4 复盘后再议"), at: 24.0),
-            Takeaway(id: 4, kind: .todo, text: String(localized: "我：周五中午前把草稿发给对方"), at: 28.0),
-            Takeaway(id: 5, kind: .todo, text: String(localized: "下周二：再对一次上线节奏"), at: 32.0),
+            Takeaway(id: 0, kind: .decision, text: String(localized: "实验进展：Recall@10 从 72% 到 78%，候选数同时变化"), at: 8.5),
+            Takeaway(id: 1, kind: .decision, text: String(localized: "待验证：提升来自重排，还是更多候选？"), at: 14.0),
+            Takeaway(id: 2, kind: .todo, text: String(localized: "固定候选数，补充去掉重排的消融"), at: 19.0),
+            Takeaway(id: 3, kind: .decision, text: String(localized: "导师反馈：报告延迟分布，关注长尾"), at: 24.0),
+            Takeaway(id: 4, kind: .todo, text: String(localized: "周五前：补齐消融、P95 延迟与失败样例"), at: 28.0),
+            Takeaway(id: 5, kind: .todo, text: String(localized: "后续验证：换一组数据检查结论是否成立"), at: 32.0),
         ]
     }
 
     /// The question the other side asked, and the answer the app would offer.
     static var suggestion: Suggestion {
-        Suggestion(question: "那这周能把 API Key 的步骤也简化吗？",
-                   answer: String(localized: "可以。做法是预设常用服务商、自动填好地址，粘贴 Key 后一键检查。周三前能给出原型。"),
+        Suggestion(question: String(localized: "提升来自重排，还是更多候选？"),
+                   answer: String(localized: "目前不能区分。需要固定候选数量，对比有无重排；同时记录检索质量和延迟，再判断提升来源。"),
                    at: 13.0)
     }
 }
@@ -135,7 +135,7 @@ struct OnboardingSampleMeeting: View {
 
     private func suggestionBlock(_ suggestion: OnboardingSample.Suggestion) -> some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            AIHeading(title: "对方在问你")
+            AIHeading(title: "导师在追问 · 参考思路")
             Text(verbatim: suggestion.question)
                 .font(Typo.body).foregroundStyle(Ink.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -150,12 +150,12 @@ struct OnboardingSampleMeeting: View {
     private func notes(_ items: [OnboardingSample.Takeaway]) -> some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack {
-                AIHeading(title: "实时纪要")
+                AIHeading(title: "研究记录")
                 Spacer(minLength: 0)
                 SampleTag()
             }
             if items.isEmpty {
-                Text("听到结论和待办后，会在这里一条条记下来。")
+                Text("进展、尚缺的证据和下一步实验会在这里留下来。")
                     .font(Typo.caption).foregroundStyle(Ink.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

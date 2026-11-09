@@ -410,12 +410,37 @@ private struct WorkspaceList: View {
     var compact: Bool
     var editor: WorkspaceEditController
     @State private var deleting: Workspace?
+    @State private var query = ""
+    @AppStorage("projectLibrarySort", store: UserDefaults.standard) private var sortRaw = "recent"
+    @AppStorage("pinnedWorkspaceIDs", store: UserDefaults.standard) private var pinnedRaw = ""
+    private var pinned: Set<String> { Set(pinnedRaw.split(separator: "|").map(String.init)) }
+    private var shown: [Workspace] {
+        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let latest = Dictionary(grouping: state.archive.sessions.filter { $0.workspaceID != nil }, by: { $0.workspaceID! })
+            .mapValues { $0.map(\.startedAt).max() ?? .distantPast }
+        let items = state.workspaces.visible.filter {
+            term.isEmpty || ([$0.name, $0.typeDisplayName, $0.notes] + $0.documents.map(\.name)).contains { $0.localizedCaseInsensitiveContains(term) }
+        }
+        return items.sorted { lhs, rhs in
+            let lp = pinned.contains(lhs.id.uuidString), rp = pinned.contains(rhs.id.uuidString)
+            if lp != rp { return lp }
+            if sortRaw == "name" { return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending }
+            let ld = max(lhs.updatedAt, latest[lhs.id] ?? .distantPast)
+            let rd = max(rhs.updatedAt, latest[rhs.id] ?? .distantPast)
+            return ld == rd ? lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending : ld > rd
+        }
+    }
+    private func togglePin(_ id: UUID) {
+        var ids = pinned
+        if !ids.insert(id.uuidString).inserted { ids.remove(id.uuidString) }
+        pinnedRaw = ids.sorted().joined(separator: "|")
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("资料夹").font(Typo.section)
+                    Text("项目与课程").font(Typo.section)
                     Text("\(state.workspaces.visible.count) 个系列").font(Typo.caption).foregroundStyle(Ink.secondary)
                 }
                 Spacer()
@@ -429,25 +454,24 @@ private struct WorkspaceList: View {
                     .menuStyle(.button).buttonStyle(GlassIconButtonStyle(size: 28)).menuIndicator(.hidden).fixedSize()
                     .help("新建系列")
             }
+            TextField("搜索项目、课程或资料", text: $query).textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("projects.search")
+            MenuPicker(title: "排序", selection: $sortRaw,
+                       options: [("recent", String(localized: "最近活动")), ("name", String(localized: "名称"))])
+                .environment(\.settingsNativeControls, true)
+            if let issue = state.workspaces.archiveRepairIssue {
+                Text(issue).font(Typo.caption).foregroundStyle(Ink.caution)
+            }
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 3) {
-                    if state.workspaces.visible.isEmpty {
-                        Text("还没有系列")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Ink.secondary)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 8)
+                    if shown.isEmpty {
+                        Text(LocalizedStringKey(query.isEmpty ? "还没有项目或课程" : "没有匹配的项目或课程"))
+                            .font(Typo.caption).foregroundStyle(Ink.secondary).padding(9)
                     }
-                    ForEach(SessionMode.allCases) { mode in
-                        let items = state.workspaces.visible.filter { $0.mode == mode }
-                        if !items.isEmpty {
-                            Label(mode.displayName, systemImage: mode.symbol)
-                                .overline().padding(.top, 6)
-                            ForEach(items) { workspace in row(workspace) }
-                        }
-                    }
+                    ForEach(shown) { workspace in row(workspace) }
                 }
             }
+
         }
         .card()
         .frame(maxHeight: .infinity, alignment: .top)
@@ -468,6 +492,7 @@ private struct WorkspaceList: View {
         return Button { editor.requestWorkspace(workspace.id, state: state) } label: {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
+                    if pinned.contains(workspace.id.uuidString) { Image(systemName: "pin.fill").font(.caption).foregroundStyle(Ink.secondary) }
                     Text(workspace.name).font(.system(size: compact ? 12.5 : 13, weight: active ? .semibold : .regular)).lineLimit(1)
                     Spacer(minLength: 0)
                     if active { Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.accent) }
@@ -485,6 +510,7 @@ private struct WorkspaceList: View {
         .accessibilityAddTraits(active ? .isSelected : [])
         .accessibilityIdentifier("library.series.\(workspace.id.uuidString)")
         .contextMenu {
+            Button(pinned.contains(workspace.id.uuidString) ? "取消固定" : "固定到顶部") { togglePin(workspace.id) }
             Button("使用这个系列") { editor.requestWorkspace(workspace.id, state: state) }
             Button("复制一份") { editor.requestDuplicateWorkspace(workspace.id, state: state) }
             Button("导出系列（含资料与题库）…") { state.exportWorkspace(workspace.id, includeSessions: false) }
@@ -500,17 +526,19 @@ private struct WorkspaceList: View {
 // MARK: - Editor
 
 enum WorkspaceEditorSection: String, CaseIterable, Identifiable {
-    case basic, requirements, documents, skills, knowledge, review
+    case records, documents, knowledge, basic, requirements, skills, review
+    static let primary: [Self] = [.records, .documents, .knowledge]
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .records: "记录"
         case .basic: "基本信息"
         case .requirements: "回答要求"
         case .documents: "资料"
         case .skills: "技能"
-        case .knowledge: "经验库与题库"
+        case .knowledge: "研究积累"
         case .review: "复盘"
         }
     }
@@ -520,12 +548,12 @@ enum WorkspaceEditorSection: String, CaseIterable, Identifiable {
 private struct WorkspaceEditor: View {
     @Environment(AppState.self) private var state
     var editor: WorkspaceEditController
-    @AppStorage("workspaceEditorFocusSection", store: UserDefaults.standard) private var sectionRaw = WorkspaceEditorSection.basic.rawValue
+    @AppStorage("workspaceEditorFocusSection", store: UserDefaults.standard) private var sectionRaw = WorkspaceEditorSection.records.rawValue
     @Namespace private var sectionIndicator
 
     var body: some View {
         @Bindable var state = state
-        let section = WorkspaceEditorSection(rawValue: sectionRaw) ?? .basic
+        let section = WorkspaceEditorSection(rawValue: sectionRaw) ?? .records
         let active = state.activeWorkspace
         let shownWorkspace = editor.draft.flatMap { $0.id == active.id ? $0 : nil } ?? active
         VStack(alignment: .leading, spacing: 12) {
@@ -542,7 +570,7 @@ private struct WorkspaceEditor: View {
             }
             ScrollView(.horizontal) {
                 HStack(spacing: 2) {
-                    ForEach(WorkspaceEditorSection.allCases) { item in
+                    ForEach(WorkspaceEditorSection.primary) { item in
                         let selected = item == section
                         Button {
                             editor.requestEditorPage(item, state: state)
@@ -603,11 +631,16 @@ private struct WorkspaceEditor: View {
     @ViewBuilder
     private func sectionContent(_ section: WorkspaceEditorSection) -> some View {
         switch section {
+        case .records: WorkspaceRecordsTab()
         case .basic: WorkspaceBasicTab(editor: editor)
         case .requirements: WorkspaceRequirementsTab(editor: editor).frame(maxWidth: 640, alignment: .leading)
         case .documents: WorkspaceDocumentsTab()
         case .skills: WorkspaceSkillsSection()
-        case .knowledge: KnowledgeTab(editor: editor).frame(maxWidth: 640, alignment: .leading)
+        case .knowledge:
+            VStack(alignment: .leading, spacing: Space.s6) {
+                KnowledgeTab(editor: editor)
+                ReviewTab()
+            }.frame(maxWidth: 760, alignment: .leading)
         case .review: ReviewTab()
         }
     }
@@ -615,6 +648,7 @@ private struct WorkspaceEditor: View {
     private func sectionCount(_ section: WorkspaceEditorSection) -> String? {
         switch section {
         case .basic, .requirements, .skills, .knowledge: nil
+        case .records: "\(state.archive.sessions.filter { $0.workspaceID == state.activeWorkspace.id }.count)"
         case .documents: "\(state.documents.count)"
         case .review: "\(state.archive.sessions.filter { $0.workspaceID == state.activeWorkspace.id }.count)"
         }
@@ -636,13 +670,18 @@ private extension WorkspaceEditor {
 
     var editorActions: some View {
         HStack(spacing: 8) {
-            MenuPicker(selection: Binding(get: { state.sessionMode }, set: { editor.requestMode($0, state: state) }),
-                       options: typeOptions)
-            MenuPicker(selection: Binding(get: { state.answerStyle }, set: { state.answerStyle = $0 }),
-                       options: AnswerStyle.allCases.map { ($0, $0.title) }, localizesOptions: true)
-            Button { state.predictQuestions() } label: { Label("预测问题", systemImage: "wand.and.stars") }
-                .buttonStyle(ChipButtonStyle()).disabled(state.isAnswering)
-                .help("根据资料预测最可能被问到的问题，并给出要点")
+            Button("新建记录", systemImage: "plus") { editor.requestNewMeeting(state: state) }
+                .buttonStyle(ChipButtonStyle(prominent: true)).disabled(state.isRunning)
+            Menu {
+                Button("基本信息") { editor.requestEditorPage(.basic, state: state) }
+                Button("回答要求") { editor.requestEditorPage(.requirements, state: state) }
+                Button("系列技能") { editor.requestEditorPage(.skills, state: state) }
+                Divider()
+                ForEach(typeOptions, id: \.0) { item in
+                    Button(item.1) { editor.requestMode(item.0, state: state) }
+                }
+            } label: { Label("配置", systemImage: "slider.horizontal.3") }
+                .buttonStyle(ChipButtonStyle())
         }
     }
 
@@ -1110,6 +1149,8 @@ private struct WorkspaceDocumentsTab: View {
     @State private var importingCategory: String?
     @State private var isFileImporterPresented = false
     @State private var dropTargeted = false
+    @State private var reviewingDocument: ContextDocument?
+    @State private var removedDocument: (workspaceID: UUID, document: ContextDocument, index: Int)?
 
     private var allowedTypes: [UTType] { DocumentImporter.supportedExtensions.compactMap { UTType(filenameExtension: $0) } }
 
@@ -1135,6 +1176,19 @@ private struct WorkspaceDocumentsTab: View {
             if !state.importStatus.isEmpty {
                 Text(state.importStatus).font(.caption).foregroundStyle(.secondary)
             }
+            if let removedDocument {
+                HStack {
+                    Text("已从项目移除 \(removedDocument.document.name)").font(Typo.caption)
+                    Spacer()
+                    Button("撤销") {
+                        if var workspace = state.workspaces.workspace(removedDocument.workspaceID), !workspace.documents.contains(where: { $0.id == removedDocument.document.id }) {
+                            workspace.documents.insert(removedDocument.document, at: min(removedDocument.index, workspace.documents.count))
+                            do { try state.workspaces.commit(workspace); state.rebuildContextIndex(); self.removedDocument = nil }
+                            catch { state.errorMessage = "恢复失败：\(error.localizedDescription)" }
+                        }
+                    }.buttonStyle(ChipButtonStyle())
+                }.padding(10).background(Ink.sunken, in: RoundedRectangle(cornerRadius: 8))
+            }
             PreparationQueueSummary()
             ForEach(categories(profile), id: \.self) { category in
                 categorySection(category)
@@ -1145,11 +1199,12 @@ private struct WorkspaceDocumentsTab: View {
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 12).strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [6])).foregroundStyle(dropTargeted ? Color.accentColor : Color.clear))
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in loadDropped(providers); return true }
-        .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: allowedTypes, allowsMultipleSelection: true) { result in
+        .sheet(item: $reviewingDocument) { document in MaterialReviewSheet(document: document) }
+        .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: allowedTypes + [.folder], allowsMultipleSelection: true) { result in
             let category = importingCategory
             importingCategory = nil
             switch result {
-            case .success(let urls): state.importDocuments(urls, category: category)
+            case .success(let urls): state.importDocuments(urls.flatMap { DocumentImporter.expand($0) }, category: category)
             case .failure(let error): state.errorMessage = error.localizedDescription
             }
         }
@@ -1200,12 +1255,15 @@ private struct WorkspaceDocumentsTab: View {
                         .help("开启后，回答时会参考这份资料。")
                     Image(systemName: icon(for: document.name)).foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(document.name).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
+                        Button { reviewingDocument = document } label: {
+                            Text(document.name).font(Typo.label).lineLimit(2).multilineTextAlignment(.leading)
+                        }.buttonStyle(.plain).help("对照原件与提取内容")
                         Text("\(document.pages.count) 块 · \(document.characterCount) 字符").font(.caption2).foregroundStyle(.secondary)
                     }
                     if let content = document.content, !content.warnings.isEmpty {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                             .help(content.warnings.joined(separator: "\n"))
+                        Button("需要核对") { reviewingDocument = document }.buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.caution)
                     }
                     if let format = document.sourceFormat {
                         Text(format.uppercased())
@@ -1235,7 +1293,11 @@ private struct WorkspaceDocumentsTab: View {
                         .menuStyle(.button).buttonStyle(TapButtonStyle(minWidth: Hit.minHeight, minHeight: Hit.minHeight)).menuIndicator(.hidden).fixedSize()
                         .accessibilityLabel("移动资料分类")
                         .help("选择这份资料所属的分类")
-                    Button(role: .destructive) { state.removeDocument(document.id) } label: {
+                    Button(role: .destructive) {
+                        guard !state.isRunning else { return }
+                        let removed = (state.activeWorkspace.id, document, state.documents.firstIndex(where: { $0.id == document.id }) ?? 0)
+                        if state.removeDocument(document.id) { removedDocument = removed }
+                    } label: {
                         Label("移除", systemImage: "trash")
                     }
                     .buttonStyle(TapButtonStyle(minWidth: Hit.minHeight, minHeight: Hit.minHeight)).foregroundStyle(.red).help("从当前系列移除这份资料")

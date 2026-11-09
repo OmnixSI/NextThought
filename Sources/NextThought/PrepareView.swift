@@ -22,10 +22,6 @@ struct PrepareView: View {
                         MaterialsBlock()
                     }
                     PrepareStep(number: state.draftContinuesSeries ? 4 : 3, title: "开始前检查") { CheckCard() }
-                    HStack {
-                        Spacer()
-                        StartButton()
-                    }
                 }
                 .frame(maxWidth: Space.content, alignment: .leading)
                 .padding(.horizontal, Space.s8)
@@ -33,11 +29,15 @@ struct PrepareView: View {
                 .padding(.bottom, Space.s12)
                 .frame(maxWidth: .infinity)
             }
+            PreparationStartBar()
         }
+        .accessibilityIdentifier("meeting.prepare")
+        .disabled(state.isChangingSession)
     }
 
     private var typeNote: LocalizedStringKey? {
-        guard let draft = state.meetingDraft, !draft.typeChosen, draft.mode != .general else { return nil }
+        guard let draft = state.meetingDraft, !draft.typeChosen,
+              MeetingTypeGuesser.guess(draft.title) != .general else { return nil }
         return "根据标题选好了，可以改"
     }
 }
@@ -212,7 +212,8 @@ private struct SeriesCarryCard: View {
 
     var body: some View {
         if let series = state.draftSeries {
-            let last = state.lastSession(inSeries: series.id)
+            let last = state.meetingDraft?.previousSessionID.flatMap { id in state.archive.sessions.first { $0.id == id } }
+                ?? state.lastSession(inSeries: series.id)
             let count = state.sessionCount(inSeries: series.id)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: Space.s3) {
@@ -750,13 +751,14 @@ private struct MaterialsBlock: View {
     }
 }
 
-/// One material being read: 读取中 → 已读懂.
+/// Parsing, blocked dependencies and optional semantic enhancement are distinct.
 private struct FileRow: View {
     @Environment(AppState.self) private var state
     let job: DocumentJob
 
     var body: some View {
-        HStack(spacing: Space.s3) {
+        VStack(alignment: .leading, spacing: Space.s2) {
+          HStack(spacing: Space.s3) {
             Text(verbatim: format)
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(Ink.secondary)
@@ -764,7 +766,7 @@ private struct FileRow: View {
                 .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             VStack(alignment: .leading, spacing: 6) {
                 Text(verbatim: job.fileName).font(Typo.body).lineLimit(1)
-                if !job.stage.terminal {
+                if [.receiving, .parsing, .ocr, .validating, .lexical, .embedding].contains(job.stage) {
                     if let total = job.total, total > 0 {
                         ProgressView(value: Double(min(job.completed, total)), total: Double(total)).controlSize(.small)
                     } else {
@@ -774,6 +776,23 @@ private struct FileRow: View {
             }
             Spacer(minLength: Space.s2)
             status
+          }
+          if [.waiting, .warning, .failed, .paused].contains(job.stage), !job.message.isEmpty {
+              Text(LocalizedStringKey(job.message)).font(Typo.caption)
+                  .foregroundStyle(job.stage == .paused ? Ink.secondary : Ink.caution)
+                  .fixedSize(horizontal: false, vertical: true)
+          }
+          if job.stage == .waiting {
+              HStack(spacing: Space.s2) {
+                  Button { state.repairPreparation(job) } label: { Text(verbatim: state.preparationRepairTitle(job)) }
+                      .buttonStyle(SecondaryButtonStyle())
+                      .disabled(state.documentSetupBusy || !state.documentModelsChecked)
+                  Button("取消此文件") { state.documentPreparation.cancel(job.id) }.buttonStyle(GhostButtonStyle())
+                  if state.documentSetupBusy { ProgressView().controlSize(.small) }
+              }
+          } else if !job.stage.terminal && job.stage != .paused {
+              Button("取消此文件") { state.documentPreparation.cancel(job.id) }.buttonStyle(GhostButtonStyle())
+          }
         }
         .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
         .paperCard(padding: 0)
@@ -782,10 +801,19 @@ private struct FileRow: View {
     @ViewBuilder private var status: some View {
         switch job.stage {
         case .ready:
-            Label("已读懂", systemImage: "checkmark").font(Typo.caption).foregroundStyle(Ink.ready)
+            Label("文字已就绪", systemImage: "checkmark").font(Typo.caption).foregroundStyle(Ink.ready)
         case .warning:
-            Label("已读懂 · 需核对", systemImage: "exclamationmark.triangle").font(Typo.caption).foregroundStyle(Ink.caution)
-                .help(job.message)
+            Label("文字可用 · 需核对", systemImage: "exclamationmark.triangle").font(Typo.caption).foregroundStyle(Ink.caution)
+        case .embedding:
+            Text("文字已可用，语义增强中").font(Typo.caption).foregroundStyle(Ink.secondary)
+        case .waiting:
+            Text(job.documentID == nil ? "需要准备组件" : "文字可用 · 等待增强组件")
+                .font(Typo.caption).foregroundStyle(Ink.caution)
+        case .paused:
+            Text(job.documentID == nil ? "会后继续读取" : "文字可用 · 会后继续增强")
+                .font(Typo.caption).foregroundStyle(Ink.secondary)
+        case .queued:
+            Text("排队中").font(Typo.caption).foregroundStyle(Ink.secondary)
         case .failed, .cancelled:
             HStack(spacing: Space.s2) {
                 Text(job.stage == .failed ? "没读出来" : "已取消").font(Typo.caption).foregroundStyle(Ink.caution).help(job.message)
@@ -805,36 +833,45 @@ private struct FileRow: View {
 /// "AI 读到的重点" and "可能会问": written on request from the series' materials.
 private struct MaterialsInsight: View {
     @Environment(AppState.self) private var state
+    @State private var preview = PreparationPreview.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            AIHeading(title: "AI 读到的重点")
+            AIHeading(title: "讨论准备 · AI 可选")
             if showsAnswer {
-                let text = state.displayedAnswer
-                if text.isEmpty {
+                let text = preview.text
+                if text.isEmpty && preview.isWorking {
                     HStack(spacing: Space.s2) {
                         ProgressView().controlSize(.small)
                         Text("正在读资料…").font(Typo.body).foregroundStyle(Ink.secondary)
                     }
-                } else {
+                } else if !text.isEmpty {
                     MarkdownText(text: text, size: 14, lineSpacing: 5).equatable()
                 }
+                if let error = preview.error {
+                    Text(verbatim: error).font(Typo.caption).foregroundStyle(Ink.caution)
+                    Button("重试") { state.readDraftMaterials() }.buttonStyle(SecondaryButtonStyle())
+                }
+                if preview.isWorking {
+                    Button("取消生成") { preview.cancel() }.buttonStyle(GhostButtonStyle())
+                }
             } else {
-                Text("读完资料后，AI 写出它读到的 3 条重点和 5 道可能会问的题，可以先在心里过一遍。")
+                Text("用本场选择的资料整理讨论重点、证据和值得追问的问题。无需 AI 也能开始记录。")
                     .font(Typo.body).foregroundStyle(Ink.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Button("读一遍资料") { state.readDraftMaterials() }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .disabled(state.isAnswering || !state.answerEngineReady)
-                    .help(state.answerEngineReady ? "用回答服务读一遍这场会议的资料" : "先连接回答服务")
+                if state.answerEngineReady {
+                    Button("整理讨论重点") { state.readDraftMaterials() }.buttonStyle(SecondaryButtonStyle())
+                } else {
+                    Button("设置 AI 服务（可选）") { state.openSettings(.answers) }.buttonStyle(GhostButtonStyle())
+                }
             }
         }
         .aiBlock()
     }
 
     private var showsAnswer: Bool {
-        guard let id = state.predictionAnswerID else { return false }
-        return state.currentAnswerID == id
+        guard let series = state.draftSeries, let plan = state.draftMeetingPlan else { return false }
+        return preview.isCurrent(series: series, plan: plan)
     }
 }
 
@@ -893,7 +930,7 @@ private struct AudioCheckRow: View {
                     if state.meetingVenue == .online {
                         AudioSourceMenu()
                     }
-                    Label(state.microphoneEnabled || state.meetingVenue == .offline ? "麦克风 · 我" : "麦克风未开启", systemImage: "mic")
+                    Label(state.isOfflineMeeting ? "麦克风 · 现场" : state.microphoneEnabled ? "麦克风 · 我" : "麦克风未开启", systemImage: "mic")
                         .font(Typo.label)
                         .foregroundStyle(state.microphoneEnabled || state.meetingVenue == .offline ? Ink.ink : Ink.secondary)
                         .lineLimit(1)
@@ -916,34 +953,19 @@ private struct AudioCheckRow: View {
 
     /// What blocks the audio, in words (nil when it is fine).
     private var problem: String? {
-        if state.meetingVenue == .online && !state.capturePermissionGranted {
-            return String(localized: "需要允许录屏与系统音频，才能听到会议里的声音")
-        }
-        if state.transcriptionBackend == "zipformer" && (!state.isModelInstalled || !state.missingPackages.isEmpty) {
-            return String(localized: "需要先下载本机识别模型（只需一次）")
-        }
-        if (state.microphoneEnabled || state.meetingVenue == .offline) && state.microphoneAccess == .denied {
-            return String(localized: "麦克风没有授权")
-        }
-        if !state.recognitionReady { return String(localized: "语音识别还没设置好") }
-        return nil
+        state.recordingReadiness.issues.isEmpty ? nil : state.recordingReadinessMessage
     }
 
-    private var tone: StatusDot.Tone { problem == nil ? .ready : .caution }
+    private var tone: StatusDot.Tone {
+        if state.recordingReadiness.canStartRecording { return .ready }
+        return state.recordingReadiness.canRequestStart ? .idle : .caution
+    }
 
     @ViewBuilder private var action: some View {
-        if state.meetingVenue == .online && !state.capturePermissionGranted {
-            Button("允许") { Task { await state.requestCapturePermission() } }.buttonStyle(GhostButtonStyle(height: 28))
-        } else if state.transcriptionBackend == "zipformer" && (!state.isModelInstalled || !state.missingPackages.isEmpty) {
-            if state.isDownloadingModel {
-                Text(verbatim: "\(Int(state.modelDownloadProgress * 100))%").font(Typo.caption).foregroundStyle(Ink.secondary)
-            } else {
-                Button("下载") { state.downloadModel() }.buttonStyle(GhostButtonStyle(height: 28))
-            }
-        } else if (state.microphoneEnabled || state.meetingVenue == .offline) && state.microphoneAccess == .denied {
-            Button("打开系统设置") { state.openMicrophoneSettings() }.buttonStyle(GhostButtonStyle(height: 28))
-        } else if !state.recognitionReady {
-            Button("去设置") { state.openSettings(.recognition) }.buttonStyle(GhostButtonStyle(height: 28))
+        if state.isDownloadingModel {
+            Text(verbatim: "\(Int(state.modelDownloadProgress * 100))%").font(Typo.caption).foregroundStyle(Ink.secondary)
+        } else if !state.recordingReadiness.issues.isEmpty {
+            Button("准备声音") { state.repairRecordingSetup() }.buttonStyle(GhostButtonStyle(height: 28))
         }
     }
 }
@@ -1002,27 +1024,47 @@ private struct AnswerCheckRow: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        CheckRow(tone: state.answerEngineReady ? .ready : .caution, label: "回答") {
-            HStack(spacing: Space.s2) {
+        CheckRow(tone: aiTone, label: "AI 可选") {
+            VStack(alignment: .leading, spacing: Space.s1) {
+              HStack(spacing: Space.s2) {
                 if state.answerEngineReady {
                     Text(verbatim: engineLine).font(Typo.label).lineLimit(1)
                     if state.activeServiceTier == "fast" {
                         Label("快速", systemImage: "bolt").font(Typo.caption).foregroundStyle(Ink.secondary)
                     }
                 } else {
-                    Text(state.checkingCodexStatus && state.answerBackend != .openAICompatible ? "正在检测回答服务…" : "回答服务还没连上")
-                        .font(Typo.label).foregroundStyle(Ink.caution)
+                    Text("未配置 · 不影响记录").font(Typo.label).foregroundStyle(Ink.secondary)
                 }
                 Spacer(minLength: 0)
                 Button(state.answerEngineReady ? "更换" : "去连接") { state.openSettings(.answers) }
                     .buttonStyle(GhostButtonStyle(height: 28))
+              }
+              if state.answerEngineReady {
+                  Text(verificationText).font(Typo.caption).foregroundStyle(aiTone == .caution ? Ink.caution : Ink.secondary)
+              }
             }
+            .padding(.vertical, Space.s2)
         }
     }
 
     private var engineLine: String {
         let model = state.currentAnswerModel
         return state.answerBackend == .openAICompatible ? "API · \(model)" : "Codex · \(model)"
+    }
+    private var aiTone: StatusDot.Tone {
+        switch state.engineTest {
+        case .passed where state.answerEngineReady: .ready
+        case .failed where state.answerEngineReady: .caution
+        default: .idle
+        }
+    }
+    private var verificationText: LocalizedStringKey {
+        switch state.engineTest {
+        case .idle: "已配置 · 尚未检查连接"
+        case .running: "正在检查 AI 服务…"
+        case .passed: "连接检查通过"
+        case .failed: "连接检查未通过 · 记录仍可继续"
+        }
     }
 }
 
@@ -1039,26 +1081,59 @@ private struct PhoneCheckRow: View {
     }
 }
 
+private struct PreparationStartBar: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        HStack(spacing: Space.s4) {
+            VStack(alignment: .leading, spacing: Space.s1) {
+                Text(verbatim: state.recordingReadinessMessage).font(Typo.label)
+                    .foregroundStyle(state.recordingReadiness.canRequestStart ? Ink.ink : Ink.caution)
+                let ready = state.draftAvailableDocumentCount
+                let deferred = state.draftDeferredDocumentCount
+                if deferred > 0 {
+                    Text("本场可用 \(ready) 份资料；其余 \(deferred) 份会后继续，本场不参与回答。")
+                        .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+                } else if ready > 0 {
+                    Text("本场使用 \(ready) 份已就绪资料；文字可用即可开始。")
+                        .font(Typo.caption).foregroundStyle(Ink.secondary)
+                } else {
+                    Text("资料与 AI 都可稍后补充。").font(Typo.caption).foregroundStyle(Ink.secondary)
+                }
+            }
+            Spacer(minLength: Space.s2)
+            StartButton()
+        }
+        .padding(.horizontal, Space.s8).padding(.vertical, Space.s4)
+        .background(Ink.paper)
+        .overlay(alignment: .top) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+        .accessibilityIdentifier("meeting.prepare.startBar")
+    }
+}
+
 private struct StartButton: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        let jobs = state.draftJobs
-        let pending = jobs.filter { !$0.stage.terminal }.count
-        Button { Task { await state.startPreparedMeeting() } } label: {
+        Button {
+            if state.recordingReadiness.canRequestStart { Task { await state.startPreparedMeeting() } }
+            else { state.repairRecordingSetup() }
+        } label: {
             HStack(spacing: Space.s2) {
                 if state.isChangingSession { ProgressView().controlSize(.small) }
                 if state.isChangingSession {
                     Text("正在启动…")
-                } else if pending > 0 {
-                    Text("开始（资料还在读取 \(jobs.count - pending)/\(jobs.count)）")
+                } else if !state.recordingReadiness.canRequestStart {
+                    Text("先准备声音")
+                } else if !state.recordingReadiness.canStartRecording {
+                    Text("允许并开始")
                 } else {
-                    Text("开始")
+                    Text("开始记录")
                 }
             }
             .frame(minWidth: 96)
         }
         .buttonStyle(PrimaryButtonStyle(height: Space.controlLarge))
         .disabled(state.isChangingSession)
+        .accessibilityIdentifier("meeting.prepare.start")
     }
 }

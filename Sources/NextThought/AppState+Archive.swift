@@ -10,7 +10,10 @@ extension AppState {
 
     func sessionContextSnapshot(for workspace: Workspace) -> SessionContextSnapshot {
         SessionContextSnapshot(mode: workspace.mode, style: workspace.style, preferences: workspace.preferences,
-                               profile: workspace.materialText, documents: workspace.documents.filter(\.enabled))
+                               profile: workspace.materialText, documents: workspace.retrievalDocuments.filter(\.enabled),
+                               effectiveMode: workspace.effectiveMode, typeName: workspace.typeDisplayName,
+                               experience: workspace.experienceNotes(), previousSessionID: plannedMeeting?.previousSessionID,
+                               glossary: workspace.glossary)
     }
 
     @discardableResult
@@ -46,7 +49,7 @@ extension AppState {
         historyWorkspaceFilter = nil
         historySelection = meta.id
         section = .meetings
-        if autoSummarize && summarize { generateSummary(for: meta.id) }
+        if autoSummarize && summarize && meta.transcriptCount > 0 { generateSummary(for: meta.id) }
     }
 
     func recordTranscript(_ entry: TranscriptEntry) {
@@ -95,7 +98,7 @@ extension AppState {
         guard activeArchiveID != nil else { return }
         archive.append(SessionAnswerEvent(id: record.id, date: record.date, question: record.question, answer: record.answer, model: record.model,
                                           seconds: record.seconds, firstTokenSeconds: record.firstTokenSeconds, automatic: record.automatic,
-                                          screenshotPath: record.screenshotPath, webAnswer: record.webAnswer, webSources: record.webSources, evidence: record.evidence))
+                                          screenshotPath: record.screenshotPath, webAnswer: record.webAnswer, webSources: record.webSources, evidence: record.evidence, completion: record.completion))
     }
 
     private var recognizerDescription: String {
@@ -127,8 +130,7 @@ extension AppState {
     }
 
     func copySessionMarkdown(_ detail: SessionDetail) {
-        let text = SessionMarkdownExporter.export(meta: detail.meta, summary: detail.summary, lines: detail.lines,
-                                                  answers: detail.answers, detected: detail.questions, notes: detail.notes)
+        let text = detail.fullMarkdown
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }
@@ -144,7 +146,7 @@ extension AppState {
                       let detail = await archive.detail(sessionID),
                       var summary = detail.summary,
                       let current = SessionEvidenceBuilder.build(meta: detail.meta, lines: detail.lines,
-                                                                 notes: detail.notes, summary: detail.summary)
+                                                                 notes: detail.effectiveNotes, summary: detail.effectiveSummary)
                         .first(where: { $0.id == evidenceID }),
                       current.claimRevision == expectedClaimRevision,
                       current.transcriptSourceRevision == expectedTranscriptRevision,

@@ -18,14 +18,32 @@ import SwiftUI
 /// - `NEXTTHOUGHT_DEMO_SNAPSHOT`: PNG the app renders its own main window into
 ///   (no Screen Recording permission needed)
 enum DemoMode {
-    static var isEnabled: Bool { AppEnvironment.values["NEXTTHOUGHT_DEMO"] == "1" }
-
-    static var speechReady: Bool { isEnabled && AppEnvironment.values["NEXTTHOUGHT_DEMO_VOICE_READY"] == "1" }
+    private static var reviewDemoEnabled: Bool {
+        let bundle = Bundle.main
+        let review = (bundle.object(forInfoDictionaryKey: "NextThoughtReviewMode")
+            ?? bundle.object(forInfoDictionaryKey: "InterviewHackerReviewMode")) as? Bool == true
+        let demo = (bundle.object(forInfoDictionaryKey: "NextThoughtReviewDemo")
+            ?? bundle.object(forInfoDictionaryKey: "InterviewHackerReviewDemo")) as? Bool == true
+        return review && demo
+    }
+    static var isEnabled: Bool {
+        if let override = AppEnvironment.values["NEXTTHOUGHT_DEMO"] { return override == "1" }
+        return reviewDemoEnabled
+    }
+    static var speechReady: Bool {
+        guard isEnabled else { return false }
+        if let override = AppEnvironment.values["NEXTTHOUGHT_DEMO_VOICE_READY"] { return override == "1" }
+        return reviewDemoEnabled
+    }
 
     @MainActor
     static func apply() {
         guard isEnabled else { return }
-        let environment = AppEnvironment.values
+        var environment = AppEnvironment.values
+        if reviewDemoEnabled {
+            environment["NEXTTHOUGHT_DEMO_SECTION"] = environment["NEXTTHOUGHT_DEMO_SECTION"] ?? "home"
+            environment["NEXTTHOUGHT_DEMO_VOICE_READY"] = environment["NEXTTHOUGHT_DEMO_VOICE_READY"] ?? "1"
+        }
         // Each capture starts from the default tabs; earlier captures must not leak in.
         for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep", "demoNotes"] {
             UserDefaults.standard.removeObject(forKey: key)

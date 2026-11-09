@@ -58,6 +58,7 @@ struct AnswerRecord: Identifiable, Codable, Equatable {
     var webAnswer: String? = nil
     var webSources: [WebResult]? = nil
     var evidence: EvidenceBundle? = nil
+    var completion: AnswerCompletion? = nil
 }
 
 struct CaptureTarget: Identifiable, Hashable {
@@ -78,21 +79,20 @@ struct ScreenshotDisplay: Identifiable, Hashable, Sendable {
     var height: Int
 }
 
-/// Sidebar sections. The live meeting is not a section: while a meeting runs the
-/// window switches to focus mode and the sidebar is hidden.
+/// Workspace destinations. Live meetings use a dedicated focus mode.
 enum AppSection: String, CaseIterable, Identifiable {
     case home, meetings, library, settings
 
     var id: String { rawValue }
 
-    /// The three everyday sections; settings sits at the bottom of the sidebar.
+    /// The three everyday destinations; settings opens its own window.
     static let primary: [AppSection] = [.home, .meetings, .library]
 
     var title: LocalizedStringKey {
         switch self {
         case .home: "首页"
-        case .meetings: "所有会议"
-        case .library: "资料夹"
+        case .meetings: "所有记录"
+        case .library: "项目与课程"
         case .settings: "设置"
         }
     }

@@ -117,12 +117,11 @@ struct LanguageSettingsSection: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 if compact {
-                    Image(systemName: "globe")
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(Ink.secondary)
-                        .frame(width: 18)
                     Text("语言")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(Typo.label)
+                    Hint("整个 App 的界面语言。切换后 App 会自动重新打开。建议回答跟着对话的语言走，不受这里影响。", presentation: .info)
+                        .accessibilityLabel("语言说明")
+                    Spacer(minLength: 16)
                 }
                 MenuPicker(selection: Binding(get: { choice }, set: { value in
                     if value != choice { pending = value }
@@ -133,8 +132,7 @@ struct LanguageSettingsSection: View {
                     .accessibilityValue(Text(choice.title))
                     .disabled(state.isRunning)
                     .help(LocalizedStringKey(state.isRunning ? "会议进行中不能切换语言。" : "选择界面语言"))
-                Hint("整个 App 的界面语言。切换后 App 会自动重新打开。建议回答跟着对话的语言走，不受这里影响。", presentation: .info)
-                    .accessibilityLabel("语言说明")
+
             }
             if state.isRunning {
                 Hint("会议进行中不能切换语言。", presentation: .inline)

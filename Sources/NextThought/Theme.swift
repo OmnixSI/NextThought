@@ -28,6 +28,28 @@ struct MarkdownText: View, Equatable {
                         .multilineTextAlignment(.center)
                         .padding(.vertical, 2)
                         .frame(maxWidth: .infinity, alignment: .center)
+                case let .table(headers, rows):
+                    ScrollView(.horizontal) {
+                        Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 10) {
+                            GridRow {
+                                ForEach(Array(headers.enumerated()), id: \.offset) { _, cell in
+                                    Text(Self.inline(cell)).font(font(size: size, weight: .semibold, relativeTo: .title3))
+                                        .frame(minWidth: 80, alignment: .leading)
+                                }
+                            }
+                            Divider().gridCellColumns(headers.count)
+                            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                                GridRow {
+                                    ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                                        Text(Self.inline(cell)).font(font(size: size, relativeTo: .title3))
+                                            .frame(minWidth: 80, maxWidth: 280, alignment: .leading)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
+                        }.padding(12)
+                    }
+                    .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall))
                 case let .heading(line):
                     Text(Self.inline(line)).font(font(size: size * 1.05, weight: .semibold, relativeTo: .title3))
                 case let .bullet(line, level):
@@ -53,7 +75,7 @@ struct MarkdownText: View, Equatable {
         }
     }
 
-    enum Block { case paragraph(String), bullet(String, Int), heading(String), code(String), math(String) }
+    enum Block { case paragraph(String), bullet(String, Int), heading(String), code(String), math(String), table([String], [[String]]) }
 
     static func blocks(_ text: String) -> [Block] {
         var result: [Block] = []
@@ -107,7 +129,38 @@ struct MarkdownText: View, Equatable {
         if let open = math, !open.lines.joined().trimmingCharacters(in: .whitespaces).isEmpty {
             result.append(.math(open.lines.joined(separator: "\n")))
         }
-        return result
+        var grouped: [Block] = []
+        var index = 0
+        func cells(_ line: String) -> [String] {
+            var value = line.trimmingCharacters(in: .whitespaces)
+            if value.hasPrefix("|") { value.removeFirst() }
+            if value.hasSuffix("|") { value.removeLast() }
+            return value.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
+        }
+        while index < result.count {
+            if index + 1 < result.count, case let .paragraph(header) = result[index],
+               header.contains("|"), case let .paragraph(rule) = result[index + 1] {
+                let separators = cells(rule)
+                let headings = cells(header)
+                if separators.count == headings.count, separators.allSatisfy({
+                    let value = $0.replacingOccurrences(of: ":", with: "")
+                    return value.count >= 3 && value.allSatisfy { $0 == "-" }
+                }) {
+                    index += 2
+                    var rows: [[String]] = []
+                    while index < result.count, case let .paragraph(line) = result[index], line.contains("|") {
+                        let row = cells(line)
+                        guard row.count == headings.count else { break }
+                        rows.append(row)
+                        index += 1
+                    }
+                    grouped.append(.table(headings, rows))
+                    continue
+                }
+            }
+            grouped.append(result[index]); index += 1
+        }
+        return grouped
     }
 
     static func inline(_ line: String) -> AttributedString {

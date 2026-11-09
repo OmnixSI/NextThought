@@ -74,7 +74,7 @@ struct ContentView: View {
             }
             Button("取消", role: .cancel) { state.recordingNoticePending = nil }
         } message: {
-            Text("请确认录音符合当地法律，并告知参会的人。声音只在这台 Mac 上识别，不保存录音。")
+            Text(String(localized: "开始前，请确认已告知参会的人。") + "\n\n" + state.recordingDataRouteSummary)
         }
     }
 }
@@ -82,11 +82,19 @@ struct ContentView: View {
 // MARK: - Shell (outside a meeting)
 
 private struct MainShell: View {
+    @Environment(AppState.self) private var state
     var body: some View {
         VStack(spacing: 0) {
             AppNavigationBar()
-            SectionStack()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            SectionStack().frame(maxWidth: .infinity, maxHeight: .infinity)
+                .disabled(state.isDataBusy)
+        }
+        .onChange(of: state.section, initial: true) { _, section in
+            // Route legacy links without ever replacing the workspace with Settings.
+            if section == .settings {
+                state.section = .home
+                SettingsWindow.show()
+            }
         }
     }
 }
@@ -124,7 +132,7 @@ private struct SectionStack: View {
         case .home: HomeView()
         case .meetings: HistoryView().padding(.top, Space.s8)
         case .library: WorkspacesView().padding(.top, Space.s8)
-        case .settings: SettingsView().padding(.top, Space.s8)
+        case .settings: Color.clear
         }
     }
 }
@@ -134,14 +142,20 @@ struct ErrorBanner: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        if let message = state.errorMessage {
+        if let message = state.errorMessage ?? SessionArchive.shared.userSaveErrors.values.sorted().first ?? SessionArchive.shared.storageErrors.values.sorted().first {
             HStack(alignment: .top, spacing: Space.s2) {
                 Image(systemName: "exclamationmark.triangle").foregroundStyle(Ink.caution)
                 Text(verbatim: message)
                     .font(Typo.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
-                Button { state.closeError() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(GlassIconButtonStyle(size: 24)).help("关闭提示")
+                if !SessionArchive.shared.userSaveErrors.isEmpty {
+                    Button("重试保存") { Task { await SessionArchive.shared.flushUserContent() } }
+                        .buttonStyle(GhostButtonStyle())
+                }
+                if state.errorMessage != nil || !SessionArchive.shared.storageErrors.isEmpty {
+                    Button { state.closeError(); SessionArchive.shared.acknowledgeStorageErrors() } label: { Image(systemName: "xmark") }
+                        .buttonStyle(GlassIconButtonStyle(size: 24)).help("关闭提示")
+                }
             }
             .padding(Space.s3)
             .frame(maxWidth: 560)

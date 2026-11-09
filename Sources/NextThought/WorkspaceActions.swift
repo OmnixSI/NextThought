@@ -49,14 +49,30 @@ extension AppState {
         if semanticRetrievalEnabled, embeddingModelInstalled, documentPreparation.pendingCount == 0 { rebuildSemanticIndex() }
     }
 
-    func removeDocument(_ id: UUID) {
-        guard !isRunning else { errorMessage = "请在会议结束后移除资料。"; return }
-        if let path = documents.first(where: { $0.id == id })?.markdownPath, let url = MaterialArchive.resolve(path),
-           workspaces.workspaces.flatMap(\.documents).filter({ $0.markdownPath == path }).count <= 1 {
-            try? FileManager.default.removeItem(at: url)
-            try? FileManager.default.removeItem(at: url.deletingPathExtension().appendingPathExtension("json"))
+    @discardableResult
+    func removeDocument(_ id: UUID) -> Bool {
+        guard !isRunning else { errorMessage = "请在会议结束后移除资料。"; return false }
+        // Keep the extracted file until the project itself is deleted, so removal
+        // can be undone without re-reading a potentially large original.
+        var workspace = activeWorkspace
+        guard let index = workspace.documents.firstIndex(where: { $0.id == id }) else { return false }
+        let document = workspace.documents.remove(at: index)
+        do { try workspaces.commit(workspace) }
+        catch { errorMessage = "移除未完成：\(error.localizedDescription)"; return false }
+        let workspaceID = workspace.id
+        NSApp.keyWindow?.undoManager?.registerUndo(withTarget: self) { target in
+            Task { @MainActor in target.restoreDocument(document, in: workspaceID, at: index) }
         }
-        documents.removeAll { $0.id == id }; rebuildContextIndex()
+        NSApp.keyWindow?.undoManager?.setActionName("移除资料")
+        rebuildContextIndex(); return true
+    }
+
+    func restoreDocument(_ document: ContextDocument, in workspaceID: UUID, at index: Int) {
+        guard !isRunning, var workspace = workspaces.workspace(workspaceID) else { errorMessage = "原项目暂不可恢复资料，请先结束记录或检查项目是否存在。"; return }
+        guard !workspace.documents.contains(where: { $0.id == document.id }) else { return }
+        workspace.documents.insert(document, at: min(index, workspace.documents.count))
+        do { try workspaces.commit(workspace); rebuildContextIndex() }
+        catch { errorMessage = "恢复资料失败：\(error.localizedDescription)" }
     }
 
     func setDocumentEnabled(_ id: UUID, enabled: Bool) {
@@ -93,7 +109,8 @@ extension AppState {
     }
 
     func duplicateWorkspace(_ id: UUID) {
-        workspaces.duplicate(id)
+        do { _ = try workspaces.duplicate(id) }
+        catch { errorMessage = "复制未完成，原项目已保留：\(error.localizedDescription)"; return }
         rebuildContextIndex()
     }
 
@@ -184,6 +201,7 @@ extension AppState {
         ]
         do {
             workspaces.flush()
+            try workspaces.repairArchives()
             for sessionID in sessionIDs {
                 guard await archive.flush(sessionID: sessionID) else {
                     let reason = archive.persistenceBySession[sessionID]?.lastFailure
@@ -753,30 +771,47 @@ extension AppState {
     // MARK: Data export / import
 
     func exportAllData(includeSecrets: Bool) {
+        guard !isRunning, archive.activeID == nil else {
+            errorMessage = String(localized: "请先结束记录，再导出完整备份。")
+            return
+        }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "ntbackup") ?? .zip, UTType(filenameExtension: "ihbackup") ?? .zip]
         panel.nameFieldStringValue = "NextThought-\(Date.now.formatted(.iso8601.year().month().day())).ntbackup"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         workspaces.flush()
-        let items = workspaces.workspaces
-        let skills = SkillLibrary.shared.skills
-        let glossary = GlossaryStore.shared.glossary
         runDataTask("正在导出…") {
+            guard await self.archive.flushForSnapshot() else {
+                throw AppFailure.capture(String(localized: "有内容尚未保存，未导出备份。请重试保存后再导出。"))
+            }
+            self.workspaces.flush()
+            let items = self.workspaces.workspaces
+            let skills = SkillLibrary.shared.skills
+            let glossary = GlossaryStore.shared.glossary
             try await Task.detached(priority: .userInitiated) { try DataBackup.exportAll(to: url, includeSecrets: includeSecrets, workspaces: items, skills: skills, glossary: glossary) }.value
             return "已导出到 \(url.lastPathComponent)。"
         }
     }
 
     func exportWorkspace(_ id: UUID, includeSessions: Bool) {
+        guard !isRunning, archive.activeID == nil else {
+            errorMessage = String(localized: "请先结束记录，再导出完整备份。")
+            return
+        }
         guard let workspace = workspaces.workspace(id) else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "ntbackup") ?? .zip, UTType(filenameExtension: "ihbackup") ?? .zip]
         panel.nameFieldStringValue = "\(workspace.name.replacingOccurrences(of: "/", with: "-")).ntbackup"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         workspaces.flush()
-        let sessions = includeSessions ? archive.sessions.filter { $0.workspaceID == id }.map(\.id) : []
-        let skills = SkillLibrary.shared.skills
         runDataTask("正在导出场景…") {
+            guard await self.archive.flushForSnapshot() else {
+                throw AppFailure.capture(String(localized: "有内容尚未保存，未导出备份。请重试保存后再导出。"))
+            }
+            self.workspaces.flush()
+            guard let workspace = self.workspaces.workspace(id) else { throw CocoaError(.fileNoSuchFile) }
+            let sessions = includeSessions ? self.archive.sessions.filter { $0.workspaceID == id }.map(\.id) : []
+            let skills = SkillLibrary.shared.skills
             try await Task.detached(priority: .userInitiated) { try DataBackup.exportWorkspace(workspace, sessions: sessions, to: url, skills: skills) }.value
             return "已导出“\(workspace.name)”。"
         }
@@ -793,26 +828,39 @@ extension AppState {
 
     func importArchive(_ url: URL, applySettings: Bool) {
         guard !isRunning else { errorMessage = "请先停止辅助再导入数据。"; return }
-        runDataTask("正在校验并恢复…") {
-            let summary = try await DataBackup.importArchive(url, applySettings: applySettings)
-            self.archive.load(); self.rebuildContextIndex()
-            return summary.description + (applySettings && summary.settingsApplied > 0 ? " 设置在重新打开应用后完全生效。" : "")
+        guard !isDataBusy else { return }
+        runDataTask("正在校验备份并准备预览…") {
+            let prepared = try await DataBackup.prepareImport(url)
+            BackupRestoreReview.present(prepared, applySettings: applySettings, state: self)
+            return "预览已就绪；确认前不会修改本机数据。"
         }
     }
 
     func backupNow() {
-        runDataTask("正在备份…") {
+        runDataTask("正在备份…", canRetryBackup: true) {
             let url = try await DataBackup.automaticBackup(reason: "manual")
+            self.backupIssue = nil
             return "已备份到 \(url.lastPathComponent)。"
         }
     }
 
-    private func runDataTask(_ progress: String, _ work: @escaping () async throws -> String) {
+    private func runDataTask(_ progress: String, canRetryBackup: Bool = false, _ work: @escaping () async throws -> String) {
         dataStatus = progress
+        dataStatusTone = .progress
+        dataStatusCanRetryBackup = canRetryBackup
         isDataBusy = true
         Task {
             defer { isDataBusy = false }
-            do { dataStatus = try await work() } catch { dataStatus = ""; errorMessage = "操作失败：\(error.localizedDescription)" }
+            do {
+                let result = try await work()
+                if dataStatusTone == .warning { dataStatus = result + "\n" + dataStatus }
+                else { dataStatus = result; dataStatusTone = .success }
+                dataStatusCanRetryBackup = false
+            } catch {
+                dataStatus = String(localized: "操作失败：") + error.localizedDescription
+                dataStatusTone = .failure
+                if !SettingsWindow.isVisible { errorMessage = dataStatus }
+            }
         }
     }
 
@@ -829,11 +877,11 @@ extension AppState {
         effective.merge(next) { _, value in value }
         if let error = ShortcutBinding.validate(effective) { errorMessage = error; return }
         customShortcuts = next
-        UserDefaults.standard.set(try? JSONEncoder().encode(next), forKey: "customShortcuts")
+        AppPreferences.standard.set(try? JSONEncoder().encode(next), forKey: "customShortcuts")
         registerHotkeys()
     }
 
     func resetShortcuts() {
-        customShortcuts = [:]; UserDefaults.standard.removeObject(forKey: "customShortcuts"); registerHotkeys()
+        customShortcuts = [:]; AppPreferences.standard.removeObject(forKey: "customShortcuts"); registerHotkeys()
     }
 }

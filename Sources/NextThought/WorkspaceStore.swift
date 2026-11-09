@@ -12,6 +12,7 @@ final class WorkspaceStore {
 
     private(set) var workspaces: [Workspace] = []
     private(set) var activeID: UUID?
+    private(set) var archiveRepairIssue: String?
 
     @ObservationIgnored private var dirty: Set<UUID> = []
     @ObservationIgnored private var saveTask: Task<Void, Never>?
@@ -53,19 +54,21 @@ final class WorkspaceStore {
                 try? FileManager.default.moveItem(at: file, to: file.appendingPathExtension("unreadable"))
             }
         }
-        let preferences = UserDefaults.standard
+        let preferences = AppPreferences.standard
         if loaded.isEmpty && !preferences.bool(forKey: Self.legacyMigrationCompletedKey) {
             loaded = migrateLegacyContext()
         }
         if !loaded.isEmpty { preferences.set(true, forKey: Self.legacyMigrationCompletedKey) }
         workspaces = loaded
+        do { try repairArchives() }
+        catch { archiveRepairIssue = "资料归档修复未完成：\(error.localizedDescription)" }
         let saved = preferences.string(forKey: "activeWorkspaceID").flatMap(UUID.init(uuidString:))
         activeID = loaded.contains { $0.id == saved } ? saved : visible.first?.id
         if activeID == nil { preferences.removeObject(forKey: "activeWorkspaceID") }
     }
 
     private func migrateLegacyContext() -> [Workspace] {
-        let defaults = UserDefaults.standard
+        let defaults = AppPreferences.standard
         var result: [Workspace] = []
         let mode = SessionMode(rawValue: defaults.string(forKey: "sessionMode") ?? "") ?? .general
         let preferences = defaults.string(forKey: "answerPreferences") ?? ""
@@ -99,7 +102,7 @@ final class WorkspaceStore {
     func activate(_ id: UUID) {
         guard workspaces.contains(where: { $0.id == id }) else { return }
         activeID = id
-        UserDefaults.standard.set(id.uuidString, forKey: "activeWorkspaceID")
+        AppPreferences.standard.set(id.uuidString, forKey: "activeWorkspaceID")
     }
 
     func update(_ workspace: Workspace) {
@@ -115,12 +118,12 @@ final class WorkspaceStore {
         guard let index = workspaces.firstIndex(where: { $0.id == workspace.id }) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        guard !DemoMode.isEnabled else {
-            throw CocoaError(.fileWriteNoPermission)
-        }
-
         var next = workspace
         next.updatedAt = Date()
+        if DemoMode.isEnabled {
+            workspaces[index] = next
+            return
+        }
         let encoder = JSONLines.encoder()
         encoder.outputFormatting.insert(.prettyPrinted)
         let data = try encoder.encode(next)
@@ -157,7 +160,7 @@ final class WorkspaceStore {
 
     @discardableResult
     func create(mode: SessionMode, name: String? = nil) -> Workspace {
-        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
+        AppPreferences.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         let base = name ?? "新的\(mode.title)"
         var unique = base, counter = 2
         while workspaces.contains(where: { $0.name == unique }) { unique = "\(base) \(counter)"; counter += 1 }
@@ -169,19 +172,46 @@ final class WorkspaceStore {
     }
 
     @discardableResult
-    func duplicate(_ id: UUID) -> Workspace? {
+    func duplicate(_ id: UUID) throws -> Workspace? {
         guard let source = workspace(id) else { return nil }
-        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
+        AppPreferences.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         var copy = source
         copy.id = UUID()
         copy.name = source.name + " 副本"
         copy.createdAt = Date(); copy.updatedAt = Date()
         copy.stageReview = nil; copy.stageReviewAt = nil
         copy.knowledgeCandidates = []
+        if DemoMode.isEnabled {
+            workspaces.append(copy)
+            activeID = copy.id
+            return copy
+        }
+        do {
+            copy = try WorkspaceArchiveOwnership.repair(copy, dataRoot: AppPaths.root)
+            let data = try JSONLines.encoder().encode(copy)
+            try FileManager.default.createDirectory(at: AppPaths.workspaces, withIntermediateDirectories: true)
+            try data.write(to: fileURL(copy.id), options: .atomic)
+        } catch {
+            try? FileManager.default.removeItem(at: MaterialArchive.folder(for: copy.id))
+            throw error
+        }
         workspaces.append(copy)
-        write(copy)
         activate(copy.id)
         return copy
+    }
+
+    /// Repairs old copies without changing their user-visible modification dates.
+    func repairArchives() throws {
+        guard !DemoMode.isEnabled else { return }
+        io.sync { }
+        for index in workspaces.indices {
+            let next = try WorkspaceArchiveOwnership.repair(workspaces[index], dataRoot: AppPaths.root)
+            guard next != workspaces[index] else { continue }
+            let data = try JSONLines.encoder().encode(next)
+            try data.write(to: fileURL(next.id), options: .atomic)
+            workspaces[index] = next
+        }
+        archiveRepairIssue = nil
     }
 
     /// Permanently removes the workspace record after its related files are deleted.
@@ -197,13 +227,13 @@ final class WorkspaceStore {
             }
         }
         workspaces.removeAll { $0.id == id }
-        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
+        AppPreferences.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         if activeID == id {
             if let next = visible.first?.id ?? workspaces.first?.id {
                 activate(next)
             } else {
                 activeID = nil
-                UserDefaults.standard.removeObject(forKey: "activeWorkspaceID")
+                AppPreferences.standard.removeObject(forKey: "activeWorkspaceID")
             }
         }
     }
@@ -214,13 +244,13 @@ final class WorkspaceStore {
         guard workspace(id) != nil else { return }
         dirty.remove(id)
         workspaces.removeAll { $0.id == id }
-        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
+        AppPreferences.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         if activeID == id {
             if let next = visible.first?.id ?? workspaces.first?.id {
                 activate(next)
             } else {
                 activeID = nil
-                UserDefaults.standard.removeObject(forKey: "activeWorkspaceID")
+                AppPreferences.standard.removeObject(forKey: "activeWorkspaceID")
             }
         }
     }
@@ -228,12 +258,12 @@ final class WorkspaceStore {
     /// Replaces the whole list (backup import); everything is written immediately.
     func replaceAll(_ next: [Workspace]) {
         workspaces = next
-        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
+        AppPreferences.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
         for workspace in next { write(workspace) }
         if !next.contains(where: { $0.id == activeID }) {
             activeID = visible.first?.id
-            if let activeID { UserDefaults.standard.set(activeID.uuidString, forKey: "activeWorkspaceID") }
-            else { UserDefaults.standard.removeObject(forKey: "activeWorkspaceID") }
+            if let activeID { AppPreferences.standard.set(activeID.uuidString, forKey: "activeWorkspaceID") }
+            else { AppPreferences.standard.removeObject(forKey: "activeWorkspaceID") }
         }
     }
 

@@ -4,20 +4,10 @@ import NextThoughtCore
 
 // MARK: - Meeting plan
 
-/// What the next start uses: set by the preparation page, cleared when the meeting ends.
-struct MeetingPlan: Equatable {
-    var title: String?
-    var carry: MeetingCarry = .standard
-    /// Materials of the series before this meeting; `carry.materials == false` leaves them out.
-    var baselineDocumentIDs: Set<UUID> = []
-    /// The meeting this one continues (for the transcript carry).
-    var previousSessionID: UUID?
-}
-
 /// The meeting on the preparation page, before it starts (kept in memory only).
 struct MeetingDraft: Equatable {
     var title = ""
-    var mode: SessionMode = .general
+    var mode: SessionMode = .labMeeting
     /// Name and base type of a custom type ("自定义…").
     var customTypeName = ""
     var customBaseMode: SessionMode = .general
@@ -34,6 +24,7 @@ struct MeetingDraft: Equatable {
     var carry = MeetingCarry.standard
     /// Materials the bound series had before this meeting.
     var baselineDocumentIDs: Set<UUID> = []
+    var previousSessionID: UUID?
     /// When the page opened (files added since then are "这次新加的资料").
     var startedAt = Date()
 }
@@ -125,14 +116,35 @@ extension AppState {
     }
 
     /// The default live mode of the active series' type.
-    var typeDefaults: MeetingTypeDefaults { MeetingTypeDefaults.for(activeWorkspace.effectiveMode) }
+    var typeDefaults: MeetingTypeDefaults { MeetingTypeDefaults.for((preparedWorkspace ?? activeWorkspace).effectiveMode) }
+
+    var draftMeetingPlan: MeetingPlan? {
+        guard let draft = meetingDraft else { return nil }
+        let series = draftSeries
+        return MeetingPlan(title: draft.title, mode: draft.mode, customTypeName: draft.customTypeName,
+                           customBaseMode: draft.customBaseMode, carry: draft.carry,
+                           baselineDocumentIDs: draft.seriesID == nil ? Set(series?.documents.map(\.id) ?? []) : draft.baselineDocumentIDs,
+                           previousSessionID: draft.previousSessionID ?? series.flatMap { lastSession(inSeries: $0.id)?.id })
+    }
+
+    /// Preparation and capture use the same frozen single-meeting choices.
+    func meetingWorkspace(for plan: MeetingPlan, in series: Workspace) async -> Workspace {
+        var previousTranscript: ContextDocument?
+        if plan.carry.transcript, let previous = plan.previousSessionID,
+           let detail = await archive.detail(previous), !detail.lines.isEmpty {
+            let text = SessionSummaryPrompt.transcriptText(detail.effectiveLines, start: detail.meta.startedAt)
+            previousTranscript = ContextDocument(name: detail.meta.displayTitle,
+                pages: SessionSummaryPrompt.chunks(text, limit: 4_000), category: "上一场转写")
+        }
+        return plan.preparedWorkspace(from: series, previousTranscript: previousTranscript)
+    }
 
     /// The immediate workspace snapshot a starting meeting answers from.
     /// Optional transcript loading and any changed retrieval index are applied later.
     func meetingWorkspaceForStart() -> Workspace {
         let series = activeWorkspace
         guard let plan = plannedMeeting else { return series }
-        return plan.carry.workspaceSnapshot(from: series, baselineDocumentIDs: plan.baselineDocumentIDs)
+        return plan.preparedWorkspace(from: series)
     }
 
     /// Builds the optional, carry-filtered retrieval context after the archive has
@@ -158,7 +170,7 @@ extension AppState {
             var prepared = workspace
             if needsTranscript, let previous = plan.previousSessionID,
                let detail = await self.archive.detail(previous), !detail.lines.isEmpty {
-                let text = SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt)
+                let text = SessionSummaryPrompt.transcriptText(detail.effectiveLines, start: detail.meta.startedAt)
                 prepared.documents.append(ContextDocument(name: detail.meta.displayTitle,
                                                           pages: SessionSummaryPrompt.chunks(text, limit: 4_000),
                                                           category: "上一场转写")) // l10n-ignore: label for the model

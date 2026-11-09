@@ -136,6 +136,7 @@ enum MainWindowLayout {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    private var closing = false
     private var terminationCheckInProgress = false
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -163,7 +164,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 sender.reply(toApplicationShouldTerminate: false)
                 return
             }
-            let saved = await state.archive.flush()
+            await state.archive.flushUserContent()
+            let archiveSaved = await state.archive.flush()
+            let saved = archiveSaved && state.archive.userContentDrafts.isEmpty && state.archive.userSaveErrors.isEmpty
             terminationCheckInProgress = false
             if saved {
                 state.prepareForTermination()
@@ -176,7 +179,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     state.section = .meetings
                 }
                 let snapshots = Array(state.archive.persistenceBySession.values)
-                let failure = snapshots.first(where: { $0.lastFailure != nil })?.lastFailure
+                let failure = state.archive.userSaveErrors.values.sorted().first
+                    ?? snapshots.first(where: { $0.lastFailure != nil })?.lastFailure
                 let hasUnacknowledgedLoss = snapshots.contains(where: \.hasUnacknowledgedDataLoss)
                 state.errorMessage = hasUnacknowledgedLoss
                     ? "有会议内容未能入队，因此没有保存。请到会议归档确认缺失并继续保存后，再退出。" + (failure.map { "\n" + $0 } ?? "")
@@ -199,7 +203,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard MainWindowLayout.isMainWindow(sender) else { return true }
-        return WorkspaceEditController.shared.shouldCloseWindow()
+        guard WorkspaceEditController.shared.shouldCloseWindow() else { return false }
+        guard !SessionArchive.shared.userContentDrafts.isEmpty else { return true }
+        guard !closing else { return false }
+        closing = true
+        Task {
+            await SessionArchive.shared.flushUserContent()
+            closing = false
+            if SessionArchive.shared.userContentDrafts.isEmpty && SessionArchive.shared.userSaveErrors.isEmpty {
+                sender.close()
+            } else {
+                AppState.shared.errorMessage = "笔记尚未保存，已保留窗口。请重试保存。"
+            }
+        }
+        return false
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

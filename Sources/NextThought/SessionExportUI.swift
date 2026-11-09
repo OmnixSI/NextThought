@@ -54,13 +54,15 @@ struct SessionExportSheet: View {
 
     private var detail: SessionDetail { request.detail }
     private var projection: SessionTextProjection {
-        SessionProjectionBuilder.build(meta: detail.meta, lines: detail.lines, answers: detail.answers,
-                                       detected: detail.questions, summary: detail.summary, notes: detail.notes,
-                                       options: SessionProjectionOptions(transcriptVariant: transcriptVariant,
-                                                                         languageView: languageView))
+        detail.effectiveProjection(options: SessionProjectionOptions(transcriptVariant: transcriptVariant,
+                                                                     languageView: languageView))
     }
     private var previewContent: SessionExportPreviewContent {
-        SessionExportPreviewContent.make(format: format, meta: detail.meta, projection: projection)
+        let content = SessionExportPreviewContent.make(format: format, meta: detail.meta, projection: projection)
+        if case let .pages(markdown) = content {
+            return .pages(markdown: markdown + detail.userContentMarkdown)
+        }
+        return content
     }
     private var previewText: String { previewContent.sourceText }
     private var subtitleExport: SessionSubtitleExport? {
@@ -89,21 +91,23 @@ struct SessionExportSheet: View {
             }
 
             HStack(alignment: .top, spacing: Space.s3) {
-                Picker("格式", selection: $format) {
-                    ForEach(SessionExportFormat.allCases) { item in Text(item.title).tag(item) }
-                }
-                .frame(width: 180)
-                Picker("转写", selection: $transcriptVariant) {
-                    Text("当前校正版本").tag(SessionTranscriptVariant.corrected)
-                    Text("原始记录").tag(SessionTranscriptVariant.original)
-                }
-                .frame(width: 180)
-                Picker("语言", selection: $languageView) {
-                    Text("原文与译文").tag(SessionLanguageView.bilingual)
-                    Text("仅原文").tag(SessionLanguageView.source)
-                    Text("译文优先").tag(SessionLanguageView.translated)
-                }
-                .frame(width: 160)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("格式").font(Typo.label)
+                    MenuPicker(selection: $format, options: SessionExportFormat.allCases.map { ($0, $0.title) },
+                               accessibilityTitle: "格式")
+                }.frame(width: 180, alignment: .leading)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("转写").font(Typo.label)
+                    MenuPicker(selection: $transcriptVariant,
+                               options: [(.corrected, String(localized: "当前校正版本")), (.original, String(localized: "原始记录"))],
+                               accessibilityTitle: "转写")
+                }.frame(width: 180, alignment: .leading)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("语言").font(Typo.label)
+                    MenuPicker(selection: $languageView,
+                               options: [(.bilingual, String(localized: "原文与译文")), (.source, String(localized: "仅原文")),
+                                         (.translated, String(localized: "译文优先"))], accessibilityTitle: "语言")
+                }.frame(width: 160, alignment: .leading)
             }
 
             HStack(spacing: Space.s2) {

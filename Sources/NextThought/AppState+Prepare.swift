@@ -6,6 +6,7 @@ import NextThoughtCore
 enum PendingStart: Equatable {
     case prepared
     case quick
+    case direct
 }
 
 /// Preparing a meeting (首页 → 准备) and starting it.
@@ -15,12 +16,12 @@ extension AppState {
 
     /// "新会议" (⌘N): opens the preparation page of a new meeting.
     func beginNewMeeting() {
-        guard !isRunning else { return }
+        guard !isRunning, !isChangingSession else { return }
         WorkspaceEditController.shared.requestNewMeeting(state: self)
     }
 
     func beginNewMeetingAfterWorkspaceEdit() {
-        guard !isRunning else { return }
+        guard !isRunning, !isChangingSession else { return }
         if meetingDraft == nil { meetingDraft = MeetingDraft() }
         section = .home
         MainWindowLayout.bringToFront()
@@ -28,7 +29,7 @@ extension AppState {
 
     /// "以此为上一场，准备下一场": a new meeting in the same series as `sessionID`.
     func prepareNextMeeting(after sessionID: UUID) {
-        guard !isRunning, let meta = archive.sessions.first(where: { $0.id == sessionID }),
+        guard !isRunning, !isChangingSession, let meta = archive.sessions.first(where: { $0.id == sessionID }),
               let seriesID = meta.workspaceID, let series = workspaces.workspace(seriesID) else { return }
         var draft = MeetingDraft()
         draft.title = series.name
@@ -36,6 +37,7 @@ extension AppState {
         draft.customTypeName = series.customTypeName ?? ""
         draft.customBaseMode = series.customBaseMode ?? .general
         draft.typeChosen = true
+        draft.previousSessionID = sessionID
         meetingDraft = draft
         bindDraft(to: seriesID, isNew: false)
         section = .home
@@ -43,6 +45,8 @@ extension AppState {
 
     /// Leaves the preparation page. Imported materials stay in their series.
     func cancelDraft() {
+        guard !isChangingSession else { return }
+        PreparationPreview.shared.cancel()
         meetingDraft = nil
         predictionAnswerID = nil
     }
@@ -62,7 +66,10 @@ extension AppState {
     func updateDraftTitle(_ title: String) {
         guard var draft = meetingDraft else { return }
         draft.title = title
-        if !draft.typeChosen { draft.mode = MeetingTypeGuesser.guess(title) }
+        if !draft.typeChosen {
+            let guessed = MeetingTypeGuesser.guess(title)
+            draft.mode = guessed == .general ? .labMeeting : guessed
+        }
         if draft.seriesID == nil {
             let match = SeriesMatcher.bestMatch(title: title, mode: draft.mode,
                                                 candidates: seriesCandidates(excluding: draft.declinedSeriesIDs))
@@ -75,7 +82,6 @@ extension AppState {
             series.name = trimmed
             workspaces.update(series)
         }
-        if !draft.typeChosen, let id = draft.seriesID, draft.seriesIsNew { applyDraftType(to: id) }
     }
 
     func setDraftType(_ mode: SessionMode) {
@@ -83,7 +89,6 @@ extension AppState {
         draft.mode = mode
         draft.typeChosen = true
         meetingDraft = draft
-        if let id = draft.seriesID { applyDraftType(to: id) }
     }
 
     func setDraftCustomType(name: String? = nil, base: SessionMode? = nil) {
@@ -93,7 +98,6 @@ extension AppState {
         draft.mode = .custom
         draft.typeChosen = true
         meetingDraft = draft
-        if let id = draft.seriesID { applyDraftType(to: id) }
     }
 
     func setDraftCarry(_ carry: MeetingCarry) {
@@ -105,6 +109,7 @@ extension AppState {
         guard var draft = meetingDraft, let id = draft.seriesID ?? draft.suggestedSeriesID else { return }
         draft.declinedSeriesIDs.insert(id)
         draft.suggestedSeriesID = nil
+        draft.previousSessionID = nil
         draft.carry = .standard
         let wasBound = draft.seriesID == id
         if wasBound { draft.seriesID = nil; draft.seriesIsNew = false }
@@ -153,30 +158,27 @@ extension AppState {
 
     private func bindDraft(to id: UUID, isNew: Bool) {
         guard var draft = meetingDraft, let series = workspaces.workspace(id) else { return }
+        if draft.seriesID != id {
+            draft.baselineDocumentIDs = isNew ? [] : Set(series.documents.map(\.id))
+        }
+        if isNew {
+            draft.previousSessionID = nil
+        } else if !archive.sessions.contains(where: { $0.id == draft.previousSessionID && $0.workspaceID == id }) {
+            draft.previousSessionID = lastSession(inSeries: id)?.id
+        }
         draft.seriesID = id
         draft.seriesIsNew = isNew
-        draft.baselineDocumentIDs = isNew ? [] : Set(series.documents.map(\.id))
         meetingDraft = draft
         if activeWorkspace.id != id { switchWorkspace(id) }
     }
 
-    /// Writes the draft's type (and its answer length) into the bound series.
+    /// Initializes a newly-created series. Existing series are never changed by
+    /// a single meeting's preparation choices.
     private func applyDraftType(to id: UUID) {
-        guard let draft = meetingDraft, var series = workspaces.workspace(id) else { return }
-        let changed = series.mode != draft.mode
-        if changed {
-            workspaces.setMode(draft.mode, for: id)
-            series = workspaces.workspace(id) ?? series
-        }
-        if draft.mode == .custom {
-            series.customTypeName = draft.customTypeName
-            series.customBaseMode = draft.customBaseMode
-        }
-        if changed || draft.mode == .custom {
-            series.style = MeetingTypeDefaults.for(series.effectiveMode).style
-            workspaces.update(series)
-        }
-        if changed, id == activeWorkspace.id { tracker.mode = activeWorkspace.effectiveMode }
+        guard let draft = meetingDraft, draft.seriesIsNew, let series = workspaces.workspace(id),
+              let plan = draftMeetingPlan else { return }
+        workspaces.update(plan.preparedWorkspace(from: series))
+        if id == activeWorkspace.id { tracker.mode = activeWorkspace.effectiveMode }
     }
 
     /// Adds files to the meeting's series (created if needed).
@@ -194,16 +196,9 @@ extension AppState {
     /// "AI 读到的重点 · 可能会问": one request over the series' materials; the answer
     /// streams into the preparation page.
     func readDraftMaterials() {
-        guard ensureDraftSeries() != nil else { return }
-        // Binding or creating the series rebuilds its index, and `ask` refuses to run
-        // while that is in progress: wait for it (as starting does).
-        Task {
-            for _ in 0..<100 where isIndexingDocuments {
-                try? await Task.sleep(for: .milliseconds(100))
-            }
-            predictQuestions()
-            predictionAnswerID = isAnswering ? currentAnswerID : nil
-        }
+        guard answerEngineReady, ensureDraftSeries() != nil,
+              let series = draftSeries, let plan = draftMeetingPlan else { return }
+        PreparationPreview.shared.read(series: series, plan: plan, using: self)
     }
 
     // MARK: Starting
@@ -213,10 +208,9 @@ extension AppState {
         guard meetingDraft != nil, !isRunning, !isChangingSession else { return }
         if !UserDefaults.standard.bool(forKey: "recordingNoticeShown") { recordingNoticePending = .prepared; return }
         // Binding the series updates the draft (baseline, new or existing): read it after.
-        guard let seriesID = ensureDraftSeries(), let draft = meetingDraft else { return }
-        plannedMeeting = MeetingPlan(title: draft.title, carry: draft.carry,
-                                     baselineDocumentIDs: draft.baselineDocumentIDs,
-                                     previousSessionID: draft.seriesIsNew ? nil : lastSession(inSeries: seriesID)?.id)
+        guard ensureDraftSeries() != nil, let plan = draftMeetingPlan else { return }
+        plannedMeeting = plan
+        PreparationPreview.shared.cancel()
         await startWithPermissions()
         if isRunning {
             meetingDraft = nil
@@ -233,8 +227,11 @@ extension AppState {
         if !UserDefaults.standard.bool(forKey: "recordingNoticeShown") { recordingNoticePending = .quick; return }
         let id = quickNotesSeries()
         if activeWorkspace.id != id { switchWorkspace(id) }
-        plannedMeeting = MeetingPlan()
+        plannedMeeting = MeetingPlan(carry: .init(materials: false, review: false, lessons: false),
+                                     baselineDocumentIDs: Set(activeWorkspace.documents.map(\.id)))
+        PreparationPreview.shared.cancel()
         await startWithPermissions()
+        if isRunning { meetingDraft = nil; predictionAnswerID = nil }
         if !isRunning && !isChangingSession { plannedMeeting = nil }
     }
 
@@ -246,22 +243,13 @@ extension AppState {
         switch pending {
         case .prepared: await startPreparedMeeting()
         case .quick: await recordNow()
+        case .direct: await startSession()
         }
     }
 
     /// Asks for screen-and-audio permission in place (instead of an onboarding
     /// step), then starts without waiting for optional material indexing.
     private func startWithPermissions() async {
-        if !capturePermissionGranted, meetingVenue == .online {
-            await requestCapturePermission()
-            guard capturePermissionGranted else {
-                errorMessage = String(localized: "需要允许“屏幕与系统音频录制”才能听到会议里的声音。允许后回到这里点开始。")
-                return
-            }
-        }
-        if microphoneEnabled || meetingVenue == .offline, MicrophoneAccess.current() == .undetermined {
-            await requestMicrophoneAccess()
-        }
         await startSession()
     }
 

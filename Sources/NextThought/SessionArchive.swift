@@ -13,6 +13,52 @@ struct SessionDetail: Equatable {
     var summary: SessionSummary?
     /// Structured notes (notes.json); nil for sessions summarized before them.
     var notes: StructuredNotes? = nil
+    var userContent: SessionUserContent = .init()
+    var userContentError: String? = nil
+
+    var effectiveNotes: StructuredNotes? {
+        var result = userContent.editedNotes ?? notes
+        result?.corrections = userContent.corrections(generated: notes?.corrections ?? [], lines: lines)
+        return result
+    }
+
+    var effectiveLines: [SessionTranscriptLine] {
+        NotesCorrections.apply(userContent.corrections(generated: notes?.corrections ?? [], lines: lines), to: lines)
+    }
+
+    var effectiveSummary: SessionSummary? {
+        if var edited = userContent.editedSummary {
+            edited.title = meta.displayTitle
+            return edited
+        }
+        guard var result = summary else { return nil }
+        result.title = meta.displayTitle
+        if let edited = userContent.editedNotes {
+            result.markdown = NotesMarkdown.render(edited, title: meta.displayTitle, facts: "")
+        } else if let markdown = userContent.editedMarkdown {
+            result.markdown = markdown
+        }
+        return result
+    }
+
+    func effectiveProjection(options: SessionProjectionOptions = .init()) -> SessionTextProjection {
+        SessionProjectionBuilder.build(meta: meta, lines: lines, answers: answers, detected: questions,
+                                       summary: effectiveSummary, notes: effectiveNotes, options: options)
+    }
+
+    var userContentMarkdown: String {
+        var result = ""
+        if !userContent.personalNotes.isEmpty { result += "\n\n## 我的笔记\n\n" + userContent.personalNotes }
+        if !userContent.highlights.isEmpty {
+            result += "\n\n## 重点标记\n\n" + userContent.highlights.map { "- [\(NotesTime.text($0.offsetSeconds))] \($0.quote)" }.joined(separator: "\n")
+        }
+        return result
+    }
+
+    var fullMarkdown: String {
+        SessionMarkdownExporter.export(meta: meta, projection: effectiveProjection()) + userContentMarkdown
+    }
+
     var readIssues: [SessionArchiveReadIssue] = []
 }
 
@@ -138,6 +184,8 @@ final class SessionArchive {
     var notesSteps: [UUID: NotesStep] = [:]
     /// Bumped when notes change on disk, so open pages reload them.
     var notesRevision = 0
+    /// Search readers observe this only after a content write has reached disk.
+    var searchRevision = 0
     /// Per-session revision for saved translations, so only that meeting page reloads.
     private(set) var translationRevisionBySession: [UUID: Int] = [:]
     private(set) var persistenceBySession: [UUID: SessionPersistenceSnapshot] = [:]
@@ -151,6 +199,13 @@ final class SessionArchive {
     @ObservationIgnored private var loadGeneration = 0
     @ObservationIgnored private var activeAnswerIDs: Set<UUID> = []
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
+    @ObservationIgnored private var cachedUserContent: [UUID: SessionUserContent] = [:]
+    @ObservationIgnored private var userSaveTasks: [UUID: Task<Void, Never>] = [:]
+    private(set) var userContentDrafts: [UUID: String] = [:]
+    private(set) var userSaveErrors: [UUID: String] = [:]
+    private(set) var savingUserContent: Set<UUID> = []
+    /// Sticky until acknowledged: a later successful write must not hide an earlier missing segment.
+    private(set) var storageErrors: [UUID: String] = [:]
     @ObservationIgnored private var legacyFallbackDetails: [UUID: SessionDetail] = [:]
     @ObservationIgnored private var writeQueues: [UUID: SessionArchiveWriteQueue] = [:]
     @ObservationIgnored private var drainingWrites: Set<UUID> = []
@@ -342,6 +397,8 @@ final class SessionArchive {
                 sessions = preserved
             }
             sessions.sort { $0.startedAt > $1.startedAt }
+            cachedUserContent.removeAll()
+            contentDidChange()
             if !sessions.isEmpty { recordArchivePresence() }
             if !result.recovered.isEmpty { onRecoveredSummaries(result.recovered) }
         }
@@ -447,6 +504,10 @@ final class SessionArchive {
                 do { return try decoder.decode(type, from: bytes) }
                 catch { issues.append(.unreadableFile(name, error.localizedDescription)); return nil }
             }
+            var content = SessionUserContent()
+            var contentError: String?
+            do { content = try SessionUserContentStore.load(from: folder) }
+            catch { contentError = error.localizedDescription; issues.append(.unreadableFile(SessionUserContent.filename, error.localizedDescription)) }
             return SessionDetail(
                 meta: meta,
                 lines: transcript,
@@ -455,7 +516,7 @@ final class SessionArchive {
                 context: snapshot("context.json", SessionContextSnapshot.self),
                 summary: snapshot("summary.json", SessionSummary.self, required: meta.summaryState == .ready),
                 notes: snapshot("notes.json", StructuredNotes.self),
-                readIssues: issues)
+                userContent: content, userContentError: contentError, readIssues: issues)
         }.value
         guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { return nil }
         return result
@@ -644,7 +705,10 @@ final class SessionArchive {
         activeID = nil
         activeMeta = nil
         meta.endedAt = date
-        if meta.transcriptCount == 0 && meta.answerCount == 0 {
+        let hasUserContent = cachedUserContent[meta.id]?.hasContent == true
+            || !(userContentDrafts[meta.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || ((try? SessionUserContentStore.load(from: folder(meta.id)).hasContent) ?? false)
+        if meta.transcriptCount == 0 && meta.answerCount == 0 && !hasUserContent {
             sessions.removeAll { $0.id == meta.id }
             let folder = folder(meta.id)
             discardPersistence(meta.id)
@@ -682,71 +746,32 @@ final class SessionArchive {
         return queued
     }
 
-    /// Edits one generated structured-notes node on top of the newest queued summary.
+    /// Edit the newest effective summary without replacing the model's saved original.
     func updateSummary(_ id: UUID, _ change: @escaping (inout SessionSummary) -> Bool,
                        completion: @escaping @MainActor (SessionArchiveEditResult) -> Void) {
         Task {
-            guard !isReadOnlyFallback(id) else {
-                completion(.readOnlyFallback)
-                return
-            }
-            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                completion(.unavailable)
-                return
-            }
-            guard !summarizing.contains(id) else {
-                completion(.busy)
-                return
-            }
-            if var demo = demoDetails[id], var summary = demo.summary {
-                guard change(&summary) else {
-                    completion(.staleTarget)
-                    return
+            guard !isReadOnlyFallback(id) else { completion(.readOnlyFallback); return }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard await flush(sessionID: id) else { completion(.persistenceBlocked); return }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard let detail = await detail(id), var summary = detail.effectiveSummary else { completion(.unavailable); return }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard change(&summary) else { completion(.staleTarget); return }
+            let edited = summary, expectedRevision = detail.userContent.revision
+            do {
+                _ = try await updateUserContent(for: id) { current in
+                    guard current.revision == expectedRevision else { throw SessionUserContentStore.Failure.changedElsewhere }
+                    current.editedSummary = edited
+                    current.basedOnGeneratedAt = detail.summary?.generatedAt ?? detail.notes?.generatedAt
                 }
-                demo.summary = summary
-                demoDetails[id] = demo
-                searchableContentRevision &+= 1
+                guard await flush(sessionID: id) else { completion(.persistenceBlocked); return }
+                userSaveErrors[id] = nil
                 completion(.saved)
-                return
-            }
-            var summary = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
-                .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
-            if summary == nil {
-                guard await flush(sessionID: id) else {
-                    completion(.persistenceBlocked)
-                    return
-                }
-                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                    completion(.unavailable)
-                    return
-                }
-                guard !summarizing.contains(id) else {
-                    completion(.busy)
-                    return
-                }
-                summary = await detail(id)?.summary
-                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                    completion(.unavailable)
-                    return
-                }
-                guard !summarizing.contains(id) else {
-                    completion(.busy)
-                    return
-                }
-            }
-            guard var summary else {
-                completion(.unavailable)
-                return
-            }
-            guard change(&summary) else {
-                completion(.staleTarget)
-                return
-            }
-            guard saveSummary(summary, for: id) else {
-                completion(.persistenceBlocked)
-                return
-            }
-            completion(await flush(sessionID: id) ? .saved : .persistenceBlocked)
+            } catch SessionUserContentStore.Failure.changedElsewhere { completion(.staleTarget) }
+            catch { userSaveErrors[id] = "纪要修改尚未保存：\(error.localizedDescription)"; completion(.persistenceBlocked) }
         }
     }
 
@@ -758,120 +783,28 @@ final class SessionArchive {
         return enqueueSnapshot(notes, file: "notes.json", session: id)
     }
 
-    /// Edits saved notes in place (undoing a correction).
+    /// Human edits are revision checked and survive future AI generations.
     func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Bool,
                      completion: @escaping @MainActor (SessionArchiveEditResult) -> Void = { _ in }) {
         Task {
-            guard !isReadOnlyFallback(id) else {
-                completion(.readOnlyFallback)
-                return
-            }
-            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                completion(.unavailable)
-                return
-            }
-            guard !summarizing.contains(id) else {
-                completion(.busy)
-                return
-            }
-            if var demo = demoDetails[id], var notes = demo.notes {
-                let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
-                guard change(&notes) else {
-                    completion(.staleTarget)
-                    return
+            guard !isReadOnlyFallback(id) else { completion(.readOnlyFallback); return }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard await flush(sessionID: id) else { completion(.persistenceBlocked); return }
+            guard let detail = await detail(id), var notes = detail.effectiveNotes else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard change(&notes) else { completion(.staleTarget); return }
+            let edited = notes, expectedRevision = detail.userContent.revision
+            do {
+                _ = try await updateUserContent(for: id) { current in
+                    guard current.revision == expectedRevision else { throw SessionUserContentStore.Failure.changedElsewhere }
+                    current.editedNotes = edited
+                    current.basedOnGeneratedAt = detail.notes?.generatedAt ?? detail.summary?.generatedAt
                 }
-                if demo.summary?.structuredNotesSourceRevision == nil {
-                    demo.summary?.structuredNotesSourceRevision = originalNotesRevision
-                }
-                demo.notes = notes
-                demoDetails[id] = demo
-                notesRevision += 1
+                userSaveErrors[id] = nil
                 completion(.saved)
-                return
-            }
-            // Start from the newest queued edit when an earlier write could not
-            // be acknowledged. This lets a new correction build on, and remain
-            // recoverable with, that pending snapshot.
-            var notes = pendingArchiveData(file: "notes.json", sessionID: id, mode: .replace)
-                .last.flatMap { try? JSONLines.decoder().decode(StructuredNotes.self, from: $0) }
-            if notes == nil {
-                guard await flush(sessionID: id) else {
-                    completion(.persistenceBlocked)
-                    return
-                }
-                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                    completion(.unavailable)
-                    return
-                }
-                guard !summarizing.contains(id) else {
-                    completion(.busy)
-                    return
-                }
-                notes = await detail(id)?.notes
-                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                    completion(.unavailable)
-                    return
-                }
-                guard !summarizing.contains(id) else {
-                    completion(.busy)
-                    return
-                }
-            }
-            guard var notes else {
-                completion(.unavailable)
-                return
-            }
-            let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
-            guard change(&notes) else {
-                completion(.staleTarget)
-                return
-            }
-            // Older summaries did not record the structured-notes revision. Seed it
-            // with the pre-edit snapshot so a manual note edit makes their rendered
-            // wording explicitly stale instead of leaving its freshness unknown.
-            if let originalNotesRevision {
-                var summary = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
-                    .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
-                if summary == nil {
-                    summary = await detail(id)?.summary
-                    guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                        completion(.unavailable)
-                        return
-                    }
-                    guard !summarizing.contains(id) else {
-                        completion(.busy)
-                        return
-                    }
-                }
-                // A summary can be queued while detail() is suspended. Prefer that newer
-                // snapshot before applying the compatibility stamp.
-                if let queued = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
-                    .last.flatMap({ try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }) {
-                    summary = queued
-                }
-                if var summary, summary.structuredNotesSourceRevision == nil {
-                    summary.structuredNotesSourceRevision = originalNotesRevision
-                    guard enqueueSnapshot(summary, file: "summary.json", session: id) else {
-                        completion(.persistenceBlocked)
-                        return
-                    }
-                }
-            }
-            guard saveNotes(notes, for: id) else {
-                completion(.persistenceBlocked)
-                return
-            }
-            if await flush(sessionID: id) {
-                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                    completion(.unavailable)
-                    return
-                }
-                notesRevision += 1
-                if id != activeID { searchableContentRevision &+= 1 }
-                completion(.saved)
-            } else {
-                completion(.persistenceBlocked)
-            }
+            } catch SessionUserContentStore.Failure.changedElsewhere { completion(.staleTarget) }
+            catch { userSaveErrors[id] = "纪要修改尚未保存：\(error.localizedDescription)"; completion(.persistenceBlocked) }
         }
     }
 
@@ -1030,7 +963,140 @@ final class SessionArchive {
         return false
     }
 
+    func contentDidChange(_ id: UUID? = nil) {
+        notesRevision &+= 1
+        searchRevision &+= 1
+        searchableContentRevision &+= 1
+    }
+
+    func acknowledgeStorageErrors() { storageErrors.removeAll() }
+
+    func userContent(_ id: UUID) async throws -> SessionUserContent {
+        if let content = demoDetails[id]?.userContent { return content }
+        let directory = folder(id)
+        let result: SessionUserContent = try await withCheckedThrowingContinuation { continuation in
+            io.async {
+                do { continuation.resume(returning: try SessionUserContentStore.load(from: directory)) }
+                catch { continuation.resume(throwing: error) }
+            }
+        }
+        cachedUserContent[id] = result
+        return result
+    }
+
+    @discardableResult
+    func saveUserContent(_ content: SessionUserContent, for id: UUID) async throws -> SessionUserContent {
+        try await updateUserContent(for: id) { current in
+            guard content.revision == current.revision else { throw SessionUserContentStore.Failure.changedElsewhere }
+            current = content
+        }
+    }
+
+    /// A field edit reads and commits on one queue, so typing and marking a line cannot overwrite each other.
+    @discardableResult
+    func updateUserContent(for id: UUID, _ change: @escaping @Sendable (inout SessionUserContent) throws -> Void) async throws -> SessionUserContent {
+        guard !isReadOnlyFallback(id), !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { throw CocoaError(.fileNoSuchFile) }
+        if var demo = demoDetails[id] {
+            try change(&demo.userContent)
+            demo.userContent.revision += 1; demo.userContent.updatedAt = Date()
+            demoDetails[id] = demo; cachedUserContent[id] = demo.userContent; contentDidChange(id)
+            return demo.userContent
+        }
+        let directory = folder(id)
+        let committed: SessionUserContent = try await withCheckedThrowingContinuation { continuation in
+            io.async {
+                do {
+                    var current = try SessionUserContentStore.load(from: directory)
+                    try change(&current)
+                    continuation.resume(returning: try SessionUserContentStore.save(current, to: directory))
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+        cachedUserContent[id] = committed
+        contentDidChange(id)
+        return committed
+    }
+
+    func personalNotes(for id: UUID) -> String { userContentDrafts[id] ?? cachedUserContent[id]?.personalNotes ?? demoDetails[id]?.userContent.personalNotes ?? "" }
+
+    func isHighlighted(_ lineID: UUID, in id: UUID) -> Bool {
+        _ = notesRevision
+        return (cachedUserContent[id] ?? demoDetails[id]?.userContent)?.highlights.contains(where: { $0.lineID == lineID }) == true
+    }
+
+    func primeUserContent(_ content: SessionUserContent, for id: UUID) {
+        if (cachedUserContent[id]?.revision ?? -1) <= content.revision { cachedUserContent[id] = content }
+    }
+
+    func editPersonalNotes(_ text: String, for id: UUID) {
+        userContentDrafts[id] = text
+        userSaveErrors[id] = nil
+        userSaveTasks[id]?.cancel()
+        userSaveTasks[id] = Task {
+            do { try await Task.sleep(for: .milliseconds(350)); try Task.checkCancellation() }
+            catch { return }
+            await persistPersonalNotes(for: id)
+        }
+    }
+
+    func persistPersonalNotes(for id: UUID) async {
+        guard let draft = userContentDrafts[id] else { return }
+        savingUserContent.insert(id)
+        defer { savingUserContent.remove(id) }
+        do {
+            _ = try await updateUserContent(for: id) { $0.personalNotes = draft }
+            if userContentDrafts[id] == draft { userContentDrafts[id] = nil }
+            userSaveErrors[id] = nil
+        } catch { userSaveErrors[id] = "笔记尚未保存：\(error.localizedDescription)" }
+    }
+
+    /// Called before leaving or finishing a meeting. Failed drafts remain in memory for retry.
+    func flushUserContent() async {
+        for task in userSaveTasks.values { task.cancel() }
+        userSaveTasks.removeAll()
+        for id in Array(userContentDrafts.keys) { await persistPersonalNotes(for: id) }
+        await flush()
+    }
+
+    /// Snapshot consumers must include debounced personal drafts as well as queued events.
+    func flushForSnapshot() async -> Bool {
+        for id in Array(pendingTranslationSearchSessionIDs) {
+            guard await waitForFinalTranslationDrain(sessionID: id) else { return false }
+        }
+        await flushUserContent()
+        let saved = await flush()
+        return saved && userContentDrafts.isEmpty && userSaveErrors.isEmpty
+    }
+
     // MARK: Private
+
+    func saveGeneratedContent(_ summary: SessionSummary, notes: StructuredNotes?, for id: UUID) async throws {
+        guard !isReadOnlyFallback(id), !deletedSessionIDs.contains(id),
+              var meta = sessions.first(where: { $0.id == id }) else { throw CocoaError(.fileNoSuchFile) }
+        if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty { meta.title = summary.title }
+        meta.summaryState = .ready; meta.summaryError = nil
+        if let notes { meta.actionItemCount = notes.actionItemCount; meta.improveCount = notes.improveCount }
+        if var demo = demoDetails[id] {
+            demo.summary = summary; if let notes { demo.notes = notes }; demo.meta = meta
+            demo.userContent.revision += 1; demoDetails[id] = demo; cachedUserContent[id] = demo.userContent
+        } else {
+            guard await flush(sessionID: id) else { throw CocoaError(.fileWriteUnknown) }
+            if let notes, !enqueueSnapshot(notes, file: "notes.json", session: id) { throw CocoaError(.fileWriteUnknown) }
+            guard enqueueSnapshot(summary, file: "summary.json", session: id),
+                  enqueueSnapshot(meta, file: "meta.json", session: id), await flush(sessionID: id) else { throw CocoaError(.fileWriteUnknown) }
+            // Invalidate in-progress editors while preserving every authored field.
+            _ = try await updateUserContent(for: id) { _ in }
+        }
+        if let index = sessions.firstIndex(where: { $0.id == id }) { sessions[index] = meta }
+        contentDidChange(id)
+    }
+
+    func saveDerivedSummary(_ summary: SessionSummary, for id: UUID) async throws {
+        guard !isReadOnlyFallback(id), !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { throw CocoaError(.fileNoSuchFile) }
+        if demoDetails[id] != nil { demoDetails[id]?.summary = summary; contentDidChange(id); return }
+        guard enqueueSnapshot(summary, file: "summary.json", session: id), await flush(sessionID: id) else { throw CocoaError(.fileWriteUnknown) }
+        contentDidChange(id)
+    }
 
     private func publishActiveCounts() {
         guard let meta = activeMeta, let index = sessions.firstIndex(where: { $0.id == meta.id }) else { return }
@@ -1181,6 +1247,9 @@ final class SessionArchive {
     }
 
     private func discardPersistence(_ id: UUID) {
+        userSaveTasks[id]?.cancel(); userSaveTasks[id] = nil
+        cachedUserContent[id] = nil; userContentDrafts[id] = nil; userSaveErrors[id] = nil
+
         discardedSessions.insert(id)
         retryTasks[id]?.cancel(); retryTasks[id] = nil
         retryAttempts[id] = nil
@@ -1194,12 +1263,16 @@ final class SessionArchive {
         completedTranslationDrainSessionIDs.remove(id)
     }
 
-    nonisolated private static func write<T: Encodable>(_ value: T, to url: URL) {
+    @discardableResult
+    nonisolated private static func write<T: Encodable>(_ value: T, to url: URL) -> Bool {
         let encoder = JSONLines.encoder()
         encoder.outputFormatting.insert(.prettyPrinted)
-        guard let data = try? encoder.encode(value) else { return }
-        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? data.write(to: url, options: .atomic)
+        do {
+            let data = try encoder.encode(value)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try data.write(to: url, options: .atomic)
+            return true
+        } catch { return false }
     }
 
     /// Converts the single `sessions.json` written by earlier versions, once.

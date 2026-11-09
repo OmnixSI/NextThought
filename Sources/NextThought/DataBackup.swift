@@ -5,10 +5,17 @@ import NextThoughtCore
 /// event-triggered, deduplicated recovery points.
 /// Archives are ZIP files with the `.ntbackup` extension; legacy `.ihbackup` archives remain importable.
 enum DataBackup {
+    static let didChangeNotification = Notification.Name("NextThought.backupsDidChange")
     struct ImportSummary {
         var workspacesAdded = 0
         var workspacesUpdated = 0
         var sessionsAdded = 0
+        var sessionsReplaced = 0
+        var sessionsKept = 0
+        var sessionsIdentical = 0
+        var templatesAdded = 0
+        var templatesReplaced = 0
+        var templatesKept = 0
         var settingsApplied = 0
         var secretsApplied = 0
         var skillsAdded = 0
@@ -18,7 +25,10 @@ enum DataBackup {
             if skillsAdded > 0 { parts.append("技能 \(skillsAdded) 个") }
             if glossaryAdded > 0 { parts.append("术语和人名 \(glossaryAdded) 项") }
             if workspacesAdded + workspacesUpdated > 0 { parts.append("场景 新增 \(workspacesAdded)、更新 \(workspacesUpdated)") }
-            if sessionsAdded > 0 { parts.append("会话记录 \(sessionsAdded) 条") }
+            if sessionsAdded + sessionsReplaced + sessionsKept + sessionsIdentical > 0 {
+                parts.append("记录 新增 \(sessionsAdded)、替换 \(sessionsReplaced)、保留本机 \(sessionsKept)、相同跳过 \(sessionsIdentical)")
+            }
+            if templatesAdded + templatesReplaced + templatesKept > 0 { parts.append("模板 新增 \(templatesAdded)、替换 \(templatesReplaced)、保留 \(templatesKept)") }
             if settingsApplied > 0 { parts.append("设置 \(settingsApplied) 项") }
             if secretsApplied > 0 { parts.append("密钥 \(secretsApplied) 个") }
             return parts.isEmpty ? "没有需要导入的新内容（已有的数据都保持不变）。" : "已导入：" + parts.joined(separator: "，") + "。"
@@ -45,6 +55,7 @@ enum DataBackup {
         try writeWorkspaces(workspaces, into: staging)
         try writeSkills(skills, into: staging)
         try writeGlossary(glossary, into: staging)
+        try writeTemplates(into: staging)
         let sessionIDs = try copySessions(into: staging, only: nil)
         try writeSettings(into: staging)
         if includeSecrets { try writeSecrets(into: staging) }
@@ -71,86 +82,159 @@ enum DataBackup {
 
     // MARK: Import
 
-    /// Merges an archive into the current data. Nothing existing is deleted; newer
-    /// local edits win over older copies in the archive. A backup of the current state
-    /// is taken first.
+    struct SessionImport: Identifiable {
+        var id: UUID
+        var title: String
+        var status: BackupImportStatus
+        var localFingerprint: String?
+        var incomingFingerprint: String
+    }
+    struct TemplateImport: Identifiable {
+        var id: String
+        var title: String
+        var status: BackupImportStatus
+    }
+    final class PreparedImport: Identifiable {
+        let id = UUID()
+        let staging: URL
+        let root: URL
+        let manifest: BackupManifest
+        let sessions: [SessionImport]
+        let templates: [TemplateImport]
+        let incomingTemplates: [NotesTemplate]
+        init(staging: URL, root: URL, manifest: BackupManifest, sessions: [SessionImport], templates: [TemplateImport], incomingTemplates: [NotesTemplate]) {
+            self.staging = staging; self.root = root; self.manifest = manifest; self.sessions = sessions
+            self.templates = templates; self.incomingTemplates = incomingTemplates
+        }
+        func discard() { try? FileManager.default.removeItem(at: staging.deletingLastPathComponent()) }
+        deinit { discard() }
+    }
+
+    /// Preflight writes only to its owned temporary directory; review precedes any merge.
+    @MainActor
+    static func prepareImport(_ source: URL) async throws -> PreparedImport {
+        let staging = try makeStaging()
+        do {
+            if ["ntrestore", "ihrestore"].contains(source.pathExtension) { try await recoveryStore.restore(source, into: staging) }
+            else {
+                try await Task.detached(priority: .utility) {
+                    let names = try Shell.check("/usr/bin/zipinfo", ["-1", source.path], "读取备份目录").output
+                    let listing = try Shell.check("/usr/bin/zipinfo", ["-l", source.path], "检查备份容量").output
+                    let free = (try FileManager.default.attributesOfFileSystem(forPath: staging.path)[.systemFreeSize] as? NSNumber)?.int64Value ?? 0
+                    try BackupArchivePolicy.validate(names: names, listing: listing, freeBytes: free)
+                    try Shell.check("/usr/bin/ditto", ["-x", "-k", source.path, staging.path], "解压备份")
+                }.value
+            }
+            let root = try locateRoot(in: staging)
+            let manifest = try JSONLines.decoder().decode(BackupManifest.self, from: Data(contentsOf: root.appendingPathComponent("manifest.json")))
+            try manifest.validate()
+            let localRoot = AppPaths.sessions
+            let existingTemplates = currentTemplates()
+            let prepared = try await Task.detached(priority: .utility) { () -> ([SessionImport], [TemplateImport], [NotesTemplate]) in
+                try validateContents(root, manifest: manifest)
+                let directory = root.appendingPathComponent("Sessions")
+                let folders = ((try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []).filter { UUID(uuidString: $0.lastPathComponent) != nil }
+                let sessions = try folders.map { folder -> SessionImport in
+                    let id = UUID(uuidString: folder.lastPathComponent)!
+                    let local = localRoot.appendingPathComponent(id.uuidString)
+                    let existing = FileManager.default.fileExists(atPath: local.path) ? try BackupContent.fingerprint(local) : nil
+                    let incoming = try BackupContent.fingerprint(folder)
+                    let meta = try? JSONLines.decoder().decode(SessionMeta.self, from: Data(contentsOf: folder.appendingPathComponent("meta.json")))
+                    return SessionImport(id: id, title: meta?.displayTitle ?? id.uuidString, status: BackupContent.status(local: existing, incoming: incoming), localFingerprint: existing, incomingFingerprint: incoming)
+                }.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+                let templates = try readTemplates(in: root)
+                let templatePlan = templates.map { template in
+                    let current = existingTemplates.first { $0.id == template.id }
+                    return TemplateImport(id: template.id, title: template.name, status: current == nil ? .new : current == template ? .identical : .conflict)
+                }
+                return (sessions, templatePlan, templates)
+            }.value
+            try Task.checkCancellation()
+            return PreparedImport(staging: staging, root: root, manifest: manifest, sessions: prepared.0, templates: prepared.1, incomingTemplates: prepared.2)
+        } catch { try? FileManager.default.removeItem(at: staging.deletingLastPathComponent()); throw error }
+    }
+
+    /// Programmatic callers keep conflicts on this Mac. UI callers review the same prepared plan.
     @MainActor
     static func importArchive(_ source: URL, applySettings: Bool) async throws -> ImportSummary {
-        let staging = try makeStaging()
-        defer { try? FileManager.default.removeItem(at: staging.deletingLastPathComponent()) }
-        if ["ntrestore", "ihrestore"].contains(source.pathExtension) {
-            try await recoveryStore.restore(source, into: staging)
-        } else {
-            try await Task.detached(priority: .utility) {
-                let names = try Shell.check("/usr/bin/zipinfo", ["-1", source.path], "读取备份目录").output
-                let listing = try Shell.check("/usr/bin/zipinfo", ["-l", source.path], "检查备份容量").output
-                let free = (try FileManager.default.attributesOfFileSystem(forPath: staging.path)[.systemFreeSize] as? NSNumber)?.int64Value ?? 0
-                try BackupArchivePolicy.validate(names: names, listing: listing, freeBytes: free)
-                try Shell.check("/usr/bin/ditto", ["-x", "-k", source.path, staging.path], "解压备份")
-            }.value
-        }
-        // ditto keeps the top-level folder name of the archive.
-        let root = try locateRoot(in: staging)
-        let manifest = try JSONLines.decoder().decode(BackupManifest.self, from: Data(contentsOf: root.appendingPathComponent("manifest.json")))
-        try manifest.validate()
-        try await Task.detached(priority: .utility) { try validateContents(root, manifest: manifest) }.value
+        let prepared = try await prepareImport(source)
+        return try await applyImport(prepared, useBackupSessions: [], useBackupTemplates: [], applySettings: applySettings)
+    }
 
+    @MainActor
+    static func applyImport(_ prepared: PreparedImport, useBackupSessions: Set<UUID>, useBackupTemplates: Set<String>, applySettings: Bool) async throws -> ImportSummary {
+        guard !AppState.shared.isRunning, SessionArchive.shared.summarizing.isEmpty else { throw AppFailure.capture("请等记录和纪要整理结束后再恢复。") }
         WorkspaceStore.shared.flush()
+        guard await SessionArchive.shared.flushForSnapshot() else {
+            throw AppFailure.capture(String(localized: "有内容尚未保存，未恢复备份。请重试保存后再恢复。"))
+        }
+        let localRoot = AppPaths.sessions
+        try await Task.detached(priority: .utility) {
+            for item in prepared.sessions {
+                let folder = localRoot.appendingPathComponent(item.id.uuidString)
+                let fingerprint = FileManager.default.fileExists(atPath: folder.path) ? try BackupContent.fingerprint(folder) : nil
+                guard fingerprint == item.localFingerprint else { throw AppFailure.capture("预览后本机记录有变化，请重新导入以查看最新差异。") }
+            }
+        }.value
         _ = try await automaticBackup(reason: "import")
-
         var summary = ImportSummary()
-        let incoming = await Task.detached(priority: .utility) { readWorkspaces(in: root) }.value
+        let root = prepared.root
+        let incoming = try await Task.detached(priority: .utility) { try readWorkspaces(in: root, materialize: true) }.value
         let merged = BackupMerge.workspaces(existing: WorkspaceStore.shared.workspaces, incoming: incoming)
         WorkspaceStore.shared.replaceAll(merged.merged)
-        summary.workspacesAdded = merged.added
-        summary.workspacesUpdated = merged.updated
-        if manifest.kind == .workspace, let first = incoming.first,
-           let imported = merged.merged.first(where: { $0.id == first.id }) ?? merged.merged.last {
-            WorkspaceStore.shared.activate(imported.id)
+        summary.workspacesAdded = merged.added; summary.workspacesUpdated = merged.updated
+        if prepared.manifest.kind == .workspace, let first = incoming.first { WorkspaceStore.shared.activate(first.id) }
+        if let data = try? Data(contentsOf: root.appendingPathComponent("skills.json")) {
+            summary.skillsAdded = SkillLibrary.shared.merge(try JSONLines.decoder().decode([Skill].self, from: data))
         }
-
-        if let data = try? Data(contentsOf: root.appendingPathComponent("skills.json")),
-           let skills = try? JSONLines.decoder().decode([Skill].self, from: data) {
-            summary.skillsAdded = SkillLibrary.shared.merge(skills)
+        if let data = try? Data(contentsOf: root.appendingPathComponent("glossary.json")) {
+            summary.glossaryAdded = GlossaryStore.shared.merge(try JSONLines.decoder().decode(Glossary.self, from: data))
         }
-        if let data = try? Data(contentsOf: root.appendingPathComponent("glossary.json")),
-           let glossary = try? JSONLines.decoder().decode(Glossary.self, from: data) {
-            summary.glossaryAdded = GlossaryStore.shared.merge(glossary)
-        }
-
-        let sessionsDirectory = root.appendingPathComponent("Sessions", isDirectory: true)
-        let incomingSessions = ((try? FileManager.default.contentsOfDirectory(at: sessionsDirectory, includingPropertiesForKeys: nil)) ?? [])
-            .compactMap { UUID(uuidString: $0.lastPathComponent) }
-        let existing = Set(((try? FileManager.default.contentsOfDirectory(at: AppPaths.sessions, includingPropertiesForKeys: nil)) ?? [])
-            .compactMap { UUID(uuidString: $0.lastPathComponent) })
-        summary.sessionsAdded = try await Task.detached(priority: .utility) {
-            try FileManager.default.createDirectory(at: AppPaths.sessions, withIntermediateDirectories: true)
-            let ids = BackupMerge.sessionsToImport(existing: existing, incoming: incomingSessions)
-            for id in ids {
-                try FileManager.default.copyItem(at: sessionsDirectory.appendingPathComponent(id.uuidString),
-                                                 to: AppPaths.sessions.appendingPathComponent(id.uuidString))
+        let counts = try await Task.detached(priority: .utility) { () -> (Int, Int, Int, Int) in
+            try FileManager.default.createDirectory(at: localRoot, withIntermediateDirectories: true)
+            var added = 0, replaced = 0, kept = 0, identical = 0
+            for item in prepared.sessions {
+                if item.status == .identical { identical += 1; continue }
+                if item.status == .conflict && !useBackupSessions.contains(item.id) { kept += 1; continue }
+                let target = localRoot.appendingPathComponent(item.id.uuidString)
+                let temporary = localRoot.appendingPathComponent(".restore-" + UUID().uuidString)
+                defer { try? FileManager.default.removeItem(at: temporary) }
+                try FileManager.default.copyItem(at: root.appendingPathComponent("Sessions").appendingPathComponent(item.id.uuidString), to: temporary)
+                if item.status == .conflict {
+                    _ = try FileManager.default.replaceItemAt(target, withItemAt: temporary)
+                    replaced += 1
+                } else { try FileManager.default.moveItem(at: temporary, to: target); added += 1 }
             }
-            return ids.count
-        }.value
-
-        let originals = root.appendingPathComponent("Originals", isDirectory: true)
-        try await Task.detached(priority: .utility) {
-            let target = AppPaths.root.appendingPathComponent("Originals", isDirectory: true)
-            let files = (try? FileManager.default.contentsOfDirectory(at: originals, includingPropertiesForKeys: [.isRegularFileKey])) ?? []
+            let originals = root.appendingPathComponent("Originals")
+            let target = AppPaths.root.appendingPathComponent("Originals")
+            let files = (try? FileManager.default.contentsOfDirectory(at: originals, includingPropertiesForKeys: nil)) ?? []
             if !files.isEmpty { try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true) }
             for file in files where !file.lastPathComponent.hasPrefix("._") {
-                let hash = file.deletingPathExtension().lastPathComponent
-                guard hash.count == 64, hash.allSatisfy({ $0.isHexDigit }), ManagedModelStore.sha256(of: file) == hash else { throw AppFailure.capture("备份原文件校验失败。") }
                 let destination = target.appendingPathComponent(file.lastPathComponent)
                 if !FileManager.default.fileExists(atPath: destination.path) { try FileManager.default.copyItem(at: file, to: destination) }
             }
+            return (added, replaced, kept, identical)
         }.value
-
+        summary.sessionsAdded = counts.0; summary.sessionsReplaced = counts.1; summary.sessionsKept = counts.2; summary.sessionsIdentical = counts.3
+        let templateMerge = BackupMerge.notesTemplates(existing: currentTemplates(), incoming: prepared.incomingTemplates, useIncoming: useBackupTemplates)
         if applySettings {
             summary.settingsApplied = applySettingsFile(root.appendingPathComponent("settings.plist"))
             summary.secretsApplied = applySecretsFile(root.appendingPathComponent("secrets.plist"))
         }
-        Diagnostics.record("backup.imported", ["workspaces": merged.added + merged.updated, "sessions": summary.sessionsAdded, "settings": summary.settingsApplied])
+        // Templates are user data, independent of the preference-import switch.
+        AppPreferences.standard.set(try JSONEncoder().encode(templateMerge.templates), forKey: "customNotesTemplates")
+        AppState.shared.customNotesTemplates = templateMerge.templates
+        if applySettings {
+            let defaults = AppPreferences.standard
+            AppState.shared.notesModelID = defaults.string(forKey: "notesModelID") ?? AppState.shared.notesModelID
+            AppState.shared.notesReasoning = defaults.string(forKey: "notesReasoning") ?? AppState.shared.notesReasoning
+            AppState.shared.notesLanguage = defaults.string(forKey: "notesLanguage") ?? AppState.shared.notesLanguage
+            AppState.shared.notesTemplateByType = defaults.dictionary(forKey: "notesTemplateByType") as? [String: String] ?? AppState.shared.notesTemplateByType
+        }
+        summary.templatesAdded = templateMerge.added; summary.templatesReplaced = templateMerge.replaced; summary.templatesKept = templateMerge.kept
+        SessionArchive.shared.contentDidChange()
+        SessionArchive.shared.load()
+        Diagnostics.record("backup.imported", ["workspaces": merged.added + merged.updated, "sessions": summary.sessionsAdded, "replaced": summary.sessionsReplaced])
         return summary
     }
 
@@ -170,18 +254,19 @@ enum DataBackup {
         if let sessionID, !(await SessionArchive.shared.waitForFinalTranslationDrain(sessionID: sessionID)) {
             throw AppFailure.capture("会议最终翻译尚未全部保存，未创建恢复点。")
         }
-        guard await SessionArchive.shared.flush() else {
+        guard await SessionArchive.shared.flushForSnapshot() else {
             let failure = SessionArchive.shared.persistenceBySession.values.first(where: { $0.lastFailure != nil })?.lastFailure
             throw AppFailure.capture("会议归档尚未全部保存，未创建恢复点。" + (failure.map { "\n" + $0 } ?? "请重试保存后再试。"))
         }
         let workspaces = WorkspaceStore.shared.workspaces, skills = SkillLibrary.shared.skills, glossary = GlossaryStore.shared.glossary
-        let settings = SettingsSnapshot.filter(UserDefaults.standard.dictionaryRepresentation())
+        let settings = SettingsSnapshot.filter(AppPreferences.standard.dictionaryRepresentation())
         let settingsData = try PropertyListSerialization.data(fromPropertyList: settings, format: .xml, options: 0)
         let version = appVersion, build = appBuild
         let files = try await Task.detached(priority: .utility) { () -> [String: Data] in
             let encoder = JSONLines.encoder(); encoder.outputFormatting.insert(.sortedKeys)
             var files: [String: Data] = ["settings.plist": settingsData, "skills.json": try encoder.encode(skills)]
             if !glossary.isEmpty { files["glossary.json"] = try encoder.encode(glossary) }
+            files["note-templates.json"] = try encoder.encode(Self.currentTemplates())
             for workspace in workspaces { files["Workspaces/\(workspace.id.uuidString).json"] = try encoder.encode(workspace) }
             let sessions = ((try? FileManager.default.contentsOfDirectory(at: AppPaths.sessions, includingPropertiesForKeys: nil)) ?? []).filter { UUID(uuidString: $0.lastPathComponent) != nil }
             var manifest = BackupManifest(kind: .full, appVersion: version, appBuild: build, includesSecrets: false, workspaceCount: workspaces.count, sessionCount: sessions.count)
@@ -193,9 +278,10 @@ enum DataBackup {
         let url = try await recoveryStore.create(files: files, directories: ["Sessions": AppPaths.sessions,
             "Originals": AppPaths.root.appendingPathComponent("Originals", isDirectory: true)], reason: reason)
         if try await recoveryStore.storageBytes() > 2 * 1024 * 1024 * 1024 {
-            AppState.shared.dataStatus = "最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。"
+            AppState.shared.recoveryPointWarning = "最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。"
             Diagnostics.record("backup.soft_budget_exceeded")
-        }
+        } else { AppState.shared.recoveryPointWarning = nil }
+        NotificationCenter.default.post(name: didChangeNotification, object: nil)
         Diagnostics.record("backup.automatic", ["reason": reason])
         return url
     }
@@ -203,11 +289,15 @@ enum DataBackup {
     @MainActor
     @discardableResult
     static func afterSession(sessionID: UUID) -> Task<URL?, Never>? {
-        guard UserDefaults.standard.object(forKey: "autoBackup") as? Bool ?? true else { return nil }
+        guard AppPreferences.standard.object(forKey: "autoBackup") as? Bool ?? true else { return nil }
         return Task {
-            do { return try await automaticBackup(reason: "session", waitForFinalTranslationDrainOf: sessionID) }
+            do {
+                let url = try await automaticBackup(reason: "session", waitForFinalTranslationDrainOf: sessionID)
+                AppState.shared.backupIssue = nil
+                return url
+            }
             catch {
-                AppState.shared.dataStatus = "会议归档或恢复点创建失败：" + error.localizedDescription
+                AppState.shared.backupIssue = "会议归档或恢复点创建失败：" + error.localizedDescription
                 return nil
             }
         }
@@ -252,6 +342,17 @@ enum DataBackup {
             if fm.fileExists(atPath: file.path) {
                 guard try PropertyListSerialization.propertyList(from: Data(contentsOf: file), format: nil) is [String: Any] else { throw AppFailure.capture("备份设置格式无效。") }
             }
+        }
+        _ = try readTemplates(in: root)
+        let invalidMetadata = sessions.filter { folder in
+            guard let data = try? Data(contentsOf: folder.appendingPathComponent("meta.json")),
+                  let meta = try? JSONLines.decoder().decode(SessionMeta.self, from: data) else { return true }
+            return meta.id != UUID(uuidString: folder.lastPathComponent)
+        }
+        guard invalidMetadata.isEmpty else { throw AppFailure.capture(String(localized: "备份中有 \(invalidMetadata.count) 场记录的元数据损坏或标识不匹配；尚未导入任何内容。")) }
+        for session in sessions {
+            let user = session.appendingPathComponent(SessionUserContent.filename)
+            if fm.fileExists(atPath: user.path) { _ = try JSONLines.decoder().decode(SessionUserContent.self, from: Data(contentsOf: user)) }
         }
         let skills = root.appendingPathComponent("skills.json")
         if fm.fileExists(atPath: skills.path) { _ = try JSONLines.decoder().decode([Skill].self, from: Data(contentsOf: skills)) }
@@ -320,21 +421,37 @@ enum DataBackup {
         }
     }
 
-    private static func readWorkspaces(in root: URL) -> [Workspace] {
+    private static func readWorkspaces(in root: URL, materialize: Bool = false) throws -> [Workspace] {
         let directory = root.appendingPathComponent("Workspaces", isDirectory: true)
         let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-        return files.filter { $0.pathExtension == "json" && !$0.lastPathComponent.hasPrefix("._") }.compactMap { file in
-            guard var workspace = try? JSONLines.decoder().decode(Workspace.self, from: Data(contentsOf: file)) else { return nil }
-            for index in workspace.documents.indices {
-                let document = workspace.documents[index]
-                // Recreate archives from the canonical inline content; never trust paths from an imported backup.
-                if let url = try? MaterialArchive.archive(document.content?.markdown ?? document.pages.joined(separator: "\n\n"), name: document.name, format: document.sourceFormat ?? "legacy", workspaceID: workspace.id) {
+        return try files.filter { $0.pathExtension == "json" && !$0.lastPathComponent.hasPrefix("._") }.map { file in
+            var workspace = try JSONLines.decoder().decode(Workspace.self, from: Data(contentsOf: file))
+            if materialize {
+                for index in workspace.documents.indices {
+                    let document = workspace.documents[index]
+                    let url = try MaterialArchive.archive(document.content?.markdown ?? document.pages.joined(separator: "\n\n"), name: document.name, format: document.sourceFormat ?? "legacy", workspaceID: workspace.id)
                     workspace.documents[index].markdownPath = MaterialArchive.relative(url)
-                    if let content = document.content { try? JSONEncoder().encode(content).write(to: url.deletingPathExtension().appendingPathExtension("json"), options: .atomic) }
-                } else { workspace.documents[index].markdownPath = nil }
+                    if let content = document.content { try JSONEncoder().encode(content).write(to: url.deletingPathExtension().appendingPathExtension("json"), options: .atomic) }
+                }
             }
             return workspace
         }
+    }
+
+    private static func currentTemplates() -> [NotesTemplate] {
+        guard let data = AppPreferences.standard.data(forKey: "customNotesTemplates") else { return [] }
+        return (try? JSONDecoder().decode([NotesTemplate].self, from: data)) ?? []
+    }
+    private static func writeTemplates(into root: URL) throws {
+        try write(currentTemplates(), to: root.appendingPathComponent("note-templates.json"))
+    }
+    private static func readTemplates(in root: URL) throws -> [NotesTemplate] {
+        let file = root.appendingPathComponent("note-templates.json")
+        if FileManager.default.fileExists(atPath: file.path) { return try JSONLines.decoder().decode([NotesTemplate].self, from: Data(contentsOf: file)) }
+        if let data = try? Data(contentsOf: root.appendingPathComponent("settings.plist")),
+           let values = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+           let templates = values["customNotesTemplates"] as? Data { return try JSONDecoder().decode([NotesTemplate].self, from: templates) }
+        return []
     }
 
     /// Copies session folders; `only` limits to the given ids.
@@ -352,7 +469,7 @@ enum DataBackup {
     }
 
     private static func writeSettings(into staging: URL) throws {
-        let values = SettingsSnapshot.filter(UserDefaults.standard.dictionaryRepresentation())
+        let values = SettingsSnapshot.filter(AppPreferences.standard.dictionaryRepresentation())
         let data = try PropertyListSerialization.data(fromPropertyList: values, format: .xml, options: 0)
         try data.write(to: staging.appendingPathComponent("settings.plist"))
     }
@@ -371,7 +488,7 @@ enum DataBackup {
         guard let data = try? Data(contentsOf: url),
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else { return 0 }
         let filtered = SettingsSnapshot.valuesForRestore(values)
-        for (key, value) in filtered { UserDefaults.standard.set(value, forKey: key) }
+        for (key, value) in filtered { AppPreferences.standard.set(value, forKey: key) }
         return filtered.count
     }
 
