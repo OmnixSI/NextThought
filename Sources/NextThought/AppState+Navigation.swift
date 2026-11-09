@@ -39,10 +39,15 @@ enum SettingsWindow {
         next.title = String(localized: "设置")
         next.isReleasedWhenClosed = false
         next.backgroundColor = Ink.paperNSColor
-        next.minSize = NSSize(width: 880, height: 600)
         next.level = MainWindowLayout.effectiveWorkspaceLevel
         next.setFrameAutosaveName("NextThought.Settings")
-        next.contentView = NSHostingView(rootView: SettingsWindowContent())
+        let content = NSHostingView(rootView: SettingsWindowContent())
+        // The scrollable form's intrinsic minimum is smaller than its usable
+        // layout. Keep hosting from replacing our window constraints on SDKs
+        // that update minSize when the root view is installed.
+        content.sizingOptions = []
+        next.contentView = content
+        next.contentMinSize = NSSize(width: 880, height: 600)
         next.center()
         window = next
         next.makeKeyAndOrderFront(nil)
