@@ -72,9 +72,10 @@ enum SettingsNavigationSelfTest {
         try checkWorkspace(running: false)
         guard settingsWindows.count == 1, let first = settingsWindows.first,
               first.isVisible, first.contentView != nil,
-              first.minSize.width >= 880, first.minSize.height >= 600 else {
+              first.contentMinSize.width >= 880, first.contentMinSize.height >= 600,
+              first.styleMask.contains(.resizable) else {
             let details = settingsWindows.map {
-                "visible=\($0.isVisible), content=\($0.contentView != nil), min=\($0.minSize), style=\($0.styleMask.rawValue)"
+                "visible=\($0.isVisible), content=\($0.contentView != nil), contentMin=\($0.contentMinSize), frameMin=\($0.minSize), style=\($0.styleMask.rawValue)"
             }.joined(separator: "; ")
             throw SelfTest.Failure("Settings did not open as one independent, resizable window (count=\(settingsWindows.count); \(details))")
         }
