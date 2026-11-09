@@ -4,7 +4,7 @@
 
 ## 已执行的验证
 
-- `swift test --disable-sandbox`：最终 **387 项通过**。包括无 AI 录制就绪、单场上下文隔离、1,005 场全文检索、32 MiB 缓存驱逐、保存刷新、资料副本所有权、用户内容持久化、纠错决定、损坏与失败写入，以及拒绝错误引用的边界测试。
+- `swift test --disable-sandbox`：最终 **510 项通过**。包括无 AI 录制就绪、单场上下文隔离、1,005 场全文检索、32 MiB 缓存驱逐、保存刷新、资料副本所有权、用户内容持久化、纠错决定、损坏与失败写入，以及拒绝错误引用的边界测试。
 - `scripts/build-ux-preview.sh`：发布配置构建、资源编译、独立预览打包与严格代码签名验证通过。
 - `meeting-content`：真实归档验证仅笔记记录保留、人工修订保护、有效导出、同请求片段去重、失败保存草稿重试。
 - `archive-ux`：真实备份往返验证个人笔记、重点、自定义模板、内容冲突、默认保留本机、显式恢复、相同内容重导入和恢复前恢复点；损坏 metadata 在应用前拒绝。
@@ -17,8 +17,8 @@
 | 场景 | 检查内容 |
 |---|---|
 | 首页／准备 | 学术入口、继续项目、固定开始栏、AI 可选、就绪与资料范围 |
-| 全局导航 | 四个独立原生选择行、选择状态、收起／展开 |
-| 设置 | 12 个直接入口；中文“术语”命中并滚动定位；中英文切换；英文同义词复验 |
+| 全局导航 | 三个工作区顶栏入口；独立设置窗口重复打开复用，保留项目与会议草稿 |
+| 设置 | 六类目录保留 12 个目的地；中英文术语、纪要、模板、备份等检索定位；清空时取消定位和高亮 |
 | 记录／纪要 | 纪要正文全文搜索、命中片段、分节编辑、人工版本标签与 AI 原稿入口 |
 | 引用 | 就地证据栏与返回；无法定位时禁止猜用其他原话 |
 | 项目／资料 | 三标签、原件与提取对照、缺原件说明、移除及撤销 |
@@ -46,7 +46,46 @@
 
 ## 交付状态
 
-最终测试和发布构建日志保留在 `.build/ux-verified-tests.log`、`.build/ux-delivery-build.log`；自检与预览使用本仓库 `.local/` 下独立目录。可运行预览为 `.local/AcademicUXReview.app`，默认使用演示数据；其 Bundle ID、偏好、钥匙串服务与数据路径与正式版隔离，预览禁用自动更新。
+本轮早期测试和发布构建日志保留在 `.build/ux-verified-tests.log`、`.build/ux-delivery-build.log`；最终组件验收日志见下节；自检与预览使用本仓库 `.local/` 下独立目录。可运行预览为 `.local/NextThoughtUXReview.app`，默认使用演示数据；其 Bundle ID、偏好、钥匙串服务与数据路径与正式版隔离，预览禁用自动更新。
 
 
 最终补充：`meeting-content`、`archive-ux`、`large-pdf`、`structured-notes`、`fishbone-rendering` 五组应用级自检全部通过；鱼骨图宽/窄实际渲染中六类内容均可识别。最终原生复验通过 English `minutes` 搜索、AI optional、资料移除→Undo 恢复 4 份资料、超范围时间引用不显示无关原话，以及浅/深色界面。十二个设置目录逐一只读进入检查。预览停在浅色英文首页，正式版语言与外观未改变。
+
+
+## v2.5.0 最终组件验收（2026-11-09）
+
+用户已查看并明确同意合并发版。本轮独立设置窗口、下划线页签、模板值菜单、更新页面、按钮、输入与反馈状态已经纳入原生产品；HTML 概念仅保留设计历史。
+
+- 最终本机 `swift test --disable-sandbox`：510 项通过；`swift build --disable-sandbox -c release` 通过（148.81 秒）。日志：`.build/settings-swift-tests.log`、`.build/settings-final-release-build.log`。
+- 发布配置实际应用自检：data、meeting-content、archive-ux、large-pdf、session-export、session-backup-drain、session-edit-receipts、session-carry-context、source-integrity、settings-navigation 均通过。日志：`.build/settings-production-*.log`。
+- 结构化纪要、鱼骨图渲染、资料准备分支另外通过应用自检。Codex transport、Legacy Office、7 项文档归一化、4 项发布资产测试及 3 项移动共享协议测试通过。
+- 最终发布配置 PDF：400 页、742,606 字符，首次 0.767 秒、缓存 0.023 秒，扫描混合页 1.162 秒、同页页眉与扫描正文 0.641 秒；页定位与两项依赖保护通过。
+- 设置的 general / updates / templates，中文与英文、浅色与深色、980×720 与 880×600 内容尺寸，共 24 张实际 SwiftUI/AppKit 渲染图。完整原图和机器验收结果在 `.local/settings-ui-final-zh-Hans/` 与 `.local/settings-ui-final-en/`；仓库 evidence 目录保留代表图。
+- 原生交互实际检查：独立窗口复用、方向键切换页签与真实焦点移动、原生菜单当前值与 Escape 关闭、Command-F 聚焦搜索、AX 选择状态。
+- 远端暴露的新版 SDK `CGPDFDictionaryRef` 类型问题已修复。无图形生命周期的命令行数据测试先补 AppKit 初始化；断言全部通过后退出阶段仍出现崩溃，因此仅自检入口改用刷新输出后 `_exit`，避免进程全局 AppKit 析构。自检仍等待各自持久化回执；正式应用入口不变。设置窗口自检另显式完成 AppKit 启动生命周期，以匹配命令行 CI 环境；独立测试身份在本机复验通过。
+
+### 验证边界与剩余 P2
+
+- 当前最终设置截图尺寸不等同于主窗口尺寸；上表 960 / 1120 检查属于本轮前期主流程检查。
+- 尚未完成真实 VoiceOver 用户测试、中文输入法完整自动化、物理 macOS 14 设备和真实麦克风故障矩阵。不得将 AX 静态检查等同于这些验证。
+- 后续收敛值菜单装饰箭头的 AX 表达；验证无重复可操作名称，并复验 VoiceOver 与键盘菜单。
+- 当前 1,005 场合成记录验证无 200 条上限；进一步按真实库测量冷查询延迟与内存，再决定持久化索引。
+- 没有用户此前失败的 PDF。大扫描文档、公式和图表语义完整性仍需真实样本；512 MiB / 2,000 页限制保持明确。
+
+
+### 发布检查状态
+
+最终设置窗口使用明确的 `contentMinSize`，自检对应检查内容区约束及可调整大小属性；避免混淆窗口外框最小值与内容最小值。新版 SDK 的宿主最小布局回写通过禁用自动 sizing、再设置内容约束修复。
+
+源代码 `d90e776faad08fd21d0cf0e586bb657a098314f3` 的远端运行 [42613672380](https://github.com/OmnixSI/NextThought/actions/runs/42613672380) 未执行任何步骤：GitHub 拒绝启动任务，提示账户付款或支出额度问题。这不是测试通过，也不是代码测试失败。最后一轮有执行的构建与应用自检结果必须结合该限制阅读；用户随后明确要求本机构建并发布，本次不使用 Actions。README 的截图均为本地真实原生渲染，不包含真实会议资料。
+
+
+### 本机正式发布路径
+
+用户明确授权本机构建发版。最新源代码本机完整复验：510 项测试通过，发布配置构建通过（114.18 秒）；日志 `.build/settings-release-final-tests.log` 和 `.build/settings-release-final-build.log`。最终发布二进制的 13 组自检全部通过：data、meeting-content、archive-ux、large-pdf、structured-notes、fishbone-rendering、session-export、session-backup-drain、session-edit-receipts、session-carry-context、source-integrity、settings-navigation、document-setup。日志 `.build/settings-release-local-*.log`。
+
+本次最终大 PDF 为 400 页 / 742,606 字符，首次 0.756 秒、缓存 0.023 秒、扫描混合页 1.165 秒、同页页眉加扫描正文 0.772 秒。仅代表合成样本。
+
+iOS SDK 构建在此前远端 macos 作业通过；之后变更局限于 macOS 设置窗口、自检入口及文档，未更改移动端代码。本机仅有 Command Line Tools，无法把该历史结果表述为本机完整 iOS SDK 重跑。
+
+为遵守本次不使用 Actions 的要求，合并与打标签期间暂时停用 Verify / Release 自动工作流；上传校验完成后恢复原先启用状态，未来触发策略不变。本机正式发布使用仓库打包与发布资产校验脚本，最终产物沿用 v2.4.1 的正式签名身份，而非预览的临时签名。

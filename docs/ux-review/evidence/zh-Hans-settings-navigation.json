@@ -1,0 +1,137 @@
+{
+  "captures" : [
+    {
+      "appearance" : "light",
+      "height" : 720,
+      "path" : "settings-general-light-980.png",
+      "width" : 980
+    },
+    {
+      "appearance" : "light",
+      "height" : 720,
+      "path" : "settings-updates-light-980.png",
+      "width" : 980
+    },
+    {
+      "appearance" : "light",
+      "height" : 720,
+      "path" : "settings-templates-light-980.png",
+      "width" : 980
+    },
+    {
+      "appearance" : "light",
+      "height" : 600,
+      "path" : "settings-general-light-880.png",
+      "width" : 880
+    },
+    {
+      "appearance" : "light",
+      "height" : 600,
+      "path" : "settings-updates-light-880.png",
+      "width" : 880
+    },
+    {
+      "appearance" : "light",
+      "height" : 600,
+      "path" : "settings-templates-light-880.png",
+      "width" : 880
+    },
+    {
+      "appearance" : "dark",
+      "height" : 720,
+      "path" : "settings-general-dark-980.png",
+      "width" : 980
+    },
+    {
+      "appearance" : "dark",
+      "height" : 720,
+      "path" : "settings-updates-dark-980.png",
+      "width" : 980
+    },
+    {
+      "appearance" : "dark",
+      "height" : 720,
+      "path" : "settings-templates-dark-980.png",
+      "width" : 980
+    },
+    {
+      "appearance" : "dark",
+      "height" : 600,
+      "path" : "settings-general-dark-880.png",
+      "width" : 880
+    },
+    {
+      "appearance" : "dark",
+      "height" : 600,
+      "path" : "settings-updates-dark-880.png",
+      "width" : 880
+    },
+    {
+      "appearance" : "dark",
+      "height" : 600,
+      "path" : "settings-templates-dark-880.png",
+      "width" : 880
+    }
+  ],
+  "dirtyProjectPreserved" : true,
+  "meetingDraftPreserved" : true,
+  "modelCalls" : 0,
+  "queries" : [
+    "appearance",
+    "minutes",
+    "terms",
+    "template",
+    "backup"
+  ],
+  "routes" : [
+    {
+      "category" : "general",
+      "group" : "基础"
+    },
+    {
+      "category" : "recording",
+      "group" : "识别"
+    },
+    {
+      "category" : "intelligence",
+      "group" : "回答"
+    },
+    {
+      "category" : "notes",
+      "group" : "纪要"
+    },
+    {
+      "category" : "intelligence",
+      "group" : "资料"
+    },
+    {
+      "category" : "presentation",
+      "group" : "提词器"
+    },
+    {
+      "category" : "intelligence",
+      "group" : "技能"
+    },
+    {
+      "category" : "data",
+      "group" : "数据"
+    },
+    {
+      "category" : "general",
+      "group" : "更多"
+    },
+    {
+      "category" : "presentation",
+      "group" : "快捷键"
+    },
+    {
+      "category" : "presentation",
+      "group" : "手机伴侣"
+    },
+    {
+      "category" : "data",
+      "group" : "权限与维护"
+    }
+  ],
+  "windowReused" : true
+}
