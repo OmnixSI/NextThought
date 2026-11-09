@@ -1,7 +1,7 @@
 # T07 Live Session Acceptance Evidence
 
-Generated at: 2026-11-09T04:01:13Z  
-Source revision: `bccece1+worktree`  
+- Generated at: 2026-11-09T04:24:34Z
+- Source revision: `605baf2`
 Tracked evidence includes 24 representative scenario PNGs, one evidence popover PNG, and one component sample sheet PNG. The reproducible run produced 114 native matrix captures for both appearances, three widths, and all 19 scenarios. `manifest.json` maps every tracked matrix image and records the full dimensions.
 
 All transcript, answer, and persistence states are synthetic. Captures use the actual SwiftUI live page rendered through AppKit with locale `zh-Hans`; they use no real audio, ASR, model call, network request, or archive write. The full local matrix is at the requested output directory; run `scripts/capture-live-session-acceptance.sh` to regenerate it and refresh these representative files.
