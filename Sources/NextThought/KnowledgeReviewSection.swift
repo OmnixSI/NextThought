@@ -28,7 +28,8 @@ struct KnowledgeReviewSection: View {
                           !((summary.lessons ?? []).isEmpty && (summary.bank ?? []).isEmpty) else { return false }
                     var preview = workspace
                     return !KnowledgeMerger.collectCandidates(lessons: summary.lessons ?? [], bank: summary.bank ?? [],
-                                                              into: &preview, session: sessionID, originID: sessionID).isEmpty
+                                                              into: &preview, session: sessionID, originID: sessionID,
+                                                              transcriptSourceRevision: summary.transcriptSourceRevision).isEmpty
                 }()
                 let pendingSeriesChanges = (workspace.seriesChangeCandidates ?? []).filter { candidate in
                     candidate.status == .pending && (sessionID == nil || candidate.sourceSessionID == sessionID)

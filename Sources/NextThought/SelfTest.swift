@@ -9,6 +9,12 @@ private actor SelfTestCompletionFlag {
     func isFinished() -> Bool { finished }
 }
 
+private actor SelfTestReleaseGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+    func wait() async { await withCheckedContinuation { continuation = $0 } }
+    func release() { continuation?.resume(); continuation = nil }
+}
+
 /// Entry point: the normal app, or `NextThought --self-test <suites…>` which
 /// exercises the real code paths headlessly (used by CI on macOS runners):
 ///
@@ -16,6 +22,7 @@ private actor SelfTestCompletionFlag {
 ///   signing  local signing identity, re-signing keeps the designated requirement
 ///   update   download + verify the latest release; rehearse the bundle swap
 ///   asr      install X-ASR models, two-pass recognition of the fixtures, question detection
+///   live-session-ui native live-page screenshot and interaction acceptance matrix
 ///
 /// Set NEXTTHOUGHT_DATA_DIR to a scratch folder; `--fixtures <dir>` for asr.
 /// Set NEXTTHOUGHT_SELFTEST_EXPORT_DIRECTORY to retain generated export fixtures.
@@ -79,10 +86,12 @@ enum SelfTest {
                 case "screen-context": return try await ScreenSelfTest.run(options)
                 case "relay": return try await CompanionRelaySelfTest.run(options)
                 case "search-eval": return try await ScreenSelfTest.search(options)
+                case "live-session-ui": return try await LiveSessionAcceptanceSelfTest.run(options)
                 case "session-export": return try verifySessionExports()
                 case "session-backup-drain": return try await testSessionBackupWaitsForFinalTranslationDrain()
                 case "session-edit-receipts": return try await testSessionEditsWaitForSaveReceipts()
                 case "session-carry-context": return try await testSessionCarryContextSnapshot()
+                case "source-integrity": return try await testDeletedMeetingBlocksLateSummaryCandidates()
                 case "large-file": return try await PreparationSelfTest.largeFile(options)
                 case "preparation-file": return try await PreparationSelfTest.realFile(options)
                 case "capacity": return try await PreparationSelfTest.capacity()
@@ -383,6 +392,64 @@ enum SelfTest {
         try expect(!names.contains("excluded baseline"), "archived context leaked excluded baseline material")
         try expect(!names.contains("disabled material"), "archived context included a disabled material")
         return "asynchronously carried transcript is persisted while excluded and disabled documents stay out"
+    }
+
+    @MainActor
+    private static func testDeletedMeetingBlocksLateSummaryCandidates() async throws -> String {
+        guard AppEnvironment.values["NEXTTHOUGHT_DATA_DIR"] != nil else {
+            throw Failure("source-integrity requires NEXTTHOUGHT_DATA_DIR scratch storage")
+        }
+        guard !AppState.shared.isRunning else { throw Failure("source-integrity requires no active meeting") }
+        let app = AppState.shared
+        let archive = SessionArchive.shared
+        let store = WorkspaceStore.shared
+        let workspace = store.create(mode: .meeting, name: "source-integrity self-test")
+        let meta = SessionMeta(startedAt: Date(), mode: .meeting, title: "delete race", workspaceID: workspace.id,
+                               workspaceName: workspace.name)
+        let line = SessionTranscriptLine(date: Date(), speaker: .remote, text: "This transcript belongs to the deleted meeting.")
+        archive.begin(meta, context: SessionContextSnapshot(mode: .meeting, style: .concise,
+                                                            preferences: "", profile: "", documents: []))
+        archive.append(line)
+        guard archive.finish() != nil, await archive.flush(sessionID: meta.id) else {
+            throw Failure("meeting fixture did not receive a save receipt")
+        }
+
+        let sourceRevision = SessionProjectionBuilder.transcriptSourceRevision(meta: meta, lines: [line])
+        let lateSummary = SessionSummary(title: "late summary", markdown: "", questions: [], generatedAt: Date(),
+                                         model: "self-test", lessons: ["deleted meeting lesson"],
+                                         bank: [BankEntry(question: "deleted meeting question", answer: "deleted meeting answer")],
+                                         transcriptSourceRevision: sourceRevision)
+        let releaseGate = SelfTestReleaseGate()
+        let finished = SelfTestCompletionFlag()
+        let lateSummaryTask = Task { @MainActor in
+            await releaseGate.wait()
+            _ = app.collectReviewCandidates(lateSummary, sessionID: meta.id, workspaceID: workspace.id)
+            await finished.markFinished()
+        }
+        archive.summarizing.insert(meta.id)
+        archive.summaryTasks[meta.id] = lateSummaryTask
+
+        app.deleteArchivedMeeting(meta.id)
+        for _ in 0..<200 where archive.sessions.contains(where: { $0.id == meta.id }) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        guard !archive.sessions.contains(where: { $0.id == meta.id }), archive.isTombstoned(meta.id) else {
+            await releaseGate.release()
+            await lateSummaryTask.value
+            throw Failure("delete did not remove and tombstone the meeting")
+        }
+
+        // Release a cancelled but non-cooperative callback after deletion. The
+        // tombstone/session-presence check must prevent candidate resurrection.
+        await releaseGate.release()
+        await lateSummaryTask.value
+        guard await finished.isFinished() else { throw Failure("late summary callback did not finish") }
+        guard let cleanedWorkspace = store.workspace(workspace.id) else { throw Failure("workspace was removed unexpectedly") }
+        try expect(cleanedWorkspace.knowledgeCandidates?.isEmpty != false,
+                   "late summary callback recreated a candidate for the deleted meeting")
+        try expect(!cleanedWorkspace.lessons.contains { $0.text == "deleted meeting lesson" },
+                   "late summary callback recreated a lesson for the deleted meeting")
+        return "deleting a meeting tombstones and cancels its summary; a late summary cannot recreate knowledge"
     }
 
     /// Exercises the exact file writers used by the preview sheet with the synthetic F10

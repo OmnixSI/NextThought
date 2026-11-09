@@ -9,7 +9,10 @@ import Observation
     private(set) var evidenceHistory: [UUID: EvidenceBundle] = [:]
     func begin(id: UUID, question: String) { state = .init(id: id, question: question) }
     func update(id: UUID, _ change: (inout AnswerState) -> Void) {
-        guard state?.id == id else { return }
+        // Cancellation is terminal for this request. A late stream, search, or
+        // model callback may still arrive after its task was cancelled; it must
+        // not turn the retained partial result back into a success.
+        guard state?.id == id, state?.phase != .cancelled else { return }
         change(&state!); state!.revision += 1
         evidenceHistory[id] = state!.evidence
         if evidenceHistory.count > 100, let first = evidenceHistory.keys.first(where: { $0 != id }) { evidenceHistory[first] = nil }

@@ -80,6 +80,9 @@ public struct SessionStructuredNotesTarget: Sendable, Equatable {
 /// `support` describes the source match only; it never means that a claim is confirmed.
 public struct SessionEvidenceReference: Sendable, Equatable, Identifiable {
     public let id: String
+    /// The archive record that produced this reference. Kept in-memory so a series
+    /// brief never validates one meeting's item against another meeting's row.
+    public let sessionID: UUID?
     public let title: String
     public let claim: String
     public let quote: String?
@@ -112,8 +115,10 @@ public struct SessionEvidenceReference: Sendable, Equatable, Identifiable {
                 kind: NotesSectionKind? = nil, owner: String? = nil, due: String? = nil,
                 dueDate: Date? = nil, claimRevision: String? = nil,
                 transcriptSourceRevision: String = "", sourceStatus: SessionDerivedContentStatus = .unknown,
-                reviewDecision: SessionEvidenceDecision? = nil, reviewIsStale: Bool = false) {
+                reviewDecision: SessionEvidenceDecision? = nil, reviewIsStale: Bool = false,
+                sessionID: UUID? = nil) {
         self.id = id
+        self.sessionID = sessionID
         self.title = title
         self.claim = claim
         self.quote = quote
@@ -228,7 +233,7 @@ public enum SessionEvidenceBuilder {
                                             transcriptSourceRevision: currentTranscriptRevision,
                                             sourceStatus: sourceStatus,
                                             reviewDecision: reviewIsCurrent ? savedReview?.decision : nil,
-                                            reviewIsStale: reviewIsStale)
+                                            reviewIsStale: reviewIsStale, sessionID: meta.id)
         }
 
         let notesStatus = status(savedRevision: notes?.transcriptSourceRevision,

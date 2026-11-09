@@ -177,6 +177,10 @@ final class WorkspaceEditController {
 
     func requestDeleteWorkspace(_ id: UUID, state: AppState, onDeleted: (() -> Void)? = nil) {
         guard !state.isRunning, state.workspaces.workspace(id) != nil else { return }
+        if let reason = state.workspaceDeletionDisabledReason(id) {
+            state.errorMessage = reason
+            return
+        }
         request(.deleteWorkspace(id, onDeleted: onDeleted), state: state)
     }
 
@@ -1425,6 +1429,46 @@ private struct ExperienceLessonRow: View {
                 } else {
                     lessonText.textSelection(.enabled)
                 }
+                HStack(spacing: 6) {
+                    Text("v\(lesson.revision)").font(.system(size: 10)).foregroundStyle(Ink.tertiary)
+                    sourceLinks(lesson.sourceSessionID, lesson.sourceSessionIDs,
+                                tombstones: lesson.sourceMissingSessionIDs)
+                }
+                if !lesson.history.isEmpty {
+                    DisclosureGroup("历史版本（\(lesson.history.count)）") {
+                        VStack(alignment: .leading, spacing: 7) {
+                            ForEach(lesson.history.sorted {
+                                $0.revision == $1.revision ? $0.recordedAt < $1.recordedAt : $0.revision < $1.revision
+                            }) { revision in
+                                VStack(alignment: .leading, spacing: 5) {
+                                    HStack {
+                                        Text("v\(revision.revision) · \(revision.recordedAt.formatted(date: .abbreviated, time: .shortened))")
+                                            .font(.system(size: 10)).foregroundStyle(Ink.tertiary)
+                                        Spacer()
+                                        if lessonDiffers(from: revision) {
+                                            Button("恢复此版") {
+                                                state.restoreLessonRevision(revision.id, lessonID: lesson.id,
+                                                                            workspaceID: state.activeWorkspace.id)
+                                            }
+                                            .buttonStyle(.plain).font(.system(size: 10, weight: .medium))
+                                            .disabled(editor.isEntryEditing)
+                                            .help(editor.isEntryEditing ? "先保存或放弃当前经验草稿，再恢复历史版本" : "恢复此版本并保留当前版本记录")
+                                        } else {
+                                            Text("与当前内容相同").font(.system(size: 10)).foregroundStyle(Ink.tertiary)
+                                        }
+                                    }
+                                    Text(verbatim: revision.text).font(.system(size: 12)).textSelection(.enabled)
+                                    sourceLinks(revision.sourceSessionID, revision.sourceSessionIDs,
+                                                tombstones: revision.sourceMissingSessionIDs)
+                                }
+                                .padding(6)
+                                .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 7))
+                            }
+                        }
+                        .padding(.top, 5)
+                    }
+                    .font(.system(size: 10)).foregroundStyle(Ink.secondary)
+                }
             }
             Button(action: onDelete) {
                 Image(systemName: "xmark").frame(width: 22, height: 24)
@@ -1459,6 +1503,39 @@ private struct ExperienceLessonRow: View {
             draft.lessons[index].text = value
             editor.updateDraft(draft)
         })
+    }
+
+    private func lessonDiffers(from revision: WorkspaceLessonRevision) -> Bool {
+        lesson.text != revision.text || lesson.sourceSessionID != revision.sourceSessionID
+            || lesson.sourceSessionIDs != revision.sourceSessionIDs
+            || lesson.sourceMissingSessionIDs != revision.sourceMissingSessionIDs
+    }
+
+    @ViewBuilder
+    private func sourceLinks(_ primary: UUID?, _ all: [UUID]?, tombstones: [UUID]?) -> some View {
+        let sources = Set(all ?? []).union(primary.map { [$0] } ?? [])
+        if !sources.isEmpty {
+            ForEach(sources.sorted { $0.uuidString < $1.uuidString }, id: \.self) { sourceID in
+                if let meta = state.archive.sessions.first(where: { $0.id == sourceID }) {
+                    Button(meta.displayTitle) { openSource(sourceID) }
+                        .buttonStyle(.plain).font(.system(size: 10)).foregroundStyle(Brand.accent)
+                        .lineLimit(1).help("打开来源会议")
+                }
+            }
+        }
+        if !(tombstones ?? []).isEmpty {
+            Label("原来源会议已删除", systemImage: "clock.arrow.circlepath")
+                .font(.system(size: 10)).foregroundStyle(Ink.caution)
+        }
+        if sources.isEmpty && (tombstones ?? []).isEmpty {
+            Text("来源未记录").font(.system(size: 10)).foregroundStyle(Ink.tertiary)
+        }
+    }
+
+    private func openSource(_ sessionID: UUID) {
+        guard state.archive.sessions.contains(where: { $0.id == sessionID }) else { return }
+        state.section = .meetings
+        state.historySelection = sessionID
     }
 
 }

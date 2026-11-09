@@ -130,7 +130,7 @@ private struct SectionStack: View {
 }
 
 /// Error or warning line, floating at the top of the window in every mode.
-private struct ErrorBanner: View {
+struct ErrorBanner: View {
     @Environment(AppState.self) private var state
 
     var body: some View {

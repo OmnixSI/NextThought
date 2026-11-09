@@ -88,17 +88,42 @@ struct SeriesBriefingTests {
         #expect(briefing.decisions.map(\.text) == ["正式改为下周一提交，外部数据已到齐。"])
         #expect(briefing.decisions.first?.history.map(\.text) == ["暂定周五提交，等待外部数据确认。"])
 
-        // Removing the meeting that supplied the current version hides the item;
-        // it never falls back to the older Friday revision in its history.
+        // Removing the current source leaves a visible needs-review row and never
+        // falls back to the older Friday revision.
         let afterSourceDeletion = SeriesBriefingBuilder.build(workspace: workspace, sessions: [friday, next],
                                                               evidenceReferences: [firstEvidence, secondEvidence])
         #expect(afterSourceDeletion.decisions.isEmpty)
+        #expect(afterSourceDeletion.staleItems.map(\.text) == ["正式改为下周一提交，外部数据已到齐。"])
+        #expect(afterSourceDeletion.staleItems.first?.sourceMissing == true)
+        #expect(afterSourceDeletion.staleItems.first?.sourceQuote == nil)
+        #expect(afterSourceDeletion.staleItems.first?.history.map(\.text) == ["暂定周五提交，等待外部数据确认。"])
         #expect(!afterSourceDeletion.decisions.contains(where: { $0.text.contains("周五") }))
 
         workspace.useKnowledge = false
         let disabled = SeriesBriefingBuilder.build(workspace: workspace, sessions: [friday, monday, next],
                                                    evidenceReferences: [firstEvidence, secondEvidence])
         #expect(disabled.decisions.isEmpty)
+    }
+
+    @Test func changedSourceRevisionShowsAcceptedItemAsStaleAndExcludesItFromCarry() throws {
+        let sourceID = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000011"))
+        let workspace = Workspace(name: "项目交付", mode: .meeting,
+                                  seriesItems: [WorkspaceSeriesItem(kind: .decision, text: "改为周一交付",
+                                                                    sourceSessionID: sourceID,
+                                                                    evidenceID: "notes:decisions:delivery",
+                                                                    claimRevision: "claim-v1", sourceRevision: "line-v1",
+                                                                    transcriptSourceRevision: "transcript-v1")])
+        let session = SessionMeta(id: sourceID, startedAt: Date(), mode: .meeting, workspaceID: workspace.id)
+        let changedEvidence = evidence(id: "notes:decisions:delivery", claim: "改为周一交付，新增验收步骤",
+                                       sourceRevision: "line-v2", claimRevision: "claim-v2",
+                                       transcriptSourceRevision: "transcript-v2")
+
+        let briefing = SeriesBriefingBuilder.build(workspace: workspace, sessions: [session],
+                                                   evidenceReferences: [changedEvidence])
+
+        #expect(briefing.decisions.isEmpty)
+        #expect(briefing.openActions.isEmpty)
+        #expect(briefing.staleItems.map(\.text) == ["改为周一交付"])
     }
 
     @Test func reviewingOnTheLatestWorkspacePreservesConcurrentActionProgress() throws {
@@ -225,6 +250,32 @@ struct SeriesBriefingTests {
         #expect(workspace.seriesChangeCandidates == nil)
     }
 
+    @Test func staleTranscriptRevisionCannotConfirmOrSurviveMeetingDeletion() throws {
+        var workspace = Workspace(name: "项目交付", mode: .meeting)
+        let session = SessionMeta(startedAt: Date(), mode: .meeting, workspaceID: workspace.id)
+        let current = evidence(id: "notes:decisions:revision", claim: "正式改为周一。",
+                               sourceRevision: "line-v1", claimRevision: "claim-v1",
+                               transcriptSourceRevision: "transcript-v1")
+        let candidateID = try #require(WorkspaceSeriesChangeMerger.collectCandidates(
+            from: [current], sessionID: session.id, into: &workspace).first)
+        let candidate = try #require(workspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }))
+        let editedTranscript = evidence(id: current.id, title: current.title, claim: current.claim,
+                                        quote: current.quote, lineID: current.lineID,
+                                        sourceRevision: current.sourceRevision,
+                                        claimRevision: current.claimRevision,
+                                        transcriptSourceRevision: "transcript-v2")
+        #expect(!WorkspaceSeriesChangeMerger.matchesCurrentEvidence(candidate, reference: editedTranscript))
+
+        #expect(WorkspaceSourceIntegrity.removeMeetings([session.id], from: &workspace))
+        let tombstone = try #require(workspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }))
+        #expect(tombstone.status == .superseded && tombstone.sourceMissing == true)
+        #expect(tombstone.text.isEmpty && tombstone.sourceQuote == nil)
+        #expect(tombstone.transcriptSourceRevision == nil)
+        #expect(WorkspaceSeriesChangeMerger.applyCandidate(candidateID, decision: .add, operationID: UUID(),
+                                                           into: &workspace) == nil)
+        #expect(workspace.seriesItems?.isEmpty ?? true)
+    }
+
     @Test func changedOwnerOrDeadlineSupersedesTheOldPendingProposal() throws {
         var workspace = Workspace(name: "项目交付", mode: .meeting)
         let session = SessionMeta(startedAt: Date(), mode: .meeting, workspaceID: workspace.id)
@@ -304,6 +355,7 @@ struct SeriesBriefingTests {
     private func evidence(id: String, title: String = "决定", claim: String,
                           quote: String? = "这句原话能定位。", lineID: UUID? = UUID(),
                           sourceRevision: String? = "line-revision", claimRevision: String? = "claim-revision",
+                          transcriptSourceRevision: String = "transcript-revision",
                           kind: NotesSectionKind? = .items, owner: String? = nil, due: String? = nil,
                           dueDate: Date? = nil, reviewDecision: SessionEvidenceDecision? = .supported,
                           reviewIsStale: Bool = false,
@@ -312,7 +364,7 @@ struct SeriesBriefingTests {
                                  lineID: lineID, sourceRevision: sourceRevision, sourceText: quote,
                                  support: .quoted, origin: origin, kind: kind, owner: owner, due: due,
                                  dueDate: dueDate, claimRevision: claimRevision,
-                                 transcriptSourceRevision: "transcript-revision", sourceStatus: .current,
+                                 transcriptSourceRevision: transcriptSourceRevision, sourceStatus: .current,
                                  reviewDecision: reviewDecision, reviewIsStale: reviewIsStale)
     }
 }

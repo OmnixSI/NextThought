@@ -45,6 +45,208 @@ public enum SessionArchiveWriteMode: Sendable, Equatable {
     case replace
 }
 
+/// Distinguishes a genuinely absent/empty archive root from a directory that
+/// exists but cannot be listed. The app can treat a missing root as a new
+/// archive while preserving visible state for other read failures.
+public enum SessionArchiveDirectoryReadResult: Sendable, Equatable {
+    case contents([URL])
+    case unavailable(path: String, reason: String)
+}
+
+public enum SessionArchiveDirectoryReader {
+    public static func read(
+        at root: URL,
+        knownContentExpected: Bool = false,
+        list: @Sendable (URL) throws -> [URL],
+        isMissing: @Sendable (Error) -> Bool
+    ) -> SessionArchiveDirectoryReadResult {
+        do {
+            return .contents(try list(root))
+        } catch {
+            if isMissing(error) {
+                guard knownContentExpected else { return .contents([]) }
+                return .unavailable(path: root.path,
+                                    reason: "已知会议记录目录现已缺失，原记录未显示或删除。")
+            }
+            return .unavailable(path: root.path, reason: error.localizedDescription)
+        }
+    }
+}
+
+/// Durable evidence that at least one session archive was previously created.
+/// It lives outside the Sessions directory so deleting or losing that root does
+/// not erase the evidence needed to distinguish loss from first use.
+public enum SessionArchiveContentMarker {
+    public static func wasPreviouslyPopulated(at markerURL: URL) -> Bool {
+        FileManager.default.fileExists(atPath: markerURL.path)
+    }
+
+    public static func record(at markerURL: URL) throws {
+        try FileManager.default.createDirectory(at: markerURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("sessions-archive-present-v1".utf8).write(to: markerURL, options: .atomic)
+    }
+}
+
+public enum SessionArchiveMetadataReadIssue: Sendable, Equatable {
+    case missing(path: String)
+    case unreadable(path: String, reason: String)
+    case malformed(path: String, reason: String)
+}
+
+public enum SessionArchiveMetadataReadResult<Value: Sendable>: Sendable {
+    case value(Value)
+    case failure(SessionArchiveMetadataReadIssue)
+}
+
+/// Keeps file-read failures distinct from decoding failures so callers never
+/// turn an unreadable or malformed metadata file into an absent meeting.
+public enum SessionArchiveMetadataReader {
+    public static func read<Value: Decodable & Sendable>(
+        at url: URL,
+        load: @Sendable (URL) throws -> Data,
+        decode: @Sendable (Data) throws -> Value,
+        isMissing: @Sendable (Error) -> Bool
+    ) -> SessionArchiveMetadataReadResult<Value> {
+        let bytes: Data
+        do {
+            bytes = try load(url)
+        } catch {
+            if isMissing(error) {
+                return .failure(.missing(path: url.path))
+            }
+            return .failure(.unreadable(path: url.path, reason: error.localizedDescription))
+        }
+        do {
+            return .value(try decode(bytes))
+        } catch {
+            return .failure(.malformed(path: url.path, reason: error.localizedDescription))
+        }
+    }
+}
+
+/// Publishes a set of migrated session folders only after every folder has been
+/// staged and validated. If publishing one folder fails, already-published
+/// folders are rolled back so callers can keep serving the intact source archive.
+public enum SessionArchiveMigrationPublisher {
+    public struct RecoveryRequired: Error, LocalizedError, Sendable {
+        public let stagingDirectory: String
+        public let operationFailure: String
+        public let rollbackFailures: [String]
+
+        public var errorDescription: String? {
+            "Archive migration rollback needs recovery. The staged backup remains at \(stagingDirectory). "
+                + ([operationFailure] + rollbackFailures).joined(separator: "; ")
+        }
+    }
+
+    /// A leftover staging root means an earlier migration could not finish its
+    /// rollback or was interrupted. Preserve it and let the app report recovery
+    /// state instead of starting another replacement attempt.
+    public static func pendingRecoveryDirectory(for root: URL) throws -> URL? {
+        let parent = root.deletingLastPathComponent()
+        guard FileManager.default.fileExists(atPath: parent.path) else { return nil }
+        let prefix = ".\(root.lastPathComponent)-migration-"
+        return try FileManager.default.contentsOfDirectory(at: parent, includingPropertiesForKeys: nil)
+            .first { $0.lastPathComponent.hasPrefix(prefix) }
+    }
+
+    public static func publish(
+        sessionIDs: [String],
+        into root: URL,
+        stage: (String, URL) throws -> Void,
+        validate: (String, URL) throws -> Void,
+        canReplaceExisting: (String, URL) throws -> Bool = { _, _ in false },
+        move: (URL, URL) throws -> Void = { try FileManager.default.moveItem(at: $0, to: $1) },
+        commit: () throws -> Void = {}
+    ) throws {
+        guard Set(sessionIDs).count == sessionIDs.count,
+              sessionIDs.allSatisfy({ !$0.isEmpty && !$0.contains("/") && $0 != "." && $0 != ".." }) else {
+            throw CocoaError(.fileWriteInvalidFileName)
+        }
+
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let stagingRoot = root.deletingLastPathComponent()
+            .appendingPathComponent(".\(root.lastPathComponent)-migration-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: stagingRoot, withIntermediateDirectories: false)
+        var preserveStagingRoot = false
+        defer {
+            if !preserveStagingRoot { try? FileManager.default.removeItem(at: stagingRoot) }
+        }
+        let backupsRoot = stagingRoot.appendingPathComponent("backups", isDirectory: true)
+        try FileManager.default.createDirectory(at: backupsRoot, withIntermediateDirectories: false)
+
+        for id in sessionIDs {
+            let stagedFolder = stagingRoot.appendingPathComponent(id, isDirectory: true)
+            try FileManager.default.createDirectory(at: stagedFolder, withIntermediateDirectories: false)
+            try stage(id, stagedFolder)
+            try validate(id, stagedFolder)
+            let destination = root.appendingPathComponent(id, isDirectory: true)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                guard try canReplaceExisting(id, destination) else {
+                    throw CocoaError(.fileWriteFileExists)
+                }
+            }
+        }
+
+        var published: [URL] = []
+        var backups: [(backup: URL, destination: URL)] = []
+        do {
+            for id in sessionIDs {
+                let stagedFolder = stagingRoot.appendingPathComponent(id, isDirectory: true)
+                let destination = root.appendingPathComponent(id, isDirectory: true)
+                if FileManager.default.fileExists(atPath: destination.path) {
+                    guard try canReplaceExisting(id, destination) else {
+                        throw CocoaError(.fileWriteFileExists)
+                    }
+                    let backup = backupsRoot.appendingPathComponent(id, isDirectory: true)
+                    backups.append((backup, destination))
+                    try move(destination, backup)
+                }
+                published.append(destination)
+                try move(stagedFolder, destination)
+            }
+            try commit()
+        } catch {
+            var rollbackFailures: [String] = []
+            for destination in published.reversed() {
+                guard FileManager.default.fileExists(atPath: destination.path) else { continue }
+                do { try FileManager.default.removeItem(at: destination) }
+                catch { rollbackFailures.append("Could not remove published folder \(destination.path): \(error.localizedDescription)") }
+            }
+            for backup in backups.reversed() {
+                guard FileManager.default.fileExists(atPath: backup.backup.path) else { continue }
+                guard !FileManager.default.fileExists(atPath: backup.destination.path) else {
+                    rollbackFailures.append("Could not restore \(backup.destination.path): destination still exists")
+                    continue
+                }
+                do { try move(backup.backup, backup.destination) }
+                catch { rollbackFailures.append("Could not restore \(backup.destination.path): \(error.localizedDescription)") }
+            }
+            if !rollbackFailures.isEmpty {
+                preserveStagingRoot = true
+                throw RecoveryRequired(stagingDirectory: stagingRoot.path,
+                                       operationFailure: error.localizedDescription,
+                                       rollbackFailures: rollbackFailures)
+            }
+            throw error
+        }
+    }
+}
+
+/// Converts answer-only values from the earliest `sessions.json` format into
+/// explicitly labelled archive events. Those values did not retain their prompts.
+public enum LegacySessionAnswerMigration {
+    public static func events(from answers: [String], date: Date) -> [SessionAnswerEvent] {
+        answers.enumerated().map { index, answer in
+            SessionAnswerEvent(date: date,
+                               question: "旧版回答 \(index + 1)（问题未保存）",
+                               answer: answer,
+                               model: "旧版记录",
+                               automatic: false)
+        }
+    }
+}
+
 /// Bounded per-session write-ahead queue. Keeping bytes until an explicit receipt makes
 /// transient disk errors retryable and makes overflow visible instead of silently dropping
 /// an unbounded amount of meeting content into memory.

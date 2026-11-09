@@ -352,6 +352,29 @@ private struct SeriesBriefingPanel: View {
                     .font(Typo.caption).foregroundStyle(Ink.secondary)
             }
 
+            if briefing.knowledgeEnabled, !isLoadingEvidence, !briefing.staleItems.isEmpty {
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("需要重新确认 · 不会带入下一场")
+                        .font(Typo.caption).foregroundStyle(Ink.caution)
+                    ForEach(briefing.staleItems) { item in
+                        VStack(alignment: .leading, spacing: Space.s1) {
+                            Text(verbatim: item.text).font(Typo.caption).textSelection(.enabled)
+                            seriesSourceStatusLabel(item)
+                            HStack {
+                                Text("第 \(item.revision) 版")
+                                    .font(Typo.caption).foregroundStyle(Ink.tertiary)
+                                Spacer()
+                                if item.sourceMissing != true, let source = sourceSession(item.sourceSessionID) {
+                                    sourceButton(source)
+                                }
+                            }
+                        }
+                        .padding(Space.s2)
+                        .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                    }
+                }
+            }
+
             if briefing.knowledgeEnabled {
                 if !briefing.lessons.isEmpty {
                     VStack(alignment: .leading, spacing: Space.s1) {
@@ -389,6 +412,7 @@ private struct SeriesBriefingPanel: View {
                 }
                 if briefing.lessons.isEmpty && briefing.questionBank.isEmpty {
                     if briefing.decisions.isEmpty && briefing.openActions.isEmpty && briefing.resolvedActions.isEmpty
+                        && briefing.staleItems.isEmpty
                         && !(isLoadingEvidence && !(workspace.seriesItems ?? []).isEmpty) {
                         Text("还没有已确认的系列内容。新建议会先等待你审核。")
                             .font(Typo.caption).foregroundStyle(Ink.secondary)
@@ -400,23 +424,29 @@ private struct SeriesBriefingPanel: View {
                         ForEach(briefing.decisions) { item in
                             VStack(alignment: .leading, spacing: Space.s1) {
                                 Text(verbatim: item.text).font(Typo.caption).textSelection(.enabled)
-                                if let quote = item.sourceQuote, !quote.isEmpty {
+                                if item.sourceMissing == true {
+                                    seriesSourceStatusLabel(item)
+                                } else if let quote = item.sourceQuote, !quote.isEmpty {
                                     Text("依据：“\(quote)”\(item.location.map { " · \($0)" } ?? "")")
                                         .font(Typo.caption).foregroundStyle(Ink.secondary).textSelection(.enabled)
                                 }
                                 HStack {
                                     Text("第 \(item.revision) 版").font(Typo.caption).foregroundStyle(Ink.tertiary)
                                     Spacer()
-                                    if let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
+                                    if item.sourceMissing != true, let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
                                 }
-                                if !item.history.isEmpty {
+                                if (item.sourceMissing != true || item.independentlyRetained == true), !item.history.isEmpty {
                                     DisclosureGroup("变化记录（\(item.history.count)）") {
                                         ForEach(item.history.sorted { $0.revision < $1.revision }) { revision in
                                             HStack(alignment: .top, spacing: Space.s2) {
                                                 Text("v\(revision.revision)").font(Typo.caption).foregroundStyle(Ink.tertiary)
                                                 Text(verbatim: revision.text).font(Typo.caption).textSelection(.enabled)
                                                 Spacer(minLength: 0)
-                                                if let source = sourceSession(revision.sourceSessionID) { sourceButton(source) }
+                                                if revision.sourceMissing == true {
+                                                    missingSeriesEvidenceLabel
+                                                } else if let source = sourceSession(revision.sourceSessionID) {
+                                                    sourceButton(source)
+                                                }
                                             }
                                         }
                                     }
@@ -434,7 +464,9 @@ private struct SeriesBriefingPanel: View {
                         ForEach(briefing.openActions) { item in
                             VStack(alignment: .leading, spacing: Space.s1) {
                                 Text(verbatim: item.text).font(Typo.caption).textSelection(.enabled)
-                                if let quote = item.sourceQuote, !quote.isEmpty {
+                                if item.sourceMissing == true {
+                                    seriesSourceStatusLabel(item)
+                                } else if let quote = item.sourceQuote, !quote.isEmpty {
                                     Text("依据：“\(quote)”\(item.location.map { " · \($0)" } ?? "")")
                                         .font(Typo.caption).foregroundStyle(Ink.secondary).textSelection(.enabled)
                                 }
@@ -442,10 +474,11 @@ private struct SeriesBriefingPanel: View {
                                     if let owner = item.owner, !owner.isEmpty { Text("负责人：\(owner)") }
                                     if let due = item.due, !due.isEmpty { Text("期限：\(due)") }
                                     Spacer(minLength: 0)
-                                    if let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
+                                    if item.sourceMissing != true, let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
                                 }
                                 .font(Typo.caption).foregroundStyle(Ink.secondary)
-                                HStack(spacing: Space.s2) {
+                                if item.sourceMissing != true || item.independentlyRetained == true {
+                                    HStack(spacing: Space.s2) {
                                     if item.actionState == nil || item.actionState == .open {
                                         Button("进行中") {
                                             state.updateSeriesActionState(.inProgress, itemID: item.id,
@@ -466,6 +499,7 @@ private struct SeriesBriefingPanel: View {
                                                                       workspaceID: workspace.id)
                                     }
                                     .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 8))
+                                    }
                                 }
                             }
                             .padding(Space.s2)
@@ -484,11 +518,13 @@ private struct SeriesBriefingPanel: View {
                                         Text(actionStateLabel(item.actionState))
                                             .font(Typo.caption).foregroundStyle(Ink.tertiary)
                                     }
+                                    if item.sourceMissing == true { seriesSourceStatusLabel(item) }
                                     if let due = item.due, !due.isEmpty {
                                         Text("期限：\(due)").font(Typo.caption).foregroundStyle(Ink.secondary)
                                     }
                                     HStack {
-                                        if item.actionState == .done || item.actionState == .cancelled {
+                                        if (item.sourceMissing != true || item.independentlyRetained == true)
+                                            && (item.actionState == .done || item.actionState == .cancelled) {
                                             Button("重新打开") {
                                                 state.updateSeriesActionState(.open, itemID: item.id,
                                                                               expectedRevision: item.revision,
@@ -497,7 +533,7 @@ private struct SeriesBriefingPanel: View {
                                             .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 8))
                                         }
                                         Spacer()
-                                        if let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
+                                        if item.sourceMissing != true, let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
                                     }
                                 }
                                 .padding(Space.s2)
@@ -574,6 +610,27 @@ private struct SeriesBriefingPanel: View {
         case .cancelled: "已取消"
         case .superseded: "已替代"
         case .open, .inProgress, .none: "已结束"
+        }
+    }
+
+    private var missingSeriesEvidenceLabel: some View {
+        Label("依据缺失 · 待重新确认", systemImage: "exclamationmark.triangle.fill")
+            .font(Typo.caption).foregroundStyle(Ink.caution)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder
+    private func seriesSourceStatusLabel(_ item: WorkspaceSeriesItem) -> some View {
+        if item.independentlyRetained == true {
+            Label("已作为独立内容保留 · 原来源会议已删除", systemImage: "checkmark.circle")
+                .font(Typo.caption).foregroundStyle(Ink.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if item.sourceMissing == true {
+            missingSeriesEvidenceLabel
+        } else {
+            Label("原话或纪要版本已变化 · 需要重新确认", systemImage: "exclamationmark.triangle.fill")
+                .font(Typo.caption).foregroundStyle(Ink.caution)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

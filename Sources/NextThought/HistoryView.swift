@@ -19,6 +19,7 @@ struct HistoryView: View {
     @FocusState private var focusedSessionID: UUID?
     @State private var workspaceEditor = WorkspaceEditController.shared
     @State private var showDeleteAll = false
+    @State private var deletingSessionID: UUID?
     @State private var deletingWorkspace: Workspace?
     @State private var isSelectingSeries = false
     @State private var selectedWorkspaceIDs = Set<UUID>()
@@ -120,7 +121,17 @@ struct HistoryView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .top, spacing: 0) { searchHitNavigator }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                if !archive.archiveReadIssues.isEmpty {
+                    archiveReadIssueNotice
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 8)
+                }
+                searchHitNavigator
+            }
+        }
         .onAppear { selectFirstIfNeeded() }
         .onChange(of: state.section) { _, section in
             if section == .meetings {
@@ -143,10 +154,37 @@ struct HistoryView: View {
             Text("保存后继续刚才的操作；放弃更改会丢弃本次草稿。")
         }
         .confirmationDialog("删除全部会议记录？", isPresented: $showDeleteAll, titleVisibility: .visible) {
-            Button("删除全部会议记录", role: .destructive) { archive.deleteAll(); state.historySelection = nil }
+            Button("删除会议和依赖内容", role: .destructive) {
+                state.deleteAllArchivedMeetings()
+                state.historySelection = nil
+            }
+            .disabled(archive.destructiveOperationDisabledReason != nil)
+            if hasRetainableAcceptedContent(from: deleteAllSessionIDs) {
+                Button("删除会议，保留已确认的系列内容", role: .destructive) {
+                    state.deleteAllArchivedMeetings(retainAcceptedContent: true)
+                    state.historySelection = nil
+                }
+                .disabled(archive.destructiveOperationDisabledReason != nil)
+            }
             Button("取消", role: .cancel) { }
         } message: {
-            Text("将删除全部 \(archive.sessions.count) 场会议的转写、问题、回答和纪要，不限当前系列，且无法恢复。")
+            Text("将永久删除所有归档会议的转写、音频、手记、索引、问题、回答和纪要。默认同时删除只依赖这些会议的已确认经验、决定和行动。若选择保留，内容会作为独立经验保存并标记原来源已删除，不保留会议原话。")
+        }
+        .confirmationDialog("删除这场会议？", isPresented: Binding(
+            get: { deletingSessionID != nil }, set: { if !$0 { deletingSessionID = nil } }), titleVisibility: .visible) {
+                if let id = deletingSessionID {
+                    Button("删除会议和依赖内容", role: .destructive) { confirmDeleteSession(id, retainAcceptedContent: false) }
+                        .disabled(archive.destructiveOperationDisabledReason != nil)
+                    if hasRetainableAcceptedContent(from: [id]) {
+                        Button("删除会议，保留已确认的系列内容", role: .destructive) {
+                            confirmDeleteSession(id, retainAcceptedContent: true)
+                        }
+                        .disabled(archive.destructiveOperationDisabledReason != nil)
+                    }
+                }
+                Button("取消", role: .cancel) { deletingSessionID = nil }
+            } message: {
+                Text("将永久删除这场会议的转写、音频、手记、索引、问题、回答和纪要。默认同时删除只依赖它的已确认经验、决定和行动。若选择保留，内容会作为独立经验保存并标记原来源已删除，不保留会议原话。")
         }
         .confirmationDialog("删除系列“\(deletingWorkspace?.name ?? "")”？", isPresented: Binding(
             get: { deletingWorkspace != nil },
@@ -257,6 +295,7 @@ struct HistoryView: View {
             selectedWorkspaceIDs: $selectedWorkspaceIDs,
             selectedFolder: isRoot ? nil : folder,
             hasUnderlyingRecords: isRoot ? !archive.sessions.isEmpty : !(folder?.sessions.isEmpty ?? true),
+            hasArchiveReadIssues: !archive.archiveReadIssues.isEmpty,
             hasActiveFilters: hasNarrowingFilter,
             onOpenRoot: showAllMeetings,
             onOpenFolder: showFolder,
@@ -267,10 +306,11 @@ struct HistoryView: View {
             onManageFolder: manageFolder,
             onDeleteFolder: confirmDeleteFolder,
             deleteDisabledReason: { folder in folder.workspaceID.flatMap { state.workspaceDeletionDisabledReason($0) } },
-            managementDisabled: state.isRunning,
+            managementDisabled: state.isRunning || archive.destructiveOperationDisabledReason != nil,
             onOpen: openFromOverview,
             onClearFilters: clearFilters,
             onReturnHome: { state.section = .home },
+            onRetryArchiveRead: { archive.load() },
             searchHits: contentHits)
         return Group {
             if compact {
@@ -427,7 +467,23 @@ struct HistoryView: View {
     }
 
     private func deleteSession(_ id: UUID) {
-        archive.delete(id)
+        deletingSessionID = id
+    }
+
+    private var deleteAllSessionIDs: [UUID] {
+        archive.sessions.filter { $0.id != archive.activeID }.map(\.id)
+    }
+
+    private func hasRetainableAcceptedContent(from sessionIDs: [UUID]) -> Bool {
+        let deletedIDs = Set(sessionIDs)
+        return state.workspaces.workspaces.contains {
+            WorkspaceSourceIntegrity.hasRetainableAcceptedContent(in: $0, from: deletedIDs)
+        }
+    }
+
+    private func confirmDeleteSession(_ id: UUID, retainAcceptedContent: Bool) {
+        state.deleteArchivedMeeting(id, retainAcceptedContent: retainAcceptedContent)
+        deletingSessionID = nil
         if state.historySelection == id {
             isCollectionOverview = true
             state.historySelection = nil
@@ -542,7 +598,7 @@ struct HistoryView: View {
                 Menu {
                     SeriesManagementMenuItems(
                         deleteDisabledReason: folder.workspaceID.flatMap { state.workspaceDeletionDisabledReason($0) },
-                        managementDisabled: state.isRunning,
+                        managementDisabled: state.isRunning || archive.destructiveOperationDisabledReason != nil,
                         onEdit: { manageFolder(folder) },
                         onDelete: { confirmDeleteFolder(folder) })
                 } label: {
@@ -564,7 +620,7 @@ struct HistoryView: View {
             header.contextMenu {
                 SeriesManagementMenuItems(
                     deleteDisabledReason: folder.workspaceID.flatMap { state.workspaceDeletionDisabledReason($0) },
-                    managementDisabled: state.isRunning,
+                    managementDisabled: state.isRunning || archive.destructiveOperationDisabledReason != nil,
                     onEdit: { manageFolder(folder) },
                     onDelete: { confirmDeleteFolder(folder) })
             }
@@ -612,11 +668,13 @@ struct HistoryView: View {
                 .buttonStyle(GlassIconButtonStyle(size: 28))
                 .menuIndicator(.hidden)
                 .accessibilityLabel("会议记录操作")
-                .disabled(archive.sessions.isEmpty)
-                .help("会议记录操作；删除会影响所有系列")
+                .disabled(archive.sessions.isEmpty || archive.destructiveOperationDisabledReason != nil)
+                .help(archive.destructiveOperationDisabledReason ?? "会议记录操作；删除会影响所有系列")
             }
             filterBar
-            if isScopedToSeries && currentScopeSessionCount == 0 {
+            if !archive.archiveReadIssues.isEmpty && currentScopeSessionCount == 0 {
+                archiveUnavailableEmptyState
+            } else if isScopedToSeries && currentScopeSessionCount == 0 {
                 VStack(spacing: 7) {
                     Image(systemName: "folder")
                         .font(.system(size: 24, weight: .regular))
@@ -767,6 +825,57 @@ struct HistoryView: View {
                 .accessibilityElement(children: .contain)
             }
         }
+    }
+
+    private var archiveReadIssueNotice: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(alignment: .top, spacing: 7) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Ink.caution)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("会议记录未能完整读取")
+                        .font(.system(size: 12, weight: .semibold))
+                    ForEach(Array(archive.archiveReadIssues.enumerated()), id: \.offset) { _, issue in
+                        Text(issue.message)
+                            .font(.system(size: 11))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            Button("重试读取") { archive.load() }
+                .buttonStyle(SecondaryButtonStyle())
+                .controlSize(.small)
+        }
+        .foregroundStyle(Ink.ink)
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Ink.caution.opacity(0.10), in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                .strokeBorder(Ink.caution.opacity(0.25), lineWidth: 1)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var archiveUnavailableEmptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(Ink.caution)
+            Text("无法确认会议记录为空")
+                .font(.system(size: 14, weight: .semibold))
+            Text("归档目录或会议元数据读取失败。修复读取问题并重试后，才能确认此处没有会议。")
+                .font(.system(size: 11)).foregroundStyle(Ink.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("重试读取") { archive.load() }
+                .buttonStyle(ChipButtonStyle(prominent: true))
+                .controlSize(.small)
+        }
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// A capsule that mirrors the `MenuPicker` look. The glass is drawn as a
@@ -1078,6 +1187,7 @@ private struct MeetingArchiveOverview: View {
     @Binding var selectedWorkspaceIDs: Set<UUID>
     let selectedFolder: MeetingSeriesFolder?
     let hasUnderlyingRecords: Bool
+    let hasArchiveReadIssues: Bool
     let hasActiveFilters: Bool
     let onOpenRoot: () -> Void
     let onOpenFolder: (MeetingSeriesFolder) -> Void
@@ -1092,6 +1202,7 @@ private struct MeetingArchiveOverview: View {
     let onOpen: (UUID) -> Void
     let onClearFilters: () -> Void
     let onReturnHome: () -> Void
+    let onRetryArchiveRead: () -> Void
     let searchHits: [UUID: SessionSearchHit]
     @FocusState private var focusedSessionID: UUID?
     @FocusState private var focusedFolderID: String?
@@ -1173,7 +1284,17 @@ private struct MeetingArchiveOverview: View {
                     }
                     if isRoot {
                         if folders.isEmpty {
-                            if hasUnderlyingRecords {
+                            if hasArchiveReadIssues {
+                                ContentUnavailableView {
+                                    Label("无法确认会议系列为空", systemImage: "exclamationmark.triangle")
+                                } description: {
+                                    Text("会议归档或元数据读取失败。重试后才能确认是否还有会议系列。")
+                                } actions: {
+                                    Button("重试读取", action: onRetryArchiveRead)
+                                        .buttonStyle(ChipButtonStyle(prominent: true))
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 180)
+                            } else if hasUnderlyingRecords {
                                 ContentUnavailableView {
                                     Label("没有匹配的系列", systemImage: "magnifyingglass")
                                 } description: {
@@ -1200,7 +1321,17 @@ private struct MeetingArchiveOverview: View {
                             }
                         }
                     } else {
-                        if selectedFolder?.sessions.isEmpty == true {
+                        if hasArchiveReadIssues && selectedFolder?.sessions.isEmpty == true {
+                            ContentUnavailableView {
+                                Label("无法确认系列中没有会议", systemImage: "exclamationmark.triangle")
+                            } description: {
+                                Text("会议归档或元数据读取失败。重试后才能确认此系列中的会议记录。")
+                            } actions: {
+                                Button("重试读取", action: onRetryArchiveRead)
+                                    .buttonStyle(ChipButtonStyle(prominent: true))
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 180)
+                        } else if selectedFolder?.sessions.isEmpty == true {
                             ContentUnavailableView {
                                 Label("这个系列还没有会议", systemImage: "folder")
                             } description: {

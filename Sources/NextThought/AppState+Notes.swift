@@ -140,6 +140,8 @@ extension AppState {
     func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil,
                          onCompletion: (@MainActor () -> Void)? = nil) {
         guard !isPreparingForTermination,
+              !archive.isReadOnlyFallback(id),
+              !archive.isTombstoned(id),
               !archive.summarizing.contains(id), var meta = archive.sessions.first(where: { $0.id == id }) else {
             onCompletion?()
             return
@@ -159,8 +161,9 @@ extension AppState {
         archive.notesSteps[id] = .proofreading
         let useEnglish = english ?? notesUseEnglish
         Diagnostics.record("summary.started", ["session_id": id.uuidString])
-        Task {
+        let summaryTask = Task { @MainActor in
             defer {
+                archive.summaryTasks[id] = nil
                 archive.summarizing.remove(id)
                 archive.notesSteps[id] = nil
                 onCompletion?()
@@ -170,18 +173,25 @@ extension AppState {
                 guard await archive.flush(sessionID: id) else {
                     throw SummaryError.archiveNotSaved(archive.persistenceBySession[id]?.lastFailure)
                 }
+                guard !Task.isCancelled, !archive.isTombstoned(id),
+                      archive.sessions.contains(where: { $0.id == id }) else { return }
                 guard let detail = await archive.detail(id), !detail.lines.isEmpty else { throw SummaryError.emptyTranscript }
                 loaded = detail
                 let workspace = detail.meta.workspaceID.flatMap { workspaces.workspace($0) }
                 let mode = workspace?.effectiveMode ?? detail.meta.mode
                 let template = notesTemplate(id: templateID ?? detail.notes?.templateID ?? defaultNotesTemplateID(for: mode), english: useEnglish)
                 var notes = try await writeNotes(detail: detail, workspace: workspace, template: template, english: useEnglish, engine: engine)
+                guard !Task.isCancelled, !archive.isTombstoned(id),
+                      archive.sessions.contains(where: { $0.id == id }) else { return }
                 notes.model = engine.model
                 notes.generatedAt = Date()
                 guard let summary = await saveGeneratedSummary(notesSummary(from: notes, template: template, detail: detail),
                                                                notes: notes, for: id) else {
+                    guard !Task.isCancelled, !archive.isTombstoned(id) else { return }
                     throw SummaryError.archiveNotSaved(archive.persistenceBySession[id]?.lastFailure)
                 }
+                guard !Task.isCancelled, !archive.isTombstoned(id),
+                      archive.sessions.contains(where: { $0.id == id }) else { return }
                 if var latest = archive.sessions.first(where: { $0.id == id }) {
                     latest.actionItemCount = notes.actionItemCount
                     latest.improveCount = notes.improveCount
@@ -196,45 +206,58 @@ extension AppState {
             } catch NotesError.unreadable {
                 // The model did not answer in JSON: keep the session useful with the
                 // former Markdown summary.
+                guard !Task.isCancelled, !archive.isTombstoned(id),
+                      archive.sessions.contains(where: { $0.id == id }) else { return }
                 Diagnostics.record("notes.unreadable")
                 do {
                     guard let detail = loaded else { throw NotesError.unreadable }
                     let generated = try await markdownSummary(detail: detail, engine: engine)
+                    guard !Task.isCancelled, !archive.isTombstoned(id),
+                          archive.sessions.contains(where: { $0.id == id }) else { return }
                     guard let summary = await saveGeneratedSummary(generated, notes: nil, for: id) else {
+                        guard !Task.isCancelled, !archive.isTombstoned(id) else { return }
                         throw SummaryError.archiveNotSaved(archive.persistenceBySession[id]?.lastFailure)
                     }
+                    guard !Task.isCancelled, !archive.isTombstoned(id),
+                          archive.sessions.contains(where: { $0.id == id }) else { return }
                     if autoCollectKnowledgeCandidates { collectReviewCandidates(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
                 } catch {
-                    markSummaryFailed(id, error)
+                    if !Task.isCancelled, !archive.isTombstoned(id) { markSummaryFailed(id, error) }
                 }
             } catch {
-                markSummaryFailed(id, error)
+                if !Task.isCancelled, !archive.isTombstoned(id) { markSummaryFailed(id, error) }
             }
         }
+        archive.summaryTasks[id] = summaryTask
     }
 
     /// Text and structured passes share one commit lock and read the newest saved views.
     private func saveGeneratedSummary(_ generated: SessionSummary, notes: StructuredNotes?, for id: UUID) async -> SessionSummary? {
-        guard !isPreparingForTermination else { return nil }
+        guard !isPreparingForTermination, !archive.isTombstoned(id),
+              archive.sessions.contains(where: { $0.id == id }) else { return nil }
         var summary = generated
         var saved: SessionSummary?
         await StructuredNotesJobs.shared.exclusive {
-            guard await archive.flush(sessionID: id), !isPreparingForTermination else { return }
+            guard await archive.flush(sessionID: id), !isPreparingForTermination,
+                  !archive.isTombstoned(id), archive.sessions.contains(where: { $0.id == id }) else { return }
             guard let detail = await archive.detail(id) else { return }
+            guard !archive.isTombstoned(id), archive.sessions.contains(where: { $0.id == id }) else { return }
             summary.preserveStructuredViews(from: detail.summary)
             let sourceRevision = summary.transcriptSourceRevision
                 ?? notes?.transcriptSourceRevision
                 ?? SessionProjectionBuilder.transcriptSourceRevision(meta: detail.meta, lines: detail.lines,
                                                                        notes: notes ?? detail.notes)
             summary.transcriptSourceRevision = sourceRevision
-            guard !isPreparingForTermination else { return }
+            guard !isPreparingForTermination, !archive.isTombstoned(id),
+                  archive.sessions.contains(where: { $0.id == id }) else { return }
             if var notes {
                 notes.transcriptSourceRevision = sourceRevision
                 summary.structuredNotesSourceRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
                 archive.saveNotes(notes, for: id)
             }
             archive.saveSummary(summary, for: id)
-            guard await archive.flush(sessionID: id), !isPreparingForTermination else { return }
+            guard await archive.flush(sessionID: id), !isPreparingForTermination,
+                  !archive.isTombstoned(id), archive.sessions.contains(where: { $0.id == id }) else { return }
             archive.notesRevision += 1
             saved = summary
         }
@@ -242,7 +265,7 @@ extension AppState {
     }
 
     private func markSummaryFailed(_ id: UUID, _ error: Error) {
-        guard !isPreparingForTermination else { return }
+        guard !isPreparingForTermination, !archive.isTombstoned(id) else { return }
         if var failed = archive.sessions.first(where: { $0.id == id }) {
             failed.summaryState = .failed
             failed.summaryError = error.localizedDescription
