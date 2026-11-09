@@ -103,6 +103,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: python3 Tools/DocumentRuntime/release_assets.py --tag "$RELEASE_TAG" --commit "$(git rev-parse HEAD)"
+      - name: Test release checksum manifest
+        run: python3 -m unittest discover -s Tools/Validation/ReleaseAssets -p 'test_*.py'
       - name: Upload to draft, verify, then publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -111,7 +113,22 @@ jobs:
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" --draft --target "$GITHUB_SHA" --title "NextThought $RELEASE_TAG" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
-          gh release upload "$RELEASE_TAG" dist/NextThought-*-macOS-arm64.* dist/SHA256SUMS.txt dist/update.json dist/runtime-manifest.json --clobber
+          assets=()
+          while IFS= read -r asset; do
+            [[ -n "$asset" ]] && assets+=("dist/$asset")
+          done < dist/release-assets.txt
+          if [[ ${#assets[@]} -eq 0 ]]; then echo "The release asset list is empty." >&2; exit 1; fi
+          gh release upload "$RELEASE_TAG" \
+            "${assets[@]}" \
+            dist/SHA256SUMS.txt --clobber
+          expected_assets="$(cat dist/release-assets.txt; printf '%s\n' SHA256SUMS.txt)"
+          expected_assets="$(printf '%s\n' "$expected_assets" | LC_ALL=C sort)"
+          actual_assets="$(gh release view "$RELEASE_TAG" --json assets --jq '[.assets[].name] | sort | .[]')"
+          if [[ "$actual_assets" != "$expected_assets" ]]; then
+            echo "Attached release assets differ from the generated upload list." >&2
+            diff -u <(printf '%s\n' "$expected_assets") <(printf '%s\n' "$actual_assets") || true
+            exit 1
+          fi
           verify="$RUNNER_TEMP/release-verification"
           mkdir -p "$verify"
           gh release download "$RELEASE_TAG" --dir "$verify" --clobber
