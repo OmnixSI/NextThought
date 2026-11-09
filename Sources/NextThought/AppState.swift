@@ -7,6 +7,27 @@ import NextThoughtCore
 import Observation
 import UniformTypeIdentifiers
 
+struct SessionTranscriptNavigationTarget: Equatable {
+    let sessionID: UUID
+    let hits: [SessionSearchHit]
+    let selectedIndex: Int
+
+    var hit: SessionSearchHit { hits[selectedIndex] }
+
+    init(sessionID: UUID, hit: SessionSearchHit) {
+        self.sessionID = sessionID
+        self.hits = [hit]
+        self.selectedIndex = 0
+    }
+
+    init(sessionID: UUID, hits: [SessionSearchHit], selectedIndex: Int = 0) {
+        precondition(!hits.isEmpty)
+        self.sessionID = sessionID
+        self.hits = hits
+        self.selectedIndex = min(max(selectedIndex, 0), hits.count - 1)
+    }
+}
+
 /// App-wide state. Uses the Observation framework: a view re-renders only when a
 /// property it actually read changes, so a partial transcript arriving 4×/s or an
 /// answer streaming 15×/s redraws only the few views that show them.
@@ -44,6 +65,10 @@ final class AppState {
     var isDataBusy = false
     /// Session selected in the history page (also set when jumping from a workspace review).
     var historySelection: UUID?
+    /// A history content hit to reveal after its meeting detail has loaded.
+    var pendingTranscriptNavigation: SessionTranscriptNavigationTarget?
+    /// Frozen archive detail awaiting a format and transcript-version choice.
+    var sessionExportRequest: SessionExportRequest?
     /// nil shows sessions of all workspaces.
     var historyWorkspaceFilter: UUID?
 
@@ -257,8 +282,10 @@ final class AppState {
     var recordSessions = UserDefaults.standard.object(forKey: "recordSessions") as? Bool ?? true
     /// Ask the answer model for a summary and question list when a session ends.
     var autoSummarize = UserDefaults.standard.object(forKey: "autoSummarize") as? Bool ?? true
-    /// Add the review's lessons and improved answers to the workspace automatically.
-    var autoApplyLessons = UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
+    /// Automatically collect review suggestions into the pending queue. Applying them
+    /// always requires an explicit per-item decision.
+    var autoCollectKnowledgeCandidates = UserDefaults.standard.object(forKey: "autoCollectKnowledgeCandidates") as? Bool
+        ?? UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true
     // MARK: Notes (会后纪要), separate from live answers
     /// "" picks automatically (see `notesEngine`).
     var notesModelID = UserDefaults.standard.string(forKey: "notesModelID") ?? ""
@@ -305,6 +332,7 @@ final class AppState {
     var isRunning = false
     var isPaused = false
     var isChangingSession = false
+    var isPreparingForTermination = false
     var statusText = "就绪"
     var errorMessage: String?
     var entries: [TranscriptEntry] = []
@@ -336,6 +364,7 @@ final class AppState {
 
     // MARK: Not observed (services, tasks, bookkeeping)
     @ObservationIgnored var contextIndex = HybridContextIndex()
+    @ObservationIgnored var meetingContextTask: Task<Void, Never>?
     @ObservationIgnored var documentRevision = UUID()
     @ObservationIgnored var importTask: Task<Void, Never>?
     @ObservationIgnored var microphoneTranscriber: (any LiveTranscribing)?
@@ -522,7 +551,6 @@ final class AppState {
         if transcriptionBackend == "zipformer", !isModelInstalled { return "需要先下载本地识别模型" }
         if transcriptionBackend == "zipformer", !missingPackages.isEmpty { return "需要完成语音模型下载" }
         if usesMicrophone && microphoneAccess != .granted { return "请先允许麦克风权限" }
-        if !answerEngineReady { return checkingCodexStatus && answerBackend != .openAICompatible ? "正在检测回答服务…" : "请先连接回答服务" }
         if !isOfflineMeeting, !liveSetupReadiness.audioSource { return "请选择会议声音来源" }
         return "可以开始"
     }
@@ -602,6 +630,10 @@ final class AppState {
     // MARK: Session lifecycle
 
     func startSession() async {
+        guard !isPreparingForTermination else {
+            errorMessage = "会议归档正在保存，请稍后再开始。"
+            return
+        }
         if DemoMode.isEnabled {
             liveTranslation.beginMeeting()
             isRunning = true; isPaused = false; statusText = "演示：正在聆听"
@@ -609,10 +641,8 @@ final class AppState {
         }
         guard !isRunning, !isChangingSession else { return }
         guard !isDownloadingModel else { return }
-        guard answerEngineReady else { errorMessage = "请先连接回答服务，再开始会议记录。"; openSettings(.answers); return }
         guard transcriptionBackend != "zipformer" || isModelInstalled else { errorMessage = AppFailure.modelMissing.localizedDescription; section = .settings; return }
         guard isOfflineMeeting || !selectedTargetID.isEmpty else { errorMessage = String(localized: "请先选择声音来源（默认是电脑声音）。"); return }
-        guard !isIndexingDocuments else { errorMessage = "文字索引正在完成，请稍后开始会议。"; return }
         liveTranslation.beginMeeting()
         speakers.beginMeeting(inPerson: isOfflineMeeting)
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
@@ -628,11 +658,14 @@ final class AppState {
         selectedExcerpts = []; lastASRSeconds = nil; lastRTF = nil; lastRefineSeconds = nil; lastAnswerSeconds = nil
         droppedAudioSegments = 0; echoDroppedCount = 0
         audioEpoch = UUID()
+        meetingContextTask?.cancel(); meetingContextTask = nil
         isChangingSession = true
         defer { isChangingSession = false }
         do {
             let startupBegan = Date()
-            if semanticRetrievalReady { await SemanticRetrievalService.shared.prepare() }
+            if semanticRetrievalReady {
+                Task.detached(priority: .utility) { await SemanticRetrievalService.shared.prepare() }
+            }
             recognizerIdleTask?.cancel(); recognizerIdleTask = nil
             if usesMicrophone { try await MicrophoneCaptureService.authorize() }
             isPreparingModel = true
@@ -654,9 +687,13 @@ final class AppState {
             echoMonitor.reset()
             if answerBackend == .codexAppServer { Task { await appServer.prewarm() } }
             isStopping = false
-            preparedWorkspace = await meetingWorkspaceForStart()
+            let startPlan = plannedMeeting
+            let startWorkspace = meetingWorkspaceForStart()
+            preparedWorkspace = startWorkspace
             isRunning = true
             documentPreparation.pauseForMeeting()
+            beginArchive(startedAt: startedAt)
+            prepareMeetingContextForStart(workspace: startWorkspace, plan: startPlan, epoch: audioEpoch)
             if !isOfflineMeeting {
                 do {
                     try await audio.startCapture(targetID: selectedTargetID)
@@ -678,11 +715,11 @@ final class AppState {
             transcriptionStatus = isOfflineMeeting ? "等待麦克风" : "等待系统音频"
             pendingAutomaticQuestion = nil
             errorMessage = nil
-            beginArchive(startedAt: startedAt)
             startCandidateTicker()
             startAutoEnd()
         } catch {
             isRunning = false
+            meetingContextTask?.cancel(); meetingContextTask = nil
             speakers.endMeeting()
             // A carry-filtered index (meetingWorkspaceForStart) must not outlive a failed start.
             if let prepared = preparedWorkspace, prepared.retrievalDocuments != activeWorkspace.retrievalDocuments {
@@ -699,6 +736,7 @@ final class AppState {
             isPreparingModel = false
             audioEpoch = UUID()
             sessionStartedAt = nil
+            finishArchive()
             errorMessage = "开始记录失败：\(error.localizedDescription)"
             statusText = "启动失败"
         }
@@ -767,11 +805,12 @@ final class AppState {
     }
 
     /// `endedAt`: where the meeting really ended, when that was before now (auto-end after silence).
-    func stopSession(endedAt: Date? = nil) async {
+    func stopSession(endedAt: Date? = nil, preparingForTermination: Bool = false) async {
         guard (isRunning || isPaused) && !isChangingSession else { return }
         isChangingSession = true
         defer { isChangingSession = false }
         isStopping = true
+        meetingContextTask?.cancel(); meetingContextTask = nil
         stopAutoEnd()
         statusText = "正在处理最后片段…"
         pendingAutomaticQuestion = nil
@@ -779,7 +818,7 @@ final class AppState {
         _ = await audio.stopCapture()
         _ = microphone.stopCapture()
         await liveTranscriber?.finish(); await microphoneTranscriber?.finish()
-        liveTranslation.finishMeeting()
+        liveTranslation.finishMeeting(sessionID: activeArchiveID)
         audio.setPCMHandler(nil); microphone.setPCMHandler(nil)
         audioEpoch = UUID()
         liveTranscriber = nil
@@ -795,7 +834,7 @@ final class AppState {
         partialTranscript = ""
         microphonePartialTranscript = ""
         transcriptionStatus = "已停止"
-        finishArchive(endedAt: endedAt)
+        finishArchive(endedAt: endedAt, summarize: !preparingForTermination)
         // Voices are forgotten with the meeting: nothing about them is kept for the next one.
         speakers.endMeeting()
         preparedWorkspace = nil
@@ -869,6 +908,13 @@ final class AppState {
         if isAutomatic && isAnswering && !supersede {
             pendingAutomaticQuestion = (question, recentContext ?? "", candidateID)
             Diagnostics.record("answer.queued")
+            return
+        }
+        guard answerEngineReady else {
+            if !isAutomatic {
+                errorMessage = "连接回答服务后才能生成回答；当前会议记录会继续。"
+                openSettings(.answers)
+            }
             return
         }
         let backend = answerBackend
@@ -1286,7 +1332,8 @@ final class AppState {
         defaults.set(recordSessions, forKey: "recordSessions")
         defaults.set(autoSummarize, forKey: "autoSummarize")
         resumeRecoveredSummariesIfNeeded()
-        defaults.set(autoApplyLessons, forKey: "autoApplyLessons")
+        defaults.set(autoCollectKnowledgeCandidates, forKey: "autoCollectKnowledgeCandidates")
+        defaults.removeObject(forKey: "autoApplyLessons")
         defaults.set(autoBackup, forKey: "autoBackup")
         defaults.set(keepOnTop, forKey: "keepOnTop")
         defaults.set(appearance, forKey: "appearance")
@@ -1337,6 +1384,7 @@ final class AppState {
     }
 
     func prepareForTermination() {
+        beginTerminationPreparation()
         localAssetScanTask?.cancel()
         documentSetupTask?.cancel(); managedDownloadTask?.cancel(); runtimeDownloadTask?.cancel()
         importTask?.cancel()
@@ -1367,6 +1415,16 @@ final class AppState {
         slideCodex.cancel()
         CompanionServer.shared.stop()
         if let screenshotURL { try? FileManager.default.removeItem(at: screenshotURL) }
+    }
+
+    func beginTerminationPreparation() {
+        isPreparingForTermination = true
+        summaryCodex.cancel()
+        StructuredNotesJobs.shared.cancelAll()
+    }
+
+    func resumeAfterFailedTermination() {
+        isPreparingForTermination = false
     }
 
     // MARK: Hotkeys

@@ -128,9 +128,8 @@ extension AppState {
                   let index = updated.questionBank.firstIndex(where: { $0.id == itemID }) else {
                 throw CocoaError(.fileNoSuchFile)
             }
-            updated.questionBank[index].question = draftItem.question
-            updated.questionBank[index].answer = draftItem.answer
-            updated.questionBank[index].updatedAt = Date()
+            KnowledgeMerger.editQuestionBankItem(&updated.questionBank[index],
+                                                 question: draftItem.question, answer: draftItem.answer)
         }
 
         let formerName = current.name
@@ -171,9 +170,17 @@ extension AppState {
         let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
         do {
             workspaces.flush()
+            for sessionID in archive.workspaceSessionIDs(id, formerName: workspace.name,
+                                                         includeLegacyNameOnly: includeLegacyNameOnly) {
+                guard await archive.flush(sessionID: sessionID) else {
+                    let reason = archive.persistenceBySession[sessionID]?.lastFailure
+                    errorMessage = "系列会议内容尚未全部保存，未删除系列或会议记录。" +
+                        (reason.map { "\n" + $0 } ?? "请重试保存后再删除。")
+                    return false
+                }
+            }
             let remainingWorkspaces = workspaces.workspaces.filter { $0.id != id }
             try await documentPreparation.deleteWorkspaceArtifacts(id, remainingWorkspaces: remainingWorkspaces)
-            await archive.flush()
             try archive.deleteWorkspaceSessions(id, formerName: workspace.name,
                                                 includeLegacyNameOnly: includeLegacyNameOnly)
             try MaterialArchive.deleteWorkspaceFiles(id)
@@ -225,7 +232,16 @@ extension AppState {
 
     func updateBankItem(_ item: QuestionBankItem) {
         guard let index = activeWorkspace.questionBank.firstIndex(where: { $0.id == item.id }) else { return }
-        var next = item; next.updatedAt = Date()
+        var next = activeWorkspace.questionBank[index]
+        KnowledgeMerger.editQuestionBankItem(&next, question: item.question, answer: item.answer)
+        activeWorkspace.questionBank[index] = next
+        rebuildContextIndex()
+    }
+
+    func restoreBankAnswer(itemID: UUID, revisionID: UUID) {
+        guard let index = activeWorkspace.questionBank.firstIndex(where: { $0.id == itemID }) else { return }
+        var next = activeWorkspace.questionBank[index]
+        guard KnowledgeMerger.restoreAnswerRevision(revisionID, on: &next) else { return }
         activeWorkspace.questionBank[index] = next
         rebuildContextIndex()
     }
@@ -235,19 +251,153 @@ extension AppState {
         rebuildContextIndex()
     }
 
-    /// Merges a session review's lessons and improved answers into its workspace.
+    /// Generated review output is queued as suggestions. It never changes reusable
+    /// knowledge until the user makes a per-candidate decision.
     @discardableResult
-    func applyReview(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> (lessons: Int, questions: Int)? {
-        guard let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return nil }
-        let result = KnowledgeMerger.merge(lessons: summary.lessons ?? [], bank: (summary.bank ?? []).map { ($0.question, $0.answer) },
-                                           into: &workspace, session: sessionID)
-        workspaces.update(workspace)
-        if workspaceID == activeWorkspace.id { rebuildContextIndex() }
-        var applied = summary
-        applied.appliedToWorkspace = true
-        archive.saveSummary(applied, for: sessionID)
-        Diagnostics.record("knowledge.applied", ["lessons": result.lessons, "questions": result.questions])
-        return result
+    func collectReviewCandidates(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> Int {
+        guard !isPreparingForTermination else { return 0 }
+        guard summary.appliedToWorkspace != true, let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return 0 }
+        let ids = KnowledgeMerger.collectCandidates(lessons: summary.lessons ?? [], bank: summary.bank ?? [],
+                                                    into: &workspace, session: sessionID, originID: sessionID)
+        guard !ids.isEmpty else { return 0 }
+        do { try workspaces.commit(workspace) }
+        catch {
+            errorMessage = "保存知识候选失败：\(error.localizedDescription)"
+            return 0
+        }
+        Diagnostics.record("knowledge.candidates.collected", ["count": ids.count])
+        return ids.count
+    }
+
+    func reviewKnowledgeCandidate(_ candidateID: String, decision: WorkspaceKnowledgeDecision,
+                                  workspaceID: UUID, operationID: UUID = UUID()) {
+        guard !isPreparingForTermination else { return }
+        guard var workspace = workspaces.workspace(workspaceID) else { return }
+        guard let receipt = KnowledgeMerger.applyCandidate(candidateID, decision: decision,
+                                                            operationID: operationID, into: &workspace) else {
+            if KnowledgeMerger.refreshCandidateBase(candidateID, in: &workspace) {
+                do { try workspaces.commit(workspace) }
+                catch { errorMessage = "保存候选状态失败：\(error.localizedDescription)"; return }
+                errorMessage = "这个问题的现有答法刚刚有变化。请核对当前答案后再选择。"
+            } else {
+                errorMessage = "这个候选已变化或不再可用，请重新打开后核对。"
+            }
+            return
+        }
+        do {
+            try workspaces.commit(workspace)
+            if workspaceID == activeWorkspace.id { rebuildContextIndex() }
+            Diagnostics.record("knowledge.candidate.reviewed", ["decision": decision.rawValue,
+                                                                   "source_counted": String(receipt.sourceCounted)])
+        } catch {
+            errorMessage = "保存知识更新失败：\(error.localizedDescription)"
+        }
+    }
+
+    /// Queue only note entries whose current transcript evidence was explicitly supported.
+    /// The review pane is deliberately not trusted as the source of truth; rebuild the
+    /// references from the persisted session snapshot before committing proposals.
+    func collectSeriesChangeCandidates(sessionID: UUID, workspaceID: UUID) async -> Int {
+        guard !isPreparingForTermination,
+              let meta = archive.sessions.first(where: { $0.id == sessionID }),
+              meta.workspaceID == workspaceID, meta.workspaceDeleted != true else { return 0 }
+        guard await archive.flush(sessionID: sessionID) else {
+            errorMessage = "本场纪要尚未保存，无法收集系列事项。请等待保存完成后重试。"
+            return 0
+        }
+        guard !isPreparingForTermination,
+              let detail = await archive.detail(sessionID),
+              detail.meta.workspaceID == workspaceID, detail.meta.workspaceDeleted != true,
+              archive.sessions.contains(where: { $0.id == sessionID && $0.workspaceID == workspaceID && $0.workspaceDeleted != true }),
+              var workspace = workspaces.workspace(workspaceID) else { return 0 }
+        let evidence = SessionEvidenceBuilder.build(meta: detail.meta, lines: detail.lines,
+                                                    notes: detail.notes, summary: detail.summary)
+        let added = WorkspaceSeriesChangeMerger.collectCandidates(from: evidence, sessionID: sessionID,
+                                                                  into: &workspace)
+        guard !added.isEmpty else { return 0 }
+        do { try workspaces.commit(workspace) }
+        catch {
+            errorMessage = "保存系列事项候选失败：\(error.localizedDescription)"
+            return 0
+        }
+        return added.count
+    }
+
+    /// Review one proposed series item. Replace is guarded by the revision shown in the
+    /// card, and the proposal's evidence must still be current and explicitly supported.
+    func reviewSeriesChangeCandidate(_ candidateID: String, decision: WorkspaceSeriesChangeDecision,
+                                     workspaceID: UUID, targetItemID: UUID? = nil,
+                                     expectedRevision: Int? = nil,
+                                     reviewedDetails: WorkspaceSeriesChangeReviewDetails? = nil,
+                                     operationID: UUID = UUID()) async {
+        guard !isPreparingForTermination,
+              let initialWorkspace = workspaces.workspace(workspaceID),
+              let initialCandidate = initialWorkspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }) else { return }
+        // A receipt is the durable result of the user's first click. Replays remain
+        // successful even if the source is later edited or removed.
+        if initialCandidate.receipt != nil || initialCandidate.status != .pending { return }
+        var currentEvidence: SessionEvidenceReference?
+        if decision != .reject {
+            guard let meta = archive.sessions.first(where: { $0.id == initialCandidate.sourceSessionID }),
+                  meta.workspaceID == workspaceID, meta.workspaceDeleted != true,
+                  await archive.flush(sessionID: initialCandidate.sourceSessionID) else {
+                errorMessage = "本场纪要尚未保存，无法确认系列依据。请等待保存完成后重试。"
+                return
+            }
+            guard !isPreparingForTermination,
+                  let detail = await archive.detail(initialCandidate.sourceSessionID),
+                  detail.meta.workspaceID == workspaceID, detail.meta.workspaceDeleted != true,
+                  archive.sessions.contains(where: {
+                      $0.id == initialCandidate.sourceSessionID && $0.workspaceID == workspaceID && $0.workspaceDeleted != true
+                  }),
+                  let current = SessionEvidenceBuilder.build(meta: detail.meta, lines: detail.lines,
+                                                             notes: detail.notes, summary: detail.summary)
+                    .first(where: { $0.id == initialCandidate.evidenceID }) else {
+                errorMessage = "这条系列建议的依据已变化或不可用，请重新核对后再接受。"
+                return
+            }
+            currentEvidence = current
+        }
+
+        // `archive.detail` suspends this main-actor method. Rebase on the latest workspace
+        // after that suspension so a concurrent review or action-state change is not lost.
+        guard !isPreparingForTermination,
+              var workspace = workspaces.workspace(workspaceID),
+              let candidate = workspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }) else { return }
+        if candidate.receipt != nil { return }
+        if decision != .reject {
+            guard let currentEvidence,
+                  WorkspaceSeriesChangeMerger.matchesCurrentEvidence(candidate, reference: currentEvidence) else {
+                errorMessage = "这条系列建议的依据已变化或不可用，请重新核对后再接受。"
+                return
+            }
+        }
+        guard let receipt = WorkspaceSeriesChangeMerger.applyCandidate(candidateID, decision: decision,
+                                                                        operationID: operationID,
+                                                                        targetItemID: targetItemID,
+                                                                        expectedRevision: expectedRevision,
+                                                                        reviewedDetails: reviewedDetails,
+                                                                        into: &workspace) else {
+            errorMessage = "系列内容刚刚有变化，请刷新后核对当前版本。"
+            return
+        }
+        do {
+            try workspaces.commit(workspace)
+            Diagnostics.record("series.change.reviewed", ["decision": receipt.decision.rawValue,
+                                                             "kind": candidate.kind.rawValue])
+        } catch {
+            errorMessage = "保存系列变更失败：\(error.localizedDescription)"
+        }
+    }
+
+    func updateSeriesActionState(_ status: WorkspaceSeriesItem.ActionState, itemID: UUID,
+                                 expectedRevision: Int, workspaceID: UUID) {
+        guard !isPreparingForTermination, var workspace = workspaces.workspace(workspaceID),
+              WorkspaceSeriesChangeMerger.setActionState(status, itemID: itemID,
+                                                          expectedRevision: expectedRevision,
+                                                          into: &workspace) else { return }
+        do { try workspaces.commit(workspace) }
+        catch { errorMessage = "保存事项进度失败：\(error.localizedDescription)" }
     }
 
     // MARK: Stage review
@@ -280,13 +430,13 @@ extension AppState {
                 case .codexExec, .codexAppServer:
                     markdown = try await summaryCodex.run(prompt: request.fullPrompt, model: model, reasoning: reasoning, timeout: 600) { _ in }
                 }
-                guard var latest = workspaces.workspace(workspaceID) else { return }
+                guard !isPreparingForTermination, var latest = workspaces.workspace(workspaceID) else { return }
                 latest.stageReview = markdown
                 latest.stageReviewAt = Date()
-                if autoApplyLessons {
-                    _ = KnowledgeMerger.merge(lessons: SessionSummaryParser.parseAll(markdown).lessons, bank: [], into: &latest, session: nil)
-                }
-                workspaces.update(latest)
+                let parsed = SessionSummaryParser.parseAll(markdown)
+                _ = KnowledgeMerger.collectCandidates(lessons: parsed.lessons, bank: parsed.bank,
+                                                       into: &latest, session: nil, originID: workspaceID)
+                try workspaces.commit(latest)
                 Diagnostics.record("stage_review.completed", ["sessions": digests.count])
             } catch {
                 errorMessage = "阶段复盘生成失败：\(error.localizedDescription)"

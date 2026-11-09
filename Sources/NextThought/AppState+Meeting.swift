@@ -4,20 +4,6 @@ import NextThoughtCore
 
 // MARK: - Meeting plan
 
-/// What to bring from the previous meeting of the series ("接着上一场").
-struct MeetingCarry: Equatable {
-    /// Materials the series already had before this meeting.
-    var materials = true
-    /// The question bank: reviewed questions with improved answers.
-    var review = true
-    /// Lessons ("经验").
-    var lessons = true
-    /// The full transcript of the previous meeting (long, so off by default).
-    var transcript = false
-
-    static let standard = MeetingCarry()
-}
-
 /// What the next start uses: set by the preparation page, cleared when the meeting ends.
 struct MeetingPlan: Equatable {
     var title: String?
@@ -141,32 +127,63 @@ extension AppState {
     /// The default live mode of the active series' type.
     var typeDefaults: MeetingTypeDefaults { MeetingTypeDefaults.for(activeWorkspace.effectiveMode) }
 
-    /// The workspace a starting meeting answers from: the series, minus what the
-    /// preparation page left unchecked, plus the previous transcript when asked for.
-    /// When anything differs from the series, the retrieval index is rebuilt from
-    /// that set (keyword search only: the vector index belongs to the full series).
-    func meetingWorkspaceForStart() async -> Workspace {
+    /// The immediate workspace snapshot a starting meeting answers from.
+    /// Optional transcript loading and any changed retrieval index are applied later.
+    func meetingWorkspaceForStart() -> Workspace {
         let series = activeWorkspace
-        guard let plan = plannedMeeting, plan.carry != .standard else { return series }
-        var workspace = series
-        if !plan.carry.materials {
-            workspace.documents.removeAll { plan.baselineDocumentIDs.contains($0.id) }
-        }
-        if !plan.carry.review { workspace.questionBank = [] }
-        if !plan.carry.lessons { workspace.lessons = [] }
-        if plan.carry.transcript, let previous = plan.previousSessionID, let detail = await archive.detail(previous), !detail.lines.isEmpty {
-            let text = SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt)
-            workspace.documents.append(ContextDocument(name: detail.meta.displayTitle,
-                                                       pages: SessionSummaryPrompt.chunks(text, limit: 4_000),
-                                                       category: "上一场转写")) // l10n-ignore: label for the model
-        }
-        let documents = workspace.retrievalDocuments
-        if documents != series.retrievalDocuments {
-            contextIndex = await Task.detached(priority: .userInitiated) {
+        guard let plan = plannedMeeting else { return series }
+        return plan.carry.workspaceSnapshot(from: series, baselineDocumentIDs: plan.baselineDocumentIDs)
+    }
+
+    /// Builds the optional, carry-filtered retrieval context after the archive has
+    /// started and audio capture can proceed. An empty index is the safe fallback
+    /// while a custom filter is being indexed; it cannot leak excluded materials.
+    func prepareMeetingContextForStart(workspace: Workspace, plan: MeetingPlan?, epoch: UUID) {
+        meetingContextTask?.cancel()
+        meetingContextTask = nil
+        guard let plan else { return }
+
+        let seriesDocuments = activeWorkspace.retrievalDocuments
+        let seriesIndex = contextIndex
+        let needsTranscript = plan.carry.transcript && plan.previousSessionID != nil
+        let needsFilteredIndex = workspace.retrievalDocuments != seriesDocuments || needsTranscript
+        guard needsFilteredIndex else { return }
+
+        // Do not use the unfiltered series index while custom carry options are
+        // being applied. The workspace snapshot still carries its chosen profile,
+        // lessons, and question bank immediately.
+        contextIndex = HybridContextIndex()
+        meetingContextTask = Task { [weak self] in
+            guard let self else { return }
+            var prepared = workspace
+            if needsTranscript, let previous = plan.previousSessionID,
+               let detail = await self.archive.detail(previous), !detail.lines.isEmpty {
+                let text = SessionSummaryPrompt.transcriptText(detail.lines, start: detail.meta.startedAt)
+                prepared.documents.append(ContextDocument(name: detail.meta.displayTitle,
+                                                          pages: SessionSummaryPrompt.chunks(text, limit: 4_000),
+                                                          category: "上一场转写")) // l10n-ignore: label for the model
+            }
+            guard !Task.isCancelled, self.audioEpoch == epoch, self.isRunning, !self.isStopping else { return }
+            let documents = prepared.retrievalDocuments
+            guard documents != seriesDocuments else {
+                self.contextIndex = seriesIndex
+                self.publishPreparedWorkspace(prepared)
+                return
+            }
+            let index = await Task.detached(priority: .utility) {
                 HybridContextIndex(documents: documents, semantic: SemanticIndex())
             }.value
+            guard !Task.isCancelled, self.audioEpoch == epoch, self.isRunning, !self.isStopping else { return }
+            self.contextIndex = index
+            self.publishPreparedWorkspace(prepared)
             Diagnostics.record("meeting.carry_applied", ["documents": documents.count])
         }
-        return workspace
+    }
+
+    private func publishPreparedWorkspace(_ workspace: Workspace) {
+        preparedWorkspace = workspace
+        if let sessionID = activeArchiveID {
+            _ = updateArchiveContext(workspace, sessionID: sessionID)
+        }
     }
 }

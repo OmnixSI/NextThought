@@ -16,6 +16,28 @@ struct SessionRecordTests {
         #expect(lines[1].date == start.addingTimeInterval(2))
     }
 
+    @Test func interruptedSessionReconcilesTranscriptCountBeforeSummaryRecovery() throws {
+        var transcript = Data()
+        transcript.append(try JSONLines.line(SessionTranscriptLine(date: start, speaker: .remote, text: "先确认范围")))
+        transcript.append(try JSONLines.line(SessionTranscriptLine(date: start.addingTimeInterval(2), speaker: .me, text: "我来跟进")))
+        let lastWrite = start.addingTimeInterval(3)
+        var meta = SessionMeta(startedAt: start, mode: .interview, transcriptCount: 0, summaryState: .pending,
+                               summaryError: "旧错误")
+
+        let recoveredTranscript = meta.recoverInterruptedRecording(transcriptData: transcript, lastTranscriptWrite: lastWrite)
+        #expect(recoveredTranscript)
+        #expect(meta.transcriptCount == 2)
+        #expect(meta.endedAt == lastWrite)
+        #expect(meta.summaryState == .none)
+        #expect(meta.summaryError == nil)
+
+        var noTranscript = SessionMeta(startedAt: start, mode: .interview, summaryState: .pending)
+        let recoveredEmptyTranscript = noTranscript.recoverInterruptedRecording(transcriptData: nil, lastTranscriptWrite: nil)
+        #expect(!recoveredEmptyTranscript)
+        #expect(noTranscript.transcriptCount == 0)
+        #expect(noTranscript.summaryState == .none)
+    }
+
     @Test func parsesTitleAndQuestionList() {
         let markdown = """
         # 标题

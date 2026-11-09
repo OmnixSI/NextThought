@@ -140,7 +140,7 @@ Release 工作流会用 `--clobber` 上传并替换同名资产。要求使用�
 
 `Workspace`（Core）是一个场景：模式、结构化字段（`ModeProfile.fields`）、分类资料、回答要求、背景、经验库（`WorkspaceLesson`）、题库（`QuestionBankItem`）和阶段复盘。`WorkspaceStore` 每个场景存一个 JSON（`Workspaces/<id>.json`，原子写入、0.6 s 合并保存）；读不了的文件改名为 `.unreadable` 保留。`AppState.sessionMode / documents / answerPreferences / profile` 是当前场景的视图，旧代码路径不变。回答提示词里 `user_material` 来自 `Workspace.materialText`，`experience_notes` 来自经验库，题库作为一份“题库”资料参与检索。
 
-复盘：`SessionSummaryPrompt.system(for:)` 按模式加入复盘重点，并要求输出“经验沉淀”“题库更新”；`SessionSummaryParser.parseAll` 解析后由 `KnowledgeMerger` 合并（相似问题按归一化后的二元组相似度去重并更新答案）。`StageReviewPrompt` 汇总一个场景下所有带摘要的会话。
+复盘：`SessionSummaryPrompt.system(for:)` 按模式加入复盘重点，并要求输出“经验沉淀”“题库更新”；`SessionSummaryParser.parseAll` 解析后由 `KnowledgeMerger` 把结果放入场景的待审阅候选。候选只有在用户逐项确认后才会改写经验库或题库；采用新答法会保留旧版本，会议来源去重后才计入“被问次数”。`StageReviewPrompt` 汇总一个场景下所有带摘要的会话，提取出的经验同样先待审阅。
 
 ## 数据与备份
 
@@ -148,9 +148,11 @@ Release 工作流会用 `--clobber` 上传并替换同名资产。要求使用�
 
 若旧钥匙串项因 macOS 访问控制无法读取，原项会保留，用户可重新输入凭据。`DataBackup` 导出 `.ntbackup`（ZIP：`manifest.json`、`settings.plist`、可选 `secrets.plist`、`Workspaces/`、`Sessions/`）；旧 `.ihbackup` 和旧备份格式仍可导入。自动备份：每天一次、安装更新前、导入前，保留 10 份。
 
+Workspace JSON 以可选字段增加知识候选收据、不同会议来源和旧答法历史。旧版本可以读取自己认识的系列字段，但如果它随后保存这个系列，会丢掉它不认识的新字段。回退到旧版前先从新版导出 `.ntbackup`；若旧版已经写过系列文件，先重新安装新版，再从这份备份恢复。不得把直接降级二进制当作新知识收据和答法历史的回滚路径。
+
 ## 自检（self-test）
 
-`NextThought --self-test data signing update asr --fixtures Tools/Validation/Fixtures` 在应用包内运行真实代码路径（需设置 `NEXTTHOUGHT_DATA_DIR` 指向临时目录）。Verify 工作流的 `selftest` 任务逐项运行；Release 工作流在打包后运行 `data update`。
+`NextThought --self-test data signing update session-export asr --fixtures Tools/Validation/Fixtures` 在应用包内运行真实代码路径（需设置 `NEXTTHOUGHT_DATA_DIR` 指向临时目录）。`session-export` 会实际生成并读取 Markdown、DOCX、PDF、SRT 与 WebVTT。Release 工作流会在隔离数据目录中运行 `data`、`session-export`、`session-backup-drain`、`session-edit-receipts` 和 `session-carry-context`，然后用演示资料运行 `document-setup`。
 
 ## GitHub Release 自动更新
 

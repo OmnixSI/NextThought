@@ -58,21 +58,196 @@ struct WorkspaceTests {
         #expect(workspace.experienceNotes().isEmpty)
     }
 
-    @Test func knowledgeMergeDeduplicatesAndUpdates() {
+    @Test func knowledgeCandidatesStayPendingUntilAcceptedAndRepeatedReviewsDoNotCountTwice() throws {
         var workspace = Workspace(name: "面试", mode: .interview)
-        let session = UUID()
-        var result = KnowledgeMerger.merge(lessons: ["先说结论再展开", "先说结论再展开。"], bank: [("缓存一致性怎么保证？", "先更新库再删缓存")],
-                                           into: &workspace, session: session, now: now)
-        #expect(result.lessons == 1)
-        #expect(workspace.questionBank.count == 1)
-        result = KnowledgeMerger.merge(lessons: ["被问项目时报具体数字"], bank: [("缓存一致性如何保证", "先更新库再删缓存，并用 binlog 兜底")],
-                                       into: &workspace, session: session, now: now)
-        #expect(result == (1, 1))
+        let earlierSession = UUID(), session = UUID()
+        workspace.questionBank = [QuestionBankItem(question: "缓存一致性怎么保证？", answer: "旧答法保留", timesAsked: 2,
+                                                    sourceSessionID: earlierSession, updatedAt: now)]
+        let first = KnowledgeMerger.collectCandidates(lessons: ["先说结论再展开", "先说结论再展开。"],
+                                                       bank: [BankEntry(question: "缓存一致性怎么保证？", answer: "先更新库再删缓存")],
+                                                       into: &workspace, session: session, now: now)
+        #expect(first.count == 2)
         #expect(workspace.questionBank.count == 1)
         #expect(workspace.questionBank[0].timesAsked == 2)
-        #expect(workspace.questionBank[0].answer.contains("binlog"))
-        workspace.lessons[1].pinned = true
-        #expect(workspace.experienceNotes().hasPrefix("- 被问项目时报具体数字"))
+        #expect(workspace.questionBank[0].answer == "旧答法保留")
+        let again = KnowledgeMerger.collectCandidates(lessons: ["先说结论再展开"],
+                                                       bank: [BankEntry(question: "缓存一致性怎么保证？", answer: "先更新库再删缓存")],
+                                                       into: &workspace, session: session, now: now)
+        #expect(again.isEmpty)
+
+        let candidate = try #require(workspace.knowledgeCandidates?.first { $0.kind == .question })
+        let receipt = try #require(KnowledgeMerger.applyCandidate(candidate.id, decision: .keepExisting,
+                                                                  operationID: UUID(), into: &workspace, now: now))
+        #expect(workspace.questionBank[0].answer == "旧答法保留")
+        #expect(workspace.questionBank[0].timesAsked == 3)
+        #expect(workspace.questionBank[0].sourceSessionIDs == [earlierSession, session].sorted { $0.uuidString < $1.uuidString })
+        let retry = KnowledgeMerger.applyCandidate(candidate.id, decision: .replaceAnswer,
+                                                   operationID: UUID(), into: &workspace, now: now.addingTimeInterval(1))
+        #expect(retry == receipt)
+        #expect(workspace.questionBank[0].timesAsked == 3)
+        let data = try JSONEncoder().encode(workspace)
+        var restored = try JSONDecoder().decode(Workspace.self, from: data)
+        let afterRestart = KnowledgeMerger.applyCandidate(candidate.id, decision: .replaceAnswer,
+                                                           operationID: UUID(), into: &restored, now: now.addingTimeInterval(2))
+        #expect(afterRestart == receipt)
+        #expect(restored.questionBank[0].timesAsked == 3)
+    }
+
+    @Test func replacingAnAnswerRequiresFreshRevisionAndKeepsTheOldAnswer() throws {
+        var workspace = Workspace(name: "面试", mode: .interview)
+        workspace.questionBank = [QuestionBankItem(question: "Redis 缓存雪崩怎么处理", answer: "人工维护的答法", timesAsked: 4)]
+        let session = UUID()
+        let ids = KnowledgeMerger.collectCandidates(lessons: [],
+                                                     bank: [BankEntry(question: "Redis 缓存雪崩如何处理", answer: "分批过期并加随机值")],
+                                                     into: &workspace, session: session, now: now)
+        let candidateID = try #require(ids.first)
+        KnowledgeMerger.editQuestionBankItem(&workspace.questionBank[0],
+                                             question: "Redis 缓存雪崩如何处理", answer: "用户后来手动调整的答法",
+                                             now: now.addingTimeInterval(1))
+        #expect(KnowledgeMerger.applyCandidate(candidateID, decision: .replaceAnswer,
+                                               operationID: UUID(), into: &workspace, now: now) == nil)
+        #expect(KnowledgeMerger.refreshCandidateBase(candidateID, in: &workspace))
+        let receipt = try #require(KnowledgeMerger.applyCandidate(candidateID, decision: .replaceAnswer,
+                                                                  operationID: UUID(), into: &workspace, now: now))
+        #expect(receipt.decision == .replaceAnswer)
+        #expect(workspace.questionBank[0].answer == "分批过期并加随机值")
+        #expect(workspace.questionBank[0].answerSourceSessionID == session)
+        #expect(workspace.questionBank[0].answerHistory?.map(\.answer) == ["人工维护的答法", "用户后来手动调整的答法"])
+        #expect(workspace.questionBank[0].timesAsked == 5)
+    }
+
+    @Test func replacingAnAnswerPreservesItsSourceAttribution() throws {
+        var workspace = Workspace(name: "面试", mode: .interview)
+        let originalQuestionSession = UUID(), answerSession = UUID(), candidateSession = UUID()
+        workspace.questionBank = [QuestionBankItem(question: "Redis 缓存雪崩怎么处理", answer: "原答法",
+                                                    timesAsked: 2, sourceSessionID: originalQuestionSession,
+                                                    sourceSessionIDs: [originalQuestionSession, answerSession],
+                                                    answerSourceSessionID: answerSession, answerRevision: 2,
+                                                    updatedAt: now)]
+        let ids = KnowledgeMerger.collectCandidates(lessons: [],
+                                                     bank: [BankEntry(question: "Redis 缓存雪崩如何处理", answer: "新答法")],
+                                                     into: &workspace, session: candidateSession, now: now)
+        let candidateID = try #require(ids.first)
+
+        _ = try #require(KnowledgeMerger.applyCandidate(candidateID, decision: .replaceAnswer,
+                                                         operationID: UUID(), into: &workspace,
+                                                         now: now.addingTimeInterval(1)))
+
+        #expect(workspace.questionBank[0].answer == "新答法")
+        #expect(workspace.questionBank[0].answerSourceSessionID == candidateSession)
+        #expect(workspace.questionBank[0].answerHistory?.count == 1)
+        #expect(workspace.questionBank[0].answerHistory?.first?.answer == "原答法")
+        #expect(workspace.questionBank[0].answerHistory?.first?.sourceSessionID == answerSession)
+    }
+
+    @Test func staleKeepExistingRequiresReviewOfTheCurrentQuestionRevision() throws {
+        var workspace = Workspace(name: "面试", mode: .interview)
+        let existingSession = UUID(), candidateSession = UUID()
+        workspace.questionBank = [QuestionBankItem(question: "Redis 缓存雪崩怎么处理", answer: "原答法", timesAsked: 2,
+                                                    sourceSessionID: existingSession, sourceSessionIDs: [existingSession])]
+        let candidateIDs = KnowledgeMerger.collectCandidates(lessons: [],
+                                                              bank: [BankEntry(question: "Redis 缓存雪崩如何处理", answer: "候选答法")],
+                                                              into: &workspace, session: candidateSession, now: now)
+        let candidateID = try #require(candidateIDs.first)
+
+        KnowledgeMerger.editQuestionBankItem(&workspace.questionBank[0],
+                                             question: "Redis 缓存雪崩怎么处理", answer: "刚刚手动更新的答法",
+                                             now: now.addingTimeInterval(1))
+        #expect(KnowledgeMerger.applyCandidate(candidateID, decision: .keepExisting,
+                                               operationID: UUID(), into: &workspace, now: now) == nil)
+        #expect(workspace.questionBank[0].answer == "刚刚手动更新的答法")
+        #expect(workspace.questionBank[0].timesAsked == 2)
+        #expect(workspace.questionBank[0].sourceSessionIDs == [existingSession])
+
+        #expect(KnowledgeMerger.refreshCandidateBase(candidateID, in: &workspace))
+        let receipt = try #require(KnowledgeMerger.applyCandidate(candidateID, decision: .keepExisting,
+                                                                  operationID: UUID(), into: &workspace, now: now))
+        #expect(receipt.sourceCounted)
+        #expect(workspace.questionBank[0].answer == "刚刚手动更新的答法")
+        #expect(workspace.questionBank[0].timesAsked == 3)
+        #expect(Set(workspace.questionBank[0].sourceSessionIDs ?? []) == [existingSession, candidateSession])
+    }
+
+    @Test func keepingAnExistingLessonIsRejectedWhenNoSimilarLessonRemains() throws {
+        var workspace = Workspace(name: "面试", mode: .interview)
+        let ids = KnowledgeMerger.collectCandidates(lessons: ["面试回答先说结论，再按证据展开"], bank: [],
+                                                     into: &workspace, session: UUID(), now: now)
+        let candidateID = try #require(ids.first)
+
+        #expect(KnowledgeMerger.applyCandidate(candidateID, decision: .keepExisting,
+                                               operationID: UUID(), into: &workspace, now: now) == nil)
+        #expect(workspace.lessons.isEmpty)
+        #expect(workspace.knowledgeCandidates?.first?.status == .pending)
+    }
+
+    @Test func editingQuestionWordingInvalidatesOpenReplacementWithoutErasingProvenance() throws {
+        var workspace = Workspace(name: "面试", mode: .interview)
+        let sourceSession = UUID(), currentSession = UUID()
+        let oldRevision = WorkspaceAnswerRevision(answer: "更早的答法", recordedAt: now.addingTimeInterval(-10))
+        workspace.questionBank = [QuestionBankItem(question: "Redis 缓存雪崩怎么处理", answer: "人工维护的答法",
+                                                    timesAsked: 4, sourceSessionID: sourceSession,
+                                                    sourceSessionIDs: [sourceSession], answerHistory: [oldRevision],
+                                                    answerRevision: 3, updatedAt: now)]
+        let ids = KnowledgeMerger.collectCandidates(lessons: [],
+                                                     bank: [BankEntry(question: "Redis 缓存雪崩如何处理", answer: "分批过期并加随机值")],
+                                                     into: &workspace, session: currentSession, now: now)
+        let candidateID = try #require(ids.first)
+
+        KnowledgeMerger.editQuestionBankItem(&workspace.questionBank[0],
+                                             question: "Redis 缓存雪崩如何处理", answer: "人工维护的答法",
+                                             now: now.addingTimeInterval(1))
+        #expect(workspace.questionBank[0].answerRevision == 4)
+        #expect(workspace.questionBank[0].answerHistory == [oldRevision])
+        #expect(workspace.questionBank[0].sourceSessionIDs == [sourceSession])
+        #expect(KnowledgeMerger.applyCandidate(candidateID, decision: .replaceAnswer,
+                                               operationID: UUID(), into: &workspace, now: now) == nil)
+        #expect(KnowledgeMerger.refreshCandidateBase(candidateID, in: &workspace))
+
+        let receipt = try #require(KnowledgeMerger.applyCandidate(candidateID, decision: .replaceAnswer,
+                                                                  operationID: UUID(), into: &workspace, now: now))
+        #expect(receipt.sourceCounted)
+        #expect(workspace.questionBank[0].answer == "分批过期并加随机值")
+        #expect(workspace.questionBank[0].answerHistory?.map(\.answer) == ["更早的答法", "人工维护的答法"])
+        #expect(workspace.questionBank[0].sourceSessionIDs?.contains(currentSession) == true)
+    }
+
+    @Test func whyAndHowQuestionsRemainSeparateCandidates() {
+        var workspace = Workspace(name: "面试", mode: .interview)
+        let ids = KnowledgeMerger.collectCandidates(lessons: [], bank: [
+            BankEntry(question: "为什么选择 Redis？", answer: "需要低延迟缓存"),
+            BankEntry(question: "如何使用 Redis？", answer: "设置过期时间并处理并发")
+        ], into: &workspace, session: UUID(), now: now)
+        #expect(ids.count == 2)
+        #expect(Set(ids).count == 2)
+    }
+
+    @Test func legacyKnowledgeFieldsRemainReadable() throws {
+        let session = UUID()
+        let workspaceID = UUID(), lessonID = UUID(), questionID = UUID()
+        let json = """
+        {"id":"\(workspaceID.uuidString)","name":"旧场景","mode":"interview","lessons":[{"id":"\(lessonID.uuidString)","text":"旧经验","sourceSessionID":"\(session.uuidString)","createdAt":0,"pinned":false}],"questionBank":[{"id":"\(questionID.uuidString)","question":"旧问题","answer":"旧答法","timesAsked":3,"sourceSessionID":"\(session.uuidString)","updatedAt":0}]}
+        """
+        let workspace = try JSONDecoder().decode(Workspace.self, from: Data(json.utf8))
+        #expect(workspace.questionBank.first?.answer == "旧答法")
+        #expect(workspace.questionBank.first?.answerHistory == nil)
+        #expect(workspace.questionBank.first?.answerRevision == nil)
+        #expect(workspace.knowledgeCandidates == nil)
+    }
+
+    @Test func legacyReaderCanReadNewWorkspaceFields() throws {
+        let item = QuestionBankItem(question: "缓存问题", answer: "新答法", timesAsked: 2,
+                                    answerHistory: [WorkspaceAnswerRevision(answer: "旧答法", recordedAt: now)],
+                                    answerRevision: 1, updatedAt: now)
+        var workspace = Workspace(name: "新场景", mode: .interview, questionBank: [item])
+        workspace.knowledgeCandidates = [WorkspaceKnowledgeCandidate(id: "candidate", logicalItemID: "question",
+                                                                      kind: .question, text: "缓存问题",
+                                                                      proposedAnswer: "待审阅答法")]
+        let data = try JSONEncoder().encode(workspace)
+        let oldView = try JSONDecoder().decode(LegacyWorkspaceView.self, from: data)
+
+        #expect(oldView.name == "新场景")
+        #expect(oldView.questionBank.first?.answer == "新答法")
+        #expect(oldView.questionBank.first?.timesAsked == 2)
     }
 
     @Test func parsesLessonsAndBankFromReview() {
@@ -122,6 +297,194 @@ struct WorkspaceTests {
         #expect(second.merged[0].lessons.count == 2)
     }
 
+    @Test func backupMergePreservesKnowledgeSourcesHistoryAndReviewReceipt() throws {
+        let workspaceID = UUID(), lessonID = UUID(), questionID = UUID()
+        let oldSession = UUID(), sharedSession = UUID(), currentSession = UUID()
+        let sharedRevision = WorkspaceAnswerRevision(answer: "共同历史", recordedAt: now.addingTimeInterval(-300))
+        let olderRevision = WorkspaceAnswerRevision(answer: "备份中的旧答法", recordedAt: now.addingTimeInterval(-200),
+                                                    sourceSessionID: oldSession)
+        let currentRevision = WorkspaceAnswerRevision(answer: "本机历史", recordedAt: now.addingTimeInterval(-100),
+                                                      sourceSessionID: sharedSession)
+        var current = Workspace(id: workspaceID, name: "A", mode: .interview, updatedAt: now)
+        current.lessons = [WorkspaceLesson(id: lessonID, text: "当前经验", sourceSessionID: currentSession,
+                                           sourceSessionIDs: [sharedSession, currentSession],
+                                           createdAt: now.addingTimeInterval(-50), pinned: true)]
+        current.questionBank = [QuestionBankItem(id: questionID, question: "缓存雪崩如何处理", answer: "当前答法",
+                                                 timesAsked: 5, sourceSessionID: currentSession,
+                                                 sourceSessionIDs: [sharedSession, currentSession],
+                                                 answerSourceSessionID: currentSession,
+                                                 answerHistory: [sharedRevision, currentRevision], answerRevision: 4,
+                                                 updatedAt: now)]
+        let acceptedReceipt = WorkspaceKnowledgeReceipt(operationID: UUID(), candidateID: "same-candidate",
+                                                        decision: .keepExisting, reviewedAt: now.addingTimeInterval(-25),
+                                                        resultItemID: questionID, sourceCounted: true)
+        current.knowledgeCandidates = [WorkspaceKnowledgeCandidate(id: "same-candidate", logicalItemID: "question",
+                                                                   kind: .question, text: "缓存雪崩如何处理",
+                                                                   proposedAnswer: "备选答法")]
+
+        var backup = Workspace(id: workspaceID, name: "A backup", mode: .interview,
+                               updatedAt: now.addingTimeInterval(-20))
+        backup.lessons = [WorkspaceLesson(id: lessonID, text: "较旧经验", sourceSessionID: oldSession,
+                                          sourceSessionIDs: [oldSession, sharedSession],
+                                          createdAt: now.addingTimeInterval(-150))]
+        backup.questionBank = [QuestionBankItem(id: questionID, question: "缓存雪崩如何处理", answer: "旧答法",
+                                                 timesAsked: 4, sourceSessionID: oldSession,
+                                                 sourceSessionIDs: [oldSession, sharedSession],
+                                                 answerSourceSessionID: oldSession,
+                                                 answerHistory: [sharedRevision, olderRevision], answerRevision: 2,
+                                                 updatedAt: now.addingTimeInterval(-10))]
+        let acceptedCandidate = WorkspaceKnowledgeCandidate(id: "same-candidate", logicalItemID: "question",
+                                                             kind: .question, text: "缓存雪崩如何处理",
+                                                             proposedAnswer: "备选答法", status: .accepted,
+                                                             receipt: acceptedReceipt, createdAt: now.addingTimeInterval(-80))
+        backup.knowledgeCandidates = [acceptedCandidate]
+
+        let merged = BackupMerge.workspaces(existing: [current], incoming: [backup])
+        let workspace = try #require(merged.merged.first)
+        let lesson = try #require(workspace.lessons.first)
+        let question = try #require(workspace.questionBank.first)
+        let candidate = try #require(workspace.knowledgeCandidates?.first)
+
+        #expect(workspace.name == "A")
+        #expect(lesson.text == "当前经验")
+        #expect(lesson.pinned)
+        #expect(lesson.createdAt == now.addingTimeInterval(-150))
+        #expect(Set(lesson.sourceSessionIDs ?? []) == [oldSession, sharedSession, currentSession])
+        #expect(question.answer == "当前答法")
+        #expect(question.answerSourceSessionID == currentSession)
+        #expect(question.answerRevision == 5)
+        #expect(question.timesAsked == 5)
+        #expect(Set(question.sourceSessionIDs ?? []) == [oldSession, sharedSession, currentSession])
+        let preservedBackupAnswer = try #require(question.answerHistory?.first { $0.answer == "旧答法" })
+        #expect(preservedBackupAnswer.recordedAt == backup.questionBank[0].updatedAt)
+        #expect(preservedBackupAnswer.sourceSessionID == oldSession)
+        #expect(Set(question.answerHistory?.map(\.id) ?? []) == Set([sharedRevision.id, olderRevision.id,
+                                                                      currentRevision.id, preservedBackupAnswer.id]))
+        #expect(candidate.status == .accepted)
+        #expect(candidate.receipt == acceptedReceipt)
+        #expect(candidate.receipt?.resultItemID == questionID)
+        #expect(merged.updated == 1)
+    }
+
+    @Test func backupMergePreservesLosingManualAnswerOnceWithItsSourceAndTimestamp() throws {
+        let workspaceID = UUID(), questionID = UUID(), sourceSessionID = UUID()
+        let manualEditAt = now.addingTimeInterval(-60)
+        let acceptedAt = now
+        var manualItem = QuestionBankItem(id: questionID, question: "缓存雪崩怎么处理", answer: "初始答法",
+                                           sourceSessionID: sourceSessionID, answerSourceSessionID: sourceSessionID,
+                                           updatedAt: now.addingTimeInterval(-120))
+        KnowledgeMerger.editQuestionBankItem(&manualItem, question: "缓存雪崩怎么处理",
+                                             answer: "手动维护的答法", now: manualEditAt)
+        #expect(manualItem.answerHistory?.map(\.answer) == ["初始答法"])
+        #expect(manualItem.answerSourceSessionID == nil)
+        #expect(manualItem.knownAnswerSourceSessionID == nil)
+
+        var current = Workspace(id: workspaceID, name: "面试", mode: .interview, updatedAt: acceptedAt)
+        current.questionBank = [QuestionBankItem(id: questionID, question: manualItem.question, answer: "已接受的建议",
+                                                  sourceSessionID: sourceSessionID, answerSourceSessionID: UUID(),
+                                                  answerRevision: 2, updatedAt: acceptedAt)]
+        var backup = Workspace(id: workspaceID, name: "面试备份", mode: .interview,
+                               updatedAt: acceptedAt.addingTimeInterval(-1))
+        backup.questionBank = [manualItem]
+
+        let firstMerge = try #require(BackupMerge.workspaces(existing: [current], incoming: [backup]).merged.first)
+        let firstQuestion = try #require(firstMerge.questionBank.first)
+        let preserved = try #require(firstQuestion.answerHistory?.first(where: { $0.answer == "手动维护的答法" }))
+        #expect(firstQuestion.answer == "已接受的建议")
+        #expect(preserved.recordedAt == manualEditAt)
+        #expect(preserved.sourceSessionID == nil)
+
+        let secondMerge = try #require(BackupMerge.workspaces(existing: [firstMerge], incoming: [backup]).merged.first)
+        let secondQuestion = try #require(secondMerge.questionBank.first)
+        let preservedRevisions = secondQuestion.answerHistory?.filter { $0.answer == "手动维护的答法" } ?? []
+        #expect(preservedRevisions.count == 1)
+        #expect(preservedRevisions.first?.recordedAt == manualEditAt)
+        #expect(preservedRevisions.first?.sourceSessionID == nil)
+    }
+
+    @Test func backupMergeDoesNotRestoreSourceForSameTextManualAnswer() throws {
+        let workspaceID = UUID(), questionID = UUID(), oldSourceSessionID = UUID()
+        var current = Workspace(id: workspaceID, name: "面试", mode: .interview, updatedAt: now)
+        current.questionBank = [QuestionBankItem(id: questionID, question: "如何处理缓存击穿", answer: "手动维护的答法",
+                                                  sourceSessionID: oldSourceSessionID, answerRevision: 1,
+                                                  updatedAt: now)]
+        var backup = Workspace(id: workspaceID, name: "面试备份", mode: .interview,
+                               updatedAt: now.addingTimeInterval(-10))
+        backup.questionBank = [QuestionBankItem(id: questionID, question: "如何处理缓存击穿", answer: "手动维护的答法",
+                                                 sourceSessionID: oldSourceSessionID,
+                                                 answerSourceSessionID: oldSourceSessionID,
+                                                 updatedAt: now.addingTimeInterval(-20))]
+
+        let merged = BackupMerge.workspaces(existing: [current], incoming: [backup])
+        let question = try #require(merged.merged.first?.questionBank.first)
+
+        #expect(question.answer == "手动维护的答法")
+        #expect(question.answerRevision == 1)
+        #expect(question.answerSourceSessionID == nil)
+        #expect(question.knownAnswerSourceSessionID == nil)
+    }
+
+    @Test func editingOnlyLegacyQuestionWordingKeepsAnswerAttribution() {
+        let sourceSession = UUID()
+        var item = QuestionBankItem(question: "如何处理缓存击穿", answer: "先加互斥锁",
+                                    sourceSessionID: sourceSession, updatedAt: now)
+        let answer = item.answer
+
+        KnowledgeMerger.editQuestionBankItem(&item, question: "缓存击穿如何处理", answer: answer,
+                                             now: now.addingTimeInterval(1))
+
+        #expect(item.answerRevision == 1)
+        #expect(item.answerHistory == nil)
+        #expect(item.answerSourceSessionID == sourceSession)
+        #expect(item.knownAnswerSourceSessionID == sourceSession)
+    }
+
+    @Test func backupMergePreservesWinningLegacyAnswerAttributionWhenAnswersDiverge() throws {
+        let workspaceID = UUID(), questionID = UUID()
+        let currentSource = UUID(), backupSource = UUID()
+        let current = Workspace(id: workspaceID, name: "面试", mode: .interview,
+                                questionBank: [QuestionBankItem(id: questionID, question: "如何处理缓存击穿",
+                                                                answer: "当前答法", sourceSessionID: currentSource,
+                                                                updatedAt: now)],
+                                updatedAt: now)
+        let backup = Workspace(id: workspaceID, name: "面试备份", mode: .interview,
+                               questionBank: [QuestionBankItem(id: questionID, question: "如何处理缓存击穿",
+                                                               answer: "旧答法", sourceSessionID: backupSource,
+                                                               updatedAt: now.addingTimeInterval(-20))],
+                               updatedAt: now.addingTimeInterval(-10))
+
+        let merged = try #require(BackupMerge.workspaces(existing: [current], incoming: [backup]).merged.first)
+        let question = try #require(merged.questionBank.first)
+        let preserved = try #require(question.answerHistory?.first)
+
+        #expect(question.answer == "当前答法")
+        #expect(question.answerRevision == 1)
+        #expect(question.answerSourceSessionID == currentSource)
+        #expect(question.knownAnswerSourceSessionID == currentSource)
+        #expect(preserved.answer == "旧答法")
+        #expect(preserved.sourceSessionID == backupSource)
+    }
+
+    @Test func currentSeriesRevisionHasStableIdentityAndDuplicateBackupDoesNotAddHistory() throws {
+        let workspaceID = UUID(), itemID = UUID(), sessionID = UUID()
+        let item = WorkspaceSeriesItem(id: itemID, kind: .decision, text: "按周发布",
+                                       sourceSessionID: sessionID, evidenceID: "decision-1",
+                                       claimRevision: "claim-1", sourceRevision: "line-1",
+                                       confirmedAt: now, updatedAt: now)
+
+        #expect(item.currentRevision == item.currentRevision)
+
+        let current = Workspace(id: workspaceID, name: "系列", mode: .meeting,
+                                seriesItems: [item], updatedAt: now)
+        let backup = Workspace(id: workspaceID, name: "系列", mode: .meeting,
+                               seriesItems: [item], updatedAt: now.addingTimeInterval(-1))
+        let merged = try #require(BackupMerge.workspaces(existing: [current], incoming: [backup]).merged.first)
+        let mergedItem = try #require(merged.seriesItems?.first)
+
+        #expect(mergedItem == item)
+        #expect(mergedItem.history.isEmpty)
+    }
+
     @Test func manifestValidationAndSettingsFilter() throws {
         let manifest = BackupManifest(kind: .full, appVersion: "1.3.0", appBuild: "20", includesSecrets: false, workspaceCount: 1, sessionCount: 2)
         try manifest.validate()
@@ -134,4 +497,31 @@ struct WorkspaceTests {
         #expect(filtered.keys.sorted() == ["apiModel"])
         #expect(SettingsSnapshot.secretAccounts.contains("stt.soniox"))
     }
+
+    @Test func restoreMapsLegacyAutoApplyLessonsPreferenceToCandidateCollection() {
+        let legacy = SettingsSnapshot.valuesForRestore(["autoApplyLessons": false, "apiModel": "legacy-model",
+                                                        "selectedTargetID": "window:1"])
+        #expect(legacy["autoCollectKnowledgeCandidates"] as? Bool == false)
+        #expect(legacy["autoApplyLessons"] == nil)
+        #expect(legacy["apiModel"] as? String == "legacy-model")
+        #expect(legacy["selectedTargetID"] == nil)
+
+        let current = SettingsSnapshot.valuesForRestore(["autoApplyLessons": true,
+                                                         "autoCollectKnowledgeCandidates": false])
+        #expect(current["autoCollectKnowledgeCandidates"] as? Bool == false)
+        #expect(current["autoApplyLessons"] == nil)
+
+        let currentOnly = SettingsSnapshot.valuesForRestore(["autoCollectKnowledgeCandidates": true])
+        #expect(currentOnly["autoCollectKnowledgeCandidates"] as? Bool == true)
+    }
+}
+
+private struct LegacyWorkspaceView: Decodable {
+    let name: String
+    let questionBank: [LegacyQuestion]
+}
+
+private struct LegacyQuestion: Decodable {
+    let answer: String
+    let timesAsked: Int
 }

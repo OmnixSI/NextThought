@@ -1,6 +1,13 @@
 import AppKit
 import Foundation
+import PDFKit
 import NextThoughtCore
+
+private actor SelfTestCompletionFlag {
+    private var finished = false
+    func markFinished() { finished = true }
+    func isFinished() -> Bool { finished }
+}
 
 /// Entry point: the normal app, or `NextThought --self-test <suites…>` which
 /// exercises the real code paths headlessly (used by CI on macOS runners):
@@ -11,6 +18,7 @@ import NextThoughtCore
 ///   asr      install X-ASR models, two-pass recognition of the fixtures, question detection
 ///
 /// Set NEXTTHOUGHT_DATA_DIR to a scratch folder; `--fixtures <dir>` for asr.
+/// Set NEXTTHOUGHT_SELFTEST_EXPORT_DIRECTORY to retain generated export fixtures.
 @main
 enum Launcher {
     static func main() {
@@ -71,6 +79,10 @@ enum SelfTest {
                 case "screen-context": return try await ScreenSelfTest.run(options)
                 case "relay": return try await CompanionRelaySelfTest.run(options)
                 case "search-eval": return try await ScreenSelfTest.search(options)
+                case "session-export": return try verifySessionExports()
+                case "session-backup-drain": return try await testSessionBackupWaitsForFinalTranslationDrain()
+                case "session-edit-receipts": return try await testSessionEditsWaitForSaveReceipts()
+                case "session-carry-context": return try await testSessionCarryContextSnapshot()
                 case "large-file": return try await PreparationSelfTest.largeFile(options)
                 case "preparation-file": return try await PreparationSelfTest.realFile(options)
                 case "capacity": return try await PreparationSelfTest.capacity()
@@ -146,7 +158,7 @@ enum SelfTest {
         archive.append(SessionTranscriptLine(date: Date(), speaker: .me, text: "我负责订单缓存层"))
         archive.append(SessionQuestionEvent(date: Date(), text: "介绍一下你的项目", intent: "explanationRequest", score: 0.9, disposition: "auto"))
         archive.finish()
-        await archive.flush()
+        guard await archive.flush(sessionID: meta.id) else { throw Failure("session writes did not receive a save receipt") }
         guard let saved = await archive.detail(meta.id) else { throw Failure("session not readable after writing") }
         try expect(saved.lines.count == 2 && saved.questions.count == 1, "session content \(saved.lines.count)/\(saved.questions.count)")
 
@@ -179,6 +191,417 @@ enum SelfTest {
         try expect(again.workspacesAdded == 0 && again.sessionsAdded == 0, "re-import duplicated data: \(again.description)")
         try expect(!DataBackup.listBackups().isEmpty, "no automatic backup taken before import")
         return summary.description
+    }
+
+    @MainActor
+    private static func testSessionBackupWaitsForFinalTranslationDrain() async throws -> String {
+        guard AppEnvironment.values["NEXTTHOUGHT_DATA_DIR"] != nil else {
+            throw Failure("session-backup-drain requires NEXTTHOUGHT_DATA_DIR scratch storage")
+        }
+        let archive = SessionArchive.shared
+        guard archive.activeID == nil else { throw Failure("an archive is already active") }
+        let defaults = UserDefaults.standard
+        let previousAutoBackup = defaults.object(forKey: "autoBackup")
+        defaults.set(true, forKey: "autoBackup")
+        defer {
+            if let previousAutoBackup { defaults.set(previousAutoBackup, forKey: "autoBackup") }
+            else { defaults.removeObject(forKey: "autoBackup") }
+        }
+
+        let meta = SessionMeta(startedAt: Date(), mode: .meeting, title: "final translation backup self-test")
+        let lineID = UUID()
+        archive.begin(meta, context: SessionContextSnapshot(mode: .meeting, style: .concise,
+                                                            preferences: "", profile: "", documents: []))
+        archive.append(SessionTranscriptLine(id: lineID, date: Date(), speaker: .remote, text: "The final translation must be backed up."))
+        archive.beginFinalTranslationDrain(for: meta.id)
+        guard archive.finish() != nil else { throw Failure("session did not finalize") }
+
+        let backupFinished = SelfTestCompletionFlag()
+        guard let backupTask = DataBackup.afterSession(sessionID: meta.id) else {
+            throw Failure("automatic session backup was disabled")
+        }
+        let observer = Task.detached {
+            _ = await backupTask.value
+            await backupFinished.markFinished()
+        }
+        try await Task.sleep(for: .seconds(1))
+        guard !(await backupFinished.isFinished()) else {
+            throw Failure("after-session backup completed before the final translation drain")
+        }
+
+        archive.appendTranslation(sessionID: meta.id, lineID: lineID, text: "最终翻译已保存")
+        await archive.finishFinalTranslationDrain(for: meta.id)
+        guard let backupURL = await backupTask.value else {
+            throw Failure("after-session backup failed: \(AppState.shared.dataStatus)")
+        }
+        await observer.value
+        guard await backupFinished.isFinished() else { throw Failure("backup completion was not observed") }
+
+        let point = try JSONDecoder().decode(RestorePoint.self, from: Data(contentsOf: backupURL))
+        let translationObjects = point.files.filter { $0.key.contains(meta.id.uuidString) && $0.key.hasSuffix("/translations.jsonl") }
+        guard translationObjects.count == 1, let translationHash = translationObjects.first?.value else {
+            throw Failure("restore point is missing the session translation file")
+        }
+        let translationFile = AppPaths.backups.appendingPathComponent("Objects/\(translationHash)")
+        let translations = JSONLines.decode(SessionTranscriptTranslation.self, from: try Data(contentsOf: translationFile))
+        guard translations == [SessionTranscriptTranslation(id: lineID, text: "最终翻译已保存")] else {
+            throw Failure("restore point omitted or duplicated the final translation")
+        }
+        return "final translation is present in the session restore point"
+    }
+
+    @MainActor
+    private static func testSessionEditsWaitForSaveReceipts() async throws -> String {
+        guard AppEnvironment.values["NEXTTHOUGHT_DATA_DIR"] != nil else {
+            throw Failure("session-edit-receipts requires NEXTTHOUGHT_DATA_DIR scratch storage")
+        }
+        let archive = SessionArchive.shared
+        guard archive.activeID == nil else { throw Failure("an archive is already active") }
+
+        let meta = SessionMeta(startedAt: Date(), mode: .meeting, title: "edit receipt self-test")
+        archive.begin(meta, context: SessionContextSnapshot(mode: .meeting, style: .concise,
+                                                            preferences: "", profile: "", documents: []))
+        let transcriptLine = SessionTranscriptLine(date: Date(), speaker: .remote, text: "A saved note must be durable.")
+        archive.append(transcriptLine)
+        guard archive.finish() != nil, await archive.flush(sessionID: meta.id) else {
+            throw Failure("session fixture did not receive a save receipt")
+        }
+
+        let itemID = UUID()
+        let notes = StructuredNotes(templateID: "general", templateName: "General", language: "en",
+                                    title: "Receipt test", sections: [
+                                        NotesSectionResult(id: "main", title: "Main", kind: .items,
+                                                           items: [NotesItem(id: itemID, text: "before")])
+                                    ])
+        guard archive.saveNotes(notes, for: meta.id), await archive.flush(sessionID: meta.id) else {
+            throw Failure("notes fixture did not receive a save receipt")
+        }
+        let legacySummary = SessionSummary(
+            title: "Receipt test", markdown: "## Main\n\nbefore", questions: [], generatedAt: Date(), model: "selftest",
+            transcriptSourceRevision: SessionProjectionBuilder.transcriptSourceRevision(meta: meta, lines: [transcriptLine]))
+        guard legacySummary.structuredNotesSourceRevision == nil,
+              archive.saveSummary(legacySummary, for: meta.id), await archive.flush(sessionID: meta.id) else {
+            throw Failure("legacy summary fixture did not receive a save receipt")
+        }
+        let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
+        archive.summarizing.insert(meta.id)
+        let busyNoteEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
+            archive.updateNotes(meta.id, { current in
+                current.sections[0].items[0].text = "blocked edit"
+                return true
+            }, completion: { continuation.resume(returning: $0) })
+        }
+        let busySummaryEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
+            archive.updateSummary(meta.id, { current in
+                current.markdown = "blocked edit"
+                return true
+            }, completion: { continuation.resume(returning: $0) })
+        }
+        archive.summarizing.remove(meta.id)
+        try expect(busyNoteEdit == .busy && busySummaryEdit == .busy,
+                   "archive accepted edits while summary regeneration was active")
+
+        let noteEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
+            archive.updateNotes(meta.id, { current in
+                guard let sectionIndex = current.sections.firstIndex(where: { $0.items.contains { $0.id == itemID } }),
+                      let itemIndex = current.sections[sectionIndex].items.firstIndex(where: { $0.id == itemID }) else {
+                    return false
+                }
+                current.sections[sectionIndex].items[itemIndex].text = "after"
+                return true
+            }, completion: { continuation.resume(returning: $0) })
+        }
+        try expect(noteEdit == .saved, "text-note edit returned \(noteEdit), expected saved")
+        guard let afterNoteEdit = await archive.detail(meta.id),
+              afterNoteEdit.notes?.sections.first?.items.first?.text == "after" else {
+            throw Failure("text-note save receipt arrived before the edited value was readable")
+        }
+        guard afterNoteEdit.summary?.structuredNotesSourceRevision == originalNotesRevision else {
+            throw Failure("editing legacy notes did not seed the summary's old source revision")
+        }
+        let legacySummaryHit = SessionContentSearch.firstHit(
+            in: SessionContentSearch.fields(meta: afterNoteEdit.meta, lines: afterNoteEdit.lines,
+                                            questions: afterNoteEdit.questions, answers: afterNoteEdit.answers,
+                                            summary: afterNoteEdit.summary, notes: afterNoteEdit.notes),
+            terms: Glossary().search(for: "before"))
+        try expect(legacySummaryHit?.kind == .notes && legacySummaryHit?.isStale == true,
+                   "legacy summary search hit did not become stale after editing notes")
+
+        let staleNoteEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
+            archive.updateNotes(meta.id, { _ in false }, completion: { continuation.resume(returning: $0) })
+        }
+        try expect(staleNoteEdit == .staleTarget, "missing text-note target returned \(staleNoteEdit)")
+
+        let summaryEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
+            archive.updateSummary(meta.id, { current in
+                current.markdown = "after"
+                return true
+            }, completion: { continuation.resume(returning: $0) })
+        }
+        try expect(summaryEdit == .saved, "structured-note edit returned \(summaryEdit), expected saved")
+        guard let afterSummaryEdit = await archive.detail(meta.id), afterSummaryEdit.summary?.markdown == "after" else {
+            throw Failure("structured-note save receipt arrived before the edited value was readable")
+        }
+        let staleSummaryEdit: SessionArchiveEditResult = await withCheckedContinuation { continuation in
+            archive.updateSummary(meta.id, { _ in false }, completion: { continuation.resume(returning: $0) })
+        }
+        try expect(staleSummaryEdit == .staleTarget, "missing structured-note target returned \(staleSummaryEdit)")
+        return "text and structured note edits wait for durable receipts; stale targets and edits during regeneration are rejected"
+    }
+
+    @MainActor
+    private static func testSessionCarryContextSnapshot() async throws -> String {
+        guard AppEnvironment.values["NEXTTHOUGHT_DATA_DIR"] != nil else {
+            throw Failure("session-carry-context requires NEXTTHOUGHT_DATA_DIR scratch storage")
+        }
+        let archive = SessionArchive.shared
+        guard archive.activeID == nil else { throw Failure("an archive is already active") }
+
+        let baseline = ContextDocument(name: "excluded baseline", pages: ["baseline material"])
+        let disabled = ContextDocument(name: "disabled material", pages: ["disabled material"], enabled: false)
+        let series = Workspace(name: "carry context", mode: .meeting, documents: [baseline, disabled])
+        let plan = MeetingPlan(carry: MeetingCarry(materials: false, transcript: true),
+                               baselineDocumentIDs: [baseline.id])
+        let initialWorkspace = plan.carry.workspaceSnapshot(from: series, baselineDocumentIDs: plan.baselineDocumentIDs)
+        let meta = SessionMeta(startedAt: Date(), mode: .meeting, workspaceID: series.id, workspaceName: series.name)
+        let app = AppState.shared
+        archive.begin(meta, context: app.sessionContextSnapshot(for: initialWorkspace))
+        archive.append(SessionTranscriptLine(date: Date(), speaker: .remote, text: "carry context fixture"))
+
+        var finalWorkspace = initialWorkspace
+        finalWorkspace.documents.append(ContextDocument(name: "previous transcript", pages: ["carried transcript text"],
+                                                         category: "上一场转写"))
+        guard app.updateArchiveContext(finalWorkspace, sessionID: meta.id) else {
+            throw Failure("final carry context was not accepted by the archive queue")
+        }
+        guard archive.finish() != nil, await archive.flush(sessionID: meta.id),
+              let detail = await archive.detail(meta.id), let documents = detail.context?.documents else {
+            throw Failure("final carry context did not receive a readable archive receipt")
+        }
+        let names = Set(documents.map(\.name))
+        try expect(names.contains("previous transcript"), "archived context omitted the carried transcript")
+        try expect(!names.contains("excluded baseline"), "archived context leaked excluded baseline material")
+        try expect(!names.contains("disabled material"), "archived context included a disabled material")
+        return "asynchronously carried transcript is persisted while excluded and disabled documents stay out"
+    }
+
+    /// Exercises the exact file writers used by the preview sheet with the synthetic F10
+    /// fixture: a 20+ page bilingual transcript, Chinese names, a long URL, nested lists,
+    /// and a Markdown table. Kept isolated from the user's archive and signing identity.
+    private static func verifySessionExports() throws -> String {
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let longURL = "https://example.invalid/releases/nextthought/2026/11/09/" + String(repeating: "review-and-approval-", count: 12)
+            + "?owner=wang-xiaoming&reviewer=chen-xiaoyu&build=20261109"
+        let longTableCell = "WRAP-START 王小明负责在上线前逐项检查双语会议记录、数据备份、审批状态、责任人和时间；陈晓雨确认所有问题都已关闭后再提交最终的发布复核报告。 WRAP-END"
+        let wideTableCell = "WIDE-START " + String(repeating: "责任人已核对", count: 12) + " WIDE-END"
+        let meta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(5_300), mode: .meeting,
+                               title: "导出格式自检")
+        let lines = (0..<650).map { index in
+            let date = start.addingTimeInterval(Double(index * 8 + 2))
+            let person = index.isMultiple(of: 2) ? "王小明" : "陈晓雨"
+            let source = "\(person)确认第\(index + 1)段：先核对上线名单、责任人和时间，再按已记录的依据安排下一步。"
+            let id = UUID()
+            return SessionTranscriptLine(id: id, date: date, speaker: index.isMultiple(of: 2) ? .remote : .me,
+                                         text: source, translatedText: "Part \(index + 1): confirm the release list, owner, and timing.",
+                                         translationInputRevision: SessionProjectionBuilder.transcriptRevision(id: id, text: source),
+                                         startedAt: date, endedAt: date.addingTimeInterval(4))
+        }
+        let summaryMarkdown = """
+        ## 决定与行动
+        - 王小明负责预发布验证。
+          1. 陈晓雨复核长会记录。
+            - 如果失败，先保留旧版并联系值班负责人。
+
+        | 负责人 | 交付物 | 日期 |
+        | --- | --- | --- |
+        | 王小明 | 预发布验证清单 | 周五 |
+        | 陈晓雨 | 双语会议摘要 | 下周一 |
+        | 王小明 | \(longTableCell) | 周五 |
+
+        | 负责人 | 交付物 | 日期 | 状态 |
+        | --- | --- | --- | --- |
+        | \(String(repeating: "王小明", count: 8)) | \(wideTableCell) | \(String(repeating: "周五", count: 16)) | \(String(repeating: "待确认", count: 10)) |
+
+        ## 参考链接
+        \(longURL)
+        """
+        let summary = SessionSummary(title: "王小明与陈晓雨的导出格式自检", markdown: summaryMarkdown,
+                                    questions: [], generatedAt: start, model: "self-test")
+        let projection = SessionProjectionBuilder.build(meta: meta, lines: lines, summary: summary)
+        let markdown = SessionMarkdownExporter.export(meta: meta, projection: projection)
+        for format in [SessionExportFormat.markdown, .docx, .pdf] {
+            let preview = SessionExportPreviewContent.make(format: format, meta: meta, projection: projection)
+            try expect(preview.usesPageLayout && preview.sourceText == markdown,
+                       "\(format.rawValue) preview did not use the same Markdown source as export")
+        }
+        for (format, subtitleFormat) in [(SessionExportFormat.srt, SessionSubtitleFormat.srt),
+                                         (.vtt, .vtt)] {
+            let expected = SessionSubtitleExporter.export(meta: meta, projection: projection, format: subtitleFormat).text
+            let preview = SessionExportPreviewContent.make(format: format, meta: meta, projection: projection)
+            try expect(!preview.usesPageLayout && preview.sourceText == expected,
+                       "\(format.rawValue) preview did not keep its subtitle source text")
+        }
+        let retainedPath = ProcessInfo.processInfo.environment["NEXTTHOUGHT_SELFTEST_EXPORT_DIRECTORY"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let retainedDirectory = retainedPath.flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0, isDirectory: true) }
+        let retainArtifacts = retainedDirectory != nil
+        let root = retainedDirectory
+            ?? FileManager.default.temporaryDirectory.appendingPathComponent("nextthought-export-\(UUID().uuidString)",
+                                                                              isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { if !retainArtifacts { try? FileManager.default.removeItem(at: root) } }
+
+        var pdfPages = 0
+        for format in SessionExportFormat.allCases {
+            let content: String
+            switch format {
+            case .markdown, .docx, .pdf: content = markdown
+            case .srt: content = SessionSubtitleExporter.export(meta: meta, projection: projection, format: .srt).text
+            case .vtt: content = SessionSubtitleExporter.export(meta: meta, projection: projection, format: .vtt).text
+            }
+            let url = root.appendingPathComponent("meeting.\(format.fileExtension)")
+            try SessionFileExporter.write(content: content, format: format, to: url)
+            let data = try Data(contentsOf: url)
+            try expect(!data.isEmpty, "\(format.rawValue) export is empty")
+            switch format {
+            case .markdown:
+                let text = String(decoding: data, as: UTF8.self)
+                try expect(text.contains("第650段"), "Markdown omitted the final transcript line")
+                try expect(text.contains("王小明") && text.contains("陈晓雨"), "Markdown omitted Chinese names")
+                try expect(text.contains("如果失败，先保留旧版") && text.contains("| 王小明 | 预发布验证清单 | 周五 |"),
+                           "Markdown omitted nested list or table fixture")
+                try expect(text.contains(longURL), "Markdown omitted the long URL")
+            case .srt:
+                let text = String(decoding: data, as: UTF8.self)
+                try expect(text.contains("第650段"), "SRT omitted the final transcript line")
+                if let source = text.range(of: "第1段"), let translation = text.range(of: "Part 1:") {
+                    try expect(source.lowerBound < translation.lowerBound, "SRT placed the translation before its source")
+                } else {
+                    throw Failure("SRT omitted the first bilingual cue")
+                }
+            case .vtt:
+                let text = String(decoding: data, as: UTF8.self)
+                try expect(text.hasPrefix("WEBVTT") && text.contains("第650段"), "VTT header or final cue missing")
+                if let source = text.range(of: "第1段"), let translation = text.range(of: "Part 1:") {
+                    try expect(source.lowerBound < translation.lowerBound, "VTT placed the translation before its source")
+                } else {
+                    throw Failure("VTT omitted the first bilingual cue")
+                }
+            case .docx:
+                try expect(data.starts(with: [0x50, 0x4B]), "DOCX is not a ZIP package")
+                let decoded = try NSAttributedString(url: url,
+                                                    options: [.documentType: NSAttributedString.DocumentType.officeOpenXML],
+                                                    documentAttributes: nil)
+                try expect(decoded.string.contains("第650段"), "DOCX round trip omitted the final transcript line")
+                try expect(decoded.string.contains("王小明") && decoded.string.contains("陈晓雨"), "DOCX round trip omitted Chinese names")
+                try expect(decoded.string.contains("如果失败，先保留旧版") && decoded.string.contains("预发布验证清单"),
+                           "DOCX round trip omitted nested-list or table content")
+                try expect(decoded.string.contains(longURL), "DOCX round trip omitted the long URL")
+                let documentXML = try Shell.check("/usr/bin/unzip", ["-p", url.path, "word/document.xml"],
+                                                  "读取 DOCX 主文档").output
+                try expect(documentXML.contains("<w:p") && documentXML.contains("<w:r"),
+                           "DOCX does not contain editable Word paragraphs and runs")
+                try expect(documentXML.contains("<w:tbl"), "DOCX omitted the native editable table")
+                try expect(documentXML.components(separatedBy: "<w:tr>").count - 1 >= 3
+                           && documentXML.components(separatedBy: "<w:tc>").count - 1 >= 9,
+                           "DOCX table omitted header or data cells")
+                try expect(documentXML.contains("<w:numPr") && documentXML.contains("<w:ilvl"),
+                           "DOCX omitted editable nested-list numbering")
+                try expect(documentXML.contains("<w:ilvl w:val=\"1\""),
+                           "DOCX omitted the nested list level")
+                try expect(documentXML.contains("<w:ilvl w:val=\"2\""),
+                           "DOCX omitted the mixed-style nested list level")
+            case .pdf:
+                guard let document = PDFDocument(url: url) else { throw Failure("PDF could not be opened") }
+                pdfPages = document.pageCount
+                try expect(pdfPages > 20, "F10 PDF fixture should paginate to more than 20 pages; got \(pdfPages)")
+                guard let page = document.page(at: 0), let text = document.string else {
+                    throw Failure("PDF has no readable first page or text")
+                }
+                let mediaBox = page.bounds(for: .mediaBox)
+                try expect(mediaBox.width >= 500 && mediaBox.height >= 700, "PDF page media box is unexpectedly small")
+                try expect(text.contains("第650段"), "PDF omitted the final transcript line")
+                try expect(text.contains("王小明") && text.contains("陈晓雨"), "PDF omitted Chinese names")
+                try expect(text.contains("如果失败，先保留旧版") && text.contains("预发布验证清单"),
+                           "PDF omitted nested-list or table content")
+                try expect(text.contains("1. 陈晓雨复核长会记录。"),
+                           "PDF omitted the ordered nested-list marker")
+                let pdfWithoutWrapMarkers = String(text.filter { !$0.isWhitespace && $0 != "\u{200B}" })
+                let compactURL = String(longURL.filter { !$0.isWhitespace })
+                try expect(pdfWithoutWrapMarkers.contains(compactURL), "PDF omitted the long URL")
+                try expect(text.contains("│ 负责人") && text.contains("│ 王小明"),
+                           "PDF omitted the visible table grid")
+                try expect(text.contains("\n"), "PDF omitted visible paragraph separation")
+                try expect(text.contains("WRAP-START"), "PDF omitted the long table-cell fixture")
+                for marker in ["WRAP-START", "WRAP-END", "WIDE-START"] {
+                    guard let markerPage = (0..<document.pageCount).compactMap({ document.page(at: $0) })
+                        .first(where: { $0.string?.contains(marker) == true }) else {
+                        throw Failure("PDF omitted a wrapped table-cell marker: \(marker)")
+                    }
+                    let markerBounds = markerPage.bounds(for: .mediaBox)
+                    let markerLines = markerPage.selection(for: markerBounds)?.selectionsByLine() ?? []
+                    guard let line = markerLines.first(where: { $0.string?.contains(marker) == true }),
+                          let lineText = line.string else {
+                        throw Failure("PDF omitted a wrapped table-cell marker: \(marker)")
+                    }
+                    if marker.hasPrefix("WRAP-") {
+                        let visibleLine = lineText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        try expect(visibleLine.hasPrefix("│") && visibleLine.hasSuffix("│"),
+                                   "PDF table-cell wrap broke the grid around \(marker)")
+                    }
+                    try expect(line.bounds(for: markerPage).maxX <= markerBounds.maxX - 40 + 2,
+                               "PDF table-cell line exceeded the page text bounds around \(marker)")
+                }
+            }
+        }
+
+        let selectionLine = SessionTranscriptLine(date: start.addingTimeInterval(20), speaker: .remote,
+                                                  text: "王小明确认周五提交。")
+        let selectionMeta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(30), mode: .meeting)
+        let selectionNotes = StructuredNotes(templateID: "general", templateName: "通用", language: "zh", title: "版本选择",
+                                             sections: [], corrections: [TranscriptCorrection(
+                                                line: 0, lineID: selectionLine.id,
+                                                baseRevision: SessionProjectionBuilder.transcriptRevision(id: selectionLine.id,
+                                                                                                         text: selectionLine.text),
+                                                original: "周五", corrected: "周一")])
+        let originalProjection = SessionProjectionBuilder.build(
+            meta: selectionMeta, lines: [selectionLine], notes: selectionNotes,
+            options: .init(transcriptVariant: .original, languageView: .source))
+        let correctedProjection = SessionProjectionBuilder.build(
+            meta: selectionMeta, lines: [selectionLine], notes: selectionNotes,
+            options: .init(transcriptVariant: .corrected, languageView: .source))
+        for (name, selectedProjection, expected, absent) in [
+            ("original", originalProjection, "周五", "周一"),
+            ("corrected", correctedProjection, "周一", "周五")
+        ] {
+            let content = SessionMarkdownExporter.export(meta: selectionMeta, projection: selectedProjection)
+            let pagePreview = SessionExportPreviewContent.make(format: .docx, meta: selectionMeta,
+                                                               projection: selectedProjection)
+            try expect(pagePreview.usesPageLayout && pagePreview.sourceText == content,
+                       "DOCX page preview did not use the selected \(name) source revision")
+            for format in [SessionExportFormat.docx, .pdf] {
+                let url = root.appendingPathComponent("\(name).\(format.fileExtension)")
+                try SessionFileExporter.write(content: content, format: format, to: url)
+                let decoded: String
+                switch format {
+                case .docx:
+                    decoded = try NSAttributedString(url: url,
+                                                     options: [.documentType: NSAttributedString.DocumentType.officeOpenXML],
+                                                     documentAttributes: nil).string
+                case .pdf:
+                    guard let document = PDFDocument(url: url), let text = document.string else {
+                        throw Failure("\(name) PDF projection could not be read")
+                    }
+                    decoded = text
+                default:
+                    throw Failure("unexpected projection writer \(format.rawValue)")
+                }
+                try expect(decoded.contains(expected) && !decoded.contains(absent),
+                           "\(format.rawValue) writer did not preserve the selected \(name) projection")
+            }
+        }
+        let retainedNote = retainArtifacts ? "; files retained at \(root.path)" : ""
+        return "F10 fixture: Markdown, editable DOCX, PDF (\(pdfPages) pages), SRT and VTT passed\(retainedNote)"
     }
 
     // MARK: signing
@@ -217,7 +640,13 @@ enum SelfTest {
         let token = AppEnvironment.values["GITHUB_TOKEN"].flatMap { $0.isEmpty ? nil : $0 }
         let channel = UpdateChannel(rawValue: options["channel"] ?? "stable") ?? .stable
         let staged = try await updater.stageForSelfTest(channel: channel, token: token)
-        try expect(FileManager.default.fileExists(atPath: staged.app.appendingPathComponent("Contents/MacOS/NextThought").path), "staged app has no executable")
+        guard let executableName = Bundle(url: staged.app)?.object(forInfoDictionaryKey: "CFBundleExecutable") as? String else {
+            throw Failure("staged app has no executable declaration")
+        }
+        let executableURL = staged.app.appendingPathComponent("Contents/MacOS", isDirectory: true)
+            .appendingPathComponent(executableName)
+        try expect(FileManager.default.isExecutableFile(atPath: executableURL.path),
+                   "staged app executable \(executableName) is missing or not executable")
 
         // Rehearse the swap on a scratch copy (a dead pid, no relaunch).
         let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("selftest-swap-\(UUID().uuidString)", isDirectory: true)

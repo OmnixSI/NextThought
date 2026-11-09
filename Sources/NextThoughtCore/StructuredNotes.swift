@@ -179,15 +179,20 @@ public struct StructuredNotesPayload: Codable, Sendable, Equatable {
     public var model: String
     /// The structured pass ran and failed (nothing to show): the page says so quietly.
     public var failed: Bool?
+    /// Transcript snapshot used to generate this format. Nil for older archives.
+    public var transcriptSourceRevision: String?
 
     public init(format: NotesFormat, fishbone: FishboneNotes? = nil, outline: OutlineNotes? = nil, viewpoints: ViewpointMatrix? = nil,
-                language: String = "zh", droppedCount: Int = 0, generatedAt: Date = Date(), model: String = "", failed: Bool? = nil) {
+                language: String = "zh", droppedCount: Int = 0, generatedAt: Date = Date(), model: String = "", failed: Bool? = nil,
+                transcriptSourceRevision: String? = nil) {
         self.format = format; self.fishbone = fishbone; self.outline = outline; self.viewpoints = viewpoints
         self.language = language; self.droppedCount = droppedCount; self.generatedAt = generatedAt; self.model = model
-        self.failed = failed
+        self.failed = failed; self.transcriptSourceRevision = transcriptSourceRevision
     }
 
-    enum CodingKeys: String, CodingKey { case format, fishbone, outline, viewpoints, language, droppedCount, generatedAt, model, failed }
+    enum CodingKeys: String, CodingKey {
+        case format, fishbone, outline, viewpoints, language, droppedCount, generatedAt, model, failed, transcriptSourceRevision
+    }
 
     /// Lenient: every part is optional and a part that does not decode is left out.
     public init(from decoder: Decoder) throws {
@@ -201,6 +206,7 @@ public struct StructuredNotesPayload: Codable, Sendable, Equatable {
         generatedAt = (try? c.decodeIfPresent(Date.self, forKey: .generatedAt)) ?? Date()
         model = (try? c.decodeIfPresent(String.self, forKey: .model)) ?? ""
         failed = try? c.decodeIfPresent(Bool.self, forKey: .failed)
+        transcriptSourceRevision = try? c.decodeIfPresent(String.self, forKey: .transcriptSourceRevision)
     }
 
     /// A marker for "the structured pass failed" (no content).

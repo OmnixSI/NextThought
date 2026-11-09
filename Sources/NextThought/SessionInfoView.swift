@@ -31,7 +31,8 @@ struct SessionInfoView: View {
                     VStack(alignment: .leading, spacing: Space.s6) {
                         VStack(alignment: .leading, spacing: Space.s2) {
                             Text(verbatim: meta.displayTitle).font(Typo.display)
-                            Text(meta.mode.title).font(Typo.caption).foregroundStyle(Ink.secondary)
+                            Text(String(localized: String.LocalizationValue(stringLiteral: meta.mode.title)))
+                                .font(Typo.caption).foregroundStyle(Ink.secondary)
                         }
                         infoGroup("会议") {
                             infoRow("开始时间", meta.startedAt.formatted(date: .long, time: .shortened))
@@ -46,6 +47,30 @@ struct SessionInfoView: View {
                             Text("大小按本会议存储目录及其子目录中的普通文件总字节数统计。")
                                 .font(.system(size: 11)).foregroundStyle(Ink.tertiary)
                         }
+                        infoGroup("归档") {
+                            infoRow("写入状态", persistenceDescription)
+                            if let snapshot = archive.persistenceBySession[sessionID] {
+                                if snapshot.unqueuedWriteCount > 0 {
+                                    Text(snapshot.dataLossAcknowledged
+                                         ? String(localized: "已确认：有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。")
+                                         : String(localized: "有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。"))
+                                        .font(Typo.caption).foregroundStyle(Ink.caution)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                if snapshot.canAcknowledgeDataLoss {
+                                    Button("确认缺失并继续保存") { archive.acknowledgeDataLossAndResume(sessionID) }
+                                        .buttonStyle(SecondaryButtonStyle())
+                                } else if snapshot.state == .blocked, snapshot.pendingEvents > 0 {
+                                    Button("重试保存") { archive.retryPersistence(sessionID) }
+                                        .buttonStyle(SecondaryButtonStyle())
+                                }
+                            }
+                            if let detail, !detail.readIssues.isEmpty {
+                                ForEach(Array(detail.readIssues.enumerated()), id: \.offset) { item in
+                                    infoRow("读取提醒", item.element.message)
+                                }
+                            }
+                        }
                     }
                     .frame(maxWidth: 520, alignment: .leading)
                     .padding(Space.s6)
@@ -59,7 +84,7 @@ struct SessionInfoView: View {
         .frame(width: 500, height: 540)
         .background(Ink.paper)
         .task(id: sessionID) {
-            await archive.flush()
+            _ = await archive.flush(sessionID: sessionID)
             async let loadedDetail = archive.detail(sessionID)
             async let loadedStorage = archive.storageInfo(sessionID)
             detail = await loadedDetail
@@ -73,34 +98,34 @@ struct SessionInfoView: View {
             infoRow("时长", Self.durationText(endedAt.timeIntervalSince(meta.startedAt)))
         } else if sessionID == archive.activeID {
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                infoRow("时长", "进行中 · \(Self.durationText(context.date.timeIntervalSince(meta.startedAt)))")
+                infoRow("时长", String(localized: "进行中 · \(Self.durationText(context.date.timeIntervalSince(meta.startedAt)))"))
             }
         } else {
-            infoRow("时长", "不可用（会议尚未结束）")
+            infoRow("时长", String(localized: "不可用（会议尚未结束）"))
         }
     }
 
     private func speakerDescription(_ meta: SessionMeta) -> String {
-        guard let detail else { return "正在读取…" }
+        guard let detail else { return String(localized: "正在读取…") }
         var names: [String] = []
         for line in detail.lines where !names.contains(line.speaker.label) {
             names.append(line.speaker.label)
         }
         if !names.isEmpty { return names.joined(separator: "、") }
-        if meta.transcriptCount > 0 { return "不可用（转写数据无法读取）" }
-        return "暂无可识别发言人"
+        if meta.transcriptCount > 0 { return String(localized: "不可用（转写数据无法读取）") }
+        return String(localized: "暂无可识别发言人")
     }
 
     private func notesDescription(_ meta: SessionMeta) -> String {
-        guard let detail else { return "正在读取…" }
-        if detail.notes != nil { return "已有纪要（结构化内容）" }
-        if detail.summary != nil { return "已有纪要（Markdown 内容）" }
+        guard let detail else { return String(localized: "正在读取…") }
+        if detail.notes != nil { return String(localized: "已有纪要（结构化内容）") }
+        if detail.summary != nil { return String(localized: "已有纪要（Markdown 内容）") }
         switch meta.summaryState {
-        case .none: return "没有纪要"
-        case .pending where archive.summarizing.contains(meta.id): return "正在整理纪要"
-        case .pending: return "整理已中断，可重试"
-        case .failed: return "整理失败：\(meta.summaryError ?? "原因不可用")"
-        case .ready: return "不可用（状态显示已完成，但纪要内容无法读取）"
+        case .none: return String(localized: "没有纪要")
+        case .pending where archive.summarizing.contains(meta.id): return String(localized: "正在整理纪要")
+        case .pending: return String(localized: "整理已中断，可重试")
+        case .failed: return String(localized: "整理失败：\(meta.summaryError ?? String(localized: "原因不可用"))")
+        case .ready: return String(localized: "不可用（状态显示已完成，但纪要内容无法读取）")
         }
     }
 
@@ -111,23 +136,42 @@ struct SessionInfoView: View {
             infoRow("存储位置", path)
             infoRow("存储大小", ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))
         case .some(.missing(let path)):
-            infoRow("存储位置", "\(path)（目录不存在）")
-            infoRow("存储大小", "不可用（会议目录不存在）")
+            infoRow("存储位置", String(localized: "\(path)（目录不存在）"))
+            infoRow("存储大小", String(localized: "不可用（会议目录不存在）"))
         case .some(.unavailable(let path)):
-            infoRow("存储位置", "\(path)（无法读取）")
-            infoRow("存储大小", "不可用（无权限或读取失败）")
+            infoRow("存储位置", String(localized: "\(path)（无法读取）"))
+            infoRow("存储大小", String(localized: "不可用（无权限或读取失败）"))
         case .some(.demo):
-            infoRow("存储位置", "演示数据没有实际存储目录")
-            infoRow("存储大小", "不可用（演示数据没有实际文件）")
+            infoRow("存储位置", String(localized: "演示数据没有实际存储目录"))
+            infoRow("存储大小", String(localized: "不可用（演示数据没有实际文件）"))
         case .none:
-            infoRow("存储位置", "正在读取…")
-            infoRow("存储大小", "正在统计…")
+            infoRow("存储位置", String(localized: "正在读取…"))
+            infoRow("存储大小", String(localized: "正在统计…"))
+        }
+    }
+
+    private var persistenceDescription: String {
+        if case .some(.demo) = storage { return String(localized: "演示数据没有实际存储目录。") }
+        guard let snapshot = archive.persistenceBySession[sessionID] else {
+            return String(localized: "归档已读取；当前没有待写入项。")
+        }
+        switch snapshot.state {
+        case .saved:
+            if let date = snapshot.lastPersistedAt {
+                return String(localized: "已保存 · 最近 \(date.formatted(date: .omitted, time: .shortened))")
+            }
+            return String(localized: "已保存")
+        case .saving:
+            return String(localized: "正在保存 · 还有 \(snapshot.pendingEvents) 项（\(ByteCountFormatter.string(fromByteCount: Int64(snapshot.pendingBytes), countStyle: .file))）")
+        case .blocked:
+            return snapshot.lastFailure ?? String(localized: "保存受阻")
         }
     }
 
     private func infoGroup<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            Text(title).font(Typo.label).foregroundStyle(Ink.secondary)
+            Text(String(localized: String.LocalizationValue(stringLiteral: title)))
+                .font(Typo.label).foregroundStyle(Ink.secondary)
             VStack(alignment: .leading, spacing: Space.s2, content: content)
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -137,7 +181,8 @@ struct SessionInfoView: View {
 
     private func infoRow(_ title: String, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
-            Text(title).font(Typo.caption).foregroundStyle(Ink.secondary)
+            Text(String(localized: String.LocalizationValue(stringLiteral: title)))
+                .font(Typo.caption).foregroundStyle(Ink.secondary)
                 .frame(width: 72, alignment: .leading)
             Text(verbatim: value).font(Typo.body).textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -150,8 +195,8 @@ struct SessionInfoView: View {
         let hours = seconds / 3_600
         let minutes = (seconds % 3_600) / 60
         let remainder = seconds % 60
-        if hours > 0 { return "\(hours) 小时 \(minutes) 分钟" }
-        if minutes > 0 { return "\(minutes) 分钟 \(remainder) 秒" }
-        return "\(remainder) 秒"
+        if hours > 0 { return String(localized: "\(hours) 小时 \(minutes) 分钟") }
+        if minutes > 0 { return String(localized: "\(minutes) 分钟 \(remainder) 秒") }
+        return String(localized: "\(remainder) 秒")
     }
 }

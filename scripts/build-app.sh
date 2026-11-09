@@ -33,6 +33,8 @@ fi
 cp -R "$project_root/Resources/Companion" "$app_path/Contents/Resources/Companion"
 "$project_root/scripts/compile-strings.sh" "$app_path/Contents/Resources"
 cp "$project_root/Resources/ThirdPartyNotices.txt" "$app_path/Contents/Resources/ThirdPartyNotices.txt"
+mkdir -p "$app_path/Contents/Resources/licenses/cicada"
+cp "$project_root/Resources/licenses/cicada/LICENSE" "$app_path/Contents/Resources/licenses/cicada/LICENSE"
 rsync -a --exclude=__pycache__ --exclude='*.pyc' "$project_root/Resources/DocumentRuntime/" "$app_path/Contents/Resources/DocumentRuntime/"
 mkdir -p "$app_path/Contents/Resources/models"
 cp -R "$project_root/Resources/models/SpeakerEmbedding.mlpackage" "$app_path/Contents/Resources/models/SpeakerEmbedding.mlpackage"

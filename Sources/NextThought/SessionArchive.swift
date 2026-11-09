@@ -13,6 +13,42 @@ struct SessionDetail: Equatable {
     var summary: SessionSummary?
     /// Structured notes (notes.json); nil for sessions summarized before them.
     var notes: StructuredNotes? = nil
+    var readIssues: [SessionArchiveReadIssue] = []
+}
+
+enum SessionArchiveEditResult: Equatable {
+    case saved
+    case busy
+    case staleTarget
+    case unavailable
+    case persistenceBlocked
+
+    var failureMessage: String? {
+        switch self {
+        case .saved: nil
+        case .busy: String(localized: "纪要正在重新整理，本次编辑没有保存。完成后请重新打开再试。")
+        case .staleTarget: String(localized: "纪要内容已更新，本次编辑没有保存。请重新打开后再试。")
+        case .unavailable: String(localized: "无法读取这份纪要，本次编辑没有保存。请刷新后重试。")
+        case .persistenceBlocked: String(localized: "归档保存受阻，本次编辑没有保存。请先重试保存。")
+        }
+    }
+}
+
+enum SessionArchiveReadIssue: Equatable {
+    case missingFile(String)
+    case unreadableFile(String, String)
+    case malformedLines(String, firstLine: Int, count: Int, truncatedTail: Bool)
+    case countMismatch(String, expected: Int, actual: Int)
+
+    var message: String {
+        switch self {
+        case .missingFile(let file): "归档文件缺失：\(file)"
+        case .unreadableFile(let file, let reason): "无法读取 \(file)：\(reason)"
+        case .malformedLines(let file, let firstLine, let count, let truncatedTail):
+            "\(file) 有 \(count) 行无法解析（从第 \(firstLine) 行开始）" + (truncatedTail ? "；最后一行可能未写完。" : "。")
+        case .countMismatch(let file, let expected, let actual): "\(file) 只读到 \(actual) 条，记录中应有 \(expected) 条。"
+        }
+    }
 }
 
 enum SessionStorageInfo: Equatable, Sendable {
@@ -51,11 +87,27 @@ final class SessionArchive {
     var notesSteps: [UUID: NotesStep] = [:]
     /// Bumped when notes change on disk, so open pages reload them.
     var notesRevision = 0
+    /// Per-session revision for saved translations, so only that meeting page reloads.
+    private(set) var translationRevisionBySession: [UUID: Int] = [:]
+    private(set) var persistenceBySession: [UUID: SessionPersistenceSnapshot] = [:]
+    /// Bumped when finalized, searchable content is durably saved.
+    private(set) var searchableContentRevision = 0
+    /// Newly finalized meetings stay out of history search until final translations have drained.
+    private(set) var pendingTranslationSearchSessionIDs: Set<UUID> = []
 
     private let io = DispatchQueue(label: "app.nextthought.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
     @ObservationIgnored private var activeAnswerIDs: Set<UUID> = []
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
+    @ObservationIgnored private var writeQueues: [UUID: SessionArchiveWriteQueue] = [:]
+    @ObservationIgnored private var drainingWrites: Set<UUID> = []
+    @ObservationIgnored private var discardedSessions: Set<UUID> = []
+    @ObservationIgnored private var retryTasks: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var retryAttempts: [UUID: Int] = [:]
+    @ObservationIgnored private let fileAppender = SessionArchiveFileAppender.live
+    @ObservationIgnored private var pendingSearchableTranslationSessionIDs: Set<UUID> = []
+    @ObservationIgnored private var completedTranslationDrainSessionIDs: Set<UUID> = []
+    @ObservationIgnored private var translationWriteReceipts: [UUID: SessionTranslationWriteReceipts] = [:]
 
     static var root: URL { AppPaths.sessions }
 
@@ -85,13 +137,11 @@ final class SessionArchive {
                     if meta.endedAt == nil {
                         // Interrupted session: end it at the last transcript write.
                         let transcript = folder.appendingPathComponent("transcript.jsonl")
+                        let transcriptData = try? Data(contentsOf: transcript)
                         let modified = (try? FileManager.default.attributesOfItem(atPath: transcript.path)[.modificationDate]) as? Date
-                        meta.endedAt = modified ?? meta.startedAt
-                        if meta.summaryState == .pending {
-                            meta.summaryState = .none
-                            meta.summaryError = nil
-                            changed = true
-                            if meta.transcriptCount > 0 { recovered.insert(meta.id) }
+                        if meta.recoverInterruptedRecording(transcriptData: transcriptData,
+                                                            lastTranscriptWrite: modified) {
+                            recovered.insert(meta.id)
                         }
                         changed = true
                     } else if meta.summaryState == .pending, !activeSummaries.contains(meta.id) {
@@ -128,17 +178,52 @@ final class SessionArchive {
         let fallback = sessions.first { $0.id == id }
         return await Task.detached(priority: .userInitiated) { () -> SessionDetail? in
             let decoder = JSONLines.decoder()
-            let meta = (try? Data(contentsOf: folder.appendingPathComponent("meta.json"))).flatMap { try? decoder.decode(SessionMeta.self, from: $0) } ?? fallback
-            guard let meta else { return nil }
-            func lines<T: Decodable>(_ name: String, _ type: T.Type) -> [T] {
-                (try? Data(contentsOf: folder.appendingPathComponent(name))).map { JSONLines.decode(T.self, from: $0) } ?? []
+            var issues: [SessionArchiveReadIssue] = []
+            func data(_ name: String, required: Bool = false) -> Data? {
+                let url = folder.appendingPathComponent(name)
+                do { return try Data(contentsOf: url) }
+                catch {
+                    let exists = FileManager.default.fileExists(atPath: url.path)
+                    if required {
+                        let cocoaError = error as NSError
+                        if cocoaError.domain == NSCocoaErrorDomain && cocoaError.code == NSFileReadNoSuchFileError {
+                            issues.append(.missingFile(name))
+                        } else {
+                            issues.append(.unreadableFile(name, error.localizedDescription))
+                        }
+                    } else if exists {
+                        issues.append(.unreadableFile(name, error.localizedDescription))
+                    }
+                    return nil
+                }
             }
-            var transcript = lines("transcript.jsonl", SessionTranscriptLine.self)
-            let translations = Dictionary(lines("translations.jsonl", SessionTranscriptTranslation.self).map { ($0.id, $0.text) },
+            let decodedMeta: SessionMeta?
+            if let bytes = data("meta.json", required: true) {
+                do { decodedMeta = try decoder.decode(SessionMeta.self, from: bytes) }
+                catch { issues.append(.unreadableFile("meta.json", error.localizedDescription)); decodedMeta = nil }
+            } else { decodedMeta = nil }
+            let meta = decodedMeta ?? fallback
+            guard let meta else { return nil }
+            func lines<T: Decodable>(_ name: String, _ type: T.Type, expected: Int? = nil, required: Bool? = nil) -> [T] {
+                guard let bytes = data(name, required: required ?? ((expected ?? 0) > 0)) else { return [] }
+                let report = JSONLines.decodeReport(type, from: bytes)
+                if let firstLine = report.malformedLineNumbers.first {
+                    issues.append(.malformedLines(name, firstLine: firstLine,
+                                                  count: report.malformedLineNumbers.count,
+                                                  truncatedTail: report.truncatedFinalLine))
+                }
+                if let expected, report.records.count != expected {
+                    issues.append(.countMismatch(name, expected: expected, actual: report.records.count))
+                }
+                return report.records
+            }
+            var transcript = lines("transcript.jsonl", SessionTranscriptLine.self, expected: meta.transcriptCount)
+            let translations = Dictionary(lines("translations.jsonl", SessionTranscriptTranslation.self).map { ($0.id, $0) },
                                           uniquingKeysWith: { _, latest in latest })
             for index in transcript.indices {
                 if let translation = translations[transcript[index].id] {
-                    transcript[index].translatedText = translation
+                    transcript[index].translatedText = translation.text
+                    transcript[index].translationInputRevision = translation.inputRevision
                 }
             }
             let voices = Dictionary(lines("voices.jsonl", SessionVoiceTag.self).map { ($0.id, $0.voice) },
@@ -146,14 +231,26 @@ final class SessionArchive {
             for index in transcript.indices {
                 if let voice = voices[transcript[index].id] { transcript[index].voice = voice }
             }
+            let rawAnswers = lines("answers.jsonl", SessionAnswerEvent.self, required: meta.answerCount > 0)
+            let answers = Self.latestAnswers(rawAnswers)
+            if answers.count != meta.answerCount && !issues.contains(.missingFile("answers.jsonl")) {
+                issues.append(.countMismatch("answers.jsonl", expected: meta.answerCount, actual: answers.count))
+            }
+            let questions = lines("questions.jsonl", SessionQuestionEvent.self, expected: meta.questionCount)
+            func snapshot<T: Decodable>(_ name: String, _ type: T.Type, required: Bool = false) -> T? {
+                guard let bytes = data(name, required: required) else { return nil }
+                do { return try decoder.decode(type, from: bytes) }
+                catch { issues.append(.unreadableFile(name, error.localizedDescription)); return nil }
+            }
             return SessionDetail(
                 meta: meta,
                 lines: transcript,
-                answers: Self.latestAnswers(lines("answers.jsonl", SessionAnswerEvent.self)),
-                questions: lines("questions.jsonl", SessionQuestionEvent.self),
-                context: (try? Data(contentsOf: folder.appendingPathComponent("context.json"))).flatMap { try? decoder.decode(SessionContextSnapshot.self, from: $0) },
-                summary: (try? Data(contentsOf: folder.appendingPathComponent("summary.json"))).flatMap { try? decoder.decode(SessionSummary.self, from: $0) },
-                notes: (try? Data(contentsOf: folder.appendingPathComponent("notes.json"))).flatMap { try? decoder.decode(StructuredNotes.self, from: $0) })
+                answers: answers,
+                questions: questions,
+                context: snapshot("context.json", SessionContextSnapshot.self),
+                summary: snapshot("summary.json", SessionSummary.self, required: meta.summaryState == .ready),
+                notes: snapshot("notes.json", StructuredNotes.self),
+                readIssues: issues)
         }.value
     }
 
@@ -195,49 +292,117 @@ final class SessionArchive {
     // MARK: Recording
 
     func begin(_ meta: SessionMeta, context: SessionContextSnapshot) {
+        discardedSessions.remove(meta.id)
+        translationRevisionBySession[meta.id] = nil
+        translationWriteReceipts[meta.id] = nil
+        pendingSearchableTranslationSessionIDs.remove(meta.id)
+        pendingTranslationSearchSessionIDs.remove(meta.id)
+        completedTranslationDrainSessionIDs.remove(meta.id)
         activeID = meta.id
         activeAnswerIDs = []
         activeMeta = meta
         sessions.removeAll { $0.id == meta.id }
         sessions.insert(meta, at: 0)
-        let folder = folder(meta.id)
-        io.async {
-            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            Self.write(meta, to: folder.appendingPathComponent("meta.json"))
-            Self.write(context, to: folder.appendingPathComponent("context.json"))
+        writeQueues[meta.id] = SessionArchiveWriteQueue()
+        persistenceBySession[meta.id] = writeQueues[meta.id]?.snapshot
+        _ = enqueueSnapshot(meta, file: "meta.json", session: meta.id)
+        _ = enqueueSnapshot(context, file: "context.json", session: meta.id)
+    }
+
+    /// Replaces the session's initial context snapshot after optional carry material has loaded.
+    @discardableResult
+    func updateContext(_ context: SessionContextSnapshot, for id: UUID) -> Bool {
+        if var detail = demoDetails[id] {
+            detail.context = context
+            demoDetails[id] = detail
+            return true
         }
+        guard sessions.contains(where: { $0.id == id }) else { return false }
+        return enqueueSnapshot(context, file: "context.json", session: id)
     }
 
-    func append(_ line: SessionTranscriptLine) {
-        guard let id = activeID else { return }
+    @discardableResult func append(_ line: SessionTranscriptLine) -> Bool {
+        guard let id = activeID else { return false }
         activeMeta?.transcriptCount += 1
-        appendLine(line, file: "transcript.jsonl", session: id)
+        let saved = appendLine(line, file: "transcript.jsonl", session: id)
         publishActiveCounts()
+        return saved
     }
 
-    func append(_ question: SessionQuestionEvent) {
-        guard let id = activeID else { return }
+    @discardableResult func append(_ question: SessionQuestionEvent) -> Bool {
+        guard let id = activeID else { return false }
         activeMeta?.questionCount += 1
-        appendLine(question, file: "questions.jsonl", session: id)
+        let saved = appendLine(question, file: "questions.jsonl", session: id)
         publishActiveCounts()
+        return saved
     }
 
-    func append(_ answer: SessionAnswerEvent) {
-        guard let id = activeID else { return }
+    @discardableResult func append(_ answer: SessionAnswerEvent) -> Bool {
+        guard let id = activeID else { return false }
         if activeAnswerIDs.insert(answer.id).inserted { activeMeta?.answerCount += 1 }
-        appendLine(answer, file: "answers.jsonl", session: id)
+        let saved = appendLine(answer, file: "answers.jsonl", session: id)
         publishActiveCounts()
         // Keep meta.json reasonably fresh for crash recovery.
         if let meta = activeMeta { saveMeta(meta) }
+        return saved
     }
 
-    func appendTranslation(sessionID: UUID, lineID: UUID, text: String) {
+    func appendTranslation(sessionID: UUID, lineID: UUID, text: String, inputRevision: String? = nil) {
         guard sessionID == activeID || sessions.contains(where: { $0.id == sessionID }) else { return }
-        appendLine(SessionTranscriptTranslation(id: lineID, text: text), file: "translations.jsonl", session: sessionID)
-        Task { [weak self] in
-            await self?.flush()
-            self?.notesRevision &+= 1
+        guard appendLine(SessionTranscriptTranslation(id: lineID, text: text, inputRevision: inputRevision),
+                         file: "translations.jsonl", session: sessionID) else { return }
+        var receipts = translationWriteReceipts[sessionID] ?? SessionTranslationWriteReceipts()
+        receipts.recordSubmittedRevision(persistenceBySession[sessionID]?.submittedRevision ?? 0)
+        translationWriteReceipts[sessionID] = receipts
+        if pendingTranslationSearchSessionIDs.contains(sessionID) {
+            pendingSearchableTranslationSessionIDs.insert(sessionID)
         }
+    }
+
+    func beginFinalTranslationDrain(for sessionID: UUID) {
+        pendingTranslationSearchSessionIDs.insert(sessionID)
+        if translationWriteReceipts[sessionID]?.hasPending == true {
+            pendingSearchableTranslationSessionIDs.insert(sessionID)
+        }
+    }
+
+    /// Wait for this session's final translations and archive writes before exposing it to search.
+    func finishFinalTranslationDrain(for sessionID: UUID) async {
+        completedTranslationDrainSessionIDs.insert(sessionID)
+        guard await flush(sessionID: sessionID) else { return }
+        completeFinalTranslationDrain(for: sessionID)
+    }
+
+    /// Wait until the final-translation drain has also received a durable archive receipt.
+    /// This is async so a session backup can wait without blocking the main actor.
+    func waitForFinalTranslationDrain(sessionID: UUID) async -> Bool {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(120))
+        while pendingTranslationSearchSessionIDs.contains(sessionID) {
+            guard !Task.isCancelled else { return false }
+            if ContinuousClock.now >= deadline {
+                return !pendingTranslationSearchSessionIDs.contains(sessionID)
+            }
+            do { try await Task.sleep(for: .milliseconds(50)) }
+            catch { return false }
+        }
+        return true
+    }
+
+    private func completeFinalTranslationDrain(for sessionID: UUID) {
+        guard completedTranslationDrainSessionIDs.remove(sessionID) != nil else { return }
+        if pendingSearchableTranslationSessionIDs.remove(sessionID) != nil {
+            publishTranslationRevision(for: sessionID)
+            if sessionID != activeID { searchableContentRevision &+= 1 }
+        }
+        pendingTranslationSearchSessionIDs.remove(sessionID)
+    }
+
+    func translationRevision(for sessionID: UUID) -> Int {
+        translationRevisionBySession[sessionID, default: 0]
+    }
+
+    private func publishTranslationRevision(for sessionID: UUID) {
+        translationRevisionBySession[sessionID, default: 0] &+= 1
     }
 
     /// Copies a screenshot into the session folder and returns its path
@@ -273,6 +438,7 @@ final class SessionArchive {
         if meta.transcriptCount == 0 && meta.answerCount == 0 {
             sessions.removeAll { $0.id == meta.id }
             let folder = folder(meta.id)
+            discardPersistence(meta.id)
             io.async { try? FileManager.default.removeItem(at: folder) }
             return nil
         }
@@ -286,33 +452,181 @@ final class SessionArchive {
         saveMeta(meta)
     }
 
-    func saveSummary(_ summary: SessionSummary, for id: UUID) {
-        guard var meta = sessions.first(where: { $0.id == id }) else { return }
+    @discardableResult
+    func saveSummary(_ summary: SessionSummary, for id: UUID) -> Bool {
+        guard var meta = sessions.first(where: { $0.id == id }) else { return false }
         // A title the user gave the meeting stays; otherwise the summary names it.
         if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty {
             meta.title = summary.title
         }
         meta.summaryState = .ready
         meta.summaryError = nil
-        let folder = folder(id)
-        io.async { Self.write(summary, to: folder.appendingPathComponent("summary.json")) }
+        let queued = enqueueSnapshot(summary, file: "summary.json", session: id)
         update(meta)
+        Task { [weak self] in
+            guard let self, await self.flush(sessionID: id), id != self.activeID else { return }
+            self.searchableContentRevision &+= 1
+        }
+        return queued
     }
 
-    func saveNotes(_ notes: StructuredNotes, for id: UUID) {
-        if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return }
-        let folder = folder(id)
-        io.async { Self.write(notes, to: folder.appendingPathComponent("notes.json")) }
-        notesRevision += 1
+    /// Edits one generated structured-notes node on top of the newest queued summary.
+    func updateSummary(_ id: UUID, _ change: @escaping (inout SessionSummary) -> Bool,
+                       completion: @escaping @MainActor (SessionArchiveEditResult) -> Void) {
+        Task {
+            guard !summarizing.contains(id) else {
+                completion(.busy)
+                return
+            }
+            if var demo = demoDetails[id], var summary = demo.summary {
+                guard change(&summary) else {
+                    completion(.staleTarget)
+                    return
+                }
+                demo.summary = summary
+                demoDetails[id] = demo
+                searchableContentRevision &+= 1
+                completion(.saved)
+                return
+            }
+            var summary = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
+                .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
+            if summary == nil {
+                guard await flush(sessionID: id) else {
+                    completion(.persistenceBlocked)
+                    return
+                }
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
+                summary = await detail(id)?.summary
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
+            }
+            guard var summary else {
+                completion(.unavailable)
+                return
+            }
+            guard change(&summary) else {
+                completion(.staleTarget)
+                return
+            }
+            guard saveSummary(summary, for: id) else {
+                completion(.persistenceBlocked)
+                return
+            }
+            completion(await flush(sessionID: id) ? .saved : .persistenceBlocked)
+        }
+    }
+
+    @discardableResult
+    func saveNotes(_ notes: StructuredNotes, for id: UUID) -> Bool {
+        if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return true }
+        return enqueueSnapshot(notes, file: "notes.json", session: id)
     }
 
     /// Edits saved notes in place (undoing a correction).
-    func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Void) {
+    func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Bool,
+                     completion: @escaping @MainActor (SessionArchiveEditResult) -> Void = { _ in }) {
         Task {
-            guard var notes = await detail(id)?.notes else { return }
-            change(&notes)
-            saveNotes(notes, for: id)
+            guard !summarizing.contains(id) else {
+                completion(.busy)
+                return
+            }
+            if var demo = demoDetails[id], var notes = demo.notes {
+                let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
+                guard change(&notes) else {
+                    completion(.staleTarget)
+                    return
+                }
+                if demo.summary?.structuredNotesSourceRevision == nil {
+                    demo.summary?.structuredNotesSourceRevision = originalNotesRevision
+                }
+                demo.notes = notes
+                demoDetails[id] = demo
+                notesRevision += 1
+                completion(.saved)
+                return
+            }
+            // Start from the newest queued edit when an earlier write could not
+            // be acknowledged. This lets a new correction build on, and remain
+            // recoverable with, that pending snapshot.
+            var notes = pendingArchiveData(file: "notes.json", sessionID: id, mode: .replace)
+                .last.flatMap { try? JSONLines.decoder().decode(StructuredNotes.self, from: $0) }
+            if notes == nil {
+                guard await flush(sessionID: id) else {
+                    completion(.persistenceBlocked)
+                    return
+                }
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
+                notes = await detail(id)?.notes
+                guard !summarizing.contains(id) else {
+                    completion(.busy)
+                    return
+                }
+            }
+            guard var notes else {
+                completion(.unavailable)
+                return
+            }
+            let originalNotesRevision = SessionProjectionBuilder.structuredNotesRevision(notes)
+            guard change(&notes) else {
+                completion(.staleTarget)
+                return
+            }
+            // Older summaries did not record the structured-notes revision. Seed it
+            // with the pre-edit snapshot so a manual note edit makes their rendered
+            // wording explicitly stale instead of leaving its freshness unknown.
+            if let originalNotesRevision {
+                var summary = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
+                    .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
+                if summary == nil {
+                    summary = await detail(id)?.summary
+                    guard !summarizing.contains(id) else {
+                        completion(.busy)
+                        return
+                    }
+                }
+                // A summary can be queued while detail() is suspended. Prefer that newer
+                // snapshot before applying the compatibility stamp.
+                if let queued = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
+                    .last.flatMap({ try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }) {
+                    summary = queued
+                }
+                if var summary, summary.structuredNotesSourceRevision == nil {
+                    summary.structuredNotesSourceRevision = originalNotesRevision
+                    guard enqueueSnapshot(summary, file: "summary.json", session: id) else {
+                        completion(.persistenceBlocked)
+                        return
+                    }
+                }
+            }
+            guard saveNotes(notes, for: id) else {
+                completion(.persistenceBlocked)
+                return
+            }
+            if await flush(sessionID: id) {
+                notesRevision += 1
+                if id != activeID { searchableContentRevision &+= 1 }
+                completion(.saved)
+            } else {
+                completion(.persistenceBlocked)
+            }
         }
+    }
+
+    /// Pending serialized archive data, including writes that failed before receipt.
+    /// Callers use it to build a new user edit on top of the newest queued version.
+    func pendingArchiveData(file: String, sessionID: UUID, mode: SessionArchiveWriteMode) -> [Data] {
+        writeQueues[sessionID]?.entries
+            .filter { $0.fileName == file && $0.mode == mode }
+            .map(\.data) ?? []
     }
 
     func rename(_ id: UUID, to title: String) {
@@ -349,6 +663,7 @@ final class SessionArchive {
                 }
             }
         }
+        for sessionID in ids { discardPersistence(sessionID) }
         sessions.removeAll { ids.contains($0.id) }
         for sessionID in ids { notesSteps[sessionID] = nil }
         notesRevision &+= 1
@@ -379,6 +694,7 @@ final class SessionArchive {
         guard id != activeID else { return }
         sessions.removeAll { $0.id == id }
         let folder = folder(id)
+        discardPersistence(id)
         io.async { try? FileManager.default.removeItem(at: folder) }
     }
 
@@ -391,8 +707,28 @@ final class SessionArchive {
     }
 
     /// Waits until queued writes are on disk (before reading a session back).
-    func flush() async {
-        await withCheckedContinuation { continuation in io.async { continuation.resume() } }
+    @discardableResult
+    func flush() async -> Bool {
+        let ids = Array(writeQueues.keys)
+        return await flush(sessionIDs: ids)
+    }
+
+    @discardableResult
+    func flush(sessionID id: UUID) async -> Bool {
+        await flush(sessionIDs: [id])
+    }
+
+    private func flush(sessionIDs ids: [UUID]) async -> Bool {
+        for id in ids { drainWrites(id) }
+        for _ in 0..<500 {
+            let states = ids.compactMap { persistenceBySession[$0] }
+            if states.allSatisfy({ $0.pendingEvents == 0 }) {
+                return states.allSatisfy { $0.lastFailure == nil }
+            }
+            if states.contains(where: { $0.state == .blocked }) { return false }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return false
     }
 
     // MARK: Private
@@ -403,8 +739,7 @@ final class SessionArchive {
     }
 
     private func saveMeta(_ meta: SessionMeta) {
-        let url = folder(meta.id).appendingPathComponent("meta.json")
-        io.async { Self.write(meta, to: url) }
+        _ = enqueueSnapshot(meta, file: "meta.json", session: meta.id)
     }
 
     nonisolated private static func directorySize(at directory: URL) throws -> Int64 {
@@ -425,19 +760,134 @@ final class SessionArchive {
         return total
     }
 
-    func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) {
-        let url = folder(id).appendingPathComponent(file)
-        guard let data = try? JSONLines.line(value) else { return }
-        io.async {
-            if !FileManager.default.fileExists(atPath: url.path) {
-                try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-                FileManager.default.createFile(atPath: url.path, contents: nil)
-            }
-            guard let handle = try? FileHandle(forWritingTo: url) else { return }
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
+    @discardableResult
+    func appendLine<T: Encodable>(_ value: T, file: String, session id: UUID) -> Bool {
+        do { return enqueueWrite(try JSONLines.line(value), file: file, session: id) }
+        catch { return recordEncodingFailure(error, session: id) }
+    }
+
+    func retryPersistence(_ id: UUID) {
+        retryTasks[id]?.cancel(); retryTasks[id] = nil
+        retryAttempts[id] = 0
+        drainWrites(id)
+    }
+
+    /// Reopens an overflowed queue only after all accepted writes have been saved.
+    /// The snapshot retains the count of writes that were never queued.
+    @discardableResult
+    func acknowledgeDataLossAndResume(_ id: UUID) -> Bool {
+        guard var queue = writeQueues[id], queue.acknowledgeDataLossAndResume() else { return false }
+        writeQueues[id] = queue
+        persistenceBySession[id] = queue.snapshot
+        return true
+    }
+
+    private func enqueueSnapshot<T: Encodable>(_ value: T, file: String, session id: UUID) -> Bool {
+        let encoder = JSONLines.encoder(); encoder.outputFormatting.insert(.prettyPrinted)
+        do { return enqueueWrite(try encoder.encode(value), file: file, session: id, mode: .replace) }
+        catch { return recordEncodingFailure(error, session: id) }
+    }
+
+    private func recordEncodingFailure(_ error: Error, session id: UUID) -> Bool {
+        var queue = writeQueues[id] ?? SessionArchiveWriteQueue()
+        queue.fail("编码归档内容失败：\(error.localizedDescription)", permanent: true)
+        writeQueues[id] = queue; persistenceBySession[id] = queue.snapshot
+        return false
+    }
+
+    private func enqueueWrite(_ data: Data, file: String, session id: UUID, mode: SessionArchiveWriteMode = .append) -> Bool {
+        guard !discardedSessions.contains(id) else { return false }
+        var queue = writeQueues[id] ?? SessionArchiveWriteQueue()
+        let result = queue.enqueue(fileName: file, data: data, mode: mode)
+        writeQueues[id] = queue; persistenceBySession[id] = queue.snapshot
+        switch result {
+        case .queued: drainWrites(id); return true
+        case .full: drainWrites(id); return false
         }
+    }
+
+    private func drainWrites(_ id: UUID) {
+        guard !drainingWrites.contains(id), let queue = writeQueues[id], !queue.entries.isEmpty else { return }
+        drainingWrites.insert(id)
+        let batch = Array(queue.entries.prefix(32))
+        let directory = folder(id), appender = fileAppender
+        io.async { [weak self] in
+            var completed: Int?
+            var failure: String?
+            for entry in batch {
+                do { try appender.write(entry.data, to: directory.appendingPathComponent(entry.fileName), mode: entry.mode); completed = entry.revision }
+                catch { failure = error.localizedDescription; break }
+            }
+            let persistedSearchableContent = completed.map { completedRevision in
+                batch.contains {
+                    $0.revision <= completedRevision
+                        && ["transcript.jsonl", "questions.jsonl", "answers.jsonl"].contains($0.fileName)
+                }
+            } ?? false
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.drainingWrites.remove(id)
+                guard !self.discardedSessions.contains(id) else { return }
+                var latest = self.writeQueues[id] ?? SessionArchiveWriteQueue()
+                if let completed { latest.acknowledge(through: completed) }
+                if let failure { latest.fail("保存受阻：\(failure)") }
+                self.writeQueues[id] = latest
+                self.persistenceBySession[id] = latest.snapshot
+                if id != self.activeID && persistedSearchableContent {
+                    self.searchableContentRevision &+= 1
+                }
+                if completed != nil {
+                    self.acknowledgeTranslationWrites(for: id, persistedRevision: latest.persistedRevision)
+                }
+                if failure != nil { self.scheduleRetry(id) }
+                else {
+                    self.retryAttempts[id] = 0
+                    if !latest.entries.isEmpty {
+                        self.drainWrites(id)
+                    } else if self.completedTranslationDrainSessionIDs.contains(id) {
+                        self.completeFinalTranslationDrain(for: id)
+                    }
+                }
+            }
+        }
+    }
+
+    private func acknowledgeTranslationWrites(for sessionID: UUID, persistedRevision: Int) {
+        guard var receipts = translationWriteReceipts[sessionID],
+              receipts.acknowledge(persistedRevision: persistedRevision) else { return }
+        translationWriteReceipts[sessionID] = receipts.hasPending ? receipts : nil
+        if pendingTranslationSearchSessionIDs.contains(sessionID) {
+            pendingSearchableTranslationSessionIDs.insert(sessionID)
+            return
+        }
+        publishTranslationRevision(for: sessionID)
+        if sessionID != activeID { searchableContentRevision &+= 1 }
+    }
+
+    private func scheduleRetry(_ id: UUID) {
+        guard retryTasks[id] == nil, !discardedSessions.contains(id) else { return }
+        let attempt = retryAttempts[id, default: 0]
+        retryAttempts[id] = attempt + 1
+        let delay = min(30, 1 << min(attempt, 5))
+        retryTasks[id] = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard let self, !Task.isCancelled else { return }
+            self.retryTasks[id] = nil
+            self.drainWrites(id)
+        }
+    }
+
+    private func discardPersistence(_ id: UUID) {
+        discardedSessions.insert(id)
+        retryTasks[id]?.cancel(); retryTasks[id] = nil
+        retryAttempts[id] = nil
+        writeQueues[id] = nil
+        persistenceBySession[id] = nil
+        translationWriteReceipts[id] = nil
+        translationRevisionBySession[id] = nil
+        pendingSearchableTranslationSessionIDs.remove(id)
+        pendingTranslationSearchSessionIDs.remove(id)
+        completedTranslationDrainSessionIDs.remove(id)
     }
 
     nonisolated private static func write<T: Encodable>(_ value: T, to url: URL) {

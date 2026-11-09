@@ -67,4 +67,7 @@ SpeakerEmbedding.mlpackage is the WeSpeaker ResNet34-LM speaker model trained on
 (https://github.com/wenet-e2e/wespeaker), licensed CC BY 4.0
 (https://creativecommons.org/licenses/by/4.0/), converted to Core ML by
 scripts/convert-voiceprint.py. The conversion script, the log-mel filterbank and the voiceprint
-grouping rules are adapted from cicada (Apache-2.0), https://github.com/wquguru/cicada.
+grouping rules are adapted from cicada at commit
+f11cc1354e7f1c04d831a783750b1c62c9ba3ef8 (Apache-2.0),
+https://github.com/wquguru/cicada. The full upstream license is shipped at
+licenses/cicada/LICENSE; the adapted conversion and grouping code is identified here.

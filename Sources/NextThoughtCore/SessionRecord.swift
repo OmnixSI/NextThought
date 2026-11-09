@@ -29,15 +29,18 @@ public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable 
     public var speaker: SessionSpeaker
     public var text: String
     public var translatedText: String?
+    /// Content fingerprint of the source text sent to translation. Nil in older archives.
+    public var translationInputRevision: String?
     public var startedAt: Date?
     public var endedAt: Date?
     /// Which voice said it (the other side or the room), when "区分对方的每个人" was on.
     /// A meeting-local id from `VoiceClusterer`; nil for the user's own lines and for older records.
     public var voice: Int?
     public init(id: UUID = UUID(), date: Date, speaker: SessionSpeaker, text: String, translatedText: String? = nil,
-                startedAt: Date? = nil, endedAt: Date? = nil, voice: Int? = nil) {
+                translationInputRevision: String? = nil, startedAt: Date? = nil, endedAt: Date? = nil, voice: Int? = nil) {
         self.id = id; self.date = date; self.speaker = speaker; self.text = text
         self.translatedText = translatedText
+        self.translationInputRevision = translationInputRevision
         self.startedAt = startedAt; self.endedAt = endedAt
         self.voice = voice
     }
@@ -46,7 +49,11 @@ public struct SessionTranscriptLine: Codable, Sendable, Identifiable, Equatable 
 public struct SessionTranscriptTranslation: Codable, Sendable, Identifiable, Equatable {
     public var id: UUID
     public var text: String
-    public init(id: UUID, text: String) { self.id = id; self.text = text }
+    /// Content fingerprint of the transcript text used to produce this translation.
+    public var inputRevision: String?
+    public init(id: UUID, text: String, inputRevision: String? = nil) {
+        self.id = id; self.text = text; self.inputRevision = inputRevision
+    }
 }
 
 /// A question the detector saw, whether or not it was answered automatically.
@@ -171,6 +178,24 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
 
     public var duration: TimeInterval { max(0, (endedAt ?? startedAt).timeIntervalSince(startedAt)) }
 
+    /// Reconciles an interrupted recording from its durable transcript before recovery.
+    /// Returns true only when an interrupted summary can be retried from saved lines.
+    @discardableResult
+    public mutating func recoverInterruptedRecording(transcriptData: Data?, lastTranscriptWrite: Date?) -> Bool {
+        guard endedAt == nil else { return false }
+        endedAt = lastTranscriptWrite ?? startedAt
+        let transcriptCount = transcriptData.map {
+            JSONLines.decodeReport(SessionTranscriptLine.self, from: $0).records.count
+        }
+        if let transcriptCount { self.transcriptCount = transcriptCount }
+        let shouldRecoverSummary = summaryState == .pending && transcriptCount.map { $0 > 0 } == true
+        if summaryState == .pending {
+            summaryState = .none
+            summaryError = nil
+        }
+        return shouldRecoverSummary
+    }
+
     public var displayTitle: String {
         if let title, !title.trimmingCharacters(in: .whitespaces).isEmpty { return title }
         return "\(mode.title) · " + startedAt.formatted(date: .abbreviated, time: .shortened)
@@ -212,18 +237,32 @@ public struct SessionSummary: Codable, Sendable, Equatable {
     /// Every fishbone, outline and viewpoint matrix written for this meeting, one per format
     /// (absent in older summaries, which only have `structured`).
     public var structuredAll: [StructuredNotesPayload]?
+    /// Transcript snapshot used to generate this summary. Nil for older archives.
+    public var transcriptSourceRevision: String?
+    /// Structured-notes snapshot used to generate this summary's rendered note text.
+    /// Nil for summaries written before note-content freshness was tracked.
+    public var structuredNotesSourceRevision: String?
+    /// Explicit per-item evidence reviews, bound to both the claim and current transcript.
+    public var evidenceReviews: [String: SessionEvidenceReview]?
     public init(title: String, markdown: String, questions: [SummaryQuestion], generatedAt: Date, model: String,
                 lessons: [String]? = nil, bank: [BankEntry]? = nil, appliedToWorkspace: Bool? = nil,
-                structured: StructuredNotesPayload? = nil, structuredAll: [StructuredNotesPayload]? = nil) {
+                structured: StructuredNotesPayload? = nil, structuredAll: [StructuredNotesPayload]? = nil,
+                transcriptSourceRevision: String? = nil,
+                structuredNotesSourceRevision: String? = nil,
+                evidenceReviews: [String: SessionEvidenceReview]? = nil) {
         self.title = title; self.markdown = markdown; self.questions = questions; self.generatedAt = generatedAt; self.model = model
         self.lessons = lessons; self.bank = bank; self.appliedToWorkspace = appliedToWorkspace
         self.structured = structured; self.structuredAll = structuredAll
+        self.transcriptSourceRevision = transcriptSourceRevision
+        self.structuredNotesSourceRevision = structuredNotesSourceRevision
+        self.evidenceReviews = evidenceReviews
     }
 
     /// A text rewrite keeps the latest saved diagrams, including results completed while it ran.
     public mutating func preserveStructuredViews(from latest: SessionSummary?) {
         structured = latest?.structured
         structuredAll = latest?.structuredAll
+        evidenceReviews = latest?.evidenceReviews ?? evidenceReviews
     }
 
     /// The saved view of a format that has something to draw (failure markers and the plain
@@ -285,10 +324,40 @@ public enum JSONLines {
         return data
     }
 
-    /// Decodes every well-formed line; a torn last line (crash mid-write) is skipped.
+    /// Decodes every well-formed line; a torn last line is skipped and reported by
+    /// `decodeReport` so callers can distinguish a partial archive from an empty one.
     public static func decode<T: Decodable>(_ type: T.Type, from data: Data) -> [T] {
+        decodeReport(type, from: data).records
+    }
+
+    public static func decodeReport<T: Decodable>(_ type: T.Type, from data: Data) -> JSONLinesDecodeReport<T> {
         let decoder = decoder()
-        return data.split(separator: 0x0A).compactMap { try? decoder.decode(T.self, from: Data($0)) }
+        guard !data.isEmpty else { return JSONLinesDecodeReport(records: [], malformedLineNumbers: [], truncatedFinalLine: false) }
+        let terminated = data.last == 0x0A
+        let rawLines = data.split(separator: 0x0A, omittingEmptySubsequences: false)
+        let lineCount = terminated ? max(0, rawLines.count - 1) : rawLines.count
+        var records: [T] = []
+        var malformed: [Int] = []
+        for index in 0..<lineCount {
+            let line = rawLines[index]
+            guard !line.isEmpty else { continue }
+            do { records.append(try decoder.decode(T.self, from: Data(line))) }
+            catch { malformed.append(index + 1) }
+        }
+        let truncated = !terminated && lineCount > 0 && malformed.last == lineCount
+        return JSONLinesDecodeReport(records: records, malformedLineNumbers: malformed, truncatedFinalLine: truncated)
+    }
+}
+
+public struct JSONLinesDecodeReport<Record> {
+    public var records: [Record]
+    public var malformedLineNumbers: [Int]
+    public var truncatedFinalLine: Bool
+
+    public init(records: [Record], malformedLineNumbers: [Int], truncatedFinalLine: Bool) {
+        self.records = records
+        self.malformedLineNumbers = malformedLineNumbers
+        self.truncatedFinalLine = truncatedFinalLine
     }
 }
 
@@ -505,29 +574,52 @@ public enum SessionSummaryParser {
 
 public enum SessionMarkdownExporter {
     public static func export(meta: SessionMeta, summary: SessionSummary?, lines: [SessionTranscriptLine],
-                              answers: [SessionAnswerEvent], detected: [SessionQuestionEvent]) -> String {
+                              answers: [SessionAnswerEvent], detected: [SessionQuestionEvent], notes: StructuredNotes? = nil,
+                              transcriptVariant: SessionTranscriptVariant = .corrected) -> String {
+        let projection = SessionProjectionBuilder.build(meta: meta, lines: lines, answers: answers, detected: detected,
+                                                       summary: summary, notes: notes,
+                                                       options: SessionProjectionOptions(transcriptVariant: transcriptVariant))
+        return export(meta: meta, projection: projection)
+    }
+
+    public static func export(meta: SessionMeta, projection: SessionTextProjection) -> String {
         var out: [String] = []
-        out.append("# " + (summary?.title ?? meta.displayTitle))
+        out.append("# " + (projection.summary?.title ?? meta.displayTitle))
         out.append("")
         var facts = ["\(meta.mode.title)", meta.startedAt.formatted(date: .abbreviated, time: .shortened)]
         if meta.duration > 0 { facts.append("\(Int(meta.duration / 60)) 分钟") }
         if !meta.audioSource.isEmpty { facts.append(meta.audioSource) }
         out.append("> " + facts.joined(separator: " · "))
         out.append("")
-        if let summary {
+        switch projection.derivedContentStatus {
+        case .current:
+            break
+        case .stale:
+            out.append("> 提示：部分纪要内容来自较旧的转写版本；请核对当前原话后再转发。")
+            out.append("")
+        case .unknown:
+            out.append("> 提示：旧纪要未记录转写版本，无法确认它是否与当前原话一致。")
+            out.append("")
+        }
+        if let notes = projection.notes {
+            out.append("## 纪要")
+            out.append("")
+            out.append(renderNotes(notes))
+            out.append("")
+        } else if let summary = projection.summary {
             // The model's own document, minus its title section (already the heading).
             var body = summary.markdown
             if let range = body.range(of: "## ") { body = String(body[range.lowerBound...]) }
             out.append(body.trimmingCharacters(in: .whitespacesAndNewlines))
             out.append("")
-        } else if !detected.isEmpty {
+        } else if !projection.detectedQuestions.isEmpty {
             out.append("## 检测到的问题")
-            out.append(contentsOf: detected.enumerated().map { "\($0.offset + 1). \($0.element.text)" })
+            out.append(contentsOf: projection.detectedQuestions.enumerated().map { "\($0.offset + 1). \($0.element.text)" })
             out.append("")
         }
-        if !answers.isEmpty {
+        if !projection.answers.isEmpty {
             out.append("## 会中回答")
-            for answer in answers {
+            for answer in projection.answers {
                 out.append("")
                 out.append("### \(answer.question.replacingOccurrences(of: "\n", with: " ").prefix(200))")
                 out.append("")
@@ -537,14 +629,45 @@ public enum SessionMarkdownExporter {
         }
         out.append("## 完整转录")
         out.append("")
-        let labels = SpeakerLabels.promptLabels(lines, voiceNames: meta.voiceNames, meVoices: Set(meta.meVoices ?? []), english: false)
-        out.append(contentsOf: lines.map { line in
-            let offset = Int(max(0, line.date.timeIntervalSince(meta.startedAt)))
-            let original = String(format: "- `%02d:%02d` ", offset / 60, offset % 60) + "**\(labels[line.id] ?? line.speaker.label)**：" + line.text
-            guard let translation = line.translatedText, !translation.isEmpty else { return original }
-            return original + "\n  *译文：* " + translation
+        out.append(contentsOf: projection.transcript.map { line in
+            let offset = line.offset
+            let timestamp = String(format: "- `%02d:%02d` ", offset / 60, offset % 60)
+            let speaker = "**\(line.speakerLabel)**："
+            if line.languageView == .translated, line.translationIsStale,
+               let translation = line.translationText,
+               !translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return timestamp + speaker + "译文（待更新）：" + translation
+            }
+            let original = timestamp + speaker + line.displayText
+            guard line.languageView == .bilingual,
+                  let translation = line.translationText, !translation.isEmpty else { return original }
+            let label = line.translationIsStale ? "译文（待更新）" : "译文"
+            return original + "\n  *\(label)：* " + translation
         })
         return out.joined(separator: "\n") + "\n"
+    }
+
+    /// Render the same structured note fields the meeting page reads, rather than the
+    /// original generated Markdown, which cannot include edits made after generation.
+    private static func renderNotes(_ notes: StructuredNotes) -> String {
+        let english = notes.language == "en"
+        var sections: [String] = []
+        for section in notes.sections where !section.items.isEmpty {
+            var lines = ["### \(section.title)"]
+            for item in section.items {
+                lines.append(NotesMarkdown.line(item, kind: section.kind, english: english))
+                if section.kind == .questions {
+                    if let answer = item.answer, !answer.isEmpty {
+                        lines.append("  - \(english ? "My answer: " : "我答：")\(answer)")
+                    }
+                    if item.improves, let better = item.better, !better.isEmpty {
+                        lines.append("  - \(english ? "Better: " : "更好的答法：")\(better)")
+                    }
+                }
+            }
+            sections.append(lines.joined(separator: "\n"))
+        }
+        return sections.isEmpty ? "这场会议没有整理出内容。" : sections.joined(separator: "\n\n")
     }
 }
 

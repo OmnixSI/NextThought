@@ -231,6 +231,8 @@ private struct SeriesCarryCard: View {
                         .buttonStyle(GhostButtonStyle(height: 28))
                 }
                 .padding(Space.s4)
+                SeriesBriefingPanel(workspace: series, sessions: state.archive.sessions,
+                                    onOpenSession: state.openArchivedMeeting)
                 Rectangle().fill(Ink.hairline).frame(height: 1).padding(.horizontal, Space.s4)
                 VStack(alignment: .leading, spacing: Space.s3) {
                     if !series.documents.isEmpty {
@@ -238,22 +240,28 @@ private struct SeriesCarryCard: View {
                                  title: String(localized: "资料 · \(names(series.documents.map(\.name)))"),
                                  detail: String(localized: "\(series.documents.count) 份"))
                     }
-                    if !series.questionBank.isEmpty {
-                        CarryRow(isOn: binding(\.review),
-                                 title: String(localized: "复盘 · 改进后的答法"),
-                                 detail: String(localized: "\(series.questionBank.count) 题"))
-                    }
-                    if !series.lessons.isEmpty {
-                        CarryRow(isOn: binding(\.lessons),
-                                 title: String(localized: "经验 · \(quoted(series.lessons.map(\.text)))"),
-                                 detail: String(localized: "\(series.lessons.count) 条"))
+                    if series.useKnowledge {
+                        if !series.questionBank.isEmpty {
+                            CarryRow(isOn: binding(\.review),
+                                     title: String(localized: "复盘 · 改进后的答法"),
+                                     detail: String(localized: "\(series.questionBank.count) 题"))
+                        }
+                        if !series.lessons.isEmpty {
+                            CarryRow(isOn: binding(\.lessons),
+                                     title: String(localized: "经验 · \(quoted(series.lessons.map(\.text)))"),
+                                     detail: String(localized: "\(series.lessons.count) 条"))
+                        }
+                    } else if !series.questionBank.isEmpty || !series.lessons.isEmpty {
+                        Text("系列知识已关闭；经验和答法不会带入。")
+                            .font(Typo.caption).foregroundStyle(Ink.secondary)
                     }
                     if let last, last.transcriptCount > 0 {
                         CarryRow(isOn: binding(\.transcript),
                                  title: String(localized: "上一场完整转写"),
                                  detail: String(localized: "\(max(1, Int(last.duration / 60))) 分钟"))
                     }
-                    if series.documents.isEmpty && series.questionBank.isEmpty && series.lessons.isEmpty && (last?.transcriptCount ?? 0) == 0 {
+                    if series.documents.isEmpty && (!series.useKnowledge || (series.questionBank.isEmpty && series.lessons.isEmpty))
+                        && (last?.transcriptCount ?? 0) == 0 {
                         Text("这个系列还没有资料、题库或经验可以带入。").font(Typo.caption).foregroundStyle(Ink.secondary)
                     }
                 }
@@ -279,6 +287,294 @@ private struct SeriesCarryCard: View {
 
     private func quoted(_ items: [String]) -> String {
         items.prefix(2).map { "“\($0.prefix(14))”" }.joined()
+    }
+}
+
+/// An offline, source-linked snapshot of this series. Only reviewed knowledge is
+/// presented as reusable guidance; pending candidates remain visibly separate.
+private struct SeriesBriefingPanel: View {
+    @Environment(AppState.self) private var state
+    let workspace: Workspace
+    let sessions: [SessionMeta]
+    let onOpenSession: (UUID) -> Void
+    @State private var evidenceReferences: [SessionEvidenceReference] = []
+    @State private var isLoadingEvidence = true
+
+    private var briefing: SeriesBriefing {
+        SeriesBriefingBuilder.build(workspace: workspace, sessions: sessions,
+                                    evidenceReferences: evidenceReferences)
+    }
+
+    private var evidenceLoadKey: String {
+        let archiveRevision = "\(state.archive.searchableContentRevision)|\(state.archive.notesRevision)"
+        let items = (workspace.seriesItems ?? []).map { "\($0.sourceSessionID.uuidString)|\($0.evidenceID)|\($0.claimRevision)|\($0.sourceRevision)" }
+            .sorted().joined(separator: ";")
+        let candidates = (workspace.seriesChangeCandidates ?? []).filter { $0.status == .pending }
+            .map { "\($0.sourceSessionID.uuidString)|\($0.id)" }
+            .sorted().joined(separator: ";")
+        return archiveRevision + "|" + items + "|" + candidates
+    }
+
+    var body: some View {
+        let briefing = briefing
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("系列简报").font(Typo.label)
+                Spacer()
+                Text("本机 · 已保存内容").font(Typo.caption).foregroundStyle(Ink.secondary)
+            }
+            if briefing.latestSessions.isEmpty {
+                Text("这个系列还没有已归档的会议。").font(Typo.caption).foregroundStyle(Ink.secondary)
+            } else {
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    Text("最近会议 · 共 \(briefing.sessionCount) 场").font(Typo.caption).foregroundStyle(Ink.secondary)
+                    ForEach(briefing.latestSessions) { meta in
+                        Button { onOpenSession(meta.id) } label: {
+                            HStack(spacing: Space.s2) {
+                                Text(verbatim: meta.displayTitle).lineLimit(1)
+                                Spacer(minLength: 0)
+                                Text(meta.startedAt.formatted(date: .abbreviated, time: .omitted))
+                                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                                Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .medium))
+                                    .foregroundStyle(Ink.tertiary)
+                            }
+                            .font(Typo.caption)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("打开这场会议的归档和原话")
+                    }
+                }
+            }
+
+            if isLoadingEvidence && (!(workspace.seriesItems ?? []).isEmpty || !(workspace.seriesChangeCandidates ?? []).isEmpty) {
+                Label("正在核对本机原话和版本…", systemImage: "arrow.triangle.2.circlepath")
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+            }
+
+            if briefing.knowledgeEnabled {
+                if !briefing.lessons.isEmpty {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("已确认的经验").font(Typo.caption).foregroundStyle(Ink.secondary)
+                        ForEach(briefing.lessons) { lesson in
+                            HStack(alignment: .top, spacing: Space.s1) {
+                                Text("•").foregroundStyle(Ink.tertiary)
+                                Text(verbatim: lesson.text).lineLimit(2)
+                                Spacer(minLength: 0)
+                                if let source = sourceSession(lesson.sourceSessionIDs, fallback: lesson.sourceSessionID) {
+                                    sourceButton(source)
+                                }
+                            }
+                            .font(Typo.caption)
+                        }
+                    }
+                }
+                if !briefing.questionBank.isEmpty {
+                    VStack(alignment: .leading, spacing: Space.s1) {
+                        Text("已确认的答法").font(Typo.caption).foregroundStyle(Ink.secondary)
+                        ForEach(briefing.questionBank) { item in
+                            HStack(alignment: .top, spacing: Space.s1) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(verbatim: item.question).fontWeight(.medium).lineLimit(1)
+                                    Text(verbatim: item.answer).foregroundStyle(Ink.secondary).lineLimit(2)
+                                }
+                                Spacer(minLength: 0)
+                                if let source = sourceSession(item.knownAnswerSourceSessionID) {
+                                    sourceButton(source)
+                                }
+                            }
+                            .font(Typo.caption)
+                        }
+                    }
+                }
+                if briefing.lessons.isEmpty && briefing.questionBank.isEmpty {
+                    if briefing.decisions.isEmpty && briefing.openActions.isEmpty && briefing.resolvedActions.isEmpty
+                        && !(isLoadingEvidence && !(workspace.seriesItems ?? []).isEmpty) {
+                        Text("还没有已确认的系列内容。新建议会先等待你审核。")
+                            .font(Typo.caption).foregroundStyle(Ink.secondary)
+                    }
+                }
+                if !briefing.decisions.isEmpty {
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        Text("当前决定").font(Typo.caption).foregroundStyle(Ink.secondary)
+                        ForEach(briefing.decisions) { item in
+                            VStack(alignment: .leading, spacing: Space.s1) {
+                                Text(verbatim: item.text).font(Typo.caption).textSelection(.enabled)
+                                if let quote = item.sourceQuote, !quote.isEmpty {
+                                    Text("依据：“\(quote)”\(item.location.map { " · \($0)" } ?? "")")
+                                        .font(Typo.caption).foregroundStyle(Ink.secondary).textSelection(.enabled)
+                                }
+                                HStack {
+                                    Text("第 \(item.revision) 版").font(Typo.caption).foregroundStyle(Ink.tertiary)
+                                    Spacer()
+                                    if let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
+                                }
+                                if !item.history.isEmpty {
+                                    DisclosureGroup("变化记录（\(item.history.count)）") {
+                                        ForEach(item.history.sorted { $0.revision < $1.revision }) { revision in
+                                            HStack(alignment: .top, spacing: Space.s2) {
+                                                Text("v\(revision.revision)").font(Typo.caption).foregroundStyle(Ink.tertiary)
+                                                Text(verbatim: revision.text).font(Typo.caption).textSelection(.enabled)
+                                                Spacer(minLength: 0)
+                                                if let source = sourceSession(revision.sourceSessionID) { sourceButton(source) }
+                                            }
+                                        }
+                                    }
+                                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                                }
+                            }
+                            .padding(Space.s2)
+                            .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                        }
+                    }
+                }
+                if !briefing.openActions.isEmpty {
+                    VStack(alignment: .leading, spacing: Space.s2) {
+                        Text("未完成事项").font(Typo.caption).foregroundStyle(Ink.secondary)
+                        ForEach(briefing.openActions) { item in
+                            VStack(alignment: .leading, spacing: Space.s1) {
+                                Text(verbatim: item.text).font(Typo.caption).textSelection(.enabled)
+                                if let quote = item.sourceQuote, !quote.isEmpty {
+                                    Text("依据：“\(quote)”\(item.location.map { " · \($0)" } ?? "")")
+                                        .font(Typo.caption).foregroundStyle(Ink.secondary).textSelection(.enabled)
+                                }
+                                HStack(spacing: Space.s2) {
+                                    if let owner = item.owner, !owner.isEmpty { Text("负责人：\(owner)") }
+                                    if let due = item.due, !due.isEmpty { Text("期限：\(due)") }
+                                    Spacer(minLength: 0)
+                                    if let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
+                                }
+                                .font(Typo.caption).foregroundStyle(Ink.secondary)
+                                HStack(spacing: Space.s2) {
+                                    if item.actionState == nil || item.actionState == .open {
+                                        Button("进行中") {
+                                            state.updateSeriesActionState(.inProgress, itemID: item.id,
+                                                                          expectedRevision: item.revision,
+                                                                          workspaceID: workspace.id)
+                                        }
+                                        .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 8))
+                                    }
+                                    Button("完成") {
+                                        state.updateSeriesActionState(.done, itemID: item.id,
+                                                                      expectedRevision: item.revision,
+                                                                      workspaceID: workspace.id)
+                                    }
+                                    .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 8))
+                                    Button("取消") {
+                                        state.updateSeriesActionState(.cancelled, itemID: item.id,
+                                                                      expectedRevision: item.revision,
+                                                                      workspaceID: workspace.id)
+                                    }
+                                    .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 8))
+                                }
+                            }
+                            .padding(Space.s2)
+                            .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                        }
+                    }
+                }
+                if !briefing.resolvedActions.isEmpty {
+                    DisclosureGroup("已完成或取消（\(briefing.resolvedActions.count)）") {
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            ForEach(briefing.resolvedActions) { item in
+                                VStack(alignment: .leading, spacing: Space.s1) {
+                                    HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                                        Text(verbatim: item.text).font(Typo.caption).textSelection(.enabled)
+                                        Spacer(minLength: 0)
+                                        Text(actionStateLabel(item.actionState))
+                                            .font(Typo.caption).foregroundStyle(Ink.tertiary)
+                                    }
+                                    if let due = item.due, !due.isEmpty {
+                                        Text("期限：\(due)").font(Typo.caption).foregroundStyle(Ink.secondary)
+                                    }
+                                    HStack {
+                                        if item.actionState == .done || item.actionState == .cancelled {
+                                            Button("重新打开") {
+                                                state.updateSeriesActionState(.open, itemID: item.id,
+                                                                              expectedRevision: item.revision,
+                                                                              workspaceID: workspace.id)
+                                            }
+                                            .buttonStyle(GhostButtonStyle(height: 30, horizontalPadding: 8))
+                                        }
+                                        Spacer()
+                                        if let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
+                                    }
+                                }
+                                .padding(Space.s2)
+                                .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                            }
+                        }
+                        .padding(.top, Space.s2)
+                    }
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                }
+                if !briefing.pendingSeriesChanges.isEmpty {
+                    Label("\(briefing.pendingSeriesChanges.count) 条决定或行动待确认；尚未用于简报。", systemImage: "hourglass")
+                        .font(Typo.caption).foregroundStyle(Ink.caution)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                Text("系列知识已关闭；本简报不会带入经验或答法。")
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+            }
+
+            if !briefing.pendingCandidates.isEmpty {
+                Label("\(briefing.pendingCandidates.count) 条建议待确认，不会作为已确认内容带入。", systemImage: "hourglass")
+                    .font(Typo.caption).foregroundStyle(Ink.caution)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, Space.s4)
+        .padding(.bottom, Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+        .task(id: evidenceLoadKey) {
+            isLoadingEvidence = true
+            let validIDs = Set(sessions.filter { $0.workspaceID == workspace.id && $0.workspaceDeleted != true }.map(\.id))
+            let storedItemSources = (workspace.seriesItems ?? []).map(\.sourceSessionID)
+            let candidateSources = (workspace.seriesChangeCandidates ?? []).filter { $0.status == .pending }
+                .map(\.sourceSessionID)
+            let sourceIDs = Set(storedItemSources + candidateSources).intersection(validIDs)
+            var loaded: [SessionEvidenceReference] = []
+            for sessionID in sourceIDs.sorted(by: { $0.uuidString < $1.uuidString }) {
+                guard !Task.isCancelled, let detail = await state.archive.detail(sessionID),
+                      detail.meta.workspaceID == workspace.id, detail.meta.workspaceDeleted != true else { continue }
+                loaded.append(contentsOf: SessionEvidenceBuilder.build(meta: detail.meta, lines: detail.lines,
+                                                                       notes: detail.notes, summary: detail.summary))
+            }
+            guard !Task.isCancelled else { return }
+            evidenceReferences = loaded
+            isLoadingEvidence = false
+        }
+    }
+
+    private func sourceSession(_ sourceIDs: [UUID]?, fallback: UUID? = nil) -> UUID? {
+        let ids = Set(sourceIDs ?? []).union(fallback.map { [$0] } ?? [])
+        return sessions
+            .filter { ids.contains($0.id) && $0.workspaceID == workspace.id && $0.workspaceDeleted != true }
+            .max { $0.startedAt < $1.startedAt }?.id
+    }
+
+    private func sourceSession(_ id: UUID?) -> UUID? {
+        guard let id else { return nil }
+        return sessions.first(where: { $0.id == id && $0.workspaceID == workspace.id && $0.workspaceDeleted != true })?.id
+    }
+
+    private func sourceButton(_ sessionID: UUID) -> some View {
+        Button("来源") { onOpenSession(sessionID) }
+            .font(.system(size: 10, weight: .medium))
+            .buttonStyle(.plain)
+            .foregroundStyle(Brand.accent)
+            .help("打开产生这条已确认内容的会议")
+    }
+
+    private func actionStateLabel(_ state: WorkspaceSeriesItem.ActionState?) -> String {
+        switch state {
+        case .done: "已完成"
+        case .cancelled: "已取消"
+        case .superseded: "已替代"
+        case .open, .inProgress, .none: "已结束"
+        }
     }
 }
 

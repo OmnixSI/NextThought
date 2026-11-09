@@ -19,7 +19,9 @@ extension AppState {
     var isOfflineMeeting: Bool { meetingVenue == .offline }
 
     /// The microphone is recognized: when switched on, and always in the room.
-    var usesMicrophone: Bool { microphoneEnabled || isOfflineMeeting }
+    var usesMicrophone: Bool {
+        RealtimeSetupReadiness.microphoneRequired(microphoneEnabled: microphoneEnabled, isOfflineMeeting: isOfflineMeeting)
+    }
 
     // MARK: Capture target
 

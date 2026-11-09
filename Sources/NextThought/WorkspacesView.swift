@@ -1518,6 +1518,23 @@ private struct BankRow: View {
                 .lineLimit(expanded ? nil : 2)
                 .padding(.leading, 22)
             }
+            if expanded, !isSelected, let history = item.answerHistory, !history.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("旧答法")
+                        .font(.system(size: 11, weight: .medium)).foregroundStyle(Ink.secondary)
+                    ForEach(history.reversed()) { revision in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text(revision.answer)
+                                .font(.system(size: 12)).foregroundStyle(Ink.secondary)
+                                .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                            Button("恢复") { state.restoreBankAnswer(itemID: item.id, revisionID: revision.id) }
+                            .buttonStyle(.plain).font(.system(size: 11, weight: .medium))
+                            .help("恢复这版答法；当前答法会留在旧答法记录中")
+                        }
+                    }
+                }
+                .padding(.leading, 22).padding(.top, 4)
+            }
         }
         .padding(8).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .confirmationDialog("删除这道题？", isPresented: $confirmDelete, titleVisibility: .visible) {
@@ -1603,10 +1620,11 @@ private struct ReviewTab: View {
                 MarkdownText(text: review, size: 13, lineSpacing: 3)
                     .padding(10).background(Brand.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
-                Text("综合这个场景下所有会话的摘要，找出高频问题、反复出现的薄弱点和已经改进的地方，并给出下一步准备清单；新的经验会加入经验库。")
+                Text("综合这个系列的会话摘要，整理高频问题、反复出现的薄弱点、进步和下一步准备；经验与答法会先进入待审阅区。")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
+        KnowledgeReviewSection(workspaceID: workspace.id)
         Divider()
         VStack(alignment: .leading, spacing: 6) {
             WorkspaceSectionHeading("会议 \(sessions.count)", icon: "clock")

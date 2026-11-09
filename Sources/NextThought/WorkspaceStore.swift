@@ -177,6 +177,7 @@ final class WorkspaceStore {
         copy.name = source.name + " 副本"
         copy.createdAt = Date(); copy.updatedAt = Date()
         copy.stageReview = nil; copy.stageReviewAt = nil
+        copy.knowledgeCandidates = []
         workspaces.append(copy)
         write(copy)
         activate(copy.id)

@@ -94,6 +94,10 @@ jobs:
           plutil -replace CFBundleIdentifier -string com.nextthought.app.ci "$ci/Contents/Info.plist"
           codesign --force --sign - --identifier com.nextthought.app.ci "$ci"
           "$ci/Contents/MacOS/NextThought" --self-test data
+          "$ci/Contents/MacOS/NextThought" --self-test session-export
+          "$ci/Contents/MacOS/NextThought" --self-test session-backup-drain
+          "$ci/Contents/MacOS/NextThought" --self-test session-edit-receipts
+          "$ci/Contents/MacOS/NextThought" --self-test session-carry-context
           NEXTTHOUGHT_DEMO=1 "$ci/Contents/MacOS/NextThought" --self-test document-setup
       - name: Stage and validate all release assets
         env:

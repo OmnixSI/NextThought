@@ -61,6 +61,9 @@ struct ContentView: View {
         .sheet(isPresented: Binding(get: { state.shareTestImage != nil }, set: { if !$0 { state.shareTestImage = nil } })) {
             ShareTestSheet()
         }
+        .sheet(item: $state.sessionExportRequest) { request in
+            SessionExportSheet(request: request)
+        }
         // Shown once, before the first recording.
         .alert("开始记录之前", isPresented: Binding(get: { state.recordingNoticePending != nil },
                                               set: { if !$0 { state.recordingNoticePending = nil } })) {
@@ -134,7 +137,8 @@ private struct ErrorBanner: View {
         if let message = state.errorMessage {
             HStack(alignment: .top, spacing: Space.s2) {
                 Image(systemName: "exclamationmark.triangle").foregroundStyle(Ink.caution)
-                Text(message).font(Typo.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                Text(verbatim: message)
+                    .font(Typo.body).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 Button { state.closeError() } label: { Image(systemName: "xmark") }
                     .buttonStyle(GlassIconButtonStyle(size: 24)).help("关闭提示")

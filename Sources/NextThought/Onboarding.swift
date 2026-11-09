@@ -64,9 +64,11 @@ extension AppState {
     }
 
     var liveSetupReadiness: RealtimeSetupReadiness {
-        .init(speech: recognitionReady, capture: capturePermissionGranted, microphoneRequired: microphoneEnabled,
-              microphone: microphoneAccess == .granted, answers: answerEngineReady,
-              audioSource: captureTargets.contains { $0.id == selectedTargetID })
+        .init(speech: recognitionReady, capture: isOfflineMeeting || capturePermissionGranted, microphoneRequired: usesMicrophone,
+              microphone: RealtimeSetupReadiness.microphonePermissionAllowsStart(
+                isGranted: microphoneAccess == .granted, isUndetermined: microphoneAccess == .undetermined),
+              answers: answerEngineReady,
+              audioSource: isOfflineMeeting || captureTargets.contains { $0.id == selectedTargetID })
     }
     var currentGuideVersion: String {
         OnboardingVersion.guideVersion(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.8.0")
@@ -192,9 +194,10 @@ extension AppState {
             action: { Task { await self.requestCapturePermission() } }))
         items.append(SetupItem(
             id: "mic", icon: "mic", title: "麦克风",
-            detail: microphoneAccess == .granted ? "已允许 · 你说的话标记为“我”"
-                : microphoneAccess == .undetermined ? "第一次开始记录时才会询问，用于识别你自己说的话" : "未允许 · 只能记录对方的声音",
-            status: microphoneAccess == .granted ? .done : (microphoneEnabled ? .required : .recommended),
+            detail: microphoneAccess == .granted ? (isOfflineMeeting ? "已允许 · 线下声音会标为“现场”" : "已允许 · 你说的话标记为“我”")
+                : microphoneAccess == .undetermined ? (isOfflineMeeting ? "线下记录需要麦克风；开始时会询问" : "第一次开始记录时才会询问，用于识别你自己说的话")
+                : usesMicrophone ? (isOfflineMeeting ? "未允许 · 线下记录需要麦克风" : "未允许 · 请允许，或关闭麦克风采集") : "未允许 · 只记录对方的声音",
+            status: microphoneAccess == .granted ? .done : (usesMicrophone ? .required : .recommended),
             actionTitle: microphoneAccess == .granted ? nil : (microphoneAccess == .undetermined ? "允许" : "打开系统设置"),
             action: { Task { await self.requestMicrophoneAccess() } }))
         let recognitionDetail: String
@@ -580,10 +583,18 @@ struct OnboardingView: View {
     }
 
     private var microphoneLine: String {
-        switch state.microphoneAccess {
-        case .granted: "已允许 · 你说的话会标为“我”"
-        case .undetermined: "现在不用允许。第一次开始记录时才会询问，用来标出“我”说的话。"
-        case .denied: "未允许 · 只能记录对方的声音。需要时到系统设置里打开。"
+        if state.isOfflineMeeting {
+            switch state.microphoneAccess {
+            case .granted: "已允许 · 线下声音会标为“现场”"
+            case .undetermined: "线下会议需要麦克风；开始记录时会询问。"
+            case .denied: "未允许 · 线下记录需要麦克风，请在系统设置中开启。"
+            }
+        } else {
+            switch state.microphoneAccess {
+            case .granted: "已允许 · 你说的话会标为“我”"
+            case .undetermined: "现在不用允许。第一次开始记录时才会询问，用来标出“我”说的话。"
+            case .denied: "未允许 · 只能记录对方的声音。需要时到系统设置里打开。"
+            }
         }
     }
 
@@ -645,7 +656,7 @@ struct OnboardingView: View {
             pageHeader("接上一个回答服务", "会中的参考回答、会后的纪要，都由它来写。选一个服务商，粘贴 Key，点一下检查。")
             AnswerEngineForm()
             if !state.answerEngineReady {
-                Text("先不接也可以继续看完引导；开始记录前需要接上。")
+                Text("可以先开始本机记录；连接后才能生成会中回答和会后纪要。")
                     .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -662,10 +673,10 @@ struct OnboardingView: View {
     private var readiness: RealtimeSetupReadiness { state.liveSetupReadiness }
 
     /// The microphone is asked for when recording starts, so only a refusal blocks.
-    private var microphoneBlocks: Bool { state.microphoneEnabled && state.microphoneAccess == .denied }
+    private var microphoneBlocks: Bool { state.usesMicrophone && state.microphoneAccess == .denied }
 
     private var canStart: Bool {
-        readiness.speech && readiness.capture && readiness.answers && readiness.audioSource && !microphoneBlocks
+        readiness.canRecord && !microphoneBlocks
     }
 
     private var start: some View {
@@ -707,8 +718,13 @@ struct OnboardingView: View {
                             .fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: 0)
                         if microphoneBlocks {
-                            Button("只记录对方") { state.microphoneEnabled = false; state.updateSettings() }
-                                .buttonStyle(GhostButtonStyle(height: 28))
+                            if state.isOfflineMeeting {
+                                Button("打开系统设置") { Task { await state.requestMicrophoneAccess() } }
+                                    .buttonStyle(GhostButtonStyle(height: 28))
+                            } else {
+                                Button("只记录对方") { state.microphoneEnabled = false; state.updateSettings() }
+                                    .buttonStyle(GhostButtonStyle(height: 28))
+                            }
                         }
                     }
                 }
@@ -737,6 +753,13 @@ struct OnboardingView: View {
     }
 
     private var startMicrophoneLine: String {
+        if state.isOfflineMeeting {
+            switch state.microphoneAccess {
+            case .granted: return "已允许 · 线下声音会标为“现场”"
+            case .undetermined: return "线下记录需要麦克风 · 点“开始记录”时会询问"
+            case .denied: return "未允许 · 线下记录需要在系统设置中开启麦克风"
+            }
+        }
         if !state.microphoneEnabled { return "不使用麦克风 · 只记录对方的声音" }
         switch state.microphoneAccess {
         case .granted: return "已允许 · 你说的话会标为“我”"
@@ -755,7 +778,7 @@ struct OnboardingView: View {
         Task {
             defer { starting = false }
             // The microphone prompt appears here, when recording is about to start.
-            if state.microphoneEnabled, MicrophoneAccess.current() == .undetermined {
+            if state.usesMicrophone, MicrophoneAccess.current() == .undetermined {
                 await state.requestMicrophoneAccess()
             }
             guard !microphoneBlocks else { return }
