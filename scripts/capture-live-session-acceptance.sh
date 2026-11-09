@@ -106,8 +106,8 @@ checks = "\n".join(
     for item in manifest["interactions"])
 report = f"""# T07 Live Session Acceptance Evidence
 
-Generated at: {manifest['generatedAt']}  
-Source revision: `{manifest['sourceRevision']}`  
+- Generated at: {manifest['generatedAt']}
+- Source revision: `{manifest['sourceRevision']}`
 Tracked evidence includes {len(representatives)} representative scenario PNGs, one evidence popover PNG, and one component sample sheet PNG. The reproducible run produced {len(manifest['captures'])} native matrix captures for both appearances, three widths, and all {scenario_count} scenarios. `manifest.json` maps every tracked matrix image and records the full dimensions.
 
 All transcript, answer, and persistence states are synthetic. Captures use the actual SwiftUI live page rendered through AppKit with locale `zh-Hans`; they use no real audio, ASR, model call, network request, or archive write. The full local matrix is at the requested output directory; run `scripts/capture-live-session-acceptance.sh` to regenerate it and refresh these representative files.
