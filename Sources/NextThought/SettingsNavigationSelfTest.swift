@@ -9,6 +9,10 @@ enum SettingsNavigationSelfTest {
     static func run(_ options: [String: String]) async throws -> String {
         try requireIsolatedDemo()
         _ = NSApplication.shared
+        // A CLI-launched runner has no SwiftUI App lifecycle to finish launching
+        // AppKit. Start it explicitly before asserting window visibility.
+        NSApp.setActivationPolicy(.regular)
+        if !NSApp.isRunning { NSApp.finishLaunching() }
         let state = AppState.shared
         let editor = WorkspaceEditController.shared
         guard !editor.showUnsavedPrompt, !editor.showRestorePrompt else {
@@ -69,7 +73,10 @@ enum SettingsNavigationSelfTest {
         guard settingsWindows.count == 1, let first = settingsWindows.first,
               first.isVisible, first.contentView != nil,
               first.minSize.width >= 880, first.minSize.height >= 600 else {
-            throw SelfTest.Failure("Settings did not open as one independent, resizable window")
+            let details = settingsWindows.map {
+                "visible=\($0.isVisible), content=\($0.contentView != nil), min=\($0.minSize), style=\($0.styleMask.rawValue)"
+            }.joined(separator: "; ")
+            throw SelfTest.Failure("Settings did not open as one independent, resizable window (count=\(settingsWindows.count); \(details))")
         }
         let identity = ObjectIdentifier(first)
         state.openSettingsFromMenu()
