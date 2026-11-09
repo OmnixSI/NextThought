@@ -1,0 +1,63 @@
+{
+  "version": "2.5.0",
+  "build": 2500,
+  "tag": "v2.5.0",
+  "sourceCommit": "72ddb004a195f4274736e9ba9ab28c23ba610656",
+  "pullRequest": "https://github.com/OmnixSI/NextThought/pull/28",
+  "release": "https://github.com/OmnixSI/NextThought/releases/tag/v2.5.0",
+  "publishedAt": "2026-11-09T12:12:22Z",
+  "buildLocation": "local macOS; Actions not used for release",
+  "swiftTestsPassed": 510,
+  "artifactSelftestsPassed": [
+    "data",
+    "meeting-content",
+    "archive-ux",
+    "large-pdf",
+    "structured-notes",
+    "fishbone-rendering",
+    "session-export",
+    "session-backup-drain",
+    "session-edit-receipts",
+    "session-carry-context",
+    "source-integrity",
+    "settings-navigation",
+    "document-setup"
+  ],
+  "signatureMatchesPreviousRelease": true,
+  "designatedRequirement": "identifier \"com.nextthought.app\" and certificate root = H\"9751fdac3340e375a377f13a0f933115fe6642e7\"",
+  "downloadedChecksumsPassed": true,
+  "downloadedDMGVerified": true,
+  "downloadedAppStrictSignaturePassed": true,
+  "assets": [
+    {
+      "name": "NextThought-2.5.0-macOS-arm64.dmg",
+      "bytes": 37229395,
+      "sha256": "3647c3b89ff10d073098acd996d0c904cb97ba2f407716a215778455492d29bb"
+    },
+    {
+      "name": "NextThought-2.5.0-macOS-arm64.zip",
+      "bytes": 33006474,
+      "sha256": "f812bdb093be04c7026e639f91d5ac6ffa817582f6999d643afcbb4214c78215"
+    },
+    {
+      "name": "runtime-manifest.json",
+      "bytes": 341,
+      "sha256": "d653e611715c53d2d5fa0de97b803ffcd00d0cf3891013dec83cd7f082531097"
+    },
+    {
+      "name": "update.json",
+      "bytes": 284,
+      "sha256": "238b1c143c6a993da4ebf15d5e4c7faa02f08cdc3ec88cdfc3e015308e70c6ba"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 366,
+      "sha256": "498deaeb3b17af1f6db65ad062359361ee890dbb9197cc541aafc068aed94934"
+    }
+  ],
+  "limitations": [
+    "Physical macOS 14, full VoiceOver and Chinese IME matrix not completed",
+    "iOS SDK passed on earlier remote build; unchanged mobile code; not rerun with local CLT",
+    "Synthetic 400-page PDF does not establish all scanned document performance"
+  ]
+}

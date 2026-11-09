@@ -89,3 +89,10 @@
 iOS SDK 构建在此前远端 macos 作业通过；之后变更局限于 macOS 设置窗口、自检入口及文档，未更改移动端代码。本机仅有 Command Line Tools，无法把该历史结果表述为本机完整 iOS SDK 重跑。
 
 为遵守本次不使用 Actions 的要求，合并与打标签期间暂时停用 Verify / Release 自动工作流；上传校验完成后恢复原先启用状态，未来触发策略不变。本机正式发布使用仓库打包与发布资产校验脚本，最终产物沿用 v2.4.1 的正式签名身份，而非预览的临时签名。
+
+
+### 已发布结果
+
+[PR #28](https://github.com/OmnixSI/NextThought/pull/28) 已合并，发布源提交 `72ddb004a195f4274736e9ba9ab28c23ba610656`。本机构建的 [v2.5.0](https://github.com/OmnixSI/NextThought/releases/tag/v2.5.0) 于 2026-11-09 12:12:22 UTC 发布并设为最新版，build 2500。
+
+最终打包产物的 13 组自检再次全部通过（`.build/settings-artifact-*.log`）。上传后重新下载全部 5 个资产：SHA256 清单逐项通过，DMG 自身校验通过，解压应用严格签名验证通过，版本、build、源提交与更新清单一致；正式签名沿用 v2.4.1 的根证书指纹。完整校验回执见 [v2.5.0-release-verification.json](evidence/v2.5.0-release-verification.json)。README 顶部已展示实际新版界面与功能。
