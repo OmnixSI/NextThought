@@ -177,6 +177,10 @@ final class WorkspaceEditController {
 
     func requestDeleteWorkspace(_ id: UUID, state: AppState, onDeleted: (() -> Void)? = nil) {
         guard !state.isRunning, state.workspaces.workspace(id) != nil else { return }
+        if let reason = state.workspaceDeletionDisabledReason(id) {
+            state.errorMessage = reason
+            return
+        }
         request(.deleteWorkspace(id, onDeleted: onDeleted), state: state)
     }
 

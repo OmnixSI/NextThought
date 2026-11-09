@@ -3,6 +3,263 @@ import Testing
 @testable import NextThoughtCore
 
 struct SessionArchivePersistenceTests {
+    private enum InjectedReadFailure: Error, Equatable {
+        case missing
+        case denied
+    }
+
+    @Test func archiveRootReadSeparatesMissingEmptyAndUnreadable() {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("archive-\(UUID())", isDirectory: true)
+        let empty = SessionArchiveDirectoryReader.read(at: root, list: { _ in [] }, isMissing: { _ in false })
+        #expect(empty == .contents([]))
+
+        let populated = [root.appendingPathComponent(UUID().uuidString, isDirectory: true)]
+        let listed = SessionArchiveDirectoryReader.read(at: root, list: { _ in populated }, isMissing: { _ in false })
+        #expect(listed == .contents(populated))
+
+        let absent = SessionArchiveDirectoryReader.read(
+            at: root,
+            list: { _ in throw InjectedReadFailure.missing },
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        #expect(absent == .contents([]))
+
+        let denied = SessionArchiveDirectoryReader.read(
+            at: root,
+            list: { _ in throw InjectedReadFailure.denied },
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        guard case .unavailable(let path, let reason) = denied else {
+            Issue.record("an unreadable archive root must remain an error")
+            return
+        }
+        #expect(path == root.path)
+        #expect(!reason.isEmpty)
+    }
+
+    @Test func missingArchiveRootIsEmptyOnlyOnFirstUse() {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("known-archive-\(UUID())", isDirectory: true)
+        let firstUse = SessionArchiveDirectoryReader.read(
+            at: root,
+            knownContentExpected: false,
+            list: { _ in throw InjectedReadFailure.missing },
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        #expect(firstUse == .contents([]))
+
+        let knownSessions = SessionArchiveDirectoryReader.read(
+            at: root,
+            knownContentExpected: true,
+            list: { _ in throw InjectedReadFailure.missing },
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        guard case .unavailable(let path, let reason) = knownSessions else {
+            Issue.record("a missing root after known session content must be reported")
+            return
+        }
+        #expect(path == root.path)
+        #expect(reason.contains("缺失"))
+    }
+
+    @Test func archiveRootLossRemainsKnownAfterRelaunch() throws {
+        let parent = FileManager.default.temporaryDirectory.appendingPathComponent("archive-history-\(UUID())", isDirectory: true)
+        let root = parent.appendingPathComponent("Sessions", isDirectory: true)
+        let marker = parent.appendingPathComponent("sessions-archive-present.marker")
+        defer { try? FileManager.default.removeItem(at: parent) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("known-session", isDirectory: true), withIntermediateDirectories: true)
+        try SessionArchiveContentMarker.record(at: marker)
+
+        // The local state is intentionally reconstructed as it would be after
+        // process relaunch; only the marker survives outside the missing root.
+        let knownAfterRelaunch = SessionArchiveContentMarker.wasPreviouslyPopulated(at: marker)
+        try FileManager.default.removeItem(at: root)
+        let afterRelaunch = SessionArchiveDirectoryReader.read(
+            at: root,
+            knownContentExpected: knownAfterRelaunch,
+            list: { _ in throw InjectedReadFailure.missing },
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        guard case .unavailable(let path, let reason) = afterRelaunch else {
+            Issue.record("a missing root after relaunch must preserve the known-content loss issue")
+            return
+        }
+        #expect(path == root.path)
+        #expect(reason.contains("缺失"))
+    }
+
+    @Test func archiveMetadataReadSeparatesMissingUnreadableAndMalformed() {
+        struct Metadata: Decodable, Equatable, Sendable { let version: Int }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("meta.json")
+        let decoder: @Sendable (Data) throws -> Metadata = { try JSONDecoder().decode(Metadata.self, from: $0) }
+
+        let valid = SessionArchiveMetadataReader.read(
+            at: url,
+            load: { _ in Data("{\"version\":2}".utf8) },
+            decode: decoder,
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        guard case .value(let value) = valid else {
+            Issue.record("valid metadata should load")
+            return
+        }
+        #expect(value == Metadata(version: 2))
+
+        let missing = SessionArchiveMetadataReader.read(
+            at: url,
+            load: { _ in throw InjectedReadFailure.missing },
+            decode: decoder,
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        guard case .failure(.missing(let missingPath)) = missing else {
+            Issue.record("missing metadata should be reported as missing")
+            return
+        }
+        #expect(missingPath == url.path)
+
+        let denied = SessionArchiveMetadataReader.read(
+            at: url,
+            load: { _ in throw InjectedReadFailure.denied },
+            decode: decoder,
+            isMissing: { ($0 as? InjectedReadFailure) == .missing })
+        guard case .failure(.unreadable(let path, let reason)) = denied else {
+            Issue.record("an unreadable metadata file must remain an error")
+            return
+        }
+        #expect(path == url.path)
+        #expect(!reason.isEmpty)
+
+        let malformed = SessionArchiveMetadataReader.read(
+            at: url,
+            load: { _ in Data("not json".utf8) },
+            decode: decoder,
+            isMissing: { _ in false })
+        guard case .failure(.malformed(let malformedPath, let malformedReason)) = malformed else {
+            Issue.record("malformed metadata must remain distinct from an absent file")
+            return
+        }
+        #expect(malformedPath == url.path)
+        #expect(!malformedReason.isEmpty)
+    }
+
+    @Test func legacyAnswerOnlyRecordsBecomeLabeledEvents() {
+        let date = Date(timeIntervalSince1970: 123)
+        let events = LegacySessionAnswerMigration.events(from: ["first answer", "second answer"], date: date)
+        #expect(events.count == 2)
+        #expect(events.map(\.answer) == ["first answer", "second answer"])
+        #expect(events.map(\.question) == ["旧版回答 1（问题未保存）", "旧版回答 2（问题未保存）"])
+        #expect(events.allSatisfy { $0.date == date && $0.model == "旧版记录" })
+    }
+
+    @Test func migrationStagesAllFoldersBeforePublishingAndRollsBackPublishFailure() throws {
+        let parent = FileManager.default.temporaryDirectory.appendingPathComponent("archive-migration-\(UUID())", isDirectory: true)
+        let root = parent.appendingPathComponent("Sessions", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: parent) }
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+
+        var moveCount = 0
+        #expect(throws: (any Error).self) {
+            try SessionArchiveMigrationPublisher.publish(
+                sessionIDs: ["first", "second"],
+                into: root,
+                stage: { id, folder in
+                    if id == "second" { throw InjectedReadFailure.denied }
+                    try Data(id.utf8).write(to: folder.appendingPathComponent("data"))
+                },
+                validate: { id, folder in
+                    guard try Data(contentsOf: folder.appendingPathComponent("data")) == Data(id.utf8),
+                          !FileManager.default.fileExists(atPath: root.appendingPathComponent(id).path) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                },
+                move: { source, destination in
+                    moveCount += 1
+                    try FileManager.default.moveItem(at: source, to: destination)
+                })
+        }
+        #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("first").path))
+        #expect(moveCount == 0)
+
+        moveCount = 0
+        #expect(throws: (any Error).self) {
+            try SessionArchiveMigrationPublisher.publish(
+                sessionIDs: ["first", "second"],
+                into: root,
+                stage: { id, folder in
+                    try Data(id.utf8).write(to: folder.appendingPathComponent("data"))
+                },
+                validate: { id, folder in
+                    guard try Data(contentsOf: folder.appendingPathComponent("data")) == Data(id.utf8) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                },
+                move: { source, destination in
+                    moveCount += 1
+                    if moveCount == 2 { throw InjectedReadFailure.denied }
+                    try FileManager.default.moveItem(at: source, to: destination)
+                })
+        }
+        #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("first").path))
+        #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("second").path))
+    }
+
+    @Test func migrationCommitFailureRestoresReplacedDestination() throws {
+        let parent = FileManager.default.temporaryDirectory.appendingPathComponent("archive-migration-\(UUID())", isDirectory: true)
+        let root = parent.appendingPathComponent("Sessions", isDirectory: true)
+        let destination = root.appendingPathComponent("session", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: parent) }
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let oldFile = destination.appendingPathComponent("meta.json")
+        try Data("old".utf8).write(to: oldFile)
+
+        #expect(throws: (any Error).self) {
+            try SessionArchiveMigrationPublisher.publish(
+                sessionIDs: ["session"],
+                into: root,
+                stage: { _, folder in try Data("new".utf8).write(to: folder.appendingPathComponent("meta.json")) },
+                validate: { _, folder in
+                    guard try Data(contentsOf: folder.appendingPathComponent("meta.json")) == Data("new".utf8) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                },
+                canReplaceExisting: { _, _ in true },
+                commit: { throw InjectedReadFailure.denied })
+        }
+        #expect(try Data(contentsOf: oldFile) == Data("old".utf8))
+    }
+
+    @Test func migrationRestoreFailurePreservesBackupAndRequiresRecovery() throws {
+        let parent = FileManager.default.temporaryDirectory.appendingPathComponent("archive-migration-restore-\(UUID())", isDirectory: true)
+        let root = parent.appendingPathComponent("Sessions", isDirectory: true)
+        let destination = root.appendingPathComponent("session", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: parent) }
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try Data("old".utf8).write(to: destination.appendingPathComponent("meta.json"))
+
+        var recovery: SessionArchiveMigrationPublisher.RecoveryRequired?
+        do {
+            try SessionArchiveMigrationPublisher.publish(
+                sessionIDs: ["session"],
+                into: root,
+                stage: { _, folder in try Data("new".utf8).write(to: folder.appendingPathComponent("meta.json")) },
+                validate: { _, folder in
+                    guard try Data(contentsOf: folder.appendingPathComponent("meta.json")) == Data("new".utf8) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                },
+                canReplaceExisting: { _, _ in true },
+                move: { source, destination in
+                    if source.path.contains("/backups/") { throw InjectedReadFailure.denied }
+                    try FileManager.default.moveItem(at: source, to: destination)
+                },
+                commit: { throw InjectedReadFailure.denied })
+            Issue.record("the injected restore failure should require recovery")
+        } catch let error as SessionArchiveMigrationPublisher.RecoveryRequired {
+            recovery = error
+        }
+
+        let recoveryDirectory = try #require(recovery).stagingDirectory
+        let preservedBackup = URL(fileURLWithPath: recoveryDirectory)
+            .appendingPathComponent("backups/session/meta.json")
+        #expect(try Data(contentsOf: preservedBackup) == Data("old".utf8))
+        #expect(!FileManager.default.fileExists(atPath: destination.path))
+        let pendingRecovery = try SessionArchiveMigrationPublisher.pendingRecoveryDirectory(for: root)
+        #expect(pendingRecovery?.standardizedFileURL.path == URL(fileURLWithPath: recoveryDirectory).standardizedFileURL.path)
+    }
+
     @Test func jsonLinesReportsMalformedTailAndKeepsValidPrefix() throws {
         let first = SessionTranscriptLine(date: Date(timeIntervalSince1970: 10), speaker: .remote, text: "第一句")
         let valid = try JSONLines.line(first)

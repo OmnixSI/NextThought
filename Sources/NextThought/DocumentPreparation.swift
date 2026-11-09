@@ -4,6 +4,16 @@ import Foundation
 import NextThoughtCore
 import Observation
 
+@MainActor
+final class WorkspaceArtifactDeletionPlan {
+    var journal: WorkspaceDeletionJournal
+    var workspaceID: UUID { journal.workspaceID }
+    var targetIDs: Set<UUID> { Set(journal.jobs.map(\.id)) }
+    var targetJobs: [DocumentJob] { journal.jobs }
+
+    init(journal: WorkspaceDeletionJournal) { self.journal = journal }
+}
+
 /// Owns preparation independently of whichever workspace the user is viewing.
 /// Only finished, validated files are committed to workspaces.
 @MainActor @Observable
@@ -128,27 +138,81 @@ final class DocumentPreparation {
         return hasActiveJob ? String(localized: "该系列仍有资料任务在处理，请完成或取消任务后再删除。") : nil
     }
 
-    func deleteWorkspaceArtifacts(_ workspaceID: UUID, remainingWorkspaces: [Workspace]) async throws {
+    /// Removes only the persisted queue rows. Artifact files and in-memory jobs
+    /// remain untouched until the caller rechecks deletion authorization.
+    func stageWorkspaceArtifactDeletion(_ workspaceID: UUID,
+                                       additionalFiles: [URL]) async throws -> WorkspaceArtifactDeletionPlan {
         guard let store, ready else { throw AppFailure.capture("资料任务队列正在加载，请稍后删除系列。") }
         if let reason = workspaceDeletionBlockReason(workspaceID) { throw AppFailure.capture(reason) }
         let targetJobs = jobs.filter { $0.workspaceID == workspaceID }
-        guard !targetJobs.isEmpty else { return }
-        let targetIDs = Set(targetJobs.map(\.id))
-        let retainedHashes = Set(jobs.filter { !targetIDs.contains($0.id) }.compactMap(\.sourceHash))
-            .union(remainingWorkspaces.flatMap(\.documents).compactMap { $0.content?.sourceHash })
         let originalsRoot = Self.originals.standardizedFileURL.path + "/"
-        var artifacts = targetJobs.map { Self.root.appendingPathComponent($0.id.uuidString, isDirectory: true) }
-        for job in targetJobs where !retainedHashes.contains(job.sourceHash ?? "") {
+        var sources = additionalFiles
+        sources += targetJobs.map { Self.root.appendingPathComponent($0.id.uuidString, isDirectory: true) }
+        for job in targetJobs {
             guard let path = job.originalPath else { continue }
             let file = URL(fileURLWithPath: path).standardizedFileURL
-            if file.path.hasPrefix(originalsRoot) { artifacts.append(file) }
+            if file.path.hasPrefix(originalsRoot) { sources.append(file) }
         }
-        var removed = Set<String>()
-        for artifact in artifacts where removed.insert(artifact.standardizedFileURL.path).inserted {
-            if FileManager.default.fileExists(atPath: artifact.path) { try FileManager.default.removeItem(at: artifact) }
+        let stagingRoot = Self.root.deletingLastPathComponent()
+            .appendingPathComponent(".workspace-delete-\(UUID().uuidString)", isDirectory: true)
+        let moves = WorkspaceDeletionFileStaging.manifest(sources: sources, stagingRoot: stagingRoot)
+        let journal = WorkspaceDeletionJournal(workspaceID: workspaceID, stagingRoot: stagingRoot,
+                                               jobs: targetJobs, moves: moves)
+        try await store.stageWorkspaceDeletion(journal)
+        return WorkspaceArtifactDeletionPlan(journal: journal)
+    }
+
+    func workspaceArtifactDeletionPlanIsCurrent(_ plan: WorkspaceArtifactDeletionPlan) -> Bool {
+        Set(jobs.filter { $0.workspaceID == plan.workspaceID }.map(\.id)) == plan.targetIDs
+            && workspaceDeletionBlockReason(plan.workspaceID) == nil
+    }
+
+    /// Reverses the queue-row staging when a read failure or other guard cancels
+    /// the deletion. Restore the latest in-memory snapshot for each staged job.
+    func rollbackWorkspaceArtifactDeletion(_ plan: WorkspaceArtifactDeletionPlan) async throws {
+        guard let store else { throw AppFailure.capture("资料任务队列尚未就绪，无法恢复待删除任务。") }
+        try WorkspaceDeletionFileStaging.rollback(plan.journal.moves, stagingRoot: plan.journal.stagingRoot)
+        try await store.restoreWorkspaceDeletionRows(plan.journal.transactionID)
+    }
+
+    /// Moves files out of their live paths so later synchronous workspace
+    /// deletion can still roll them back if another operation fails.
+    func stageWorkspaceArtifactFiles(for plan: WorkspaceArtifactDeletionPlan,
+                                     remainingWorkspaces: [Workspace],
+                                     move: (URL, URL) throws -> Void = { try FileManager.default.moveItem(at: $0, to: $1) }) throws {
+        guard workspaceArtifactDeletionPlanIsCurrent(plan) else {
+            throw AppFailure.capture("系列资料任务已变化，请重新确认删除。")
         }
-        try await store.delete(ids: targetIDs)
-        jobs.removeAll { targetIDs.contains($0.id) }
+        let currentWorkspaceSourceHashes = Set(remainingWorkspaces.flatMap(\.documents).compactMap { $0.content?.sourceHash })
+        let currentMoves = WorkspaceDeletionFileStaging.excludingSharedOriginals(
+            plan.journal.moves,
+            deletingJobs: plan.targetJobs,
+            currentJobs: jobs,
+            currentWorkspaceSourceHashes: currentWorkspaceSourceHashes,
+            originalsRoot: Self.originals)
+        if currentMoves != plan.journal.moves {
+            var updatedJournal = plan.journal
+            updatedJournal.moves = currentMoves
+            try DocumentJobStore.updateWorkspaceDeletionJournal(
+                updatedJournal, at: Self.root.appendingPathComponent("jobs.sqlite"))
+            plan.journal = updatedJournal
+        }
+        try WorkspaceDeletionFileStaging.stage(currentMoves, move: move)
+    }
+
+    /// Persists the transaction's commit point. The following in-memory cleanup
+    /// is non-throwing, while a crash is finished by the launch recovery path.
+    func markWorkspaceArtifactDeletionCommitted(_ plan: WorkspaceArtifactDeletionPlan) throws {
+        try DocumentJobStore.markWorkspaceDeletionCommitted(
+            plan.journal.transactionID,
+            at: Self.root.appendingPathComponent("jobs.sqlite"))
+    }
+
+    /// Finishes after the journal records a committed deletion.
+    func finalizeWorkspaceArtifactDeletion(_ plan: WorkspaceArtifactDeletionPlan) {
+        jobs.removeAll { plan.targetIDs.contains($0.id) }
+        DocumentJobStore.finishWorkspaceDeletion(plan.journal.transactionID,
+                                                 at: Self.root.appendingPathComponent("jobs.sqlite"))
     }
     private func mutate(_ id: UUID, _ change: (inout DocumentJob) -> Void) {
         guard let i = jobs.firstIndex(where: { $0.id == id }) else { return }

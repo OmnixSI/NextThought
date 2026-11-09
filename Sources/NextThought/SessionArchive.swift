@@ -21,6 +21,7 @@ enum SessionArchiveEditResult: Equatable {
     case busy
     case staleTarget
     case unavailable
+    case readOnlyFallback
     case persistenceBlocked
 
     var failureMessage: String? {
@@ -29,24 +30,68 @@ enum SessionArchiveEditResult: Equatable {
         case .busy: String(localized: "纪要正在重新整理，本次编辑没有保存。完成后请重新打开再试。")
         case .staleTarget: String(localized: "纪要内容已更新，本次编辑没有保存。请重新打开后再试。")
         case .unavailable: String(localized: "无法读取这份纪要，本次编辑没有保存。请刷新后重试。")
+        case .readOnlyFallback: String(localized: "旧版会议记录正处于只读恢复状态，本次编辑没有保存。修复归档后重试。")
         case .persistenceBlocked: String(localized: "归档保存受阻，本次编辑没有保存。请先重试保存。")
         }
     }
 }
 
-enum SessionArchiveReadIssue: Equatable {
+private struct LegacySessionArchiveFallback: Sendable {
+    let meta: SessionMeta
+    let lines: [SessionTranscriptLine]
+    let answers: [SessionAnswerEvent]
+
+    var detail: SessionDetail {
+        SessionDetail(meta: meta, lines: lines, answers: answers, questions: [], context: nil, summary: nil)
+    }
+}
+
+private struct LegacySessionMigrationPayload {
+    let meta: SessionMeta
+    let metaBytes: Data
+    let transcriptBytes: Data
+    let answerBytes: Data
+}
+
+enum SessionArchiveReadIssue: Equatable, Sendable {
     case missingFile(String)
     case unreadableFile(String, String)
     case malformedLines(String, firstLine: Int, count: Int, truncatedTail: Bool)
     case countMismatch(String, expected: Int, actual: Int)
+    case unreadableDirectory(String, String)
+    case missingSessionMetadata(String)
+    case unreadableSessionMetadata(String, String)
+    case malformedSessionMetadata(String, String)
+    case unreadableLegacyArchive(String)
+    case malformedLegacyArchive(String)
+    case legacyMigrationFailed(String)
+    case migrationRecoveryRequired(String)
 
     var message: String {
         switch self {
-        case .missingFile(let file): "归档文件缺失：\(file)"
-        case .unreadableFile(let file, let reason): "无法读取 \(file)：\(reason)"
+        case .missingFile(let file): String(localized: "归档文件缺失：\(file)")
+        case .unreadableFile(let file, let reason): String(localized: "无法读取 \(file)：\(reason)")
         case .malformedLines(let file, let firstLine, let count, let truncatedTail):
-            "\(file) 有 \(count) 行无法解析（从第 \(firstLine) 行开始）" + (truncatedTail ? "；最后一行可能未写完。" : "。")
-        case .countMismatch(let file, let expected, let actual): "\(file) 只读到 \(actual) 条，记录中应有 \(expected) 条。"
+            String(localized: "\(file) 有 \(count) 行无法解析（从第 \(firstLine) 行开始）")
+                + (truncatedTail ? String(localized: "；最后一行可能未写完。") : String(localized: "。"))
+        case .countMismatch(let file, let expected, let actual):
+            String(localized: "\(file) 只读到 \(actual) 条，记录中应有 \(expected) 条。")
+        case .unreadableDirectory(_, let reason):
+            String(localized: "会议归档目录暂时无法读取：\(reason)。请检查磁盘权限后重试。")
+        case .missingSessionMetadata(let folder):
+            String(localized: "会议归档缺少元数据文件：\(folder)/meta.json。请勿删除或重建该目录。")
+        case .unreadableSessionMetadata(let folder, let reason):
+            String(localized: "无法读取会议 \(folder) 的元数据：\(reason)。")
+        case .malformedSessionMetadata(let folder, let reason):
+            String(localized: "会议 \(folder) 的元数据无法解析：\(reason)。")
+        case .unreadableLegacyArchive(let reason):
+            String(localized: "无法读取旧版会议归档：\(reason)。原文件已保留，请修复后重试。")
+        case .malformedLegacyArchive(let reason):
+            String(localized: "旧版会议归档无法解析：\(reason)。原文件已保留，请勿删除。")
+        case .legacyMigrationFailed(let reason):
+            String(localized: "旧版会议归档迁移未完成：\(reason)。原文件已保留，请修复后重试。")
+        case .migrationRecoveryRequired(let reason):
+            String(localized: "旧版会议归档需要恢复：\(reason)。暂存备份已保留，请先恢复后再删除会议或系列。")
         }
     }
 }
@@ -80,6 +125,12 @@ final class SessionArchive {
     static let shared = SessionArchive()
 
     private(set) var sessions: [SessionMeta] = []
+    /// Root or per-session metadata failures found during archive discovery.
+    /// A failed root read preserves the previous list and never becomes “empty”.
+    private(set) var archiveReadIssues: [SessionArchiveReadIssue] = []
+    private(set) var isLoading = false
+    private(set) var archivePresenceIssue: String?
+    private(set) var workspaceDeletionRecoveryIssue: String?
     private(set) var activeID: UUID?
     /// Sessions whose summary is being generated right now.
     var summarizing: Set<UUID> = []
@@ -97,8 +148,10 @@ final class SessionArchive {
 
     private let io = DispatchQueue(label: "app.nextthought.archive", qos: .utility)
     @ObservationIgnored private var activeMeta: SessionMeta?
+    @ObservationIgnored private var loadGeneration = 0
     @ObservationIgnored private var activeAnswerIDs: Set<UUID> = []
     @ObservationIgnored private var demoDetails: [UUID: SessionDetail] = [:]
+    @ObservationIgnored private var legacyFallbackDetails: [UUID: SessionDetail] = [:]
     @ObservationIgnored private var writeQueues: [UUID: SessionArchiveWriteQueue] = [:]
     @ObservationIgnored private var drainingWrites: Set<UUID> = []
     @ObservationIgnored private var discardedSessions: Set<UUID> = []
@@ -115,24 +168,104 @@ final class SessionArchive {
 
     private init() {}
 
+    var destructiveOperationDisabledReason: String? {
+        if isLoading { return String(localized: "会议记录正在读取，暂时不能删除会议或系列。读取完成后再试。") }
+        if let archivePresenceIssue { return archivePresenceIssue }
+        if let workspaceDeletionRecoveryIssue { return workspaceDeletionRecoveryIssue }
+        return archiveReadIssues.isEmpty
+            ? nil
+            : String(localized: "会议记录未完整读取，暂时不能删除会议或系列。修复读取问题并重试后再试。")
+    }
+
+    func isReadOnlyFallback(_ id: UUID) -> Bool {
+        legacyFallbackDetails[id] != nil
+    }
+
+    func reportWorkspaceDeletionRecoveryIssue(_ issue: String?) {
+        workspaceDeletionRecoveryIssue = issue
+    }
+
+    private func recordArchivePresence() {
+        do {
+            try SessionArchiveContentMarker.record(at: AppPaths.sessionsPresenceMarker)
+            archivePresenceIssue = nil
+        } catch {
+            archivePresenceIssue = String(localized: "无法记录会议归档已创建的状态：") + error.localizedDescription
+        }
+    }
+
     // MARK: Loading
 
     func load(onRecoveredSummaries: @escaping @MainActor ([UUID]) -> Void = { _ in }) {
         guard !DemoMode.isEnabled else { return }
+        loadGeneration &+= 1
+        let generation = loadGeneration
+        isLoading = true
         let root = Self.root
+        let hasPersistedArchiveHistory = SessionArchiveContentMarker.wasPreviouslyPopulated(at: AppPaths.sessionsPresenceMarker)
+        let knownSessionContent = hasPersistedArchiveHistory || !sessions.isEmpty || activeMeta != nil || activeID != nil
         // A load can also happen after restoring a backup while the app remains
         // open. Do not mistake work that is genuinely running in this process
         // for an orphan left by a previous launch.
         let activeSummaries = summarizing
         Task {
-            let result = await Task.detached(priority: .utility) { () -> (metas: [SessionMeta], recovered: [UUID]) in
-                Self.migrateLegacySessions(into: root)
-                let folders = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
+            let result = await Task.detached(priority: .utility) { () -> (metas: [SessionMeta]?, recovered: [UUID], issues: [SessionArchiveReadIssue], legacyFallbacks: [LegacySessionArchiveFallback]) in
+                let migration = Self.migrateLegacySessions(into: root)
+                let directoryResult = SessionArchiveDirectoryReader.read(
+                    at: root,
+                    knownContentExpected: knownSessionContent,
+                    list: { try FileManager.default.contentsOfDirectory(at: $0, includingPropertiesForKeys: nil) },
+                    isMissing: { error in
+                        let cocoaError = error as NSError
+                        return cocoaError.domain == NSCocoaErrorDomain && cocoaError.code == NSFileReadNoSuchFileError
+                    })
+                let folders: [URL]
+                switch directoryResult {
+                case .contents(let value): folders = value
+                case .unavailable(let path, let reason):
+                    return (nil, [], migration.issues + [.unreadableDirectory(path, reason)], migration.fallbacks)
+                }
                 var recovered = Set<UUID>()
+                var issues = migration.issues
+                let legacyFolderNames = Set(migration.fallbacks.map { $0.meta.id.uuidString })
                 let metas = folders.compactMap { folder -> SessionMeta? in
+                    // Earlier migration attempts could leave a partial folder at
+                    // the legacy UUID path. The decoded source owns that identity
+                    // until the complete staged replacement is committed.
+                    guard !legacyFolderNames.contains(folder.lastPathComponent) else { return nil }
+                    do {
+                        let values = try folder.resourceValues(forKeys: [.isDirectoryKey])
+                        guard let isDirectory = values.isDirectory else {
+                            issues.append(.unreadableSessionMetadata(folder.lastPathComponent, "无法确认归档条目的类型。"))
+                            return nil
+                        }
+                        guard isDirectory else { return nil }
+                    } catch {
+                        issues.append(.unreadableSessionMetadata(folder.lastPathComponent, error.localizedDescription))
+                        return nil
+                    }
                     let metaURL = folder.appendingPathComponent("meta.json")
-                    guard let data = try? Data(contentsOf: metaURL),
-                          var meta = try? JSONLines.decoder().decode(SessionMeta.self, from: data) else { return nil }
+                    let metadata = SessionArchiveMetadataReader.read(
+                        at: metaURL,
+                        load: { try Data(contentsOf: $0) },
+                        decode: { try JSONLines.decoder().decode(SessionMeta.self, from: $0) },
+                        isMissing: { error in
+                            let cocoaError = error as NSError
+                            return cocoaError.domain == NSCocoaErrorDomain && cocoaError.code == NSFileReadNoSuchFileError
+                        })
+                    var meta: SessionMeta
+                    switch metadata {
+                    case .value(let value): meta = value
+                    case .failure(.missing):
+                        issues.append(.missingSessionMetadata(folder.lastPathComponent))
+                        return nil
+                    case .failure(.unreadable(_, let reason)):
+                        issues.append(.unreadableSessionMetadata(folder.lastPathComponent, reason))
+                        return nil
+                    case .failure(.malformed(_, let reason)):
+                        issues.append(.malformedSessionMetadata(folder.lastPathComponent, reason))
+                        return nil
+                    }
                     var changed = false
                     if meta.endedAt == nil {
                         // Interrupted session: end it at the last transcript write.
@@ -158,22 +291,65 @@ final class SessionArchive {
                 // Process the backlog oldest-first so long-standing meetings are
                 // not continually pushed behind newer ones.
                 let orderedRecovered = metas.filter { recovered.contains($0.id) }.map(\.id).reversed()
-                return (metas, Array(orderedRecovered))
+                return (metas, Array(orderedRecovered), issues, migration.fallbacks)
             }.value
-            sessions = result.metas.filter { $0.id != activeID } + (activeMeta.map { [$0] } ?? [])
+            guard loadGeneration == generation else { return }
+            isLoading = false
+            archiveReadIssues = result.issues
+            legacyFallbackDetails = Dictionary(
+                result.legacyFallbacks.map { ($0.meta.id, $0.detail) },
+                uniquingKeysWith: { _, latest in latest })
+            let fallbackMetas = result.legacyFallbacks.map(\.meta)
+            let fallbackIDs = Set(fallbackMetas.map(\.id))
+            if let loadedMetas = result.metas {
+                let failedFolders = Set(result.issues.compactMap { issue -> String? in
+                    switch issue {
+                    case .missingSessionMetadata(let folder),
+                         .unreadableSessionMetadata(let folder, _),
+                         .malformedSessionMetadata(let folder, _): folder
+                    default: nil
+                    }
+                })
+                let visibleMetas = loadedMetas.filter { !fallbackIDs.contains($0.id) }
+                let loadedIDs = Set(visibleMetas.map(\.id))
+                let preservedMetas = sessions.filter {
+                    failedFolders.contains($0.id.uuidString) && !loadedIDs.contains($0.id)
+                        && !fallbackIDs.contains($0.id) && $0.id != activeID
+                }
+                sessions = visibleMetas.filter { $0.id != activeID } + preservedMetas + fallbackMetas + (activeMeta.map { [$0] } ?? [])
+            } else if !fallbackMetas.isEmpty {
+                sessions = sessions.filter { !fallbackIDs.contains($0.id) && $0.id != activeID }
+                    + fallbackMetas + (activeMeta.map { [$0] } ?? [])
+            } else {
+                // A missing root is a valid empty archive only on first use. If
+                // known sessions or an active session existed, keep them visible
+                // while the read issue blocks destructive operations.
+                var preserved = sessions.filter { $0.id != activeID }
+                if let activeMeta, !preserved.contains(where: { $0.id == activeMeta.id }) {
+                    preserved.append(activeMeta)
+                }
+                sessions = preserved
+            }
             sessions.sort { $0.startedAt > $1.startedAt }
+            if !sessions.isEmpty { recordArchivePresence() }
             if !result.recovered.isEmpty { onRecoveredSummaries(result.recovered) }
         }
     }
 
     /// Screenshot mode: sample sessions that never touch the disk.
     func installDemo(_ details: [SessionDetail]) {
+        loadGeneration &+= 1
+        isLoading = false
         demoDetails = Dictionary(uniqueKeysWithValues: details.map { ($0.meta.id, $0) })
         sessions = details.map(\.meta)
+        legacyFallbackDetails = [:]
+        archiveReadIssues = []
+        archivePresenceIssue = nil
     }
 
     func detail(_ id: UUID) async -> SessionDetail? {
         if let demo = demoDetails[id] { return demo }
+        if let fallback = legacyFallbackDetails[id] { return fallback }
         let folder = folder(id)
         let fallback = sessions.first { $0.id == id }
         return await Task.detached(priority: .userInitiated) { () -> SessionDetail? in
@@ -292,6 +468,7 @@ final class SessionArchive {
     // MARK: Recording
 
     func begin(_ meta: SessionMeta, context: SessionContextSnapshot) {
+        recordArchivePresence()
         discardedSessions.remove(meta.id)
         translationRevisionBySession[meta.id] = nil
         translationWriteReceipts[meta.id] = nil
@@ -447,6 +624,7 @@ final class SessionArchive {
     }
 
     func update(_ meta: SessionMeta) {
+        guard !isReadOnlyFallback(meta.id) else { return }
         if let index = sessions.firstIndex(where: { $0.id == meta.id }) { sessions[index] = meta } else { sessions.insert(meta, at: 0) }
         if activeID == meta.id { activeMeta = meta }
         saveMeta(meta)
@@ -454,6 +632,7 @@ final class SessionArchive {
 
     @discardableResult
     func saveSummary(_ summary: SessionSummary, for id: UUID) -> Bool {
+        guard !isReadOnlyFallback(id) else { return false }
         guard var meta = sessions.first(where: { $0.id == id }) else { return false }
         // A title the user gave the meeting stays; otherwise the summary names it.
         if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty {
@@ -474,6 +653,10 @@ final class SessionArchive {
     func updateSummary(_ id: UUID, _ change: @escaping (inout SessionSummary) -> Bool,
                        completion: @escaping @MainActor (SessionArchiveEditResult) -> Void) {
         Task {
+            guard !isReadOnlyFallback(id) else {
+                completion(.readOnlyFallback)
+                return
+            }
             guard !summarizing.contains(id) else {
                 completion(.busy)
                 return
@@ -524,6 +707,7 @@ final class SessionArchive {
 
     @discardableResult
     func saveNotes(_ notes: StructuredNotes, for id: UUID) -> Bool {
+        guard !isReadOnlyFallback(id) else { return false }
         if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return true }
         return enqueueSnapshot(notes, file: "notes.json", session: id)
     }
@@ -532,6 +716,10 @@ final class SessionArchive {
     func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Bool,
                      completion: @escaping @MainActor (SessionArchiveEditResult) -> Void = { _ in }) {
         Task {
+            guard !isReadOnlyFallback(id) else {
+                completion(.readOnlyFallback)
+                return
+            }
             guard !summarizing.contains(id) else {
                 completion(.busy)
                 return
@@ -630,6 +818,7 @@ final class SessionArchive {
     }
 
     func rename(_ id: UUID, to title: String) {
+        guard !isReadOnlyFallback(id) else { return }
         guard var meta = sessions.first(where: { $0.id == id }) else { return }
         meta.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         update(meta)
@@ -647,6 +836,7 @@ final class SessionArchive {
     /// Permanently deletes every archived meeting folder linked to a workspace.
     func deleteWorkspaceSessions(_ id: UUID, formerName: String?, includeLegacyNameOnly: Bool) throws {
         guard !DemoMode.isEnabled else { throw AppFailure.capture("演示资料不可删除。") }
+        if let reason = destructiveOperationDisabledReason { throw AppFailure.capture(reason) }
         let sessionIDs = workspaceSessionIDs(id, formerName: formerName, includeLegacyNameOnly: includeLegacyNameOnly)
         if let activeID, sessionIDs.contains(activeID) {
             throw AppFailure.capture("正在记录的会议不能删除。")
@@ -666,6 +856,15 @@ final class SessionArchive {
         for sessionID in ids { discardPersistence(sessionID) }
         sessions.removeAll { ids.contains($0.id) }
         for sessionID in ids { notesSteps[sessionID] = nil }
+        notesRevision &+= 1
+    }
+
+    /// Updates only live archive state after the transaction journal has
+    /// committed and the corresponding session folders have been staged.
+    func forgetWorkspaceSessionsAfterStaging(_ sessionIDs: Set<UUID>) {
+        for sessionID in sessionIDs { discardPersistence(sessionID) }
+        sessions.removeAll { sessionIDs.contains($0.id) }
+        for sessionID in sessionIDs { notesSteps[sessionID] = nil }
         notesRevision &+= 1
     }
 
@@ -690,16 +889,21 @@ final class SessionArchive {
         io.sync { }
     }
 
-    func delete(_ id: UUID) {
-        guard id != activeID else { return }
+    @discardableResult
+    func delete(_ id: UUID) -> Bool {
+        guard destructiveOperationDisabledReason == nil, !isReadOnlyFallback(id), id != activeID else { return false }
         sessions.removeAll { $0.id == id }
         let folder = folder(id)
         discardPersistence(id)
         io.async { try? FileManager.default.removeItem(at: folder) }
+        return true
     }
 
-    func deleteAll() {
+    @discardableResult
+    func deleteAll() -> Bool {
+        guard destructiveOperationDisabledReason == nil else { return false }
         for meta in sessions where meta.id != activeID { delete(meta.id) }
+        return true
     }
 
     func revealInFinder(_ id: UUID) {
@@ -899,28 +1103,132 @@ final class SessionArchive {
     }
 
     /// Converts the single `sessions.json` written by earlier versions, once.
-    nonisolated private static func migrateLegacySessions(into root: URL) {
-        let legacy = AppPaths.legacySessions
-        guard FileManager.default.fileExists(atPath: legacy.path),
-              let data = try? Data(contentsOf: legacy),
-              let old = try? JSONDecoder().decode([SavedSession].self, from: data) else { return }
-        for session in old {
-            let meta = SessionMeta(startedAt: session.startedAt, endedAt: session.endedAt,
-                                   mode: SessionMode(rawValue: session.mode ?? "") ?? .meeting,
-                                   transcriptCount: session.entries.count, answerCount: session.records?.count ?? session.answers.count)
-            let folder = root.appendingPathComponent(meta.id.uuidString, isDirectory: true)
-            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            write(meta, to: folder.appendingPathComponent("meta.json"))
-            let lines = session.entries.compactMap { entry in
-                try? JSONLines.line(SessionTranscriptLine(date: entry.date, speaker: entry.speaker, text: entry.text, startedAt: entry.startedAt, endedAt: entry.endedAt))
-            }
-            try? lines.reduce(Data(), +).write(to: folder.appendingPathComponent("transcript.jsonl"))
-            let answers = (session.records ?? []).compactMap { record in
-                try? JSONLines.line(SessionAnswerEvent(date: record.date, question: record.question, answer: record.answer, model: record.model,
-                                                       seconds: record.seconds, firstTokenSeconds: record.firstTokenSeconds, automatic: record.automatic))
-            }
-            try? answers.reduce(Data(), +).write(to: folder.appendingPathComponent("answers.jsonl"))
+    /// The source is moved aside only after every staged destination is validated.
+    nonisolated private static func migrateLegacySessions(into root: URL) -> (issues: [SessionArchiveReadIssue], fallbacks: [LegacySessionArchiveFallback]) {
+        let pendingRecovery: URL?
+        do {
+            pendingRecovery = try SessionArchiveMigrationPublisher.pendingRecoveryDirectory(for: root)
+        } catch {
+            return ([.unreadableLegacyArchive(error.localizedDescription)], [])
         }
-        try? FileManager.default.moveItem(at: legacy, to: legacy.deletingLastPathComponent().appendingPathComponent("sessions.legacy.json"))
+        let legacy = AppPaths.legacySessions
+        do {
+            _ = try FileManager.default.attributesOfItem(atPath: legacy.path)
+        } catch {
+            let cocoaError = error as NSError
+            if cocoaError.domain == NSCocoaErrorDomain && cocoaError.code == NSFileReadNoSuchFileError {
+                return pendingRecovery.map { ([.migrationRecoveryRequired($0.path)], []) } ?? ([], [])
+            }
+            return ([.unreadableLegacyArchive(error.localizedDescription)], [])
+        }
+
+        let old: [SavedSession]
+        do {
+            let data = try Data(contentsOf: legacy)
+            old = try JSONDecoder().decode([SavedSession].self, from: data)
+        } catch let error as DecodingError {
+            return ([.malformedLegacyArchive(error.localizedDescription)], [])
+        } catch {
+            return ([.unreadableLegacyArchive(error.localizedDescription)], [])
+        }
+
+        // Construct the read-only fallback before encoding or touching destinations.
+        // If any later write fails, these exact legacy records remain available.
+        let fallbacks: [LegacySessionArchiveFallback] = old.map { session in
+            let answers: [SessionAnswerEvent]
+            if let records = session.records {
+                answers = records.map { record in
+                    SessionAnswerEvent(id: record.id, date: record.date, question: record.question,
+                                       answer: record.answer, model: record.model, seconds: record.seconds,
+                                       firstTokenSeconds: record.firstTokenSeconds, automatic: record.automatic,
+                                       screenshotPath: record.screenshotPath, webAnswer: record.webAnswer,
+                                       webSources: record.webSources, evidence: record.evidence)
+                }
+            } else {
+                answers = LegacySessionAnswerMigration.events(from: session.answers, date: session.startedAt)
+            }
+            let lines = session.entries.map {
+                SessionTranscriptLine(id: $0.id, date: $0.date, speaker: $0.speaker, text: $0.text,
+                                      translatedText: $0.translatedText, startedAt: $0.startedAt,
+                                      endedAt: $0.endedAt, voice: $0.voice)
+            }
+            let meta = SessionMeta(id: session.id, startedAt: session.startedAt, endedAt: session.endedAt,
+                                   mode: SessionMode(rawValue: session.mode ?? "") ?? .meeting,
+                                   transcriptCount: lines.count, answerCount: answers.count)
+            return LegacySessionArchiveFallback(meta: meta, lines: lines, answers: answers)
+        }
+
+        if let pendingRecovery {
+            return ([.migrationRecoveryRequired(pendingRecovery.path)], fallbacks)
+        }
+
+        do {
+            let payloads = try fallbacks.map { fallback -> LegacySessionMigrationPayload in
+                let encoder = JSONLines.encoder()
+                encoder.outputFormatting.insert(.prettyPrinted)
+                let metaBytes = try encoder.encode(fallback.meta)
+                let transcriptBytes = try fallback.lines.map { try JSONLines.line($0) }.reduce(Data(), +)
+                let answerBytes = try fallback.answers.map { try JSONLines.line($0) }.reduce(Data(), +)
+                return LegacySessionMigrationPayload(meta: fallback.meta, metaBytes: metaBytes,
+                                                     transcriptBytes: transcriptBytes, answerBytes: answerBytes)
+            }
+            let payloadByID = Dictionary(payloads.map { ($0.meta.id.uuidString, $0) }, uniquingKeysWith: { _, latest in latest })
+            let fallbackByID = Dictionary(fallbacks.map { ($0.meta.id.uuidString, $0) }, uniquingKeysWith: { _, latest in latest })
+            let destinationNames = ["meta.json", "transcript.jsonl", "answers.jsonl"]
+            try SessionArchiveMigrationPublisher.publish(
+                sessionIDs: payloads.map { $0.meta.id.uuidString },
+                into: root,
+                stage: { id, folder in
+                    guard let payload = payloadByID[id] else { throw CocoaError(.fileWriteUnknown) }
+                    try Self.writeMigrationData(payload.metaBytes, to: folder.appendingPathComponent("meta.json"))
+                    try Self.writeMigrationData(payload.transcriptBytes, to: folder.appendingPathComponent("transcript.jsonl"))
+                    try Self.writeMigrationData(payload.answerBytes, to: folder.appendingPathComponent("answers.jsonl"))
+                },
+                validate: { id, folder in
+                    guard let payload = payloadByID[id], let fallback = fallbackByID[id] else { throw CocoaError(.fileWriteUnknown) }
+                    let decoder = JSONLines.decoder()
+                    let meta = try decoder.decode(SessionMeta.self, from: Data(contentsOf: folder.appendingPathComponent("meta.json")))
+                    let transcriptData = try Data(contentsOf: folder.appendingPathComponent("transcript.jsonl"))
+                    let transcript = JSONLines.decodeReport(SessionTranscriptLine.self, from: transcriptData)
+                    let answerData = try Data(contentsOf: folder.appendingPathComponent("answers.jsonl"))
+                    let answers = JSONLines.decodeReport(SessionAnswerEvent.self, from: answerData)
+                    guard meta == payload.meta,
+                          transcript.records == fallback.lines, transcript.malformedLineNumbers.isEmpty,
+                          !transcript.truncatedFinalLine,
+                          answers.records == fallback.answers, answers.malformedLineNumbers.isEmpty,
+                          !answers.truncatedFinalLine else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                },
+                canReplaceExisting: { id, destination in
+                    guard let payload = payloadByID[id] else { return false }
+                    let attributes = try FileManager.default.attributesOfItem(atPath: destination.path)
+                    guard attributes[.type] as? FileAttributeType == .typeDirectory else { return false }
+                    let entries = try FileManager.default.contentsOfDirectory(at: destination, includingPropertiesForKeys: nil)
+                    guard Set(entries.map(\.lastPathComponent)).isSubset(of: Set(destinationNames)) else { return false }
+                    if let metaURL = entries.first(where: { $0.lastPathComponent == "meta.json" }) {
+                        let existing = try JSONLines.decoder().decode(SessionMeta.self, from: Data(contentsOf: metaURL))
+                        guard existing == payload.meta else { return false }
+                    }
+                    return true
+                },
+                commit: {
+                    let backupRoot = legacy.deletingLastPathComponent()
+                    let conventionalBackup = backupRoot.appendingPathComponent("sessions.legacy.json")
+                    let preservedLegacy = FileManager.default.fileExists(atPath: conventionalBackup.path)
+                        ? backupRoot.appendingPathComponent("sessions.legacy-\(UUID().uuidString).json")
+                        : conventionalBackup
+                    try FileManager.default.moveItem(at: legacy, to: preservedLegacy)
+                })
+            return ([], [])
+        } catch let error as SessionArchiveMigrationPublisher.RecoveryRequired {
+            return ([.migrationRecoveryRequired(error.localizedDescription)], fallbacks)
+        } catch {
+            return ([.legacyMigrationFailed(error.localizedDescription)], fallbacks)
+        }
+    }
+
+    nonisolated private static func writeMigrationData(_ data: Data, to url: URL) throws {
+        try SessionArchiveFileAppender.live.write(data, to: url, mode: .replace)
     }
 }

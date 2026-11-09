@@ -152,6 +152,8 @@ extension AppState {
     func workspaceDeletionDisabledReason(_ id: UUID) -> String? {
         if DemoMode.isEnabled { return String(localized: "演示资料不可删除。") }
         if isRunning { return String(localized: "会议中不能管理系列") }
+        if let workspaceDeletionRecoveryIssue { return workspaceDeletionRecoveryIssue }
+        if let reason = archive.destructiveOperationDisabledReason { return reason }
         guard let workspace = workspaces.workspace(id) else { return String(localized: "系列不存在。") }
         guard workspaces.canDelete(id) else { return String(localized: "系列不存在。") }
         let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
@@ -167,25 +169,57 @@ extension AppState {
     func deleteWorkspace(_ id: UUID) async -> Bool {
         if let reason = workspaceDeletionDisabledReason(id) { errorMessage = reason; return false }
         guard let workspace = workspaces.workspace(id) else { errorMessage = String(localized: "系列不存在。"); return false }
+        func recheckDeletionAuthorization() -> Bool {
+            guard let reason = workspaceDeletionDisabledReason(id) else { return true }
+            errorMessage = reason
+            return false
+        }
         let includeLegacyNameOnly = workspaces.workspaces.filter { $0.name == workspace.name }.count == 1
+        let sessionIDs = archive.workspaceSessionIDs(id, formerName: workspace.name,
+                                                     includeLegacyNameOnly: includeLegacyNameOnly)
+        let deletionFiles = sessionIDs.map { archive.folder($0) } + [
+            MaterialArchive.folder(for: id),
+            AppPaths.index.appendingPathComponent(id.uuidString, isDirectory: true),
+            workspaces.fileURL(id)
+        ]
         do {
             workspaces.flush()
-            for sessionID in archive.workspaceSessionIDs(id, formerName: workspace.name,
-                                                         includeLegacyNameOnly: includeLegacyNameOnly) {
+            for sessionID in sessionIDs {
                 guard await archive.flush(sessionID: sessionID) else {
                     let reason = archive.persistenceBySession[sessionID]?.lastFailure
                     errorMessage = "系列会议内容尚未全部保存，未删除系列或会议记录。" +
                         (reason.map { "\n" + $0 } ?? "请重试保存后再删除。")
                     return false
                 }
+                guard recheckDeletionAuthorization() else { return false }
             }
-            let remainingWorkspaces = workspaces.workspaces.filter { $0.id != id }
-            try await documentPreparation.deleteWorkspaceArtifacts(id, remainingWorkspaces: remainingWorkspaces)
-            try archive.deleteWorkspaceSessions(id, formerName: workspace.name,
-                                                includeLegacyNameOnly: includeLegacyNameOnly)
-            try MaterialArchive.deleteWorkspaceFiles(id)
-            try SemanticIndexStore.removeWorkspace(id)
-            try workspaces.delete(id)
+            let didDelete = try await WorkspaceDeletionTransaction.execute(
+                prepare: {
+                    try await documentPreparation.stageWorkspaceArtifactDeletion(
+                        id, additionalFiles: deletionFiles)
+                },
+                isAuthorized: { plan in
+                    recheckDeletionAuthorization()
+                        && documentPreparation.workspaceArtifactDeletionPlanIsCurrent(plan)
+                },
+                rollback: { plan in
+                    try await documentPreparation.rollbackWorkspaceArtifactDeletion(plan)
+                },
+                stage: { plan in
+                    // Persist edits made while queue rows were being staged,
+                    // then move the workspace JSON with the other resources.
+                    workspaces.flush()
+                    let currentRemainingWorkspaces = workspaces.workspaces.filter { $0.id != id }
+                    try documentPreparation.stageWorkspaceArtifactFiles(
+                        for: plan, remainingWorkspaces: currentRemainingWorkspaces)
+                },
+                commit: { plan in
+                    try documentPreparation.markWorkspaceArtifactDeletionCommitted(plan)
+                    archive.forgetWorkspaceSessionsAfterStaging(Set(sessionIDs))
+                    workspaces.deleteRecordAfterStaging(id)
+                    documentPreparation.finalizeWorkspaceArtifactDeletion(plan)
+                })
+            guard didDelete else { return false }
         } catch {
             errorMessage = String(localized: "删除失败：") + error.localizedDescription
             return false
