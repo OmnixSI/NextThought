@@ -66,22 +66,42 @@ public enum BackupMerge {
                 let primary = item.updatedAt > current.updatedAt ? item : current
                 let secondary = item.updatedAt > current.updatedAt ? current : item
                 var merged = primary
+                let deletedSources = Set(primary.sourceDeletionTombstones ?? [])
+                    .union(secondary.sourceDeletionTombstones ?? [])
+                merged.sourceDeletionTombstones = deletedSources.isEmpty
+                    && primary.sourceDeletionTombstones == nil && secondary.sourceDeletionTombstones == nil
+                    ? nil : deletedSources.sorted { $0.uuidString.lowercased() < $1.uuidString.lowercased() }
                 merged.lessons = mergeLessons(primary.lessons, secondary.lessons)
                 merged.questionBank = mergeQuestionBank(primary.questionBank, secondary.questionBank)
-                let seriesItems = mergeSeriesItems(primary.seriesItems ?? [], secondary.seriesItems ?? [])
-                merged.seriesItems = seriesItems.isEmpty && primary.seriesItems == nil && secondary.seriesItems == nil
-                    ? nil : seriesItems
+                merged.seriesItemSourceTombstones = mergeSeriesItemSourceTombstones(
+                    primary.seriesItemSourceTombstones, secondary.seriesItemSourceTombstones)
                 let seriesCandidates = mergeSeriesCandidates(primary.seriesChangeCandidates ?? [],
                                                               secondary.seriesChangeCandidates ?? [])
+                let seriesTombstones = seriesItemSourceTombstones(
+                    candidates: seriesCandidates,
+                    workspaces: [primary, secondary])
+                let seriesItems = mergeSeriesItems(primary.seriesItems ?? [], secondary.seriesItems ?? [],
+                                                    tombstones: seriesTombstones)
+                merged.seriesItems = seriesItems.isEmpty && primary.seriesItems == nil && secondary.seriesItems == nil
+                    ? nil : seriesItems
                 merged.seriesChangeCandidates = seriesCandidates.isEmpty && primary.seriesChangeCandidates == nil && secondary.seriesChangeCandidates == nil
                     ? nil : seriesCandidates
                 let candidates = mergeCandidates(primary.knowledgeCandidates ?? [], secondary.knowledgeCandidates ?? [])
                 merged.knowledgeCandidates = candidates.isEmpty && primary.knowledgeCandidates == nil && secondary.knowledgeCandidates == nil
                     ? nil : candidates
+                if !deletedSources.isEmpty {
+                    _ = WorkspaceSourceIntegrity.removeMeetings(deletedSources, from: &merged,
+                                                                retainAcceptedContent: false, now: merged.updatedAt)
+                }
                 if merged != current { result[index] = merged; updated += 1 }
                 else { skipped += 1 }
             } else {
                 // Same name from another machine: keep both, mark the import.
+                let deletedSources = Set(item.sourceDeletionTombstones ?? [])
+                if !deletedSources.isEmpty {
+                    _ = WorkspaceSourceIntegrity.removeMeetings(deletedSources, from: &item,
+                                                                retainAcceptedContent: false, now: item.updatedAt)
+                }
                 if result.contains(where: { $0.name == item.name }) { item.name += "（导入）" }
                 result.append(item)
                 added += 1
@@ -94,14 +114,94 @@ public enum BackupMerge {
         var result = preferred
         for incoming in other {
             guard let index = result.firstIndex(where: { $0.id == incoming.id }) else { result.append(incoming); continue }
-            var item = result[index]
-            var sources = Set(item.sourceSessionIDs ?? [])
-            var fallbackSources = Set(incoming.sourceSessionIDs ?? [])
-            if let source = item.sourceSessionID { sources.insert(source) }
-            if let source = incoming.sourceSessionID { fallbackSources.insert(source) }
-            sources.formUnion(fallbackSources)
-            item.sourceSessionID = item.sourceSessionID ?? incoming.sourceSessionID
-            item.sourceSessionIDs = sources.isEmpty ? nil : sources.sorted { $0.uuidString < $1.uuidString }
+            let existing = result[index]
+            let current = incoming.revision > existing.revision
+                || (incoming.revision == existing.revision && incoming.updatedAt > existing.updatedAt) ? incoming : existing
+            let fallback = current.id == existing.id && current.revision == existing.revision
+                && current.updatedAt == existing.updatedAt ? incoming : existing
+            var item = current
+            var history = current.history
+            let deletedSourceIDs = Set(current.sourceMissingSessionIDs ?? [])
+                .union(fallback.sourceMissingSessionIDs ?? [])
+                .union(current.history.flatMap { $0.sourceMissingSessionIDs ?? [] })
+                .union(fallback.history.flatMap { $0.sourceMissingSessionIDs ?? [] })
+            func contains(_ revision: WorkspaceLessonRevision, in history: [WorkspaceLessonRevision]) -> Bool {
+                history.contains {
+                    $0.revision == revision.revision && $0.text == revision.text
+                        && $0.sourceSessionID == revision.sourceSessionID
+                        && $0.sourceSessionIDs == revision.sourceSessionIDs
+                        && $0.sourceMissingSessionIDs == revision.sourceMissingSessionIDs
+                }
+            }
+            for revision in fallback.history where !contains(revision, in: history) {
+                history.append(revision)
+            }
+            if fallback.currentRevision != current.currentRevision,
+               !contains(fallback.currentRevision, in: history) {
+                history.append(fallback.currentRevision)
+            }
+            // A deletion tombstone is authoritative across backup imports. The older
+            // copy may still list that meeting as a live source, so scrub it from both
+            // the merged current version and every historical snapshot before merging.
+            func removingDeletedSources(from revision: WorkspaceLessonRevision) -> WorkspaceLessonRevision {
+                let originalSources = WorkspaceLessonHistory.allSourceIDs(revision)
+                let missingSources = originalSources.intersection(deletedSourceIDs)
+                guard !missingSources.isEmpty else { return revision }
+                let remainingSources = originalSources.subtracting(deletedSourceIDs)
+                var cleaned = revision
+                cleaned.sourceSessionIDs = remainingSources.isEmpty ? nil : WorkspaceLessonHistory.sorted(remainingSources)
+                cleaned.sourceSessionID = revision.sourceSessionID.flatMap {
+                    remainingSources.contains($0) ? $0 : nil
+                } ?? WorkspaceLessonHistory.sorted(remainingSources).first
+                cleaned.sourceMissingSessionIDs = WorkspaceLessonHistory.sorted(
+                    Set(revision.sourceMissingSessionIDs ?? []).union(missingSources))
+                return cleaned
+            }
+            history = history.map(removingDeletedSources)
+            var uniqueHistory: [WorkspaceLessonRevision] = []
+            for revision in history {
+                if let index = uniqueHistory.firstIndex(where: {
+                    $0.revision == revision.revision && $0.text == revision.text
+                        && $0.sourceSessionID == revision.sourceSessionID
+                        && $0.sourceSessionIDs == revision.sourceSessionIDs
+                        && $0.sourceMissingSessionIDs == revision.sourceMissingSessionIDs
+                }) {
+                    if revision.recordedAt < uniqueHistory[index].recordedAt {
+                        uniqueHistory[index].recordedAt = revision.recordedAt
+                    }
+                } else {
+                    uniqueHistory.append(revision)
+                }
+            }
+            if current.text == fallback.text {
+                let allSources = WorkspaceLessonHistory.allSourceIDs(current)
+                    .union(WorkspaceLessonHistory.allSourceIDs(fallback))
+                let removedSources = allSources.intersection(deletedSourceIDs)
+                let sources = allSources.subtracting(deletedSourceIDs)
+                item.sourceSessionIDs = sources.isEmpty ? nil : WorkspaceLessonHistory.sorted(sources)
+                item.sourceSessionID = current.sourceSessionID.flatMap { sources.contains($0) ? $0 : nil }
+                    ?? WorkspaceLessonHistory.sorted(sources).first
+                let missing = Set(current.sourceMissingSessionIDs ?? [])
+                    .union(fallback.sourceMissingSessionIDs ?? [])
+                    .union(removedSources)
+                item.sourceMissingSessionIDs = missing.isEmpty ? nil : WorkspaceLessonHistory.sorted(missing)
+                item.independentlyRetained = sources.isEmpty
+                    && (current.independentlyRetained || fallback.independentlyRetained)
+            } else {
+                let currentSources = WorkspaceLessonHistory.allSourceIDs(current)
+                let removedSources = currentSources.intersection(deletedSourceIDs)
+                let sources = currentSources.subtracting(deletedSourceIDs)
+                item.sourceSessionIDs = sources.isEmpty ? nil : WorkspaceLessonHistory.sorted(sources)
+                item.sourceSessionID = current.sourceSessionID.flatMap { sources.contains($0) ? $0 : nil }
+                    ?? WorkspaceLessonHistory.sorted(sources).first
+                let missing = Set(current.sourceMissingSessionIDs ?? []).union(removedSources)
+                item.sourceMissingSessionIDs = missing.isEmpty ? nil : WorkspaceLessonHistory.sorted(missing)
+                if !sources.isEmpty { item.independentlyRetained = false }
+            }
+            uniqueHistory.removeAll { contains($0, in: [item.currentRevision]) }
+            item.history = uniqueHistory.sorted {
+                $0.revision == $1.revision ? $0.recordedAt < $1.recordedAt : $0.revision < $1.revision
+            }
             item.createdAt = min(item.createdAt, incoming.createdAt)
             result[index] = item
         }
@@ -170,47 +270,196 @@ public enum BackupMerge {
     }
 
     private static func mergeSeriesItems(_ preferred: [WorkspaceSeriesItem],
-                                         _ other: [WorkspaceSeriesItem]) -> [WorkspaceSeriesItem] {
+                                         _ other: [WorkspaceSeriesItem],
+                                         tombstones: [SeriesItemSourceKey: Bool]) -> [WorkspaceSeriesItem] {
         var result = preferred
         for incoming in other {
+            let incomingKey = SeriesItemSourceKey(itemID: incoming.id, sessionID: incoming.sourceSessionID)
             guard let index = result.firstIndex(where: { $0.id == incoming.id }) else {
                 result.append(incoming)
                 continue
             }
             let existing = result[index]
-            let current = incoming.revision > existing.revision ||
-                (incoming.revision == existing.revision && incoming.updatedAt > existing.updatedAt) ? incoming : existing
-            let fallback = current.id == existing.id && current.revision == existing.revision && current.updatedAt == existing.updatedAt
-                ? incoming : existing
-            var item = current
-            var history = current.history
-            var historyIDs = Set(history.map(\.id))
-            history.append(contentsOf: fallback.history.filter { historyIDs.insert($0.id).inserted })
-            if fallback.revision < current.revision {
-                let losingCurrent = fallback.currentRevision
-                let alreadyPreserved = history.contains {
-                    $0.revision == losingCurrent.revision && $0.text == losingCurrent.text
-                        && $0.sourceSessionID == losingCurrent.sourceSessionID
-                        && $0.sourceRevision == losingCurrent.sourceRevision
-                }
-                if !alreadyPreserved { history.append(losingCurrent) }
-            } else if fallback.revision == current.revision && fallback.currentRevision != current.currentRevision {
-                // Concurrent same-revision edits cannot be silently discarded; retain the
-                // non-selected snapshot as history and keep the preferred workspace winner.
-                let losingCurrent = fallback.currentRevision
-                let alreadyPreserved = history.contains {
-                    $0.revision == losingCurrent.revision && $0.text == losingCurrent.text
-                        && $0.sourceSessionID == losingCurrent.sourceSessionID
-                        && $0.sourceRevision == losingCurrent.sourceRevision
-                }
-                if !alreadyPreserved { history.append(losingCurrent) }
+            let existingKey = SeriesItemSourceKey(itemID: existing.id, sessionID: existing.sourceSessionID)
+            let existingIsDeleted = tombstones[existingKey] != nil
+            let incomingIsDeleted = tombstones[incomingKey] != nil
+            let existingWasRetained = tombstones[existingKey] == true
+                && existing.sourceMissing == true && existing.independentlyRetained == true
+            let incomingWasRetained = tombstones[incomingKey] == true
+                && incoming.sourceMissing == true && incoming.independentlyRetained == true
+            let currentIsExisting: Bool
+            if existingWasRetained != incomingWasRetained {
+                let retainedIsExisting = existingWasRetained
+                let retained = retainedIsExisting ? existing : incoming
+                let otherItem = retainedIsExisting ? incoming : existing
+                let otherKey = retainedIsExisting ? incomingKey : existingKey
+                let otherIsLiveOnDifferentSource = tombstones[otherKey] == nil
+                    && otherItem.sourceMissing != true
+                    && otherItem.sourceSessionID != retained.sourceSessionID
+                let otherIsNewer = otherItem.revision > retained.revision
+                    || (otherItem.revision == retained.revision && otherItem.updatedAt > retained.updatedAt)
+                currentIsExisting = otherIsLiveOnDifferentSource && otherIsNewer
+                    ? !retainedIsExisting : retainedIsExisting
+            } else if existingIsDeleted != incomingIsDeleted {
+                currentIsExisting = !existingIsDeleted
+            } else {
+                currentIsExisting = !(incoming.revision > existing.revision
+                    || (incoming.revision == existing.revision && incoming.updatedAt > existing.updatedAt))
             }
-            item.history = history.sorted {
-                $0.revision == $1.revision ? $0.recordedAt < $1.recordedAt : $0.revision < $1.revision
+            let current = currentIsExisting ? existing : incoming
+            let fallback = currentIsExisting ? incoming : existing
+            var item = current
+            var history = current.history + fallback.history
+            if fallback.revision < current.revision
+                || (fallback.revision == current.revision && fallback.currentRevision != current.currentRevision) {
+                // Preserve every losing snapshot, including concurrent edits that share a revision number.
+                history.append(fallback.currentRevision)
+            }
+            let cleanedHistory = history.compactMap { revision -> WorkspaceSeriesItemRevision? in
+                let key = SeriesItemSourceKey(itemID: item.id, sessionID: revision.sourceSessionID)
+                guard let retain = tombstones[key] else { return revision }
+                guard retain else { return nil }
+                return scrubbedDeletedSource(revision, itemID: item.id)
+            }
+            var historyByID: [UUID: WorkspaceSeriesItemRevision] = [:]
+            for var revision in cleanedHistory {
+                revision.id = revision.stableID(itemID: item.id)
+                if let existing = historyByID[revision.id] {
+                    if revision.recordedAt < existing.recordedAt { historyByID[revision.id] = revision }
+                } else {
+                    historyByID[revision.id] = revision
+                }
+            }
+            item.history = historyByID.values.sorted {
+                if $0.revision != $1.revision { return $0.revision < $1.revision }
+                if $0.recordedAt != $1.recordedAt { return $0.recordedAt < $1.recordedAt }
+                return $0.id.uuidString.lowercased() < $1.id.uuidString.lowercased()
             }
             result[index] = item
         }
-        return result
+        return result.compactMap { item in
+            let key = SeriesItemSourceKey(itemID: item.id, sessionID: item.sourceSessionID)
+            guard let retain = tombstones[key] else {
+                var updated = item
+                updated.history = updated.history.compactMap { revision in
+                    let revisionKey = SeriesItemSourceKey(itemID: item.id, sessionID: revision.sourceSessionID)
+                    guard let retain = tombstones[revisionKey] else { return revision }
+                    return retain ? scrubbedDeletedSource(revision, itemID: item.id) : nil
+                }
+                updated.history = uniqueSeriesHistory(updated.history, itemID: updated.id)
+                    .filter { $0.id != updated.currentRevision.id }
+                return updated
+            }
+            guard retain else { return nil }
+            var updated = scrubbedDeletedSource(item)
+            updated.independentlyRetained = true
+            updated.history = updated.history.compactMap { revision in
+                let revisionKey = SeriesItemSourceKey(itemID: item.id, sessionID: revision.sourceSessionID)
+                guard let retain = tombstones[revisionKey] else { return revision }
+                return retain ? scrubbedDeletedSource(revision, itemID: item.id) : nil
+            }
+            updated.history = uniqueSeriesHistory(updated.history, itemID: updated.id)
+                .filter { $0.id != updated.currentRevision.id }
+            return updated
+        }
+    }
+
+    private static func uniqueSeriesHistory(_ history: [WorkspaceSeriesItemRevision], itemID: UUID)
+        -> [WorkspaceSeriesItemRevision] {
+        var result: [UUID: WorkspaceSeriesItemRevision] = [:]
+        for var revision in history {
+            revision.id = revision.stableID(itemID: itemID)
+            if let existing = result[revision.id] {
+                if revision.recordedAt < existing.recordedAt { result[revision.id] = revision }
+            } else {
+                result[revision.id] = revision
+            }
+        }
+        return result.values.sorted {
+            if $0.revision != $1.revision { return $0.revision < $1.revision }
+            if $0.recordedAt != $1.recordedAt { return $0.recordedAt < $1.recordedAt }
+            return $0.id.uuidString.lowercased() < $1.id.uuidString.lowercased()
+        }
+    }
+
+    private struct SeriesItemSourceKey: Hashable {
+        var itemID: UUID
+        var sessionID: UUID
+    }
+
+    private static func mergeSeriesItemSourceTombstones(
+        _ preferred: [WorkspaceSeriesItemSourceTombstone]?,
+        _ other: [WorkspaceSeriesItemSourceTombstone]?
+    ) -> [WorkspaceSeriesItemSourceTombstone]? {
+        let tombstones = Set((preferred ?? []) + (other ?? [])).sorted {
+            let leftItem = $0.itemID.uuidString.lowercased()
+            let rightItem = $1.itemID.uuidString.lowercased()
+            if leftItem != rightItem { return leftItem < rightItem }
+            return $0.sourceSessionID.uuidString.lowercased() < $1.sourceSessionID.uuidString.lowercased()
+        }
+        return tombstones.isEmpty && preferred == nil && other == nil ? nil : tombstones
+    }
+
+    /// A redacted accepted/rejected receipt is the durable tombstone for its source.
+    /// Only preserve the corresponding item when either backup contains the explicit
+    /// independently-retained marker (or a redacted retained history revision).
+    private static func seriesItemSourceTombstones(candidates: [WorkspaceSeriesChangeCandidate],
+                                                   workspaces: [Workspace]) -> [SeriesItemSourceKey: Bool] {
+        var deleted = Set<SeriesItemSourceKey>()
+        var retained = Set<SeriesItemSourceKey>()
+        for workspace in workspaces {
+            for tombstone in workspace.seriesItemSourceTombstones ?? [] {
+                deleted.insert(SeriesItemSourceKey(itemID: tombstone.itemID, sessionID: tombstone.sourceSessionID))
+            }
+            let deletedSessionIDs = Set(workspace.sourceDeletionTombstones ?? [])
+            for item in workspace.seriesItems ?? [] {
+                let currentKey = SeriesItemSourceKey(itemID: item.id, sessionID: item.sourceSessionID)
+                if deletedSessionIDs.contains(item.sourceSessionID) || item.sourceMissing == true {
+                    deleted.insert(currentKey)
+                }
+                if item.sourceMissing == true && item.independentlyRetained == true {
+                    retained.insert(currentKey)
+                }
+                for revision in item.history {
+                    let key = SeriesItemSourceKey(itemID: item.id, sessionID: revision.sourceSessionID)
+                    if deletedSessionIDs.contains(revision.sourceSessionID) || revision.sourceMissing == true {
+                        deleted.insert(key)
+                    }
+                    if revision.sourceMissing == true { retained.insert(key) }
+                }
+            }
+        }
+        for candidate in candidates where candidate.sourceMissing == true {
+            guard let itemID = candidate.receipt?.resultItemID else { continue }
+            deleted.insert(SeriesItemSourceKey(itemID: itemID, sessionID: candidate.sourceSessionID))
+        }
+        return Dictionary(uniqueKeysWithValues: deleted.map { ($0, retained.contains($0)) })
+    }
+
+    private static func scrubbedDeletedSource(_ item: WorkspaceSeriesItem) -> WorkspaceSeriesItem {
+        var updated = item
+        updated.evidenceID = ""
+        updated.claimRevision = ""
+        updated.sourceRevision = ""
+        updated.sourceQuote = nil
+        updated.location = nil
+        updated.transcriptSourceRevision = nil
+        updated.sourceMissing = true
+        return updated
+    }
+
+    private static func scrubbedDeletedSource(_ revision: WorkspaceSeriesItemRevision,
+                                             itemID: UUID) -> WorkspaceSeriesItemRevision {
+        var updated = revision
+        updated.evidenceID = ""
+        updated.claimRevision = ""
+        updated.sourceRevision = ""
+        updated.sourceQuote = nil
+        updated.location = nil
+        updated.transcriptSourceRevision = nil
+        updated.sourceMissing = true
+        updated.id = updated.stableID(itemID: itemID)
+        return updated
     }
 
     private static func mergeSeriesCandidates(_ preferred: [WorkspaceSeriesChangeCandidate],
@@ -218,22 +467,98 @@ public enum BackupMerge {
         var result = preferred
         for incoming in other {
             guard let index = result.firstIndex(where: { $0.id == incoming.id }) else {
-                result.append(incoming)
+                if incoming.sourceMissing == true {
+                    var tombstone = scrubbedDeletedSource(incoming)
+                    let receipts = mergedSeriesReceipts([incoming], candidateID: incoming.id)
+                    tombstone.receipt = receipts.current
+                    tombstone.receiptHistory = receipts.history
+                    tombstone.status = receipts.current.map { $0.decision == .reject ? .rejected : .accepted } ?? .superseded
+                    result.append(tombstone)
+                } else {
+                    result.append(incoming)
+                }
                 continue
             }
             let existing = result[index]
-            switch (existing.receipt, incoming.receipt) {
-            case let (left?, right?) where right.reviewedAt > left.reviewedAt:
+            if existing.sourceMissing == true || incoming.sourceMissing == true {
+                let bothTombstoned = existing.sourceMissing == true && incoming.sourceMissing == true
+                let deletionCopy = existing.sourceMissing == true ? existing : incoming
+                var tombstone = scrubbedDeletedSource(deletionCopy)
+                // Merge receipts only when both copies already recorded deletion.
+                // A live stale copy cannot replace a deletion with a later review.
+                let receipts = mergedSeriesReceipts(bothTombstoned ? [existing, incoming] : [deletionCopy],
+                                                    candidateID: existing.id)
+                tombstone.receipt = receipts.current
+                tombstone.receiptHistory = receipts.history
+                tombstone.status = receipts.current.map { $0.decision == .reject ? .rejected : .accepted } ?? .superseded
+                result[index] = tombstone
+                continue
+            }
+            let receipts = mergedSeriesReceipts([existing, incoming], candidateID: existing.id)
+            if let current = receipts.current {
+                var merged = existing
+                if incoming.receipt?.operationID == current.operationID { merged = incoming }
+                merged.receipt = current
+                merged.receiptHistory = receipts.history
+                merged.status = current.decision == .reject ? .rejected : .accepted
+                result[index] = merged
+            } else if incoming.status == .superseded && existing.status == .pending {
                 result[index] = incoming
-            case (nil, .some):
-                result[index] = incoming
-            case (nil, nil) where incoming.status == .superseded && existing.status == .pending:
-                result[index] = incoming
-            default:
-                break
             }
         }
         return result
+    }
+
+    private static func mergedSeriesReceipts(
+        _ candidates: [WorkspaceSeriesChangeCandidate],
+        candidateID: String
+    ) -> (current: WorkspaceSeriesChangeReceipt?, history: [WorkspaceSeriesChangeReceipt]?) {
+        var byOperationID: [UUID: WorkspaceSeriesChangeReceipt] = [:]
+        for candidate in candidates {
+            for receipt in (candidate.receiptHistory ?? []) + (candidate.receipt.map { [$0] } ?? [])
+                where receipt.candidateID == candidateID {
+                if let previous = byOperationID[receipt.operationID] {
+                    if seriesReceiptPrecedes(previous, receipt) { byOperationID[receipt.operationID] = receipt }
+                } else {
+                    byOperationID[receipt.operationID] = receipt
+                }
+            }
+        }
+        let ordered = byOperationID.values.sorted(by: seriesReceiptPrecedes)
+        guard let current = ordered.last else { return (nil, nil) }
+        let history = Array(ordered.dropLast())
+        return (current, history.isEmpty ? nil : history)
+    }
+
+    /// Orders competing receipts by review time, then stable fields so backup
+    /// import order cannot change which decision is current.
+    private static func seriesReceiptPrecedes(_ lhs: WorkspaceSeriesChangeReceipt,
+                                              _ rhs: WorkspaceSeriesChangeReceipt) -> Bool {
+        if lhs.reviewedAt != rhs.reviewedAt { return lhs.reviewedAt < rhs.reviewedAt }
+        let leftOperation = lhs.operationID.uuidString.lowercased()
+        let rightOperation = rhs.operationID.uuidString.lowercased()
+        if leftOperation != rightOperation { return leftOperation < rightOperation }
+        if lhs.decision.rawValue != rhs.decision.rawValue { return lhs.decision.rawValue < rhs.decision.rawValue }
+        let leftResult = lhs.resultItemID?.uuidString.lowercased() ?? ""
+        let rightResult = rhs.resultItemID?.uuidString.lowercased() ?? ""
+        if leftResult != rightResult { return leftResult < rightResult }
+        return lhs.candidateID < rhs.candidateID
+    }
+
+    private static func scrubbedDeletedSource(_ candidate: WorkspaceSeriesChangeCandidate) -> WorkspaceSeriesChangeCandidate {
+        var updated = candidate
+        updated.text = ""
+        updated.owner = nil
+        updated.due = nil
+        updated.dueDate = nil
+        updated.evidenceID = ""
+        updated.claimRevision = ""
+        updated.sourceRevision = ""
+        updated.sourceQuote = nil
+        updated.location = nil
+        updated.transcriptSourceRevision = nil
+        updated.sourceMissing = true
+        return updated
     }
 
     private static func mergeCandidates(_ preferred: [WorkspaceKnowledgeCandidate],

@@ -122,7 +122,7 @@ extension AppState {
                   let index = updated.lessons.firstIndex(where: { $0.id == lessonID }) else {
                 throw CocoaError(.fileNoSuchFile)
             }
-            updated.lessons[index].text = draftLesson.text
+            WorkspaceLessonHistory.editText(draftLesson.text, on: &updated.lessons[index])
         case .question(let itemID):
             guard let draftItem = draft.questionBank.first(where: { $0.id == itemID }),
                   let index = updated.questionBank.firstIndex(where: { $0.id == itemID }) else {
@@ -194,6 +194,83 @@ extension AppState {
         return true
     }
 
+    /// Remove archived meetings only after all workspaces have durably dropped
+    /// knowledge anchored to them. Tombstones stop in-flight summaries from
+    /// reintroducing candidates during the cleanup window.
+    func deleteArchivedMeeting(_ id: UUID, retainAcceptedContent: Bool = false) {
+        Task { await deleteArchivedMeetings([id], retainAcceptedContent: retainAcceptedContent) }
+    }
+
+    func deleteAllArchivedMeetings(retainAcceptedContent: Bool = false) {
+        Task {
+            await deleteArchivedMeetings(archive.sessions.filter { $0.id != archive.activeID }.map(\.id),
+                                         retainAcceptedContent: retainAcceptedContent)
+        }
+    }
+
+    private func deleteArchivedMeetings(_ requestedIDs: [UUID], retainAcceptedContent: Bool) async {
+        guard !isPreparingForTermination else { return }
+        guard !isRunning else {
+            errorMessage = "会议进行中，暂时不能删除会议记录。"
+            return
+        }
+        let existingIDs = Set(archive.sessions.map(\.id))
+        let sessionIDs = Set(requestedIDs).intersection(existingIDs).subtracting(archive.activeID.map { [$0] } ?? [])
+        guard !sessionIDs.isEmpty else { return }
+
+        let preparedIDs = sessionIDs.filter { archive.prepareForDeletion($0) }
+        guard !preparedIDs.isEmpty else { return }
+        let deletedIDs = Set(preparedIDs)
+        var cleanupUpdates: [(original: Workspace, cleaned: Workspace)] = []
+        for original in workspaces.workspaces {
+            var workspace = original
+            guard WorkspaceSourceIntegrity.removeMeetings(deletedIDs, from: &workspace,
+                                                          retainAcceptedContent: retainAcceptedContent) else { continue }
+            cleanupUpdates.append((original, workspace))
+        }
+
+        var attemptedWorkspaces: [Workspace] = []
+        for update in cleanupUpdates {
+            attemptedWorkspaces.append(update.original)
+            do {
+                try workspaces.commit(update.cleaned)
+            } catch {
+                var rollbackFailures: [String] = []
+                for original in attemptedWorkspaces.reversed() {
+                    do { try workspaces.commit(original) }
+                    catch { rollbackFailures.append("\(original.name)：\(error.localizedDescription)") }
+                }
+                if rollbackFailures.isEmpty {
+                    for id in preparedIDs { archive.cancelPreparedDeletion(id) }
+                    errorMessage = "无法先清理会议关联的系列知识，因此没有删除会议：\(error.localizedDescription)"
+                } else {
+                    if attemptedWorkspaces.contains(where: { $0.id == activeWorkspace.id }) { rebuildContextIndex() }
+                    errorMessage = "系列知识清理未能完整保存，相关会议已暂时停用且保留归档，请重试删除：\n"
+                        + rollbackFailures.joined(separator: "\n")
+                }
+                return
+            }
+        }
+
+        if cleanupUpdates.contains(where: { $0.cleaned.id == activeWorkspace.id }) { rebuildContextIndex() }
+
+        var failures: [String] = []
+        for id in preparedIDs {
+            do {
+                guard try archive.delete(id) else {
+                    failures.append(id.uuidString)
+                    continue
+                }
+                if historySelection == id { historySelection = nil }
+            } catch {
+                failures.append("\(id.uuidString)：\(error.localizedDescription)")
+            }
+        }
+        if !failures.isEmpty {
+            errorMessage = "部分会议记录尚未从磁盘删除。其内容已停用且系列知识已清理，请重试：\n" + failures.joined(separator: "\n")
+        }
+    }
+
     /// Pre-session preparation: what the materials say, and likely questions with
     /// short talking points (shown as "AI 读到的重点 · 可能会问").
     func predictQuestions() {
@@ -219,7 +296,21 @@ extension AppState {
 
     func updateLesson(_ lesson: WorkspaceLesson) {
         guard let index = activeWorkspace.lessons.firstIndex(where: { $0.id == lesson.id }) else { return }
-        activeWorkspace.lessons[index] = lesson
+        var updated = activeWorkspace.lessons[index]
+        updated.pinned = lesson.pinned
+        activeWorkspace.lessons[index] = updated
+    }
+
+    func restoreLessonRevision(_ revisionID: UUID, lessonID: UUID, workspaceID: UUID) {
+        guard var workspace = workspaces.workspace(workspaceID),
+              let index = workspace.lessons.firstIndex(where: { $0.id == lessonID }) else { return }
+        guard WorkspaceLessonHistory.restore(revisionID, on: &workspace.lessons[index]) else { return }
+        do {
+            try workspaces.commit(workspace)
+            if workspaceID == activeWorkspace.id { rebuildContextIndex() }
+        } catch {
+            errorMessage = "恢复经验历史版本失败：\(error.localizedDescription)"
+        }
     }
 
     func deleteLesson(_ id: UUID) { activeWorkspace.lessons.removeAll { $0.id == id } }
@@ -255,10 +346,14 @@ extension AppState {
     /// knowledge until the user makes a per-candidate decision.
     @discardableResult
     func collectReviewCandidates(_ summary: SessionSummary, sessionID: UUID, workspaceID: UUID?) -> Int {
-        guard !isPreparingForTermination else { return 0 }
+        guard !isPreparingForTermination, !archive.isTombstoned(sessionID),
+              let meta = archive.sessions.first(where: { $0.id == sessionID }),
+              meta.workspaceID == workspaceID, meta.workspaceDeleted != true,
+              summary.transcriptSourceRevision != nil else { return 0 }
         guard summary.appliedToWorkspace != true, let workspaceID, var workspace = workspaces.workspace(workspaceID) else { return 0 }
         let ids = KnowledgeMerger.collectCandidates(lessons: summary.lessons ?? [], bank: summary.bank ?? [],
-                                                    into: &workspace, session: sessionID, originID: sessionID)
+                                                    into: &workspace, session: sessionID, originID: sessionID,
+                                                    transcriptSourceRevision: summary.transcriptSourceRevision)
         guard !ids.isEmpty else { return 0 }
         do { try workspaces.commit(workspace) }
         catch {
@@ -271,8 +366,78 @@ extension AppState {
 
     func reviewKnowledgeCandidate(_ candidateID: String, decision: WorkspaceKnowledgeDecision,
                                   workspaceID: UUID, operationID: UUID = UUID()) {
-        guard !isPreparingForTermination else { return }
-        guard var workspace = workspaces.workspace(workspaceID) else { return }
+        Task { await performKnowledgeCandidateReview(candidateID, decision: decision,
+                                                     workspaceID: workspaceID, operationID: operationID) }
+    }
+
+    private func performKnowledgeCandidateReview(_ candidateID: String, decision: WorkspaceKnowledgeDecision,
+                                                workspaceID: UUID, operationID: UUID) async {
+        guard !isPreparingForTermination,
+              let initialWorkspace = workspaces.workspace(workspaceID),
+              let initialCandidate = initialWorkspace.knowledgeCandidates?.first(where: { $0.id == candidateID }),
+              initialCandidate.status == .pending, initialCandidate.receipt == nil else { return }
+
+        if decision != .reject {
+            if let contributingSources = initialCandidate.contributingSources, !contributingSources.isEmpty {
+                guard await knowledgeCandidateSourcesAreCurrent(contributingSources, workspaceID: workspaceID) else {
+                    invalidateKnowledgeCandidate(candidateID, workspaceID: workspaceID)
+                    errorMessage = "阶段复盘所依据的会议记录已删除或变化，不能接受这个候选。"
+                    return
+                }
+            } else {
+                guard let sourceSessionID = initialCandidate.sourceSessionID,
+                      !archive.isTombstoned(sourceSessionID),
+                      let meta = archive.sessions.first(where: { $0.id == sourceSessionID }),
+                      meta.workspaceID == workspaceID, meta.workspaceDeleted != true else {
+                    invalidateKnowledgeCandidate(candidateID, workspaceID: workspaceID)
+                    errorMessage = "候选来源会议已删除或不属于当前系列，不能接受。"
+                    return
+                }
+                guard await archive.flush(sessionID: sourceSessionID) else {
+                    errorMessage = "候选来源归档尚未保存，暂时不能接受。请保存完成后重试。"
+                    return
+                }
+                guard !Task.isCancelled, !archive.isTombstoned(sourceSessionID),
+                      let detail = await archive.detail(sourceSessionID),
+                      detail.meta.id == sourceSessionID, detail.meta.workspaceID == workspaceID,
+                      detail.meta.workspaceDeleted != true,
+                      archive.sessions.contains(where: {
+                          $0.id == sourceSessionID && $0.workspaceID == workspaceID && $0.workspaceDeleted != true
+                      }),
+                      let summary = detail.summary else {
+                    invalidateKnowledgeCandidate(candidateID, workspaceID: workspaceID)
+                    errorMessage = "候选来源归档已变化或不可用，不能接受。"
+                    return
+                }
+
+                let sourceNotes: StructuredNotes? = summary.structuredNotesSourceRevision == nil ? nil : detail.notes
+                let liveTranscriptRevision = SessionProjectionBuilder.transcriptSourceRevision(
+                    meta: detail.meta, lines: detail.lines, notes: sourceNotes)
+                guard !archive.isTombstoned(sourceSessionID),
+                      KnowledgeMerger.matchesCurrentSummary(initialCandidate, summary: summary,
+                                                            sessionID: sourceSessionID,
+                                                            liveTranscriptSourceRevision: liveTranscriptRevision) else {
+                    invalidateKnowledgeCandidate(candidateID, workspaceID: workspaceID)
+                    errorMessage = "候选依据的转写或总结内容已变化，请重新整理后再审核。"
+                    return
+                }
+            }
+        }
+
+        guard !isPreparingForTermination,
+              var workspace = workspaces.workspace(workspaceID),
+              let candidate = workspace.knowledgeCandidates?.first(where: { $0.id == candidateID }),
+              candidate == initialCandidate, candidate.status == .pending, candidate.receipt == nil else { return }
+        if decision != .reject,
+           candidate.contributingSessionIDs.contains(where: { source in
+               archive.isTombstoned(source)
+                   || !archive.sessions.contains(where: { $0.id == source && $0.workspaceID == workspaceID && $0.workspaceDeleted != true })
+           }) {
+            invalidateKnowledgeCandidate(candidateID, workspaceID: workspaceID)
+            errorMessage = "候选来源会议已删除，不能接受。"
+            return
+        }
+
         guard let receipt = KnowledgeMerger.applyCandidate(candidateID, decision: decision,
                                                             operationID: operationID, into: &workspace) else {
             if KnowledgeMerger.refreshCandidateBase(candidateID, in: &workspace) {
@@ -294,18 +459,72 @@ extension AppState {
         }
     }
 
+    private func invalidateKnowledgeCandidate(_ candidateID: String, workspaceID: UUID) {
+        guard var workspace = workspaces.workspace(workspaceID),
+              var candidates = workspace.knowledgeCandidates,
+              let index = candidates.firstIndex(where: { $0.id == candidateID }),
+              candidates[index].status == .pending else { return }
+        candidates[index].status = .rejected
+        workspace.knowledgeCandidates = candidates
+        do { try workspaces.commit(workspace) }
+        catch { errorMessage = "保存候选失效状态失败：\(error.localizedDescription)" }
+    }
+
+    private func knowledgeCandidateSourceSnapshot(from detail: SessionDetail,
+                                                  workspaceID: UUID) -> WorkspaceKnowledgeCandidateSource? {
+        guard detail.meta.workspaceID == workspaceID, detail.meta.workspaceDeleted != true,
+              detail.meta.summaryState == .ready, let summary = detail.summary,
+              let transcriptRevision = summary.transcriptSourceRevision, !transcriptRevision.isEmpty else { return nil }
+        let sourceNotes: StructuredNotes? = summary.structuredNotesSourceRevision == nil ? nil : detail.notes
+        let liveTranscriptRevision = SessionProjectionBuilder.transcriptSourceRevision(
+            meta: detail.meta, lines: detail.lines, notes: sourceNotes)
+        guard transcriptRevision == liveTranscriptRevision else { return nil }
+        let projectionRevision = SessionProjectionBuilder.build(meta: detail.meta, lines: detail.lines,
+                                                                 answers: detail.answers, detected: detail.questions,
+                                                                 summary: summary, notes: detail.notes).revision
+        return WorkspaceKnowledgeCandidateSource(sessionID: detail.meta.id, startedAt: detail.meta.startedAt,
+                                                 transcriptSourceRevision: transcriptRevision,
+                                                 projectionRevision: projectionRevision)
+    }
+
+    /// Flush and re-read every contributing archive before accepting a stage-review
+    /// candidate or publishing a stage review that was generated asynchronously.
+    private func knowledgeCandidateSourcesAreCurrent(_ sources: [WorkspaceKnowledgeCandidateSource],
+                                                     workspaceID: UUID) async -> Bool {
+        guard !sources.isEmpty,
+              Set(sources.map(\.sessionID)).count == sources.count else { return false }
+        let searchableRevision = archive.searchableContentRevision
+        let notesRevision = archive.notesRevision
+        for expected in sources {
+            let id = expected.sessionID
+            guard !archive.isTombstoned(id),
+                  archive.sessions.contains(where: { $0.id == id && $0.workspaceID == workspaceID && $0.workspaceDeleted != true }),
+                  await archive.flush(sessionID: id),
+                  !archive.isTombstoned(id),
+                  let detail = await archive.detail(id), detail.meta.id == id,
+                  let current = knowledgeCandidateSourceSnapshot(from: detail, workspaceID: workspaceID),
+                  current == expected,
+                  !archive.isTombstoned(id),
+                  archive.sessions.contains(where: { $0.id == id && $0.workspaceID == workspaceID && $0.workspaceDeleted != true }) else {
+                return false
+            }
+        }
+        return archive.searchableContentRevision == searchableRevision && archive.notesRevision == notesRevision
+    }
+
     /// Queue only note entries whose current transcript evidence was explicitly supported.
     /// The review pane is deliberately not trusted as the source of truth; rebuild the
     /// references from the persisted session snapshot before committing proposals.
     func collectSeriesChangeCandidates(sessionID: UUID, workspaceID: UUID) async -> Int {
         guard !isPreparingForTermination,
+              !archive.isTombstoned(sessionID),
               let meta = archive.sessions.first(where: { $0.id == sessionID }),
               meta.workspaceID == workspaceID, meta.workspaceDeleted != true else { return 0 }
         guard await archive.flush(sessionID: sessionID) else {
             errorMessage = "本场纪要尚未保存，无法收集系列事项。请等待保存完成后重试。"
             return 0
         }
-        guard !isPreparingForTermination,
+        guard !isPreparingForTermination, !archive.isTombstoned(sessionID),
               let detail = await archive.detail(sessionID),
               detail.meta.workspaceID == workspaceID, detail.meta.workspaceDeleted != true,
               archive.sessions.contains(where: { $0.id == sessionID && $0.workspaceID == workspaceID && $0.workspaceDeleted != true }),
@@ -331,8 +550,10 @@ extension AppState {
                                      reviewedDetails: WorkspaceSeriesChangeReviewDetails? = nil,
                                      operationID: UUID = UUID()) async {
         guard !isPreparingForTermination,
+              let initialCandidate = workspaces.workspace(workspaceID)?.seriesChangeCandidates?.first(where: { $0.id == candidateID }),
+              !archive.isTombstoned(initialCandidate.sourceSessionID),
               let initialWorkspace = workspaces.workspace(workspaceID),
-              let initialCandidate = initialWorkspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }) else { return }
+              initialWorkspace.seriesChangeCandidates?.contains(where: { $0.id == candidateID }) == true else { return }
         // A receipt is the durable result of the user's first click. Replays remain
         // successful even if the source is later edited or removed.
         if initialCandidate.receipt != nil || initialCandidate.status != .pending { return }
@@ -340,12 +561,18 @@ extension AppState {
         if decision != .reject {
             guard let meta = archive.sessions.first(where: { $0.id == initialCandidate.sourceSessionID }),
                   meta.workspaceID == workspaceID, meta.workspaceDeleted != true,
-                  await archive.flush(sessionID: initialCandidate.sourceSessionID) else {
+                  !archive.isTombstoned(initialCandidate.sourceSessionID) else {
+                invalidateSeriesChangeCandidate(candidateID, workspaceID: workspaceID)
+                errorMessage = "候选来源会议已删除或不属于当前系列，不能接受。"
+                return
+            }
+            guard await archive.flush(sessionID: initialCandidate.sourceSessionID) else {
                 errorMessage = "本场纪要尚未保存，无法确认系列依据。请等待保存完成后重试。"
                 return
             }
-            guard !isPreparingForTermination,
+            guard !isPreparingForTermination, !archive.isTombstoned(initialCandidate.sourceSessionID),
                   let detail = await archive.detail(initialCandidate.sourceSessionID),
+                  detail.meta.id == initialCandidate.sourceSessionID,
                   detail.meta.workspaceID == workspaceID, detail.meta.workspaceDeleted != true,
                   archive.sessions.contains(where: {
                       $0.id == initialCandidate.sourceSessionID && $0.workspaceID == workspaceID && $0.workspaceDeleted != true
@@ -353,6 +580,7 @@ extension AppState {
                   let current = SessionEvidenceBuilder.build(meta: detail.meta, lines: detail.lines,
                                                              notes: detail.notes, summary: detail.summary)
                     .first(where: { $0.id == initialCandidate.evidenceID }) else {
+                invalidateSeriesChangeCandidate(candidateID, workspaceID: workspaceID)
                 errorMessage = "这条系列建议的依据已变化或不可用，请重新核对后再接受。"
                 return
             }
@@ -361,13 +589,14 @@ extension AppState {
 
         // `archive.detail` suspends this main-actor method. Rebase on the latest workspace
         // after that suspension so a concurrent review or action-state change is not lost.
-        guard !isPreparingForTermination,
+        guard !isPreparingForTermination, !archive.isTombstoned(initialCandidate.sourceSessionID),
               var workspace = workspaces.workspace(workspaceID),
               let candidate = workspace.seriesChangeCandidates?.first(where: { $0.id == candidateID }) else { return }
         if candidate.receipt != nil { return }
         if decision != .reject {
             guard let currentEvidence,
                   WorkspaceSeriesChangeMerger.matchesCurrentEvidence(candidate, reference: currentEvidence) else {
+                invalidateSeriesChangeCandidate(candidateID, workspaceID: workspaceID)
                 errorMessage = "这条系列建议的依据已变化或不可用，请重新核对后再接受。"
                 return
             }
@@ -390,6 +619,19 @@ extension AppState {
         }
     }
 
+    private func invalidateSeriesChangeCandidate(_ candidateID: String, workspaceID: UUID) {
+        guard var workspace = workspaces.workspace(workspaceID),
+              var candidates = workspace.seriesChangeCandidates,
+              let index = candidates.firstIndex(where: { $0.id == candidateID }),
+              candidates[index].status == .pending else { return }
+        candidates[index].status = .superseded
+        candidates[index].sourceQuote = nil
+        candidates[index].location = nil
+        workspace.seriesChangeCandidates = candidates
+        do { try workspaces.commit(workspace) }
+        catch { errorMessage = "保存候选失效状态失败：\(error.localizedDescription)" }
+    }
+
     func updateSeriesActionState(_ status: WorkspaceSeriesItem.ActionState, itemID: UUID,
                                  expectedRevision: Int, workspaceID: UUID) {
         guard !isPreparingForTermination, var workspace = workspaces.workspace(workspaceID),
@@ -408,17 +650,36 @@ extension AppState {
         guard !stageReviewing.contains(workspaceID), let workspace = workspaces.workspace(workspaceID) else { return }
         let model = currentAnswerModel
         guard !model.isEmpty else { errorMessage = "请先在设置中选择回答模型。"; return }
-        let metas = archive.sessions.filter { $0.workspaceID == workspaceID && $0.summaryState == .ready }
+        let metas = archive.sessions.filter {
+            $0.workspaceID == workspaceID && $0.summaryState == .ready && $0.workspaceDeleted != true
+        }
         guard !metas.isEmpty else { errorMessage = "这个场景还没有带摘要的会话记录。先完成一次会话并生成摘要。"; return }
         stageReviewing.insert(workspaceID)
+        let workspaceGeneration = workspace.updatedAt
         let backend = answerBackend, reasoning = codexReasoning
         Task {
             defer { stageReviewing.remove(workspaceID) }
             var digests: [StageReviewPrompt.SessionDigest] = []
+            var sources: [WorkspaceKnowledgeCandidateSource] = []
             for meta in metas {
-                if let summary = await archive.detail(meta.id)?.summary {
-                    digests.append(.init(title: summary.title, date: meta.startedAt, summary: summary.markdown))
+                guard !archive.isTombstoned(meta.id),
+                      archive.sessions.contains(where: { $0.id == meta.id && $0.workspaceID == workspaceID && $0.workspaceDeleted != true }),
+                      await archive.flush(sessionID: meta.id), !archive.isTombstoned(meta.id),
+                      let detail = await archive.detail(meta.id), detail.meta.id == meta.id,
+                      let summary = detail.summary,
+                      let source = knowledgeCandidateSourceSnapshot(from: detail, workspaceID: workspaceID) else {
+                    errorMessage = "会议记录已变化或尚未保存，阶段复盘未生成。请保存完成后重试。"
+                    return
                 }
+                sources.append(source)
+                digests.append(.init(title: summary.title, date: detail.meta.startedAt,
+                                     summary: summary.markdown, source: source))
+            }
+            let contributingSources = StageReviewPrompt.includedSessions(digests).compactMap(\.source)
+            guard sources.count == metas.count, !contributingSources.isEmpty,
+                  await knowledgeCandidateSourcesAreCurrent(contributingSources, workspaceID: workspaceID) else {
+                errorMessage = "阶段复盘依据的会议记录已变化，未生成复盘。请重试。"
+                return
             }
             do {
                 let request = AnswerRequest(system: StageReviewPrompt.system, user: StageReviewPrompt.make(workspace: workspace, sessions: digests),
@@ -430,14 +691,25 @@ extension AppState {
                 case .codexExec, .codexAppServer:
                     markdown = try await summaryCodex.run(prompt: request.fullPrompt, model: model, reasoning: reasoning, timeout: 600) { _ in }
                 }
-                guard !isPreparingForTermination, var latest = workspaces.workspace(workspaceID) else { return }
+                guard !Task.isCancelled else { return }
+                guard await knowledgeCandidateSourcesAreCurrent(contributingSources, workspaceID: workspaceID) else {
+                    errorMessage = "会议记录在阶段复盘生成期间发生变化，结果已取消。请重新生成。"
+                    return
+                }
+                guard !isPreparingForTermination,
+                      var latest = workspaces.workspace(workspaceID),
+                      latest.updatedAt == workspaceGeneration else {
+                    errorMessage = "系列资料在阶段复盘生成期间发生变化，结果已取消。请重新生成。"
+                    return
+                }
                 latest.stageReview = markdown
                 latest.stageReviewAt = Date()
                 let parsed = SessionSummaryParser.parseAll(markdown)
                 _ = KnowledgeMerger.collectCandidates(lessons: parsed.lessons, bank: parsed.bank,
-                                                       into: &latest, session: nil, originID: workspaceID)
+                                                       into: &latest, session: nil, originID: workspaceID,
+                                                       contributingSources: contributingSources)
                 try workspaces.commit(latest)
-                Diagnostics.record("stage_review.completed", ["sessions": digests.count])
+                Diagnostics.record("stage_review.completed", ["sessions": contributingSources.count])
             } catch {
                 errorMessage = "阶段复盘生成失败：\(error.localizedDescription)"
             }

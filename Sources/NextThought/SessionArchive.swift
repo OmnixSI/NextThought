@@ -102,6 +102,8 @@ final class SessionArchive {
     @ObservationIgnored private var writeQueues: [UUID: SessionArchiveWriteQueue] = [:]
     @ObservationIgnored private var drainingWrites: Set<UUID> = []
     @ObservationIgnored private var discardedSessions: Set<UUID> = []
+    @ObservationIgnored private var deletedSessionIDs: Set<UUID> = []
+    @ObservationIgnored var summaryTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var retryTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var retryAttempts: [UUID: Int] = [:]
     @ObservationIgnored private let fileAppender = SessionArchiveFileAppender.live
@@ -160,7 +162,8 @@ final class SessionArchive {
                 let orderedRecovered = metas.filter { recovered.contains($0.id) }.map(\.id).reversed()
                 return (metas, Array(orderedRecovered))
             }.value
-            sessions = result.metas.filter { $0.id != activeID } + (activeMeta.map { [$0] } ?? [])
+            sessions = result.metas.filter { $0.id != activeID && !deletedSessionIDs.contains($0.id) }
+                + (activeMeta.map { [$0] } ?? [])
             sessions.sort { $0.startedAt > $1.startedAt }
             if !result.recovered.isEmpty { onRecoveredSummaries(result.recovered) }
         }
@@ -173,10 +176,11 @@ final class SessionArchive {
     }
 
     func detail(_ id: UUID) async -> SessionDetail? {
+        guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { return nil }
         if let demo = demoDetails[id] { return demo }
         let folder = folder(id)
         let fallback = sessions.first { $0.id == id }
-        return await Task.detached(priority: .userInitiated) { () -> SessionDetail? in
+        let result = await Task.detached(priority: .userInitiated) { () -> SessionDetail? in
             let decoder = JSONLines.decoder()
             var issues: [SessionArchiveReadIssue] = []
             func data(_ name: String, required: Bool = false) -> Data? {
@@ -252,6 +256,8 @@ final class SessionArchive {
                 notes: snapshot("notes.json", StructuredNotes.self),
                 readIssues: issues)
         }.value
+        guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { return nil }
+        return result
     }
 
     /// Reads the session directory size off the main actor. The reported size is
@@ -292,6 +298,7 @@ final class SessionArchive {
     // MARK: Recording
 
     func begin(_ meta: SessionMeta, context: SessionContextSnapshot) {
+        deletedSessionIDs.remove(meta.id)
         discardedSessions.remove(meta.id)
         translationRevisionBySession[meta.id] = nil
         translationWriteReceipts[meta.id] = nil
@@ -447,6 +454,7 @@ final class SessionArchive {
     }
 
     func update(_ meta: SessionMeta) {
+        guard !deletedSessionIDs.contains(meta.id) else { return }
         if let index = sessions.firstIndex(where: { $0.id == meta.id }) { sessions[index] = meta } else { sessions.insert(meta, at: 0) }
         if activeID == meta.id { activeMeta = meta }
         saveMeta(meta)
@@ -454,7 +462,7 @@ final class SessionArchive {
 
     @discardableResult
     func saveSummary(_ summary: SessionSummary, for id: UUID) -> Bool {
-        guard var meta = sessions.first(where: { $0.id == id }) else { return false }
+        guard !deletedSessionIDs.contains(id), var meta = sessions.first(where: { $0.id == id }) else { return false }
         // A title the user gave the meeting stays; otherwise the summary names it.
         if (meta.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !summary.title.isEmpty {
             meta.title = summary.title
@@ -465,6 +473,7 @@ final class SessionArchive {
         update(meta)
         Task { [weak self] in
             guard let self, await self.flush(sessionID: id), id != self.activeID else { return }
+            guard !self.deletedSessionIDs.contains(id), self.sessions.contains(where: { $0.id == id }) else { return }
             self.searchableContentRevision &+= 1
         }
         return queued
@@ -474,6 +483,10 @@ final class SessionArchive {
     func updateSummary(_ id: UUID, _ change: @escaping (inout SessionSummary) -> Bool,
                        completion: @escaping @MainActor (SessionArchiveEditResult) -> Void) {
         Task {
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                completion(.unavailable)
+                return
+            }
             guard !summarizing.contains(id) else {
                 completion(.busy)
                 return
@@ -496,11 +509,19 @@ final class SessionArchive {
                     completion(.persistenceBlocked)
                     return
                 }
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
                 }
                 summary = await detail(id)?.summary
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
@@ -524,6 +545,7 @@ final class SessionArchive {
 
     @discardableResult
     func saveNotes(_ notes: StructuredNotes, for id: UUID) -> Bool {
+        guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { return false }
         if demoDetails[id] != nil { demoDetails[id]?.notes = notes; notesRevision += 1; return true }
         return enqueueSnapshot(notes, file: "notes.json", session: id)
     }
@@ -532,6 +554,10 @@ final class SessionArchive {
     func updateNotes(_ id: UUID, _ change: @escaping (inout StructuredNotes) -> Bool,
                      completion: @escaping @MainActor (SessionArchiveEditResult) -> Void = { _ in }) {
         Task {
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                completion(.unavailable)
+                return
+            }
             guard !summarizing.contains(id) else {
                 completion(.busy)
                 return
@@ -561,11 +587,19 @@ final class SessionArchive {
                     completion(.persistenceBlocked)
                     return
                 }
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
                 }
                 notes = await detail(id)?.notes
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 guard !summarizing.contains(id) else {
                     completion(.busy)
                     return
@@ -588,6 +622,10 @@ final class SessionArchive {
                     .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
                 if summary == nil {
                     summary = await detail(id)?.summary
+                    guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                        completion(.unavailable)
+                        return
+                    }
                     guard !summarizing.contains(id) else {
                         completion(.busy)
                         return
@@ -612,6 +650,10 @@ final class SessionArchive {
                 return
             }
             if await flush(sessionID: id) {
+                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
+                    completion(.unavailable)
+                    return
+                }
                 notesRevision += 1
                 if id != activeID { searchableContentRevision &+= 1 }
                 completion(.saved)
@@ -663,10 +705,14 @@ final class SessionArchive {
                 }
             }
         }
+        deletedSessionIDs.formUnion(ids)
+        for sessionID in ids { summaryTasks[sessionID]?.cancel() }
         for sessionID in ids { discardPersistence(sessionID) }
+        for sessionID in ids { summarizing.remove(sessionID); summaryTasks[sessionID] = nil }
         sessions.removeAll { ids.contains($0.id) }
         for sessionID in ids { notesSteps[sessionID] = nil }
         notesRevision &+= 1
+        searchableContentRevision &+= 1
     }
 
     /// Keeps a renamed workspace attached to its meetings, including legacy metadata
@@ -690,16 +736,42 @@ final class SessionArchive {
         io.sync { }
     }
 
-    func delete(_ id: UUID) {
-        guard id != activeID else { return }
-        sessions.removeAll { $0.id == id }
-        let folder = folder(id)
-        discardPersistence(id)
-        io.async { try? FileManager.default.removeItem(at: folder) }
+    func isTombstoned(_ id: UUID) -> Bool { deletedSessionIDs.contains(id) }
+
+    /// Mark the source unavailable before any asynchronous summary work can finish.
+    /// The caller commits dependent-knowledge cleanup before finalizing the delete.
+    @discardableResult
+    func prepareForDeletion(_ id: UUID) -> Bool {
+        guard !DemoMode.isEnabled, id != activeID, sessions.contains(where: { $0.id == id }) else { return false }
+        deletedSessionIDs.insert(id)
+        summaryTasks[id]?.cancel()
+        return true
     }
 
-    func deleteAll() {
-        for meta in sessions where meta.id != activeID { delete(meta.id) }
+    func cancelPreparedDeletion(_ id: UUID) {
+        guard sessions.contains(where: { $0.id == id }) else { return }
+        deletedSessionIDs.remove(id)
+    }
+
+    @discardableResult
+    func delete(_ id: UUID) throws -> Bool {
+        guard !DemoMode.isEnabled, id != activeID, sessions.contains(where: { $0.id == id }) else { return false }
+        _ = prepareForDeletion(id)
+        let directory = folder(id)
+        try io.sync {
+            if FileManager.default.fileExists(atPath: directory.path) {
+                try FileManager.default.removeItem(at: directory)
+            }
+        }
+        sessions.removeAll { $0.id == id }
+        discardPersistence(id)
+        summaryTasks[id]?.cancel()
+        summaryTasks[id] = nil
+        summarizing.remove(id)
+        notesSteps[id] = nil
+        notesRevision &+= 1
+        searchableContentRevision &+= 1
+        return true
     }
 
     func revealInFinder(_ id: UUID) {
@@ -796,7 +868,7 @@ final class SessionArchive {
     }
 
     private func enqueueWrite(_ data: Data, file: String, session id: UUID, mode: SessionArchiveWriteMode = .append) -> Bool {
-        guard !discardedSessions.contains(id) else { return false }
+        guard !discardedSessions.contains(id), !deletedSessionIDs.contains(id) else { return false }
         var queue = writeQueues[id] ?? SessionArchiveWriteQueue()
         let result = queue.enqueue(fileName: file, data: data, mode: mode)
         writeQueues[id] = queue; persistenceBySession[id] = queue.snapshot

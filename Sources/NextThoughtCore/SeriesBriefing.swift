@@ -16,12 +16,16 @@ public struct SeriesBriefing: Sendable, Equatable {
     public let decisions: [WorkspaceSeriesItem]
     public let openActions: [WorkspaceSeriesItem]
     public let resolvedActions: [WorkspaceSeriesItem]
+    /// Accepted text whose current source no longer matches the stored revision.
+    /// These rows stay visible for review but are never carried into the next meeting.
+    public let staleItems: [WorkspaceSeriesItem]
     public let pendingSeriesChanges: [WorkspaceSeriesChangeCandidate]
 
     public init(workspaceID: UUID, workspaceName: String, sessionCount: Int, knowledgeEnabled: Bool,
                 latestSessions: [SessionMeta], lessons: [WorkspaceLesson], questionBank: [QuestionBankItem],
                 pendingCandidates: [WorkspaceKnowledgeCandidate], decisions: [WorkspaceSeriesItem] = [],
                 openActions: [WorkspaceSeriesItem] = [], resolvedActions: [WorkspaceSeriesItem] = [],
+                staleItems: [WorkspaceSeriesItem] = [],
                 pendingSeriesChanges: [WorkspaceSeriesChangeCandidate] = []) {
         self.workspaceID = workspaceID
         self.workspaceName = workspaceName
@@ -34,6 +38,7 @@ public struct SeriesBriefing: Sendable, Equatable {
         self.decisions = decisions
         self.openActions = openActions
         self.resolvedActions = resolvedActions
+        self.staleItems = staleItems
         self.pendingSeriesChanges = pendingSeriesChanges
     }
 }
@@ -59,18 +64,39 @@ public enum SeriesBriefingBuilder {
             questionBank = []
         }
         let validSessionIDs = Set(seriesSessions.map(\.id))
-        let reviewed = Dictionary(evidenceReferences.compactMap { reference -> (String, SessionEvidenceReference)? in
-            guard reference.reviewDecision == .supported, !reference.reviewIsStale,
-                  let claimRevision = reference.claimRevision,
-                  reference.id.count > 0 else { return nil }
-            return (reference.id + "|" + claimRevision + "|" + (reference.sourceRevision ?? ""), reference)
-        }, uniquingKeysWith: { _, latest in latest })
-        let activeItems = workspace.useKnowledge ? (workspace.seriesItems ?? []).filter { item in
-            guard validSessionIDs.contains(item.sourceSessionID) else { return false }
-            let key = item.evidenceID + "|" + item.claimRevision + "|" + item.sourceRevision
-            guard let reference = reviewed[key], reference.lineID != nil else { return false }
-            return true
-        } : []
+        let referencesByID = Dictionary(grouping: evidenceReferences, by: \.id)
+        var activeItems: [WorkspaceSeriesItem] = []
+        var staleItems: [WorkspaceSeriesItem] = []
+        if workspace.useKnowledge {
+            for item in workspace.seriesItems ?? [] {
+                // An explicit opt-in during source deletion is itself a human review.
+                // Older implicit tombstones remain stale until a new source confirms them.
+                if item.sourceMissing == true {
+                    if item.independentlyRetained == true { activeItems.append(item) }
+                    else { staleItems.append(item) }
+                    continue
+                }
+                guard validSessionIDs.contains(item.sourceSessionID) else {
+                    var missing = item
+                    missing.sourceMissing = true
+                    missing.sourceQuote = nil
+                    missing.location = nil
+                    staleItems.append(missing)
+                    continue
+                }
+                let current = (referencesByID[item.evidenceID] ?? []).first { reference in
+                    (reference.sessionID == nil || reference.sessionID == item.sourceSessionID)
+                        && reference.reviewDecision == .supported && !reference.reviewIsStale
+                        && reference.origin == .textNotes && reference.lineID != nil
+                        && reference.claimRevision == item.claimRevision
+                        && reference.sourceRevision == item.sourceRevision
+                        && reference.transcriptSourceRevision == item.transcriptSourceRevision
+                }
+                if current != nil { activeItems.append(item) }
+                else { staleItems.append(item) }
+            }
+        }
+        staleItems.sort { $0.updatedAt > $1.updatedAt }
         let decisions = activeItems.filter { $0.kind == .decision }
             .sorted { $0.updatedAt > $1.updatedAt }
         let openActions = activeItems.filter {
@@ -85,9 +111,10 @@ public enum SeriesBriefingBuilder {
         let pendingSeries = workspace.useKnowledge ? (workspace.seriesChangeCandidates ?? [])
             .filter { candidate in
                 guard candidate.status == .pending, validSessionIDs.contains(candidate.sourceSessionID) else { return false }
-                guard let reference = reviewed[candidate.evidenceID + "|" + candidate.claimRevision + "|" + candidate.sourceRevision]
-                else { return false }
-                return WorkspaceSeriesChangeMerger.matchesCurrentEvidence(candidate, reference: reference)
+                return (referencesByID[candidate.evidenceID] ?? []).contains {
+                    ($0.sessionID == nil || $0.sessionID == candidate.sourceSessionID)
+                        && WorkspaceSeriesChangeMerger.matchesCurrentEvidence(candidate, reference: $0)
+                }
             }
             .sorted { $0.createdAt > $1.createdAt } : []
         return SeriesBriefing(workspaceID: workspace.id, workspaceName: workspace.name,
@@ -95,6 +122,7 @@ public enum SeriesBriefingBuilder {
                               latestSessions: recent, lessons: lessons, questionBank: questionBank,
                               pendingCandidates: pending, decisions: decisions, openActions: openActions,
                               resolvedActions: resolvedActions,
+                              staleItems: staleItems,
                               pendingSeriesChanges: pendingSeries)
     }
 
@@ -119,6 +147,9 @@ public enum WorkspaceSeriesChangeMerger {
         guard reference.origin == .textNotes,
               reference.reviewDecision == .supported, !reference.reviewIsStale,
               reference.lineID != nil,
+              let transcriptSourceRevision = candidate.transcriptSourceRevision,
+              !transcriptSourceRevision.isEmpty,
+              transcriptSourceRevision == reference.transcriptSourceRevision,
               reference.claimRevision == candidate.claimRevision,
               reference.sourceRevision == candidate.sourceRevision,
               let kind = seriesKind(for: reference) else { return false }
@@ -139,9 +170,11 @@ public enum WorkspaceSeriesChangeMerger {
                   reference.reviewDecision == .supported, !reference.reviewIsStale,
                   reference.lineID != nil, let sourceRevision = reference.sourceRevision,
                   let claimRevision = reference.claimRevision,
+                  !reference.transcriptSourceRevision.isEmpty,
                   let kind = seriesKind(for: reference) else { continue }
             let id = candidateID(sessionID: sessionID, evidenceID: reference.id,
                                  claimRevision: claimRevision, sourceRevision: sourceRevision,
+                                 transcriptSourceRevision: reference.transcriptSourceRevision,
                                  text: reference.claim, owner: reference.owner, due: reference.due,
                                  dueDate: reference.dueDate, quote: reference.quote, location: reference.location)
             guard !candidates.contains(where: { $0.id == id }) else { continue }
@@ -157,7 +190,8 @@ public enum WorkspaceSeriesChangeMerger {
                 id: id, kind: kind, text: reference.claim, owner: reference.owner, due: reference.due,
                 dueDate: reference.dueDate, sourceSessionID: sessionID, evidenceID: reference.id,
                 claimRevision: claimRevision, sourceRevision: sourceRevision, sourceQuote: reference.quote,
-                location: reference.location, createdAt: now))
+                location: reference.location, transcriptSourceRevision: reference.transcriptSourceRevision,
+                createdAt: now))
             added.append(id)
         }
         if !added.isEmpty {
@@ -177,9 +211,11 @@ public enum WorkspaceSeriesChangeMerger {
         guard var candidates = workspace.seriesChangeCandidates,
               let candidateIndex = candidates.firstIndex(where: { $0.id == candidateID }) else { return nil }
         let candidate = candidates[candidateIndex]
+        if let replay = candidate.receiptHistory?.first(where: { $0.operationID == operationID }) { return replay }
         if let receipt = candidate.receipt { return receipt }
         guard candidate.status == .pending else { return nil }
         guard decision == .reject || workspace.useKnowledge else { return nil }
+        guard decision == .reject || candidate.transcriptSourceRevision.map({ !$0.isEmpty }) == true else { return nil }
 
         var resultItemID: UUID?
         let owner = reviewedDetails.map(\.owner) ?? candidate.owner
@@ -198,6 +234,7 @@ public enum WorkspaceSeriesChangeMerger {
                                             sourceSessionID: candidate.sourceSessionID, evidenceID: candidate.evidenceID,
                                             claimRevision: candidate.claimRevision, sourceRevision: candidate.sourceRevision,
                                             sourceQuote: candidate.sourceQuote, location: candidate.location,
+                                            transcriptSourceRevision: candidate.transcriptSourceRevision,
                                             confirmedAt: now, updatedAt: now)
             items.append(item)
             workspace.seriesItems = items
@@ -220,6 +257,9 @@ public enum WorkspaceSeriesChangeMerger {
             item.sourceRevision = candidate.sourceRevision
             item.sourceQuote = candidate.sourceQuote
             item.location = candidate.location
+            item.transcriptSourceRevision = candidate.transcriptSourceRevision
+            item.sourceMissing = false
+            item.independentlyRetained = false
             item.revision += 1
             // A changed commitment is open again until a user advances its state.
             if item.kind == .action { item.actionState = .open }
@@ -246,6 +286,7 @@ public enum WorkspaceSeriesChangeMerger {
         guard var items = workspace.seriesItems,
               let index = items.firstIndex(where: { $0.id == itemID }),
               items[index].kind == .action,
+              items[index].sourceMissing != true || items[index].independentlyRetained == true,
               items[index].revision == expectedRevision,
               items[index].actionState != newState else { return false }
         var item = items[index]
@@ -270,14 +311,16 @@ public enum WorkspaceSeriesChangeMerger {
     }
 
     private static func candidateID(sessionID: UUID, evidenceID: String,
-                                    claimRevision: String, sourceRevision: String, text: String,
+                                    claimRevision: String, sourceRevision: String,
+                                    transcriptSourceRevision: String, text: String,
                                     owner: String?, due: String?, dueDate: Date?, quote: String?, location: String?) -> String {
         func component(_ value: String?) -> String {
             let value = value ?? ""
             return "\(value.utf8.count):\(value)"
         }
         let dueDateBits = dueDate.map { String($0.timeIntervalSince1970.bitPattern, radix: 16) }
-        let source = [sessionID.uuidString.lowercased(), evidenceID, claimRevision, sourceRevision, text,
+        let source = [sessionID.uuidString.lowercased(), evidenceID, claimRevision, sourceRevision,
+                      transcriptSourceRevision, text,
                       owner, due, dueDateBits, quote, location].map(component).joined(separator: "|")
         return SHA256.hash(data: Data(source.utf8)).map { String(format: "%02x", $0) }.joined()
     }
