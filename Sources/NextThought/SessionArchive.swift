@@ -157,6 +157,9 @@ final class SessionArchive {
     @ObservationIgnored private var discardedSessions: Set<UUID> = []
     @ObservationIgnored private var retryTasks: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var retryAttempts: [UUID: Int] = [:]
+    /// In-memory failure/retry receipts used by the native acceptance renderer.
+    /// Demo retries never reach the disk-backed writer.
+    @ObservationIgnored private var demoRetryReceipts: [UUID: SessionPersistenceSnapshot] = [:]
     @ObservationIgnored private let fileAppender = SessionArchiveFileAppender.live
     @ObservationIgnored private var pendingSearchableTranslationSessionIDs: Set<UUID> = []
     @ObservationIgnored private var completedTranslationDrainSessionIDs: Set<UUID> = []
@@ -345,6 +348,23 @@ final class SessionArchive {
         legacyFallbackDetails = [:]
         archiveReadIssues = []
         archivePresenceIssue = nil
+    }
+
+    /// Seeds a persistence indicator for a deterministic UI fixture without writing
+    /// to the user's archive. The acceptance renderer runs with DemoMode enabled.
+    func installDemoPersistence(_ snapshot: SessionPersistenceSnapshot, for sessionID: UUID) {
+        guard DemoMode.isEnabled else { return }
+        persistenceBySession[sessionID] = snapshot
+    }
+
+    /// Seeds one blocked snapshot and the receipt the demo retry action will publish.
+    /// This preserves the real button/action path without writing an archive file.
+    func installDemoPersistenceRetry(_ blocked: SessionPersistenceSnapshot,
+                                     receipt: SessionPersistenceSnapshot,
+                                     for sessionID: UUID) {
+        guard DemoMode.isEnabled else { return }
+        persistenceBySession[sessionID] = blocked
+        demoRetryReceipts[sessionID] = receipt
     }
 
     func detail(_ id: UUID) async -> SessionDetail? {
@@ -971,6 +991,10 @@ final class SessionArchive {
     }
 
     func retryPersistence(_ id: UUID) {
+        if DemoMode.isEnabled, let receipt = demoRetryReceipts.removeValue(forKey: id) {
+            persistenceBySession[id] = receipt
+            return
+        }
         retryTasks[id]?.cancel(); retryTasks[id] = nil
         retryAttempts[id] = 0
         drainWrites(id)
@@ -1085,6 +1109,7 @@ final class SessionArchive {
         discardedSessions.insert(id)
         retryTasks[id]?.cancel(); retryTasks[id] = nil
         retryAttempts[id] = nil
+        demoRetryReceipts[id] = nil
         writeQueues[id] = nil
         persistenceBySession[id] = nil
         translationWriteReceipts[id] = nil

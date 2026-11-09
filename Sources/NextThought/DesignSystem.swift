@@ -167,10 +167,14 @@ struct StatusDot: View {
 /// Borderless button that shows the hover color under the pointer.
 struct GhostButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.liveSessionAcceptanceButtonInteraction) private var acceptanceInteraction
     var height: CGFloat = Space.control
     var horizontalPadding: CGFloat = 10
+    var scalesWithDynamicType = false
     func makeBody(configuration: Configuration) -> some View {
-        GhostBody(configuration: configuration, isEnabled: isEnabled, height: height, horizontalPadding: horizontalPadding)
+        GhostBody(configuration: configuration, isEnabled: isEnabled, height: height,
+                  horizontalPadding: horizontalPadding, scalesWithDynamicType: scalesWithDynamicType,
+                  acceptanceInteraction: acceptanceInteraction)
     }
 
     private struct GhostBody: View {
@@ -178,17 +182,26 @@ struct GhostButtonStyle: ButtonStyle {
         let isEnabled: Bool
         let height: CGFloat
         let horizontalPadding: CGFloat
+        let scalesWithDynamicType: Bool
+        let acceptanceInteraction: LiveSessionAcceptanceButtonInteraction
         @State private var hovering = false
         var body: some View {
             configuration.label
-                .font(Typo.label)
+                .font(scalesWithDynamicType ? Font.body.weight(.medium) : Typo.label)
                 .lineLimit(1)
                 .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary)
                 .padding(.horizontal, horizontalPadding)
                 .frame(minWidth: Hit.minHeight)
-                .frame(height: max(height, Hit.minHeight))
-                .background((hovering || configuration.isPressed) && isEnabled ? Ink.hover : Color.clear,
+                .frame(minHeight: scalesWithDynamicType ? max(height, Hit.minHeight) : nil)
+                .frame(height: scalesWithDynamicType ? nil : max(height, Hit.minHeight))
+                .background((hovering || configuration.isPressed || acceptanceInteraction == .hover
+                             || acceptanceInteraction == .pressed) && isEnabled ? Ink.hover : Color.clear,
                             in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                        .strokeBorder(acceptanceInteraction == .focused ? Ink.focus : Color.clear, lineWidth: 2)
+                        .allowsHitTesting(false)
+                }
                 .contentShape(Rectangle())
                 .onHover { hovering = $0 }
                 .animation(Motion.hover, value: hovering)
@@ -226,6 +239,7 @@ struct InkSegmented<Value: Hashable>: View {
     let items: [(value: Value, title: LocalizedStringKey)]
     @Binding var selection: Value
     var height: CGFloat = Hit.minHeight
+    var scalesWithDynamicType = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -233,7 +247,7 @@ struct InkSegmented<Value: Hashable>: View {
                 let selected = item.value == selection
                 Button { selection = item.value } label: {
                     Text(item.title)
-                        .font(Typo.label)
+                        .font(scalesWithDynamicType ? Font.body.weight(.medium) : Typo.label)
                         .lineLimit(1).fixedSize()
                         .foregroundStyle(selected ? Ink.ink : Ink.secondary)
                         .padding(.horizontal, 14)
@@ -307,9 +321,12 @@ struct FlowLayout: Layout {
 struct ShortcutHint: View {
     let text: String
     var onInk = false
+    var scalesWithDynamicType = false
     var body: some View {
         Text(verbatim: text)
-            .font(.system(size: 11, weight: .medium).monospacedDigit())
+            .font(scalesWithDynamicType
+                  ? Font.caption.weight(.medium).monospacedDigit()
+                  : .system(size: 11, weight: .medium).monospacedDigit())
             .foregroundStyle(onInk ? Ink.onInk.opacity(0.7) : Ink.secondary)
     }
 }

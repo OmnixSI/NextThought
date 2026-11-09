@@ -8,6 +8,8 @@ struct MarkdownText: View, Equatable {
     var text: String
     var size: CGFloat = 15
     var lineSpacing: CGFloat = 4
+    /// Opt in for reading surfaces that must honor macOS accessibility text sizes.
+    var scalesWithDynamicType = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: size * 0.45) {
@@ -15,31 +17,40 @@ struct MarkdownText: View, Equatable {
                 switch block {
                 case let .code(code):
                     Text(code)
-                        .font(.system(size: size * 0.86, design: .monospaced))
+                        .font(font(size: size * 0.86, design: .monospaced, relativeTo: .title3))
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall))
                 case let .math(latex):
                     // A display formula (`$$…$$`, `\[…\]`), as Unicode text in a serif face.
                     Text(verbatim: LaTeXMath.unicode(latex))
-                        .font(.system(size: size * 1.1, design: .serif))
+                        .font(font(size: size * 1.1, design: .serif, relativeTo: .title3))
                         .multilineTextAlignment(.center)
                         .padding(.vertical, 2)
                         .frame(maxWidth: .infinity, alignment: .center)
                 case let .heading(line):
-                    Text(Self.inline(line)).font(.system(size: size * 1.05, weight: .semibold))
+                    Text(Self.inline(line)).font(font(size: size * 1.05, weight: .semibold, relativeTo: .title3))
                 case let .bullet(line, level):
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(verbatim: "•").foregroundStyle(Ink.ai)
-                        Text(Self.inline(line)).font(.system(size: size)).lineSpacing(lineSpacing)
+                        Text(Self.inline(line)).font(font(size: size, relativeTo: .title3)).lineSpacing(lineSpacing)
                     }.padding(.leading, CGFloat(level) * 14)
                 case let .paragraph(line):
-                    Text(Self.inline(line)).font(.system(size: size)).lineSpacing(lineSpacing)
+                    Text(Self.inline(line)).font(font(size: size, relativeTo: .title3)).lineSpacing(lineSpacing)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .textSelection(.enabled)
+    }
+
+    private func font(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default,
+                      relativeTo style: Font.TextStyle = .body) -> Font {
+        if scalesWithDynamicType {
+            .system(style, design: design).weight(weight)
+        } else {
+            .system(size: size, weight: weight, design: design)
+        }
     }
 
     enum Block { case paragraph(String), bullet(String, Int), heading(String), code(String), math(String) }
