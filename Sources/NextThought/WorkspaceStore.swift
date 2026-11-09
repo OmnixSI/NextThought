@@ -208,6 +208,23 @@ final class WorkspaceStore {
         }
     }
 
+    /// Removes only live workspace state after the deletion transaction has
+    /// durably staged this workspace's JSON record and committed its journal.
+    func deleteRecordAfterStaging(_ id: UUID) {
+        guard workspace(id) != nil else { return }
+        dirty.remove(id)
+        workspaces.removeAll { $0.id == id }
+        UserDefaults.standard.set(true, forKey: Self.legacyMigrationCompletedKey)
+        if activeID == id {
+            if let next = visible.first?.id ?? workspaces.first?.id {
+                activate(next)
+            } else {
+                activeID = nil
+                UserDefaults.standard.removeObject(forKey: "activeWorkspaceID")
+            }
+        }
+    }
+
     /// Replaces the whole list (backup import); everything is written immediately.
     func replaceAll(_ next: [Workspace]) {
         workspaces = next

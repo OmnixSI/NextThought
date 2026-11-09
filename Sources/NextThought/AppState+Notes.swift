@@ -140,6 +140,7 @@ extension AppState {
     func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil,
                          onCompletion: (@MainActor () -> Void)? = nil) {
         guard !isPreparingForTermination,
+              !archive.isReadOnlyFallback(id),
               !archive.summarizing.contains(id), var meta = archive.sessions.first(where: { $0.id == id }) else {
             onCompletion?()
             return

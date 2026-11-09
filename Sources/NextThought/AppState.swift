@@ -335,6 +335,7 @@ final class AppState {
     var isPreparingForTermination = false
     var statusText = "就绪"
     var errorMessage: String?
+    var workspaceDeletionRecoveryIssue: String?
     var entries: [TranscriptEntry] = []
     var partialTranscript = ""
     var microphonePartialTranscript = ""
@@ -454,7 +455,18 @@ final class AppState {
 
     private init() {
         Diagnostics.record("app.launch", ["bundle_id": Bundle.main.bundleIdentifier ?? "unknown"])
-        if !DemoMode.isEnabled { workspaces.load() }
+        if !DemoMode.isEnabled {
+            do {
+                try DocumentJobStore.recoverWorkspaceDeletionTransactions(
+                    at: AppPaths.root.appendingPathComponent("Preparation", isDirectory: true)
+                        .appendingPathComponent("jobs.sqlite"))
+            } catch {
+                workspaceDeletionRecoveryIssue = String(localized: "系列删除恢复未完成：") + error.localizedDescription
+                errorMessage = workspaceDeletionRecoveryIssue
+                archive.reportWorkspaceDeletionRecoveryIssue(workspaceDeletionRecoveryIssue)
+            }
+            workspaces.load()
+        }
         documentPreparation.start()
         loadAPIPresets()
         archive.load { [weak self] ids in

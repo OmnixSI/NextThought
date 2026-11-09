@@ -5,6 +5,7 @@ enum AppPaths {
 
     static var workspaces: URL { root.appendingPathComponent("Workspaces", isDirectory: true) }
     static var sessions: URL { root.appendingPathComponent("Sessions", isDirectory: true) }
+    static var sessionsPresenceMarker: URL { root.appendingPathComponent("sessions-archive-present.marker") }
     static var skills: URL { root.appendingPathComponent("Skills", isDirectory: true).appendingPathComponent("library.json") }
     static var backups: URL { root.appendingPathComponent("Backups", isDirectory: true) }
     static var models: URL { root.appendingPathComponent("models", isDirectory: true) }
