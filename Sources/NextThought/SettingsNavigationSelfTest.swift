@@ -17,6 +17,7 @@ enum SettingsNavigationSelfTest {
         let defaults = UserDefaults.standard
         let keys = ["settingsGroup", "NSWindow Frame NextThought.Settings"]
         let savedPreferences = keys.map { defaults.object(forKey: $0) }
+        let oldAppearance = state.appearance
         let oldSection = state.section, oldRunning = state.isRunning
         let oldMeetingDraft = state.meetingDraft, oldError = state.errorMessage
         let oldDraft = editor.draft, oldOriginal = editor.original, oldTarget = editor.target
@@ -28,6 +29,7 @@ enum SettingsNavigationSelfTest {
             editor.draft = oldDraft; editor.original = oldOriginal; editor.target = oldTarget
             editor.isEntryEditing = oldEntryEditing
             state.section = oldSection; state.isRunning = oldRunning
+            state.appearance = oldAppearance; state.applyAppearance()
             state.meetingDraft = oldMeetingDraft; state.errorMessage = oldError
             for (key, value) in zip(keys, savedPreferences) {
                 if let value { defaults.set(value, forKey: key) }
@@ -133,9 +135,34 @@ enum SettingsNavigationSelfTest {
         if let output = options["output"] {
             let directory = URL(fileURLWithPath: output, isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            var captures: [[String: Any]] = []
+            state.isRunning = false
+            for appearance in ["light", "dark"] {
+                state.appearance = appearance; state.applyAppearance()
+                for size in [NSSize(width: 980, height: 720), NSSize(width: 880, height: 600)] {
+                    for (group, name) in [(SettingsGroup.essentials, "general"), (.more, "updates"), (.notes, "templates")] {
+                        defaults.set(group.rawValue, forKey: "settingsGroup")
+                        reopened.setContentSize(size)
+                        try await Task.sleep(for: .milliseconds(160))
+                        guard let content = reopened.contentView else { throw SelfTest.Failure("missing settings content view") }
+                        content.layoutSubtreeIfNeeded()
+                        guard let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds) else {
+                            throw SelfTest.Failure("could not capture native settings content")
+                        }
+                        content.cacheDisplay(in: content.bounds, to: bitmap)
+                        guard let png = bitmap.representation(using: .png, properties: [:]) else {
+                            throw SelfTest.Failure("could not encode native settings screenshot")
+                        }
+                        let filename = "settings-" + name + "-" + appearance + "-" + String(Int(size.width)) + ".png"
+                        try png.write(to: directory.appendingPathComponent(filename), options: .atomic)
+                        captures.append(["path": filename, "appearance": appearance,
+                                         "width": Int(size.width), "height": Int(size.height)])
+                    }
+                }
+            }
             let report: [String: Any] = ["routes": routes, "queries": searches.map(\.0),
                                        "windowReused": true, "dirtyProjectPreserved": true,
-                                       "meetingDraftPreserved": true, "modelCalls": 0]
+                                       "meetingDraftPreserved": true, "modelCalls": 0, "captures": captures]
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
                 .write(to: directory.appendingPathComponent("settings-navigation.json"), options: .atomic)
         }

@@ -27,6 +27,10 @@ struct SessionDetail: Equatable {
     }
 
     var effectiveSummary: SessionSummary? {
+        if var edited = userContent.editedSummary {
+            edited.title = meta.displayTitle
+            return edited
+        }
         guard var result = summary else { return nil }
         result.title = meta.displayTitle
         if let edited = userContent.editedNotes {
@@ -742,71 +746,32 @@ final class SessionArchive {
         return queued
     }
 
-    /// Edits one generated structured-notes node on top of the newest queued summary.
+    /// Edit the newest effective summary without replacing the model's saved original.
     func updateSummary(_ id: UUID, _ change: @escaping (inout SessionSummary) -> Bool,
                        completion: @escaping @MainActor (SessionArchiveEditResult) -> Void) {
         Task {
-            guard !isReadOnlyFallback(id) else {
-                completion(.readOnlyFallback)
-                return
-            }
-            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                completion(.unavailable)
-                return
-            }
-            guard !summarizing.contains(id) else {
-                completion(.busy)
-                return
-            }
-            if var demo = demoDetails[id], var summary = demo.summary {
-                guard change(&summary) else {
-                    completion(.staleTarget)
-                    return
+            guard !isReadOnlyFallback(id) else { completion(.readOnlyFallback); return }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard await flush(sessionID: id) else { completion(.persistenceBlocked); return }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard let detail = await detail(id), var summary = detail.effectiveSummary else { completion(.unavailable); return }
+            guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else { completion(.unavailable); return }
+            guard !summarizing.contains(id) else { completion(.busy); return }
+            guard change(&summary) else { completion(.staleTarget); return }
+            let edited = summary, expectedRevision = detail.userContent.revision
+            do {
+                _ = try await updateUserContent(for: id) { current in
+                    guard current.revision == expectedRevision else { throw SessionUserContentStore.Failure.changedElsewhere }
+                    current.editedSummary = edited
+                    current.basedOnGeneratedAt = detail.summary?.generatedAt ?? detail.notes?.generatedAt
                 }
-                demo.summary = summary
-                demoDetails[id] = demo
-                searchableContentRevision &+= 1
+                guard await flush(sessionID: id) else { completion(.persistenceBlocked); return }
+                userSaveErrors[id] = nil
                 completion(.saved)
-                return
-            }
-            var summary = pendingArchiveData(file: "summary.json", sessionID: id, mode: .replace)
-                .last.flatMap { try? JSONLines.decoder().decode(SessionSummary.self, from: $0) }
-            if summary == nil {
-                guard await flush(sessionID: id) else {
-                    completion(.persistenceBlocked)
-                    return
-                }
-                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                    completion(.unavailable)
-                    return
-                }
-                guard !summarizing.contains(id) else {
-                    completion(.busy)
-                    return
-                }
-                summary = await detail(id)?.summary
-                guard !deletedSessionIDs.contains(id), sessions.contains(where: { $0.id == id }) else {
-                    completion(.unavailable)
-                    return
-                }
-                guard !summarizing.contains(id) else {
-                    completion(.busy)
-                    return
-                }
-            }
-            guard var summary else {
-                completion(.unavailable)
-                return
-            }
-            guard change(&summary) else {
-                completion(.staleTarget)
-                return
-            }
-            guard saveSummary(summary, for: id) else {
-                completion(.persistenceBlocked)
-                return
-            }
-            completion(await flush(sessionID: id) ? .saved : .persistenceBlocked)
+            } catch SessionUserContentStore.Failure.changedElsewhere { completion(.staleTarget) }
+            catch { userSaveErrors[id] = "纪要修改尚未保存：\(error.localizedDescription)"; completion(.persistenceBlocked) }
         }
     }
 
@@ -1095,6 +1060,9 @@ final class SessionArchive {
 
     /// Snapshot consumers must include debounced personal drafts as well as queued events.
     func flushForSnapshot() async -> Bool {
+        for id in Array(pendingTranslationSearchSessionIDs) {
+            guard await waitForFinalTranslationDrain(sessionID: id) else { return false }
+        }
         await flushUserContent()
         let saved = await flush()
         return saved && userContentDrafts.isEmpty && userSaveErrors.isEmpty

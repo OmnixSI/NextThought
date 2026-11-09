@@ -49,9 +49,11 @@ public struct SessionSearchSnapshot: Sendable {
         let meta = meta ?? SessionMeta(startedAt: lines.first?.date ?? Date(timeIntervalSince1970: 0), mode: .general)
         var effectiveNotes = user.editedNotes ?? notes
         effectiveNotes?.corrections = user.corrections(generated: notes?.corrections ?? [], lines: lines)
-        var effectiveSummary = summary
-        if let edited = user.editedNotes { effectiveSummary?.markdown = NotesMarkdown.render(edited, title: meta.displayTitle, facts: "") }
-        else if let edited = user.editedMarkdown { effectiveSummary?.markdown = edited }
+        var effectiveSummary = user.editedSummary ?? summary
+        if user.editedSummary == nil {
+            if let edited = user.editedNotes { effectiveSummary?.markdown = NotesMarkdown.render(edited, title: meta.displayTitle, facts: "") }
+            else if let edited = user.editedMarkdown { effectiveSummary?.markdown = edited }
+        }
         var answerOrder: [UUID] = []
         var finalAnswers: [UUID: SessionAnswerEvent] = [:]
         for answer in answers {

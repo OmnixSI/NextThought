@@ -26,6 +26,7 @@ final class BackupRestoreReview: NSObject, NSWindowDelegate {
             do {
                 let summary = try await DataBackup.applyImport(prepared, useBackupSessions: sessions, useBackupTemplates: templates, applySettings: settings)
                 state.rebuildContextIndex(); state.dataStatus = summary.description
+                state.dataStatusTone = .success; state.dataStatusCanRetryBackup = false
                 review.finish()
             } catch {
                 state.archive.contentDidChange(); state.archive.load(); state.rebuildContextIndex()

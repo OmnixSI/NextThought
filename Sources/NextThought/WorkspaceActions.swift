@@ -837,18 +837,30 @@ extension AppState {
     }
 
     func backupNow() {
-        runDataTask("正在备份…") {
+        runDataTask("正在备份…", canRetryBackup: true) {
             let url = try await DataBackup.automaticBackup(reason: "manual")
+            self.backupIssue = nil
             return "已备份到 \(url.lastPathComponent)。"
         }
     }
 
-    private func runDataTask(_ progress: String, _ work: @escaping () async throws -> String) {
+    private func runDataTask(_ progress: String, canRetryBackup: Bool = false, _ work: @escaping () async throws -> String) {
         dataStatus = progress
+        dataStatusTone = .progress
+        dataStatusCanRetryBackup = canRetryBackup
         isDataBusy = true
         Task {
             defer { isDataBusy = false }
-            do { dataStatus = try await work() } catch { dataStatus = ""; errorMessage = "操作失败：\(error.localizedDescription)" }
+            do {
+                let result = try await work()
+                if dataStatusTone == .warning { dataStatus = result + "\n" + dataStatus }
+                else { dataStatus = result; dataStatusTone = .success }
+                dataStatusCanRetryBackup = false
+            } catch {
+                dataStatus = String(localized: "操作失败：") + error.localizedDescription
+                dataStatusTone = .failure
+                if !SettingsWindow.isVisible { errorMessage = dataStatus }
+            }
         }
     }
 

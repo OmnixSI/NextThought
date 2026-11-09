@@ -62,6 +62,10 @@ final class AppState {
     var stageReviewing: Set<UUID> = []
     /// Result line of the last export / import / backup.
     var dataStatus = ""
+    var dataStatusTone: OperationTone = .progress
+    var dataStatusCanRetryBackup = false
+    var backupIssue: String?
+    var recoveryPointWarning: String?
     var isDataBusy = false
     /// Session selected in the history page (also set when jumping from a workspace review).
     var historySelection: UUID?

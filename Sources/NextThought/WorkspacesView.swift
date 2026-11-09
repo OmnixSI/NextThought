@@ -456,10 +456,9 @@ private struct WorkspaceList: View {
             }
             TextField("搜索项目、课程或资料", text: $query).textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("projects.search")
-            Picker("排序", selection: $sortRaw) {
-                Text("最近活动").tag("recent")
-                Text("名称").tag("name")
-            }.pickerStyle(.menu).font(Typo.caption)
+            MenuPicker(title: "排序", selection: $sortRaw,
+                       options: [("recent", String(localized: "最近活动")), ("name", String(localized: "名称"))])
+                .environment(\.settingsNativeControls, true)
             if let issue = state.workspaces.archiveRepairIssue {
                 Text(issue).font(Typo.caption).foregroundStyle(Ink.caution)
             }

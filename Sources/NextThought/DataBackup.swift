@@ -278,9 +278,9 @@ enum DataBackup {
         let url = try await recoveryStore.create(files: files, directories: ["Sessions": AppPaths.sessions,
             "Originals": AppPaths.root.appendingPathComponent("Originals", isDirectory: true)], reason: reason)
         if try await recoveryStore.storageBytes() > 2 * 1024 * 1024 * 1024 {
-            AppState.shared.dataStatus = "最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。"
+            AppState.shared.recoveryPointWarning = "最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。"
             Diagnostics.record("backup.soft_budget_exceeded")
-        }
+        } else { AppState.shared.recoveryPointWarning = nil }
         NotificationCenter.default.post(name: didChangeNotification, object: nil)
         Diagnostics.record("backup.automatic", ["reason": reason])
         return url
@@ -291,9 +291,13 @@ enum DataBackup {
     static func afterSession(sessionID: UUID) -> Task<URL?, Never>? {
         guard AppPreferences.standard.object(forKey: "autoBackup") as? Bool ?? true else { return nil }
         return Task {
-            do { return try await automaticBackup(reason: "session", waitForFinalTranslationDrainOf: sessionID) }
+            do {
+                let url = try await automaticBackup(reason: "session", waitForFinalTranslationDrainOf: sessionID)
+                AppState.shared.backupIssue = nil
+                return url
+            }
             catch {
-                AppState.shared.dataStatus = "会议归档或恢复点创建失败：" + error.localizedDescription
+                AppState.shared.backupIssue = "会议归档或恢复点创建失败：" + error.localizedDescription
                 return nil
             }
         }

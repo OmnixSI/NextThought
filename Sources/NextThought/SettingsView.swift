@@ -19,6 +19,18 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         default: rawValue
         }
     }
+    var tabTitle: String {
+        switch self {
+        case .essentials: "界面偏好"
+        case .more: "版本更新"
+        case .answers: "AI 服务"
+        case .documents: "资料"
+        case .overlay: "显示"
+        case .recording: "备份"
+        case .privacy: "权限与维护"
+        default: displayTitle
+        }
+    }
     var symbol: String {
         switch self {
         case .essentials: "checklist"
@@ -128,6 +140,11 @@ struct SettingsView: View {
             Button("") { searchFocused = true }
                 .keyboardShortcut("f", modifiers: .command).hidden().accessibilityHidden(true)
         }
+        .onChange(of: query) { _, next in
+            if next.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                searchTarget = nil; highlightTarget = nil; searchNavigationRevision = UUID()
+            }
+        }
         .onAppear {
             if groupRaw != selectedGroup.rawValue { groupRaw = selectedGroup.rawValue }
         }
@@ -146,13 +163,13 @@ struct SettingsView: View {
                     .onExitCommand { query = ""; searchTarget = nil; searchFocused = false }
                     .accessibilityIdentifier("settings.search")
                 if !query.isEmpty {
-                    Button { query = ""; searchTarget = nil } label: { Image(systemName: "xmark.circle.fill") }
+                    Button { query = ""; searchTarget = nil; highlightTarget = nil; searchNavigationRevision = UUID(); searchFocused = true } label: { Image(systemName: "xmark.circle.fill") }
                         .buttonStyle(.plain).foregroundStyle(Ink.secondary).accessibilityLabel("清除搜索")
                 }
             }
             .font(Typo.caption).padding(9)
             .background(Ink.surface, in: RoundedRectangle(cornerRadius: 8))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Ink.hairline))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(searchFocused ? Ink.focus : Ink.hairline, lineWidth: searchFocused ? 2 : 1))
             .padding(.horizontal, 12)
             if searching {
                 ScrollView {
@@ -215,14 +232,9 @@ struct SettingsView: View {
             Text(LocalizedStringKey(category.title)).font(.system(size: 23, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
             if category.groups.count > 1 {
-                Picker("设置分区", selection: $groupRaw) {
-                    ForEach(category.groups) { group in
-                        Text(LocalizedStringKey(group.displayTitle)).tag(group.rawValue)
-                    }
-                }
-                .pickerStyle(.segmented).labelsHidden()
-                .frame(maxWidth: 480)
-                .accessibilityIdentifier("settings.subsections")
+                UnderlineTabs(items: category.groups.map { (value: $0.rawValue, title: $0.tabTitle) },
+                              selection: $groupRaw, accessibilityLabel: "设置分区")
+                    .accessibilityIdentifier("settings.subsections")
             }
             Text(LocalizedStringKey(selectedGroup.summary)).font(Typo.caption).foregroundStyle(Ink.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -313,7 +325,7 @@ extension SettingsGroup {
         case .skills: "加载 SKILL.md · 全局或按系列"
         case .overlay: "位置 · 字号 · 共享显示"
         case .recording: "本机会话记录 · 备份与恢复"
-        case .more: "版本检查 · 更新渠道 · 下载与安装"
+        case .more: "应用版本与更新偏好"
         case .shortcuts: "查看与修改键盘快捷键"
         case .companion: "手机配对 · 局域网与备用连接"
         case .privacy: "系统权限 · 本机签名 · 运行维护"
@@ -454,10 +466,22 @@ struct AdvancedOptions<Content: View>: View {
     private let content: Content
     private let alwaysVisible: Bool
     private let title: String
+    private let searchAnchors: Set<String>
+    @State private var searchExpanded = false
     @AppStorage private var expanded: Bool
     init(_ id: String, alwaysVisible: Bool = false, @ViewBuilder content: () -> Content) {
         self.content = content()
         self.alwaysVisible = alwaysVisible
+        self.searchAnchors = Set([
+            "essentials-tools": ["窗口", "环境与模型", "使用前检查"],
+            "capture-refresh": ["会议声音与麦克风"], "apple-speech-note": ["语音识别"],
+            "recognition": ["专业词", "本地模型", "启动与回声"],
+            "answers": ["问题识别", "联网搜索", "Codex 运行方式"],
+            "answers-codex": ["回答引擎"], "auto-end-minutes": ["会议自动收尾"],
+            "overlay": ["位置与外观"], "recording-lessons": ["会话记录"],
+            "recording-transfer": ["备份与恢复"], "recording-backups": ["自动备份"],
+            "updates": ["GitHub 访问"], "document-management": ["组件管理与高级设置"]
+        ][id] ?? [])
         self.title = [
             "essentials-tools": "环境检查与修复", "capture-refresh": "刷新声音来源",
             "apple-speech-note": "系统识别说明", "recognition": "识别模型与音频处理",
@@ -471,11 +495,16 @@ struct AdvancedOptions<Content: View>: View {
     var body: some View {
         if alwaysVisible { content }
         else {
-            DisclosureGroup(LocalizedStringKey(title), isExpanded: $expanded) {
+            DisclosureGroup(LocalizedStringKey(title), isExpanded: Binding(
+                get: { searchDestination == nil ? expanded : searchExpanded },
+                set: { if searchDestination != nil { searchExpanded = $0 } else { expanded = $0 } }
+            )) {
                 content.padding(.top, Space.s3)
             }
             .font(Typo.label)
-            .onChange(of: searchDestination, initial: true) { _, target in if target != nil { expanded = true } }
+            .onChange(of: searchDestination, initial: true) { _, target in
+                searchExpanded = target.map { expanded || searchAnchors.contains($0) } ?? false
+            }
         }
     }
 }
@@ -508,7 +537,7 @@ struct Note: View {
                     Image(systemName: "info.circle")
                         .font(.system(size: 12))
                         .foregroundStyle(color)
-                        .frame(width: 28, height: 28)
+                        .frame(width: Hit.icon, height: Hit.icon)
                         .background(isHovering || infoFocused ? Ink.hover : Color.clear, in: Circle())
                         .overlay(Circle().strokeBorder(infoFocused ? Ink.focus : Color.clear, lineWidth: 1.5))
                         .contentShape(Rectangle())
@@ -743,13 +772,13 @@ private struct CompanionSection: View {
         return VStack(alignment: .leading, spacing: 12) {
             Toggle("启用原生手机 App 的蓝牙备用", isOn: Binding(get: { state.companionBluetoothEnabled }, set: { state.setCompanionBluetooth(enabled: $0) })).disabled(!state.companionEnabled)
             if !state.companionBluetoothEnabled { Text(state.companionBluetoothStatus).font(.system(size: 12)).foregroundStyle(.secondary) }
-            TextField("HTTPS 中转服务根地址", text: $state.companionRelayURL).textFieldStyle(.roundedBorder)
+            TextField("HTTPS 中转服务根地址", text: $state.companionRelayURL).textFieldStyle(PaperTextFieldStyle())
             Toggle("启用互联网加密备用连接", isOn: Binding(get: { state.companionRelayEnabled }, set: { state.setCompanionRelay(enabled: $0) })).disabled(!state.companionEnabled)
             if !state.companionRelayEnabled { Text(state.companionRelayStatus).font(.system(size: 12)).foregroundStyle(.secondary) }
             Divider()
             HStack(spacing: 8) {
                 Text("首选端口").font(.system(size: 12))
-                TextField("8765", value: $state.companionPort, format: .number.grouping(.never)).textFieldStyle(.roundedBorder).frame(width: 80)
+                TextField("8765", value: $state.companionPort, format: .number.grouping(.never)).textFieldStyle(PaperTextFieldStyle()).frame(width: 80)
                 Button("重新生成链接") { state.setCompanion(enabled: true); copiedLink = nil }.buttonStyle(ChipButtonStyle()).disabled(!state.companionEnabled)
             }
             Note("重新生成链接后，手机需要重新配对。", presentation: .inline)
@@ -923,10 +952,10 @@ struct CloudSettings: View {
             .disabled(state.isRunning)
             .onChange(of: state.cloudProvider) { _, _ in state.loadCloudKey(); state.saveAnswerSettings() }
         TextField("模型（留空使用 \(state.cloudProvider.defaultModel)）", text: $state.cloudModel)
-            .textFieldStyle(.roundedBorder)
+            .textFieldStyle(PaperTextFieldStyle())
             .onChange(of: state.cloudModel) { _, _ in state.saveAnswerSettings() }
         SecureField("\(state.cloudProvider.rawValue.capitalized) API Key（保存在系统钥匙串）", text: $state.cloudKey)
-            .textFieldStyle(.roundedBorder)
+            .textFieldStyle(PaperTextFieldStyle())
             .onChange(of: state.cloudKey) { _, _ in state.saveCloudKey() }
         Toggle("我了解：会议音频会实时上传到所选服务商并按其条款处理", isOn: $state.cloudConsent)
             .onChange(of: state.cloudConsent) { _, _ in state.saveAnswerSettings() }
@@ -1045,7 +1074,7 @@ struct WebSearchSettings: View {
                 case .tavily:
                     HStack {
                         SecureField("Tavily API Key（保存在系统钥匙串）", text: $state.tavilyKey)
-                            .textFieldStyle(.roundedBorder)
+                            .textFieldStyle(PaperTextFieldStyle())
                             .onChange(of: state.tavilyKey) { _, _ in state.saveTavilyKey() }
                         Link("获取 Key", destination: URL(string: "https://app.tavily.com")!).font(.system(size: 12))
                     }
@@ -1065,12 +1094,10 @@ struct EngineTestRow: View {
             Button {
                 Task { await state.testAnswerEngine() }
             } label: {
-                HStack(spacing: 6) {
-                    if state.engineTest == .running { ProgressView().controlSize(.small) }
-                    Label("测试回答", systemImage: "play.circle")
-                }
+                BusyActionLabel(title: "测试回答", busyTitle: "正在测试…", busy: state.engineTest == .running)
             }
             .buttonStyle(SecondaryButtonStyle())
+            .controlBusy(state.engineTest == .running)
             .disabled(state.engineTest == .running || state.isAnswering)
             switch state.engineTest {
             case .idle: Text("发一句测试问题，确认引擎能正常回答").font(.system(size: 11)).foregroundStyle(.secondary)
@@ -1154,8 +1181,8 @@ struct SkillEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("编辑技能").font(.headline)
-            TextField("名称", text: $skill.name).textFieldStyle(.roundedBorder)
-            TextField("一句话说明（可选）", text: $skill.summary).textFieldStyle(.roundedBorder)
+            TextField("名称", text: $skill.name).textFieldStyle(PaperTextFieldStyle())
+            TextField("一句话说明（可选）", text: $skill.summary).textFieldStyle(PaperTextFieldStyle())
             TextEditor(text: $skill.content)
                 .font(.system(size: 13, design: .monospaced))
                 .scrollContentBackground(.hidden)
@@ -1274,9 +1301,21 @@ private struct RecordingSettings: View {
                 if includeSecrets { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
             }
             if state.isDataBusy { ProgressView().controlSize(.small) }
-            if !state.dataStatus.isEmpty { Note(state.dataStatus, color: .green) }
+            if !state.dataStatus.isEmpty {
+                OperationFeedback(message: state.dataStatus, tone: state.dataStatusTone)
+                if state.dataStatusCanRetryBackup && state.dataStatusTone == .failure {
+                    Button("重试备份") { state.backupNow() }
+                        .buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
+                }
+            }
         }
         }
+        if let issue = state.backupIssue {
+            OperationFeedback(message: issue, tone: .failure)
+            Button("重试备份") { state.backupNow() }
+                .buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
+        }
+        if let warning = state.recoveryPointWarning { OperationFeedback(message: warning, tone: .warning) }
         AdvancedOptions("recording-backups") {
         SettingsSection(title: "自动备份", icon: "clock.arrow.circlepath") {
             Toggle("会议结束后自动创建恢复点", isOn: $state.autoBackup)
@@ -1376,37 +1415,38 @@ private struct UpdateSettings: View {
 
     var body: some View {
         @Bindable var updater = Updater.shared
-        SettingsSection(title: "自动更新", icon: "arrow.down.circle") {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("当前版本 \(updater.currentVersion)（#\(updater.currentBuild)）").font(.system(size: 13, weight: .medium))
-                    Text(statusText).foregroundStyle(statusColor).lineLimit(3)
+        SettingsSection(title: "应用版本", icon: "app.badge") {
+            HStack(alignment: .center, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(verbatim: "NextThought " + updater.currentVersion).font(.system(size: 15, weight: .medium))
+                        Text("构建 \(String(updater.currentBuild))").font(Typo.caption).foregroundStyle(Ink.secondary)
+                    }
+                    Text(statusText).font(Typo.caption).foregroundStyle(statusColor)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer()
-                switch updater.phase {
-                case .ready:
-                    Button("重启并安装") { updater.installAndRelaunch() }.buttonStyle(PrimaryButtonStyle()).disabled(state.isRunning)
-                case .available:
-                    Button("下载") { updater.downloadUpdate() }.buttonStyle(PrimaryButtonStyle())
-                case .checking, .downloading, .installing:
-                    ProgressView().controlSize(.small)
-                default:
-                    Button("检查更新") { Task { await updater.check(userInitiated: true) } }.buttonStyle(SecondaryButtonStyle())
+                Spacer(minLength: 8)
+                updateAction
+            }
+            if case let .downloading(fraction) = updater.phase {
+                ProgressView(value: fraction).controlSize(.small).accessibilityLabel("更新下载进度")
+            }
+            if let note = updater.stagedNote { Note(note, color: Ink.caution) }
+            if state.isRunning, updater.phase == .ready { Note("记录结束后即可安装更新。", color: Ink.caution) }
+        }
+        SettingsSection(title: "更新偏好", icon: "arrow.triangle.2.circlepath") {
+            MenuPicker(title: "更新渠道", selection: $updater.channel,
+                       options: [(.stable, String(localized: "正式版本")), (.main, String(localized: "预览版本"))])
+                .onChange(of: updater.channel) { _, _ in
+                    updater.saveSettings()
+                    Task { await updater.check(userInitiated: true) }
                 }
-            }
-            if case let .downloading(fraction) = updater.phase { ProgressView(value: fraction).controlSize(.small) }
-            if let note = updater.stagedNote { Note(note, color: .orange) }
-            if state.isRunning, updater.phase == .ready { Note("正在辅助中：停止后再安装，避免打断会议。", color: .orange) }
-            Group {
-            Picker("更新渠道", selection: $updater.channel) {
-                ForEach(UpdateChannel.allCases) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .onChange(of: updater.channel) { _, _ in updater.saveSettings(); Task { await updater.check(userInitiated: true) } }
-            Toggle("自动检查更新（启动后与每 6 小时；有新版本时在后台下载）", isOn: $updater.automaticChecks)
+            if updater.channel == .main { Note("预览版本可能包含尚未正式发布的功能。", color: Ink.caution) }
+            Divider()
+            Toggle("自动检查更新", isOn: $updater.automaticChecks)
                 .onChange(of: updater.automaticChecks) { _, _ in updater.saveSettings() }
-            }
-            Note(state.simplifiedInterface ? "更新前会自动备份，并校验安装包。" : "从 GitHub Releases 下载，校验 SHA-256 和签名后再安装；已绑定本机签名时，更新后权限保持不变。")
+            Note("启动后及每 6 小时检查；有新版本时在后台下载。")
+            Note("更新前会自动备份，并校验安装包。")
         }
         // Show essential access help after an error; otherwise use the global expert switch.
         if updater.needsAccessHelp {
@@ -1416,23 +1456,41 @@ private struct UpdateSettings: View {
         }
     }
 
+    @ViewBuilder private var updateAction: some View {
+        switch updater.phase {
+        case .ready:
+            Button("重启并安装") { updater.installAndRelaunch() }
+                .buttonStyle(PrimaryButtonStyle()).disabled(state.isRunning || !updater.canInstall)
+        case .available:
+            Button("下载更新") { updater.downloadUpdate() }.buttonStyle(PrimaryButtonStyle())
+        case .checking, .downloading, .installing:
+            Button {} label: {
+                BusyActionLabel(title: "检查更新", busyTitle: "正在处理…", busy: true)
+            }.buttonStyle(SecondaryButtonStyle()).controlBusy(true).disabled(true)
+        default:
+            Button { Task { await updater.check(userInitiated: true) } } label: {
+                BusyActionLabel(title: "检查更新", busyTitle: "正在处理…", busy: false)
+            }.buttonStyle(SecondaryButtonStyle())
+        }
+    }
+
     private var statusText: String {
         switch updater.phase {
-        case .idle: return updater.lastChecked.map { "上次检查 \($0.formatted(date: .omitted, time: .shortened))" } ?? "尚未检查"
-        case .checking: return "正在检查…"
-        case .upToDate: return "已是最新" + (updater.lastChecked.map { " · \($0.formatted(date: .omitted, time: .shortened)) 检查" } ?? "")
-        case .available: return "发现新版本 \(updater.available?.displayVersion ?? "")"
-        case let .downloading(fraction): return "正在下载 \(updater.available?.displayVersion ?? "") · \(Int(fraction * 100))%"
-        case .ready: return "\(updater.available?.displayVersion ?? "新版本") 已下载并校验，可以安装"
-        case .installing: return "正在安装并重新打开…"
+        case .idle: return updater.lastChecked.map { String(localized: "上次检查 \($0.formatted(date: .omitted, time: .shortened))") } ?? String(localized: "尚未检查")
+        case .checking: return String(localized: "正在检查…")
+        case .upToDate: return String(localized: "已是最新") + (updater.lastChecked.map { " · " + $0.formatted(date: .omitted, time: .shortened) } ?? "")
+        case .available: return String(localized: "发现新版本 \(updater.available?.displayVersion ?? "")")
+        case let .downloading(fraction): return String(localized: "正在下载") + " " + (updater.available?.displayVersion ?? "") + " · " + String(Int(fraction * 100)) + "%"
+        case .ready: return String(localized: "\(updater.available?.displayVersion ?? String(localized: "新版本")) 已下载并校验，可以安装")
+        case .installing: return String(localized: "正在安装并重新打开…")
         case let .failed(message): return message
         }
     }
 
     private var statusColor: Color {
         switch updater.phase {
-        case .failed: .orange
-        case .ready, .available: Brand.accent
+        case .failed: Ink.live
+        case .ready, .available: Ink.ready
         default: .secondary
         }
     }
@@ -1445,14 +1503,14 @@ private struct GitHubAccessSection: View {
         @Bindable var updater = Updater.shared
         SettingsSection(title: "GitHub 访问", icon: "key") {
             HStack {
-                TextField("仓库", text: $updater.repository).textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                TextField("仓库", text: $updater.repository).textFieldStyle(PaperTextFieldStyle()).frame(maxWidth: 260)
                     .onSubmit { updater.saveSettings() }
                 Spacer()
                 Label(updater.hasToken ? "已保存访问令牌" : "未保存访问令牌", systemImage: updater.hasToken ? "checkmark.seal" : "key")
                     .foregroundStyle(updater.hasToken ? .green : .secondary)
             }
             HStack {
-                SecureField("粘贴访问令牌（github_pat_…）", text: $token).textFieldStyle(.roundedBorder)
+                SecureField("粘贴访问令牌（github_pat_…）", text: $token).textFieldStyle(PaperTextFieldStyle())
                 Button("保存并检查") {
                     updater.saveToken(token); token = ""
                     Task { await updater.check(userInitiated: true) }

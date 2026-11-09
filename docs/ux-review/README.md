@@ -23,7 +23,7 @@ Pages are checkpointed independently. Cancellation preserves completed checkpoin
 
 ## Isolated preview
 
-Build using `scripts/build-ux-preview.sh`. This creates `.local/AcademicUXReview.app` with a separate preview bundle identity. Use `NEXTTHOUGHT_DATA_DIR` pointing inside this repository for fixture/self-test runs. Never run demo mode using the production bundle identity: demo mode changes preferences.
+Build using `scripts/build-ux-preview.sh`. This creates `.local/NextThoughtUXReview.app` with a separate preview bundle identity. Use `NEXTTHOUGHT_DATA_DIR` pointing inside this repository for fixture/self-test runs. Never run demo mode using the production bundle identity: demo mode changes preferences.
 
 ## Acceptance record
 
@@ -38,6 +38,6 @@ Record actual test commands, results and remaining limitations in `VALIDATION.md
 | Efficiency | Search locates settings directly, including English aliases; native sidebar and menu controls support keyboard navigation. |
 | Feedback | Errors appear in the settings window. Search has a clear action and a useful empty state; results retain section context. |
 | Visual hierarchy | Compact native category rows, a single page header, restrained form cards and no permanent readiness dashboard in General. |
-| Component consistency | Native popup controls within settings, aligned row spacing, shared type and state colors, immediate appearance updates. |
+| Component consistency | Quiet native menus with content-sized value labels within settings, aligned row spacing, shared type and state colors, immediate appearance updates. |
 
 The HTML concept is design history. The shipped product uses native SwiftUI/AppKit components.

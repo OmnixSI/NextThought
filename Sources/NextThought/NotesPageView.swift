@@ -166,7 +166,7 @@ struct MeetingPage: View {
             Button("保留我的修订", role: .cancel) {}
             Button("使用 AI 原稿", role: .destructive) {
                 Task {
-                    do { _ = try await archive.updateUserContent(for: id) { $0.editedNotes = nil; $0.editedMarkdown = nil; $0.basedOnGeneratedAt = nil } }
+                    do { _ = try await archive.updateUserContent(for: id) { $0.editedNotes = nil; $0.editedSummary = nil; $0.editedMarkdown = nil; $0.basedOnGeneratedAt = nil } }
                     catch { state.errorMessage = "未能切换版本：\(error.localizedDescription)" }
                 }
             }
@@ -202,9 +202,15 @@ struct MeetingPage: View {
                            recommended: recommendedFormat(detail), selection: $format,
                            onPick: { picked in pick(picked, in: detail) })
         }
-        StructuredNotesPane(detail: detail, format: shownFormat(detail), onJump: { seconds in jump(to: seconds, in: detail) }) {
+        StructuredNotesPane(detail: notesPresentation(detail), format: shownFormat(detail), onJump: { seconds in jump(to: seconds, in: detail) }) {
             NotesBody(detail: detail, selectedEvidenceID: $selectedEvidenceID) { seconds in jump(to: seconds, in: detail) }
         }
+    }
+
+    private func notesPresentation(_ detail: SessionDetail) -> SessionDetail {
+        var presentation = detail
+        presentation.summary = detail.effectiveSummary
+        return presentation
     }
 
     @ViewBuilder
@@ -347,7 +353,7 @@ struct MeetingPage: View {
 
     /// A click on the bar: a view that is saved shows at once, a new one is written now.
     private func pick(_ picked: NotesFormat, in detail: SessionDetail) {
-        guard picked.isStructured, detail.summary?.payload(for: picked) == nil,
+        guard picked.isStructured, detail.effectiveSummary?.payload(for: picked) == nil,
               !StructuredNotesJobs.shared.isRunning(StructuredJobKey(id: id, format: picked)) else { return }
         state.generateStructuredNotes(for: id, format: picked)
     }
@@ -355,7 +361,7 @@ struct MeetingPage: View {
     /// What the copy button copies: the structured view on screen, otherwise the text notes.
     private func copiedFormat(_ detail: SessionDetail) -> NotesFormat {
         let shown = shownFormat(detail)
-        return tab == .notes && detail.summary?.payload(for: shown) != nil ? shown : .standard
+        return tab == .notes && detail.effectiveSummary?.payload(for: shown) != nil ? shown : .standard
     }
 
     private func copyShown(_ detail: SessionDetail) {
@@ -377,7 +383,7 @@ struct MeetingPage: View {
             return
         }
         let shown = copiedFormat(detail)
-        if shown.isStructured, let payload = detail.summary?.payload(for: shown) {
+        if shown.isStructured, let payload = detail.effectiveSummary?.payload(for: shown) {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(StructuredNotesMarkdown.render(payload), forType: .string)
         } else {
@@ -407,9 +413,9 @@ struct MeetingPage: View {
 
     private func notesEditingActions(_ detail: SessionDetail) -> some View {
         HStack(spacing: Space.s2) {
-            if detail.userContent.editedNotes != nil || detail.userContent.editedMarkdown != nil {
+            if detail.userContent.editedNotes != nil || detail.userContent.editedSummary != nil || detail.userContent.editedMarkdown != nil {
                 Label("你的修订版", systemImage: "pencil").font(Typo.caption).foregroundStyle(Ink.secondary)
-                if let base = detail.userContent.basedOnGeneratedAt, let latest = detail.notes?.generatedAt, base < latest {
+                if let base = detail.userContent.basedOnGeneratedAt, let latest = detail.summary?.generatedAt ?? detail.notes?.generatedAt, base < latest {
                     Text("AI 原稿已有新版本").font(Typo.caption).foregroundStyle(Ink.ai)
                 }
                 Button("使用 AI 原稿…") { confirmsUseAI = true }.buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
@@ -722,7 +728,7 @@ private struct NotesBody: View {
                 }
                 footer(notes)
             }
-        } else if let summary = detail.summary {
+        } else if let summary = detail.effectiveSummary {
             // Notes written before the structured notes: the Markdown summary.
             MarkdownText(text: Self.body(of: summary.markdown), size: 14, lineSpacing: 6)
         } else if !archive.summarizing.contains(detail.meta.id), detail.meta.id != archive.activeID,

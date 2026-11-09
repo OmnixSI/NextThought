@@ -9,6 +9,42 @@ struct SessionUserContentTests {
         return directory
     }
 
+    @Test func schemaOneDecisionsWithoutIDsHaveAStableFallback() throws {
+        let lineID = UUID()
+        let legacy: [String: Any] = ["schemaVersion": 1, "correctionDecisions": [[
+            "lineID": lineID.uuidString, "original": "Mamba", "corrected": "曼巴", "reverted": true
+        ]]]
+        let data = try JSONSerialization.data(withJSONObject: legacy)
+        let first = try JSONLines.decoder().decode(SessionUserContent.self, from: data)
+        let second = try JSONLines.decoder().decode(SessionUserContent.self, from: data)
+        #expect(first.correctionDecisions.first?.id == second.correctionDecisions.first?.id)
+        #expect(first.correctionDecisions.first?.lineID == lineID)
+        #expect(first.editedSummary == nil)
+        #expect(first.hasContent)
+        let roundTrip = try JSONLines.decoder().decode(SessionUserContent.self, from: JSONLines.encoder().encode(first))
+        #expect(roundTrip.correctionDecisions.first?.id == first.correctionDecisions.first?.id)
+    }
+
+    @Test func fullSummaryOverrideKeepsStructuredPayloadAcrossAIDraftReplacement() throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let generatedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        var summary = SessionSummary(title: "Edited", markdown: "User-edited summary", questions: [], generatedAt: generatedAt, model: "test")
+        summary.store(StructuredNotesPayload(format: .outline, outline: OutlineNotes(sections: [
+            OutlineSection(title: "Edited section", points: [OutlinePoint(text: "User-edited point")])
+        ]), transcriptSourceRevision: "source-v1"))
+        var content = SessionUserContent()
+        content.editedSummary = summary
+        _ = try SessionUserContentStore.save(content, to: directory)
+        let replacement = SessionSummary(title: "New AI", markdown: "New AI original", questions: [], generatedAt: generatedAt, model: "test")
+        try JSONLines.encoder().encode(replacement).write(to: directory.appendingPathComponent("summary.json"))
+        let reopened = try SessionUserContentStore.load(from: directory)
+        #expect(reopened.hasContent)
+        #expect(reopened.editedSummary?.markdown == "User-edited summary")
+        #expect(reopened.editedSummary?.payload(for: .outline)?.outline?.sections.first?.points.first?.text == "User-edited point")
+        #expect(reopened.editedSummary?.payload(for: .outline)?.transcriptSourceRevision == "source-v1")
+    }
+
     @Test func userDraftRoundTripsIndependentlyOfAIResults() throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

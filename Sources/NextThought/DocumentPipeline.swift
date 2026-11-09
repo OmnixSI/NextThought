@@ -215,7 +215,7 @@ extension MarkdownConverter {
     /// in scanner/exporter PDFs. Bounded traversal also handles cyclic resources.
     static func hasLargeEmbeddedImage(_ page: PDFPage) -> Bool {
         guard let reference = page.pageRef else { return false }
-        var visited = Set<OpaquePointer>()
+        var visited = Set<CGPDFDictionaryRef>()
         func scan(_ resources: CGPDFDictionaryRef, depth: Int) -> Bool {
             // An unusually deep form graph is uncertain coverage, never proof
             // that no image exists. Prefer OCR/a visible warning in this case.

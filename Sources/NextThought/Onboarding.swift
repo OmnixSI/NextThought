@@ -869,14 +869,11 @@ private struct AutoEndGuideChoice: View {
             Text(LocalizedStringKey(line)).font(Typo.body).foregroundStyle(Ink.ink)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
-            Picker("会议没人说话时", selection: $mode) {
-                Text("提醒后结束").tag(MeetingEndWatch.Mode.prompt.rawValue)
-                Text("直接结束").tag(MeetingEndWatch.Mode.end.rawValue)
-                Text("不自动结束").tag(MeetingEndWatch.Mode.off.rawValue)
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .fixedSize()
+            MenuPicker(selection: $mode,
+                       options: [(MeetingEndWatch.Mode.prompt.rawValue, String(localized: "提醒后结束")),
+                                 (MeetingEndWatch.Mode.end.rawValue, String(localized: "直接结束")),
+                                 (MeetingEndWatch.Mode.off.rawValue, String(localized: "不自动结束"))],
+                       accessibilityTitle: "会议没人说话时")
         }
     }
 

@@ -67,6 +67,30 @@ import Testing
         #expect(snapshot.fields.filter { $0.kind == .answer }.count == 1)
     }
 
+    @Test func searchUsesEditedSummaryMarkdownAndStructuredPayload() {
+        let date = Date(timeIntervalSince1970: 1_800_000_000)
+        let generatedPayload = StructuredNotesPayload(format: .outline,
+            outline: OutlineNotes(sections: [OutlineSection(title: "AI原结构图",
+                points: [OutlinePoint(text: "AI旧结构图独有内容")])]))
+        let editedPayload = StructuredNotesPayload(format: .outline,
+            outline: OutlineNotes(sections: [OutlineSection(title: "人工修订结构图",
+                points: [OutlinePoint(text: "人工结构图独有内容")])]))
+        let generated = SessionSummary(title: "AI原摘要", markdown: "AI旧纪要独有内容", questions: [],
+            generatedAt: date, model: "test", structured: generatedPayload, structuredAll: [generatedPayload])
+        var user = SessionUserContent()
+        user.editedMarkdown = "旧版人工文本独有内容"
+        user.editedSummary = SessionSummary(title: "人工修订摘要", markdown: "人工纪要独有内容", questions: [],
+            generatedAt: date, model: "test", structured: editedPayload, structuredAll: [editedPayload])
+        let snapshot = SessionSearchSnapshot(lines: [], questions: [], answers: [], notes: nil, summary: generated, user: user)
+
+        for text in ["人工纪要独有内容", "人工结构图独有内容"] {
+            #expect(SessionContentSearch.firstHit(in: snapshot.fields, terms: Glossary().search(for: text))?.kind == .notes)
+        }
+        for text in ["AI旧纪要独有内容", "AI旧结构图独有内容", "旧版人工文本独有内容"] {
+            #expect(SessionContentSearch.firstHit(in: snapshot.fields, terms: Glossary().search(for: text)) == nil)
+        }
+    }
+
     @Test func oldCopiedProjectOwnsArchivesBeforeOriginalIsDeleted() throws {
         let root = try temporaryRoot(); defer { try? FileManager.default.removeItem(at: root) }
         let originalID = UUID()

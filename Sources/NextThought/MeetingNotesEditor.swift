@@ -14,10 +14,10 @@ struct MeetingNotesEditor: View {
     init(detail: SessionDetail) {
         self.detail = detail
         _notes = State(initialValue: detail.effectiveNotes)
-        _markdown = State(initialValue: detail.userContent.editedMarkdown ?? detail.summary?.markdown ?? "")
+        _markdown = State(initialValue: detail.userContent.editedMarkdown ?? detail.effectiveSummary?.markdown ?? "")
     }
 
-    private var dirty: Bool { notes != detail.effectiveNotes || markdown != (detail.userContent.editedMarkdown ?? detail.summary?.markdown ?? "") }
+    private var dirty: Bool { notes != detail.effectiveNotes || markdown != (detail.userContent.editedMarkdown ?? detail.effectiveSummary?.markdown ?? "") }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
@@ -67,8 +67,11 @@ struct MeetingNotesEditor: View {
                 Spacer()
                 Button("取消") { if dirty { confirmsDiscard = true } else { dismiss() } }
                     .keyboardShortcut(.cancelAction).buttonStyle(SecondaryButtonStyle()).disabled(saving)
-                Button(saving ? "正在保存…" : "保存更改") { Task { await save() } }
-                    .buttonStyle(PrimaryButtonStyle()).disabled(saving || showOriginal).keyboardShortcut(.defaultAction)
+                Button { Task { await save() } } label: {
+                    BusyActionLabel(title: "保存更改", busyTitle: "正在保存…", busy: saving)
+                }
+                .buttonStyle(PrimaryButtonStyle()).controlBusy(saving)
+                .disabled(saving || showOriginal).keyboardShortcut(.defaultAction)
             }
         }
         .padding(Space.s6).frame(width: 720, height: 640)
@@ -89,7 +92,13 @@ struct MeetingNotesEditor: View {
         do {
             _ = try await SessionArchive.shared.updateUserContent(for: detail.meta.id) { content in
                 content.editedNotes = edited
-                content.editedMarkdown = edited == nil ? editedMarkdown : nil
+                if edited == nil, var summary = content.editedSummary {
+                    summary.markdown = editedMarkdown
+                    content.editedSummary = summary
+                    content.editedMarkdown = nil
+                } else {
+                    content.editedMarkdown = edited == nil ? editedMarkdown : nil
+                }
                 content.basedOnGeneratedAt = basedOn
             }
             dismiss()

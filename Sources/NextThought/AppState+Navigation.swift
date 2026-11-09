@@ -24,6 +24,7 @@ extension AppState {
 enum SettingsWindow {
     static let identifier = NSUserInterfaceItemIdentifier("NextThought.SettingsWindow")
     private static var window: NSWindow?
+    static var isVisible: Bool { window?.isVisible == true }
 
     static func show() {
         if let window {

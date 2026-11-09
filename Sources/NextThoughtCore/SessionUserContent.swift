@@ -23,6 +23,23 @@ public struct SessionCorrectionDecision: Codable, Sendable, Equatable {
         self.id = id
         self.lineID = lineID; self.original = original; self.corrected = corrected; self.reverted = reverted
     }
+
+    enum CodingKeys: String, CodingKey { case id, lineID, original, corrected, reverted }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        lineID = try c.decode(UUID.self, forKey: .lineID)
+        original = try c.decode(String.self, forKey: .original)
+        corrected = try c.decode(String.self, forKey: .corrected)
+        reverted = try c.decodeIfPresent(Bool.self, forKey: .reverted) ?? false
+        if let saved = try c.decodeIfPresent(UUID.self, forKey: .id) { id = saved }
+        else {
+            // Schema-1 decisions originally had no ID. A stable fallback keeps source/search revisions steady across reads.
+            let hash = SessionProjectionBuilder.transcriptRevision(id: lineID, text: "\(original.utf8.count):\(original)\(corrected)")
+            let compact = String(hash.prefix(32))
+            let value = "\(compact.prefix(8))-\(compact.dropFirst(8).prefix(4))-\(compact.dropFirst(12).prefix(4))-\(compact.dropFirst(16).prefix(4))-\(compact.dropFirst(20).prefix(12))"
+            id = UUID(uuidString: value) ?? lineID
+        }
+    }
 }
 
 public struct SessionUserContent: Codable, Sendable, Equatable {
@@ -33,6 +50,7 @@ public struct SessionUserContent: Codable, Sendable, Equatable {
     public var personalNotes = ""
     public var highlights: [SessionHighlight] = []
     public var editedNotes: StructuredNotes?
+    public var editedSummary: SessionSummary?
     public var editedMarkdown: String?
     public var basedOnGeneratedAt: Date?
     public var correctionDecisions: [SessionCorrectionDecision] = []
@@ -41,7 +59,7 @@ public struct SessionUserContent: Codable, Sendable, Equatable {
 
     public var hasContent: Bool {
         !personalNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !highlights.isEmpty
-            || editedNotes != nil || editedMarkdown != nil || !correctionDecisions.isEmpty
+            || editedNotes != nil || editedSummary != nil || editedMarkdown != nil || !correctionDecisions.isEmpty
     }
 
     /// Model corrections can change with a template. Explicit user decisions cannot.
@@ -61,7 +79,7 @@ public struct SessionUserContent: Codable, Sendable, Equatable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case schemaVersion, revision, updatedAt, personalNotes, highlights, editedNotes, editedMarkdown, basedOnGeneratedAt, correctionDecisions
+        case schemaVersion, revision, updatedAt, personalNotes, highlights, editedNotes, editedSummary, editedMarkdown, basedOnGeneratedAt, correctionDecisions
     }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -72,6 +90,7 @@ public struct SessionUserContent: Codable, Sendable, Equatable {
         personalNotes = try c.decodeIfPresent(String.self, forKey: .personalNotes) ?? ""
         highlights = try c.decodeIfPresent([SessionHighlight].self, forKey: .highlights) ?? []
         editedNotes = try c.decodeIfPresent(StructuredNotes.self, forKey: .editedNotes)
+        editedSummary = try c.decodeIfPresent(SessionSummary.self, forKey: .editedSummary)
         editedMarkdown = try c.decodeIfPresent(String.self, forKey: .editedMarkdown)
         basedOnGeneratedAt = try c.decodeIfPresent(Date.self, forKey: .basedOnGeneratedAt)
         correctionDecisions = try c.decodeIfPresent([SessionCorrectionDecision].self, forKey: .correctionDecisions) ?? []

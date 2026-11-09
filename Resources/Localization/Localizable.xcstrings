@@ -9686,7 +9686,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Version %@ is available"
+            "value": "New version available: %@"
           }
         }
       }
@@ -9706,7 +9706,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ downloaded and verified. Ready to install."
+            "value": "%@ is downloaded and verified, ready to install"
           }
         }
       }
@@ -20527,6 +20527,426 @@
           "stringUnit": {
             "state": "translated",
             "value": "Data is being backed up or restored. You can start recording when it finishes."
+          }
+        }
+      }
+    },
+    "界面偏好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        }
+      }
+    },
+    "版本更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        }
+      }
+    },
+    "AI 服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI service"
+          }
+        }
+      }
+    },
+    "显示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display"
+          }
+        }
+      }
+    },
+    "备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup"
+          }
+        }
+      }
+    },
+    "应用版本与更新偏好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App version and update preferences"
+          }
+        }
+      }
+    },
+    "应用版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App version"
+          }
+        }
+      }
+    },
+    "更新偏好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update preferences"
+          }
+        }
+      }
+    },
+    "构建 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Build %@"
+          }
+        }
+      }
+    },
+    "更新下载进度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update download progress"
+          }
+        }
+      }
+    },
+    "下载更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download update"
+          }
+        }
+      }
+    },
+    "正在处理…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Working…"
+          }
+        }
+      }
+    },
+    "正在测试…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testing…"
+          }
+        }
+      }
+    },
+    "记录结束后即可安装更新。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can install the update after the recording ends."
+          }
+        }
+      }
+    },
+    "预览版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview releases"
+          }
+        }
+      }
+    },
+    "预览版本可能包含尚未正式发布的功能。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview releases may include features that have not been formally released."
+          }
+        }
+      }
+    },
+    "自动检查更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for updates automatically"
+          }
+        }
+      }
+    },
+    "启动后及每 6 小时检查；有新版本时在后台下载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check at launch and every 6 hours; download new versions in the background."
+          }
+        }
+      }
+    },
+    "操作失败：": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operation failed: "
+          }
+        }
+      }
+    },
+    "重试备份": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry backup"
+          }
+        }
+      }
+    },
+    "页面分区": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page sections"
+          }
+        }
+      }
+    },
+    "默认模板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default template"
+          }
+        }
+      }
+    },
+    "删除模板“%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete template “%@”"
+          }
+        }
+      }
+    },
+    "删除模板“%@”？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete template “%@”?"
+          }
+        }
+      }
+    },
+    "删除模板": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete template"
+          }
+        }
+      }
+    },
+    "删除后不能再选择此模板。使用它的默认设置将恢复为各类型的内置模板，已经生成的纪要不会被删除。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This template will no longer be available. Defaults using it will revert to the built-in template for each meeting type. Existing notes will be kept."
+          }
+        }
+      }
+    },
+    "例如：每周组会": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: Weekly lab meeting"
+          }
+        }
+      }
+    },
+    "请填写模板名称。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a template name."
+          }
+        }
+      }
+    },
+    "请至少添加一个部分。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add at least one section."
+          }
+        }
+      }
+    },
+    "部分名称": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Section name"
+          }
+        }
+      }
+    },
+    "给 AI 的要求": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instructions for AI"
+          }
+        }
+      }
+    },
+    "请填写部分名称；已写的要求会保留。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a section name. Your instructions will be kept."
+          }
+        }
+      }
+    },
+    "例如：下一步实验": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: Next experiments"
+          }
+        }
+      }
+    },
+    "例如：列出下一步实验、对照与所需数据": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: List the next experiments, controls, and data needed"
+          }
+        }
+      }
+    },
+    "删除部分“%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete section “%@”"
+          }
+        }
+      }
+    },
+    "此模板已不存在，你的编辑仍保留在这里。请取消后重新选择模板。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This template no longer exists. Your edits are still here. Cancel and choose another template."
+          }
+        }
+      }
+    },
+    "未能保存模板，你的编辑仍保留在这里。请重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save the template. Your edits are still here. Try again."
+          }
+        }
+      }
+    },
+    "低": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Low"
+          }
+        }
+      }
+    },
+    "中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medium"
+          }
+        }
+      }
+    },
+    "高": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "High"
+          }
+        }
+      }
+    },
+    "更高": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Extra high"
+          }
+        }
+      }
+    },
+    "自动选择可用模型": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an available model automatically"
           }
         }
       }
