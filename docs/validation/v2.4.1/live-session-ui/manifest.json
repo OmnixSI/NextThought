@@ -1,0 +1,452 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-09T04:01:13Z",
+  "sourceRevision": "bccece1+worktree",
+  "syntheticState": true,
+  "fullMatrixCaptureCount": 114,
+  "fullMatrix": {
+    "appearances": [
+      "light",
+      "dark"
+    ],
+    "widthsPt": [
+      1200,
+      960,
+      900
+    ],
+    "heightPt": 780,
+    "scenarioCount": 19,
+    "locale": "zh-Hans"
+  },
+  "componentSample": {
+    "appearance": "light",
+    "heightPoints": 1080,
+    "locale": "zh-Hans",
+    "path": "synthetic-component-samples-light-1200.png",
+    "pixelHeight": 2160,
+    "pixelWidth": 2400,
+    "synthetic": true,
+    "widthPoints": 1200
+  },
+  "representativeCaptures": [
+    {
+      "scenario": "normal",
+      "appearance": "light",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-normal-light-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "normal",
+      "appearance": "dark",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-normal-dark-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "normal",
+      "appearance": "light",
+      "widthPoints": 900,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-normal-light-900.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Below the 960 pt minimum window width; stress render only."
+      ]
+    },
+    {
+      "scenario": "streaming",
+      "appearance": "light",
+      "widthPoints": 900,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-streaming-light-900.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Below the 960 pt minimum window width; stress render only."
+      ]
+    },
+    {
+      "scenario": "streaming",
+      "appearance": "dark",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-streaming-dark-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "busy",
+      "appearance": "dark",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-busy-dark-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "success",
+      "appearance": "light",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-success-light-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "save-warning",
+      "appearance": "light",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-save-warning-light-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Top-bar persistence status is seeded; no archive file was written."
+      ]
+    },
+    {
+      "scenario": "save-warning",
+      "appearance": "dark",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-save-warning-dark-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Top-bar persistence status is seeded; no archive file was written."
+      ]
+    },
+    {
+      "scenario": "save-recovery",
+      "appearance": "dark",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-save-recovery-dark-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Top-bar persistence status is seeded; no archive file was written."
+      ]
+    },
+    {
+      "scenario": "unavailable",
+      "appearance": "dark",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-unavailable-dark-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "stale",
+      "appearance": "light",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-stale-light-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Stale message is rendered through the real ErrorBanner view but the state itself is synthetic."
+      ]
+    },
+    {
+      "scenario": "empty",
+      "appearance": "dark",
+      "widthPoints": 900,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-empty-dark-900.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Below the 960 pt minimum window width; stress render only."
+      ]
+    },
+    {
+      "scenario": "reading-history",
+      "appearance": "light",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-reading-history-light-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "selection",
+      "appearance": "dark",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-selection-dark-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "ScrollFollowState is selection-pinned; the screenshot does not paint a fake text highlight."
+      ]
+    },
+    {
+      "scenario": "focus",
+      "appearance": "light",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-focus-light-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "overlay",
+      "appearance": "dark",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-overlay-dark-1200.png",
+      "overlayPath": "synthetic-overlay-dark-1200-popover.png",
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request."
+      ]
+    },
+    {
+      "scenario": "large-text",
+      "appearance": "light",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "accessibility3",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-large-text-light-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Records DynamicTypeSize.accessibility3 in the renderer; macOS does not change text size for this override, so this is not large-text acceptance evidence."
+      ]
+    },
+    {
+      "scenario": "large-text",
+      "appearance": "dark",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "accessibility3",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-large-text-dark-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Records DynamicTypeSize.accessibility3 in the renderer; macOS does not change text size for this override, so this is not large-text acceptance evidence."
+      ]
+    },
+    {
+      "scenario": "focus-busy",
+      "appearance": "light",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-focus-busy-light-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Stop-generation control receives a keyboard-focus highlight in the synthetic busy state."
+      ]
+    },
+    {
+      "scenario": "stale-manual-edit",
+      "appearance": "dark",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-stale-manual-edit-dark-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Corrected transcript text and stale notice are synthetic; no persisted correction/version transition is exercised."
+      ]
+    },
+    {
+      "scenario": "streaming-reading-history",
+      "appearance": "light",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-streaming-reading-history-light-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "Synthetic partial transcript is shown while the reading-history state is pinned; this is not a live ASR stream."
+      ]
+    },
+    {
+      "scenario": "selected-focus",
+      "appearance": "dark",
+      "widthPoints": 960,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-selected-focus-dark-960.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "The return-to-live control is focus-highlighted; native keyboard navigation is not exercised."
+      ]
+    },
+    {
+      "scenario": "cancel-late-callback",
+      "appearance": "dark",
+      "widthPoints": 1200,
+      "heightPoints": 780,
+      "dynamicTypeSize": "large",
+      "locale": "zh-Hans",
+      "synthetic": true,
+      "path": "synthetic-cancel-late-callback-dark-1200.png",
+      "overlayPath": null,
+      "notes": [
+        "Synthetic transcript and answer content; no microphone, system audio, ASR, model, or network request.",
+        "AnswerCoordinator rejects a synthetic late completion after cancellation; no provider/network request runs."
+      ]
+    }
+  ],
+  "interactions": [
+    {
+      "evidence": "ScrollFollowState holds position, counts six new items, and resumes only on explicit return.",
+      "id": "reading-history",
+      "result": "passed"
+    },
+    {
+      "evidence": "Selecting text pins the viewport through new content; explicit return releases it.",
+      "id": "selection-pinning",
+      "result": "passed"
+    },
+    {
+      "evidence": "Arrow/Page navigation keys and pointer-inside hit testing are classified; unrelated keys and outside points are ignored.",
+      "id": "scroll-navigation-input",
+      "result": "passed"
+    },
+    {
+      "evidence": "The live pause control receives keyboard focus in the native SwiftUI capture.",
+      "id": "keyboard-focus",
+      "result": "rendered"
+    },
+    {
+      "evidence": "Captured the open evidence details popover at synthetic-overlay-dark-1200-popover.png alongside the live page.",
+      "id": "evidence-overlay",
+      "result": "passed"
+    },
+    {
+      "evidence": "The focus-busy capture shows the Stop control's focus ring while generation is active; focus is a synthetic preview state.",
+      "id": "busy-focus",
+      "result": "rendered"
+    },
+    {
+      "evidence": "The selected-focus capture shows the return-to-live action's focus ring; focus is a synthetic preview state.",
+      "id": "selection-focus",
+      "result": "rendered"
+    },
+    {
+      "evidence": "A synthetic finish after cancellation was ignored; the cancelled phase and partial text remained unchanged.",
+      "id": "cancel-late-callback",
+      "result": "passed"
+    },
+    {
+      "evidence": "Expanded synthetic partial text by 203 pt; composer drift 0.0 pt and primary-action drift 0.0 pt (≤0.5 pt).",
+      "id": "streaming-history-layout",
+      "result": "passed"
+    },
+    {
+      "evidence": "Captured the native component sample sheet at synthetic-component-samples-light-1200.png.",
+      "id": "component-sample-sheet",
+      "result": "passed"
+    },
+    {
+      "evidence": "The renderer records an accessibility3 environment override, but native macOS text remains the same size; app-level font enlargement is not implemented.",
+      "id": "accessibility-text-size",
+      "result": "limited"
+    }
+  ],
+  "limitations": [
+    "The 900 pt capture is a below-minimum stress render; the current app window minimum is 960 pt.",
+    "Save warning and recovery are seeded persistence snapshots. They do not simulate a disk fault or execute a retry against storage.",
+    "Stale notices and manual corrections are synthetic acceptance fixtures; this matrix does not exercise a real archive revision change.",
+    "Selection coverage verifies selection-pinned scroll state and unread-count behavior; it does not synthesize a native text range highlight.",
+    "The streaming+history geometry check uses a synthetic partial transcript, not an audio/ASR stream or real meeting.",
+    "Hover, pressed, and overlap focus rings are deterministic previews, not native pointer or keyboard recordings.",
+    "The focused suite does not cover live device permission prompts, VoiceOver navigation, Chinese/Japanese IME composition, or Reduce Motion behavior.",
+    "The accessibility3 environment override is a no-op for text sizing on macOS; font enlargement remains unverified and no app-level text-size control is provided.",
+    "No native operation video is included in this focused T07 evidence set."
+  ]
+}

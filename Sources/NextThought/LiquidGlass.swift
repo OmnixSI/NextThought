@@ -95,18 +95,28 @@ enum UI {
 /// Primary action: ink fill, on-ink text, radius 6. One per area at most.
 struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.liveSessionAcceptanceButtonInteraction) private var acceptanceInteraction
     var height: CGFloat = UI.controlHeight
+    var scalesWithDynamicType = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: height >= Space.controlLarge ? 14 : 13, weight: .medium))
+            .font(scalesWithDynamicType
+                  ? Font.body.weight(.medium)
+                  : .system(size: height >= Space.controlLarge ? 14 : 13, weight: .medium))
             .lineLimit(1)
             .foregroundStyle(isEnabled ? Ink.onInk : Ink.tertiary)
             .padding(.horizontal, height >= Space.controlLarge ? 20 : 14)
             .frame(minWidth: Hit.minHeight)
-            .frame(height: max(height, Hit.minHeight))
+            .frame(minHeight: scalesWithDynamicType ? max(height, Hit.minHeight) : nil)
+            .frame(height: scalesWithDynamicType ? nil : max(height, Hit.minHeight))
             .background(isEnabled ? Ink.ink : Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .opacity(configuration.isPressed ? 0.85 : 1)
+            .opacity(configuration.isPressed || acceptanceInteraction == .pressed ? 0.85 : 1)
+            .overlay {
+                RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                    .strokeBorder(acceptanceInteraction == .focused ? Ink.focus : Color.clear, lineWidth: 2)
+                    .allowsHitTesting(false)
+            }
             .animation(Motion.hover, value: configuration.isPressed)
     }
 }
@@ -114,15 +124,25 @@ struct PrimaryButtonStyle: ButtonStyle {
 /// Secondary action: sunken fill, ink text.
 struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.liveSessionAcceptanceButtonInteraction) private var acceptanceInteraction
+    var scalesWithDynamicType = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Typo.label)
+            .font(scalesWithDynamicType ? Font.body.weight(.medium) : Typo.label)
             .lineLimit(1)
             .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary)
             .padding(.horizontal, 12)
             .frame(minWidth: Hit.minHeight)
-            .frame(height: max(UI.controlHeight, Hit.minHeight))
-            .background(configuration.isPressed ? Ink.hover : Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            .frame(minHeight: scalesWithDynamicType ? max(UI.controlHeight, Hit.minHeight) : nil)
+            .frame(height: scalesWithDynamicType ? nil : max(UI.controlHeight, Hit.minHeight))
+            .background(configuration.isPressed || acceptanceInteraction == .hover || acceptanceInteraction == .pressed
+                        ? Ink.hover : Ink.sunken,
+                        in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                    .strokeBorder(acceptanceInteraction == .focused ? Ink.focus : Color.clear, lineWidth: 2)
+                    .allowsHitTesting(false)
+            }
             .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .animation(Motion.hover, value: configuration.isPressed)
     }

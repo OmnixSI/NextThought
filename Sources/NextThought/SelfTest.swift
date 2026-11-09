@@ -16,6 +16,7 @@ private actor SelfTestCompletionFlag {
 ///   signing  local signing identity, re-signing keeps the designated requirement
 ///   update   download + verify the latest release; rehearse the bundle swap
 ///   asr      install X-ASR models, two-pass recognition of the fixtures, question detection
+///   live-session-ui native live-page screenshot and interaction acceptance matrix
 ///
 /// Set NEXTTHOUGHT_DATA_DIR to a scratch folder; `--fixtures <dir>` for asr.
 /// Set NEXTTHOUGHT_SELFTEST_EXPORT_DIRECTORY to retain generated export fixtures.
@@ -79,6 +80,7 @@ enum SelfTest {
                 case "screen-context": return try await ScreenSelfTest.run(options)
                 case "relay": return try await CompanionRelaySelfTest.run(options)
                 case "search-eval": return try await ScreenSelfTest.search(options)
+                case "live-session-ui": return try await LiveSessionAcceptanceSelfTest.run(options)
                 case "session-export": return try verifySessionExports()
                 case "session-backup-drain": return try await testSessionBackupWaitsForFinalTranslationDrain()
                 case "session-edit-receipts": return try await testSessionEditsWaitForSaveReceipts()

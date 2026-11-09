@@ -58,7 +58,17 @@ enum DemoMode {
         // normal window with the sidebar.
         let demoSection = environment["NEXTTHOUGHT_DEMO_SECTION"] ?? "assistant"
         if environment["NEXTTHOUGHT_DEMO_IDLE"] == "1" || !["assistant", "live", "live-notes"].contains(demoSection) { state.isRunning = false }
-        if demoSection == "live-notes" { state.automaticAnswers = false }
+        if demoSection == "live-notes" {
+            state.automaticAnswers = false
+            // This page demonstrates a quiet record-only meeting, not a previous
+            // answer kept visible after switching modes in an active session.
+            state.currentAnswerID = nil
+            state.answerHistory = []
+            state.historyCursor = nil
+            state.currentQuestion = ""
+            state.answer = ""
+            state.answerDraft = ""
+        }
         if demoSection == "prepare" { state.populateDemoDraft() }
         if let advanced = environment["NEXTTHOUGHT_DEMO_ADVANCED"] { state.simplifiedInterface = advanced != "1" }
         if environment["NEXTTHOUGHT_DEMO_VOICE_READY"] == "1" {

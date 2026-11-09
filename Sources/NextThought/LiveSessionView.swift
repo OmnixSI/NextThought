@@ -2,6 +2,19 @@ import AppKit
 import SwiftUI
 import NextThoughtCore
 
+/// The live page keeps the current type scale while using native text styles, so
+/// macOS accessibility text sizes can scale its reading content and controls.
+enum LiveSessionTypography {
+    static let display = Font.system(.largeTitle, design: .serif).weight(.medium)
+    static let section = Font.system(.title3, design: .serif).weight(.medium)
+    static let prompt = Font.system(.title2).weight(.medium)
+    static let body = Font.body
+    static let label = Font.body.weight(.medium)
+    static let caption = Font.caption
+    static let overline = Font.caption2.weight(.semibold)
+    static let code = Font.system(.body, design: .monospaced)
+}
+
 /// 会中页 (focus mode): a top bar, the live transcript on the left, the suggested
 /// automatic answers or a quiet notes column on the right, and one input row.
 /// See 02-scenarios-and-flows.md, "每个功能放在哪".
@@ -25,7 +38,8 @@ struct LiveSessionView: View {
                     VStack(spacing: 0) {
                         HStack {
                             InkSegmented(items: [(value: true, title: "实时转写"), (value: false, title: "辅助")],
-                                         selection: $showsTranscriptInCompactLayout)
+                                         selection: $showsTranscriptInCompactLayout,
+                                         scalesWithDynamicType: true)
                                 .fixedSize()
                                 .accessibilityLabel("会中内容")
                             Spacer(minLength: 0)
@@ -111,11 +125,11 @@ private struct LiveTopBar: View {
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(verbatim: title)
-                .font(Typo.label).foregroundStyle(Ink.ink)
+                .font(LiveSessionTypography.label).foregroundStyle(Ink.ink)
                 .lineLimit(1).truncationMode(.middle)
             if state.activeWorkspace.name != title {
                 Text(verbatim: state.activeWorkspace.name)
-                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
                     .lineLimit(1).truncationMode(.middle)
             }
         }
@@ -123,13 +137,14 @@ private struct LiveTopBar: View {
 
     private var answerModePicker: some View {
         InkSegmented(items: [(value: true, title: "自动回答"), (value: false, title: "只记录")],
-                     selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }))
+                     selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }),
+                     scalesWithDynamicType: true)
             .fixedSize()
             .help("自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。")
     }
 
     private var offlineMeetingLabel: some View {
-        Label("现场", systemImage: "person.3").font(Typo.caption).foregroundStyle(Ink.secondary)
+        Label("现场", systemImage: "person.3").font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
             .help("线下会议：只用麦克风")
     }
 
@@ -141,7 +156,7 @@ private struct LiveTopBar: View {
 
     private var endSessionButton: some View {
         Button("结束") { Task { await state.stopSession() } }
-            .buttonStyle(SecondaryButtonStyle())
+            .buttonStyle(SecondaryButtonStyle(scalesWithDynamicType: true))
             .disabled(state.isChangingSession)
             .help("结束并整理纪要 · \(state.shortcutLabel(.toggleSession))")
     }
@@ -206,14 +221,14 @@ private struct LiveTopBar: View {
                 Image(systemName: snapshot.unqueuedWriteCount > 0 ? "exclamationmark.triangle.fill" : archiveSaveSymbol(snapshot.state))
                 if snapshot.state != .saved {
                     Text(snapshot.state == .saving ? "保存中" : "保存受阻")
-                        .font(Typo.caption)
+                        .font(LiveSessionTypography.caption)
                         .lineLimit(1)
                 }
                 if snapshot.unqueuedWriteCount > 0 {
                     Text(snapshot.dataLossAcknowledged
                          ? "已确认：有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。"
                          : "有 \(snapshot.unqueuedWriteCount) 项内容未能入队，因此未保存。")
-                        .font(Typo.caption)
+                        .font(LiveSessionTypography.caption)
                         .lineLimit(2)
                 }
                 if snapshot.canAcknowledgeDataLoss {
@@ -264,11 +279,11 @@ private struct RecordingTimer: View {
                     .accessibilityHidden(true)
                 if let elapsed {
                     Text(verbatim: elapsed)
-                        .font(.system(size: 13, weight: .medium).monospacedDigit())
+                        .font(Font.caption.weight(.medium).monospacedDigit())
                         .foregroundStyle(state.isPaused ? Ink.secondary : Ink.ink)
                 }
                 Text(verbatim: status)
-                    .font(Typo.caption)
+                    .font(LiveSessionTypography.caption)
                     .foregroundStyle(Ink.secondary)
             }
             .padding(.horizontal, 6)
@@ -289,6 +304,7 @@ private struct RecordingTimer: View {
 /// Always-visible pause and resume action beside the current listening status.
 private struct PauseResumeButton: View {
     @Environment(AppState.self) private var state
+    @Environment(\.liveSessionAcceptanceScenario) private var acceptanceScenario
     @FocusState private var isKeyboardFocused: Bool
     @State private var isHovering = false
 
@@ -299,7 +315,7 @@ private struct PauseResumeButton: View {
         Button { Task { await state.togglePause() } } label: {
             Label(title, systemImage: state.isPaused ? "play.fill" : "pause.fill")
         }
-        .buttonStyle(SecondaryButtonStyle())
+        .buttonStyle(SecondaryButtonStyle(scalesWithDynamicType: true))
         .focusable()
         .focused($isKeyboardFocused)
         .onHover { isHovering = $0 }
@@ -317,6 +333,9 @@ private struct PauseResumeButton: View {
         .accessibilityHint(Text(verbatim: "快捷键 \(state.shortcutLabel(.togglePause))"))
         .accessibilityIdentifier("liveSession.pauseResume")
         .help("\(actionLabel) · \(state.shortcutLabel(.togglePause))")
+        .onAppear {
+            if DemoMode.isEnabled { isKeyboardFocused = acceptanceScenario == .focus }
+        }
     }
 }
 
@@ -397,7 +416,7 @@ private struct AnswerSettingsMenu: View {
         } label: {
             HStack(spacing: 3) {
                 Text(verbatim: state.currentAnswerModel.isEmpty ? String(localized: "选择模型") : state.currentAnswerModel)
-                    .font(Typo.label)
+                    .font(LiveSessionTypography.label)
                 if state.activeServiceTier == "fast" {
                     Image(systemName: "bolt.fill").font(.system(size: 10))
                 }
@@ -405,7 +424,7 @@ private struct AnswerSettingsMenu: View {
             .foregroundStyle(Ink.secondary)
         }
         .menuStyle(.button)
-        .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+        .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8, scalesWithDynamicType: true))
         .menuIndicator(.hidden)
         .fixedSize()
         .help("回答设置")
@@ -432,6 +451,7 @@ private struct AnswerSettingsMenu: View {
 
 private struct TranscriptColumn: View {
     @Environment(AppState.self) private var state
+    @Environment(\.liveSessionAcceptanceScenario) private var acceptanceScenario
     @State private var follow = ScrollFollowState()
 
     var body: some View {
@@ -473,7 +493,7 @@ private struct TranscriptColumn: View {
                     LazyVStack(alignment: .leading, spacing: Space.s3) {
                         if state.entries.isEmpty && state.partialTranscript.isEmpty && state.microphonePartialTranscript.isEmpty {
                             Text(state.isOfflineMeeting ? "开始说话后，房间里的声音会实时出现在这里。" : "对方和你说的话会实时出现在这里。")
-                                .font(Typo.body).foregroundStyle(Ink.secondary)
+                                .font(LiveSessionTypography.body).foregroundStyle(Ink.secondary)
                                 .padding(.top, Space.s2)
                         }
                         ForEach(state.entries) { entry in
@@ -504,7 +524,9 @@ private struct TranscriptColumn: View {
                             } label: {
                                 Label("新增 \(follow.pendingItemCount) 句 · 回到现场", systemImage: "arrow.down.to.line.compact")
                             }
-                            .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 10))
+                            .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 10, scalesWithDynamicType: true))
+                            .environment(\.liveSessionAcceptanceButtonInteraction,
+                                         DemoMode.isEnabled && acceptanceScenario == .selectionFocus ? .focused : .normal)
                             .padding(.vertical, Space.s2)
                         }
                         CandidateStrip()
@@ -535,6 +557,19 @@ private struct TranscriptColumn: View {
             .frame(maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            guard DemoMode.isEnabled else { return }
+            switch acceptanceScenario {
+            case .readingHistory, .streamingHistory:
+                follow.userScrolledAway()
+                follow.receivedNewContent(count: 6)
+            case .selection, .selectionFocus:
+                follow.userSelectedText()
+                follow.receivedNewContent(count: 2)
+            default:
+                break
+            }
+        }
     }
 }
 
@@ -545,7 +580,7 @@ private struct SpeakerLabel: View {
     var hidden = false
     var body: some View {
         Text(speaker.displayName)
-            .font(.system(size: 12, weight: speaker == .me ? .semibold : .regular))
+            .font(Font.caption.weight(speaker == .me ? .semibold : .regular))
             .foregroundStyle(speaker == .me ? Ink.ink : Ink.secondary)
             .frame(width: 40, alignment: .leading)
             .opacity(hidden ? 0 : 1)
@@ -565,10 +600,10 @@ private struct TranscriptLine: View {
         if entry.suspectedEcho == true {
             HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
                 SpeakerLabel(speaker: entry.speaker)
-                Text(verbatim: entry.text).font(Typo.caption).foregroundStyle(Ink.tertiary).lineLimit(1)
+                Text(verbatim: entry.text).font(LiveSessionTypography.caption).foregroundStyle(Ink.tertiary).lineLimit(1)
                     .strikethrough(color: Ink.tertiary)
                 Button("是我说的") { state.markNotEcho(entry.id) }
-                    .buttonStyle(.tapText).font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .buttonStyle(.tapText).font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
             }
             .help("这句和对方刚说的话很像，当作扬声器回声忽略了，不参与回答。如果是你说的，点“是我说的”。")
         } else {
@@ -581,7 +616,7 @@ private struct TranscriptLine: View {
                     }
                     lineText(isQuestion: isQuestion)
                     if let translation = entry.translatedText, !translation.isEmpty {
-                        Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
+                        Text("译文：\(translation)").font(LiveSessionTypography.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                     }
                 }
                 .lineSpacing(5)
@@ -608,9 +643,9 @@ private struct TranscriptLine: View {
 
     /// The line, with a small neutral "问题" tag when the detector saw a question.
     private func lineText(isQuestion: Bool) -> Text {
-        let body = Text(verbatim: entry.text).font(Typo.body).foregroundStyle(Ink.ink)
+        let body = Text(verbatim: entry.text).font(LiveSessionTypography.body).foregroundStyle(Ink.ink)
         guard isQuestion else { return body }
-        let tag = Text("问题").font(.system(size: 11, weight: .medium)).foregroundStyle(Ink.ai)
+        let tag = Text("问题").font(Font.caption2.weight(.medium)).foregroundStyle(Ink.ai)
         return tag + Text(verbatim: " ") + body
     }
 }
@@ -621,6 +656,7 @@ private struct PartialLines: View {
     var body: some View {
         if !state.partialTranscript.isEmpty {
             line(state.partialTranscript, translation: state.liveTranslation.systemPartialTranslation, speaker: .remote)
+                .liveSessionAcceptanceFrame("partial-transcript")
         }
         if !state.microphonePartialTranscript.isEmpty {
             line(state.microphonePartialTranscript, translation: state.liveTranslation.microphonePartialTranslation,
@@ -632,9 +668,9 @@ private struct PartialLines: View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
             SpeakerLabel(speaker: speaker)
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text(verbatim: text).font(Typo.body).foregroundStyle(Ink.secondary).lineSpacing(5)
+                Text(verbatim: text).font(LiveSessionTypography.body).foregroundStyle(Ink.secondary).lineSpacing(5)
                 if !translation.isEmpty {
-                    Text("译文：\(translation)").font(Typo.caption).foregroundStyle(Ink.ai).lineSpacing(4)
+                    Text("译文：\(translation)").font(LiveSessionTypography.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                 }
             }
             Spacer(minLength: 0)
@@ -664,10 +700,11 @@ private struct CandidateStrip: View {
 
     private func row(_ candidate: QuestionCandidate, dismissible: Bool) -> some View {
         HStack(spacing: Space.s2) {
-            Text("可能的问题").font(.system(size: 11, weight: .medium)).foregroundStyle(Ink.ai)
-            Text(verbatim: candidate.fullText).font(Typo.caption).foregroundStyle(Ink.ink).lineLimit(1)
+            Text("可能的问题").font(Font.caption2.weight(.medium)).foregroundStyle(Ink.ai)
+            Text(verbatim: candidate.fullText).font(LiveSessionTypography.caption).foregroundStyle(Ink.ink).lineLimit(1)
             Spacer(minLength: Space.s2)
-            Button("回答这句") { state.answerCandidate(candidate) }.buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 6))
+            Button("回答这句") { state.answerCandidate(candidate) }
+                .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 6, scalesWithDynamicType: true))
             if dismissible {
                 Button { state.dismissCandidate(candidate) } label: { Image(systemName: "xmark") }
                     .buttonStyle(GlassIconButtonStyle(size: 22))
@@ -704,7 +741,7 @@ private struct TranscriptStatus: View {
             Image(systemName: "lock")
                 .help(state.privacySummary)
         }
-        .font(Typo.caption)
+        .font(LiveSessionTypography.caption)
         .foregroundStyle(Ink.secondary)
         .lineLimit(1)
         .padding(.horizontal, Space.s6)
@@ -742,12 +779,12 @@ private struct NotesOnlyColumn: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             Text("只记录").overline()
-            Text("不打扰，安静地记。结束后自动整理纪要。").font(Typo.body)
+            Text("不打扰，安静地记。结束后自动整理纪要。").font(LiveSessionTypography.body)
             Text(notesHint)
-                .font(Typo.caption).foregroundStyle(Ink.secondary)
+                .font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text("需要帮忙时按 \(state.shortcutLabel(.forceAnswer))，或在下方输入问题。")
-                .font(Typo.caption).foregroundStyle(Ink.secondary)
+                .font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
             Spacer()
         }
         .padding(Space.s6)
@@ -774,7 +811,7 @@ private struct AnswerColumn: View {
                 if let position = state.historyPositionText {
                     Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }
                         .buttonStyle(GlassIconButtonStyle(size: 22)).help("上一条 · \(state.shortcutLabel(.previousAnswer))")
-                    Text(verbatim: position).font(.system(size: 12).monospacedDigit()).foregroundStyle(Ink.secondary)
+                    Text(verbatim: position).font(Font.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
                     Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }
                         .buttonStyle(GlassIconButtonStyle(size: 22)).help("下一条 · \(state.shortcutLabel(.nextAnswer))")
                 }
@@ -783,7 +820,7 @@ private struct AnswerColumn: View {
             let question = state.displayedQuestion
             if !question.isEmpty {
                 Text(verbatim: AnswerRefinement.originalQuestion(of: question))
-                    .font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(2)
+                    .font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary).lineLimit(2)
                     .textSelection(.enabled)
             }
             AnswerText()
@@ -810,10 +847,10 @@ private struct AnswerText: View {
                         let text = state.displayedAnswer
                         if text.isEmpty {
                             Text(state.isAnswering ? "正在生成…" : "对方提问时，这里会自动给出建议回答。也可以在下方输入问题，或按 \(state.shortcutLabel(.forceAnswer)) 立即回答。")
-                                .font(Typo.body).foregroundStyle(Ink.secondary)
+                                .font(LiveSessionTypography.body).foregroundStyle(Ink.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         } else {
-                            MarkdownText(text: text, size: 20, lineSpacing: 9).equatable()
+                            MarkdownText(text: text, size: 20, lineSpacing: 9, scalesWithDynamicType: true).equatable()
                         }
                         Color.clear.frame(height: 1).id("answer-end")
                     }
@@ -845,7 +882,7 @@ private struct AnswerText: View {
                 } label: {
                     Label(follow.hasNewContent ? "有新回答 · 回到最新" : "回到最新", systemImage: "arrow.down.to.line.compact")
                 }
-                .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 10))
+                .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 10, scalesWithDynamicType: true))
                 .padding(Space.s2)
             }
         }
@@ -869,15 +906,15 @@ private struct WebStatusLine: View {
                     Text(state.showsWebAnswer ? "联网版 · \(lookup.sources.count) 个来源" : "联网版已就绪 · \(lookup.sources.count) 个来源")
                         .foregroundStyle(Ink.secondary)
                     Button(state.showsWebAnswer ? "看原回答" : "看联网版") { state.toggleWebAnswer() }
-                        .buttonStyle(GhostButtonStyle(height: 22, horizontalPadding: 6))
+                        .buttonStyle(GhostButtonStyle(height: 22, horizontalPadding: 6, scalesWithDynamicType: true))
                 case let .failed(message):
                     Text("联网没有完成").foregroundStyle(Ink.caution).help(message)
                     Button("重试") { state.lookUpDisplayedAnswer() }
-                        .buttonStyle(GhostButtonStyle(height: 22, horizontalPadding: 6))
+                        .buttonStyle(GhostButtonStyle(height: 22, horizontalPadding: 6, scalesWithDynamicType: true))
                 }
                 Spacer(minLength: 0)
             }
-            .font(Typo.caption)
+            .font(LiveSessionTypography.caption)
         }
     }
 }
@@ -894,7 +931,7 @@ private struct WebSources: View {
                         Link(destination: url) {
                             Text(verbatim: "[\(index + 1)] \(source.title)").lineLimit(1)
                         }
-                        .font(Typo.caption).foregroundStyle(Ink.secondary)
+                        .font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
                     }
                 }
             }
@@ -905,6 +942,7 @@ private struct WebSources: View {
 /// 更简短 · 举例 · 英文版, the rest in "…".
 private struct RefinementRow: View {
     @Environment(AppState.self) private var state
+    @Environment(\.liveSessionAcceptanceScenario) private var acceptanceScenario
     private static let shown: [AnswerRefinement] = [.shorter, .example, .english]
 
     var body: some View {
@@ -912,7 +950,7 @@ private struct RefinementRow: View {
         HStack(spacing: Space.s1) {
             ForEach(Self.shown) { item in
                 Button { state.refine(item) } label: { Text(verbatim: item.displayName) }
-                    .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+                    .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8, scalesWithDynamicType: true))
                     .disabled(!hasAnswer || state.isAnswering)
                     .help(item == .shorter ? "把回答改短 · \(state.shortcutLabel(.refineShorter))" : "")
             }
@@ -920,7 +958,9 @@ private struct RefinementRow: View {
             Spacer(minLength: 0)
             if state.isAnswering {
                 Button("停止生成") { state.cancelAnswer() }
-                    .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+                    .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8, scalesWithDynamicType: true))
+                    .environment(\.liveSessionAcceptanceButtonInteraction,
+                                 DemoMode.isEnabled && acceptanceScenario == .busyFocus ? .focused : .normal)
                     .help("取消回答 · \(state.shortcutLabel(.cancelAnswer))")
             }
         }
@@ -956,7 +996,7 @@ struct AnswerMoreMenu: View {
             Image(systemName: "ellipsis")
         }
         .menuStyle(.button)
-        .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+        .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8, scalesWithDynamicType: true))
         .menuIndicator(.hidden)
         .fixedSize()
         .help("更多")
@@ -966,6 +1006,7 @@ struct AnswerMoreMenu: View {
 /// "依据：资料 2 · 联网 3"; amber when the answer had limits.
 private struct EvidenceLine: View {
     @Environment(AppState.self) private var state
+    @Environment(\.liveSessionAcceptanceScenario) private var acceptanceScenario
     @State private var showsDetails = false
 
     var body: some View {
@@ -976,12 +1017,15 @@ private struct EvidenceLine: View {
                     if !evidence.notes.isEmpty { Image(systemName: "exclamationmark.triangle") }
                     Text(verbatim: summary(evidence))
                 }
-                .font(Typo.caption)
+                .font(LiveSessionTypography.caption)
                 .foregroundStyle(evidence.notes.isEmpty ? Ink.secondary : Ink.caution)
             }
             .buttonStyle(.tapText)
             .popover(isPresented: $showsDetails, arrowEdge: .bottom) {
                 EvidenceDetails(evidence: evidence).frame(width: 380)
+            }
+            .onAppear {
+                if DemoMode.isEnabled && acceptanceScenario == .overlay { showsDetails = true }
             }
         }
     }
@@ -1002,30 +1046,31 @@ private struct EvidenceDetails: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s2) {
-                Text(verbatim: evidence.retrieval).font(Typo.caption).foregroundStyle(Ink.secondary)
+                Text(verbatim: evidence.retrieval).font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
                 ForEach(Array(evidence.materials.enumerated()), id: \.offset) { _, item in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: item.citation).font(.system(size: 12, weight: .semibold))
-                        Text(verbatim: item.text).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(6)
+                        Text(verbatim: item.citation).font(Font.caption.weight(.semibold))
+                        Text(verbatim: item.text).font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary).lineLimit(6)
                     }
                 }
                 if let screen = evidence.screen {
-                    Label { Text(verbatim: screen.source) } icon: { Image(systemName: "display") }.font(Typo.caption)
+                    Label { Text(verbatim: screen.source) } icon: { Image(systemName: "display") }.font(LiveSessionTypography.caption)
                 }
                 ForEach(evidence.webSources, id: \.url) { source in
                     if let url = URL(string: source.url) {
-                        Link(destination: url) { Text(verbatim: source.title).lineLimit(1) }.font(Typo.caption)
+                        Link(destination: url) { Text(verbatim: source.title).lineLimit(1) }.font(LiveSessionTypography.caption)
                     }
                 }
                 ForEach(evidence.notes, id: \.self) { note in
                     Label { Text(verbatim: note) } icon: { Image(systemName: "exclamationmark.triangle") }
-                        .font(Typo.caption).foregroundStyle(Ink.caution)
+                        .font(LiveSessionTypography.caption).foregroundStyle(Ink.caution)
                 }
             }
             .padding(Space.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxHeight: 360)
+        .background(Ink.surfaceRaised)
     }
 }
 
@@ -1042,10 +1087,12 @@ private struct LiveComposer: View {
                 HStack(spacing: Space.s3) {
                     Image(nsImage: image).resizable().scaledToFit().frame(height: 48)
                         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                    Text("截图已就绪，可以补充要求后发送").font(Typo.caption).foregroundStyle(Ink.secondary)
+                    Text("截图已就绪，可以补充要求后发送").font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
                     Spacer()
-                    Button("取消") { state.clearScreenshot() }.buttonStyle(GhostButtonStyle(height: 28))
-                    Button("分析截图") { state.answerScreenshot() }.buttonStyle(SecondaryButtonStyle())
+                    Button("取消") { state.clearScreenshot() }
+                        .buttonStyle(GhostButtonStyle(height: 28, scalesWithDynamicType: true))
+                    Button("分析截图") { state.answerScreenshot() }
+                        .buttonStyle(SecondaryButtonStyle(scalesWithDynamicType: true))
                 }
             }
             HStack(spacing: Space.s2) {
@@ -1053,10 +1100,10 @@ private struct LiveComposer: View {
                     TextField("", text: $state.questionInput, prompt: placeholder, axis: .vertical)
                         .lineLimit(1...4)
                         .textFieldStyle(.plain)
-                        .font(Typo.body)
+                        .font(LiveSessionTypography.body)
                         .focused($focused)
                         .onSubmit { submit() }
-                    ShortcutHint(text: "⌘L")
+                    ShortcutHint(text: "⌘L", scalesWithDynamicType: true)
                 }
                 .padding(.horizontal, Space.s3)
                 .frame(minHeight: 36)
@@ -1078,10 +1125,12 @@ private struct LiveComposer: View {
                         HStack(spacing: 6) {
                             Image(systemName: "bolt.fill").font(.system(size: 11))
                             Text("立即回答")
-                            ShortcutHint(text: state.shortcutLabel(.forceAnswer), onInk: true)
+                            ShortcutHint(text: state.shortcutLabel(.forceAnswer), onInk: true, scalesWithDynamicType: true)
                         }
                     }
-                    .buttonStyle(PrimaryButtonStyle())
+                    .buttonStyle(PrimaryButtonStyle(scalesWithDynamicType: true))
+                    .accessibilityIdentifier("liveSession.primaryAnswer")
+                    .liveSessionAcceptanceFrame("primary-action")
                     .help("回答最新的问题或转写，不等自动判断")
                 }
             }
@@ -1097,6 +1146,7 @@ private struct LiveComposer: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+        .liveSessionAcceptanceFrame("composer")
     }
 
     private var placeholder: Text {
