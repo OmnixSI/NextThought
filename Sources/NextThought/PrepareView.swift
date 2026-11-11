@@ -1052,6 +1052,26 @@ private struct AudioCheckRow: View {
                 if state.isDownloadingModel {
                     ProgressView(value: state.modelDownloadProgress).controlSize(.small)
                 }
+                // The model download's own status, including why it failed.
+                if state.needsRecognitionModelDownload, !state.modelDownloadStatus.isEmpty,
+                   state.isDownloadingModel || state.modelDownloadStatus.hasPrefix("下载失败") {
+                    Text(verbatim: state.modelDownloadStatus)
+                        .font(Typo.caption)
+                        .foregroundStyle(state.modelDownloadStatus.hasPrefix("下载失败") ? Ink.caution : Ink.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("meeting.prepare.modelStatus")
+                }
+                if state.canMeetWithoutMicrophone, state.microphoneAccess != .granted {
+                    microphoneChoice
+                } else if state.meetingVenue == .online, !state.microphoneEnabled {
+                    HStack(spacing: Space.s2) {
+                        Text("这场只记录对方的声音。想连自己的话一起记，可以重新打开麦克风。")
+                            .font(Typo.caption).foregroundStyle(Ink.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("重新打开麦克风") { state.useMicrophoneAgain() }
+                            .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 8))
+                    }
+                }
                 if state.meetingVenue == .offline {
                     Text("线下会议只用麦克风，转写标为“现场”。笔记本尽量放在桌子中间；人多时建议外接会议麦克风。")
                         .font(Typo.caption).foregroundStyle(Ink.secondary)
@@ -1059,6 +1079,17 @@ private struct AudioCheckRow: View {
                 }
             }
             .padding(.vertical, Space.s3)
+        }
+    }
+
+    /// The way out of a denied or unanswered microphone prompt: record only the other side.
+    private var microphoneChoice: some View {
+        HStack(spacing: Space.s2) {
+            Button("只记录对方（不用麦克风）") { state.continueWithoutMicrophone() }
+                .buttonStyle(GhostButtonStyle(height: 26, horizontalPadding: 8))
+                .help("这场不识别你说的话，只记录电脑里播放的声音。以后可以在这里或 设置 → 声音与识别 重新打开麦克风。")
+            Text("以后可在设置 → 声音与识别 重新打开")
+                .font(Typo.caption).foregroundStyle(Ink.tertiary)
         }
     }
 
@@ -1071,7 +1102,8 @@ private struct AudioCheckRow: View {
         if state.isDownloadingModel {
             Text(verbatim: "\(Int(state.modelDownloadProgress * 100))%").font(Typo.caption).foregroundStyle(Ink.secondary).monospacedDigit()
         } else if !state.recordingReadiness.issues.isEmpty {
-            Button("准备声音") { state.repairRecordingSetup() }.buttonStyle(GhostButtonStyle(height: 28))
+            Button { state.repairRecordingSetup() } label: { Text(verbatim: state.recordingRepairTitle) }
+                .buttonStyle(GhostButtonStyle(height: 28))
         }
     }
 }
@@ -1220,6 +1252,12 @@ private struct PreparationStartBar: View {
             Spacer(minLength: Space.s2)
             Button("取消") { state.cancelDraft() }
                 .buttonStyle(GhostButtonStyle())
+            if state.canMeetWithoutMicrophone, state.microphoneAccess == .denied {
+                Button("只记录对方") { state.continueWithoutMicrophone() }
+                    .buttonStyle(GhostButtonStyle())
+                    .help("不用麦克风，只记录电脑里播放的声音。以后可在设置 → 声音与识别 重新打开。")
+                    .accessibilityLabel("只记录对方（不用麦克风）")
+            }
             StartButton()
         }
         .padding(.horizontal, Space.s8).padding(.vertical, Space.s3)
@@ -1268,7 +1306,7 @@ private struct StartButton: View {
                     ProgressView().controlSize(.small)
                     Text("正在启动…")
                 } else if !state.recordingReadiness.canRequestStart {
-                    Text("先准备声音")
+                    Text(verbatim: state.recordingRepairTitle)
                 } else if !state.recordingReadiness.canStartRecording {
                     Circle().fill(Ink.seal).frame(width: 7, height: 7)
                     Text("允许并开始")

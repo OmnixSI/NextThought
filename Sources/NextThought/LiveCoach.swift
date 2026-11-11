@@ -12,13 +12,17 @@ import Vision
 final class LiveCoach {
     // MARK: Preferences
     var isEnabled = UserDefaults.standard.object(forKey: "coachEnabled") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(isEnabled, forKey: "coachEnabled") }
+        didSet {
+            UserDefaults.standard.set(isEnabled, forKey: "coachEnabled")
+            // Switching the coach off mid-meeting also lets go of the camera.
+            if !isEnabled { camera.stop(); gaze = nil; nudge = nil; nudgeShownAt = nil; resetAway() }
+        }
     }
     /// Watching the eyes needs the camera, so it is off until the user turns it on.
     var watchesGaze = UserDefaults.standard.object(forKey: "coachWatchesGaze") as? Bool ?? false {
         didSet {
             UserDefaults.standard.set(watchesGaze, forKey: "coachWatchesGaze")
-            if !watchesGaze { camera.stop(); gaze = nil }
+            if !watchesGaze { camera.stop(); gaze = nil; resetAway() }
         }
     }
     var gazeSensitivity = GazeSensitivity(rawValue: UserDefaults.standard.string(forKey: "coachGazeSensitivity") ?? "") ?? .standard {
@@ -39,7 +43,8 @@ final class LiveCoach {
     private(set) var cameraAccess: AVAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
     private(set) var isCalibrating = false
     var isCalibrated: Bool { camera.isCalibrated }
-    var isWatching: Bool { camera.isRunning }
+    /// The camera is running. Mirrored from `GazeCamera`, whose own flag is not observable.
+    private(set) var isWatching = false
 
     let camera = GazeCamera()
     @ObservationIgnored private var coach = SpeakingCoach(profile: ScenePreset.for(.general).coaching)
@@ -48,11 +53,25 @@ final class LiveCoach {
     @ObservationIgnored private var nudgeShownAt: Date?
     @ObservationIgnored private var lastSpokeAt: Date?
     @ObservationIgnored private var awaySince: Date?
+    @ObservationIgnored private var tick: Task<Void, Never>?
+    @ObservationIgnored private var accumulator = CoachSummaryAccumulator()
+    @ObservationIgnored private var wasLookingUp = false
 
     init() {
         camera.onReading = { [weak self] reading, ratio in
             self?.receive(reading, ratio: ratio)
         }
+        camera.onRunningChange = { [weak self] running in
+            guard let self, self.isWatching != running else { return }
+            self.isWatching = running
+            if !running { self.isCalibrating = false }
+        }
+    }
+
+    private func resetAway() {
+        awaySince = nil
+        if awayWhileSpeaking != 0 { awayWhileSpeaking = 0 }
+        wasLookingUp = false
     }
 
     // MARK: Meeting lifecycle
@@ -61,13 +80,31 @@ final class LiveCoach {
         self.startedAt = startedAt
         coach = SpeakingCoach(profile: ScenePreset.for(mode).coaching)
         snapshot = CoachSnapshot(); nudge = nil; nudgeShownAt = nil; lastNudgeAt = [:]
-        awaySince = nil; awayWhileSpeaking = 0; contactRatio = nil; lastSpokeAt = nil
+        resetAway(); contactRatio = nil; lastSpokeAt = nil
+        accumulator = CoachSummaryAccumulator()
         if isEnabled, watchesGaze { startWatching() }
+        // Monologues grow between transcript lines, so the coach looks once a second,
+        // whether or not the island is on screen.
+        tick?.cancel()
+        tick = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                self?.refresh()
+            }
+        }
     }
 
-    func end() {
+    /// Stops the coach and returns what it measured (nil when there was nothing to say).
+    @discardableResult
+    func end() -> CoachSummary? {
+        tick?.cancel(); tick = nil
+        accumulator.observeEyeContact(contactRatio)
+        let summary = isEnabled ? accumulator.summary() : nil
         camera.stop()
-        gaze = nil; nudge = nil
+        gaze = nil; nudge = nil; nudgeShownAt = nil
+        resetAway()
+        return summary.flatMap { $0.isEmpty && $0.nudges.isEmpty ? nil : $0 }
     }
 
     /// A finished transcript line from either side.
@@ -76,7 +113,9 @@ final class LiveCoach {
         let end = (entry.endedAt ?? entry.date).timeIntervalSince(startedAt)
         // Lines without timestamps get a plausible length from their text.
         let start = entry.startedAt?.timeIntervalSince(startedAt) ?? end - max(1, SpeechUnits.count(entry.text) / 4.2)
-        coach.ingest(SpokenSegment(isMe: entry.isMe, start: start, end: end, text: entry.text))
+        let segment = SpokenSegment(isMe: entry.isMe, start: start, end: end, text: entry.text)
+        coach.ingest(segment)
+        accumulator.ingest(segment)
         if entry.isMe { lastSpokeAt = entry.endedAt ?? entry.date }
         refresh()
     }
@@ -86,12 +125,15 @@ final class LiveCoach {
         guard isEnabled else { return }
         let next = coach.snapshot(at: now.timeIntervalSince(startedAt))
         if next != snapshot { snapshot = next }
+        accumulator.observe(next)
+        accumulator.observeEyeContact(contactRatio)
         if let shown = nudgeShownAt, now.timeIntervalSince(shown) > 7 { nudge = nil; nudgeShownAt = nil }
         guard nudge == nil, let candidate = next.nudge else { return }
         // The same advice at most once a minute and a half: a coach, not a metronome.
         if let last = lastNudgeAt[candidate], now.timeIntervalSince(last) < 90 { return }
         lastNudgeAt[candidate] = now
         nudge = candidate; nudgeShownAt = now
+        accumulator.record(candidate)
     }
 
     // MARK: Gaze
@@ -118,6 +160,7 @@ final class LiveCoach {
     func stopWatching() {
         camera.stop()
         gaze = nil
+        resetAway()
     }
 
     /// Two seconds of looking into the lens become the user's on-camera pose.
@@ -131,6 +174,7 @@ final class LiveCoach {
     private func receive(_ reading: GazeReading, ratio: Double?) {
         gaze = reading
         contactRatio = ratio
+        if !isWatching { isWatching = true }
         let now = Date()
         let speaking = lastSpokeAt.map { now.timeIntervalSince($0) < 4 } ?? false
         if reading.state == .away, speaking {
@@ -140,6 +184,9 @@ final class LiveCoach {
             awaySince = nil
             if awayWhileSpeaking != 0 { awayWhileSpeaking = 0 }
         }
+        let lookingUp = shouldLookUp
+        if lookingUp, !wasLookingUp { accumulator.recordLookUp() }
+        wasLookingUp = lookingUp
     }
 
     /// The eyes have been off the lens long enough, mid-sentence, to be worth a cue.
@@ -191,6 +238,8 @@ extension CoachNudge {
 final class GazeCamera: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
     /// Called on the main actor, at most a few times a second.
     @MainActor var onReading: ((GazeReading, Double?) -> Void)?
+    /// Called on the main actor when the session starts or stops running.
+    @MainActor var onRunningChange: ((Bool) -> Void)?
 
     private let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "nextthought.gaze", qos: .utility)
@@ -230,7 +279,9 @@ final class GazeCamera: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, 
             guard self.configured else { return }
             self.estimator.resetSession()
             self.session.startRunning()
-            self.lock.withLock { self.running = self.session.isRunning }
+            let isRunning = self.session.isRunning
+            self.lock.withLock { self.running = isRunning }
+            Task { @MainActor in self.onRunningChange?(isRunning) }
         }
     }
 
@@ -238,6 +289,13 @@ final class GazeCamera: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, 
         queue.async {
             if self.session.isRunning { self.session.stopRunning() }
             self.lock.withLock { self.running = false }
+            // A calibration cannot finish without frames: release its waiter, and keep
+            // the frames it had collected from leaking into the next one.
+            self.calibrationEnd = nil
+            self.estimator.cancelCalibration()
+            self.calibrationDone?(false)
+            self.calibrationDone = nil
+            Task { @MainActor in self.onRunningChange?(false) }
         }
     }
 

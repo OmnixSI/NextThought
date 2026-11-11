@@ -98,6 +98,7 @@ private struct LiveTopBar: View {
             trafficLightSpace
             RecordingTimer()
             archiveSaveStatus
+            quietStatus
             sceneTag
             titleBlock.frame(maxWidth: 220, alignment: .leading).layoutPriority(1)
             if state.isOfflineMeeting { offlineMeetingLabel }
@@ -115,6 +116,7 @@ private struct LiveTopBar: View {
             trafficLightSpace
             RecordingTimer()
             archiveSaveStatus
+            quietStatus
             if showsScene { sceneTag }
             titleBlock.frame(maxWidth: 170, alignment: .leading).layoutPriority(1)
             Spacer(minLength: 0)
@@ -147,7 +149,45 @@ private struct LiveTopBar: View {
                      selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }),
                      scalesWithDynamicType: true)
             .fixedSize()
-            .help("自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。")
+            .overlay(alignment: .topTrailing) {
+                if !state.answerEngineReady {
+                    Circle().fill(Ink.caution).frame(width: 6, height: 6).offset(x: 2, y: -2)
+                        .accessibilityHidden(true)
+                }
+            }
+            .help(state.answerEngineReady
+                  ? "自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。"
+                  : "还没有连接回答服务，听到问题也不会自动回答")
+            .accessibilityHint(state.answerEngineReady ? "" : "还没有连接回答服务，听到问题也不会自动回答")
+    }
+
+    /// One quiet line beside the timer for what the island would otherwise be the only place to
+    /// say: the coach's nudge, the "看镜头" cue, and that the island stepped aside for screen sharing.
+    @ViewBuilder private var quietStatus: some View {
+        let sharing = CueIslandController.shared.model.shareAvoiding
+        let coach = state.coach
+        let item: (text: String, symbol: String)? = {
+            guard state.isRunning else { return nil }
+            if sharing { return (String(localized: "正在共享这块屏幕，提词岛已收起"), "rectangle.on.rectangle") }
+            guard coach.isEnabled else { return nil }
+            if coach.shouldLookUp { return (String(localized: "看镜头"), "eye.fill") }
+            if let nudge = coach.nudge { return (nudge.message, nudge.symbol) }
+            return nil
+        }()
+        Group {
+            if let item {
+                HStack(spacing: 5) {
+                    Image(systemName: item.symbol).font(.system(size: 10, weight: .semibold))
+                    Text(verbatim: item.text).font(LiveSessionTypography.caption).lineLimit(1)
+                }
+                .foregroundStyle(Ink.caution)
+                .id(item.text)
+                .transition(.blurReplace)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("liveSession.quietStatus")
+            }
+        }
+        .animation(Motion.snappy, value: item?.text)
     }
 
     private var offlineMeetingLabel: some View {
@@ -183,6 +223,12 @@ private struct LiveTopBar: View {
                     .labelsHidden()
                 }
             }
+            if !state.answerEngineReady {
+                Button { state.openSettings(.answers) } label: {
+                    Label("连接回答服务…", systemImage: "sparkles")
+                }
+                .help("还没有连接回答服务，听到问题也不会自动回答")
+            }
             Section("工具") {
                 Button(state.liveTranslation.isEnabled ? "关闭同声传译" : "开启同声传译") {
                     state.liveTranslation.setEnabled(!state.liveTranslation.isEnabled)
@@ -213,8 +259,8 @@ private struct LiveTopBar: View {
                 .contentShape(Rectangle())
                 .overlay(alignment: .topTrailing) {
                     // Something running in the background (translation, screen, phone) shows as a dot.
-                    if state.liveTranslation.isEnabled || state.insights.screenWatch || state.companionEnabled {
-                        Circle().fill(Ink.ink).frame(width: 5, height: 5).offset(x: -3, y: 4)
+                    if state.liveTranslation.isEnabled || state.insights.screenWatch || state.companionEnabled || !state.answerEngineReady {
+                        Circle().fill(state.answerEngineReady ? Ink.ink : Ink.caution).frame(width: 5, height: 5).offset(x: -3, y: 4)
                             .transition(.scale.combined(with: .opacity))
                     }
                 }

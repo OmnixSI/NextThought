@@ -37,6 +37,9 @@ struct MeetingPage: View {
     @State private var confirmsUseAI = false
     @State private var routedTarget: SessionContentTarget?
     @State private var scrollTarget: String?
+    @State private var coachSummary: CoachSummary?
+    /// Showing the newest AI draft without touching the user's edited version.
+    @State private var viewsNewDraft = false
 
     private var archive: SessionArchive { SessionArchive.shared }
     private var meta: SessionMeta? { archive.sessions.first { $0.id == id } }
@@ -132,6 +135,7 @@ struct MeetingPage: View {
             format = .standard
             transcriptVersion = .corrected
             tab = .notes; detail = nil; projection = nil; evidenceLineID = nil; evidenceUnavailable = false; routedTarget = nil
+            coachSummary = nil; viewsNewDraft = false
         }
         .onChange(of: initialTarget) { _, target in if let detail { route(target, in: detail) } }
         .onChange(of: selectedEvidenceID) { _, _ in evidenceLineID = nil; evidenceUnavailable = false }
@@ -139,6 +143,7 @@ struct MeetingPage: View {
             _ = await archive.flush(sessionID: id)
             let loaded = await archive.detail(id)
             guard !Task.isCancelled else { return }
+            coachSummary = await CoachSummaryStore.load(id)
             if detail == nil, let loaded, loaded.lines.isEmpty, loaded.summary == nil, loaded.userContent.hasContent { tab = .personalNotes }
             detail = loaded
             if let loaded { archive.primeUserContent(loaded.userContent, for: id); route(initialTarget, in: loaded) }
@@ -162,6 +167,15 @@ struct MeetingPage: View {
             revealTranscriptHit(target, using: projection)
         }
         .sheet(isPresented: $editingNotes) { if let detail { MeetingNotesEditor(detail: detail) } }
+        .alert("重新整理这份纪要？", isPresented: Binding(
+            get: { NotesRegeneration.shared.pending?.sessionID == id },
+            set: { if !$0 { NotesRegeneration.shared.cancel() } })
+        ) {
+            Button("重新整理") { NotesRegeneration.shared.confirm() }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这场会议的纪要你改过。重新整理会生成新的 AI 版本，你改过的版本会保留。")
+        }
         .alert("使用最新 AI 原稿替换你的修订？", isPresented: $confirmsUseAI) {
             Button("保留我的修订", role: .cancel) {}
             Button("使用 AI 原稿", role: .destructive) {
@@ -195,8 +209,10 @@ struct MeetingPage: View {
     }
 
     @ViewBuilder
-    private func notesContent(_ detail: SessionDetail) -> some View {
-        notesEditingActions(detail)
+    private func notesContent(_ shown: SessionDetail) -> some View {
+        let detail = viewsNewDraft ? aiDraft(of: shown) : shown
+        notesEditingActions(shown)
+        newDraftRow(shown)
         if showsFormatBar(detail) {
             NotesFormatBar(id: id, firstTitle: isReview ? String(localized: "复盘") : String(localized: "纪要"),
                            recommended: recommendedFormat(detail), selection: $format,
@@ -204,6 +220,58 @@ struct MeetingPage: View {
         }
         StructuredNotesPane(detail: notesPresentation(detail), format: shownFormat(detail), onJump: { seconds in jump(to: seconds, in: detail) }) {
             NotesBody(detail: detail, selectedEvidenceID: $selectedEvidenceID) { seconds in jump(to: seconds, in: detail) }
+        }
+    }
+
+    /// The same meeting with the user's edits set aside, for looking at the newest AI draft.
+    private func aiDraft(of detail: SessionDetail) -> SessionDetail {
+        var draft = detail
+        draft.userContent.editedNotes = nil; draft.userContent.editedSummary = nil; draft.userContent.editedMarkdown = nil
+        return draft
+    }
+
+    private func hasEdits(_ detail: SessionDetail) -> Bool {
+        detail.userContent.editedNotes != nil || detail.userContent.editedSummary != nil || detail.userContent.editedMarkdown != nil
+    }
+
+    /// When the AI wrote a newer draft than the one the user edited from.
+    private func newerDraftDate(_ detail: SessionDetail) -> Date? {
+        guard hasEdits(detail), let base = detail.userContent.basedOnGeneratedAt,
+              let latest = detail.summary?.generatedAt ?? detail.notes?.generatedAt, base < latest else { return nil }
+        return latest
+    }
+
+    /// A clear row, not a tiny label: the page keeps showing the user's version, so a new draft
+    /// has to say where it is.
+    @ViewBuilder
+    private func newDraftRow(_ detail: SessionDetail) -> some View {
+        if let latest = newerDraftDate(detail) {
+            HStack(spacing: Space.s2) {
+                Image(systemName: "sparkles").foregroundStyle(Ink.ai).accessibilityHidden(true)
+                Text(viewsNewDraft ? "正在看新的 AI 版本，你改过的版本没有动。" : "AI 整理出了新版本。现在显示的仍是你改过的版本。")
+                    .font(Typo.caption).foregroundStyle(Ink.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: Space.s2)
+                if !viewsNewDraft {
+                    Button("查看新版") { withAnimation(Motion.snappy) { viewsNewDraft = true } }
+                        .buttonStyle(SecondaryButtonStyle())
+                } else {
+                    Button("用这一版…") { confirmsUseAI = true }
+                        .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+                }
+                Button("继续用我改的版本") {
+                    viewsNewDraft = false
+                    Task {
+                        // Remember that this draft was seen and passed over: the row goes away.
+                        _ = try? await archive.updateUserContent(for: id) { $0.basedOnGeneratedAt = latest }
+                    }
+                }
+                .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
+            }
+            .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+            .background(Ink.ai.opacity(0.08), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+            .transition(.opacity)
+            .accessibilityIdentifier("notes.newDraft")
         }
     }
 
@@ -415,9 +483,6 @@ struct MeetingPage: View {
         HStack(spacing: Space.s2) {
             if detail.userContent.editedNotes != nil || detail.userContent.editedSummary != nil || detail.userContent.editedMarkdown != nil {
                 Label("你的修订版", systemImage: "pencil").font(Typo.caption).foregroundStyle(Ink.secondary)
-                if let base = detail.userContent.basedOnGeneratedAt, let latest = detail.summary?.generatedAt ?? detail.notes?.generatedAt, base < latest {
-                    Text("AI 原稿已有新版本").font(Typo.caption).foregroundStyle(Ink.ai)
-                }
                 Button("使用 AI 原稿…") { confirmsUseAI = true }.buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8))
             }
             Spacer(minLength: Space.s2)
@@ -601,6 +666,11 @@ struct MeetingPage: View {
             if let meta {
                 Text(verbatim: state.notesFacts(meta, notes: detail?.notes))
                     .font(Typo.caption).foregroundStyle(Ink.secondary)
+                if let facts = coachSummary?.factsLine {
+                    Text(verbatim: facts)
+                        .font(Typo.caption).foregroundStyle(Ink.secondary)
+                        .accessibilityLabel(Text(verbatim: String(localized: "表达数据：") + facts))
+                }
             }
         }
     }
@@ -665,7 +735,8 @@ private struct TemplateMenu: View {
         Menu {
             ForEach(state.allNotesTemplates(english: english)) { template in
                 Button {
-                    state.generateSummary(for: id, templateID: template.id, english: english)
+                    let edited = detail.map { $0.userContent.editedNotes != nil || $0.userContent.editedSummary != nil || $0.userContent.editedMarkdown != nil }
+                    NotesRegeneration.shared.request(sessionID: id, templateID: template.id, english: english, hasEdits: edited)
                 } label: {
                     if template.id == currentID { Label(template.name, systemImage: "checkmark") } else { Text(verbatim: template.name) }
                 }

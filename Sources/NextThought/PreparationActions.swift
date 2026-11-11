@@ -10,6 +10,47 @@ extension AppState {
     var draftDeferredDocumentCount: Int {
         draftJobs.filter { $0.documentID == nil && !$0.stage.terminal }.count
     }
+    /// Megabytes the local recognition model still needs (at least 1).
+    var recognitionModelDownloadMB: Int {
+        max(1, missingPackages.reduce(0) { $0 + $1.approximateMegabytes })
+    }
+
+    /// Recognition is the first thing missing and the fix is a model download.
+    var needsRecognitionModelDownload: Bool {
+        transcriptionBackend == "zipformer" && recordingReadiness.issues.first == .recognition
+    }
+
+    /// What the repair button will do, in words: a download is hundreds of megabytes.
+    var recordingRepairTitle: String {
+        guard let issue = recordingReadiness.issues.first else { return String(localized: "先准备声音") }
+        switch issue {
+        case .recognition:
+            guard transcriptionBackend == "zipformer" else { return String(localized: "设置语音识别") }
+            if isDownloadingModel { return String(localized: "正在下载 \(Int(modelDownloadProgress * 100))%") }
+            return String(localized: "下载语音识别模型（约 \(recognitionModelDownloadMB) MB）")
+        case .microphonePermission:
+            return microphoneAccess == .undetermined ? String(localized: "允许麦克风") : String(localized: "打开系统设置")
+        case .systemAudioPermission: return String(localized: "允许系统音频")
+        case .audioSource: return String(localized: "刷新声音来源")
+        }
+    }
+
+    /// An online meeting may leave the microphone out: the other side alone can be recorded.
+    var canMeetWithoutMicrophone: Bool {
+        meetingVenue == .online && microphoneEnabled
+    }
+
+    /// "只记录对方": same as the switch in settings, and persisted the same way.
+    func continueWithoutMicrophone() {
+        microphoneEnabled = false
+        updateSettings()
+    }
+
+    func useMicrophoneAgain() {
+        microphoneEnabled = true
+        updateSettings()
+    }
+
     func repairRecordingSetup() {
         guard let issue = recordingReadiness.issues.first else { return }
         switch issue {

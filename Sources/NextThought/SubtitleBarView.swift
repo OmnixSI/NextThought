@@ -36,7 +36,9 @@ struct SubtitleBarView: View {
 
     private func card(fontSize: CGFloat) -> some View {
         VStack(spacing: Space.s1) {
-            if let display = model.display {
+            if let deadline = model.autoEndDeadline {
+                autoEndLine(deadline: deadline, fontSize: fontSize)
+            } else if let display = model.display {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                     // The other side is the default speaker and needs no label.
                     if display.speaker != .remote {
@@ -64,6 +66,27 @@ struct SubtitleBarView: View {
         .padding(.horizontal, SubtitleBarController.cardPadding)
         .padding(.vertical, Space.s3)
         .frame(maxWidth: .infinity)
+    }
+
+    /// "好像没人说话了，N 秒后结束记录" with 继续记录: the reminder the live page shows as a banner.
+    private func autoEndLine(deadline: Date, fontSize: CGFloat) -> some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let left = max(0, Int(deadline.timeIntervalSince(context.date).rounded(.up)))
+            HStack(spacing: Space.s3) {
+                Image(systemName: "moon.zzz").font(.system(size: max(13, fontSize * 0.6))).accessibilityHidden(true)
+                Text("好像没人说话了，\(left) 秒后结束记录")
+                    .font(.system(size: max(14, fontSize * 0.75), weight: .medium).monospacedDigit())
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(Motion.reduce ? nil : .default, value: left)
+                    .lineLimit(1)
+                Button("继续记录") { state.keepRecording() }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(state.isChangingSession)
+            }
+            .foregroundStyle(Ink.caution)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("subtitleBar.autoEnd")
+        }
     }
 
     /// Shown while the window is not hidden from screen sharing: whoever watches the

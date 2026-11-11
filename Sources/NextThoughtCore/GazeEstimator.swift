@@ -137,6 +137,9 @@ public struct GazeEstimator: Sendable {
         return true
     }
 
+    /// Drops frames collected for a calibration that did not finish.
+    public mutating func cancelCalibration() { calibration.removeAll() }
+
     public mutating func restore(baseline: GazeSignature) {
         self.baseline = baseline; isCalibrated = true; smoothed = nil
     }

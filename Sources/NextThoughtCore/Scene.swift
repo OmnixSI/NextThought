@@ -37,7 +37,8 @@ public struct CoachingProfile: Sendable, Equatable {
 public struct ScenePreset: Sendable, Equatable {
     public var mode: SessionMode
     public var cueStyle: CueStyle
-    /// Cues appear on the eye line (next to the camera) rather than in a free window.
+    /// Scenes where answers are the point: the scene's native look for them is beside the camera.
+    /// It no longer gates the island's presence, which is there in every meeting.
     public var eyeLine: Bool
     public var coaching: CoachingProfile
 
