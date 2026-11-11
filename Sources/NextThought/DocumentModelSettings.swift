@@ -12,11 +12,10 @@ struct DocumentModelSettings: View {
         return String(localized: "关键词查找 · 无需下载")
     }
 
-    @ViewBuilder private func details(showManagement: Bool = false) -> some View {
+    @ViewBuilder private func details() -> some View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
-        SettingsCardRow {
-            SettingsSection(title: "现在用什么读取资料", icon: "doc.text.viewfinder") {
+            SettingsSection(title: "读取资料的方式", icon: "doc.text.viewfinder") {
                 Label(LocalizedStringKey(currentSummary), systemImage: currentReady ? "checkmark.circle.fill" : "exclamationmark.circle")
                     .foregroundStyle(currentReady ? .green : .orange)
                 Note("选一种即可。PDF、图片和纯文本可先用系统识别，无需下载文档模型。")
@@ -41,27 +40,6 @@ struct DocumentModelSettings: View {
                     Button("先用系统识别") { state.selectDocumentProvider(.system) }.buttonStyle(SecondaryButtonStyle())
                 }
             }
-        } right: {
-            SettingsSection(title: "已经在这台 Mac 下载过？", icon: "internaldrive") {
-                HStack(spacing: 6) {
-                    Text("扫描并校验已有组件，不会自动启用。")
-                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
-                    Note("先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。", presentation: .info)
-                        .accessibilityLabel("复用已有组件说明")
-                }
-                HStack {
-                    Button("扫描本机已有组件") { state.scanLocalDocumentAssets() }
-                        .buttonStyle(SecondaryButtonStyle()).disabled(state.documentSetupBusy || !state.documentModelsChecked)
-                    Button("选择其他目录…") { state.chooseLocalDocumentAssets() }
-                        .disabled(state.documentSetupBusy || !state.documentModelsChecked)
-                    if state.isScanningLocalAssets { ProgressView().controlSize(.small); Button("取消") { state.localAssetScanTask?.cancel() } }
-                }
-                if !state.documentModelsChecked { Note("正在检查组件状态，完成后可以扫描。") }
-                else if state.documentSetupBusy && !state.isScanningLocalAssets { Note("正在准备其他组件，完成后可以扫描。") }
-                if !state.localAssetScanStatus.isEmpty { Note(state.localAssetScanStatus, presentation: .inline) }
-                Note("扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。")
-            }
-        }
             if state.documentSetupFeature != nil || !state.documentSetupStatus.isEmpty {
                 SettingsSection(title: "准备进度", icon: "arrow.down.circle") {
                     Note(state.documentSetupStatus, presentation: .inline)
@@ -71,8 +49,7 @@ struct DocumentModelSettings: View {
                     }
                 }
             }
-        SettingsCardRow {
-            SettingsSection(title: "怎样从资料中找答案", icon: "magnifyingglass") {
+            SettingsSection(title: "查找方式", icon: "magnifyingglass") {
                 choice(title: "关键词查找", status: !state.semanticRetrievalEnabled ? "正在使用 · 无需下载" : "始终可用，增强失败时也会使用",
                        detail: "按问题里的关键词挑选片段，准备快、占用少；问法和原文不同，或答案跨多个段落时，可能漏掉相关内容。") {
                     Button(state.semanticRetrievalEnabled ? "使用关键词查找" : "正在使用") {
@@ -87,15 +64,9 @@ struct DocumentModelSettings: View {
                         featureButton(.semantic, title: "启用语义增强")
                     }
                 }
-                Note("默认只向回答服务发送相关资料片段；全量发送会增加等待和用量。", presentation: .inline)
-                HStack(spacing: 6) {
-                    Text("查找方式说明").font(.system(size: 11.5)).foregroundStyle(.secondary)
-                    Note("两种方式都会挑选相关片段放进回答上下文，不会默认发送全部资料。全量发送会增加等待和用量，还可能超过模型的上下文上限；关闭向量检索不等于全文已经被读取。", presentation: .info)
-                        .accessibilityLabel("资料查找方式说明")
-                }
+                Note("两种方式都只把相关片段放进回答，不会默认发送全部资料。全量发送会增加等待和用量，还可能超过模型的上下文上限。", presentation: .inline)
                 if !state.semanticIndexStatus.isEmpty { Note(state.semanticIndexStatus, presentation: .inline) }
             }
-        } right: {
             SettingsSection(title: "Word、Excel 与 PowerPoint", icon: "doc.richtext") {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 5) {
@@ -111,48 +82,69 @@ struct DocumentModelSettings: View {
                     if !state.runtimeInstalled { featureButton(.office, title: "安装支持") }
                 }
             }
-        }
-            AdvancedOptions("document-management", alwaysVisible: showManagement) {
-                SettingsSection(title: "组件管理与高级设置", icon: "gearshape") {
-                    Note("下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。")
-                    ForEach(ModelCatalog.all, id: \.id) { descriptor in
-                        ManagedModelRow(descriptor: descriptor, isInstalled: state.installedDocumentModels.contains(descriptor.id))
+            AdvancedOptions("materials-components", title: "组件管理", card: true) {
+                reuseExisting
+                Divider()
+                Note("下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。")
+                ForEach(ModelCatalog.all, id: \.id) { descriptor in
+                    ManagedModelRow(descriptor: descriptor, isInstalled: state.installedDocumentModels.contains(descriptor.id))
+                }
+                if !state.managedModelDownloadStatus.isEmpty { Note(state.managedModelDownloadStatus, presentation: .inline) }
+                HStack {
+                    Text(LocalizedStringKey(state.runtimeInstalled ? "共用文档组件 · 已安装" : "共用文档组件 · 未安装"))
+                    Spacer()
+                    Button(state.runtimeInstalled ? "校验／修复" : "安装") { state.installDocumentRuntime() }
+                        .disabled(state.documentSetupBusy || !state.documentModelsChecked)
+                    if state.runtimeInstalled {
+                        Button("删除", role: .destructive) { state.deleteDocumentRuntime() }.disabled(state.documentSetupBusy)
                     }
-                    if !state.managedModelDownloadStatus.isEmpty { Note(state.managedModelDownloadStatus, presentation: .inline) }
-                    HStack {
-                        Text(LocalizedStringKey(state.runtimeInstalled ? "共用文档组件 · 已安装" : "共用文档组件 · 未安装"))
-                        Spacer()
-                        Button(state.runtimeInstalled ? "校验／修复" : "安装") { state.installDocumentRuntime() }
-                            .disabled(state.documentSetupBusy || !state.documentModelsChecked)
-                        if state.runtimeInstalled {
-                            Button("删除", role: .destructive) { state.deleteDocumentRuntime() }.disabled(state.documentSetupBusy)
-                        }
-                    }
-                    Note(DocumentRuntimeInstaller.sizeDescription, presentation: .inline)
-                    if state.isInstallingDocumentRuntime {
-                        Button("取消下载组件") { state.runtimeDownloadTask?.cancel() }
-                    }
-                    if !state.documentRuntimeStatus.isEmpty { Note(state.documentRuntimeStatus, presentation: .inline) }
+                }
+                Note(DocumentRuntimeInstaller.sizeDescription, presentation: .inline)
+                if state.isInstallingDocumentRuntime {
+                    Button("取消下载组件") { state.runtimeDownloadTask?.cancel() }
+                }
+                if !state.documentRuntimeStatus.isEmpty { Note(state.documentRuntimeStatus, presentation: .inline) }
+                Divider()
+                VStack(alignment: .leading, spacing: 3) {
                     Toggle("本机识别失败时用系统识别补读，并标明降级内容", isOn: $state.ocrFallbackToVision)
                         .onChange(of: state.ocrFallbackToVision) { _, _ in state.updateSettings() }
-                    Note("关闭本机补读后，识别失败会让该文件导入失败；不会自动切到在线 Codex。", presentation: .inline)
-                    if state.documentOCRProvider == .codex {
-                        TextField("Codex 模型", text: $state.codexOCRModel).onSubmit { state.updateSettings() }
-                        Picker("推理强度", selection: $state.codexOCREffort) {
-                            ForEach(["low", "medium", "high", "xhigh"], id: \.self) { Text($0).tag($0) }
-                        }.onChange(of: state.codexOCREffort) { _, _ in state.updateSettings() }
-                        HStack {
-                            Text("每个文件超时（秒）")
-                            TextField("600", value: $state.codexOCRTimeout, format: .number).onSubmit {
-                                state.codexOCRTimeout = max(30, min(3600, state.codexOCRTimeout)); state.updateSettings()
-                            }
+                    Note("关闭后，识别失败会让该文件导入失败；不会自动切到在线 Codex。", presentation: .inline)
+                }
+                if state.documentOCRProvider == .codex {
+                    TextField("Codex 模型", text: $state.codexOCRModel).onSubmit { state.updateSettings() }
+                    Picker("推理强度", selection: $state.codexOCREffort) {
+                        ForEach(["low", "medium", "high", "xhigh"], id: \.self) { Text($0).tag($0) }
+                    }.onChange(of: state.codexOCREffort) { _, _ in state.updateSettings() }
+                    HStack {
+                        Text("每个文件超时（秒）")
+                        TextField("600", value: $state.codexOCRTimeout, format: .number).onSubmit {
+                            state.codexOCRTimeout = max(30, min(3600, state.codexOCRTimeout)); state.updateSettings()
                         }
                     }
-                    Button("重建语义索引") { state.rebuildSemanticIndex() }
-                        .disabled(!state.documentAvailability.ready(.semantic) || !state.semanticRetrievalEnabled || state.isBuildingSemanticIndex)
                 }
+                Button("重建语义索引") { state.rebuildSemanticIndex() }
+                    .disabled(!state.documentAvailability.ready(.semantic) || !state.semanticRetrievalEnabled || state.isBuildingSemanticIndex)
             }
             Note("资料原件保留在本机。只有选择在线代读或在线回答时，资料才会发送给对应服务。", presentation: .inline)
+        }
+    }
+
+    /// Reuses components already downloaded on this Mac instead of fetching them again.
+    @ViewBuilder private var reuseExisting: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("已经在这台 Mac 下载过？").font(Typo.label)
+            Note("扫描并校验本机已有的兼容文档模型与支持组件后复用，保留原文件；不会自动启用识别或语义检索。", presentation: .inline)
+            HStack {
+                Button("扫描本机已有组件") { state.scanLocalDocumentAssets() }
+                    .buttonStyle(SecondaryButtonStyle()).disabled(state.documentSetupBusy || !state.documentModelsChecked)
+                Button("选择其他目录…") { state.chooseLocalDocumentAssets() }
+                    .disabled(state.documentSetupBusy || !state.documentModelsChecked)
+                if state.isScanningLocalAssets { ProgressView().controlSize(.small); Button("取消") { state.localAssetScanTask?.cancel() } }
+            }
+            if !state.documentModelsChecked { Note("正在检查组件状态，完成后可以扫描。") }
+            else if state.documentSetupBusy && !state.isScanningLocalAssets { Note("正在准备其他组件，完成后可以扫描。") }
+            if !state.localAssetScanStatus.isEmpty { Note(state.localAssetScanStatus, presentation: .inline) }
+            Note("外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。", presentation: .inline)
         }
     }
     private var currentReady: Bool {

@@ -16,7 +16,7 @@ struct InsightsPanel: View {
                 Button("立即识别") { Task { await state.readScreen() } }.buttonStyle(ChipButtonStyle()).disabled(insights.isReadingScreen || !insights.screenWatch)
                 if insights.isReadingScreen { ProgressView().controlSize(.mini) }
                 Button { state.openInsightSettings() } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(GlassIconButtonStyle(size: 26)).help("设置 → 识别 → 屏幕感知")
+                    .buttonStyle(GlassIconButtonStyle(size: 26)).help("设置 → 回答 → 屏幕与讲稿")
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {

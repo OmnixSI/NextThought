@@ -172,7 +172,7 @@ extension AppState {
         guard !engine.model.isEmpty else {
             meta.notesDeferred = nil
             meta.summaryState = .failed
-            meta.summaryError = String(localized: "没有可用的纪要模型。请在 设置 → 纪要 里选择。")
+            meta.summaryError = String(localized: "没有可用的纪要模型。请在 设置 → 纪要 → 纪要模型 里选择。")
             archive.update(meta)
             onCompletion?()
             return

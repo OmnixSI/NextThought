@@ -87,13 +87,21 @@ enum SettingsNavigationSelfTest {
         }
         try checkWorkspace(running: false)
 
-        let categories = SettingsCategory.allCases
+        let pages = SettingsPage.allCases
         let destinations = SettingsGroup.allCases
-        let assigned = categories.flatMap(\.groups)
-        guard categories.count == 6, destinations.count == 12,
-              assigned.count == destinations.count,
-              Set(assigned) == Set(destinations), Set(assigned).count == assigned.count else {
-            throw SelfTest.Failure("Settings categories do not partition the twelve destinations exactly once")
+        guard pages.count == 8, Set(pages.map(\.rawValue)).count == 8 else {
+            throw SelfTest.Failure("Settings must have exactly eight distinct pages")
+        }
+        // Every name an older version stored must still land on a page, and a page name on itself.
+        for group in destinations where SettingsPage(stored: group.rawValue) != group.page {
+            throw SelfTest.Failure("stored destination " + group.rawValue + " does not open its page")
+        }
+        for page in pages where SettingsPage(stored: page.rawValue) != page {
+            throw SelfTest.Failure("page name " + page.rawValue + " does not open itself")
+        }
+        guard SettingsPage(stored: "常规") == .general, SettingsPage(stored: "更新") == .general,
+              SettingsPage(stored: "快捷键") == .general, SettingsPage(stored: "unknown-destination") == .general else {
+            throw SelfTest.Failure("legacy settings names do not map to the new pages")
         }
 
         // A fake running flag also exercises the live-meeting route. It does not
@@ -103,24 +111,23 @@ enum SettingsNavigationSelfTest {
         for group in destinations {
             state.openSettings(group)
             try checkWorkspace(running: true)
-            let category = SettingsCategory.containing(group)
             guard defaults.string(forKey: "settingsGroup") == group.rawValue,
-                  category.groups.contains(group),
                   settingsWindows.count == 1, settingsWindows.first.map(ObjectIdentifier.init) == identity else {
                 throw SelfTest.Failure("Settings deep link failed for " + group.rawValue)
             }
             first.contentView?.layoutSubtreeIfNeeded()
-            routes.append(["group": group.rawValue, "category": category.rawValue])
+            routes.append(["group": group.rawValue, "page": group.page.rawValue])
             await Task.yield()
         }
 
-        let searches: [(String, SettingsGroup)] = [
-            ("appearance", .essentials), ("minutes", .notes), ("terms", .documents),
-            ("template", .notes), ("backup", .recording)
+        let searches: [(String, SettingsPage)] = [
+            ("appearance", .general), ("minutes", .notes), ("terms", .sound),
+            ("template", .scenes), ("template", .notes), ("backup", .data),
+            ("推理强度", .answers), ("二次判断", .answers), ("摄像头", .data), ("麦克风", .sound), ("字幕", .presenter)
         ]
         for (query, expected) in searches {
             let hits = SettingsSearchItem.matching("  " + query.uppercased() + "  ")
-            guard hits.contains(where: { $0.group == expected && !$0.anchor.isEmpty }) else {
+            guard hits.contains(where: { $0.page == expected && !$0.anchor.isEmpty }) else {
                 throw SelfTest.Failure("Settings search does not reach the expected destination for " + query)
             }
         }
@@ -148,8 +155,8 @@ enum SettingsNavigationSelfTest {
             for appearance in ["light", "dark"] {
                 state.appearance = appearance; state.applyAppearance()
                 for size in [NSSize(width: 980, height: 720), NSSize(width: 880, height: 600)] {
-                    for (group, name) in [(SettingsGroup.essentials, "general"), (.more, "updates"), (.notes, "templates")] {
-                        defaults.set(group.rawValue, forKey: "settingsGroup")
+                    for (page, name) in [(SettingsPage.general, "general"), (.scenes, "scenes"), (.notes, "notes")] {
+                        defaults.set(page.rawValue, forKey: "settingsGroup")
                         reopened.setContentSize(size)
                         try await Task.sleep(for: .milliseconds(160))
                         guard let content = reopened.contentView else { throw SelfTest.Failure("missing settings content view") }
@@ -174,7 +181,7 @@ enum SettingsNavigationSelfTest {
             try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
                 .write(to: directory.appendingPathComponent("settings-navigation.json"), options: .atomic)
         }
-        return "independent Settings window; menu/deep-link/reopen reuse; dirty project and meeting drafts preserved; 12 destinations in 6 categories; appearance/minutes/terms/template/backup search; no devices, models or AX automation"
+        return "independent Settings window; menu/deep-link/reopen reuse; dirty project and meeting drafts preserved; 12 legacy destinations map onto 8 pages; appearance/minutes/terms/template/backup search; no devices, models or AX automation"
     }
 
     private static var settingsWindows: [NSWindow] {

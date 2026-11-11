@@ -217,7 +217,7 @@ extension AppState {
     }
 
     func openInsightSettings() {
-        UserDefaults.standard.set(SettingsGroup.recognition.rawValue, forKey: "settingsGroup")
+        UserDefaults.standard.set(SettingsGroup.screen.rawValue, forKey: "settingsGroup")
         select(.settings)
     }
 }

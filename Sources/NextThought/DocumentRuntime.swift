@@ -103,7 +103,7 @@ actor DocumentWorker {
 
     private func start() throws {
         if process?.isRunning == true { return }
-        guard DocumentRuntime.installed else { throw AppFailure.capture("请先在设置 → 资料下载文档运行包。") }
+        guard DocumentRuntime.installed else { throw AppFailure.capture("请先在 设置 → 资料 → 组件管理 下载文档运行包。") }
         try FileManager.default.createDirectory(at: DocumentRuntime.temporary, withIntermediateDirectories: true)
         let child = Process(); let stdin = Pipe(); let stdout = Pipe()
         child.executableURL = DocumentRuntime.python

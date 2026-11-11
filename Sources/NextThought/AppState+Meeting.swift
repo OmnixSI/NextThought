@@ -139,7 +139,7 @@ extension AppState {
             previousTranscript = ContextDocument(name: detail.meta.displayTitle,
                 pages: SessionSummaryPrompt.chunks(text, limit: 4_000), category: "上一场转写")
         }
-        return plan.preparedWorkspace(from: series, previousTranscript: previousTranscript)
+        return SceneSettings.shared.prepared(plan, from: series, previousTranscript: previousTranscript)
     }
 
     /// The immediate workspace snapshot a starting meeting answers from.
@@ -147,7 +147,7 @@ extension AppState {
     func meetingWorkspaceForStart() -> Workspace {
         let series = activeWorkspace
         guard let plan = plannedMeeting else { return series }
-        return plan.preparedWorkspace(from: series)
+        return SceneSettings.shared.prepared(plan, from: series)
     }
 
     /// Builds the optional, carry-filtered retrieval context after the archive has

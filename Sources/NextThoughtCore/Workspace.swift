@@ -695,7 +695,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var standing: Bool?
     public var isStanding: Bool { standing == true }
 
-    public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle = .concise, preferences: String? = nil,
+    public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle? = nil, preferences: String? = nil,
                 notes: String = "", fields: [String: String] = [:], documents: [ContextDocument] = [],
                 lessons: [WorkspaceLesson] = [], questionBank: [QuestionBankItem] = [], useKnowledge: Bool = true,
                 knowledgeCandidates: [WorkspaceKnowledgeCandidate]? = nil,
@@ -704,7 +704,9 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
                 seriesItemSourceTombstones: [WorkspaceSeriesItemSourceTombstone]? = nil,
                 sourceDeletionTombstones: [UUID]? = nil,
                 stageReview: String? = nil, stageReviewAt: Date? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), archived: Bool = false, skillIDs: [UUID] = []) {
-        self.id = id; self.name = name; self.mode = mode; self.style = style
+        self.id = id; self.name = name; self.mode = mode
+        // A new series starts with its type's answer length, so only a length that differs from it counts as the person's choice.
+        self.style = style ?? MeetingTypeDefaults.for(mode).style
         self.preferences = preferences ?? ModeProfile.for(mode).templatePreferences
         self.notes = notes; self.fields = fields; self.documents = documents; self.lessons = lessons
         self.questionBank = questionBank; self.knowledgeCandidates = knowledgeCandidates; self.useKnowledge = useKnowledge

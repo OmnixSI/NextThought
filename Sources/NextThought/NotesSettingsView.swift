@@ -1,24 +1,20 @@
 import SwiftUI
 import NextThoughtCore
 
-/// Settings → 纪要: the notes model (separate from live answers), when to write the
-/// notes, their language, the template of each meeting type and custom templates.
+/// Settings → 纪要: the notes model (separate from live answers), what happens after a
+/// meeting, custom templates and how a meeting ends. The default template of each
+/// scene is chosen on the 场景 page.
 struct NotesSettingsView: View {
     @Environment(AppState.self) private var state
+    @Environment(\.settingsNavigate) private var navigate
     @State private var editing: NotesTemplate?
     @State private var deleting: NotesTemplate?
 
     var body: some View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 12) {
-        SettingsCardRow {
             SettingsSection(title: "纪要模型", icon: "doc.text") {
-                HStack(spacing: 6) {
-                    Text("会后纪要使用独立模型。")
-                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
-                    Hint("会后整理纪要不赶时间，追求准确和详细，所以用单独的模型：默认是能用到的最强模型，推理强度“高”，不开快速模式。", presentation: .info)
-                        .accessibilityLabel("纪要模型说明")
-                }
+                Note("会后整理不赶时间，追求准确和详细，所以用单独的模型：默认是能用到的最强模型，推理强度“高”，不开快速模式。", presentation: .inline)
                 if state.answerBackend == .openAICompatible {
                     TextField("模型 ID（留空时与回答模型相同）", text: $state.notesModelID)
                         .textFieldStyle(PaperTextFieldStyle())
@@ -29,47 +25,36 @@ struct NotesSettingsView: View {
                     MenuPicker(title: "推理强度", selection: $state.notesReasoning, options: effortOptions)
                         .onChange(of: state.notesReasoning) { _, _ in state.saveNotesSettings() }
                 }
-                Toggle("会议结束后自动整理", isOn: $state.autoSummarize)
-                    .disabled(!state.recordSessions)
-                    .onChange(of: state.autoSummarize) { _, _ in state.saveNotesSettings() }
-                if !state.recordSessions { Hint("请先在“数据”中开启会话记录。", presentation: .inline) }
                 MenuPicker(title: "纪要语言", selection: $state.notesLanguage,
                            options: [("auto", String(localized: "跟随界面语言")), ("zh", "简体中文"), ("en", "English")])
                     .onChange(of: state.notesLanguage) { _, _ in state.saveNotesSettings() }
-                Hint("不重新识别声音、不保存原始录音；整理在后台进行，失败后保留转写并可重试。", presentation: .inline)
-                HStack(spacing: 6) {
-                    Text("整理流程").font(.system(size: 11.5)).foregroundStyle(.secondary)
-                    Hint("整理分三步：结合资料校对转写、按模板生成带时间点的纪要，再核对原话依据和日期。", presentation: .info)
-                        .accessibilityLabel("纪要整理流程说明")
-                }
+                Note("不重新识别声音、不保存原始录音。整理分三步：结合资料校对转写、按模板生成带时间点的纪要，再核对原话依据和日期；在后台进行，失败后保留转写并可重试。", presentation: .inline)
             }
-        } right: {
-            SettingsSection(title: "各类型的默认模板", icon: "list.bullet.rectangle") {
-                VStack(spacing: 0) {
-                    ForEach(SessionMode.builtIn) { mode in
-                        if mode != SessionMode.builtIn.first { Divider() }
-                        HStack(spacing: 20) {
-                            Text(verbatim: mode.displayName).font(Typo.label)
-                            Spacer(minLength: 12)
-                            MenuPicker(selection: Binding(get: { state.defaultNotesTemplateID(for: mode) },
-                                                          set: { state.setDefaultNotesTemplate($0, for: mode) }),
-                                       options: state.allNotesTemplates().map { ($0.id, $0.name) })
-                                .accessibilityLabel(Text(mode.displayName + " · " + String(localized: "默认模板")))
-                                .accessibilityIdentifier("settings.template." + mode.rawValue)
-                        }
-                        .frame(minHeight: 42)
+
+            SettingsSection(title: "会后整理", icon: "wand.and.stars") {
+                Toggle("会议结束后自动整理", isOn: $state.autoSummarize)
+                    .disabled(!state.recordSessions)
+                    .onChange(of: state.autoSummarize) { _, _ in state.saveNotesSettings() }
+                VStack(alignment: .leading, spacing: 3) {
+                    Toggle("自动收集经验与答法候选", isOn: $state.autoCollectKnowledgeCandidates)
+                        .disabled(!state.recordSessions || !state.autoSummarize)
+                        .onChange(of: state.autoCollectKnowledgeCandidates) { _, _ in state.updateSettings() }
+                    Note("整理时顺带挑出值得记住的经验和答法，逐项确认后才加入系列。", presentation: .inline)
+                }
+                if !state.recordSessions {
+                    HStack(spacing: 8) {
+                        Note("这两项需要先开启“记录每次会议”。", color: Ink.caution, presentation: .inline)
+                        Button("去打开") { navigate(.data, "记录每次会议") }
+                            .buttonStyle(ChipButtonStyle())
+                            .accessibilityIdentifier("settings.notes.openRecording")
                     }
+                } else if !state.autoSummarize {
+                    Note("自动收集经验需要先开启上面的自动整理。", presentation: .inline)
                 }
-                Hint("纪要页的“模板”菜单可以给单场会议换个模板重新整理。")
             }
-        }
+
             SettingsSection(title: "自定义模板", icon: "square.and.pencil") {
-                HStack(spacing: 6) {
-                    Text("从现有模板复制后，可以编辑各部分。")
-                        .font(.system(size: 11.5)).foregroundStyle(.secondary)
-                    Hint("一个模板就是若干部分，每部分有名字和一句给 AI 的要求，例如“风险：列出可能导致延期的事，附原话”。可以从现有模板复制一份再改。", presentation: .info)
-                        .accessibilityLabel("自定义模板说明")
-                }
+                Note("一个模板就是若干部分，每部分有名字和一句给 AI 的要求，例如“风险：列出可能导致延期的事，附原话”。可以从现有模板复制一份再改；每个场景用哪个模板，在“场景”页选。", presentation: .inline)
                 ForEach(state.customNotesTemplates) { template in
                     HStack(spacing: 8) {
                         Text(verbatim: template.name).fontWeight(.medium)
@@ -90,6 +75,8 @@ struct NotesSettingsView: View {
                 }
                 .fixedSize()
             }
+
+            AutoEndSettingsSection()
         }
         .sheet(item: $editing) { template in
             NotesTemplateEditor(template: template)

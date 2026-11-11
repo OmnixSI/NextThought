@@ -695,7 +695,7 @@ final class AppState {
         // 提词 / 只记录 starts from the meeting type's default; the live page can switch it.
         // In the room people talk face to face: answers stay quiet unless asked for.
         let meetingMode = plannedMeeting?.effectiveMode ?? activeWorkspace.effectiveMode
-        automaticAnswers = answerEngineReady && MeetingTypeDefaults.for(meetingMode).liveMode == .prompting && !isOfflineMeeting
+        automaticAnswers = answerEngineReady && SceneSettings.shared.liveMode(for: meetingMode) == .prompting && !isOfflineMeeting
         documentPreparation.pauseForMeeting()
         Task { await SemanticWorkspacePreparation.shared.cancelAll() }
         cancelAnswer()

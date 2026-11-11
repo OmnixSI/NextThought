@@ -65,7 +65,7 @@ private struct StructuredFormatPane: View {
             if !running, jobs.hasFailed(key) {
                 if state.notesEngine.model.isEmpty {
                     HStack {
-                        Text("没有可用的纪要模型。请在 设置 → 纪要 里选择。").font(Typo.caption)
+                        Text("没有可用的纪要模型。请在 设置 → 纪要 → 纪要模型 里选择。").font(Typo.caption)
                         Spacer(minLength: Space.s2)
                         Button("设置") { state.openSettings(.notes) }.buttonStyle(SecondaryButtonStyle())
                     }.paperCard()

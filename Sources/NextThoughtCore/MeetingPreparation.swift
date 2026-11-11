@@ -19,13 +19,20 @@ public struct MeetingPlan: Equatable, Sendable {
     }
     public var effectiveMode: SessionMode { mode == .custom ? customBaseMode : mode }
 
-    public func preparedWorkspace(from series: Workspace, previousTranscript: ContextDocument? = nil) -> Workspace {
+    /// `sceneStyle` is the answer length the scene resolves to (Settings → 场景, else the
+    /// built-in default). It applies to every meeting unless the series carries an explicit
+    /// length of its own, i.e. one that differs from its type's default.
+    public func preparedWorkspace(from series: Workspace, previousTranscript: ContextDocument? = nil,
+                                  sceneStyle: AnswerStyle? = nil) -> Workspace {
         var result = carry.workspaceSnapshot(from: series, baselineDocumentIDs: baselineDocumentIDs)
         if result.effectiveMode != effectiveMode {
             if ModeProfile.for(result.effectiveMode).matchesDefaultTemplatePreferences(result.preferences) {
                 result.preferences = ModeProfile.for(effectiveMode).templatePreferences
             }
             result.style = MeetingTypeDefaults.for(effectiveMode).style
+        }
+        if series.style == MeetingTypeDefaults.for(series.effectiveMode).style {
+            result.style = sceneStyle ?? MeetingTypeDefaults.for(effectiveMode).style
         }
         result.mode = mode
         result.customTypeName = customTypeName

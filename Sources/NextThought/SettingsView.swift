@@ -3,52 +3,71 @@ import AVFoundation
 import SwiftUI
 import NextThoughtCore
 
-/// Stable destinations retained across versions and grouped by user task.
-enum SettingsGroup: String, CaseIterable, Identifiable {
-    case essentials = "基础", recognition = "识别", answers = "回答", notes = "纪要", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多", shortcuts = "快捷键", companion = "手机伴侣", privacy = "权限与维护"
-    static let navigationOrder: [SettingsGroup] = [.essentials, .recognition, .answers, .notes, .documents, .overlay, .shortcuts, .skills, .companion, .recording, .privacy, .more]
+/// One sidebar page. Each is a single scroll of sections; nothing nests below it.
+enum SettingsPage: String, CaseIterable, Identifiable {
+    case scenes = "场景", sound = "声音", answers = "回答", materials = "资料"
+    case presenter = "提词与教练", notes = "纪要", general = "通用", data = "数据与权限"
     var id: String { rawValue }
-    var displayTitle: String {
-        switch self {
-        case .essentials: "通用"
-        case .recognition: "声音与识别"
-        case .answers: "回答服务"
-        case .documents: "资料与模型"
-        case .overlay: "提词与教练"
-        case .recording: "数据与备份"
-        case .more: "版本与更新"
-        default: rawValue
-        }
-    }
-    var tabTitle: String {
-        switch self {
-        case .essentials: "界面偏好"
-        case .more: "版本更新"
-        case .answers: "AI 服务"
-        case .documents: "资料"
-        case .overlay: "显示"
-        case .recording: "备份"
-        case .privacy: "权限与维护"
-        default: displayTitle
-        }
-    }
+    var title: String { rawValue }
     var symbol: String {
         switch self {
-        case .essentials: "checklist"
-        case .recognition: "waveform"
-        case .documents: "doc.text.magnifyingglass"
+        case .scenes: "square.grid.2x2"
+        case .sound: "waveform"
         case .answers: "sparkles"
-        case .notes: "doc.text"
-        case .skills: "wand.and.stars"
-        case .overlay: "rectangle.topthird.inset.filled"
-        case .recording: "tray.full"
-        case .more: "arrow.triangle.2.circlepath"
-        case .shortcuts: "keyboard"
-        case .companion: "iphone"
-        case .privacy: "lock.shield"
+        case .materials: "doc.text"
+        case .presenter: "rectangle.topthird.inset.filled"
+        case .notes: "doc.plaintext"
+        case .general: "gearshape"
+        case .data: "lock.shield"
         }
     }
+    var summary: String {
+        switch self {
+        case .scenes: "每种会议开始时怎么设置：会中、回答、纪要模板、提词"
+        case .sound: "会议声音 · 麦克风 · 语音识别 · 术语和人名"
+        case .answers: "回答服务 · 联网搜索 · 屏幕与讲稿 · 技能"
+        case .materials: "怎样读取和查找你的资料"
+        case .presenter: "提词岛、临场教练、屏幕共享和字幕条"
+        case .notes: "会后纪要的模型、模板和收尾方式"
+        case .general: "语言、外观、快捷键、手机伴侣和更新"
+        case .data: "会议记录、备份、系统权限和维护"
+        }
+    }
+    /// Accepts a page name or any name stored by older versions.
+    init(stored: String) {
+        self = SettingsPage(rawValue: stored) ?? SettingsGroup(stored: stored).page
+    }
+}
 
+/// Destinations used by earlier versions (and by code that opens Settings). Each one
+/// now opens a page, and a section on it where the old destination was one.
+enum SettingsGroup: String, CaseIterable, Identifiable {
+    case essentials = "基础", recognition = "识别", answers = "回答", notes = "纪要", documents = "资料", overlay = "提词器", skills = "技能", recording = "数据", more = "更多", shortcuts = "快捷键", companion = "手机伴侣", privacy = "权限与维护"
+    case screen = "屏幕与讲稿"
+    var id: String { rawValue }
+    var page: SettingsPage {
+        switch self {
+        case .essentials, .more, .shortcuts, .companion: .general
+        case .recognition: .sound
+        case .answers, .skills, .screen: .answers
+        case .notes: .notes
+        case .documents: .materials
+        case .overlay: .presenter
+        case .recording, .privacy: .data
+        }
+    }
+    /// The section the old destination pointed at, when it was not the top of its page.
+    var anchor: String? {
+        switch self {
+        case .skills: "技能"
+        case .screen: "屏幕与讲稿"
+        case .more: "更新"
+        case .shortcuts: "快捷键"
+        case .companion: "手机伴侣"
+        case .privacy: "权限"
+        default: nil
+        }
+    }
     /// Accepts names stored by older versions (常规 / 更新 / 快捷键).
     init(stored: String) {
         switch stored {
@@ -60,56 +79,24 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     }
 }
 
-/// Six user tasks, with the original destinations retained for search and deep links.
-enum SettingsCategory: String, CaseIterable, Identifiable {
-    case general, recording, intelligence, notes, presentation, data
-    var id: String { rawValue }
-    var groups: [SettingsGroup] {
-        switch self {
-        case .general: [.essentials, .more]
-        case .recording: [.recognition]
-        case .intelligence: [.answers, .documents, .skills]
-        case .notes: [.notes]
-        case .presentation: [.overlay, .shortcuts, .companion]
-        case .data: [.recording, .privacy]
-        }
-    }
-    var title: String {
-        switch self {
-        case .general: "通用"
-        case .recording: "声音与记录"
-        case .intelligence: "AI 与资料"
-        case .notes: "纪要"
-        case .presentation: "浮窗与快捷键"
-        case .data: "数据与隐私"
-        }
-    }
-    var symbol: String {
-        switch self {
-        case .general: "slider.horizontal.3"
-        case .recording: "waveform"
-        case .intelligence: "sparkles"
-        case .notes: "doc.text"
-        case .presentation: "rectangle.on.rectangle"
-        case .data: "lock.shield"
-        }
-    }
-    static func containing(_ group: SettingsGroup) -> Self {
-        allCases.first { $0.groups.contains(group) } ?? .general
+/// Lets a row in one page send the reader to a section of another (“去打开”).
+private struct SettingsNavigateKey: EnvironmentKey { static let defaultValue: (SettingsPage, String?) -> Void = { _, _ in } }
+extension EnvironmentValues {
+    var settingsNavigate: (SettingsPage, String?) -> Void {
+        get { self[SettingsNavigateKey.self] }
+        set { self[SettingsNavigateKey.self] = newValue }
     }
 }
 
 struct SettingsView: View {
     @Environment(AppState.self) private var state
-    @AppStorage("settingsGroup", store: AppPreferences.standard) private var groupRaw = SettingsGroup.essentials.rawValue
+    @AppStorage("settingsGroup", store: AppPreferences.standard) private var groupRaw = SettingsPage.scenes.rawValue
     @State private var query = ""
     @State private var searchTarget: SettingsSearchItem?
     @State private var searchNavigationRevision = UUID()
     @State private var highlightTarget: String?
-    @State private var lastGroups: [SettingsCategory: SettingsGroup] = [:]
     @FocusState private var searchFocused: Bool
-    private var selectedGroup: SettingsGroup { SettingsGroup(stored: groupRaw) }
-    private var category: SettingsCategory { .containing(selectedGroup) }
+    private var page: SettingsPage { SettingsPage(stored: groupRaw) }
     private var searching: Bool { !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     private var searchItems: [SettingsSearchItem] { SettingsSearchItem.matching(query) }
 
@@ -137,6 +124,12 @@ struct SettingsView: View {
         .foregroundStyle(Ink.ink)
         .tint(Brand.accent)
         .environment(\.settingsNativeControls, true)
+        .environment(\.settingsNavigate) { page, anchor in
+            groupRaw = page.rawValue
+            searchTarget = anchor.map { SettingsSearchItem(page, $0, "") }
+            highlightTarget = anchor
+            searchNavigationRevision = UUID()
+        }
         .background {
             Button("") { searchFocused = true }
                 .keyboardShortcut("f", modifiers: .command).hidden().accessibilityHidden(true)
@@ -146,13 +139,20 @@ struct SettingsView: View {
                 searchTarget = nil; highlightTarget = nil; searchNavigationRevision = UUID()
             }
         }
-        .onAppear {
-            if groupRaw != selectedGroup.rawValue { groupRaw = selectedGroup.rawValue }
-        }
+        .onAppear { followLegacyDestination() }
         .onChange(of: groupRaw) { _, _ in
             // External deep links must not remain behind stale search results.
-            if searchTarget?.group != selectedGroup { query = ""; searchTarget = nil; highlightTarget = nil }
+            if searchTarget?.page != page { query = ""; searchTarget = nil; highlightTarget = nil }
+            followLegacyDestination()
         }
+    }
+
+    /// A deep link written with an old destination name lands on its section.
+    private func followLegacyDestination() {
+        guard let anchor = SettingsGroup(rawValue: groupRaw)?.anchor, searchTarget == nil else { return }
+        searchTarget = SettingsSearchItem(page, anchor, "")
+        highlightTarget = anchor
+        searchNavigationRevision = UUID()
     }
 
     private var sidebar: some View {
@@ -184,17 +184,17 @@ struct SettingsView: View {
                         ForEach(searchItems) { item in
                             Button {
                                 let target: SettingsSearchItem
-                                if item.group == .recognition, item.anchor == "本地模型", state.transcriptionBackend != "zipformer" {
-                                    target = SettingsSearchItem(item.group, item.title, anchor: "语音识别", item.words)
+                                if item.page == .sound, item.title == "流式模型与整句精修", state.transcriptionBackend != "zipformer" {
+                                    target = SettingsSearchItem(item.page, item.title, anchor: "语音识别", item.words)
                                 } else { target = item }
                                 searchTarget = target
-                                groupRaw = item.group.rawValue
+                                groupRaw = item.page.rawValue
                                 highlightTarget = target.anchor
                                 searchNavigationRevision = UUID()
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(LocalizedStringKey(item.title)).font(Typo.label)
-                                    Text(LocalizedStringKey(item.group.displayTitle)).font(Typo.caption).foregroundStyle(Ink.secondary)
+                                    Text(LocalizedStringKey(item.page.title)).font(Typo.caption).foregroundStyle(Ink.secondary)
                                 }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
                                     .background(searchTarget?.id == item.id ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: 7))
                                     .contentShape(Rectangle())
@@ -203,21 +203,20 @@ struct SettingsView: View {
                     }.padding(.horizontal, 8)
                 }.accessibilityLabel("设置搜索结果")
             } else {
-                List(selection: Binding<SettingsCategory?>(get: { category }, set: { next in
-                    guard let next, next != category else { return }
-                    lastGroups[category] = selectedGroup
-                    groupRaw = (lastGroups[next] ?? next.groups[0]).rawValue
+                List(selection: Binding<SettingsPage?>(get: { page }, set: { next in
+                    guard let next, next != page else { return }
+                    groupRaw = next.rawValue
                     searchTarget = nil; highlightTarget = nil
                 })) {
-                    ForEach(SettingsCategory.allCases) { item in
+                    ForEach(SettingsPage.allCases) { item in
                         Label {
                             Text(LocalizedStringKey(item.title)).font(Typo.label)
                         } icon: {
                             Image(systemName: item.symbol).font(.system(size: 15)).frame(width: 20)
                         }
-                        .padding(.vertical, 7)
+                        .padding(.vertical, 6)
                         .tag(item)
-                        .accessibilityIdentifier("settings.category." + item.id)
+                        .accessibilityIdentifier("settings.page." + item.rawValue)
                     }
                 }.listStyle(.sidebar).scrollContentBackground(.hidden)
             }
@@ -229,32 +228,25 @@ struct SettingsView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(LocalizedStringKey(category.title)).font(.system(size: 23, weight: .semibold))
+        VStack(alignment: .leading, spacing: 6) {
+            Text(LocalizedStringKey(page.title)).font(.system(size: 23, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-            if category.groups.count > 1 {
-                UnderlineTabs(items: category.groups.map { (value: $0.rawValue, title: $0.tabTitle) },
-                              selection: $groupRaw, accessibilityLabel: "设置分区")
-                    .accessibilityIdentifier("settings.subsections")
-            }
-            Text(LocalizedStringKey(selectedGroup.summary)).font(Typo.caption).foregroundStyle(Ink.secondary)
+            Text(LocalizedStringKey(page.summary)).font(Typo.caption).foregroundStyle(Ink.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 28).padding(.top, 24).padding(.bottom, 20)
+        .padding(.horizontal, 28).padding(.top, 24).padding(.bottom, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var detail: some View {
         ScrollViewReader { scroll in
             ScrollView {
-                SettingsGroupContent(group: selectedGroup)
+                SettingsPageContent(page: page)
                     .frame(maxWidth: 760, alignment: .leading)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(28)
             }
-            .id(selectedGroup)
-            .environment(\.settingsColumnCount, 1)
-            .environment(\.settingsShowsFullOptions, true)
+            .id(page)
             .environment(\.settingsSearchHighlight, highlightTarget)
             .environment(\.settingsSearchDestination, searchTarget?.anchor)
             .task(id: searchNavigationRevision) {
@@ -269,176 +261,28 @@ struct SettingsView: View {
     }
 }
 
-private struct SettingsGroupContent: View {
-    let group: SettingsGroup
+private struct SettingsPageContent: View {
+    let page: SettingsPage
 
     @ViewBuilder var body: some View {
-        switch group {
-        case .essentials: EssentialSettings()
-        case .recognition: RecognitionSettings()
-        case .documents:
-            VStack(alignment: .leading, spacing: 12) {
-                DocumentModelSettings()
-                GlossarySettingsEntry()
-            }
+        switch page {
+        case .scenes: SceneSettingsPage()
+        case .sound: SoundSettings()
         case .answers: AnswerSettings()
+        case .materials: DocumentModelSettings()
+        case .presenter: PresenterSettings()
         case .notes: NotesSettingsView()
-        case .skills: SkillSettings()
-        case .overlay: OverlaySettings()
-        case .recording: RecordingSettings()
-        case .more: UpdateSettings()
-        case .shortcuts: ShortcutSection()
-        case .companion: CompanionSection()
-        case .privacy:
-            VStack(alignment: .leading, spacing: 16) {
-                MoreSettings()
-                AdvancedOptions("essentials-tools") { AdvancedEssentialSettings() }
-            }
+        case .general: GeneralSettings()
+        case .data: DataSettings()
         }
     }
 }
 
-extension SettingsGroup {
-    fileprivate var englishSearchTerms: String {
-        switch self {
-        case .essentials: "general appearance language setup"
-        case .recognition: "meeting audio microphone speech recognition 声音 音频 麦克风 录屏 语音识别 说话人 声纹"
-        case .documents: "documents materials OCR retrieval 模型 下载 资料 语义 向量 OCR 文档"
-        case .answers: "answers model engine search"
-        case .notes: "notes summary template language"
-        case .skills: "skills instructions"
-        case .overlay: "teleprompter overlay font display 字幕条 字号 提词器 屏幕共享"
-        case .recording: "data recording backup restore export import"
-        case .more: "version updates github channel 更新 下载 版本 GitHub"
-        case .shortcuts: "keyboard hotkey shortcuts"
-        case .companion: "phone mobile bluetooth relay companion"
-        case .privacy: "permissions privacy signing microphone performance 录屏 麦克风 签名 授权 权限 性能"
-        }
-    }
-
-    var summary: String {
-        switch self {
-        case .essentials: "语言、外观与工作台"
-        case .recognition: "会议声音 · 麦克风 · 语音识别"
-        case .documents: "读取资料 · 免下载或按需增强"
-        case .answers: "回答服务 · 回答模型 · 联网"
-        case .notes: String(localized: "纪要模型 · 模板 · 语言")
-        case .skills: "加载 SKILL.md · 全局或按系列"
-        case .overlay: "位置 · 字号 · 共享显示"
-        case .recording: "本机会话记录 · 备份与恢复"
-        case .more: "应用版本与更新偏好"
-        case .shortcuts: "查看与修改键盘快捷键"
-        case .companion: "手机配对 · 局域网与备用连接"
-        case .privacy: "系统权限 · 本机签名 · 运行维护"
-        }
-    }
-}
-
-private struct SettingsFullOptionsKey: EnvironmentKey { static let defaultValue = false }
-extension EnvironmentValues {
-    var settingsShowsFullOptions: Bool {
-        get { self[SettingsFullOptionsKey.self] }
-        set { self[SettingsFullOptionsKey.self] = newValue }
-    }
-}
-
-private struct SettingsColumnCountKey: EnvironmentKey {
-    static let defaultValue = 2
-}
-
-private struct SettingsRowAlignmentKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
-extension EnvironmentValues {
-    var settingsColumnCount: Int {
-        get { self[SettingsColumnCountKey.self] }
-        set { self[SettingsColumnCountKey.self] = max(1, newValue) }
-    }
-
-    fileprivate var settingsRowAligned: Bool {
-        get { self[SettingsRowAlignmentKey.self] }
-        set { self[SettingsRowAlignmentKey.self] = newValue }
-    }
-}
-
-/// Measures paired cards at the same column width and gives them a shared
-/// row height so both card surfaces finish on the same baseline.
-private struct BalancedSettingsRow: Layout {
-    var spacing: CGFloat = 12
-    var firstColumnFraction: CGFloat = 0.5
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        guard !subviews.isEmpty else { return .zero }
-        let width = proposal.width ?? subviews.reduce(0) { $0 + $1.sizeThatFits(.unspecified).width } + spacing
-        let availableWidth = max(0, width - spacing)
-        let firstWidth = availableWidth * min(max(firstColumnFraction, 0), 1)
-        let widths = subviews.count == 1 ? [width] : [firstWidth, availableWidth - firstWidth]
-        let rowHeight = subviews.enumerated().map { index, subview in
-            subview.sizeThatFits(ProposedViewSize(width: widths[min(index, widths.count - 1)], height: nil)).height
-        }.max() ?? 0
-        return CGSize(width: width, height: rowHeight)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        guard !subviews.isEmpty else { return }
-        let availableWidth = max(0, bounds.width - spacing)
-        let firstWidth = availableWidth * min(max(firstColumnFraction, 0), 1)
-        let widths = subviews.count == 1 ? [bounds.width] : [firstWidth, availableWidth - firstWidth]
-        let rowHeight = subviews.enumerated().map { index, subview in
-            subview.sizeThatFits(ProposedViewSize(width: widths[min(index, widths.count - 1)], height: nil)).height
-        }.max() ?? bounds.height
-        var x = bounds.minX
-        for (index, subview) in subviews.enumerated() {
-            let columnWidth = widths[min(index, widths.count - 1)]
-            subview.place(
-                at: CGPoint(x: x, y: bounds.minY),
-                anchor: .topLeading,
-                proposal: ProposedViewSize(width: columnWidth, height: rowHeight)
-            )
-            x += columnWidth + spacing
-        }
-    }
-}
-
-/// Explicit rows keep wide cards full width and paired card bottoms aligned.
-struct SettingsCardRow<Left: View, Right: View>: View {
-    @Environment(\.settingsColumnCount) private var columnCount
-    private let leftFraction: CGFloat
-    private let left: Left
-    private let right: Right
-
-    init(leftFraction: CGFloat = 0.5, @ViewBuilder left: () -> Left, @ViewBuilder right: () -> Right) {
-        self.leftFraction = leftFraction
-        self.left = left()
-        self.right = right()
-    }
-
-    var body: some View {
-        Group {
-            if columnCount > 1 {
-                BalancedSettingsRow(spacing: 12, firstColumnFraction: leftFraction) {
-                    left.environment(\.settingsRowAligned, true)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                    right.environment(\.settingsRowAligned, true)
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                    left.frame(maxWidth: .infinity, alignment: .topLeading)
-                    right.frame(maxWidth: .infinity, alignment: .topLeading)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-    }
-}
-
-/// Card with an icon title, shared by every settings group.
+/// Card with an icon title, shared by every settings page. The title is also the
+/// scroll anchor that search results and deep links point at.
 struct SettingsSection<Content: View>: View {
     let title: String
     let icon: String
-    @Environment(\.settingsRowAligned) private var rowAligned
     @Environment(\.settingsSearchHighlight) private var searchHighlight
     @ViewBuilder var content: Content
 
@@ -453,7 +297,6 @@ struct SettingsSection<Content: View>: View {
             content
         }
         .font(.system(size: 13))
-        .frame(maxHeight: rowAligned ? .infinity : nil, alignment: .topLeading)
         .card()
         .id(title)
         .overlay(RoundedRectangle(cornerRadius: Space.radiusMedium).stroke(searchHighlight == title ? Ink.focus : Color.clear, lineWidth: 2))
@@ -461,51 +304,45 @@ struct SettingsSection<Content: View>: View {
     }
 }
 
-/// The single global switch hides expert controls without resetting their values.
+/// One collapsed group per page (or section) for controls that are rarely changed.
+/// Search opens it when a result points inside (`advanced:<id>`).
 struct AdvancedOptions<Content: View>: View {
     @Environment(\.settingsSearchDestination) private var searchDestination
+    @Environment(\.settingsSearchHighlight) private var searchHighlight
     private let content: Content
-    private let alwaysVisible: Bool
+    private let id: String
     private let title: String
-    private let searchAnchors: Set<String>
+    private let carded: Bool
     @State private var searchExpanded = false
     @AppStorage private var expanded: Bool
-    init(_ id: String, alwaysVisible: Bool = false, @ViewBuilder content: () -> Content) {
+    /// `card` wraps a page-level group in the same card the sections use.
+    init(_ id: String, title: String = "更多选项", card: Bool = false, @ViewBuilder content: () -> Content) {
         self.content = content()
-        self.alwaysVisible = alwaysVisible
-        self.searchAnchors = Set([
-            "essentials-tools": ["窗口", "环境与模型", "使用前检查"],
-            "capture-refresh": ["会议声音与麦克风"], "apple-speech-note": ["语音识别"],
-            "recognition": ["专业词", "本地模型", "启动与回声"],
-            "answers": ["问题识别", "联网搜索", "Codex 运行方式"],
-            "answers-codex": ["回答引擎"], "auto-end-minutes": ["会议自动收尾"],
-            "overlay": ["位置与外观"], "recording-lessons": ["会话记录"],
-            "recording-transfer": ["备份与恢复"], "recording-backups": ["自动备份"],
-            "updates": ["GitHub 访问"], "document-management": ["组件管理与高级设置"]
-        ][id] ?? [])
-        self.title = [
-            "essentials-tools": "环境检查与修复", "capture-refresh": "刷新声音来源",
-            "apple-speech-note": "系统识别说明", "recognition": "识别模型与音频处理",
-            "answers": "联网搜索与回答参数", "overlay": "浮窗位置与外观",
-            "recording-lessons": "会后经验回写", "recording-transfer": "导入导出选项",
-            "recording-backups": "自动备份与恢复记录", "updates": "GitHub 访问设置",
-            "document-management": "模型与组件管理"
-        ][id] ?? "高级选项"
+        self.id = id
+        self.title = title
+        self.carded = card
         self._expanded = AppStorage(wrappedValue: false, "settings.expanded." + id, store: AppPreferences.standard)
     }
+    private var anchor: String { "advanced:" + id }
+
+    private var disclosure: some View {
+        DisclosureGroup(LocalizedStringKey(title), isExpanded: Binding(
+            get: { searchDestination == nil ? expanded : searchExpanded },
+            set: { if searchDestination != nil { searchExpanded = $0 } else { expanded = $0 } }
+        )) {
+            VStack(alignment: .leading, spacing: Space.s3) { content }.padding(.top, Space.s3)
+        }
+        .font(Typo.label)
+    }
+
     var body: some View {
-        if alwaysVisible { content }
-        else {
-            DisclosureGroup(LocalizedStringKey(title), isExpanded: Binding(
-                get: { searchDestination == nil ? expanded : searchExpanded },
-                set: { if searchDestination != nil { searchExpanded = $0 } else { expanded = $0 } }
-            )) {
-                content.padding(.top, Space.s3)
-            }
-            .font(Typo.label)
-            .onChange(of: searchDestination, initial: true) { _, target in
-                searchExpanded = target.map { expanded || searchAnchors.contains($0) } ?? false
-            }
+        Group {
+            if carded { disclosure.card() } else { disclosure }
+        }
+        .id(anchor)
+        .overlay(RoundedRectangle(cornerRadius: Space.radiusMedium).stroke(searchHighlight == anchor ? Ink.focus : Color.clear, lineWidth: 2))
+        .onChange(of: searchDestination, initial: true) { _, target in
+            searchExpanded = target.map { expanded || $0 == anchor } ?? false
         }
     }
 }
@@ -562,121 +399,6 @@ struct Note: View {
     }
 }
 
-// MARK: - Essentials
-
-/// Simple mode: what this Mac can do right now, each with one way to fix it,
-/// beside language and appearance. Everything else lives behind 高级设置.
-private struct EssentialSettings: View {
-    @Environment(AppState.self) private var state
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            AppearanceSettingsSection()
-
-            SettingsSection(title: "工作台功能", icon: "rectangle.3.group") {
-                Toggle("显示完整工作台功能", isOn: Binding(get: { !state.simplifiedInterface }, set: {
-                    state.simplifiedInterface = !$0
-                    state.saveAnswerSettings()
-                }))
-                Note("只影响工作台的功能展示。设置中的所有项目始终可以访问。", presentation: .inline)
-            }
-        }
-    }
-}
-
-private struct AdvancedEssentialSettings: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        @Bindable var state = state
-        SettingsSection(title: "窗口", icon: "macwindow") {
-            Toggle("工作台在本应用前台时置顶", isOn: $state.keepOnTop)
-                .onChange(of: state.keepOnTop) { _, _ in state.updateSettings() }
-            Note("仅在 NextThought 处于前台时生效；切换到其他 App 后会降回普通层级。", presentation: .inline)
-        }
-        SettingsSection(title: "环境与模型", icon: "wrench.and.screwdriver") {
-            HStack(spacing: 8) {
-                Button { Task { await state.runQuickEnvironmentSetup() } } label: {
-                    Label("一键配置", systemImage: "wand.and.stars")
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(state.isRunningEnvironmentSetup)
-                .help("检查回答引擎、选择模型、准备语音识别、刷新音频来源并重建资料索引。缺少本地语音模型时会在后台下载，不影响使用")
-                Note("一键检查并配好回答模型、语音模型、音频来源和资料索引；哪一步没成功会直接写在这里。", presentation: .info)
-                    .accessibilityLabel("一键配置说明")
-                Button { Task { await state.rebuildEnvironment() } } label: {
-                    Label("一键重建环境", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .buttonStyle(SecondaryButtonStyle())
-                .disabled(state.isRunningEnvironmentSetup)
-                .help("重新读取配置、重建资料索引与数据目录，不改变你的选择")
-                if state.isRunningEnvironmentSetup {
-                    ProgressView().controlSize(.small)
-                }
-                Spacer(minLength: 0)
-            }
-            if !state.environmentSetupSteps.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(state.environmentSetupSteps) { step in
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: step.status.symbol)
-                                .font(.system(size: 12))
-                                .foregroundStyle(stepColor(step.status))
-                                .frame(width: 16)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(step.title).font(.system(size: 12.5, weight: .medium))
-                                if !step.detail.isEmpty {
-                                    Text(step.detail).font(.system(size: 11)).foregroundStyle(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            Spacer(minLength: 0)
-                        }
-                    }
-                }
-            }
-            if !state.environmentSetupSummary.isEmpty {
-                Note(state.environmentSetupSummary, color: state.environmentSetupSummary.hasPrefix("有 ") ? .orange : .green)
-            }
-        }
-        SettingsSection(title: "使用前检查", icon: "checklist") {
-            SetupChecklist()
-            HStack {
-                Button("重新打开新手引导") { state.openOnboarding(); MainWindowLayout.bringToFront() }
-                    .buttonStyle(SecondaryButtonStyle())
-                Spacer()
-                Button("刷新") { Task { await state.refreshSetupStatus() } }.buttonStyle(ChipButtonStyle())
-            }
-        }
-    }
-
-    /// Status colours of the one-click setup steps: green for finished, orange
-    /// for a step that needs attention, brand colour while it runs.
-    @MainActor private func stepColor(_ status: EnvironmentSetup.Step.Status) -> Color {
-        switch status {
-        case .done: .green
-        case .failed: .orange
-        case .running: Brand.accent
-        case .pending, .skipped: .secondary
-        }
-    }
-}
-
-private struct AppearanceSettingsSection: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        SettingsSection(title: "界面与外观", icon: "paintbrush") {
-            LanguageSettingsSection(compact: true)
-            Divider()
-            MenuPicker(title: "外观", selection: Binding(get: { state.appearance }, set: { state.setAppearance($0) }),
-                       options: [("system", String(localized: "跟随系统")),
-                                 ("light", String(localized: "浅色")), ("dark", String(localized: "深色"))])
-                .accessibilityIdentifier("settings.appearance")
-        }
-    }
-}
-
-/// Current code signature and the one-click “bind to this Mac”.
 struct SignatureStatus: View {
     private var updater: Updater { Updater.shared }
     @State private var confirming = false
@@ -712,7 +434,7 @@ struct SignatureStatus: View {
     }
 }
 
-private struct CompanionSection: View {
+struct CompanionSection: View {
     @Environment(AppState.self) private var state
     @State private var appPairing = false
     @State private var showsBackup = false
@@ -751,7 +473,7 @@ private struct CompanionSection: View {
                     }
                 }
             }
-            DisclosureGroup("备用连接与高级选项") { advancedControls.padding(.top, 8) }
+            AdvancedOptions("general-companion", title: "备用连接与高级选项") { advancedControls }
             Note("手机端会显示问题、回答与来源标签，不同步完整转录、资料或截图。配对链接请勿转发；共享手机屏幕时，回答仍可能被看见。", presentation: .inline)
         }
     }
@@ -787,129 +509,7 @@ private struct CompanionSection: View {
     }
 }
 
-// MARK: - Recognition
 
-private struct RecognitionSettings: View {
-    @Environment(AppState.self) private var state
-    @State private var confirmDelete = false
-    @FocusState private var vocabularyFocused: Bool
-
-    var body: some View {
-        @Bindable var state = state
-        VStack(alignment: .leading, spacing: 12) {
-        SettingsCardRow {
-        SettingsSection(title: "会议声音与麦克风", icon: "speaker.wave.2") {
-            if !state.capturePermissionGranted {
-                Note("需要音频权限，才能听到会议里的声音。", color: .orange)
-                Button("允许录屏与系统音频") { Task { await state.requestCapturePermission() } }
-            } else { Label("会议音频权限已允许", systemImage: "checkmark.circle.fill").foregroundStyle(.green) }
-            HStack {
-                MenuPicker(title: "会议声音来自", selection: $state.selectedTargetID,
-                           options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "选择会议窗口")
-                    .disabled(state.isRunning || state.isChangingSession)
-                    .onChange(of: state.selectedTargetID) { _, _ in Task { await state.changeCaptureTarget() } }
-                // The list refreshes itself whenever this page opens; the manual button is for experts.
-                AdvancedOptions("capture-refresh") {
-                    Button("刷新") { Task { await state.refreshTargets() } }
-                }
-            }
-            Toggle("同时识别我说的话（麦克风）", isOn: $state.microphoneEnabled)
-                .disabled(state.isRunning || state.isChangingSession)
-                .onChange(of: state.microphoneEnabled) { _, _ in state.updateSettings() }
-            if state.microphoneEnabled && state.microphoneAccess != .granted {
-                Button("允许麦克风") { Task { await state.requestMicrophoneAccess() } }
-            }
-        }
-        .task { if !state.isRunning && !state.isChangingSession { await state.refreshTargets() } }
-        } right: {
-        SettingsSection(title: "语音识别", icon: "waveform") {
-            Group {
-            MenuPicker(title: "引擎", selection: $state.transcriptionBackend, options: [
-                ("zipformer", "本地流式 · 离线（推荐）"),
-                ("apple", "Apple Speech · 本地 / macOS 26"),
-                ("cloud", "云端流式 · 需 API Key"),
-            ], localizesOptions: true)
-            .disabled(state.isRunning || state.isPreparingModel)
-            .onChange(of: state.transcriptionBackend) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
-            }
-            switch state.transcriptionBackend {
-            case "zipformer": ModelDownloadRow()
-            case "apple":
-                LanguagePicker()
-                AdvancedOptions("apple-speech-note") {
-                    Note("Apple 路径需明确选择中文或 English，首次使用可能下载语言资源。")
-                }
-            default:
-                LanguagePicker()
-                CloudSettings()
-            }
-        }
-        }
-        AutoEndSettingsSection()
-        SpeakerSettingsSection()
-        AdvancedOptions("recognition") {
-            VStack(alignment: .leading, spacing: 12) {
-            SettingsSection(title: "专业词", icon: "textformat") {
-                HStack(spacing: 8) {
-                    TextField("专业词 / 人名，逗号分隔（提高识别准确度）", text: $state.recognitionVocabulary)
-                        .textFieldStyle(.plain).padding(.horizontal, 10).padding(.vertical, 8)
-                        .frame(maxWidth: 520, minHeight: 36)
-                        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: 8))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(vocabularyFocused ? Ink.focus : Ink.hairline, lineWidth: vocabularyFocused ? 1.5 : 1))
-                        .focused($vocabularyFocused)
-                        .onChange(of: state.recognitionVocabulary) { _, _ in state.updateSettings() }
-                    Note("填入人名、项目名和专有名词，识别时会更准；用逗号分隔。", presentation: .info)
-                        .accessibilityLabel("专业词说明")
-                }
-            }
-            if state.transcriptionBackend == "zipformer" {
-                SettingsSection(title: "本地模型", icon: "cpu") {
-                    HStack(spacing: 8) {
-                        MenuPicker(title: "流式模型", selection: $state.localStreamingModel, options: LocalStreamingModel.allCases.map { ($0, $0.title) }, localizesOptions: true)
-                            .disabled(state.modelControlsDisabled)
-                            .onChange(of: state.localStreamingModel) { _, _ in state.updateSettings(); Task { await state.refreshModelStatus(); await state.prewarmRecognizer() } }
-                        Note(state.localStreamingModel.detail, presentation: .info).accessibilityLabel("流式模型说明")
-                    }
-                    Toggle("整句精修：每句说完后用离线模型重新识别整句（推荐）", isOn: $state.secondPassEnabled)
-                        .disabled(state.modelControlsDisabled || state.localStreamingModel == .legacy)
-                        .onChange(of: state.secondPassEnabled) { _, _ in state.updateSettings(); Task { await state.prewarmRecognizer() } }
-                    if let rtf = state.lastRTF, let seconds = state.lastASRSeconds {
-                        Note(String(format: "最近处理 %.2f s · RTF %.2f", seconds, rtf) + (state.lastRefineSeconds.map { String(format: " · 精修 %.2f s", $0) } ?? ""), presentation: .inline)
-                    }
-                    HStack {
-                        Link("模型来源：sherpa-onnx X-ASR（Apache-2.0）", destination: URL(string: "https://github.com/Gilgamesh-J/X-ASR")!)
-                            .font(.system(size: 11)).foregroundStyle(Color.accentColor)
-                        Spacer()
-                        Button("删除全部模型") { confirmDelete = true }.buttonStyle(.borderless).foregroundStyle(.red).disabled(state.modelControlsDisabled)
-                    }
-                }
-                .confirmationDialog("删除全部本地识别模型？", isPresented: $confirmDelete, titleVisibility: .visible) {
-                    Button("删除", role: .destructive) { state.deleteModels() }
-                    Button("取消", role: .cancel) { }
-                }
-            }
-            SettingsSection(title: "启动与回声", icon: "speaker.wave.2.bubble.left") {
-                Toggle("后台预加载识别模型（开始几乎瞬间启动）", isOn: $state.keepRecognizerWarm)
-                    .onChange(of: state.keepRecognizerWarm) { _, _ in state.saveRecognizerSettings() }
-                if let seconds = state.lastStartupSeconds { Note(String(format: "上次开始用时 %.1f 秒", seconds), presentation: .inline) }
-                HStack(spacing: 8) {
-                    Toggle("忽略麦克风里的扬声器回声（推荐）", isOn: $state.echoSuppression)
-                        .onChange(of: state.echoSuppression) { _, _ in state.updateSettings() }
-                    Note("不戴耳机时对方的声音会从扬声器传进麦克风；应用比对两路音频的节奏和文字，回声不记为“我”。戴耳机始终最干净。", presentation: .info)
-                        .accessibilityLabel("回声处理说明")
-                }
-                Toggle("麦克风回声消除（Apple 语音处理，实验）", isOn: $state.microphoneVoiceProcessing)
-                    .disabled(state.isRunning)
-                    .onChange(of: state.microphoneVoiceProcessing) { _, _ in state.updateSettings() }
-            }
-            InsightSettings()
-            }
-        }
-        }
-    }
-}
-
-/// Model status with download / cancel, shared by settings, the setup checklist and onboarding.
 struct ModelDownloadRow: View {
     @Environment(AppState.self) private var state
 
@@ -935,7 +535,7 @@ struct ModelDownloadRow: View {
     }
 }
 
-private struct LanguagePicker: View {
+struct LanguagePicker: View {
     @Environment(AppState.self) private var state
     var body: some View {
         @Bindable var state = state
@@ -964,59 +564,7 @@ struct CloudSettings: View {
     }
 }
 
-// MARK: - Answers
 
-private struct AnswerSettings: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        @Bindable var state = state
-        VStack(alignment: .leading, spacing: 12) {
-        SettingsSection(title: "回答引擎", icon: "sparkles") {
-            VStack(alignment: .leading, spacing: 12) {
-                AnswerEngineForm(foldSecondary: true)
-                Divider()
-                SettingsInfoRow(icon: "text.bubble", title: "自动回答", detail: "在会议顶栏选择“自动回答”或“只记录”。")
-                if state.simplifiedInterface {
-                    SettingsInfoRow(icon: "globe", title: "联网搜索",
-                                    detail: state.webSearchMode == .off ? "联网搜索已关闭；可在下方高级选项中打开。" : "联网搜索已开启；可在下方高级选项中调整。")
-                }
-            }
-        }
-        .frame(maxWidth: 1320, alignment: .leading)
-        AdvancedOptions("answers") {
-            VStack(alignment: .leading, spacing: 12) {
-            WebSearchSettings()
-            SettingsSection(title: "问题识别", icon: "text.magnifyingglass") {
-                HStack(spacing: 8) {
-                    Toggle("不确定的句子交给 API 模型二次判断", isOn: $state.verifyUncertainWithModel)
-                        .disabled(state.answerBackend != .openAICompatible)
-                        .onChange(of: state.verifyUncertainWithModel) { _, _ in state.saveAnswerSettings() }
-                    Note("本地规则逐句判断：区分陈述、未说完、提问、请求（“说一下你对…的理解”“walk me through…”）和追问；去掉口头禅，忽略“能听到吗”这类设备确认。课程场景更严格，避免把讲师的自问自答当成提问。", presentation: .info)
-                        .accessibilityLabel("问题识别说明")
-                }
-                if state.answerBackend != .openAICompatible { Note("需要使用 API Key 回答引擎才能启用二次判断。") }
-            }
-            if state.answerBackend != .openAICompatible {
-                SettingsSection(title: "Codex 运行方式", icon: "terminal") {
-                    HStack(spacing: 8) {
-                        MenuPicker(title: "运行方式", selection: $state.answerBackend,
-                                   options: [(.codexAppServer, String(localized: "常驻服务 · 流式（推荐）")),
-                                             (.codexExec, String(localized: "codex exec · 兼容"))])
-                            .onChange(of: state.answerBackend) { _, _ in state.saveAnswerSettings() }
-                        Note("常驻 `codex app-server` 复用进程与登录，逐字流式显示；不可用时自动回退到 codex exec。exec 每次启动一个进程，等完整结果后显示。", presentation: .info)
-                            .accessibilityLabel("Codex 运行方式说明")
-                    }
-                }
-            }
-            }
-        }
-        }
-    }
-}
-
-/// Reasoning strength of the Codex engine; rarely changed, so the settings page
-/// folds it away.
 struct CodexReasoningPicker: View {
     @Environment(AppState.self) private var state
     var body: some View {
@@ -1034,7 +582,7 @@ struct CodexFastModeToggle: View {
         Toggle(isOn: $state.codexFastMode) {
             HStack(spacing: 6) {
                 Image(systemName: "bolt.fill").foregroundStyle(state.codexFastMode ? Brand.accent : .secondary)
-                Text("Fast 模式")
+                Text("快速模式")
                 Text(LocalizedStringKey(state.codexFastLabel)).foregroundStyle(.secondary)
             }
         }
@@ -1079,7 +627,7 @@ struct WebSearchSettings: View {
                             .onChange(of: state.tavilyKey) { _, _ in state.saveTavilyKey() }
                         Link("获取 Key", destination: URL(string: "https://app.tavily.com")!).font(.system(size: 12))
                     }
-                    Note("问题文本会发送给 Tavily；它返回的网页摘要由当前回答引擎整理，并在回答中标注来源。", presentation: .inline)
+                    Note("问题文本会发送给 Tavily；它返回的网页摘要由当前回答服务整理，并在回答中标注来源。", presentation: .inline)
                 }
             }
         }
@@ -1101,7 +649,7 @@ struct EngineTestRow: View {
             .controlBusy(state.engineTest == .running)
             .disabled(state.engineTest == .running || state.isAnswering)
             switch state.engineTest {
-            case .idle: Text("发一句测试问题，确认引擎能正常回答").font(.system(size: 11)).foregroundStyle(.secondary)
+            case .idle: Text("发一句测试问题，确认回答服务能正常回答").font(.system(size: 11)).foregroundStyle(.secondary)
             case .running: Text("正在请求…").font(.system(size: 11)).foregroundStyle(.secondary)
             case let .passed(seconds, reply):
                 Label(String(format: "可以使用 · %.1f 秒 · “%@”", seconds, String(reply.prefix(24))), systemImage: "checkmark.circle.fill")
@@ -1114,16 +662,17 @@ struct EngineTestRow: View {
     }
 }
 
+
 // MARK: - Skills
 
-private struct SkillSettings: View {
+struct SkillSettings: View {
     @Environment(AppState.self) private var state
     @State private var editing: Skill?
     @State private var deleting: Skill?
     private var library: SkillLibrary { SkillLibrary.shared }
 
     var body: some View {
-        SettingsSection(title: "技能库", icon: "wand.and.stars") {
+        SettingsSection(title: "技能", icon: "wand.and.stars") {
             HStack(spacing: 6) {
                 Text("技能可用于所有系列，或在资料夹中按系列选择。")
                     .font(.system(size: 11.5)).foregroundStyle(.secondary)
@@ -1159,7 +708,7 @@ private struct SkillSettings: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(skill.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(skill.enabled ? .primary : .secondary)
                 Text(skill.summary.isEmpty ? "\(skill.content.count) 字" : skill.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
-                if !skill.global { Text(attached == 0 ? "还没有场景使用" : "\(attached) 个场景在用").font(.system(size: 10.5)).foregroundStyle(.tertiary) }
+                if !skill.global { Text(attached == 0 ? "还没有系列使用" : "\(attached) 个系列在用").font(.system(size: 10.5)).foregroundStyle(.tertiary) }
             }
             Spacer()
             Toggle("所有系列", isOn: Binding(get: { skill.global }, set: { var next = skill; next.global = $0; library.update(next) }))
@@ -1203,332 +752,16 @@ struct SkillEditor: View {
     }
 }
 
-// MARK: - Overlay
-
-private struct OverlaySettings: View {
-    @Environment(AppState.self) private var state
-    @State private var calibration: Bool?
-    @State private var startedPreview = false
-
-    var body: some View {
-        @Bindable var state = state
-        @Bindable var cue = CueIslandController.shared.model
-        @Bindable var coach = state.coach
-        VStack(alignment: .leading, spacing: 12) {
-        SettingsSection(title: "提词", icon: "rectangle.topthird.inset.filled") {
-            MenuPicker(title: "显示方式", selection: $cue.surface,
-                       options: CueSurface.allCases.map { ($0, $0.title) })
-            if cue.surface == .island {
-                MenuPicker(title: "宽度", selection: $cue.width,
-                           options: CueWidth.allCases.map { ($0, $0.title) })
-                MenuPicker(title: "排版", selection: $cue.style,
-                           options: CueStyleChoice.allCases.map { ($0, $0.title) })
-                Note("要点 = 结论加每一点的开头，一眼看完；逐句 = 按要说的话一句一句显示。", presentation: .inline)
-                MenuPicker(title: "摄像头所在的屏幕", selection: $cue.screenName,
-                           options: [("", String(localized: "自动（内建显示器）"))]
-                                + NSScreen.screens.map { ($0.localizedName, $0.localizedName) })
-                HStack {
-                    if cue.preview {
-                        Button("结束预览") { CueIslandController.shared.hide() }.buttonStyle(SecondaryButtonStyle())
-                    } else {
-                        Button("预览提词岛") {
-                            cue.preview = true
-                            startedPreview = true
-                            CueIslandController.shared.show()
-                        }.buttonStyle(PrimaryButtonStyle())
-                    }
-                }
-            } else {
-                Button("显示回答浮窗") { TeleprompterController.shared.showWindow() }.buttonStyle(PrimaryButtonStyle())
-                HStack {
-                    Text("移动到")
-                    ForEach(TeleprompterController.Placement.allCases) { placement in
-                        Button(placement.title) { TeleprompterController.shared.move(to: placement) }.buttonStyle(ChipButtonStyle())
-                            .help("显示回答浮窗并移动到\(placement.title)")
-                    }
-                }
-                HStack {
-                    Text("不透明度")
-                    Slider(value: $state.teleprompterOpacity, in: 0.35...1).disabled(state.teleprompterHideBackground)
-                        .frame(maxWidth: 320)
-                        .onChange(of: state.teleprompterOpacity) { _, _ in state.saveAnswerSettings() }
-                    Text("\(Int(state.teleprompterOpacity * 100))%").font(.caption.monospacedDigit()).frame(width: 36)
-                }
-                Toggle("隐藏背景，只保留文字、边框与按钮", isOn: $state.teleprompterHideBackground)
-                    .onChange(of: state.teleprompterHideBackground) { _, _ in state.saveAnswerSettings() }
-                Toggle("鼠标穿透（点击穿过回答浮窗）", isOn: Binding(get: { state.clickThrough }, set: { _ in state.toggleClickThrough() }))
-                Note("手机显示与遥控在设置 → 手机伴侣。隐藏背景时，不透明度不会影响文字与按钮。")
-            }
-            HStack {
-                Text("字号")
-                Slider(value: $state.teleprompterFontSize, in: 14...44, step: 1)
-                    .frame(maxWidth: 320)
-                    .onChange(of: state.teleprompterFontSize) { _, _ in state.saveAnswerSettings() }
-                Text("\(Int(state.teleprompterFontSize))").font(.caption.monospacedDigit()).frame(width: 36)
-            }
-            if CueIslandController.shared.model.surface == .island {
-                Toggle("不开会时，鼠标停在刘海上可以直接开始一场", isOn: Binding(
-                    get: { CueIslandController.shared.model.launcher },
-                    set: { CueIslandController.shared.model.launcher = $0 }))
-            }
-            Note("提词岛不抢键盘焦点；鼠标停在上面才会展开会议控制和按钮，其余时候点击会穿过它。", presentation: .inline)
-        }
-
-        SettingsSection(title: "临场教练", icon: "figure.wave") {
-            Toggle("会中轻提示：语速、说得太久、发言占比", isOn: $coach.isEnabled)
-            Toggle("留意眼神是否离开镜头（使用摄像头）", isOn: $coach.watchesGaze)
-                .onChange(of: coach.watchesGaze) { _, on in
-                    calibration = nil
-                    if on { state.coach.startWatching() }
-                }
-            if coach.watchesGaze {
-                HStack(spacing: 8) {
-                    StatusDot(tone: cameraTone(coach.cameraAccess))
-                    Text("摄像头权限").foregroundStyle(.secondary)
-                    Text(cameraText(coach.cameraAccess))
-                }
-                .font(.callout)
-                HStack(spacing: 8) {
-                    StatusDot(tone: gazeTone(coach.gaze?.state))
-                    Text("当前").foregroundStyle(.secondary)
-                    Text(gazeText(coach.gaze?.state))
-                }
-                .font(.callout)
-                MenuPicker(title: "灵敏度", selection: $coach.gazeSensitivity,
-                           options: GazeSensitivity.allCases.map { ($0, $0.title) })
-                HStack(spacing: 10) {
-                    Button("校准：看着摄像头 2 秒") {
-                        calibration = nil
-                        Task { calibration = await state.coach.calibrate() }
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .disabled(coach.isCalibrating || coach.cameraAccess != .authorized)
-                    if coach.isCalibrating {
-                        ProgressView().controlSize(.small)
-                        Text("正在校准，请看着摄像头…").font(.callout).foregroundStyle(.secondary)
-                    } else if let calibration {
-                        Text(calibration ? "已校准" : "没有看清眼睛，请正对摄像头再试一次")
-                            .font(.callout).foregroundStyle(.secondary)
-                    } else if coach.isCalibrated {
-                        Text("已校准过").font(.callout).foregroundStyle(.secondary)
-                    }
-                }
-            }
-            Note("画面只在这台 Mac 上分析成几个特征点，不保存、不上传。提词岛就在摄像头下方，读提词时视线偏移很小，对方看到的是你在看镜头。", presentation: .inline)
-        }
-
-        SettingsSection(title: "屏幕共享", icon: "eye.slash") {
-            Toggle("会议软件共享提词岛所在的屏幕时，自动收回刘海", isOn: Binding(
-                get: { CueIslandController.shared.model.avoidsSharing },
-                set: { CueIslandController.shared.model.avoidsSharing = $0 }))
-            Toggle("尽力从屏幕共享中排除本应用窗口", isOn: $state.capturePrivacy)
-                .onChange(of: state.capturePrivacy) { _, _ in state.saveAnswerSettings(); state.updateSettings() }
-            Note(String(localized: "共享某个窗口或另一块屏幕时，提词岛不在画面里。共享它所在的整块屏幕时，macOS 15.4 起系统不再让应用把自己排除在外，所以提词岛会在识别到 Zoom、Teams、腾讯会议、飞书、钉钉或 Webex 的整屏共享后自动收起；其他软件请先用下面的测试看一眼。\(state.shortcutLabel(.panicHide)) 可随时隐藏全部窗口。"), presentation: .inline)
-            Button("共享可见性测试") { state.runShareVisibilityTest() }.buttonStyle(SecondaryButtonStyle())
-        }
-        // Kept out of 高级设置: its "恢复默认位置" is the way back for a bar dragged off-screen.
-        SubtitleBarSettingsSection()
-        }
-        .onDisappear {
-            guard !state.isRunning else { return }
-            state.coach.stopWatching()
-            if startedPreview || CueIslandController.shared.model.preview {
-                CueIslandController.shared.hide()
-                startedPreview = false
-            }
-        }
-    }
-
-    private func cameraText(_ status: AVAuthorizationStatus) -> String {
-        switch status {
-        case .authorized: String(localized: "已允许")
-        case .notDetermined: String(localized: "等待允许")
-        default: String(localized: "未允许，请在系统设置 → 隐私与安全性 → 摄像头 中打开")
-        }
-    }
-    private func cameraTone(_ status: AVAuthorizationStatus) -> StatusDot.Tone {
-        switch status {
-        case .authorized: .ready
-        case .notDetermined: .idle
-        default: .caution
-        }
-    }
-    private func gazeText(_ gaze: GazeReading.State?) -> String {
-        switch gaze {
-        case .onCamera: String(localized: "正在看镜头")
-        case .away: String(localized: "视线离开了镜头")
-        case .noFace: String(localized: "没有检测到人脸")
-        case nil: String(localized: "正在启动…")
-        }
-    }
-    private func gazeTone(_ gaze: GazeReading.State?) -> StatusDot.Tone {
-        switch gaze {
-        case .onCamera: .ready
-        case .away: .caution
-        default: .idle
-        }
-    }
-}
-
-// MARK: - Recording
-
-private struct RecordingSettings: View {
-    @Environment(AppState.self) private var state
-    @State private var includeSecrets = false
-    @State private var applySettings = true
-    @State private var backups: [DataBackup.BackupFile] = []
-    @State private var restoring: DataBackup.BackupFile?
-
-    var body: some View {
-        @Bindable var state = state
-        VStack(alignment: .leading, spacing: 12) {
-        SettingsCardRow {
-        SettingsSection(title: "会话记录", icon: "tray.full") {
-            Toggle("记录每次会话（转录、识别到的问题、会中回答与当时的系列资料）", isOn: $state.recordSessions)
-                .disabled(state.isRunning)
-                .onChange(of: state.recordSessions) { _, _ in state.updateSettings() }
-            Note("转录边说边保存在本机，不保存原始音频。生成摘要与复盘会把本次转录发送给当前回答服务并使用其额度。", presentation: .inline)
-            AdvancedOptions("recording-lessons") {
-                // 会后自动整理 lives in 纪要; this one only decides whether lessons flow back into the series.
-                Toggle("自动收集经验与答法候选（逐项确认后才加入系列）", isOn: $state.autoCollectKnowledgeCandidates)
-                    .disabled(!state.autoSummarize)
-                    .onChange(of: state.autoCollectKnowledgeCandidates) { _, _ in state.updateSettings() }
-                if !state.autoSummarize { Note("请先开启会后自动整理纪要。") }
-            }
-        }
-        } right: {
-        SettingsSection(title: "备份与恢复", icon: "externaldrive") {
-            HStack {
-                Button("导出全部数据…") { state.exportAllData(includeSecrets: includeSecrets) }.buttonStyle(PrimaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
-                Button("导入…") { state.importData(applySettings: applySettings) }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
-                Button("立即备份") { state.backupNow(); refreshSoon() }.buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy)
-            }
-            Note("导入会合并，不删除现有数据。密钥和设置是否包含，由下方导入导出选项决定。", presentation: .inline)
-            if let latest = backups.first {
-                Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened), presentation: .inline)
-            }
-            AdvancedOptions("recording-transfer") {
-                Note("备份包含项目资料、经验积累、会议记录、个人笔记、模板和设置。先预览再恢复；项目按修改时间合并，记录与模板冲突由你选择。", presentation: .inline)
-                Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets)
-                Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings)
-                if includeSecrets { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
-            }
-            if state.isDataBusy { ProgressView().controlSize(.small) }
-            if !state.dataStatus.isEmpty {
-                OperationFeedback(message: state.dataStatus, tone: state.dataStatusTone)
-                if state.dataStatusCanRetryBackup && state.dataStatusTone == .failure {
-                    Button("重试备份") { state.backupNow() }
-                        .buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
-                }
-            }
-        }
-        }
-        if let issue = state.backupIssue {
-            OperationFeedback(message: issue, tone: .failure)
-            Button("重试备份") { state.backupNow() }
-                .buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy || state.isRunning)
-        }
-        if let warning = state.recoveryPointWarning { OperationFeedback(message: warning, tone: .warning) }
-        AdvancedOptions("recording-backups") {
-        SettingsSection(title: "自动备份", icon: "clock.arrow.circlepath") {
-            Toggle("会议结束后自动创建恢复点", isOn: $state.autoBackup)
-                .onChange(of: state.autoBackup) { _, _ in state.updateSettings() }
-            Button("打开数据文件夹") {
-                try? FileManager.default.createDirectory(at: AppPaths.root, withIntermediateDirectories: true)
-                NSWorkspace.shared.open(AppPaths.root)
-            }.buttonStyle(SecondaryButtonStyle())
-            if backups.isEmpty {
-                Note("还没有自动备份。", presentation: .inline)
-            } else {
-                ForEach(backups.prefix(10)) { backup in
-                    HStack {
-                        Image(systemName: "archivebox").foregroundStyle(.secondary)
-                        Text(backup.date.formatted(date: .abbreviated, time: .shortened))
-                        Text(reasonTitle(backup.reason)).foregroundStyle(.secondary)
-                        Text(ByteCountFormatter.string(fromByteCount: Int64(backup.size), countStyle: .file)).foregroundStyle(.tertiary)
-                        Spacer()
-                        Button("恢复…") { restoring = backup }.buttonStyle(ChipButtonStyle()).disabled(state.isRunning)
-                        Button { NSWorkspace.shared.activateFileViewerSelecting([backup.url]) } label: { Image(systemName: "folder") }.buttonStyle(.borderless)
-                    }
-                }
-            }
-            Note(String(localized: "数据保存在 \(AppPaths.root.path)。恢复点最多保留最近 10 份、软预算 2 GiB，不含模型、索引或密钥。"), presentation: .inline)
-        }
-        }
-        }
-        // Attached to the stack, not to the advanced card, so the list also loads in simple mode.
-        .onAppear { backups = DataBackup.listBackups() }
-        .onReceive(NotificationCenter.default.publisher(for: DataBackup.didChangeNotification)) { _ in
-            backups = DataBackup.listBackups()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { notification in
-            if (notification.object as? NSWindow)?.identifier == SettingsWindow.identifier {
-                backups = DataBackup.listBackups()
-            }
-        }
-        .confirmationDialog("从这份备份恢复？", isPresented: Binding(get: { restoring != nil }, set: { if !$0 { restoring = nil } }), titleVisibility: .visible) {
-            Button("查看恢复预览") { if let restoring { state.importArchive(restoring.url, applySettings: false) }; restoring = nil; refreshSoon() }
-            Button("取消", role: .cancel) { restoring = nil }
-        } message: {
-            Text("先查看新增、相同和冲突内容；确认所选内容后才会应用。冲突默认保留本机，应用前创建恢复点。")
-        }
-    }
-
-    private func refreshSoon() {
-        Task { try? await Task.sleep(for: .seconds(2)); backups = DataBackup.listBackups() }
-    }
-
-    private func reasonTitle(_ reason: String) -> String {
-        switch reason {
-        case "daily": String(localized: "旧每日备份")
-        case "session": String(localized: "会议结束")
-        case "update": String(localized: "更新前")
-        case "import": String(localized: "导入前")
-        case "manual": String(localized: "手动")
-        default: String(localized: String.LocalizationValue(reason))
-        }
-    }
-}
-
-// MARK: - More
-
-private struct MoreSettings: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        @Bindable var state = state
-        VStack(alignment: .leading, spacing: 12) {
-            Group {
-                VStack(alignment: .leading, spacing: 12) {
-                    SettingsSection(title: "权限与签名", icon: "lock.shield") {
-                        Text(state.capturePermissionStatus).foregroundStyle(state.capturePermissionGranted ? .green : .secondary)
-                        HStack {
-                            Button("录屏与系统音频…") { state.openCapturePermissionSettings() }.buttonStyle(SecondaryButtonStyle())
-                            Button("麦克风…") { state.openMicrophoneSettings() }.buttonStyle(SecondaryButtonStyle())
-                            Button("刷新") { Task { await state.refreshSetupStatus() } }.buttonStyle(ChipButtonStyle())
-                        }
-                        SignatureStatus()
-                    }
-                    SettingsSection(title: "性能", icon: "gauge.with.dots.needle.33percent") {
-                        Toggle("减少视觉特效（更流畅，适合轻薄本 / 省电）", isOn: $state.reducedEffects)
-                            .onChange(of: state.reducedEffects) { _, value in AppPreferences.standard.set(value, forKey: "reducedEffects") }
-                        Note("关闭液态玻璃的实时折射，改用平面半透明效果。系统“降低透明度”开启时会自动使用。")
-                    }
-                }
-            }
-        }
-    }
-}
 
 // MARK: - Updates
 
-private struct UpdateSettings: View {
+struct UpdateSettings: View {
     @Environment(AppState.self) private var state
     private var updater: Updater { Updater.shared }
 
     var body: some View {
         @Bindable var updater = Updater.shared
-        SettingsSection(title: "应用版本", icon: "app.badge") {
+        SettingsSection(title: "更新", icon: "arrow.triangle.2.circlepath") {
             HStack(alignment: .center, spacing: 20) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -1546,8 +779,7 @@ private struct UpdateSettings: View {
             }
             if let note = updater.stagedNote { Note(note, color: Ink.caution) }
             if state.isRunning, updater.phase == .ready { Note("记录结束后即可安装更新。", color: Ink.caution) }
-        }
-        SettingsSection(title: "更新偏好", icon: "arrow.triangle.2.circlepath") {
+            Divider()
             MenuPicker(title: "更新渠道", selection: $updater.channel,
                        options: [(.stable, String(localized: "正式版本")), (.main, String(localized: "预览版本"))])
                 .onChange(of: updater.channel) { _, _ in
@@ -1565,7 +797,7 @@ private struct UpdateSettings: View {
         if updater.needsAccessHelp {
             GitHubAccessSection()
         } else {
-            AdvancedOptions("updates") { GitHubAccessSection() }
+            AdvancedOptions("general-updates", title: "GitHub 访问") { GitHubAccessSection() }
         }
     }
 
@@ -1648,17 +880,6 @@ private struct GitHubAccessSection: View {
     }
 }
 
-// MARK: - Shortcuts
-
-private struct ShortcutSection: View {
-    @Environment(AppState.self) private var state
-    var body: some View {
-        SettingsSection(title: "全局快捷键", icon: "keyboard") {
-            ShortcutSettingsView()
-            ForEach(state.shortcutErrors, id: \.self) { Note($0, color: .orange) }
-        }
-    }
-}
 
 private struct SettingsNativeControlsKey: EnvironmentKey { static let defaultValue = false }
 extension EnvironmentValues {
@@ -1667,3 +888,4 @@ extension EnvironmentValues {
         set { self[SettingsNativeControlsKey.self] = newValue }
     }
 }
+

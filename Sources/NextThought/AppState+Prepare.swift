@@ -225,7 +225,7 @@ extension AppState {
     private func applyDraftType(to id: UUID) {
         guard let draft = meetingDraft, draft.seriesIsNew, let series = workspaces.workspace(id),
               let plan = draftMeetingPlan else { return }
-        workspaces.update(plan.preparedWorkspace(from: series))
+        workspaces.update(SceneSettings.shared.prepared(plan, from: series))
         if id == activeWorkspace.id { tracker.mode = activeWorkspace.effectiveMode }
     }
 

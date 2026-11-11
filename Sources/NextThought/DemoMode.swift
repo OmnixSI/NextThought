@@ -110,6 +110,13 @@ enum DemoMode {
         // NEXTTHOUGHT_DEMO_FRAME: the demo on one display while the others stay in use.
         let frame = (environment["NEXTTHOUGHT_DEMO_FRAME"] ?? "").split(separator: ",").compactMap { Double($0) }
         if frame.count == 4 {
+            // NEXTTHOUGHT_DEMO_SETTINGS_SNAPSHOT=<png>: the settings page named by
+            // NEXTTHOUGHT_DEMO_SETTINGS_PAGE, drawn in an off-screen window and never shown.
+            if let path = environment["NEXTTHOUGHT_DEMO_SETTINGS_SNAPSHOT"] {
+                snapshotSettings(path, page: environment["NEXTTHOUGHT_DEMO_SETTINGS_PAGE"],
+                                 size: environment["NEXTTHOUGHT_DEMO_SETTINGS_SIZE"], state: state)
+                return
+            }
             // A window of its own: a hidden launch does not always create the SwiftUI one.
             let window = NSWindow(contentRect: NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]),
                                   styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
@@ -247,6 +254,29 @@ extension DemoMode {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
             snapshot(NSApp.windows.first { $0.title == String(localized: "NextThought 提词岛") }, to: path)
         }
+    }
+
+    private static var settingsSnapshotWindow: NSWindow?
+
+    /// The Settings window's content (980 × 700 unless `size` says otherwise) in a window
+    /// that is never ordered front, selected on one page.
+    @MainActor
+    static func snapshotSettings(_ path: String, page: String?, size: String?, state: AppState) {
+        if let page { AppPreferences.standard.set(page, forKey: "settingsGroup") }
+        let dimensions = (size ?? "").split(separator: ",").compactMap { Double($0) }
+        let width = dimensions.count == 2 ? dimensions[0] : 980, height = dimensions.count == 2 ? dimensions[1] : 700
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = Ink.paperNSColor
+        let content = NSHostingView(rootView: SettingsView().environment(state).wideHitTargets()
+            .preferredColorScheme(state.colorScheme).background(Ink.paper))
+        content.sizingOptions = []
+        window.contentView = content
+        window.setContentSize(NSSize(width: width, height: height))
+        content.layoutSubtreeIfNeeded()
+        settingsSnapshotWindow = window
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: path) }
     }
 
     /// Renders a window's own content into a PNG (no Screen Recording permission needed).

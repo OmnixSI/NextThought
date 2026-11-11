@@ -37,7 +37,7 @@ struct AutoEndBanner: View {
     }
 }
 
-/// 设置 → 会议声音与麦克风 下面一张小卡：会议没人说话时怎么办。
+/// 设置 → 纪要 → 会议自动收尾：会议没人说话时怎么办。
 struct AutoEndSettingsSection: View {
     @AppStorage(MeetingAutoEnd.modeKey, store: UserDefaults.standard) private var mode = MeetingEndWatch.Mode.prompt.rawValue
     @AppStorage(MeetingAutoEnd.minutesKey, store: UserDefaults.standard) private var minutes = MeetingEndWatch.Config.defaultMinutes
@@ -50,7 +50,7 @@ struct AutoEndSettingsSection: View {
                 (MeetingEndWatch.Mode.off.rawValue, "不自动结束"),
             ], localizesOptions: true)
             // The wait time has a good default (see MeetingEndWatch.Config); changing it is for experts.
-            AdvancedOptions("auto-end-minutes") {
+            AdvancedOptions("auto-end-minutes", title: "等待时间") {
                 MenuPicker(title: "多久没人说话算结束", selection: $minutes,
                            options: MeetingEndWatch.Config.minuteChoices.map { ($0, String(localized: "\($0) 分钟")) })
                     .disabled(mode == MeetingEndWatch.Mode.off.rawValue)

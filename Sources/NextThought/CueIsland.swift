@@ -488,13 +488,8 @@ struct CueIslandView: View {
         let text = state.displayedQuestion.isEmpty ? state.pendingQuestion : state.displayedQuestion
         return AnswerRefinement.originalQuestion(of: text)
     }
-    private var cueStyle: CueStyle {
-        switch model.style {
-        case .scene: ScenePreset.for(mode).cueStyle
-        case .keyPoints: .keyPoints
-        case .script: .script
-        }
-    }
+    /// The scene decides the layout (Settings → 场景); the island no longer offers its own.
+    private var cueStyle: CueStyle { SceneSettings.shared.cueStyle(for: mode) }
     private var lines: [CueLine] { CueScript.lines(from: answer, style: cueStyle) }
 
     private var phase: Phase {

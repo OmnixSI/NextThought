@@ -326,7 +326,7 @@ private struct TeleprompterView: View {
             }
             Button { state.teleprompterFontSize = max(14, state.teleprompterFontSize - 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.smaller") }
                 .buttonStyle(GlassIconButtonStyle(size: 24)).help("缩小文字")
-            Button { state.teleprompterFontSize = min(44, state.teleprompterFontSize + 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.larger") }
+            Button { state.teleprompterFontSize = min(36, state.teleprompterFontSize + 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.larger") }
                 .buttonStyle(GlassIconButtonStyle(size: 24)).help("放大文字")
             // This button is the way out of click-through, so it must keep
             // receiving clicks even when the rest of the panel does not.

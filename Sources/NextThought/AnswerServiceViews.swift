@@ -110,6 +110,8 @@ extension AppState {
 /// button. Shared by the first-run guide and Settings → 回答.
 struct APIConnectView: View {
     @Environment(AppState.self) private var state
+    /// Settings keeps 推理强度 and 预设 in its own group; the first-run guide folds them in here.
+    var showsMoreOptions = true
     /// nil until the person taps a provider; then the fields stay open.
     @State private var picked: Bool?
     @State private var keyDraft = ""
@@ -139,7 +141,7 @@ struct APIConnectView: View {
                 modelRow
                 actionRow
                 footnote
-                moreOptions
+                if showsMoreOptions { moreOptions }
             }
         }
         .disabled(state.isAnswering)
@@ -415,33 +417,32 @@ struct APIConnectView: View {
     }
 }
 
-/// Thinking strength of the API service; rarely changed.
-private struct APIEffortRow: View {
+/// Reasoning strength of the API service; rarely changed.
+struct APIEffortRow: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
         @Bindable var state = state
         HStack(spacing: Space.s2) {
-            MenuPicker(title: "思考强度", selection: $state.apiReasoningEffort, options: APIPreset.efforts, localizesOptions: true)
+            MenuPicker(title: "推理强度", selection: $state.apiReasoningEffort, options: APIPreset.efforts, localizesOptions: true)
                 .onChange(of: state.apiReasoningEffort) { _, _ in state.saveAnswerSettings() }
             Note("仅对服务商支持的推理模型有效；不确定时保持默认。", presentation: .info)
-                .accessibilityLabel("思考强度说明")
+                .accessibilityLabel("推理强度说明")
             Spacer(minLength: 0)
         }
     }
 }
 
 /// Saved providers: switch between them, rename or delete one. Each keeps its own
-/// address, key, model and thinking strength; the key is removed with the preset.
-private struct APIPresetManager: View {
-    @Environment(\.settingsShowsFullOptions) private var showFullSettings
+/// address, key, model and reasoning strength; the key is removed with the preset.
+struct APIPresetManager: View {
     @Environment(AppState.self) private var state
     @State private var renaming = false
     @State private var newName = ""
     @State private var confirmDelete = false
 
     var body: some View {
-        if showFullSettings || !state.simplifiedInterface || state.apiPresets.count > 1 {
+        Group {
             HStack(spacing: Space.s2) {
                 Text("预设").font(Typo.label).foregroundStyle(Ink.secondary)
                 Menu {
@@ -454,7 +455,7 @@ private struct APIPresetManager: View {
                     Label { Text(verbatim: state.activeAPIPreset?.name ?? String(localized: "选择预设")) } icon: { Image(systemName: "server.rack") }
                 }
                 .menuStyle(.button).buttonStyle(SecondaryButtonStyle()).fixedSize()
-                if showFullSettings || !state.simplifiedInterface {
+                Group {
                     Button("重命名") { newName = state.activeAPIPreset?.name ?? ""; renaming = true }.buttonStyle(ChipButtonStyle())
                     Button("删除") { confirmDelete = true }.buttonStyle(ChipButtonStyle()).disabled(state.apiPresets.count <= 1)
                 }
@@ -478,8 +479,9 @@ private struct APIPresetManager: View {
 
 /// Codex for people who already have it: status, model, thinking strength.
 struct CodexEngineSection: View {
-    @Environment(\.settingsShowsFullOptions) private var showFullSettings
     @Environment(AppState.self) private var state
+    /// Settings shows 推理强度 and 快速模式 in its own group.
+    var showsAdvanced = true
 
     var body: some View {
         @Bindable var state = state
@@ -489,7 +491,7 @@ struct CodexEngineSection: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(LocalizedStringKey(state.checkingCodexStatus ? "正在检测 Codex…" : state.codexReady ? "Codex 已登录（ChatGPT 账号）" : state.codexInstalled ? "需要登录 Codex" : "未检测到 Codex"))
                         .font(Typo.label).lineLimit(2)
-                    if showFullSettings || !state.simplifiedInterface {
+                    Group {
                         Text("\(state.codexLoginStatus) · \(state.codexVersion)").font(Typo.caption).foregroundStyle(Ink.secondary)
                     }
                 }
@@ -510,9 +512,11 @@ struct CodexEngineSection: View {
                     .inkField().disabled(state.isAnswering)
                     .onChange(of: state.codexModelID) { _, _ in state.updateSettings() }
             }
-            AdvancedOptions("answers-codex") {
-                CodexReasoningPicker()
-                CodexFastModeToggle()
+            if showsAdvanced {
+                AdvancedOptions("answers-codex") {
+                    CodexReasoningPicker()
+                    CodexFastModeToggle()
+                }
             }
             if state.answerBackend == .openAICompatible {
                 Button("改用 Codex") { state.selectAnswerBackend(.codexAppServer) }

@@ -12,6 +12,17 @@ struct MeetingPreparationTests {
         #expect(series.mode == .labMeeting && series.style == .detailed)
     }
 
+    @Test func sceneStyleAppliesToEveryMeetingUnlessTheSeriesChoseItsOwn() {
+        // Same type as the series: a lab meeting answers in detail by default.
+        let plain = Workspace(name: "组会", mode: .labMeeting)
+        #expect(MeetingPlan(mode: .labMeeting).preparedWorkspace(from: plain).style == .detailed)
+        // The scene setting wins over the type's default.
+        #expect(MeetingPlan(mode: .labMeeting).preparedWorkspace(from: plain, sceneStyle: .concise).style == .concise)
+        // A series whose length differs from its type's default keeps it.
+        let explicit = Workspace(name: "组会", mode: .labMeeting, style: .concise)
+        #expect(MeetingPlan(mode: .labMeeting).preparedWorkspace(from: explicit, sceneStyle: .detailed).style == .concise)
+    }
+
     @Test func excludedCarryNeverReappearsAndNewFilesStayAvailable() {
         let old = ContextDocument(name: "旧论文", pages: ["prior evidence"])
         let new = ContextDocument(name: "新实验", pages: ["current evidence"])

@@ -655,7 +655,7 @@ struct HistoryView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(sessionListTitle).font(Typo.section).foregroundStyle(Ink.ink).lineLimit(2)
                     Text(state.historyWorkspaceFilter == nil
-                         ? (overviewFolderKey != nil ? "这个系列中的会议记录" : (state.recordSessions ? "自动保存 · 不保存录音" : "记录已关闭（设置 → 数据）"))
+                         ? (overviewFolderKey != nil ? "这个系列中的会议记录" : (state.recordSessions ? "自动保存 · 不保存录音" : "记录已关闭（设置 → 数据与权限）"))
                          : "这个系列中的会议记录")
                         .font(Typo.caption)
                         .foregroundStyle(state.historyWorkspaceFilter == nil && !state.recordSessions ? Ink.caution : Ink.secondary)
