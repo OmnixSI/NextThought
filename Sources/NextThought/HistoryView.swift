@@ -88,8 +88,8 @@ struct HistoryView: View {
                     if !isMeetingListHidden && !archive.sessions.isEmpty {
                         sessionList
                             .frame(width: 270)
-                            .padding(.leading, 16).padding(.top, 4).padding(.bottom, 14)
-                        Rectangle().fill(Ink.hairline).frame(width: 1).padding(.vertical, 14)
+                            .padding(.leading, Space.s4).padding(.trailing, Space.s2).padding(.top, Space.s1)
+                        Rectangle().fill(Ink.hairline).frame(width: 0.5)
                     }
                     if let selection, archive.sessions.contains(where: { $0.id == selection }) {
                         MeetingPage(
@@ -122,7 +122,7 @@ struct HistoryView: View {
                     archiveOverview(compact: true)
                 } else {
                     sessionList
-                        .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 14)
+                        .padding(.horizontal, Space.s4).padding(.top, Space.s1)
                 }
             }
         }
@@ -130,9 +130,9 @@ struct HistoryView: View {
             VStack(spacing: 0) {
                 if !archive.archiveReadIssues.isEmpty {
                     archiveReadIssueNotice
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 8)
+                        .padding(.horizontal, Space.s4)
+                        .padding(.top, Space.s2)
+                        .padding(.bottom, Space.s2)
                 }
                 searchHitNavigator
             }
@@ -259,7 +259,7 @@ struct HistoryView: View {
             .padding(.horizontal, Space.s4)
             .padding(.vertical, Space.s2)
             .background(Ink.surface)
-            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
             .accessibilityElement(children: .contain)
             .accessibilityLabel("搜索结果导航，共 \(target.hits.count) 个命中")
         }
@@ -348,11 +348,12 @@ struct HistoryView: View {
             let id = key.hasPrefix("workspace:") ? UUID(uuidString: String(key.dropFirst("workspace:".count))) : nil
             let workspace = id.flatMap { state.workspaces.workspace($0) }
             let name = workspace?.name ?? String(localized: "未分类会议")
-            let modeTitle = workspace?.mode.title ?? sessions.first?.mode.title
+            let modeTitle = workspace?.typeDisplayName ?? sessions.first?.mode.title
+            let folderMode = workspace?.effectiveMode ?? sessions.first?.mode ?? .general
             let lastSessionAt = sessions.map(\.startedAt).max()
             let updatedAt = lastSessionAt ?? workspace?.updatedAt ?? .distantPast
             return MeetingSeriesFolder(id: key, workspaceID: id, name: name, modeTitle: modeTitle,
-                                       sessions: sessions, lastMeetingAt: lastSessionAt, updatedAt: updatedAt)
+                                       sessions: sessions, lastMeetingAt: lastSessionAt, updatedAt: updatedAt, mode: folderMode)
         }
         .sorted { lhs, rhs in
             lhs.updatedAt == rhs.updatedAt ? lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending : lhs.updatedAt > rhs.updatedAt
@@ -577,23 +578,23 @@ struct HistoryView: View {
     private func seriesGroupHeader(_ folder: MeetingSeriesFolder, meetingCount: Int) -> some View {
         let header = HStack(spacing: 4) {
             Button { showFolder(folder) } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 10, weight: .medium))
+                HStack(spacing: Space.s2) {
+                    SceneGlyph(mode: folder.mode, size: 24)
                     Text(verbatim: folder.name)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(Typo.label)
+                        .foregroundStyle(Ink.ink)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Spacer(minLength: 4)
+                    Spacer(minLength: Space.s1)
                     Text(meetingCount.formatted())
-                        .font(.system(size: 10, weight: .medium).monospacedDigit())
+                        .font(Typo.caption.monospacedDigit())
+                        .foregroundStyle(Ink.secondary)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 8, weight: .semibold))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Ink.tertiary)
                 }
-                .foregroundStyle(Ink.secondary)
-                .padding(.leading, 9)
-                .padding(.top, 8)
-                .padding(.bottom, 2)
+                .padding(.horizontal, Space.s3)
+                .padding(.vertical, Space.s2)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -614,7 +615,7 @@ struct HistoryView: View {
                         .contentShape(Rectangle())
                 }
                 .menuStyle(.button)
-                .buttonStyle(GlassIconButtonStyle(size: 25))
+                .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 0))
                 .menuIndicator(.hidden)
                 .fixedSize()
                 .accessibilityLabel("管理系列")
@@ -649,10 +650,10 @@ struct HistoryView: View {
     }
 
     private var sessionList: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(sessionListTitle).font(Typo.section).lineLimit(2)
+                    Text(sessionListTitle).font(Typo.section).foregroundStyle(Ink.ink).lineLimit(2)
                     Text(state.historyWorkspaceFilter == nil
                          ? (overviewFolderKey != nil ? "这个系列中的会议记录" : (state.recordSessions ? "自动保存 · 不保存录音" : "记录已关闭（设置 → 数据）"))
                          : "这个系列中的会议记录")
@@ -672,7 +673,7 @@ struct HistoryView: View {
                         .contentShape(Rectangle())
                 }
                 .menuStyle(.button)
-                .buttonStyle(GlassIconButtonStyle(size: 28))
+                .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 0))
                 .menuIndicator(.hidden)
                 .accessibilityLabel("会议记录操作")
                 .disabled(archive.sessions.isEmpty || archive.destructiveOperationDisabledReason != nil)
@@ -682,82 +683,44 @@ struct HistoryView: View {
             if !archive.archiveReadIssues.isEmpty && currentScopeSessionCount == 0 {
                 archiveUnavailableEmptyState
             } else if isScopedToSeries && currentScopeSessionCount == 0 {
-                VStack(spacing: 7) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 24, weight: .regular))
-                        .foregroundStyle(Ink.tertiary)
-                    Text("这个系列还没有会议")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("开始一场会议后，它会出现在这个系列里。")
-                        .font(.system(size: 11)).foregroundStyle(Ink.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                VStack(spacing: Space.s4) {
+                    quietEmpty("这个系列还没有会议", "开始一场会议后，它会出现在这个系列里。")
                     Button("返回所有记录") { showAllMeetings() }
-                        .buttonStyle(ChipButtonStyle(prominent: true))
-                        .controlSize(.small)
+                        .buttonStyle(SecondaryButtonStyle())
                 }
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if archive.sessions.isEmpty {
-                VStack(spacing: 7) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 24, weight: .regular))
-                        .foregroundStyle(Ink.tertiary)
-                    Text("还没有会议")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("开过的会议会保存在这里；结束时自动整理纪要。")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Ink.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                quietEmpty("还没有会议", "开过的会议会保存在这里；结束时自动整理纪要。")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if isContentSearching && visibleSessions.isEmpty {
                 ProgressView("正在搜索 \(searchChecked)/\(searchTotal) 场…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if visibleSessions.isEmpty && visibleSessionGroups.isEmpty {
                 if isContentSearching {
-                    VStack(spacing: 8) {
+                    VStack(spacing: Space.s3) {
                         ProgressView(value: Double(searchChecked), total: Double(max(searchTotal, 1)))
                             .frame(maxWidth: 220)
-                        Text(searchIsScopedToSeries ? "正在搜索当前系列内容" : "正在搜索全部会议内容")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("已检查 \(searchChecked) / \(searchTotal) 场；完成后才会确定没有匹配项。")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Ink.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                        quietEmpty(searchIsScopedToSeries ? "正在搜索当前系列内容" : "正在搜索全部会议内容",
+                                   "已检查 \(searchChecked) / \(searchTotal) 场；完成后才会确定没有匹配项。")
                     }
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    VStack(spacing: 7) {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                            .font(.system(size: 24, weight: .regular))
-                            .foregroundStyle(Ink.tertiary)
-                        Text("没有符合条件的记录")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text(isScopedToSeries
-                             ? "当前系列有 \(currentScopeSessionCount) 场会议；当前搜索或筛选没有匹配项。"
-                             : "当前搜索或筛选条件下没有记录，可以清除条件后查看全部。")
-                            .font(.system(size: 11))
-                            .foregroundStyle(Ink.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    VStack(spacing: Space.s4) {
+                        quietEmpty("没有符合条件的记录",
+                                   isScopedToSeries
+                                   ? "当前系列有 \(currentScopeSessionCount) 场会议；当前搜索或筛选没有匹配项。"
+                                   : "当前搜索或筛选条件下没有记录，可以清除条件后查看全部。")
                         Button("清除搜索与筛选") { clearFilters() }
-                            .buttonStyle(ChipButtonStyle(prominent: true))
-                            .controlSize(.small)
+                            .buttonStyle(SecondaryButtonStyle())
                             .help("清除搜索、筛选和排序，保留当前系列范围")
                     }
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 10) {
+                    LazyVStack(alignment: .leading, spacing: Space.s4) {
                         ForEach(visibleSessionGroups) { group in
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: 0) {
                                 seriesGroupHeader(group.folder, meetingCount: group.sessions.count)
 
                                 ForEach(group.sessions) { meta in
@@ -787,6 +750,8 @@ struct HistoryView: View {
                                                          onRename: beginRenaming,
                                                          onDelete: deleteSession)
                                     }
+                                    Rectangle().fill(Ink.hairline).frame(height: 0.5)
+                                        .padding(.horizontal, Space.s3)
                                 }
                             }
                         }
@@ -794,32 +759,36 @@ struct HistoryView: View {
                 }
             }
         }
-        .card()
+        .padding(.top, Space.s2)
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+
+    /// One serif line, one caption line, centred; no icon, no box.
+    private func quietEmpty(_ title: LocalizedStringKey, _ detail: LocalizedStringKey, tone: Color = Ink.secondary) -> some View {
+        VStack(spacing: Space.s2) {
+            Text(title).font(Typo.section).foregroundStyle(Ink.ink)
+            Text(detail).font(Typo.caption).foregroundStyle(tone).fixedSize(horizontal: false, vertical: true)
+        }
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, Space.s3)
     }
 
     // MARK: Search, filter and sort
 
     /// Search stays visible above the three core controls.
     private var filterBar: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: Space.s2) {
             searchField
-            Text("系列按最近匹配的会议排序；以下排序只作用于组内会议。")
-                .font(.system(size: 10))
-                .foregroundStyle(Ink.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 6) {
+            HStack(spacing: Space.s1) {
                 HistoryFilterPicker(selection: $dateFilter, options: SessionDateFilter.allCases.map { ($0, $0.rawValue) })
                 HistoryFilterPicker(selection: $lengthFilter, options: SessionLengthFilter.allCases.map { ($0, $0.rawValue) })
                 HistoryFilterPicker(selection: $sortOrder, options: SessionSort.allCases.map { ($0, $0.rawValue) })
-            }
-            .frame(maxWidth: .infinity)
-            HStack {
-                Text(searchScopeLabel).font(.system(size: 10)).foregroundStyle(Ink.secondary)
-                Text("·").font(.system(size: 10)).foregroundStyle(Ink.tertiary)
-                Text(resultCount).font(.system(size: 11)).foregroundStyle(.tertiary)
                 Spacer(minLength: 0)
             }
+            .help("系列按最近匹配的会议排序；以下排序只作用于组内会议。")
+            Text(verbatim: "\(searchScopeLabel) · \(resultCount)")
+                .font(Typo.caption).foregroundStyle(Ink.secondary)
+                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             if let affected = scoped.first(where: { contentSearchIssues[$0.id] != nil }) {
                 HStack(alignment: .top, spacing: 7) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -838,8 +807,8 @@ struct HistoryView: View {
     }
 
     private var archiveReadIssueNotice: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack(alignment: .top, spacing: 7) {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            HStack(alignment: .top, spacing: Space.s2) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(Ink.caution)
                     .accessibilityHidden(true)
@@ -859,56 +828,44 @@ struct HistoryView: View {
                 .controlSize(.small)
         }
         .foregroundStyle(Ink.ink)
-        .padding(10)
+        .padding(Space.s3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Ink.caution.opacity(0.10), in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
-                .strokeBorder(Ink.caution.opacity(0.25), lineWidth: 1)
-        }
         .accessibilityElement(children: .contain)
     }
 
     private var archiveUnavailableEmptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundStyle(Ink.caution)
-            Text("无法确认会议记录为空")
-                .font(.system(size: 14, weight: .semibold))
-            Text("归档目录或会议元数据读取失败。修复读取问题并重试后，才能确认此处没有会议。")
-                .font(.system(size: 11)).foregroundStyle(Ink.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(spacing: Space.s4) {
+            quietEmpty("无法确认会议记录为空", "归档目录或会议元数据读取失败。修复读取问题并重试后，才能确认此处没有会议。", tone: Ink.caution)
             Button("重试读取") { archive.load() }
-                .buttonStyle(ChipButtonStyle(prominent: true))
-                .controlSize(.small)
+                .buttonStyle(SecondaryButtonStyle())
         }
-        .multilineTextAlignment(.center)
-        .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// A capsule that mirrors the `MenuPicker` look. The glass is drawn as a
     /// background layer so the text field keeps normal text colors.
     private var searchField: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Space.s2) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.secondary)
+                .foregroundStyle(Ink.secondary)
             TextField(searchPlaceholder, text: $query)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12.5))
+                .font(Typo.label)
+                .lineLimit(1)
                 .accessibilityLabel(searchScopeLabel)
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(TapButtonStyle(minWidth: 30, minHeight: 28))
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.secondary)
+                    .foregroundStyle(Ink.secondary)
                     .help("清空搜索")
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .glassBackground(cornerRadius: 14)
+        .padding(.horizontal, Space.s3)
+        .frame(height: Space.control + 2)
+        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
     }
 
     private var resultCount: String {
@@ -923,11 +880,11 @@ struct HistoryView: View {
     }
 
     private var searchScopeLabel: String {
-        searchIsScopedToSeries ? String(localized: "搜索范围：当前项目") : String(localized: "搜索范围：全部记录")
+        searchIsScopedToSeries ? String(localized: "搜索范围：当前系列") : String(localized: "搜索范围：全部记录")
     }
 
     private var searchPlaceholder: String {
-        searchIsScopedToSeries ? "搜索此项目的转写、纪要、笔记或回答" : "搜索全部记录的转写、纪要、笔记或回答"
+        searchIsScopedToSeries ? "搜索此系列的转写、纪要、笔记" : "搜索全部转写、纪要、笔记"
     }
 
     /// Clear search and filters while keeping the current series scope.
@@ -1053,7 +1010,7 @@ struct HistoryView: View {
     private func searchResults(compact: Bool) -> some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             if compact { filterBar }
-            Text("搜索结果").font(Typo.section)
+            Text("搜索结果").font(Typo.display)
             Text(isContentSearching ? String(localized: "正在搜索：\(searchChecked)/\(searchTotal) 场") : String(localized: "找到 \(visibleSessions.count) 场记录"))
                 .font(Typo.caption).foregroundStyle(Ink.secondary)
             if searchUnreadable > 0 {
@@ -1063,18 +1020,22 @@ struct HistoryView: View {
             if visibleSessions.isEmpty {
                 if isContentSearching { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
                 else {
-                    ContentUnavailableView("没有匹配的内容", systemImage: "magnifyingglass", description: Text("可换一个词，或清除日期和时长筛选。"))
-                    Button("清除搜索与筛选") { clearFilters() }.buttonStyle(ChipButtonStyle())
+                    VStack(spacing: Space.s4) {
+                        quietEmpty("没有匹配的内容", "可换一个词，或清除日期和时长筛选。")
+                        Button("清除搜索与筛选") { clearFilters() }.buttonStyle(SecondaryButtonStyle())
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 180)
                 }
             } else {
                 ScrollView {
-                    LazyVStack(spacing: Space.s2) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
                         ForEach(visibleSessions) { meta in
                             Button { openFromOverview(meta.id) } label: {
                                 SessionRow(meta: meta, selected: false, active: meta.id == archive.activeID,
                                     misheardForm: misheardMatch[meta.id], contentHit: contentHits[meta.id])
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }.buttonStyle(InteractiveRowButtonStyle())
+                            Rectangle().fill(Ink.hairline).frame(height: 0.5)
                         }
                     }
                 }
@@ -1127,21 +1088,22 @@ private struct HistoryFilterPicker<Value: Hashable>: View {
                 }
             }
         } label: {
+            let isDefault = options.first.map { $0.0 == selection } ?? true
             HStack(spacing: 3) {
                 Text(options.first(where: { $0.0 == selection })?.1 ?? "筛选")
-                    .lineLimit(1).minimumScaleFactor(0.72)
-                    .frame(maxWidth: .infinity)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 8, weight: .semibold)).foregroundStyle(Ink.secondary)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
             }
-            .font(.system(size: 11, weight: .medium))
-            .padding(.horizontal, 7).padding(.vertical, 6)
+            .font(Typo.caption.weight(.medium))
+            .foregroundStyle(isDefault ? Ink.secondary : Ink.ink)
+            .padding(.horizontal, Space.s2)
             .frame(minHeight: Hit.minHeight)
-            .glassCapsule()
-            .contentShape(Rectangle())
+            .background(isDefault ? Color.clear : Ink.sunken, in: Capsule())
+            .contentShape(Capsule())
         }
         .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden)
-        .frame(maxWidth: .infinity)
+        .fixedSize()
         .help(options.first(where: { $0.0 == selection })?.1 ?? "筛选")
     }
 }
@@ -1158,10 +1120,11 @@ private struct MeetingSeriesFolder: Identifiable {
     let sessions: [SessionMeta]
     let lastMeetingAt: Date?
     let updatedAt: Date
+    var mode: SessionMode = .general
 
     func withSessions(_ sessions: [SessionMeta]) -> MeetingSeriesFolder {
         MeetingSeriesFolder(id: id, workspaceID: workspaceID, name: name, modeTitle: modeTitle,
-                            sessions: sessions, lastMeetingAt: sessions.map(\.startedAt).max(), updatedAt: updatedAt)
+                            sessions: sessions, lastMeetingAt: sessions.map(\.startedAt).max(), updatedAt: updatedAt, mode: mode)
     }
 
     func contains(_ session: SessionMeta, workspaces: [Workspace]) -> Bool {
@@ -1218,6 +1181,15 @@ private struct MeetingArchiveOverview: View {
     @FocusState private var focusedSessionID: UUID?
     @FocusState private var focusedFolderID: String?
 
+    private func quietNote(_ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {
+        VStack(spacing: Space.s2) {
+            Text(title).font(Typo.section).foregroundStyle(Ink.ink)
+            Text(detail).font(Typo.caption).foregroundStyle(Ink.secondary)
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: Space.s2) {
@@ -1233,7 +1205,7 @@ private struct MeetingArchiveOverview: View {
             .padding(.horizontal, Space.s8)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+            .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.s6) {
@@ -1241,25 +1213,26 @@ private struct MeetingArchiveOverview: View {
                         Text(title).font(Typo.display)
                         Text(subtitle).font(Typo.caption).foregroundStyle(Ink.secondary)
                     }
-                    HStack(spacing: Space.s2) {
-                        MetricPill(symbol: "clock", text: "\(sessions.count) 场会议")
+                    HStack(spacing: Space.s3) {
+                        Text("\(sessions.count) 场会议")
                         if isRoot {
-                            MetricPill(symbol: "folder", text: "\(folders.filter { $0.workspaceID != nil }.count) 个系列")
+                            Text("\(folders.filter { $0.workspaceID != nil }.count) 个系列")
                         } else {
-                            MetricPill(symbol: "sparkles", text: "\(sessions.filter { $0.summaryState == .ready }.count) 篇已整理")
+                            Text("\(sessions.filter { $0.summaryState == .ready }.count) 篇已整理")
                         }
                     }
+                    .font(Typo.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
+                    .padding(.top, -Space.s3)
                     VStack(alignment: .leading, spacing: Space.s2) {
                         HStack(spacing: Space.s2) {
-                            Text(isRoot ? "会议系列" : "系列中的会议").font(Typo.section)
+                            Text(isRoot ? "会议系列" : "系列中的会议").font(Typo.section).foregroundStyle(Ink.ink)
                             Spacer(minLength: 4)
                             if isRoot && !isSelectingSeries {
                                 Button("批量删除") {
                                     selectedWorkspaceIDs.removeAll()
                                     isSelectingSeries = true
                                 }
-                                .buttonStyle(ChipButtonStyle())
-                                .controlSize(.small)
+                                .buttonStyle(GhostButtonStyle())
                                 .disabled(managementDisabled || !folders.contains(where: { canSelectSeries($0) }))
                                 .help(managementDisabled ? "会议中不能管理系列" : "选择多个系列后删除")
                             }
@@ -1275,56 +1248,50 @@ private struct MeetingArchiveOverview: View {
                                         canSelectSeries(folder) ? folder.workspaceID : nil
                                     })
                                 }
-                                .buttonStyle(ChipButtonStyle())
-                                .controlSize(.small)
+                                .buttonStyle(GhostButtonStyle())
                                 .disabled(!folders.contains(where: { canSelectSeries($0) }))
                                 Button(role: .destructive, action: onDeleteSelectedSeries) {
                                     Label("删除所选", systemImage: "trash")
                                 }
-                                .buttonStyle(ChipButtonStyle())
-                                .controlSize(.small)
+                                .buttonStyle(GhostButtonStyle())
                                 .disabled(selectedWorkspaceIDs.isEmpty || managementDisabled)
                                 Button("完成") {
                                     selectedWorkspaceIDs.removeAll()
                                     isSelectingSeries = false
                                 }
-                                .buttonStyle(ChipButtonStyle())
-                                .controlSize(.small)
+                                .buttonStyle(GhostButtonStyle())
                             }
                         }
                     }
                     if isRoot {
                         if folders.isEmpty {
                             if hasArchiveReadIssues {
-                                ContentUnavailableView {
-                                    Label("无法确认会议系列为空", systemImage: "exclamationmark.triangle")
-                                } description: {
-                                    Text("会议归档或元数据读取失败。重试后才能确认是否还有会议系列。")
-                                } actions: {
+                                VStack(spacing: Space.s4) {
+ quietNote("无法确认会议系列为空", "会议归档或元数据读取失败。重试后才能确认是否还有会议系列。")
+ HStack(spacing: Space.s2) {
                                     Button("重试读取", action: onRetryArchiveRead)
-                                        .buttonStyle(ChipButtonStyle(prominent: true))
-                                }
-                                .frame(maxWidth: .infinity, minHeight: 180)
+                                        .buttonStyle(SecondaryButtonStyle())
+ }
+ }
+ .frame(maxWidth: .infinity, minHeight: 180)
                             } else if hasUnderlyingRecords {
-                                ContentUnavailableView {
-                                    Label("没有匹配的系列", systemImage: "magnifyingglass")
-                                } description: {
-                                    Text("当前搜索或筛选条件下没有系列。清除条件可恢复全部会议系列。")
-                                } actions: {
+                                VStack(spacing: Space.s4) {
+ quietNote("没有匹配的系列", "当前搜索或筛选条件下没有系列。清除条件可恢复全部会议系列。")
+ HStack(spacing: Space.s2) {
                                     Button("清除搜索与筛选", action: onClearFilters)
-                                        .buttonStyle(ChipButtonStyle(prominent: true))
-                                }
-                                .frame(maxWidth: .infinity, minHeight: 180)
+                                        .buttonStyle(SecondaryButtonStyle())
+ }
+ }
+ .frame(maxWidth: .infinity, minHeight: 180)
                             } else {
-                                ContentUnavailableView {
-                                    Label("还没有会议系列", systemImage: "folder")
-                                } description: {
-                                    Text("开始一场会议后，它会归入对应系列。")
-                                } actions: {
+                                VStack(spacing: Space.s4) {
+ quietNote("还没有会议系列", "开始一场会议后，它会归入对应系列。")
+ HStack(spacing: Space.s2) {
                                     Button("返回首页", action: onReturnHome)
-                                        .buttonStyle(ChipButtonStyle(prominent: true))
-                                }
-                                .frame(maxWidth: .infinity, minHeight: 180)
+                                        .buttonStyle(SecondaryButtonStyle())
+ }
+ }
+ .frame(maxWidth: .infinity, minHeight: 180)
                             }
                         } else {
                             LazyVStack(alignment: .leading, spacing: 0) {
@@ -1333,50 +1300,46 @@ private struct MeetingArchiveOverview: View {
                         }
                     } else {
                         if hasArchiveReadIssues && selectedFolder?.sessions.isEmpty == true {
-                            ContentUnavailableView {
-                                Label("无法确认系列中没有会议", systemImage: "exclamationmark.triangle")
-                            } description: {
-                                Text("会议归档或元数据读取失败。重试后才能确认此系列中的会议记录。")
-                            } actions: {
+                            VStack(spacing: Space.s4) {
+ quietNote("无法确认系列中没有会议", "会议归档或元数据读取失败。重试后才能确认此系列中的会议记录。")
+ HStack(spacing: Space.s2) {
                                 Button("重试读取", action: onRetryArchiveRead)
-                                    .buttonStyle(ChipButtonStyle(prominent: true))
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 180)
+                                    .buttonStyle(SecondaryButtonStyle())
+ }
+ }
+ .frame(maxWidth: .infinity, minHeight: 180)
                         } else if selectedFolder?.sessions.isEmpty == true {
-                            ContentUnavailableView {
-                                Label("这个系列还没有会议", systemImage: "folder")
-                            } description: {
-                                Text("开始一场会议后，它会显示在这个系列里。")
-                            } actions: {
+                            VStack(spacing: Space.s4) {
+ quietNote("这个系列还没有会议", "开始一场会议后，它会显示在这个系列里。")
+ HStack(spacing: Space.s2) {
                                 Button("返回所有记录", action: onOpenRoot)
-                                    .buttonStyle(ChipButtonStyle(prominent: true))
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 180)
+                                    .buttonStyle(SecondaryButtonStyle())
+ }
+ }
+ .frame(maxWidth: .infinity, minHeight: 180)
                         } else if selectedFolder == nil {
-                            ContentUnavailableView {
-                                Label("系列信息已不可用", systemImage: "folder.badge.questionmark")
-                            } description: {
-                                Text("这个系列可能已被删除。返回所有记录查看仍保留的记录。")
-                            } actions: {
+                            VStack(spacing: Space.s4) {
+ quietNote("系列信息已不可用", "这个系列可能已被删除。返回所有记录查看仍保留的记录。")
+ HStack(spacing: Space.s2) {
                                 Button("返回所有记录", action: onOpenRoot)
-                                    .buttonStyle(ChipButtonStyle(prominent: true))
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 180)
+                                    .buttonStyle(SecondaryButtonStyle())
+ }
+ }
+ .frame(maxWidth: .infinity, minHeight: 180)
                         } else if sessions.isEmpty {
-                            ContentUnavailableView {
-                                Label(hasActiveFilters ? "当前搜索或筛选下没有会议" : "当前条件下没有会议",
-                                      systemImage: "line.3.horizontal.decrease.circle")
-                            } description: {
-                                Text("这个系列共有 \(selectedFolder?.sessions.count ?? 0) 场会议。清除条件可恢复结果。")
-                            } actions: {
+                            VStack(spacing: Space.s4) {
+ quietNote(hasActiveFilters ? "当前搜索或筛选下没有会议" : "当前条件下没有会议", "这个系列共有 \(selectedFolder?.sessions.count ?? 0) 场会议。清除条件可恢复结果。")
+ HStack(spacing: Space.s2) {
                                 Button("清除搜索与筛选", action: onClearFilters)
-                                    .buttonStyle(ChipButtonStyle(prominent: true))
+                                    .buttonStyle(SecondaryButtonStyle())
                                 Button("返回所有记录", action: onOpenRoot)
-                                    .buttonStyle(ChipButtonStyle())
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 180)
+                                    .buttonStyle(GhostButtonStyle())
+ }
+ }
+ .frame(maxWidth: .infinity, minHeight: 180)
                         } else {
-                            LazyVStack(spacing: 6) {
+                            LazyVStack(alignment: .leading, spacing: 0) {
+                                Rectangle().fill(Ink.hairline).frame(height: 0.5)
                                 ForEach(sessions) { meta in
                                     Button { onOpen(meta.id) } label: {
                                         SessionRow(meta: meta, selected: false, active: false,
@@ -1395,6 +1358,7 @@ private struct MeetingArchiveOverview: View {
                                     .accessibilityLabel(historyRowAccessibilityLabel(meta, hit: searchHits[meta.id]))
                                     .accessibilityHint("打开会议纪要和转写")
                                     .accessibilityIdentifier("history.seriesSession.\(meta.id.uuidString)")
+                                    Rectangle().fill(Ink.hairline).frame(height: 0.5)
                                 }
                             }
                         }
@@ -1426,28 +1390,26 @@ private struct MeetingArchiveOverview: View {
                 }
             } label: {
                 HStack(alignment: .center, spacing: Space.s3) {
-                    Image(systemName: "folder")
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundStyle(Ink.ai)
-                        .frame(width: 24)
-                    VStack(alignment: .leading, spacing: 4) {
+                    SceneGlyph(mode: folder.mode, size: 28)
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: folder.name)
-                            .font(Typo.body)
+                            .font(Typo.section)
                             .foregroundStyle(Ink.ink)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .lineLimit(1).truncationMode(.tail)
                         Text(folder.modeTitle ?? "会议系列")
                             .font(Typo.caption)
                             .foregroundStyle(Ink.secondary)
                     }
                     Spacer(minLength: 0)
-                    VStack(alignment: .trailing, spacing: 3) {
+                    VStack(alignment: .trailing, spacing: 2) {
                         Text("\(folder.sessions.count) 场会议")
-                            .font(.system(size: 11, weight: .medium).monospacedDigit())
+                            .font(Typo.caption.monospacedDigit())
                             .foregroundStyle(Ink.secondary)
                         Text(folder.lastMeetingAt.map { "最近 \($0.formatted(date: .abbreviated, time: .shortened))" } ?? "暂无最近时间")
-                            .font(.system(size: 10))
-                            .foregroundStyle(Ink.tertiary)
+                            .font(Typo.caption)
+                            .foregroundStyle(Ink.secondary)
                     }
+                    .lineLimit(1)
                     if isSelectingSeries && hasWorkspace {
                         Image(systemName: isSelected ? "checkmark.circle.fill" : (canSelect ? "circle" : "minus.circle"))
                             .font(.system(size: 17, weight: .medium))
@@ -1459,7 +1421,7 @@ private struct MeetingArchiveOverview: View {
                     }
                 }
                 .padding(.horizontal, Space.s2)
-                .padding(.vertical, Space.s4)
+                .padding(.vertical, Space.s3)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
@@ -1493,20 +1455,20 @@ private struct MeetingArchiveOverview: View {
                         Text("管理")
                         Image(systemName: "ellipsis")
                     }
-                    .font(.system(size: 12, weight: .medium))
-                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .font(Typo.caption.weight(.medium))
+                    .foregroundStyle(Ink.secondary)
+                    .padding(.horizontal, Space.s2)
                     .frame(minHeight: Hit.minHeight)
-                    .glassCapsule()
                     .contentShape(Rectangle())
                 }
-                .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                .menuStyle(.button).buttonStyle(GhostButtonStyle(height: Hit.minHeight, horizontalPadding: 0)).menuIndicator(.hidden).fixedSize()
                 .accessibilityLabel("管理系列")
                 .accessibilityHint(Text(verbatim: folder.name))
                 .help("管理系列")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
 
         if hasWorkspace && !isSelectingSeries {
             row.contextMenu { managementItems(for: folder) }
@@ -1616,37 +1578,50 @@ struct SessionRow: View {
     var contentHit: SessionSearchHit? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                if active { PulseDot(active: true) }
-                Text(verbatim: meta.displayTitle).font(.system(size: 13, weight: .semibold)).lineLimit(1)
-                Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: Space.s1) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                if active {
+                    Circle().fill(Ink.seal).frame(width: 7, height: 7)
+                } else {
+                    Circle().fill(meta.mode.theme.tint).frame(width: 7, height: 7)
+                }
+                Text(verbatim: meta.displayTitle)
+                    .font(Typo.label.weight(selected ? .semibold : .medium))
+                    .foregroundStyle(Ink.ink)
+                    .lineLimit(1).truncationMode(.tail)
+                Spacer(minLength: Space.s2)
                 summaryIcon
+                Text(verbatim: MeetingOutcome.when(meta.startedAt))
+                    .font(Typo.caption).foregroundStyle(Ink.secondary).monospacedDigit().lineLimit(1)
+                    .fixedSize()
             }
             Text(verbatim: details).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
-            if let misheardForm { MisheardMark(form: misheardForm) }
+                .padding(.leading, 7 + Space.s2)
+            if let misheardForm { MisheardMark(form: misheardForm).padding(.leading, 7 + Space.s2) }
             if let contentHit {
                 VStack(alignment: .leading, spacing: 2) {
                     let kind = contentHit.userContentTarget == nil ? searchHitKindLabel(contentHit.kind) : String(localized: String.LocalizationValue(contentHit.label))
                     let location = contentHit.location.map { " · \($0)" } ?? ""
                     let freshness = searchHitFreshnessLabel(contentHit).map { " · \($0)" } ?? ""
                     Text("\(kind)\(location)\(freshness)")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(Ink.secondary)
+                        .font(Typo.overline).foregroundStyle(Ink.secondary)
                     Text(verbatim: contentHit.excerpt)
-                        .font(.system(size: 10))
+                        .font(Typo.caption)
                         .foregroundStyle(Ink.secondary)
                         .lineLimit(2)
                         .textSelection(.enabled)
                 }
+                .padding(.leading, 7 + Space.s2)
             }
         }
-        .padding(10)
-        .background(selected ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+        .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(selected ? Ink.sunken : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+        .animation(Motion.snappy, value: selected)
     }
 
     private var details: String {
-        var parts = [MeetingOutcome.when(meta.startedAt), MeetingOutcome.line(for: meta)]
+        var parts = [MeetingOutcome.line(for: meta)]
         if showsWorkspace, let workspace = meta.workspaceName { parts.insert(workspace, at: 0) }
         return parts.joined(separator: " · ")
     }
