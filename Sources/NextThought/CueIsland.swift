@@ -209,7 +209,8 @@ final class CueIslandController {
             coachArchiveID = state.activeArchiveID
             model.preview = false
             state.coach.begin(mode: mode, startedAt: state.sessionStartedAt ?? Date())
-            if mode != .custom {
+            // A quick recording has no scene of its own: the home page keeps the last real one.
+            if mode != .custom, !state.isQuickRecording {
                 state.lastScene = mode
                 UserDefaults.standard.set(mode.rawValue, forKey: "lastScene")
             }

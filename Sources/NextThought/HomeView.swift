@@ -28,6 +28,19 @@ struct HomeView: View {
                 .font(Typo.hero)
                 .padding(.top, Space.s3)
                 OnboardingResumeRow()
+                if let notice = state.interruptedNotice {
+                    HStack(spacing: Space.s2) {
+                        Image(systemName: "exclamationmark.circle").foregroundStyle(Ink.caution)
+                        Text(verbatim: notice).font(Typo.caption).foregroundStyle(Ink.secondary)
+                        Spacer(minLength: Space.s2)
+                        Button("查看") { state.dismissInterruptedNotice(); state.section = .meetings }
+                            .buttonStyle(.tapText).font(Typo.caption)
+                        Button("知道了") { state.dismissInterruptedNotice() }
+                            .buttonStyle(.tapText).font(Typo.caption)
+                    }
+                    .padding(.top, Space.s4)
+                    .transition(.opacity)
+                }
                 StartComposer(scene: $scene).padding(.top, Space.s8)
                 ContinueSeries().padding(.top, Space.s12)
                 if state.screenshotPreview != nil {
@@ -248,7 +261,8 @@ private struct SceneChipStyle: ButtonStyle {
 private struct ContinueSeries: View {
     @Environment(AppState.self) private var state
     private var series: [Workspace] {
-        Array(state.workspaces.visible.sorted {
+        // Standing series (untitled starts, quick recordings) are not something to continue.
+        Array(state.workspaces.visible.filter { !$0.isStanding }.sorted {
             (state.lastSession(inSeries: $0.id)?.startedAt ?? $0.updatedAt)
                 > (state.lastSession(inSeries: $1.id)?.startedAt ?? $1.updatedAt)
         }.prefix(3))
