@@ -135,6 +135,8 @@ enum MainWindowLayout {
     static func bringToFront() {
         let window = NSApp.windows.first(where: isMainWindow)
         if window?.isMiniaturized == true { window?.deminiaturize(nil) }
+        // Hands-on walkthroughs must never take focus from whatever the person is doing.
+        if AppEnvironment.values["NEXTTHOUGHT_DEMO_STAGE"] == "1" { window?.orderFront(nil); return }
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
