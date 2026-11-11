@@ -23,6 +23,8 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
             }
+            // Both shells put their own bar in the window's title row.
+            .ignoresSafeArea(.container, edges: .top)
             .disabled(state.isOnboardingPresented)
             .accessibilityHidden(state.isOnboardingPresented)
             if #available(macOS 15.0, *) {
@@ -130,8 +132,8 @@ private struct SectionStack: View {
     @ViewBuilder private func page(_ section: AppSection) -> some View {
         switch section {
         case .home: HomeView()
-        case .meetings: HistoryView().padding(.top, Space.s8)
-        case .library: WorkspacesView().padding(.top, Space.s8)
+        case .meetings: HistoryView().padding(.top, Space.s2)
+        case .library: WorkspacesView().padding(.top, Space.s2)
         case .settings: Color.clear
         }
     }

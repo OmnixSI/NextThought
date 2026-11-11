@@ -194,6 +194,7 @@ final class AppState {
     let slideAPIClient = OpenAICompatibleClient(resourceTimeout: 120)
     /// Screen, slides and answer progress.
     let insights = LiveInsights()
+    let coach = LiveCoach()
     @ObservationIgnored var screenWatchTask: Task<Void, Never>?
 
     // MARK: Questions and answers
@@ -211,6 +212,10 @@ final class AppState {
     var currentQuestion = ""
     var currentLeadIn: String?
     var pendingQuestion = ""
+    /// The scene picked on the home page, applied once the draft exists.
+    var pendingDraftScene: SessionMode?
+    /// The scene of the last meeting that was started; the home page opens in its colour.
+    var lastScene = SessionMode(rawValue: UserDefaults.standard.string(forKey: "lastScene") ?? "") ?? .interview
     var answer = ""
     var answerDraft = ""
     @ObservationIgnored var currentAnswerAutomatic = false

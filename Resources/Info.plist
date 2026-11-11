@@ -49,6 +49,8 @@
 	<string>NextThought uses your microphone for local transcription, labelled as your voice separately from system audio.</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>NextThought captures system audio from the selected meeting or lesson window for on-device transcription.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>NextThought reads face landmarks from the camera on this Mac to tell you when your eyes leave the lens. No image is stored or sent.</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>NextThought captures the selected screen area or window when you request screenshot assistance.</string>
 </dict>

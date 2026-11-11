@@ -78,6 +78,12 @@ enum MainWindowLayout {
         window.title = "NextThought"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
+        // An empty unified toolbar makes the title row 52 pt tall with the traffic
+        // lights centred in it; the navigation and the live bar draw in that row.
+        let toolbar = NSToolbar(identifier: "NextThought.Main")
+        toolbar.showsBaselineSeparator = false
+        window.toolbar = toolbar
+        window.toolbarStyle = .unified
         window.isMovableByWindowBackground = true
         window.level = effectiveWorkspaceLevel
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -242,6 +248,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             MainWindowLayout.refreshLevels()
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
+            CueIslandController.shared.observeSession()
             DemoMode.apply()
         }
     }

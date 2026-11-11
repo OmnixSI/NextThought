@@ -180,6 +180,7 @@ extension AppState {
     /// Every finished, non-echo line from either side.
     func insightsDidReceive(_ entry: TranscriptEntry) {
         guard isRunning, !isPaused else { return }
+        coach.ingest(entry)
         if entry.isMe { updateCoverage() }
     }
 

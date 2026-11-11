@@ -17,12 +17,24 @@ extension AppState {
     /// "新会议" (⌘N): opens the preparation page of a new meeting.
     func beginNewMeeting() {
         guard !isRunning, !isChangingSession else { return }
+        pendingDraftScene = nil
+        WorkspaceEditController.shared.requestNewMeeting(state: self)
+    }
+
+    /// A new meeting of a scene picked on the home page.
+    func beginNewMeeting(scene mode: SessionMode) {
+        guard !isRunning, !isChangingSession else { return }
+        pendingDraftScene = mode
         WorkspaceEditController.shared.requestNewMeeting(state: self)
     }
 
     func beginNewMeetingAfterWorkspaceEdit() {
         guard !isRunning, !isChangingSession else { return }
         if meetingDraft == nil { meetingDraft = MeetingDraft() }
+        if let scene = pendingDraftScene {
+            pendingDraftScene = nil
+            setDraftType(scene)
+        }
         section = .home
         MainWindowLayout.bringToFront()
     }
@@ -68,7 +80,7 @@ extension AppState {
         draft.title = title
         if !draft.typeChosen {
             let guessed = MeetingTypeGuesser.guess(title)
-            draft.mode = guessed == .general ? .labMeeting : guessed
+            draft.mode = guessed
         }
         if draft.seriesID == nil {
             let match = SeriesMatcher.bestMatch(title: title, mode: draft.mode,

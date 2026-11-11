@@ -58,11 +58,17 @@ public struct GazeFrame: Sendable, Equatable {
     }
 }
 
-/// The gaze signature of one frame: eyes-in-head plus head pose, in comparable units.
+/// The gaze signature of one frame: where the pupils sit in the eye openings (half
+/// eye-widths) and how the head is turned (radians). The two are compared with the
+/// calibrated pose separately, so no sign convention between them matters.
 public struct GazeSignature: Sendable, Equatable {
     public var x: Double
     public var y: Double
-    public init(x: Double, y: Double) { self.x = x; self.y = y }
+    public var yaw: Double
+    public var pitch: Double
+    public init(x: Double, y: Double, yaw: Double = 0, pitch: Double = 0) {
+        self.x = x; self.y = y; self.yaw = yaw; self.pitch = pitch
+    }
 }
 
 public struct GazeReading: Sendable, Equatable {
@@ -70,7 +76,7 @@ public struct GazeReading: Sendable, Equatable {
     public var state: State
     /// Distance from the on-camera signature; 1 is the edge of "looking at the lens".
     public var deviation: Double
-    /// Which way the eyes have wandered, in signature units (x right, y up).
+    /// Which way the eyes have wandered since calibration (x along the eye, y up).
     public var offset: GazeSignature
     public init(state: State, deviation: Double = 0, offset: GazeSignature = GazeSignature(x: 0, y: 0)) {
         self.state = state; self.deviation = deviation; self.offset = offset
@@ -80,10 +86,9 @@ public struct GazeReading: Sendable, Equatable {
 public struct GazeEstimator: Sendable {
     /// An eye less open than this is blinking or squinting; its pupil cannot be trusted.
     static let minimumOpenness = 0.14
-    /// A radian of head turn moves the gaze about as far as this many half eye-widths
-    /// of pupil travel (eyes turn roughly 50° across the opening).
-    static let headWeight = 1.15
-    /// Signature distance that still reads as eye contact on a webcam (≈ 6–7°).
+    /// Head turn that still faces the lens (≈ 14°); a second display is well beyond it.
+    static let headTolerance = 0.25
+    /// Pupil travel, in half eye-widths, that still reads as eye contact on a webcam.
     public var tolerance: Double
     /// The on-camera signature; the neutral pose until `calibrate` has run.
     public private(set) var baseline = GazeSignature(x: 0, y: 0)
@@ -98,7 +103,7 @@ public struct GazeEstimator: Sendable {
     public private(set) var contactTime: TimeInterval = 0
     private var lastTime: TimeInterval?
 
-    public init(tolerance: Double = 0.2) { self.tolerance = tolerance }
+    public init(tolerance: Double = 0.12) { self.tolerance = tolerance }
 
     /// The signature of a frame, or nil while the eyes are closed.
     public static func signature(of frame: GazeFrame) -> GazeSignature? {
@@ -108,7 +113,7 @@ public struct GazeEstimator: Sendable {
         let eyes = [left, right].filter { $0.openness >= minimumOpenness }
         let x = eyes.reduce(0) { $0 + $1.x } / Double(eyes.count)
         let y = eyes.reduce(0) { $0 + $1.y } / Double(eyes.count)
-        return GazeSignature(x: x + (frame.yaw ?? 0) * headWeight, y: y + (frame.pitch ?? 0) * headWeight)
+        return GazeSignature(x: x, y: y, yaw: frame.yaw ?? 0, pitch: frame.pitch ?? 0)
     }
 
     /// Feeds frames recorded while the user looks into the lens; `finishCalibration`
@@ -125,7 +130,8 @@ public struct GazeEstimator: Sendable {
             let sorted = values.sorted()
             return sorted.count % 2 == 1 ? sorted[sorted.count / 2] : (sorted[sorted.count / 2 - 1] + sorted[sorted.count / 2]) / 2
         }
-        baseline = GazeSignature(x: median(calibration.map(\.x)), y: median(calibration.map(\.y)))
+        baseline = GazeSignature(x: median(calibration.map(\.x)), y: median(calibration.map(\.y)),
+                                 yaw: median(calibration.map(\.yaw)), pitch: median(calibration.map(\.pitch)))
         isCalibrated = true
         smoothed = nil
         return true
@@ -146,17 +152,21 @@ public struct GazeEstimator: Sendable {
         // A blink keeps the previous verdict: nobody breaks eye contact by blinking.
         if let signature = Self.signature(of: frame) {
             if let previous = smoothed {
-                smoothed = GazeSignature(x: previous.x + (signature.x - previous.x) * 0.35,
-                                         y: previous.y + (signature.y - previous.y) * 0.35)
+                func ease(_ from: Double, _ to: Double) -> Double { from + (to - from) * 0.35 }
+                smoothed = GazeSignature(x: ease(previous.x, signature.x), y: ease(previous.y, signature.y),
+                                         yaw: ease(previous.yaw, signature.yaw), pitch: ease(previous.pitch, signature.pitch))
             } else {
                 smoothed = signature
             }
         }
         guard let current = smoothed else { return GazeReading(state: .noFace) }
-        let offset = GazeSignature(x: current.x - baseline.x, y: current.y - baseline.y)
-        // The lens is above the screen, so the signature is noisier vertically
-        // (eyelids move with gaze); weigh that axis a little less.
-        let deviation = ((offset.x * offset.x) + (offset.y * 0.8) * (offset.y * 0.8)).squareRoot() / tolerance
+        let offset = GazeSignature(x: current.x - baseline.x, y: current.y - baseline.y,
+                                   yaw: current.yaw - baseline.yaw, pitch: current.pitch - baseline.pitch)
+        // Eyelids follow the gaze up and down, so the vertical reading is the
+        // noisier one; weigh it a little less.
+        let eyes = ((offset.x * offset.x) + (offset.y * 0.8) * (offset.y * 0.8)).squareRoot() / tolerance
+        let head = ((offset.yaw * offset.yaw) + (offset.pitch * offset.pitch)).squareRoot() / Self.headTolerance
+        let deviation = max(eyes, head)
         // Hysteresis: leaving takes a clear move, coming back a clear return.
         if looking, deviation > 1.25 { looking = false } else if !looking, deviation < 0.85 { looking = true }
         trackedTime += elapsed

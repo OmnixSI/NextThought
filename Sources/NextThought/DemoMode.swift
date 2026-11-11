@@ -134,6 +134,23 @@ enum DemoMode {
                 panel.setFrame(NSRect(x: 900, y: 600, width: 680, height: 300), display: true)
             }
         }
+        // NEXTTHOUGHT_DEMO_ISLAND: PNG of the cue island (on a backdrop, so the black
+        // island shows). NEXTTHOUGHT_DEMO_ISLAND_PHASE: cue (default) | idle | hearing.
+        if let islandPath = environment["NEXTTHOUGHT_DEMO_ISLAND"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                let island = CueIslandController.shared
+                island.model.backdrop = true
+                switch environment["NEXTTHOUGHT_DEMO_ISLAND_PHASE"] ?? "cue" {
+                case "idle": island.model.collapsedKey = nil; state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil; state.liveCandidate = nil
+                case "hearing": state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil
+                default: state.liveCandidate = nil
+                }
+                island.show()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
+                snapshot(NSApp.windows.first { $0.title == String(localized: "NextThought 提词岛") }, to: islandPath)
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             snapshot(NSApp.windows.first(where: MainWindowLayout.isMainWindow), to: environment["NEXTTHOUGHT_DEMO_SNAPSHOT"])
             guard let path = environment["NEXTTHOUGHT_DEMO_OUT"] else { return }

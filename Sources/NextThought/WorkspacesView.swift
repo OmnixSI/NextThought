@@ -440,7 +440,7 @@ private struct WorkspaceList: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("项目与课程").font(Typo.section)
+                    Text("资料夹").font(Typo.section)
                     Text("\(state.workspaces.visible.count) 个系列").font(Typo.caption).foregroundStyle(Ink.secondary)
                 }
                 Spacer()

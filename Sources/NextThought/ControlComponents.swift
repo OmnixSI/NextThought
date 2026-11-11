@@ -4,7 +4,7 @@ import SwiftUI
 enum ControlEmphasis { case primary, secondary, quiet, destructive }
 
 enum ControlMetrics {
-    static let radius: CGFloat = 8
+    static let radius: CGFloat = 9
     static let height: CGFloat = 32
     static let focusWidth: CGFloat = 2
 }
@@ -80,12 +80,21 @@ struct ControlButtonBody: View {
                 RoundedRectangle(cornerRadius: ControlMetrics.radius, style: .continuous)
                     .fill(base)
                     .overlay {
+                        // A filled button catches light along its top edge.
+                        if filled, available {
+                            RoundedRectangle(cornerRadius: ControlMetrics.radius, style: .continuous)
+                                .fill(LinearGradient(colors: [Ink.onInk.opacity(0.14), .clear], startPoint: .top, endPoint: .center))
+                        }
+                    }
+                    .overlay {
                         RoundedRectangle(cornerRadius: ControlMetrics.radius, style: .continuous).fill(interaction)
                     }
+                    .shadow(color: (filled || emphasis == .secondary) && available ? Ink.contactShadow : .clear,
+                            radius: filled ? 3 : 1, x: 0, y: filled ? 2 : 1)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: ControlMetrics.radius, style: .continuous)
-                    .strokeBorder(emphasis == .secondary && available ? Ink.hairline : .clear, lineWidth: 1)
+                    .strokeBorder(emphasis == .secondary && available ? Ink.hairline : .clear, lineWidth: 0.5)
                     .allowsHitTesting(false)
             }
             .overlay {
@@ -96,9 +105,10 @@ struct ControlButtonBody: View {
                     .allowsHitTesting(false)
             }
             .contentShape(RoundedRectangle(cornerRadius: ControlMetrics.radius, style: .continuous))
+            .scaleEffect(configuration.isPressed && available && !busy ? 0.97 : 1)
             .onHover { hovering = $0 }
             .animation(Motion.hover, value: hovering)
-            .animation(Motion.hover, value: configuration.isPressed)
+            .animation(Motion.snappy, value: configuration.isPressed)
     }
 }
 
