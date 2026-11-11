@@ -1408,7 +1408,7 @@ private struct RecordingSettings: View {
                 Note("最近备份：" + latest.date.formatted(date: .abbreviated, time: .shortened), presentation: .inline)
             }
             AdvancedOptions("recording-transfer") {
-                Note("备份包含项目资料、研究积累、会议记录、个人笔记、模板和设置。先预览再恢复；项目按修改时间合并，记录与模板冲突由你选择。", presentation: .inline)
+                Note("备份包含项目资料、经验积累、会议记录、个人笔记、模板和设置。先预览再恢复；项目按修改时间合并，记录与模板冲突由你选择。", presentation: .inline)
                 Toggle("包含 API Key 与访问令牌", isOn: $includeSecrets)
                 Toggle("同时导入设置（回答引擎、识别、快捷键等）", isOn: $applySettings)
                 if includeSecrets { Note("导出文件里的密钥是明文，请妥善保管，不要发给别人。", color: .orange) }
