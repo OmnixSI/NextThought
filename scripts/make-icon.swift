@@ -1,8 +1,9 @@
-// Renders the app icon into an .iconset: a cinnabar seal carved with 念 on ink.
+// Renders the app icon into an .iconset: two dots gathering into a line.
 //
-// 念 means both "a thought" and "to read aloud" — the next thought, said out loud.
-// The seal is the app's one accent (see DesignSystem.swift, `Ink.seal`); the ground
-// is the black of the cue island.
+// The mark needs no language: a thought forming (the dots anyone knows from a
+// typing indicator) becomes the next line to say (the pill, which is also the shape
+// of the cue island). The line is the app's one accent (`Ink.seal`); the ground is
+// the black of the island, or paper with `paper`.
 // Usage: swift scripts/make-icon.swift <output.iconset> [ink|paper]
 import AppKit
 
@@ -16,6 +17,10 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
             blue: CGFloat(hex & 0xff) / 255, alpha: alpha)
 }
 
+func pill(_ rect: NSRect) -> NSBezierPath {
+    NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2)
+}
+
 func render(_ pixels: Int) -> Data? {
     let size = CGFloat(pixels)
     guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels, bitsPerSample: 8, samplesPerPixel: 4,
@@ -27,47 +32,50 @@ func render(_ pixels: Int) -> Data? {
     // macOS icon grid: an 824/1024 body with a soft shadow in the margin.
     let inset = size * 0.0977
     let body = NSRect(x: inset, y: inset, width: size - inset * 2, height: size - inset * 2)
-    let bodyPath = NSBezierPath(roundedRect: body, xRadius: body.width * 0.225, yRadius: body.width * 0.225)
+    let width = body.width
+    let tile = NSBezierPath(roundedRect: body, xRadius: width * 0.225, yRadius: width * 0.225)
     let shadow = NSShadow()
     shadow.shadowColor = NSColor.black.withAlphaComponent(0.3)
     shadow.shadowBlurRadius = size * 0.022
     shadow.shadowOffset = NSSize(width: 0, height: -size * 0.011)
-    shadow.set()
-    let ground = onPaper ? [color(0xfbfaf6), color(0xece9e1)] : [color(0x2a2926), color(0x0d0d0c)]
-    NSGradient(colors: ground)?.draw(in: bodyPath, angle: -90)
-    NSShadow().set()
-
-    // A hairline of light along the top edge, the way a real tile catches it.
     NSGraphicsContext.saveGraphicsState()
-    bodyPath.addClip()
-    NSGradient(colors: [NSColor.white.withAlphaComponent(onPaper ? 0.9 : 0.16), NSColor.white.withAlphaComponent(0)])?
-        .draw(in: NSRect(x: body.minX, y: body.maxY - body.height * 0.5, width: body.width, height: body.height * 0.5), angle: -90)
+    shadow.set()
+    NSGradient(colors: onPaper ? [color(0xfdfcf9), color(0xe9e5dc)] : [color(0x2b2a27), color(0x0c0c0b)])?.draw(in: tile, angle: -90)
     NSGraphicsContext.restoreGraphicsState()
 
-    // The seal: a cinnabar block, slightly soft at the corners like carved stone.
-    let side = body.width * 0.66
-    let seal = NSRect(x: body.midX - side / 2, y: body.midY - side / 2, width: side, height: side)
-    let sealPath = NSBezierPath(roundedRect: seal, xRadius: side * 0.13, yRadius: side * 0.13)
-    let sealShadow = NSShadow()
-    sealShadow.shadowColor = (onPaper ? color(0x7a1f10, 0.35) : NSColor.black.withAlphaComponent(0.55))
-    sealShadow.shadowBlurRadius = size * 0.03
-    sealShadow.shadowOffset = NSSize(width: 0, height: -size * 0.014)
-    sealShadow.set()
-    NSGradient(colors: [color(0xd9523a), color(0xb73a24)])?.draw(in: sealPath, angle: -90)
-    NSShadow().set()
+    NSGraphicsContext.saveGraphicsState()
+    tile.addClip()
+    // Light along the top edge, the way a real tile catches it.
+    NSGradient(colors: [NSColor.white.withAlphaComponent(onPaper ? 0.22 : 0.1), NSColor.white.withAlphaComponent(0)])?
+        .draw(in: NSRect(x: body.minX, y: body.maxY - width * 0.3, width: width, height: width * 0.3), angle: -90)
 
-    // 念, cut out of the block in white (a "white-character" seal).
-    let font = NSFont(name: "STSongti-SC-Black", size: side * 0.74)
-        ?? NSFont(name: "Songti SC", size: side * 0.74)
-        ?? NSFont.systemFont(ofSize: side * 0.74, weight: .heavy)
-    let glyph = NSAttributedString(string: "念", attributes: [.font: font, .foregroundColor: color(0xfffaf2)])
-    let line = CTLineCreateWithAttributedString(glyph)
-    // Centre on the ink the glyph actually covers, not on its line box.
-    let bounds = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
-    if let context = NSGraphicsContext.current?.cgContext {
-        context.textPosition = CGPoint(x: seal.midX - bounds.midX, y: seal.midY - bounds.midY)
-        CTLineDraw(line, context)
-    }
+    // Two dots that grow, then the line.
+    let small = width * 0.078, large = width * 0.104, height = width * 0.13, length = width * 0.40, gap = width * 0.062
+    var x = body.midX - (small + large + length + gap * 2) / 2
+    let middle = body.midY
+    let dot = onPaper ? color(0x1a1917) : color(0xfffaf2)
+    dot.withAlphaComponent(onPaper ? 0.28 : 0.34).setFill()
+    pill(NSRect(x: x, y: middle - small / 2, width: small, height: small)).fill()
+    x += small + gap
+    dot.withAlphaComponent(onPaper ? 0.62 : 0.72).setFill()
+    pill(NSRect(x: x, y: middle - large / 2, width: large, height: large)).fill()
+    x += large + gap
+    let line = pill(NSRect(x: x, y: middle - height / 2, width: length, height: height))
+    let glow = NSShadow()
+    glow.shadowColor = color(0xe2573d, onPaper ? 0.35 : 0.6)
+    glow.shadowBlurRadius = size * 0.06
+    glow.shadowOffset = NSSize(width: 0, height: onPaper ? -size * 0.012 : 0)
+    NSGraphicsContext.saveGraphicsState()
+    glow.set()
+    NSGradient(colors: [color(0xf47358), color(0xd2452c)])?.draw(in: line, angle: -90)
+    NSGraphicsContext.restoreGraphicsState()
+    // A sheen on the line's upper half, so it reads as a lit object.
+    NSGraphicsContext.saveGraphicsState()
+    line.addClip()
+    NSGradient(colors: [NSColor.white.withAlphaComponent(0.28), NSColor.white.withAlphaComponent(0)])?
+        .draw(in: NSRect(x: x, y: middle, width: length, height: height / 2), angle: -90)
+    NSGraphicsContext.restoreGraphicsState()
+    NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])
 }
 
