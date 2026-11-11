@@ -63,7 +63,7 @@ private struct BackupSettingsSection: View {
                     .buttonStyle(SecondaryButtonStyle()).disabled(state.isDataBusy)
                 Spacer(minLength: 0)
             }
-            Note("导入会合并，不删除现有数据；先预览，再决定恢复什么。" + (latest.map { String(localized: " 最近备份：") + $0.formatted(date: .abbreviated, time: .shortened) } ?? ""),
+            Note(String(localized: "导入会合并，不删除现有数据；先预览，再决定恢复什么。") + (latest.map { String(localized: " 最近备份：") + $0.formatted(date: .abbreviated, time: .shortened) } ?? ""),
                  presentation: .inline)
             if state.isDataBusy { ProgressView().controlSize(.small) }
             if !state.dataStatus.isEmpty {

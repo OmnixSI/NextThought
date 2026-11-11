@@ -735,10 +735,9 @@ struct OnboardingView: View {
 
     private var microphoneLine: String {
         guard state.usesMicrophone else { return "不使用麦克风，也不会询问权限。会议里只记录对方的声音。" }
-        let purpose = state.isOfflineMeeting ? "线下会议靠它听现场的声音。" : "用来标出你自己说的话。"
         switch state.microphoneAccess {
         case .granted: return state.isOfflineMeeting ? "已允许 · 现场的声音会标为“现场”。" : "已允许 · 你说的话会标为“我”。"
-        case .undetermined: return purpose + "点“允许”时系统会询问一次。"
+        case .undetermined: return state.isOfflineMeeting ? "线下会议靠它听现场的声音。点“允许”时系统会询问一次。" : "用来标出你自己说的话。点“允许”时系统会询问一次。"
         case .denied: return state.isOfflineMeeting ? "未允许 · 线下记录需要它，请在系统设置里打开。" : "未允许 · 请在系统设置里打开，或选“只记录对方”。"
         }
     }
@@ -772,7 +771,7 @@ struct OnboardingView: View {
             return state.recognitionReady ? "云端识别已配置。" : "云端识别需要填写 API Key 并确认音频上传说明。"
         default:
             if state.isDownloadingModel { return "正在下载本机识别模型，下载时可以先看后面的步骤。" }
-            if state.isModelInstalled { return "\(state.localStreamingModel.shortTitle) · 在这台 Mac 上离线识别，已就绪。" }
+            if state.isModelInstalled { return String(localized: "\(state.localStreamingModel.shortTitle) · 在这台 Mac 上离线识别，已就绪。") }
             let size = max(state.missingPackages.reduce(0) { $0 + $1.approximateMegabytes }, 1)
             return String(localized: "把声音转成文字。需要下载本机识别模型，约 \(size) MB，只需一次。")
         }
@@ -804,7 +803,7 @@ struct OnboardingView: View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: Space.s2) {
             if state.transcriptionBackend == "zipformer", !state.isDownloadingModel, downloadFailed || state.modelDownloadStatus == "下载已取消。" {
-                Text(LocalizedStringKey(state.modelDownloadStatus))
+                Text(verbatim: state.modelDownloadStatusText)
                     .font(Typo.caption).foregroundStyle(downloadFailed ? Ink.caution : Ink.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

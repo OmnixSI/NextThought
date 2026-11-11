@@ -132,7 +132,7 @@ struct QuickSettingsPanel: View {
 
     private func preference<Control: View>(_ title: LocalizedStringKey, @ViewBuilder control: () -> Control) -> some View {
         HStack(spacing: Space.s2) {
-            Text(title)
+            Text(title).lineLimit(1).minimumScaleFactor(0.8)
             Spacer(minLength: Space.s2)
             control()
         }

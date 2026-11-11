@@ -1055,7 +1055,7 @@ private struct AudioCheckRow: View {
                 // The model download's own status, including why it failed.
                 if state.needsRecognitionModelDownload, !state.modelDownloadStatus.isEmpty,
                    state.isDownloadingModel || state.modelDownloadStatus.hasPrefix("下载失败") {
-                    Text(verbatim: state.modelDownloadStatus)
+                    Text(verbatim: state.modelDownloadStatusText)
                         .font(Typo.caption)
                         .foregroundStyle(state.modelDownloadStatus.hasPrefix("下载失败") ? Ink.caution : Ink.secondary)
                         .fixedSize(horizontal: false, vertical: true)

@@ -81,7 +81,7 @@ private struct SceneRow: View {
                     .accessibilityIdentifier("settings.template." + mode.rawValue)
                 column("提词", picker: SceneMenu(
                     selection: Binding(get: { scenes.cueStyle(for: mode) }, set: { scenes.setCueStyle($0, for: mode) }),
-                    options: [(.keyPoints, String(localized: "要点")), (.script, String(localized: "逐句"))],
+                    options: [(.keyPoints, String(localized: "只看要点")), (.script, String(localized: "逐句"))],
                     accessibilityTitle: String(localized: "提词") + " · " + mode.displayName))
             }
         }

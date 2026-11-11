@@ -15,6 +15,14 @@ extension AppState {
         max(1, missingPackages.reduce(0) { $0 + $1.approximateMegabytes })
     }
 
+    /// The download status in the interface language. The stored text stays Chinese because callers test its prefix.
+    var modelDownloadStatusText: String {
+        let status = modelDownloadStatus
+        if status.hasPrefix("下载失败：") { return String(localized: "下载失败：\(String(status.dropFirst("下载失败：".count)))") }
+        if status.hasPrefix("删除模型失败：") { return String(localized: "删除模型失败：\(String(status.dropFirst("删除模型失败：".count)))") }
+        return String(localized: String.LocalizationValue(status))
+    }
+
     /// Recognition is the first thing missing and the fix is a model download.
     var needsRecognitionModelDownload: Bool {
         transcriptionBackend == "zipformer" && recordingReadiness.issues.first == .recognition

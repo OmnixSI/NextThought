@@ -595,7 +595,7 @@ struct ModelDownloadRow: View {
                 }
             }
             if state.isDownloadingModel { ProgressView(value: state.modelDownloadProgress).controlSize(.small) }
-            if !state.modelDownloadStatus.isEmpty { Note(state.modelDownloadStatus, presentation: .inline) }
+            if !state.modelDownloadStatus.isEmpty { Note(state.modelDownloadStatusText, presentation: .inline) }
         }
     }
 }
