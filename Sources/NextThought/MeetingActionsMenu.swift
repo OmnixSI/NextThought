@@ -21,11 +21,11 @@ struct MeetingMenuItems: View {
     private var deletionDisabled: Bool { sessionID == archive.activeID || archive.destructiveOperationDisabledReason != nil || fallbackReadOnly }
 
     var body: some View {
-        Button("重新整理") { state.generateSummary(for: sessionID) }
+        Button("重新整理") { NotesRegeneration.shared.request(sessionID: sessionID) }
             .disabled(busy || sessionID == archive.activeID || fallbackReadOnly)
         Menu("纪要语言") {
-            Button("简体中文") { state.generateSummary(for: sessionID, english: false) }
-            Button("English") { state.generateSummary(for: sessionID, english: true) }
+            Button("简体中文") { NotesRegeneration.shared.request(sessionID: sessionID, english: false) }
+            Button("English") { NotesRegeneration.shared.request(sessionID: sessionID, english: true) }
         }
         .disabled(busy || sessionID == archive.activeID || fallbackReadOnly)
         Divider()
