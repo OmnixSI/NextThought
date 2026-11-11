@@ -133,7 +133,9 @@ enum MainWindowLayout {
 
     /// Shows the main window and activates the app.
     static func bringToFront() {
-        NSApp.windows.first(where: isMainWindow)?.makeKeyAndOrderFront(nil)
+        let window = NSApp.windows.first(where: isMainWindow)
+        if window?.isMiniaturized == true { window?.deminiaturize(nil) }
+        window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -169,11 +171,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard WorkspaceEditController.shared.shouldTerminateApplication() else { return .terminateCancel }
         guard !terminationCheckInProgress else { return .terminateLater }
-        terminationCheckInProgress = true
         let state = AppState.shared
+        // A running meeting ends silently otherwise: ask first (the notes follow on next launch).
+        guard state.confirmEndingMeeting(for: .quit) else { return .terminateCancel }
+        terminationCheckInProgress = true
         Task { @MainActor in
             guard !state.isChangingSession else {
                 state.errorMessage = "会议正在切换，稍后再试一次退出。"
+                state.endMeetingConfirmed = false
                 terminationCheckInProgress = false
                 sender.reply(toApplicationShouldTerminate: false)
                 return

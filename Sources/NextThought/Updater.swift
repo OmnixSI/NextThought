@@ -286,6 +286,7 @@ final class Updater {
         guard phase == .ready, let stagedApp, let available,
               UpdateCatalog.isNewer(manifest: available.manifest, releaseTag: available.release.tagName,
                                     currentVersion: currentVersion, currentBuild: currentBuild) else { return }
+        guard AppState.shared.confirmEndingMeeting(for: .update) else { return }
         phase = .installing
         Task {
             let state = AppState.shared

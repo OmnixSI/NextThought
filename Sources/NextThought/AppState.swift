@@ -208,7 +208,20 @@ final class AppState {
     var verifyUncertainWithModel = UserDefaults.standard.bool(forKey: "verifyUncertainWithModel")
     /// 提词 (true) or 只记录 (false) in the running meeting. Set from the meeting
     /// type at every start and switched in the live page's top bar; no longer a setting.
-    var automaticAnswers = true
+    var automaticAnswers = true {
+        didSet {
+            guard oldValue != automaticAnswers else { return }
+            // Record-only chosen by hand keeps a later-connected service from switching it back on.
+            if isRunning, !isStopping, !applyingAutomaticAnswerMode, !automaticAnswers { liveModeChosenByHand = true }
+            refreshAnswerServiceStatus()
+        }
+    }
+    /// Set while the app itself turns automatic answers on (not a user choice).
+    @ObservationIgnored var applyingAutomaticAnswerMode = false
+    @ObservationIgnored var liveModeChosenByHand = false
+    @ObservationIgnored var answerServiceWatch: UUID?
+    /// Shown in the live view while automatic answers are on but no answer service is connected.
+    var liveAnswerStatus: String?
     var currentQuestion = ""
     var currentLeadIn: String?
     var pendingQuestion = ""
@@ -340,7 +353,13 @@ final class AppState {
     /// A phone was connected since the companion was turned on (to say "reconnecting").
     var companionHadClient = false
     /// A start waiting for the one-time recording notice.
-    var recordingNoticePending: PendingStart?
+    var recordingNoticePending: PendingStart? {
+        didSet { if recordingNoticePending != nil, oldValue == nil { presentRecordingNotice() } }
+    }
+    /// One-time home-page notice after a crash left a meeting unfinished.
+    var interruptedNotice: String?
+    /// The running meeting is a quick recording ("立即记录"): it does not set the home scene.
+    var isQuickRecording = false
     var isRunning = false
     var isPaused = false
     var isChangingSession = false
@@ -418,6 +437,11 @@ final class AppState {
     @ObservationIgnored var recoveredSummaryIDs: [UUID] = []
     @ObservationIgnored var summaryRecoveryTask: Task<Void, Never>?
     @ObservationIgnored var summaryRecoveryReady = false
+    /// The latest after-meeting restore point; a refresh after the notes waits for it.
+    @ObservationIgnored var sessionBackupTask: Task<URL?, Never>?
+    @ObservationIgnored var restorePointRefreshWaiting = false
+    /// The user confirmed ending the running meeting for a quit, update or relaunch.
+    @ObservationIgnored var endMeetingConfirmed = false
 
     var modelControlsDisabled: Bool { isRunning || isChangingSession || isPreparingModel || isDownloadingModel }
     var colorScheme: ColorScheme? { appearance == "dark" ? .dark : appearance == "light" ? .light : nil }
@@ -481,11 +505,14 @@ final class AppState {
         }
         documentPreparation.start()
         loadAPIPresets()
-        archive.load { [weak self] ids in
+        archive.load(onRecoveredSummaries: { [weak self] ids in
             guard let self else { return }
             self.recoveredSummaryIDs = ids
             self.resumeRecoveredSummariesIfNeeded()
-        }
+        }, onInterrupted: { [weak self] count in
+            guard count > 0 else { return }
+            self?.interruptedNotice = String(localized: "上次会议被中断，已保存到所有记录。")
+        })
         rebuildContextIndex()
         audio.onSegment = { [weak self] event in
             Task { @MainActor in self?.receiveSpeechEvent(event) }
@@ -742,6 +769,10 @@ final class AppState {
             errorMessage = nil
             startCandidateTicker()
             startAutoEnd()
+            // Any start (button, hotkey, island) leaves no stale preparation page behind.
+            meetingDraft = nil
+            predictionAnswerID = nil
+            startAnswerServiceWatch()
         } catch {
             isRunning = false
             meetingContextTask?.cancel(); meetingContextTask = nil
@@ -762,6 +793,10 @@ final class AppState {
             audioEpoch = UUID()
             sessionStartedAt = nil
             finishArchive()
+            // The failed meeting's snapshot must not shape defaults, tint or answers outside a meeting.
+            preparedWorkspace = nil
+            plannedMeeting = nil
+            isQuickRecording = false
             errorMessage = "开始记录失败：\(error.localizedDescription)"
             statusText = "启动失败"
         }
@@ -861,7 +896,7 @@ final class AppState {
         partialTranscript = ""
         microphonePartialTranscript = ""
         transcriptionStatus = "已停止"
-        finishArchive(endedAt: endedAt, summarize: !preparingForTermination)
+        let archived = finishArchive(endedAt: endedAt, summarize: !preparingForTermination)
         // Voices are forgotten with the meeting: nothing about them is kept for the next one.
         speakers.endMeeting()
         preparedWorkspace = nil
@@ -869,6 +904,14 @@ final class AppState {
         rebuildContextIndex()
         sessionStartedAt = nil
         isStopping = false
+        isQuickRecording = false
+        stopAnswerServiceWatch()
+        // A stop from the island, a hotkey or auto-end happens away from the window:
+        // bring the notes page forward, restoring a hidden or subtitle-bar mode first.
+        if archived, !preparingForTermination, !isPreparingForTermination, !DemoMode.isEnabled {
+            liveWindow.set(.notes)
+            MainWindowLayout.bringToFront()
+        }
     }
 
     // MARK: Asking
@@ -961,6 +1004,7 @@ final class AppState {
             return
         }
         guard answerEngineReady else {
+            refreshAnswerServiceStatus()
             if !isAutomatic {
                 errorMessage = "连接回答服务后才能生成回答；当前会议记录会继续。"
                 openSettings(.answers)
@@ -1451,7 +1495,7 @@ final class AppState {
         audio.setPCMHandler(nil)
         microphone.setPCMHandler(nil)
         _ = microphone.stopCapture()
-        if isRunning { _ = archive.finish() }
+        if isRunning { _ = archive.finish(notesDeferred: autoSummarize) }
         Task {
             await liveTranscriber?.cancel()
             await microphoneTranscriber?.cancel()
@@ -1484,6 +1528,7 @@ final class AppState {
 
     func resumeAfterFailedTermination() {
         isPreparingForTermination = false
+        endMeetingConfirmed = false
     }
 
     // MARK: Hotkeys
@@ -1498,7 +1543,8 @@ final class AppState {
                 guard let self else { return }
                 Task { @MainActor in
                     if self.isRunning { await self.stopSession() }
-                    else { await self.startSession() }
+                    else if self.meetingDraft != nil { await self.startPreparedMeeting() }
+                    else { await self.recordNow() }
                 }
             },
             .regenerate: { [weak self] in self?.regenerate() },

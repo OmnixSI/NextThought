@@ -38,6 +38,45 @@ struct SessionRecordTests {
         #expect(noTranscript.summaryState == .none)
     }
 
+    @Test func deferredNotesRuleAndBackwardCompatibleDecoding() throws {
+        var meta = SessionMeta(startedAt: start, endedAt: start.addingTimeInterval(60), mode: .interview, transcriptCount: 4)
+        #expect(!meta.needsDeferredNotes)
+        meta.notesDeferred = true
+        #expect(meta.needsDeferredNotes)
+        var empty = meta; empty.transcriptCount = 0
+        #expect(!empty.needsDeferredNotes)
+        var running = meta; running.endedAt = nil
+        #expect(!running.needsDeferredNotes)
+        for state in [SummaryState.pending, .ready, .failed] {
+            var attempted = meta; attempted.summaryState = state
+            #expect(!attempted.needsDeferredNotes)
+        }
+        // The flag survives a round trip, and files written before it still decode.
+        let data = try JSONLines.encoder().encode(meta)
+        #expect(try JSONLines.decoder().decode(SessionMeta.self, from: data).needsDeferredNotes)
+        var plain = SessionMeta(startedAt: start, endedAt: start, mode: .general, transcriptCount: 2)
+        plain.notesDeferred = nil
+        let old = try JSONLines.encoder().encode(plain)
+        #expect(try JSONLines.decoder().decode(SessionMeta.self, from: old).notesDeferred == nil)
+    }
+
+    @Test func standingSeriesFlagDecodesFromOlderWorkspaces() throws {
+        var workspace = Workspace(name: "面试 · 未命名", mode: .interview)
+        #expect(!workspace.isStanding)
+        workspace.standing = true
+        let data = try JSONLines.encoder().encode(workspace)
+        #expect(try JSONLines.decoder().decode(Workspace.self, from: data).isStanding)
+        let legacy = Data(#"{"id":"\#(UUID().uuidString)","name":"旧系列","mode":"general"}"#.utf8)
+        #expect(try JSONLines.decoder().decode(Workspace.self, from: legacy).standing == nil)
+    }
+
+    @Test func sceneAndCoachPreferencesTravelInSettingsBackup() {
+        let keys = Set(SettingsSnapshot.exportedKeys)
+        #expect(keys.isSuperset(of: ["cueSurface", "cueWidth", "cueStyle", "cueScreen", "cueLauncher", "cueAvoidsSharing",
+                                     "coachEnabled", "coachWatchesGaze", "coachGazeSensitivity", "lastScene", "sceneOverrides"]))
+        #expect(!keys.contains("coachGazeBaseline"))
+    }
+
     @Test func parsesTitleAndQuestionList() {
         let markdown = """
         # 标题

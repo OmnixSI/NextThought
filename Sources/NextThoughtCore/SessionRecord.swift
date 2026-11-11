@@ -175,6 +175,9 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
     /// Outcome counts written with the notes (for one-line results in lists).
     public var actionItemCount: Int?
     public var improveCount: Int?
+    /// The meeting ended while the app was closing, so no notes were written. Cleared
+    /// when notes generation starts; the next launch writes them.
+    public var notesDeferred: Bool?
     public init(id: UUID = UUID(), startedAt: Date, endedAt: Date? = nil, mode: SessionMode, title: String? = nil, audioSource: String = "", recognizer: String = "", answerModel: String = "",
                 transcriptCount: Int = 0, questionCount: Int = 0, answerCount: Int = 0, summaryState: SummaryState = .none, summaryError: String? = nil,
                 workspaceID: UUID? = nil, workspaceName: String? = nil,
@@ -185,6 +188,11 @@ public struct SessionMeta: Codable, Sendable, Identifiable, Equatable {
         self.summaryState = summaryState; self.summaryError = summaryError
         self.workspaceID = workspaceID; self.workspaceName = workspaceName
         self.workspaceDeleted = workspaceDeleted; self.formerWorkspaceName = formerWorkspaceName
+    }
+
+    /// A finished meeting whose notes were skipped at quit and never attempted since.
+    public var needsDeferredNotes: Bool {
+        endedAt != nil && summaryState == .none && notesDeferred == true && transcriptCount > 0
     }
 
     public var duration: TimeInterval { max(0, (endedAt ?? startedAt).timeIntervalSince(startedAt)) }

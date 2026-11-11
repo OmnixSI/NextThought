@@ -21,9 +21,12 @@ extension AppState {
         }
     }
 
+    /// The series snapshot the running meeting uses; the active series otherwise.
+    var liveWorkspace: Workspace { preparedWorkspace ?? activeWorkspace }
+
     /// Only the system-audio channel (the other side) is fed here.
     func processRecognized(_ text: String, isFinal: Bool, key: String?, allowAutomatic: Bool) {
-        tracker.mode = activeWorkspace.effectiveMode
+        tracker.mode = liveWorkspace.effectiveMode
         let decision = tracker.ingest(text, isFinal: isFinal, utteranceKey: key)
         if isFinal, decision == .none, liveCandidate?.utteranceKey == key || key == nil { liveCandidate = nil }
         applyCandidateDecision(decision, allowAutomatic: allowAutomatic)

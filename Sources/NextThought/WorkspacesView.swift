@@ -257,6 +257,8 @@ final class WorkspaceEditController {
     }
 
     func continueEditing() {
+        // A scene picked on the home page belongs to the cancelled "new meeting".
+        AppState.shared.pendingDraftScene = nil
         pendingTransition = nil
         showUnsavedPrompt = false
     }

@@ -43,6 +43,7 @@ extension AppState {
     func prepareNextMeeting(after sessionID: UUID) {
         guard !isRunning, !isChangingSession, let meta = archive.sessions.first(where: { $0.id == sessionID }),
               let seriesID = meta.workspaceID, let series = workspaces.workspace(seriesID) else { return }
+        pendingDraftScene = nil
         var draft = MeetingDraft()
         draft.title = series.name
         draft.mode = series.mode
@@ -71,7 +72,7 @@ extension AppState {
 
     /// Whether the draft continues an existing series (shows "接着上一场").
     var draftContinuesSeries: Bool {
-        guard let draft = meetingDraft, draftSeries != nil else { return false }
+        guard let draft = meetingDraft, let series = draftSeries, !series.isStanding else { return false }
         return draft.seriesID == nil ? draft.suggestedSeriesID != nil : !draft.seriesIsNew
     }
 
@@ -132,6 +133,7 @@ extension AppState {
     /// "从以前的会议带入…": continue the chosen series.
     func continueDraftSeries(_ id: UUID) {
         guard var draft = meetingDraft, let series = workspaces.workspace(id) else { return }
+        pendingDraftScene = nil
         draft.declinedSeriesIDs.remove(id)
         draft.suggestedSeriesID = id
         if !draft.typeChosen {
@@ -157,15 +159,49 @@ extension AppState {
             return suggested
         }
         let trimmed = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let name = trimmed.isEmpty
-            ? String(localized: "会议 \(Date.now.formatted(date: .abbreviated, time: .shortened))")
-            : trimmed
         guard !isRunning else { return nil }
-        createWorkspace(mode: draft.mode, name: name)
+        if trimmed.isEmpty {
+            // Untitled meetings of a scene share one standing series instead of one per date.
+            if let standing = standingSeries(for: draft) {
+                bindDraft(to: standing.id, isNew: false)
+                // Earlier untitled meetings are unrelated: nothing is "the previous one".
+                meetingDraft?.previousSessionID = nil
+                return standing.id
+            }
+            createWorkspace(mode: draft.mode, name: standingSeriesName(for: draft))
+            let id = activeWorkspace.id
+            bindDraft(to: id, isNew: true)
+            applyDraftType(to: id)
+            markStanding(id)
+            meetingDraft?.seriesIsNew = false
+            meetingDraft?.previousSessionID = nil
+            return id
+        }
+        createWorkspace(mode: draft.mode, name: trimmed)
         let id = activeWorkspace.id
         bindDraft(to: id, isNew: true)
         applyDraftType(to: id)
         return id
+    }
+
+    /// "面试 · 未命名": the standing series for untitled meetings of the draft's scene.
+    private func standingSeriesName(for draft: MeetingDraft) -> String {
+        let scene = draft.mode == .custom && !draft.customTypeName.isEmpty ? draft.customTypeName : draft.mode.title
+        return String(localized: "\(scene) · 未命名")
+    }
+
+    private func standingSeries(for draft: MeetingDraft) -> Workspace? {
+        let quick = UserDefaults.standard.string(forKey: "quickNotesWorkspaceID").flatMap(UUID.init(uuidString:))
+        return workspaces.workspaces.first {
+            $0.isStanding && !$0.archived && $0.id != quick && $0.mode == draft.mode
+                && ($0.mode != .custom || ($0.customTypeName ?? "") == draft.customTypeName)
+        }
+    }
+
+    private func markStanding(_ id: UUID) {
+        guard var series = workspaces.workspace(id), !series.isStanding else { return }
+        series.standing = true
+        workspaces.update(series)
     }
 
     private func bindDraft(to id: UUID, isNew: Bool) {
@@ -241,10 +277,11 @@ extension AppState {
         if activeWorkspace.id != id { switchWorkspace(id) }
         plannedMeeting = MeetingPlan(carry: .init(materials: false, review: false, lessons: false),
                                      baselineDocumentIDs: Set(activeWorkspace.documents.map(\.id)))
+        isQuickRecording = true
         PreparationPreview.shared.cancel()
         await startWithPermissions()
         if isRunning { meetingDraft = nil; predictionAnswerID = nil }
-        if !isRunning && !isChangingSession { plannedMeeting = nil }
+        if !isRunning && !isChangingSession { plannedMeeting = nil; isQuickRecording = false }
     }
 
     /// The first start shows a short notice about recording consent.
@@ -270,11 +307,13 @@ extension AppState {
         let key = "quickNotesWorkspaceID"
         if let raw = UserDefaults.standard.string(forKey: key), let id = UUID(uuidString: raw),
            let series = workspaces.workspace(id), !series.archived {
+            markStanding(id)
             return id
         }
         let previous = activeWorkspace.id
         let created = workspaces.create(mode: .general, name: String(localized: "随手记录"))
         UserDefaults.standard.set(created.id.uuidString, forKey: key)
+        markStanding(created.id)
         // `create` activates the new series; `recordNow` switches to it properly.
         workspaces.activate(previous)
         return created.id

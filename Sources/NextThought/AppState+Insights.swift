@@ -156,7 +156,7 @@ extension AppState {
                 // Supporting material (the paper, the script), not the deck itself.
                 let excerpts = await self.retrieveExcerpts(question: page.text, maximumCharacters: 3_000)
                     .filter { !$0.source.hasSuffix(page.documentName) }
-                let prompt = SlideNotes.prompt(page: page, previous: previous, next: next, excerpts: excerpts, mode: self.sessionMode, preferences: self.activeWorkspace.preferences)
+                let prompt = SlideNotes.prompt(page: page, previous: previous, next: next, excerpts: excerpts, mode: self.liveWorkspace.mode, preferences: self.liveWorkspace.preferences)
                 let request = AnswerRequest(system: prompt.system, user: prompt.user, model: model,
                                             effort: backend == .openAICompatible ? self.codexReasoning : "low", serviceTier: self.activeServiceTier)
                 let text = try await self.runWebAnswer(request, backend: backend, forSlides: true)

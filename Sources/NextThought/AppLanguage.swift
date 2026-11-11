@@ -102,6 +102,7 @@ struct LanguageSettingsSection: View {
                             titleVisibility: .visible) {
             Button("重新打开") {
                 guard let language = pending else { return }
+                guard state.confirmEndingMeeting(for: .language) else { pending = nil; return }
                 AppLanguage.apply(language)
                 choice = language
                 pending = nil

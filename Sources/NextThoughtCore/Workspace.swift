@@ -690,6 +690,10 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var customBaseMode: SessionMode?
     /// Names and terms of this series only; added to the global glossary (“术语和人名”).
     public var glossary: Glossary?
+    /// A standing series that collects untitled meetings of one scene ("面试 · 未命名")
+    /// or quick recordings. Not offered as "接着上一场".
+    public var standing: Bool?
+    public var isStanding: Bool { standing == true }
 
     public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle = .concise, preferences: String? = nil,
                 notes: String = "", fields: [String: String] = [:], documents: [ContextDocument] = [],
@@ -719,7 +723,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         case id, name, mode, style, preferences, notes, fields, documents, lessons, questionBank, knowledgeCandidates, useKnowledge
         case seriesItems, seriesChangeCandidates, seriesItemSourceTombstones, sourceDeletionTombstones
         case stageReview, stageReviewAt, createdAt, updatedAt, archived, skillIDs
-        case customTypeName, customBaseMode, glossary
+        case customTypeName, customBaseMode, glossary, standing
     }
 
     public init(from decoder: Decoder) throws {
@@ -749,6 +753,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         customTypeName = try c.decodeIfPresent(String.self, forKey: .customTypeName)
         customBaseMode = try c.decodeIfPresent(SessionMode.self, forKey: .customBaseMode)
         glossary = try? c.decodeIfPresent(Glossary.self, forKey: .glossary)
+        standing = try? c.decodeIfPresent(Bool.self, forKey: .standing)
     }
 
     /// The type whose defaults apply: a custom type behaves like its base type.
