@@ -96,3 +96,11 @@ iOS SDK 构建在此前远端 macos 作业通过；之后变更局限于 macOS �
 [PR #28](https://github.com/OmnixSI/NextThought/pull/28) 已合并，发布源提交 `72ddb004a195f4274736e9ba9ab28c23ba610656`。本机构建的 [v2.5.0](https://github.com/OmnixSI/NextThought/releases/tag/v2.5.0) 于 2026-11-09 12:12:22 UTC 发布并设为最新版，build 2500。
 
 最终打包产物的 13 组自检再次全部通过（`.build/settings-artifact-*.log`）。上传后重新下载全部 5 个资产：SHA256 清单逐项通过，DMG 自身校验通过，解压应用严格签名验证通过，版本、build、源提交与更新清单一致；正式签名沿用 v2.4.1 的根证书指纹。完整校验回执见 [v2.5.0-release-verification.json](evidence/v2.5.0-release-verification.json)。README 顶部已展示实际新版界面与功能。
+
+## v3.0.0 本机发布
+
+GitHub Actions 因账户付款或额度问题无法启动任务，经用户明确同意，v3.0.0 在本机构建并发布，签名沿用历次正式发布的同一身份。[PR #29](https://github.com/OmnixSI/NextThought/pull/29) 合并后的发布源提交为 `d7f0331f3078301d5202adf89bd8417bebbfa66d`，[v3.0.0](https://github.com/OmnixSI/NextThought/releases/tag/v3.0.0) 于 2026-11-11 04:42:25 UTC 发布并设为最新版，build 3000。
+
+发布前在 `main` 上 544 项测试通过；发布二进制的 12 组自检全部通过（data、session-export、session-backup-drain、session-edit-receipts、session-carry-context、meeting-content、archive-ux、large-pdf、structured-notes、source-integrity、settings-navigation、document-setup）。上传到草稿后重新下载全部资产：SHA256 清单逐项通过，DMG 校验通过，解压后的应用严格签名验证通过，版本、build、源提交与更新清单一致。打标签期间暂停了 Verify / Release 工作流，核验后已恢复。
+
+这一版没有在真实会议中跑过：真实音频下的整场会议、摄像头眼神留意、真实整屏共享时提词岛的自动收回都未实测。iOS SDK 构建检查本机无法运行，移动端代码自 v2.5.0 起未改动。完整回执见 [v3.0.0-release-verification.json](evidence/v3.0.0-release-verification.json)。
