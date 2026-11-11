@@ -5,7 +5,8 @@
 #
 #   scripts/dev/preview.sh                       build the bundle only
 #   scripts/dev/preview.sh shot <section> <light|dark> <out.png> [key=value;…] [language]
-#   scripts/dev/preview.sh run [section] [light|dark]     launch the demo interactively
+#   scripts/dev/preview.sh island                  show the real cue island over a demo meeting
+#   scripts/dev/preview.sh stop                    quit the preview
 #
 # The official app, its data folder and its signing identity are never touched.
 set -euo pipefail
@@ -62,12 +63,16 @@ shot() {
 case "${1:-build}" in
     build) build ;;
     shot) shift; shot "$@" ;;
-    run)
+    island)
+        # The real island on the MacBook's own display, over a demo meeting; no other
+        # window is shown and the app is not activated. Stop it with `preview.sh stop`.
         pkill -9 -f "$app/Contents/MacOS" 2>/dev/null || true
-        # shellcheck disable=SC2086
-        env NEXTTHOUGHT_DEMO=1 NEXTTHOUGHT_DATA_DIR="$data" NEXTTHOUGHT_DEMO_SECTION="${2:-home}" \
-        NEXTTHOUGHT_DEMO_APPEARANCE="${3:-light}" NEXTTHOUGHT_DEMO_VOICE_READY=1 ${PREVIEW_ENV:-} \
-        "$app/Contents/MacOS/NextThought" -ApplePersistenceIgnoreState YES >"$project_root/.local/dev-run.log" 2>&1 &
-        echo "pid $!" ;;
-    *) echo "usage: preview.sh [build|shot|run]" >&2; exit 2 ;;
+        open -j -g -n "$app" --env NEXTTHOUGHT_DEMO=1 --env "NEXTTHOUGHT_DATA_DIR=$data" \
+            --env NEXTTHOUGHT_DEMO_SECTION=live --env "NEXTTHOUGHT_DEMO_APPEARANCE=${2:-light}" \
+            --env NEXTTHOUGHT_DEMO_VOICE_READY=1 --env NEXTTHOUGHT_DEMO_FRAME=0,0,1120,820 \
+            --env NEXTTHOUGHT_DEMO_HIDDEN=1 --env NEXTTHOUGHT_DEMO_ISLAND_SHOW=1 \
+            --args -ApplePersistenceIgnoreState YES
+        echo "island shown on the built-in display" ;;
+    stop) pkill -9 -f "$app/Contents/MacOS" 2>/dev/null || true ;;
+    *) echo "usage: preview.sh [build|shot|island|stop]" >&2; exit 2 ;;
 esac

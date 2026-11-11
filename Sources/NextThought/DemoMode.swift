@@ -161,6 +161,18 @@ extension DemoMode {
     /// launcher. With `visible` false the panel is drawn without ever being shown.
     @MainActor
     static func snapshotIsland(_ environment: [String: String], visible: Bool) {
+        // NEXTTHOUGHT_DEMO_ISLAND_SHOW=1: the real island on the camera's display, with
+        // the demo meeting behind it, to try by hand.
+        if environment["NEXTTHOUGHT_DEMO_ISLAND_SHOW"] == "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                // Launched hidden (`open -j`), so nothing has appeared anywhere. Take the
+                // ordinary windows out before unhiding: only the island comes on screen.
+                for window in NSApp.windows where !(window is NSPanel) { window.orderOut(nil) }
+                NSApp.unhideWithoutActivation()
+                CueIslandController.shared.show()
+            }
+            return
+        }
         guard let path = environment["NEXTTHOUGHT_DEMO_ISLAND"] else { return }
         let state = AppState.shared
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
