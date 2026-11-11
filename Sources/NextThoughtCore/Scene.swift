@@ -19,14 +19,16 @@ public struct CoachingProfile: Sendable, Equatable {
     /// The share of the talking that suits the scene; nil when it does not matter.
     public var talkShare: ClosedRange<Double>?
     public var pace: ClosedRange<Double>
+    /// False in a scene where the user mostly listens: no nudge of any kind.
+    public var nudgesPace: Bool
 
     public init(monologueLimit: TimeInterval?, talkShare: ClosedRange<Double>? = nil,
-                pace: ClosedRange<Double> = 150...310) {
-        self.monologueLimit = monologueLimit; self.talkShare = talkShare; self.pace = pace
+                pace: ClosedRange<Double> = 150...310, nudgesPace: Bool = true) {
+        self.monologueLimit = monologueLimit; self.talkShare = talkShare; self.pace = pace; self.nudgesPace = nudgesPace
     }
 
     /// A scene where the user mostly listens (a lecture): nothing to coach.
-    public static let listening = CoachingProfile(monologueLimit: nil)
+    public static let listening = CoachingProfile(monologueLimit: nil, nudgesPace: false)
 }
 
 /// Everything a scene decides beyond `MeetingTypeDefaults`: how cues look, whether
@@ -246,6 +248,10 @@ public struct SpeakingCoach: Sendable {
     static let shareWindow: TimeInterval = 300
     /// A pause this long (or the other side speaking) ends a monologue.
     static let monologueGap: TimeInterval = 3.5
+    /// Nobody has settled into a rhythm yet: "该你说两句了" waits until this much of the meeting has passed.
+    static let speakUpGrace: TimeInterval = 180
+    /// The user has to have said enough for a share to mean anything.
+    static let minimumOwnSpeech: TimeInterval = 10
 
     public init(profile: CoachingProfile) { self.profile = profile }
 
@@ -267,10 +273,14 @@ public struct SpeakingCoach: Sendable {
         var nudge: CoachNudge?
         if let limit = profile.monologueLimit, monologue >= limit {
             nudge = .wrapUp
-        } else if let pace, pace > profile.pace.upperBound {
+        } else if profile.nudgesPace, let pace, pace > profile.pace.upperBound {
             nudge = .slowDown
         } else if let share, let range = profile.talkShare {
-            if share > range.upperBound { nudge = .letThemTalk } else if share < range.lowerBound { nudge = .speakUp }
+            if share > range.upperBound {
+                nudge = .letThemTalk
+            } else if share < range.lowerBound, now >= Self.speakUpGrace {
+                nudge = .speakUp
+            }
         }
         return CoachSnapshot(pace: pace, talkShare: share, monologue: monologue, nudge: nudge)
     }
@@ -286,7 +296,7 @@ public struct SpeakingCoach: Sendable {
         let recent = segments.filter { $0.end >= now - Self.shareWindow }
         let mine = recent.filter(\.isMe).reduce(0) { $0 + ($1.end - $1.start) }
         let theirs = recent.filter { !$0.isMe }.reduce(0) { $0 + ($1.end - $1.start) }
-        guard mine + theirs >= 45 else { return nil }
+        guard mine >= Self.minimumOwnSpeech, theirs > 0, mine + theirs >= 45 else { return nil }
         return mine / (mine + theirs)
     }
 

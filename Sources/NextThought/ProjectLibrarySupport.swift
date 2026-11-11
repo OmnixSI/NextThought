@@ -10,7 +10,7 @@ struct WorkspaceRecordsTab: View {
         VStack(alignment: .leading, spacing: Space.s4) {
             Text("记录").font(Typo.section)
             if records.isEmpty {
-                ContentUnavailableView("还没有记录", systemImage: "doc.text", description: Text("从这个项目开始一场研究讨论，记录和资料会保存在一起。"))
+                ContentUnavailableView("还没有记录", systemImage: "doc.text", description: Text("从这个资料夹开始一场会议，记录和资料会保存在一起。"))
             }
             ForEach(records) { meta in
                 Button {

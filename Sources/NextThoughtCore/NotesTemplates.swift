@@ -94,7 +94,7 @@ public struct NotesTemplate: Codable, Sendable, Equatable, Identifiable {
                 s("improve", "下次改进", "Next time", "下次可以直接照做的 3 条改进。", "Three concrete things to do better next time.", carry: .lesson),
             ])
         case .academic:
-            return NotesTemplate(id: kind.rawValue, name: t("学术", "Academic"), sections: [
+            return NotesTemplate(id: kind.rawValue, name: t("组会 / 研究讨论", "Lab meeting / Research discussion"), sections: [
                 s("summary", "一句话总结", "In one line", "这次讨论的结论，一句话。", "The outcome of the discussion, in one sentence.", .oneLine),
                 s("topics", "讨论了哪些问题", "What was discussed", "讨论过的问题，每条一句。", "The questions discussed, one line each."),
                 s("open", "讨论得不够透彻的问题", "Not settled yet", "没有讨论透的问题：缺什么证据、卡在哪里。", "Questions that were not settled: what evidence is missing, where it is stuck.", gap: true, carry: .lesson, prefix: ("未解决", "Open")),
@@ -103,6 +103,14 @@ public struct NotesTemplate: Codable, Sendable, Equatable, Identifiable {
                 s("experiments", "下一步：实验", "Next: experiments", "要做的实验：做什么、对照什么、需要什么数据。", "Experiments to run: what, against what, with which data.", .actions, carry: .lesson, prefix: ("下一步", "Next")),
                 s("reading", "要查的文献", "Papers to look up", "提到要查或要读的文献。", "Papers someone said to look up or read."),
                 s("deadlines", "截止时间", "Deadlines", "提到的截止时间和对应的事。", "Deadlines mentioned and what they are for.", .actions),
+            ])
+        case .talk:
+            return NotesTemplate(id: kind.rawValue, name: t("汇报 / 答辩", "Talk / Defense"), sections: [
+                s("summary", "一句话总结", "In one line", "这次汇报或答辩的结果和整体反应，一句话。", "How the talk or defense went and how it was received, in one sentence.", .oneLine),
+                s("questions", "听众 / 评委的提问", "Questions from the audience", "听众或评委问的每一个问题：问了什么、我答的要点、评价（答得好 / 待改进）、更好的答法。", "Every question from the audience or committee: the question, the gist of my answer, a verdict (good / to improve) and a better answer.", .questions, carry: .bank),
+                s("unclear", "没讲清楚或被质疑的地方", "Unclear or challenged", "我没讲清楚、被追问或被质疑的地方，说明缺什么。", "Points that were unclear or challenged, and what was missing.", gap: true, carry: .lesson, prefix: ("待补", "To fix")),
+                s("revise", "幻灯片 / 论文要改什么", "What to change in the slides or paper", "幻灯片或论文要改哪一页、哪一节，怎么改。", "Which slide or section of the paper to change, and how.", .actions, carry: .lesson, prefix: ("修改", "Revise")),
+                s("followups", "答应的跟进和截止时间", "Follow-ups promised and deadlines", "当场答应补充或跟进的事，以及对应的截止时间。", "What I promised to add or follow up on, and the deadlines.", .actions, carry: .lesson, prefix: ("跟进", "Follow up")),
             ])
         case .work:
             return NotesTemplate(id: kind.rawValue, name: t("工作会议", "Work meeting"), sections: [

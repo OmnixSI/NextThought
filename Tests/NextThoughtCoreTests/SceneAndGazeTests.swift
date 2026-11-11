@@ -33,6 +33,10 @@ import Testing
         #expect(MeetingTypeGuesser.guess("周三组会") == .labMeeting)
         #expect(MeetingTypeGuesser.guess("华东区客户沟通") == .client)
     }
+
+    @Test func groupProjectUsesLabMeetingQuestionThresholds() {
+        #expect(QuestionIntentClassifier.Thresholds.forMode(.groupProject) == .forMode(.labMeeting))
+    }
 }
 
 @Suite struct CueScriptTests {
@@ -125,8 +129,40 @@ import Testing
 
         var quiet = SpeakingCoach(profile: CoachingProfile(monologueLimit: nil, talkShare: 0.25...0.6))
         quiet.ingest(SpokenSegment(isMe: false, start: 0, end: 60, text: String(repeating: "字", count: 200)))
-        quiet.ingest(SpokenSegment(isMe: true, start: 61, end: 65, text: String(repeating: "字", count: 14)))
-        #expect(quiet.snapshot(at: 70).nudge == .speakUp)
+        quiet.ingest(SpokenSegment(isMe: true, start: 61, end: 73, text: String(repeating: "字", count: 44)))
+        // Not in the first three minutes.
+        #expect(quiet.snapshot(at: 80).talkShare != nil)
+        #expect(quiet.snapshot(at: 80).nudge == nil)
+        #expect(quiet.snapshot(at: 200).nudge == .speakUp)
+    }
+
+    @Test func noShareUntilBothSidesSpokeAndTheUserSaidEnough() {
+        let profile = CoachingProfile(monologueLimit: nil, talkShare: 0.25...0.6)
+        // An interviewer still on the first question: the user has not spoken at all.
+        var onlyThem = SpeakingCoach(profile: profile)
+        onlyThem.ingest(SpokenSegment(isMe: false, start: 0, end: 60, text: String(repeating: "字", count: 200)))
+        #expect(onlyThem.snapshot(at: 200).talkShare == nil)
+        #expect(onlyThem.snapshot(at: 200).nudge == nil)
+        // Only the user so far.
+        var onlyMe = SpeakingCoach(profile: profile)
+        onlyMe.ingest(SpokenSegment(isMe: true, start: 0, end: 60, text: String(repeating: "字", count: 200)))
+        #expect(onlyMe.snapshot(at: 200).talkShare == nil)
+        // A few seconds from the user is not enough to judge.
+        var brief = SpeakingCoach(profile: profile)
+        brief.ingest(SpokenSegment(isMe: false, start: 0, end: 60, text: String(repeating: "字", count: 200)))
+        brief.ingest(SpokenSegment(isMe: true, start: 61, end: 65, text: String(repeating: "字", count: 14)))
+        #expect(brief.snapshot(at: 200).talkShare == nil)
+    }
+
+    @Test func aListeningSceneNeverNudges() {
+        var coach = SpeakingCoach(profile: .listening)
+        coach.ingest(SpokenSegment(isMe: false, start: 0, end: 5, text: "同学来回答一下"))
+        coach.ingest(SpokenSegment(isMe: true, start: 6, end: 16, text: String(repeating: "字", count: 80)))
+        let snapshot = coach.snapshot(at: 16)
+        #expect((snapshot.pace ?? 0) > 310)
+        #expect(snapshot.nudge == nil)
+        coach.ingest(SpokenSegment(isMe: true, start: 17, end: 400, text: String(repeating: "字", count: 900)))
+        #expect(coach.snapshot(at: 400).nudge == nil)
     }
 }
 

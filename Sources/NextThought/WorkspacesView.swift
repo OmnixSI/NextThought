@@ -1172,7 +1172,7 @@ private struct WorkspaceDocumentsTab: View {
     private var allowedTypes: [UTType] { DocumentImporter.supportedExtensions.compactMap { UTType(filenameExtension: $0) } }
 
     var body: some View {
-        let profile = ModeProfile.for(state.sessionMode)
+        let profile = ModeProfile.for(state.activeWorkspace.effectiveMode)
         VStack(alignment: .leading, spacing: Space.s4) {
             HStack {
                 WorkspaceSectionHeading("资料 \(state.documents.count)", icon: "doc.on.doc")

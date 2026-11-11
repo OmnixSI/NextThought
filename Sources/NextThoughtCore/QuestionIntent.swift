@@ -42,10 +42,12 @@ public enum QuestionIntentClassifier {
             case .interview: Thresholds(actionable: 0.45, uncertain: 0.25)
             // Audience / chair questions after a talk are usually explicit.
             case .academic: Thresholds(actionable: 0.5, uncertain: 0.3)
-            case .meeting, .general, .client, .discussion, .groupProject, .custom: Thresholds(actionable: 0.5, uncertain: 0.3)
+            case .meeting, .general, .client, .discussion, .custom: Thresholds(actionable: 0.5, uncertain: 0.3)
             // Supervisors ask real questions in group meetings, but people also
             // think aloud; slightly stricter than a work meeting.
-            case .labMeeting: Thresholds(actionable: 0.55, uncertain: 0.3)
+            // Classmates in a group assignment think aloud just as much ("要不我们先做
+            // 数据部分？"), so they share the lab-meeting thresholds.
+            case .labMeeting, .groupProject: Thresholds(actionable: 0.55, uncertain: 0.3)
             }
         }
     }

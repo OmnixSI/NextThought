@@ -12,11 +12,12 @@ public enum LiveMode: String, Codable, CaseIterable, Sendable {
 
 /// Built-in notes templates (02-scenarios-and-flows.md, "按场景的模板").
 public enum NotesTemplateKind: String, Codable, CaseIterable, Sendable, Identifiable {
-    case interview, academic, work, client, lecture, discussion, general, groupProject
+    /// `academic` keeps its raw value for stored notes; it is the lab-meeting / research-discussion template.
+    case interview, academic, work, client, lecture, discussion, general, groupProject, talk
     public var id: String { rawValue }
     /// Templates offered in settings and meeting notes.
     public static var selectable: [NotesTemplateKind] {
-        [.general, .interview, .academic, .groupProject, .client, .work, .lecture, .discussion]
+        [.general, .interview, .talk, .academic, .groupProject, .client, .work, .lecture, .discussion]
     }
 }
 
@@ -38,7 +39,7 @@ public struct MeetingTypeDefaults: Sendable, Equatable {
         switch mode {
         case .general, .custom: MeetingTypeDefaults(liveMode: .notesOnly, style: .concise, template: .general)
         case .interview: MeetingTypeDefaults(liveMode: .prompting, style: .concise, template: .interview)
-        case .academic: MeetingTypeDefaults(liveMode: .prompting, style: .concise, template: .academic, followsSlides: true)
+        case .academic: MeetingTypeDefaults(liveMode: .prompting, style: .concise, template: .talk, followsSlides: true)
         case .labMeeting: MeetingTypeDefaults(liveMode: .notesOnly, style: .detailed, template: .academic)
         case .meeting: MeetingTypeDefaults(liveMode: .notesOnly, style: .concise, template: .work)
         case .client: MeetingTypeDefaults(liveMode: .prompting, style: .concise, template: .client)
@@ -53,25 +54,46 @@ public struct MeetingTypeDefaults: Sendable, Equatable {
 
 /// Picks a type from words in a calendar or typed title; general when nothing fits.
 public enum MeetingTypeGuesser {
-    /// Checked in order: the first type with a matching keyword wins.
+    /// Checked in order: the first type with a matching keyword wins. The more specific
+    /// scenes come first: "课程设计" is a group project before it is a course, and
+    /// "client talk" is a client call before it is a talk.
     static let keywords: [(SessionMode, [String])] = [
         (.interview, ["面试", "一面", "二面", "三面", "四面", "终面", "hr面", "interview", "onsite", "phone screen"]),
         (.labMeeting, ["组会", "group meeting", "lab meeting"]),
-        (.academic, ["答辩", "defense", "defence", "汇报", "报告会", "presentation", "talk"]),
+        (.groupProject, ["小组作业", "大作业", "课程设计", "课设", "团队作业", "group project", "group assignment", "team project", "course project", "capstone"]),
         (.client, ["客户", "client", "customer"]),
+        (.academic, ["答辩", "defense", "defence", "汇报", "报告会", "presentation", "talk"]),
         (.lesson, ["讲座", "课程", "上课", "lecture", "class", "course"]),
-        (.groupProject, ["小组作业", "大作业", "课程设计", "课设", "团队作业", "group project", "group assignment", "team project", "capstone"]),
         (.discussion, ["小组讨论", "讨论", "discussion", "brainstorm", "头脑风暴"]),
-        (.meeting, ["例会", "周会", "站会", "sync", "standup", "stand-up", "1:1", "one on one", "review"]),
+        (.meeting, ["例会", "周会", "站会", "小组会", "项目组会", "项目会议", "sync", "standup", "stand-up", "1:1", "one on one", "review"]),
     ]
 
     public static func guess(_ title: String) -> SessionMode {
         let text = title.lowercased()
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return .general }
-        for (mode, words) in keywords where words.contains(where: { text.contains($0) }) {
+        for (mode, words) in keywords where words.contains(where: { matches($0, in: text) }) {
             return mode
         }
         return .general
+    }
+
+    private static func matches(_ word: String, in text: String) -> Bool {
+        if word == "组会" {
+            // 小组会议 and 项目组会议 are ordinary meetings, not a lab's 组会.
+            var rest = text[...]
+            while let range = rest.range(of: word) {
+                let before = text[..<range.lowerBound]
+                if !before.hasSuffix("小") && !before.hasSuffix("项目") { return true }
+                rest = text[range.upperBound...]
+            }
+            return false
+        }
+        if word.allSatisfy({ $0.isASCII && ($0.isLetter || $0 == " " || $0 == "-") }) {
+            // English words match whole words only ("class" is not in "classic").
+            let pattern = "(?<![a-z0-9])" + NSRegularExpression.escapedPattern(for: word) + "(?:s|es)?(?![a-z0-9])"
+            return text.range(of: pattern, options: .regularExpression) != nil
+        }
+        return text.contains(word)
     }
 }
 
@@ -88,13 +110,23 @@ public enum SeriesMatcher {
         #"\bround\s*[0-9]+\b"#,
         #"\b(r|#)[0-9]+\b"#,
         #"\bweek\s*[0-9]+\b"#,
+        #"第\s*[0-9一二三四五六七八九十]+\s*(讲|课|节|章|季度|季)"#,
+        #"\bq[1-4]\b"#,
         #"\b(first|second|third|final)\s+round\b"#,
         #"(面试|interview)"#,
     ]
 
-    /// The title without round markers ("一面", "round 2", "第 3 周").
+    /// Numbered units whose noun is part of the series name: "Lecture 4" → "lecture".
+    static let numberedPatterns = [
+        #"\b(lecture|lec|session|sprint|seminar|workshop|class|part)\s*#?[0-9]+\b"#,
+    ]
+
+    /// The title without round markers ("一面", "round 2", "第 3 周", "第 3 讲", "Lecture 4", "Q3").
     public static func baseTitle(_ title: String) -> String {
         var text = title.lowercased()
+        for pattern in numberedPatterns {
+            text = text.replacingOccurrences(of: pattern, with: "$1", options: .regularExpression)
+        }
         for pattern in roundPatterns {
             text = text.replacingOccurrences(of: pattern, with: " ", options: .regularExpression)
         }

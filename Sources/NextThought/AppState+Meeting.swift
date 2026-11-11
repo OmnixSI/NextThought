@@ -59,15 +59,15 @@ extension SessionMode {
     /// One line on what the type sets up (shown under the type tags, and on hover).
     var defaultsSummary: String {
         switch self {
-        case .general: String(localized: "只记录，需要时 ⌘⇧↩ 回答 · 回答简短 · 纪要：总结、决定、待办")
-        case .interview: String(localized: "被问到时自动给出回答 · 回答简短、第一人称 · 会后逐题复盘并存进题库")
-        case .academic: String(localized: "会中自动给出回答，跟着讲稿 · 回答简短 · 纪要：听众问了什么、怎么答更好")
-        case .labMeeting: String(localized: "只记录，被问到时 ⌘⇧↩ · 回答详细 · 纪要：进展、导师意见、下一步")
-        case .meeting: String(localized: "只记录 · 回答简短 · 纪要：决定、待办、风险")
-        case .client: String(localized: "会中自动给出回答 · 回答简短 · 纪要：需求、顾虑、我们答应的、下一步")
-        case .lesson: String(localized: "只记录 · 回答详细 · 笔记：要点、概念、我的疑问")
-        case .discussion: String(localized: "只记录 · 回答简短 · 纪要：各方观点、结论、分工")
-        case .groupProject: String(localized: "只记录，需要时 ⌘⇧↩ · 回答简短 · 纪要：方案、分工、截止时间")
+        case .general: String(localized: "会中只记录，需要时 ⌘⇧↩ 回答 · 回答简洁 · 纪要：总结、要点、决定、待办")
+        case .interview: String(localized: "会中自动回答 · 回答简洁 · 纪要：逐题复盘（存进题库）、说得不好的地方、下一轮")
+        case .academic: String(localized: "会中自动回答，跟着讲稿 · 回答简洁 · 纪要：听众提问逐题复盘（存进题库）、要改的地方、答应的跟进")
+        case .labMeeting: String(localized: "会中只记录，需要时 ⌘⇧↩ 回答 · 回答详细 · 纪要：讨论的问题、没讨论透的地方、意见与要求、下一步")
+        case .meeting: String(localized: "会中只记录，需要时 ⌘⇧↩ 回答 · 回答简洁 · 纪要：决定、待办、风险、下次会议")
+        case .client: String(localized: "会中自动回答 · 回答简洁 · 纪要：需求、顾虑与回应、我们答应的、下一步")
+        case .lesson: String(localized: "会中只记录，需要时 ⌘⇧↩ 回答 · 回答详细 · 纪要：要点、概念、例子、我的疑问")
+        case .discussion: String(localized: "会中只记录，需要时 ⌘⇧↩ 回答 · 回答简洁 · 纪要：各方观点、结论与分歧、分工")
+        case .groupProject: String(localized: "会中只记录，需要时 ⌘⇧↩ 回答 · 回答简洁 · 纪要：定下的方案、分工、我的任务、下次碰头")
         case .custom: String(localized: "选一个类型作为基础，再改名字")
         }
     }
