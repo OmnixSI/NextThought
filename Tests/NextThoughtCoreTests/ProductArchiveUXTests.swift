@@ -135,4 +135,21 @@ import Testing
         #expect(BackupContent.status(local: first, incoming: first) == .identical)
         #expect(BackupContent.status(local: nil, incoming: second) == .new)
     }
+
+    @Test func fingerprintIsTheSameThroughASymlinkedPath() throws {
+        let root = try temporaryRoot(); defer { try? FileManager.default.removeItem(at: root) }
+        let real = root.appendingPathComponent("real/Sessions/meeting-with-a-long-name", isDirectory: true)
+        try FileManager.default.createDirectory(at: real.appendingPathComponent("nested"), withIntermediateDirectories: true)
+        try Data("notes".utf8).write(to: real.appendingPathComponent(SessionUserContent.filename))
+        try Data("line".utf8).write(to: real.appendingPathComponent("nested/transcript.jsonl"))
+        // The same folder reached through a link whose path has a different length.
+        let link = root.appendingPathComponent("l")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: root.appendingPathComponent("real"))
+        let linked = link.appendingPathComponent("Sessions/meeting-with-a-long-name", isDirectory: true)
+        #expect(try BackupContent.fingerprint(linked) == BackupContent.fingerprint(real))
+        // A copy elsewhere with the same content is identical too.
+        let copy = root.appendingPathComponent("copy", isDirectory: true)
+        try FileManager.default.copyItem(at: real, to: copy)
+        #expect(try BackupContent.fingerprint(copy) == BackupContent.fingerprint(linked))
+    }
 }
