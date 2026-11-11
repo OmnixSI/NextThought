@@ -295,7 +295,7 @@ private struct RecordingTimer: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let elapsed = state.sessionStartedAt.map { Self.elapsed(from: $0, to: context.date) }
-            let status = state.isRunning ? (state.isPaused ? "已暂停" : "正在聆听") : "未在聆听"
+            let status = state.isRunning ? (state.isPaused ? String(localized: "已暂停") : String(localized: "正在聆听")) : String(localized: "未在聆听")
             HStack(spacing: 6) {
                 let onAir = state.isRunning && !state.isPaused
                 Image(systemName: "circle.fill")
@@ -336,8 +336,8 @@ private struct PauseResumeButton: View {
     @FocusState private var isKeyboardFocused: Bool
     @State private var isHovering = false
 
-    private var actionLabel: String { state.isPaused ? "继续聆听" : "暂停聆听" }
-    private var title: String { state.isPaused ? "继续" : "暂停" }
+    private var actionLabel: String { state.isPaused ? String(localized: "继续聆听") : String(localized: "暂停聆听") }
+    private var title: LocalizedStringKey { state.isPaused ? "继续" : "暂停" }
 
     var body: some View {
         Button { Task { await state.togglePause() } } label: {

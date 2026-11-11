@@ -20950,6 +20950,1796 @@
           }
         }
       }
+    },
+    "小组作业": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group project"
+          }
+        }
+      }
+    },
+    "被问到时自动给出回答 · 回答简短、第一人称 · 会后逐题复盘并存进题库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers automatically when asked · Brief, first person · Question-by-question review afterward, saved to the question bank"
+          }
+        }
+      }
+    },
+    "只记录，需要时 ⌘⇧↩ · 回答简短 · 纪要：方案、分工、截止时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes only, ⌘⇧↩ when needed · Brief answers · Notes: plan, roles, deadlines"
+          }
+        }
+      }
+    },
+    "作业要求、评分标准": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assignment brief, grading criteria"
+          }
+        }
+      }
+    },
+    "提词岛 · 贴着摄像头": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cue island · next to the camera"
+          }
+        }
+      }
+    },
+    "浮窗 · 可自由摆放": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Floating window · place it anywhere"
+          }
+        }
+      }
+    },
+    "窄": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Narrow"
+          }
+        }
+      }
+    },
+    "标准": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        }
+      }
+    },
+    "宽": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wide"
+          }
+        }
+      }
+    },
+    "跟随场景": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow the scene"
+          }
+        }
+      }
+    },
+    "逐句": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Line by line"
+          }
+        }
+      }
+    },
+    "NextThought 提词岛": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NextThought cue island"
+          }
+        }
+      }
+    },
+    "看镜头": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eye contact"
+          }
+        }
+      }
+    },
+    "上一条": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous"
+          }
+        }
+      }
+    },
+    "再看一眼上一条回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Look at the previous answer again"
+          }
+        }
+      }
+    },
+    "改为只记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to notes only"
+          }
+        }
+      }
+    },
+    "改为自动回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to automatic answers"
+          }
+        }
+      }
+    },
+    "自动回答：听到问题就给出回答。只记录：需要时再求助。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic: answers as soon as a question is heard. Notes only: ask when you need it."
+          }
+        }
+      }
+    },
+    "暂停": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "暂停或继续聆听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause or resume listening"
+          }
+        }
+      }
+    },
+    "语速 %lld/分": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pace %lld/min"
+          }
+        }
+      }
+    },
+    "我说了 %lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I spoke %lld%%"
+          }
+        }
+      }
+    },
+    "看镜头 %lld%%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eye contact %lld%%"
+          }
+        }
+      }
+    },
+    "开始一场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a meeting"
+          }
+        }
+      }
+    },
+    "点一个场景，立即开始。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a scene to start right away."
+          }
+        }
+      }
+    },
+    "回到 NextThought": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to NextThought"
+          }
+        }
+      }
+    },
+    "正在想…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thinking…"
+          }
+        }
+      }
+    },
+    "被问到时，回答会出现在这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers appear here when you are asked a question."
+          }
+        }
+      }
+    },
+    "加一个例子": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add an example"
+          }
+        }
+      }
+    },
+    "收起 · %@ 隐藏提词岛": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse · %@ hides the cue island"
+          }
+        }
+      }
+    },
+    "能介绍一下你在这个项目里负责的部分吗？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can you tell me about your part in this project?"
+          }
+        }
+      }
+    },
+    "正在生成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generating"
+          }
+        }
+      }
+    },
+    "这个系列还没有会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meetings in this series yet"
+          }
+        }
+      }
+    },
+    "开始一场会议后，它会出现在这个系列里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After you start a meeting, it will appear in this series."
+          }
+        }
+      }
+    },
+    "已检查 %lld / %lld 场；完成后才会确定没有匹配项。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked %lld of %lld meetings. Matches are final only when the search finishes."
+          }
+        }
+      }
+    },
+    "当前系列有 %lld 场会议；当前搜索或筛选没有匹配项。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This series has %lld meetings; none match the current search or filters."
+          }
+        }
+      }
+    },
+    "系列按最近匹配的会议排序；以下排序只作用于组内会议。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series are ordered by their most recent matching meeting. The sort below applies to meetings within a series."
+          }
+        }
+      }
+    },
+    "无法确认会议记录为空": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't confirm there are no meetings"
+          }
+        }
+      }
+    },
+    "归档目录或会议元数据读取失败。修复读取问题并重试后，才能确认此处没有会议。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The archive folder or meeting metadata couldn't be read. Fix that and try again to confirm there are no meetings here."
+          }
+        }
+      }
+    },
+    "搜索范围：当前系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search scope: this series"
+          }
+        }
+      }
+    },
+    "搜索此系列的转写、纪要、笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search this series' transcripts and notes"
+          }
+        }
+      }
+    },
+    "搜索全部转写、纪要、笔记": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search all transcripts and notes"
+          }
+        }
+      }
+    },
+    "%lld 场会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld meetings"
+          }
+        }
+      }
+    },
+    "%lld 篇已整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld with notes ready"
+          }
+        }
+      }
+    },
+    "会议系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting series"
+          }
+        }
+      }
+    },
+    "系列中的会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meetings in this series"
+          }
+        }
+      }
+    },
+    "无法确认会议系列为空": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't confirm there are no series"
+          }
+        }
+      }
+    },
+    "会议归档或元数据读取失败。重试后才能确认是否还有会议系列。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting archive or metadata couldn't be read. Try again to confirm whether any series exist."
+          }
+        }
+      }
+    },
+    "没有匹配的系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching series"
+          }
+        }
+      }
+    },
+    "当前搜索或筛选条件下没有系列。清除条件可恢复全部会议系列。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No series match the current search or filters. Clear them to see all meeting series."
+          }
+        }
+      }
+    },
+    "还没有会议系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meeting series yet"
+          }
+        }
+      }
+    },
+    "开始一场会议后，它会归入对应系列。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After you start a meeting, it is filed under its series."
+          }
+        }
+      }
+    },
+    "无法确认系列中没有会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can't confirm this series has no meetings"
+          }
+        }
+      }
+    },
+    "会议归档或元数据读取失败。重试后才能确认此系列中的会议记录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The meeting archive or metadata couldn't be read. Try again to confirm the meetings in this series."
+          }
+        }
+      }
+    },
+    "开始一场会议后，它会显示在这个系列里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After you start a meeting, it will show up in this series."
+          }
+        }
+      }
+    },
+    "系列信息已不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This series is no longer available"
+          }
+        }
+      }
+    },
+    "当前搜索或筛选下没有会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meetings match the current search or filters"
+          }
+        }
+      }
+    },
+    "当前条件下没有会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No meetings match"
+          }
+        }
+      }
+    },
+    "这个系列共有 %lld 场会议。清除条件可恢复结果。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This series has %lld meetings. Clear the conditions to see them."
+          }
+        }
+      }
+    },
+    "接下来是什么场合？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What is the meeting?"
+          }
+        }
+      }
+    },
+    "夜深了。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Late night."
+          }
+        }
+      }
+    },
+    "上午好。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good morning."
+          }
+        }
+      }
+    },
+    "下午好。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good afternoon."
+          }
+        }
+      }
+    },
+    "晚上好。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good evening."
+          }
+        }
+      }
+    },
+    "给这场会起个名字，比如“字节二面”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name this meeting, for example “Second-round interview”"
+          }
+        }
+      }
+    },
+    "不挑场合，立即记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any occasion, record right away"
+          }
+        }
+      }
+    },
+    "先准备资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare materials first"
+          }
+        }
+      }
+    },
+    "以“%@”场景立即开始": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start now with the “%@” scene"
+          }
+        }
+      }
+    },
+    "全部资料夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Library"
+          }
+        }
+      }
+    },
+    "全部记录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All records"
+          }
+        }
+      }
+    },
+    "开过的会都在这里：原话、纪要和下一步，随时找得回来。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every meeting is kept here: what was said, the notes and the next steps, easy to find again."
+          }
+        }
+      }
+    },
+    "宽松": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relaxed"
+          }
+        }
+      }
+    },
+    "严格": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strict"
+          }
+        }
+      }
+    },
+    "说了一阵了，收个尾": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've been talking a while. Wrap up."
+          }
+        }
+      }
+    },
+    "慢一点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slow down"
+          }
+        }
+      }
+    },
+    "停一下，听对方说": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause and let them speak"
+          }
+        }
+      }
+    },
+    "该你说两句了": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time to say something"
+          }
+        }
+      }
+    },
+    "自动识别我和对方说的中文或英文，并翻译成另一种语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detects whether you and the other side speak Chinese or English, and translates into the other language"
+          }
+        }
+      }
+    },
+    "同声传译需要 macOS 15 或更新版本": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live interpretation needs macOS 15 or later"
+          }
+        }
+      }
+    },
+    "会议名称，可选": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meeting name, optional"
+          }
+        }
+      }
+    },
+    "用于查找会议，可以会后修改": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helps you find the meeting later. You can change it afterward."
+          }
+        }
+      }
+    },
+    "提词与教练": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cue and coach"
+          }
+        }
+      }
+    },
+    "提词岛": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cue island"
+          }
+        }
+      }
+    },
+    "临场教练": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live coach"
+          }
+        }
+      }
+    },
+    "眼神与摄像头": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eye contact and camera"
+          }
+        }
+      }
+    },
+    "屏幕共享": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen sharing"
+          }
+        }
+      }
+    },
+    "显示方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display"
+          }
+        }
+      }
+    },
+    "宽度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Width"
+          }
+        }
+      }
+    },
+    "排版": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        }
+      }
+    },
+    "要点 = 结论加每一点的开头，一眼看完；逐句 = 按要说的话一句一句显示。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key points shows the conclusion and the lead of each point for a quick glance. Line by line shows what to say one sentence at a time."
+          }
+        }
+      }
+    },
+    "摄像头所在的屏幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen with the camera"
+          }
+        }
+      }
+    },
+    "自动（内建显示器）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic (built-in display)"
+          }
+        }
+      }
+    },
+    "结束预览": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End preview"
+          }
+        }
+      }
+    },
+    "预览提词岛": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview cue island"
+          }
+        }
+      }
+    },
+    "不开会时，鼠标停在刘海上可以直接开始一场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outside meetings, rest the pointer on the notch to start one"
+          }
+        }
+      }
+    },
+    "提词岛不抢键盘焦点；鼠标停在上面才会展开会议控制和按钮，其余时候点击会穿过它。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The cue island never takes keyboard focus. Meeting controls open only while the pointer rests on it; otherwise clicks pass through."
+          }
+        }
+      }
+    },
+    "会中轻提示：语速、说得太久、发言占比": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gentle in-meeting nudges: pace, long stretches, share of talking"
+          }
+        }
+      }
+    },
+    "留意眼神是否离开镜头（使用摄像头）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notice when your eyes leave the camera (uses the camera)"
+          }
+        }
+      }
+    },
+    "摄像头权限": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera access"
+          }
+        }
+      }
+    },
+    "当前": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Now"
+          }
+        }
+      }
+    },
+    "灵敏度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sensitivity"
+          }
+        }
+      }
+    },
+    "校准：看着摄像头 2 秒": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibrate: look at the camera for 2 seconds"
+          }
+        }
+      }
+    },
+    "正在校准，请看着摄像头…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibrating. Look at the camera…"
+          }
+        }
+      }
+    },
+    "已校准": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calibrated"
+          }
+        }
+      }
+    },
+    "没有看清眼睛，请正对摄像头再试一次": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't see your eyes. Face the camera and try again."
+          }
+        }
+      }
+    },
+    "已校准过": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Already calibrated"
+          }
+        }
+      }
+    },
+    "画面只在这台 Mac 上分析成几个特征点，不保存、不上传。提词岛就在摄像头下方，读提词时视线偏移很小，对方看到的是你在看镜头。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The picture is reduced to a few landmarks on this Mac only. Nothing is saved or uploaded. The cue island sits right under the camera, so reading from it barely moves your gaze, and the other side sees you looking at them."
+          }
+        }
+      }
+    },
+    "会议软件共享提词岛所在的屏幕时，自动收回刘海": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Withdraw into the notch when a meeting app shares the island's screen"
+          }
+        }
+      }
+    },
+    "共享某个窗口或另一块屏幕时，提词岛不在画面里。共享它所在的整块屏幕时，macOS 15.4 起系统不再让应用把自己排除在外，所以提词岛会在识别到 Zoom、Teams、腾讯会议、飞书、钉钉或 Webex 的整屏共享后自动收起；其他软件请先用下面的测试看一眼。%@ 可随时隐藏全部窗口。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The cue island is not in the picture when you share a window or another screen. Since macOS 15.4 an app can no longer exclude itself when its whole screen is shared, so the island withdraws when it detects a full-screen share from Zoom, Teams, Tencent Meeting, Feishu, DingTalk or Webex. For other apps, check with the test below first. %@ hides all windows at any time."
+          }
+        }
+      }
+    },
+    "已允许": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed"
+          }
+        }
+      }
+    },
+    "等待允许": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for permission"
+          }
+        }
+      }
+    },
+    "未允许，请在系统设置 → 隐私与安全性 → 摄像头 中打开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not allowed. Turn it on in System Settings → Privacy & Security → Camera."
+          }
+        }
+      }
+    },
+    "正在看镜头": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking at the camera"
+          }
+        }
+      }
+    },
+    "视线离开了镜头": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking away from the camera"
+          }
+        }
+      }
+    },
+    "没有检测到人脸": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No face detected"
+          }
+        }
+      }
+    },
+    "备份包含项目资料、经验积累、会议记录、个人笔记、模板和设置。先预览再恢复；项目按修改时间合并，记录与模板冲突由你选择。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A backup includes series materials, accumulated lessons, meeting records, personal notes, templates and settings. Preview before restoring. Series merge by modification time, and you choose how to resolve record and template conflicts."
+          }
+        }
+      }
+    },
+    "被问到时，答案就在镜头旁": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers right by the lens when you're asked"
+          }
+        }
+      }
+    },
+    "听到问题自动给出回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers when asked"
+          }
+        }
+      }
+    },
+    "提词贴着摄像头，不用低头": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cues by the camera, eyes up"
+          }
+        }
+      }
+    },
+    "会后逐题复盘，存进题库": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Question review afterward"
+          }
+        }
+      }
+    },
+    "专心讨论，导师的话一句不漏": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never miss what your advisor says"
+          }
+        }
+      }
+    },
+    "默认只记录，被问住再求助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes only, ask when stuck"
+          }
+        }
+      }
+    },
+    "纪要按进展、意见、下一步整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress, feedback, next steps"
+          }
+        }
+      }
+    },
+    "鱼骨图梳理卡住的问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fishbone for stuck problems"
+          }
+        }
+      }
+    },
+    "跟着讲稿走，问答环节有底": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stay on your script and be ready for Q&A"
+          }
+        }
+      }
+    },
+    "认出当前幻灯片，提示这一页要点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cues the current slide"
+          }
+        }
+      }
+    },
+    "听众提问时自动给出回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers audience questions"
+          }
+        }
+      }
+    },
+    "纪要记下被问了什么、怎么答更好": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questions and better answers"
+          }
+        }
+      }
+    },
+    "谁做什么、哪天交，散会就清楚": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Who does what and by when, clear by the end of the meeting"
+          }
+        }
+      }
+    },
+    "记下每个人领到的任务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logs who takes which task"
+          }
+        }
+      }
+    },
+    "意见不一致时帮你找折中": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finds a compromise"
+          }
+        }
+      }
+    },
+    "纪要按方案、分工、截止时间整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan, roles, deadlines"
+          }
+        }
+      }
+    },
+    "听懂需求，答应的事不落空": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Understand the need and keep every promise"
+          }
+        }
+      }
+    },
+    "客户提问时给出有依据的回应": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grounded replies to clients"
+          }
+        }
+      }
+    },
+    "价格和承诺以资料为准": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prices follow your materials"
+          }
+        }
+      }
+    },
+    "纪要列出需求、顾虑和我们答应的事": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needs, concerns, promises"
+          }
+        }
+      }
+    },
+    "决定、待办、风险，会后即得": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decisions, to-dos and risks, ready when it ends"
+          }
+        }
+      }
+    },
+    "默认只记录，不打扰": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes only, no interruptions"
+          }
+        }
+      }
+    },
+    "需要时一键求助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One click for help"
+          }
+        }
+      }
+    },
+    "纪要按决定、待办、风险整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decisions, to-dos, risks"
+          }
+        }
+      }
+    },
+    "只管听，笔记自己长出来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Just listen, the notes write themselves"
+          }
+        }
+      }
+    },
+    "跟着课件记录要点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes the slide's key points"
+          }
+        }
+      }
+    },
+    "没听懂的地方随时问": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask about what you missed"
+          }
+        }
+      }
+    },
+    "笔记按提纲、概念、疑问整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Outline, concepts, questions"
+          }
+        }
+      }
+    },
+    "各方观点摆清楚，结论自然来": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lay out every view and the conclusion follows"
+          }
+        }
+      }
+    },
+    "区分每个人说了什么": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tells who said what"
+          }
+        }
+      }
+    },
+    "观点对照表一眼看清分歧": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Table of where views differ"
+          }
+        }
+      }
+    },
+    "纪要按议题、观点、结论整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Topics, views, conclusions"
+          }
+        }
+      }
+    },
+    "先录下来，其他的之后再说": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record first, sort out the rest later"
+          }
+        }
+      }
+    },
+    "只记录，需要时求助": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes only, ask when needed"
+          }
+        }
+      }
+    },
+    "回答简短": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brief answers"
+          }
+        }
+      }
+    },
+    "纪要按总结、决定、待办整理": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Summary, decisions, to-dos"
+          }
+        }
+      }
+    },
+    "搜索系列或资料": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search series or materials"
+          }
+        }
+      }
+    },
+    "经验积累": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accumulated lessons"
+          }
+        }
+      }
+    },
+    "已从系列移除 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed from series: %@"
+          }
+        }
+      }
+    },
+    "正在聆听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listening"
+          }
+        }
+      }
+    },
+    "未在聆听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not listening"
+          }
+        }
+      }
+    },
+    "继续聆听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume listening"
+          }
+        }
+      }
+    },
+    "暂停聆听": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause listening"
+          }
+        }
+      }
+    },
+    "全部时间": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any time"
+          }
+        }
+      }
+    },
+    "今天": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "近 7 天": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 7 days"
+          }
+        }
+      }
+    },
+    "近 30 天": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 30 days"
+          }
+        }
+      }
+    },
+    "本年度": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This year"
+          }
+        }
+      }
+    },
+    "全部时长": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any length"
+          }
+        }
+      }
+    },
+    "1 分钟以内": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Under 1 min"
+          }
+        }
+      }
+    },
+    "1–10 分钟": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1–10 min"
+          }
+        }
+      }
+    },
+    "10 分钟以上": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over 10 min"
+          }
+        }
+      }
+    },
+    "最新优先": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Newest first"
+          }
+        }
+      }
+    },
+    "最早优先": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oldest first"
+          }
+        }
+      }
+    },
+    "时长最长": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longest first"
+          }
+        }
+      }
+    },
+    "时长最短": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortest first"
+          }
+        }
+      }
+    },
+    "问题最多": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most questions"
+          }
+        }
+      }
+    },
+    "%lld 场会议 · 系列共 %lld 场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld meetings · %lld in this series"
+          }
+        }
+      }
+    },
+    "%lld 场会议 · %lld 个系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld meetings · %lld series"
+          }
+        }
+      }
+    },
+    " · 已搜索 %lld/%lld 场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " · searched %lld of %lld"
+          }
+        }
+      }
+    },
+    "本机记录 · 当前匹配 %lld 场会议、%lld 个系列 · 系列按最近匹配会议排序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On this Mac · %lld meetings and %lld series match · series ordered by latest match"
+          }
+        }
+      }
+    },
+    "系列信息已不可用 · 当前筛选下共 %lld 场会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Series unavailable · %lld meetings under the current filters"
+          }
+        }
+      }
+    },
+    "%@ · 系列共 %lld 场会议 · 当前条件匹配 %lld 场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld meetings in the series · %lld match"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

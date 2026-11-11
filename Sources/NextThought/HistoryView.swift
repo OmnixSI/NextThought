@@ -279,16 +279,16 @@ struct HistoryView: View {
         let folderSessions = folder.map { folder in
             ordered(visibleSessions.filter { folder.contains($0, workspaces: state.workspaces.workspaces) })
         } ?? visibleSessions
-        let title = isRoot ? "所有记录" : (folder?.name ?? String(localized: "未分类会议"))
+        let title = isRoot ? String(localized: "所有记录") : (folder?.name ?? String(localized: "未分类会议"))
         let subtitle: String
         if let folder, !isRoot {
             subtitle = folder.workspaceID == nil
                 ? String(localized: "未归入系列的会议")
-                : "\(folder.modeTitle ?? "会议系列") · 系列共 \(folder.sessions.count) 场会议 · 当前条件匹配 \(folderSessions.count) 场"
+                : String(localized: "\(folder.modeTitle ?? String(localized: "会议系列")) · 系列共 \(folder.sessions.count) 场会议 · 当前条件匹配 \(folderSessions.count) 场")
         } else if !isRoot {
-            subtitle = "系列信息已不可用 · 当前筛选下共 \(folderSessions.count) 场会议"
+            subtitle = String(localized: "系列信息已不可用 · 当前筛选下共 \(folderSessions.count) 场会议")
         } else {
-            subtitle = "本机记录 · 当前匹配 \(visibleSessions.count) 场会议、\(visibleWorkspaceSeriesCount) 个系列 · 系列按最近匹配会议排序"
+            subtitle = String(localized: "本机记录 · 当前匹配 \(visibleSessions.count) 场会议、\(visibleWorkspaceSeriesCount) 个系列 · 系列按最近匹配会议排序")
         }
         let overview = MeetingArchiveOverview(
             title: title,
@@ -645,7 +645,7 @@ struct HistoryView: View {
 
     private var sessionListTitle: String {
         if let overviewFolder = selectedOverviewFolder { return overviewFolder.name }
-        guard let workspaceID = state.historyWorkspaceFilter else { return "所有记录" }
+        guard let workspaceID = state.historyWorkspaceFilter else { return String(localized: "所有记录") }
         return state.workspaces.workspace(workspaceID)?.name ?? String(localized: "未分类会议")
     }
 
@@ -850,7 +850,7 @@ struct HistoryView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(Ink.secondary)
-            TextField(searchPlaceholder, text: $query)
+            TextField(LocalizedStringKey(searchPlaceholder), text: $query)
                 .textFieldStyle(.plain)
                 .font(Typo.label)
                 .lineLimit(1)
@@ -870,9 +870,9 @@ struct HistoryView: View {
 
     private var resultCount: String {
         let base = searchIsScopedToSeries
-            ? "\(visibleSessions.count) 场会议 · 系列共 \(currentScopeSessionCount) 场"
-            : "\(visibleSessions.count) 场会议 · \(visibleWorkspaceSeriesCount) 个系列"
-        return isContentSearching ? base + " · 已搜索 \(searchChecked)/\(searchTotal) 场" : base
+            ? String(localized: "\(visibleSessions.count) 场会议 · 系列共 \(currentScopeSessionCount) 场")
+            : String(localized: "\(visibleSessions.count) 场会议 · \(visibleWorkspaceSeriesCount) 个系列")
+        return isContentSearching ? base + String(localized: " · 已搜索 \(searchChecked)/\(searchTotal) 场") : base
     }
 
     private var searchIsScopedToSeries: Bool {
@@ -1083,14 +1083,14 @@ private struct HistoryFilterPicker<Value: Hashable>: View {
             ForEach(options.indices, id: \.self) { index in
                 let option = options[index]
                 Button { selection = option.0 } label: {
-                    if option.0 == selection { Label(option.1, systemImage: "checkmark") }
-                    else { Text(option.1) }
+                    if option.0 == selection { Label(LocalizedStringKey(option.1), systemImage: "checkmark") }
+                    else { Text(LocalizedStringKey(option.1)) }
                 }
             }
         } label: {
             let isDefault = options.first.map { $0.0 == selection } ?? true
             HStack(spacing: 3) {
-                Text(options.first(where: { $0.0 == selection })?.1 ?? "筛选")
+                Text(LocalizedStringKey(options.first(where: { $0.0 == selection })?.1 ?? "筛选"))
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 8, weight: .semibold))
