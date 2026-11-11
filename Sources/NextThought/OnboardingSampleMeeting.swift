@@ -2,7 +2,7 @@ import SwiftUI
 import NextThoughtCore
 
 /// The sample meeting of the first-run guide: a scripted replay of a short
-/// two-person call in mixed Chinese and English. It plays no audio, asks for no
+/// interview, whatever scene was picked. It plays no audio, asks for no
 /// permission and calls no model; the notes beside it are written ahead of time.
 enum OnboardingSample {
     enum Speaker { case other, me }
@@ -30,28 +30,28 @@ enum OnboardingSample {
         let at: Double
     }
 
-    static var title: String { String(localized: "检索实验 · 周组会") }
+    static var title: String { String(localized: "面试示例") }
     static let duration: Double = 34
 
     static var lines: [Line] { [
-        Line(id: 0, speaker: .other, text: String(localized: "今天先看检索实验。上周加入重排之后，结果怎么样？"), at: 0.8),
+        Line(id: 0, speaker: .other, text: String(localized: "先聊聊你简历里的检索项目。上周加入重排之后，结果怎么样？"), at: 0.8),
         Line(id: 1, speaker: .me, text: String(localized: "这组验证集上，Recall@10 从 72% 到了 78%，但候选数量也同时增加了。"), at: 5.0),
         Line(id: 2, speaker: .other, text: String(localized: "那提升来自重排，还是更多候选？需要怎样的对照才能判断？"), at: 10.5),
         Line(id: 3, speaker: .me, text: String(localized: "现在还不能确定。我会固定候选数量，再做一组去掉重排的消融。"), at: 16.0),
-        Line(id: 4, speaker: .other, text: String(localized: "好，还要记录延迟分布。平均值可能会掩盖长尾，别只报一个数字。"), at: 21.0),
-        Line(id: 5, speaker: .me, text: String(localized: "我周五前补齐消融和 P95 延迟，下次组会带上失败样例。"), at: 26.5),
-        Line(id: 6, speaker: .other, text: String(localized: "下一步再看结论能不能迁移到另一组数据，先别把这次提升写成确定结论。"), at: 29.5),
+        Line(id: 4, speaker: .other, text: String(localized: "好，还要看延迟分布。平均值可能会掩盖长尾，别只报一个数字。"), at: 21.0),
+        Line(id: 5, speaker: .me, text: String(localized: "我会同时报告 P95 延迟，并把失败样例一起整理出来。"), at: 26.5),
+        Line(id: 6, speaker: .other, text: String(localized: "最后一个问题：结论换一组数据还成立吗？"), at: 29.5),
     ] }
 
     /// The notes grow while the call goes on. Written in the interface language.
     static var takeaways: [Takeaway] {
         [
-            Takeaway(id: 0, kind: .decision, text: String(localized: "实验进展：Recall@10 从 72% 到 78%，候选数同时变化"), at: 8.5),
-            Takeaway(id: 1, kind: .decision, text: String(localized: "待验证：提升来自重排，还是更多候选？"), at: 14.0),
-            Takeaway(id: 2, kind: .todo, text: String(localized: "固定候选数，补充去掉重排的消融"), at: 19.0),
-            Takeaway(id: 3, kind: .decision, text: String(localized: "导师反馈：报告延迟分布，关注长尾"), at: 24.0),
-            Takeaway(id: 4, kind: .todo, text: String(localized: "周五前：补齐消融、P95 延迟与失败样例"), at: 28.0),
-            Takeaway(id: 5, kind: .todo, text: String(localized: "后续验证：换一组数据检查结论是否成立"), at: 32.0),
+            Takeaway(id: 0, kind: .decision, text: String(localized: "已答：Recall@10 从 72% 到 78%，候选数同时变化"), at: 8.5),
+            Takeaway(id: 1, kind: .decision, text: String(localized: "追问：提升来自重排，还是更多候选？"), at: 14.0),
+            Takeaway(id: 2, kind: .todo, text: String(localized: "复盘：固定候选数，补充去掉重排的消融"), at: 19.0),
+            Takeaway(id: 3, kind: .decision, text: String(localized: "追问：报告延迟分布，关注长尾"), at: 24.0),
+            Takeaway(id: 4, kind: .todo, text: String(localized: "复盘：补充 P95 延迟与失败样例"), at: 28.0),
+            Takeaway(id: 5, kind: .todo, text: String(localized: "复盘：准备换一组数据的验证"), at: 32.0),
         ]
     }
 
@@ -106,7 +106,7 @@ struct OnboardingSampleMeeting: View {
                     VStack(alignment: .leading, spacing: Space.s3) {
                         ForEach(OnboardingSample.lines.prefix(visibleLines)) { line in
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(LocalizedStringKey(line.speaker == .me ? "我" : "对方"))
+                                Text(LocalizedStringKey(line.speaker == .me ? "我" : "面试官"))
                                     .font(Typo.caption)
                                     .foregroundStyle(line.speaker == .me ? Ink.ink : Ink.secondary)
                                 Text(verbatim: line.text)
@@ -135,7 +135,7 @@ struct OnboardingSampleMeeting: View {
 
     private func suggestionBlock(_ suggestion: OnboardingSample.Suggestion) -> some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            AIHeading(title: "导师在追问 · 参考思路")
+            AIHeading(title: "面试官在追问 · 参考回答")
             Text(verbatim: suggestion.question)
                 .font(Typo.body).foregroundStyle(Ink.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -150,18 +150,18 @@ struct OnboardingSampleMeeting: View {
     private func notes(_ items: [OnboardingSample.Takeaway]) -> some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack {
-                AIHeading(title: "研究记录")
+                AIHeading(title: "面试记录")
                 Spacer(minLength: 0)
                 SampleTag()
             }
             if items.isEmpty {
-                Text("进展、尚缺的证据和下一步实验会在这里留下来。")
+                Text("被问到的题、你的回答和会后要补的地方会在这里留下来。")
                     .font(Typo.caption).foregroundStyle(Ink.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             ForEach(items) { item in
                 HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
-                    Text(LocalizedStringKey(item.kind == .todo ? "待办" : "结论"))
+                    Text(LocalizedStringKey(item.kind == .todo ? "待办" : "记录"))
                         .font(Typo.caption).foregroundStyle(Ink.ai)
                         .frame(width: 32, alignment: .leading)
                     Text(verbatim: item.text)
@@ -173,7 +173,7 @@ struct OnboardingSampleMeeting: View {
         }
         .aiBlock()
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("示例纪要")
+        .accessibilityLabel("示例记录")
     }
 
     private var footer: some View {

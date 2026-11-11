@@ -27,6 +27,7 @@ struct HomeView: View {
                 }
                 .font(Typo.hero)
                 .padding(.top, Space.s3)
+                OnboardingResumeRow()
                 StartComposer(scene: $scene).padding(.top, Space.s8)
                 ContinueSeries().padding(.top, Space.s12)
                 if state.screenshotPreview != nil {
@@ -40,6 +41,8 @@ struct HomeView: View {
             .padding(.bottom, Space.s10)
             .frame(maxWidth: .infinity)
         }
+        // A scene picked in the first-run guide becomes the composer's scene.
+        .onChange(of: state.lastScene) { _, mode in scene = mode }
         .background(alignment: .top) {
             // The page takes on the pigment of the scene that is picked.
             InkWash(tint: scene.theme.tint, animated: !state.reducedEffects)
@@ -54,6 +57,50 @@ struct HomeView: View {
         if hour < 12 { return "上午好。" }
         if hour < 18 { return "下午好。" }
         return "晚上好。"
+    }
+}
+
+/// One quiet row after "稍后继续" in the first-run guide: back to the page it stopped on.
+/// Gone once the guide is finished, or when it is dismissed here.
+private struct OnboardingResumeRow: View {
+    @Environment(AppState.self) private var state
+    @AppStorage("onboardingGuideDeferredVersion") private var deferred = ""
+    @AppStorage("onboardingGuideCompletedVersion") private var completed = ""
+    @AppStorage("onboardingResumeRowDismissedVersion") private var dismissed = ""
+
+    private var line: String {
+        let names = state.onboardingPendingAreas.map { $0 == .sound ? String(localized: "声音") : String(localized: "回答服务") }
+        return names.isEmpty ? String(localized: "继续完成设置") : String(localized: "继续完成设置（还差\(names.joined(separator: " / "))）")
+    }
+
+    var body: some View {
+        let version = state.currentGuideVersion
+        if deferred == version, completed != version, dismissed != version {
+            HStack(spacing: Space.s2) {
+                Button { state.openOnboarding() } label: {
+                    HStack(spacing: Space.s2) {
+                        Circle().fill(Ink.seal).frame(width: 6, height: 6)
+                        Text(verbatim: line).font(Typo.label).foregroundStyle(Ink.ink).lineLimit(1)
+                        Image(systemName: "arrow.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(line)
+                .accessibilityHint("回到上次停下的引导页")
+                Button { dismissed = version } label: {
+                    Image(systemName: "xmark").font(.system(size: 10, weight: .semibold)).foregroundStyle(Ink.tertiary)
+                        .frame(width: 24, height: 24).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("不再提示")
+                .accessibilityLabel("不再提示继续设置")
+            }
+            .padding(.horizontal, Space.s3).padding(.vertical, 6)
+            .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            .padding(.top, Space.s6)
+        }
     }
 }
 
