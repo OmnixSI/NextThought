@@ -9,9 +9,11 @@ import NextThoughtCore
 /// dedicated focus mode (02-scenarios-and-flows.md, "会议中").
 struct ContentView: View {
     @Environment(AppState.self) private var state
+    private var route: SettingsRoute { SettingsRoute.shared }
 
     var body: some View {
         @Bindable var state = state
+        let settingsOpen = route.isPresented
         ZStack {
             AppBackdrop()
             Group {
@@ -23,10 +25,17 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
             }
-            .disabled(state.isOnboardingPresented)
-            .accessibilityHidden(state.isOnboardingPresented)
+            // Settings lie over the page; what is underneath keeps its state and keeps running.
+            .disabled(state.isOnboardingPresented || settingsOpen)
+            .allowsHitTesting(!settingsOpen)
+            .accessibilityHidden(state.isOnboardingPresented || settingsOpen)
             if #available(macOS 15.0, *) {
                 LiveTranslationHosts()
+            }
+            if settingsOpen {
+                SettingsPageView()
+                    .transition(.opacity.combined(with: .scale(scale: 0.985)))
+                    .zIndex(1)
             }
             if state.isOnboardingPresented {
                 OnboardingView().transition(.opacity)
@@ -34,6 +43,7 @@ struct ContentView: View {
         }
         .overlay(alignment: .top) { ErrorBanner() }
         .animation(Motion.phase, value: state.isRunning)
+        .animation(Motion.morph, value: settingsOpen)
         .frame(minWidth: MainWindowLayout.minimum.width, minHeight: MainWindowLayout.minimum.height)
         .tint(Brand.accent)
         // Every switch and disclosure header in the window (sheets, onboarding and the
@@ -93,7 +103,7 @@ private struct MainShell: View {
             // Route legacy links without ever replacing the workspace with Settings.
             if section == .settings {
                 state.section = .home
-                SettingsWindow.show()
+                SettingsRoute.shared.presentStored()
             }
         }
     }

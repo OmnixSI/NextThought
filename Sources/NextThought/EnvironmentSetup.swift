@@ -77,7 +77,7 @@ enum EnvironmentSetup {
             step.detail = "已选择 \(first.name)"
         } else if state.codexModelID.isEmpty {
             step.status = .failed
-            step.detail = state.codexModels.isEmpty ? "没有取到模型列表，请稍后重试。" : "请在 设置 → 回答 → 回答服务 里选一个模型。"
+            step.detail = state.codexModels.isEmpty ? "没有取到模型列表，请稍后重试。" : "请在 设置 → 回答与资料 → 回答服务 里选一个模型。"
         } else {
             step.status = .done
             step.detail = "使用 \(state.currentCodexModel?.name ?? state.codexModelID)"

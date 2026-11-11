@@ -43,19 +43,18 @@ struct AutoEndSettingsSection: View {
     @AppStorage(MeetingAutoEnd.minutesKey, store: UserDefaults.standard) private var minutes = MeetingEndWatch.Config.defaultMinutes
 
     var body: some View {
-        SettingsSection(title: "会议自动收尾", icon: "moon.zzz") {
+        SettingsSection(title: "会议自动收尾") {
             MenuPicker(title: "会议没人说话时", selection: $mode, options: [
                 (MeetingEndWatch.Mode.prompt.rawValue, "提醒后结束"),
                 (MeetingEndWatch.Mode.end.rawValue, "直接结束"),
                 (MeetingEndWatch.Mode.off.rawValue, "不自动结束"),
             ], localizesOptions: true)
-            // The wait time has a good default (see MeetingEndWatch.Config); changing it is for experts.
-            AdvancedOptions("auto-end-minutes", title: "等待时间") {
+            // The wait time only matters when the meeting can end by itself.
+            if mode != MeetingEndWatch.Mode.off.rawValue {
                 MenuPicker(title: "多久没人说话算结束", selection: $minutes,
                            options: MeetingEndWatch.Config.minuteChoices.map { ($0, String(localized: "\($0) 分钟")) })
-                    .disabled(mode == MeetingEndWatch.Mode.off.rawValue)
+                Hint("只数识别到的文字，背景音乐不算。", presentation: .inline)
             }
-            Hint("只数识别到的文字，背景音乐不算；结束时会截掉末尾的空白。", presentation: .inline)
         }
     }
 }

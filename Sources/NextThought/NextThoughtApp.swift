@@ -68,7 +68,6 @@ enum MainWindowLayout {
 
     static func isMainWindow(_ window: NSWindow) -> Bool {
         !(window is NSPanel) && !window.isSheet && window.sheetParent == nil
-            && window.identifier != SettingsWindow.identifier
             && window.contentViewController != nil && window.styleMask.contains(.titled)
     }
 
@@ -120,7 +119,7 @@ enum MainWindowLayout {
     /// Workspace windows float only while NextThought is the active app.
     static func refreshLevels() {
         let level = effectiveWorkspaceLevel
-        for window in NSApp.windows where isMainWindow(window) || window.identifier == SettingsWindow.identifier {
+        for window in NSApp.windows where isMainWindow(window) {
             window.level = level
         }
         DetachedModuleController.shared.applyWindowLevel(level)

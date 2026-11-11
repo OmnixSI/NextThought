@@ -276,7 +276,7 @@ final class Updater {
             try LocalSigning.sign(app)
             return (app, "已用本机签名重新签名，权限保持不变。")
         }
-        return (app, "新版本的签名与当前不同，安装后系统会要求重新允许录屏与麦克风。可在设置中“绑定本机签名”避免以后再出现。")
+        return (app, "新版本的签名与当前不同，安装后系统会要求重新允许录屏与麦克风。可在 设置 → 高级 → 数据与维护 中“绑定本机签名”避免以后再出现。")
     }
 
     // MARK: Installing

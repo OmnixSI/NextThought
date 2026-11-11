@@ -61,15 +61,17 @@ struct AppNavigationBar: View {
                     .disabled(state.isRunning)
                     .help(state.isRunning ? "停止辅助后再安装 \(available.displayVersion)" : "安装 \(available.displayVersion) 并重新打开")
                 }
-                Button { state.openSettingsFromMenu() } label: {
+                // The gear opens the quick panel; ⌘, opens the full settings page.
+                Button { state.toggleQuickSettings() } label: {
                     Image(systemName: "gearshape")
                         .font(.system(size: 14)).frame(width: 32, height: 32)
                         .contentShape(Circle())
                 }
                 .buttonStyle(NavigationTopButtonStyle())
+                .quickSettingsPopover()
                 .accessibilityLabel("设置")
                 .accessibilityIdentifier("appNavigation.settings")
-                .help("设置（⌘,）")
+                .help("设置（全部设置 ⌘,）")
             }
         }
         .padding(.horizontal, 14)

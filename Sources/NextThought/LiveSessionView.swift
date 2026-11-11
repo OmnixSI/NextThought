@@ -252,6 +252,10 @@ private struct LiveTopBar: View {
                 .labelsHidden()
             }
             Section("回答设置") { AnswerSettingsMenu() }
+            Divider()
+            Button { SettingsRoute.shared.quickPresented = true } label: {
+                Label("设置…", systemImage: "gearshape")
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 14, weight: .semibold))
@@ -270,6 +274,7 @@ private struct LiveTopBar: View {
         .buttonStyle(GlassIconButtonStyle(size: 28))
         .menuIndicator(.hidden)
         .fixedSize()
+        .quickSettingsPopover()
         .accessibilityLabel("会中设置和工具")
         .help("会中设置和工具")
     }

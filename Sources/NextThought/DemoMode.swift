@@ -45,7 +45,7 @@ enum DemoMode {
             environment["NEXTTHOUGHT_DEMO_VOICE_READY"] = environment["NEXTTHOUGHT_DEMO_VOICE_READY"] ?? "1"
         }
         // Each capture starts from the default tabs; earlier captures must not leak in.
-        for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep", "demoNotes"] {
+        for key in ["settingsGroup", "demoSettings", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep", "demoNotes"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
         // NEXTTHOUGHT_DEMO_DEFAULTS="key=value;key=value" opens specific tabs.
@@ -55,6 +55,9 @@ enum DemoMode {
             if let number = Int(parts[1]) { UserDefaults.standard.set(number, forKey: parts[0]) } else { UserDefaults.standard.set(parts[1], forKey: parts[0]) }
         }
         let state = AppState.shared
+        // demoSettings=1 lays the full settings page over the demo window; settingsGroup
+        // (a page name or an old destination) picks the page and section.
+        if UserDefaults.standard.integer(forKey: "demoSettings") == 1 { SettingsRoute.shared.presentStored() }
         if let path = environment["NEXTTHOUGHT_DEMO_SCREENSHOT_PREVIEW"], let image = NSImage(contentsOfFile: path) {
             state.screenshotPreview = image
             if let screenshotPath = environment["NEXTTHOUGHT_DEMO_SCREENSHOT_URL"] {
@@ -115,6 +118,11 @@ enum DemoMode {
             if let path = environment["NEXTTHOUGHT_DEMO_SETTINGS_SNAPSHOT"] {
                 snapshotSettings(path, page: environment["NEXTTHOUGHT_DEMO_SETTINGS_PAGE"],
                                  size: environment["NEXTTHOUGHT_DEMO_SETTINGS_SIZE"], state: state)
+                return
+            }
+            // NEXTTHOUGHT_DEMO_QUICK_SETTINGS=<png>: the quick settings panel, drawn the same way.
+            if let path = environment["NEXTTHOUGHT_DEMO_QUICK_SETTINGS"] {
+                snapshotQuickSettings(path, state: state)
                 return
             }
             // A window of its own: a hidden launch does not always create the SwiftUI one.
@@ -258,18 +266,37 @@ extension DemoMode {
 
     private static var settingsSnapshotWindow: NSWindow?
 
-    /// The Settings window's content (980 × 700 unless `size` says otherwise) in a window
-    /// that is never ordered front, selected on one page.
+    /// The quick settings panel at its own size, in a window that is never ordered front.
+    @MainActor
+    static func snapshotQuickSettings(_ path: String, state: AppState) {
+        let content = NSHostingView(rootView: QuickSettingsPanel().environment(state)
+            .preferredColorScheme(state.colorScheme).background(Ink.paper))
+        let size = content.fittingSize
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height),
+                              styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = Ink.paperNSColor
+        window.contentView = content
+        window.setContentSize(size)
+        content.layoutSubtreeIfNeeded()
+        settingsSnapshotWindow = window
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: path) }
+    }
+
+    /// The settings page's content (980 × 700 unless `size` says otherwise) in a window
+    /// that is never ordered front, selected on one page. The page inside the main demo
+    /// window is captured with `demoSettings=1` instead.
     @MainActor
     static func snapshotSettings(_ path: String, page: String?, size: String?, state: AppState) {
         if let page { AppPreferences.standard.set(page, forKey: "settingsGroup") }
+        SettingsRoute.shared.presentStored()
         let dimensions = (size ?? "").split(separator: ",").compactMap { Double($0) }
         let width = dimensions.count == 2 ? dimensions[0] : 980, height = dimensions.count == 2 ? dimensions[1] : 700
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: height),
                               styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.backgroundColor = Ink.paperNSColor
-        let content = NSHostingView(rootView: SettingsView().environment(state).wideHitTargets()
+        let content = NSHostingView(rootView: SettingsPageView().environment(state).wideHitTargets()
             .preferredColorScheme(state.colorScheme).background(Ink.paper))
         content.sizingOptions = []
         window.contentView = content

@@ -145,7 +145,7 @@ private struct TranscriptStatusLine: View {
             Text(state.isRunning ? state.transcriptionStatus : "未在采集")
             if !state.microphoneEnabled {
                 Text("· 麦克风未开启，不会显示你说的话").foregroundStyle(.orange)
-                    .help("在“准备开始”卡片里点麦克风按钮，或在 设置 → 声音 → 会议声音与麦克风 打开")
+                    .help("在“准备开始”卡片里点麦克风按钮，或在 设置 → 高级 → 声音与识别 打开")
             } else if state.microphoneAccess == .denied {
                 Button("· 麦克风未授权，点此打开系统设置") { state.openMicrophoneSettings() }
                     .buttonStyle(.tapText).foregroundStyle(.orange)

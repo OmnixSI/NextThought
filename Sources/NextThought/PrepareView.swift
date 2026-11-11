@@ -1087,8 +1087,8 @@ private struct AudioCheckRow: View {
         HStack(spacing: Space.s2) {
             Button("只记录对方（不用麦克风）") { state.continueWithoutMicrophone() }
                 .buttonStyle(GhostButtonStyle(height: 26, horizontalPadding: 8))
-                .help("这场不识别你说的话，只记录电脑里播放的声音。以后可以在这里或 设置 → 声音与识别 重新打开麦克风。")
-            Text("以后可在设置 → 声音与识别 重新打开")
+                .help("这场不识别你说的话，只记录电脑里播放的声音。以后可以在这里或 设置 → 高级 → 声音与识别 重新打开麦克风。")
+            Text("以后可在设置 → 高级 → 声音与识别 重新打开")
                 .font(Typo.caption).foregroundStyle(Ink.tertiary)
         }
     }
@@ -1255,7 +1255,7 @@ private struct PreparationStartBar: View {
             if state.canMeetWithoutMicrophone, state.microphoneAccess == .denied {
                 Button("只记录对方") { state.continueWithoutMicrophone() }
                     .buttonStyle(GhostButtonStyle())
-                    .help("不用麦克风，只记录电脑里播放的声音。以后可在设置 → 声音与识别 重新打开。")
+                    .help("不用麦克风，只记录电脑里播放的声音。以后可在设置 → 高级 → 声音与识别 重新打开。")
                     .accessibilityLabel("只记录对方（不用麦克风）")
             }
             StartButton()
