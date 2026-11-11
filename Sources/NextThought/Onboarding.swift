@@ -460,7 +460,7 @@ struct OnboardingView: View {
                     page
                         .id(step)
                         .transition(.opacity)
-                        .frame(maxWidth: 640, alignment: .leading)
+                        .frame(maxWidth: 720, alignment: .leading)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, Space.s8)
                         .padding(.top, Space.s6)
@@ -907,14 +907,14 @@ private struct CueIslandMock: View {
                     Circle().fill(Color.white.opacity(0.2)).frame(width: 7, height: 7)
                     Spacer()
                 }
-                Text(verbatim: String(localized: "提升来自重排，还是更多候选？"))
+                Text(verbatim: String(localized: "能介绍一下你在这个项目里负责的部分吗？"))
                     .font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
-                Text(verbatim: String(localized: "目前不能区分，需要先做对照。"))
+                Text(verbatim: String(localized: "我负责订单服务的缓存层。"))
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
                     .lineLimit(1)
                 VStack(alignment: .leading, spacing: 6) {
-                    cuePoint(String(localized: "固定候选数量，对比有无重排"))
-                    cuePoint(String(localized: "同时记录检索质量和 P95 延迟"))
+                    cuePoint(String(localized: "规模：日均 2 亿次读取，P99 降到 18 ms"))
+                    cuePoint(String(localized: "我的角色：方案设计和灰度上线由我主导"))
                 }
             }
             .padding(.horizontal, 22).padding(.top, 8).padding(.bottom, 18)
