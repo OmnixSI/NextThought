@@ -123,6 +123,18 @@ public struct ModeProfile: Sendable {
                 documentCategories: ["题目材料", "参考资料", "其他"],
                 templatePreferences: "我在参加小组讨论。给出有依据的观点，回应别人的观点时先肯定合理之处再补充；需要时帮我总结各方观点、推动形成结论。",
                 reviewFocus: "整理议题、各方观点、结论与分歧和分工。")
+        case .groupProject:
+            return ModeProfile(
+                mode: mode, role: "小组成员",
+                fields: [
+                    ModeField("assignment", "作业要求", "课程、题目、评分标准、交付物"),
+                    ModeField("deadline", "截止时间", "最终提交时间和中间节点"),
+                    ModeField("members", "成员与分工", "每个人负责什么、目前做到哪里", long: true),
+                    ModeField("mine", "我负责的部分", "我的任务、进度和需要别人配合的地方", long: true),
+                ],
+                documentCategories: ["作业要求", "评分标准", "参考资料", "已有草稿", "其他"],
+                templatePreferences: "我是小组作业的成员。回答围绕作业要求和评分标准：先给可以直接说出口的建议，再给理由；涉及分工时说清谁做什么、什么时候交；意见不一致时帮我找到双方都能接受的方案；不确定的地方建议向老师或助教确认。",
+                reviewFocus: "整理每个人领到的任务和截止时间、已经定下来的方案、还没有结论的分歧，以及下次碰头前各自要完成什么。")
         case .general, .custom:
             return ModeProfile(
                 mode: mode, role: "参与者",
@@ -678,8 +690,12 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
     public var customBaseMode: SessionMode?
     /// Names and terms of this series only; added to the global glossary (“术语和人名”).
     public var glossary: Glossary?
+    /// A standing series that collects untitled meetings of one scene ("面试 · 未命名")
+    /// or quick recordings. Not offered as "接着上一场".
+    public var standing: Bool?
+    public var isStanding: Bool { standing == true }
 
-    public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle = .concise, preferences: String? = nil,
+    public init(id: UUID = UUID(), name: String, mode: SessionMode, style: AnswerStyle? = nil, preferences: String? = nil,
                 notes: String = "", fields: [String: String] = [:], documents: [ContextDocument] = [],
                 lessons: [WorkspaceLesson] = [], questionBank: [QuestionBankItem] = [], useKnowledge: Bool = true,
                 knowledgeCandidates: [WorkspaceKnowledgeCandidate]? = nil,
@@ -688,7 +704,9 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
                 seriesItemSourceTombstones: [WorkspaceSeriesItemSourceTombstone]? = nil,
                 sourceDeletionTombstones: [UUID]? = nil,
                 stageReview: String? = nil, stageReviewAt: Date? = nil, createdAt: Date = Date(), updatedAt: Date = Date(), archived: Bool = false, skillIDs: [UUID] = []) {
-        self.id = id; self.name = name; self.mode = mode; self.style = style
+        self.id = id; self.name = name; self.mode = mode
+        // A new series starts with its type's answer length, so only a length that differs from it counts as the person's choice.
+        self.style = style ?? MeetingTypeDefaults.for(mode).style
         self.preferences = preferences ?? ModeProfile.for(mode).templatePreferences
         self.notes = notes; self.fields = fields; self.documents = documents; self.lessons = lessons
         self.questionBank = questionBank; self.knowledgeCandidates = knowledgeCandidates; self.useKnowledge = useKnowledge
@@ -707,7 +725,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         case id, name, mode, style, preferences, notes, fields, documents, lessons, questionBank, knowledgeCandidates, useKnowledge
         case seriesItems, seriesChangeCandidates, seriesItemSourceTombstones, sourceDeletionTombstones
         case stageReview, stageReviewAt, createdAt, updatedAt, archived, skillIDs
-        case customTypeName, customBaseMode, glossary
+        case customTypeName, customBaseMode, glossary, standing
     }
 
     public init(from decoder: Decoder) throws {
@@ -737,6 +755,7 @@ public struct Workspace: Codable, Sendable, Equatable, Identifiable {
         customTypeName = try c.decodeIfPresent(String.self, forKey: .customTypeName)
         customBaseMode = try c.decodeIfPresent(SessionMode.self, forKey: .customBaseMode)
         glossary = try? c.decodeIfPresent(Glossary.self, forKey: .glossary)
+        standing = try? c.decodeIfPresent(Bool.self, forKey: .standing)
     }
 
     /// The type whose defaults apply: a custom type behaves like its base type.

@@ -45,7 +45,7 @@ enum DemoMode {
             environment["NEXTTHOUGHT_DEMO_VOICE_READY"] = environment["NEXTTHOUGHT_DEMO_VOICE_READY"] ?? "1"
         }
         // Each capture starts from the default tabs; earlier captures must not leak in.
-        for key in ["settingsGroup", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep", "demoNotes"] {
+        for key in ["settingsGroup", "demoSettings", "workspaceEditorTab", "demoOnboarding", "onboardingStep", "quickStartStep", "demoNotes"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
         // NEXTTHOUGHT_DEMO_DEFAULTS="key=value;key=value" opens specific tabs.
@@ -55,15 +55,19 @@ enum DemoMode {
             if let number = Int(parts[1]) { UserDefaults.standard.set(number, forKey: parts[0]) } else { UserDefaults.standard.set(parts[1], forKey: parts[0]) }
         }
         let state = AppState.shared
+        // demoSettings=1 lays the full settings page over the demo window; settingsGroup
+        // (a page name or an old destination) picks the page and section.
+        if UserDefaults.standard.integer(forKey: "demoSettings") == 1 { SettingsRoute.shared.presentStored() }
         if let path = environment["NEXTTHOUGHT_DEMO_SCREENSHOT_PREVIEW"], let image = NSImage(contentsOfFile: path) {
             state.screenshotPreview = image
             if let screenshotPath = environment["NEXTTHOUGHT_DEMO_SCREENSHOT_URL"] {
                 state.screenshotURL = URL(fileURLWithPath: screenshotPath)
             }
         }
-        // Screenshots must be able to see the windows.
-        state.capturePrivacy = false
-        TeleprompterController.shared.applyPrivacy(false)
+        // Screenshots must be able to see the windows. NEXTTHOUGHT_DEMO_PRIVACY=1 keeps
+        // capture exclusion on, to check what a screen share really contains.
+        state.capturePrivacy = environment["NEXTTHOUGHT_DEMO_PRIVACY"] == "1"
+        TeleprompterController.shared.applyPrivacy(state.capturePrivacy)
         state.appearance = environment["NEXTTHOUGHT_DEMO_APPEARANCE"] ?? "dark"
         state.applyAppearance()
         state.section = AppSection(demoName: environment["NEXTTHOUGHT_DEMO_SECTION"] ?? "") ?? .home
@@ -109,17 +113,43 @@ enum DemoMode {
         // NEXTTHOUGHT_DEMO_FRAME: the demo on one display while the others stay in use.
         let frame = (environment["NEXTTHOUGHT_DEMO_FRAME"] ?? "").split(separator: ",").compactMap { Double($0) }
         if frame.count == 4 {
+            // NEXTTHOUGHT_DEMO_SETTINGS_SNAPSHOT=<png>: the settings page named by
+            // NEXTTHOUGHT_DEMO_SETTINGS_PAGE, drawn in an off-screen window and never shown.
+            if let path = environment["NEXTTHOUGHT_DEMO_SETTINGS_SNAPSHOT"] {
+                snapshotSettings(path, page: environment["NEXTTHOUGHT_DEMO_SETTINGS_PAGE"],
+                                 size: environment["NEXTTHOUGHT_DEMO_SETTINGS_SIZE"], state: state)
+                return
+            }
+            // NEXTTHOUGHT_DEMO_QUICK_SETTINGS=<png>: the quick settings panel, drawn the same way.
+            if let path = environment["NEXTTHOUGHT_DEMO_QUICK_SETTINGS"] {
+                snapshotQuickSettings(path, state: state)
+                return
+            }
             // A window of its own: a hidden launch does not always create the SwiftUI one.
             let window = NSWindow(contentRect: NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]),
                                   styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.isReleasedWhenClosed = false
+            // The same 52 pt title row as the real main window.
+            let toolbar = NSToolbar(identifier: "NextThought.Demo")
+            toolbar.showsBaselineSeparator = false
+            window.toolbar = toolbar
+            window.toolbarStyle = .unified
             window.contentView = NSHostingView(rootView: ContentView().environment(state))
+            MainWindowLayout.claimTitleRow(of: window)
             window.setFrame(NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]), display: true)
             if environment["NEXTTHOUGHT_DEMO_HIDDEN"] != "1" { window.orderFront(nil) }
             demoWindow = window
+            snapshotIsland(environment, visible: environment["NEXTTHOUGHT_DEMO_HIDDEN"] != "1")
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: environment["NEXTTHOUGHT_DEMO_SNAPSHOT"]) }
+            return
+        }
+        // NEXTTHOUGHT_DEMO_STAGE=1: the real main window with demo data, kept on the
+        // built-in display and never activated, for hands-on walkthroughs that must
+        // not disturb other displays. Launch hidden (`open -j -g`).
+        if environment["NEXTTHOUGHT_DEMO_STAGE"] == "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { beginStage() }
             return
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -134,6 +164,7 @@ enum DemoMode {
                 panel.setFrame(NSRect(x: 900, y: 600, width: 680, height: 300), display: true)
             }
         }
+        snapshotIsland(environment, visible: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             snapshot(NSApp.windows.first(where: MainWindowLayout.isMainWindow), to: environment["NEXTTHOUGHT_DEMO_SNAPSHOT"])
             guard let path = environment["NEXTTHOUGHT_DEMO_OUT"] else { return }
@@ -147,6 +178,133 @@ enum DemoMode {
 
 extension DemoMode {
     @MainActor static var demoWindow: NSWindow?
+    @MainActor private static var stageTimer: Timer?
+
+    @MainActor
+    private static func beginStage() {
+        NSApp.setActivationPolicy(.regular)
+        keepOnBuiltInDisplay(includingHidden: true)
+        NSApp.unhideWithoutActivation()
+        NSApp.windows.first(where: MainWindowLayout.isMainWindow)?.orderFront(nil)
+        // Sheets, the settings window and alerts open wherever AppKit likes: bring
+        // every ordinary window back to the built-in display.
+        let timer = Timer(timeInterval: 0.2, repeats: true) { _ in
+            MainActor.assumeIsolated { keepOnBuiltInDisplay(includingHidden: false) }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        stageTimer = timer
+        // NEXTTHOUGHT_DEMO_HITTEST=<file>: which view takes a click in the title row.
+        if let path = AppEnvironment.values["NEXTTHOUGHT_DEMO_HITTEST"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                guard let window = NSApp.windows.first(where: MainWindowLayout.isMainWindow),
+                      let frame = window.contentView?.superview else { return }
+                var lines: [String] = []
+                for (name, x, fromTop) in [("title row centre", frame.bounds.midX, 26.0), ("title row right", frame.bounds.maxX - 40, 26.0),
+                                           ("just below title row", frame.bounds.midX, 60.0), ("below title row", frame.bounds.midX, 300.0)] {
+                    let point = NSPoint(x: x, y: frame.bounds.maxY - fromTop)
+                    let hit = frame.hitTest(frame.convert(point, to: frame.superview))
+                    var chain: [String] = []
+                    var view = hit
+                    while let current = view, chain.count < 5 { chain.append(String(describing: type(of: current))); view = current.superview }
+                    lines.append("\(name): \(chain.joined(separator: " < "))")
+                }
+                try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+        }
+    }
+
+    @MainActor
+    private static func keepOnBuiltInDisplay(includingHidden: Bool) {
+        guard let screen = CueIslandController.cameraScreen(named: "") else { return }
+        let area = screen.visibleFrame
+        for window in NSApp.windows where !(window is NSPanel) && !window.isSheet && (includingHidden || window.isVisible) {
+            guard window.screen != screen || !area.intersects(window.frame) else { continue }
+            let size = NSSize(width: min(window.frame.width, area.width), height: min(window.frame.height, area.height))
+            window.setFrame(NSRect(x: area.midX - size.width / 2, y: area.midY - size.height / 2,
+                                   width: size.width, height: size.height), display: true)
+        }
+    }
+
+    /// NEXTTHOUGHT_DEMO_ISLAND: PNG of the cue island (on a backdrop, so the black island
+    /// shows). NEXTTHOUGHT_DEMO_ISLAND_PHASE: cue (default) | compact | hearing | deck |
+    /// launcher. With `visible` false the panel is drawn without ever being shown.
+    @MainActor
+    static func snapshotIsland(_ environment: [String: String], visible: Bool) {
+        // NEXTTHOUGHT_DEMO_ISLAND_SHOW=1: the real island on the camera's display, with
+        // the demo meeting behind it, to try by hand.
+        if environment["NEXTTHOUGHT_DEMO_ISLAND_SHOW"] == "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                // Launched hidden (`open -j`), so nothing has appeared anywhere. Take the
+                // ordinary windows out before unhiding: only the island comes on screen.
+                for window in NSApp.windows where !(window is NSPanel) { window.orderOut(nil) }
+                NSApp.unhideWithoutActivation()
+                CueIslandController.shared.show()
+            }
+            return
+        }
+        guard let path = environment["NEXTTHOUGHT_DEMO_ISLAND"] else { return }
+        let state = AppState.shared
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            let island = CueIslandController.shared
+            island.model.backdrop = true
+            let phase = environment["NEXTTHOUGHT_DEMO_ISLAND_PHASE"] ?? "cue"
+            if phase != "cue" {
+                state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil; state.historyCursor = nil
+            }
+            if phase != "hearing" { state.liveCandidate = nil }
+            if phase == "deck" { island.model.pinned = true }
+            if phase == "launcher" {
+                state.isRunning = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { island.model.hovering = true }
+            }
+            island.present(visible: visible)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            snapshot(NSApp.windows.first { $0.title == String(localized: "NextThought 提词岛") }, to: path)
+        }
+    }
+
+    private static var settingsSnapshotWindow: NSWindow?
+
+    /// The quick settings panel at its own size, in a window that is never ordered front.
+    @MainActor
+    static func snapshotQuickSettings(_ path: String, state: AppState) {
+        let content = NSHostingView(rootView: QuickSettingsPanel().environment(state)
+            .preferredColorScheme(state.colorScheme).background(Ink.paper))
+        let size = content.fittingSize
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height),
+                              styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = Ink.paperNSColor
+        window.contentView = content
+        window.setContentSize(size)
+        content.layoutSubtreeIfNeeded()
+        settingsSnapshotWindow = window
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: path) }
+    }
+
+    /// The settings page's content (980 × 700 unless `size` says otherwise) in a window
+    /// that is never ordered front, selected on one page. The page inside the main demo
+    /// window is captured with `demoSettings=1` instead.
+    @MainActor
+    static func snapshotSettings(_ path: String, page: String?, size: String?, state: AppState) {
+        if let page { AppPreferences.standard.set(page, forKey: "settingsGroup") }
+        SettingsRoute.shared.presentStored()
+        let dimensions = (size ?? "").split(separator: ",").compactMap { Double($0) }
+        let width = dimensions.count == 2 ? dimensions[0] : 980, height = dimensions.count == 2 ? dimensions[1] : 700
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = Ink.paperNSColor
+        let content = NSHostingView(rootView: SettingsPageView().environment(state).wideHitTargets()
+            .preferredColorScheme(state.colorScheme).background(Ink.paper))
+        content.sizingOptions = []
+        window.contentView = content
+        window.setContentSize(NSSize(width: width, height: height))
+        content.layoutSubtreeIfNeeded()
+        settingsSnapshotWindow = window
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: path) }
+    }
 
     /// Renders a window's own content into a PNG (no Screen Recording permission needed).
     @MainActor

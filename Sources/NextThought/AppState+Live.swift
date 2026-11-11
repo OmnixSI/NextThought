@@ -21,9 +21,12 @@ extension AppState {
         }
     }
 
+    /// The series snapshot the running meeting uses; the active series otherwise.
+    var liveWorkspace: Workspace { preparedWorkspace ?? activeWorkspace }
+
     /// Only the system-audio channel (the other side) is fed here.
     func processRecognized(_ text: String, isFinal: Bool, key: String?, allowAutomatic: Bool) {
-        tracker.mode = activeWorkspace.effectiveMode
+        tracker.mode = liveWorkspace.effectiveMode
         let decision = tracker.ingest(text, isFinal: isFinal, utteranceKey: key)
         if isFinal, decision == .none, liveCandidate?.utteranceKey == key || key == nil { liveCandidate = nil }
         applyCandidateDecision(decision, allowAutomatic: allowAutomatic)
@@ -366,8 +369,13 @@ extension AppState {
             do {
                 let displays = try await ScreenshotService.availableDisplays()
                 guard let display = displays.first else { return }
+                // The check has to include the island with something on it.
+                let island = CueIslandController.shared
+                let previewing = island.model.preview
+                if island.model.surface == .island { island.model.preview = true }
                 TeleprompterController.shared.show()
-                try? await Task.sleep(for: .milliseconds(300))
+                defer { if !previewing, island.model.preview { island.hide() } }
+                try? await Task.sleep(for: .milliseconds(450))
                 shareTestImage = try await ScreenshotService.captureDisplay(display.id, hidingAppWindows: false)
             } catch {
                 errorMessage = "共享可见性测试失败：\(error.localizedDescription)"

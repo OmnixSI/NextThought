@@ -17,27 +17,23 @@ struct AppNavigationBar: View {
         state.section == .meetings ? meetingsSidebarHidden : foldersSidebarHidden
     }
 
+    @Namespace private var selection
+
+    /// The window's title row: the three places in the middle, the tools on the right.
     var body: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "waveform")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Ink.ink)
-                    .frame(width: 28, height: 28)
-                    .background(Ink.hover, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                Text("NextThought")
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
+        ZStack {
+            HStack(spacing: 2) {
+                ForEach(AppSection.primary) { section in
+                    navigationButton(section)
+                }
             }
-            .padding(.trailing, 12)
+            .padding(3)
+            .background(Ink.sunken, in: Capsule())
 
-            ForEach(AppSection.primary) { section in
-                navigationButton(section)
-            }
-
-            Spacer(minLength: 12)
-
-            Group {
+            HStack(spacing: 4) {
+                // Room for the window's traffic-light buttons.
+                Color.clear.frame(width: 64, height: 1)
+                Spacer(minLength: 12)
                 if showsContextSidebarToggle {
                     Button {
                         if state.section == .meetings {
@@ -46,14 +42,9 @@ struct AppNavigationBar: View {
                             foldersSidebarHidden.toggle()
                         }
                     } label: {
-                        Label(contextSidebarHidden ? "显示侧栏" : "隐藏侧栏", systemImage: "sidebar.left")
-                            .font(Typo.label)
-                            .lineLimit(1)
-                            .padding(.horizontal, 10)
-                            .frame(height: 36)
-                            .background(contextSidebarHidden ? Ink.hover : Color.clear,
-                                        in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        Image(systemName: "sidebar.left")
+                            .font(.system(size: 14)).frame(width: 32, height: 32)
+                            .contentShape(Circle())
                     }
                     .buttonStyle(NavigationTopButtonStyle(selected: contextSidebarHidden))
                     .accessibilityLabel(contextSidebarHidden ? "显示侧栏" : "隐藏侧栏")
@@ -61,50 +52,55 @@ struct AppNavigationBar: View {
                     .help(contextSidebarHidden ? "显示当前栏目侧栏" : "隐藏当前栏目侧栏")
                     .disabled(state.isRunning)
                 }
-            }
-
-            if updater.phase == .ready, let available = updater.available {
-                Button { updater.installAndRelaunch() } label: {
-                    Label("重启以更新", systemImage: "arrow.down.circle")
+                if updater.phase == .ready, let available = updater.available {
+                    Button { updater.installAndRelaunch() } label: {
+                        Label("重启以更新", systemImage: "arrow.down.circle").font(Typo.label)
+                            .padding(.horizontal, 10).frame(height: 32)
+                    }
+                    .buttonStyle(NavigationTopButtonStyle())
+                    .disabled(state.isRunning)
+                    .help(state.isRunning ? "停止辅助后再安装 \(available.displayVersion)" : "安装 \(available.displayVersion) 并重新打开")
+                }
+                // The gear opens the quick panel; ⌘, opens the full settings page.
+                Button { state.toggleQuickSettings() } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 14)).frame(width: 32, height: 32)
+                        .contentShape(Circle())
                 }
                 .buttonStyle(NavigationTopButtonStyle())
-                .disabled(state.isRunning)
-                .help(state.isRunning ? "停止辅助后再安装 \(available.displayVersion)" : "安装 \(available.displayVersion) 并重新打开")
+                .quickSettingsPopover()
+                .accessibilityLabel("设置")
+                .accessibilityIdentifier("appNavigation.settings")
+                .help("设置（全部设置 ⌘,）")
             }
-
-            Button { state.openSettingsFromMenu() } label: {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 15)).frame(width: 36, height: 36)
-                    .contentShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(NavigationTopButtonStyle())
-            .accessibilityLabel("设置")
-            .accessibilityIdentifier("appNavigation.settings")
-            .help("设置（⌘,）")
         }
-        .padding(.horizontal, 18)
-        .frame(maxWidth: .infinity, minHeight: 54, maxHeight: 54, alignment: .leading)
-        .background(Ink.paper)
-        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, minHeight: 52, maxHeight: 52)
     }
 
     private func navigationButton(_ section: AppSection) -> some View {
         let selected = state.section == section
         return Button { state.select(section) } label: {
-            Label(section.title, systemImage: section.symbol)
+            Text(section.title)
                 .font(Typo.label)
                 .lineLimit(1)
-                .padding(.horizontal, 12)
-                .frame(height: 36)
-                .background(selected ? Ink.hover : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .foregroundStyle(selected ? Ink.ink : Ink.secondary)
+                .padding(.horizontal, 16)
+                .frame(height: 28)
+                .background {
+                    if selected {
+                        Capsule().fill(Ink.surfaceRaised)
+                            .shadow(color: Ink.contactShadow, radius: 1.5, x: 0, y: 1)
+                            .matchedGeometryEffect(id: "selection", in: selection)
+                    }
+                }
+                .contentShape(Capsule())
         }
-        .buttonStyle(NavigationTopButtonStyle(selected: selected))
+        .buttonStyle(.plain)
+        .animation(Motion.snappy, value: state.section)
         .accessibilityLabel(section.title)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("appNavigation.\(section.rawValue)")
-        .help(Text(section.title))
     }
 }
 
@@ -124,8 +120,7 @@ private struct NavigationTopButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .foregroundStyle(isEnabled ? (selected || hovering ? Ink.ink : Ink.secondary) : Ink.tertiary)
-                .background(configuration.isPressed ? Ink.hover : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(configuration.isPressed || hovering ? Ink.hover : Color.clear, in: Capsule())
                 .onHover { hovering = $0 }
                 .animation(Motion.hover, value: hovering)
         }

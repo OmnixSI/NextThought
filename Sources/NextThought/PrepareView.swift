@@ -3,155 +3,187 @@ import SwiftUI
 import UniformTypeIdentifiers
 import NextThoughtCore
 
-/// 准备页: one page, top to bottom: what kind of meeting, what to bring from last
-/// time, new materials, and a check before starting (02-scenarios-and-flows.md).
+/// 准备页: one page, top to bottom: name and scene of the meeting, what to bring from
+/// last time, new materials, and a check before starting (02-scenarios-and-flows.md).
+/// The title and scene sit on the one raised sheet; everything else is flat rows
+/// between hairlines. The start action is pinned to the window bottom.
 struct PrepareView: View {
     @Environment(AppState.self) private var state
+    @State private var appeared = false
+
+    private var mode: SessionMode { state.meetingDraft?.mode ?? .general }
 
     var body: some View {
         VStack(spacing: 0) {
-            PrepareHeader()
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.s10) {
-                    TitleBlock()
-                    PrepareStep(number: 1, title: "这是什么会", note: typeNote) { TypePicker() }
+                    PrepareComposer()
+                        .appear(appeared, order: 0)
                     if state.draftContinuesSeries {
-                        PrepareStep(number: 2, title: "接着上一场") { SeriesCarryCard() }
+                        PrepareSection(title: "接着上一场") { SeriesCarryCard() }
+                            .transition(.opacity.combined(with: .offset(y: -6)))
                     }
-                    PrepareStep(number: state.draftContinuesSeries ? 3 : 2, title: "这次新加的资料", note: "可跳过", trailing: { MaterialsActions() }) {
+                    PrepareSection(title: "这次新加的资料", note: "可跳过", trailing: { MaterialsActions() }) {
                         MaterialsBlock()
                     }
-                    PrepareStep(number: state.draftContinuesSeries ? 4 : 3, title: "开始前检查") { CheckCard() }
+                    .appear(appeared, order: 2)
+                    PrepareSection(title: "开始前检查") { CheckCard() }
+                        .appear(appeared, order: 3)
                 }
+                .animation(Motion.expand, value: state.draftContinuesSeries)
                 .frame(maxWidth: Space.content, alignment: .leading)
                 .padding(.horizontal, Space.s8)
-                .padding(.top, Space.s10)
-                .padding(.bottom, Space.s12)
+                .padding(.top, Space.s6)
+                .padding(.bottom, Space.s10)
                 .frame(maxWidth: .infinity)
             }
             PreparationStartBar()
         }
+        .background(alignment: .top) {
+            InkWash(tint: mode.theme.tint, animated: false)
+                .frame(height: 300)
+                .opacity(0.7)
+                .animation(.easeInOut(duration: 0.8), value: mode)
+        }
         .accessibilityIdentifier("meeting.prepare")
         .disabled(state.isChangingSession)
-    }
-
-    private var typeNote: LocalizedStringKey? {
-        guard let draft = state.meetingDraft, !draft.typeChosen,
-              MeetingTypeGuesser.guess(draft.title) != .general else { return nil }
-        return "根据标题选好了，可以改"
+        .onAppear { appeared = true }
     }
 }
 
 // MARK: - Layout pieces
 
-private struct PrepareHeader: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        HStack(spacing: Space.s2) {
-            Button("首页") { state.cancelDraft() }
-                .buttonStyle(.tapText).font(Typo.caption).foregroundStyle(Ink.secondary)
-            Image(systemName: "chevron.right").font(.system(size: 9, weight: .medium)).foregroundStyle(Ink.tertiary)
-            Text("准备").font(.system(size: 12, weight: .medium)).foregroundStyle(Ink.ink)
-            Spacer()
-        }
-        .padding(.horizontal, Space.s8)
-        .frame(height: 52)
-        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+/// Settles into place when the page opens; later sections follow a beat behind.
+private struct AppearModifier: ViewModifier {
+    let appeared: Bool
+    let order: Int
+    func body(content: Content) -> some View {
+        content
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared ? 0 : 8)
+            .animation(Motion.phase.map { $0.delay(Double(order) * 0.05) }, value: appeared)
     }
 }
 
-/// A numbered step: the number in the margin, a title row, then the content.
-private struct PrepareStep<Trailing: View, Content: View>: View {
-    let number: Int
+private extension View {
+    func appear(_ appeared: Bool, order: Int) -> some View {
+        modifier(AppearModifier(appeared: appeared, order: order))
+    }
+
+    /// A flat entry inside a section: a hairline rule at its leading edge instead of a box.
+    func quietEntry() -> some View {
+        padding(.leading, Space.s3)
+            .overlay(alignment: .leading) { Rectangle().fill(Ink.hairline).frame(width: 1) }
+    }
+}
+
+/// A section: overline label (with a note and trailing actions), a hairline, the content.
+private struct PrepareSection<Trailing: View, Content: View>: View {
     let title: LocalizedStringKey
     let note: LocalizedStringKey?
     let trailing: () -> Trailing
     let content: () -> Content
 
-    init(number: Int, title: LocalizedStringKey, note: LocalizedStringKey? = nil,
+    init(title: LocalizedStringKey, note: LocalizedStringKey? = nil,
          @ViewBuilder trailing: @escaping () -> Trailing,
          @ViewBuilder content: @escaping () -> Content) {
-        self.number = number; self.title = title; self.note = note
+        self.title = title; self.note = note
         self.trailing = trailing; self.content = content
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Text(verbatim: "\(number)")
-                .font(.system(size: 15, design: .serif))
-                .foregroundStyle(Ink.tertiary)
-                .frame(width: 32, alignment: .leading)
-            VStack(alignment: .leading, spacing: Space.s3) {
-                HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
-                    Text(title).font(.system(size: 14, weight: .semibold))
-                    if let note { Text(note).font(Typo.caption).foregroundStyle(Ink.secondary) }
-                    Spacer(minLength: Space.s2)
-                    trailing()
-                }
-                content()
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: Space.s2) {
+                Text(title).overline()
+                if let note { Text(note).font(Typo.caption).foregroundStyle(Ink.tertiary) }
+                Spacer(minLength: Space.s2)
+                trailing()
             }
+            .frame(minHeight: 28)
+            Rectangle().fill(Ink.hairline).frame(height: 0.5).padding(.top, Space.s2)
+            content().padding(.top, Space.s3)
         }
     }
 }
 
-private struct TitleBlock: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            HStack(spacing: Space.s1) {
-                Text("会议名称").overline()
-                Text("可选").font(Typo.caption).foregroundStyle(Ink.secondary)
-            }
-            TextField("这场会议叫什么", text: Binding(get: { state.meetingDraft?.title ?? "" },
-                                                set: { state.updateDraftTitle($0) }), axis: .vertical)
-                .textFieldStyle(.plain)
-                .font(Typo.display)
-                .lineLimit(1...3)
-                .accessibilityLabel("会议名称，可选")
-                .accessibilityHint("用于查找会议，可以会后修改")
-            Text("用于查找会议；可以现在填写，也可以会后再改。")
-                .font(Typo.caption).foregroundStyle(Ink.secondary)
-            HStack(spacing: Space.s1) {
-                Image(systemName: state.meetingVenue == .online ? "desktopcomputer" : "person.3")
-                Text(state.meetingVenue == .online ? "线上会议" : "线下会议")
-            }
-            .font(Typo.caption)
-            .foregroundStyle(Ink.secondary)
-        }
+extension PrepareSection where Trailing == EmptyView {
+    fileprivate init(title: LocalizedStringKey, note: LocalizedStringKey? = nil, @ViewBuilder content: @escaping () -> Content) {
+        self.init(title: title, note: note, trailing: { EmptyView() }, content: content)
     }
 }
 
-extension PrepareStep where Trailing == EmptyView {
-    init(number: Int, title: LocalizedStringKey, note: LocalizedStringKey? = nil,
-         @ViewBuilder content: @escaping () -> Content) {
-        self.init(number: number, title: title, note: note, trailing: { EmptyView() }, content: content)
-    }
-}
+// MARK: - Title and scene (the one raised sheet)
 
-// MARK: - 1 · Type
-
-private struct TypePicker: View {
+private struct PrepareComposer: View {
     @Environment(AppState.self) private var state
+    @FocusState private var titleFocused: Bool
+    @Namespace private var chip
 
     var body: some View {
         let draft = state.meetingDraft ?? MeetingDraft()
+        let mode = draft.mode
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: Space.s3) {
+                SceneGlyph(mode: mode, size: 44)
+                    .id(mode).transition(.scale(scale: 0.8).combined(with: .opacity))
+                TextField("这场会议叫什么", text: Binding(get: { state.meetingDraft?.title ?? "" },
+                                                    set: { state.updateDraftTitle($0) }), axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(Typo.display)
+                    .lineLimit(1...3)
+                    .focused($titleFocused)
+                    .frame(minHeight: 44)
+                    .accessibilityLabel("会议名称，可选")
+                    .accessibilityHint("用于查找会议，可以会后修改")
+                VenuePicker()
+                    .frame(minHeight: 44)
+            }
+            .padding(.horizontal, Space.s6).padding(.top, Space.s6).padding(.bottom, Space.s6)
+
+            TypePicker(chip: chip)
+                .padding(.horizontal, Space.s6)
+                .padding(.bottom, Space.s6)
+        }
+        .background {
+            RoundedRectangle(cornerRadius: Space.radiusLarge, style: .continuous)
+                .fill(Ink.surface)
+                .shadow(color: Ink.contactShadow, radius: 1, x: 0, y: 1)
+                .shadow(color: Ink.ambientShadow, radius: 20, x: 0, y: 10)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: Space.radiusLarge, style: .continuous)
+                .strokeBorder(titleFocused ? mode.theme.tint.opacity(0.45) : Ink.hairline, lineWidth: titleFocused ? 1 : 0.5)
+        }
+        .animation(Motion.snappy, value: mode)
+        .animation(Motion.hover, value: titleFocused)
+    }
+}
+
+// MARK: - Type
+
+private struct TypePicker: View {
+    @Environment(AppState.self) private var state
+    let chip: Namespace.ID
+
+    var body: some View {
+        let draft = state.meetingDraft ?? MeetingDraft()
+        let effective = draft.mode == .custom ? draft.customBaseMode : draft.mode
+        let theme = effective.theme
         VStack(alignment: .leading, spacing: Space.s3) {
-            FlowLayout(spacing: Space.s2, lineSpacing: Space.s2) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("这是什么会").overline()
+                if showsGuessNote(draft) {
+                    Text("根据标题选好了，可以改").font(Typo.caption).foregroundStyle(Ink.tertiary)
+                        .transition(.opacity)
+                }
+            }
+            FlowLayout(spacing: 4, lineSpacing: 4) {
                 ForEach(SessionMode.builtIn) { mode in
-                    Button { state.setDraftType(mode) } label: { Text(verbatim: mode.displayName) }
-                        .buttonStyle(TagButtonStyle(selected: draft.mode == mode))
+                    sceneChip(mode, selected: draft.mode == mode) { state.setDraftType(mode) }
                         .help(mode.defaultsSummary)
                 }
-                Button { state.setDraftCustomType() } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus").font(.system(size: 10, weight: .medium))
-                        Text("自定义…")
-                    }
-                }
-                .buttonStyle(TagButtonStyle(selected: draft.mode == .custom))
-                .help(SessionMode.custom.defaultsSummary)
+                sceneChip(.custom, selected: draft.mode == .custom) { state.setDraftCustomType() }
+                    .help(SessionMode.custom.defaultsSummary)
             }
             if draft.mode == .custom {
                 HStack(spacing: Space.s3) {
@@ -165,11 +197,60 @@ private struct TypePicker: View {
                     }
                     .fixedSize()
                 }
+                .transition(.opacity.combined(with: .offset(y: -4)))
             }
-            Text(verbatim: summary(draft))
-                .font(Typo.caption).foregroundStyle(Ink.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: Space.s2) {
+                Text(verbatim: theme.promise)
+                    .font(.system(size: 17, weight: .medium, design: .serif))
+                    .foregroundStyle(Ink.ink)
+                Text(verbatim: summary(draft))
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: Space.s4) {
+                    ForEach(theme.moments, id: \.self) { moment in
+                        HStack(spacing: 6) {
+                            Circle().fill(theme.tint).frame(width: 4, height: 4)
+                            Text(verbatim: moment).font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
+                        }
+                    }
+                }
+                .padding(.top, 2)
+            }
+            .padding(.top, Space.s1)
+            .id(effective)
+            .transition(.blurReplace)
         }
+        .animation(Motion.expand, value: draft.mode)
+    }
+
+    private func showsGuessNote(_ draft: MeetingDraft) -> Bool {
+        !draft.typeChosen && MeetingTypeGuesser.guess(draft.title) != .general
+    }
+
+    private func sceneChip(_ mode: SessionMode, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                if mode == .custom {
+                    Image(systemName: "plus").font(.system(size: 10, weight: .medium))
+                    Text("自定义…")
+                } else {
+                    Text(verbatim: mode.displayName)
+                }
+            }
+            .font(Typo.label)
+            .foregroundStyle(selected ? mode.theme.tint : Ink.secondary)
+            .padding(.horizontal, 11)
+            .frame(height: 30)
+            .background {
+                if selected {
+                    Capsule().fill(mode.theme.tint.opacity(0.13))
+                        .matchedGeometryEffect(id: "selection", in: chip)
+                }
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(SceneChipStyle())
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func summary(_ draft: MeetingDraft) -> String {
@@ -182,30 +263,23 @@ private struct TypePicker: View {
     }
 }
 
-/// A type tag: selected tags use the ink fill, the others a hairline outline.
-struct TagButtonStyle: ButtonStyle {
-    var selected: Bool
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(Typo.label)
-            .lineLimit(1)
-            .foregroundStyle(selected ? Ink.onInk : Ink.ink)
-            .padding(.horizontal, 12)
-            .frame(minWidth: Hit.minHeight)
-            .frame(height: Hit.minHeight)
-            .background(selected ? Ink.ink : (configuration.isPressed ? Ink.hover : Ink.surface),
-                        in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .overlay {
-                if !selected {
-                    RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 1)
-                }
-            }
-            .contentShape(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-            .animation(Motion.hover, value: selected)
+private struct SceneChipStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View { Chip(configuration: configuration) }
+    private struct Chip: View {
+        let configuration: ButtonStyleConfiguration
+        @State private var hovering = false
+        var body: some View {
+            configuration.label
+                .background(hovering ? Ink.hover : .clear, in: Capsule())
+                .scaleEffect(configuration.isPressed ? 0.96 : 1)
+                .onHover { hovering = $0 }
+                .animation(Motion.hover, value: hovering)
+                .animation(Motion.snappy, value: configuration.isPressed)
+        }
     }
 }
 
-// MARK: - 2 · Continue from last time
+// MARK: - Continue from last time
 
 private struct SeriesCarryCard: View {
     @Environment(AppState.self) private var state
@@ -216,8 +290,8 @@ private struct SeriesCarryCard: View {
                 ?? state.lastSession(inSeries: series.id)
             let count = state.sessionCount(inSeries: series.id)
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: Space.s3) {
-                    Image(systemName: "square.stack.3d.up").foregroundStyle(Ink.secondary).padding(.top, 2)
+                HStack(alignment: .center, spacing: Space.s3) {
+                    Circle().fill(series.effectiveMode.theme.tint).frame(width: 7, height: 7)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("这是「\(series.name)」的第 \(count + 1) 场").font(Typo.body)
                         if let last {
@@ -231,46 +305,59 @@ private struct SeriesCarryCard: View {
                     Button("不是同一个系列") { state.declineDraftSeries() }
                         .buttonStyle(GhostButtonStyle(height: 28))
                 }
-                .padding(Space.s4)
+                .padding(.horizontal, Space.s2).padding(.bottom, Space.s3)
                 SeriesBriefingPanel(workspace: series, sessions: state.archive.sessions,
                                     onOpenSession: state.openArchivedMeeting)
-                Rectangle().fill(Ink.hairline).frame(height: 1).padding(.horizontal, Space.s4)
-                VStack(alignment: .leading, spacing: Space.s3) {
-                    if !series.documents.isEmpty {
-                        CarryRow(isOn: binding(\.materials),
-                                 title: String(localized: "资料 · \(names(series.documents.map(\.name)))"),
-                                 detail: String(localized: "\(series.documents.count) 份"))
-                    }
-                    if series.useKnowledge {
-                        if !series.questionBank.isEmpty {
-                            CarryRow(isOn: binding(\.review),
-                                     title: String(localized: "复盘 · 改进后的答法"),
-                                     detail: String(localized: "\(series.questionBank.count) 题"))
-                        }
-                        if !series.lessons.isEmpty {
-                            CarryRow(isOn: binding(\.lessons),
-                                     title: String(localized: "经验 · \(quoted(series.lessons.map(\.text)))"),
-                                     detail: String(localized: "\(series.lessons.count) 条"))
-                        }
-                    } else if !series.questionBank.isEmpty || !series.lessons.isEmpty {
-                        Text("系列知识已关闭；经验和答法不会带入。")
-                            .font(Typo.caption).foregroundStyle(Ink.secondary)
-                    }
-                    if let last, last.transcriptCount > 0 {
-                        CarryRow(isOn: binding(\.transcript),
-                                 title: String(localized: "上一场完整转写"),
-                                 detail: String(localized: "\(max(1, Int(last.duration / 60))) 分钟"))
-                    }
-                    if series.documents.isEmpty && (!series.useKnowledge || (series.questionBank.isEmpty && series.lessons.isEmpty))
-                        && (last?.transcriptCount ?? 0) == 0 {
-                        Text("这个系列还没有资料、题库或经验可以带入。").font(Typo.caption).foregroundStyle(Ink.secondary)
-                    }
-                }
-                .padding(Space.s4)
+                carryRows(series: series, last: last)
             }
-            .paperCard(padding: 0)
         }
     }
+
+    @ViewBuilder
+    private func carryRows(series: Workspace, last: SessionMeta?) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !series.documents.isEmpty {
+                rule
+                CarryRow(isOn: binding(\.materials),
+                         title: String(localized: "资料 · \(names(series.documents.map(\.name)))"),
+                         detail: String(localized: "\(series.documents.count) 份"))
+            }
+            if series.useKnowledge {
+                if !series.questionBank.isEmpty {
+                    rule
+                    CarryRow(isOn: binding(\.review),
+                             title: String(localized: "复盘 · 改进后的答法"),
+                             detail: String(localized: "\(series.questionBank.count) 题"))
+                }
+                if !series.lessons.isEmpty {
+                    rule
+                    CarryRow(isOn: binding(\.lessons),
+                             title: String(localized: "经验 · \(quoted(series.lessons.map(\.text)))"),
+                             detail: String(localized: "\(series.lessons.count) 条"))
+                }
+            } else if !series.questionBank.isEmpty || !series.lessons.isEmpty {
+                rule
+                Text("系列知识已关闭；经验和答法不会带入。")
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .padding(.horizontal, Space.s2).padding(.vertical, Space.s3)
+            }
+            if let last, last.transcriptCount > 0 {
+                rule
+                CarryRow(isOn: binding(\.transcript),
+                         title: String(localized: "上一场完整转写"),
+                         detail: String(localized: "\(max(1, Int(last.duration / 60))) 分钟"))
+            }
+            if series.documents.isEmpty && (!series.useKnowledge || (series.questionBank.isEmpty && series.lessons.isEmpty))
+                && (last?.transcriptCount ?? 0) == 0 {
+                rule
+                Text("这个系列还没有资料、题库或经验可以带入。").font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .padding(.horizontal, Space.s2).padding(.vertical, Space.s3)
+            }
+            rule
+        }
+    }
+
+    private var rule: some View { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
 
     private func binding(_ keyPath: WritableKeyPath<MeetingCarry, Bool>) -> Binding<Bool> {
         Binding(get: { (state.meetingDraft?.carry ?? .standard)[keyPath: keyPath] },
@@ -370,8 +457,7 @@ private struct SeriesBriefingPanel: View {
                                 }
                             }
                         }
-                        .padding(Space.s2)
-                        .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                        .quietEntry()
                     }
                 }
             }
@@ -454,8 +540,7 @@ private struct SeriesBriefingPanel: View {
                                     .font(Typo.caption).foregroundStyle(Ink.secondary)
                                 }
                             }
-                            .padding(Space.s2)
-                            .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                            .quietEntry()
                         }
                     }
                 }
@@ -503,8 +588,7 @@ private struct SeriesBriefingPanel: View {
                                     }
                                 }
                             }
-                            .padding(Space.s2)
-                            .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                            .quietEntry()
                         }
                     }
                 }
@@ -537,8 +621,7 @@ private struct SeriesBriefingPanel: View {
                                         if item.sourceMissing != true, let source = sourceSession(item.sourceSessionID) { sourceButton(source) }
                                     }
                                 }
-                                .padding(Space.s2)
-                                .background(Ink.sunken.opacity(0.5), in: RoundedRectangle(cornerRadius: Space.radiusSmall))
+                                .quietEntry()
                             }
                         }
                         .padding(.top, Space.s2)
@@ -561,7 +644,7 @@ private struct SeriesBriefingPanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, Space.s4)
+        .padding(.horizontal, Space.s2)
         .padding(.bottom, Space.s4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
@@ -601,7 +684,7 @@ private struct SeriesBriefingPanel: View {
         Button("来源") { onOpenSession(sessionID) }
             .font(.system(size: 10, weight: .medium))
             .buttonStyle(.plain)
-            .foregroundStyle(Brand.accent)
+            .foregroundStyle(Ink.secondary).underline()
             .help("打开产生这条已确认内容的会议")
     }
 
@@ -646,14 +729,15 @@ private struct CarryRow: View {
             HStack(spacing: Space.s2) {
                 Text(verbatim: title).font(Typo.body).lineLimit(1)
                 Spacer(minLength: Space.s2)
-                Text(verbatim: detail).font(Typo.caption).foregroundStyle(Ink.secondary)
+                Text(verbatim: detail).font(Typo.caption).foregroundStyle(Ink.secondary).monospacedDigit()
             }
         }
         .toggleStyle(.wide)
+        .padding(.horizontal, Space.s2)
     }
 }
 
-// MARK: - 3 · New materials
+// MARK: - New materials
 
 private struct MaterialsActions: View {
     @Environment(AppState.self) private var state
@@ -696,16 +780,22 @@ private struct MaterialsBlock: View {
 
     var body: some View {
         let jobs = state.draftJobs
-        VStack(alignment: .leading, spacing: Space.s3) {
+        VStack(alignment: .leading, spacing: Space.s4) {
             if jobs.isEmpty {
                 dropZone
+                    .transition(.opacity)
             } else {
-                VStack(spacing: Space.s2) {
-                    ForEach(jobs) { job in FileRow(job: job) }
+                VStack(spacing: 0) {
+                    ForEach(jobs) { job in
+                        FileRow(job: job)
+                            .transition(.opacity.combined(with: .offset(y: -6)))
+                        Rectangle().fill(Ink.hairline).frame(height: 0.5)
+                    }
                 }
             }
             if hasMaterials { MaterialsInsight() }
         }
+        .animation(Motion.expand, value: jobs.count)
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
             load(providers)
             return true
@@ -720,17 +810,26 @@ private struct MaterialsBlock: View {
     private var dropZone: some View {
         let hint = (state.meetingDraft?.mode == .custom ? state.meetingDraft?.customBaseMode : state.meetingDraft?.mode)?.preparationHint ?? ""
         return VStack(spacing: Space.s1) {
+            Image(systemName: "tray.and.arrow.down")
+                .font(.system(size: 18, weight: .light))
+                .foregroundStyle(dropTargeted ? Ink.ink : Ink.tertiary)
+                .padding(.bottom, Space.s1)
             Text("把文件拖到这里，或点右上角“添加”").font(Typo.body).foregroundStyle(Ink.secondary)
             if !hint.isEmpty {
-                Text("建议放：\(hint)").font(Typo.caption).foregroundStyle(Ink.secondary)
+                Text("建议放：\(hint)").font(Typo.caption).foregroundStyle(Ink.tertiary)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Space.s6)
         .background {
             RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous)
-                .strokeBorder(dropTargeted ? Ink.ink : Ink.hairline, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                .fill(dropTargeted ? Ink.hover : Color.clear)
         }
+        .overlay {
+            RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous)
+                .strokeBorder(dropTargeted ? Ink.secondary : Ink.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+        }
+        .animation(Motion.hover, value: dropTargeted)
     }
 
     private func load(_ providers: [NSItemProvider]) {
@@ -794,8 +893,7 @@ private struct FileRow: View {
               Button("取消此文件") { state.documentPreparation.cancel(job.id) }.buttonStyle(GhostButtonStyle())
           }
         }
-        .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
-        .paperCard(padding: 0)
+        .padding(.horizontal, Space.s2).padding(.vertical, Space.s3)
     }
 
     @ViewBuilder private var status: some View {
@@ -831,13 +929,20 @@ private struct FileRow: View {
 }
 
 /// "AI 读到的重点" and "可能会问": written on request from the series' materials.
+/// A soft block whose only colour is the scene's pigment.
 private struct MaterialsInsight: View {
     @Environment(AppState.self) private var state
     @State private var preview = PreparationPreview.shared
 
+    private var tint: Color { (state.meetingDraft?.mode ?? .general).theme.tint }
+
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            AIHeading(title: "讨论准备 · AI 可选")
+            HStack(spacing: Space.s1) {
+                Image(systemName: "sparkle").font(.system(size: 11, weight: .medium))
+                Text("讨论准备 · AI 可选")
+            }
+            .overline(tint)
             if showsAnswer {
                 let text = preview.text
                 if text.isEmpty && preview.isWorking {
@@ -866,7 +971,14 @@ private struct MaterialsInsight: View {
                 }
             }
         }
-        .aiBlock()
+        .padding(Space.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Ink.aiSoft, in: RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
+        .overlay(alignment: .leading) {
+            Capsule().fill(tint.opacity(0.7)).frame(width: 2).padding(.vertical, Space.s3)
+        }
+        .animation(Motion.expand, value: showsAnswer)
+        .transition(.opacity.combined(with: .offset(y: -6)))
     }
 
     private var showsAnswer: Bool {
@@ -875,7 +987,7 @@ private struct MaterialsInsight: View {
     }
 }
 
-// MARK: - 4 · Before you start
+// MARK: - Before you start
 
 private struct CheckCard: View {
     @Environment(AppState.self) private var state
@@ -889,12 +1001,12 @@ private struct CheckCard: View {
                 divider
                 PhoneCheckRow()
             }
+            divider
         }
-        .paperCard(padding: 0)
     }
 
     private var divider: some View {
-        Rectangle().fill(Ink.hairline).frame(height: 1)
+        Rectangle().fill(Ink.hairline).frame(height: 0.5)
     }
 }
 
@@ -914,8 +1026,8 @@ private struct CheckRow<Content: View>: View {
             Text(label).font(Typo.label).foregroundStyle(Ink.secondary).frame(width: 56, alignment: .leading)
             content()
         }
-        .padding(.horizontal, Space.s4)
-        .frame(minHeight: 52)
+        .padding(.horizontal, Space.s2)
+        .frame(minHeight: 48)
     }
 }
 
@@ -923,10 +1035,9 @@ private struct AudioCheckRow: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        CheckRow(tone: tone, label: "声音") {
+        CheckRow(tone: state.prepareAudioTone, label: "声音") {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: Space.s3) {
-                    VenuePicker()
                     if state.meetingVenue == .online {
                         AudioSourceMenu()
                     }
@@ -941,6 +1052,26 @@ private struct AudioCheckRow: View {
                 if state.isDownloadingModel {
                     ProgressView(value: state.modelDownloadProgress).controlSize(.small)
                 }
+                // The model download's own status, including why it failed.
+                if state.needsRecognitionModelDownload, !state.modelDownloadStatus.isEmpty,
+                   state.isDownloadingModel || state.modelDownloadStatus.hasPrefix("下载失败") {
+                    Text(verbatim: state.modelDownloadStatusText)
+                        .font(Typo.caption)
+                        .foregroundStyle(state.modelDownloadStatus.hasPrefix("下载失败") ? Ink.caution : Ink.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("meeting.prepare.modelStatus")
+                }
+                if state.canMeetWithoutMicrophone, state.microphoneAccess != .granted {
+                    microphoneChoice
+                } else if state.meetingVenue == .online, !state.microphoneEnabled {
+                    HStack(spacing: Space.s2) {
+                        Text("这场只记录对方的声音。想连自己的话一起记，可以重新打开麦克风。")
+                            .font(Typo.caption).foregroundStyle(Ink.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("重新打开麦克风") { state.useMicrophoneAgain() }
+                            .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 8))
+                    }
+                }
                 if state.meetingVenue == .offline {
                     Text("线下会议只用麦克风，转写标为“现场”。笔记本尽量放在桌子中间；人多时建议外接会议麦克风。")
                         .font(Typo.caption).foregroundStyle(Ink.secondary)
@@ -951,34 +1082,43 @@ private struct AudioCheckRow: View {
         }
     }
 
+    /// The way out of a denied or unanswered microphone prompt: record only the other side.
+    private var microphoneChoice: some View {
+        HStack(spacing: Space.s2) {
+            Button("只记录对方（不用麦克风）") { state.continueWithoutMicrophone() }
+                .buttonStyle(GhostButtonStyle(height: 26, horizontalPadding: 8))
+                .help("这场不识别你说的话，只记录电脑里播放的声音。以后可以在这里或 设置 → 高级 → 声音与识别 重新打开麦克风。")
+            Text("以后可在设置 → 高级 → 声音与识别 重新打开")
+                .font(Typo.caption).foregroundStyle(Ink.tertiary)
+        }
+    }
+
     /// What blocks the audio, in words (nil when it is fine).
     private var problem: String? {
         state.recordingReadiness.issues.isEmpty ? nil : state.recordingReadinessMessage
     }
 
-    private var tone: StatusDot.Tone {
-        if state.recordingReadiness.canStartRecording { return .ready }
-        return state.recordingReadiness.canRequestStart ? .idle : .caution
-    }
-
     @ViewBuilder private var action: some View {
         if state.isDownloadingModel {
-            Text(verbatim: "\(Int(state.modelDownloadProgress * 100))%").font(Typo.caption).foregroundStyle(Ink.secondary)
+            Text(verbatim: "\(Int(state.modelDownloadProgress * 100))%").font(Typo.caption).foregroundStyle(Ink.secondary).monospacedDigit()
         } else if !state.recordingReadiness.issues.isEmpty {
-            Button("准备声音") { state.repairRecordingSetup() }.buttonStyle(GhostButtonStyle(height: 28))
+            Button { state.repairRecordingSetup() } label: { Text(verbatim: state.recordingRepairTitle) }
+                .buttonStyle(GhostButtonStyle(height: 28))
         }
     }
 }
 
-/// 线上 / 线下.
+/// 线上 / 线下: a quiet switch beside the title.
 private struct VenuePicker: View {
     @Environment(AppState.self) private var state
     var body: some View {
         InkSegmented(items: MeetingVenue.allCases.map { (value: $0, title: $0.title) },
-                     selection: Binding(get: { state.meetingVenue }, set: { state.setMeetingVenue($0) }))
+                     selection: Binding(get: { state.meetingVenue }, set: { state.setMeetingVenue($0) }),
+                     height: 30)
             .fixedSize()
     }
 }
+
 
 /// "电脑声音" by default; one window only as a secondary choice.
 struct AudioSourceMenu: View {
@@ -1024,7 +1164,7 @@ private struct AnswerCheckRow: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        CheckRow(tone: aiTone, label: "AI 可选") {
+        CheckRow(tone: state.prepareAITone, label: "AI 可选") {
             VStack(alignment: .leading, spacing: Space.s1) {
               HStack(spacing: Space.s2) {
                 if state.answerEngineReady {
@@ -1040,7 +1180,8 @@ private struct AnswerCheckRow: View {
                     .buttonStyle(GhostButtonStyle(height: 28))
               }
               if state.answerEngineReady {
-                  Text(verificationText).font(Typo.caption).foregroundStyle(aiTone == .caution ? Ink.caution : Ink.secondary)
+                  Text(verificationText).font(Typo.caption)
+                      .foregroundStyle(state.prepareAITone == .caution ? Ink.caution : Ink.secondary)
               }
             }
             .padding(.vertical, Space.s2)
@@ -1050,13 +1191,6 @@ private struct AnswerCheckRow: View {
     private var engineLine: String {
         let model = state.currentAnswerModel
         return state.answerBackend == .openAICompatible ? "API · \(model)" : "Codex · \(model)"
-    }
-    private var aiTone: StatusDot.Tone {
-        switch state.engineTest {
-        case .passed where state.answerEngineReady: .ready
-        case .failed where state.answerEngineReady: .caution
-        default: .idle
-        }
     }
     private var verificationText: LocalizedStringKey {
         switch state.engineTest {
@@ -1081,32 +1215,81 @@ private struct PhoneCheckRow: View {
     }
 }
 
+private extension AppState {
+    var prepareAudioTone: StatusDot.Tone {
+        if recordingReadiness.canStartRecording { return .ready }
+        return recordingReadiness.canRequestStart ? .idle : .caution
+    }
+
+    var prepareAITone: StatusDot.Tone {
+        switch engineTest {
+        case .passed where answerEngineReady: .ready
+        case .failed where answerEngineReady: .caution
+        default: .idle
+        }
+    }
+}
+
+// MARK: - Start bar
+
+/// Flat bar pinned to the window bottom: small readiness items on the left, the
+/// secondary action and the one primary action on the right.
 private struct PreparationStartBar: View {
     @Environment(AppState.self) private var state
+
     var body: some View {
         HStack(spacing: Space.s4) {
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text(verbatim: state.recordingReadinessMessage).font(Typo.label)
-                    .foregroundStyle(state.recordingReadiness.canRequestStart ? Ink.ink : Ink.caution)
-                let ready = state.draftAvailableDocumentCount
-                let deferred = state.draftDeferredDocumentCount
-                if deferred > 0 {
-                    Text("本场可用 \(ready) 份资料；其余 \(deferred) 份会后继续，本场不参与回答。")
-                        .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
-                } else if ready > 0 {
-                    Text("本场使用 \(ready) 份已就绪资料；文字可用即可开始。")
-                        .font(Typo.caption).foregroundStyle(Ink.secondary)
-                } else {
-                    Text("资料与 AI 都可稍后补充。").font(Typo.caption).foregroundStyle(Ink.secondary)
+                HStack(spacing: Space.s4) {
+                    statusItem(state.prepareAudioTone, "声音")
+                    statusItem(state.prepareAITone, "AI 可选")
+                    if state.companionEnabled {
+                        statusItem(state.companionConnected ? .ready : .caution, "手机")
+                    }
                 }
+                detail
             }
             Spacer(minLength: Space.s2)
+            Button("取消") { state.cancelDraft() }
+                .buttonStyle(GhostButtonStyle())
+            if state.canMeetWithoutMicrophone, state.microphoneAccess == .denied {
+                Button("只记录对方") { state.continueWithoutMicrophone() }
+                    .buttonStyle(GhostButtonStyle())
+                    .help("不用麦克风，只记录电脑里播放的声音。以后可在设置 → 高级 → 声音与识别 重新打开。")
+                    .accessibilityLabel("只记录对方（不用麦克风）")
+            }
             StartButton()
         }
-        .padding(.horizontal, Space.s8).padding(.vertical, Space.s4)
+        .padding(.horizontal, Space.s8).padding(.vertical, Space.s3)
         .background(Ink.paper)
-        .overlay(alignment: .top) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+        .overlay(alignment: .top) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
         .accessibilityIdentifier("meeting.prepare.startBar")
+    }
+
+    private func statusItem(_ tone: StatusDot.Tone, _ label: LocalizedStringKey) -> some View {
+        HStack(spacing: 6) {
+            StatusDot(tone: tone, size: 6)
+            Text(label).font(Typo.caption).foregroundStyle(Ink.ink)
+        }
+        .animation(Motion.hover, value: tone)
+    }
+
+    private var detail: some View {
+        let ready = state.draftAvailableDocumentCount
+        let deferred = state.draftDeferredDocumentCount
+        let message = Text(verbatim: state.recordingReadinessMessage)
+            .foregroundColor(state.recordingReadiness.canRequestStart ? Ink.secondary : Ink.caution)
+        let materials: Text
+        if deferred > 0 {
+            materials = Text("本场可用 \(ready) 份资料；其余 \(deferred) 份会后继续，本场不参与回答。")
+        } else if ready > 0 {
+            materials = Text("本场使用 \(ready) 份已就绪资料；文字可用即可开始。")
+        } else {
+            materials = Text("资料与 AI 都可稍后补充。")
+        }
+        return (message + Text(verbatim: "  ·  ").foregroundColor(Ink.tertiary) + materials.foregroundColor(Ink.secondary))
+            .font(Typo.caption)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -1118,19 +1301,21 @@ private struct StartButton: View {
             if state.recordingReadiness.canRequestStart { Task { await state.startPreparedMeeting() } }
             else { state.repairRecordingSetup() }
         } label: {
-            HStack(spacing: Space.s2) {
-                if state.isChangingSession { ProgressView().controlSize(.small) }
+            HStack(spacing: 7) {
                 if state.isChangingSession {
+                    ProgressView().controlSize(.small)
                     Text("正在启动…")
                 } else if !state.recordingReadiness.canRequestStart {
-                    Text("先准备声音")
+                    Text(verbatim: state.recordingRepairTitle)
                 } else if !state.recordingReadiness.canStartRecording {
+                    Circle().fill(Ink.seal).frame(width: 7, height: 7)
                     Text("允许并开始")
                 } else {
-                    Text("开始记录")
+                    Circle().fill(Ink.seal).frame(width: 7, height: 7)
+                    Text("开始")
                 }
             }
-            .frame(minWidth: 96)
+            .frame(minWidth: 72)
         }
         .buttonStyle(PrimaryButtonStyle(height: Space.controlLarge))
         .disabled(state.isChangingSession)

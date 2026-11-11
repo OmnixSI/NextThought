@@ -637,6 +637,8 @@ public enum SettingsSnapshot {
         "localOCRModelID", "codexOCRModel", "codexOCREffort", "codexOCRTimeout",
         "notesModelID", "notesReasoning", "notesLanguage", "notesTemplateByType", "customNotesTemplates",
         "pinnedWorkspaceIDs", "projectLibrarySort",
+        "cueSurface", "cueWidth", "cueStyle", "cueScreen", "cueLauncher", "cueAvoidsSharing",
+        "coachEnabled", "coachWatchesGaze", "coachGazeSensitivity", "lastScene", "sceneOverrides",
     ]
 
     /// Keychain accounts exported only on request.

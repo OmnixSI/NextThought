@@ -13,6 +13,12 @@ struct OnboardingVersionTests {
         #expect(!OnboardingVersion.needsGuide(appVersion: "1.7.2", completedVersion: "1.7"))
         #expect(!OnboardingVersion.needsGuide(appVersion: "2.1.4", completedVersion: "2.1"))
     }
+    @Test func featureReleaseOrNewLayoutRearmsTheGuideOnce() {
+        #expect(OnboardingVersion.isFeatureUpgrade(appVersion: "3.0.0", startedVersion: nil, startedLayout: nil, layout: 2))
+        #expect(OnboardingVersion.isFeatureUpgrade(appVersion: "3.1.0", startedVersion: "3.0", startedLayout: 2, layout: 2))
+        #expect(OnboardingVersion.isFeatureUpgrade(appVersion: "3.0.0", startedVersion: "3.0", startedLayout: 1, layout: 2))
+        #expect(!OnboardingVersion.isFeatureUpgrade(appVersion: "3.0.2", startedVersion: "3.0", startedLayout: 2, layout: 2))
+    }
     @Test func backupKeepsExpertPreferenceButNeverSkipsNewInstallGuide() {
         let snapshot = SettingsSnapshot.filter(["advancedSettingsEnabled": true, "onboardingGuideCompletedVersion": "1.7", "onboardingCompleted": true])
         #expect(snapshot["advancedSettingsEnabled"] as? Bool == true)

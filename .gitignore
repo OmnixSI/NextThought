@@ -21,3 +21,6 @@ Mobile/Android/local.properties
 Mobile/iOS/.build/
 Mobile/Shared/.build/
 Mobile/iOS/DerivedData/
+
+# Agent worktrees
+.claude/

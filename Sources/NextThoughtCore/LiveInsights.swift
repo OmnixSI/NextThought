@@ -169,6 +169,7 @@ public struct SlideNotes: Sendable, Equatable, Codable {
         case .labMeeting: role = "我在组会上汇报，正在讲这一页幻灯片。"
         case .client: role = "我在和客户沟通，正在讲这一页演示文稿。"
         case .discussion: role = "我在小组讨论中展示这一页材料。"
+        case .groupProject: role = "我在小组作业的讨论中展示这一页材料。"
         case .general, .custom: role = "我正在讲这一页幻灯片。"
         }
         let system = """

@@ -25,12 +25,14 @@ struct WorkspacesView: View {
                 .joined(separator: "|")
             let activeWorkspaceID = state.activeWorkspace.id
             let hasVisibleWorkspaces = !state.workspaces.visible.isEmpty
-            HStack(alignment: .top, spacing: isSeriesListHidden ? 0 : 12) {
+            HStack(alignment: .top, spacing: 0) {
                 if !isSeriesListHidden {
                     WorkspaceList(compact: !wide, editor: editor)
-                        .frame(width: wide ? 270 : 210)
+                        .frame(width: wide ? 270 : 220)
+                        .padding(.leading, Space.s4).padding(.trailing, Space.s2).padding(.top, Space.s1)
                         .id("\(activeWorkspaceID.uuidString)|\(listRevision)")
                         .transition(.move(edge: .leading).combined(with: .opacity))
+                    Rectangle().fill(Ink.hairline).frame(width: 0.5)
                 }
                 if hasVisibleWorkspaces {
                     WorkspaceEditor(editor: editor)
@@ -39,7 +41,6 @@ struct WorkspacesView: View {
                     emptyWorkspaceState
                 }
             }
-            .padding(.horizontal, 16).padding(.bottom, 14).padding(.top, 4)
         }
         .confirmationDialog("有未保存的修改", isPresented: Binding(
             get: { editor.showUnsavedPrompt }, set: { editor.showUnsavedPrompt = $0 }), titleVisibility: .visible) {
@@ -59,14 +60,11 @@ struct WorkspacesView: View {
     }
 
     private var emptyWorkspaceState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "folder")
-                .font(.system(size: 28))
-                .foregroundStyle(Ink.tertiary)
+        VStack(spacing: Space.s3) {
             Text("还没有系列")
-                .font(.system(size: 16, weight: .semibold))
+                .font(Typo.section).foregroundStyle(Ink.ink)
             Text("新建系列后，资料、回答要求和会议记录会归入该系列。")
-                .font(.system(size: 12))
+                .font(Typo.caption)
                 .foregroundStyle(Ink.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -80,11 +78,11 @@ struct WorkspacesView: View {
             } label: {
                 Label("新建系列", systemImage: "plus")
             }
-            .buttonStyle(ChipButtonStyle(prominent: true))
+            .buttonStyle(PrimaryButtonStyle())
             .disabled(state.isRunning)
+            .padding(.top, Space.s2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .card()
     }
 }
 
@@ -259,6 +257,8 @@ final class WorkspaceEditController {
     }
 
     func continueEditing() {
+        // A scene picked on the home page belongs to the cancelled "new meeting".
+        AppState.shared.pendingDraftScene = nil
         pendingTransition = nil
         showUnsavedPrompt = false
     }
@@ -437,10 +437,10 @@ private struct WorkspaceList: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("项目与课程").font(Typo.section)
+                    Text("资料夹").font(Typo.section).foregroundStyle(Ink.ink)
                     Text("\(state.workspaces.visible.count) 个系列").font(Typo.caption).foregroundStyle(Ink.secondary)
                 }
                 Spacer()
@@ -451,11 +451,17 @@ private struct WorkspaceList: View {
                     Divider()
                     Button("导入系列或备份…") { state.importData(applySettings: false) }
                 } label: { Image(systemName: "plus") }
-                    .menuStyle(.button).buttonStyle(GlassIconButtonStyle(size: 28)).menuIndicator(.hidden).fixedSize()
+                    .menuStyle(.button).buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 0)).menuIndicator(.hidden).fixedSize()
                     .help("新建系列")
             }
-            TextField("搜索项目、课程或资料", text: $query).textFieldStyle(.roundedBorder)
-                .accessibilityIdentifier("projects.search")
+            HStack(spacing: Space.s2) {
+                Image(systemName: "magnifyingglass").font(.system(size: 11, weight: .medium)).foregroundStyle(Ink.secondary)
+                TextField("搜索系列或资料", text: $query).textFieldStyle(.plain).font(Typo.label)
+                    .accessibilityIdentifier("projects.search")
+            }
+            .padding(.horizontal, Space.s3)
+            .frame(height: Space.control + 2)
+            .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             MenuPicker(title: "排序", selection: $sortRaw,
                        options: [("recent", String(localized: "最近活动")), ("name", String(localized: "名称"))])
                 .environment(\.settingsNativeControls, true)
@@ -463,17 +469,20 @@ private struct WorkspaceList: View {
                 Text(issue).font(Typo.caption).foregroundStyle(Ink.caution)
             }
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 3) {
+                LazyVStack(alignment: .leading, spacing: 0) {
                     if shown.isEmpty {
-                        Text(LocalizedStringKey(query.isEmpty ? "还没有项目或课程" : "没有匹配的项目或课程"))
-                            .font(Typo.caption).foregroundStyle(Ink.secondary).padding(9)
+                        Text(LocalizedStringKey(query.isEmpty ? "还没有系列" : "没有匹配的系列"))
+                            .font(Typo.caption).foregroundStyle(Ink.secondary)
+                            .frame(maxWidth: .infinity).padding(.top, Space.s8)
                     }
-                    ForEach(shown) { workspace in row(workspace) }
+                    ForEach(shown) { workspace in
+                        row(workspace)
+                        Rectangle().fill(Ink.hairline).frame(height: 0.5).padding(.horizontal, Space.s3)
+                    }
                 }
             }
-
         }
-        .card()
+        .padding(.top, Space.s2)
         .frame(maxHeight: .infinity, alignment: .top)
         .confirmationDialog("删除系列“\(deleting?.name ?? "")”？", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
             Button("删除系列", role: .destructive) {
@@ -490,18 +499,23 @@ private struct WorkspaceList: View {
         let active = workspace.id == state.activeWorkspace.id
         let sessions = state.archive.sessions.filter { $0.workspaceID == workspace.id }.count
         return Button { editor.requestWorkspace(workspace.id, state: state) } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    if pinned.contains(workspace.id.uuidString) { Image(systemName: "pin.fill").font(.caption).foregroundStyle(Ink.secondary) }
-                    Text(workspace.name).font(.system(size: compact ? 12.5 : 13, weight: active ? .semibold : .regular)).lineLimit(1)
-                    Spacer(minLength: 0)
-                    if active { Image(systemName: "checkmark.circle.fill").foregroundStyle(Brand.accent) }
+            HStack(spacing: Space.s3) {
+                SceneGlyph(mode: workspace.effectiveMode, size: 28)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: Space.s1) {
+                        if pinned.contains(workspace.id.uuidString) { Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(Ink.secondary) }
+                        Text(workspace.name).font(Typo.label.weight(active ? .semibold : .medium)).foregroundStyle(Ink.ink)
+                            .lineLimit(1).truncationMode(.tail)
+                    }
+                    Text("\(workspace.documents.count) 份资料 · \(workspace.questionBank.count) 题 · \(sessions) 场会议")
+                        .font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1).truncationMode(.tail)
                 }
-                Text("\(workspace.documents.count) 份资料 · \(workspace.questionBank.count) 题 · \(sessions) 场会议")
-                    .font(.system(size: compact ? 10 : 10.5)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 9).padding(.vertical, 7)
-            .background(active ? Brand.accent.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .padding(.horizontal, Space.s3).padding(.vertical, Space.s2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(active ? Ink.sunken : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
+            .animation(Motion.snappy, value: active)
             .contentShape(Rectangle())
         }
         .buttonStyle(InteractiveRowButtonStyle())
@@ -538,7 +552,7 @@ enum WorkspaceEditorSection: String, CaseIterable, Identifiable {
         case .requirements: "回答要求"
         case .documents: "资料"
         case .skills: "技能"
-        case .knowledge: "研究积累"
+        case .knowledge: "经验积累"
         case .review: "复盘"
         }
     }
@@ -556,9 +570,9 @@ private struct WorkspaceEditor: View {
         let section = WorkspaceEditorSection(rawValue: sectionRaw) ?? .records
         let active = state.activeWorkspace
         let shownWorkspace = editor.draft.flatMap { $0.id == active.id ? $0 : nil } ?? active
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Space.s3) {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) {
+                HStack(spacing: Space.s3) {
                     workspaceName(shownWorkspace)
                     Spacer(minLength: 8)
                     editorActions
@@ -578,12 +592,12 @@ private struct WorkspaceEditor: View {
                             HStack(spacing: 5) {
                                 Text(LocalizedStringKey(item.title)).lineLimit(1)
                                 if let count = sectionCount(item) {
-                                    Text(count).font(.system(size: 10)).foregroundStyle(Ink.tertiary)
+                                    Text(count).font(Typo.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
                                 }
                             }
-                            .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                            .font(Typo.label)
                             .foregroundStyle(selected ? Ink.ink : Ink.secondary)
-                            .padding(.horizontal, 7).padding(.vertical, 10)
+                            .padding(.horizontal, Space.s2).padding(.vertical, Space.s3)
                             .overlay(alignment: .bottom) {
                                 if selected {
                                     Capsule()
@@ -602,7 +616,7 @@ private struct WorkspaceEditor: View {
             }
             .scrollIndicators(.hidden)
             .background(alignment: .bottom) {
-                Rectangle().fill(Ink.hairline).frame(height: 1)
+                Rectangle().fill(Ink.hairline).frame(height: 0.5)
             }
 
             if editor.draft?.id == active.id, let target = editor.target {
@@ -613,18 +627,18 @@ private struct WorkspaceEditor: View {
             }
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: Space.s4) {
                     sectionContent(section)
                         .id(section)
                         .transition(.opacity)
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(.bottom, 8)
+                .padding(.top, Space.s2).padding(.bottom, Space.s6)
                 .animation(Motion.phase, value: section)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .card()
+        .padding(.horizontal, Space.s6).padding(.top, Space.s3)
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
@@ -657,49 +671,54 @@ private struct WorkspaceEditor: View {
 
 private extension WorkspaceEditor {
     func workspaceName(_ workspace: Workspace) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: workspace.mode.symbol)
-                .font(.system(size: 15, weight: .regular)).foregroundStyle(Ink.secondary)
-                .frame(width: 24, height: 24)
-            Text(workspace.name)
-                .font(Typo.section).lineLimit(1).truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel("系列名称：\(workspace.name)")
+        HStack(spacing: Space.s3) {
+            SceneGlyph(mode: workspace.effectiveMode, size: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(workspace.name)
+                    .font(Typo.display).foregroundStyle(Ink.ink).lineLimit(1).truncationMode(.tail)
+                    .accessibilityLabel("系列名称：\(workspace.name)")
+                SceneTag(mode: workspace.effectiveMode, name: workspace.typeDisplayName)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     var editorActions: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s2) {
             Button("新建记录", systemImage: "plus") { editor.requestNewMeeting(state: state) }
-                .buttonStyle(ChipButtonStyle(prominent: true)).disabled(state.isRunning)
+                .buttonStyle(PrimaryButtonStyle()).disabled(state.isRunning)
             Menu {
                 Button("基本信息") { editor.requestEditorPage(.basic, state: state) }
                 Button("回答要求") { editor.requestEditorPage(.requirements, state: state) }
                 Button("系列技能") { editor.requestEditorPage(.skills, state: state) }
                 Divider()
                 ForEach(typeOptions, id: \.0) { item in
-                    Button(item.1) { editor.requestMode(item.0, state: state) }
+                    Button { editor.requestMode(item.0, state: state) } label: {
+                        if item.0 == state.activeWorkspace.mode { Label(item.1, systemImage: "checkmark") }
+                        else { Text(item.1) }
+                    }
                 }
             } label: { Label("配置", systemImage: "slider.horizontal.3") }
-                .buttonStyle(ChipButtonStyle())
+                .menuStyle(.button).menuIndicator(.hidden).fixedSize()
+                .buttonStyle(GhostButtonStyle())
         }
     }
 
     func editActionsBar(_ target: WorkspaceEditTarget) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Space.s2) {
             Label(target == .basic ? "正在编辑系列信息" : "正在编辑回答要求", systemImage: "pencil")
-                .font(.system(size: 12, weight: .medium))
+                .font(Typo.caption.weight(.medium))
                 .foregroundStyle(Ink.secondary)
             Spacer()
             Button("保存") { editor.save(state) }
-                .buttonStyle(ChipButtonStyle(prominent: true))
+                .buttonStyle(PrimaryButtonStyle())
                 .keyboardShortcut(.defaultAction)
             Button("取消") { editor.cancelDraft() }
-                .buttonStyle(ChipButtonStyle())
+                .buttonStyle(GhostButtonStyle())
                 .keyboardShortcut(.cancelAction)
         }
-        .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, Space.s3).padding(.vertical, Space.s1)
+        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
     }
 
     func entryEditActionsBar(_ target: WorkspaceEditTarget) -> some View {
@@ -714,12 +733,12 @@ private extension WorkspaceEditor {
                 .font(.system(size: 12, weight: .medium)).foregroundStyle(Ink.secondary)
             Spacer()
             Button("保存") { editor.save(state) }
-                .buttonStyle(ChipButtonStyle(prominent: true)).keyboardShortcut(.defaultAction)
+                .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.defaultAction)
             Button("取消") { editor.cancelDraft() }
-                .buttonStyle(ChipButtonStyle()).keyboardShortcut(.cancelAction)
+                .buttonStyle(GhostButtonStyle()).keyboardShortcut(.cancelAction)
         }
-        .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, Space.s3).padding(.vertical, Space.s1)
+        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
     }
 
     /// Built-in types, plus the custom type when this series uses one.
@@ -780,10 +799,10 @@ private struct WorkspaceSingleLineField: View {
             .font(.system(size: 13))
             .padding(.horizontal, 10).padding(.vertical, 8)
             .frame(maxWidth: .infinity, minHeight: minimumHeight, alignment: .topLeading)
-            .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .strokeBorder(isFocused ? Ink.focus : Color.primary.opacity(0.16), lineWidth: isFocused ? 1.5 : 1)
+                RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                    .strokeBorder(isFocused ? Ink.focus : Ink.hairline, lineWidth: isFocused ? 1.5 : 0.5)
             }
             .focused($isFocused)
             .onSubmit(onSubmit)
@@ -874,10 +893,10 @@ private struct WorkspaceTextArea: View {
                 .focused($isFocused)
         }
         .frame(maxWidth: .infinity, minHeight: minHeight, maxHeight: maxHeight)
-        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(isFocused ? Ink.focus : Color.primary.opacity(0.16), lineWidth: isFocused ? 1.5 : 1)
+            RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous)
+                .strokeBorder(isFocused ? Ink.focus : Ink.hairline, lineWidth: isFocused ? 1.5 : 0.5)
         }
         .accessibilityLabel(Text(LocalizedStringKey(title)))
         .accessibilityHint(Text(LocalizedStringKey(placeholder ?? "多行文字")))
@@ -919,11 +938,11 @@ private struct WorkspaceSkillsSection: View {
                 Spacer()
                 Button { let added = library.importFiles(global: false); for skill in added { state.setSkill(skill.id, attached: true) } } label: {
                     Label("导入并用于此系列…", systemImage: "square.and.arrow.down")
-                }.buttonStyle(ChipButtonStyle())
-                Button("管理技能") { state.openSettings(.skills) }.buttonStyle(ChipButtonStyle())
+                }.buttonStyle(GhostButtonStyle())
+                Button("管理技能") { state.openSettings(.skills) }.buttonStyle(GhostButtonStyle())
             }
             if library.skills.isEmpty {
-                Text("还没有技能。技能是一份 Markdown 说明（如 SKILL.md）：说话方式、答题套路、领域知识，回答时会遵循。").font(.caption).foregroundStyle(.secondary)
+                Text("还没有技能。技能是一份 Markdown 说明（如 SKILL.md）：说话方式、答题套路、领域知识，回答时会遵循。").font(.caption).foregroundStyle(Ink.secondary)
             } else {
                 ForEach(library.skills) { skill in
                     let attached = skill.global || state.activeWorkspace.skillIDs.contains(skill.id)
@@ -931,8 +950,8 @@ private struct WorkspaceSkillsSection: View {
                         HStack(spacing: 6) {
                             Text(skill.name)
                             if skill.global { Text("所有系列").font(.system(size: 10, weight: .semibold)).foregroundStyle(Brand.accent) }
-                            if !skill.enabled { Text("已停用").font(.system(size: 10)).foregroundStyle(.secondary) }
-                            if !skill.summary.isEmpty { Text(skill.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1) }
+                            if !skill.enabled { Text("已停用").font(.system(size: 10)).foregroundStyle(Ink.secondary) }
+                            if !skill.summary.isEmpty { Text(skill.summary).font(.system(size: 11)).foregroundStyle(Ink.secondary).lineLimit(1) }
                         }
                     }
                     .toggleStyle(.wide)
@@ -1008,7 +1027,7 @@ private struct WorkspaceBasicTab: View {
                                 Text("更多信息")
                                     .font(.system(size: 12, weight: .semibold))
                                 Text("\(filledAdditionalCount)/\(additionalFields.count) 项已填写")
-                                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                                    .font(.system(size: 11)).foregroundStyle(Ink.secondary)
                             }
                         }
                         .padding(.top, 2)
@@ -1020,7 +1039,7 @@ private struct WorkspaceBasicTab: View {
                     Text("其他背景")
                         .font(.system(size: 12, weight: .semibold))
                     Text(hasBackground ? "已填写" : "可选")
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .font(.system(size: 11)).foregroundStyle(Ink.secondary)
                 }
             }
             .tint(Ink.secondary)
@@ -1062,9 +1081,9 @@ private struct WorkspaceBasicTab: View {
 
     private func sectionTitle(_ modeDisplayName: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("\(modeDisplayName) 信息").font(.system(size: 15, weight: .semibold))
+            Text("\(modeDisplayName) 信息").font(Typo.section)
             Text("先填写核心信息，其他内容可以稍后补充。")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(.system(size: 12)).foregroundStyle(Ink.secondary)
         }
     }
 
@@ -1077,7 +1096,7 @@ private struct WorkspaceBasicTab: View {
             Button("编辑系列信息", systemImage: "pencil") {
                 editor.begin(.basic, workspace: state.activeWorkspace)
             }
-            .buttonStyle(ChipButtonStyle())
+            .buttonStyle(GhostButtonStyle())
             .accessibilityHint("编辑系列名称、背景和此类型的基本信息")
         }
     }
@@ -1104,16 +1123,16 @@ private struct WorkspaceRequirementsTab: View {
                     Button("编辑回答要求", systemImage: "pencil") {
                         editor.begin(.requirements, workspace: state.activeWorkspace)
                     }
-                    .buttonStyle(ChipButtonStyle())
+                    .buttonStyle(GhostButtonStyle())
                     .accessibilityHint("编辑此系列的回答要求")
                 }
                 Button("恢复 \(modeDisplayName) 模板") { editor.requestRestoreTemplate(state: state) }
-                    .buttonStyle(ChipButtonStyle())
+                    .buttonStyle(GhostButtonStyle())
             }
             if isEditing {
                 WorkspaceTextArea(text: preferencesBinding, title: "回答要求", placeholder: "例如：先给结论，再补充依据和例子。",
                                    minHeight: 150, maxHeight: 280)
-                Text("用什么语言、多长、先说什么；与资料正文分开处理，文件内容不能改写这里的要求。").font(.caption).foregroundStyle(.secondary)
+                Text("用什么语言、多长、先说什么；与资料正文分开处理，文件内容不能改写这里的要求。").font(.caption).foregroundStyle(Ink.secondary)
             } else {
                 let value = state.activeWorkspace.preferences.trimmingCharacters(in: .whitespacesAndNewlines)
                 if value.isEmpty {
@@ -1155,8 +1174,8 @@ private struct WorkspaceDocumentsTab: View {
     private var allowedTypes: [UTType] { DocumentImporter.supportedExtensions.compactMap { UTType(filenameExtension: $0) } }
 
     var body: some View {
-        let profile = ModeProfile.for(state.sessionMode)
-        VStack(alignment: .leading, spacing: 10) {
+        let profile = ModeProfile.for(state.activeWorkspace.effectiveMode)
+        VStack(alignment: .leading, spacing: Space.s4) {
             HStack {
                 WorkspaceSectionHeading("资料 \(state.documents.count)", icon: "doc.on.doc")
                 Spacer()
@@ -1170,15 +1189,15 @@ private struct WorkspaceDocumentsTab: View {
                 } label: {
                     Label(LocalizedStringKey("导入资料"), systemImage: "square.and.arrow.down")
                 }
-                .buttonStyle(ChipButtonStyle(prominent: true))
+                .buttonStyle(SecondaryButtonStyle())
                 .help("一次可以选多个文件或整个文件夹：系统转成 Markdown、在后台归档，并按内容自动归类")
             }
             if !state.importStatus.isEmpty {
-                Text(state.importStatus).font(.caption).foregroundStyle(.secondary)
+                Text(state.importStatus).font(.caption).foregroundStyle(Ink.secondary)
             }
             if let removedDocument {
                 HStack {
-                    Text("已从项目移除 \(removedDocument.document.name)").font(Typo.caption)
+                    Text("已从系列移除 \(removedDocument.document.name)").font(Typo.caption)
                     Spacer()
                     Button("撤销") {
                         if var workspace = state.workspaces.workspace(removedDocument.workspaceID), !workspace.documents.contains(where: { $0.id == removedDocument.document.id }) {
@@ -1186,18 +1205,18 @@ private struct WorkspaceDocumentsTab: View {
                             do { try state.workspaces.commit(workspace); state.rebuildContextIndex(); self.removedDocument = nil }
                             catch { state.errorMessage = "恢复失败：\(error.localizedDescription)" }
                         }
-                    }.buttonStyle(ChipButtonStyle())
-                }.padding(10).background(Ink.sunken, in: RoundedRectangle(cornerRadius: 8))
+                    }.buttonStyle(GhostButtonStyle())
+                }.padding(Space.s3).background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
             }
             PreparationQueueSummary()
             ForEach(categories(profile), id: \.self) { category in
                 categorySection(category)
             }
             Text("支持 PDF（含扫描件 OCR）、Word、PowerPoint、Excel、Markdown、TXT、RTF、HTML 与图片。可以一次拖入多个文件甚至整个文件夹：系统会把它们转成结构化 Markdown、在后台静默归档，并按内容自动归类。回答时只把与问题相关的片段交给模型，并标注来源。")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(Ink.secondary)
         }
         .padding(8)
-        .background(RoundedRectangle(cornerRadius: 12).strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [6])).foregroundStyle(dropTargeted ? Color.accentColor : Color.clear))
+        .background(RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous).strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6])).foregroundStyle(dropTargeted ? Ink.secondary : Color.clear))
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in loadDropped(providers); return true }
         .sheet(item: $reviewingDocument) { document in MaterialReviewSheet(document: document) }
         .fileImporter(isPresented: $isFileImporterPresented, allowedContentTypes: allowedTypes + [.folder], allowsMultipleSelection: true) { result in
@@ -1243,8 +1262,8 @@ private struct WorkspaceDocumentsTab: View {
         let items = state.documents.filter { ($0.category ?? "其他") == category }
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(localizedCategory(category)).font(.system(size: 12, weight: .semibold))
-                Text("\(items.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
+                Text(localizedCategory(category)).overline()
+                Text("\(items.count)").font(Typo.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
                 Spacer()
             }
             ForEach(items) { document in
@@ -1253,23 +1272,23 @@ private struct WorkspaceDocumentsTab: View {
                                                        set: { state.setDocumentEnabled(document.id, enabled: $0) }))
                         .toggleStyle(.inline)
                         .help("开启后，回答时会参考这份资料。")
-                    Image(systemName: icon(for: document.name)).foregroundStyle(Color.accentColor)
+                    Image(systemName: icon(for: document.name)).foregroundStyle(Ink.secondary).frame(width: 20)
                     VStack(alignment: .leading, spacing: 1) {
                         Button { reviewingDocument = document } label: {
-                            Text(document.name).font(Typo.label).lineLimit(2).multilineTextAlignment(.leading)
+                            Text(document.name).font(Typo.label).foregroundStyle(Ink.ink).lineLimit(1).truncationMode(.middle).multilineTextAlignment(.leading)
                         }.buttonStyle(.plain).help("对照原件与提取内容")
-                        Text("\(document.pages.count) 块 · \(document.characterCount) 字符").font(.caption2).foregroundStyle(.secondary)
+                        Text("\(document.pages.count) 块 · \(document.characterCount) 字符").font(Typo.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
                     }
                     if let content = document.content, !content.warnings.isEmpty {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Ink.caution)
                             .help(content.warnings.joined(separator: "\n"))
                         Button("需要核对") { reviewingDocument = document }.buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.caution)
                     }
                     if let format = document.sourceFormat {
                         Text(format.uppercased())
-                            .font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
-                            .padding(.horizontal, 4).padding(.vertical, 1)
-                            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 4))
+                            .font(Typo.overline).foregroundStyle(Ink.secondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Ink.hover, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
                             .help("已转成 Markdown 归档")
                     }
                     Spacer()
@@ -1300,9 +1319,10 @@ private struct WorkspaceDocumentsTab: View {
                     } label: {
                         Label("移除", systemImage: "trash")
                     }
-                    .buttonStyle(TapButtonStyle(minWidth: Hit.minHeight, minHeight: Hit.minHeight)).foregroundStyle(.red).help("从当前系列移除这份资料")
+                    .buttonStyle(TapButtonStyle(minWidth: Hit.minHeight, minHeight: Hit.minHeight)).foregroundStyle(Ink.secondary).help("从当前系列移除这份资料")
                 }
-                .padding(7).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(.horizontal, Space.s2).padding(.vertical, Space.s1)
+                .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
             }
         }
     }
@@ -1357,13 +1377,13 @@ private struct KnowledgeTab: View {
                 Spacer()
                 if editor.isEntryEditing {
                     Button("完成") { editor.requestCompleteEntryEditing(state: state) }
-                        .buttonStyle(ChipButtonStyle(prominent: true))
+                        .buttonStyle(SecondaryButtonStyle())
                         .accessibilityHint("退出经验和题目的编辑模式")
                 } else {
                     Button("编辑条目", systemImage: "pencil") {
                         editor.isEntryEditing = true
                     }
-                    .buttonStyle(ChipButtonStyle())
+                    .buttonStyle(GhostButtonStyle())
                     .disabled(workspace.lessons.isEmpty && workspace.questionBank.isEmpty)
                     .accessibilityHint(workspace.lessons.isEmpty && workspace.questionBank.isEmpty
                                        ? "先新增经验或题目后即可编辑"
@@ -1372,7 +1392,7 @@ private struct KnowledgeTab: View {
             }
             if workspace.lessons.isEmpty && workspace.questionBank.isEmpty {
                 Text("目前没有可编辑的经验或题目；先新增条目后即可进入编辑模式。")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Ink.secondary)
             } else if editor.isEntryEditing {
                 Label("编辑模式：选择一条经验或题目打开编辑器；一次只编辑一条。", systemImage: "pencil")
                     .font(.caption).foregroundStyle(Ink.secondary)
@@ -1381,7 +1401,7 @@ private struct KnowledgeTab: View {
             Toggle("回答时参考这里的经验和题库（自我迭代）", isOn: Binding(get: { state.activeWorkspace.useKnowledge },
                                                               set: { state.activeWorkspace.useKnowledge = $0; state.rebuildContextIndex() }))
             Text("每次会话结束生成摘要后，AI 复盘会把“经验沉淀”和对方问到的问题（附改进后的回答）加入这里；下次回答同类问题时优先采用。可以随时编辑、置顶或删除。")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(Ink.secondary)
         }
         Divider()
         VStack(alignment: .leading, spacing: 8) {
@@ -1393,7 +1413,7 @@ private struct KnowledgeTab: View {
                 WorkspaceSingleLineField(text: $newLesson, title: "添加经验", placeholder: "例如：被问到项目时先报规模和数字") {
                     state.addLesson(newLesson); newLesson = ""
                 }
-                Button("添加") { state.addLesson(newLesson); newLesson = "" }.buttonStyle(ChipButtonStyle(prominent: true)).disabled(newLesson.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Button("添加") { state.addLesson(newLesson); newLesson = "" }.buttonStyle(SecondaryButtonStyle()).disabled(newLesson.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .help(newLesson.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "请先填写经验" : "添加经验")
             }
         }
@@ -1422,7 +1442,7 @@ private struct KnowledgeTab: View {
                 }
             }
             if !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && bank(workspace).isEmpty {
-                Text("没有匹配的问题或回答。").font(.caption).foregroundStyle(.secondary)
+                Text("没有匹配的问题或回答。").font(.caption).foregroundStyle(Ink.secondary)
             }
             ForEach(bank(workspace)) { item in BankRow(item: item, editor: editor) }
             VStack(alignment: .leading, spacing: 6) {
@@ -1431,7 +1451,7 @@ private struct KnowledgeTab: View {
                 HStack {
                     Spacer()
                     Button("加入题库") { state.addBankItem(question: newQuestion, answer: newAnswer); newQuestion = ""; newAnswer = "" }
-                        .buttonStyle(ChipButtonStyle(prominent: true)).disabled(newQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .buttonStyle(SecondaryButtonStyle()).disabled(newQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .help(newQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || newAnswer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "请先填写问题和回答" : "保存到题库")
                 }
             }
@@ -1524,7 +1544,7 @@ private struct ExperienceLessonRow: View {
                                                 tombstones: revision.sourceMissingSessionIDs)
                                 }
                                 .padding(6)
-                                .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 7))
+                                .background(Ink.sunken, in: RoundedRectangle(cornerRadius: 7))
                             }
                         }
                         .padding(.top, 5)
@@ -1535,12 +1555,12 @@ private struct ExperienceLessonRow: View {
             Button(action: onDelete) {
                 Image(systemName: "xmark").frame(width: 22, height: 24)
             }
-            .buttonStyle(.tap).foregroundStyle(.secondary)
+            .buttonStyle(.tap).foregroundStyle(Ink.secondary)
             .help("删除这条经验")
             .accessibilityLabel("删除这条经验")
         }
         .padding(8)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     private var lessonText: some View {
@@ -1615,7 +1635,7 @@ private struct BankRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top) {
                 Button { withAnimation(.easeOut(duration: 0.15)) { expanded.toggle() } } label: {
-                    Image(systemName: expanded ? "chevron.down" : "chevron.right").foregroundStyle(.secondary)
+                    Image(systemName: expanded ? "chevron.down" : "chevron.right").foregroundStyle(Ink.secondary)
                 }.buttonStyle(.tap)
                     .accessibilityLabel(expanded ? "收起问题和回答" : "展开问题和回答")
                     .help(expanded ? "收起问题和回答" : "展开查看问题和回答")
@@ -1633,11 +1653,11 @@ private struct BankRow: View {
                 }
                 Spacer()
                 if item.timesAsked > 0 {
-                    Text("被问 \(item.timesAsked) 次").font(.system(size: 10)).foregroundStyle(.secondary)
-                        .padding(.horizontal, 6).padding(.vertical, 2).background(Color.primary.opacity(0.06), in: Capsule())
+                    Text("被问 \(item.timesAsked) 次").font(.system(size: 10)).foregroundStyle(Ink.secondary)
+                        .padding(.horizontal, 6).padding(.vertical, 2).background(Ink.hover, in: Capsule())
                 }
                 Button { confirmDelete = true } label: { Image(systemName: "trash") }
-                    .buttonStyle(.tap).foregroundStyle(.red)
+                    .buttonStyle(.tap).foregroundStyle(Ink.secondary)
                     .help("删除这道题").accessibilityLabel("删除这道题")
             }
             if isSelected {
@@ -1675,7 +1695,7 @@ private struct BankRow: View {
                 .padding(.leading, 22).padding(.top, 4)
             }
         }
-        .padding(8).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(8).background(Ink.sunken, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .confirmationDialog("删除这道题？", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("删除题目", role: .destructive) { editor.requestDeleteQuestion(item.id, state: state) }
             Button("取消", role: .cancel) { }
@@ -1738,29 +1758,29 @@ private struct ReviewTab: View {
             HStack {
                 WorkspaceSectionHeading("阶段复盘", icon: "chart.line.uptrend.xyaxis")
                 if let date = workspace.stageReviewAt {
-                    Text("· \(date.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.tertiary)
+                    Text("· \(date.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(Ink.secondary)
                 }
                 Spacer()
                 if state.stageReviewing.contains(workspace.id) { ProgressView().controlSize(.small) }
                 Button { state.generateStageReview(for: workspace.id) } label: {
                     Label(workspace.stageReview == nil ? "生成阶段复盘" : "重新生成", systemImage: "sparkles")
                 }
-                .buttonStyle(ChipButtonStyle(prominent: workspace.stageReview == nil))
+                .buttonStyle(SecondaryButtonStyle())
                 .disabled(summarized.isEmpty || state.stageReviewing.contains(workspace.id))
                 .help(summarized.isEmpty ? "需要至少一次带摘要的会话" : "综合这个场景的 \(summarized.count) 次会话：高频问题、薄弱点、进步和下一步准备")
             }
             if summarized.isEmpty {
                 Text("需要至少一次已生成摘要的会话，才能生成阶段复盘。")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Ink.secondary)
             } else if state.stageReviewing.contains(workspace.id) {
-                Text("正在生成阶段复盘…").font(.caption).foregroundStyle(.secondary)
+                Text("正在生成阶段复盘…").font(.caption).foregroundStyle(Ink.secondary)
             }
             if let review = workspace.stageReview {
                 MarkdownText(text: review, size: 13, lineSpacing: 3)
-                    .padding(10).background(Brand.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .padding(10).background(Ink.sunken, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
                 Text("综合这个系列的会话摘要，整理高频问题、反复出现的薄弱点、进步和下一步准备；经验与答法会先进入待审阅区。")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Ink.secondary)
             }
         }
         KnowledgeReviewSection(workspaceID: workspace.id)
@@ -1768,27 +1788,27 @@ private struct ReviewTab: View {
         VStack(alignment: .leading, spacing: 6) {
             WorkspaceSectionHeading("会议 \(sessions.count)", icon: "clock")
             if sessions.isEmpty {
-                Text("这个系列的会议会出现在这里。").font(.caption).foregroundStyle(.secondary)
+                Text("这个系列的会议会出现在这里。").font(.caption).foregroundStyle(Ink.secondary)
             }
             ForEach(sessions) { meta in
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(meta.displayTitle).font(.system(size: 13, weight: .medium)).lineLimit(1)
                         Text("\(meta.startedAt.formatted(date: .abbreviated, time: .shortened)) · \(Int(meta.duration / 60)) 分钟 · \(meta.questionCount) 个问题")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                            .font(.system(size: 11)).foregroundStyle(Ink.secondary)
                     }
                     Spacer()
                     switch meta.summaryState {
                     case .ready: Image(systemName: "sparkles").foregroundStyle(Brand.accent)
                     case .pending where state.archive.summarizing.contains(meta.id): ProgressView().controlSize(.mini)
-                    case .pending: Image(systemName: "exclamationmark.circle").foregroundStyle(.orange).help("纪要整理已中断 · 可以重试")
-                    case .failed: Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
+                    case .pending: Image(systemName: "exclamationmark.circle").foregroundStyle(Ink.caution).help("纪要整理已中断 · 可以重试")
+                    case .failed: Image(systemName: "exclamationmark.circle").foregroundStyle(Ink.caution)
                     case .none: EmptyView()
                     }
                     Button("查看") { state.historySelection = meta.id; state.historyWorkspaceFilter = workspace.id; state.select(.meetings) }
-                        .buttonStyle(ChipButtonStyle())
+                        .buttonStyle(GhostButtonStyle())
                 }
-                .padding(8).background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(8).background(Ink.sunken, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
     }
@@ -1796,10 +1816,10 @@ private struct ReviewTab: View {
     private func stat(_ title: String, _ value: String) -> some View {
         VStack(spacing: 2) {
             Text(value).font(.system(size: 18, weight: .semibold).monospacedDigit())
-            Text(LocalizedStringKey(title)).font(.system(size: 11)).foregroundStyle(.secondary)
+            Text(LocalizedStringKey(title)).font(.system(size: 11)).foregroundStyle(Ink.secondary)
         }
         .frame(maxWidth: .infinity).padding(.vertical, 8)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(Ink.sunken, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -1824,7 +1844,7 @@ private struct PreparationQueueSummary: View {
             if !jobs.isEmpty {
                 if attentionCount > 0 {
                     Label("\(attentionCount) 份资料需要处理或核对，展开下方列表查看。", systemImage: "exclamationmark.triangle")
-                        .font(.system(size: 12)).foregroundStyle(.orange)
+                        .font(.system(size: 12)).foregroundStyle(Ink.caution)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 DisclosureGroup(summary, isExpanded: $expanded) {
@@ -1832,22 +1852,22 @@ private struct PreparationQueueSummary: View {
                         HStack(alignment: .top, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(job.fileName).font(.system(size: 12, weight: .semibold)).textSelection(.enabled)
-                                Text(job.progressText).font(.system(size: 12)).foregroundStyle(job.stage == .failed ? .red : job.stage == .warning ? .orange : .secondary)
+                                Text(job.progressText).font(.system(size: 12)).foregroundStyle(job.stage == .failed || job.stage == .warning ? Ink.caution : Ink.secondary)
                                 if let total = job.total, total > 0, !job.stage.terminal { ProgressView(value: Double(job.completed), total: Double(total)) }
-                                if !job.message.isEmpty { Text(job.message).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
+                                if !job.message.isEmpty { Text(job.message).font(.system(size: 12)).foregroundStyle(Ink.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true) }
                             }
                             Spacer(minLength: 8)
                             if [.failed, .cancelled, .warning].contains(job.stage) {
-                                Button("重试") { preparation.retry(job.id) }.buttonStyle(ChipButtonStyle())
+                                Button("重试") { preparation.retry(job.id) }.buttonStyle(GhostButtonStyle())
                             } else if !job.stage.terminal {
-                                Button("取消") { preparation.cancel(job.id) }.buttonStyle(ChipButtonStyle())
+                                Button("取消") { preparation.cancel(job.id) }.buttonStyle(GhostButtonStyle())
                             }
                         }.padding(.vertical, 6)
                     }
                 }.font(.system(size: 12, weight: .medium))
             }
             if let error = preparation.error {
-                Label(error, systemImage: "exclamationmark.circle").font(.system(size: 12)).foregroundStyle(.red).textSelection(.enabled)
+                Label(error, systemImage: "exclamationmark.circle").font(.system(size: 12)).foregroundStyle(Ink.caution).textSelection(.enabled)
             }
         }
         .onAppear { expanded = attentionCount > 0 }

@@ -49,9 +49,10 @@ final class PreparationPreview {
                     let excerpt = excerpts.joined(separator: "\n")
                     return "来源：\(document.labeledName)\n\(excerpt)"
                 }.joined(separator: "\n\n")
+                let mode = workspace.effectiveMode
                 let request = AnswerRequest(
-                    system: "你是严谨的学术讨论助手。仅使用本次选择的资料；不补造论文结果、引文或导师意见。证据不足请明确说明。",
-                    user: "为本次\(workspace.effectiveMode.title)做准备。背景：\(workspace.materialText)\n\(workspace.experienceNotes())\n\(materials)\n严格按两节输出：\n## 讨论重点\n3 条最值得讨论的进展、证据或不足，引用资料名称和页码（若有）。\n## 值得追问\n5 个研究问题，每个附一两句有依据的分析方向。资料仅展示有限摘录，不声称已完整读懂。",
+                    system: PreparationPrompt.system(for: mode),
+                    user: "为本次\(mode.title)做准备。背景：\(workspace.materialText)\n\(workspace.experienceNotes())\n\(materials)\n\(PreparationPrompt.output(for: mode))",
                     model: model, effort: effort, serviceTier: tier)
                 let reply = try await state.runAnswer(request, backend: backend) { [weak self] delta in
                     Task { @MainActor in

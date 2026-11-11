@@ -38,9 +38,13 @@ final class TeleprompterController {
         }
     }
 
-    var isVisible: Bool { panel?.isVisible == true }
+    var isVisible: Bool { panel?.isVisible == true || CueIslandController.shared.isVisible }
+
+    /// The island is the cue surface unless the user chose the free-floating window.
+    private var usesIsland: Bool { CueIslandController.shared.model.surface == .island }
 
     func toggle() {
+        if usesIsland, panel?.isVisible != true { CueIslandController.shared.toggle(); return }
         if let panel, panel.isVisible {
             panel.orderOut(nil)
             controlPanel?.orderOut(nil)
@@ -50,6 +54,12 @@ final class TeleprompterController {
     }
 
     func show() {
+        if usesIsland { CueIslandController.shared.show(); return }
+        showWindow()
+    }
+
+    /// The free-floating answer window, whatever the preferred surface.
+    func showWindow() {
         if panel == nil {
             let next = OverlayPanel(contentRect: NSRect(x: 0, y: 0, width: 640, height: 300), styleMask: [.titled, .closable, .resizable, .nonactivatingPanel, .fullSizeContentView], backing: .buffered, defer: false)
             next.title = String(localized: "NextThought 回答浮窗")
@@ -316,7 +326,7 @@ private struct TeleprompterView: View {
             }
             Button { state.teleprompterFontSize = max(14, state.teleprompterFontSize - 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.smaller") }
                 .buttonStyle(GlassIconButtonStyle(size: 24)).help("缩小文字")
-            Button { state.teleprompterFontSize = min(44, state.teleprompterFontSize + 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.larger") }
+            Button { state.teleprompterFontSize = min(36, state.teleprompterFontSize + 2); state.saveAnswerSettings() } label: { Image(systemName: "textformat.size.larger") }
                 .buttonStyle(GlassIconButtonStyle(size: 24)).help("放大文字")
             // This button is the way out of click-through, so it must keep
             // receiving clicks even when the rest of the panel does not.

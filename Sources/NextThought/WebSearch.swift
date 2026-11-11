@@ -179,7 +179,7 @@ extension AppState {
         guard let id = displayedRecordID else { return }
         let question = displayedQuestion
         guard !question.isEmpty else { return }
-        guard webSearchAvailable else { errorMessage = "联网搜索还没设置：在 设置 → 回答 → 联网搜索 选择 Codex 或填写 Tavily Key。"; return }
+        guard webSearchAvailable else { errorMessage = String(localized: "联网搜索还没设置：在 设置 → 回答与资料 → 联网搜索 打开联网，并在 设置 → 高级 → 回答服务 选择 Codex 或填写 Tavily Key。"); return }
         let workspace = activeWorkspace
         let context = TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
         let skills = activeSkillSnippets

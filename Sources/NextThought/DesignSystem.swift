@@ -1,11 +1,13 @@
 import AppKit
 import SwiftUI
 
-// MARK: - Paper & Ink design tokens
+// MARK: - Design tokens
 //
-// The values mirror docs/redesign/design-system/tokens.json. The interface is 95 %
-// paper and ink; neutral gray (`ai`) marks AI-written content, red (`live`) means
-// recording, green (`ready`) means ready, amber (`caution`) needs attention.
+// Paper, ink and a seal. Warm paper and near-black ink carry the interface; one
+// cinnabar red (`seal`) marks what is live, the way a seal marks a finished page.
+// Scenes are told apart by muted mineral pigments (`SceneTheme`, Stage.swift), never
+// by saturated colour. Depth comes from one raised sheet per page and flat rows
+// around it. Green (`ready`) means ready, amber (`caution`) needs attention.
 
 extension NSColor {
     /// sRGB color from a 0xRRGGBB value.
@@ -31,10 +33,10 @@ extension Color {
 enum Ink {
     /// Window background for AppKit (`NSWindow.backgroundColor`).
     static let paperNSColor = NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.hex(0x131312) : NSColor.hex(0xf6f5f2)
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? NSColor.hex(0x121110) : NSColor.hex(0xf7f5f0)
     }
     static let paper = Color(nsColor: paperNSColor)
-    static let surface = Color.dynamic(light: .hex(0xffffff), dark: .hex(0x1c1c1a))
+    static let surface = Color.dynamic(light: .hex(0xffffff), dark: .hex(0x1b1b19))
     static let surfaceRaised = Color.dynamic(light: .hex(0xffffff), dark: .hex(0x242422))
     static let sunken = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.04), dark: .hex(0xecebe8, alpha: 0.05))
     static let hover = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.06), dark: .hex(0xecebe8, alpha: 0.08))
@@ -44,23 +46,30 @@ enum Ink {
     static let secondary = Color.dynamic(light: .hex(0x6b6963), dark: .hex(0xa3a19b))
     /// Placeholders and decoration only; never for text that has to be read.
     static let tertiary = Color.dynamic(light: .hex(0x706e68), dark: .hex(0x95938c))
-    static let hairline = Color.dynamic(light: .hex(0xe7e5e0), dark: .hex(0x2c2b28))
+    static let hairline = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.09), dark: .hex(0xecebe8, alpha: 0.11))
     /// Neutral gray marks AI-written content; the interface stays grayscale.
     static let ai = Color.dynamic(light: .hex(0x595751), dark: .hex(0xb8b6af))
     static let aiSoft = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.045), dark: .hex(0xecebe8, alpha: 0.07))
     static let promptPanel = Color.dynamic(light: .hex(0xf0efec), dark: .hex(0x242422))
-    static let live = Color.dynamic(light: .hex(0xb82e2e), dark: .hex(0xff6b63))
+    /// Cinnabar: the one accent. Recording, the line to say next, the brand mark.
+    static let seal = Color.dynamic(light: .hex(0xc4452c), dark: .hex(0xf07055))
+    static let live = seal
     static let ready = Color.dynamic(light: .hex(0x237542), dark: .hex(0x4cc38a))
     static let caution = Color.dynamic(light: .hex(0x8a5707), dark: .hex(0xf0b24a))
     static let focus = ai
     static let floatShadow = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.12), dark: .hex(0x000000, alpha: 0.5))
+    /// Contact shadow right under a card, and the wide ambient one below it.
+    static let contactShadow = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.07), dark: .hex(0x000000, alpha: 0.4))
+    static let ambientShadow = Color.dynamic(light: .hex(0x1c1b19, alpha: 0.06), dark: .hex(0x000000, alpha: 0.32))
 }
 
 /// Type scale (01-visual-language.md). Serif styles render as New York, with the
 /// system Song face for Chinese.
 enum Typo {
+    static let hero = Font.system(size: 38, weight: .medium, design: .serif)
     static let display = Font.system(size: 30, weight: .medium, design: .serif)
     static let section = Font.system(size: 19, weight: .medium, design: .serif)
+    static let title = Font.system(size: 15, weight: .semibold)
     static let prompt = Font.system(size: 22, weight: .medium)
     static let body = Font.system(size: 15)
     static let label = Font.system(size: 13, weight: .medium)
@@ -83,20 +92,27 @@ enum Space {
     static let controlLarge: CGFloat = 40
     static let sidebar: CGFloat = 220
     static let content: CGFloat = 720
-    static let radiusSmall: CGFloat = 6
-    static let radiusMedium: CGFloat = 10
-    static let radiusLarge: CGFloat = 16
+    static let radiusSmall: CGFloat = 8
+    static let radiusMedium: CGFloat = 14
+    static let radiusLarge: CGFloat = 22
 }
 
-/// Quiet motion: ease-out, no bounce; nothing moves when Reduce Motion is on.
+/// Motion follows the hand: hover is a short ease, everything that changes size or
+/// place rides a critically damped spring, and only deliberate moments (a scene
+/// picked, a cue arriving) are allowed a little life. Nothing moves when Reduce
+/// Motion is on.
 enum Motion {
     static var reduce: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
     private static func curve(_ duration: Double) -> Animation? {
         reduce ? nil : .timingCurve(0.2, 0.8, 0.2, 1, duration: duration)
     }
-    static var hover: Animation? { curve(0.12) }
-    static var expand: Animation? { curve(0.2) }
-    static var phase: Animation? { curve(0.32) }
+    static var hover: Animation? { curve(0.14) }
+    static var expand: Animation? { reduce ? nil : .spring(response: 0.32, dampingFraction: 0.9) }
+    static var phase: Animation? { reduce ? nil : .spring(response: 0.46, dampingFraction: 0.9) }
+    /// Press, lift and selection: quick, with the faintest overshoot.
+    static var snappy: Animation? { reduce ? nil : .spring(response: 0.28, dampingFraction: 0.78) }
+    /// A surface that grows out of another (the cue island, a scene card opening).
+    static var morph: Animation? { reduce ? nil : .spring(response: 0.5, dampingFraction: 0.82) }
 }
 
 // MARK: - Modifiers
@@ -107,12 +123,18 @@ extension View {
         font(Typo.overline).tracking(0.66).foregroundStyle(color)
     }
 
-    /// Content card: surface fill, 1 px hairline, radius 10, no shadow.
-    func paperCard(padding: CGFloat = Space.s4) -> some View {
+    /// Content card: a sheet of paper lying on the window, lifted by a contact
+    /// shadow and a wide ambient one; the hairline only keeps the edge crisp.
+    func paperCard(padding: CGFloat = Space.s4, cornerRadius: CGFloat = Space.radiusMedium) -> some View {
         self.padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Ink.surface, in: RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 1))
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Ink.surface)
+                    .shadow(color: Ink.contactShadow, radius: 1, x: 0, y: 1)
+                    .shadow(color: Ink.ambientShadow, radius: 14, x: 0, y: 8)
+            }
+            .overlay(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 0.5))
     }
 
     /// AI-written block: ai-soft background, no border.
@@ -209,6 +231,7 @@ struct InkSegmented<Value: Hashable>: View {
     var scalesWithDynamicType = false
     @Environment(\.layoutDirection) private var layoutDirection
     @FocusState private var focusedValue: Value?
+    @Namespace private var thumb
 
     var body: some View {
         HStack(spacing: 0) {
@@ -223,8 +246,11 @@ struct InkSegmented<Value: Hashable>: View {
                         .frame(minWidth: Hit.minHeight, minHeight: max(height, Hit.minHeight) - 4)
                         .background {
                             if selected {
-                                RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Ink.surface)
-                                    .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 0.5))
+                                // One thumb that slides between segments.
+                                RoundedRectangle(cornerRadius: Space.radiusSmall - 2, style: .continuous).fill(Ink.surfaceRaised)
+                                    .shadow(color: Ink.contactShadow, radius: 1.5, x: 0, y: 1)
+                                    .overlay(RoundedRectangle(cornerRadius: Space.radiusSmall - 2, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 0.5))
+                                    .matchedGeometryEffect(id: "thumb", in: thumb)
                             }
                         }
                         .contentShape(Rectangle())
@@ -257,7 +283,7 @@ struct InkSegmented<Value: Hashable>: View {
         .accessibilityElement(children: .contain)
         .padding(2)
         .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-        .animation(Motion.expand, value: selection)
+        .animation(Motion.snappy, value: selection)
     }
 }
 

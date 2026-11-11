@@ -5,10 +5,14 @@ import NextThoughtCore
 
 // MARK: - Settings entry
 
-/// Settings → 资料: one card that opens the glossary page.
-struct GlossarySettingsEntry: View {
+/// Settings → 声音 → 术语和人名: one card that opens the glossary page. `extra` sits
+/// under the button (the quick vocabulary field, which feeds recognition the same way).
+struct GlossarySettingsEntry<Extra: View>: View {
     @Environment(AppState.self) private var state
     @State private var showing = false
+    private let extra: Extra
+
+    init(@ViewBuilder extra: () -> Extra) { self.extra = extra() }
 
     var body: some View {
         let global = GlossaryStore.shared.glossary.entries.count
@@ -21,6 +25,7 @@ struct GlossarySettingsEntry: View {
                 Spacer(minLength: 0)
                 Button("管理…") { showing = true }.buttonStyle(SecondaryButtonStyle())
             }
+            extra
         }
         .sheet(isPresented: $showing) {
             GlossaryView().environment(state)

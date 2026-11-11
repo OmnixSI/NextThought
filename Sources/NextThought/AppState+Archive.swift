@@ -40,16 +40,20 @@ extension AppState {
     }
 
     /// `endedAt`: the end of the last words when the meeting ended by itself after silence.
-    func finishArchive(endedAt: Date? = nil, summarize: Bool = true) {
-        guard activeArchiveID != nil else { return }
+    /// `summarize: false` (the app is closing) leaves the notes for the next launch.
+    /// Returns whether a meeting was kept.
+    @discardableResult
+    func finishArchive(endedAt: Date? = nil, summarize: Bool = true) -> Bool {
+        guard activeArchiveID != nil else { return false }
         activeArchiveID = nil
-        guard let meta = archive.finish(at: endedAt ?? Date()) else { return }
-        DataBackup.afterSession(sessionID: meta.id)
+        guard let meta = archive.finish(at: endedAt ?? Date(), notesDeferred: !summarize && autoSummarize) else { return false }
+        sessionBackupTask = DataBackup.afterSession(sessionID: meta.id)
         // 结束就是纪要: the same meeting, now as its notes page.
         historyWorkspaceFilter = nil
         historySelection = meta.id
         section = .meetings
-        if autoSummarize && summarize && meta.transcriptCount > 0 { generateSummary(for: meta.id) }
+        if autoSummarize && summarize && meta.transcriptCount > 0 { generateSummary(for: meta.id, automatic: true) }
+        return true
     }
 
     func recordTranscript(_ entry: TranscriptEntry) {

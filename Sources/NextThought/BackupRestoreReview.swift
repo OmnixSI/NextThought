@@ -65,7 +65,7 @@ private struct BackupRestoreReviewView: View {
                 stat("冲突记录", prepared.sessions.filter { $0.status == .conflict }.count)
                 stat("备份模板", prepared.templates.count)
             }
-            Text("项目与课程按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。")
+            Text("资料夹按修改时间合并；应用前会先创建本机恢复点。模板和个人笔记属于数据，始终参与恢复。")
                 .font(Typo.caption).foregroundStyle(Ink.secondary)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: Space.s3) {

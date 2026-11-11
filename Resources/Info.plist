@@ -22,9 +22,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.5.0</string>
+	<string>3.0.0</string>
 	<key>CFBundleVersion</key>
-	<string>2500</string>
+	<string>3000</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>LSMinimumSystemVersion</key>
@@ -49,6 +49,8 @@
 	<string>NextThought uses your microphone for local transcription, labelled as your voice separately from system audio.</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>NextThought captures system audio from the selected meeting or lesson window for on-device transcription.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>NextThought reads face landmarks from the camera on this Mac to tell you when your eyes leave the lens. No image is stored or sent.</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>NextThought captures the selected screen area or window when you request screenshot assistance.</string>
 </dict>

@@ -68,7 +68,6 @@ enum MainWindowLayout {
 
     static func isMainWindow(_ window: NSWindow) -> Bool {
         !(window is NSPanel) && !window.isSheet && window.sheetParent == nil
-            && window.identifier != SettingsWindow.identifier
             && window.contentViewController != nil && window.styleMask.contains(.titled)
     }
 
@@ -78,6 +77,18 @@ enum MainWindowLayout {
         window.title = "NextThought"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
+        // An empty unified toolbar makes the title row 52 pt tall with the traffic
+        // lights centred in it; the navigation and the live bar draw in that row.
+        let toolbar = NSToolbar(identifier: "NextThought.Main")
+        toolbar.showsBaselineSeparator = false
+        window.toolbar = toolbar
+        window.toolbarStyle = .unified
+        claimTitleRow(of: window)
+        for name in [NSWindow.didEnterFullScreenNotification, NSWindow.didExitFullScreenNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak window] _ in
+                MainActor.assumeIsolated { if let window { claimTitleRow(of: window) } }
+            }
+        }
         window.isMovableByWindowBackground = true
         window.level = effectiveWorkspaceLevel
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -89,6 +100,17 @@ enum MainWindowLayout {
         reset(window)
     }
 
+    /// Gives the title row to the content: the title bar's safe area is cancelled, so
+    /// the interface lays out from the top edge of the window.
+    ///
+    /// Merely ignoring the safe area in SwiftUI is not enough: a scroll view or split
+    /// view that starts where the safe area ends still stretches its AppKit view up
+    /// into it, on top of the bar, and takes every click meant for the bar's buttons.
+    static func claimTitleRow(of window: NSWindow) {
+        let titleBar = window.frame.height - window.contentLayoutRect.height
+        window.contentView?.additionalSafeAreaInsets = NSEdgeInsets(top: -titleBar, left: 0, bottom: 0, right: 0)
+    }
+
     static var effectiveWorkspaceLevel: NSWindow.Level {
         let keepOnTop = UserDefaults.standard.object(forKey: "keepOnTop") as? Bool ?? true
         return keepOnTop && NSApp?.isActive == true ? .floating : .normal
@@ -97,7 +119,7 @@ enum MainWindowLayout {
     /// Workspace windows float only while NextThought is the active app.
     static func refreshLevels() {
         let level = effectiveWorkspaceLevel
-        for window in NSApp.windows where isMainWindow(window) || window.identifier == SettingsWindow.identifier {
+        for window in NSApp.windows where isMainWindow(window) {
             window.level = level
         }
         DetachedModuleController.shared.applyWindowLevel(level)
@@ -110,7 +132,11 @@ enum MainWindowLayout {
 
     /// Shows the main window and activates the app.
     static func bringToFront() {
-        NSApp.windows.first(where: isMainWindow)?.makeKeyAndOrderFront(nil)
+        let window = NSApp.windows.first(where: isMainWindow)
+        if window?.isMiniaturized == true { window?.deminiaturize(nil) }
+        // Hands-on walkthroughs must never take focus from whatever the person is doing.
+        if AppEnvironment.values["NEXTTHOUGHT_DEMO_STAGE"] == "1" { window?.orderFront(nil); return }
+        window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -146,11 +172,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard WorkspaceEditController.shared.shouldTerminateApplication() else { return .terminateCancel }
         guard !terminationCheckInProgress else { return .terminateLater }
-        terminationCheckInProgress = true
         let state = AppState.shared
+        // A running meeting ends silently otherwise: ask first (the notes follow on next launch).
+        guard state.confirmEndingMeeting(for: .quit) else { return .terminateCancel }
+        terminationCheckInProgress = true
         Task { @MainActor in
             guard !state.isChangingSession else {
                 state.errorMessage = "会议正在切换，稍后再试一次退出。"
+                state.endMeetingConfirmed = false
                 terminationCheckInProgress = false
                 sender.reply(toApplicationShouldTerminate: false)
                 return
@@ -242,6 +271,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             MainWindowLayout.refreshLevels()
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
+            CueIslandController.shared.observeSession()
+            CueIslandController.shared.refreshPresence()
             DemoMode.apply()
         }
     }

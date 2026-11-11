@@ -148,7 +148,9 @@ extension AppState {
 
     /// Writes the notes of a session in the background (never interrupts a live
     /// answer). `templateID` / `english` re-run it with another template or language.
-    func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil,
+    /// `automatic`: started by the app (after a meeting, on recovery), not by a click;
+    /// a click without a connected answer service opens Settings → 回答.
+    func generateSummary(for id: UUID, templateID: String? = nil, english: Bool? = nil, automatic: Bool = false,
                          onCompletion: (@MainActor () -> Void)? = nil) {
         guard !isPreparingForTermination,
               !archive.isReadOnlyFallback(id),
@@ -157,10 +159,20 @@ extension AppState {
             onCompletion?()
             return
         }
+        guard answerEngineReady else {
+            meta.summaryState = .failed
+            meta.summaryError = String(localized: "先连接回答服务，才能整理纪要")
+            meta.notesDeferred = nil
+            archive.update(meta)
+            if !automatic { openSettings(.answers) }
+            onCompletion?()
+            return
+        }
         let engine = notesEngine
         guard !engine.model.isEmpty else {
+            meta.notesDeferred = nil
             meta.summaryState = .failed
-            meta.summaryError = String(localized: "没有可用的纪要模型。请在 设置 → 纪要 里选择。")
+            meta.summaryError = String(localized: "没有可用的纪要模型。请在 设置 → 高级 → 纪要 里选择。")
             archive.update(meta)
             onCompletion?()
             return
@@ -168,6 +180,7 @@ extension AppState {
         archive.summarizing.insert(id)
         meta.summaryState = .pending
         meta.summaryError = nil
+        meta.notesDeferred = nil
         archive.update(meta)
         archive.notesSteps[id] = .proofreading
         let useEnglish = english ?? notesUseEnglish
@@ -214,6 +227,7 @@ extension AppState {
                 Diagnostics.record("notes.completed", ["session_id": id.uuidString, "template": template.id,
                                                        "items": notes.sections.reduce(0) { $0 + $1.items.count },
                                                        "corrections": notes.corrections.count, "dropped": notes.droppedCount])
+                refreshRestorePoint(afterNotesFor: id)
             } catch NotesError.unreadable {
                 // The model did not answer in JSON: keep the session useful with the
                 // former Markdown summary.
@@ -232,6 +246,7 @@ extension AppState {
                     guard !Task.isCancelled, !archive.isTombstoned(id),
                           archive.sessions.contains(where: { $0.id == id }) else { return }
                     if autoCollectKnowledgeCandidates { collectReviewCandidates(summary, sessionID: id, workspaceID: detail.meta.workspaceID) }
+                    refreshRestorePoint(afterNotesFor: id)
                 } catch {
                     if !Task.isCancelled, !archive.isTombstoned(id) { markSummaryFailed(id, error) }
                 }
@@ -240,6 +255,21 @@ extension AppState {
             }
         }
         archive.summaryTasks[id] = summaryTask
+    }
+
+    /// The restore point made when the meeting ended has no notes yet: make a new one
+    /// once they are saved. It waits for the first to finish, and one waiting refresh
+    /// covers any number of notes finishing in the meantime.
+    func refreshRestorePoint(afterNotesFor id: UUID) {
+        guard !isPreparingForTermination, !restorePointRefreshWaiting else { return }
+        restorePointRefreshWaiting = true
+        let previous = sessionBackupTask
+        sessionBackupTask = Task { @MainActor [weak self] in
+            _ = await previous?.value
+            self?.restorePointRefreshWaiting = false
+            guard let self, !self.isPreparingForTermination else { return nil }
+            return await DataBackup.afterSession(sessionID: id)?.value ?? nil
+        }
     }
 
     /// Text and structured passes share one commit lock and read the newest saved views.
@@ -302,7 +332,7 @@ extension AppState {
                     return
                 }
                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                    self.generateSummary(for: id, onCompletion: { continuation.resume() })
+                    self.generateSummary(for: id, automatic: true, onCompletion: { continuation.resume() })
                 }
             }
             Diagnostics.record("summary.recovery_finished", ["count": ids.count])

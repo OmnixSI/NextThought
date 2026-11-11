@@ -55,7 +55,7 @@ final class DocumentPreparation {
         start()
         for url in urls {
             var job = DocumentJob(workspaceID: workspace.id, fileName: url.lastPathComponent, category: category,
-                categories: ModeProfile.for(workspace.mode).documentCategories, provider: options.provider.rawValue,
+                categories: ModeProfile.for(workspace.effectiveMode).documentCategories, provider: options.provider.rawValue,
                 model: options.model, effort: options.effort, fallback: options.fallback, timeout: options.timeout)
             job.localModelID = options.localModelID
             // Retain explicit user selection across a crash during the copy.

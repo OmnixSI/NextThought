@@ -32,7 +32,7 @@ struct MeetingUserNotes: View {
                         .buttonStyle(SecondaryButtonStyle())
                 }
             }
-            Text("记下自己的想法、导师反馈和待查的问题。AI 重新整理不会覆盖这里。")
+            Text("记下自己的想法、别人的反馈和待查的问题。AI 重新整理不会覆盖这里。")
                 .font(Typo.caption).foregroundStyle(Ink.secondary)
             TextEditor(text: Binding(get: { archive.personalNotes(for: sessionID) }, set: { archive.editPersonalNotes($0, for: sessionID) }))
                 .font(Typo.body)

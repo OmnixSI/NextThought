@@ -47,7 +47,7 @@ struct LiveSessionView: View {
                         }
                         .padding(.horizontal, Space.s4)
                         .frame(height: 44)
-                        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+                        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
                         if showsTranscriptInCompactLayout {
                             TranscriptColumn(jumpTo: $highlightedLineID)
                         } else {
@@ -67,11 +67,14 @@ struct LiveSessionView: View {
 private struct LiveTopBar: View {
     @Environment(AppState.self) private var state
 
+    /// The scene this meeting runs in (frozen copy while it runs).
+    private var scene: Workspace { state.preparedWorkspace ?? state.activeWorkspace }
+
     var body: some View {
         GeometryReader { proxy in
             Group {
                 if proxy.size.width < 1_080 {
-                    compactControls
+                    compactControls(showsScene: proxy.size.width >= 900)
                 } else {
                     expandedControls
                 }
@@ -80,7 +83,14 @@ private struct LiveTopBar: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(height: 52)
-        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
+    }
+
+    private var sceneTag: some View {
+        SceneTag(mode: scene.effectiveMode, name: scene.typeDisplayName)
+            .fixedSize()
+            .transition(.blurReplace)
+            .animation(Motion.snappy, value: scene.effectiveMode)
     }
 
     private var expandedControls: some View {
@@ -88,31 +98,29 @@ private struct LiveTopBar: View {
             trafficLightSpace
             RecordingTimer()
             archiveSaveStatus
-            titleBlock.frame(maxWidth: 190, alignment: .leading).layoutPriority(1)
+            quietStatus
+            sceneTag
+            titleBlock.frame(maxWidth: 220, alignment: .leading).layoutPriority(1)
             if state.isOfflineMeeting { offlineMeetingLabel }
             Spacer(minLength: Space.s3)
             answerModePicker
-            LiveTranslationToggle()
-            HStack(spacing: Space.s1) {
-                if state.insights.screenWatch { ScreenStatusIcon() }
-                if state.companionEnabled { PhoneStatusIcon() }
-                AnswerSettingsMenu()
-                teleprompterButton
-                LiveWindowMenu()
-            }
+            teleprompterButton
+            moreMenu(includesMode: false)
             if state.isRunning { PauseResumeButton() }
             endSessionButton
         }
     }
 
-    private var compactControls: some View {
+    private func compactControls(showsScene: Bool) -> some View {
         HStack(spacing: Space.s2) {
             trafficLightSpace
             RecordingTimer()
             archiveSaveStatus
+            quietStatus
+            if showsScene { sceneTag }
             titleBlock.frame(maxWidth: 170, alignment: .leading).layoutPriority(1)
             Spacer(minLength: 0)
-            compactMenu
+            moreMenu(includesMode: true)
             if state.isRunning { PauseResumeButton() }
             endSessionButton
         }
@@ -126,7 +134,7 @@ private struct LiveTopBar: View {
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(verbatim: title)
-                .font(LiveSessionTypography.label).foregroundStyle(Ink.ink)
+                .font(Font.system(.body, design: .serif).weight(.medium)).foregroundStyle(Ink.ink)
                 .lineLimit(1).truncationMode(.middle)
             if state.activeWorkspace.name != title {
                 Text(verbatim: state.activeWorkspace.name)
@@ -141,7 +149,45 @@ private struct LiveTopBar: View {
                      selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) }),
                      scalesWithDynamicType: true)
             .fixedSize()
-            .help("自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。")
+            .overlay(alignment: .topTrailing) {
+                if !state.answerEngineReady {
+                    Circle().fill(Ink.caution).frame(width: 6, height: 6).offset(x: 2, y: -2)
+                        .accessibilityHidden(true)
+                }
+            }
+            .help(state.answerEngineReady
+                  ? "自动回答：识别到问题后自动生成参考回答。只记录：不会自动回答；可输入问题或按 \(state.shortcutLabel(.forceAnswer)) 手动请求。"
+                  : "还没有连接回答服务，听到问题也不会自动回答")
+            .accessibilityHint(state.answerEngineReady ? "" : "还没有连接回答服务，听到问题也不会自动回答")
+    }
+
+    /// One quiet line beside the timer for what the island would otherwise be the only place to
+    /// say: the coach's nudge, the "看镜头" cue, and that the island stepped aside for screen sharing.
+    @ViewBuilder private var quietStatus: some View {
+        let sharing = CueIslandController.shared.model.shareAvoiding
+        let coach = state.coach
+        let item: (text: String, symbol: String)? = {
+            guard state.isRunning else { return nil }
+            if sharing { return (String(localized: "正在共享这块屏幕，提词岛已收起"), "rectangle.on.rectangle") }
+            guard coach.isEnabled else { return nil }
+            if coach.shouldLookUp { return (String(localized: "看镜头"), "eye.fill") }
+            if let nudge = coach.nudge { return (nudge.message, nudge.symbol) }
+            return nil
+        }()
+        Group {
+            if let item {
+                HStack(spacing: 5) {
+                    Image(systemName: item.symbol).font(.system(size: 10, weight: .semibold))
+                    Text(verbatim: item.text).font(LiveSessionTypography.caption).lineLimit(1)
+                }
+                .foregroundStyle(Ink.caution)
+                .id(item.text)
+                .transition(.blurReplace)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("liveSession.quietStatus")
+            }
+        }
+        .animation(Motion.snappy, value: item?.text)
     }
 
     private var offlineMeetingLabel: some View {
@@ -162,26 +208,40 @@ private struct LiveTopBar: View {
             .help("结束并整理纪要 · \(state.shortcutLabel(.toggleSession))")
     }
 
-    private var compactMenu: some View {
+    /// The one place for the secondary tools: translation, screen and phone status,
+    /// answer settings, the live window. The segmented control already carries the
+    /// mode in the wide bar, so only the compact bar repeats it here.
+    private func moreMenu(includesMode: Bool) -> some View {
         Menu {
-            Section("会中模式") {
-                Picker("会中模式", selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) })) {
-                    Text("自动回答").tag(true)
-                    Text("只记录").tag(false)
+            if includesMode {
+                Section("会中模式") {
+                    Picker("会中模式", selection: Binding(get: { state.automaticAnswers }, set: { state.setLiveMode(prompting: $0) })) {
+                        Text("自动回答").tag(true)
+                        Text("只记录").tag(false)
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
+            }
+            if !state.answerEngineReady {
+                Button { state.openSettings(.answers) } label: {
+                    Label("连接回答服务…", systemImage: "sparkles")
+                }
+                .help("还没有连接回答服务，听到问题也不会自动回答")
             }
             Section("工具") {
                 Button(state.liveTranslation.isEnabled ? "关闭同声传译" : "开启同声传译") {
                     state.liveTranslation.setEnabled(!state.liveTranslation.isEnabled)
                 }
                 .disabled(!supportsLiveTranslation)
-                if state.isOfflineMeeting { offlineMeetingLabel }
+                .help(supportsLiveTranslation ? "自动识别我和对方说的中文或英文，并翻译成另一种语言" : "同声传译需要 macOS 15 或更新版本")
+                if state.isOfflineMeeting && includesMode { offlineMeetingLabel }
                 if state.insights.screenWatch { Label("屏幕感知已开启", systemImage: "display") }
                 if state.companionEnabled { Label(state.companionConnectionText, systemImage: "iphone") }
-                Button { TeleprompterController.shared.toggle() } label: {
-                    Label("回答浮窗", systemImage: "rectangle.topthird.inset.filled")
+                if includesMode {
+                    Button { TeleprompterController.shared.toggle() } label: {
+                        Label("回答浮窗", systemImage: "rectangle.topthird.inset.filled")
+                    }
                 }
                 Picker("会中窗口", selection: Binding(get: { state.liveWindow.mode }, set: { state.liveWindow.set($0) })) {
                     ForEach(LiveWindowMode.allCases) { mode in
@@ -192,15 +252,29 @@ private struct LiveTopBar: View {
                 .labelsHidden()
             }
             Section("回答设置") { AnswerSettingsMenu() }
+            Divider()
+            Button { SettingsRoute.shared.quickPresented = true } label: {
+                Label("设置…", systemImage: "gearshape")
+            }
         } label: {
-            Image(systemName: "ellipsis.circle")
-                .font(.system(size: 16, weight: .medium))
+            Image(systemName: "ellipsis")
+                .font(.system(size: 14, weight: .semibold))
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())
+                .overlay(alignment: .topTrailing) {
+                    // Something running in the background (translation, screen, phone) shows as a dot.
+                    if state.liveTranslation.isEnabled || state.insights.screenWatch || state.companionEnabled || !state.answerEngineReady {
+                        Circle().fill(state.answerEngineReady ? Ink.ink : Ink.caution).frame(width: 5, height: 5).offset(x: -3, y: 4)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .animation(Motion.snappy, value: state.liveTranslation.isEnabled)
         }
         .menuStyle(.button)
         .buttonStyle(GlassIconButtonStyle(size: 28))
         .menuIndicator(.hidden)
+        .fixedSize()
+        .quickSettingsPopover()
         .accessibilityLabel("会中设置和工具")
         .help("会中设置和工具")
     }
@@ -272,16 +346,20 @@ private struct RecordingTimer: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let elapsed = state.sessionStartedAt.map { Self.elapsed(from: $0, to: context.date) }
-            let status = state.isRunning ? (state.isPaused ? "已暂停" : "正在聆听") : "未在聆听"
+            let status = state.isRunning ? (state.isPaused ? String(localized: "已暂停") : String(localized: "正在聆听")) : String(localized: "未在聆听")
             HStack(spacing: 6) {
-                Circle()
-                    .fill(state.isRunning && !state.isPaused ? Ink.live : Ink.tertiary)
-                    .frame(width: 7, height: 7)
+                let onAir = state.isRunning && !state.isPaused
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(onAir ? Ink.seal : Ink.tertiary)
+                    .symbolEffect(.pulse, options: .repeating, isActive: onAir && !Motion.reduce)
+                    .frame(width: 10, height: 10)
                     .accessibilityHidden(true)
                 if let elapsed {
                     Text(verbatim: elapsed)
-                        .font(Font.caption.weight(.medium).monospacedDigit())
+                        .font(Font.callout.weight(.medium).monospacedDigit())
                         .foregroundStyle(state.isPaused ? Ink.secondary : Ink.ink)
+                        .contentTransition(.numericText())
                 }
                 Text(verbatim: status)
                     .font(LiveSessionTypography.caption)
@@ -309,8 +387,8 @@ private struct PauseResumeButton: View {
     @FocusState private var isKeyboardFocused: Bool
     @State private var isHovering = false
 
-    private var actionLabel: String { state.isPaused ? "继续聆听" : "暂停聆听" }
-    private var title: String { state.isPaused ? "继续" : "暂停" }
+    private var actionLabel: String { state.isPaused ? String(localized: "继续聆听") : String(localized: "暂停聆听") }
+    private var title: LocalizedStringKey { state.isPaused ? "继续" : "暂停" }
 
     var body: some View {
         Button { Task { await state.togglePause() } } label: {
@@ -492,7 +570,7 @@ private struct TranscriptColumn: View {
             }
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: Space.s3) {
+                    LazyVStack(alignment: .leading, spacing: Space.s4) {
                         if state.entries.isEmpty && state.partialTranscript.isEmpty && state.microphonePartialTranscript.isEmpty {
                             Text(state.isOfflineMeeting ? "开始说话后，房间里的声音会实时出现在这里。" : "对方和你说的话会实时出现在这里。")
                                 .font(LiveSessionTypography.body).foregroundStyle(Ink.secondary)
@@ -585,7 +663,7 @@ private struct SpeakerLabel: View {
     var hidden = false
     var body: some View {
         Text(speaker.displayName)
-            .font(Font.caption.weight(speaker == .me ? .semibold : .regular))
+            .font(Font.caption.weight(.medium))
             .foregroundStyle(speaker == .me ? Ink.ink : Ink.secondary)
             .frame(width: 40, alignment: .leading)
             .opacity(hidden ? 0 : 1)
@@ -614,17 +692,20 @@ private struct TranscriptLine: View {
         } else {
             let isQuestion = !entry.isMe && state.isQuestionText(entry.text)
             HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
-                SpeakerLabel(speaker: entry.speaker, hidden: layout?.hidesRoleLabel(for: entry.speaker) == true)
+                VStack(alignment: .leading, spacing: Space.s1) {
+                    SpeakerLabel(speaker: entry.speaker, hidden: layout?.hidesRoleLabel(for: entry.speaker) == true)
+                    if isQuestion { QuestionMark() }
+                }
                 VStack(alignment: .leading, spacing: Space.s1) {
                     if let layout, layout.hidesRoleLabel(for: entry.speaker), layout.starts.contains(entry.id) {
                         SpeakerTag(layout: layout, lineID: entry.id, speaker: entry.speaker)
                     }
-                    lineText(isQuestion: isQuestion)
+                    Text(verbatim: entry.text).font(LiveSessionTypography.body).foregroundStyle(Ink.ink)
                     if let translation = entry.translatedText, !translation.isEmpty {
                         Text("译文：\(translation)").font(LiveSessionTypography.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                     }
                 }
-                .lineSpacing(5)
+                .lineSpacing(6)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Spacer(minLength: 0)
@@ -664,13 +745,20 @@ private struct TranscriptLine: View {
             .animation(Motion.hover, value: hovering)
         }
     }
+}
 
-    /// The line, with a small neutral "问题" tag when the detector saw a question.
-    private func lineText(isQuestion: Bool) -> Text {
-        let body = Text(verbatim: entry.text).font(LiveSessionTypography.body).foregroundStyle(Ink.ink)
-        guard isQuestion else { return body }
-        let tag = Text("问题").font(Font.caption2.weight(.medium)).foregroundStyle(Ink.ai)
-        return tag + Text(verbatim: " ") + body
+/// The detector saw a question: a small capsule in the scene's pigment.
+private struct QuestionMark: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        let tint = (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode.theme.tint
+        Text("问题")
+            .font(Font.caption2.weight(.medium))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 7).padding(.vertical, 2)
+            .background(tint.opacity(0.13), in: Capsule())
+            .accessibilityLabel("问题")
+            .transition(.scale(scale: 0.8).combined(with: .opacity))
     }
 }
 
@@ -692,7 +780,7 @@ private struct PartialLines: View {
         HStack(alignment: .firstTextBaseline, spacing: Space.s3) {
             SpeakerLabel(speaker: speaker)
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text(verbatim: text).font(LiveSessionTypography.body).foregroundStyle(Ink.secondary).lineSpacing(5)
+                Text(verbatim: text).font(LiveSessionTypography.body).foregroundStyle(Ink.secondary).lineSpacing(6)
                 if !translation.isEmpty {
                     Text("译文：\(translation)").font(LiveSessionTypography.caption).foregroundStyle(Ink.ai).lineSpacing(4)
                 }
@@ -711,29 +799,36 @@ private struct CandidateStrip: View {
             candidate.state == .triggered || candidate.assessment.intent == .statement ? nil : candidate
         }
         let suggested = Array(state.suggestedQuestions.suffix(2).reversed())
-        if live != nil || !suggested.isEmpty {
-            VStack(alignment: .leading, spacing: Space.s1) {
-                if let live { row(live, dismissible: false) }
-                ForEach(suggested) { candidate in row(candidate, dismissible: true) }
+        let tint = (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode.theme.tint
+        Group {
+            if live != nil || !suggested.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    if let live { row(live, dismissible: false, tint: tint) }
+                    ForEach(suggested) { candidate in row(candidate, dismissible: true, tint: tint) }
+                }
+                .padding(.horizontal, Space.s6)
+                .padding(.vertical, Space.s1)
+                .overlay(alignment: .top) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .padding(.horizontal, Space.s6)
-            .padding(.vertical, Space.s2)
-            .overlay(alignment: .top) { Rectangle().fill(Ink.hairline).frame(height: 1) }
         }
+        .animation(Motion.expand, value: suggested.count + (live == nil ? 0 : 1))
     }
 
-    private func row(_ candidate: QuestionCandidate, dismissible: Bool) -> some View {
+    private func row(_ candidate: QuestionCandidate, dismissible: Bool, tint: Color) -> some View {
         HStack(spacing: Space.s2) {
-            Text("可能的问题").font(Font.caption2.weight(.medium)).foregroundStyle(Ink.ai)
+            Circle().fill(tint).frame(width: 6, height: 6).accessibilityHidden(true)
+            Text("可能的问题").font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary)
             Text(verbatim: candidate.fullText).font(LiveSessionTypography.caption).foregroundStyle(Ink.ink).lineLimit(1)
             Spacer(minLength: Space.s2)
             Button("回答这句") { state.answerCandidate(candidate) }
-                .buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 6, scalesWithDynamicType: true))
+                .buttonStyle(GhostButtonStyle(height: 26, horizontalPadding: 8, scalesWithDynamicType: true))
             if dismissible {
                 Button { state.dismissCandidate(candidate) } label: { Image(systemName: "xmark") }
                     .buttonStyle(GlassIconButtonStyle(size: 22))
             }
         }
+        .frame(minHeight: 32)
     }
 }
 
@@ -798,17 +893,30 @@ private struct RightColumn: View {
             HStack {
                 InkSegmented(items: [(value: false, title: "我的笔记"), (value: true, title: "问答")], selection: $showsAnswer)
                 Spacer(minLength: Space.s2)
-                if state.isAnswering && !showsAnswer { Label("回答生成中", systemImage: "sparkles").font(LiveSessionTypography.caption).foregroundStyle(Ink.ai) }
-            }.padding(.horizontal, Space.s6).padding(.top, Space.s4)
-            if showsAnswer {
-                AnswerColumn()
-            } else if let id = state.activeArchiveID {
-                MeetingUserNotes(sessionID: id, highlights: highlights, onOpenHighlight: onOpenHighlight)
-                    .padding(Space.s6)
-            } else {
-                Text("此场未保存记录，个人笔记需要开启记录保存。").font(LiveSessionTypography.body).foregroundStyle(Ink.caution).padding(Space.s6)
-                Spacer()
+                if state.isAnswering && !showsAnswer {
+                    Label("回答生成中", systemImage: "sparkles").font(LiveSessionTypography.caption).foregroundStyle(Ink.ai)
+                        .symbolEffect(.pulse, options: .repeating, isActive: !Motion.reduce)
+                        .transition(.blurReplace)
+                }
             }
+            .padding(.horizontal, Space.s6).padding(.top, Space.s4)
+            .animation(Motion.snappy, value: state.isAnswering)
+            Group {
+                if showsAnswer {
+                    AnswerColumn()
+                } else if let id = state.activeArchiveID {
+                    MeetingUserNotes(sessionID: id, highlights: highlights, onOpenHighlight: onOpenHighlight)
+                        .padding(Space.s6)
+                } else {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("此场未保存记录，个人笔记需要开启记录保存。").font(LiveSessionTypography.body).foregroundStyle(Ink.caution).padding(Space.s6)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .transition(.opacity)
+            .animation(Motion.expand, value: showsAnswer)
         }
         .onAppear { showsAnswer = state.automaticAnswers }
         .onChange(of: state.currentAnswerID) { _, _ in if !state.currentAnswerAutomatic { showsAnswer = true } }
@@ -843,20 +951,34 @@ private struct NotesOnlyColumn: View {
     }
 }
 
-/// 建议回答: header with history, the web status when it happens, the answer, three
-/// rewrites plus "…", and one line saying what it was based on.
+/// 建议回答: header with history, the web status when it happens, the question as a
+/// quiet caption, then one raised sheet holding the answer, its rewrites (capsule
+/// chips) and the line saying what it was based on.
 private struct AnswerColumn: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
+        let tint = (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode.theme.tint
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack(spacing: Space.s2) {
-                AIHeading(title: state.isAnswering && state.historyCursor == nil ? "正在回答" : "建议回答")
+                HStack(spacing: Space.s1) {
+                    Image(systemName: "sparkle").font(.system(size: 11, weight: .medium)).foregroundStyle(tint)
+                    Group {
+                        if state.isAnswering && state.historyCursor == nil {
+                            Text("正在回答").transition(.blurReplace)
+                        } else {
+                            Text("建议回答").transition(.blurReplace)
+                        }
+                    }
+                    .overline()
+                }
+                .animation(Motion.snappy, value: state.isAnswering)
                 Spacer()
                 if let position = state.historyPositionText {
                     Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }
                         .buttonStyle(GlassIconButtonStyle(size: 22)).help("上一条 · \(state.shortcutLabel(.previousAnswer))")
                     Text(verbatim: position).font(Font.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
+                        .contentTransition(.numericText())
                     Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }
                         .buttonStyle(GlassIconButtonStyle(size: 22)).help("下一条 · \(state.shortcutLabel(.nextAnswer))")
                 }
@@ -872,15 +994,32 @@ private struct AnswerColumn: View {
                 Text(verbatim: AnswerRefinement.originalQuestion(of: question))
                     .font(LiveSessionTypography.caption).foregroundStyle(Ink.secondary).lineLimit(2)
                     .textSelection(.enabled)
+                    .id(question)
+                    .transition(.blurReplace)
             }
-            AnswerText()
-            WebSources()
-            RefinementRow()
-            EvidenceLine()
+            VStack(alignment: .leading, spacing: 0) {
+                AnswerText()
+                    .padding(.horizontal, Space.s6).padding(.top, Space.s6).padding(.bottom, Space.s3)
+                WebSources().padding(.horizontal, Space.s6).padding(.bottom, Space.s2)
+                Rectangle().fill(Ink.hairline).frame(height: 0.5)
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    RefinementRow()
+                    EvidenceLine()
+                }
+                .padding(.horizontal, Space.s4).padding(.vertical, Space.s3)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background {
+                RoundedRectangle(cornerRadius: Space.radiusLarge, style: .continuous)
+                    .fill(Ink.surface)
+                    .shadow(color: Ink.contactShadow, radius: 1, x: 0, y: 1)
+                    .shadow(color: Ink.ambientShadow, radius: 20, x: 0, y: 10)
+            }
+            .overlay(RoundedRectangle(cornerRadius: Space.radiusLarge, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 0.5))
         }
-        .padding(Space.s6)
+        .animation(Motion.expand, value: state.displayedQuestion.isEmpty)
+        .padding(.horizontal, Space.s6).padding(.top, Space.s4).padding(.bottom, Space.s4)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(Ink.promptPanel)
     }
 }
 
@@ -899,11 +1038,14 @@ private struct AnswerText: View {
                             Text(state.isAnswering ? "正在生成…" : "对方提问时，这里会自动给出建议回答。也可以在下方输入问题，或按 \(state.shortcutLabel(.forceAnswer)) 立即回答。")
                                 .font(LiveSessionTypography.body).foregroundStyle(Ink.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .transition(.blurReplace)
                         } else {
-                            MarkdownText(text: text, size: 20, lineSpacing: 9, scalesWithDynamicType: true).equatable()
+                            MarkdownText(text: text, size: 18, lineSpacing: 8, scalesWithDynamicType: true).equatable()
+                                .transition(.blurReplace)
                         }
                         Color.clear.frame(height: 1).id("answer-end")
                     }
+                    .animation(Motion.morph, value: state.displayedAnswer.isEmpty)
                     .background(ScrollFollowObserver(
                         onScrollAway: { follow.userScrolledAway() },
                         onReachedLatest: { follow.reachedLatest() },
@@ -1000,7 +1142,7 @@ private struct RefinementRow: View {
         HStack(spacing: Space.s1) {
             ForEach(Self.shown) { item in
                 Button { state.refine(item) } label: { Text(verbatim: item.displayName) }
-                    .buttonStyle(GhostButtonStyle(height: 28, horizontalPadding: 8, scalesWithDynamicType: true))
+                    .buttonStyle(LiveChipStyle())
                     .disabled(!hasAnswer || state.isAnswering)
                     .help(item == .shorter ? "把回答改短 · \(state.shortcutLabel(.refineShorter))" : "")
             }
@@ -1013,6 +1155,30 @@ private struct RefinementRow: View {
                                  DemoMode.isEnabled && acceptanceScenario == .busyFocus ? .focused : .normal)
                     .help("取消回答 · \(state.shortcutLabel(.cancelAnswer))")
             }
+        }
+    }
+}
+
+/// Capsule chip for a rewrite: hairline outline, hover wash, a quick press.
+private struct LiveChipStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View { Chip(configuration: configuration) }
+    private struct Chip: View {
+        let configuration: ButtonStyleConfiguration
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var hovering = false
+        var body: some View {
+            configuration.label
+                .font(LiveSessionTypography.label)
+                .foregroundStyle(isEnabled ? Ink.ink : Ink.tertiary.opacity(0.65))
+                .padding(.horizontal, 12)
+                .frame(minHeight: 28)
+                .background((isEnabled && (hovering || configuration.isPressed)) ? Ink.hover : .clear, in: Capsule())
+                .overlay(Capsule().strokeBorder(Ink.hairline, lineWidth: 0.5))
+                .contentShape(Capsule())
+                .scaleEffect(configuration.isPressed && isEnabled ? 0.96 : 1)
+                .onHover { hovering = $0 }
+                .animation(Motion.hover, value: hovering)
+                .animation(Motion.snappy, value: configuration.isPressed)
         }
     }
 }
@@ -1145,7 +1311,7 @@ private struct LiveComposer: View {
                         .buttonStyle(SecondaryButtonStyle(scalesWithDynamicType: true))
                 }
             }
-            HStack(spacing: Space.s2) {
+            HStack(spacing: Space.s3) {
                 HStack(spacing: Space.s2) {
                     TextField("", text: $state.questionInput, prompt: placeholder, axis: .vertical)
                         .lineLimit(1...4)
@@ -1154,26 +1320,35 @@ private struct LiveComposer: View {
                         .focused($focused)
                         .onSubmit { submit() }
                     ShortcutHint(text: "⌘L", scalesWithDynamicType: true)
+                    Menu {
+                        Button("框选区域") { state.captureScreenshot(.region) }
+                        Button("选择窗口") { state.captureScreenshot(.window) }
+                    } label: {
+                        Image(systemName: "camera.viewfinder")
+                    }
+                    .menuStyle(.button)
+                    .buttonStyle(GlassIconButtonStyle(size: 28))
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("截图提问 · 区域 \(state.shortcutLabel(.captureRegion)) · 窗口 \(state.shortcutLabel(.captureWindow))")
                     Button { submit() } label: { Image(systemName: "arrow.up.circle.fill") }
-                        .buttonStyle(GlassIconButtonStyle(size: 30))
+                        .buttonStyle(GlassIconButtonStyle(size: 28))
                         .disabled(state.questionInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && state.screenshotPreview == nil)
                         .accessibilityLabel("发送问题")
                 }
-                .padding(.horizontal, Space.s3)
-                .frame(minHeight: 36)
-                .background(Ink.surface, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous).strokeBorder(Ink.hairline, lineWidth: 1))
-                Menu {
-                    Button("框选区域") { state.captureScreenshot(.region) }
-                    Button("选择窗口") { state.captureScreenshot(.window) }
-                } label: {
-                    Image(systemName: "camera.viewfinder")
+                .padding(.leading, Space.s4).padding(.trailing, Space.s2)
+                .frame(minHeight: Space.controlLarge)
+                .background {
+                    RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous)
+                        .fill(Ink.surface)
+                        .shadow(color: Ink.contactShadow, radius: 1, x: 0, y: 1)
+                        .shadow(color: Ink.ambientShadow, radius: 14, x: 0, y: 8)
                 }
-                .menuStyle(.button)
-                .buttonStyle(GlassIconButtonStyle(size: 32))
-                .menuIndicator(.hidden)
-                .fixedSize()
-                .help("截图提问 · 区域 \(state.shortcutLabel(.captureRegion)) · 窗口 \(state.shortcutLabel(.captureWindow))")
+                .overlay {
+                    RoundedRectangle(cornerRadius: Space.radiusMedium, style: .continuous)
+                        .strokeBorder(focused ? Ink.focus.opacity(0.5) : Ink.hairline, lineWidth: focused ? 1 : 0.5)
+                }
+                .animation(Motion.hover, value: focused)
                 if state.automaticAnswers {
                     Button { state.forceAnswerCurrent() } label: {
                         HStack(spacing: 6) {
@@ -1182,16 +1357,18 @@ private struct LiveComposer: View {
                             ShortcutHint(text: state.shortcutLabel(.forceAnswer), onInk: true, scalesWithDynamicType: true)
                         }
                     }
-                    .buttonStyle(PrimaryButtonStyle(scalesWithDynamicType: true))
+                    .buttonStyle(PrimaryButtonStyle(height: Space.controlLarge, scalesWithDynamicType: true))
                     .accessibilityIdentifier("liveSession.primaryAnswer")
                     .liveSessionAcceptanceFrame("primary-action")
                     .help("回答最新的问题或转写，不等自动判断")
+                    .transition(.scale(scale: 0.92, anchor: .trailing).combined(with: .opacity))
                 }
             }
+            .animation(Motion.snappy, value: state.automaticAnswers)
         }
-        .padding(.horizontal, Space.s4)
-        .padding(.vertical, Space.s3)
-        .overlay(alignment: .top) { Rectangle().fill(Ink.hairline).frame(height: 1) }
+        .padding(.horizontal, Space.s6)
+        .padding(.top, Space.s2)
+        .padding(.bottom, Space.s4)
         .background {
             // ⌘L focuses the input.
             Button("") { focused = true }

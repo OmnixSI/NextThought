@@ -16,6 +16,9 @@ final class SubtitleBarModel {
     var isEditing = false
     /// Width of the card itself (the panel adds room for the shadow).
     var cardWidth: CGFloat = 800
+    /// The auto-end reminder is counting down: the bar stays up with the countdown and a
+    /// 继续记录 button, and takes clicks.
+    var autoEndDeadline: Date?
 }
 
 /// A panel that can never become key or main window: the meeting app keeps the keyboard.
@@ -229,7 +232,10 @@ final class SubtitleBarController {
         feed.update(channels: channels, lastFinal: lastFinal, now: now)
 
         // A bar the user is holding stays up.
-        let phase = model.isEditing ? SubtitleBarTiming.Phase.visible : timing.phase(now: now, lastActivity: feed.lastActivity)
+        let deadline = state.autoEnd.deadline
+        if model.autoEndDeadline != deadline { model.autoEndDeadline = deadline }
+        // Silence is what the reminder is about, so the bar must outlive its own fade-out.
+        let phase = model.isEditing || deadline != nil ? SubtitleBarTiming.Phase.visible : timing.phase(now: now, lastActivity: feed.lastActivity)
         if model.phase != phase { model.phase = phase }
 
         guard let line = feed.line else { return }
@@ -252,6 +258,15 @@ final class SubtitleBarController {
         let moved = hypot(mouse.x - lastMouse.x, mouse.y - lastMouse.y) > 2
         lastMouse = mouse
         let over = cardRect(of: panel.frame).insetBy(dx: -4, dy: -4).contains(mouse)
+
+        // The reminder's button needs a solid bar that takes clicks, without any dwell.
+        if model.autoEndDeadline != nil {
+            stillSeconds = 0
+            setDimmed(false)
+            if panel.ignoresMouseEvents { panel.ignoresMouseEvents = false }
+            return
+        }
+        if !model.isEditing, !panel.ignoresMouseEvents { panel.ignoresMouseEvents = true }
 
         if model.isEditing {
             // Stay solid while the pointer is on the bar or a button is held (a drag).

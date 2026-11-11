@@ -256,7 +256,9 @@ final class SessionArchive {
 
     // MARK: Loading
 
-    func load(onRecoveredSummaries: @escaping @MainActor ([UUID]) -> Void = { _ in }) {
+    /// `onInterrupted` receives how many unfinished recordings with content this launch repaired.
+    func load(onRecoveredSummaries: @escaping @MainActor ([UUID]) -> Void = { _ in },
+              onInterrupted: @escaping @MainActor (Int) -> Void = { _ in }) {
         guard !DemoMode.isEnabled else { return }
         loadGeneration &+= 1
         let generation = loadGeneration
@@ -269,7 +271,7 @@ final class SessionArchive {
         // for an orphan left by a previous launch.
         let activeSummaries = summarizing
         Task {
-            let result = await Task.detached(priority: .utility) { () -> (metas: [SessionMeta]?, recovered: [UUID], issues: [SessionArchiveReadIssue], legacyFallbacks: [LegacySessionArchiveFallback]) in
+            let result = await Task.detached(priority: .utility) { () -> (metas: [SessionMeta]?, recovered: [UUID], interrupted: Int, issues: [SessionArchiveReadIssue], legacyFallbacks: [LegacySessionArchiveFallback]) in
                 let migration = Self.migrateLegacySessions(into: root)
                 let directoryResult = SessionArchiveDirectoryReader.read(
                     at: root,
@@ -283,9 +285,10 @@ final class SessionArchive {
                 switch directoryResult {
                 case .contents(let value): folders = value
                 case .unavailable(let path, let reason):
-                    return (nil, [], migration.issues + [.unreadableDirectory(path, reason)], migration.fallbacks)
+                    return (nil, [], 0, migration.issues + [.unreadableDirectory(path, reason)], migration.fallbacks)
                 }
                 var recovered = Set<UUID>()
+                var interrupted = 0
                 var issues = migration.issues
                 let legacyFolderNames = Set(migration.fallbacks.map { $0.meta.id.uuidString })
                 let metas = folders.compactMap { folder -> SessionMeta? in
@@ -336,6 +339,7 @@ final class SessionArchive {
                                                             lastTranscriptWrite: modified) {
                             recovered.insert(meta.id)
                         }
+                        if meta.transcriptCount > 0 { interrupted += 1 }
                         changed = true
                     } else if meta.summaryState == .pending, !activeSummaries.contains(meta.id) {
                         // A finished meeting cannot still be generating after a
@@ -344,6 +348,9 @@ final class SessionArchive {
                         meta.summaryError = nil
                         changed = true
                         if meta.transcriptCount > 0 { recovered.insert(meta.id) }
+                    } else if meta.needsDeferredNotes {
+                        // Ended by a quit before the notes were written: write them now.
+                        recovered.insert(meta.id)
                     }
                     if changed { Self.write(meta, to: metaURL) }
                     return meta
@@ -351,7 +358,7 @@ final class SessionArchive {
                 // Process the backlog oldest-first so long-standing meetings are
                 // not continually pushed behind newer ones.
                 let orderedRecovered = metas.filter { recovered.contains($0.id) }.map(\.id).reversed()
-                return (metas, Array(orderedRecovered), issues, migration.fallbacks)
+                return (metas, Array(orderedRecovered), interrupted, issues, migration.fallbacks)
             }.value
             guard loadGeneration == generation else { return }
             isLoading = false
@@ -401,6 +408,7 @@ final class SessionArchive {
             contentDidChange()
             if !sessions.isEmpty { recordArchivePresence() }
             if !result.recovered.isEmpty { onRecoveredSummaries(result.recovered) }
+            if result.interrupted > 0 { onInterrupted(result.interrupted) }
         }
     }
 
@@ -700,11 +708,13 @@ final class SessionArchive {
 
     /// Ends the active session. Sessions without any transcript are discarded.
     @discardableResult
-    func finish(at date: Date = Date()) -> SessionMeta? {
+    /// `notesDeferred`: notes were skipped because the app is closing; the next launch writes them.
+    func finish(at date: Date = Date(), notesDeferred: Bool = false) -> SessionMeta? {
         guard var meta = activeMeta else { return nil }
         activeID = nil
         activeMeta = nil
         meta.endedAt = date
+        if notesDeferred, meta.transcriptCount > 0 { meta.notesDeferred = true }
         let hasUserContent = cachedUserContent[meta.id]?.hasContent == true
             || !(userContentDrafts[meta.id] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || ((try? SessionUserContentStore.load(from: folder(meta.id)).hasContent) ?? false)

@@ -32,8 +32,8 @@ struct MeetingTypeAndNotesTests {
         #expect(SessionMode.academic.rawValue == "academic" && SessionMode.academic.title == "汇报 / 答辩")
         #expect(SessionMode.meeting.rawValue == "meeting" && SessionMode.meeting.title == "工作会议")
         #expect(SessionMode.lesson.rawValue == "lesson" && SessionMode.lesson.title == "讲座 / 课程")
-        #expect(!SessionMode.builtIn.contains(.custom) && !SessionMode.builtIn.contains(.interview) && SessionMode.builtIn.count == 7)
-        #expect(!NotesTemplateKind.selectable.contains(.interview))
+        #expect(!SessionMode.builtIn.contains(.custom) && SessionMode.builtIn.contains(.interview) && SessionMode.builtIn.count == 9)
+        #expect(NotesTemplateKind.selectable.contains(.interview))
     }
 
     @Test func customTypeUsesItsBaseAndOldWorkspacesDecode() throws {
@@ -60,7 +60,7 @@ struct MeetingTypeAndNotesTests {
         }
         check(.general, .notesOnly, .concise, .general)
         check(.interview, .prompting, .concise, .interview)
-        check(.academic, .prompting, .concise, .academic)
+        check(.academic, .prompting, .concise, .talk)
         check(.labMeeting, .notesOnly, .detailed, .academic)
         check(.meeting, .notesOnly, .concise, .work)
         check(.client, .prompting, .concise, .client)
@@ -85,6 +85,41 @@ struct MeetingTypeAndNotesTests {
         #expect(MeetingTypeGuesser.guess("") == .general)
     }
 
+    @Test(arguments: [
+        ("字节跳动 · 后端二面", SessionMode.interview), ("Google phone screen", .interview), ("Final interview round", .interview),
+        ("周三组会", .labMeeting), ("Lab meeting", .labMeeting), ("课题组会 第 3 次", .labMeeting),
+        ("小组会议", .meeting), ("项目组会议", .meeting), ("Weekly sync", .meeting), ("季度 review", .meeting), ("周会", .meeting),
+        ("数据库课程设计", .groupProject), ("COMP5318 group project sync", .groupProject), ("大作业讨论", .groupProject), ("Capstone check-in", .groupProject),
+        ("客户 talk", .client), ("Client talk", .client), ("华东区客户沟通", .client), ("Customer onboarding call", .client),
+        ("毕业论文答辩", .academic), ("ACL 2026 oral presentation", .academic), ("Thesis defense", .academic), ("Tech talk", .academic), ("项目汇报", .academic),
+        ("机器学习讲座", .lesson), ("Lecture 4: Transformers", .lesson), ("线性代数课程", .lesson), ("CS229 class", .lesson),
+        ("小组讨论", .discussion), ("Brainstorm", .discussion),
+        ("随便聊聊", .general), ("Coffee with Sam", .general), ("Classic rock night", .general), ("Subclass design notes", .general), ("", .general),
+    ]) func titlesPickTheirScene(title: String, mode: SessionMode) {
+        #expect(MeetingTypeGuesser.guess(title) == mode, "\(title)")
+    }
+
+    @Test func preparationPromptFollowsTheScene() {
+        for mode in SessionMode.allCases {
+            let system = PreparationPrompt.system(for: mode), output = PreparationPrompt.output(for: mode)
+            #expect(!system.contains("导师意见") && !system.contains("学术讨论") || mode == .labMeeting, "\(mode)")
+            #expect(!output.contains("研究问题") && !output.contains("讨论重点"), "\(mode)")
+            #expect(system.contains(ModeProfile.for(mode).role))
+        }
+        #expect(PreparationPrompt.output(for: .interview).contains("## 资料里的亮点"))
+        #expect(PreparationPrompt.output(for: .client).contains("## 客户关心什么"))
+        #expect(PreparationPrompt.output(for: .lesson).contains("## 我可能不懂的地方"))
+        #expect(PreparationPrompt.output(for: .general).contains("## 资料重点\n"))
+        #expect(PreparationPrompt.output(for: .custom) == PreparationPrompt.output(for: .general))
+    }
+
+    @Test func everySceneHasPromptGuidance() {
+        let instructions = AnswerPromptBuilder.instructions(webSearch: false)
+        for mode in SessionMode.allCases where mode != .custom {
+            #expect(instructions.contains("(\(mode.rawValue))") || instructions.contains("（\(mode.rawValue)）"), "\(mode)")
+        }
+    }
+
     // MARK: Series
 
     @Test func nextRoundMatchesItsSeries() {
@@ -101,6 +136,28 @@ struct MeetingTypeAndNotesTests {
         #expect(SeriesMatcher.bestMatch(title: "周组会 第 3 周", candidates: candidates) == weekly)
         #expect(SeriesMatcher.bestMatch(title: "阿里 · 算法一面", candidates: candidates) == nil)
         #expect(SeriesMatcher.bestMatch(title: "", candidates: candidates) == nil)
+    }
+
+    @Test func recurringSeriesOutsideInterviewsMatch() {
+        for (title, base) in [("机器学习 第 3 讲", "机器学习"), ("机器学习 第三讲", "机器学习"), ("CS229 Lecture 4", "CS229 Lecture"),
+                              ("ML reading group Week 5", "ML reading group"),
+                              ("第 2 次组会", "组会"), ("季度复盘 Q3", "季度复盘"), ("季度复盘 第 3 季度", "季度复盘")] {
+            #expect(SeriesMatcher.baseTitle(title) == SeriesMatcher.baseTitle(base), "\(title)")
+        }
+        let lecture = UUID(), standup = UUID(), review = UUID(), lab = UUID()
+        let candidates = [
+            SeriesMatcher.Candidate(id: lecture, name: "机器学习", mode: .lesson, lastUsed: monday),
+            SeriesMatcher.Candidate(id: standup, name: "数据库大作业 碰头", mode: .groupProject, lastUsed: monday),
+            SeriesMatcher.Candidate(id: review, name: "季度复盘", mode: .meeting, lastUsed: monday),
+            SeriesMatcher.Candidate(id: lab, name: "组会", mode: .labMeeting, lastUsed: monday),
+        ]
+        #expect(SeriesMatcher.bestMatch(title: "机器学习 第 4 讲", candidates: candidates) == lecture)
+        #expect(SeriesMatcher.bestMatch(title: "数据库大作业 第二次碰头", candidates: candidates) == standup)
+        #expect(SeriesMatcher.bestMatch(title: "季度复盘 Q3", candidates: candidates) == review)
+        #expect(SeriesMatcher.bestMatch(title: "第 2 次组会", candidates: candidates) == lab)
+        #expect(SeriesMatcher.bestMatch(title: "操作系统 第 4 讲", candidates: candidates) == nil)
+        #expect(SeriesMatcher.bestMatch(title: "Lecture 4", candidates: candidates) == nil)
+        #expect(SeriesMatcher.bestMatch(title: "Q3 offsite planning", candidates: candidates) == nil)
     }
 
     // MARK: Dates
@@ -155,6 +212,23 @@ struct MeetingTypeAndNotesTests {
         #expect(!copy.isBuiltIn && copy.base == .work && copy.sections == NotesTemplate.builtIn(.work).sections)
         let decoded = try? JSONDecoder().decode(NotesTemplate.self, from: JSONEncoder().encode(copy))
         #expect(decoded == copy)
+    }
+
+    @Test func talkTemplateIsBuiltForThePresenter() {
+        #expect(MeetingTypeDefaults.for(.academic).template == .talk)
+        #expect(MeetingTypeDefaults.for(.labMeeting).template == .academic)
+        #expect(NotesTemplateKind.selectable.contains(.talk) && NotesTemplateKind(rawValue: "academic") == .academic)
+        for english in [false, true] {
+            let talk = NotesTemplate.builtIn(.talk, english: english)
+            let ids = talk.sections.map(\.id)
+            #expect(ids.contains("questions") && !ids.contains("feedback") && !ids.contains("experiments") && !ids.contains("paper"))
+            let questions = talk.sections.first { $0.id == "questions" }
+            #expect(questions?.kind == .questions && questions?.carry == .bank)
+            #expect(talk.sections.first?.kind == .oneLine)
+        }
+        #expect(NotesTemplate.builtIn(.talk).name == "汇报 / 答辩" && NotesTemplate.builtIn(.talk, english: true).name == "Talk / Defense")
+        #expect(NotesTemplate.builtIn(.academic).name == "组会 / 研究讨论")
+        #expect(NotesTemplate.builtIn(.academic).id == "academic")
     }
 
     @Test func modelReplyIsParsedAndChecked() throws {
