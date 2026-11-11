@@ -36,7 +36,7 @@ public enum NotesFormat: String, Codable, CaseIterable, Sendable, Identifiable {
         case .lesson: .outline
         case .labMeeting: .fishbone
         case .discussion: .viewpoints
-        case .general, .interview, .academic, .meeting, .client, .custom: .standard
+        case .general, .interview, .academic, .meeting, .client, .groupProject, .custom: .standard
         }
     }
 

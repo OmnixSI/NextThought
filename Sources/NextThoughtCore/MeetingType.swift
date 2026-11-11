@@ -12,11 +12,12 @@ public enum LiveMode: String, Codable, CaseIterable, Sendable {
 
 /// Built-in notes templates (02-scenarios-and-flows.md, "按场景的模板").
 public enum NotesTemplateKind: String, Codable, CaseIterable, Sendable, Identifiable {
-    case interview, academic, work, client, lecture, discussion, general
+    case interview, academic, work, client, lecture, discussion, general, groupProject
     public var id: String { rawValue }
-    /// Templates offered in settings and meeting notes. Keep the interview case
-    /// decodable for old notes while removing it from new selections.
-    public static var selectable: [NotesTemplateKind] { allCases.filter { $0 != .interview } }
+    /// Templates offered in settings and meeting notes.
+    public static var selectable: [NotesTemplateKind] {
+        [.general, .interview, .academic, .groupProject, .client, .work, .lecture, .discussion]
+    }
 }
 
 /// The defaults a meeting type sets, so nobody has to touch the switches.
@@ -43,6 +44,7 @@ public struct MeetingTypeDefaults: Sendable, Equatable {
         case .client: MeetingTypeDefaults(liveMode: .prompting, style: .concise, template: .client)
         case .lesson: MeetingTypeDefaults(liveMode: .notesOnly, style: .detailed, template: .lecture)
         case .discussion: MeetingTypeDefaults(liveMode: .notesOnly, style: .concise, template: .discussion)
+        case .groupProject: MeetingTypeDefaults(liveMode: .notesOnly, style: .concise, template: .groupProject)
         }
     }
 }
@@ -58,6 +60,7 @@ public enum MeetingTypeGuesser {
         (.academic, ["答辩", "defense", "defence", "汇报", "报告会", "presentation", "talk"]),
         (.client, ["客户", "client", "customer"]),
         (.lesson, ["讲座", "课程", "上课", "lecture", "class", "course"]),
+        (.groupProject, ["小组作业", "大作业", "课程设计", "课设", "团队作业", "group project", "group assignment", "team project", "capstone"]),
         (.discussion, ["小组讨论", "讨论", "discussion", "brainstorm", "头脑风暴"]),
         (.meeting, ["例会", "周会", "站会", "sync", "standup", "stand-up", "1:1", "one on one", "review"]),
     ]

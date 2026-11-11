@@ -85,7 +85,7 @@ public struct NotesTemplate: Codable, Sendable, Equatable, Identifiable {
         }
         switch kind {
         case .interview:
-            return NotesTemplate(id: kind.rawValue, name: t("会议回顾", "Meeting review"), sections: [
+            return NotesTemplate(id: kind.rawValue, name: t("面试复盘", "Interview review"), sections: [
                 s("impression", "一句话印象", "In one line", "这场面试给人的整体印象，一句话。", "The overall impression of this interview, in one sentence.", .oneLine),
                 s("questions", "逐题回放", "Question by question", "对方问的每一个问题：问了什么、我答的要点、评价（答得好 / 待改进）、更好的答法。", "Every question they asked: the question, the gist of my answer, a verdict (good / to improve) and a better answer.", .questions, carry: .bank),
                 s("weak", "我说得不好的地方", "Where I fell short", "我说得不好、含糊或说错的地方，引用原话。", "What I said poorly, vaguely or wrongly, quoting my words.", gap: true),
@@ -128,6 +128,15 @@ public struct NotesTemplate: Codable, Sendable, Equatable, Identifiable {
                 s("examples", "例子", "Examples", "讲到的例子。", "Examples that were used."),
                 s("questions", "我的疑问", "My questions", "没讲清楚、需要再问或再查的地方。", "What was unclear and needs asking or checking.", gap: true),
                 s("review", "待复习", "To review", "需要复习的内容和布置的任务。", "What to review, and any assignments."),
+            ])
+        case .groupProject:
+            return NotesTemplate(id: kind.rawValue, name: t("小组作业", "Group project"), sections: [
+                s("summary", "一句话总结", "In one line", "这次碰头定下了什么，一句话。", "What this meeting settled, in one sentence.", .oneLine),
+                s("decisions", "定下来的方案", "What we decided", "已经达成一致的选题、方案或做法。", "The topic, approach or method everyone agreed on."),
+                s("tasks", "分工 · 谁 · 哪天交", "Who does what · by when", "每项任务：谁负责、交付什么、哪天交。", "Each task: who owns it, what is delivered, and when it is due.", .actions, carry: .lesson, prefix: ("分工", "Task")),
+                s("mine", "我要做的", "My part", "我自己领到的任务和答应别人的事。", "The tasks I took on and what I promised others.", .actions),
+                s("open", "还没有结论的问题", "Still open", "意见不一致或需要问老师、助教的问题。", "Disagreements, and questions for the teacher or TA.", gap: true, carry: .lesson, prefix: ("未决", "Open")),
+                s("next", "下次碰头", "Next check-in", "下次碰头的时间，以及在那之前各自要完成什么。", "When the group meets next and what each person finishes before then."),
             ])
         case .discussion:
             return NotesTemplate(id: kind.rawValue, name: t("小组讨论", "Group discussion"), sections: [

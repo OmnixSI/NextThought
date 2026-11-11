@@ -123,6 +123,18 @@ public struct ModeProfile: Sendable {
                 documentCategories: ["题目材料", "参考资料", "其他"],
                 templatePreferences: "我在参加小组讨论。给出有依据的观点，回应别人的观点时先肯定合理之处再补充；需要时帮我总结各方观点、推动形成结论。",
                 reviewFocus: "整理议题、各方观点、结论与分歧和分工。")
+        case .groupProject:
+            return ModeProfile(
+                mode: mode, role: "小组成员",
+                fields: [
+                    ModeField("assignment", "作业要求", "课程、题目、评分标准、交付物"),
+                    ModeField("deadline", "截止时间", "最终提交时间和中间节点"),
+                    ModeField("members", "成员与分工", "每个人负责什么、目前做到哪里", long: true),
+                    ModeField("mine", "我负责的部分", "我的任务、进度和需要别人配合的地方", long: true),
+                ],
+                documentCategories: ["作业要求", "评分标准", "参考资料", "已有草稿", "其他"],
+                templatePreferences: "我是小组作业的成员。回答围绕作业要求和评分标准：先给可以直接说出口的建议，再给理由；涉及分工时说清谁做什么、什么时候交；意见不一致时帮我找到双方都能接受的方案；不确定的地方建议向老师或助教确认。",
+                reviewFocus: "整理每个人领到的任务和截止时间、已经定下来的方案、还没有结论的分歧，以及下次碰头前各自要完成什么。")
         case .general, .custom:
             return ModeProfile(
                 mode: mode, role: "参与者",

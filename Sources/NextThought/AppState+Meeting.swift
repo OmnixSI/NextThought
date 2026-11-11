@@ -7,7 +7,7 @@ import NextThoughtCore
 /// The meeting on the preparation page, before it starts (kept in memory only).
 struct MeetingDraft: Equatable {
     var title = ""
-    var mode: SessionMode = .labMeeting
+    var mode: SessionMode = .general
     /// Name and base type of a custom type ("自定义…").
     var customTypeName = ""
     var customBaseMode: SessionMode = .general
@@ -44,13 +44,14 @@ extension SessionMode {
     var displayName: String {
         switch self {
         case .general: String(localized: "通用")
-        case .interview: String(localized: "会议")
+        case .interview: String(localized: "面试")
         case .academic: String(localized: "汇报 / 答辩")
         case .labMeeting: String(localized: "组会")
         case .meeting: String(localized: "工作会议")
         case .client: String(localized: "客户沟通")
         case .lesson: String(localized: "讲座 / 课程")
         case .discussion: String(localized: "小组讨论")
+        case .groupProject: String(localized: "小组作业")
         case .custom: String(localized: "自定义")
         }
     }
@@ -59,13 +60,14 @@ extension SessionMode {
     var defaultsSummary: String {
         switch self {
         case .general: String(localized: "只记录，需要时 ⌘⇧↩ 回答 · 回答简短 · 纪要：总结、决定、待办")
-        case .interview: String(localized: "会中自动生成参考回答 · 回答简短 · 会后整理纪要")
+        case .interview: String(localized: "被问到时自动给出回答 · 回答简短、第一人称 · 会后逐题复盘并存进题库")
         case .academic: String(localized: "会中自动给出回答，跟着讲稿 · 回答简短 · 纪要：听众问了什么、怎么答更好")
         case .labMeeting: String(localized: "只记录，被问到时 ⌘⇧↩ · 回答详细 · 纪要：进展、导师意见、下一步")
         case .meeting: String(localized: "只记录 · 回答简短 · 纪要：决定、待办、风险")
         case .client: String(localized: "会中自动给出回答 · 回答简短 · 纪要：需求、顾虑、我们答应的、下一步")
         case .lesson: String(localized: "只记录 · 回答详细 · 笔记：要点、概念、我的疑问")
         case .discussion: String(localized: "只记录 · 回答简短 · 纪要：各方观点、结论、分工")
+        case .groupProject: String(localized: "只记录，需要时 ⌘⇧↩ · 回答简短 · 纪要：方案、分工、截止时间")
         case .custom: String(localized: "选一个类型作为基础，再改名字")
         }
     }
@@ -73,13 +75,14 @@ extension SessionMode {
     /// What to add before this kind of meeting (empty when nothing in particular).
     var preparationHint: String {
         switch self {
-        case .interview: String(localized: "议程、项目资料")
+        case .interview: String(localized: "简历、职位描述、公司信息")
         case .academic: String(localized: "讲稿、PPT、论文")
         case .labMeeting: String(localized: "本周进展、相关论文")
         case .meeting: String(localized: "议程")
         case .client: String(localized: "产品资料、报价")
         case .lesson: String(localized: "课件")
         case .discussion: String(localized: "讨论题目")
+        case .groupProject: String(localized: "作业要求、评分标准")
         case .general, .custom: ""
         }
     }

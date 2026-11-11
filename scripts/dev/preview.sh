@@ -1,0 +1,66 @@
+#!/bin/bash
+# Development preview: builds a debug binary, wraps it in a disposable bundle with
+# its own bundle identifier (ad-hoc signed, separate preferences and TCC entries),
+# and optionally renders demo pages into PNG files.
+#
+#   scripts/dev/preview.sh                       build the bundle only
+#   scripts/dev/preview.sh shot <section> <light|dark> <out.png> [key=value;…] [language]
+#   scripts/dev/preview.sh run [section] [light|dark]     launch the demo interactively
+#
+# The official app, its data folder and its signing identity are never touched.
+set -euo pipefail
+project_root="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$project_root"
+bundle_id="com.nextthought.app.ci.dev"
+app="$project_root/.local/NextThoughtDev.app"
+data="$project_root/.local/dev-data"
+scratch="$project_root/.build/swift"
+
+build() {
+    swift build --disable-sandbox --scratch-path "$scratch" 2>&1 | grep -E "error|warning: unre|Compiling|Build complete|Linking" | grep -vE "^\[[0-9]+/[0-9]+\] Compiling" | tail -40
+    [[ "${PIPESTATUS[0]}" == 0 ]] || { echo "BUILD FAILED" >&2; exit 1; }
+    local binary; binary="$(swift build --disable-sandbox --scratch-path "$scratch" --show-bin-path)/NextThought"
+    mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+    cp "$binary" "$app/Contents/MacOS/NextThought"
+    cp Resources/Info.plist "$app/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundle_id" "$app/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName NextThought Dev' "$app/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleName NextThought Dev' "$app/Contents/Info.plist"
+    if [[ ! -d "$app/Contents/Resources/models" || "${PREVIEW_RESOURCES:-0}" == 1 ]]; then
+        for resource in Companion models; do
+            rsync -a "Resources/$resource/" "$app/Contents/Resources/$resource/"
+        done
+    fi
+    scripts/compile-strings.sh "$app/Contents/Resources" >/dev/null
+    codesign --force --sign - --identifier "$bundle_id" "$app" >/dev/null 2>&1
+}
+
+shot() {
+    local section="$1" appearance="$2" png="$3" defaults="${4:-}" language="${5:-zh-Hans}"
+    rm -f "$png"
+    pkill -9 -f "NextThoughtDev.app/Contents/MacOS" 2>/dev/null || true
+    rm -rf "$HOME/Library/Saved Application State/$bundle_id.savedState"
+    NEXTTHOUGHT_DEMO=1 NEXTTHOUGHT_DATA_DIR="$data" NEXTTHOUGHT_DEMO_SECTION="$section" \
+    NEXTTHOUGHT_DEMO_APPEARANCE="$appearance" NEXTTHOUGHT_DEMO_DEFAULTS="$defaults" \
+    NEXTTHOUGHT_DEMO_VOICE_READY=1 NEXTTHOUGHT_DEMO_SNAPSHOT="$png" ${PREVIEW_ENV:-} \
+    "$app/Contents/MacOS/NextThought" -AppleLanguages "($language)" \
+        -ApplePersistenceIgnoreState YES -NSQuitAlwaysKeepsWindows NO >"$project_root/.local/dev-shot.log" 2>&1 &
+    local pid=$!
+    for _ in $(seq 1 40); do [[ -s "$png" ]] && break; sleep 0.25; done
+    sleep 0.3
+    kill "$pid" 2>/dev/null || true; sleep 0.2; kill -9 "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    [[ -s "$png" ]] && echo "ok $png" || { echo "FAIL $png"; tail -n 15 "$project_root/.local/dev-shot.log"; }
+}
+
+case "${1:-build}" in
+    build) build ;;
+    shot) shift; shot "$@" ;;
+    run)
+        pkill -9 -f "NextThoughtDev.app/Contents/MacOS" 2>/dev/null || true
+        NEXTTHOUGHT_DEMO=1 NEXTTHOUGHT_DATA_DIR="$data" NEXTTHOUGHT_DEMO_SECTION="${2:-home}" \
+        NEXTTHOUGHT_DEMO_APPEARANCE="${3:-light}" NEXTTHOUGHT_DEMO_VOICE_READY=1 ${PREVIEW_ENV:-} \
+        "$app/Contents/MacOS/NextThought" -ApplePersistenceIgnoreState YES >"$project_root/.local/dev-run.log" 2>&1 &
+        echo "pid $!" ;;
+    *) echo "usage: preview.sh [build|shot|run]" >&2; exit 2 ;;
+esac

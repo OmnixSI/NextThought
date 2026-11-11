@@ -4,20 +4,21 @@ import Foundation
 /// workspaces and never change: `academic` is shown as 汇报 / 答辩, `meeting` as
 /// 工作会议 and `lesson` as 讲座 / 课程. The case order is the order of the type tags.
 public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
-    case general, interview, academic, labMeeting, meeting, client, lesson, discussion, custom
+    case general, interview, academic, labMeeting, meeting, client, lesson, discussion, groupProject, custom
     public var id: String { rawValue }
     /// Chinese name used in prompts and stored text; the interface uses the
     /// localized name defined in the app target.
     public var title: String {
         switch self {
         case .general: "通用"
-        case .interview: "会议"
+        case .interview: "面试"
         case .academic: "汇报 / 答辩"
         case .labMeeting: "组会"
         case .meeting: "工作会议"
         case .client: "客户沟通"
         case .lesson: "讲座 / 课程"
         case .discussion: "小组讨论"
+        case .groupProject: "小组作业"
         case .custom: "自定义"
         }
     }
@@ -31,12 +32,15 @@ public enum SessionMode: String, Codable, CaseIterable, Sendable, Identifiable {
         case .client: "person.2"
         case .lesson: "book"
         case .discussion: "bubble.left.and.bubble.right"
+        case .groupProject: "person.3"
         case .custom: "slider.horizontal.3"
         }
     }
-    /// Types offered for new meetings and series. The legacy interview raw value
-    /// remains decodable for existing records, but is no longer offered in the UI.
-    public static var builtIn: [SessionMode] { allCases.filter { $0 != .custom && $0 != .interview } }
+    /// Scenes offered for new meetings and series, in the order the interface shows
+    /// them: the ones where you are the person being asked come first.
+    public static var builtIn: [SessionMode] {
+        [.interview, .labMeeting, .academic, .groupProject, .client, .meeting, .lesson, .discussion, .general]
+    }
     /// Unknown raw values (e.g. from a newer version) fall back to general.
     public init(from decoder: Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)

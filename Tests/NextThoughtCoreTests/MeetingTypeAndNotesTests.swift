@@ -32,8 +32,8 @@ struct MeetingTypeAndNotesTests {
         #expect(SessionMode.academic.rawValue == "academic" && SessionMode.academic.title == "汇报 / 答辩")
         #expect(SessionMode.meeting.rawValue == "meeting" && SessionMode.meeting.title == "工作会议")
         #expect(SessionMode.lesson.rawValue == "lesson" && SessionMode.lesson.title == "讲座 / 课程")
-        #expect(!SessionMode.builtIn.contains(.custom) && !SessionMode.builtIn.contains(.interview) && SessionMode.builtIn.count == 7)
-        #expect(!NotesTemplateKind.selectable.contains(.interview))
+        #expect(!SessionMode.builtIn.contains(.custom) && SessionMode.builtIn.contains(.interview) && SessionMode.builtIn.count == 9)
+        #expect(NotesTemplateKind.selectable.contains(.interview))
     }
 
     @Test func customTypeUsesItsBaseAndOldWorkspacesDecode() throws {
