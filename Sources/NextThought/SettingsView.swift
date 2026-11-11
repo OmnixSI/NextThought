@@ -1266,7 +1266,12 @@ private struct OverlaySettings: View {
                     .onChange(of: state.teleprompterFontSize) { _, _ in state.saveAnswerSettings() }
                 Text("\(Int(state.teleprompterFontSize))").font(.caption.monospacedDigit()).frame(width: 36)
             }
-            Note("提词岛不抢键盘焦点；鼠标停在上面才会出现按钮，其余时候点击会穿过它。", presentation: .inline)
+            if CueIslandController.shared.model.surface == .island {
+                Toggle("不开会时，鼠标停在刘海上可以直接开始一场", isOn: Binding(
+                    get: { CueIslandController.shared.model.launcher },
+                    set: { CueIslandController.shared.model.launcher = $0 }))
+            }
+            Note("提词岛不抢键盘焦点；鼠标停在上面才会展开会议控制和按钮，其余时候点击会穿过它。", presentation: .inline)
         }
 
         SettingsSection(title: "临场教练", icon: "figure.wave") {
@@ -1313,9 +1318,12 @@ private struct OverlaySettings: View {
         }
 
         SettingsSection(title: "屏幕共享", icon: "eye.slash") {
+            Toggle("会议软件共享提词岛所在的屏幕时，自动收回刘海", isOn: Binding(
+                get: { CueIslandController.shared.model.avoidsSharing },
+                set: { CueIslandController.shared.model.avoidsSharing = $0 }))
             Toggle("尽力从屏幕共享中排除本应用窗口", isOn: $state.capturePrivacy)
                 .onChange(of: state.capturePrivacy) { _, _ in state.saveAnswerSettings(); state.updateSettings() }
-            Note(String(localized: "系统无法保证窗口不被录屏。共享会议窗口或标签页更稳妥；\(state.shortcutLabel(.panicHide)) 可隐藏全部窗口。"), presentation: .inline)
+            Note(String(localized: "共享某个窗口或另一块屏幕时，提词岛不在画面里。共享它所在的整块屏幕时，macOS 15.4 起系统不再让应用把自己排除在外，所以提词岛会在识别到 Zoom、Teams、腾讯会议、飞书、钉钉或 Webex 的整屏共享后自动收起；其他软件请先用下面的测试看一眼。\(state.shortcutLabel(.panicHide)) 可随时隐藏全部窗口。"), presentation: .inline)
             Button("共享可见性测试") { state.runShareVisibilityTest() }.buttonStyle(SecondaryButtonStyle())
         }
         // Kept out of 高级设置: its "恢复默认位置" is the way back for a bar dragged off-screen.
