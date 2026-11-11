@@ -80,7 +80,11 @@ extension AppState {
     var canAnswerAutomatically: Bool { answerEngineReady }
 
     /// The meeting type's default: automatic answers, except in the room.
-    var defaultsToAutomaticAnswers: Bool { typeDefaults.liveMode == .prompting && !isOfflineMeeting }
+    var defaultsToAutomaticAnswers: Bool {
+        // The scene's default as the user set it on the scenes page, not the built-in one.
+        let mode = (preparedWorkspace ?? activeWorkspace).effectiveMode
+        return SceneSettings.shared.liveMode(for: mode) == .prompting && !isOfflineMeeting
+    }
 
     /// "还没有连接回答服务" while automatic answers are on but cannot answer; nil otherwise.
     func refreshAnswerServiceStatus() {
