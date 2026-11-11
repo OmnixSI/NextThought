@@ -122,11 +122,19 @@ enum DemoMode {
             window.toolbar = toolbar
             window.toolbarStyle = .unified
             window.contentView = NSHostingView(rootView: ContentView().environment(state))
+            MainWindowLayout.claimTitleRow(of: window)
             window.setFrame(NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]), display: true)
             if environment["NEXTTHOUGHT_DEMO_HIDDEN"] != "1" { window.orderFront(nil) }
             demoWindow = window
             snapshotIsland(environment, visible: environment["NEXTTHOUGHT_DEMO_HIDDEN"] != "1")
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: environment["NEXTTHOUGHT_DEMO_SNAPSHOT"]) }
+            return
+        }
+        // NEXTTHOUGHT_DEMO_STAGE=1: the real main window with demo data, kept on the
+        // built-in display and never activated, for hands-on walkthroughs that must
+        // not disturb other displays. Launch hidden (`open -j -g`).
+        if environment["NEXTTHOUGHT_DEMO_STAGE"] == "1" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { beginStage() }
             return
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -155,6 +163,52 @@ enum DemoMode {
 
 extension DemoMode {
     @MainActor static var demoWindow: NSWindow?
+    @MainActor private static var stageTimer: Timer?
+
+    @MainActor
+    private static func beginStage() {
+        NSApp.setActivationPolicy(.regular)
+        keepOnBuiltInDisplay(includingHidden: true)
+        NSApp.unhideWithoutActivation()
+        NSApp.windows.first(where: MainWindowLayout.isMainWindow)?.orderFront(nil)
+        // Sheets, the settings window and alerts open wherever AppKit likes: bring
+        // every ordinary window back to the built-in display.
+        let timer = Timer(timeInterval: 0.2, repeats: true) { _ in
+            MainActor.assumeIsolated { keepOnBuiltInDisplay(includingHidden: false) }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        stageTimer = timer
+        // NEXTTHOUGHT_DEMO_HITTEST=<file>: which view takes a click in the title row.
+        if let path = AppEnvironment.values["NEXTTHOUGHT_DEMO_HITTEST"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                guard let window = NSApp.windows.first(where: MainWindowLayout.isMainWindow),
+                      let frame = window.contentView?.superview else { return }
+                var lines: [String] = []
+                for (name, x, fromTop) in [("title row centre", frame.bounds.midX, 26.0), ("title row right", frame.bounds.maxX - 40, 26.0),
+                                           ("just below title row", frame.bounds.midX, 60.0), ("below title row", frame.bounds.midX, 300.0)] {
+                    let point = NSPoint(x: x, y: frame.bounds.maxY - fromTop)
+                    let hit = frame.hitTest(frame.convert(point, to: frame.superview))
+                    var chain: [String] = []
+                    var view = hit
+                    while let current = view, chain.count < 5 { chain.append(String(describing: type(of: current))); view = current.superview }
+                    lines.append("\(name): \(chain.joined(separator: " < "))")
+                }
+                try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+        }
+    }
+
+    @MainActor
+    private static func keepOnBuiltInDisplay(includingHidden: Bool) {
+        guard let screen = CueIslandController.cameraScreen(named: "") else { return }
+        let area = screen.visibleFrame
+        for window in NSApp.windows where !(window is NSPanel) && !window.isSheet && (includingHidden || window.isVisible) {
+            guard window.screen != screen || !area.intersects(window.frame) else { continue }
+            let size = NSSize(width: min(window.frame.width, area.width), height: min(window.frame.height, area.height))
+            window.setFrame(NSRect(x: area.midX - size.width / 2, y: area.midY - size.height / 2,
+                                   width: size.width, height: size.height), display: true)
+        }
+    }
 
     /// NEXTTHOUGHT_DEMO_ISLAND: PNG of the cue island (on a backdrop, so the black island
     /// shows). NEXTTHOUGHT_DEMO_ISLAND_PHASE: cue (default) | compact | hearing | deck |

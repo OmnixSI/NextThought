@@ -84,6 +84,12 @@ enum MainWindowLayout {
         toolbar.showsBaselineSeparator = false
         window.toolbar = toolbar
         window.toolbarStyle = .unified
+        claimTitleRow(of: window)
+        for name in [NSWindow.didEnterFullScreenNotification, NSWindow.didExitFullScreenNotification] {
+            NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak window] _ in
+                MainActor.assumeIsolated { if let window { claimTitleRow(of: window) } }
+            }
+        }
         window.isMovableByWindowBackground = true
         window.level = effectiveWorkspaceLevel
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -93,6 +99,17 @@ enum MainWindowLayout {
         window.isRestorable = false
         window.setFrameAutosaveName("")
         reset(window)
+    }
+
+    /// Gives the title row to the content: the title bar's safe area is cancelled, so
+    /// the interface lays out from the top edge of the window.
+    ///
+    /// Merely ignoring the safe area in SwiftUI is not enough: a scroll view or split
+    /// view that starts where the safe area ends still stretches its AppKit view up
+    /// into it, on top of the bar, and takes every click meant for the bar's buttons.
+    static func claimTitleRow(of window: NSWindow) {
+        let titleBar = window.frame.height - window.contentLayoutRect.height
+        window.contentView?.additionalSafeAreaInsets = NSEdgeInsets(top: -titleBar, left: 0, bottom: 0, right: 0)
     }
 
     static var effectiveWorkspaceLevel: NSWindow.Level {

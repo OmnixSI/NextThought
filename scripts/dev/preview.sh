@@ -73,6 +73,26 @@ case "${1:-build}" in
             --env NEXTTHOUGHT_DEMO_HIDDEN=1 --env NEXTTHOUGHT_DEMO_ISLAND_SHOW=1 \
             --args -ApplePersistenceIgnoreState YES
         echo "island shown on the built-in display" ;;
+    walk)
+        # A separate copy for hands-on walkthroughs: the real main window with demo
+        # data, on the MacBook's own display, never activated. Extra environment in
+        # PREVIEW_ENV (e.g. NEXTTHOUGHT_DEMO_ONBOARDING=1). Stop with `preview.sh unwalk`.
+        walk="$project_root/.local/NextThoughtWalk.app"
+        pkill -9 -f "$walk/Contents/MacOS" 2>/dev/null || true
+        rm -rf "$walk" && cp -R "$app" "$walk"
+        /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.nextthought.app.ci.walk' "$walk/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName NextThought Walk' "$walk/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c 'Set :CFBundleName NextThought Walk' "$walk/Contents/Info.plist"
+        codesign --force --sign - --identifier com.nextthought.app.ci.walk "$walk" >/dev/null 2>&1
+        [[ "${2:-}" == fresh ]] && rm -rf "$project_root/.local/walk-data"
+        extra=()
+        for pair in ${PREVIEW_ENV:-}; do extra+=(--env "$pair"); done
+        open -j -g -n "$walk" --env NEXTTHOUGHT_DEMO=1 --env "NEXTTHOUGHT_DATA_DIR=$project_root/.local/walk-data" \
+            --env "NEXTTHOUGHT_DEMO_SECTION=${WALK_SECTION:-home}" --env NEXTTHOUGHT_DEMO_APPEARANCE=light \
+            --env NEXTTHOUGHT_DEMO_VOICE_READY=1 --env NEXTTHOUGHT_DEMO_STAGE=1 ${extra[@]+"${extra[@]}"} \
+            --args -ApplePersistenceIgnoreState YES
+        echo "walkthrough app launched on the built-in display" ;;
+    unwalk) pkill -9 -f "$project_root/.local/NextThoughtWalk.app/Contents/MacOS" 2>/dev/null || true ;;
     stop) pkill -9 -f "$app/Contents/MacOS" 2>/dev/null || true ;;
-    *) echo "usage: preview.sh [build|shot|island|stop]" >&2; exit 2 ;;
+    *) echo "usage: preview.sh [build|shot|island|stop|walk|unwalk]" >&2; exit 2 ;;
 esac

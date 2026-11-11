@@ -23,8 +23,6 @@ struct ContentView: View {
                         .transition(.opacity)
                 }
             }
-            // Both shells put their own bar in the window's title row.
-            .ignoresSafeArea(.container, edges: .top)
             .disabled(state.isOnboardingPresented)
             .accessibilityHidden(state.isOnboardingPresented)
             if #available(macOS 15.0, *) {
