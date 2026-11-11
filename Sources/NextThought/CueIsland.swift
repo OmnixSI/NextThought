@@ -107,6 +107,8 @@ final class CueIslandModel {
     var shareAvoiding = false
     /// Nothing is drawn: the pointer is tracked over the notch itself.
     @ObservationIgnored var isHidden = true
+    /// Recordings drive the hover state themselves instead of following the pointer.
+    @ObservationIgnored var demoHover: Bool?
     /// The deck stays open after a click on its bar, until the next click on the bar or outside.
     var pinned = false
     /// NextThought's own window is the key window on the island's display: the window already
@@ -311,6 +313,10 @@ final class CueIslandController {
 
     private func track() {
         guard let panel, panel.isVisible else { return }
+        if let forced = model.demoHover {
+            if model.hovering != forced { model.hovering = forced }
+            return
+        }
         let metrics = model.metrics
         // Drawing nothing, the island is the notch itself.
         let state = AppState.shared
@@ -515,7 +521,8 @@ struct CueIslandView: View {
         let phase = phase
         ZStack(alignment: .top) {
             if model.backdrop {
-                LinearGradient(colors: [Color(nsColor: .hex(0x9db4d6)), Color(nsColor: .hex(0xd9c7b8))], startPoint: .topLeading, endPoint: .bottomTrailing)
+                // A flat desk colour: recordings of it compress well and sit quietly on a page.
+                Color(nsColor: .hex(0xe4e1da))
             }
             if phase != .hidden {
                 island(phase)

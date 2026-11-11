@@ -193,6 +193,7 @@ extension DemoMode {
         }
         RunLoop.main.add(timer, forMode: .common)
         stageTimer = timer
+        DemoFilm.begin(AppEnvironment.values)
         // NEXTTHOUGHT_DEMO_HITTEST=<file>: which view takes a click in the title row.
         if let path = AppEnvironment.values["NEXTTHOUGHT_DEMO_HITTEST"] {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -246,7 +247,8 @@ extension DemoMode {
         let state = AppState.shared
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             let island = CueIslandController.shared
-            island.model.backdrop = true
+            // NEXTTHOUGHT_DEMO_ISLAND_CLEAR=1 leaves the background transparent, for compositing.
+            island.model.backdrop = environment["NEXTTHOUGHT_DEMO_ISLAND_CLEAR"] != "1"
             let phase = environment["NEXTTHOUGHT_DEMO_ISLAND_PHASE"] ?? "cue"
             if phase != "cue" {
                 state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil; state.historyCursor = nil
