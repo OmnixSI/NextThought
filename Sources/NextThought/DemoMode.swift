@@ -61,9 +61,10 @@ enum DemoMode {
                 state.screenshotURL = URL(fileURLWithPath: screenshotPath)
             }
         }
-        // Screenshots must be able to see the windows.
-        state.capturePrivacy = false
-        TeleprompterController.shared.applyPrivacy(false)
+        // Screenshots must be able to see the windows. NEXTTHOUGHT_DEMO_PRIVACY=1 keeps
+        // capture exclusion on, to check what a screen share really contains.
+        state.capturePrivacy = environment["NEXTTHOUGHT_DEMO_PRIVACY"] == "1"
+        TeleprompterController.shared.applyPrivacy(state.capturePrivacy)
         state.appearance = environment["NEXTTHOUGHT_DEMO_APPEARANCE"] ?? "dark"
         state.applyAppearance()
         state.section = AppSection(demoName: environment["NEXTTHOUGHT_DEMO_SECTION"] ?? "") ?? .home
@@ -115,10 +116,16 @@ enum DemoMode {
             window.titlebarAppearsTransparent = true
             window.titleVisibility = .hidden
             window.isReleasedWhenClosed = false
+            // The same 52 pt title row as the real main window.
+            let toolbar = NSToolbar(identifier: "NextThought.Demo")
+            toolbar.showsBaselineSeparator = false
+            window.toolbar = toolbar
+            window.toolbarStyle = .unified
             window.contentView = NSHostingView(rootView: ContentView().environment(state))
             window.setFrame(NSRect(x: frame[0], y: frame[1], width: frame[2], height: frame[3]), display: true)
             if environment["NEXTTHOUGHT_DEMO_HIDDEN"] != "1" { window.orderFront(nil) }
             demoWindow = window
+            snapshotIsland(environment, visible: environment["NEXTTHOUGHT_DEMO_HIDDEN"] != "1")
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { snapshot(window, to: environment["NEXTTHOUGHT_DEMO_SNAPSHOT"]) }
             return
         }
@@ -134,23 +141,7 @@ enum DemoMode {
                 panel.setFrame(NSRect(x: 900, y: 600, width: 680, height: 300), display: true)
             }
         }
-        // NEXTTHOUGHT_DEMO_ISLAND: PNG of the cue island (on a backdrop, so the black
-        // island shows). NEXTTHOUGHT_DEMO_ISLAND_PHASE: cue (default) | idle | hearing.
-        if let islandPath = environment["NEXTTHOUGHT_DEMO_ISLAND"] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                let island = CueIslandController.shared
-                island.model.backdrop = true
-                switch environment["NEXTTHOUGHT_DEMO_ISLAND_PHASE"] ?? "cue" {
-                case "idle": island.model.collapsedKey = nil; state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil; state.liveCandidate = nil
-                case "hearing": state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil
-                default: state.liveCandidate = nil
-                }
-                island.show()
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.6) {
-                snapshot(NSApp.windows.first { $0.title == String(localized: "NextThought 提词岛") }, to: islandPath)
-            }
-        }
+        snapshotIsland(environment, visible: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             snapshot(NSApp.windows.first(where: MainWindowLayout.isMainWindow), to: environment["NEXTTHOUGHT_DEMO_SNAPSHOT"])
             guard let path = environment["NEXTTHOUGHT_DEMO_OUT"] else { return }
@@ -164,6 +155,33 @@ enum DemoMode {
 
 extension DemoMode {
     @MainActor static var demoWindow: NSWindow?
+
+    /// NEXTTHOUGHT_DEMO_ISLAND: PNG of the cue island (on a backdrop, so the black island
+    /// shows). NEXTTHOUGHT_DEMO_ISLAND_PHASE: cue (default) | compact | hearing | deck |
+    /// launcher. With `visible` false the panel is drawn without ever being shown.
+    @MainActor
+    static func snapshotIsland(_ environment: [String: String], visible: Bool) {
+        guard let path = environment["NEXTTHOUGHT_DEMO_ISLAND"] else { return }
+        let state = AppState.shared
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            let island = CueIslandController.shared
+            island.model.backdrop = true
+            let phase = environment["NEXTTHOUGHT_DEMO_ISLAND_PHASE"] ?? "cue"
+            if phase != "cue" {
+                state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil; state.historyCursor = nil
+            }
+            if phase != "hearing" { state.liveCandidate = nil }
+            if phase == "deck" { island.model.pinned = true }
+            if phase == "launcher" {
+                state.isRunning = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { island.model.hovering = true }
+            }
+            island.present(visible: visible)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) {
+            snapshot(NSApp.windows.first { $0.title == String(localized: "NextThought 提词岛") }, to: path)
+        }
+    }
 
     /// Renders a window's own content into a PNG (no Screen Recording permission needed).
     @MainActor

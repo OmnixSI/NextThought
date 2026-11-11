@@ -249,6 +249,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             AppState.shared.applyAppearance()
             TeleprompterController.shared.applyPrivacy(AppState.shared.capturePrivacy)
             CueIslandController.shared.observeSession()
+            CueIslandController.shared.refreshPresence()
             DemoMode.apply()
         }
     }

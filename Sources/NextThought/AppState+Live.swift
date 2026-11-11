@@ -366,8 +366,13 @@ extension AppState {
             do {
                 let displays = try await ScreenshotService.availableDisplays()
                 guard let display = displays.first else { return }
+                // The check has to include the island with something on it.
+                let island = CueIslandController.shared
+                let previewing = island.model.preview
+                if island.model.surface == .island { island.model.preview = true }
                 TeleprompterController.shared.show()
-                try? await Task.sleep(for: .milliseconds(300))
+                defer { if !previewing, island.model.preview { island.hide() } }
+                try? await Task.sleep(for: .milliseconds(450))
                 shareTestImage = try await ScreenshotService.captureDisplay(display.id, hidingAppWindows: false)
             } catch {
                 errorMessage = "共享可见性测试失败：\(error.localizedDescription)"

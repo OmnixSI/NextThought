@@ -37,24 +37,26 @@ build() {
     codesign --force --sign - --identifier "$bundle_id" "$app" >/dev/null 2>&1
 }
 
+# Renders off screen: the app is launched hidden, never activated, and draws its demo
+# window without showing it, so nothing appears on any display while you work.
 shot() {
     local section="$1" appearance="$2" png="$3" defaults="${4:-}" language="${5:-zh-Hans}"
     rm -f "$png"
     pkill -9 -f "$app/Contents/MacOS" 2>/dev/null || true
     rm -rf "$HOME/Library/Saved Application State/$bundle_id.savedState"
-    # shellcheck disable=SC2086
-    env NEXTTHOUGHT_DEMO=1 NEXTTHOUGHT_DATA_DIR="$data" NEXTTHOUGHT_DEMO_SECTION="$section" \
-    NEXTTHOUGHT_DEMO_APPEARANCE="$appearance" NEXTTHOUGHT_DEMO_DEFAULTS="$defaults" \
-    NEXTTHOUGHT_DEMO_VOICE_READY=1 NEXTTHOUGHT_DEMO_SNAPSHOT="$png" ${PREVIEW_ENV:-} \
-    "$app/Contents/MacOS/NextThought" -AppleLanguages "($language)" \
-        -ApplePersistenceIgnoreState YES -NSQuitAlwaysKeepsWindows NO >"$project_root/.local/dev-shot.log" 2>&1 &
-    local pid=$!
-    disown "$pid" 2>/dev/null || true
-    for _ in $(seq 1 40); do [[ -s "$png" ]] && break; sleep 0.25; done
-    sleep 0.3
-    kill "$pid" 2>/dev/null || true; sleep 0.2; kill -9 "$pid" 2>/dev/null || true
-    wait "$pid" 2>/dev/null || true
-    [[ -s "$png" ]] && echo "ok $png" || { echo "FAIL $png"; tail -n 15 "$project_root/.local/dev-shot.log"; }
+    local extra=()
+    for pair in ${PREVIEW_ENV:-}; do extra+=(--env "$pair"); done
+    open -j -g -n "$app" \
+        --env NEXTTHOUGHT_DEMO=1 --env "NEXTTHOUGHT_DATA_DIR=$data" --env "NEXTTHOUGHT_DEMO_SECTION=$section" \
+        --env "NEXTTHOUGHT_DEMO_APPEARANCE=$appearance" --env "NEXTTHOUGHT_DEMO_DEFAULTS=$defaults" \
+        --env NEXTTHOUGHT_DEMO_VOICE_READY=1 --env "NEXTTHOUGHT_DEMO_SNAPSHOT=$png" \
+        --env "NEXTTHOUGHT_DEMO_FRAME=${PREVIEW_FRAME:-0,0,1120,820}" --env NEXTTHOUGHT_DEMO_HIDDEN=1 \
+        ${extra[@]+"${extra[@]}"} \
+        --args -AppleLanguages "($language)" -ApplePersistenceIgnoreState YES -NSQuitAlwaysKeepsWindows NO
+    for _ in $(seq 1 48); do [[ -s "$png" ]] && break; sleep 0.25; done
+    sleep 0.6
+    pkill -9 -f "$app/Contents/MacOS" 2>/dev/null || true
+    [[ -s "$png" ]] && echo "ok $png" || echo "FAIL $png"
 }
 
 case "${1:-build}" in

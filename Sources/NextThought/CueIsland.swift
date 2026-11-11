@@ -92,6 +92,20 @@ final class CueIslandModel {
     /// Sample content, for the settings preview and screenshots.
     var preview = false
     var backdrop = false
+    /// Outside a meeting, resting the pointer on the notch offers to start one.
+    var launcher = UserDefaults.standard.object(forKey: "cueLauncher") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(launcher, forKey: "cueLauncher"); CueIslandController.shared.refreshPresence() }
+    }
+    /// Withdraw into the notch while a meeting app shares the display the island is on.
+    var avoidsSharing = UserDefaults.standard.object(forKey: "cueAvoidsSharing") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(avoidsSharing, forKey: "cueAvoidsSharing") }
+    }
+    /// A meeting app is sharing this display right now.
+    var shareAvoiding = false
+    /// Nothing is drawn: the pointer is tracked over the notch itself.
+    @ObservationIgnored var isHidden = true
+    /// The deck stays open after a click, until the next click.
+    var pinned = false
 }
 
 @MainActor
@@ -107,19 +121,43 @@ final class CueIslandController {
 
     func toggle() { isVisible ? hide() : show() }
 
-    func show() {
+    func show() { present(visible: true) }
+
+    /// `visible: false` builds and lays out the panel without putting it on a screen
+    /// (off-screen previews).
+    func present(visible: Bool) {
         if panel == nil { panel = makePanel() }
         reposition()
         panel?.sharingType = AppState.shared.capturePrivacy ? .none : .readOnly
+        guard visible else { return }
         panel?.orderFrontRegardless()
         startTracking()
     }
 
     func hide() {
+        model.preview = false
+        model.pinned = false
+        // With the launcher on, the panel stays (drawing nothing) so the notch keeps
+        // answering to the pointer.
+        if keepsPresence { model.hovering = false; return }
         panel?.orderOut(nil)
         tracker?.invalidate(); tracker = nil
         model.hovering = false
-        model.preview = false
+    }
+
+    /// The island is a standing part of the notch: on when the launcher is.
+    private var keepsPresence: Bool {
+        model.surface == .island && model.launcher && hasNotch && !AppState.shared.isRunning
+    }
+
+    private var hasNotch: Bool {
+        (Self.cameraScreen(named: model.screenName)?.safeAreaInsets.top ?? 0) > 0
+            || AppEnvironment.values["NEXTTHOUGHT_DEMO_NOTCH"] == "1"
+    }
+
+    /// Called at launch and when a preference changes.
+    func refreshPresence() {
+        if keepsPresence { show() } else if !AppState.shared.isRunning, !model.preview { panel?.orderOut(nil); tracker?.invalidate(); tracker = nil }
     }
 
     /// Follows the meeting: the island appears with a scene that prompts beside the
@@ -147,6 +185,9 @@ final class CueIslandController {
             if model.surface == .island, ScenePreset.for(mode).eyeLine { show() }
         } else {
             state.coach.end()
+            // Whatever answer was showing belongs to the meeting that just ended.
+            model.collapsedKey = CueIslandView.answerKey(state)
+            model.shareAvoiding = false
             if !model.preview { hide() }
         }
     }
@@ -169,7 +210,8 @@ final class CueIslandController {
         if notch > 0 || demoNotch {
             let left = screen.auxiliaryTopLeftArea?.width ?? 0, right = screen.auxiliaryTopRightArea?.width ?? 0
             metrics.hasNotch = true
-            metrics.notchWidth = demoNotch && notch == 0 ? 186 : max(120, screen.frame.width - left - right)
+            // A few points wider than the hardware notch, so no seam shows beside it.
+            metrics.notchWidth = demoNotch && notch == 0 ? 186 : max(120, screen.frame.width - left - right + 4)
             metrics.barHeight = demoNotch && notch == 0 ? 32 : notch
             metrics.topOffset = 0
         } else {
@@ -219,18 +261,85 @@ final class CueIslandController {
         tracker = timer
     }
 
+    private var pointerEntered: Date?
+    private var pointerLeft: Date?
+    private var lastShareCheck = Date.distantPast
+
     private func track() {
         guard let panel, panel.isVisible else { return }
-        let size = model.islandSize
+        let metrics = model.metrics
+        // Drawing nothing, the island is the notch itself.
+        let size = model.isHidden ? CGSize(width: metrics.notchWidth, height: metrics.barHeight) : model.islandSize
         let rect = NSRect(x: panel.frame.midX - size.width / 2,
-                          y: panel.frame.maxY - model.metrics.topOffset - size.height,
+                          y: panel.frame.maxY - metrics.topOffset - size.height,
                           width: size.width, height: size.height)
-        // A little slack below, so the pointer does not fall off between rows.
+        // A little slack, so the pointer does not fall off between rows.
         let inside = size.width > 0 && rect.insetBy(dx: -6, dy: -6).contains(NSEvent.mouseLocation)
-        if inside != model.hovering {
-            model.hovering = inside
-            panel.ignoresMouseEvents = !inside
+        let now = Date()
+        if inside {
+            pointerLeft = nil
+            if pointerEntered == nil { pointerEntered = now }
+            // A pointer on its way to the menu bar must not open the island: it has
+            // to rest a moment. Once open, it stays open at once.
+            if !model.hovering, now.timeIntervalSince(pointerEntered ?? now) >= 0.22 {
+                model.hovering = true
+                panel.ignoresMouseEvents = false
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+            }
+        } else {
+            pointerEntered = nil
+            if model.hovering {
+                if pointerLeft == nil { pointerLeft = now }
+                if now.timeIntervalSince(pointerLeft ?? now) >= 0.2 {
+                    model.hovering = false
+                    panel.ignoresMouseEvents = true
+                }
+            }
         }
+        if now.timeIntervalSince(lastShareCheck) >= 2 {
+            lastShareCheck = now
+            let sharing = model.avoidsSharing && AppState.shared.isRunning
+                && Self.cameraScreen(named: model.screenName).map(ShareGuard.isShared) == true
+            if sharing != model.shareAvoiding { model.shareAvoiding = sharing }
+        }
+    }
+}
+
+/// Tells when a meeting app is sharing a whole display.
+///
+/// macOS has no public way to keep a window out of a ScreenCaptureKit capture (since
+/// 15.4 `sharingType = .none` is ignored by it), so the island steps aside instead.
+/// Meeting apps mark the display they share with a border overlay as large as the
+/// display; that overlay is what this looks for. Window names are not read, so no
+/// Screen Recording permission is involved.
+enum ShareGuard {
+    static let meetingApps: Set<String> = [
+        "us.zoom.xos", "com.microsoft.teams2", "com.microsoft.teams", "com.tencent.meeting",
+        "com.tencent.tencentmeeting", "com.bytedance.macos.feishu", "com.electron.lark", "com.larksuite.larkApp",
+        "com.alibaba.DingTalkMac", "com.cisco.webexmeetingsapp", "Cisco-Systems.Spark", "com.webex.meetingmanager",
+    ]
+
+    static func isShared(_ screen: NSScreen) -> Bool {
+        guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
+              let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
+        else { return false }
+        let display = CGDisplayBounds(CGDirectDisplayID(number.uint32Value))
+        let own = ProcessInfo.processInfo.processIdentifier
+        return windows.contains { window in
+            guard let pid = window[kCGWindowOwnerPID as String] as? Int32, pid != own,
+                  let layer = window[kCGWindowLayer as String] as? Int, layer > 0,
+                  let boundsValue = window[kCGWindowBounds as String] as? [String: Any],
+                  let bounds = CGRect(dictionaryRepresentation: boundsValue as CFDictionary),
+                  let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier,
+                  meetingApps.contains(bundle) else { return false }
+            return coversDisplay(bounds, display: display)
+        }
+    }
+
+    /// A share border spans the display (some apps leave the menu bar out).
+    static func coversDisplay(_ bounds: CGRect, display: CGRect) -> Bool {
+        abs(bounds.minX - display.minX) <= 4 && abs(bounds.maxX - display.maxX) <= 4
+            && abs(bounds.maxY - display.maxY) <= 4 && bounds.minY - display.minY <= 60 && bounds.minY >= display.minY - 4
     }
 }
 
@@ -251,6 +360,12 @@ private final class FirstMouseHostingView<Content: View>: NSHostingView<Content>
 struct IslandShape: Shape {
     var flare: CGFloat
     var radius: CGFloat
+
+    /// Both radii animate, so the outline morphs instead of cross-fading.
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(flare, radius) }
+        set { flare = newValue.first; radius = newValue.second }
+    }
 
     func path(in rect: CGRect) -> Path {
         guard flare > 0 else {
@@ -303,11 +418,15 @@ struct CueIslandView: View {
     @Environment(AppState.self) private var state
     let model: CueIslandModel
 
-    enum Phase: Equatable { case hidden, idle, hearing(String), cue }
+    /// The island's presentations, in the grammar of a Dynamic Island: `compact` sits
+    /// beside the notch, `hearing` and `cue` are live activities that open by
+    /// themselves, `deck` and `launcher` open under the pointer.
+    enum Phase: Equatable { case hidden, compact, hearing(String), cue, deck, launcher }
 
     private var mode: SessionMode { (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode }
     private var tint: Color { mode.theme.tint }
-    private var answerKey: String {
+    private var answerKey: String { Self.answerKey(state) }
+    static func answerKey(_ state: AppState) -> String {
         "\(state.currentAnswerID.map { "\($0)" } ?? "-")|\(state.historyCursor ?? -1)|\(state.displayedQuestion.count)"
     }
     private var answer: String { model.preview && state.displayedAnswer.isEmpty ? Self.sampleAnswer : state.displayedAnswer }
@@ -327,11 +446,17 @@ struct CueIslandView: View {
 
     private var phase: Phase {
         if model.preview { return .cue }
+        // A meeting app is sharing this display: nothing of ours is drawn on it.
+        if model.shareAvoiding { return .hidden }
         let hasAnswer = !state.displayedAnswer.isEmpty || state.isAnswering
         if hasAnswer, model.collapsedKey != answerKey { return .cue }
-        if state.isRunning, let candidate = state.liveCandidate, candidate.state != .triggered,
-           !candidate.text.isEmpty { return .hearing(candidate.text) }
-        return state.isRunning || hasAnswer ? .idle : .hidden
+        if state.isRunning {
+            if model.hovering || model.pinned { return .deck }
+            if let candidate = state.liveCandidate, candidate.state != .triggered,
+               !candidate.text.isEmpty { return .hearing(candidate.text) }
+            return .compact
+        }
+        return model.hovering && model.launcher && model.metrics.hasNotch ? .launcher : .hidden
     }
 
     var body: some View {
@@ -347,7 +472,10 @@ struct CueIslandView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.colorScheme, .dark)
-        .animation(Motion.morph, value: phase)
+        // Opening has a little life; closing settles without a bounce.
+        .animation(Motion.reduce ? nil : (phase == .compact || phase == .hidden
+                                          ? .spring(response: 0.45, dampingFraction: 1)
+                                          : .spring(response: 0.42, dampingFraction: 0.8)), value: phase)
         .animation(Motion.expand, value: model.hovering)
         .task(id: state.isRunning) {
             // Monologues grow between transcript lines; the coach looks once a second.
@@ -357,6 +485,7 @@ struct CueIslandView: View {
             }
         }
         .task(id: "\(answerKey)|\(state.isAnswering)") { await settle() }
+        .onChange(of: phase, initial: true) { _, phase in model.isHidden = phase == .hidden }
         .onChange(of: state.entries.count) { _, _ in refreshCoverage() }
         .onChange(of: answerKey) { _, _ in model.covered = [] }
     }
@@ -365,9 +494,11 @@ struct CueIslandView: View {
 
     private func island(_ phase: Phase) -> some View {
         let metrics = model.metrics
-        let flare: CGFloat = metrics.hasNotch ? 8 : 0
-        let idle = phase == .idle
-        let shape = IslandShape(flare: flare, radius: idle ? (metrics.hasNotch ? 12 : 15) : 24)
+        let idle = phase == .compact
+        // Closed, the outline is the hardware notch's (6 pt flare, 14 pt corners);
+        // open, it relaxes.
+        let flare: CGFloat = metrics.hasNotch ? (idle ? 6 : 14) : 0
+        let shape = IslandShape(flare: flare, radius: idle ? (metrics.hasNotch ? 14 : 15) : 24)
         let edge: Color = state.coach.shouldLookUp ? Ink.caution : tint
         return islandContent(phase)
             .frame(width: width(phase))
@@ -375,10 +506,8 @@ struct CueIslandView: View {
             .modifier(IslandChrome(shape: shape, edge: edge, edgeOpacity: idle ? 0 : 0.85,
                                    edgeWidth: state.coach.shouldLookUp ? 2 : 1.2,
                                    floating: !metrics.hasNotch, lifted: !idle))
-            .onTapGesture {
-                // A collapsed island opens again on a click.
-                if idle, model.collapsedKey != nil { model.collapsedKey = nil }
-            }
+            // The hover bump: the island leans towards the pointer before it opens.
+            .scaleEffect(idle && model.hovering ? 1.04 : 1, anchor: .top)
             .background(GeometryReader { proxy in
                 Color.clear.onChange(of: proxy.size, initial: true) { _, size in model.islandSize = size }
             })
@@ -390,6 +519,8 @@ struct CueIslandView: View {
             bar(phase)
             if case let .hearing(text) = phase { hearing(text) }
             if phase == .cue { cue }
+            if phase == .deck { deck }
+            if phase == .launcher { launcher }
         }
     }
 
@@ -397,9 +528,11 @@ struct CueIslandView: View {
         let metrics = model.metrics
         let ears: CGFloat = metrics.hasNotch ? metrics.notchWidth + 2 * (state.coach.nudge != nil || state.coach.shouldLookUp ? 132 : 76) : 164
         switch phase {
-        case .hidden, .idle: return ears
+        case .hidden, .compact: return ears
         case .hearing: return max(ears, min(model.width.points, 440))
         case .cue: return max(ears, model.width.points)
+        case .deck: return max(ears, 470)
+        case .launcher: return max(ears, 500)
         }
     }
 
@@ -412,6 +545,8 @@ struct CueIslandView: View {
                 Circle().fill(state.isRunning && !state.isPaused ? tint : Color.white.opacity(0.35)).frame(width: 7, height: 7)
                 VoiceWave(tint: .white.opacity(0.85), bars: 5, height: 13, active: state.isRunning && !state.isPaused)
             }
+            // Before a meeting there is no pulse to show.
+            .opacity(phase == .launcher ? 0 : 1)
             Spacer(minLength: metrics.hasNotch ? metrics.notchWidth : 8)
             coachEar
         }
@@ -469,6 +604,130 @@ struct CueIslandView: View {
         }
         .padding(.horizontal, 18).padding(.top, 2).padding(.bottom, 12)
         .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    // MARK: Deck
+
+    /// The meeting under the pointer: what was just said, how it is going, and the
+    /// four things worth doing without leaving the meeting window.
+    private var deck: some View {
+        let workspace = state.preparedWorkspace ?? state.activeWorkspace
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text(verbatim: workspace.name)
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
+                Text(verbatim: workspace.typeDisplayName)
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(tint)
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(tint.opacity(0.18), in: Capsule())
+                Spacer(minLength: 0)
+                Text(state.isPaused ? "已暂停" : (state.automaticAnswers ? "自动回答" : "只记录"))
+                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+            }
+            if let heard = lastHeard {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(heard.isMe ? "我" : "对方")
+                        .font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
+                    Text(verbatim: heard.text)
+                        .font(.system(size: 13)).foregroundStyle(.white.opacity(0.82))
+                        .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .transition(.blurReplace)
+            }
+            HStack(spacing: 6) {
+                IslandAction(title: String(localized: "立即回答"), symbol: "bolt.fill", prominent: true,
+                             help: state.shortcutLabel(.forceAnswer)) {
+                    model.collapsedKey = nil
+                    state.forceAnswerCurrent()
+                }
+                if model.collapsedKey != nil, !state.displayedAnswer.isEmpty {
+                    IslandAction(title: String(localized: "上一条"), symbol: "arrow.uturn.backward", help: String(localized: "再看一眼上一条回答")) {
+                        model.collapsedKey = nil
+                    }
+                }
+                IslandAction(title: state.automaticAnswers ? String(localized: "改为只记录") : String(localized: "改为自动回答"),
+                             symbol: state.automaticAnswers ? "pencil.line" : "sparkles",
+                             help: String(localized: "自动回答：听到问题就给出回答。只记录：需要时再求助。")) {
+                    state.setLiveMode(prompting: !state.automaticAnswers)
+                }
+                Spacer(minLength: 0)
+                IslandAction(title: state.isPaused ? String(localized: "继续") : String(localized: "暂停"),
+                             symbol: state.isPaused ? "play.fill" : "pause.fill", help: String(localized: "暂停或继续聆听")) {
+                    Task { await state.togglePause() }
+                }
+                IslandAction(title: String(localized: "结束"), symbol: "stop.fill", destructive: true,
+                             help: String(localized: "结束并整理纪要 · \(state.shortcutLabel(.toggleSession))")) {
+                    Task { await state.stopSession() }
+                }
+                .disabled(state.isChangingSession)
+            }
+            if let stats = coachStats {
+                Text(verbatim: stats)
+                    .font(.system(size: 11).monospacedDigit()).foregroundStyle(.white.opacity(0.45))
+                    .contentTransition(.numericText())
+            }
+        }
+        .padding(.horizontal, 18).padding(.top, 6).padding(.bottom, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+    }
+
+    /// The newest line of the conversation, while it is still being said if possible.
+    private var lastHeard: (isMe: Bool, text: String)? {
+        let partial = state.partialTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !partial.isEmpty { return (false, partial) }
+        guard let entry = state.entries.last(where: { $0.suspectedEcho != true }) else { return nil }
+        return (entry.isMe, entry.text)
+    }
+
+    /// "语速 240/分 · 我说了 46% · 看镜头 82%", from what the coach has so far.
+    private var coachStats: String? {
+        guard state.coach.isEnabled else { return nil }
+        var parts: [String] = []
+        if let pace = state.coach.snapshot.pace { parts.append(String(localized: "语速 \(Int(pace.rounded()))/分")) }
+        if let share = state.coach.snapshot.talkShare { parts.append(String(localized: "我说了 \(Int((share * 100).rounded()))%")) }
+        if let contact = state.coach.contactRatio { parts.append(String(localized: "看镜头 \(Int((contact * 100).rounded()))%")) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    // MARK: Launcher
+
+    /// No meeting yet: the notch offers to start one, in any scene, from anywhere.
+    private var launcher: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("开始一场").font(.system(size: 11, weight: .semibold)).tracking(0.6).foregroundStyle(.white.opacity(0.45))
+            FlowLayout(spacing: 6, lineSpacing: 6) {
+                ForEach(SessionMode.builtIn) { mode in
+                    Button { start(mode) } label: {
+                        HStack(spacing: 6) {
+                            Circle().fill(mode.theme.tint).frame(width: 6, height: 6)
+                            Text(verbatim: mode.displayName).font(.system(size: 12, weight: .medium))
+                        }
+                        .padding(.horizontal, 10).frame(height: 28)
+                    }
+                    .buttonStyle(IslandChipStyle())
+                    .help(mode.theme.promise)
+                    .disabled(state.isChangingSession)
+                }
+            }
+            HStack(spacing: 6) {
+                Text("点一个场景，立即开始。").font(.system(size: 11)).foregroundStyle(.white.opacity(0.45))
+                Spacer(minLength: 0)
+                IslandAction(title: String(localized: "打开主窗口"), symbol: "macwindow", help: String(localized: "回到 NextThought")) {
+                    MainWindowLayout.bringToFront()
+                }
+            }
+        }
+        .padding(.horizontal, 18).padding(.top, 6).padding(.bottom, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+    }
+
+    private func start(_ mode: SessionMode) {
+        state.beginNewMeeting(scene: mode)
+        // An unsaved series edit asks first, in the main window.
+        guard state.meetingDraft != nil else { return }
+        Task { await state.startPreparedMeeting() }
     }
 
     // MARK: Cue
@@ -664,6 +923,54 @@ private struct IslandButton: View {
         .onHover { hovering = $0 }
         .help(help)
         .accessibilityLabel(Text(verbatim: title ?? help))
+    }
+}
+
+/// A labelled action on the deck.
+private struct IslandAction: View {
+    let title: String
+    let symbol: String
+    var prominent = false
+    var destructive = false
+    let help: String
+    let action: () -> Void
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: symbol).font(.system(size: 10, weight: .semibold))
+                Text(verbatim: title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+            }
+            .padding(.horizontal, 11).frame(height: 28)
+            .foregroundStyle(prominent ? Color.black : (destructive ? Ink.seal : Color.white.opacity(hovering ? 1 : 0.85)))
+            .background(prominent ? Color.white.opacity(hovering ? 1 : 0.92) : Color.white.opacity(hovering ? 0.18 : 0.1), in: Capsule())
+            .opacity(isEnabled ? 1 : 0.4)
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(Motion.hover, value: hovering)
+        .help(help)
+    }
+}
+
+private struct IslandChipStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View { Chip(configuration: configuration) }
+    private struct Chip: View {
+        let configuration: ButtonStyleConfiguration
+        @State private var hovering = false
+        var body: some View {
+            configuration.label
+                .foregroundStyle(.white.opacity(hovering ? 1 : 0.85))
+                .background(.white.opacity(hovering ? 0.2 : 0.1), in: Capsule())
+                .contentShape(Capsule())
+                .scaleEffect(configuration.isPressed ? 0.95 : 1)
+                .onHover { hovering = $0 }
+                .animation(Motion.hover, value: hovering)
+                .animation(Motion.snappy, value: configuration.isPressed)
+        }
     }
 }
 
