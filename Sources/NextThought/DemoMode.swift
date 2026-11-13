@@ -250,11 +250,31 @@ extension DemoMode {
             // NEXTTHOUGHT_DEMO_ISLAND_CLEAR=1 leaves the background transparent, for compositing.
             island.model.backdrop = environment["NEXTTHOUGHT_DEMO_ISLAND_CLEAR"] != "1"
             let phase = environment["NEXTTHOUGHT_DEMO_ISLAND_PHASE"] ?? "cue"
-            if phase != "cue" {
+            if phase != "cue", phase != "open" {
                 state.answer = ""; state.answerHistory = []; state.currentAnswerID = nil; state.historyCursor = nil
             }
             if phase != "hearing" { state.liveCandidate = nil }
             if phase == "deck" { island.model.pinned = true }
+            // "open": kept open with the last answer, already said. "slide": presenting,
+            // following a deck on the other display.
+            if phase == "open" {
+                island.model.alwaysOpen = true
+                island.model.collapsedKey = CueIslandView.answerKey(state)
+            }
+            if phase == "slide" {
+                island.model.presenting = true
+                island.model.collapsedKey = CueIslandView.answerKey(state)
+                let page = SlidePage(documentID: UUID(), documentName: "后端二面 · 项目介绍.pptx", page: 4, pageCount: 12,
+                                     text: "缓存一致性：先更新数据库，再删除缓存")
+                state.insights.slide = page
+                state.insights.slideNotes[page.key] = SlideNotes(
+                    points: ["先说规模：日均 2 亿次读取，P99 从 120 ms 降到 18 ms",
+                             "一致性：先更新数据库再删缓存，binlog 订阅兜底",
+                             "删除失败进重试队列，热点 key 延迟双删",
+                             "我负责方案设计、灰度上线和回滚预案"],
+                    transition: "讲完数字，接着讲上线时踩过的坑")
+                state.insights.slideCovered[page.key] = [0]
+            }
             if phase == "launcher" {
                 state.isRunning = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { island.model.hovering = true }

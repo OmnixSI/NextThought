@@ -229,6 +229,13 @@ private struct LiveTopBar: View {
                 }
                 .help("还没有连接回答服务，听到问题也不会自动回答")
             }
+            Section("提词") {
+                Toggle("提词岛一直展开", isOn: Binding(get: { CueIslandController.shared.model.alwaysOpen },
+                                                    set: { CueIslandController.shared.model.alwaysOpen = $0 }))
+                Toggle("双屏演讲", isOn: Binding(get: { PresenterMode.shared.isEnabled },
+                                              set: { PresenterMode.shared.isEnabled = $0 }))
+                    .help(PresenterMode.shared.summary)
+            }
             Section("工具") {
                 Button(state.liveTranslation.isEnabled ? "关闭同声传译" : "开启同声传译") {
                     state.liveTranslation.setEnabled(!state.liveTranslation.isEnabled)

@@ -25670,6 +25670,176 @@
           }
         }
       }
+    },
+    "提词岛一直展开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the cue island open"
+          }
+        }
+      }
+    },
+    "双屏演讲": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dual-screen presenting"
+          }
+        }
+      }
+    },
+    "幻灯片在 %@，提示在 MacBook": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slides on %@, cues on the MacBook"
+          }
+        }
+      }
+    },
+    "接上外接屏后可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available with an external display"
+          }
+        }
+      }
+    },
+    "会中一直展开提词岛，不用把鼠标移上去": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the cue island open during meetings, no hovering needed"
+          }
+        }
+      }
+    },
+    "外接屏放幻灯片，MacBook 看提示": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slides on the external display, cues on the MacBook"
+          }
+        }
+      }
+    },
+    "幻灯片所在的屏幕": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display with the slides"
+          }
+        }
+      }
+    },
+    "第 %lld 页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slide %lld"
+          }
+        }
+      }
+    },
+    "第 %lld 页，共 %lld 页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slide %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "下一页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        }
+      }
+    },
+    "正在准备这一页的要点…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing this slide's points…"
+          }
+        }
+      }
+    },
+    "被问到时，回答会出现在这里；翻到已放进资料的幻灯片时，这里显示这一页的要点。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you are asked, the answer appears here. On a slide from your materials, its talking points appear here."
+          }
+        }
+      }
+    },
+    "一直展开 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep open · %@"
+          }
+        }
+      }
+    },
+    "不再一直展开 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop keeping open · %@"
+          }
+        }
+      }
+    },
+    "提词岛一直展开 / 恢复": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the cue island open / back to normal"
+          }
+        }
+      }
+    },
+    "会中不用把鼠标移上去，回答一直完整显示 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answers stay fully visible without hovering · %@"
+          }
+        }
+      }
+    },
+    "会议开始后：提词岛在 MacBook 的摄像头下方一直展开，主窗口让开，不挡演讲者视图；NextThought 读取幻灯片所在的屏幕，跟着你翻页，显示这一页的要点和下一页的过渡；外接屏上不会出现 NextThought 的任何窗口。要跟随幻灯片，先把这份幻灯片（PPT、Keynote 或 PDF）放进这个系列的资料。主窗口可用 %@ 叫回。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once the meeting starts, the cue island stays open under the MacBook camera and the main window steps aside so it does not cover the presenter view. NextThought reads the display with the slides, follows as you move through them and shows this slide's points and the way into the next one. No NextThought window appears on the external display. To follow the slides, add the deck (PowerPoint, Keynote or PDF) to this series' materials first. Bring the main window back with %@."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -107,6 +107,18 @@ final class CueIslandModel {
     var shareAvoiding = false
     /// Nothing is drawn: the pointer is tracked over the notch itself.
     @ObservationIgnored var isHidden = true
+    /// The island stays open through the meeting: the latest answer in full, without
+    /// hovering. ⌘⇧E, the pin on the island, the quick panel or Settings → 提词与教练.
+    var alwaysOpen = UserDefaults.standard.bool(forKey: "cueAlwaysOpen") {
+        didSet {
+            UserDefaults.standard.set(alwaysOpen, forKey: "cueAlwaysOpen")
+            if alwaysOpen, AppState.shared.isRunning { CueIslandController.shared.show() }
+        }
+    }
+    /// Dual-screen presenting shapes this meeting (PresenterMode).
+    var presenting = false
+    /// Open without hovering: chosen by the user, or because the meeting is being presented.
+    var keepsOpen: Bool { alwaysOpen || presenting }
     /// Recordings drive the hover state themselves instead of following the pointer.
     @ObservationIgnored var demoHover: Bool?
     /// The deck stays open after a click on its bar, until the next click on the bar or outside.
@@ -127,7 +139,7 @@ final class CueIslandController {
     private var panel: NSPanel?
     private var tracker: Timer?
     private var observers: [NSObjectProtocol] = []
-    private static let canvas = CGSize(width: 760, height: 460)
+    private static let canvas = CGSize(width: 820, height: 660)
 
     var isVisible: Bool { panel?.isVisible == true }
 
@@ -182,7 +194,7 @@ final class CueIslandController {
     /// Called at launch and when a preference changes.
     func refreshPresence() {
         guard !model.preview else { return }
-        if model.surface == .island, AppState.shared.isRunning || keepsPresence {
+        if (model.surface == .island || model.presenting) && (AppState.shared.isRunning || keepsPresence) {
             show()
         } else {
             panel?.ignoresMouseEvents = true
@@ -217,13 +229,15 @@ final class CueIslandController {
                 UserDefaults.standard.set(mode.rawValue, forKey: "lastScene")
             }
             model.collapsedKey = nil; model.covered = []; model.forceCue = false
-            if model.surface == .island {
+            PresenterMode.shared.begin()
+            if model.surface == .island || model.presenting {
                 show()
             } else if state.automaticAnswers {
                 // The floating window is the cue surface and nothing else opens it.
                 TeleprompterController.shared.showWindow()
             }
         } else {
+            PresenterMode.shared.end()
             let summary = state.coach.end()
             if let summary, let id = coachArchiveID { CoachSummaryStore.save(summary, for: id) }
             coachArchiveID = nil
@@ -290,7 +304,11 @@ final class CueIslandController {
         panel.contentView = FirstMouseHostingView(rootView: CueIslandView(model: model).environment(AppState.shared))
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                                 object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.reposition() }
+            MainActor.assumeIsolated {
+                self?.reposition()
+                // A display plugged in or out mid-meeting turns dual-screen presenting on or off.
+                PresenterMode.shared.displaysChanged()
+            }
         })
         return panel
     }
@@ -480,7 +498,7 @@ struct CueIslandView: View {
     /// The island's presentations, in the grammar of a Dynamic Island: `compact` sits
     /// beside the notch, `hearing` and `cue` are live activities that open by
     /// themselves, `deck` and `launcher` open under the pointer.
-    enum Phase: Equatable { case hidden, compact, hearing(String), cue, deck, launcher, autoEnd }
+    enum Phase: Equatable { case hidden, compact, hearing(String), cue, deck, launcher, autoEnd, slide }
 
     private var mode: SessionMode { (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode }
     private var tint: Color { mode.theme.tint }
@@ -505,6 +523,16 @@ struct CueIslandView: View {
         // Nobody is talking: the meeting ends soon unless the user says otherwise.
         if state.isRunning, model.peeking || Self.demoAutoEnd { return .autoEnd }
         let hasAnswer = !state.displayedAnswer.isEmpty || state.isAnswering
+        // Kept open: answers first, then the slide being presented, then the last answer.
+        if state.isRunning, model.keepsOpen {
+            if model.pinned { return .deck }
+            if hasAnswer, model.collapsedKey != answerKey { return .cue }
+            if model.presenting, state.insights.slide != nil { return .slide }
+            if let candidate = state.liveCandidate, candidate.state != .triggered, !candidate.text.isEmpty {
+                return .hearing(candidate.text)
+            }
+            return .cue
+        }
         // With NextThought's own window in front the answer is already there: stay compact.
         let covered = model.mainWindowFront && !model.forceCue
         if hasAnswer, model.collapsedKey != answerKey, !covered { return .cue }
@@ -574,6 +602,7 @@ struct CueIslandView: View {
             bar(phase)
             if case let .hearing(text) = phase { hearing(text) }
             if phase == .cue { cue }
+            if phase == .slide { slideNotes }
             if phase == .deck { deck }
             if phase == .launcher { launcher }
             if phase == .autoEnd { autoEndPeek }
@@ -586,7 +615,7 @@ struct CueIslandView: View {
         switch phase {
         case .hidden, .compact: return ears
         case .hearing: return max(ears, min(model.width.points, 440))
-        case .cue: return max(ears, model.width.points)
+        case .cue, .slide: return max(ears, model.width.points)
         case .deck: return max(ears, 470)
         case .launcher: return max(ears, 500)
         case .autoEnd: return max(ears, 470)
@@ -619,6 +648,9 @@ struct CueIslandView: View {
     private func togglePinned(_ phase: Phase) {
         switch phase {
         case .compact, .deck, .hearing, .launcher: model.pinned.toggle()
+        // Kept open, a click on the bar swaps the answer for the meeting deck and back.
+        case .cue, .slide:
+            if model.keepsOpen, state.isRunning { model.pinned.toggle() }
         default: break
         }
     }
@@ -633,6 +665,13 @@ struct CueIslandView: View {
                 .transition(.blurReplace)
         } else {
             HStack(spacing: 6) {
+                if model.presenting, let slide = state.insights.slide {
+                    Text(verbatim: "\(slide.page)/\(slide.pageCount)")
+                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(tint)
+                        .contentTransition(.numericText())
+                        .accessibilityLabel(Text("第 \(slide.page) 页，共 \(slide.pageCount) 页"))
+                }
                 if coach.isWatching, let gaze = coach.gaze {
                     Image(systemName: gaze.state == .onCamera ? "eye.fill" : "eye.slash")
                         .font(.system(size: 10, weight: .semibold))
@@ -843,6 +882,52 @@ struct CueIslandView: View {
 
     // MARK: Cue
 
+    /// Presenting: the talking points of the slide on the shared display, ticked off as
+    /// they are said, and how to get to the next one.
+    private var slideNotes: some View {
+        let insights = state.insights
+        let size = CGFloat(state.teleprompterFontSize)
+        let slide = insights.slide
+        let notes = slide.flatMap { insights.slideNotes[$0.key] }
+        let covered = slide.flatMap { insights.slideCovered[$0.key] } ?? []
+        let next = notes.flatMap { notes in notes.points.indices.first { !covered.contains($0) } }
+        return VStack(alignment: .leading, spacing: 0) {
+            if let slide {
+                HStack(spacing: 6) {
+                    Text(verbatim: String(localized: "第 \(slide.page) 页") + " · " + slide.documentName)
+                        .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                    Spacer(minLength: 0)
+                    if insights.generatingNotes.contains(slide.key) { ThinkingDots(color: tint) }
+                }
+                .padding(.bottom, 8)
+            }
+            if let notes, !notes.points.isEmpty {
+                VStack(alignment: .leading, spacing: size * 0.34) {
+                    ForEach(Array(notes.points.enumerated()), id: \.offset) { index, point in
+                        CueRow(line: CueLine(id: index, kind: .point, text: point), size: size, tint: tint,
+                               said: covered.contains(index), current: index == next, expanded: true)
+                    }
+                    if !notes.transition.isEmpty {
+                        Text(verbatim: String(localized: "下一页") + "  " + notes.transition)
+                            .font(.system(size: size * 0.66, weight: .medium)).foregroundStyle(tint.opacity(0.9))
+                            .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+                    }
+                }
+                .animation(Motion.expand, value: slide?.key)
+            } else {
+                Text(insights.slideNotesError ?? String(localized: "正在准备这一页的要点…"))
+                    .font(.system(size: size * 0.72, weight: .medium)).foregroundStyle(.white.opacity(0.55))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if model.hovering { controls.padding(.top, 10).transition(.opacity.combined(with: .move(edge: .bottom))) }
+        }
+        .padding(.horizontal, 20).padding(.top, 4).padding(.bottom, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+        .id(slide?.key)
+    }
+
     private var cue: some View {
         let lines = lines
         let size = CGFloat(state.teleprompterFontSize)
@@ -859,7 +944,7 @@ struct CueIslandView: View {
                 .padding(.bottom, 8)
             }
             if lines.isEmpty {
-                Text(state.isAnswering ? "正在想…" : "被问到时，回答会出现在这里。")
+                Text(state.isAnswering ? "正在想…" : (model.presenting ? "被问到时，回答会出现在这里；翻到已放进资料的幻灯片时，这里显示这一页的要点。" : "被问到时，回答会出现在这里。"))
                     .font(.system(size: size * 0.8, weight: .medium)).foregroundStyle(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -867,7 +952,7 @@ struct CueIslandView: View {
                 ForEach(visible) { line in
                     CueRow(line: line, size: size, tint: tint, said: model.covered.contains(line.id),
                            current: line.id == next && !state.isAnswering,
-                           expanded: model.hovering || cueStyle == .script)
+                           expanded: model.hovering || model.keepsOpen || cueStyle == .script)
                         .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 10)),
                                                 removal: .opacity.combined(with: .offset(y: -10))))
                 }
@@ -900,9 +985,16 @@ struct CueIslandView: View {
                 state.teleprompterFontSize = min(36, state.teleprompterFontSize + 1); state.saveAnswerSettings()
             }
             IslandButton(symbol: "macwindow", help: String(localized: "打开主窗口")) { TeleprompterController.shared.showWorkbench() }
-            IslandButton(symbol: "chevron.up", help: String(localized: "收起 · \(state.shortcutLabel(.toggleTeleprompter)) 隐藏提词岛")) {
-                model.preview = false
-                model.collapsedKey = answerKey
+            IslandButton(symbol: model.alwaysOpen ? "pin.fill" : "pin",
+                         help: model.alwaysOpen ? String(localized: "不再一直展开 · \(state.shortcutLabel(.toggleCueOpen))")
+                                                : String(localized: "一直展开 · \(state.shortcutLabel(.toggleCueOpen))")) {
+                model.alwaysOpen.toggle()
+            }
+            if !model.keepsOpen {
+                IslandButton(symbol: "chevron.up", help: String(localized: "收起 · \(state.shortcutLabel(.toggleTeleprompter)) 隐藏提词岛")) {
+                    model.preview = false
+                    model.collapsedKey = answerKey
+                }
             }
         }
     }

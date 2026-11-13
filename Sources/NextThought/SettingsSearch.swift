@@ -45,6 +45,8 @@ struct SettingsSearchItem: Identifiable {
         .init(.answers, "技能", "技能库 技能 说明 SKILL instructions skills"),
         // 提词与教练
         .init(.presenter, "提词", "提词 提词岛 浮窗 刘海 摄像头 宽度 屏幕 字号 隐藏背景 开始一场 cue island notch teleprompter font"),
+        .init(.presenter, "双屏演讲", "双屏 演讲 外接屏 外接显示器 幻灯片 PPT Keynote 演讲者视图 讲稿 跟随幻灯片 翻页 第几页 presenter dual screen slides speaker notes"),
+        .init(.presenter, "提词", "一直展开 常驻 固定 不收起 钉住 pin always open 提词岛展开"),
         .init(.presenter, "临场教练", "教练 语速 说得太久 发言占比 轻提示 眼神 看镜头 摄像头 校准 灵敏度 视线 live coach pace gaze camera"),
         .init(.presenter, "屏幕共享", "共享 排除 录屏 可见性 测试 隐私 自动收回 capture privacy share visibility"),
         .init(.presenter, "字幕条", "字幕 位置 同声传译 恢复默认位置 subtitle captions"),

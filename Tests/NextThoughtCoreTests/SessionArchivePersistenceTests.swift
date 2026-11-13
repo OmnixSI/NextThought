@@ -567,3 +567,18 @@ struct SessionArchivePersistenceTests {
         #expect(try Data(contentsOf: url) == Data("{\"version\":2}".utf8))
     }
 }
+
+@Suite struct SessionArchiveLeftoverTests {
+    @Test func aFolderWithOnlyDerivedFilesIsALeftover() {
+        #expect(SessionArchiveLeftover.isLeftover(fileNames: ["notes.json"]))
+        #expect(SessionArchiveLeftover.isLeftover(fileNames: ["notes.json", "summary.json", ".DS_Store"]))
+        #expect(SessionArchiveLeftover.isLeftover(fileNames: []))
+    }
+
+    @Test func anythingRecordedMakesItAMeetingToRepair() {
+        #expect(!SessionArchiveLeftover.isLeftover(fileNames: ["notes.json", "transcript.jsonl"]))
+        #expect(!SessionArchiveLeftover.isLeftover(fileNames: ["context.json"]))
+        #expect(!SessionArchiveLeftover.isLeftover(fileNames: ["answers.jsonl", "notes.json"]))
+        #expect(!SessionArchiveLeftover.isLeftover(fileNames: ["meta.json", "notes.json"]))
+    }
+}

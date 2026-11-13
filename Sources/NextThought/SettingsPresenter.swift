@@ -16,10 +16,12 @@ struct PresenterSettings: View {
         @Bindable var state = state
         @Bindable var cue = CueIslandController.shared.model
         @Bindable var coach = state.coach
+        @Bindable var presenter = PresenterMode.shared
         VStack(alignment: .leading, spacing: 0) {
             SettingsSection(title: "提词") {
                 MenuPicker(title: "显示方式", selection: $cue.surface,
                            options: CueSurface.allCases.map { ($0, $0.title) })
+                Toggle("会中一直展开提词岛，不用把鼠标移上去", isOn: $cue.alwaysOpen)
                 if cue.surface == .island {
                     MenuPicker(title: "宽度", selection: $cue.width,
                                options: CueWidth.allCases.map { ($0, $0.title) })
@@ -48,6 +50,16 @@ struct PresenterSettings: View {
                     Text("\(Int(state.teleprompterFontSize))").font(.caption.monospacedDigit()).frame(width: 36)
                 }
                 Note("每个场景用要点还是逐句，在“场景”页设置。", presentation: .inline)
+            }
+
+            SettingsSection(title: "双屏演讲") {
+                Toggle("外接屏放幻灯片，MacBook 看提示", isOn: $presenter.isEnabled)
+                if presenter.otherScreens.count > 1 {
+                    MenuPicker(title: "幻灯片所在的屏幕", selection: $presenter.slidesScreenName,
+                               options: [("", String(localized: "自动"))] + presenter.otherScreens.map { ($0.localizedName, $0.localizedName) })
+                }
+                Note(String(localized: "会议开始后：提词岛在 MacBook 的摄像头下方一直展开，主窗口让开，不挡演讲者视图；NextThought 读取幻灯片所在的屏幕，跟着你翻页，显示这一页的要点和下一页的过渡；外接屏上不会出现 NextThought 的任何窗口。要跟随幻灯片，先把这份幻灯片（PPT、Keynote 或 PDF）放进这个系列的资料。主窗口可用 \(state.shortcutLabel(.toggleLiveWindow)) 叫回。"), presentation: .inline)
+                Text(verbatim: presenter.summary).font(Typo.caption).foregroundStyle(Ink.secondary)
             }
 
             SettingsSection(title: "临场教练") {

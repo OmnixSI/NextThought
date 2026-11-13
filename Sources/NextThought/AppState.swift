@@ -1561,7 +1561,8 @@ final class AppState {
             .previousAnswer: { [weak self] in self?.showPreviousAnswer() },
             .nextAnswer: { [weak self] in self?.showNextAnswer() },
             .refineShorter: { [weak self] in self?.refine(.shorter) },
-            .toggleLiveWindow: { [weak self] in self?.liveWindow.cycle() }
+            .toggleLiveWindow: { [weak self] in self?.liveWindow.cycle() },
+            .toggleCueOpen: { CueIslandController.shared.model.alwaysOpen.toggle() }
         ], overrides: customShortcuts)
     }
 

@@ -7,6 +7,7 @@ enum HotkeyAction: UInt32, CaseIterable, Identifiable {
     case copyAnswer, toggleClickThrough, panicHide, previousAnswer, nextAnswer, refineShorter
     /// Explicit raw value: a stored shortcut is keyed by it, so it must not shift when other actions are added.
     case toggleLiveWindow = 40
+    case toggleCueOpen = 41
     var id: UInt32 { rawValue }
     var title: String {
         switch self {
@@ -25,6 +26,7 @@ enum HotkeyAction: UInt32, CaseIterable, Identifiable {
         case .nextAnswer: "下一条回答"
         case .refineShorter: "把回答改短"
         case .toggleLiveWindow: "切换会中窗口（纪要 / 字幕条 / 隐藏）"
+        case .toggleCueOpen: "提词岛一直展开 / 恢复"
         }
     }
     var defaultBinding: ShortcutBinding {
@@ -46,6 +48,7 @@ enum HotkeyAction: UInt32, CaseIterable, Identifiable {
         case .refineShorter: return ShortcutBinding(keyCode: 18)
         // ⌃⌥S: no ⌘, so it cannot collide with the ⌘⇧ defaults above.
         case .toggleLiveWindow: return ShortcutBinding(keyCode: 1, command: false, shift: false, option: true, control: true)
+        case .toggleCueOpen: return ShortcutBinding(keyCode: 14)
         }
     }
 }

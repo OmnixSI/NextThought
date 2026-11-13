@@ -31,6 +31,19 @@ struct QuickSettingsPanel: View {
                 Text("\(Int(state.teleprompterFontSize))").font(.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
                     .frame(width: 22, alignment: .trailing)
             }
+            Toggle("提词岛一直展开", isOn: $cue.alwaysOpen)
+                .frame(minHeight: 34)
+                .help("会中不用把鼠标移上去，回答一直完整显示 · \(state.shortcutLabel(.toggleCueOpen))")
+                .accessibilityIdentifier("quickSettings.cueAlwaysOpen")
+            VStack(alignment: .leading, spacing: 0) {
+                Toggle("双屏演讲", isOn: Binding(get: { PresenterMode.shared.isEnabled },
+                                              set: { PresenterMode.shared.isEnabled = $0 }))
+                    .frame(minHeight: 34)
+                    .accessibilityIdentifier("quickSettings.presenter")
+                Text(verbatim: PresenterMode.shared.summary)
+                    .font(Typo.caption).foregroundStyle(Ink.secondary)
+                    .padding(.bottom, Space.s1)
+            }
             Toggle("临场教练", isOn: $coach.isEnabled).frame(minHeight: 34)
             VStack(alignment: .leading, spacing: 0) {
                 Toggle("留意眼神", isOn: $coach.watchesGaze)

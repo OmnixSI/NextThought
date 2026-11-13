@@ -320,6 +320,9 @@ final class SessionArchive {
                     switch metadata {
                     case .value(let value): meta = value
                     case .failure(.missing):
+                        // A leftover from an older version (a notes file written after
+                        // its meeting was deleted) is kept aside, not reported forever.
+                        if Self.setAsideLeftover(folder) { return nil }
                         issues.append(.missingSessionMetadata(folder.lastPathComponent))
                         return nil
                     case .failure(.unreadable(_, let reason)):
@@ -1159,6 +1162,31 @@ final class SessionArchive {
         writeQueues[id] = queue
         persistenceBySession[id] = queue.snapshot
         return true
+    }
+
+    /// Moves a session folder that holds no recording into `Previous Data/Leftover
+    /// meeting files`, so nothing is lost and nothing is reported again. Returns
+    /// false (and leaves the folder alone) when it still holds a meeting or cannot move.
+    nonisolated static func setAsideLeftover(_ folder: URL) -> Bool {
+        let manager = FileManager.default
+        guard let names = try? manager.contentsOfDirectory(atPath: folder.path),
+              SessionArchiveLeftover.isLeftover(fileNames: names) else { return false }
+        let shelf = folder.deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Previous Data", isDirectory: true)
+            .appendingPathComponent("Leftover meeting files", isDirectory: true)
+        var destination = shelf.appendingPathComponent(folder.lastPathComponent, isDirectory: true)
+        var suffix = 2
+        while manager.fileExists(atPath: destination.path) {
+            destination = shelf.appendingPathComponent("\(folder.lastPathComponent) \(suffix)", isDirectory: true)
+            suffix += 1
+        }
+        do {
+            try manager.createDirectory(at: shelf, withIntermediateDirectories: true)
+            try manager.moveItem(at: folder, to: destination)
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func enqueueSnapshot<T: Encodable>(_ value: T, file: String, session id: UUID) -> Bool {

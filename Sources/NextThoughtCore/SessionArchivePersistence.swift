@@ -488,3 +488,26 @@ public struct SessionArchiveFileAppender: Sendable {
         try handle.write(contentsOf: data)
     }
 }
+
+// MARK: - Leftover folders
+
+/// A session folder without `meta.json` is a damaged meeting only when something of
+/// the meeting itself is still there. Older versions could write a notes file (or
+/// another derived file) after the meeting had been deleted, recreating a folder
+/// that holds nothing to recover; such a leftover is set aside instead of reported.
+public enum SessionArchiveLeftover {
+    /// Files written while a meeting is recorded. Any of them makes the folder a
+    /// meeting worth recovering.
+    public static let recordingFiles: Set<String> = [
+        "transcript.jsonl", "questions.jsonl", "answers.jsonl", "context.json",
+        "translations.jsonl", "voices.jsonl",
+    ]
+
+    /// The folder holds only files derived after a meeting (notes, summaries, the
+    /// user's notes) and no recording: there is no meeting to show or repair.
+    public static func isLeftover(fileNames: [String]) -> Bool {
+        let names = fileNames.filter { !$0.hasPrefix(".") }
+        guard !names.contains("meta.json") else { return false }
+        return !names.contains { recordingFiles.contains($0) }
+    }
+}

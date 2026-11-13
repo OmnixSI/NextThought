@@ -129,6 +129,8 @@ final class LiveCoach {
         accumulator.observeEyeContact(contactRatio)
         if let shown = nudgeShownAt, now.timeIntervalSince(shown) > 7 { nudge = nil; nudgeShownAt = nil }
         guard nudge == nil, let candidate = next.nudge else { return }
+        // Presenting is talking for a long time on purpose: only pace and eye contact matter.
+        if CueIslandController.shared.model.presenting, candidate == .wrapUp || candidate == .letThemTalk { return }
         // The same advice at most once a minute and a half: a coach, not a metronome.
         if let last = lastNudgeAt[candidate], now.timeIntervalSince(last) < 90 { return }
         lastNudgeAt[candidate] = now
