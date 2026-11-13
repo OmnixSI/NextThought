@@ -174,10 +174,19 @@ def slide_table(table):
         rows.append('<tr>'+''.join(cells)+'</tr>')
     return '<table>\n'+'\n'.join(rows)+'\n</table>'
 
+def shape_kind(shape):
+    # python-pptx gives None (or raises) for shapes it has no type for, such as some
+    # placeholders and embedded objects; those are read for text like any other shape.
+    try:
+        value=shape.shape_type
+        return int(value) if value is not None else None
+    except Exception:
+        return None
+
 def read_slide_shapes(shapes,locator,parts,save_image,warnings,job=None):
     for shape in shapes:
         checkpoint(job)
-        if int(shape.shape_type)==6:
+        if shape_kind(shape)==6 and hasattr(shape,'shapes'):
             read_slide_shapes(shape.shapes,locator,parts,save_image,warnings,job);continue
         if getattr(shape,'has_text_frame',False) and shape.text.strip():parts.append(dict(markdown=shape.text,locator=locator))
         if getattr(shape,'has_table',False):parts.append(dict(markdown=slide_table(shape.table),locator=locator))
@@ -192,7 +201,7 @@ def read_slide_shapes(shapes,locator,parts,save_image,warnings,job=None):
                     lines.append(mdtable([['类别','数值']]+[[categories[n] if n<len(categories) else str(n+1),str(v)] for n,v in enumerate(values)]))
                 parts.append(dict(markdown='\n'.join(lines),locator=locator))
             except Exception as error:warnings.append('幻灯片 '+str(locator['slide'])+'：图表数据无法完整提取：'+str(error))
-        if int(shape.shape_type)==13:save_image(shape.image.blob,'image.'+shape.image.ext,locator)
+        if shape_kind(shape)==13 and hasattr(shape,'image'):save_image(shape.image.blob,'image.'+shape.image.ext,locator)
         # SmartArt/diagram relationships need rendering; do not label extraction complete.
         xml=getattr(shape,'_element',None)
         if xml is not None and 'drawingml/2006/diagram' in str(getattr(xml,'xml','')):
