@@ -1,0 +1,40 @@
+{
+  "version": "3.1.0",
+  "build": 3100,
+  "tag": "v3.1.0",
+  "sourceCommit": "e5d8b32032a1c72f38e10437234631b540b55622",
+  "release": "https://github.com/OmnixSI/NextThought/releases/tag/v3.1.0",
+  "publishedAt": "2026-11-13T03:37:22Z",
+  "buildLocation": "local macOS; GitHub Actions could not start jobs (account billing)",
+  "swiftTestsPassed": 546,
+  "artifactSelftestsPassed": [
+    "data",
+    "session-export",
+    "session-backup-drain",
+    "session-edit-receipts",
+    "session-carry-context",
+    "meeting-content",
+    "archive-ux",
+    "large-pdf",
+    "structured-notes",
+    "source-integrity",
+    "settings-navigation",
+    "document-setup"
+  ],
+  "signatureMatchesPreviousRelease": true,
+  "designatedRequirement": "identifier \"com.nextthought.app\" and certificate root = H\"9751fdac3340e375a377f13a0f933115fe6642e7\"",
+  "downloadedChecksumsPassed": true,
+  "downloadedDMGVerified": true,
+  "downloadedAppStrictSignaturePassed": true,
+  "assets": {
+    "NextThought-3.1.0-macOS-arm64.dmg": "a738cb4a6c0b63c2615e11365762dc85cb88402aed22d96757f943124b26676a",
+    "NextThought-3.1.0-macOS-arm64.zip": "554a27e6291cccb345895718cc6de94482fb7f23b6f8ae0050e20ea95a99e3cf",
+    "runtime-manifest.json": "d653e611715c53d2d5fa0de97b803ffcd00d0cf3891013dec83cd7f082531097",
+    "update.json": "19f749c3ad2942841036ec6ce63b9e18054ed026c26f1ae4c7bf5cebc9a9edb6"
+  },
+  "limitations": [
+    "Slide following and dual-screen presenting were checked with demo data and the window list, not in a real talk with a real screen share",
+    "scripts/verify-companions.sh --require-ios was not run (Command Line Tools only); mobile code unchanged",
+    "Verify and Release workflows were disabled while tagging and re-enabled after verification"
+  ]
+}

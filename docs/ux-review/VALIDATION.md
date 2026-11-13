@@ -104,3 +104,7 @@ GitHub Actions 因账户付款或额度问题无法启动任务，经用户明�
 发布前在 `main` 上 544 项测试通过；发布二进制的 12 组自检全部通过（data、session-export、session-backup-drain、session-edit-receipts、session-carry-context、meeting-content、archive-ux、large-pdf、structured-notes、source-integrity、settings-navigation、document-setup）。上传到草稿后重新下载全部资产：SHA256 清单逐项通过，DMG 校验通过，解压后的应用严格签名验证通过，版本、build、源提交与更新清单一致。打标签期间暂停了 Verify / Release 工作流，核验后已恢复。
 
 这一版没有在真实会议中跑过：真实音频下的整场会议、摄像头眼神留意、真实整屏共享时提词岛的自动收回都未实测。iOS SDK 构建检查本机无法运行，移动端代码自 v2.5.0 起未改动。完整回执见 [v3.0.0-release-verification.json](evidence/v3.0.0-release-verification.json)。
+
+## v3.1.0 本机发布
+
+GitHub Actions 仍无法启动任务，v3.1.0 按 v3.0.0 的方式在本机构建并发布，签名沿用同一正式发布身份。发布源提交 `e5d8b32032a1c72f38e10437234631b540b55622`，[v3.1.0](https://github.com/OmnixSI/NextThought/releases/tag/v3.1.0) 于 2026-11-13T03:37:22Z 发布并设为最新版，build 3100。发布前 546 项测试通过；发布二进制 12 组自检全部通过；重新下载的全部资产校验和、DMG、应用严格签名、版本与更新清单均一致。双屏演讲与跟随幻灯片只用演示数据和窗口列表验证过，未在真实演讲与屏幕共享中实测。回执见 [v3.1.0-release-verification.json](evidence/v3.1.0-release-verification.json)。
