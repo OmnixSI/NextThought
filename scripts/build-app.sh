@@ -10,9 +10,6 @@ clang_cache="$build_root/clang-module-cache"
 swift_cache="$build_root/swift-module-cache"
 
 mkdir -p "$clang_cache" "$swift_cache" "$project_root/dist"
-# Keep the build output out of Spotlight: it has the installed app's name and bundle
-# identifier, and picking it from a search started a second NextThought next to the first.
-touch "$project_root/dist/.metadata_never_index"
 export CLANG_MODULE_CACHE_PATH="$clang_cache"
 export SWIFT_MODULE_CACHE_PATH="$swift_cache"
 
