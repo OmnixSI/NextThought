@@ -1,5 +1,8 @@
 <div align="center">
 
+[![简体中文](https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-1c1b19?style=for-the-badge)](README.md)
+[![English](https://img.shields.io/badge/English-e9e6dd?style=for-the-badge)](README.en.md)
+
 # NextThought
 
 **会议里的下一句话，提前替你想好 · 原生 macOS**
@@ -150,7 +153,7 @@ scripts/dev/preview.sh shot home light /tmp/home.png   # 离屏渲染演示页�
 
 ## 文档
 
-- [3.0.0 发布说明](docs/releases/v3.0.0.md) · [更新日志](CHANGELOG.md)（历次版本的完整说明）
+- [3.3.0 发布说明](docs/releases/v3.3.0.md) · [更新日志](CHANGELOG.md)（历次版本的完整说明）
 - [开发与发布](docs/DEVELOPMENT.md)：项目结构、构建、签名、发布流程和自检
 - [资料处理管线](docs/DOCUMENT-MARKDOWN-PIPELINE.md) · [本地语音识别模型调研](docs/ASR-MODELS-2026-10.md)
 - 问题反馈与功能建议：[Issues](../../issues/new/choose)
