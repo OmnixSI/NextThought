@@ -34,6 +34,12 @@ final class PresenterMode {
         }
     }
 
+    /// The island shows the current slide's notes while I talk. Off when the notes are
+    /// read from PowerPoint's own presenter view: the island then waits for questions.
+    var showsSlideNotes = UserDefaults.standard.object(forKey: "presenterSlideNotes") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showsSlideNotes, forKey: "presenterSlideNotes") }
+    }
+
     /// The mode is shaping the running meeting.
     private(set) var isActive = false
 

@@ -176,6 +176,34 @@ public enum SpeakerLabels {
     public static func shownCount(_ lines: [SessionTranscriptLine]) -> Int { Set(numbers(lines).values).count }
 
     /// A name worth keeping: one line, trimmed, at most 24 characters; nil when nothing is left.
+    /// A name may carry who the person is in brackets: "Kai Wu（导师）". The part before
+    /// the bracket is what they are called in running text.
+    public static func shortName(_ name: String) -> String {
+        guard let bracket = name.firstIndex(where: { $0 == "（" || $0 == "(" }) else { return name }
+        let short = name[..<bracket].trimmingCharacters(in: .whitespaces)
+        return short.isEmpty ? name : short
+    }
+
+    /// Notes written before a voice had a name say "说话人 2". Once the user says who that
+    /// is, everything already written reads with the name, without asking the model again.
+    public static func naming(_ text: String, names: [Int: String]) -> String {
+        guard !names.isEmpty, text.contains("说话人") || text.contains("Speaker") else { return text }
+        var result = text
+        // Longest numbers first, so "说话人 12" is not read as "说话人 1" and a "2".
+        for (number, name) in names.sorted(by: { $0.key > $1.key }) {
+            for label in ["说话人 \(number)", "说话人\(number)", "Speaker \(number)"] {
+                var searchFrom = result.startIndex
+                while let range = result.range(of: label, range: searchFrom..<result.endIndex) {
+                    if range.upperBound < result.endIndex, result[range.upperBound].isNumber { searchFrom = range.upperBound; continue }
+                    let short = shortName(name)
+                    result.replaceSubrange(range, with: short)
+                    searchFrom = result.index(range.lowerBound, offsetBy: short.count)
+                }
+            }
+        }
+        return result
+    }
+
     public static func cleanName(_ raw: String) -> String? {
         let single = raw.components(separatedBy: .newlines).joined(separator: " ")
         let trimmed = String(single.trimmingCharacters(in: .whitespacesAndNewlines).prefix(24))
@@ -229,13 +257,16 @@ public enum SpeakerLabels {
             Speakers (this paragraph overrides what the system instructions say about not telling people apart): lines labelled with a person's name \
             or "Speaker N" were told apart by voice, which is occasionally wrong. Lines labelled "\(unknown)" are speech that could not be matched to a person. \
             People in this meeting: \(people). Where the transcript makes it clear, say who is responsible on action items (owner) and who made each point. \
-            "Speaker N" is not a real name: never guess a name from it; use a name only when the words themselves give it.\(meNote)
+            "Speaker N" is not a real name: never guess a name from it; use a name only when the words themselves give it. \
+            Words in brackets after a name say who the person is ("Kai Wu (advisor)"): read what they say accordingly (an advisor, examiner \
+            or client states requirements; a peer suggests), and write the name without the brackets in the text.\(meNote)
             """
         }
         return """
         说话人区分（本段优先于系统说明里“无法区分说话人”的描述）：转写里标着人名或“说话人 N”的行，是按声音区分出的不同的人，偶尔会有误判；\
         标着“\(unknown)”的行是没能认出是谁的发言。本场出现的人：\(people)。在转写能看清的情况下，待办的 owner 和各条要点都写明是谁；\
-        “说话人 N”不是真名，不要凭它猜名字，只有原话里点了名才用名字。\(meNote)
+        “说话人 N”不是真名，不要凭它猜名字，只有原话里点了名才用名字。名字后面括号里的字是这个人的身份（例如“Kai Wu（导师）”）：\
+        按身份理解每句话的分量（导师、评委、客户说的是要求或意见，同学说的是建议），正文里称呼时只写名字，不带括号。\(meNote)
         """
     }
 }

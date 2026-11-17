@@ -15,6 +15,13 @@ public struct ModeField: Sendable, Equatable, Identifiable {
     }
 }
 
+extension ModeField {
+    /// The field every scene has: what the meeting is about. It goes with the other
+    /// fields into answers, proofreading and notes, so the terms of the field are heard
+    /// and written the way its people write them.
+    public static let domain = ModeField("domain", "领域", "例如：无线通信物理层、机器学习。专业词会按这个领域来认和写")
+}
+
 /// What each mode asks for: fields, material slots, default answer requirements.
 public struct ModeProfile: Sendable {
     public var mode: SessionMode
@@ -46,6 +53,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "候选人",
                 fields: [
+                    .domain,
                     ModeField("company", "应聘公司", "公司名称、业务、近期新闻、团队情况"),
                     ModeField("position", "岗位", "岗位名称、级别、JD 要点"),
                     ModeField("interviewer", "面试官 / HR", "面试官姓名、背景、风格；HR 关注点"),
@@ -59,6 +67,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "报告人",
                 fields: [
+                    .domain,
                     ModeField("title", "报告题目", "论文 / 报告标题"),
                     ModeField("venue", "会议与场次", "会议名称、分会场、报告时长、主持人"),
                     ModeField("claims", "核心论点", "要讲清楚的贡献、方法和关键结果", long: true),
@@ -72,6 +81,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "会议参与者",
                 fields: [
+                    .domain,
                     ModeField("counterpart", "对方公司 / 参会人", "公司、职位、决策人、关注点"),
                     ModeField("goal", "会议目标", "这次会议要达成的结果"),
                     ModeField("position", "我方立场与底线", "可以让步的、不能让步的", long: true),
@@ -84,6 +94,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "学生",
                 fields: [
+                    .domain,
                     ModeField("course", "课程", "课程名称、章节、老师"),
                     ModeField("goals", "学习目标", "这节课需要掌握的内容", long: true),
                 ],
@@ -94,6 +105,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "组会汇报人",
                 fields: [
+                    .domain,
                     ModeField("progress", "本周进展", "做了哪些实验、读了哪些论文、结果如何", long: true),
                     ModeField("problems", "卡住的地方", "想请导师或同学帮忙判断的问题", long: true),
                     ModeField("next", "下一步计划", "下周打算做什么"),
@@ -105,6 +117,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "我方代表",
                 fields: [
+                    .domain,
                     ModeField("counterpart", "客户 / 对方", "公司、参会人、决策人、关注点"),
                     ModeField("goal", "沟通目标", "这次沟通要达成的结果"),
                     ModeField("offer", "产品与报价", "我们能提供什么、价格和时间", long: true),
@@ -117,6 +130,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "讨论参与者",
                 fields: [
+                    .domain,
                     ModeField("topic", "讨论题目", "要讨论的问题或案例"),
                     ModeField("position", "我的观点", "我想表达的看法和依据", long: true),
                 ],
@@ -127,6 +141,7 @@ public struct ModeProfile: Sendable {
             return ModeProfile(
                 mode: mode, role: "小组成员",
                 fields: [
+                    .domain,
                     ModeField("assignment", "作业要求", "课程、题目、评分标准、交付物"),
                     ModeField("deadline", "截止时间", "最终提交时间和中间节点"),
                     ModeField("members", "成员与分工", "每个人负责什么、目前做到哪里", long: true),
@@ -138,7 +153,7 @@ public struct ModeProfile: Sendable {
         case .general, .custom:
             return ModeProfile(
                 mode: mode, role: "参与者",
-                fields: [ModeField("context", "场景说明", "这是什么场合、对方是谁、我希望达成什么", long: true)],
+                fields: [.domain, ModeField("context", "场景说明", "这是什么场合、对方是谁、我希望达成什么", long: true)],
                 documentCategories: ["资料", "其他"],
                 templatePreferences: "直接回答当前问题：先给一句简洁结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。",
                 reviewFocus: "总结讨论要点和对方关心的问题，给出下次可以做得更好的地方。")

@@ -236,6 +236,14 @@ private struct LiveTopBar: View {
                                               set: { PresenterMode.shared.isEnabled = $0 }))
                     .help(PresenterMode.shared.summary)
             }
+            Section("回答") {
+                Picker("回答语言", selection: Binding(get: { state.answerLanguage }, set: { state.answerLanguage = $0 })) {
+                    Text("跟随问题").tag("auto")
+                    Text("中文").tag("zh")
+                    Text("English").tag("en")
+                }
+                Toggle("英文回答附中文对照", isOn: Binding(get: { state.answerGloss }, set: { state.answerGloss = $0 }))
+            }
             Section("工具") {
                 Button(state.liveTranslation.isEnabled ? "关闭同声传译" : "开启同声传译") {
                     state.liveTranslation.setEnabled(!state.liveTranslation.isEnabled)

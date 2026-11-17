@@ -247,9 +247,10 @@ struct SessionExportSheet: View {
         panel.isExtensionHidden = false
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let selectedURL = panel.url else { return }
+        // Add the extension when it is missing; never cut a name at a dot it happens to contain ("v2.0 评审").
         let url = selectedURL.pathExtension.lowercased() == format.fileExtension
             ? selectedURL
-            : selectedURL.deletingPathExtension().appendingPathExtension(format.fileExtension)
+            : selectedURL.appendingPathExtension(format.fileExtension)
         do {
             try SessionFileExporter.write(content: previewText, format: format, to: url)
             status = String(localized: "已导出：\(url.lastPathComponent)")

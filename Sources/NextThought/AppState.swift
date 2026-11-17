@@ -115,6 +115,23 @@ final class AppState {
 
     // MARK: Appearance and overlay
     var teleprompterFontSize = UserDefaults.standard.object(forKey: "teleprompterFontSize") as? Double ?? 22
+    /// The language answers are written in: "auto" follows the question, "en" and "zh" hold
+    /// it whatever was asked (a defense in English is answered in English even when a
+    /// question was recognised with Chinese words in it).
+    var answerLanguage = UserDefaults.standard.string(forKey: "answerLanguage") ?? "auto" {
+        didSet { UserDefaults.standard.set(answerLanguage, forKey: "answerLanguage") }
+    }
+    /// Under an answer in another language, what was asked and what each sentence means, in
+    /// Chinese. On until it is turned off: an answer to be said in English is of no use
+    /// before it is understood.
+    var answerGloss = UserDefaults.standard.object(forKey: "answerGloss") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(answerGloss, forKey: "answerGloss") }
+    }
+    /// For the prompt: the answer language (the chosen one, or the one the question was
+    /// asked in), and the gloss language when one is wanted.
+    func answerLanguageFields(for question: String) -> (answer: String?, gloss: String?) {
+        AnswerLanguage.fields(choice: answerLanguage, gloss: answerGloss, question: question)
+    }
     // Fully opaque by default: a translucent window costs an extra blend every frame.
     var teleprompterOpacity = UserDefaults.standard.object(forKey: "teleprompterOpacity") as? Double ?? 1.0
     var capturePrivacy = UserDefaults.standard.object(forKey: "capturePrivacy") as? Bool ?? true
@@ -415,6 +432,13 @@ final class AppState {
     let summaryCodex = CodexBridge()
     private let hotkeys = HotkeyManager()
     @ObservationIgnored var tracker = QuestionCandidateTracker()
+    /// What the other side has said since I last spoke; in a question round after a
+    /// talk the whole turn is the question.
+    var questionTurn = QuestionTurn()
+    @ObservationIgnored var answerServiceWarmedAt = Date.distantPast
+    /// Words I have said in this meeting, and when I last finished a sentence.
+    @ObservationIgnored var myWords = 0
+    @ObservationIgnored var lastSpokeAt = Date.distantPast
     let appServer = CodexAppServerClient()
     let apiClient = OpenAICompatibleClient()
     let summaryAPIClient = OpenAICompatibleClient(resourceTimeout: 600)
@@ -728,6 +752,7 @@ final class AppState {
             sessionStartedAt = startedAt
             entries = []
             tracker = QuestionCandidateTracker(mode: meetingMode)
+            questionTurn = QuestionTurn(); myWords = 0; lastSpokeAt = .distantPast; answerServiceWarmedAt = .distantPast
             liveCandidate = nil; suggestedQuestions = []; questionTexts = []; appleUtteranceCounter = [:]
             deferredCandidate = nil; answeringCandidateID = nil; lastAutomaticAnswer = nil
             answerHistory = []; historyCursor = nil; webLookups = [:]; showOriginalAnswer = []; currentAnswerID = nil; webLookupTask?.cancel()
@@ -990,14 +1015,18 @@ final class AppState {
     /// - Parameters:
     ///   - candidateID: the detector candidate this answers (for superseding).
     ///   - supersede: replace an in-flight automatic answer instead of queueing.
+    ///   - heardPartial: the unfinished sentence of theirs the question includes
+    ///     (whatever is on screen when not given).
     func ask(_ question: String, screenshot: URL?, recentContext: String? = nil, isAutomatic: Bool = false,
-             candidateID: UUID? = nil, supersede: Bool = false) {
+             candidateID: UUID? = nil, supersede: Bool = false, heardPartial: String? = nil) {
         if DemoMode.isEnabled {
             historyCursor = nil; currentQuestion = question; answerDraft = ""
             answer = "这是界面演示，不会调用真实回答服务。正式使用时，助手会结合实时对话与当前场景生成建议回答。"
             lastAnswerModel = "UI Demo"; statusText = "演示：未调用模型"
             return
         }
+        // Whatever asks, the answer covers what they have said so far.
+        if !questionTurn.isEmpty { questionTurn.asked(with: heardPartial ?? partialTranscript) }
         if isAutomatic && isAnswering && !supersede {
             pendingAutomaticQuestion = (question, recentContext ?? "", candidateID)
             Diagnostics.record("answer.queued")
@@ -1036,6 +1065,7 @@ final class AppState {
         requestID = id
         currentAnswerID = id
         answerCoordinator.begin(id: id, question: question)
+        answerServiceWarmedAt = Date()
         Diagnostics.record("answer.started", ["request_id": id.uuidString, "automatic": isAutomatic, "screenshot": screenshot != nil, "question_characters": question.count, "backend": backend.rawValue, "supersede": supersede])
 
         let context = recentContext ?? TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) })
@@ -1061,17 +1091,25 @@ final class AppState {
             }
             return await self.screenForQuestion(question)
         }
+        let language = answerLanguageFields(for: AnswerRefinement.originalQuestion(of: question))
+        // Presenting my own work: when the material is small enough the model reads all
+        // of it at every question instead of the few passages a lookup returns.
+        let wholeMaterial = workspace.effectiveMode == .academic ? AnswerPromptBuilder.wholeMaterial(of: workspace.retrievalDocuments) : nil
         let makeParts = { (webSearch: Bool, results: [WebResult]?, excerpts: [ContextExcerpt], screen: ScreenContext?, slide: ContextExcerpt?, image: Bool) in
             AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: turns, hasScreenshot: image,
                 preferences: workspace.preferences, mode: workspace.effectiveMode, style: workspace.style, excerpts: excerpts,
                 experience: workspace.experienceNotes(), skills: allSnippets, webResults: results, webSearch: webSearch,
                 screen: screen.map { "来源：\($0.source)；采集时间：\(AnswerPromptBuilder.todayText($0.capturedAt))；识别：\($0.recognizer)\n" + ScreenText.trimmed($0.text, limit: 5000) }, currentSlide: slide,
-                glossary: glossarySection)
+                glossary: glossarySection,
+                answerLanguage: language.answer, glossLanguage: language.gloss, fullMaterial: wholeMaterial)
         }
         searchDecisionTask = Task { [weak self] in
             guard let self else { return }
             let screen = await screenTask.value
-            let decision = await self.assessWebSearch(question, context: context, screen: screen.context?.text)
+            // With all of my own material in the prompt the question is about my work: the
+            // web has nothing on it, and a lookup rewrote good answers a few seconds later.
+            let decision = wholeMaterial == nil ? await self.assessWebSearch(question, context: context, screen: screen.context?.text)
+                : SearchDecision(search: false, reason: "回答基于整份资料", query: "", mechanism: "material")
             guard !Task.isCancelled, self.requestID == id else { return }
             self.answerCoordinator.update(id: id) { $0.evidence.search = decision }
             Diagnostics.record("web.decision", ["request_id": id.uuidString, "search": decision.search, "reason": decision.reason, "mechanism": decision.mechanism])
@@ -1562,7 +1600,9 @@ final class AppState {
             .nextAnswer: { [weak self] in self?.showNextAnswer() },
             .refineShorter: { [weak self] in self?.refine(.shorter) },
             .toggleLiveWindow: { [weak self] in self?.liveWindow.cycle() },
-            .toggleCueOpen: { CueIslandController.shared.model.alwaysOpen.toggle() }
+            .toggleCueOpen: { CueIslandController.shared.model.alwaysOpen.toggle() },
+            .slidePrevious: { [weak self] in self?.stepSlide(-1) },
+            .slideNext: { [weak self] in self?.stepSlide(1) }
         ], overrides: customShortcuts)
     }
 

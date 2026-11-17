@@ -70,7 +70,11 @@ private struct SlideSection: View {
                 Text(slide.documentName).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 Spacer()
                 if insights.generatingNotes.contains(slide.key) { ProgressView().controlSize(.mini) }
-                Button("重新生成") { state.prepareSlideNotes(slide, force: true) }
+                Button { state.stepSlide(-1) } label: { Image(systemName: "chevron.left") }
+                    .buttonStyle(ChipButtonStyle()).disabled(slide.page <= 1).help("上一页 · \(state.shortcutLabel(.slidePrevious))")
+                Button { state.stepSlide(1) } label: { Image(systemName: "chevron.right") }
+                    .buttonStyle(ChipButtonStyle()).disabled(slide.page >= slide.pageCount).help("下一页 · \(state.shortcutLabel(.slideNext))")
+                Button(notes?.isScript == true ? String(localized: "改用 AI 要点") : String(localized: "重新生成")) { state.prepareSlideNotes(slide, force: true) }
                     .buttonStyle(ChipButtonStyle()).disabled(insights.generatingNotes.contains(slide.key))
             }
             if let notes {
@@ -86,7 +90,7 @@ private struct SlideSection: View {
                     }
                 }
                 if !notes.transition.isEmpty {
-                    Text("过渡：\(notes.transition)").font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(notes.isScript ? String(localized: "下一页：\(notes.transition)") : String(localized: "过渡：\(notes.transition)")).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if !notes.questions.isEmpty {
                     Text("听众可能会问（点一下提前准备回答）").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)

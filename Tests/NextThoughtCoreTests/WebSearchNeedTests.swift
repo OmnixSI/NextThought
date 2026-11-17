@@ -22,4 +22,12 @@ struct WebSearchNeedTests {
         #expect(result.reason.contains("最近"))
         #expect(result.reason.contains("油价"))
     }
+
+    @Test func aWordInsideAnotherIsNotATopic() {
+        #expect(!WebSearchNeed.mentions("won", in: "i was wondering whether the site map needs to be updated"))
+        #expect(WebSearchNeed.mentions("won", in: "who won the election"))
+        #expect(WebSearchNeed.mentions("launch", in: "when it launches"))
+        #expect(WebSearchNeed.mentions("股价", in: "苹果的股价是多少"))
+        #expect(WebSearchNeed.assess("I was wondering whether the site map in your third research question needs to be updated when the environment changes.").score < 0.5)
+    }
 }

@@ -673,18 +673,7 @@ public enum SessionMarkdownExporter {
         let english = notes.language == "en"
         var sections: [String] = []
         for section in notes.sections where !section.items.isEmpty {
-            var lines = ["### \(section.title)"]
-            for item in section.items {
-                lines.append(NotesMarkdown.line(item, kind: section.kind, english: english))
-                if section.kind == .questions {
-                    if let answer = item.answer, !answer.isEmpty {
-                        lines.append("  - \(english ? "My answer: " : "我答：")\(answer)")
-                    }
-                    if item.improves, let better = item.better, !better.isEmpty {
-                        lines.append("  - \(english ? "Better: " : "更好的答法：")\(better)")
-                    }
-                }
-            }
+            let lines = ["### \(section.title)"] + NotesMarkdown.lines(section, english: english)
             sections.append(lines.joined(separator: "\n"))
         }
         return sections.isEmpty ? "这场会议没有整理出内容。" : sections.joined(separator: "\n\n")

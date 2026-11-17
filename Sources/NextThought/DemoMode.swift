@@ -275,6 +275,34 @@ extension DemoMode {
                     transition: "讲完数字，接着讲上线时踩过的坑")
                 state.insights.slideCovered[page.key] = [0]
             }
+            // "bilingual": an answer in English with what was asked, and what each sentence
+            // means, in Chinese underneath.
+            if phase == "bilingual" || phase == "pinned" {
+                island.model.alwaysOpen = true
+                state.historyCursor = nil
+                state.currentQuestion = "In RQ2 the map is learned without labels. How do you know the learned prior is correct?"
+                state.answer = """
+                > 问：RQ2 没有真实信道作标签，怎么确认学到的先验是对的？
+
+                The prior is not guaranteed to be exactly correct without ground-truth labels.
+                > 译：没有真实标签，这个先验不能保证完全正确。
+
+                I assess it through held-out service pilots and compare it with simpler baselines.
+                > 译：我用留出的服务导频评估，并和更简单的基线比较。
+
+                It stays matched when the installation changes, which a fixed mapping does not.
+                > 译：安装条件变了它仍然匹配，固定映射做不到。
+                """
+            }
+            // "pinned": the same answer, pinned open, while the examiner starts a new turn.
+            if phase == "pinned" {
+                state.liveTranslation.setEnabled(true, remember: false)
+                state.partialTranscript = ""
+                state.entries.append(TranscriptEntry(source: CaptureSource.system.rawValue,
+                    text: "I am not fully convinced by the term physics informed. Many model-based methods already use the array response.",
+                    isFinal: true, translatedText: "我不太认同“物理信息”这个说法。很多基于模型的方法已经用了阵列响应。"))
+                state.questionTurn.heard("I am not fully convinced by the term physics informed. Many model-based methods already use the array response.", at: Date())
+            }
             if phase == "launcher" {
                 state.isRunning = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { island.model.hovering = true }

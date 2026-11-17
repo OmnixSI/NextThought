@@ -62,7 +62,12 @@ def embedding(payload):
     import mlx.core as mx
     from mlx_lm import load
     path = payload['model_directory']
-    if ('embed',path) not in MODELS: MODELS['embed',path] = load(path)
+    if ('embed',path) not in MODELS:
+        MODELS['embed',path] = load(path)
+        # Every chunk has its own length, and MLX keeps the buffers of each length it has
+        # seen. Unbounded, that cache grew over a few hundred chunks until the Mac paged:
+        # a vector went from 0.05 s to over a second. The model itself needs very little.
+        mx.set_cache_limit(64*1024*1024)
     model, tokenizer = MODELS['embed',path]
     text = payload['text']
     if payload.get('query'): text = 'Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: '+text
@@ -106,6 +111,20 @@ def reading_order(regions, width):
         return result+sorted([r for r in remaining if r in left],key=lambda r:r[2][1])+sorted([r for r in remaining if r in right],key=lambda r:r[2][1])
     return order(clean)
 
+# PP-DocLayoutV3 labels: 9 footer_image, 13 header_image, 20 seal; 3 chart, 14 image.
+DECORATION={9,13,20}
+PICTURES={3,14}
+PICTURE_TOKENS=768
+
+def unlooped(text):
+    """A generation that ran to its limit usually ends in a loop: keep one turn of it."""
+    lines=[]
+    for line in text.splitlines():
+        if not lines or line.strip()!=lines[-1].strip():lines.append(line)
+    text='\n'.join(lines)
+    text=re.sub(r'(.{2,120}?)\1{3,}',r'\1',text,flags=re.S)
+    return text.strip()
+
 def recognize(payload, job):
     from PIL import Image
     import mlx.core as mx
@@ -113,7 +132,10 @@ def recognize(payload, job):
     from mlx_vlm.prompt_utils import apply_chat_template
     from mlx_vlm.utils import load_config
     path=payload['model_directory'];image=Image.open(payload['image']).convert('RGB')
-    if ('ocr',path) not in MODELS: MODELS['ocr',path]=load(path)
+    if ('ocr',path) not in MODELS:
+        MODELS['ocr',path]=load(path)
+        # Crops come in every size; see the note on the embedding cache.
+        mx.set_cache_limit(512*1024*1024)
     model,processor=MODELS['ocr',path]
     regions=[]
     if payload.get('layout_directory'):
@@ -131,25 +153,34 @@ def recognize(payload, job):
         regions = reading_order(regions, w)
 
     if not regions:regions=[(0,22,(0,0,*image.size))]
-    blocks=[]
+    blocks=[];warnings=[]
     for i,(_,label,box) in enumerate(regions):
         checkpoint(job)
+        emit_progress=lambda:emit({'version':1,'id':job,'event':'progress','completed':i+1,'total':len(regions)})
+        # Logos, page furniture and stamps carry nothing to read.
+        if label in DECORATION:emit_progress();continue
         task='Table Recognition:' if label==21 else 'Formula Recognition:' if label in (5,15) else 'OCR:'
         prompt=apply_chat_template(processor,load_config(path),task,num_images=1)
         crop=image.crop(box)
-        # Bound is explicit: reaching the generation limit fails this page, never returns a silently clipped page.
-        result=generate(model,processor,prompt,image=[crop],max_tokens=4096,temperature=0.0,verbose=False)
+        # On a photo or a plot the model describes or repeats itself instead of reading, and runs
+        # to whatever limit it is given: pictures get a short one, and reaching a limit never
+        # fails the page. What was read up to there is kept, with a note.
+        limit=4096 if label==21 else PICTURE_TOKENS if label in PICTURES else 2048
+        result=generate(model,processor,prompt,image=[crop],max_tokens=limit,temperature=0.0,verbose=False)
         checkpoint(job)
-        if getattr(result,'generation_tokens',0)>=4096:raise ValueError('区域文字超过生成上限，请使用更小的页面或其他接口')
         text=result.text.strip()
+        if getattr(result,'generation_tokens',0)>=limit:
+            text=unlooped(text)
+            if label in PICTURES or len(text)<8:emit_progress();continue
+            warnings.append('有一处文字过长，只读到了前一部分，请核对原件。')
         if label==21:text=otsl(text)
         elif label in (5,15):
             text=re.sub(r'^\\\[|\\\]$', '', text).strip()
             text='$$\n'+text+'\n$$'
         elif label in (6,17):text='## '+text
         if text:blocks.append({'markdown':text,'kind':'table' if label==21 else 'formula' if label in (5,15) else 'paragraph','region':list(box)})
-        emit({'version':1,'id':job,'event':'progress','completed':i+1,'total':len(regions)})
-    return {'markdown':'\n\n'.join(b['markdown'] for b in blocks),'blocks':blocks,'components':{'mlx-vlm':'0.7.9','layout':'PP-DocLayoutV3'}}
+        emit_progress()
+    return {'markdown':'\n\n'.join(b['markdown'] for b in blocks),'blocks':blocks,'warnings':warnings,'components':{'mlx-vlm':'0.7.9','layout':'PP-DocLayoutV3'}}
 
 def validate_office_archive(archive):
     entries=archive.infolist()
@@ -183,6 +214,27 @@ def shape_kind(shape):
     except Exception:
         return None
 
+def smartart_text(shape):
+    """The texts of a SmartArt graphic, in the order they were typed."""
+    try:
+        import xml.etree.ElementTree as ET
+        dgm='{http://schemas.openxmlformats.org/drawingml/2006/diagram}'
+        rel='{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
+        a='{http://schemas.openxmlformats.org/drawingml/2006/main}'
+        ids=next(shape._element.iter(dgm+'relIds'),None)
+        if ids is None:return []
+        data=ET.fromstring(shape.part.related_part(ids.get(rel+'dm')).blob)
+        words=[]
+        for point in data.iter(dgm+'pt'):
+            # Presentation and transition points repeat or decorate the typed ones.
+            if point.get('type') in ('pres','parTrans','sibTrans'):continue
+            for paragraph in point.iter(a+'p'):
+                text=''.join(t.text or '' for t in paragraph.iter(a+'t')).strip()
+                if text:words.append(text)
+        return words
+    except Exception:
+        return []
+
 def read_slide_shapes(shapes,locator,parts,save_image,warnings,job=None):
     for shape in shapes:
         checkpoint(job)
@@ -202,10 +254,16 @@ def read_slide_shapes(shapes,locator,parts,save_image,warnings,job=None):
                 parts.append(dict(markdown='\n'.join(lines),locator=locator))
             except Exception as error:warnings.append('幻灯片 '+str(locator['slide'])+'：图表数据无法完整提取：'+str(error))
         if shape_kind(shape)==13 and hasattr(shape,'image'):save_image(shape.image.blob,'image.'+shape.image.ext,locator)
-        # SmartArt/diagram relationships need rendering; do not label extraction complete.
+        # SmartArt keeps its words in a diagram part beside the slide, not in the shape.
         xml=getattr(shape,'_element',None)
         if xml is not None and 'drawingml/2006/diagram' in str(getattr(xml,'xml','')):
-            warnings.append('幻灯片 '+str(locator['slide'])+'：包含 SmartArt，请核对图形关系；文字已尽量提取。')
+            words=smartart_text(shape)
+            if words:
+                part=dict(markdown='### 图示\n'+'\n'.join('- '+w for w in words),locator=locator)
+                if part not in parts:parts.append(part)
+            else:
+                note='幻灯片 '+str(locator['slide'])+'：SmartArt 里的文字没有读出来，请核对。'
+                if note not in warnings:warnings.append(note)
 
 def office(payload, job=None):
     from markitdown import MarkItDown

@@ -15,7 +15,7 @@ struct DocumentCheckpoint {
     var key: String
     init(options: DocumentConversionOptions, sourceHash: String) {
         directory = options.checkpointDirectory
-        key = ContextFingerprint.hash([sourceHash, "pipeline-4", options.provider.rawValue, options.localModelID,
+        key = ContextFingerprint.hash([sourceHash, "pipeline-5", options.provider.rawValue, options.localModelID,
             options.model, options.effort, String(options.fallback)].joined(separator: "|"))
     }
     func load(_ unit: String) -> DocumentPageCheckpoint? {

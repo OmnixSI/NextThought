@@ -498,7 +498,7 @@ struct CueIslandView: View {
     /// The island's presentations, in the grammar of a Dynamic Island: `compact` sits
     /// beside the notch, `hearing` and `cue` are live activities that open by
     /// themselves, `deck` and `launcher` open under the pointer.
-    enum Phase: Equatable { case hidden, compact, hearing(String), cue, deck, launcher, autoEnd, slide }
+    enum Phase: Equatable { case hidden, compact, hearing(String), cue, deck, launcher, autoEnd, slide, listening }
 
     private var mode: SessionMode { (state.preparedWorkspace ?? state.activeWorkspace).effectiveMode }
     private var tint: Color { mode.theme.tint }
@@ -526,11 +526,23 @@ struct CueIslandView: View {
         // Kept open: answers first, then the slide being presented, then the last answer.
         if state.isRunning, model.keepsOpen {
             if model.pinned { return .deck }
-            if hasAnswer, model.collapsedKey != answerKey { return .cue }
-            if model.presenting, state.insights.slide != nil { return .slide }
+            // The other side has the floor: what they are saying, and what it means, come
+            // before the script. An answer on show gives way only to a real sentence, and
+            // only while it is being said; it is back the moment they stop.
+            let theirs = state.partialTranscript.trimmingCharacters(in: .whitespacesAndNewlines).count
+            if hasAnswer, model.collapsedKey != answerKey {
+                // Between two sentences of a new question the last answer stays away.
+                // Pinned open, nothing gives way: what they are saying goes above the answer.
+                return (theirs >= 40 || unansweredTurn) && !state.isAnswering && !model.alwaysOpen ? .listening : .cue
+            }
+            if theirs >= 12 || (theirFloor && state.microphonePartialTranscript.isEmpty) { return .listening }
+            let script = model.presenting && PresenterMode.shared.showsSlideNotes
+            if script, state.insights.slide != nil { return .slide }
             if let candidate = state.liveCandidate, candidate.state != .triggered, !candidate.text.isEmpty {
                 return .hearing(candidate.text)
             }
+            // Presenting from PowerPoint's own notes: nothing to show until someone asks.
+            if model.presenting, !script, !hasAnswer, !model.alwaysOpen { return .compact }
             return .cue
         }
         // With NextThought's own window in front the answer is already there: stay compact.
@@ -603,6 +615,7 @@ struct CueIslandView: View {
             if case let .hearing(text) = phase { hearing(text) }
             if phase == .cue { cue }
             if phase == .slide { slideNotes }
+            if phase == .listening { listening }
             if phase == .deck { deck }
             if phase == .launcher { launcher }
             if phase == .autoEnd { autoEndPeek }
@@ -615,7 +628,7 @@ struct CueIslandView: View {
         switch phase {
         case .hidden, .compact: return ears
         case .hearing: return max(ears, min(model.width.points, 440))
-        case .cue, .slide: return max(ears, model.width.points)
+        case .cue, .slide, .listening: return max(ears, model.width.points)
         case .deck: return max(ears, 470)
         case .launcher: return max(ears, 500)
         case .autoEnd: return max(ears, 470)
@@ -649,7 +662,7 @@ struct CueIslandView: View {
         switch phase {
         case .compact, .deck, .hearing, .launcher: model.pinned.toggle()
         // Kept open, a click on the bar swaps the answer for the meeting deck and back.
-        case .cue, .slide:
+        case .cue, .slide, .listening:
             if model.keepsOpen, state.isRunning { model.pinned.toggle() }
         default: break
         }
@@ -700,6 +713,100 @@ struct CueIslandView: View {
         .symbolEffect(.bounce, value: Motion.reduce ? "" : text)
     }
 
+    /// What the other side has said in this turn: their finished sentences of the last
+    /// half minute and the one still being said, with the interpretation of each.
+    private var theirTurn: (text: String, translation: String) {
+        var texts: [String] = [], translations: [String] = []
+        let recent = state.entries.suffix(6).filter { $0.suspectedEcho != true }
+        if let last = recent.last, !last.isMe {
+            for entry in recent.reversed() {
+                guard !entry.isMe, last.date.timeIntervalSince(entry.date) < 30 else { break }
+                texts.insert(entry.text, at: 0)
+                if let translated = entry.translatedText, !translated.isEmpty { translations.insert(translated, at: 0) }
+            }
+        }
+        let partial = state.partialTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !partial.isEmpty {
+            texts.append(partial)
+            let translated = state.liveTranslation.partialTranslation(for: .system)
+            if !translated.isEmpty { translations.append(translated) }
+        }
+        return (texts.joined(separator: " "), state.liveTranslation.isEnabled ? translations.joined(separator: " ") : "")
+    }
+
+    /// They have said a sentence or more that no answer covers, and I have not replied.
+    private var unansweredTurn: Bool {
+        let turn = state.questionTurn
+        guard turn.unanswered >= 8, let heard = turn.lastHeardAt, Date().timeIntervalSince(heard) < 20 else { return false }
+        return !state.isUserSpeaking && !state.holdsFloor
+    }
+
+    /// The last thing said was a sentence of theirs, and nothing has answered it yet.
+    private var theirFloor: Bool {
+        guard let last = state.entries.last(where: { $0.suspectedEcho != true }), !last.isMe else { return false }
+        return last.text.count >= 12 && Date().timeIntervalSince(last.date) < 45
+    }
+
+    /// Listening to a question: the words as they are heard and, with live interpretation
+    /// on, their meaning underneath.
+    private var listening: some View {
+        let turn = theirTurn
+        let size = CGFloat(state.teleprompterFontSize)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "waveform").font(.system(size: 11, weight: .semibold)).foregroundStyle(tint)
+                    .symbolEffect(.variableColor.iterative, options: .repeating, isActive: !Motion.reduce)
+                Text("对方在说").font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                Spacer(minLength: 0)
+                if !state.liveTranslation.isEnabled {
+                    Button("开启同声传译") { state.liveTranslation.setEnabled(true) }
+                        .buttonStyle(.plain).font(.system(size: 11, weight: .medium)).foregroundStyle(tint)
+                }
+            }
+            Text(verbatim: turn.text)
+                .font(.system(size: max(13, size * 0.62))).foregroundStyle(.white.opacity(0.78))
+                .lineSpacing(2).lineLimit(4).truncationMode(.head)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if !turn.translation.isEmpty {
+                Text(verbatim: turn.translation)
+                    .font(.system(size: size * 0.8, weight: .medium)).foregroundStyle(.white)
+                    .lineSpacing(size * 0.12).lineLimit(4).truncationMode(.head)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentTransition(.opacity)
+            }
+            if model.hovering { controls.padding(.top, 4).transition(.opacity.combined(with: .move(edge: .bottom))) }
+        }
+        .padding(.horizontal, 20).padding(.top, 4).padding(.bottom, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+    }
+
+    /// The same, as a strip above an answer that stays on show.
+    private var heard: some View {
+        let turn = theirTurn
+        let size = CGFloat(state.teleprompterFontSize)
+        return VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                Image(systemName: "waveform").font(.system(size: 11, weight: .semibold)).foregroundStyle(tint)
+                    .symbolEffect(.variableColor.iterative, options: .repeating, isActive: !Motion.reduce)
+                Text("对方在说").font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                Spacer(minLength: 0)
+            }
+            Text(verbatim: turn.text)
+                .font(.system(size: max(13, size * 0.62))).foregroundStyle(.white.opacity(0.78))
+                .lineSpacing(2).lineLimit(2).truncationMode(.head)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if !turn.translation.isEmpty {
+                Text(verbatim: turn.translation)
+                    .font(.system(size: size * 0.72, weight: .medium)).foregroundStyle(.white)
+                    .lineSpacing(2).lineLimit(3).truncationMode(.head)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentTransition(.opacity)
+            }
+            Rectangle().fill(.white.opacity(0.12)).frame(height: 1).padding(.top, 6)
+        }
+    }
+
     /// A question is being asked: its words, as they are heard.
     private func hearing(_ text: String) -> some View {
         HStack(spacing: 8) {
@@ -742,9 +849,18 @@ struct CueIslandView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(heard.isMe ? "我" : "对方")
                         .font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.45))
-                    Text(verbatim: heard.text)
-                        .font(.system(size: 13)).foregroundStyle(.white.opacity(0.82))
-                        .lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(verbatim: heard.text)
+                            .font(.system(size: 13)).foregroundStyle(.white.opacity(0.82))
+                            .lineLimit(heard.translation.isEmpty ? 2 : 3).frame(maxWidth: .infinity, alignment: .leading)
+                        if !heard.translation.isEmpty {
+                            // Live interpretation: what is being said, in the other language, as it is said.
+                            Text(verbatim: heard.translation)
+                                .font(.system(size: 14, weight: .medium)).foregroundStyle(tint)
+                                .lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
+                                .contentTransition(.opacity)
+                        }
+                    }
                 }
                 .transition(.blurReplace)
             }
@@ -794,11 +910,13 @@ struct CueIslandView: View {
     static let noAnswerServiceHint = String(localized: "还没有连接回答服务，听到问题也不会自动回答")
 
     /// The newest line of the conversation, while it is still being said if possible.
-    private var lastHeard: (isMe: Bool, text: String)? {
+    private var lastHeard: (isMe: Bool, text: String, translation: String)? {
+        let translating = state.liveTranslation.isEnabled
         let partial = state.partialTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !partial.isEmpty { return (false, partial) }
+        if !partial.isEmpty { return (false, partial, translating ? state.liveTranslation.partialTranslation(for: .system) : "") }
         guard let entry = state.entries.last(where: { $0.suspectedEcho != true }) else { return nil }
-        return (entry.isMe, entry.text)
+        // Only the other side is interpreted here: the user knows what they said themself.
+        return (entry.isMe, entry.text, translating && !entry.isMe ? (entry.translatedText ?? "") : "")
     }
 
     /// "语速 240/分 · 我说了 46% · 看镜头 82%", from what the coach has so far.
@@ -891,23 +1009,36 @@ struct CueIslandView: View {
         let notes = slide.flatMap { insights.slideNotes[$0.key] }
         let covered = slide.flatMap { insights.slideCovered[$0.key] } ?? []
         let next = notes.flatMap { notes in notes.points.indices.first { !covered.contains($0) } }
+        // A written script can run to dozens of sentences: the island shows the stretch being read.
+        let lines = (notes?.points ?? []).enumerated().map { CueLine(id: $0.offset, kind: .point, text: $0.element) }
+        let visible = Self.window(lines, next: next, limit: notes?.isScript == true ? 5 : 6)
         return VStack(alignment: .leading, spacing: 0) {
             if let slide {
                 HStack(spacing: 6) {
-                    Text(verbatim: String(localized: "第 \(slide.page) 页") + " · " + slide.documentName)
+                    Text(verbatim: String(localized: "第 \(slide.page) 页") + " · " + (notes?.isScript == true ? String(localized: "我的讲稿") : slide.documentName))
                         .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                    if insights.slideSource == .manual {
+                        Text("手动").font(.system(size: 10, weight: .semibold)).foregroundStyle(tint)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(tint.opacity(0.16), in: Capsule())
+                            .help("这一页是手动翻到的；共享屏幕换到别的幻灯片后恢复自动跟随")
+                    }
                     Spacer(minLength: 0)
                     if insights.generatingNotes.contains(slide.key) { ThinkingDots(color: tint) }
+                    if model.hovering || model.keepsOpen {
+                        slideStep("chevron.left", String(localized: "上一页 · \(state.shortcutLabel(.slidePrevious))"), slide.page > 1) { state.stepSlide(-1) }
+                        slideStep("chevron.right", String(localized: "下一页 · \(state.shortcutLabel(.slideNext))"), slide.page < slide.pageCount) { state.stepSlide(1) }
+                    }
                 }
                 .padding(.bottom, 8)
             }
             if let notes, !notes.points.isEmpty {
                 VStack(alignment: .leading, spacing: size * 0.34) {
-                    ForEach(Array(notes.points.enumerated()), id: \.offset) { index, point in
-                        CueRow(line: CueLine(id: index, kind: .point, text: point), size: size, tint: tint,
-                               said: covered.contains(index), current: index == next, expanded: true)
+                    ForEach(visible) { line in
+                        CueRow(line: line, size: size, tint: tint,
+                               said: covered.contains(line.id), current: line.id == next, expanded: true)
                     }
-                    if !notes.transition.isEmpty {
+                    if !notes.transition.isEmpty, visible.last?.id == lines.last?.id {
                         Text(verbatim: String(localized: "下一页") + "  " + notes.transition)
                             .font(.system(size: size * 0.66, weight: .medium)).foregroundStyle(tint.opacity(0.9))
                             .lineLimit(2).fixedSize(horizontal: false, vertical: true)
@@ -915,6 +1046,7 @@ struct CueIslandView: View {
                     }
                 }
                 .animation(Motion.expand, value: slide?.key)
+                .animation(Motion.snappy, value: visible.first?.id)
             } else {
                 Text(insights.slideNotesError ?? String(localized: "正在准备这一页的要点…"))
                     .font(.system(size: size * 0.72, weight: .medium)).foregroundStyle(.white.opacity(0.55))
@@ -928,23 +1060,61 @@ struct CueIslandView: View {
         .id(slide?.key)
     }
 
+    private func slideStep(_ symbol: String, _ help: String, _ enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white.opacity(enabled ? 0.8 : 0.25))
+                .frame(width: 22, height: 20)
+                .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).disabled(!enabled).help(help)
+    }
+
     private var cue: some View {
         let lines = lines
         let size = CGFloat(state.teleprompterFontSize)
         let next = lines.first { !model.covered.contains($0.id) }?.id
-        let visible = Self.window(lines, next: next, limit: cueStyle == .script ? 4 : 6)
+        // With the meaning under each sentence a line takes twice the room: show fewer.
+        let glossed = lines.contains { !$0.gloss.isEmpty }
+        // A new turn of theirs while an answer is on show (only when pinned open; otherwise
+        // the island is listening instead).
+        let theirs = state.partialTranscript.trimmingCharacters(in: .whitespacesAndNewlines).count
+        let hearing = model.alwaysOpen && state.isRunning && !model.preview && !state.isAnswering && !lines.isEmpty && (theirs >= 12 || unansweredTurn)
+        // Pinned open on a display nobody else sees, there is room for the whole answer.
+        let limit = glossed ? (model.alwaysOpen ? (hearing ? 4 : 5) : 3) : (cueStyle == .script ? 4 : 6)
+        let visible = Self.window(lines, next: next, limit: limit)
+        let asked = BilingualAnswer.question(in: answer)
         return VStack(alignment: .leading, spacing: 0) {
+            if hearing { heard.padding(.bottom, 12) }
             if !question.isEmpty {
                 HStack(spacing: 6) {
+                    // A question of several sentences ends with what is actually asked.
                     Text(verbatim: question)
-                        .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                        .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5)).lineLimit(asked == nil ? 1 : 2)
+                        .truncationMode(.head)
                     Spacer(minLength: 0)
                     if state.isAnswering { ThinkingDots(color: tint) }
                 }
-                .padding(.bottom, 8)
+                .padding(.bottom, asked == nil ? 8 : 4)
             }
-            if lines.isEmpty {
-                Text(state.isAnswering ? "正在想…" : (model.presenting ? "被问到时，回答会出现在这里；翻到已放进资料的幻灯片时，这里显示这一页的要点。" : "被问到时，回答会出现在这里。"))
+            if let asked {
+                // What was asked, in the user's own language: understood before the answer is read.
+                Text(verbatim: asked)
+                    .font(.system(size: max(13, size * 0.62), weight: .medium)).foregroundStyle(tint)
+                    .lineSpacing(2).lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 10)
+            }
+            if lines.isEmpty, state.isAnswering, case let meaning = theirTurn.translation, !meaning.isEmpty {
+                // Until the answer starts, what they asked stays readable in my language.
+                Text(verbatim: meaning)
+                    .font(.system(size: size * 0.8, weight: .medium)).foregroundStyle(.white)
+                    .lineSpacing(3).lineLimit(4).truncationMode(.head)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else if lines.isEmpty {
+                Text(state.isAnswering ? "正在想…" : (model.presenting && PresenterMode.shared.showsSlideNotes ? "被问到时，回答会出现在这里；翻到已放进资料的幻灯片时，这里显示这一页的要点。" : "被问到时，回答会出现在这里。"))
                     .font(.system(size: size * 0.8, weight: .medium)).foregroundStyle(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -952,7 +1122,8 @@ struct CueIslandView: View {
                 ForEach(visible) { line in
                     CueRow(line: line, size: size, tint: tint, said: model.covered.contains(line.id),
                            current: line.id == next && !state.isAnswering,
-                           expanded: model.hovering || model.keepsOpen || cueStyle == .script)
+                           expanded: model.hovering || model.keepsOpen || cueStyle == .script || glossed)
+                        .withGloss
                         .transition(.asymmetric(insertion: .opacity.combined(with: .offset(y: 10)),
                                                 removal: .opacity.combined(with: .offset(y: -10))))
                 }
@@ -1094,6 +1265,22 @@ private struct CueRow: View {
         .opacity(said ? 0.36 : 1)
         .animation(.easeOut(duration: 0.35), value: said)
         .animation(Motion.snappy, value: current)
+    }
+
+    /// The row with its meaning underneath: read to understand, not to say.
+    @ViewBuilder var withGloss: some View {
+        if line.gloss.isEmpty { self } else {
+            VStack(alignment: .leading, spacing: size * 0.08) {
+                self
+                Text(verbatim: line.gloss)
+                    .font(.system(size: max(11, size * 0.56)))
+                    .foregroundStyle(.white.opacity(said ? 0.28 : 0.52))
+                    .lineSpacing(2).lineLimit(expanded ? 3 : 1)
+                    .padding(.leading, line.kind == .lead ? 0 : 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }
 

@@ -17,8 +17,20 @@ extension AppState {
                 guard let self, self.isRunning, !self.isPaused else { continue }
                 self.applyCandidateDecision(self.tracker.tick(), allowAutomatic: true)
                 self.releaseDeferredCandidate()
+                self.answerTurnIfDue()
+                self.keepAnswerServiceWarm()
             }
         }
+    }
+
+    /// The first question of a round is answered as fast as the fifth: the answer service
+    /// is touched when the meeting starts and every few minutes while nobody asks.
+    private func keepAnswerServiceWarm() {
+        guard answerEngineReady, answerBackend == .codexAppServer, !isAnswering,
+              Date().timeIntervalSince(answerServiceWarmedAt) >= 240 else { return }
+        answerServiceWarmedAt = Date()
+        let model = currentAnswerModel, effort = codexReasoning, fast = activeServiceTier == "fast"
+        Task { await appServer.warm(model: model, effort: effort, fast: fast) }
     }
 
     /// The series snapshot the running meeting uses; the active series otherwise.
@@ -53,7 +65,13 @@ extension AppState {
             liveCandidate = candidate
             Diagnostics.record("question.triggered", ["intent": candidate.assessment.intent.rawValue, "score": candidate.assessment.score, "final": candidate.isFinal, "revision": candidate.revision, "supersedes": candidate.supersedes != nil, "lead_in": candidate.leadIn != nil])
             let canAnswer = automaticAnswers && allowAutomatic && isRunning && !isPaused && !isStopping
-            if canAnswer, isUserSpeaking {
+            if canAnswer, answersWholeTurns, !(isUserSpeaking && holdsFloor) {
+                // A question round: the answer is for everything they have said in this turn.
+                let partial = candidate.isFinal ? "" : partialTranscript
+                guard questionTurn.worthAsking(with: partial) else { return }
+                recordQuestion(candidate, disposition: "auto")
+                answerTurn(partial: partial, candidateID: candidate.id, reason: "question")
+            } else if canAnswer, isUserSpeaking {
                 // Do not talk over the user; answer if they stop within a few seconds.
                 deferredCandidate = (candidate, Date())
                 remember(candidate)
@@ -76,6 +94,40 @@ extension AppState {
             recentContext: TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) }),
             isAutomatic: true, candidateID: candidate.id, supersede: supersedesCurrent)
         if supersedesCurrent { Diagnostics.record("answer.superseded") }
+    }
+
+    // MARK: Question round
+
+    /// After my own talk the other side's turns are questions for me, however they are
+    /// put, so each turn is answered as a whole: in a 汇报 / 答辩 meeting once I am
+    /// presenting on two screens or have done most of the talking.
+    var answersWholeTurns: Bool {
+        liveWorkspace.effectiveMode == .academic && !isOfflineMeeting && (PresenterMode.shared.isActive || myWords >= 300)
+    }
+
+    /// I finished a sentence moments ago: I am the one talking.
+    var holdsFloor: Bool { Date().timeIntervalSince(lastSpokeAt) < 8 }
+
+    /// They stopped and part of what they said has no answer: a doubt put as a statement,
+    /// a question the rules did not recognize, or more said after the answer was asked for.
+    private func answerTurnIfDue() {
+        guard automaticAnswers, !isStopping, answersWholeTurns, !holdsFloor else { return }
+        let replying = isUserSpeaking
+        // Once an answer is on its way, my own voice never restarts it.
+        guard !(replying && questionTurn.requests > 0),
+              questionTurn.isDue(now: Date(), partial: partialTranscript, replying: replying),
+              questionTurn.words <= 250, questionTurn.requests < 4 else { return }
+        recordQuestion(text: questionTurn.text(), leadIn: nil, intent: "turn", score: 1, disposition: "auto")
+        answerTurn(partial: "", candidateID: nil, reason: replying ? "reply" : "pause")
+    }
+
+    private func answerTurn(partial: String, candidateID: UUID?, reason: String) {
+        let question = questionTurn.text(with: partial)
+        guard !question.isEmpty else { return }
+        Diagnostics.record("question.turn", ["reason": reason, "words": questionTurn.words, "sentences": questionTurn.sentences.count, "request": questionTurn.requests + 1])
+        ask(question, screenshot: nil,
+            recentContext: TranscriptContextBuilder.recent(contextEntries.map { (date: $0.date, text: $0.contextualText) }),
+            isAutomatic: true, candidateID: candidateID, supersede: true, heardPartial: partial)
     }
 
     private func releaseDeferredCandidate() {
@@ -172,6 +224,10 @@ extension AppState {
                 entries.append(entry)
             }
             if entries.count > 400 { entries.removeFirst(entries.count - 400) }
+            if entry.suspectedEcho != true, !isOfflineMeeting {
+                if source == .system { questionTurn.heard(text, at: end) }
+                else { myWords += QuestionTurn.words(text); lastSpokeAt = max(lastSpokeAt, end); questionTurn.spoke(text) }
+            }
             if entry.suspectedEcho != true {
                 autoEnd.heard(text: text, end: end)
                 recordTranscript(entry)

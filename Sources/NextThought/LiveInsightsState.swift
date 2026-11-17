@@ -49,6 +49,16 @@ final class LiveInsights {
 
     var slide: SlidePage?
     var slideSeenAt: Date?
+    /// How the current slide was found.
+    enum SlideSource { case screen, manual, speech }
+    var slideSource = SlideSource.screen
+    /// Chosen by hand or by what was said: it stays until the screen shows a different slide.
+    var slideIsManual: Bool {
+        get { slideSource != .screen }
+        set { if !newValue { slideSource = .screen } }
+    }
+    /// Key of the slide the screen showed when the first step was made by hand.
+    @ObservationIgnored var manualSlideAnchor: String?
     var slideNotes: [String: SlideNotes] = [:]
     var generatingNotes: Set<String> = []
     var slideNotesError: String?
@@ -81,6 +91,7 @@ final class LiveInsights {
     func resetSession() {
         screen = nil
         slide = nil; slideSeenAt = nil; slideCovered = [:]; slideSince = Date()
+        slideSource = .screen; manualSlideAnchor = nil
         answerID = nil; answerPoints = []; answerCovered = []
     }
 }

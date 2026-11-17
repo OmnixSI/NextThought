@@ -26,6 +26,8 @@ final class DocumentPreparation {
     @ObservationIgnored private var ticker: Task<Void, Never>?
     @ObservationIgnored private var loaded = false
     private(set) var ready = false
+    /// Files whose own text is already in their workspace while their pictures are read.
+    private(set) var textReady: Set<UUID> = []
     static var root: URL { AppPaths.root.appendingPathComponent("Preparation", isDirectory: true) }
     static var originals: URL { AppPaths.root.appendingPathComponent("Originals", isDirectory: true) }
 
@@ -243,15 +245,51 @@ final class DocumentPreparation {
             }
             if available { mutate(job.id) { $0.stage = $0.documentID == nil ? .queued : .embedding } }
         }
-        let activeJobs = jobs.filter { tasks[$0.id] != nil }
-        var light = activeJobs.filter { Self.isLight($0) }.count, heavy = activeJobs.count - light
+        // Reading a file and making vectors for one that is read are different work: the
+        // next file is read while the previous one is indexed. Two files are read at a
+        // time (the local reader takes their pictures in turn, so one model is loaded).
+        let active = jobs.filter { tasks[$0.id] != nil }
+        var light = active.filter { Self.isLight($0) }.count
+        var vectors = active.filter { $0.documentID != nil }.count
+        var reads = active.count - light - vectors
         for job in jobs where [.queued, .embedding].contains(job.stage) && tasks[job.id] == nil {
-            let simple = Self.isLight(job)
-            guard simple ? light < 2 : heavy < 1 else { continue }
-            if simple { light += 1 } else { heavy += 1 }
+            if Self.isLight(job) { guard light < 2 else { continue }; light += 1 }
+            else if job.documentID != nil { guard vectors < 1 else { continue }; vectors += 1 }
+            else { guard reads < 2 else { continue }; reads += 1 }
             process(job)
         }
     }
+    /// Puts a read file into its workspace, in place of an earlier read of the same file.
+    private func commit(_ result: MarkdownConverter.Result, for job: DocumentJob, format ext: String) async throws -> UUID {
+        guard let workspace = AppState.shared.workspaces.workspace(job.workspaceID) else { throw CancellationError() }
+        let existing = workspace.documents.first(where: { $0.content?.sourceHash == job.sourceHash && $0.sourceFormat == ext })
+        let id = existing?.id ?? UUID(), workspaceID = job.workspaceID
+        let category = job.category ?? existing?.category ?? DocumentClassifier.classify(name: job.fileName, content: String(result.markdown.prefix(20000)), categories: job.categories)
+        var document = try await Task.detached(priority: .utility) { () -> ContextDocument in
+            let archived = try MaterialArchive.archive(result.markdown, name: (job.fileName as NSString).deletingPathExtension, format: ext, workspaceID: workspaceID)
+            if let content = result.content { try JSONEncoder().encode(content).write(to: archived.deletingPathExtension().appendingPathExtension("json"), options: .atomic) }
+            return ContextDocument(id: id, name: job.fileName, pages: result.sections, category: category, markdownPath: MaterialArchive.relative(archived), sourceFormat: ext, content: result.content)
+        }.value
+        try Task.checkCancellation()
+        // Refresh after awaiting disk I/O, preserving concurrent file commits.
+        guard !AppState.shared.isRunning, var latest = AppState.shared.workspaces.workspace(job.workspaceID) else { throw CancellationError() }
+        if let position = latest.documents.firstIndex(where: { $0.content?.sourceHash == job.sourceHash && $0.sourceFormat == ext }) {
+            document.id = latest.documents[position].id
+            document.enabled = latest.documents[position].enabled
+            latest.documents[position] = document
+        } else { latest.documents.append(document) }
+        AppState.shared.workspaces.update(latest)
+        return document.id
+    }
+
+    /// The file's own text is complete; its pictures are still being read.
+    private func textArrived(_ result: MarkdownConverter.Result, for job: DocumentJob, format ext: String) async {
+        guard let current = jobs.first(where: { $0.id == job.id }), !current.stage.terminal, current.stage != .paused else { return }
+        guard (try? await commit(result, for: job, format: ext)) != nil else { return }
+        textReady.insert(job.id)
+        if AppState.shared.activeWorkspace.id == job.workspaceID { AppState.shared.rebuildContextIndex() }
+    }
+
     private static func isLight(_ job: DocumentJob) -> Bool {
         job.documentID == nil && job.provider == "system" && ["txt", "md", "markdown", "csv", "json", "rtf"].contains((job.fileName as NSString).pathExtension.lowercased())
     }
@@ -279,6 +317,9 @@ final class DocumentPreparation {
                 }
                 var documentID = job.documentID
                 if let id = documentID, !AppState.shared.workspaces.workspace(job.workspaceID)!.documents.contains(where: { $0.id == id }) { documentID = nil }
+                // Where the time of an import goes, for the next "it is slow": reading, then vectors.
+                let began = Date()
+                var readSeconds = 0.0
                 if documentID == nil {
                     var options = DocumentConversionOptions(provider: DocumentOCRProvider(rawValue: job.provider) ?? .system,
                         fallback: job.fallback, model: job.model, effort: job.effort, timeout: job.timeout)
@@ -286,33 +327,16 @@ final class DocumentPreparation {
                     options.sourceHash = job.sourceHash
                     options.checkpointDirectory = Self.root.appendingPathComponent(job.id.uuidString, isDirectory: true)
                     options.onProgress = { [weak self] event in Task { @MainActor in self?.progress(job.id, event) } }
+                    options.onText = { [weak self] text in await self?.textArrived(text, for: job, format: ext) }
                     let worker = Task.detached(priority: .utility) { try await MarkdownConverter.convert(URL(fileURLWithPath: path), options: options) }
                     let result = try await withTaskCancellationHandler { try await worker.value } onCancel: { worker.cancel() }
                     try Task.checkCancellation()
-                    guard !AppState.shared.isRunning, var workspace = AppState.shared.workspaces.workspace(job.workspaceID) else { throw CancellationError() }
+                    guard !AppState.shared.isRunning, AppState.shared.workspaces.workspace(job.workspaceID) != nil else { throw CancellationError() }
                     progress(job.id, .init(.validating, message: "OCR / 解析已完成，正在检查内容。"))
                     guard result.sections.contains(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else { throw AppFailure.capture("没有提取到内容，请查看文件是否为空或不可读。") }
-                    do {
-                        let existing = workspace.documents.first(where: { $0.content?.sourceHash == job.sourceHash && $0.sourceFormat == ext })
-                        let id = existing?.id ?? UUID(), workspaceID = job.workspaceID
-                        let category = job.category ?? DocumentClassifier.classify(name: job.fileName, content: String(result.markdown.prefix(20000)), categories: job.categories)
-                        var document = try await Task.detached(priority: .utility) { () -> ContextDocument in
-                            let archived = try MaterialArchive.archive(result.markdown, name: (job.fileName as NSString).deletingPathExtension, format: ext, workspaceID: workspaceID)
-                            if let content = result.content { try JSONEncoder().encode(content).write(to: archived.deletingPathExtension().appendingPathExtension("json"), options: .atomic) }
-                            return ContextDocument(id: id, name: job.fileName, pages: result.sections, category: category, markdownPath: MaterialArchive.relative(archived), sourceFormat: ext, content: result.content)
-                        }.value
-                        try Task.checkCancellation()
-                        guard !AppState.shared.isRunning else { throw CancellationError() }
-                        // Refresh after awaiting disk I/O, preserving concurrent file commits.
-                        guard let latest = AppState.shared.workspaces.workspace(job.workspaceID) else { throw CancellationError() }
-                        workspace = latest
-                        if let position = workspace.documents.firstIndex(where: { $0.content?.sourceHash == job.sourceHash && $0.sourceFormat == ext }) {
-                            document.id = workspace.documents[position].id
-                            workspace.documents[position] = document
-                        } else { workspace.documents.append(document) }
-                        AppState.shared.workspaces.update(workspace)
-                        documentID = document.id
-                    }
+                    documentID = try await commit(result, for: job, format: ext)
+                    textReady.remove(job.id)
+                    readSeconds = Date().timeIntervalSince(began)
                     mutate(job.id) { $0.documentID = documentID; $0.stage = .lexical; $0.message = "OCR 已完成，正在建立文字索引。" }
                     if AppState.shared.activeWorkspace.id == job.workspaceID { AppState.shared.rebuildContextIndex() }
                 }
@@ -325,13 +349,23 @@ final class DocumentPreparation {
                         Task { @MainActor in self?.progress(job.id, .init(.embedding, completed: completed, total: total, message: "文字检索已可用，正在生成向量。")) }
                     }
                 }
-                let warnings = AppState.shared.workspaces.workspace(job.workspaceID)?.documents.first(where: { $0.id == documentID })?.content?.warnings ?? []
-                mutate(job.id) { $0.stage = warnings.isEmpty ? .ready : .warning; $0.completed = $0.total ?? $0.completed; $0.message = warnings.isEmpty ? (AppState.shared.semanticRetrievalEnabled ? "Embedding 已完成，资料已就绪。" : "文字检索已就绪，语义查找未启用。") : warnings.joined(separator: "\n") }
+                let lines = AppState.shared.workspaces.workspace(job.workspaceID)?.documents.first(where: { $0.id == documentID })?.content?.warnings ?? []
+                let warnings = DocumentNotice.warnings(in: lines)
+                Diagnostics.record("document.prepared", ["format": ext, "provider": job.provider, "read_seconds": readSeconds,
+                                                         "index_seconds": Date().timeIntervalSince(began) - readSeconds, "warnings": warnings.count])
+                let done = AppState.shared.semanticRetrievalEnabled ? "Embedding 已完成，资料已就绪。" : "文字检索已就绪，语义查找未启用。"
+                mutate(job.id) {
+                    $0.stage = warnings.isEmpty ? .ready : .warning; $0.completed = $0.total ?? $0.completed
+                    $0.message = warnings.isEmpty ? (DocumentNotice.note(for: lines) ?? done) : DocumentNotice.unique(lines).joined(separator: "\n")
+                }
             } catch let dependency as DocumentDependencyError {
                 mutate(job.id) { $0.stage = .waiting; $0.waitingReason = dependency.reason; $0.message = dependency.message }
             } catch is CancellationError {
                 if jobs.first(where: { $0.id == job.id })?.stage != .cancelled { mutate(job.id) { $0.stage = .paused; $0.message = "已保存检查点，稍后继续。" } }
-            } catch { mutate(job.id) { $0.stage = .failed; $0.message = error.localizedDescription } }
+            } catch {
+                Diagnostics.record("document.failed", ["format": ((job.originalPath ?? job.fileName) as NSString).pathExtension.lowercased(), "provider": job.provider])
+                mutate(job.id) { $0.stage = .failed; $0.message = error.localizedDescription }
+            }
         }
     }
 }

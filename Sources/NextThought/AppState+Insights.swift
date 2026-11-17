@@ -39,11 +39,13 @@ extension AppState {
                 localModelID: documentOCRProvider == .paddle ? selectedOCRModel.id : nil) {
                 insights.screenError = nil; await screenRead(context.text)
             } else {
-                insights.screen = nil; insights.slide = nil; insights.slideSeenAt = nil
+                insights.screen = nil
+                if !insights.slideIsManual { insights.slide = nil; insights.slideSeenAt = nil }
             }
         } catch is CancellationError { }
         catch {
-            insights.screen = nil; insights.slide = nil; insights.slideSeenAt = nil
+            insights.screen = nil
+            if !insights.slideIsManual { insights.slide = nil; insights.slideSeenAt = nil }
             insights.screenError = "读不到选定画面：" + error.localizedDescription + "。请检查来源和屏幕录制权限。"
             Diagnostics.record("insight.screen_failed")
         }
@@ -97,12 +99,20 @@ extension AppState {
 
     // MARK: Following slides
 
-    /// Pages of the imported decks (PowerPoint, Keynote, multi-page PDF).
+    /// Pages of the imported decks (PowerPoint, Keynote, a PDF of slides).
     var slidePages: [SlidePage] {
-        activeWorkspace.documents.filter { $0.enabled && SlideMatcher.isDeck(name: $0.name, pageCount: $0.pages.count) }.flatMap { document in
+        activeWorkspace.documents.filter { document in
+            guard document.enabled else { return false }
+            let characters = document.pages.reduce(0) { $0 + $1.count } / max(1, document.pages.count)
+            return SlideMatcher.isDeck(name: document.name, pageCount: document.pages.count, averageCharacters: characters)
+        }.flatMap { document in
             if let content = document.content {
                 let grouped = Dictionary(grouping: content.blocks.filter { $0.locator.slide != nil || $0.locator.page != nil }, by: { $0.locator.slide ?? $0.locator.page! })
-                return grouped.keys.sorted().map { number in SlidePage(documentID: document.id, documentName: document.name, page: number, pageCount: grouped.count, text: grouped[number]!.map(\.markdown).joined(separator: "\n\n"), locator: grouped[number]!.first?.locator) }
+                return grouped.keys.sorted().map { number in
+                    let parts = SlidePage.split(grouped[number]!)
+                    return SlidePage(documentID: document.id, documentName: document.name, page: number, pageCount: grouped.count,
+                                     text: parts.text, notes: parts.notes, locator: grouped[number]!.first?.locator)
+                }
             }
             return document.pages.enumerated().map { SlidePage(documentID: document.id, documentName: document.name, page: $0.offset + 1, pageCount: document.pages.count, text: $0.element, locator: .init(section: $0.offset+1)) }
         }
@@ -111,38 +121,113 @@ extension AppState {
     /// Finds the slide on screen; true when one is showing.
     private func followSlide(_ text: String) -> Bool {
         let pages = slidePages
-        guard !pages.isEmpty else { insights.slide = nil; return false }
+        guard !pages.isEmpty else { insights.slide = nil; insights.slideSource = .screen; return false }
         let ranked = SlideMatcher.rank(screen: text, pages: pages)
         var page: SlidePage?
         switch SlideMatcher.decide(ranked, previous: insights.slide) {
         case let .page(found): page = found
         case let .ambiguous(candidates):
-            if let current = insights.slide, candidates.contains(where: { $0.page == current && $0.score >= 0.45 }) { page = current }
+            if let current = insights.slide, candidates.contains(where: { $0.page == current && $0.score >= 0.35 }) { page = current }
         case .none: break
         }
-        guard let page else { insights.slide = nil; insights.slideSeenAt = nil; return false }
-        insights.slideSeenAt = Date()
-        if insights.slide != page {
-            insights.slide = page
-            insights.slideSince = Date()
-            Diagnostics.record("insight.slide", ["page": page.page, "pages": page.pageCount])
-            prepareSlideNotes(page)
-            // The next slide's notes are ready before it is shown.
-            if let next = pages.first(where: { $0.documentID == page.documentID && $0.page == page.page + 1 }) { prepareSlideNotes(next) }
+        if insights.slideIsManual {
+            // Stepped by hand: the screen decides again once it shows a slide other than
+            // the one it saw when the step was made.
+            guard let page, page.key != insights.manualSlideAnchor else { return page != nil }
+            insights.slideSource = .screen
         }
+        guard let page else {
+            // A demo, a video or the blank between two slides: the last slide's notes stay
+            // for a while instead of blinking away.
+            let grace: TimeInterval = CueIslandController.shared.model.presenting ? 120 : 20
+            if insights.slide != nil, let seen = insights.slideSeenAt, Date().timeIntervalSince(seen) < grace { return false }
+            insights.slide = nil; insights.slideSeenAt = nil
+            return false
+        }
+        insights.slideSeenAt = Date()
+        show(page, among: pages, manual: false)
         return true
+    }
+
+    private func show(_ page: SlidePage, among pages: [SlidePage], manual: Bool) {
+        guard insights.slide != page else { return }
+        insights.slide = page
+        insights.slideSince = Date()
+        Diagnostics.record("insight.slide", ["page": page.page, "pages": page.pageCount, "manual": manual])
+        // This slide and the two after it: their notes are ready before they are shown.
+        for offset in 0...2 {
+            if let upcoming = pages.first(where: { $0.documentID == page.documentID && $0.page == page.page + offset }) { prepareSlideNotes(upcoming) }
+        }
+    }
+
+    /// Whether there is a deck to step through by hand.
+    var canStepSlides: Bool { isRunning && !slidePages.isEmpty }
+
+    /// One slide back or forward by hand, for when the screen cannot be read or matched
+    /// (a slide that is one picture, a deck shown from another computer).
+    func stepSlide(_ delta: Int) {
+        let pages = slidePages
+        guard isRunning, let first = pages.first else { return }
+        let target: SlidePage?
+        if let current = insights.slide {
+            target = pages.first { $0.documentID == current.documentID && $0.page == current.page + delta }
+        } else {
+            target = first
+        }
+        guard let target else { return }
+        hold(target, among: pages, source: .manual)
+    }
+
+    private func hold(_ page: SlidePage, among pages: [SlidePage], source: LiveInsights.SlideSource) {
+        if !insights.slideIsManual { insights.manualSlideAnchor = insights.slide?.key }
+        insights.slideSource = source
+        insights.slideSeenAt = Date()
+        show(page, among: pages, manual: true)
+    }
+
+    /// The script says where the talk is. When what I have just said is the script of the
+    /// next slide (or, with no slide found yet, of some slide), the notes move there, whether
+    /// or not the shared screen could be read. Two sentences of the script must have been
+    /// said: one could be a phrase the slides share.
+    private func followSpeech() {
+        // With the notes off the island the screen alone says which slide is up.
+        guard insights.followSlides, !(PresenterMode.shared.isActive && !PresenterMode.shared.showsSlideNotes) else { return }
+        let pages = slidePages
+        guard pages.contains(where: { !$0.notes.isEmpty }) else { return }
+        let candidates: [SlidePage]
+        if let current = insights.slide {
+            candidates = pages.filter { $0.documentID == current.documentID && (1...2).contains($0.page - current.page) }
+        } else {
+            candidates = pages
+        }
+        let since = max(Date().addingTimeInterval(-30), insights.slide == nil ? .distantPast : insights.slideSince)
+        let speech = entries.filter { $0.isMe && $0.suspectedEcho != true && $0.date >= since }.map(\.text).joined(separator: " ")
+        guard speech.count >= 16, let page = SlideMatcher.spokenPage(among: candidates, speech: speech) else { return }
+        hold(page, among: pages, source: .speech)
     }
 
     /// Talking points for one slide, written once by the answer engine on the
     /// background clients (the live answer is never blocked).
     func prepareSlideNotes(_ page: SlidePage, force: Bool = false) {
         guard force || insights.slideNotes[page.key] == nil, !insights.generatingNotes.contains(page.key) else { return }
+        let pages = slidePages
+        // The presenter's own notes are the script: shown as written, at once, without the model.
+        if !force, let script = SlideNotes.script(for: page, next: pages.first { $0.documentID == page.documentID && $0.page == page.page + 1 }) {
+            insights.slideNotes[page.key] = script
+            return
+        }
+        // Written in an earlier meeting or rehearsal for the same slide.
+        let fingerprint = SlideNotesCache.fingerprint(page, mode: liveWorkspace.mode)
+        if !force, let saved = SlideNotesCache.notes(for: page, fingerprint: fingerprint) {
+            insights.slideNotes[page.key] = saved
+            return
+        }
         let model = currentAnswerModel
         guard !model.isEmpty else { insights.slideNotesError = "还没有选择回答模型，讲稿提示需要回答引擎。"; return }
         let workspaceID=activeWorkspace.id, revision=documentRevision
         insights.generatingNotes.insert(page.key)
         insights.slideNotesError = nil
-        let deck = slidePages.filter { $0.documentID == page.documentID }
+        let deck = pages.filter { $0.documentID == page.documentID }
         let previous = deck.first { $0.page == page.page - 1 }?.text
         let next = deck.first { $0.page == page.page + 1 }?.text
         let backend = answerBackend
@@ -164,6 +249,7 @@ extension AppState {
                 guard self.activeWorkspace.id == workspaceID, self.documentRevision == revision else { return }
                 if let notes = SlideNotes.parse(text) {
                     self.insights.slideNotes[page.key] = notes
+                    if page.notes.isEmpty { SlideNotesCache.save(notes, for: page, fingerprint: fingerprint) }
                     Diagnostics.record("insight.slide_notes", ["page": page.page, "points": notes.points.count, "seconds": Date().timeIntervalSince(started)])
                 } else {
                     self.insights.slideNotesError = "讲稿提示没有按格式返回，可以点“重新生成”。"
@@ -181,7 +267,7 @@ extension AppState {
     func insightsDidReceive(_ entry: TranscriptEntry) {
         guard isRunning, !isPaused else { return }
         coach.ingest(entry)
-        if entry.isMe { updateCoverage() }
+        if entry.isMe { followSpeech(); updateCoverage() }
     }
 
     /// Which sentences of the current answer, and of the slide's talking points, the

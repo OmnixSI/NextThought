@@ -848,12 +848,22 @@ private struct NotesSectionView: View {
         case .items:
             VStack(alignment: .leading, spacing: Space.s3) {
                 Text(verbatim: section.title).font(Typo.section)
-                ForEach(section.items) { item in
-                    HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
-                        Text(verbatim: item.text).id("note-\(item.id)").font(Typo.body).lineSpacing(6).textSelection(.enabled)
-                        TimeLink(time: item.time, onJump: onJump)
-                        evidenceButton(item)
-                        if item.uncertain { ConfirmBadge() }
+                // Points sit under the subject they belong to; a list without subjects reads as before.
+                ForEach(Array(NotesShape.groups(section.items).enumerated()), id: \.offset) { index, group in
+                    if let topic = group.topic {
+                        Text(verbatim: topic).font(.system(size: 13, weight: .semibold)).foregroundStyle(Ink.secondary)
+                            .padding(.top, index == 0 ? 0 : Space.s2)
+                    }
+                    ForEach(group.items) { item in
+                        HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
+                            if group.topic != nil {
+                                Circle().fill(Ink.tertiary).frame(width: 4, height: 4).alignmentGuide(.firstTextBaseline) { $0[.bottom] + 5 }
+                            }
+                            Text(verbatim: item.text).id("note-\(item.id)").font(Typo.body).lineSpacing(6).textSelection(.enabled)
+                            TimeLink(time: item.time, onJump: onJump)
+                            evidenceButton(item)
+                            if item.uncertain { ConfirmBadge() }
+                        }
                     }
                 }
             }

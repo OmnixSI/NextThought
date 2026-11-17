@@ -25840,6 +25840,236 @@
           }
         }
       }
+    },
+    "上一页 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous · %@"
+          }
+        }
+      }
+    },
+    "下一页 · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next · %@"
+          }
+        }
+      }
+    },
+    "下一页：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next: %@"
+          }
+        }
+      }
+    },
+    "例如：无线通信物理层、机器学习。专业词会按这个领域来认和写": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: wireless physical layer, machine learning. Terms are recognised and written the way this field writes them"
+          }
+        }
+      }
+    },
+    "回答上方用中文写对方问了什么，每句英文下面有中文意思；只帮你理解，不用念": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What was asked is written in Chinese above the answer, and each English sentence has its meaning underneath; for you to understand, not to say"
+          }
+        }
+      }
+    },
+    "回答语言": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Answer language"
+          }
+        }
+      }
+    },
+    "对方在说": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They are speaking"
+          }
+        }
+      }
+    },
+    "我的讲稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My script"
+          }
+        }
+      }
+    },
+    "改用 AI 要点": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use AI points instead"
+          }
+        }
+      }
+    },
+    "文字已可用，正在读图片": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text ready, reading pictures"
+          }
+        }
+      }
+    },
+    "用 PowerPoint 自带的演讲者备注时关掉：提词岛只在被提问时展开": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off when you read PowerPoint's own speaker notes: the island opens only when you are asked something"
+          }
+        }
+      }
+    },
+    "英文回答附中文对照": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chinese under English answers"
+          }
+        }
+      }
+    },
+    "英文答辩或面试选 English：不管问题听成什么语言，回答都用英文": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose English for a defense or interview in English: answers are in English whatever language the question was heard in"
+          }
+        }
+      }
+    },
+    "讲的时候在提词岛显示这一页的讲稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show this slide's notes on the island while I talk"
+          }
+        }
+      }
+    },
+    "讲的时候显示这一页的讲稿": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show this slide's notes while I talk"
+          }
+        }
+      }
+    },
+    "讲稿上一页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Previous slide's notes"
+          }
+        }
+      }
+    },
+    "讲稿下一页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next slide's notes"
+          }
+        }
+      }
+    },
+    "语义模型还在加载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The semantic model is still loading"
+          }
+        }
+      }
+    },
+    "跟随问题": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Same as the question"
+          }
+        }
+      }
+    },
+    "过渡：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transition: %@"
+          }
+        }
+      }
+    },
+    "这一页是手动翻到的；共享屏幕换到别的幻灯片后恢复自动跟随": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You moved to this slide by hand; following resumes when the shared screen shows another slide"
+          }
+        }
+      }
+    },
+    "领域": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Field"
+          }
+        }
+      }
+    },
+    "已就绪 · 含语义索引": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready · Semantic Index Built"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

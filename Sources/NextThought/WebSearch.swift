@@ -189,11 +189,13 @@ extension AppState {
         Task { [weak self] in
             guard let self else { return }
             let passages = await self.retrieveExcerpts(question: question)
+            let language = self.answerLanguageFields(for: question)
             self.startWebLookup(id: id, question: question) { webSearch, results in
                 AnswerPromptBuilder.makeParts(question: question, context: context, profile: workspace.materialText, turns: [], hasScreenshot: false,
                                               preferences: workspace.preferences, mode: workspace.mode, style: workspace.style, excerpts: passages,
                                               experience: workspace.experienceNotes(), skills: skills, webResults: results, webSearch: webSearch,
-                                              glossary: glossarySection)
+                                              glossary: glossarySection,
+                                              answerLanguage: language.answer, glossLanguage: language.gloss)
             }
         }
     }

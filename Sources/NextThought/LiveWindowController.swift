@@ -53,7 +53,9 @@ final class LiveWindowController {
     /// The page comes back without taking the keyboard from the meeting app, unless
     /// the user is already working in this one.
     private func showMainWindows() {
-        for window in NSApp.windows where MainWindowLayout.isMainWindow(window) {
+        // Not a page the user closed: it is still in `NSApp.windows`, and showing it
+        // put a second interface next to the one in use.
+        for window in NSApp.windows where MainWindowLayout.isMainWindow(window) && !MainWindowLayout.closed.contains(window) {
             if NSApp.isActive { window.makeKeyAndOrderFront(nil) } else { window.orderFrontRegardless() }
         }
     }

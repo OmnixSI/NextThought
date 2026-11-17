@@ -12,7 +12,7 @@ import Vision
 /// the same shape — a title, headings, lists, tables — which is also what gets
 /// archived on disk, shown in the material list and cited by page.
 enum MarkdownConverter {
-    struct Result {
+    struct Result: Sendable {
         var name: String
         var markdown: String
         /// One chunk per heading, used for retrieval and for citing a section.

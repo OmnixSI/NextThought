@@ -24,6 +24,8 @@ struct DocumentConversionOptions: Sendable {
     var sourceHash: String? = nil
     var checkpointDirectory: URL? = nil
     var onProgress: @Sendable (DocumentJobEvent) -> Void = { _ in }
+    /// The file's own text, handed over while its pictures are still being read.
+    var onText: @Sendable (MarkdownConverter.Result) async -> Void = { _ in }
 }
 
 enum DocumentRuntime {
@@ -69,7 +71,8 @@ actor DocumentWorker {
     static let shared = DocumentWorker(terminateOnCancel: true)
     static let embedding = DocumentWorker()
     static let realtime = DocumentWorker(terminateOnCancel: true)
-    static let queryEmbedding = DocumentWorker(terminateOnCancel: true)
+    /// Kept alive when a query gives up: the model it holds takes seconds to load again.
+    static let queryEmbedding = DocumentWorker()
     private let terminateOnCancel: Bool
     init(terminateOnCancel: Bool = false) { self.terminateOnCancel = terminateOnCancel }
     private var process: Process?

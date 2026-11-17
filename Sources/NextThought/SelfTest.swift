@@ -43,6 +43,7 @@ enum Launcher {
             fflush(nil)
             _exit(code)
         }
+        SingleInstance.yieldToRunningCopy()
         NextThoughtApp.main()
     }
 }
@@ -68,6 +69,19 @@ enum SelfTest {
             suites.append(item); index += 1
         }
         if suites.isEmpty || suites == ["all"] { suites = ["data", "signing", "update", "asr"] }
+        // The suites work in a scratch data folder, but preferences belong to the bundle
+        // they run in. Run against the shipped app, a suite that selects a test scene
+        // left the user's own app pointing at a scene that does not exist. Whatever the
+        // suites write is taken back before the process ends.
+        let domain = Bundle.main.bundleIdentifier
+        let preferences = domain.flatMap { UserDefaults.standard.persistentDomain(forName: $0) }
+        defer {
+            if let domain {
+                if let preferences { UserDefaults.standard.setPersistentDomain(preferences, forName: domain) }
+                else { UserDefaults.standard.removePersistentDomain(forName: domain) }
+                UserDefaults.standard.synchronize()
+            }
+        }
         var failed = 0
         for suite in suites {
             let started = Date()
@@ -109,6 +123,11 @@ enum SelfTest {
                 case "signing": return try await testSigning()
                 case "update": return try await testUpdate(options)
                 case "asr": return try await testASR(options)
+                case "question-round": return try await testQuestionRound(options)
+                case "answer-prompt": return try testAnswerPrompt(options)
+                case "answer-latency": return try await testAnswerLatency(options)
+                case "embedding-speed": return try await testEmbeddingSpeed(options)
+                case "import-speed": return try await testImportSpeed(options)
                 default: throw Failure("unknown suite \(suite)")
                 }
             }
@@ -812,6 +831,208 @@ enum SelfTest {
             }
         }
         return report.joined(separator: ", ")
+    }
+
+    /// The prompt the answer model would get for each question (one per line in
+    /// `--questions`), with passages looked up by keyword in the `--material` files,
+    /// written to `--output` as prompt-N.txt: for trying a question round by hand.
+    private static func testAnswerPrompt(_ options: [String: String]) throws -> String {
+        guard let material = options["material"], let questions = options["questions"], let output = options["output"] else {
+            throw Failure("pass --material <a.md,b.md> --questions <file> --output <dir>")
+        }
+        let docs = try material.split(separator: ",").map { path -> ContextDocument in
+            let url = URL(fileURLWithPath: String(path))
+            let text = try String(contentsOf: url, encoding: .utf8)
+            // A form feed or a "<!-- page -->" marker is a page break; otherwise one page.
+            let pages = text.components(separatedBy: "\u{0C}").filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            return ContextDocument(name: url.lastPathComponent, pages: pages)
+        }
+        let index = HybridContextIndex(documents: docs)
+        let terms = MaterialTerms.extract(from: docs.flatMap(\.pages))
+        let glossary = Glossary(entries: terms.map { GlossaryEntry(canonical: $0) }).promptSection()
+        let lines = try String(contentsOfFile: questions, encoding: .utf8).split(separator: "\n").map(String.init).filter { !$0.isEmpty }
+        try FileManager.default.createDirectory(atPath: output, withIntermediateDirectories: true)
+        for (number, question) in lines.enumerated() {
+            let excerpts = index.retrieve(question: question, maximumCharacters: 8_000)
+            let parts = AnswerPromptBuilder.makeParts(question: question, context: "[对方 · 系统声音] " + question, profile: options["profile"] ?? "", turns: [], hasScreenshot: false,
+                                                      preferences: options["preferences"] ?? "", mode: .academic, style: .concise, excerpts: excerpts,
+                                                      glossary: glossary, answerLanguage: "English", glossLanguage: "简体中文",
+                                                      fullMaterial: options["whole"] == "1" ? AnswerPromptBuilder.wholeMaterial(of: docs) : nil)
+            try (parts.system + "\n\n" + parts.user).write(toFile: output + "/prompt-\(number + 1).txt", atomically: true, encoding: .utf8)
+            print("SELFTEST   \(number + 1): \(excerpts.count) passages, \(parts.user.count) characters")
+        }
+        return "\(lines.count) prompts"
+    }
+
+    /// Sends prompt files (`--prompts a.txt,b.txt`, one after another) to the answer
+    /// service the way a live question does and reports the time to the first words
+    /// and to the end; the replies go next to the prompts as *.reply.txt.
+    private static func testAnswerLatency(_ options: [String: String]) async throws -> String {
+        guard let prompts = options["prompts"] else { throw Failure("pass --prompts <a.txt,b.txt>") }
+        let client = CodexAppServerClient()
+        await client.prewarm()
+        defer { client.shutdown() }
+        var report: [String] = []
+        for path in prompts.split(separator: ",").map(String.init) {
+            let text = try String(contentsOfFile: path, encoding: .utf8)
+            let started = Date()
+            let first = FirstDelta()
+            let request = AnswerRequest(system: text, user: "", model: options["model"] ?? "gpt-6-luna", effort: options["effort"] ?? "medium", imageURL: nil, serviceTier: "fast")
+            let reply = try await client.answer(request) { _ in first.mark() }
+            let total = Date().timeIntervalSince(started)
+            try reply.write(toFile: path + ".reply.txt", atomically: true, encoding: .utf8)
+            let line = String(format: "%@: first %.1f s, done %.1f s, %d characters in, %d out", (path as NSString).lastPathComponent, first.seconds(since: started), total, text.count, reply.count)
+            print("SELFTEST   " + line); report.append(line)
+        }
+        return "\(report.count) answers"
+    }
+
+    /// Where the time of "生成向量" goes: the same chunks through the worker from an
+    /// ordinary task, from a utility task, and the way the app does it.
+    private static func testEmbeddingSpeed(_ options: [String: String]) async throws -> String {
+        guard let path = options["material"] else { throw Failure("pass --material <file.md>") }
+        let text = try String(contentsOfFile: path, encoding: .utf8)
+        let document = ContextDocument(name: (path as NSString).lastPathComponent, pages: [text])
+        let chunks = Array(ContextChunker.chunks(documents: [document]).prefix(Int(options["count"] ?? "") ?? 30))
+        let embedder = MLXTextEmbedder()
+        _ = try await embedder.embedPassage("warm up")
+        func timed(_ name: String, _ body: @escaping @Sendable () async throws -> Void) async throws -> String {
+            let began = Date(); try await body()
+            let line = String(format: "%@: %.3f s per chunk", name, Date().timeIntervalSince(began) / Double(chunks.count))
+            print("SELFTEST   " + line); return line
+        }
+        var report: [String] = []
+        if options["each"] == "1" {
+            var rows: [(Double, Int)] = []
+            for chunk in chunks { let t = Date(); _ = try await embedder.embedPassage(chunk.text); rows.append((Date().timeIntervalSince(t), chunk.text.count)) }
+            let total = rows.reduce(0) { $0 + $1.0 }
+            print(String(format: "SELFTEST   %d chunks, %.1f s, mean %.3f s", rows.count, total, total / Double(rows.count)))
+            for (index, row) in rows.enumerated() where row.0 > 0.3 || index % 20 == 0 { print(String(format: "SELFTEST   #%d %.3f s %d characters", index, row.0, row.1)) }
+            return "\(rows.count) chunks"
+        }
+        report.append(try await timed("plain") { for chunk in chunks { _ = try await embedder.embedPassage(chunk.text) } })
+        report.append(try await timed("utility task") {
+            try await Task.detached(priority: .utility) { for chunk in chunks { _ = try await embedder.embedPassage(chunk.text) } }.value
+        })
+        report.append(try await timed("utility task + main actor check") {
+            try await Task.detached(priority: .utility) {
+                for chunk in chunks {
+                    if await MainActor.run(body: { AppState.shared.isRunning }) { return }
+                    _ = try await embedder.embedPassage(chunk.text)
+                }
+            }.value
+        })
+        return "\(chunks.count) chunks; " + report.joined(separator: "; ")
+    }
+
+    /// Files dropped into a scene together, the way the app takes them: when each one's
+    /// text can be used, when each is finished, and what it is marked with.
+    @MainActor private static func testImportSpeed(_ options: [String: String]) async throws -> String {
+        guard DemoMode.isEnabled else { throw Failure("import-speed requires NEXTTHOUGHT_DEMO=1 and a scratch data folder") }
+        guard let files = options["files"] else { throw Failure("pass --files <a.pptx,b.pdf>") }
+        _ = NSApplication.shared
+        let workspace = Workspace(name: "import", mode: .academic, documents: [])
+        WorkspaceStore.shared.installDemo([workspace])
+        let state = AppState.shared
+        state.runtimeInstalled = DocumentRuntime.installed
+        state.installedDocumentModels = Set(([ModelCatalog.qwen3Embedding, ModelCatalog.layout] + ModelCatalog.localOCRChoices).filter(ManagedModelStore.isInstalled).map(\.id))
+        state.semanticRetrievalEnabled = options["semantic"] != "0"
+        state.documentPreparation.start(testing: true)
+        var conversion = DocumentConversionOptions(provider: DocumentOCRProvider(rawValue: options["provider"] ?? "paddle") ?? .paddle, fallback: false)
+        conversion.localModelID = options["ocr"] ?? ModelCatalog.paddleOCR.id
+        let began = Date()
+        state.documentPreparation.enqueue(files.split(separator: ",").map { URL(fileURLWithPath: String($0)) }, workspace: workspace, category: nil, options: conversion)
+        var usable: [String: Double] = [:], finished: [String: Double] = [:]
+        while Date().timeIntervalSince(began) < 900 {
+            try await Task.sleep(for: .milliseconds(200))
+            let now = Date().timeIntervalSince(began)
+            for document in WorkspaceStore.shared.workspace(workspace.id)?.documents ?? [] where usable[document.name] == nil { usable[document.name] = now }
+            let jobs = state.documentPreparation.jobs
+            for job in jobs where job.stage.terminal && finished[job.fileName] == nil { finished[job.fileName] = now }
+            if !jobs.isEmpty, jobs.allSatisfy({ $0.stage.terminal || $0.stage == .waiting }) { break }
+        }
+        var report: [String] = []
+        for job in state.documentPreparation.jobs {
+            let document = WorkspaceStore.shared.workspace(workspace.id)?.documents.first { $0.id == job.documentID }
+            let line = String(format: "%@: text usable %.1f s, finished %.1f s, %@, %d blocks, %d characters | %@", job.fileName,
+                              usable[job.fileName] ?? -1, finished[job.fileName] ?? -1, job.stage.rawValue, document?.pages.count ?? 0, document?.characterCount ?? 0,
+                              job.message.replacingOccurrences(of: "\n", with: " / "))
+            print("SELFTEST   " + line); report.append(line)
+        }
+        let whole = AnswerPromptBuilder.wholeMaterial(of: WorkspaceStore.shared.workspace(workspace.id)?.retrievalDocuments ?? [])
+        print("SELFTEST   whole material: \(whole?.count ?? -1) characters, \(whole?.components(separatedBy: "【").count ?? 0) marks")
+        if let output = options["output"], let whole { try whole.write(toFile: output, atomically: true, encoding: .utf8) }
+        await DocumentWorker.embedding.unload(); await DocumentWorker.shared.unload()
+        guard state.documentPreparation.jobs.allSatisfy({ [.ready, .warning].contains($0.stage) }) else { throw Failure("not every file was read") }
+        return String(format: "%d files in %.1f s", report.count, Date().timeIntervalSince(began))
+    }
+
+    private final class FirstDelta: @unchecked Sendable {
+        private let lock = NSLock()
+        private var date: Date?
+        func mark() { lock.withLock { if date == nil { date = Date() } } }
+        func seconds(since start: Date) -> Double { lock.withLock { date?.timeIntervalSince(start) ?? -1 } }
+    }
+
+    /// Recordings of an examiner's turns (one WAV each) through the local recognizer and
+    /// the question-round rules: what is heard, and what would be asked of the answer
+    /// model and when. `--material` gives the text the hotwords are taken from.
+    @MainActor
+    private static func testQuestionRound(_ options: [String: String]) async throws -> String {
+        guard let fixtures = options["fixtures"] else { throw Failure("pass --fixtures <dir of 16 kHz mono WAV files>") }
+        var hotwords = ""
+        if let material = options["material"], let text = try? String(contentsOfFile: material, encoding: .utf8) {
+            let terms = MaterialTerms.extract(from: [text])
+            hotwords = Glossary(entries: terms.map { GlossaryEntry(canonical: $0) }).hotwordString(merging: "")
+            print("SELFTEST hotwords: \(terms.count)")
+        }
+        let files = try FileManager.default.contentsOfDirectory(atPath: fixtures).filter { $0.hasSuffix(".wav") }.sorted()
+        try expect(!files.isEmpty, "no WAV files in \(fixtures)")
+        var asked = 0
+        for file in files {
+            let samples = try readWAV(URL(fileURLWithPath: fixtures).appendingPathComponent(file))
+            let transcriber = ZipformerStreamingTranscriber(model: LocalStreamingModel.xasr480.onlineModel,
+                                                           refiner: .xasrOffline(at: LocalASRPackage.xasrOffline.directory), vocabulary: hotwords)
+            var finals: [(text: String, start: Date, end: Date)] = []
+            var failure: String?
+            try await transcriber.start(language: "auto") { text, isFinal, start, end, _, _ in
+                if isFinal { finals.append((text, start, end)) }
+            } onError: { failure = $0 }
+            let input = transcriber.inputHandler()
+            var segmenter = VoiceActivitySegmenter()
+            let origin = Date()
+            let padded = samples + [Int16](repeating: 0, count: 16_000 * 2)
+            for start in stride(from: 0, to: padded.count, by: 1_600) {
+                let chunk = Array(padded[start..<min(start + 1_600, padded.count)])
+                input(chunk, origin)
+                for var event in segmenter.append(chunk) where event.kind == .final {
+                    event.streamStartedAt = origin
+                    await transcriber.commitUtterance(event)
+                }
+            }
+            await transcriber.finish()
+            try await Task.sleep(for: .milliseconds(300))
+            if let failure { throw Failure(failure) }
+            print("SELFTEST \(file) (\(String(format: "%.1f", Double(samples.count) / 16_000)) s)")
+            var tracker = QuestionCandidateTracker(mode: .academic)
+            var turn = QuestionTurn()
+            func ask(_ reason: String, at date: Date) {
+                print("SELFTEST   ASK[\(reason)] at \(String(format: "%.1f", date.timeIntervalSince(origin))) s: \(turn.text())")
+                turn.asked(); asked += 1
+            }
+            for (index, final) in finals.enumerated() {
+                print("SELFTEST   \(String(format: "%5.1f", final.end.timeIntervalSince(origin))) s  \(final.text)")
+                turn.heard(final.text, at: final.end)
+                if case .trigger = tracker.ingest(final.text, isFinal: true, utteranceKey: "u\(index)", now: final.end), turn.worthAsking() {
+                    ask("question", at: final.end)
+                }
+                let quiet = final.end.addingTimeInterval(turn.config.quiet)
+                let next = index + 1 < finals.count ? finals[index + 1].start : Date.distantFuture
+                if next >= quiet, turn.isDue(now: quiet, partial: "", replying: false) { ask("pause", at: quiet) }
+            }
+            try expect(turn.requests >= 1, "\(file): nothing would be answered")
+        }
+        return "\(files.count) turns, \(asked) answers asked"
     }
 
     /// The app's own pipeline: streaming X-ASR fed in 100 ms chunks, the voice-activity

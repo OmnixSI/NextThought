@@ -89,17 +89,129 @@ public struct CueLine: Sendable, Equatable, Identifiable {
     public var head: String
     public var text: String
 
-    public init(id: Int, kind: Kind, head: String = "", text: String) {
-        self.id = id; self.kind = kind; self.head = head; self.text = text
+    /// What the line means in the user's own language, when the answer is given in another
+    /// one: read to understand, never spoken.
+    public var gloss: String
+
+    public init(id: Int, kind: Kind, head: String = "", text: String, gloss: String = "") {
+        self.id = id; self.kind = kind; self.head = head; self.text = text; self.gloss = gloss
     }
 
     /// The whole line as it would be spoken, for matching against speech.
     public var spoken: String { head.isEmpty ? text : (text.isEmpty ? head : head + "，" + text) }
 }
 
+/// An answer to say in one language with the meaning alongside in another.
+///
+/// Answering in English in front of a committee, the user reads the English out and
+/// needs to know, at a glance and in Chinese, what they were asked and what they are
+/// saying. The model marks those lines as Markdown quotes: "> 问：…" once, for the
+/// question, and "> 译：…" under each sentence. They show as quotes on the page and as
+/// small print on the cue island; they are never part of what is to be said.
+public enum BilingualAnswer {
+    public enum Gloss: Equatable, Sendable {
+        case question(String)
+        case line(String)
+    }
+
+    /// Whether an answer carries glosses at all: it opens with what was asked, or marks a meaning.
+    public static func isBilingual(_ answer: String) -> Bool {
+        guard answer.contains(">") else { return false }
+        return answer.components(separatedBy: .newlines).contains { marked($0) != nil }
+    }
+
+    /// A line the model marked: "> 问：…" or "> 译：…".
+    static func marked(_ line: String) -> Gloss? {
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard trimmed.hasPrefix(">") else { return nil }
+        let body = trimmed.drop { $0 == ">" || $0 == " " }
+        for marker in ["问：", "问:"] where body.hasPrefix(marker) {
+            return .question(String(body.dropFirst(marker.count)).trimmingCharacters(in: .whitespaces))
+        }
+        for marker in ["译：", "译:"] where body.hasPrefix(marker) {
+            return .line(String(body.dropFirst(marker.count)).trimmingCharacters(in: .whitespaces))
+        }
+        return nil
+    }
+
+    /// The gloss a line of a bilingual answer is, if it is one. Models drop the "译：" mark
+    /// as often as they write it: in such an answer every quoted line is a meaning.
+    public static func gloss(_ line: String, in bilingual: Bool = true) -> Gloss? {
+        if let marked = marked(line) { return marked }
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        guard bilingual, trimmed.hasPrefix(">") else { return nil }
+        let body = String(trimmed.drop { $0 == ">" || $0 == " " })
+        return body.isEmpty ? nil : .line(body)
+    }
+
+    /// What the other side asked, in the user's language.
+    public static func question(in answer: String) -> String? {
+        let lines = answer.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        for (index, line) in lines.enumerated() {
+            guard case let .question(text)? = marked(line), !text.isEmpty else { continue }
+            // Now and then the question is repeated as it was asked and its meaning
+            // follows on a line of its own: the meaning is what is wanted.
+            if index + 1 < lines.count, case let .line(meaning)? = marked(lines[index + 1]), !meaning.isEmpty { return meaning }
+            return text
+        }
+        return nil
+    }
+
+    /// A sentence to say, without a source note the model left at its end ("(报告第 5 页)",
+    /// "(report, p. 5)"): page numbers are not spoken.
+    public static func withoutSource(_ sentence: String) -> String {
+        let trimmed = sentence.trimmingCharacters(in: .whitespaces)
+        guard let last = trimmed.last, last == ")" || last == "）",
+              let open = trimmed.lastIndex(where: { $0 == "(" || $0 == "（" }) else { return sentence }
+        let note = trimmed[open...].lowercased()
+        guard note.contains("页") || note.contains("p.") || note.contains("§") || note.contains("page") || note.contains("slide") || note.contains("节") else { return sentence }
+        let kept = trimmed[..<open].trimmingCharacters(in: .whitespaces)
+        return kept.isEmpty ? sentence : kept
+    }
+
+    /// The answer without its glosses: the words to say.
+    public static func spoken(_ answer: String) -> String {
+        guard isBilingual(answer) else { return answer }
+        return answer.components(separatedBy: .newlines).filter { gloss($0) == nil }.joined(separator: "\n")
+    }
+}
+
 /// Turns a Markdown answer into lines short enough to read in a glance.
 public enum CueScript {
     public static func lines(from answer: String, style: CueStyle, limit: Int = 14) -> [CueLine] {
+        // With glosses the model wrote one sentence per line: keep its lines, each with its meaning.
+        if BilingualAnswer.isBilingual(answer) {
+            var result: [CueLine] = []
+            // Sentences still waiting for their meaning. Usually each meaning follows its
+            // sentence; now and then all of them come together after the last sentence,
+            // and are then handed out in order.
+            var waiting: [Int] = [], glossing = false, lastGlossed: Int?
+            for raw in answer.components(separatedBy: .newlines) {
+                switch BilingualAnswer.gloss(raw) {
+                case .question?: continue
+                case let .line(text)?:
+                    glossing = true
+                    if !waiting.isEmpty {
+                        let index = waiting.removeFirst()
+                        result[index].gloss = text; lastGlossed = index
+                    } else if let index = lastGlossed {
+                        result[index].gloss += " " + text
+                    }
+                case nil:
+                    guard result.count < limit else { continue }
+                    let plain = BilingualAnswer.withoutSource(bulletBody(raw.trimmingCharacters(in: .whitespaces)) ?? raw)
+                    let sentences = AnswerPoints.split(plain, limit: 3)
+                    guard !sentences.isEmpty else { continue }
+                    if glossing { waiting.removeAll(); glossing = false }
+                    // One meaning covers the whole line: it goes with the line's first sentence.
+                    waiting.append(result.count)
+                    for sentence in sentences {
+                        result.append(CueLine(id: result.count, kind: result.isEmpty ? .lead : .detail, text: sentence))
+                    }
+                }
+            }
+            return result
+        }
         switch style {
         case .script:
             return AnswerPoints.split(answer, limit: limit).enumerated().map { index, sentence in

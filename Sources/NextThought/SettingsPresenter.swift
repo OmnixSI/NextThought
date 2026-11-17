@@ -54,6 +54,9 @@ struct PresenterSettings: View {
 
             SettingsSection(title: "双屏演讲") {
                 Toggle("外接屏放幻灯片，MacBook 看提示", isOn: $presenter.isEnabled)
+                Toggle("讲的时候在提词岛显示这一页的讲稿", isOn: $presenter.showsSlideNotes)
+                    .disabled(!presenter.isEnabled)
+                    .help("用 PowerPoint 自带的演讲者备注时关掉：提词岛只在被提问时展开")
                 if presenter.otherScreens.count > 1 {
                     MenuPicker(title: "幻灯片所在的屏幕", selection: $presenter.slidesScreenName,
                                options: [("", String(localized: "自动"))] + presenter.otherScreens.map { ($0.localizedName, $0.localizedName) })

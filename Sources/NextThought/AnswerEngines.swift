@@ -70,6 +70,21 @@ final class CodexAppServerClient: @unchecked Sendable {
         do { try await ensureStarted() } catch { Diagnostics.record("appserver.prewarm.failed") }
     }
 
+    /// Opens a thread and leaves it: what the first answer of a meeting would otherwise
+    /// wait for. Measured in a rehearsal, the first `thread/start` after the server had
+    /// sat idle took 10.6 s, the later ones 0.1 s; the question itself then took 2.8 s.
+    func warm(model: String, effort: String, fast: Bool) async {
+        let began = Date()
+        do {
+            try await ensureStarted()
+            let workDir = FileManager.default.temporaryDirectory.appendingPathComponent("nextthought-appserver-\(UUID().uuidString)", isDirectory: true)
+            try FileManager.default.createDirectory(at: workDir, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: workDir) }
+            _ = try await send("thread/start", CodexAppServerProtocol.threadStartParams(model: model, effort: effort, cwd: workDir.path, fast: fast, webSearch: false), timeout: 20)
+            Diagnostics.record("appserver.warmed", ["seconds": Date().timeIntervalSince(began)])
+        } catch { Diagnostics.record("appserver.prewarm.failed") }
+    }
+
     func shutdown() {
         let (old, startup) = lock.withLock {
             let value = (process, startTask)

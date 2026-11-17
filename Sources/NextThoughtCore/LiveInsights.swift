@@ -32,6 +32,36 @@ public enum TextSimilarity {
         return Double(part.intersection(whole).count) / Double(part.count)
     }
 
+    /// What a page is made of, for telling pages apart: whole words where the script has
+    /// them, character pairs where it does not (Chinese, Japanese).
+    ///
+    /// Letter pairs are too common to tell English slides apart: nearly every pair of a
+    /// short slide ("th", "es", "re") is somewhere on any full screen of English, so a
+    /// title slide matched everything. Words are rare enough to mean something.
+    public static func terms(_ text: String) -> Set<String> {
+        var result = Set<String>()
+        var word = "", previousCJK: Character?
+        func flush() {
+            if word.count >= 2 { result.insert(word) }
+            word = ""
+        }
+        for character in text.lowercased() {
+            let isCJK = character.unicodeScalars.first.map { $0.value >= 0x2E80 } ?? false
+            if isCJK, character.isLetter || character.isNumber {
+                flush()
+                if let previousCJK { result.insert(String([previousCJK, character])) }
+                previousCJK = character
+            } else if character.isLetter || character.isNumber {
+                previousCJK = nil
+                word.append(character)
+            } else {
+                flush(); previousCJK = nil
+            }
+        }
+        flush()
+        return result
+    }
+
     public static func jaccard(_ a: String, _ b: String) -> Double { jaccard(bigrams(a), bigrams(b)) }
     public static func containment(_ part: String, in whole: String) -> Double { containment(bigrams(part), in: bigrams(whole)) }
 }
@@ -83,13 +113,38 @@ public struct SlidePage: Sendable, Equatable {
     /// 1-based, as cited in answers (“p.N”).
     public var page: Int
     public var pageCount: Int
+    /// What the audience sees on the slide. The screen is matched against this alone.
     public var text: String
+    /// The presenter's own notes for the slide (PowerPoint's speaker notes); never on the shared screen.
+    public var notes: String
     public var locator: DocumentLocator?
-    public init(documentID: UUID, documentName: String, page: Int, pageCount: Int, text: String, locator: DocumentLocator? = nil) {
+    public init(documentID: UUID, documentName: String, page: Int, pageCount: Int, text: String, notes: String = "", locator: DocumentLocator? = nil) {
         self.locator = locator
-        self.documentID = documentID; self.documentName = documentName; self.page = page; self.pageCount = pageCount; self.text = text
+        self.documentID = documentID; self.documentName = documentName; self.page = page; self.pageCount = pageCount
+        self.text = text; self.notes = notes
     }
     public var key: String { "\(documentID.uuidString)#\(page)" }
+    /// The slide's title: its first line with words in it.
+    public var title: String {
+        let line = text.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "#*-•· \t")) }
+            .first { $0.contains(where: \.isLetter) } ?? ""
+        return String(line.prefix(48))
+    }
+
+    /// Heading the importer puts above a slide's speaker notes.
+    public static let notesHeading = "演讲备注"
+
+    /// Splits the blocks of one slide into what is shown and what the presenter wrote for themself.
+    public static func split(_ blocks: [DocumentBlock]) -> (text: String, notes: String) {
+        var shown: [String] = [], notes: [String] = []
+        for block in blocks {
+            let isNotesHeading = block.kind == "heading" && block.markdown.contains(notesHeading)
+            if isNotesHeading { continue }
+            if block.locator.headingPath.contains(notesHeading) { notes.append(block.markdown) } else { shown.append(block.markdown) }
+        }
+        return (shown.joined(separator: "\n\n"), notes.joined(separator: "\n"))
+    }
 }
 
 public struct SlideMatch: Sendable, Equatable {
@@ -99,25 +154,66 @@ public struct SlideMatch: Sendable, Equatable {
 }
 
 public enum SlideMatcher {
-    /// Slide decks among the imported documents: PowerPoint / Keynote / PDF with pages.
-    public static func isDeck(name: String, pageCount: Int) -> Bool {
+    /// Slide decks among the imported documents: PowerPoint / Keynote, or a PDF whose pages
+    /// read like slides. A report or a paper has pages too, but thousands of characters on
+    /// each: following it as a deck matches the wrong thing and hides the real slides.
+    public static func isDeck(name: String, pageCount: Int, averageCharacters: Int? = nil) -> Bool {
         let lower = name.lowercased()
         if lower.hasSuffix(".pptx") || lower.hasSuffix(".ppt") || lower.hasSuffix(".key") { return true }
-        return lower.hasSuffix(".pdf") && pageCount >= 3
+        guard lower.hasSuffix(".pdf"), pageCount >= 3 else { return false }
+        return (averageCharacters ?? 0) <= 1_200
     }
 
-    /// Pages by how much of their text is on the screen. Short pages (a title slide)
-    /// count less: a few words match too easily.
+    /// Pages by how much of their text is on the screen.
+    ///
+    /// Text that is on most slides (the talk's title in the footer, the author, section
+    /// names) says nothing about which slide is showing, so every term counts by how rare
+    /// it is in the deck. A page with little that is its own (a title, a divider) cannot
+    /// score high: a few common words match too easily.
     public static func rank(screen: String, pages: [SlidePage], limit: Int = 4) -> [SlideMatch] {
-        let screenGrams = TextSimilarity.bigrams(screen)
-        guard screenGrams.count >= 6 else { return [] }
-        let matches = pages.compactMap { page -> SlideMatch? in
-            let grams = TextSimilarity.bigrams(page.text)
-            guard grams.count >= 4 else { return nil }
-            let score = TextSimilarity.containment(grams, in: screenGrams) * min(1, Double(grams.count) / 30)
+        let screenTerms = TextSimilarity.terms(screen)
+        guard screenTerms.count >= 4 else { return [] }
+        let terms = pages.map { TextSimilarity.terms($0.text) }
+        var frequency: [String: Int] = [:]
+        for page in terms { for term in page { frequency[term, default: 0] += 1 } }
+        let total = Double(pages.count)
+        func weight(_ term: String) -> Double {
+            guard pages.count >= 3 else { return 1 }
+            // 1 for a term on one page only, falling to 0.05 for one on every page.
+            return max(0.05, 1 - log(Double(frequency[term] ?? 1)) / log(total))
+        }
+        let matches = zip(pages, terms).compactMap { page, terms -> SlideMatch? in
+            guard terms.count >= 2 else { return nil }
+            var all = 0.0, seen = 0.0
+            for term in terms {
+                let value = weight(term)
+                all += value
+                if screenTerms.contains(term) { seen += value }
+            }
+            guard all > 0 else { return nil }
+            let score = seen / all * min(1, all / 6)
             return score > 0.05 ? SlideMatch(page: page, score: score) : nil
         }
         return Array(matches.sorted { $0.score > $1.score }.prefix(limit))
+    }
+
+    /// The slide whose script is being spoken: the first candidate whose notes open with
+    /// what was just said. Either two of its opening sentences were said (one could be a
+    /// phrase slides share, "as shown here"), or, for a script of one or two short
+    /// sentences, most of the words of its opening.
+    public static func spokenPage(among candidates: [SlidePage], speech: String) -> SlidePage? {
+        let said = TextSimilarity.terms(speech)
+        guard said.count >= 6 else { return nil }
+        let matching = candidates.filter { page in
+            let opening = AnswerPoints.split(page.notes, limit: 5)
+            let sentences = opening.filter { TextSimilarity.terms($0).count >= 4 }
+            if sentences.count >= 2, sentences.filter({ AnswerPoints.heuristicCovered($0, said: said) }).count >= 2 { return true }
+            let words = AnswerPoints.contentTerms(opening.prefix(3).joined(separator: " "))
+            return words.count >= 8 && Double(words.intersection(said).count) / Double(words.count) >= 0.7
+        }
+        // Looking through the whole deck, two slides that open alike cannot be told apart: claim neither.
+        if candidates.count > 2, matching.count > 1 { return nil }
+        return matching.first
     }
 
     public enum Outcome: Sendable, Equatable {
@@ -141,7 +237,9 @@ public enum SlideMatcher {
         }
         let rest = ranked.filter { $0.page != best.page && !($0.page.documentID == best.page.documentID && $0.page.page == best.page.page + 1) }
         let margin = best.score - (rest.first?.score ?? 0)
-        if best.score >= 0.45 && margin >= 0.12 { return .page(best.page) }
+        // Talks go forward: the page after the current one needs less proof than a jump.
+        let isNext = previous.map { best.page.documentID == $0.documentID && best.page.page == $0.page + 1 } ?? false
+        if best.score >= (isNext ? 0.35 : 0.45) && margin >= (isNext ? 0.06 : 0.12) { return .page(best.page) }
         // Staying on the previous page wins ties: slides rarely jump.
         if let previous, ranked.contains(where: { $0.page == previous }), let current = ranked.first(where: { $0.page == previous }), current.score >= top.score - 0.05 {
             return .page(previous)
@@ -155,8 +253,27 @@ public struct SlideNotes: Sendable, Equatable, Codable {
     public var points: [String]
     public var transition: String
     public var questions: [String]
-    public init(points: [String], transition: String = "", questions: [String] = []) {
-        self.points = points; self.transition = transition; self.questions = questions
+    /// The points are the presenter's own speaker notes, sentence by sentence, not a suggestion.
+    public var isScript: Bool
+    public init(points: [String], transition: String = "", questions: [String] = [], isScript: Bool = false) {
+        self.points = points; self.transition = transition; self.questions = questions; self.isScript = isScript
+    }
+
+    enum CodingKeys: String, CodingKey { case points, transition, questions, isScript }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        points = try c.decodeIfPresent([String].self, forKey: .points) ?? []
+        transition = try c.decodeIfPresent(String.self, forKey: .transition) ?? ""
+        questions = try c.decodeIfPresent([String].self, forKey: .questions) ?? []
+        isScript = try c.decodeIfPresent(Bool.self, forKey: .isScript) ?? false
+    }
+
+    /// The presenter wrote what to say on this slide: show exactly that, one sentence at a
+    /// time, with the next slide's title as the way out. Nil when the notes are a stub.
+    public static func script(for page: SlidePage, next: SlidePage?) -> SlideNotes? {
+        let points = AnswerPoints.split(page.notes, limit: 60)
+        guard points.reduce(0, { $0 + $1.count }) >= 12 else { return nil }
+        return SlideNotes(points: points, transition: next?.title ?? "", isScript: true)
     }
 
     public static func prompt(page: SlidePage, previous: String?, next: String?, excerpts: [ContextExcerpt], mode: SessionMode, preferences: String) -> (system: String, user: String) {
@@ -233,7 +350,8 @@ public enum AnswerPoints {
             current = ""
         }
         var inCode = false
-        for line in answer.components(separatedBy: .newlines) {
+        // The meaning written under each sentence is read, not said.
+        for line in BilingualAnswer.spoken(answer).components(separatedBy: .newlines) {
             if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") { inCode.toggle(); flush(); continue }
             if inCode { continue }
             let text = line.trimmingCharacters(in: .whitespaces).drop { "-•*·#> ".contains($0) }
@@ -255,9 +373,27 @@ public enum AnswerPoints {
         text.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "`", with: "").trimmingCharacters(in: .whitespaces)
     }
 
-    /// Without the model: most of the point's character pairs appear in the speech.
+    /// Without the model: most of what the point is made of was said.
+    ///
+    /// Words for English, character pairs for Chinese. The short English words ("the",
+    /// "of", "and") are in every sentence, so when a point has longer ones only those
+    /// count; letter pairs, used before, made any English sentence look said after half
+    /// a minute of talking.
     public static func heuristicCovered(_ point: String, speech: String) -> Bool {
-        TextSimilarity.containment(point, in: speech) >= 0.5
+        heuristicCovered(point, said: TextSimilarity.terms(speech))
+    }
+
+    public static func heuristicCovered(_ point: String, said: Set<String>) -> Bool {
+        let wanted = contentTerms(point)
+        guard !wanted.isEmpty else { return false }
+        return Double(wanted.intersection(said).count) / Double(wanted.count) >= 0.5
+    }
+
+    /// The terms of a sentence that carry it: without the short English words when there are longer ones.
+    static func contentTerms(_ text: String) -> Set<String> {
+        let terms = TextSimilarity.terms(text)
+        let content = terms.filter { $0.count >= 4 || ($0.unicodeScalars.first?.value ?? 0) >= 0x2E80 }
+        return content.count >= 3 ? content : terms
     }
 
     /// Index of the first point not yet said.

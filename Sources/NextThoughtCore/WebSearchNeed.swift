@@ -64,10 +64,26 @@ public enum WebSearchNeed {
         ("目前我们团队用的是微服务架构，你怎么看", false),
     ]
 
+    /// A word of Latin letters counts when it stands on its own: "I was wondering" is
+    /// not about who "won". Chinese has no word breaks, so those are found anywhere.
+    static func mentions(_ word: String, in text: String) -> Bool {
+        guard word.unicodeScalars.allSatisfy({ $0.isASCII }) else { return text.contains(word) }
+        var from = text.startIndex
+        while let range = text.range(of: word, range: from..<text.endIndex) {
+            let before = range.lowerBound == text.startIndex ? nil : text[text.index(before: range.lowerBound)]
+            let letter = { (c: Character?) in c.map { $0.isASCII && ($0.isLetter || $0.isNumber) } ?? false }
+            // "launches" and "released" are still the word; "wondering" is another one.
+            let ending = String(text[range.upperBound...].prefix { letter($0) })
+            if !letter(before), ["", "s", "es", "d", "ed"].contains(ending) { return true }
+            from = range.upperBound
+        }
+        return false
+    }
+
     public static func assess(_ question: String, now: Date = Date()) -> WebSearchAssessment {
         let text = question.lowercased()
-        let times = timeWords.filter { text.contains($0) }
-        let topics = freshTopics.filter { text.contains($0) }
+        let times = timeWords.filter { mentions($0, in: text) }
+        let topics = freshTopics.filter { mentions($0, in: text) }
         let strongTime = times.contains { !weakTimeWords.contains($0) }
         let year = Calendar(identifier: .gregorian).component(.year, from: now)
         let thisYear = text.contains(String(year))

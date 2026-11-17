@@ -19,7 +19,13 @@ struct SessionDetail: Equatable {
     var effectiveNotes: StructuredNotes? {
         var result = userContent.editedNotes ?? notes
         result?.corrections = userContent.corrections(generated: notes?.corrections ?? [], lines: lines)
-        return result
+        // Voices named after the notes were written: the notes read with the names at once.
+        return result?.named(speakerNames)
+    }
+
+    /// Speaker number → the name the user gave that voice.
+    var speakerNames: [Int: String] {
+        SpeakerLabels.names(meta.voiceNames, lines: lines, meVoices: Set(meta.meVoices ?? []))
     }
 
     var effectiveLines: [SessionTranscriptLine] {
@@ -37,6 +43,8 @@ struct SessionDetail: Equatable {
             result.markdown = NotesMarkdown.render(edited, title: meta.displayTitle, facts: "")
         } else if let markdown = userContent.editedMarkdown {
             result.markdown = markdown
+        } else {
+            result.markdown = SpeakerLabels.naming(result.markdown, names: speakerNames)
         }
         return result
     }

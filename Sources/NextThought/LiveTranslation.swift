@@ -107,7 +107,13 @@ final class LiveTranslationCoordinator {
         }
     }
 
-    func setEnabled(_ enabled: Bool) {
+    /// What the user chose with the switch; nil until they touch it. Untouched, the
+    /// interpretation turns itself on when the other side is heard speaking English.
+    @ObservationIgnored private var choice = UserDefaults.standard.object(forKey: "liveTranslation") as? Bool
+    @ObservationIgnored private var checkedForeign = false
+
+    func setEnabled(_ enabled: Bool, remember: Bool = true) {
+        if remember { choice = enabled; UserDefaults.standard.set(enabled, forKey: "liveTranslation") }
         guard isEnabled != enabled else { return }
         isEnabled = enabled
         if enabled {
@@ -125,8 +131,32 @@ final class LiveTranslationCoordinator {
         }
     }
 
+    /// The other side speaks English and nobody chose: a reader of Chinese gets the
+    /// meaning without looking for a switch in the middle of a question. Only with the
+    /// language packs already on this Mac, so no download sheet opens during a meeting.
+    private func turnOnForForeignSpeech(_ source: CaptureSource, _ text: String) {
+        guard !isEnabled, choice == nil, !checkedForeign, source == .system,
+              Locale.preferredLanguages.first?.hasPrefix("zh") == true,
+              TranslationDirection.detect(in: text) == .englishToChinese,
+              text.split(whereSeparator: { $0 == " " }).count >= 4 else { return }
+        guard #available(macOS 15.0, *) else { return }
+        checkedForeign = true
+        Task { [weak self] in
+            let availability = LanguageAvailability()
+            let english = TranslationDirection.englishToChinese, chinese = TranslationDirection.chineseToEnglish
+            let there = await availability.status(from: english.sourceLanguage, to: english.targetLanguage) == .installed
+            let back = await availability.status(from: chinese.sourceLanguage, to: chinese.targetLanguage) == .installed
+            Diagnostics.record("translation.auto", ["installed": there && back])
+            guard let self, there, back, self.choice == nil, AppState.shared.isRunning else { return }
+            self.setEnabled(true, remember: false)
+        }
+    }
+
     func beginMeeting() {
         meetingID = UUID()
+        checkedForeign = false
+        // The choice of the last meeting holds for this one.
+        if choice == true { setEnabled(true, remember: false) }
         clearPartial(.system)
         clearPartial(.microphone)
         if isEnabled { status = readyDirections.count == TranslationDirection.allCases.count ? "自动识别 · 中英互译" : "正在准备中英互译…" }
@@ -164,6 +194,7 @@ final class LiveTranslationCoordinator {
     }
 
     func submitPartial(_ source: CaptureSource, text: String) {
+        turnOnForForeignSpeech(source, text)
         guard isEnabled else { return }
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { clearPartial(source); return }
@@ -179,6 +210,7 @@ final class LiveTranslationCoordinator {
     }
 
     func submitFinal(_ source: CaptureSource, text: String, entryID: UUID, sessionID: UUID?) {
+        turnOnForForeignSpeech(source, text)
         partialTasks[source]?.cancel()
         partialTasks[source] = nil
         partialTaskIDs[source] = nil

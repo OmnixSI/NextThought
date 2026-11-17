@@ -71,3 +71,5 @@ grouping rules are adapted from cicada at commit
 f11cc1354e7f1c04d831a783750b1c62c9ba3ef8 (Apache-2.0),
 https://github.com/wquguru/cicada. The full upstream license is shipped at
 licenses/cicada/LICENSE; the adapted conversion and grouping code is identified here.
+The shape of the meeting notes (short points grouped by topic, capped lists, open questions
+kept few) follows the rules cicada gives its notes model; the prompt text is NextThought's own.

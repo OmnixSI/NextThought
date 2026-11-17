@@ -156,3 +156,51 @@ struct SessionExportTests {
         #expect(markdown.contains("王小明确认预发布验证从周五开始。"))
     }
 }
+
+@Suite struct NotesShapeTests {
+    private func item(_ text: String, _ topic: String? = nil) -> NotesItem { NotesItem(text: text, topic: topic) }
+
+    @Test func markdownIsSavedAsMd() {
+        #expect(SessionExportFormat.markdown.fileExtension == "md")
+        #expect(SessionExportFormat.docx.fileExtension == "docx")
+        #expect(SessionExportFormat.srt.fileExtension == "srt")
+    }
+
+    @Test func pointsOfOneTopicSitTogether() {
+        let tidy = NotesShape.tidy([item("a1", "上线顺序"), item("b1", "资金安排"), item("a2", "上线顺序："), item("b2", " 资金安排")],
+                                   kind: .items, isGap: false)
+        #expect(tidy.map(\.text) == ["a1", "a2", "b1", "b2"])
+        let groups = NotesShape.groups(tidy)
+        #expect(groups.map(\.topic) == ["上线顺序", "资金安排"])
+        #expect(groups.map(\.items.count) == [2, 2])
+    }
+
+    @Test func aListWithoutRealTopicsStaysFlat() {
+        // One topic for everything, or topics on some items only, is no grouping.
+        #expect(NotesShape.tidy([item("a", "会议"), item("b", "会议")], kind: .items, isGap: false).allSatisfy { $0.topic == nil })
+        #expect(NotesShape.tidy([item("a", "x"), item("b"), item("c", "y")], kind: .items, isGap: false).allSatisfy { $0.topic == nil })
+    }
+
+    @Test func openQuestionsDoNotBuryTheDecisions() {
+        let many = (1...12).map { item("未决 \($0)") }
+        #expect(NotesShape.tidy(many, kind: .items, isGap: true).count == NotesShape.maximumGaps)
+        #expect(NotesShape.tidy((1...30).map { item("要点 \($0)") }, kind: .items, isGap: false).count == NotesShape.maximumPoints)
+        // Action items and question replays are things that happened: all kept.
+        #expect(NotesShape.tidy(many, kind: .actions, isGap: false).count == 12)
+    }
+
+    @Test func topicsShowAsLabelsInMarkdown() {
+        let section = NotesSectionResult(id: "points", title: "要点", kind: .items,
+                                         items: [NotesItem(text: "先上线 SaaS", time: "12:19", topic: "上线顺序"), NotesItem(text: "收入先投入研发", topic: "资金安排")])
+        #expect(NotesMarkdown.lines(section, english: false) == ["**上线顺序**", "", "- 先上线 SaaS [12:19]", "", "**资金安排**", "", "- 收入先投入研发"])
+        let flat = NotesSectionResult(id: "points", title: "要点", kind: .items, items: [NotesItem(text: "一条")])
+        #expect(NotesMarkdown.lines(flat, english: false) == ["- 一条"])
+    }
+
+    @Test func thePromptAsksForShortGroupedNotes() {
+        let prompt = NotesPrompt.organizeSystem(template: .builtIn(.general), english: false, meetingDate: Date(timeIntervalSince1970: 1_794_000_000), inPerson: false)
+        #expect(prompt.contains("topic"))
+        #expect(prompt.contains("最多 5 条"))
+        #expect(!prompt.contains("详细"))
+    }
+}

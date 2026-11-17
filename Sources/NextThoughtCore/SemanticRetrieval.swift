@@ -48,9 +48,9 @@ public enum ContextFingerprint {
 ///
 /// The same bounds as the lexical index: 900 characters per chunk with 120
 /// characters of overlap, so a sentence that straddles two chunks is still
-/// found by both.
+/// found by both. Short neighbouring paragraphs share a chunk.
 public enum ContextChunker {
-    public static let version = "2-heading-table"
+    public static let version = "3-merged-small"
     public static let chunkCharacters = 900
     public static let overlapCharacters = 120
     public static func chunks(documents: [ContextDocument]) -> [ContextChunk] {
@@ -59,7 +59,7 @@ public enum ContextChunker {
             let blocks = document.content?.blocks ?? document.pages.enumerated().flatMap { offset, text in
                 DocumentStructure.parse(text, locator: .init(section: offset + 1))
             }
-            for block in blocks where block.kind != "heading" {
+            for block in merged(blocks.filter { $0.kind != "heading" }) {
                 for (part, text) in DocumentStructure.pieces(block, target: chunkCharacters).enumerated() {
                     let path = ([document.name] + block.locator.headingPath).joined(separator: " > ")
                     let body = path + "\n" + text
@@ -70,6 +70,31 @@ public enum ContextChunker {
                 }
             }
         }
+        return result
+    }
+
+    /// Short paragraphs of one place (the same page or slide, under the same heading) as
+    /// one block, up to a chunk's size.
+    ///
+    /// A slide is a dozen text boxes of a few words each. One chunk per box means "Frozen
+    /// LLM" is searched, and embedded, on its own: hundreds of vectors that match nothing
+    /// and cost a second each. Together the boxes say what the slide says. Tables, code
+    /// and formulas stay whole, and long paragraphs stay their own chunks.
+    static func merged(_ blocks: [DocumentBlock]) -> [DocumentBlock] {
+        var result: [DocumentBlock] = []
+        var run: [DocumentBlock] = []
+        var length = 0
+        func flush() {
+            guard let first = run.first else { return }
+            result.append(run.count == 1 ? first : DocumentBlock(id: first.id, kind: "paragraph", markdown: run.map(\.markdown).joined(separator: "\n"), locator: first.locator))
+            run = []; length = 0
+        }
+        for block in blocks {
+            guard block.kind == "paragraph", block.markdown.count < chunkCharacters / 2 else { flush(); result.append(block); continue }
+            if let first = run.first, first.locator != block.locator || length + block.markdown.count + 1 > chunkCharacters { flush() }
+            run.append(block); length += block.markdown.count + 1
+        }
+        flush()
         return result
     }
 }

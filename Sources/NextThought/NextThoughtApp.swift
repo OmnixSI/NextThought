@@ -71,6 +71,48 @@ enum MainWindowLayout {
             && window.contentViewController != nil && window.styleMask.contains(.titled)
     }
 
+    /// The page of the app itself, as SwiftUI makes it for the window group (not a review
+    /// sheet's window or any other titled window of ours).
+    static func isPage(_ window: NSWindow) -> Bool {
+        isMainWindow(window) && (String(describing: type(of: window)).contains("AppKitWindow")
+            || window.identifier?.rawValue.contains("AppWindow") == true)
+    }
+
+    /// Pages the user closed. AppKit keeps a closed window in `NSApp.windows` for a
+    /// while, and SwiftUI keeps it for good: ordering "every main window" front brought a
+    /// closed page back next to the one in use.
+    static let closed = NSHashTable<NSWindow>.weakObjects()
+
+    /// The page that is open: on screen or minimized, or taken off screen by the live
+    /// window mode during a meeting.
+    static var openPage: NSWindow? {
+        let hiddenByMode = AppState.shared.liveWindow.mode != .notes
+        return NSApp.windows.first { isPage($0) && !closed.contains($0) && ($0.isVisible || $0.isMiniaturized || hiddenByMode) }
+    }
+
+    /// The app has one page. A second one that appears (a reopen the system answered
+    /// with a new window, a page restored next to the one in use) is closed again and
+    /// the first comes forward; pages nobody can see are put away for good.
+    static func keepOnePage(_ window: NSWindow) {
+        guard isPage(window) else { return }
+        closed.remove(window)
+        let others = NSApp.windows.filter { $0 !== window && isPage($0) && !closed.contains($0) }
+        guard !others.isEmpty else { return }
+        let hiddenByMode = AppState.shared.liveWindow.mode != .notes
+        if let first = others.first(where: { $0.isVisible || $0.isMiniaturized || hiddenByMode }) {
+            Diagnostics.record("window.duplicate_closed")
+            DispatchQueue.main.async {
+                window.close()
+                if hiddenByMode { AppState.shared.liveWindow.set(.notes) }
+                if first.isMiniaturized { first.deminiaturize(nil) }
+                first.makeKeyAndOrderFront(nil)
+            }
+        } else {
+            // Left behind off screen with nothing to bring them back.
+            for stale in others { stale.close() }
+        }
+    }
+
     /// Styles a main window once and gives it the ideal frame.
     static func configure(_ window: NSWindow) {
         guard isMainWindow(window), configured.insert(ObjectIdentifier(window)).inserted else { return }
@@ -132,7 +174,7 @@ enum MainWindowLayout {
 
     /// Shows the main window and activates the app.
     static func bringToFront() {
-        let window = NSApp.windows.first(where: isMainWindow)
+        let window = openPage ?? NSApp.windows.first { isMainWindow($0) && !closed.contains($0) } ?? NSApp.windows.first(where: isMainWindow)
         if window?.isMiniaturized == true { window?.deminiaturize(nil) }
         // Hands-on walkthroughs must never take focus from whatever the person is doing.
         if AppEnvironment.values["NEXTTHOUGHT_DEMO_STAGE"] == "1" { window?.orderFront(nil); return }
@@ -225,8 +267,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// mode brings the page back (and nothing else opens a second window).
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         let live = AppState.shared.liveWindow
-        guard live.mode != .notes else { return true }
-        live.set(.notes)
+        if live.mode != .notes { live.set(.notes); return false }
+        // A page that is minimized, behind other apps or on another display comes
+        // forward. Only with no page at all (it was closed) is a new one made.
+        guard let page = MainWindowLayout.openPage else { return true }
+        if page.isMiniaturized { page.deminiaturize(nil) }
+        page.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
         return false
     }
 
@@ -255,7 +302,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             MainActor.assumeIsolated {
                 MainWindowLayout.configure(window)
                 if MainWindowLayout.isMainWindow(window) { window.delegate = self }
+                MainWindowLayout.keepOnePage(window)
             }
+        }
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { note in
+            guard let window = note.object as? NSWindow else { return }
+            MainActor.assumeIsolated { if MainWindowLayout.isMainWindow(window) { MainWindowLayout.closed.add(window) } }
         }
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: NSApp, queue: .main) { _ in
             MainActor.assumeIsolated { MainWindowLayout.refreshLevels() }

@@ -43,7 +43,31 @@ struct QuickSettingsPanel: View {
                 Text(verbatim: PresenterMode.shared.summary)
                     .font(Typo.caption).foregroundStyle(Ink.secondary)
                     .padding(.bottom, Space.s1)
+                if PresenterMode.shared.isEnabled {
+                    Toggle("讲的时候显示这一页的讲稿", isOn: Binding(get: { PresenterMode.shared.showsSlideNotes },
+                                                         set: { PresenterMode.shared.showsSlideNotes = $0 }))
+                        .frame(minHeight: 34)
+                        .help("用 PowerPoint 自带的演讲者备注时关掉：提词岛只在被提问时展开")
+                        .accessibilityIdentifier("quickSettings.presenterNotes")
+                }
             }
+            HStack {
+                Text("回答语言")
+                Spacer()
+                Picker("回答语言", selection: $state.answerLanguage) {
+                    Text("跟随问题").tag("auto")
+                    Text("中文").tag("zh")
+                    Text("English").tag("en")
+                }
+                .labelsHidden().pickerStyle(.segmented).frame(width: 190)
+                .accessibilityIdentifier("quickSettings.answerLanguage")
+            }
+            .frame(minHeight: 34)
+            .help("英文答辩或面试选 English：不管问题听成什么语言，回答都用英文")
+            Toggle("英文回答附中文对照", isOn: $state.answerGloss)
+                .frame(minHeight: 34)
+                .help("回答上方用中文写对方问了什么，每句英文下面有中文意思；只帮你理解，不用念")
+                .accessibilityIdentifier("quickSettings.answerGloss")
             Toggle("临场教练", isOn: $coach.isEnabled).frame(minHeight: 34)
             VStack(alignment: .leading, spacing: 0) {
                 Toggle("留意眼神", isOn: $coach.watchesGaze)

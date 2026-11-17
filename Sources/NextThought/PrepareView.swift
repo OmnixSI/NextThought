@@ -876,8 +876,11 @@ private struct FileRow: View {
             Spacer(minLength: Space.s2)
             status
           }
-          if [.waiting, .warning, .failed, .paused].contains(job.stage), !job.message.isEmpty {
-              Text(LocalizedStringKey(job.message)).font(Typo.caption)
+          if let note {
+              Text(verbatim: note).font(Typo.caption).foregroundStyle(Ink.secondary)
+                  .fixedSize(horizontal: false, vertical: true)
+          } else if [.waiting, .warning, .failed, .paused].contains(job.stage), !job.message.isEmpty {
+              Text(LocalizedStringKey(job.stage == .warning ? DocumentNotice.warnings(in: lines).joined(separator: "\n") : job.message)).font(Typo.caption)
                   .foregroundStyle(job.stage == .paused ? Ink.secondary : Ink.caution)
                   .fixedSize(horizontal: false, vertical: true)
           }
@@ -896,10 +899,26 @@ private struct FileRow: View {
         .padding(.horizontal, Space.s2).padding(.vertical, Space.s3)
     }
 
+    private var lines: [String] { job.message.split(separator: "\n").map(String.init) }
+
+    /// Read in full, with nothing to check: also a file whose only remarks are about
+    /// pictures that were left unread.
+    private var isComplete: Bool {
+        job.stage == .ready || (job.stage == .warning && DocumentNotice.warnings(in: lines).isEmpty)
+    }
+
+    /// What was left unread, said quietly under a file that is complete.
+    private var note: String? { isComplete ? DocumentNotice.note(for: lines) : nil }
+
     @ViewBuilder private var status: some View {
         switch job.stage {
-        case .ready:
-            Label("文字已就绪", systemImage: "checkmark").font(Typo.caption).foregroundStyle(Ink.ready)
+        case _ where isComplete:
+            // "文字已就绪" alone left it open whether the vectors were made as well.
+            if state.semanticRetrievalEnabled, !job.message.contains("语义查找未启用") {
+                Label("已就绪 · 含语义索引", systemImage: "checkmark").font(Typo.caption).foregroundStyle(Ink.ready)
+            } else {
+                Label("文字已就绪", systemImage: "checkmark").font(Typo.caption).foregroundStyle(Ink.ready)
+            }
         case .warning:
             Label("文字可用 · 需核对", systemImage: "exclamationmark.triangle").font(Typo.caption).foregroundStyle(Ink.caution)
         case .embedding:
@@ -918,7 +937,11 @@ private struct FileRow: View {
                 Button("重试") { state.documentPreparation.retry(job.id) }.buttonStyle(GhostButtonStyle(height: 24, horizontalPadding: 6))
             }
         default:
-            Text("读取中").font(Typo.caption).foregroundStyle(Ink.secondary)
+            if state.documentPreparation.textReady.contains(job.id) {
+                Text("文字已可用，正在读图片").font(Typo.caption).foregroundStyle(Ink.secondary)
+            } else {
+                Text("读取中").font(Typo.caption).foregroundStyle(Ink.secondary)
+            }
         }
     }
 

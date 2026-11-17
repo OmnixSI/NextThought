@@ -1279,9 +1279,9 @@ private struct WorkspaceDocumentsTab: View {
                         }.buttonStyle(.plain).help("对照原件与提取内容")
                         Text("\(document.pages.count) 块 · \(document.characterCount) 字符").font(Typo.caption.monospacedDigit()).foregroundStyle(Ink.secondary)
                     }
-                    if let content = document.content, !content.warnings.isEmpty {
+                    if let content = document.content, !DocumentNotice.warnings(in: content.warnings).isEmpty {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Ink.caution)
-                            .help(content.warnings.joined(separator: "\n"))
+                            .help(DocumentNotice.warnings(in: content.warnings).joined(separator: "\n"))
                         Button("需要核对") { reviewingDocument = document }.buttonStyle(.plain).font(Typo.caption).foregroundStyle(Ink.caution)
                     }
                     if let format = document.sourceFormat {

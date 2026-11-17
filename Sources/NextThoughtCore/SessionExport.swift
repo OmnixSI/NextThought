@@ -8,7 +8,9 @@ public enum SessionExportFormat: String, CaseIterable, Sendable, Identifiable {
     case vtt
 
     public var id: String { rawValue }
-    public var fileExtension: String { rawValue }
+    /// The extension files are saved with. Markdown is `.md`, the one editors and
+    /// previewers open; the case name is not an extension.
+    public var fileExtension: String { self == .markdown ? "md" : rawValue }
     public var title: String {
         switch self {
         case .markdown: String(localized: "Markdown")

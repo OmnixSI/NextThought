@@ -11,9 +11,30 @@ enum GlossaryScope: Hashable {
 /// steers the model's wording, and widens searches to the wrong spellings.
 @MainActor
 extension AppState {
-    /// The global table plus the series' own table.
+    /// The global table plus the series' own table, and after them the terms found in the
+    /// series' materials: hotwords and spellings without anyone typing them in.
     func effectiveGlossary(for workspace: Workspace? = nil) -> Glossary {
-        Glossary.layered(global: GlossaryStore.shared.glossary, series: (workspace ?? activeWorkspace).glossary)
+        let workspace = workspace ?? activeWorkspace
+        return Self.adding(materialTerms(of: workspace), to: Glossary.layered(global: GlossaryStore.shared.glossary, series: workspace.glossary))
+    }
+
+    /// Terms of a series' enabled materials, worked out once per set of materials.
+    func materialTerms(of workspace: Workspace) -> [String] {
+        let documents = workspace.documents.filter(\.enabled)
+        guard !documents.isEmpty else { return [] }
+        let signature = documents.map { $0.id.uuidString + String($0.characterCount) }.joined(separator: "|")
+        if let cached = MaterialTermsCache.entries[workspace.id], cached.signature == signature { return cached.terms }
+        let terms = MaterialTerms.extract(from: documents.flatMap(\.pages))
+        MaterialTermsCache.entries[workspace.id] = (signature, terms)
+        return terms
+    }
+
+    private static func adding(_ terms: [String], to glossary: Glossary) -> Glossary {
+        guard !terms.isEmpty else { return glossary }
+        let known = Set(glossary.entries.map { Glossary.strictKey($0.canonical) })
+        var result = glossary
+        result.entries += terms.filter { !known.contains(Glossary.strictKey($0)) }.map { GlossaryEntry(canonical: $0) }
+        return result
     }
 
     /// Hotwords for the local recognizer: the user's “专业词” followed by the glossary's canonical spellings.
@@ -31,7 +52,8 @@ extension AppState {
     /// The table for a finished meeting: the global one plus the meeting's own series (never the
     /// series that happens to be active now).
     func glossaryForNotes(workspace: Workspace?) -> Glossary {
-        Glossary.layered(global: GlossaryStore.shared.glossary, series: workspace?.glossary)
+        let table = Glossary.layered(global: GlossaryStore.shared.glossary, series: workspace?.glossary)
+        return workspace.map { Self.adding(materialTerms(of: $0), to: table) } ?? table
     }
 
     /// Appended to the notes prompts: the glossary and how to use it. Empty without a glossary.
@@ -181,4 +203,10 @@ extension GlossarySearch {
         if text.localizedCaseInsensitiveContains(query) { return GlossarySearchHit(form: query, isMisheard: false) }
         return firstMatch(in: text)
     }
+}
+
+/// Material terms per series, keyed by which materials they came from.
+@MainActor
+enum MaterialTermsCache {
+    static var entries: [UUID: (signature: String, terms: [String])] = [:]
 }

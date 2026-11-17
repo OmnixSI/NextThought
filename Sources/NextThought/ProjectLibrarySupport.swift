@@ -45,11 +45,15 @@ struct MaterialReviewSheet: View {
                 Spacer()
                 Button("完成") { dismiss() }.keyboardShortcut(.cancelAction).buttonStyle(ChipButtonStyle())
             }
-            if let warnings = document.content?.warnings, !warnings.isEmpty {
+            let warnings = DocumentNotice.warnings(in: document.content?.warnings ?? [])
+            if !warnings.isEmpty {
                 VStack(alignment: .leading, spacing: 5) {
                     Label("这份资料需要核对", systemImage: "exclamationmark.triangle").font(Typo.label)
                     ForEach(Array(warnings.enumerated()), id: \.offset) { _, warning in Text(warning).font(Typo.body).textSelection(.enabled) }
                 }.foregroundStyle(Ink.caution).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Ink.sunken, in: RoundedRectangle(cornerRadius: 8))
+            }
+            if let note = DocumentNotice.note(for: document.content?.warnings ?? []) {
+                Text(verbatim: note).font(Typo.caption).foregroundStyle(Ink.secondary)
             }
             HSplitView {
                 VStack(alignment: .leading, spacing: 10) {
