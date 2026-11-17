@@ -108,3 +108,8 @@ GitHub Actions 因账户付款或额度问题无法启动任务，经用户明�
 ## v3.1.0 本机发布
 
 GitHub Actions 仍无法启动任务，v3.1.0 按 v3.0.0 的方式在本机构建并发布，签名沿用同一正式发布身份。发布源提交 `e5d8b32032a1c72f38e10437234631b540b55622`，[v3.1.0](https://github.com/OmnixSI/NextThought/releases/tag/v3.1.0) 于 2026-11-13T03:37:22Z 发布并设为最新版，build 3100。发布前 546 项测试通过；发布二进制 12 组自检全部通过；重新下载的全部资产校验和、DMG、应用严格签名、版本与更新清单均一致。双屏演讲与跟随幻灯片只用演示数据和窗口列表验证过，未在真实演讲与屏幕共享中实测。回执见 [v3.1.0-release-verification.json](evidence/v3.1.0-release-verification.json)。
+
+## v3.3.0 本机发布
+
+GitHub Actions 仍无法启动任务，v3.3.0 按前两版的方式在本机构建并发布，签名沿用同一正式发布身份；v3.2.0 没有单独发布，改动并入这一版。发布源提交 `39dc6a09b4fa61dc8663718177de4cf863dbaa2e`，[v3.3.0](https://github.com/OmnixSI/NextThought/releases/tag/v3.3.0) 于 2026-11-17T14:35:33Z 发布并设为最新版，build 3304。发布前 592 项测试通过；发布二进制 17 组自检全部通过（在前两版的 12 组之外加了 fishbone-rendering、preparation、document-lifecycle、question-round、live-session-ui）；重新下载的全部资产校验和、DMG、应用严格签名、版本与更新清单均一致。提问环节用合成的评委语音和真实回答服务在安装好的应用里排练过一遍；之后改动的回答语言自动判断、同声传译自动开启、回答服务预热和钉住时的提词岛版式只有单元测试、离屏渲染和发布版自检；真人通话整场没有跑过。回执见 [v3.3.0-release-verification.json](evidence/v3.3.0-release-verification.json)。
+

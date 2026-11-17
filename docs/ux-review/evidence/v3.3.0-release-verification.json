@@ -1,0 +1,47 @@
+{
+  "version": "3.3.0",
+  "build": 3304,
+  "tag": "v3.3.0",
+  "sourceCommit": "39dc6a09b4fa61dc8663718177de4cf863dbaa2e",
+  "release": "https://github.com/OmnixSI/NextThought/releases/tag/v3.3.0",
+  "publishedAt": "2026-11-17T14:35:33Z",
+  "buildLocation": "local macOS; GitHub Actions could not start jobs (account billing)",
+  "swiftTestsPassed": 592,
+  "artifactSelftestsPassed": [
+    "data",
+    "session-export",
+    "session-backup-drain",
+    "session-edit-receipts",
+    "session-carry-context",
+    "meeting-content",
+    "archive-ux",
+    "large-pdf",
+    "structured-notes",
+    "source-integrity",
+    "fishbone-rendering",
+    "settings-navigation",
+    "document-setup",
+    "preparation",
+    "document-lifecycle",
+    "question-round",
+    "live-session-ui"
+  ],
+  "signatureMatchesPreviousRelease": true,
+  "designatedRequirement": "identifier \"com.nextthought.app\" and certificate root = H\"9751fdac3340e375a377f13a0f933115fe6642e7\"",
+  "downloadedChecksumsPassed": true,
+  "downloadedDMGVerified": true,
+  "downloadedAppStrictSignaturePassed": true,
+  "assets": {
+    "NextThought-3.3.0-macOS-arm64.dmg": "62e37b280d63f15a4f9376c30ffe67652c61c47a013e8516804add3b578384e3",
+    "NextThought-3.3.0-macOS-arm64.zip": "d737d42160b34445962503d8bbe519d98ae586117843fda85d8eac2888110a35",
+    "runtime-manifest.json": "d653e611715c53d2d5fa0de97b803ffcd00d0cf3891013dec83cd7f082531097",
+    "update.json": "cb6c1751505b5de65301cd870fda76fc3d7f3115b6e7fb6af94a83038f47b433"
+  },
+  "limitations": [
+    "The question round was rehearsed in the installed app with synthesized examiner speech and the real answer service, not in a call with people",
+    "Answer language detection, automatic live interpretation, the answer service warm-up and the pinned island layout were changed after that rehearsal: unit tests, an off-screen render and the artifact self-tests only",
+    "One process and one page were checked on the installed app through repeated opens and a second copy; a page closed and reopened by hand was not replayed",
+    "scripts/verify-companions.sh --require-ios was not run (Command Line Tools only); mobile code unchanged",
+    "Verify and Release workflows were disabled while tagging and re-enabled after verification"
+  ]
+}
