@@ -151,7 +151,7 @@ import Testing
     }
 
     @Test func aFooterOnEverySlideDoesNotDecideThePage() {
-        let footer = "Self-Evolving Site Priors for Cross-Band Beam Prediction · Hongming Yang · UTS 2026"
+        let footer = "Adaptive Beam Prediction Across Bands · A. Speaker · Example University 2026"
         let bodies = ["Scenario: a sub-6 GHz aided mmWave site with two co-sited arrays",
                       "Signals the base station keeps: fingerprints, probing beams and received pilots",
                       "Label-free adaptive prior learns the cross-band map from service pilots",
