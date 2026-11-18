@@ -1,22 +1,18 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.NotesView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,Auto,*" Margin="32,18,32,0">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="32,18,32,0">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-      <StackPanel Spacing="6">
+      <StackPanel Spacing="6" MaxWidth="720" HorizontalAlignment="Left">
         <TextBlock Text="会后纪要" Classes="display" />
         <TextBlock Text="按这场会议的转写整理总结、决定、待办和未决问题；原始文字不会被改写。"
-                   Classes="caption" />
+                   Classes="caption" TextWrapping="Wrap" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-        <CheckBox Content="结束后自动整理" IsChecked="{Binding Settings.AutoSummarize}" VerticalAlignment="Center" />
-        <ComboBox ItemsSource="{Binding TemplateChoices}" SelectedItem="{Binding SelectedTemplate}" MinWidth="160"
-                  ToolTip.Tip="纪要模板：章节由模板决定，模型只填内容" />
-        <Button Content="按模板整理" Command="{Binding SummarizeWithTemplateCommand}" />
         <Button Content="导出 Markdown" Command="{Binding ExportCommand}" />
         <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="36" Padding="18,0">
           <TextBlock Text="整理这场会议" Foreground="{DynamicResource OnInk}" />
@@ -24,8 +20,22 @@
       </StackPanel>
     </Grid>
 
+    <!-- 模板与校对：模板决定章节，校对只改名字与术语 -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,14,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <ComboBox ItemsSource="{Binding TemplateChoices}" SelectedItem="{Binding SelectedTemplate}" MinWidth="150"
+                  ToolTip.Tip="纪要模板：章节由模板决定，模型只填内容" />
+        <Button Content="按模板整理" Command="{Binding SummarizeWithTemplateCommand}" />
+        <Button Content="校对转写" Command="{Binding ProofreadTranscriptCommand}"
+                ToolTip.Tip="只更正名字与术语的识别错误，改动写入 corrections.json" />
+        <TextBlock Text="{Binding ProofreadStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                   IsVisible="{Binding HasProofreadStatus}" />
+      </StackPanel>
+      <CheckBox Grid.Column="1" Content="结束后自动整理" IsChecked="{Binding Settings.AutoSummarize}" VerticalAlignment="Center" />
+    </Grid>
+
     <!-- 纪要格式：文字纪要 / 因果鱼骨图 / 要点大纲 / 观点对照 -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
       <StackPanel Orientation="Horizontal" Spacing="6">
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsStandard, Mode=OneWay}"
@@ -54,7 +64,7 @@
       </StackPanel>
     </Grid>
 
-    <Border Grid.Row="2" Classes="card" Padding="0" Margin="0,12,0,16">
+    <Border Grid.Row="3" Classes="card" Padding="0" Margin="0,12,0,16">
       <Grid RowDefinitions="Auto,*">
         <Grid Margin="22,16,22,10" ColumnDefinitions="*,Auto">
           <StackPanel>

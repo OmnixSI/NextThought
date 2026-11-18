@@ -440,6 +440,7 @@ public partial class AppState : ObservableObject
         ExportCommand.NotifyCanExecuteChanged();
         GenerateStructuredNotesCommand.NotifyCanExecuteChanged();
         SummarizeWithTemplateCommand.NotifyCanExecuteChanged();
+        ProofreadTranscriptCommand.NotifyCanExecuteChanged();
         BackupCommand.NotifyCanExecuteChanged();
         RestoreCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged();
