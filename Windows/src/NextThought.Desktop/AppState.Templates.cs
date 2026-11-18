@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
 
@@ -73,6 +73,8 @@ public partial class AppState
                 SetStatus("这次回复不是可用的 JSON，可以重试；原来的纪要保持不变。", true);
                 return;
             }
+            // 「周四」「下周一前」按会议日期换成具体日期（模糊说法保持原样）。
+            doc = NotesDueDates.Apply(doc, meta.StartedAt);
             var markdown = NotesMarkdown.Render(doc);
             SummaryText = markdown;
             await Sessions.SaveSummaryAsync(meta, markdown, AnswerOptions(true).Model, cancellation.Token);

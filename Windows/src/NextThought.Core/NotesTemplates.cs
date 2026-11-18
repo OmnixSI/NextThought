@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 
 namespace NextThought.Core;
@@ -220,6 +220,8 @@ public sealed record NotesItem
     public string? Owner { get; init; }
     /// <summary>When it is due, as said ("周四").</summary>
     public string? Due { get; init; }
+    /// <summary>The due date when it could be worked out from the meeting date.</summary>
+    public DateTime? DueDate { get; init; }
     /// <summary>Questions: the gist of my answer.</summary>
     public string? Answer { get; init; }
     /// <summary>Questions: "good" or "improve".</summary>
@@ -372,6 +374,28 @@ public static class NotesMarkdown
             lines.Add("");
         }
         return string.Join('\n', lines).TrimEnd();
+    }
+}
+
+/// <summary>
+/// Turns "周四" / "下周一前" into a concrete date when the meeting date makes it possible (the
+/// due-date step of NotesVerifier.verify). Vague phrases stay as written.
+/// </summary>
+public static class NotesDueDates
+{
+    public static StructuredNotesDoc Apply(StructuredNotesDoc doc, DateTimeOffset meetingDate, bool english = false)
+    {
+        var sections = doc.Sections.Select(section => section with
+        {
+            Items = section.Items.Select(item =>
+            {
+                if (item.Due is not { Length: > 0 } due || item.DueDate is not null) return item;
+                return NotesDates.Resolve(due, meetingDate) is { } date
+                    ? item with { DueDate = date, Due = NotesDates.Format(date, english) }
+                    : item;
+            }).ToList()
+        }).ToList();
+        return doc with { Sections = sections };
     }
 }
 
