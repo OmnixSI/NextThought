@@ -30,6 +30,7 @@ public static class StartupOptions
     public static string? SeriesBriefingCheck { get; private set; }
     public static string? HistorySearchCheck { get; private set; }
     public static string? BackupManifestCheck { get; private set; }
+    public static string? MeetingPlanCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -98,6 +99,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--series-briefing-check=", StringComparison.OrdinalIgnoreCase)) SeriesBriefingCheck = argument["--series-briefing-check=".Length..];
             else if (argument.StartsWith("--history-search-check=", StringComparison.OrdinalIgnoreCase)) HistorySearchCheck = argument["--history-search-check=".Length..];
             else if (argument.StartsWith("--backup-manifest-check=", StringComparison.OrdinalIgnoreCase)) BackupManifestCheck = argument["--backup-manifest-check=".Length..];
+            else if (argument.StartsWith("--meeting-plan-check=", StringComparison.OrdinalIgnoreCase)) MeetingPlanCheck = argument["--meeting-plan-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)

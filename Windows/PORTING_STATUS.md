@@ -1,4 +1,19 @@
 
+# P6 会议携带与计划 · 0.54.0
+
+0.54.0 移植 `MeetingCarry.swift`（38 行）与 `MeetingPreparation.swift`（43 行）的可用部分，测试 495 → 502。
+
+- **MeetingCarry**：材料 / 复习 / 经验 / 转写四个开关；`WorkspaceSnapshot` 按开关过滤题库与经验，
+  `useKnowledge` 关闭时两者都清空；`Standard` 默认 材料+复习+经验、不要转写。
+- **MeetingPlan**：标题、模式、自定义类型与基础模式、携带选择、基线文档 id、上一场会议 id；
+  `EffectiveMode` 在自定义时回落到基础模式；`PreparedWorkspace` 只做值拷贝过滤，不改原系列。
+- **自检**：`--meeting-plan-check` 用自定义→学术模式、关闭题库复习生成计划，验证有效模式与过滤
+  （`qa\meeting-plan-0540\meeting-plan-check.json`）。
+- 7 项测试：默认开关、快照保留、独立关闭复习/经验、关闭知识、材料开关无效（无系列文档）、有效模式、计划不改原系列。
+- 未移植：系列文档列表（材料开关因此暂不生效）、风格继承与上一场转写附件的实际接线。
+
+统计：已移植 54 / 部分 16 / 基线 2 / 未移植 9。
+
 # P6 备份规则 · 0.53.0
 
 0.53.0 移植 `Backup.swift`（667 行）的备份规则部分，测试 486 → 495。

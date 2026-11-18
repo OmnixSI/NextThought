@@ -41,9 +41,9 @@
 | LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 已移植 | Core/LocalModelReuse.cs（按名字搜索、大小/哈希校验、原子复用；4 项测试） |
 | MaterialTerms.swift | 57 | 已移植 | Core/MaterialTerms.cs（3 项测试，含 9 个 IsTerm 用例） |
-| MeetingCarry.swift | 38 | 未移植 |  |
+| MeetingCarry.swift | 38 | 部分移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关与快照过滤；4 项测试。系列无文档列表，材料开关暂不生效） |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
-| MeetingPreparation.swift | 43 | 未移植 |  |
+| MeetingPreparation.swift | 43 | 部分移植 | Core/MeetingPreparation.cs（MeetingPlan 有效模式、携带选择与快照；3 项测试。风格/文档继承未移植） |
 | MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults（场景 → 纪要模板与实时模式；自定义类型未移植） |
 | NotesTemplates.swift | 873 | 部分移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/渲染/提示/校对/到期日） |
 | OnboardingFlow.swift | 55 | 已移植 | Core/OnboardingFlow.cs（步骤/可跳过/待办） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 54，部分移植 14，基线简化版 2，未移植 11。
+统计：已移植 54，部分移植 16，基线简化版 2，未移植 9。
 
-测试：`tests/NextThought.Core.Tests` 495 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 502 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 
