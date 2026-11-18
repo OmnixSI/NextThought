@@ -85,6 +85,22 @@ public static class DemoContent
     ]}
     """;
 
+    /// <summary>A frozen viewpoint matrix reply for the 观点对照 view.</summary>
+    public const string ViewpointsJson = """
+    {"topic": "连续刚构桥监测方案怎么落地", "parties": ["我", "导师"],
+     "issues": [
+       {"title": "支座刚度怎么定", "positions": [
+         {"party": "我", "text": "先做敏感性分析再定", "time": "07:10"},
+         {"party": "导师", "text": "按设计值先跑，再拿实测校核", "time": "08:02"}]},
+       {"title": "要不要补现场试验", "positions": [
+         {"party": "我", "text": "这周排不出时间", "time": "12:30"},
+         {"party": "导师", "text": "至少补一次静载", "time": "13:05"}]}
+     ],
+     "consensus": [{"text": "本周先跑 20 组仿真", "time": "15:40"}],
+     "disagreements": [{"text": "现场试验排期是否推迟到下周", "time": "16:20"}],
+     "owners": [{"who": "我", "task": "跑 20 组敏感性分析", "due": "周五", "time": "17:10"}]}
+    """;
+
     public const string Summary = """
         ## 结构组会 · 连续刚构桥监测
 

@@ -17,6 +17,7 @@ public static class StartupOptions
     public static string? HistoryFilter { get; private set; }
     public static string? HistoryQuery { get; private set; }
     public static NextThought.Core.MeetingMode? Scene { get; private set; }
+    public static NextThought.Core.NotesFormat? NotesFormat { get; private set; }
 
     public static void Parse(IReadOnlyList<string> args)
     {
@@ -28,6 +29,13 @@ public static class StartupOptions
             else if (argument is "--subtitles") Subtitles = true;
             else if (argument is "--companion") Companion = true;
             else if (argument is "--teleprompter") Teleprompter = true;
+            else if (argument.StartsWith("--notes-format=", StringComparison.OrdinalIgnoreCase))
+                NotesFormat = argument["--notes-format=".Length..].ToLowerInvariant() switch {
+                    "fishbone" => NextThought.Core.NotesFormat.Fishbone,
+                    "outline" => NextThought.Core.NotesFormat.Outline,
+                    "viewpoints" => NextThought.Core.NotesFormat.Viewpoints,
+                    _ => NextThought.Core.NotesFormat.Standard
+                };
             else if (argument.StartsWith("--scene=", StringComparison.OrdinalIgnoreCase)
                      && Enum.TryParse<NextThought.Core.MeetingMode>(argument["--scene=".Length..], true, out var scene)) Scene = scene;
             else if (argument.StartsWith("--history-filter=", StringComparison.OrdinalIgnoreCase)) HistoryFilter = argument["--history-filter=".Length..];

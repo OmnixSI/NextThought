@@ -134,11 +134,13 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private string structuredMarkdown = "";
     [ObservableProperty] private StructuredNotesPayload? structuredPayload;
     public bool HasFishboneDrawing => StructuredPayload?.Fishbone is { Categories.Count: > 0 };
+    public bool HasViewpointMatrix => StructuredPayload?.Viewpoints is { Issues.Count: > 0 } || StructuredPayload?.Viewpoints is { Consensus.Count: > 0 };
     /// <summary>The Markdown copy is only shown when there is no drawing to stand in for it.</summary>
-    public bool ShowStructuredMarkdown => HasStructuredNotes && !HasFishboneDrawing;
+    public bool ShowStructuredMarkdown => HasStructuredNotes && !HasFishboneDrawing && !HasViewpointMatrix;
     partial void OnStructuredPayloadChanged(StructuredNotesPayload? value)
     {
         OnPropertyChanged(nameof(HasFishboneDrawing));
+        OnPropertyChanged(nameof(HasViewpointMatrix));
         OnPropertyChanged(nameof(ShowStructuredMarkdown));
     }
     partial void OnStructuredMarkdownChanged(string value) => OnPropertyChanged(nameof(ShowStructuredMarkdown));
@@ -573,11 +575,14 @@ public partial class AppState : ObservableObject
         OnPropertyChanged(nameof(StatsText));
         ModelStatusText = "演示模式：未加载识别模型";
         var demoFishbone = StructuredNotesParser.Parse(DemoContent.FishboneJson, NotesFormat.Fishbone, fallbackTitle: "结构组会");
-        if (demoFishbone is not null)
+        var demoViewpoints = StructuredNotesParser.Parse(DemoContent.ViewpointsJson, NotesFormat.Viewpoints, fallbackTitle: "结构组会");
+        // The demo follows --notes-format, so each drawn format can be reviewed without a model.
+        var demoPayload = StartupOptions.NotesFormat == NotesFormat.Viewpoints ? demoViewpoints : demoFishbone;
+        if (demoPayload is not null)
         {
-            SelectedNotesFormat = NotesFormat.Fishbone;
-            StructuredPayload = demoFishbone;
-            StructuredMarkdown = StructuredNotesMarkdown.Render(demoFishbone);
+            SelectedNotesFormat = demoPayload.Format;
+            StructuredPayload = demoPayload;
+            StructuredMarkdown = StructuredNotesMarkdown.Render(demoPayload);
             OnPropertyChanged(nameof(HasStructuredNotes));
             OnPropertyChanged(nameof(NotesFormatIsStandard));
             OnPropertyChanged(nameof(NotesFormatIsFishbone));
