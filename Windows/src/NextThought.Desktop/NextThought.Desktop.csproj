@@ -9,7 +9,7 @@
     <RootNamespace>NextThought.Desktop</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <Product>NextThought</Product>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>

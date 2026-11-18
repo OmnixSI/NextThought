@@ -102,4 +102,38 @@ public sealed class MeetingCarryTests
         Assert.Equal("s1", plan.PreviousSessionId);
         Assert.Contains("doc-1", plan.BaselineDocumentIds);
     }
+
+    [Fact]
+    public void BaselineDocumentsFilterThePreparedMaterials()
+    {
+        var series = Series() with
+        {
+            DocumentIds = ["doc-1", "doc-2"],
+            Documents =
+            [
+                new ContextDocument { Id = "doc-1", Name = "简历" },
+                new ContextDocument { Id = "doc-2", Name = "新资料" }
+            ]
+        };
+        var plan = new MeetingPlan { BaselineDocumentIds = new HashSet<string> { "doc-1" } };
+        var prepared = plan.PreparedWorkspace(series);
+        Assert.Equal(["doc-1"], prepared.DocumentIds);
+        Assert.Equal(["简历"], prepared.Documents.Select(document => document.Name));
+        Assert.Equal(2, series.Documents.Count);
+    }
+
+    [Fact]
+    public void ThePreviousTranscriptIsAttachedOnlyWhenCarried()
+    {
+        var series = Series();
+        var transcript = new ContextDocument { Id = "transcript", Name = "上一场转写", Pages = ["原话"] };
+        var withTranscript = new MeetingPlan { Carry = MeetingCarry.Standard with { Transcript = true } }
+            .PreparedWorkspace(series, transcript);
+        Assert.Contains(withTranscript.Documents, document => document.Id == "transcript");
+        Assert.Contains("transcript", withTranscript.DocumentIds);
+
+        var without = new MeetingPlan().PreparedWorkspace(series, transcript);
+        Assert.DoesNotContain(without.Documents, document => document.Id == "transcript");
+        Assert.Empty(without.DocumentIds);
+    }
 }

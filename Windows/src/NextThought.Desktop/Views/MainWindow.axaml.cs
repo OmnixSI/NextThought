@@ -1836,6 +1836,26 @@ public partial class MainWindow : Window
         Check("workspace-documents", documentsSeries.DocumentsOf().Count == 2
                                      && documentsSeries.DocumentsOf(enabledOnly: true).Count == 1);
 
+        var prepSeries = new NextThought.Core.WorkspaceSeries("p", "系列", DateTimeOffset.UtcNow, [], [])
+        {
+            DocumentIds = ["doc-1", "doc-2"],
+            Documents =
+            [
+                new NextThought.Core.ContextDocument { Id = "doc-1", Name = "简历" },
+                new NextThought.Core.ContextDocument { Id = "doc-2", Name = "新资料" }
+            ]
+        };
+        var prepPlan = new NextThought.Core.MeetingPlan
+        {
+            BaselineDocumentIds = new HashSet<string> { "doc-1" },
+            Carry = NextThought.Core.MeetingCarry.Standard with { Transcript = true }
+        };
+        var prepResult = prepPlan.PreparedWorkspace(prepSeries,
+            new NextThought.Core.ContextDocument { Id = "transcript", Name = "上一场转写" });
+        Check("meeting-prepare", prepResult.Documents.Count == 2
+                                 && prepResult.Documents.Any(document => document.Id == "doc-1")
+                                 && prepResult.DocumentIds.Contains("transcript"));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

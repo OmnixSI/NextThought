@@ -41,9 +41,9 @@
 | LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 已移植 | Core/LocalModelReuse.cs（按名字搜索、大小/哈希校验、原子复用；4 项测试） |
 | MaterialTerms.swift | 57 | 已移植 | Core/MaterialTerms.cs（3 项测试，含 9 个 IsTerm 用例） |
-| MeetingCarry.swift | 38 | 部分移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关与快照过滤；5 项测试。系列已带资料 id，材料开关生效；上一场转写附件未建模） |
+| MeetingCarry.swift | 38 | 已移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关 + 基线资料过滤 + 快照；7 项测试） |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
-| MeetingPreparation.swift | 43 | 部分移植 | Core/MeetingPreparation.cs（MeetingPlan 有效模式、携带选择与快照；3 项测试。风格/文档继承未移植） |
+| MeetingPreparation.swift | 166 | 已移植 | Core/MeetingPreparation.cs（有效模式/自定义基准/携带选择/基线资料/上一场转写/快照；4 项测试） |
 | MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults + MeetingTypeGuesser.cs（场景默认、标题猜类型、系列基准标题/相似度/最佳匹配；19 项测试。自定义场景类型未移植） |
 | NotesTemplates.swift | 570 | 已移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/形状整理/渲染/提示/校对/到期日/转写校对） |
 | OnboardingFlow.swift | 55 | 已移植 | Core/OnboardingFlow.cs（步骤/可跳过/待办） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 71，部分移植 9，基线简化版 0，未移植 0。
+统计：已移植 73，部分移植 7，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、

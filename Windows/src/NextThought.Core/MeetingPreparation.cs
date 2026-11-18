@@ -2,8 +2,8 @@ namespace NextThought.Core;
 
 /// <summary>
 /// A single meeting's choices (port of MeetingPlan): applying them makes a value copy and never
-/// changes the reusable series. The Windows series does not carry its own document list or style,
-/// so only the carry selection and the effective mode are applied here yet.
+/// changes the reusable series. Materials are filtered to the baseline documents, and the previous
+/// meeting's transcript is attached when the carry selection asks for it.
 /// </summary>
 public sealed record MeetingPlan
 {
@@ -18,6 +18,14 @@ public sealed record MeetingPlan
     public MeetingMode EffectiveMode => Mode == MeetingMode.Custom ? CustomBaseMode : Mode;
 
     /// <summary>The series as this meeting may use it; the original series is untouched.</summary>
-    public WorkspaceSeries PreparedWorkspace(WorkspaceSeries series) =>
-        Carry.WorkspaceSnapshot(series, BaselineDocumentIds);
+    public WorkspaceSeries PreparedWorkspace(WorkspaceSeries series, ContextDocument? previousTranscript = null)
+    {
+        var prepared = Carry.WorkspaceSnapshot(series, BaselineDocumentIds);
+        if (!Carry.Transcript || previousTranscript is null) return prepared;
+        return prepared with
+        {
+            Documents = [.. prepared.Documents, previousTranscript],
+            DocumentIds = [.. prepared.DocumentIds, previousTranscript.Id]
+        };
+    }
 }

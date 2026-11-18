@@ -2,8 +2,7 @@ namespace NextThought.Core;
 
 /// <summary>
 /// What a follow-up meeting may use from its series and previous meeting (port of MeetingCarry).
-/// The Windows series carries lessons and the question bank but not per-series documents, so the
-/// materials flag has no effect here yet.
+/// Materials are the series documents, the previous transcript is attached by the meeting plan.
 /// </summary>
 public sealed record MeetingCarry
 {
@@ -25,7 +24,18 @@ public sealed record MeetingCarry
     public WorkspaceSeries WorkspaceSnapshot(WorkspaceSeries series, IReadOnlySet<string> baselineDocumentIds)
     {
         var workspace = series;
-        if (!Materials) workspace = workspace with { DocumentIds = [] };
+        if (!Materials)
+        {
+            workspace = workspace with { DocumentIds = [], Documents = [] };
+        }
+        else if (baselineDocumentIds.Count > 0)
+        {
+            workspace = workspace with
+            {
+                DocumentIds = series.DocumentIds.Where(baselineDocumentIds.Contains).ToList(),
+                Documents = series.Documents.Where(document => baselineDocumentIds.Contains(document.Id)).ToList()
+            };
+        }
         if (!series.UseKnowledge || !Review) workspace = workspace with { QuestionBank = [] };
         if (!series.UseKnowledge || !Lessons) workspace = workspace with { Lessons = [] };
         return workspace;
