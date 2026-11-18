@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using NextThought.Core;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -52,7 +53,7 @@ public class MarkdownText : ContentControl
     private void Rebuild()
     {
         var panel = new StackPanel { Spacing = 10 };
-        foreach (var block in ParseBlocks(Text ?? ""))
+        foreach (var block in ParseBlocks(LaTeXMath.Markdown(Text ?? "")))
         {
             panel.Children.Add(BuildBlock(block));
         }
