@@ -347,4 +347,17 @@
   <Style Selector="RadioButton.chip:checked /template/ ContentPresenter">
     <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
   </Style>
+
+  <!-- Scene chip on the home page: a quiet pill that hovers like a card. -->
+  <Style Selector="Button.scene">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,5" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="CornerRadius" Value="14" />
+  </Style>
+  <Style Selector="Button.scene:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Hover}" />
+  </Style>
 </Styles>

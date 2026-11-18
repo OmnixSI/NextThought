@@ -31,6 +31,11 @@ public partial class AppState : ObservableObject
     private DateTimeOffset lastMicrophoneSpeech;
     private AudioCaptureService? capture;
     private MeetingEndWatch? autoEnd;
+    private SpeakingCoach? coach;
+    private CoachSummaryAccumulator? coachSummary;
+    private int coachTicks;
+    private CoachNudge? lastNudge;
+    private DateTimeOffset lastNudgeAt;
     private DispatcherTimer? autoEndTimer;
     private bool sawSpeech;
     private DateTimeOffset? lastSpeechEnd;
@@ -123,6 +128,65 @@ public partial class AppState : ObservableObject
     public bool HistoryFilterHasSummary => HistoryFilter == "有纪要";
     public bool HistoryFilterUnfiled => HistoryFilter == "未整理";
 
+    // ---- 九个场景（Core ScenePreset 的界面映射） ----
+
+    [ObservableProperty] private MeetingMode selectedMode = MeetingMode.Meeting;
+
+    public IReadOnlyList<SceneChoice> Scenes { get; } =
+    [
+        new(MeetingMode.Interview, "面试", "被问、要答得清楚"),
+        new(MeetingMode.Academic, "汇报 / 答辩", "讲给别人听"),
+        new(MeetingMode.LabMeeting, "组会", "讲进展，听意见"),
+        new(MeetingMode.GroupProject, "小组作业", "分工与对齐"),
+        new(MeetingMode.Client, "客户沟通", "先听需求再回应"),
+        new(MeetingMode.Meeting, "工作会议", "结论与待办"),
+        new(MeetingMode.Lesson, "讲座 / 课程", "主要听，记重点"),
+        new(MeetingMode.Discussion, "小组讨论", "来回交换观点"),
+        new(MeetingMode.General, "通用", "什么都可以")
+    ];
+
+    public SceneChoice? SelectedScene
+    {
+        get => Scenes.FirstOrDefault(scene => scene.Mode == SelectedMode);
+        set { if (value is not null) SelectedMode = value.Mode; }
+    }
+
+    public string SceneTitle => SelectedScene?.Title ?? "通用";
+
+    /// <summary>The cue surface layout this scene asks for (key points vs. a script).</summary>
+    public CueStyle SceneCueStyle => ScenePreset.For(SelectedMode).CueStyle;
+
+    [RelayCommand]
+    private void SetScene(MeetingMode mode)
+    {
+        SelectedMode = mode;
+        OnPropertyChanged(nameof(SelectedScene));
+        OnSceneChanged();
+    }
+
+    private void OnSceneChanged()
+    {
+        OnPropertyChanged(nameof(SceneTitle));
+        OnPropertyChanged(nameof(SceneCueStyle));
+        OnPropertyChanged(nameof(SceneSummary));
+        OnPropertyChanged(nameof(IslandLines));
+        OnPropertyChanged(nameof(IslandHeadline));
+        OnPropertyChanged(nameof(IslandDetail));
+    }
+
+    /// <summary>What the picker says about the chosen scene.</summary>
+    public string SceneSummary => SelectedScene is { } scene
+        ? $"当前场景：{scene.Title} · {scene.Subtitle}" + (SceneCueStyle == CueStyle.Script ? " · 提词按句" : " · 提词按要点")
+        : "当前场景：通用";
+
+    /// <summary>Cue lines for the island: key points or a script, per the scene.</summary>
+    public IReadOnlyList<CueLine> IslandLines => string.IsNullOrWhiteSpace(PlainAnswer)
+        ? []
+        : CueScript.Lines(PlainAnswer, SceneCueStyle, 3);
+
+    public string IslandHeadline => IslandLines.Count > 0 ? IslandLines[0].Spoken : "";
+    public string IslandDetail => IslandLines.Count > 1 ? string.Join("　", IslandLines.Skip(1).Select(line => line.Spoken)) : "";
+
     [RelayCommand]
     private void SetHistoryFilter(string filter) => HistoryFilter = filter;
 
@@ -174,7 +238,13 @@ public partial class AppState : ObservableObject
     partial void OnSummarizingChanged(bool value) => RaiseBusy();
     partial void OnCurrentSessionChanged(SessionMeta? value) => OnPropertyChanged(nameof(StatsText));
     partial void OnLiveModeChanged(LiveWindowMode value) => OnPropertyChanged(nameof(LiveModeLabel));
-    partial void OnAnswerTextChanged(string value) => OnPropertyChanged(nameof(PlainAnswer));
+    partial void OnAnswerTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(PlainAnswer));
+        OnPropertyChanged(nameof(IslandLines));
+        OnPropertyChanged(nameof(IslandHeadline));
+        OnPropertyChanged(nameof(IslandDetail));
+    }
 
     /// <summary>Answer text without Markdown markers, for the single-line cue island.</summary>
     public string PlainAnswer => MarkdownPlain.Strip(AnswerText);
@@ -426,6 +496,7 @@ public partial class AppState : ObservableObject
     private SessionMeta NewMeta(AppSettings settings, string? title = null) => new()
     {
         Title = string.IsNullOrWhiteSpace(title ?? settings.LastMeetingTitle) ? "会议 " + DateTime.Now.ToString("MM-dd HH:mm") : (title ?? settings.LastMeetingTitle),
+        Mode = ModeKey(SelectedMode),
         AudioSource = settings.CaptureSystem && settings.CaptureProcessId > 0
             ? settings.CaptureMicrophone ? "process-tree+microphone" : "process-tree"
             : settings.CaptureSystem ? settings.CaptureMicrophone ? "system+microphone" : "system" : "microphone",
@@ -433,6 +504,13 @@ public partial class AppState : ObservableObject
         Recognizer = settings.LocalModel + (settings.SecondPass ? "+refine" : ""),
         AnswerModel = settings.Model
     };
+
+    /// <summary>SessionMode raw value as the Mac archive writes it (LabMeeting → "labMeeting").</summary>
+    private static string ModeKey(MeetingMode mode)
+    {
+        var name = mode.ToString();
+        return char.ToLowerInvariant(name[0]) + name[1..];
+    }
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     private async Task StartRecordingAsync()
@@ -600,6 +678,10 @@ public partial class AppState : ObservableObject
         AutoEndNotice = "";
         autoEndTimer?.Stop();
         autoEndTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        coach = new SpeakingCoach(ScenePreset.For(SelectedMode).Coaching);
+        coachSummary = new CoachSummaryAccumulator();
+        coachTicks = 0;
+        lastNudge = null;
         autoEndTimer.Tick += (_, _) => AutoEndTick();
         autoEndTimer.Start();
     }
@@ -609,6 +691,9 @@ public partial class AppState : ObservableObject
         autoEndTimer?.Stop();
         autoEndTimer = null;
         autoEnd = null;
+        coach = null;
+        coachSummary = null;
+        lastNudge = null;
         AutoEndNotice = "";
     }
 
@@ -621,7 +706,46 @@ public partial class AppState : ObservableObject
         lastSpeechEnd = lastSpeechEnd is { } previous && previous > end ? previous : end;
         autoEnd.Heard(DateTimeOffset.UtcNow);
         AutoEndNotice = "";
+        if (coach is not null && CurrentSession is { } session)
+        {
+            var start = Math.Max(0, ((line.StartedAt ?? line.Date) - session.StartedAt).TotalSeconds);
+            var finish = Math.Max(start, (end - session.StartedAt).TotalSeconds);
+            var segment = new SpokenSegment(line.Speaker != "remote", start, finish, line.Text);
+            coach.Ingest(segment);
+            coachSummary?.Ingest(segment);
+        }
     }
+
+    [ObservableProperty] private string coachHint = "";
+    public bool HasCoachHint => CoachHint.Length > 0;
+    partial void OnCoachHintChanged(string value) => OnPropertyChanged(nameof(HasCoachHint));
+
+    /// <summary>临场教练（Scene 里的 SpeakingCoach）：每 5 秒看一次语速、占比与独白时长。</summary>
+    private void CoachTick(DateTimeOffset now)
+    {
+        if (coach is null || CurrentSession is not { } session) return;
+        coachTicks++;
+        if (coachTicks % 5 != 0) return;
+        var snapshot = coach.Snapshot((now - session.StartedAt).TotalSeconds);
+        coachSummary?.Observe(snapshot);
+        if (snapshot.Nudge is not { } nudge) return;
+        if (lastNudge == nudge && (now - lastNudgeAt).TotalSeconds < 90) return;
+        lastNudge = nudge;
+        lastNudgeAt = now;
+        coachSummary?.Record(nudge);
+        CoachHint = nudge switch
+        {
+            CoachNudge.WrapUp => "说了很久了，收个尾，把话交回去。",
+            CoachNudge.SlowDown => "语速偏快，适当放慢并加停顿。",
+            CoachNudge.LetThemTalk => "这段时间你讲得偏多，留点空间给对方。",
+            CoachNudge.SpeakUp => "对方讲得比较多，可以主动补充一句。",
+            _ => ""
+        };
+        if (CoachHint.Length > 0) SetStatus(CoachHint);
+    }
+
+    [RelayCommand]
+    private void DismissCoach() => CoachHint = "";
 
     private int autoEndTicks;
 
@@ -630,6 +754,7 @@ public partial class AppState : ObservableObject
         if (!Recording || Stopping || autoEnd is null || CurrentSession is not { } meta) return;
         autoEndTicks++;
         var now = DateTimeOffset.UtcNow;
+        CoachTick(now);
         var settings = Settings.Build();
         var reason = autoEnd.Tick(now, sawSpeech, settings.MeetingAutoEndMode == "off");
         if (reason is not null || autoEndTicks % 15 == 0)

@@ -1,4 +1,4 @@
-namespace NextThought.Desktop;
+﻿namespace NextThought.Desktop;
 
 /// <summary>Command-line switches that make the interface inspectable without a live meeting.</summary>
 public static class StartupOptions
@@ -16,6 +16,7 @@ public static class StartupOptions
     public static string? ImportWave { get; private set; }
     public static string? HistoryFilter { get; private set; }
     public static string? HistoryQuery { get; private set; }
+    public static NextThought.Core.MeetingMode? Scene { get; private set; }
 
     public static void Parse(IReadOnlyList<string> args)
     {
@@ -27,6 +28,8 @@ public static class StartupOptions
             else if (argument is "--subtitles") Subtitles = true;
             else if (argument is "--companion") Companion = true;
             else if (argument is "--teleprompter") Teleprompter = true;
+            else if (argument.StartsWith("--scene=", StringComparison.OrdinalIgnoreCase)
+                     && Enum.TryParse<NextThought.Core.MeetingMode>(argument["--scene=".Length..], true, out var scene)) Scene = scene;
             else if (argument.StartsWith("--history-filter=", StringComparison.OrdinalIgnoreCase)) HistoryFilter = argument["--history-filter=".Length..];
             else if (argument.StartsWith("--history-query=", StringComparison.OrdinalIgnoreCase)) HistoryQuery = argument["--history-query=".Length..];
             else if (argument is "--teleprompter-through") { Teleprompter = true; TeleprompterThrough = true; }

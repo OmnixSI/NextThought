@@ -1,10 +1,10 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace NextThought.Core;
 
 public enum AudioSource { System, Microphone }
-public enum MeetingMode { General, Meeting, Client, Academic, LabMeeting, Lesson, Discussion, Interview, Custom }
+public enum MeetingMode { General, Meeting, Client, Academic, LabMeeting, Lesson, Discussion, Interview, GroupProject, Custom }
 public sealed record AudioFrame(AudioSource Source, short[] Samples, long StartSample, DateTimeOffset Origin);
 public sealed record TranscriptUpdate(Guid Id, AudioSource Source, string Text, bool IsFinal, DateTimeOffset Start, DateTimeOffset End, double InferenceSeconds = 0);
 public sealed record TranscriptLine

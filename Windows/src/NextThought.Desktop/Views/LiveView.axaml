@@ -5,7 +5,7 @@
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.LiveView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,Auto,*" Margin="32,18,32,0">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="32,18,32,0">
     <!-- Header -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="6">
@@ -41,8 +41,21 @@
       </Grid>
     </Border>
 
+    <!-- 临场教练：语速、独白时长与发言占比，按当前场景给一次提醒 -->
+    <Border Grid.Row="2" Classes="aiBlock" Padding="16,10" Margin="0,10,0,0"
+            IsVisible="{Binding HasCoachHint}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="&#xE82F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+                     Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding CoachHint}" Classes="label" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="知道了" Command="{Binding DismissCoachCommand}" />
+      </Grid>
+    </Border>
+
     <!-- Body -->
-    <Grid Grid.Row="2" ColumnDefinitions="1.12*,*" ColumnSpacing="16" Margin="0,16,0,16">
+    <Grid Grid.Row="3" ColumnDefinitions="1.12*,*" ColumnSpacing="16" Margin="0,16,0,16">
       <!-- Transcript -->
       <Border Classes="card" Padding="0">
         <Grid RowDefinitions="Auto,*,Auto">

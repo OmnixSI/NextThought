@@ -4,6 +4,7 @@
 状态含义：
 
 - **已移植**：C# 侧逐文件移植，带 xunit 测试，行为与 Swift 对齐。
+- **部分移植**：只移植了其它文件依赖的那几个函数，其余随该文件的完整移植补齐。
 - **基线简化版**：基线 0.4.0 已有的 C# 实现，只覆盖一部分字段或规则，后续按方案 P1 被逐文件移植取代。
 - **未移植**：尚无 C# 对应物。
 
@@ -21,7 +22,7 @@
 | ByteLevelBPETokenizer.swift | 219 | 未移植 |  |
 | CancellableTaskValue.swift | 34 | 未移植 |  |
 | CloudTranscription.swift | 293 | 未移植 |  |
-| CoachSummary.swift | 69 | 未移植 |  |
+| CoachSummary.swift | 69 | 已移植 | Core/CoachSummary.cs（随 Scene 测试覆盖） |
 | CodexEventParser.swift | 31 | 未移植 |  |
 | Companion.swift | 110 | 未移植 |  |
 | CompanionBLEProtocol.swift | 93 | 未移植 |  |
@@ -36,7 +37,7 @@
 | Glossary.swift | 572 | 未移植 |  |
 | IncrementalBackup.swift | 123 | 未移植 |  |
 | LaTeXMath.swift | 545 | 未移植 |  |
-| LiveInsights.swift | 403 | 未移植 |  |
+| LiveInsights.swift | 403 | 部分移植 | Core/AnswerPoints.cs（仅 Split / StripMarkup，供提词使用） |
 | LiveTranslationRevisionGate.swift | 76 | 未移植 |  |
 | LocalModelReuse.swift | 112 | 未移植 |  |
 | MaterialTerms.swift | 57 | 未移植 |  |
@@ -56,7 +57,7 @@
 | QuestionIntent.swift | 532 | 基线简化版 | QuestionIntent.cs + QuestionCandidateTracker.cs + QuestionVocabulary.cs（精简重写） |
 | QuestionTurn.swift | 96 | 基线简化版 | AutomaticAnswerScheduler.cs（部分） |
 | RealtimeSetupReadiness.swift | 77 | 未移植 |  |
-| Scene.swift | 427 | 未移植 |  |
+| Scene.swift | 427 | 已移植 | Core/Scene.cs（11 项测试；场景/提词/教练已接入界面） |
 | ScreenContext.swift | 44 | 未移植 |  |
 | ScreenDelta.swift | 23 | 未移植 |  |
 | ScrollFollowInputClassifier.swift | 21 | 未移植 |  |
@@ -90,14 +91,16 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 5，基线简化版 7，未移植 68。
+统计：已移植 7，部分移植 1，基线简化版 7，未移植 65。
 
-测试：`tests/NextThought.Core.Tests` 46 项通过（SubtitleBar 12、AudioTimeline 10、
-TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8）。
+测试：`tests/NextThought.Core.Tests` 57 项通过（SubtitleBar 12、AudioTimeline 10、
+TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11）。
 
-已移植但尚未接入运行时流程：`TranscriptDeduplicator`、`AudioTimeline`（等识别器暴露句尾时间与
-声纹取片）、`CrossTalkMonitor`（等采集端把两路 PCM 同时送进来）。
+已接入运行时：回声过滤（`EchoTextFilter`）、会议自动收尾（`MeetingEndWatch`）、
+场景预设与提词（`ScenePreset` → 提词岛关键点/按句）、临场教练（`SpeakingCoach` → 会议页提醒）。
 
-下一步（方案第 5 节批次 A/B）：QuestionDetector、QuestionEvalCorpus、LaTeXMath、
-ByteLevelBPETokenizer、PDFTextLayout、SpeakerClustering、Scene（九个场景与临场教练）、
-CoachSummary、NotesTemplates、StructuredNotes。
+已移植未接入：`TranscriptDeduplicator`、`AudioTimeline`（等识别器暴露句尾时间与声纹取片）、
+`CrossTalkMonitor`（等采集端把两路 PCM 同时送进来）、`CoachSummaryAccumulator`（尚无纪要落盘位置）。
+
+下一步：NotesTemplates、StructuredNotes（结构化纪要）、Workspace（系列/经验库）、
+Glossary、SpeakerClustering、LaTeXMath、ByteLevelBPETokenizer 等。

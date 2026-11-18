@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -34,6 +34,7 @@ public partial class MainWindow : Window
         {
             await state.InitializeAsync();
             SetupTray();
+            if (StartupOptions.Scene is { } scene) state.SetSceneCommand.Execute(scene);
             if (StartupOptions.HistoryFilter is { } filter) state.HistoryFilter = filter;
             if (StartupOptions.HistoryQuery is { } query) state.HistoryQuery = query;
             if (StartupOptions.ImportWave is { } wave) await RunImportWaveTestAsync(wave);
