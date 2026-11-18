@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -33,6 +33,8 @@ public partial class MainWindow : Window
         Opened += async (_, _) =>
         {
             await state.InitializeAsync();
+            if (StartupOptions.HistoryFilter is { } filter) state.HistoryFilter = filter;
+            if (StartupOptions.HistoryQuery is { } query) state.HistoryQuery = query;
             if (StartupOptions.ImportWave is { } wave) await RunImportWaveTestAsync(wave);
             if (StartupOptions.Island) ToggleCueIsland();
             if (StartupOptions.Teleprompter) { ToggleTeleprompter(); if (StartupOptions.TeleprompterThrough) teleprompter?.ApplyClickThrough(true); }

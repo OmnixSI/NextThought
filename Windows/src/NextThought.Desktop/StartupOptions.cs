@@ -14,6 +14,8 @@ public static class StartupOptions
     public static bool Teleprompter { get; private set; }
     public static bool TeleprompterThrough { get; private set; }
     public static string? ImportWave { get; private set; }
+    public static string? HistoryFilter { get; private set; }
+    public static string? HistoryQuery { get; private set; }
 
     public static void Parse(IReadOnlyList<string> args)
     {
@@ -25,6 +27,8 @@ public static class StartupOptions
             else if (argument is "--subtitles") Subtitles = true;
             else if (argument is "--companion") Companion = true;
             else if (argument is "--teleprompter") Teleprompter = true;
+            else if (argument.StartsWith("--history-filter=", StringComparison.OrdinalIgnoreCase)) HistoryFilter = argument["--history-filter=".Length..];
+            else if (argument.StartsWith("--history-query=", StringComparison.OrdinalIgnoreCase)) HistoryQuery = argument["--history-query=".Length..];
             else if (argument is "--teleprompter-through") { Teleprompter = true; TeleprompterThrough = true; }
             else if (argument.StartsWith("--import-wave=", StringComparison.OrdinalIgnoreCase)) ImportWave = argument["--import-wave=".Length..];
             else if (argument.StartsWith("--capture-test=", StringComparison.OrdinalIgnoreCase)) CaptureTest = argument["--capture-test=".Length..];

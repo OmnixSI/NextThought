@@ -68,6 +68,13 @@
                 <TextBlock Text="纪要" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHistory, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="History" ToolTip.Tip="历史">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="&#xE81C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="历史" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLibrary, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Library" ToolTip.Tip="资料库">
               <StackPanel Orientation="Horizontal" Spacing="10">
@@ -125,6 +132,7 @@
           <views:HomeView IsVisible="{Binding OnHome}" />
           <views:LiveView IsVisible="{Binding OnLive}" />
           <views:NotesView IsVisible="{Binding OnNotes}" />
+          <views:HistoryView IsVisible="{Binding OnHistory}" />
           <views:LibraryView IsVisible="{Binding OnLibrary}" />
           <views:SettingsView IsVisible="{Binding OnSettings}" />
         </Grid>

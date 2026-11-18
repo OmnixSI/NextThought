@@ -12,7 +12,7 @@ using NextThought.Platform;
 
 namespace NextThought.Desktop;
 
-public enum AppSection { Home, Live, Notes, Library, Settings }
+public enum AppSection { Home, Live, Notes, History, Library, Settings }
 
 /// <summary>
 /// Application state and meeting orchestration. Ported from the WPF window
@@ -104,12 +104,23 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private SessionMeta? currentSession;
     [ObservableProperty] private LiveWindowMode liveMode = LiveWindowMode.Notes;
     [ObservableProperty] private string? startupErrorText;
+    [ObservableProperty] private string historyQuery = "";
+    [ObservableProperty] private string historyFilter = "全部";
     public ObservableCollection<TranscriptRow> Transcript { get; }
     public ObservableCollection<RecentMeetingRow> History { get; }
+    public ObservableCollection<RecentMeetingRow> FilteredHistory { get; } = [];
     public ObservableCollection<SourceCitation> Sources { get; }
     public ObservableCollection<CompanionAddress> CompanionAddresses { get; } = [];
 
     public string CompanionToggleLabel => CompanionRunning ? "关闭局域网手机伴侣" : "开启局域网手机伴侣";
+    public string HistorySummary => $"{FilteredHistory.Count} 场会议 · 共 {History.Count} 场";
+    public bool IsHistoryViewEmpty => FilteredHistory.Count == 0;
+    public bool HistoryFilterIsAll => HistoryFilter == "全部";
+    public bool HistoryFilterHasSummary => HistoryFilter == "有纪要";
+    public bool HistoryFilterUnfiled => HistoryFilter == "未整理";
+
+    [RelayCommand]
+    private void SetHistoryFilter(string filter) => HistoryFilter = filter;
 
     public AppSettings SettingsSnapshot => Settings.Build();
 
@@ -120,6 +131,7 @@ public partial class AppState : ObservableObject
     public bool OnLive => Section == AppSection.Live;
     public bool OnNotes => Section == AppSection.Notes;
     public bool OnLibrary => Section == AppSection.Library;
+    public bool OnHistory => Section == AppSection.History;
     public bool OnSettings => Section == AppSection.Settings;
     public bool HasTranscript => Transcript.Count > 0;
     public string StatsText => Recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(CurrentSession?.AnswerCount ?? 0)} 条回答";
@@ -138,7 +150,17 @@ public partial class AppState : ObservableObject
         OnPropertyChanged(nameof(OnLive));
         OnPropertyChanged(nameof(OnNotes));
         OnPropertyChanged(nameof(OnLibrary));
+        OnPropertyChanged(nameof(OnHistory));
         OnPropertyChanged(nameof(OnSettings));
+    }
+
+    partial void OnHistoryQueryChanged(string value) => ApplyHistoryFilter();
+    partial void OnHistoryFilterChanged(string value)
+    {
+        ApplyHistoryFilter();
+        OnPropertyChanged(nameof(HistoryFilterIsAll));
+        OnPropertyChanged(nameof(HistoryFilterHasSummary));
+        OnPropertyChanged(nameof(HistoryFilterUnfiled));
     }
 
     partial void OnWorkingChanged(bool value) => RaiseBusy();
@@ -302,6 +324,7 @@ public partial class AppState : ObservableObject
             "第 1 页", "小波分解后残差约占原始信号 12%。", 1));
         OnPropertyChanged(nameof(HasTranscript));
         OnPropertyChanged(nameof(IsHistoryEmpty));
+        ApplyHistoryFilter();
         OnPropertyChanged(nameof(StatsText));
         ModelStatusText = "演示模式：未加载识别模型";
         StartDemoFeeder();
@@ -345,6 +368,30 @@ public partial class AppState : ObservableObject
         HomeRecent.Clear();
         foreach (var item in list.Take(5)) HomeRecent.Add(new RecentMeetingRow(item));
         OnPropertyChanged(nameof(IsHistoryEmpty));
+        ApplyHistoryFilter();
+    }
+
+    /// <summary>
+    /// Search and status filter for the history page (plan §15 历史：搜索、筛选、批量删除).
+    /// Batch delete is not ported yet; the filter and search are.
+    /// </summary>
+    private void ApplyHistoryFilter()
+    {
+        var query = HistoryQuery.Trim();
+        IEnumerable<RecentMeetingRow> rows = History;
+        if (HistoryFilter == "有纪要") rows = rows.Where(row => row.HasSummary);
+        else if (HistoryFilter == "未整理") rows = rows.Where(row => !row.HasSummary);
+        if (query.Length > 0)
+        {
+            rows = rows.Where(row =>
+                row.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || row.Meta.LocalStartedAt.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || row.Meta.Mode.Contains(query, StringComparison.OrdinalIgnoreCase));
+        }
+        FilteredHistory.Clear();
+        foreach (var row in rows) FilteredHistory.Add(row);
+        OnPropertyChanged(nameof(HistorySummary));
+        OnPropertyChanged(nameof(IsHistoryViewEmpty));
     }
 
     public bool IsHistoryEmpty => History.Count == 0;
