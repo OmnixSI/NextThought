@@ -146,6 +146,21 @@ public partial class AppState
                 return;
             }
 
+            UpdateInstallStatus = "正在备份当前版本…";
+            try
+            {
+                var backupRoot = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NextThought", "UpdateBackups");
+                var backup = UpdateBackup.Create(AppContext.BaseDirectory, backupRoot, UpdateCheck.CurrentVersion);
+                UpdateBackup.Prune(backupRoot, 2);
+                SetStatus("已备份当前版本：" + Path.GetFileName(backup.Path));
+            }
+            catch (Exception backupError)
+            {
+                // A failed backup must not block a checksum-verified update; it is reported instead.
+                SetStatus("备份失败，仍继续更新：" + backupError.Message, true);
+            }
+
             Process.Start(new ProcessStartInfo(installer, SilentInstallArguments) { UseShellExecute = true });
             UpdateInstallStatus = "校验通过，正在安装…";
             UpdateInstallSucceeded = true;

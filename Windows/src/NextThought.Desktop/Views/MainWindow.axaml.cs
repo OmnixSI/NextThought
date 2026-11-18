@@ -101,6 +101,7 @@ public partial class MainWindow : Window
             if (StartupOptions.PageCheck is { } pageCheck) await RunPageCheckAsync(pageCheck);
             if (StartupOptions.ArchivePersistenceCheck is { } archiveCheck) await RunArchivePersistenceCheckAsync(archiveCheck);
             if (StartupOptions.AcceptanceCheck is { } acceptance) await RunAcceptanceCheckAsync(acceptance);
+            if (StartupOptions.UpdateBackupCheck is { } updateBackup) await RunUpdateBackupCheckAsync(updateBackup);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -1557,6 +1558,14 @@ public partial class MainWindow : Window
                            && hotwords.SequenceEqual(["Kubernetes", "开源"])
                            && NextThought.Core.ZipformerModelFiles.SampleRate == 16000);
 
+        var updateApp = Path.Combine(temporary, "app");
+        Directory.CreateDirectory(updateApp);
+        await File.WriteAllTextAsync(Path.Combine(updateApp, "NextThought.exe"), "old");
+        var backup = NextThought.Core.UpdateBackup.Create(updateApp, Path.Combine(temporary, "backups"), "1.0.0");
+        await File.WriteAllTextAsync(Path.Combine(updateApp, "NextThought.exe"), "new");
+        NextThought.Core.UpdateBackup.Restore(backup.Path, updateApp);
+        Check("update-backup", File.ReadAllText(Path.Combine(updateApp, "NextThought.exe")) == "old");
+
         var projection = new NextThought.Core.SessionTextProjection(sessionId, "rev", "t1",
             new NextThought.Core.SessionProjectionOptions(), [],
             [new NextThought.Core.SessionProjectedText("n", NextThought.Core.SessionProjectionTextKind.Notes, "n",
@@ -1588,7 +1597,38 @@ public partial class MainWindow : Window
         Close();
     }
 
+
+    /// <summary>Copies a program directory, replaces a file and restores the backup.</summary>
+    private async Task RunUpdateBackupCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var directory = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "update-backup");
+        var app = Path.Combine(directory, "app");
+        Directory.CreateDirectory(Path.Combine(app, "runtimes"));
+        await File.WriteAllTextAsync(Path.Combine(app, "NextThought.exe"), "old");
+        await File.WriteAllTextAsync(Path.Combine(app, "runtimes", "native.dll"), "native");
+        var backup = NextThought.Core.UpdateBackup.Create(app, Path.Combine(directory, "backups"), "0.64.0");
+        await File.WriteAllTextAsync(Path.Combine(app, "NextThought.exe"), "new");
+        NextThought.Core.UpdateBackup.Restore(backup.Path, app);
+        var passed = File.ReadAllText(Path.Combine(app, "NextThought.exe")) == "old"
+                     && File.ReadAllText(Path.Combine(app, "runtimes", "native.dll")) == "native"
+                     && NextThought.Core.UpdateBackup.List(Path.Combine(directory, "backups")).Count == 1;
+        var report = new { passed, backup = Path.GetFileName(backup.Path), restored = "old" };
+        try
+        {
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "update-backup-check: passed" : "update-backup-check: failed");
+        Close();
+    }
+
     // The design-time constructor required by the XAML compiler for previews.
+
     public MainWindow() : this(new AppState()) { }
 
     private CueIslandWindow? island;

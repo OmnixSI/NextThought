@@ -1,4 +1,17 @@
 
+# P7 更新备份与回滚 · 0.65.0
+
+0.65.0 给应用内自动更新加上「替换前备份当前版本」，测试 566 → 572。
+
+- **备份**：启动安装包前把当前程序目录（含 runtimes 子目录）整体复制到
+  `%LOCALAPPDATA%\NextThought\UpdateBackups\<版本>-<时间戳>`，只留最新 2 份；备份失败不阻塞更新，
+  但会在状态栏明确提示。
+- **回滚**：`UpdateBackup.Restore` 把备份覆盖回程序目录（保留备份里没有的新文件），供更新失败后恢复。
+- **自检**：`--update-backup-check` 在临时目录建程序目录、备份、改文件、恢复并校验
+  （`qa\install-smoke-0650\backup.json`）；`--acceptance-check` 增加第 15 项。
+- 6 项测试：整目录复制、最新优先排序、只留 2 份、覆盖恢复、非法版本/缺失目录、空备份根。
+- 未完成：恢复入口还没有 UI 按钮，安装包仍未做 Authenticode 签名（`sign_release.ps1` 仍是 EV 证书占位）。
+
 # P3 Zipformer 模型描述 · 0.64.0
 
 0.64.0 移植 `ZipformerStreaming.swift`（496 行）的模型/热词/错误部分，测试 557 → 566。
