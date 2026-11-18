@@ -1,4 +1,21 @@
 
+# P6 证据模型 · 0.55.0
+
+0.55.0 移植 `SessionEvidence.swift`（456 行）的证据模型部分，测试 502 → 507。
+
+- **评审**：`SessionEvidenceReview` 记录「谁在哪一版结论/转写/行修订上做的 supported/unsupported 决定」。
+- **依据等级**：`SessionEvidenceSupport` 四档（引文找到 / 仅时间 / 未找到原话 / 无定位）并带中文说明，
+  明确「来源匹配」不等于「结论已确认」。
+- **来源与定位**：原文/校对后版本、`SessionStructuredNotesTarget`（格式 + 路径 + 载荷修订，防止重新生成后改错节点）。
+- **证据引用**：`SessionEvidenceReference` 携带标题、结论、引文、时间、行 id、来源修订、章节类型、
+  负责人/截止/日期、转写修订、过期状态与评审结果。
+- **自检**：`--evidence-check` 在真实进程构造带结构定位与评审的引用并校验文案
+  （`qa\evidence-0550\evidence-check.json`）。
+- 5 项测试：四档文案、默认值、完整溯源、值相等、枚举区分。
+- 未移植：`SessionEvidenceBuilder`/`SessionEvidenceEditor`（依赖 SessionTextProjection 与 SessionSummary）。
+
+统计：已移植 54 / 部分 17 / 基线 2 / 未移植 8。
+
 # P6 会议携带与计划 · 0.54.0
 
 0.54.0 移植 `MeetingCarry.swift`（38 行）与 `MeetingPreparation.swift`（43 行）的可用部分，测试 495 → 502。
