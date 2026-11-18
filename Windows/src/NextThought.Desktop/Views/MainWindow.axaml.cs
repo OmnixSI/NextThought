@@ -1597,6 +1597,15 @@ public partial class MainWindow : Window
                                      && projectedExport.Contains("Kubernetes", StringComparison.Ordinal)
                                      && !projectedExport.Contains("库伯奈提斯", StringComparison.Ordinal));
 
+        var notesPayload = new NextThought.Core.StructuredNotesPayload(NextThought.Core.NotesFormat.Outline,
+            outline: new NextThought.Core.OutlineNotes(
+                [new NextThought.Core.OutlineSection("结论", Points: [new NextThought.Core.OutlinePoint("先演练再上线")])]));
+        var notesExport = NextThought.Core.SessionMarkdownExporter.Export("导出", "会议", DateTimeOffset.UtcNow, 0, "",
+            new NextThought.Core.SessionTextProjection(Guid.NewGuid(), "r", "t",
+                new NextThought.Core.SessionProjectionOptions(), [], []), [], notes: notesPayload);
+        Check("notes-export", notesExport.Contains("## 纪要", StringComparison.Ordinal)
+                              && notesExport.Contains("先演练再上线", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

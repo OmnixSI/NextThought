@@ -28,7 +28,8 @@ public static class SessionMarkdownExporter
         string audioSource,
         SessionTextProjection projection,
         IReadOnlyList<TranscriptLine> lines,
-        IReadOnlyList<SessionQuestionEvent>? detectedQuestions = null)
+        IReadOnlyList<SessionQuestionEvent>? detectedQuestions = null,
+        StructuredNotesPayload? notes = null)
     {
         var output = new List<string>
         {
@@ -53,7 +54,15 @@ public static class SessionMarkdownExporter
                 break;
         }
 
-        if (projection.Summary is { } projectedSummary && projectedSummary.Markdown.Length > 0)
+        var renderedNotes = notes is null ? "" : StructuredNotesMarkdown.Render(notes);
+        if (renderedNotes.Length > 0)
+        {
+            output.Add("## 纪要");
+            output.Add("");
+            output.Add(renderedNotes);
+            output.Add("");
+        }
+        else if (projection.Summary is { } projectedSummary && projectedSummary.Markdown.Length > 0)
         {
             // The model's own document, minus its title section (already the heading).
             var body = projectedSummary.Markdown;

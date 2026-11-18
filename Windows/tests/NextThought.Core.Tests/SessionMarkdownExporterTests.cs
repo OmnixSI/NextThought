@@ -25,11 +25,33 @@ public sealed class SessionMarkdownExporterTests
         [new SessionProjectedText("t", SessionProjectionTextKind.Transcript, "x")]);
 
     private static string Export(SessionTextProjection? projection = null, SessionProjectedSummary? summary = null,
-        IReadOnlyList<TranscriptLine>? lines = null, IReadOnlyList<SessionQuestionEvent>? questions = null)
+        IReadOnlyList<TranscriptLine>? lines = null, IReadOnlyList<SessionQuestionEvent>? questions = null,
+        StructuredNotesPayload? notes = null)
     {
         var value = (projection ?? Projection()) with { Summary = summary };
         return SessionMarkdownExporter.Export("默认标题", "会议", Start, 90 * 60, "系统音频",
-            value, lines ?? [Line("第一句", 5)], questions);
+            value, lines ?? [Line("第一句", 5)], questions, notes);
+    }
+
+    private static StructuredNotesPayload Notes() => new(NotesFormat.Outline,
+        outline: new OutlineNotes([new OutlineSection("结论", Points: [new OutlinePoint("先演练再上线")])]));
+
+    [Fact]
+    public void NotesTakePrecedenceOverTheSummary()
+    {
+        var markdown = Export(summary: new SessionProjectedSummary("复盘", "## 摘要\n自动摘要"), notes: Notes());
+        Assert.Contains("## 纪要", markdown);
+        Assert.Contains("先演练再上线", markdown);
+        Assert.DoesNotContain("自动摘要", markdown);
+    }
+
+    [Fact]
+    public void EmptyNotesFallBackToTheSummary()
+    {
+        var empty = new StructuredNotesPayload(NotesFormat.Outline);
+        var markdown = Export(summary: new SessionProjectedSummary("复盘", "## 摘要\n自动摘要"), notes: empty);
+        Assert.DoesNotContain("## 纪要", markdown);
+        Assert.Contains("自动摘要", markdown);
     }
 
     [Fact]
