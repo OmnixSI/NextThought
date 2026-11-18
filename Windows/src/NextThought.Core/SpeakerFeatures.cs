@@ -53,18 +53,14 @@ public static class SpeakerFeatures
 
 public sealed class VoiceGroups
 {
-    private readonly List<float[]> sums = [];
-    public int VoiceCount => sums.Count;
+    private readonly VoiceClusterer clusterer = new();
+    public int VoiceCount => clusterer.VoiceCount;
+    public IReadOnlyList<float[]> Sums => clusterer.Sums;
+    public void Merge(int from, int into) => clusterer.Merge(from, into);
     public int? Assign(float[] vector, double seconds)
     {
-        if (vector.Length != 256 || vector.Any(v => !float.IsFinite(v)) || Math.Abs(vector.Sum(v => (double)v * v) - 1) > .02) return null;
-        var candidates = sums.Select((sum, id) => (Id: id, Score: Similarity(vector, sum))).OrderByDescending(c => c.Score).ToArray();
-        // Upstream uses 0.5; retain a separate uncertainty band before creating a new group.
-        if (candidates.Length > 0 && candidates[0].Score >= .5 && (candidates.Length == 1 || candidates[0].Score - candidates[1].Score >= .05))
-        { var target = sums[candidates[0].Id]; for (int i = 0; i < vector.Length; i++) target[i] += vector[i]; return candidates[0].Id; }
-        if (seconds >= 2 && sums.Count < 16 && (candidates.Length == 0 || candidates[0].Score < .4)) { sums.Add((float[])vector.Clone()); return sums.Count - 1; }
-        return null;
+        if (vector.Length != 256 || vector.Any(value => !float.IsFinite(value)) || Math.Abs(vector.Sum(value => (double)value * value) - 1) > .02) return null;
+        return clusterer.Label(vector, seconds);
     }
-    public static double Similarity(float[] unit, float[] sum)
-    { double dot = 0, norm = 0; for (int i = 0; i < unit.Length; i++) { dot += (double)unit[i] * sum[i]; norm += (double)sum[i] * sum[i]; } return norm == 0 ? 0 : dot / Math.Sqrt(norm); }
+    public static double Similarity(float[] unit, float[] sum) => VoiceClusterer.Similarity(unit, sum);
 }

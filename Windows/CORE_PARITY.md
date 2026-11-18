@@ -76,7 +76,7 @@
 | SessionUserContent.swift | 143 | 未移植 |  |
 | ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |
 | Skill.swift | 84 | 未移植 |  |
-| SpeakerClustering.swift | 272 | 基线简化版 | SpeakerFeatures.cs（仅特征） |
+| SpeakerClustering.swift | 272 | 已移植 | Core/SpeakerClustering.cs（VoiceClusterer 合并/判定 + SpeakerLabels 编号与提示词；12 项测试；VoiceGroups 委托至此） |
 | StructuredNotes.swift | 962 | 已移植 | Core/StructuredNotes.cs + StructuredNotesCleaner.cs（16 项测试；鱼骨图/大纲/观点对照已接入纪要页，含核对与丢弃） |
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
 | TranscriptContextBuilder.swift | 8 | 已移植 | Core/OnboardingVersion.cs（TranscriptContextBuilder） |
@@ -91,11 +91,11 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 30，部分移植 9，基线简化版 6，未移植 36。
+统计：已移植 31，部分移植 9，基线简化版 5，未移植 36。
 
-测试：`tests/NextThought.Core.Tests` 258 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 270 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
