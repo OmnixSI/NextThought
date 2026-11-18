@@ -1544,6 +1544,14 @@ public partial class MainWindow : Window
                                 && parsedSummary.Questions[0].AnswerGist == "因为"
                                 && parsedSummary.Lessons.Count == 1 && parsedSummary.Bank.Count == 1);
 
+        var exportProjection = new NextThought.Core.SessionTextProjection(Guid.NewGuid(), "rev", "t1",
+            new NextThought.Core.SessionProjectionOptions(), [], []);
+        var exported = NextThought.Core.SessionMarkdownExporter.Export("导出", "会议", DateTimeOffset.UtcNow,
+            60, "系统音频", exportProjection, [new NextThought.Core.TranscriptLine { Text = "你好", Date = DateTimeOffset.UtcNow }]);
+        Check("markdown-export", exported.StartsWith("# 导出", StringComparison.Ordinal)
+                                  && exported.Contains("## 完整转录", StringComparison.Ordinal)
+                                  && exported.Contains("你好", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
