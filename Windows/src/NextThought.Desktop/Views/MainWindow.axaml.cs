@@ -1552,6 +1552,13 @@ public partial class MainWindow : Window
                                   && exported.Contains("## 完整转录", StringComparison.Ordinal)
                                   && exported.Contains("你好", StringComparison.Ordinal));
 
+        var stagePrompt = NextThought.Core.StageReviewPrompt.Make("系列", "会议", "", "",
+            [new NextThought.Core.StageReviewPrompt.SessionDigest("场次", DateTimeOffset.UtcNow, "概要")]);
+        Check("stage-review", stagePrompt.StartsWith("场景分区：系列（会议）", StringComparison.Ordinal)
+                              && stagePrompt.Contains("## 各次会话记录", StringComparison.Ordinal)
+                              && stagePrompt.Contains("### 场次", StringComparison.Ordinal)
+                              && NextThought.Core.StageReviewPrompt.System.Contains("## 经验沉淀", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
