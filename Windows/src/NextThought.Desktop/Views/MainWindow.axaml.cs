@@ -77,7 +77,14 @@ public partial class MainWindow : Window
                 version = typeof(AppState).Assembly.GetName().Version?.ToString(3),
                 framework = Environment.Version.ToString(),
                 workingSetMiB = Math.Round(Environment.WorkingSet / 1048576.0, 1),
-                process = Environment.ProcessPath
+                process = Environment.ProcessPath,
+                windowWidth = Width,
+                windowHeight = Height,
+                clientWidth = ClientSize.Width,
+                clientHeight = ClientSize.Height,
+                renderScaling = RenderScaling,
+                screenScaling = Screens.Primary?.Scaling,
+                screenBounds = Screens.Primary?.Bounds.ToString()
             };
             await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         }
