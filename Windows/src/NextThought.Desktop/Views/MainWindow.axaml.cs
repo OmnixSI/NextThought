@@ -1907,6 +1907,23 @@ public partial class MainWindow : Window
                                    && ownershipUpdated.Documents[0].MarkdownPath == archivedDocuments[0].MarkdownPath
                                    && File.Exists(archivedDocuments[0].MarkdownPath));
 
+        var recordMeta = new NextThought.Core.SessionMeta
+        {
+            Id = Guid.NewGuid(), Title = "组会", StartedAt = DateTimeOffset.UtcNow.AddHours(-1)
+        };
+        var recordData = new NextThought.Core.SessionData(recordMeta,
+            [new NextThought.Core.TranscriptLine { Text = "先演练", Date = recordMeta.StartedAt }],
+            [new NextThought.Core.AnswerRecord
+            {
+                Id = Guid.NewGuid(), Date = recordMeta.StartedAt, Question = "怎么上线？", Answer = "先灰度"
+            }],
+            "摘要");
+        var sessionRecord = NextThought.Core.SessionRecord.FromSessionData(recordData);
+        Check("session-record", sessionRecord.Id == recordMeta.Id
+                                && sessionRecord.ToSessionData().Answers.Count == 1
+                                && sessionRecord.Summary == "摘要"
+                                && sessionRecord.Transcript.Count == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
