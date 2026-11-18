@@ -13,11 +13,11 @@ public static class DemoContent
 
     public static IReadOnlyList<SessionMeta> Meetings() =>
     [
-        new() { Id = Guid.NewGuid(), Title = "结构组会 · 连续刚构桥监测", Mode = "labMeeting", StartedAt = Base,
+        new() { Id = Guid.Parse("00000001-1111-1111-1111-111111111111"), Title = "结构组会 · 连续刚构桥监测", Mode = "labMeeting", StartedAt = Base,
                 EndedAt = Base.AddMinutes(46), TranscriptCount = 43, AnswerCount = 5, SummaryState = "saved" },
-        new() { Id = Guid.NewGuid(), Title = "开题答辩演练", Mode = "academic", StartedAt = Base.AddDays(-2), EndedAt = Base.AddDays(-2).AddMinutes(52),
+        new() { Id = Guid.Parse("00000002-1111-1111-1111-111111111111"), Title = "开题答辩演练", Mode = "academic", StartedAt = Base.AddDays(-2), EndedAt = Base.AddDays(-2).AddMinutes(52),
                 TranscriptCount = 61, AnswerCount = 9, SummaryState = "saved" },
-        new() { Id = Guid.NewGuid(), Title = "与导师讨论风振数据", Mode = "meeting", StartedAt = Base.AddDays(-5), EndedAt = Base.AddDays(-5).AddMinutes(31),
+        new() { Id = Guid.Parse("00000003-1111-1111-1111-111111111111"), Title = "与导师讨论风振数据", Mode = "meeting", StartedAt = Base.AddDays(-5), EndedAt = Base.AddDays(-5).AddMinutes(31),
                 TranscriptCount = 28, AnswerCount = 3, SummaryState = "none" }
     ];
 
@@ -28,7 +28,7 @@ public static class DemoContent
         {
             lines.Add(new TranscriptLine
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse("00000004-1111-1111-1111-111111111111"),
                 Date = Base.AddSeconds(seconds),
                 StartedAt = Base.AddSeconds(seconds),
                 EndedAt = Base.AddSeconds(seconds + 4),
@@ -63,7 +63,7 @@ public static class DemoContent
 
     private static TranscriptLine New(string speaker, string text) => new()
     {
-        Id = Guid.NewGuid(),
+        Id = Guid.Parse("00000005-1111-1111-1111-111111111111"),
         Date = DateTimeOffset.Now,
         StartedAt = DateTimeOffset.Now,
         EndedAt = DateTimeOffset.Now.AddSeconds(4),

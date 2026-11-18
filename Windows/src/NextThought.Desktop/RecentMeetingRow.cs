@@ -1,8 +1,14 @@
-using NextThought.Core;
+﻿using NextThought.Core;
 
 namespace NextThought.Desktop;
 
 /// <summary>A row in the recent-meetings list: a saved meeting plus its compact summary line.</summary>
+public sealed record SeriesRow(string Id, string Name, int Count, int LessonCount, string LastTitle, string LastLesson)
+{
+    public string Meta => $"{Count} 场会议 · {LessonCount} 条经验";
+    public string Preview => LastLesson.Length > 0 ? LastLesson : LastTitle;
+}
+
 public sealed record RecentMeetingRow(SessionMeta Meta)
 {
     public string Title => string.IsNullOrWhiteSpace(Meta.Title) ? "未命名会议" : Meta.Title;

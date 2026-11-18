@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -12,7 +12,7 @@ using NextThought.Platform;
 
 namespace NextThought.Desktop;
 
-public enum AppSection { Home, Live, Notes, History, Library, Settings }
+public enum AppSection { Home, Live, Notes, History, Series, Library, Settings }
 
 /// <summary>
 /// Application state and meeting orchestration. Ported from the WPF window
@@ -372,6 +372,7 @@ public partial class AppState : ObservableObject
     public bool OnNotes => Section == AppSection.Notes;
     public bool OnLibrary => Section == AppSection.Library;
     public bool OnHistory => Section == AppSection.History;
+    public bool OnSeries => Section == AppSection.Series;
     public bool OnSettings => Section == AppSection.Settings;
     public bool HasTranscript => Transcript.Count > 0;
     public string StatsText => Recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(CurrentSession?.AnswerCount ?? 0)} 条回答";
@@ -391,6 +392,7 @@ public partial class AppState : ObservableObject
         OnPropertyChanged(nameof(OnNotes));
         OnPropertyChanged(nameof(OnLibrary));
         OnPropertyChanged(nameof(OnHistory));
+        OnPropertyChanged(nameof(OnSeries));
         OnPropertyChanged(nameof(OnSettings));
     }
 
@@ -475,6 +477,7 @@ public partial class AppState : ObservableObject
             var recovered = await Sessions.RecoverInterruptedAsync();
             Mark("recover");
             RefreshHistory();
+            LoadWorkspace();
             Mark("history");
             LatchCompanionCommandState();
             initialized = true;
@@ -590,6 +593,8 @@ public partial class AppState : ObservableObject
             OnPropertyChanged(nameof(NotesFormatIsViewpoints));
             OnPropertyChanged(nameof(StructuredHint));
         }
+        // History now holds the demo meetings: the series page lists them by id.
+        RefreshSeries();
         StartDemoFeeder();
         if (StartupOptions.Subtitles) LiveMode = LiveWindowMode.Subtitles;
     }

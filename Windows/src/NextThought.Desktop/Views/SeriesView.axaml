@@ -1,0 +1,95 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
+             x:Class="NextThought.Desktop.Views.SeriesView"
+             x:DataType="local:AppState">
+  <Grid RowDefinitions="Auto,*" Margin="32,18,32,0">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="6">
+        <TextBlock Text="系列" Classes="display" />
+        <TextBlock Text="同一门课、同一个项目、同一类面试放在一个系列里；每场会议的结论与经验会攒在一起。" Classes="caption" />
+        <TextBlock Text="{Binding SeriesSummary}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <TextBox Text="{Binding NewSeriesName}" PlaceholderText="新系列的名字" Width="180" MinHeight="34" />
+        <Button Content="新建系列" Command="{Binding CreateSeriesCommand}" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="330,*" ColumnSpacing="16" Margin="0,18,0,16">
+      <!-- 系列列表 -->
+      <Border Classes="card" Padding="8">
+        <Grid RowDefinitions="*,Auto">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ListBox Name="SeriesList" ItemsSource="{Binding SeriesRows}" Background="Transparent"
+                     SelectionChanged="Series_SelectionChanged">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="local:SeriesRow">
+                  <StackPanel Spacing="3" Margin="0,6">
+                    <TextBlock Text="{Binding Name}" Classes="title" FontSize="14" />
+                    <TextBlock Text="{Binding Meta}" Classes="caption" FontSize="11" />
+                    <TextBlock Text="{Binding Preview}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </ScrollViewer>
+          <TextBlock Grid.Row="1" Text="还没有系列。上面的输入框新建一个，再把会议放进来。"
+                     Classes="caption" Margin="8,8,8,4" IsVisible="{Binding SeriesIsEmpty}" TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+
+      <!-- 选中的系列 -->
+      <Border Grid.Column="1" Classes="card" Padding="22,16">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding SelectedSeriesTitle}" FontFamily="{StaticResource SerifFamily}"
+                         FontSize="22" FontWeight="Medium" Foreground="{DynamicResource InkBrush}" />
+              <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <Button Content="把这场景加入" Command="{Binding AssignCurrentToSeriesCommand}" />
+              <Button Content="移出" Command="{Binding RemoveCurrentFromSeriesCommand}" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Grid.Row="1" Text="会议" Classes="overline" Margin="0,18,0,6" />
+          <ScrollViewer Grid.Row="2" MaxHeight="160" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding SeriesMeetings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:RecentMeetingRow">
+                  <TextBlock Text="{Binding Meta.Title}" Classes="label" Margin="0,3" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="3" Spacing="6" Margin="0,14,0,0">
+            <TextBlock Text="经验" Classes="overline" />
+            <ItemsControl ItemsSource="{Binding SeriesLessons}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:WorkspaceLesson">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                    <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
+                    <Button Grid.Column="1" Content="删除" Classes="ghost" Tag="{Binding}"
+                            Click="RemoveLesson_Click" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="还没有经验。把这场会议里值得记住的一句话写下来。" Classes="caption"
+                       IsVisible="{Binding !HasSeriesLessons}" />
+          </StackPanel>
+
+          <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+            <TextBox Text="{Binding NewLessonText}" PlaceholderText="一句话经验，例如：先说结论，再说依据" MinHeight="34" />
+            <Button Grid.Column="1" Content="记下" Classes="primary" Margin="8,0,0,0"
+                    Command="{Binding AddLessonCommand}" />
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>
