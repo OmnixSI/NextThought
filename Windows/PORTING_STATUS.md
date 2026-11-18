@@ -1,4 +1,23 @@
 
+# P6 备份规则 · 0.53.0
+
+0.53.0 移植 `Backup.swift`（667 行）的备份规则部分，测试 486 → 495。
+
+- **BackupManifest**：格式标识（含旧名 `interviewhacker-backup`）、版本 1、工作区/会议计数；
+  非备份文件与「版本比应用新」分别给出可读错误。
+- **模板合并**：按 id 匹配；内置模板从不来自备份；相同则跳过，不同则默认保留本地、显式选择才替换；
+  返回新增/替换/保留计数。
+- **待导入会议**：只导入本地没有的 id。
+- **SettingsSnapshot**：导出键白名单（约 80 项，含场景、提示词、云转写、搜狗/检索、字幕条等）、
+  密钥账户（`answer.api`/`github.token`/`websearch.tavily`/三家 STT）、预置 `answer.api.<id>` 识别、
+  过滤与旧键 `autoApplyLessons` → `autoCollectKnowledgeCandidates` 的恢复映射。
+- **自检**：`--backup-manifest-check` 校验清单、模板合并、旧键迁移与新版本拒绝
+  （`qa\backup-manifest-0530\backup-manifest-check.json`）。
+- 9 项测试：格式/版本/计数、模板新增/替换/保留/内置忽略、会议过滤、密钥账户、设置过滤、旧键迁移。
+- 未移植：`workspaces` 合并（依赖完整 Workspace 模型与源删除墓碑）与归档写入。
+
+统计：已移植 54 / 部分 14 / 基线 2 / 未移植 11。
+
 # P1 历史检索 · 0.52.0
 
 0.52.0 移植 `SessionSearch.swift`（173 行）的检索外壳与命中导航，测试 478 → 486。

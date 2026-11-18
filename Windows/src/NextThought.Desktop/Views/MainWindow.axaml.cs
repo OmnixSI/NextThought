@@ -87,6 +87,7 @@ public partial class MainWindow : Window
             if (StartupOptions.SessionSearchCheck is { } sessionSearch) await RunSessionSearchCheckAsync(sessionSearch);
             if (StartupOptions.SeriesBriefingCheck is { } seriesBriefing) await RunSeriesBriefingCheckAsync(seriesBriefing);
             if (StartupOptions.HistorySearchCheck is { } historySearch) await RunHistorySearchCheckAsync(historySearch);
+            if (StartupOptions.BackupManifestCheck is { } backupManifest) await RunBackupManifestCheckAsync(backupManifest);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -1137,6 +1138,56 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "history-search-check: passed" : "history-search-check: failed");
+        Close();
+    }
+
+    /// <summary>Validates a manifest, merges a template and maps legacy settings.</summary>
+    private async Task RunBackupManifestCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var manifest = new NextThought.Core.BackupManifest
+        {
+            Kind = NextThought.Core.BackupManifest.BackupKind.Full,
+            AppVersion = "check",
+            AppBuild = "check",
+            WorkspaceCount = 2,
+            SessionCount = 3
+        };
+        manifest.Validate();
+        var template = new NextThought.Core.NotesTemplate("custom", "模板", []);
+        var merge = NextThought.Core.BackupMerge.NotesTemplates([], [template]);
+        var restored = NextThought.Core.SettingsSnapshot.ValuesForRestore(new Dictionary<string, object?>
+        {
+            ["autoApplyLessons"] = true,
+            ["notExported"] = 1
+        });
+        var rejectedNewer = false;
+        try
+        {
+            (manifest with { Version = 2 }).Validate();
+        }
+        catch (NextThought.Core.BackupManifest.ValidationException)
+        {
+            rejectedNewer = true;
+        }
+        var passed = merge.Added == 1 && merge.Templates.Count == 1
+                     && restored.Count == 1 && restored["autoCollectKnowledgeCandidates"] is true
+                     && !restored.ContainsKey("notExported") && rejectedNewer
+                     && NextThought.Core.SettingsSnapshot.IsSecretAccount("answer.api.x")
+                     && NextThought.Core.BackupMerge.SessionsToImport(new HashSet<Guid>(), []).Count == 0;
+        var report = new { passed, added = merge.Added, restoredKeys = restored.Keys, rejectedNewer };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "backup-manifest-check: passed" : "backup-manifest-check: failed");
         Close();
     }
 
