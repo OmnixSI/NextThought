@@ -1725,6 +1725,15 @@ public partial class MainWindow : Window
             new HashSet<string>(), originalRoot);
         Check("shared-originals", keptMove.Count == 1 && retainedMove.Count == 0);
 
+        var guessedMode = NextThought.Core.MeetingTypeGuesser.Guess("字节跳动 后端二面");
+        var seriesCandidate = new NextThought.Core.SeriesMatcher.Candidate(Guid.NewGuid(), "字节跳动 · 后端",
+            NextThought.Core.SessionMode.Interview, DateTimeOffset.UtcNow);
+        var matchedSeries = NextThought.Core.SeriesMatcher.BestMatch("字节跳动 · 后端三面",
+            NextThought.Core.SessionMode.Interview, [seriesCandidate]);
+        Check("meeting-type", guessedMode == NextThought.Core.SessionMode.Interview
+                               && matchedSeries == seriesCandidate.Id
+                               && NextThought.Core.SeriesMatcher.BaseTitle("第 3 讲 线性代数") == "线性代数");
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

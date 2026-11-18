@@ -44,7 +44,7 @@
 | MeetingCarry.swift | 38 | 部分移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关与快照过滤；4 项测试。系列无文档列表，材料开关暂不生效） |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 43 | 部分移植 | Core/MeetingPreparation.cs（MeetingPlan 有效模式、携带选择与快照；3 项测试。风格/文档继承未移植） |
-| MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults（场景 → 纪要模板与实时模式；自定义类型未移植） |
+| MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults + MeetingTypeGuesser.cs（场景默认、标题猜类型、系列基准标题/相似度/最佳匹配；19 项测试。自定义场景类型未移植） |
 | NotesTemplates.swift | 873 | 部分移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/渲染/提示/校对/到期日） |
 | OnboardingFlow.swift | 55 | 已移植 | Core/OnboardingFlow.cs（步骤/可跳过/待办） |
 | OnboardingVersion.swift | 16 | 已移植 | Core/OnboardingVersion.cs（与 TranscriptContextBuilder 同文件） |
