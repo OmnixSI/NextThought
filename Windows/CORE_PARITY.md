@@ -69,7 +69,7 @@
 | SessionContext.swift | 265 | 部分移植 | Core/SessionContext.cs（词法索引、手动提问、Office XML 文本、AnswerStyle、ContextExcerpt；ContextDocument/SessionMode/SessionPreset 未移植） |
 | SessionEvidence.swift | 456 | 部分移植 | Core/SessionEvidence.cs（评审决定/依据等级与文案/来源/结构定位/证据引用模型；5 项测试。builder/editor 未移植） |
 | SessionExport.swift | 129 | 部分移植 | Core/SessionExport.cs（SRT/VTT 字幕与时间戳；Markdown/Word/PDF 导出走既有实现） |
-| SessionRecord.swift | 740 | 基线简化版 | Models.cs（只覆盖部分字段） |
+| SessionRecord.swift | 740 | 部分移植 | Models.cs + Platform/SessionStore（会话元数据/言行/答案/摘要磁盘往返、恢复中断记录；验收覆盖。汇总提示词与 Markdown 导出器未移植） |
 | SessionSearch.swift | 173 | 部分移植 | Core/SessionSearch.cs（命中标签/打开目标/进度与快照字节数/无缓存检索；8 项测试。磁盘快照加载与字节上限缓存未移植） |
 | SessionTextProjection.swift | 497 | 部分移植 | Core/SessionTextProjection.cs（选项/可搜索文本/回答/摘要/新鲜度；7 项测试。转写行投影与 builder 未移植） |
 | SessionTranscriptLocator.swift | 31 | 已移植 | Core/SessionTranscriptLocator.cs（按 id 或 3 秒容差定位） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 部分移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、暂存/回滚/清理、授权事务；9 项测试。DocumentJob 与共享原件判定未移植） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 56，部分移植 23，基线简化版 1，未移植 1。
+统计：已移植 56，部分移植 24，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、

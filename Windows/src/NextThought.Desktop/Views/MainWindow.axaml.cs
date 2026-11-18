@@ -1559,6 +1559,25 @@ public partial class MainWindow : Window
                            && hotwords.SequenceEqual(["Kubernetes", "开源"])
                            && NextThought.Core.ZipformerModelFiles.SampleRate == 16000);
 
+        var sessionPaths = new NextThought.Platform.AppPaths(Path.Combine(temporary, "session-store"));
+        var sessionStore = new NextThought.Platform.SessionStore(sessionPaths);
+        var storedMeta = new NextThought.Core.SessionMeta
+        {
+            Id = Guid.NewGuid(),
+            Title = "验收会议",
+            StartedAt = DateTimeOffset.UtcNow,
+            EndedAt = DateTimeOffset.UtcNow
+        };
+        await sessionStore.CreateAsync(storedMeta);
+        await sessionStore.AppendTranscriptAsync(storedMeta, new NextThought.Core.TranscriptLine
+        {
+            Id = Guid.NewGuid(), Text = "Kubernetes 部署", Date = DateTimeOffset.UtcNow, StartedAt = DateTimeOffset.UtcNow, EndedAt = DateTimeOffset.UtcNow
+        });
+        await sessionStore.EndAsync(storedMeta);
+        var stored = sessionStore.Load(storedMeta.Id);
+        Check("session-store", stored.Meta.Title == "验收会议" && stored.Lines.Count == 1
+                               && stored.Lines[0].Text == "Kubernetes 部署");
+
         var updateApp = Path.Combine(temporary, "app");
         Directory.CreateDirectory(updateApp);
         await File.WriteAllTextAsync(Path.Combine(updateApp, "NextThought.exe"), "old");
