@@ -212,14 +212,20 @@
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="12">
           <TextBlock Text="更新" Classes="section" />
-          <TextBlock Text="检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。只在浏览器打开下载页，不在应用内替换文件。"
+          <TextBlock Text="检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。"
                      Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
           <StackPanel Orientation="Horizontal" Spacing="10">
             <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding SelectedUpdateChannel}" MinWidth="170" />
             <Button Content="检查更新" Command="{Binding CheckUpdateCommand}" />
+            <Button Content="下载并安装" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanInstallUpdateInApp}" />
             <Button Content="打开下载页" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding CanOpenUpdatePage}" />
           </StackPanel>
           <TextBlock Text="{Binding UpdateStatus}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+          <ProgressBar Value="{Binding UpdateInstallProgress}" Maximum="1" IsVisible="{Binding InstallingUpdate}" MaxWidth="420" HorizontalAlignment="Left" />
+          <TextBlock Text="{Binding UpdateInstallStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+                     IsVisible="{Binding InstallingUpdate}" HorizontalAlignment="Left" />
+          <TextBlock Text="「下载并安装」会下载安装包并校验发布里的 SHA-256，校验通过后静默安装并重新打开；发布没有校验文件时只提供下载页。"
+                     Classes="caption" FontSize="11" />
         </StackPanel>
       </Border>
 

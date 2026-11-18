@@ -30,6 +30,15 @@ public sealed record GitHubRelease(
     public GitHubReleaseAsset? WindowsAsset => Assets.FirstOrDefault(asset =>
         asset.Name.EndsWith("-windows-x64.zip", StringComparison.OrdinalIgnoreCase) || asset.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>The Windows installer, when this release ships one (in-app replacement).</summary>
+    public GitHubReleaseAsset? SetupAsset => Assets.FirstOrDefault(asset =>
+        asset.Name.EndsWith("-windows-x64-setup.exe", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Checksums for the installer: <c>&lt;setup&gt;.sha256</c> first, then SHA256SUMS.txt.</summary>
+    public GitHubReleaseAsset? ChecksumsAsset(string setupName) =>
+        Assets.FirstOrDefault(asset => string.Equals(asset.Name, setupName + ".sha256", StringComparison.OrdinalIgnoreCase))
+        ?? Assets.FirstOrDefault(asset => string.Equals(asset.Name, "SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase));
+
     public static List<GitHubRelease> DecodeList(string json) =>
         JsonSerializer.Deserialize<List<GitHubRelease>>(json, UpdateJson.Options) ?? [];
 }

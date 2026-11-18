@@ -1,5 +1,22 @@
 
-# P5 伴侣中转 · 0.23.0
+# P8 应用内更新 · 0.24.0
+
+0.24.0 把「检查更新」从只开下载页补成应用内替换：下载 Setup → 校验 SHA-256 → 静默安装 → 退出重启。
+
+- **Core/UpdateChecksums.cs**：解析发布里的校验文件（`<setup>.sha256` 或 `SHA256SUMS.txt`，
+  支持 `hash  name` / `hash *name` / 单行裸 hash），并对下载文件做 SHA-256 校验（定长比较）。
+- **UpdateFeed / UpdateCheck**：发布里新增 `SetupAsset` 与 `ChecksumsAsset`；`UpdateReport` 带回
+  `setupUrl` / `setupName` / `checksumsUrl` 与 `CanInstall`。
+- **AppState.Update**：新增「下载并安装」命令 —— 流式下载带进度、校验失败删除文件、校验通过后以
+  `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS` 启动安装包并触发退出；
+  发布没有校验文件时按钮不出现，只保留下载页。
+- **自检**：`--update-install-check=<json>` 对本地发布源跑完整链路；`NEXTTHOUGHT_UPDATE_LAUNCH`
+  只记录启动命令而不真的替换当前构建，因此可以反复验证下载与校验。
+- 测试：Core 163 → 168（5 项校验和解析/校验测试）；本地发布源实测 下载 → SHA-256 → 启动命令 记录，
+  篡改校验值时 `passed=false` 且下载文件被删除（`qa\update-install-0230`）。
+- 未做：Authenticode 签名（当前信任根是发布源与校验文件）、增量更新、回滚。
+
+## P5 伴侣中转 · 0.23.0
 
 0.23.0 把手机伴侣的第三条通道补上：中转。中继只转发密文，桌面端负责建房、发状态、收命令、回回执。
 

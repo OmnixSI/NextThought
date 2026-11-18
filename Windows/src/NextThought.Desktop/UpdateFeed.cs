@@ -14,8 +14,14 @@ public sealed record UpdateReport(
     string? LatestVersion,
     bool Available,
     string? DownloadUrl,
-    string? Error)
+    string? Error,
+    string? SetupUrl = null,
+    string? SetupName = null,
+    string? ChecksumsUrl = null)
 {
+    /// <summary>True when the app can download, verify and run the installer itself.</summary>
+    public bool CanInstall => SetupUrl is { Length: > 0 } && ChecksumsUrl is { Length: > 0 };
+
     public static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -25,7 +31,7 @@ public sealed record UpdateReport(
     public string Describe() => Error is not null
         ? "检查更新失败：" + Error
         : Available
-            ? $"有新版本 {LatestVersion}（{CandidateTag}），可以打开下载页。"
+            ? $"有新版本 {LatestVersion}（{CandidateTag}），" + (CanInstall ? "可以下载并安装。" : "可以打开下载页。")
             : $"已是最新：当前 {CurrentVersion}，频道「{Channel}」。";
 }
 
@@ -81,8 +87,11 @@ public static class UpdateCheck
                 : candidate.TagName;
             var available = UpdateCatalog.IsNewer(null, candidate.TagName, version, build);
             var url = candidate.WindowsAsset?.BrowserDownloadUrl;
+            var setup = candidate.SetupAsset;
+            var checksums = setup is null ? null : candidate.ChecksumsAsset(setup.Name);
             return new UpdateReport(DateTimeOffset.UtcNow, source, channel.Title(), version, build,
-                candidate.TagName, latest, available, url, null);
+                candidate.TagName, latest, available, url, null,
+                setup?.BrowserDownloadUrl, setup?.Name, checksums?.BrowserDownloadUrl);
         }
         catch (Exception ex)
         {

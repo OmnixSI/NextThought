@@ -31,6 +31,7 @@ public partial class MainWindow : Window
         };
         state.Notify = ShowMessageAsync;
         state.Initialized += HandleInitialized;
+        state.UpdateInstalled += RequestExit;
         state.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AppState.LiveMode)) ApplyLiveMode(state.LiveMode);
@@ -66,6 +67,7 @@ public partial class MainWindow : Window
             if (StartupOptions.KnowledgeCheck is { } knowledge) await RunKnowledgeCheckAsync(knowledge);
             if (StartupOptions.PresenterCheck is { } presenterCheck) await RunPresenterCheckAsync(presenterCheck);
             if (StartupOptions.RelayCheck is { } relayCheck) await RunRelayCheckAsync(relayCheck);
+            if (StartupOptions.UpdateInstallCheck is { } updateInstall) await RunUpdateInstallCheckAsync(updateInstall);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -117,7 +119,7 @@ public partial class MainWindow : Window
                     "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
                     "glossary", "update-check", "companion-lan",
                     "workspace-knowledge", "knowledge-merge", "question-bank", "live-translation", "translation-gate",
-                    "presenter-mode", "companion-relay"
+                    "presenter-mode", "companion-relay", "update-install"
                 },
                 screens = BuildDisplays().Select(display => new
                 {
@@ -329,6 +331,74 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "relay-check: passed" : "relay-check: failed");
+        Close();
+    }
+
+    /// <summary>
+    /// In-app update check: read the release feed, download the installer, verify its SHA-256,
+    /// and record the silent-install command instead of running it (QA switch).
+    /// </summary>
+    private async Task RunUpdateInstallCheckAsync(string path)
+    {
+        await Task.Delay(200);
+        var update = await state.CheckForUpdatesAsync();
+        var markerPath = Environment.GetEnvironmentVariable("NEXTTHOUGHT_UPDATE_LAUNCH");
+        var marker = "";
+        var installerExists = false;
+        string? sha = null;
+        var error = "";
+        try
+        {
+            if (!state.CanInstallUpdateInApp)
+            {
+                error = update.Error ?? "这个发布没有安装包或校验文件，不能应用内安装。";
+            }
+            else
+            {
+                if (markerPath is { Length: > 0 } && File.Exists(markerPath)) File.Delete(markerPath);
+                await state.InstallUpdateCommand.ExecuteAsync(null).WaitAsync(TimeSpan.FromSeconds(90));
+                if (markerPath is { Length: > 0 } && File.Exists(markerPath))
+                {
+                    marker = await File.ReadAllTextAsync(markerPath);
+                    using var document = System.Text.Json.JsonDocument.Parse(marker);
+                    var root = document.RootElement;
+                    installerExists = root.TryGetProperty("installer", out var installer) && File.Exists(installer.GetString());
+                    sha = root.TryGetProperty("sha256", out var hash) ? hash.GetString() : null;
+                }
+                else
+                {
+                    error = "安装步骤没有写出启动标记。";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        var passed = state.UpdateInstallSucceeded && installerExists && sha is { Length: 64 } && error.Length == 0;
+        var report = new
+        {
+            passed,
+            update = state.LastUpdateReport,
+            installSucceeded = state.UpdateInstallSucceeded,
+            installStatus = state.UpdateInstallStatus,
+            installerExists,
+            sha256 = sha,
+            marker,
+            error
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "update-install-check: passed" : "update-install-check: failed");
         Close();
     }
 
