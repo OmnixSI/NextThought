@@ -45,7 +45,7 @@
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 43 | 未移植 |  |
 | MeetingType.swift | 168 | 未移植 |  |
-| NotesTemplates.swift | 873 | 未移植 |  |
+| NotesTemplates.swift | 873 | 部分移植 | Core/NotesTime.cs（仅 NotesTime 与结构化纪要的 Markdown 渲染；模板与校对提示未移植） |
 | OnboardingFlow.swift | 55 | 未移植 |  |
 | OnboardingVersion.swift | 16 | 未移植 |  |
 | PDFTextLayout.swift | 171 | 基线简化版 | LayoutReadingOrder.cs（简化版） |
@@ -77,7 +77,7 @@
 | ShortcutBinding.swift | 26 | 未移植 |  |
 | Skill.swift | 84 | 未移植 |  |
 | SpeakerClustering.swift | 272 | 基线简化版 | SpeakerFeatures.cs（仅特征） |
-| StructuredNotes.swift | 962 | 未移植 |  |
+| StructuredNotes.swift | 962 | 已移植 | Core/StructuredNotes.cs（8 项测试；鱼骨图/大纲/观点对照已接入纪要页） |
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
 | TranscriptContextBuilder.swift | 8 | 未移植 |  |
 | TranscriptDeduplicator.swift | 98 | 已移植 | Core/TranscriptDeduplicator.cs（8 项测试） |
@@ -91,16 +91,14 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 7，部分移植 1，基线简化版 7，未移植 65。
+统计：已移植 8，部分移植 2，基线简化版 7，未移植 63。
 
-测试：`tests/NextThought.Core.Tests` 57 项通过（SubtitleBar 12、AudioTimeline 10、
-TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11）。
+测试：`tests/NextThought.Core.Tests` 65 项通过（SubtitleBar 12、AudioTimeline 10、
+TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、StructuredNotes 8）。
 
-已接入运行时：回声过滤（`EchoTextFilter`）、会议自动收尾（`MeetingEndWatch`）、
-场景预设与提词（`ScenePreset` → 提词岛关键点/按句）、临场教练（`SpeakingCoach` → 会议页提醒）。
+已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
+（鱼骨图 / 要点大纲 / 观点对照，含提示词与 Markdown 缓存）。
 
-已移植未接入：`TranscriptDeduplicator`、`AudioTimeline`（等识别器暴露句尾时间与声纹取片）、
-`CrossTalkMonitor`（等采集端把两路 PCM 同时送进来）、`CoachSummaryAccumulator`（尚无纪要落盘位置）。
-
-下一步：NotesTemplates、StructuredNotes（结构化纪要）、Workspace（系列/经验库）、
-Glossary、SpeakerClustering、LaTeXMath、ByteLevelBPETokenizer 等。
+未接入/未移植的重点：`StructuredNotesCleaner`（依赖 `NotesVerifier`，需要 `NotesTemplates`）、
+结构化纪要的可视化绘制（鱼骨图曲线、观点矩阵表格，目前以带时间的 Markdown 呈现）、
+`Workspace`（系列/经验库）、`NotesTemplates`（模板与校对提示）、`Glossary`、`SpeakerClustering`。

@@ -1,4 +1,23 @@
-# P4/P6 场景与临场教练 · 0.10.0
+# P6 结构化纪要 · 0.11.0
+
+0.11.0 补上 Mac 版四种纪要格式里的后三种：
+
+- **Core/StructuredNotes.cs**：逐文件移植 `StructuredNotes.swift` —— `NotesFormat`（标准/鱼骨图/大纲/
+  观点对照，未知值按标准读）、三套数据模型、`StructuredNotesPayload`、`StructuredNotesLimits`、
+  容错 JSON 解析（代码围栏、尾逗号、纯字符串条目、外层包装键、`12:41` 或秒数时间）、
+  Markdown 渲染，以及中英两套提示词（含 `partialUser`/`mergeUser` 分段合并）。
+- **Core/NotesTime.cs**：`NotesTime`（`00:00` / `1:02:05` 互转）与 `StructuredNotesMarkdown`。
+- 8 项测试（Core 合计 65）：三种格式解析、畸形回复、Markdown 结构、提示词里的上限与 schema、
+  场景推荐格式。
+- **界面**：纪要页新增格式胶囊（文字纪要 / 鱼骨图 / 要点大纲 / 观点对照）与「生成这种纪要」；
+  生成时用 `StructuredNotesPrompt` 组提示词、调用当前回答服务、解析后渲染并缓存到
+  `Sessions/<ID>/structured-<格式>.md`；打开一场会议时按场景推荐自动选中并加载缓存。
+  演示数据内置一份鱼骨图回复，无需模型即可查看渲染效果。
+
+尚未移植：`StructuredNotesCleaner`（依赖 `NotesVerifier`）与图形化绘制（鱼骨曲线、观点矩阵表格）——
+目前结构化纪要以带原话时间的 Markdown 呈现，导出与复制走同一条路径。
+
+# P6 场景与临场教练 · 0.10.0
 
 0.10.0 落地 Mac 版的差异化主干——九个场景、提词样式与临场教练：
 
