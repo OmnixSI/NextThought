@@ -750,7 +750,7 @@ public partial class AppState : ObservableObject
             if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
             if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
             BeginLiveTranslation();
-            engine = await Task.Run(() => new LiveSpeechEngine(Models, settings));
+            engine = await Task.Run(() => new LiveSpeechEngine(Models, settings, RecognitionHotwords()));
             if (closing) throw new OperationCanceledException("程序正在退出，已取消开始记录。");
             engine.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, true); });
             engine.Failed += message => Dispatcher.UIThread.Post(() => HandleAudioFailure(message));
@@ -1405,7 +1405,7 @@ public partial class AppState : ObservableObject
                 var tagger = voiceTagger;
                 await Task.Run(() =>
                 {
-                    using var recognizer = new SpeechRecognizerSession(Models, settings, GlossaryHotwords());
+                    using var recognizer = new SpeechRecognizerSession(Models, settings, RecognitionHotwords());
                     recognizer.FrameObserved += frame => tagger?.Add(frame);
                     recognizer.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, false); });
                     recognizer.TranscribeWave(file, AudioSource.System, ct);

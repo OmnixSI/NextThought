@@ -69,6 +69,7 @@ public partial class MainWindow : Window
             if (StartupOptions.RelayCheck is { } relayCheck) await RunRelayCheckAsync(relayCheck);
             if (StartupOptions.UpdateInstallCheck is { } updateInstall) await RunUpdateInstallCheckAsync(updateInstall);
             if (StartupOptions.SubtitleExportCheck is { } subtitleExport) await RunSubtitleExportCheckAsync(subtitleExport);
+            if (StartupOptions.HotwordsCheck is { } hotwordsCheck) await RunHotwordsCheckAsync(hotwordsCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -120,7 +121,7 @@ public partial class MainWindow : Window
                     "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
                     "glossary", "update-check", "companion-lan",
                     "workspace-knowledge", "knowledge-merge", "question-bank", "live-translation", "translation-gate",
-                    "presenter-mode", "companion-relay", "update-install"
+                    "presenter-mode", "companion-relay", "update-install", "material-hotwords"
                 },
                 screens = BuildDisplays().Select(display => new
                 {
@@ -466,6 +467,58 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "subtitle-export-check: passed" : "subtitle-export-check: failed");
+        Close();
+    }
+
+    /// <summary>
+    /// Imports a small text document, then checks that its technical terms reach the recognizer
+    /// hotword list together with the glossary (MaterialTerms integration).
+    /// </summary>
+    private async Task RunHotwordsCheckAsync(string directory)
+    {
+        await Task.Delay(200);
+        var error = "";
+        IReadOnlyList<string> material = [];
+        IReadOnlyList<string> hotwords = [];
+        try
+        {
+            Directory.CreateDirectory(directory);
+            var fixture = Path.Combine(directory, "materials.txt");
+            await File.WriteAllTextAsync(fixture,
+                "The XL-MIMO testbed uses TSIR and DeepMIMO data; RQ2 is open.\nAgain XL-MIMO and TSIR; RQ2 is answered by the DeepMIMO run.\n",
+                new System.Text.UTF8Encoding(false));
+            await state.Library.ImportAsync([fixture]);
+            state.GlossaryText = "Kubernetes | K8s";
+            state.SaveGlossaryCommand.Execute(null);
+            material = state.MaterialHotwords();
+            hotwords = state.RecognitionHotwords();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        var passed = error.Length == 0
+                     && new[] { "XL-MIMO", "TSIR", "DeepMIMO", "RQ2" }.All(term => material.Contains(term))
+                     && hotwords.Contains("Kubernetes")
+                     && hotwords.Contains("XL-MIMO");
+        var report = new
+        {
+            passed,
+            materialTerms = material,
+            hotwords,
+            error
+        };
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(directory, "hotwords-check.json"),
+                System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+                }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "hotwords-check: passed" : "hotwords-check: failed");
         Close();
     }
 

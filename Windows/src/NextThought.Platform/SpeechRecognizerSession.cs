@@ -146,9 +146,9 @@ public sealed class LiveSpeechEngine : IAsyncDisposable
     public event Action<TranscriptUpdate>? Updated;
     public event Action<string>? Failed;
     public event Action<string>? Warning;
-    public LiveSpeechEngine(ModelStore store, AppSettings settings)
+    public LiveSpeechEngine(ModelStore store, AppSettings settings, IReadOnlyList<string>? extraHotwords = null)
     {
-        session = new(store, settings);
+        session = new(store, settings, extraHotwords);
         session.Updated += update => Updated?.Invoke(update); session.Warning += message => Warning?.Invoke(message);
         processing = Task.Run(async () =>
         {

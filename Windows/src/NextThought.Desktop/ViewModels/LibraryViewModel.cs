@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using NextThought.Core;
@@ -97,6 +97,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
                 }
             }
             Refresh();
+            state.RefreshMaterialTerms();
             ImportStatus = added > 0 ? $"已导入 {added} 份资料。" : ImportStatus;
             ImportProgress = "";
         }

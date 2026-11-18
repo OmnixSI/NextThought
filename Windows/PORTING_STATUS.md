@@ -1,4 +1,17 @@
 
+# P7 资料术语进热词 · 0.28.0
+
+0.28.0 把已移植的 `MaterialTerms` 接进识别链路：资料里的技术术语和术语表一起成为热词。
+
+- **`AppState.Hotwords`**：`MaterialHotwords()` 从资料库的文本块里抽术语（上限 24，按文档 sha + 块数缓存，
+  导入后失效）；`RecognitionHotwords()` 先放术语表、再放资料术语，大小写不敏感去重。
+- **顺带修掉一个真 bug**：实时识别的 `LiveSpeechEngine` 之前只吃 `settings.Vocabulary`，
+  `GlossaryHotwords()` 只进了导入与校对——也就是说**术语表对实时会议一直没生效**。
+  `LiveSpeechEngine` 现在接受 `extraHotwords`，开始记录时传 `RecognitionHotwords()`。
+- **自检**：`--hotwords-check=<dir>` 导入一份含 XL-MIMO/TSIR/DeepMIMO/RQ2 的文档，再写一条术语表
+  Kubernetes；识别热词为 `[Kubernetes, XL-MIMO, TSIR, DeepMIMO, RQ2]`（`qa\hotwords-0280`）。
+- 测试：沿用 Core 222（`MaterialTerms` 的 12 项已覆盖抽取规则；本轮是接线与缓存）。
+
 # P6 字幕导出 · 0.27.0
 
 0.27.0 把 SessionExport.swift 的字幕半边接上：纪要页可以直接导出 SRT / VTT。
