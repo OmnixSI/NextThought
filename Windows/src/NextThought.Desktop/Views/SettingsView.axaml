@@ -57,9 +57,16 @@
             <TextBlock Text="首次需下载流式模型约 134 MB；整句精修另约 136 MB，下载后离线运行。"
                        Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
           </StackPanel>
-          <TextBlock Text="术语与人名（逗号或换行分隔）" Classes="label" />
-          <TextBox Text="{Binding Settings.Vocabulary}" AcceptsReturn="True" Height="76" TextWrapping="Wrap"
-                   ScrollViewer.VerticalScrollBarVisibility="Auto" PlaceholderText="例如：同济大学，王工，OpenSees" />
+          <TextBlock Text="术语表（人名与专有名词）" Classes="label" />
+          <TextBlock Text="每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。"
+                     Classes="caption" FontSize="11" />
+          <TextBox Text="{Binding GlossaryText}" AcceptsReturn="True" Height="96" TextWrapping="Wrap"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   PlaceholderText="Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="保存术语表" Command="{Binding SaveGlossaryCommand}" />
+            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
+          </StackPanel>
         </StackPanel>
       </Border>
 

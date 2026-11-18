@@ -478,6 +478,7 @@ public partial class AppState : ObservableObject
             Mark("recover");
             RefreshHistory();
             LoadWorkspace();
+            LoadGlossary();
             Mark("history");
             LatchCompanionCommandState();
             initialized = true;
@@ -836,11 +837,13 @@ public partial class AppState : ObservableObject
         }
         if (update.Source == AudioSource.System) SystemPartial = ""; else MicrophonePartial = "";
         var echo = IsTextEcho(update, currentLines, meta.InPerson);
+        // 术语表：识别错的写法改回正确写法（原话只在内存里更正，识别器本身的输出不动）。
+        var text = Canonicalize(update.Text);
         var line = new TranscriptLine
         {
             Id = update.Id, Date = update.Start, StartedAt = update.Start, EndedAt = update.End,
             Speaker = update.Source == AudioSource.System ? "remote" : meta.InPerson ? "room" : "me",
-            Text = update.Text, SuspectedEcho = echo ? true : null
+            Text = text, SuspectedEcho = echo ? true : null
         };
         currentLines.Add(line);
         Transcript.Add(new TranscriptRow(line));
@@ -1266,7 +1269,7 @@ public partial class AppState : ObservableObject
                 var tagger = voiceTagger;
                 await Task.Run(() =>
                 {
-                    using var recognizer = new SpeechRecognizerSession(Models, settings);
+                    using var recognizer = new SpeechRecognizerSession(Models, settings, GlossaryHotwords());
                     recognizer.FrameObserved += frame => tagger?.Add(frame);
                     recognizer.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, false); });
                     recognizer.TranscribeWave(file, AudioSource.System, ct);

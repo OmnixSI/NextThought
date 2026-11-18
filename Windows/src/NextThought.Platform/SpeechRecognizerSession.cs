@@ -30,14 +30,17 @@ public sealed class SpeechRecognizerSession : IDisposable
         public string LastText = "";
         public long LastPartialSample;
     }
-    public SpeechRecognizerSession(ModelStore store, AppSettings settings)
+    public SpeechRecognizerSession(ModelStore store, AppSettings settings, IReadOnlyList<string>? extraHotwords = null)
     {
         if (!store.IsInstalled(settings.LocalModel)) throw new InvalidOperationException("请先准备并校验语音模型。");
         if (settings.SecondPass && !store.IsInstalled("xasrOffline")) throw new InvalidOperationException("整句精修模型尚未准备，可先关闭整句精修。");
         if (Native.ActiveCodePage() != 65001 && store.DirectoryFor(settings.LocalModel).Any(c => c > 127))
             throw new InvalidOperationException("中文模型路径需要应用的 UTF-8 清单。请通过 NextThought.exe 或 NextThought.Cli.exe 启动，避免直接用 dotnet 执行 DLL。");
         var hotwords = Path.Combine(Path.GetTempPath(), "nextthought-hotwords-" + Guid.NewGuid().ToString("N") + ".txt");
-        var words = settings.Vocabulary.Split([',', '，', '、', '\r', '\n', ';', '；'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var words = settings.Vocabulary.Split([',', '，', '、', '\r', '\n', ';', '；'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Concat(extraHotwords ?? [])
+            .Distinct()
+            .ToArray();
         try
         {
             if (words.Length > 0) File.WriteAllText(hotwords, string.Join('\n', words));
