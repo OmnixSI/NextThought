@@ -16,6 +16,7 @@ public static class StartupOptions
     public static string? FormulaCheck { get; private set; }
     public static string? BackupCheck { get; private set; }
     public static string? PromptCheck { get; private set; }
+    public static string? ApiCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -70,6 +71,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--formula-check=", StringComparison.OrdinalIgnoreCase)) FormulaCheck = argument["--formula-check=".Length..];
             else if (argument.StartsWith("--backup-check=", StringComparison.OrdinalIgnoreCase)) BackupCheck = argument["--backup-check=".Length..];
             else if (argument.StartsWith("--prompt-check=", StringComparison.OrdinalIgnoreCase)) PromptCheck = argument["--prompt-check=".Length..];
+            else if (argument.StartsWith("--api-check=", StringComparison.OrdinalIgnoreCase)) ApiCheck = argument["--api-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)

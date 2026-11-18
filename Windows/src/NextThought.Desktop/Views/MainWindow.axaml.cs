@@ -74,6 +74,7 @@ public partial class MainWindow : Window
             if (StartupOptions.FormulaCheck is { } formulaCheck) await RunFormulaCheckAsync(formulaCheck);
             if (StartupOptions.BackupCheck is { } backupCheck) await RunBackupCheckAsync(backupCheck);
             if (StartupOptions.PromptCheck is { } promptCheck) await RunPromptCheckAsync(promptCheck);
+            if (StartupOptions.ApiCheck is { } apiCheck) await RunApiCheckAsync(apiCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -661,6 +662,45 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "prompt-check: passed" : "prompt-check: failed");
+        Close();
+    }
+
+    /// <summary>Exercises the ported answer-service rules and writes their outcomes.</summary>
+    private async Task RunApiCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var failures = new[]
+        {
+            (401, "", NextThought.Core.APIFailure.BadKey),
+            (404, "model not found", NextThought.Core.APIFailure.BadModel),
+            (429, "insufficient quota", NextThought.Core.APIFailure.OutOfCredit),
+            (503, "", NextThought.Core.APIFailure.ServerBusy)
+        };
+        var passed = failures.All(item => NextThought.Core.APIFailureExplainer.Classify(item.Item1, item.Item2) == item.Item3)
+                     && NextThought.Core.APIFailureExplainer.Classify(null, "", -1001) == NextThought.Core.APIFailure.Timeout
+                     && NextThought.Core.APIProviders.Normalized(" HTTPS://API.Deepseek.com/v1/ ") == "https://api.deepseek.com/v1"
+                     && NextThought.Core.APIProviders.Guide("https://api.deepseek.com/v1")?.SuggestedModel == "deepseek-chat"
+                     && NextThought.Core.APIKeyInput.Masked("sk-abcdef123456").EndsWith("3456", StringComparison.Ordinal)
+                     && NextThought.Core.AnswerBackendDefault.RawValue(null, codexInstalled: true) == NextThought.Core.AnswerBackendDefault.CodexAppServer;
+        var report = new
+        {
+            passed,
+            badKey = NextThought.Core.APIFailureExplainer.Message(NextThought.Core.APIFailure.BadKey),
+            normalized = NextThought.Core.APIProviders.Normalized(" HTTPS://API.Deepseek.com/v1/ "),
+            masked = NextThought.Core.APIKeyInput.Masked("sk-abcdef123456")
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "api-check: passed" : "api-check: failed");
         Close();
     }
 
