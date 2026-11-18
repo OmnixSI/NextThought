@@ -1,4 +1,18 @@
 
+# P1 小文件批次四 · 0.33.0
+
+0.33.0 再补 5 个自包含 Core 文件（测试 287 → 301）。
+
+| Swift | C# | 测试 | 说明 |
+| --- | --- | --- | --- |
+| `ScreenDelta.swift` | `Core/ScreenDelta.cs` | 2 | 变化像素区域、边距、>75% 视为整屏、无上一帧返回全屏 |
+| `DocumentClassifier.swift` | `Core/DocumentClassifier.cs` | 2 | 文件名 ×6 + 正文前 2000 字 ×1，映射到当前场景的资料槽 |
+| `Skill.swift` | `Core/Skill.cs` | 2 | front matter 名称/描述、`# 标题` 回退、SKILL 文件名回退、启用/全局筛选 |
+| `VoiceProfile.swift` | `Core/VoiceProfile.cs` | 3 | 0.55 阈值识别「我」、3 段起建、离群片段丢弃、同模型校验 |
+| `CompanionBLEProtocol.swift` | `Core/CompanionBLEProtocol.cs` | 5 | 8 字节大端头分片/乱序重组、15 秒重置、384 KB 上限、重发 outbox |
+
+统计：已移植 37 / 部分 9 / 基线 5 / 未移植 30。
+
 # P2 公式渲染 · 0.32.0
 
 0.32.0 移植 `LaTeXMath.swift`（545 行，未移植），答案和纪要里的公式不再是原始 LaTeX，测试 270 → 287。

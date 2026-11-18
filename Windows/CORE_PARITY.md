@@ -25,9 +25,9 @@
 | CoachSummary.swift | 69 | 已移植 | Core/CoachSummary.cs（随 Scene 测试覆盖） |
 | CodexEventParser.swift | 31 | 已移植 | Core/CodexEventParser.cs（2 项测试） |
 | Companion.swift | 110 | 部分移植 | Platform/CompanionServer.cs（`CompanionSnapshot` / `CompanionEnvelope` / 局域网命令去重）+ Core/CompanionRelayCrypto.cs（`CompanionCommandCache`）；`CompanionHTTP` 的完整动作表仍在 Platform |
-| CompanionBLEProtocol.swift | 93 | 未移植 |  |
+| CompanionBLEProtocol.swift | 93 | 已移植 | Core/CompanionBLEProtocol.cs（分片/重组/重发 outbox） |
 | CompanionCrypto.swift | 68 | 已移植 | Core/CompanionRelayCrypto.cs（9 项测试；HKDF 用 RFC 5869 向量、AES-GCM 信封、配对链接、命令新鲜度与去重） |
-| DocumentClassifier.swift | 74 | 未移植 |  |
+| DocumentClassifier.swift | 74 | 已移植 | Core/DocumentClassifier.cs（文件名优先 + 正文前 2000 字） |
 | DocumentFeatureAvailability.swift | 27 | 已移植 | Core/DocumentFeatureAvailability.cs（依赖齐备才可用） |
 | DocumentJobs.swift | 466 | 未移植 |  |
 | DocumentNotice.swift | 53 | 已移植 | Core/DocumentNotice.cs（提示与警告区分、页码汇总） |
@@ -59,7 +59,7 @@
 | RealtimeSetupReadiness.swift | 77 | 已移植 | Core/RealtimeSetupReadiness.cs（录音就绪与可请求启动） |
 | Scene.swift | 427 | 已移植 | Core/Scene.cs（11 项测试；场景/提词/教练已接入界面） |
 | ScreenContext.swift | 44 | 未移植 |  |
-| ScreenDelta.swift | 23 | 未移植 |  |
+| ScreenDelta.swift | 23 | 已移植 | Core/ScreenDelta.cs（变化区域与边距） |
 | ScrollFollowInputClassifier.swift | 21 | 已移植 | Core/ScrollFollowState.cs（滚动导航键与命中测试） |
 | ScrollFollowState.swift | 48 | 已移植 | Core/ScrollFollowState.cs（跟随/读历史/选中文字） |
 | SemanticRetrieval.swift | 277 | 基线简化版 | DocumentChunks.cs + KeywordIndex.cs（简化版） |
@@ -75,7 +75,7 @@
 | SessionTranscriptLocator.swift | 31 | 已移植 | Core/SessionTranscriptLocator.cs（按 id 或 3 秒容差定位） |
 | SessionUserContent.swift | 143 | 未移植 |  |
 | ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |
-| Skill.swift | 84 | 未移植 |  |
+| Skill.swift | 84 | 已移植 | Core/Skill.cs（front matter、标题回退、启用/全局筛选） |
 | SpeakerClustering.swift | 272 | 已移植 | Core/SpeakerClustering.cs（VoiceClusterer 合并/判定 + SpeakerLabels 编号与提示词；12 项测试；VoiceGroups 委托至此） |
 | StructuredNotes.swift | 962 | 已移植 | Core/StructuredNotes.cs + StructuredNotesCleaner.cs（16 项测试；鱼骨图/大纲/观点对照已接入纪要页，含核对与丢弃） |
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
@@ -83,7 +83,7 @@
 | TranscriptDeduplicator.swift | 98 | 已移植 | Core/TranscriptDeduplicator.cs（8 项测试） |
 | UpdateCatalog.swift | 164 | 部分移植 | Core/UpdateCatalog.cs（7 项测试；设置页「检查更新」已接入） |
 | VoiceActivitySegmenter.swift | 153 | 已移植 | Core/VoiceActivitySegmenter.cs（partial/final、12 秒切分 + 0.5 秒重叠、预卷；7 项测试；已接识别器） |
-| VoiceProfile.swift | 86 | 未移植 |  |
+| VoiceProfile.swift | 86 | 已移植 | Core/VoiceProfile.cs（0.55 阈值、3 段起建、离群片段丢弃） |
 | WebLookupPromptBuilder.swift | 41 | 已移植 | Core/WebLookupPromptBuilder.cs（字段预算与最近两轮） |
 | WebSearchNeed.swift | 129 | 已移植 | Core/WebSearchNeed.cs（17 条标注语料逐条断言；联网搜索提供方仍未接） |
 | Workspace.swift | 1460 | 部分移植 | Core/Workspace.cs + WorkspaceKnowledge.cs（系列、经验版本历史、题库、候选与回执、KnowledgeMerger；16 项测试。seriesItems、源删除完整性、SeriesBriefing 未移植） |
@@ -91,11 +91,11 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 32，部分移植 9，基线简化版 5，未移植 35。
+统计：已移植 37，部分移植 9，基线简化版 5，未移植 30。
 
-测试：`tests/NextThought.Core.Tests` 287 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 301 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
