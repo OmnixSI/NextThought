@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -338,6 +338,7 @@ public partial class AppState : ObservableObject
 
     private void OnSceneChanged()
     {
+        ApplyDefaultTemplate();
         OnPropertyChanged(nameof(SceneTitle));
         OnPropertyChanged(nameof(SceneCueStyle));
         OnPropertyChanged(nameof(SceneSummary));
@@ -438,6 +439,7 @@ public partial class AppState : ObservableObject
         ImportWaveCommand.NotifyCanExecuteChanged();
         ExportCommand.NotifyCanExecuteChanged();
         GenerateStructuredNotesCommand.NotifyCanExecuteChanged();
+        SummarizeWithTemplateCommand.NotifyCanExecuteChanged();
         BackupCommand.NotifyCanExecuteChanged();
         RestoreCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged();
