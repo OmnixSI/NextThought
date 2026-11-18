@@ -1,4 +1,16 @@
 
+# P3 屏幕上下文 · 0.37.0
+
+0.37.0 移植 `ScreenContext.swift`（44 行），并补上它依赖的 `TextSimilarity` 二元组工具，测试 342 → 352。
+
+- **ScreenContext / ScreenTextRegion**：OCR 区域文本与归一化边界、增强文本优先、低置信度判断、2 秒新鲜度。
+- **ScreenReference**：中英文「这一页 / this slide」引用检测与是否需要图像（图/表/公式/位置/颜色）。
+- **TextSimilarity**：小写字母数字归一化、字符二元组、Jaccard、containment，
+  `Relevant` 用「最近发言的二元组至少 8 个、且 25% 出现在屏幕文本中」判断屏幕是否相关。
+- 10 项测试覆盖引用、上下文文本/置信度/新鲜度、二元组边界、Jaccard/containment、相关度阈值。
+
+统计：已移植 41 / 部分 9 / 基线 4 / 未移植 27。
+
 # P4 提问轮次 · 0.36.0
 
 0.36.0 把 `QuestionTurn.swift`（96 行，原基线简化）补齐为 `Core/QuestionTurn.cs`，测试 328 → 342。
