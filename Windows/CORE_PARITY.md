@@ -71,7 +71,7 @@
 | SessionExport.swift | 129 | 部分移植 | Core/SessionExport.cs（SRT/VTT 字幕与时间戳；Markdown/Word/PDF 导出走既有实现） |
 | SessionRecord.swift | 740 | 部分移植 | Models.cs + Platform/SessionStore + SessionSummaryParser + SessionMarkdownExporter（会话读写、恢复中断记录、摘要解析、Markdown 导出、汇总/阶段复盘提示词；验收覆盖） |
 | SessionSearch.swift | 173 | 部分移植 | Core/SessionSearch.cs（命中标签/打开目标/进度与快照字节数/无缓存检索；8 项测试。磁盘快照加载与字节上限缓存未移植） |
-| SessionTextProjection.swift | 497 | 部分移植 | Core/SessionTextProjection.cs + SessionProjectionBuilder.cs（选项/可搜索文本/回答/摘要/新鲜度 + 转写/译文/问题/回答/摘要条目与修订；13 项测试。完整转写行投影与笔记渲染未移植） |
+| SessionTextProjection.swift | 497 | 部分移植 | Core/SessionTextProjection.cs + SessionProjectionBuilder.cs（选项/可搜索文本/回答/摘要/新鲜度 + 转写/译文/问题/回答/摘要条目与修订；13 项测试。完整转写行投影已补，笔记渲染未移植） |
 | SessionTranscriptLocator.swift | 31 | 已移植 | Core/SessionTranscriptLocator.cs（按 id 或 3 秒容差定位） |
 | SessionUserContent.swift | 143 | 已移植 | Core/SessionUserContent.cs（个人笔记/重点/编辑稿/校对决定/修订存储；7 项测试） |
 | ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |

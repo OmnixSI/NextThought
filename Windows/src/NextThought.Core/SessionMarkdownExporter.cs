@@ -86,22 +86,40 @@ public static class SessionMarkdownExporter
 
         output.Add("## 完整转录");
         output.Add("");
-        foreach (var line in lines)
+        if (projection.Transcript.Count > 0)
         {
-            var offset = line.StartedAt is { } started
-                ? Math.Max(0, (int)(started - startedAt).TotalSeconds)
-                : Math.Max(0, (int)(line.Date - startedAt).TotalSeconds);
-            var timestamp = $"- `{offset / 60:00}:{offset % 60:00}` ";
-            var speaker = "**" + SpeakerLabel(line.Speaker) + "**：";
-            var original = timestamp + speaker + line.Text;
-            var translation = line.Translation?.Text;
-            if (translation is null || translation.Trim().Length == 0)
+            foreach (var line in projection.Transcript)
             {
-                output.Add(original);
-                continue;
+                var timestamp = $"- `{line.Offset / 60:00}:{line.Offset % 60:00}` ";
+                var speaker = "**" + line.SpeakerLabel + "**：";
+                output.Add(timestamp + speaker + line.DisplayText);
+                if (line.LanguageView == SessionLanguageView.Bilingual
+                    && line.TranslationText is { } translated && translated.Trim().Length > 0)
+                {
+                    var label = line.TranslationIsStale ? "译文（待更新）" : "译文";
+                    output.Add("  *" + label + "：* " + translated);
+                }
             }
-            output.Add(original);
-            output.Add("  *译文：* " + translation);
+        }
+        else
+        {
+            foreach (var line in lines)
+            {
+                var offset = line.StartedAt is { } started
+                    ? Math.Max(0, (int)(started - startedAt).TotalSeconds)
+                    : Math.Max(0, (int)(line.Date - startedAt).TotalSeconds);
+                var timestamp = $"- `{offset / 60:00}:{offset % 60:00}` ";
+                var speaker = "**" + SpeakerLabel(line.Speaker) + "**：";
+                var original = timestamp + speaker + line.Text;
+                var translation = line.Translation?.Text;
+                if (translation is null || translation.Trim().Length == 0)
+                {
+                    output.Add(original);
+                    continue;
+                }
+                output.Add(original);
+                output.Add("  *译文：* " + translation);
+            }
         }
         return string.Join("\n", output) + "\n";
     }

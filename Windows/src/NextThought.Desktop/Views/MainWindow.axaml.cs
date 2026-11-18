@@ -1588,6 +1588,15 @@ public partial class MainWindow : Window
                              && writeQueue.Snapshot.AcknowledgedUnqueuedWriteCount == 1
                              && writeQueue.Enqueue("d", [4]).Queued);
 
+        var projectedLines = NextThought.Core.SessionProjectionBuilder.Build(Guid.NewGuid(), DateTimeOffset.UtcNow,
+            [new NextThought.Core.TranscriptLine { Text = "库伯奈提斯", Date = DateTimeOffset.UtcNow }], [],
+            corrections: [new NextThought.Core.TranscriptCorrection { Line = 0, Original = "库伯奈提斯", Corrected = "Kubernetes" }]);
+        var projectedExport = NextThought.Core.SessionMarkdownExporter.Export("导出", "会议", DateTimeOffset.UtcNow,
+            0, "", projectedLines, []);
+        Check("projected-transcript", projectedLines.Transcript.Count == 1
+                                     && projectedExport.Contains("Kubernetes", StringComparison.Ordinal)
+                                     && !projectedExport.Contains("库伯奈提斯", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

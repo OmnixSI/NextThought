@@ -13,16 +13,27 @@ public static class SessionProjectionBuilder
     public static SessionTextProjection Build(Guid sessionId, DateTimeOffset startedAt,
         IReadOnlyList<TranscriptLine> lines, IReadOnlyList<SessionProjectedAnswer> answers,
         SessionProjectedSummary? summary = null, IReadOnlyList<SessionQuestionEvent>? detected = null,
-        SessionProjectionOptions? options = null)
+        SessionProjectionOptions? options = null, IReadOnlyList<TranscriptCorrection>? corrections = null)
     {
         options ??= new SessionProjectionOptions();
+        corrections ??= [];
+        var correctedLines = NotesCorrections.Apply(corrections, lines);
         var text = new List<SessionProjectedText>();
-        foreach (var line in lines)
+        var transcript = new List<SessionProjectedTranscriptLine>();
+        for (var index = 0; index < lines.Count; index++)
         {
-            var offset = Math.Max(0, (int)(line.Date - startedAt).TotalSeconds);
+            var line = lines[index];
+            var applied = corrections.Where(correction => !correction.Reverted
+                && (correction.LineId == line.Id || (correction.LineId is null && correction.Line == index))).ToList();
+            var projectedLine = SessionProjectedTranscriptLine.From(line, correctedLines[index].Text, startedAt,
+                options, appliedCorrections: applied);
+            transcript.Add(projectedLine);
+            var offset = projectedLine.Offset;
             var location = $"{offset / 60:00}:{offset % 60:00}";
-            text.Add(new SessionProjectedText("line:" + line.Id, SessionProjectionTextKind.Transcript, line.Text,
-                LineId: line.Id, Location: location, SourceRevision: TranscriptRevisions.Of(line.Id, line.Text)));
+            text.Add(new SessionProjectedText("line:" + line.Id, SessionProjectionTextKind.Transcript,
+                projectedLine.DisplayText, LineId: line.Id, Location: location,
+                SourceRevision: TranscriptRevisions.Of(line.Id, projectedLine.DisplayText),
+                AlternateText: options.TranscriptVariant == SessionTranscriptVariant.Original ? null : projectedLine.OriginalText));
             if (line.Translation is { } translation && translation.Text.Trim().Length > 0
                 && options.LanguageView != SessionLanguageView.Source)
             {
@@ -49,7 +60,10 @@ public static class SessionProjectionBuilder
         }
 
         var revision = Revision(text);
-        return new SessionTextProjection(sessionId, revision, "", options, answers, text, summary);
+        return new SessionTextProjection(sessionId, revision, "", options, answers, text, summary)
+        {
+            Transcript = transcript
+        };
     }
 
     /// <summary>SHA-256 over ids and text in order, so the same sources yield the same revision.</summary>

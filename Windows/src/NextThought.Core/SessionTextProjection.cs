@@ -77,6 +77,9 @@ public sealed record SessionTextProjection(
     /// Overall freshness of generated notes and summaries; original transcript lines alone are
     /// current because they are the source of record.
     /// </summary>
+    /// <summary>Projected transcript lines; populated by the projection builder when available.</summary>
+    public IReadOnlyList<SessionProjectedTranscriptLine> Transcript { get; init; } = [];
+
     public SessionDerivedContentStatus DerivedContentStatus
     {
         get
