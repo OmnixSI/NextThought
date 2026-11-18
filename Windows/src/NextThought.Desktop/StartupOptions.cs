@@ -26,6 +26,7 @@ public static class StartupOptions
     public static string? BpeCheck { get; private set; }
     public static string? GlossarySearchCheck { get; private set; }
     public static string? ProcessCheck { get; private set; }
+    public static string? SessionSearchCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -90,6 +91,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--bpe-check=", StringComparison.OrdinalIgnoreCase)) BpeCheck = argument["--bpe-check=".Length..];
             else if (argument.StartsWith("--glossary-search-check=", StringComparison.OrdinalIgnoreCase)) GlossarySearchCheck = argument["--glossary-search-check=".Length..];
             else if (argument.StartsWith("--process-check=", StringComparison.OrdinalIgnoreCase)) ProcessCheck = argument["--process-check=".Length..];
+            else if (argument.StartsWith("--session-search-check=", StringComparison.OrdinalIgnoreCase)) SessionSearchCheck = argument["--session-search-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)

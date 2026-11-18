@@ -1,4 +1,20 @@
 
+# P1 会话内容检索 · 0.50.0
+
+0.50.0 移植 `SessionContentSearch.swift`（293 行）的检索主体，测试 462 → 471。
+
+- **字段/命中模型**：`SessionSearchField`（类型、正文、位置、备用文本、行 id、修订、过期状态等）、
+  `SessionSearchHit`、`SessionSearchDocument`、`SessionSearchResult`，以及`字段类型/衍生内容状态`枚举。
+- **检索**：直接文本优先、备用文本（如纠正前的原文）次之；命中类型与 id 随来源切换；
+  按 id 去重（同一条转写只报一次），保持文档顺序；`Search` 每场会议取第一条。
+- **摘录**：命中位置前后 32/64 字，边界加省略号；无位置时取前 116 字加省略号；大小写与全半角不敏感。
+- **自检**：`--session-search-check` 在两场会议里检索 Kubernetes，只命中第一场转写并带位置
+  （`qa\session-search-0500\session-search-check.json`）。
+- 9 项测试：直接/备用命中、大小写与全角、去重、无 id、短/长摘录、顺序与空输入。
+- 未移植：`fields` 构建器（依赖 SessionTextProjection 与 SessionSummary）与结构化纪要字段。
+
+统计：已移植 54 / 部分 11 / 基线 2 / 未移植 14。
+
 # P1 进程与取消 · 0.49.0
 
 0.49.0 移植 `ProcessLineReader.swift`（67 行）与 `CancellableTaskValue.swift`（34 行），测试 457 → 462。

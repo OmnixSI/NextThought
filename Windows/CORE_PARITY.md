@@ -65,7 +65,7 @@
 | SemanticRetrieval.swift | 277 | 已移植 | Core/SemanticRetrieval.cs（指纹、分块、SemanticIndex、RRF、HybridContextIndex.retrieve 与显式页码/文件名优先；11 项测试） |
 | SeriesBriefing.swift | 327 | 未移植 |  |
 | SessionArchivePersistence.swift | 513 | 未移植 |  |
-| SessionContentSearch.swift | 293 | 未移植 |  |
+| SessionContentSearch.swift | 293 | 部分移植 | Core/SessionContentSearch.cs（字段/命中/摘录/去重/按会话首命中；9 项测试。fields 构建器依赖 SessionTextProjection/SessionSummary，未移植） |
 | SessionContext.swift | 265 | 部分移植 | Core/SessionContext.cs（词法索引、手动提问、Office XML 文本、AnswerStyle、ContextExcerpt；ContextDocument/SessionMode/SessionPreset 未移植） |
 | SessionEvidence.swift | 456 | 未移植 |  |
 | SessionExport.swift | 129 | 部分移植 | Core/SessionExport.cs（SRT/VTT 字幕与时间戳；Markdown/Word/PDF 导出走既有实现） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 54，部分移植 10，基线简化版 2，未移植 15。
+统计：已移植 54，部分移植 11，基线简化版 2，未移植 14。
 
-测试：`tests/NextThought.Core.Tests` 462 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 471 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 
