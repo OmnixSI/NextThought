@@ -136,13 +136,7 @@
       <!-- Content -->
       <Grid Grid.Column="1" RowDefinitions="*,Auto">
         <Grid Grid.Row="0" Margin="0">
-          <views:HomeView IsVisible="{Binding OnHome}" />
-          <views:LiveView IsVisible="{Binding OnLive}" />
-          <views:NotesView IsVisible="{Binding OnNotes}" />
-          <views:HistoryView IsVisible="{Binding OnHistory}" />
-        <views:SeriesView IsVisible="{Binding OnSeries}" />
-          <views:LibraryView IsVisible="{Binding OnLibrary}" />
-          <views:SettingsView IsVisible="{Binding OnSettings}" />
+          <ContentControl x:Name="PageHost" />
         </Grid>
 
         <!-- Status bar -->

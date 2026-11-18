@@ -13,6 +13,7 @@ namespace NextThought.Desktop.Views;
 public partial class MainWindow : Window
 {
     private readonly AppState state;
+    private readonly Dictionary<AppSection, Control> pages = [];
     private bool closing;
     private bool openedOnce;
 
@@ -21,6 +22,7 @@ public partial class MainWindow : Window
         this.state = state;
         InitializeComponent();
         DataContext = state;
+        ShowSection();
         state.PickSaveFile = PickSaveFileAsync;
         state.PickOpenFile = PickOpenFileAsync;
         state.CopyText = async text =>
@@ -35,7 +37,10 @@ public partial class MainWindow : Window
         state.UpdateInstalled += RequestExit;
         state.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(AppState.LiveMode)) ApplyLiveMode(state.LiveMode);
+            if (e.PropertyName is nameof(AppState.OnHome) or nameof(AppState.OnLive) or nameof(AppState.OnNotes)
+                or nameof(AppState.OnHistory) or nameof(AppState.OnSeries) or nameof(AppState.OnLibrary)
+                or nameof(AppState.OnSettings)) ShowSection();
+            else if (e.PropertyName == nameof(AppState.LiveMode)) ApplyLiveMode(state.LiveMode);
             else if (e.PropertyName == nameof(AppState.Recording))
             {
                 if (state.Recording) ApplyPresenterModeForRecording();
@@ -93,6 +98,7 @@ public partial class MainWindow : Window
             if (StartupOptions.UserContentCheck is { } userContent) await RunUserContentCheckAsync(userContent);
             if (StartupOptions.WorkspaceDeletionCheck is { } deletion) await RunWorkspaceDeletionCheckAsync(deletion);
             if (StartupOptions.DocumentJobCheck is { } documentJob) await RunDocumentJobCheckAsync(documentJob);
+            if (StartupOptions.PageCheck is { } pageCheck) await RunPageCheckAsync(pageCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -1368,6 +1374,74 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "document-job-check: passed" : "document-job-check: failed");
+        Close();
+    }
+
+    /// <summary>Pages are built the first time they are shown; hidden sections cost no controls.</summary>
+    private void ShowSection()
+    {
+        var section = state.Section;
+        if (!pages.TryGetValue(section, out var page))
+        {
+            page = section switch
+            {
+                AppSection.Home => new HomeView(),
+                AppSection.Live => new LiveView(),
+                AppSection.Notes => new NotesView(),
+                AppSection.History => new HistoryView(),
+                AppSection.Series => new SeriesView(),
+                AppSection.Library => new LibraryView(),
+                AppSection.Settings => new SettingsView(),
+                _ => new HomeView()
+            };
+            pages[section] = page;
+        }
+        if (!ReferenceEquals(PageHost.Content, page)) PageHost.Content = page;
+    }
+
+    /// <summary>Measures the lazy page host: pages built at startup, then working set after visiting all.</summary>
+    private async Task RunPageCheckAsync(string path)
+    {
+        await Task.Delay(150);
+        var process = System.Diagnostics.Process.GetCurrentProcess();
+        process.Refresh();
+        var initialBytes = process.WorkingSet64;
+        var initialPages = pages.Count;
+        var names = new List<string>();
+        foreach (var section in Enum.GetValues<AppSection>())
+        {
+            state.Section = section;
+            await Task.Delay(60);
+            if (PageHost.Content is Control page) names.Add(section + ":" + page.GetType().Name);
+        }
+        state.Section = AppSection.Home;
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        process.Refresh();
+        var allBytes = process.WorkingSet64;
+        var passed = initialPages == 1 && pages.Count == Enum.GetValues<AppSection>().Length
+                     && names.Count == pages.Count && names.All(name => name.Contains(':'));
+        var report = new
+        {
+            passed,
+            initialPages,
+            pageCount = pages.Count,
+            initialWorkingSetMiB = Math.Round(initialBytes / 1048576.0, 1),
+            allPagesWorkingSetMiB = Math.Round(allBytes / 1048576.0, 1),
+            pages = names
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "page-check: passed" : "page-check: failed");
         Close();
     }
 

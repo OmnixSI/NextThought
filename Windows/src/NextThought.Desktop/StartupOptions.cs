@@ -35,6 +35,7 @@ public static class StartupOptions
     public static string? UserContentCheck { get; private set; }
     public static string? WorkspaceDeletionCheck { get; private set; }
     public static string? DocumentJobCheck { get; private set; }
+    public static string? PageCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -108,6 +109,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--user-content-check=", StringComparison.OrdinalIgnoreCase)) UserContentCheck = argument["--user-content-check=".Length..];
             else if (argument.StartsWith("--workspace-deletion-check=", StringComparison.OrdinalIgnoreCase)) WorkspaceDeletionCheck = argument["--workspace-deletion-check=".Length..];
             else if (argument.StartsWith("--document-job-check=", StringComparison.OrdinalIgnoreCase)) DocumentJobCheck = argument["--document-job-check=".Length..];
+            else if (argument.StartsWith("--page-check=", StringComparison.OrdinalIgnoreCase)) PageCheck = argument["--page-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)
