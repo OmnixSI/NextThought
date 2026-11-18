@@ -1571,6 +1571,13 @@ public partial class MainWindow : Window
         Check("projection-builder", builtProjection.SearchableText.Any(text => text.Kind == NextThought.Core.SessionProjectionTextKind.Transcript)
                                    && builtProjection.Revision.Length == 64);
 
+        var evidenceSupport = NextThought.Core.SessionEvidenceBuilder.Support("Kubernetes", null,
+            [new NextThought.Core.TranscriptLine { Text = "Kubernetes 部署", Date = DateTimeOffset.UtcNow }]);
+        var evidenceCurrent = NextThought.Core.SessionEvidenceBuilder.IsReviewCurrent(
+            new NextThought.Core.SessionEvidenceReview(NextThought.Core.SessionEvidenceDecision.Supported, "c", "t", "l", DateTimeOffset.UtcNow),
+            "c", "t", "l");
+        Check("evidence-builder", evidenceSupport == NextThought.Core.SessionEvidenceSupport.Quoted && evidenceCurrent);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

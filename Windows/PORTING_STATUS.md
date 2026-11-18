@@ -1,5 +1,19 @@
 
+# P2 证据匹配 · 0.76.0
+
+0.76.0 移植 ``SessionEvidenceBuilder`` 的匹配/时效部分，测试 631 → 637。
+
+- **依据等级**：有引文时在转写里大小写不敏感查找（找到 Quoted，找不到 QuoteNotFound）；
+  无引文但有时间且附近 45 秒内有行 → TimeOnly，否则 Unlocated。
+- **位置解析**：``mm:ss``、``h:mm:ss`` 与纯秒数；负数/非数字/超段数返回 null。
+- **评审时效**：结论修订、转写源修订、行修订三者都一致才算有效；挂评审时若已变化则标记 ``reviewIsStale``。
+- **自检**：``--acceptance-check`` 增加第 25 项（引文命中 + 评审有效）。
+- 6 项测试：引文大小写、时间支持/无定位、非法位置、秒数解析、评审时效、陈旧标记。
+
+统计：已移植 56 / 部分 24 / 基线 0 / 未移植 0。
+
 # P1 归档迁移发布 · 0.75.0
+
 
 0.75.0 移植 ``SessionArchiveMigrationPublisher``（SessionArchivePersistence.swift 的迁移段），测试 624 → 631。
 
