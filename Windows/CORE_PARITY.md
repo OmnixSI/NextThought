@@ -48,7 +48,7 @@
 | NotesTemplates.swift | 873 | 部分移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/渲染/提示/校对/到期日） |
 | OnboardingFlow.swift | 55 | 已移植 | Core/OnboardingFlow.cs（步骤/可跳过/待办） |
 | OnboardingVersion.swift | 16 | 已移植 | Core/OnboardingVersion.cs（与 TranscriptContextBuilder 同文件） |
-| PDFTextLayout.swift | 171 | 基线简化版 | LayoutReadingOrder.cs（简化版） |
+| PDFTextLayout.swift | 171 | 已移植 | Core/PDFTextLayout.cs（页眉页脚、页码、换行合并、标题识别；9 项测试；已接入 PDF 读取） |
 | ProcessLineReader.swift | 67 | 未移植 |  |
 | QuestionDetector.swift | 115 | 已移植 | Core/QuestionDetector.cs（片段合并、15 秒去重、问句判定；7 项测试） |
 | QuestionEvalCorpus+Extended.swift | 110 | 已移植 | Core/QuestionEvalCorpus.cs（Extended 集；评估器见 QuestionDetectionEvaluator.cs） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 48，部分移植 11，基线简化版 3，未移植 19。
+统计：已移植 49，部分移植 11，基线简化版 2，未移植 19。
 
-测试：`tests/NextThought.Core.Tests` 423 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 432 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 

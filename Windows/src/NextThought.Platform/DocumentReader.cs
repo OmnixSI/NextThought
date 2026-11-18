@@ -32,10 +32,14 @@ public sealed class DocumentReader(EnhancedOcrService? enhancedOcr = null)
             if (pdf.NumberOfPages > 1500) throw new InvalidDataException("PDF 超过 1500 页，请拆分导入。");
             if (enhancedOcr != null && pdf.NumberOfPages > 10) throw new InvalidDataException("增强 OCR 的 CPU 模式每次最多 10 页，请拆分 PDF，或取消增强选项后使用系统 OCR。");
             global::Windows.Data.Pdf.PdfDocument? rendered = null;
+            var pageTexts = new List<string>(pdf.NumberOfPages);
+            for (var page = 1; page <= pdf.NumberOfPages; page++) pageTexts.Add(ContentOrderTextExtractor.GetText(pdf.GetPage(page)));
+            var furniture = NextThought.Core.PDFTextLayout.Furniture(pageTexts);
+            var prose = NextThought.Core.PDFTextLayout.IsProse(pageTexts);
             for (var i = 1; i <= pdf.NumberOfPages; i++)
             {
                 ct.ThrowIfCancellationRequested();
-                var text = ContentOrderTextExtractor.GetText(pdf.GetPage(i)).Trim();
+                var text = NextThought.Core.PDFTextLayout.Markdown(pageTexts[i - 1], furniture, prose).Trim();
                 if (text.Length < 10)
                 {
                     rendered ??= await global::Windows.Data.Pdf.PdfDocument.LoadFromFileAsync(await StorageFile.GetFileFromPathAsync(path).AsTask(ct)).AsTask(ct);

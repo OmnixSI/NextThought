@@ -1,4 +1,18 @@
 
+# P5 PDF 版式 · 0.45.0
+
+0.45.0 把 `PDFTextLayout.swift`（171 行，原「基线简化版」）完整移植为 `Core/PDFTextLayout.cs` 并接入 PDF 读取，测试 423 → 432。
+
+- **页眉页脚**：跨页重复（数字忽略）且出现在页首/页尾 30% 的行判为版式噪声；单页出现 >2 次的行不算；少于 4 页不判定。
+- **单页 Markdown**：先去页码（首/尾）、去页眉；把被换行拆开的句子接回去（中文不空格、英文补空格、断词连字符去掉）；
+  点线引导替换为省略号；编号标题（`3.2`、`II. SYSTEM MODEL`、`A. Array…`、`Abstract`、`APPENDIX B`）标记为 Markdown 标题。
+- **接入**：`DocumentReader` 的 PDF 分支先一次取出各页文本，算版式噪声与「是否论文正文」，再逐页转 Markdown 后归档；短页仍走 OCR 兜底。
+- **自检**：`--pdf-check` 用 5 页合成页验证页眉被识别、正文不被误判、`摘要` 成为标题、页眉与页码消失
+  （`qa\pdf-0450\pdf-check.json`）。
+- 9 项测试覆盖页眉/页码、换行合并、断词、中文不空格、编号与期刊标题、点线、正文判定。
+
+统计：已移植 49 / 部分 11 / 基线 2 / 未移植 19。
+
 # P4 问句语料与离线评估 · 0.44.0
 
 0.44.0 移植三份 QuestionEvalCorpus 与 QuestionDetectionEvaluator（在 QuestionIntent.swift 末尾），测试 420 → 423。
