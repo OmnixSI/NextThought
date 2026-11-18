@@ -1,4 +1,20 @@
 
+# P6 系列简报 · 0.51.0
+
+0.51.0 移植 `SeriesBriefing.swift`（327 行）的简报主体，测试 471 → 478。
+
+- **近期会议**：只算系列成员，按开始时间倒序，最多 `meetingLimit` 场；`sessionCount` 是成员总数。
+- **经验**：`useKnowledge` 打开时置顶经验优先，其余按创建时间倒序，最多 `knowledgeLimit` 条；
+  关闭时经验、题库、待确认候选都为空。
+- **题库**：按被问次数降序、同次数按更新时间降序。
+- **待确认候选**：只留 pending 且来源会议仍在系列里的（无来源的保留），按创建时间倒序。
+- **自检**：`--series-briefing-check` 用两场会议、两条经验与一条题库生成简报并校验顺序/限额
+  （`qa\series-briefing-0510\series-briefing-check.json`）。
+- 7 项测试：顺序与限额、只算成员、置顶优先、题库排序、关闭知识、候选来源过滤、零限额。
+- 未移植：`seriesItems`（决定/待办/过期项）、证据引用合并与行动状态（依赖 SessionEvidence/Workspace 完整模型）。
+
+统计：已移植 54 / 部分 12 / 基线 2 / 未移植 13。
+
 # P1 会话内容检索 · 0.50.0
 
 0.50.0 移植 `SessionContentSearch.swift`（293 行）的检索主体，测试 462 → 471。
