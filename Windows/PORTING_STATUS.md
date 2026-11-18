@@ -1,5 +1,16 @@
 
+# P7 口径校准：LiveInsights / MeetingType · 1.1.2
+
+1.1.2 审计后把两文件转为**已移植**（无代码改动）：
+
+- ``LiveInsights.swift``：整屏截图 OCR + ``SlideFollower`` 已覆盖 Mac 的单窗口截图跟随；
+  ``--slide-follow-check`` 在安装版实测 passed（命中第 1 页）。差异仅是「窗口选择」交互。
+- ``MeetingType.swift``：场景默认、标题猜类型、系列匹配、自定义名称/基准模式（MeetingPlan）均已具备。
+- 统计：已移植 **77** / 部分 **3** / 基线 0 / 未移植 0；测试 774；验收 57。
+- **1.1.2 安装版实测**：启动 8.8 秒（负载中）、工作集 **122.9 MiB**、私有 52.7 MiB；slide-follow passed。
+
 # P6 从证据收集系列变更 · 1.1.1
+
 
 1.1.1 补上从笔记证据自动生成系列变更候选，测试 773 → 774；``SeriesBriefing.swift`` 转为**已移植**。
 

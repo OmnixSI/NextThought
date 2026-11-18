@@ -37,14 +37,14 @@
 | Glossary.swift | 572 | 已移植 | Core/Glossary.cs（词条/分类/宽松键/归一/合并/检索展开/规范替换/热词/提示词；17 项测试） |
 | IncrementalBackup.swift | 123 | 已移植 | Core/IncrementalBackup.cs（内容寻址恢复点、校验、去重与裁剪；16 项测试） |
 | LaTeXMath.swift | 545 | 已移植 | Core/LaTeXMath.cs（Unicode 转换 + Markdown 预处理；17 项测试；接入答案与纪要渲染） |
-| LiveInsights.swift | 403 | 部分移植 | Core/AnswerPoints.cs + LiveInsights.cs（文本相似度/OCR 空格桥接、屏幕判定、幻灯片页/匹配/决定/跟随状态、讲稿解析与提示、回答进度；15 项测试。截图→OCR→跟随由 ``--slide-follow-check`` 实测，Mac 的实时窗口选择未移植） |
+| LiveInsights.swift | 777 | 已移植 | Core/AnswerPoints.cs + LiveInsights.cs（文本相似度/OCR 空格桥接、屏幕判定、页/匹配/决定/跟随、讲稿解析与提示、回答进度；15 项测试。Windows 用整屏截图 OCR 替代 Mac 单窗口选择，``--slide-follow-check`` 实测通过） |
 | LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 已移植 | Core/LocalModelReuse.cs（按名字搜索、大小/哈希校验、原子复用；4 项测试） |
 | MaterialTerms.swift | 57 | 已移植 | Core/MaterialTerms.cs（3 项测试，含 9 个 IsTerm 用例） |
 | MeetingCarry.swift | 38 | 已移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关 + 基线资料过滤 + 快照；7 项测试） |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 166 | 已移植 | Core/MeetingPreparation.cs（有效模式/自定义基准/携带选择/基线资料/上一场转写/快照；4 项测试） |
-| MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults + MeetingTypeGuesser.cs（场景默认、标题猜类型、系列基准标题/相似度/最佳匹配；19 项测试。自定义场景类型未移植） |
+| MeetingType.swift | 168 | 已移植 | Core.MeetingTypeDefaults + MeetingTypeGuesser.cs + MeetingPlan（场景默认、标题猜类型、系列匹配、自定义名称/基准模式；19 项测试） |
 | NotesTemplates.swift | 570 | 已移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/形状整理/渲染/提示/校对/到期日/转写校对） |
 | OnboardingFlow.swift | 55 | 已移植 | Core/OnboardingFlow.cs（步骤/可跳过/待办） |
 | OnboardingVersion.swift | 16 | 已移植 | Core/OnboardingVersion.cs（与 TranscriptContextBuilder 同文件） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 75，部分移植 5，基线简化版 0，未移植 0。
+统计：已移植 77，部分移植 3，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
