@@ -19,6 +19,8 @@ public sealed class WorkspaceSeriesChangeTests
         EvidenceId = "e1",
         ClaimRevision = "c1",
         SourceRevision = "s1",
+        SourceQuote = "补充压测",
+        Location = "12:00",
         TranscriptSourceRevision = "t1"
     };
 
@@ -28,6 +30,7 @@ public sealed class WorkspaceSeriesChangeTests
     private static SessionEvidenceReference Evidence(bool supported = true, bool stale = false) => new(
         "e1", "标题", "补充压测", SessionEvidenceSupport.Quoted, SessionEvidenceOrigin.TextNotes,
         ReviewDecision: supported ? SessionEvidenceDecision.Supported : SessionEvidenceDecision.Unsupported,
+        Quote: "补充压测", Location: "12:00", LineId: Guid.NewGuid(), Kind: NotesSectionKind.Actions, Owner: "小王", Due: "下周五",
         ReviewIsStale: stale, ClaimRevision: "c1", SourceRevision: "s1", TranscriptSourceRevision: "t1");
 
     [Fact]
@@ -85,6 +88,35 @@ public sealed class WorkspaceSeriesChangeTests
         var unsupported = SeriesBriefingBuilder.Build(series, [session], evidenceReferences: [Evidence(supported: false)]);
         Assert.Empty(unsupported.PendingSeriesChanges!);
         Assert.Empty(SeriesBriefingBuilder.Build(series with { UseKnowledge = false }, [session]).PendingSeriesChanges!);
+    }
+
+    [Fact]
+    public void SupportedCurrentNotesBecomeOneProposalPerRevision()
+    {
+        var series = Series();
+        var reference = Evidence() with { Id = "notes:actions:0", Title = "待办", Kind = NotesSectionKind.Actions };
+        var (once, added) = WorkspaceSeriesChangeMerger.CollectCandidates(series, [reference], SessionId.ToString("D"));
+        Assert.Single(added);
+        var candidate = Assert.Single(once.SeriesChangeCandidates);
+        Assert.Equal(WorkspaceSeriesItem.KindValue.Action, candidate.Kind);
+        Assert.Equal("补充压测", candidate.Text);
+        Assert.Equal("小王", candidate.Owner);
+        Assert.Equal(added[0], candidate.Id);
+        Assert.Empty(once.SeriesItems);
+
+        var (twice, again) = WorkspaceSeriesChangeMerger.CollectCandidates(once, [reference], SessionId.ToString("D"));
+        Assert.Empty(again);
+        Assert.Single(twice.SeriesChangeCandidates);
+
+        var regenerated = reference with { Owner = "小李" };
+        var (updated, newIds) = WorkspaceSeriesChangeMerger.CollectCandidates(twice, [regenerated], SessionId.ToString("D"));
+        Assert.Single(newIds);
+        Assert.Equal(2, updated.SeriesChangeCandidates.Count);
+        Assert.Single(updated.SeriesChangeCandidates, item => item.Status == WorkspaceSeriesChangeCandidate.StatusValue.Pending);
+        Assert.Single(updated.SeriesChangeCandidates, item => item.Status == WorkspaceSeriesChangeCandidate.StatusValue.Superseded);
+
+        Assert.Empty(WorkspaceSeriesChangeMerger.CollectCandidates(series with { UseKnowledge = false }, [reference],
+            SessionId.ToString("D")).Added);
     }
 
     [Fact]

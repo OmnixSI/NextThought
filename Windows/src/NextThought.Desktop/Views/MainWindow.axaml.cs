@@ -1883,6 +1883,18 @@ public partial class MainWindow : Window
                                && changedSeries.SeriesChangeCandidates[0].Status
                                    == NextThought.Core.WorkspaceSeriesChangeCandidate.StatusValue.Accepted);
 
+        var collectReference = new NextThought.Core.SessionEvidenceReference("notes:actions:1", "待办", "发布",
+            NextThought.Core.SessionEvidenceSupport.Quoted, NextThought.Core.SessionEvidenceOrigin.TextNotes,
+            LineId: Guid.NewGuid(), Kind: NextThought.Core.NotesSectionKind.Actions, Owner: "小王", Due: "周五",
+            ClaimRevision: "c1", SourceRevision: "s1", TranscriptSourceRevision: "t1",
+            ReviewDecision: NextThought.Core.SessionEvidenceDecision.Supported);
+        var (collectedSeries, collectedIds) = NextThought.Core.WorkspaceSeriesChangeMerger.CollectCandidates(
+            series, [collectReference], sessionId.ToString("D"));
+        Check("series-change-collect", collectedIds.Count == 1
+                                        && collectedSeries.SeriesChangeCandidates.Count == 1
+                                        && collectedSeries.SeriesChangeCandidates[0].Kind
+                                            == NextThought.Core.WorkspaceSeriesItem.KindValue.Action);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

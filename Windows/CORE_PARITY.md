@@ -63,7 +63,7 @@
 | ScrollFollowInputClassifier.swift | 21 | 已移植 | Core/ScrollFollowState.cs（滚动导航键与命中测试） |
 | ScrollFollowState.swift | 48 | 已移植 | Core/ScrollFollowState.cs（跟随/读历史/选中文字） |
 | SemanticRetrieval.swift | 277 | 已移植 | Core/SemanticRetrieval.cs（指纹、分块、SemanticIndex、RRF、HybridContextIndex.retrieve 与显式页码/文件名优先；11 项测试） |
-| SeriesBriefing.swift | 327 | 部分移植 | Core/SeriesBriefing.cs + WorkspaceSeriesChange.cs（近期会议/经验/题库/候选限制 + 决定/待办/过期 + 证据时效 + 系列变更候选/接受回执；21 项测试。从证据自动收集候选未移植） |
+| SeriesBriefing.swift | 327 | 已移植 | Core/SeriesBriefing.cs + WorkspaceSeriesChange.cs（近期会议/经验/题库/候选限制 + 决定/待办/过期 + 证据时效 + 系列变更候选收集/审阅/回执；22 项测试） |
 | SessionArchivePersistence.swift | 513 | 已移植 | Core/SessionArchivePersistence.cs + 迁移发布/写队列/快照缓存（目录读取、标记、元数据读取、旧版回答迁移、迁移发布、写队列、回执、追加器、残留；20 项测试） |
 | SessionContentSearch.swift | 293 | 已移植 | Core/SessionContentSearch.cs（字段/命中/摘录/去重/首命中 + 投影字段 + 结构化笔记字段；13 项测试） |
 | SessionContext.swift | 265 | 已移植 | Core/SessionContext.cs + SessionPreset.cs（词法索引、手动提问、Office XML、AnswerStyle、摘录、模式/资料文档/预置；5 项测试） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 74，部分移植 6，基线简化版 0，未移植 0。
+统计：已移植 75，部分移植 5，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、

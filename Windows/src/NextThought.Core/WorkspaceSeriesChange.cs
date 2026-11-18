@@ -50,13 +50,85 @@ public sealed record WorkspaceSeriesChangeCandidate
 public static class WorkspaceSeriesChangeMerger
 {
     /// <summary>A proposal counts only while the review is supported, fresh and on the same revisions.</summary>
-    public static bool MatchesCurrentEvidence(WorkspaceSeriesChangeCandidate candidate, SessionEvidenceReference reference) =>
-        reference.Id == candidate.EvidenceId
-        && reference.ReviewDecision == SessionEvidenceDecision.Supported
-        && !reference.ReviewIsStale
-        && reference.ClaimRevision == candidate.ClaimRevision
-        && reference.SourceRevision == candidate.SourceRevision
-        && (reference.TranscriptSourceRevision ?? "") == (candidate.TranscriptSourceRevision ?? "");
+    public static bool MatchesCurrentEvidence(WorkspaceSeriesChangeCandidate candidate, SessionEvidenceReference reference)
+    {
+        if (reference.Origin != SessionEvidenceOrigin.TextNotes
+            || reference.ReviewDecision != SessionEvidenceDecision.Supported || reference.ReviewIsStale
+            || reference.LineId is null || string.IsNullOrEmpty(reference.TranscriptSourceRevision))
+            return false;
+        if (reference.ClaimRevision != candidate.ClaimRevision || reference.SourceRevision != candidate.SourceRevision
+            || reference.TranscriptSourceRevision != (candidate.TranscriptSourceRevision ?? ""))
+            return false;
+        return reference.Id == candidate.EvidenceId && reference.Claim == candidate.Text
+            && reference.Owner == candidate.Owner && reference.Due == candidate.Due
+            && reference.DueDate == candidate.DueDate && reference.Quote == candidate.SourceQuote
+            && reference.Location == candidate.Location && SeriesKind(reference) == candidate.Kind;
+    }
+
+    /// <summary>Only explicitly supported, current note evidence becomes a proposal.</summary>
+    public static (WorkspaceSeries Series, IReadOnlyList<string> Added) CollectCandidates(
+        WorkspaceSeries series, IReadOnlyList<SessionEvidenceReference> evidence, string sessionId,
+        DateTimeOffset? now = null)
+    {
+        if (!series.UseKnowledge) return (series, []);
+        var candidates = series.SeriesChangeCandidates.ToList();
+        var added = new List<string>();
+        foreach (var reference in evidence)
+        {
+            if (reference.Origin != SessionEvidenceOrigin.TextNotes
+                || reference.ReviewDecision != SessionEvidenceDecision.Supported || reference.ReviewIsStale
+                || reference.LineId is null || reference.ClaimRevision is null || reference.SourceRevision is null
+                || string.IsNullOrEmpty(reference.TranscriptSourceRevision))
+                continue;
+            if (SeriesKind(reference) is not { } kind) continue;
+            var id = CandidateId(sessionId, reference);
+            if (candidates.Any(candidate => candidate.Id == id)) continue;
+            for (var index = 0; index < candidates.Count; index++)
+                if (candidates[index].Status == WorkspaceSeriesChangeCandidate.StatusValue.Pending
+                    && candidates[index].SourceSessionId == sessionId
+                    && candidates[index].EvidenceId == reference.Id)
+                    candidates[index] = candidates[index] with { Status = WorkspaceSeriesChangeCandidate.StatusValue.Superseded };
+            candidates.Add(new WorkspaceSeriesChangeCandidate
+            {
+                Id = id,
+                Kind = kind,
+                Text = reference.Claim,
+                Owner = reference.Owner,
+                Due = reference.Due,
+                DueDate = reference.DueDate,
+                SourceSessionId = sessionId,
+                EvidenceId = reference.Id,
+                ClaimRevision = reference.ClaimRevision,
+                SourceRevision = reference.SourceRevision,
+                SourceQuote = reference.Quote,
+                Location = reference.Location,
+                TranscriptSourceRevision = reference.TranscriptSourceRevision,
+                CreatedAt = now ?? DateTimeOffset.UtcNow
+            });
+            added.Add(id);
+        }
+        return added.Count == 0 ? (series, added) : (series with { SeriesChangeCandidates = candidates }, added);
+    }
+
+    private static WorkspaceSeriesItem.KindValue? SeriesKind(SessionEvidenceReference reference)
+    {
+        if (reference.Kind == NotesSectionKind.Actions) return WorkspaceSeriesItem.KindValue.Action;
+        if (reference.Kind != NotesSectionKind.Items) return null;
+        var components = reference.Id.Split(':');
+        var section = components.Length > 1 ? components[1].ToLowerInvariant() : "";
+        var title = reference.Title.Trim().ToLowerInvariant();
+        return section is "decisions" or "decision" || title is "决定" or "decisions"
+            ? WorkspaceSeriesItem.KindValue.Decision
+            : null;
+    }
+
+    private static string CandidateId(string sessionId, SessionEvidenceReference reference)
+    {
+        var raw = string.Join("\u0000", sessionId, reference.Id, reference.ClaimRevision, reference.SourceRevision,
+            reference.TranscriptSourceRevision, reference.Claim, reference.Owner, reference.Due);
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(raw)))
+            .ToLowerInvariant()[..24];
+    }
 
     /// <summary>Accepts or rejects a pending candidate; accepted ones become series items.</summary>
     public static (WorkspaceSeries Series, WorkspaceSeriesChangeReceipt? Receipt) Apply(
