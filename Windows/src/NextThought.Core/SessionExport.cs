@@ -2,6 +2,32 @@ using System.Text;
 
 namespace NextThought.Core;
 
+/// <summary>What a meeting can be exported as (port of SessionExportFormat).</summary>
+public enum SessionExportFormat
+{
+    Markdown,
+    Docx,
+    Pdf,
+    Srt,
+    Vtt
+}
+
+public static class SessionExportFormats
+{
+    /// <summary>Markdown is saved as .md; the other names are the extensions.</summary>
+    public static string FileExtension(this SessionExportFormat format) =>
+        format == SessionExportFormat.Markdown ? "md" : format.ToString().ToLowerInvariant();
+
+    public static string Title(this SessionExportFormat format) => format switch
+    {
+        SessionExportFormat.Markdown => "Markdown",
+        SessionExportFormat.Docx => "Word 文档",
+        SessionExportFormat.Pdf => "PDF",
+        SessionExportFormat.Srt => "SRT 字幕",
+        _ => "WebVTT 字幕"
+    };
+}
+
 public enum SessionSubtitleFormat
 {
     Srt,

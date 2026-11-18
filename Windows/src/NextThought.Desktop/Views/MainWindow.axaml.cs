@@ -1766,6 +1766,11 @@ public partial class MainWindow : Window
             .WorkspaceSnapshot(carrySeries, new HashSet<string>());
         Check("meeting-carry-materials", carriedDocuments.DocumentIds.Count == 1 && droppedDocuments.DocumentIds.Count == 0);
 
+        Check("export-formats", NextThought.Core.SessionExportFormat.Markdown.FileExtension() == "md"
+                                && NextThought.Core.SessionExportFormat.Docx.FileExtension() == "docx"
+                                && NextThought.Core.SessionExportFormat.Docx.Title() == "Word 文档"
+                                && NextThought.Core.SessionExportFormat.Vtt.Title() == "WebVTT 字幕");
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
