@@ -1895,6 +1895,18 @@ public partial class MainWindow : Window
                                         && collectedSeries.SeriesChangeCandidates[0].Kind
                                             == NextThought.Core.WorkspaceSeriesItem.KindValue.Action);
 
+        var ownershipSeries = new NextThought.Core.WorkspaceSeries("owner", "系列", DateTimeOffset.UtcNow, [], [])
+        {
+            Documents = [new NextThought.Core.ContextDocument { Id = "owner-doc", Name = "资料" }]
+        };
+        var archivedDocuments = NextThought.Core.WorkspaceArchiveOwnership.Repair(ownershipSeries,
+            [new NextThought.Core.MaterialDocument { Id = "owner-doc", Name = "资料.pdf" }],
+            Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "materials"));
+        var ownershipUpdated = NextThought.Core.WorkspaceArchiveOwnership.ApplyMarkdownPaths(ownershipSeries, archivedDocuments);
+        Check("archive-ownership", archivedDocuments.Count == 1
+                                   && ownershipUpdated.Documents[0].MarkdownPath == archivedDocuments[0].MarkdownPath
+                                   && File.Exists(archivedDocuments[0].MarkdownPath));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

@@ -45,6 +45,23 @@ public static class WorkspaceArchiveOwnership
         return archived;
     }
 
+    /// <summary>
+    /// Writes the owned Markdown paths back onto the series documents, so reopening the series
+    /// reads the archived copy instead of re-extracting the original.
+    /// </summary>
+    public static WorkspaceSeries ApplyMarkdownPaths(WorkspaceSeries series,
+        IReadOnlyList<WorkspaceArchivedDocument> archived)
+    {
+        if (archived.Count == 0 || series.Documents.Count == 0) return series;
+        var paths = archived.ToDictionary(document => document.DocumentId, document => document.MarkdownPath,
+            StringComparer.Ordinal);
+        return series with
+        {
+            Documents = series.Documents.Select(document =>
+                paths.TryGetValue(document.Id, out var path) ? document with { MarkdownPath = path } : document).ToList()
+        };
+    }
+
     public static readonly JsonSerializerOptions MaterialDocumentOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

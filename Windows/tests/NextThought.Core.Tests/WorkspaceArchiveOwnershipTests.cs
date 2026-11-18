@@ -44,6 +44,24 @@ public sealed class WorkspaceArchiveOwnershipTests : IDisposable
     }
 
     [Fact]
+    public void MarkdownPathsAreWrittenBackOntoSeriesDocuments()
+    {
+        var withDocuments = series with
+        {
+            Documents =
+            [
+                new ContextDocument { Id = "doc-1", Name = "A" },
+                new ContextDocument { Id = "doc-2", Name = "B" }
+            ]
+        };
+        var archived = WorkspaceArchiveOwnership.Repair(withDocuments, [Document("doc-1", "x")], root);
+        var updated = WorkspaceArchiveOwnership.ApplyMarkdownPaths(withDocuments, archived);
+        Assert.Equal(archived[0].MarkdownPath, updated.Documents[0].MarkdownPath);
+        Assert.Null(updated.Documents[1].MarkdownPath);
+        Assert.Same(withDocuments, WorkspaceArchiveOwnership.ApplyMarkdownPaths(withDocuments, []));
+    }
+
+    [Fact]
     public void DocumentsWithoutBlocksStillGetFiles()
     {
         var archived = Assert.Single(WorkspaceArchiveOwnership.Repair(series, [Document("doc-2")], root));

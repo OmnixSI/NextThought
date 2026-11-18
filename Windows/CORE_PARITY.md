@@ -87,11 +87,11 @@
 | WebLookupPromptBuilder.swift | 41 | 已移植 | Core/WebLookupPromptBuilder.cs（字段预算与最近两轮） |
 | WebSearchNeed.swift | 129 | 已移植 | Core/WebSearchNeed.cs（17 条标注语料逐条断言；联网搜索提供方仍未接） |
 | Workspace.swift | 1460 | 已移植 | Core/Workspace.cs + WorkspaceKnowledge.cs + WorkspaceSeriesItem.cs/WorkspaceSessionDeletion.cs（系列、资料文档、经验版本、题库、候选与回执、决定待办、源删除墓碑、KnowledgeMerger；19 项测试） |
-| WorkspaceArchiveOwnership.swift | 35 | 部分移植 | Core/WorkspaceArchiveOwnership.cs（系列目录下生成/复用 md + json、原子写、非法 id 拒绝；6 项测试。Windows 资料全局共享，无 markdownPath 回写） |
+| WorkspaceArchiveOwnership.swift | 218 | 已移植 | Core/WorkspaceArchiveOwnership.cs（系列目录下生成/复用 md + json、原子写、非法 id 拒绝、markdownPath 回写；7 项测试） |
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 77，部分移植 3，基线简化版 0，未移植 0。
+统计：已移植 78，部分移植 2，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
