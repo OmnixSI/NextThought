@@ -1650,6 +1650,17 @@ public partial class MainWindow : Window
                               && interviewProfile.DocumentCategories.Contains("简历")
                               && interviewProfile.TemplatePreferences.StartsWith("我是候选人", StringComparison.Ordinal));
 
+        var slidePages = new[]
+        {
+            new NextThought.Core.SlidePage { Page = 1, PageCount = 2, DocumentName = "talk.pptx", Text = "缓存一致性 读写时序" }
+        };
+        var rankedSlides = NextThought.Core.SlideMatcher.Rank("缓存一致性 读写时序", slidePages);
+        var slideDecision = NextThought.Core.SlideMatcher.Decide(rankedSlides);
+        Check("slide-matching", rankedSlides.Count == 1
+                                 && slideDecision.Kind == NextThought.Core.SlideDecisionKind.Page
+                                 && slideDecision.Page?.Page == 1
+                                 && NextThought.Core.SlideMatcher.IsDeck("talk.pptx", 2));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

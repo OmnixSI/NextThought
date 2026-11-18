@@ -87,6 +87,45 @@ public static class TextSimilarity
     public static double Containment(HashSet<string> part, HashSet<string> whole) =>
         part.Count == 0 ? 0 : (double)part.Count(whole.Contains) / part.Count;
 
+    public static double Jaccard(string a, string b) => Jaccard(Bigrams(a), Bigrams(b));
+
+    public static double Containment(string part, string whole) => Containment(Bigrams(part), Bigrams(whole));
+
+    /// <summary>Whole words where the script has them, character pairs for Chinese/Japanese.</summary>
+    public static HashSet<string> Terms(string text)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        var word = new System.Text.StringBuilder();
+        char? previousCjk = null;
+        void Flush()
+        {
+            if (word.Length >= 2) result.Add(word.ToString());
+            word.Clear();
+        }
+        foreach (var character in text.ToLowerInvariant())
+        {
+            var isCjk = char.ConvertToUtf32(character.ToString(), 0) >= 0x2E80;
+            if (isCjk && char.IsLetterOrDigit(character))
+            {
+                Flush();
+                if (previousCjk is { } previous) result.Add(new string([previous, character]));
+                previousCjk = character;
+            }
+            else if (char.IsLetterOrDigit(character))
+            {
+                previousCjk = null;
+                word.Append(character);
+            }
+            else
+            {
+                Flush();
+                previousCjk = null;
+            }
+        }
+        Flush();
+        return result;
+    }
+
     /// <summary>Without the model: the screen matters when a fair share of recent speech appears on it.</summary>
     public static bool Relevant(string screen, string recentSpeech)
     {

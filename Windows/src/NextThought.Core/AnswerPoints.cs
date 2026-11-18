@@ -50,4 +50,29 @@ public static class AnswerPoints
     }
 
     public static string StripMarkup(string text) => text.Replace("**", "").Replace("`", "").Trim();
+
+    public static bool HeuristicCovered(string point, string speech) => HeuristicCovered(point, TextSimilarity.Terms(speech));
+
+    public static bool HeuristicCovered(string point, HashSet<string> said)
+    {
+        var wanted = ContentTerms(point);
+        if (wanted.Count == 0) return false;
+        return (double)wanted.Count(term => said.Contains(term)) / wanted.Count >= 0.5;
+    }
+
+    /// <summary>The terms that carry a sentence: longer English words, or CJK pairs.</summary>
+    public static HashSet<string> ContentTerms(string text)
+    {
+        var terms = TextSimilarity.Terms(text);
+        var content = terms.Where(term => term.Length >= 4 || term.Any(character => character >= 0x2E80))
+            .ToHashSet(StringComparer.Ordinal);
+        return content.Count >= 3 ? content : terms;
+    }
+
+    public static int? Next(HashSet<int> covered, int count)
+    {
+        for (var index = 0; index < count; index++)
+            if (!covered.Contains(index)) return index;
+        return null;
+    }
 }
