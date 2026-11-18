@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -510,7 +510,7 @@ public partial class AppState : ObservableObject
             return;
         }
         if (update.Source == AudioSource.System) SystemPartial = ""; else MicrophonePartial = "";
-        var echo = EchoDetector.IsLikelyEcho(update, currentLines, meta.InPerson);
+        var echo = IsTextEcho(update, currentLines, meta.InPerson);
         var line = new TranscriptLine
         {
             Id = update.Id, Date = update.Start, StartedAt = update.Start, EndedAt = update.End,
@@ -528,6 +528,19 @@ public partial class AppState : ObservableObject
         if (automatic && update.Source == AudioSource.System && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, true, update.Id, DateTimeOffset.UtcNow));
         OnPropertyChanged(nameof(StatsText));
         OnPropertyChanged(nameof(HasTranscript));
+    }
+
+    /// <summary>
+    /// Text-level echo backstop (Core EchoTextFilter, ported from EchoSuppression.swift): a
+    /// microphone line that repeats a nearby system line is the speakers being re-recorded.
+    /// </summary>
+    private static bool IsTextEcho(TranscriptUpdate update, IReadOnlyList<TranscriptLine> lines, bool inPerson)
+    {
+        if (inPerson || update.Source != AudioSource.Microphone) return false;
+        var remote = lines.Where(line => line.Speaker == "remote").TakeLast(12)
+            .Select(line => new TimedLine(line.Text, line.StartedAt ?? line.Date, line.EndedAt ?? line.Date))
+            .ToList();
+        return EchoTextFilter.IsEcho(update.Text, update.Start, update.End, remote, 0);
     }
 
     private async Task TagVoiceAsync(SessionMeta meta, TranscriptLine line, MeetingVoiceTagger tagger)

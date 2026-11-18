@@ -31,7 +31,7 @@
 | DocumentJobs.swift | 466 | 未移植 |  |
 | DocumentNotice.swift | 53 | 未移植 |  |
 | DocumentStructure.swift | 210 | 未移植 |  |
-| EchoSuppression.swift | 177 | 未移植 |  |
+| EchoSuppression.swift | 177 | 已移植 | Core/EchoSuppression.cs（8 项测试；已接入转写回声判定） |
 | GazeEstimator.swift | 188 | 未移植 |  |
 | Glossary.swift | 572 | 未移植 |  |
 | IncrementalBackup.swift | 123 | 未移植 |  |
@@ -90,13 +90,14 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 3，基线简化版 7，未移植 70。
+统计：已移植 4，基线简化版 7，未移植 69。
 
-测试：`tests/NextThought.Core.Tests` 30 项通过（SubtitleBar 12、AudioTimeline 10、TranscriptDeduplicator 8）。
+测试：`tests/NextThought.Core.Tests` 38 项通过（SubtitleBar 12、AudioTimeline 10、
+TranscriptDeduplicator 8、EchoSuppression 8）。
 
-已移植但尚未接入运行时流程：`TranscriptDeduplicator`（等 Platform 的识别器暴露句尾/句首时间）、
-`AudioTimeline`（等 `MeetingVoiceTagger` 改用时间轴取片）。
+已移植但尚未接入运行时流程：`TranscriptDeduplicator`、`AudioTimeline`（等 Platform 识别器暴露
+句尾/句首时间与声纹取片），`CrossTalkMonitor`（等采集端把两路 PCM 同时送进来）。
 
-下一步（方案第 5 节批次 A）：QuestionDetector、QuestionEvalCorpus、EchoSuppression、LaTeXMath、
-ByteLevelBPETokenizer、PDFTextLayout、SpeakerClustering 等；可用 Windows Swift 编译真实 Core 生成夹具
-做逐字节对照（见 `docs/DECISIONS.md` 第 3 节）。
+下一步（方案第 5 节批次 A）：QuestionDetector、QuestionEvalCorpus、LaTeXMath、
+ByteLevelBPETokenizer、PDFTextLayout、SpeakerClustering、VoiceActivitySegmenter 等；
+可用 Windows Swift 编译真实 Core 生成夹具做逐字节对照（见 `docs/DECISIONS.md` 第 3 节）。
