@@ -79,7 +79,7 @@
 | StructuredNotes.swift | 962 | 未移植 |  |
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
 | TranscriptContextBuilder.swift | 8 | 未移植 |  |
-| TranscriptDeduplicator.swift | 98 | 未移植 |  |
+| TranscriptDeduplicator.swift | 98 | 已移植 | Core/TranscriptDeduplicator.cs（8 项测试） |
 | UpdateCatalog.swift | 164 | 未移植 |  |
 | VoiceActivitySegmenter.swift | 153 | 基线简化版 | VoiceActivitySegmenter.cs（简化版） |
 | VoiceProfile.swift | 86 | 未移植 |  |
@@ -90,10 +90,13 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 2，基线简化版 8，未移植 70。
+统计：已移植 3，基线简化版 7，未移植 70。
 
-测试：`tests/NextThought.Core.Tests` 22 项通过（SubtitleBar 12、AudioTimeline 10）。
+测试：`tests/NextThought.Core.Tests` 30 项通过（SubtitleBar 12、AudioTimeline 10、TranscriptDeduplicator 8）。
 
-下一步（按方案第 5 节批次 A 起）：QuestionDetector、QuestionEvalCorpus、TranscriptDeduplicator、
-EchoSuppression、LaTeXMath、ByteLevelBPETokenizer、PDFTextLayout、SpeakerClustering 等；
-可用 Windows Swift 编译真实 Core 生成夹具做逐字节对照（见 `docs/DECISIONS.md` 第 3 节）。
+已移植但尚未接入运行时流程：`TranscriptDeduplicator`（等 Platform 的识别器暴露句尾/句首时间）、
+`AudioTimeline`（等 `MeetingVoiceTagger` 改用时间轴取片）。
+
+下一步（方案第 5 节批次 A）：QuestionDetector、QuestionEvalCorpus、EchoSuppression、LaTeXMath、
+ByteLevelBPETokenizer、PDFTextLayout、SpeakerClustering 等；可用 Windows Swift 编译真实 Core 生成夹具
+做逐字节对照（见 `docs/DECISIONS.md` 第 3 节）。
