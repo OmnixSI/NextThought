@@ -79,6 +79,8 @@ public partial class AppState
             SummaryText = markdown;
             await Sessions.SaveSummaryAsync(meta, markdown, AnswerOptions(true).Model, cancellation.Token);
             meta.SummaryState = "saved";
+            // The template marks sections that carry into the series (NotesCarry): queue them for review.
+            CollectFromNotes(meta, doc, template);
             SetStatus(truncated
                 ? $"已按「{template.Name}」整理（会议较长，只整理了前 {maxCharacters} 字）。"
                 : $"已按「{template.Name}」整理，可导出 Markdown。");

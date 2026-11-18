@@ -48,6 +48,7 @@ public partial class MainWindow : Window
                 await File.WriteAllTextAsync(target, System.Text.Json.JsonSerializer.Serialize(update, UpdateReport.Options));
             }
             if (StartupOptions.CheckReport is { } report) await WriteStartupReportAsync(report);
+            if (StartupOptions.KnowledgeCheck is { } knowledge) await RunKnowledgeCheckAsync(knowledge);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -92,7 +93,8 @@ public partial class MainWindow : Window
                     "cue-island", "subtitles", "teleprompter", "region-capture", "hotkeys-7",
                     "tray", "hide-all", "auto-end", "notes-templates-9", "notes-fishbone",
                     "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
-                    "glossary", "update-check", "companion-lan"
+                    "glossary", "update-check", "companion-lan",
+                    "workspace-knowledge", "knowledge-merge", "question-bank"
                 },
                 version = typeof(AppState).Assembly.GetName().Version?.ToString(3),
                 framework = Environment.Version.ToString(),
@@ -113,6 +115,32 @@ public partial class MainWindow : Window
             passed = false;
         }
         Console.WriteLine(passed ? "startup-check: passed" : "startup-check: failed");
+        Close();
+    }
+
+    /// <summary>
+    /// Offline proof of the knowledge loop, with no answer service involved:
+    /// template notes → candidates → review → workspace.json → prompt text.
+    /// </summary>
+    private async Task RunKnowledgeCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var report = KnowledgeCheck.Run(state);
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            }));
+        }
+        catch
+        {
+            report = report with { Passed = false };
+        }
+        Console.WriteLine(report.Passed ? "knowledge-check: passed" : "knowledge-check: failed");
         Close();
     }
 

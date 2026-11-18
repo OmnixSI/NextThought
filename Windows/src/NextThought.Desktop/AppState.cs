@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -1112,8 +1112,8 @@ public partial class AppState : ObservableObject
             var sources = retrieved?.Sources ?? [];
             if (!check) { Sources.Clear(); }
             var result = await CurrentClient().AnswerAsync(options,
-                check ? "严格按用户要求回复。" : AnswerPrompt,
-                check ? question : $"最近的会议转写：\n{context}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n\n当前问题：{question}",
+                check ? "严格按用户要求回复。" : BuildAnswerSystemPrompt(meta),
+                check ? question : BuildAnswerUserPrompt(meta, context, sources, question),
                 text => ((IProgress<string>)progress).Report(text), cancellation.Token);
             if (generation != requestEpoch) return;
             if (!check)
@@ -1160,6 +1160,26 @@ public partial class AppState : ObservableObject
         "你是会议中的参考助手。根据已提供的转写回答当前问题，使用简洁中文；问题为英文时可用英文。" +
         "区分事实与建议，不编造未提供的文件、数据、决定或经历。参考资料库中的具体事实必须有对应摘录支持并标注引用；" +
         "资料和转写均未提供所需事实时，明确说明资料不足，不猜测金额、日期、人员或参数。";
+
+    /// <summary>
+    /// System prompt plus the accepted lessons of this meeting's series (Mac
+    /// Workspace.experienceNotes): pinned first, then newest, capped at 2,000 characters.
+    /// </summary>
+    private string BuildAnswerSystemPrompt(SessionMeta? meta)
+    {
+        var experience = ExperiencePromptFor(meta);
+        return experience.Length == 0
+            ? AnswerPrompt
+            : AnswerPrompt + "\n\n这个系列已经确认的经验（优先遵守）：\n" + experience;
+    }
+
+    /// <summary>User prompt with the series question bank as extra reference material.</summary>
+    private string BuildAnswerUserPrompt(SessionMeta? meta, string transcript, IReadOnlyList<SourceCitation> sources, string question)
+    {
+        var bank = QuestionBankPromptFor(meta);
+        var bankBlock = bank.Length == 0 ? "" : $"\n这个系列的题库（历次复盘确认过的回答）：\n{bank}\n";
+        return $"最近的会议转写：\n{transcript}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n{bankBlock}\n当前问题：{question}";
+    }
 
     [RelayCommand(CanExecute = nameof(CanSummarize))]
     private async Task SummarizeAsync()

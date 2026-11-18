@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace NextThought.Core;
@@ -19,8 +19,9 @@ public sealed record GitHubRelease(
     [property: JsonPropertyName("draft")] bool Draft = false,
     [property: JsonPropertyName("prerelease")] bool Prerelease = false,
     [property: JsonPropertyName("published_at")] DateTimeOffset? PublishedAt = null,
-    [property: JsonPropertyName("assets")] IReadOnlyList<GitHubReleaseAsset>? Assets = null)
+    IReadOnlyList<GitHubReleaseAsset>? Assets = null)
 {
+    [JsonPropertyName("assets")]
     public IReadOnlyList<GitHubReleaseAsset> Assets { get; init; } = Assets ?? [];
 
     public GitHubReleaseAsset? Asset(string name) => Assets.FirstOrDefault(asset => asset.Name == name);

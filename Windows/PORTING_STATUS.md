@@ -1,8 +1,32 @@
-﻿
-## 0.20.0 之后的小修正
+
+# P7 系列知识库与合并 · 0.20.0
+
+0.20.0 补上「越用越懂你」这条链路：模板纪要 → 待确认候选 → 用户确认 → 经验/题库 → 回答提示词。
+
+- **Core/WorkspaceKnowledge.cs**：逐文件移植 `Workspace.swift` 的知识半边 ——
+  `WorkspaceLessonRevision`、`WorkspaceLessonHistory`（改文本 / 加来源 / 恢复旧版本，版本号与历史）、
+  `WorkspaceAnswerRevision`、`QuestionBankItem`（答案历史、`answerRevision`、旧记录的单来源回退）、
+  `WorkspaceKnowledgeCandidate(+Source)`、`WorkspaceKnowledgeReceipt`、`KnowledgeMerger`
+  （候选去重、`similarQuestion` 的问句意图区分、0.55 / 0.6 阈值、来源计数、过期基版本拒绝、回执幂等、
+  字符二元组 Jaccard、FNV-1a 稳定 id）。
+- **NotesCarry 接通**：`NotesKnowledge.Extract` 把模板里 `NotesCarry.Lesson/Bank` 的章节转成经验与题库条目
+  （带章节前缀）；此前模板只声明、没有消费者。
+- **系列页**：新增「待确认 / 题库」两个页签；候选逐条 采纳 / 替换回答 / 忽略，结果写回 `workspace.json`
+  并留回执；已确认的经验与题库按「钉住优先、最新在前」进入回答提示词（`WorkspaceKnowledgePrompt`）。
+- **回答**：`AnswerAsync` 的系统提示词追加本系列经验，用户提示词追加题库前三条；`useKnowledge=false` 时都不加。
+- **离线自检**：`--knowledge-check=<json>` 不连模型、不开麦克风，走完
+  模板 → 候选 → 采纳 → 落盘 → 重新加载 → 提示词包含经验 的全链路
+  （`qa\knowledge-0200\knowledge.json`，10 项全过）。
+- 测试：Core 116 → 132（新增 16 项 KnowledgeMerger / NotesCarry / JSON 往返）。
+- 仍未做：`WorkspaceSeriesItem`（决定 / 待办）、源删除完整性、`SeriesBriefing`、系列级回顾候选的
+  `contributingSources` 快照校验、应用内自动替换安装包。
+
+## 0.19.0 之后的小修正
 
 - 系列页「把这场景加入」现在会说明会议是从哪个系列移过来的（一个会议最多属于一个系列，加入即移动）。
-- `--startup-check` 报告新增 `features`（23 项），一份 JSON 既证明能启动，也说明这个构建带了什么。# P6 到期日解析 · 0.19.0
+- `--startup-check` 报告新增 `features`（当时 23 项，0.20.0 起 26 项），一份 JSON 既证明能启动，也说明这个构建带了什么。
+
+# P6 到期日解析 · 0.19.0
 
 0.19.0 补上模板纪要的到期日：
 
