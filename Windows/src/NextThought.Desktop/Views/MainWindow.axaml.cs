@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using NextThought.Core;
 
 namespace NextThought.Desktop.Views;
 
@@ -27,9 +28,11 @@ public partial class MainWindow : Window
         };
         state.Notify = ShowMessageAsync;
         state.Initialized += HandleInitialized;
+        state.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(AppState.LiveMode)) ApplyLiveMode(state.LiveMode); };
         Opened += async (_, _) =>
         {
             await state.InitializeAsync();
+            if (StartupOptions.Island) ToggleCueIsland();
             if (StartupOptions.CheckReport is { } report) await WriteStartupReportAsync(report);
         };
         Closing += OnClosing;
@@ -84,6 +87,35 @@ public partial class MainWindow : Window
 
     // The design-time constructor required by the XAML compiler for previews.
     public MainWindow() : this(new AppState()) { }
+
+    private CueIslandWindow? island;
+    private SubtitleBarWindow? subtitleBar;
+
+    /// <summary>Show or hide the floating cue island (the Mac app's notch panel).</summary>
+    public void ToggleCueIsland()
+    {
+        if (island is { IsVisible: true }) { island.Hide(); return; }
+        island ??= new CueIslandWindow(state);
+        island.Show();
+        island.Activate();
+    }
+
+    /// <summary>The subtitle bar follows the three-state live window mode from Core.</summary>
+    private void ApplyLiveMode(LiveWindowMode mode)
+    {
+        if (mode == LiveWindowMode.Notes)
+        {
+            if (subtitleBar is { IsVisible: true }) subtitleBar.Hide();
+            return;
+        }
+        if (mode == LiveWindowMode.Hidden)
+        {
+            if (subtitleBar is { IsVisible: true }) subtitleBar.Hide();
+            return;
+        }
+        subtitleBar ??= new SubtitleBarWindow(state);
+        if (!subtitleBar.IsVisible) subtitleBar.Show();
+    }
 
     private void HandleInitialized()
     {

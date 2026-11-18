@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextThought.Cli", "src\Next
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextThought.Desktop", "src\NextThought.Desktop\NextThought.Desktop.csproj", "{05B708F9-6A1C-40FE-A933-47B0D83AFD96}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextThought.Core.Tests", "tests\NextThought.Core.Tests\NextThought.Core.Tests.csproj", "{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,18 @@ Global
 		{05B708F9-6A1C-40FE-A933-47B0D83AFD96}.Release|x64.Build.0 = Release|Any CPU
 		{05B708F9-6A1C-40FE-A933-47B0D83AFD96}.Release|x86.ActiveCfg = Release|Any CPU
 		{05B708F9-6A1C-40FE-A933-47B0D83AFD96}.Release|x86.Build.0 = Release|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Debug|x64.Build.0 = Debug|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Debug|x86.Build.0 = Debug|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Release|x64.ActiveCfg = Release|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Release|x64.Build.0 = Release|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Release|x86.ActiveCfg = Release|Any CPU
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,5 +126,6 @@ Global
 		{28FA3368-6A2C-4EFA-B9B0-1A2431E70D57} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{D87C3587-8925-4E87-AD07-81588550F542} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{05B708F9-6A1C-40FE-A933-47B0D83AFD96} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{8089AABC-997C-4E6A-91EA-CB4F3EA552C0} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

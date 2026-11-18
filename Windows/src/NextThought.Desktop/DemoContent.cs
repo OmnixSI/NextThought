@@ -1,4 +1,4 @@
-using NextThought.Core;
+﻿using NextThought.Core;
 
 namespace NextThought.Desktop;
 
@@ -50,6 +50,26 @@ public static class DemoContent
         Add(141, "room", "顺便把福建沿海那八站的风速数据也接进来，看看风和温度叠加的工况。");
         return lines;
     }
+
+    /// <summary>Lines the demo feeder keeps appending after the seeded transcript.</summary>
+    public static IReadOnlyList<TranscriptLine> ExtraLines() =>
+    [
+        New("现场", "那我们把这个结果记下来，下周组会再讨论具体的参数取值。"),
+        New("麦克风", "好，我先把敏感性分析的图整理出来，顺便标一下支座的位置。"),
+        New("现场", "记得把福建沿海那八站的数据也放进去，风和温度要分开看。"),
+        New("麦克风", "明白，我按工况拆开，先做恒载加温度的基线。"),
+        New("现场", "如果残差还是集中在支座，我们可能需要补一次现场静载试验。"),
+    ];
+
+    private static TranscriptLine New(string speaker, string text) => new()
+    {
+        Id = Guid.NewGuid(),
+        Date = DateTimeOffset.Now,
+        StartedAt = DateTimeOffset.Now,
+        EndedAt = DateTimeOffset.Now.AddSeconds(4),
+        Speaker = speaker == "现场" ? "room" : "me",
+        Text = text
+    };
 
     public const string Summary = """
         ## 结构组会 · 连续刚构桥监测

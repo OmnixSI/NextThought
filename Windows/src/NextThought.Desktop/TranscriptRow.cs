@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using NextThought.Core;
 
 namespace NextThought.Desktop;
@@ -11,7 +11,8 @@ public partial class TranscriptRow : ObservableObject
         Id = line.Id;
         Label = BuildLabel(line);
         Text = line.Text;
-        Translation = line.Translation is { } t ? (t.Direction == "zh-en" ? "英译：" : "中译：") + t.Text : "";
+        TranslationRaw = line.Translation is { } t ? t.Text : "";
+        Translation = TranslationRaw.Length == 0 ? "" : (line.Translation!.Direction == "zh-en" ? "英译：" : "中译：") + TranslationRaw;
         Speaker = line.Speaker;
         Date = line.Date;
         IsEcho = line.SuspectedEcho == true;
@@ -26,6 +27,7 @@ public partial class TranscriptRow : ObservableObject
     [ObservableProperty] private string label;
     [ObservableProperty] private string text;
     [ObservableProperty] private string translation;
+    public string TranslationRaw { get; }
     public bool HasTranslation => Translation.Length > 0;
     public bool IsSystem => Speaker == "remote";
 

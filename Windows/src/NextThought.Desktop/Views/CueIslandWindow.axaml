@@ -1,0 +1,32 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.CueIslandWindow"
+        x:DataType="local:AppState"
+        Title="NextThought 提词岛"
+        Width="560" SizeToContent="Height"
+        CanResize="False" ShowInTaskbar="False" ShowActivated="False"
+        WindowDecorations="None" Topmost="True"
+        Background="Transparent" TransparencyLevelHint="Transparent"
+        WindowStartupLocation="Manual">
+  <!-- The island: a black pill on top of the screen, holding the question being answered
+       and the first lines of the answer. Ported from CueIsland.swift (Windows has no notch). -->
+  <Border Background="#F0121110" CornerRadius="20" Padding="16,11" Margin="0,8,0,0"
+          BoxShadow="0 10 22 0 #40000000">
+    <Border Background="#F2121110" BorderBrush="#33ECEBE8" BorderThickness="0.5" CornerRadius="16" Padding="16,10">
+      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+        <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                Background="{DynamicResource Seal}" Margin="0,0,10,0" IsVisible="{Binding Recording}" />
+        <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
+                Background="#B8B6AF" Margin="0,0,10,0" IsVisible="{Binding !Recording}" />
+        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DetectedQuestion}" Foreground="#ECEBE8"
+                   FontSize="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
+        <TextBlock Grid.Row="0" Grid.Column="2" Text="NextThought" Foreground="#7A7871" FontSize="10"
+                   VerticalAlignment="Center" Margin="12,0,0,0" />
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding AnswerText}" Foreground="#B8B6AF"
+                   FontSize="12.5" LineHeight="19" Margin="18,6,0,0" MaxLines="3"
+                   TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+  </Border>
+</Window>

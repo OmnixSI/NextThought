@@ -97,6 +97,7 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private double progress;
     [ObservableProperty] private bool progressIndeterminate;
     [ObservableProperty] private SessionMeta? currentSession;
+    [ObservableProperty] private LiveWindowMode liveMode = LiveWindowMode.Notes;
     [ObservableProperty] private string? startupErrorText;
     public ObservableCollection<TranscriptRow> Transcript { get; }
     public ObservableCollection<RecentMeetingRow> History { get; }
@@ -138,6 +139,7 @@ public partial class AppState : ObservableObject
     partial void OnAnsweringChanged(bool value) { RaiseBusy(); OnPropertyChanged(nameof(CanCancel)); }
     partial void OnSummarizingChanged(bool value) => RaiseBusy();
     partial void OnCurrentSessionChanged(SessionMeta? value) => OnPropertyChanged(nameof(StatsText));
+    partial void OnLiveModeChanged(LiveWindowMode value) => OnPropertyChanged(nameof(LiveModeLabel));
 
     private void RaiseBusy()
     {
@@ -230,6 +232,31 @@ public partial class AppState : ObservableObject
     public event Action? Initialized;
     private void OnInitialized() => Initialized?.Invoke();
 
+    private DispatcherTimer? demoFeeder;
+    private int demoIndex = 10;
+
+    /// <summary>Demo only: keeps a half-sentence moving so the subtitle bar has live activity.</summary>
+    private void StartDemoFeeder()
+    {
+        var lines = DemoContent.ExtraLines();
+        demoFeeder = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        demoFeeder.Tick += (_, _) =>
+        {
+            var line = lines[demoIndex % lines.Count];
+            demoIndex++;
+            SystemPartial = "系统 · " + line.Text[..Math.Min(12, line.Text.Length)];
+            DispatcherTimer.RunOnce(() =>
+            {
+                SystemPartial = "";
+                currentLines.Add(line);
+                Transcript.Add(new TranscriptRow(line));
+                while (Transcript.Count > 400) Transcript.RemoveAt(0);
+                OnPropertyChanged(nameof(StatsText));
+            }, TimeSpan.FromMilliseconds(1400));
+        };
+        demoFeeder.Start();
+    }
+
     /// <summary>Fills the interface with the built-in sample meeting; never touches the data directory.</summary>
     public void LoadDemo()
     {
@@ -263,6 +290,8 @@ public partial class AppState : ObservableObject
         OnPropertyChanged(nameof(IsHistoryEmpty));
         OnPropertyChanged(nameof(StatsText));
         ModelStatusText = "演示模式：未加载识别模型";
+        StartDemoFeeder();
+        if (StartupOptions.Subtitles) LiveMode = LiveWindowMode.Subtitles;
     }
 
     public void RefreshModelState()
@@ -826,6 +855,12 @@ public partial class AppState : ObservableObject
 
     [RelayCommand]
     private void Cancel() { workCancellation?.Cancel(); requestCancellation?.Cancel(); translator?.Cancel(); }
+
+    /// <summary>纪要窗口 → 字幕条 → 隐藏 → 纪要窗口 … (LiveWindowMode in Core).</summary>
+    [RelayCommand]
+    private void CycleLiveMode() => LiveMode = LiveMode.Next();
+
+    public string LiveModeLabel => LiveMode.Title();
 
     [RelayCommand]
     private void CopyAnswer()

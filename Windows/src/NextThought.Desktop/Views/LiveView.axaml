@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
@@ -16,6 +16,8 @@
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" VerticalAlignment="Center"
                   ToolTip.Tip="系统声音里出现提问时自动生成回答" />
+        <Button Content="{Binding LiveModeLabel}" Command="{Binding CycleLiveModeCommand}" ToolTip.Tip="纪要窗口 → 字幕条 → 隐藏" />
+        <Button Content="提词岛" Click="Island_Click" ToolTip.Tip="在屏幕顶部显示问题与回答，不抢焦点" />
         <Button Content="补译" Command="{Binding TranslateMissingCommand}" ToolTip.Tip="把还没有译文的完整句发送到当前回答服务" />
         <Button Content="结束会议" Command="{Binding StopRecordingCommand}" />
         <Button Classes="primary" Command="{Binding StartRecordingCommand}" MinHeight="36" Padding="18,0">

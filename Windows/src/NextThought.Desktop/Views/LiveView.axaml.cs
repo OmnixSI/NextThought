@@ -1,4 +1,4 @@
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -46,6 +46,11 @@ public partial class LiveView : UserControl
         if (DataContext is not AppState state) return;
         e.Handled = true;
         if (state.AskCommand.CanExecute(null)) state.AskCommand.Execute(null);
+    }
+
+    private void Island_Click(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleCueIsland();
     }
 
     private void ViewSource_Click(object? sender, RoutedEventArgs e)
