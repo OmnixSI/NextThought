@@ -1,4 +1,20 @@
 
+# P2 流式协议 · 0.43.0
+
+0.43.0 移植 `AnswerStreaming.swift`（267 行）为 `Core/AnswerStreaming.cs`，测试 409 → 420。
+
+- **Codex app-server 协议**：请求/通知行、审批拒绝（decline/denied）、thread/turn 参数、登录与 id 提取、
+  行解析（响应/通知/服务端请求）、turn 事件映射（delta、agentMessage、webSearch、retrying、completed）。
+- **AgentMessageAccumulator**：按 item 累积 delta，`final_answer` 优先，否则最后一条。
+- **ChatCompletionStreamParser**：`data:` 行、`[DONE]`、纯 JSON 错误体、delta/message 内容；
+  请求体（图片 data URL、reasoning_effort 与 temperature 互斥）；端点补全与「远程明文 HTTP 拒绝」。
+- **ModelListParser**：`data`/`models` 两种形状、去重排序。
+- **自检**：`--stream-check` 在真实进程里解析响应、SSE delta、模型列表与端点
+  （`qa\stream-0430\stream-check.json`）。
+- 未移植：实际 WebSocket/HTTP 传输仍在应用层客户端。
+
+统计：已移植 45 / 部分 11 / 基线 3 / 未移植 22。
+
 # P3 云端转写 · 0.42.0
 
 0.42.0 移植 `CloudTranscription.swift`（293 行）为 `Core/CloudTranscription.cs`，测试 400 → 409。

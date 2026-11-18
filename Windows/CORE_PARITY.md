@@ -14,7 +14,7 @@
 | AnswerLanguage.swift | 38 | 已移植 | Core/AnswerLanguage.cs（4 项测试） |
 | AnswerPromptBuilder.swift | 328 | 部分移植 | Core/AnswerPromptBuilder.cs（指令原文、预算化 JSON、整份资料、精炼；PreparationPrompt 依赖未移植的 ModeProfile，暂缺） |
 | AnswerServiceSupport.swift | 242 | 已移植 | Core/AnswerServiceSupport.cs（默认后端、服务商表、Key 清洗/掩码、失败解释、时间线；8 项测试） |
-| AnswerStreaming.swift | 267 | 未移植 |  |
+| AnswerStreaming.swift | 267 | 已移植 | Core/AnswerStreaming.cs（Codex 协议、SSE 解析、模型列表、请求体；11 项测试） |
 | AudioTimeline.swift | 119 | 已移植 | Core/AudioTimeline.cs（10 项测试） |
 | Backup.swift | 667 | 未移植 |  |
 | BackupArchivePolicy.swift | 33 | 已移植 | Core/BackupContent.cs（路径/符号链接/资源上限预检） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 44，部分移植 11，基线简化版 3，未移植 23。
+统计：已移植 45，部分移植 11，基线简化版 3，未移植 22。
 
-测试：`tests/NextThought.Core.Tests` 409 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 420 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 

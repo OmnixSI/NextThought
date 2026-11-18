@@ -77,6 +77,7 @@ public partial class MainWindow : Window
             if (StartupOptions.ApiCheck is { } apiCheck) await RunApiCheckAsync(apiCheck);
             if (StartupOptions.RetrievalCheck is { } retrievalCheck) await RunRetrievalCheckAsync(retrievalCheck);
             if (StartupOptions.CloudCheck is { } cloudCheck) await RunCloudCheckAsync(cloudCheck);
+            if (StartupOptions.StreamCheck is { } streamCheck) await RunStreamCheckAsync(streamCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -775,6 +776,34 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "cloud-check: passed" : "cloud-check: failed");
+        Close();
+    }
+
+    /// <summary>Exercises the Codex protocol helpers, SSE parsing and model list in the shipped process.</summary>
+    private async Task RunStreamCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var parsed = NextThought.Core.CodexAppServerProtocol.Parse("""{"id":2,"result":{"thread":{"id":"t1"}}}""");
+        var delta = new NextThought.Core.ChatCompletionStreamParser().Parse("""data: {"choices":[{"delta":{"content":"Hi"}}]}""");
+        var ids = NextThought.Core.ModelListParser.Ids("""{"data":[{"id":"b"},{"id":"a"}]}""");
+        var passed = parsed is { Kind: NextThought.Core.CodexInboundKind.Response, ResponseId: 2 }
+                     && NextThought.Core.CodexAppServerProtocol.ThreadIdFromThreadStart(parsed.Result!) == "t1"
+                     && delta is NextThought.Core.ChatDelta { Text: "Hi" }
+                     && ids.SequenceEqual(["a", "b"])
+                     && NextThought.Core.ChatCompletionStreamParser.Endpoint("https://api.example.com/v1") == "https://api.example.com/v1/chat/completions";
+        var report = new { passed, thread = NextThought.Core.CodexAppServerProtocol.ThreadIdFromThreadStart(parsed?.Result ?? new System.Text.Json.Nodes.JsonObject()), models = ids };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "stream-check: passed" : "stream-check: failed");
         Close();
     }
 
