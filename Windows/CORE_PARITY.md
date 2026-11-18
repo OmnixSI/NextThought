@@ -28,7 +28,7 @@
 | CompanionBLEProtocol.swift | 93 | 未移植 |  |
 | CompanionCrypto.swift | 68 | 已移植 | Core/CompanionRelayCrypto.cs（9 项测试；HKDF 用 RFC 5869 向量、AES-GCM 信封、配对链接、命令新鲜度与去重） |
 | DocumentClassifier.swift | 74 | 未移植 |  |
-| DocumentFeatureAvailability.swift | 27 | 未移植 |  |
+| DocumentFeatureAvailability.swift | 27 | 已移植 | Core/DocumentFeatureAvailability.cs（依赖齐备才可用） |
 | DocumentJobs.swift | 466 | 未移植 |  |
 | DocumentNotice.swift | 53 | 未移植 |  |
 | DocumentStructure.swift | 210 | 未移植 |  |
@@ -56,12 +56,12 @@
 | QuestionEvalCorpus.swift | 8 | 未移植 |  |
 | QuestionIntent.swift | 532 | 基线简化版 | QuestionIntent.cs + QuestionCandidateTracker.cs + QuestionVocabulary.cs（精简重写） |
 | QuestionTurn.swift | 96 | 基线简化版 | AutomaticAnswerScheduler.cs（部分） |
-| RealtimeSetupReadiness.swift | 77 | 未移植 |  |
+| RealtimeSetupReadiness.swift | 77 | 已移植 | Core/RealtimeSetupReadiness.cs（录音就绪与可请求启动） |
 | Scene.swift | 427 | 已移植 | Core/Scene.cs（11 项测试；场景/提词/教练已接入界面） |
 | ScreenContext.swift | 44 | 未移植 |  |
 | ScreenDelta.swift | 23 | 未移植 |  |
-| ScrollFollowInputClassifier.swift | 21 | 未移植 |  |
-| ScrollFollowState.swift | 48 | 未移植 |  |
+| ScrollFollowInputClassifier.swift | 21 | 已移植 | Core/ScrollFollowState.cs（滚动导航键与命中测试） |
+| ScrollFollowState.swift | 48 | 已移植 | Core/ScrollFollowState.cs（跟随/读历史/选中文字） |
 | SemanticRetrieval.swift | 277 | 基线简化版 | DocumentChunks.cs + KeywordIndex.cs（简化版） |
 | SeriesBriefing.swift | 327 | 未移植 |  |
 | SessionArchivePersistence.swift | 513 | 未移植 |  |
@@ -85,17 +85,17 @@
 | VoiceActivitySegmenter.swift | 153 | 基线简化版 | VoiceActivitySegmenter.cs（简化版） |
 | VoiceProfile.swift | 86 | 未移植 |  |
 | WebLookupPromptBuilder.swift | 41 | 未移植 |  |
-| WebSearchNeed.swift | 129 | 未移植 |  |
+| WebSearchNeed.swift | 129 | 已移植 | Core/WebSearchNeed.cs（17 条标注语料逐条断言；联网搜索提供方仍未接） |
 | Workspace.swift | 1460 | 部分移植 | Core/Workspace.cs + WorkspaceKnowledge.cs（系列、经验版本历史、题库、候选与回执、KnowledgeMerger；16 项测试。seriesItems、源删除完整性、SeriesBriefing 未移植） |
 | WorkspaceArchiveOwnership.swift | 35 | 未移植 |  |
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 16，部分移植 8，基线简化版 7，未移植 50。
+统计：已移植 21，部分移植 8，基线简化版 7，未移植 45。
 
-测试：`tests/NextThought.Core.Tests` 193 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 211 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、

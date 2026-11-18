@@ -1,4 +1,18 @@
 
+# P1 小文件批次二 · 0.26.0
+
+0.26.0 继续补自包含的 Core 小文件（+5 已移植，测试 193 → 211）。
+
+| Swift | C# | 测试 | 说明 |
+| --- | --- | --- | --- |
+| `WebSearchNeed.swift` | `Core/WebSearchNeed.cs` | 5 | 时效词/话题/年份打分、`mentions` 英文词边界、问“你本人”与概念问题降权；17 条标注语料逐条断言。联网搜索提供方仍未接，只移植判断规则 |
+| `ScrollFollowState.swift` | `Core/ScrollFollowState.cs` | 2 | 跟随 / 读历史 / 选中文字三态与未读计数 |
+| `ScrollFollowInputClassifier.swift` | `Core/ScrollFollowState.cs` | 2 | macOS 滚动导航键码与命中测试（纯函数，Windows 侧未接 UI） |
+| `RealtimeSetupReadiness.swift` | `Core/RealtimeSetupReadiness.cs` | 3 | 录音就绪清单、能否请求启动、离线会议跳过系统声检查 |
+| `DocumentFeatureAvailability.swift` | `Core/DocumentFeatureAvailability.cs` | 1（多断言） | 依赖齐备才算可用 |
+
+统计：已移植 21 / 部分 8 / 基线简化 7 / 未移植 45。
+
 # P1/内存 小文件批次与内存测量 · 0.25.0
 
 0.25.0 做两件事：补一批自包含的 Core 小文件，把「内存目标」用可复现的测量说清楚。
