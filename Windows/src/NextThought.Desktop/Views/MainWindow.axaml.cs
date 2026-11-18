@@ -1559,6 +1559,13 @@ public partial class MainWindow : Window
                               && stagePrompt.Contains("### 场次", StringComparison.Ordinal)
                               && NextThought.Core.StageReviewPrompt.System.Contains("## 经验沉淀", StringComparison.Ordinal));
 
+        var summaryPrompt = NextThought.Core.SessionSummaryPrompt.System("面试", "候选人", "回答具体");
+        var summaryHeader = NextThought.Core.SessionSummaryPrompt.Header("会议", DateTimeOffset.UtcNow, 30, null, "", []);
+        Check("summary-prompt", summaryPrompt.Contains("本次场景：面试", StringComparison.Ordinal)
+                                 && summaryPrompt.Contains("## 题库更新", StringComparison.Ordinal)
+                                 && summaryHeader.Contains("时长：30 分钟", StringComparison.Ordinal)
+                                 && NextThought.Core.SessionSummaryPrompt.Chunks("a\nb", 100).Count == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
