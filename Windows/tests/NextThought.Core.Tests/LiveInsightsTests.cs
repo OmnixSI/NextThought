@@ -104,6 +104,33 @@ public sealed class LiveInsightsTests
     }
 
     [Fact]
+    public void FollowerKeepsTheCurrentPageWhenTheScreenIsUnclear()
+    {
+        var first = Page(1, "缓存一致性 读写时序 方案");
+        var second = Page(2, "灰度发布 回滚计划 演练");
+        var follower = new SlideFollower([first, second]);
+        Assert.Null(follower.Current);
+        Assert.Equal(first, follower.Observe("缓存一致性 读写时序 方案"));
+        Assert.Equal(SlideDecisionKind.Page, follower.LastDecision!.Kind);
+        Assert.Equal(first, follower.Observe("无关内容"));
+        Assert.Equal(first, follower.Current);
+    }
+
+    [Fact]
+    public void FollowerSwitchesOnAClearNewPageAndResets()
+    {
+        var first = Page(1, "缓存一致性 读写时序 方案");
+        var second = Page(2, "灰度发布 回滚计划 演练");
+        var follower = new SlideFollower([first, second]);
+        follower.Observe("缓存一致性 读写时序 方案");
+        Assert.Equal(second, follower.Observe("灰度发布 回滚计划 演练"));
+        follower.Reset();
+        Assert.Null(follower.Current);
+        Assert.Null(follower.LastDecision);
+        Assert.Null(new SlideFollower([]).Observe("任何内容"));
+    }
+
+    [Fact]
     public void SlideTitleSkipsDecorationsAndSplitSeparatesNotes()
     {
         var page = Page(1, "# 缓存一致性\n正文内容");

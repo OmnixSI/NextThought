@@ -167,6 +167,35 @@ public static class SlideMatcher
         left.DocumentId == right.DocumentId && left.Page == right.Page;
 }
 
+/// <summary>
+/// Stateful slide following: ranks the deck against each screen observation and keeps the last
+/// page when the match is ambiguous (port of the presenter view's slide follower loop).
+/// </summary>
+public sealed class SlideFollower
+{
+    public SlideFollower(IReadOnlyList<SlidePage> pages) => Pages = pages;
+
+    public IReadOnlyList<SlidePage> Pages { get; }
+    public SlidePage? Current { get; private set; }
+    public SlideDecision? LastDecision { get; private set; }
+
+    /// <summary>Observes one screen text and returns the current page after the decision.</summary>
+    public SlidePage? Observe(string screenText)
+    {
+        var ranked = SlideMatcher.Rank(screenText, Pages);
+        var decision = SlideMatcher.Decide(ranked, Current);
+        LastDecision = decision;
+        if (decision.Kind == SlideDecisionKind.Page) Current = decision.Page;
+        return Current;
+    }
+
+    public void Reset()
+    {
+        Current = null;
+        LastDecision = null;
+    }
+}
+
 /// <summary>What the presenter says on one slide, generated once per page.</summary>
 public sealed record SlideNotes
 {

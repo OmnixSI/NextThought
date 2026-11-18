@@ -1815,6 +1815,13 @@ public partial class MainWindow : Window
         var archiveManifest = NextThought.Core.BackupArchive.ReadManifest(archivePath);
         Check("backup-archive", archiveManifest?.WorkspaceCount == 1 && File.Exists(archivePath));
 
+        var follower = new NextThought.Core.SlideFollower([
+            new NextThought.Core.SlidePage { Page = 1, PageCount = 2, Text = "缓存一致性 读写时序" }
+        ]);
+        var followedPage = follower.Observe("缓存一致性 读写时序");
+        Check("slide-follower", followedPage?.Page == 1
+                                && follower.LastDecision?.Kind == NextThought.Core.SlideDecisionKind.Page);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
