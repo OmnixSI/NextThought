@@ -1637,6 +1637,13 @@ public partial class MainWindow : Window
             new Dictionary<string, string> { ["role"] = "后端", ["other"] = "备注" });
         Check("workspace-material", materialText == "岗位：后端\nother：备注");
 
+        var prepSystem = NextThought.Core.PreparationPrompt.System(NextThought.Core.MeetingMode.Interview);
+        var prepOutput = NextThought.Core.PreparationPrompt.Output(NextThought.Core.MeetingMode.Academic);
+        Check("preparation-prompt", prepSystem.Contains("面试", StringComparison.Ordinal)
+                                    && prepSystem.Contains("候选人", StringComparison.Ordinal)
+                                    && prepOutput.Contains("## 要讲清楚的重点", StringComparison.Ordinal)
+                                    && prepOutput.Contains("## 可能被问到的问题", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
