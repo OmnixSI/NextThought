@@ -1,0 +1,151 @@
+﻿<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:NextThought.Desktop"
+        xmlns:views="using:NextThought.Desktop.Views"
+        x:Class="NextThought.Desktop.Views.MainWindow"
+        x:DataType="local:AppState"
+        Title="NextThought"
+        Width="1120" Height="820" MinWidth="960" MinHeight="660"
+        Background="{DynamicResource Paper}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="52"
+        WindowDecorations="BorderOnly"
+        WindowStartupLocation="CenterScreen">
+  <Grid RowDefinitions="52,*">
+    <!-- Title row: the client area extends into the title bar; the window keeps only its
+         resize border, and the caption buttons are drawn here so the brand reads first. -->
+    <Grid Grid.Row="0" Name="TitleBar" Background="Transparent" PointerPressed="TitleBar_PointerPressed">
+      <StackPanel Orientation="Horizontal" Margin="24,0,0,0" VerticalAlignment="Center" Spacing="12">
+        <Border Width="24" Height="24" CornerRadius="7" Background="{DynamicResource InkBrush}" VerticalAlignment="Center">
+          <TextBlock Text="N" Foreground="{DynamicResource OnInk}" FontSize="12" FontWeight="SemiBold"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <TextBlock Text="NextThought" Classes="title" FontSize="14" VerticalAlignment="Center" />
+        <Border Classes="chip" Margin="4,0,0,0" VerticalAlignment="Center">
+          <TextBlock Text="{Binding VersionText}" Classes="overline" FontSize="10" />
+        </Border>
+      </StackPanel>
+      <TextBlock Text="{Binding PageSubtitle}" Classes="caption" HorizontalAlignment="Right"
+                 VerticalAlignment="Center" Margin="0,0,142,0" MaxWidth="340" TextTrimming="CharacterEllipsis"
+                 TextWrapping="NoWrap" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch" Spacing="0">
+        <Button Name="MinimizeButton" Classes="caption" Click="Minimize_Click" ToolTip.Tip="最小化">
+          <Path Data="M0,5 H10" StrokeThickness="1" />
+        </Button>
+        <Button Name="MaximizeButton" Classes="caption" Click="Maximize_Click" ToolTip.Tip="最大化">
+          <Path Data="M0.5,0.5 H9.5 V9.5 H0.5 Z" StrokeThickness="1" />
+        </Button>
+        <Button Name="CloseButton" Classes="caption close" Click="Close_Click" ToolTip.Tip="关闭">
+          <Path Data="M0.5,0.5 L9.5,9.5 M9.5,0.5 L0.5,9.5" StrokeThickness="1" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="222,*">
+      <!-- Sidebar: brand, sections, recent meetings, data controls -->
+      <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
+              BorderThickness="0,0,0.5,0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="14,6,14,14">
+          <StackPanel Grid.Row="0" Spacing="1">
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHome, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Home" ToolTip.Tip="首页">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="&#xE80F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="首页" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLive, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Live" ToolTip.Tip="会议">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="&#xE720;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="会议" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnNotes, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Notes" ToolTip.Tip="纪要">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="纪要" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLibrary, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Library" ToolTip.Tip="资料库">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="资料库" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSettings, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="设置">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="设置" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Margin="10,22,10,8">
+            <TextBlock Text="最近会议" Classes="overline" />
+          </StackPanel>
+
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ListBox Name="HistoryList" ItemsSource="{Binding History}" SelectionChanged="History_SelectionChanged"
+                     Background="Transparent" Margin="0,0,0,0">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="local:RecentMeetingRow">
+                  <Border Padding="10,8" CornerRadius="8" Background="Transparent">
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                      <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="3" Spacing="6" Margin="2,10,2,0">
+            <Border Classes="chip" HorizontalAlignment="Left">
+              <TextBlock Text="{Binding StatsText}" Classes="caption" FontSize="10" />
+            </Border>
+            <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding OpenDataCommand}" ToolTip.Tip="打开数据目录">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="&#xE838;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Text="数据目录" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Content -->
+      <Grid Grid.Column="1" RowDefinitions="*,Auto">
+        <Grid Grid.Row="0" Margin="0">
+          <views:HomeView IsVisible="{Binding OnHome}" />
+          <views:LiveView IsVisible="{Binding OnLive}" />
+          <views:NotesView IsVisible="{Binding OnNotes}" />
+          <views:LibraryView IsVisible="{Binding OnLibrary}" />
+          <views:SettingsView IsVisible="{Binding OnSettings}" />
+        </Grid>
+
+        <!-- Status bar -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Padding="24,10,24,12">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
+                        Background="{DynamicResource Seal}" IsVisible="{Binding Recording}" />
+                <TextBlock Text="{Binding Status}" Classes="caption" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+              <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}"
+                           Maximum="1" IsVisible="{Binding Working}" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="quiet" Content="取消当前任务" VerticalAlignment="Center"
+                    Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" />
+          </Grid>
+        </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>

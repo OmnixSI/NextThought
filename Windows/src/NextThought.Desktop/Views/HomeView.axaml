@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.HomeView"
+             x:DataType="local:AppState">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="40,26,40,36" MaxWidth="920" Spacing="26">
+      <!-- Greeting -->
+      <StackPanel Spacing="10">
+        <TextBlock Text="{Binding Greeting}" Classes="overline" />
+        <TextBlock Text="把讨论留下来" Classes="hero" />
+        <TextBlock Text="开会、听讲、面谈。NextThought 在本机把声音变成文字，再变成可以带走的结论。"
+                   Classes="body" Foreground="{DynamicResource Secondary}" MaxWidth="620" />
+      </StackPanel>
+
+      <!-- Next meeting -->
+      <Border Classes="card" Padding="24">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+          <StackPanel Spacing="8">
+            <TextBlock Text="下一场会议" Classes="overline" />
+            <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="0"
+                     FontFamily="{StaticResource SerifFamily}" FontSize="24" FontWeight="Medium" MinHeight="36" />
+            <TextBlock Text="{Binding AudioSourceText}" Classes="caption" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+            <Button Content="导入 WAV" Command="{Binding ImportWaveCommand}" />
+            <Button Classes="primary" Command="{Binding StartRecordingCommand}"
+                    MinHeight="40" Padding="20,0" FontSize="14">
+          <TextBlock Text="开始记录" Foreground="{DynamicResource OnInk}" />
+        </Button>
+          </StackPanel>
+          <Border Grid.Row="1" Grid.ColumnSpan="2" Margin="0,18,0,0" BorderBrush="{DynamicResource Hairline}"
+                  BorderThickness="0,0.5,0,0" Padding="0,14,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="18">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
+                        Background="{DynamicResource Ready}" />
+                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" />
+              </StackPanel>
+              <TextBlock Text="{Binding Status}" Classes="caption" TextTrimming="CharacterEllipsis" MaxWidth="460" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Capability cards -->
+      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+        <Border Grid.Column="0" Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="本机语音识别" Classes="overline" />
+            <TextBlock Text="X-ASR 流式识别加整句精修，CPU 离线运行；原始音频只在内存中经过。"
+                       Classes="caption" MaxWidth="240" />
+            <Button Classes="quiet" Content="准备语音组件" HorizontalAlignment="Left" Margin="-10,0,0,0"
+                    Command="{Binding PrepareModelsCommand}" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="回答服务" Classes="overline" />
+            <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" MaxWidth="240" />
+            <Button Classes="quiet" Content="打开设置" HorizontalAlignment="Left" Margin="-10,0,0,0"
+                    Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="2" Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="资料库" Classes="overline" />
+            <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" MaxWidth="240" />
+            <Button Classes="quiet" Content="导入资料" HorizontalAlignment="Left" Margin="-10,0,0,0"
+                    Command="{Binding NavigateCommand}" CommandParameter="Library" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Recent meetings -->
+      <StackPanel Spacing="12">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="最近会议" Classes="section" />
+          <Button Grid.Column="1" Classes="quiet" Content="全部会议" VerticalAlignment="Center"
+                  Command="{Binding NavigateCommand}" CommandParameter="Live" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding HomeRecent}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="local:RecentMeetingRow">
+              <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      Tag="{Binding}" Click="Recent_Click" Margin="0,0,0,6">
+                <Grid ColumnDefinitions="*,Auto" Margin="4,2">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                             FontSize="12" Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Text="还没有会议记录。点击「开始记录」写下第一场。" Classes="caption"
+                   IsVisible="{Binding IsHistoryEmpty}" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

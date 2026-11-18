@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
+             xmlns:views="using:NextThought.Desktop.Views"
+             x:Class="NextThought.Desktop.Views.LiveView"
+             x:DataType="local:AppState">
+  <Grid RowDefinitions="Auto,*" Margin="32,18,32,0">
+    <!-- Header -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="6">
+        <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="0"
+                 FontFamily="{StaticResource SerifFamily}" FontSize="28" FontWeight="Medium" MinHeight="40" />
+        <TextBlock Text="{Binding PageSubtitle}" Classes="caption" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" VerticalAlignment="Center"
+                  ToolTip.Tip="系统声音里出现提问时自动生成回答" />
+        <Button Content="补译" Command="{Binding TranslateMissingCommand}" ToolTip.Tip="把还没有译文的完整句发送到当前回答服务" />
+        <Button Content="结束会议" Command="{Binding StopRecordingCommand}" />
+        <Button Classes="primary" Command="{Binding StartRecordingCommand}" MinHeight="36" Padding="18,0">
+          <TextBlock Text="开始记录" Foreground="{DynamicResource OnInk}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- Body -->
+    <Grid Grid.Row="1" ColumnDefinitions="1.12*,*" ColumnSpacing="16" Margin="0,18,0,16">
+      <!-- Transcript -->
+      <Border Classes="card" Padding="0">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <Grid Margin="18,16,18,10" ColumnDefinitions="*,Auto">
+            <StackPanel>
+              <TextBlock Text="实时转写" Classes="title" FontSize="16" />
+              <TextBlock Text="系统声音与麦克风分别处理；只在本机保存文字。" Classes="caption" FontSize="11" Margin="0,3,0,0" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{Binding LevelText}" Classes="caption" FontSize="10" VerticalAlignment="Top" />
+          </Grid>
+
+          <ListBox Name="TranscriptList" Grid.Row="1" ItemsSource="{Binding Transcript}" Background="Transparent"
+                   Margin="10,0,12,0" SelectionMode="Single">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="local:TranscriptRow">
+                <Border Background="{DynamicResource TranscriptBubble}" CornerRadius="10" Padding="12,10"
+                        Margin="0,0,6,8">
+                  <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                    <SelectableTextBlock Text="{Binding Text}" FontSize="14" LineHeight="22" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Translation}" FontSize="13" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Ai}" IsVisible="{Binding HasTranslation}" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <StackPanel Grid.Row="2" Margin="18,6,18,16" Spacing="4">
+            <TextBlock Text="{Binding SystemPartial}" Foreground="{DynamicResource Ai}" FontSize="13" />
+            <TextBlock Text="{Binding MicrophonePartial}" Foreground="{DynamicResource Secondary}" FontSize="13" />
+            <TextBlock Text="转写会显示在这里。也可以导入录音 WAV 验证。"
+                       Classes="caption" IsVisible="{Binding !HasTranscript}" Margin="0,10,0,12" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Answer -->
+      <Border Grid.Column="1" Classes="card" Padding="0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <Grid Margin="18,16,18,6" ColumnDefinitions="*,Auto">
+            <StackPanel>
+              <TextBlock Text="参考回答" Classes="title" FontSize="16" />
+              <TextBlock Text="{Binding RetrievalInfo}" Classes="caption" FontSize="11" Margin="0,3,0,0" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}"
+                    VerticalAlignment="Top" />
+          </Grid>
+
+          <TextBlock Grid.Row="1" Text="{Binding DetectedQuestion}" Classes="caption" Margin="18,0,18,10"
+                     TextWrapping="Wrap" MaxHeight="56" TextTrimming="CharacterEllipsis" />
+
+          <ScrollViewer Grid.Row="2" Margin="12,0,12,0" VerticalScrollBarVisibility="Auto">
+            <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" Margin="6,0" />
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="3" Margin="18,10,18,14" Spacing="8">
+            <TextBox Text="{Binding QuestionInput}" PlaceholderText="输入问题，回车回答" AcceptsReturn="True"
+                     MinHeight="58" MaxHeight="110" TextWrapping="Wrap" KeyDown="Question_KeyDown" />
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="primary" Command="{Binding AskCommand}" Margin="0,0,8,6">
+          <TextBlock Text="回答" Foreground="{DynamicResource OnInk}" />
+        </Button>
+              <CheckBox Content="参考资料库" IsChecked="{Binding Settings.UseMaterials}" VerticalAlignment="Center"
+                        Margin="0,0,10,6" />
+              <ComboBox Name="SourcesBox" Width="150" ItemsSource="{Binding Sources}" PlaceholderText="引用来源"
+                        Margin="0,0,8,6">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="core:SourceCitation">
+                    <TextBlock Text="{Binding Label}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Content="查看来源" Click="ViewSource_Click" Margin="0,0,0,6" />
+            </WrapPanel>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

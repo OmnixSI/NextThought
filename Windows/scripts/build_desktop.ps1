@@ -1,0 +1,62 @@
+﻿param(
+    [string]$Version = "0.5.0",
+    [string]$Configuration = "Release",
+    [switch]$SkipInstaller,
+    [switch]$SkipZip
+)
+# Build, publish, package and verify the Avalonia desktop app (NextThought.exe).
+# Outputs land in <repo>/../../dist by default so downloaded tooling, intermediates
+# and results all stay on this drive.
+$ErrorActionPreference = 'Stop'
+$projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$dotnet = Join-Path $projectRoot '.tools\dotnet\dotnet.exe'
+if (-not (Test-Path -LiteralPath $dotnet)) { throw 'Run scripts/bootstrap_sdk.py first.' }
+$distRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot '..\..\..\dist'))
+$payload = Join-Path $distRoot ("NextThought-$Version-win-x64")
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+$env:DOTNET_NOLOGO = '1'
+
+function Invoke-Dotnet {
+    & $dotnet @args
+    if ($LASTEXITCODE -ne 0) { throw "dotnet failed (exit $LASTEXITCODE)" }
+}
+
+Push-Location -LiteralPath $projectRoot
+try {
+    Invoke-Dotnet build "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration --verbosity minimal
+    if (Test-Path -LiteralPath $payload) { Remove-Item -LiteralPath $payload -Recurse -Force }
+    Invoke-Dotnet publish "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration -r win-x64 --self-contained true -p:PublishSingleFile=false -o $payload --verbosity minimal
+
+    # Startup self-check on the published build, in an isolated data directory.
+    $smoke = Join-Path $distRoot 'smoke'
+    New-Item -ItemType Directory -Force -Path $smoke | Out-Null
+    $env:NEXTTHOUGHT_DATA_DIR = $smoke
+    $startup = Join-Path $smoke 'startup.json'
+    if (Test-Path $startup) { Remove-Item $startup -Force }
+    $process = Start-Process -FilePath (Join-Path $payload 'NextThought.exe') -ArgumentList @("--startup-check=$startup") -PassThru -Wait
+    if ($process.ExitCode -ne 0) { throw "Startup self-check failed (exit $($process.ExitCode))." }
+    $report = Get-Content -LiteralPath $startup -Raw -Encoding UTF8 | ConvertFrom-Json
+    Write-Output ("startup: passed={0} seconds={1} workingSetMiB={2} steps={3}" -f $report.passed, $report.seconds, $report.workingSetMiB, $report.initTimings)
+
+    if (-not $SkipInstaller) {
+        $iscc = Join-Path $projectRoot '.tools\inno-7.1.1\ISCC.exe'
+        if (-not (Test-Path -LiteralPath $iscc)) { throw 'Run scripts/bootstrap_installer.ps1 first (or install Inno Setup 7.1.1 into .tools/inno-7.1.1).' }
+        & $iscc "/DAppVersion=$Version" "/DPayload=$payload" "/DOutputDirectory=$distRoot" "/DOutputName=NextThought-$Version-windows-x64-setup" (Join-Path $projectRoot 'installer\NextThought.Desktop.iss') | Select-Object -Last 3
+        if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
+    }
+
+    if (-not $SkipZip) {
+        $zip = Join-Path $distRoot "NextThought-$Version-windows-x64.zip"
+        if (Test-Path -LiteralPath $zip) { Remove-Item $zip -Force }
+        Compress-Archive -LiteralPath $payload -DestinationPath $zip -Force
+        $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+        [IO.File]::WriteAllText($zip + '.sha256', "$hash  $([IO.Path]::GetFileName($zip))`n", [Text.UTF8Encoding]::new($false))
+        Write-Output "zip: $zip"
+        Write-Output "sha256: $hash"
+    }
+    Write-Output "payload: $payload"
+}
+finally {
+    Remove-Item Env:NEXTTHOUGHT_DATA_DIR -ErrorAction SilentlyContinue
+    Pop-Location
+}

@@ -1,0 +1,293 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Buttons are styled with plain templates rather than ControlThemes: the Fluent
+    theme keeps its own ContentPresenter foreground, which would override the ink
+    colours the design system needs. One template per emphasis, all on the paper
+    surfaces defined in Theme.axaml.
+  -->
+
+
+  <!-- Outline: a sheet of paper on the page. -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Hover}" />
+  </Style>
+  <Style Selector="Button:pressed /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Pressed}" />
+  </Style>
+  <Style Selector="Button:disabled">
+    <Setter Property="Opacity" Value="0.38" />
+  </Style>
+  <!-- The Fluent theme colours the template's content presenter itself; these two
+       rules put the ink palette back in charge of button text. -->
+  <Style Selector="Button /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.primary /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
+  <Style Selector="Button.caption /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+  </Style>
+
+  <!-- Primary: ink fill, on-ink text. -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Border>
+      </ControlTemplate>    </Setter>
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="#33312C" />
+  </Style>
+  <Style Selector="Button.primary /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ Border#Root">
+    <Setter Property="Background" Value="#121110" />
+  </Style>
+
+  <!-- Quiet: no fill until hover. -->
+  <Style Selector="Button.quiet">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Border>
+      </ControlTemplate>    </Setter>
+  </Style>
+  <Style Selector="Button.quiet:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Hover}" />
+  </Style>
+  <Style Selector="Button.quiet /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.quiet:pressed /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Pressed}" />
+  </Style>
+
+  <!-- Full-width list row (recent meetings, materials). -->
+  <Style Selector="Button.recent">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Border>
+      </ControlTemplate>    </Setter>
+  </Style>
+  <Style Selector="Button.recent:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Hover}" />
+  </Style>
+
+  <!-- Caption buttons (minimise / maximise / close), drawn inside the extended title bar. -->
+  <Style Selector="Button.caption">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Width" Value="46" />
+    <Setter Property="Height" Value="52" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Cursor" Value="Arrow" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+        </Border>
+      </ControlTemplate>    </Setter>
+  </Style>
+  <Style Selector="Button.caption Path">
+    <Setter Property="Stroke" Value="{DynamicResource Secondary}" />
+  </Style>
+  <Style Selector="Button.caption:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Hover}" />
+  </Style>
+  <Style Selector="Button.caption:pointerover Path">
+    <Setter Property="Stroke" Value="{DynamicResource InkBrush}" />
+  </Style>
+  <Style Selector="Button.caption.close:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="#C4452C" />
+  </Style>
+  <Style Selector="Button.caption.close:pointerover Path">
+    <Setter Property="Stroke" Value="#FFFFFF" />
+  </Style>
+
+  <!-- TextBox: paper field, 32 high, 8 radius -->
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="CaretBrush" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <!-- ComboBox -->
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,5" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <!-- CheckBox -->
+  <Style Selector="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <!-- ListBox without chrome -->
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <Style Selector="ProgressBar">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="Foreground" Value="{DynamicResource Seal}" />
+    <Setter Property="MinHeight" Value="3" />
+    <Setter Property="Height" Value="3" />
+  </Style>
+
+  <!-- Surface helpers -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="BoxShadow" Value="0 1 2 0 #121C1B19, 0 8 14 0 #0F1C1B19" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="Border.aiBlock">
+    <Setter Property="Background" Value="{DynamicResource AiSoft}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="Border.floating">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="BoxShadow" Value="0 12 16 0 #1F1C1B19" />
+  </Style>
+
+  <!-- Sidebar navigation row -->
+  <Style Selector="RadioButton.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="10,0" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="Left" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    </Style>
+    <Style Selector="^:checked">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+  </Style>
+
+  <!-- Chip -->
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="7,3" />
+  </Style>
+</Styles>

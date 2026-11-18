@@ -1,0 +1,40 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:views="using:NextThought.Desktop.Views"
+             x:Class="NextThought.Desktop.Views.NotesView"
+             x:DataType="local:AppState">
+  <Grid RowDefinitions="Auto,*" Margin="32,18,32,0">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="6">
+        <TextBlock Text="会后纪要" Classes="display" />
+        <TextBlock Text="按这场会议的转写整理总结、决定、待办和未决问题；原始文字不会被改写。"
+                   Classes="caption" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <CheckBox Content="结束后自动整理" IsChecked="{Binding Settings.AutoSummarize}" VerticalAlignment="Center" />
+        <Button Content="导出 Markdown" Command="{Binding ExportCommand}" />
+        <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="36" Padding="18,0">
+          <TextBlock Text="整理这场会议" Foreground="{DynamicResource OnInk}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Border Grid.Row="1" Classes="card" Padding="0" Margin="0,18,0,16">
+      <Grid RowDefinitions="Auto,*">
+        <Grid Margin="22,16,22,10" ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="{Binding MeetingTitle}" Classes="title" FontSize="15" />
+            <TextBlock Text="{Binding PageSubtitle}" Classes="caption" FontSize="11" Margin="0,3,0,0" />
+          </StackPanel>
+          <Border Grid.Column="1" Classes="chip" VerticalAlignment="Top">
+            <TextBlock Text="Markdown" Classes="overline" FontSize="10" />
+          </Border>
+        </Grid>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="22,0,22,22">
+          <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14" />
+        </ScrollViewer>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,70 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
+             x:Class="NextThought.Desktop.Views.LibraryView"
+             x:DataType="local:AppState">
+  <Grid RowDefinitions="Auto,*" Margin="32,18,32,0">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="6">
+        <TextBlock Text="资料库" Classes="display" />
+        <TextBlock Text="导入 PDF、Word、PPT、Excel、Markdown 与图片；解析在本机完成，检索时只把相关摘录发给回答服务。"
+                   Classes="caption" MaxWidth="620" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <TextBlock Text="{Binding Library.ImportProgress}" Classes="caption" VerticalAlignment="Center" />
+        <Button Classes="primary" Click="Import_Click" MinHeight="36" Padding="18,0"
+                IsEnabled="{Binding !Library.Importing}">
+          <TextBlock Text="导入资料" Foreground="{DynamicResource OnInk}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="360,*" ColumnSpacing="16" Margin="0,18,0,16">
+      <!-- Material list -->
+      <Border Classes="card" Padding="0">
+        <Grid RowDefinitions="Auto,*">
+          <StackPanel Margin="16,14,16,8" Spacing="8">
+            <TextBox Text="{Binding Library.Filter}" PlaceholderText="筛选资料名称" />
+            <TextBlock Text="{Binding Library.ImportStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          </StackPanel>
+          <ListBox Grid.Row="1" ItemsSource="{Binding Library.Materials}" SelectedItem="{Binding Library.SelectedMaterial}"
+                   Background="Transparent" Margin="6,0,6,10">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="core:MaterialDocument">
+                <Border Padding="10,9" CornerRadius="8">
+                    <StackPanel Spacing="3">
+                    <TextBlock Text="{Binding Name}" Classes="label" FontSize="13" TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Extension}" Classes="caption" FontSize="11" />
+                      <TextBlock Text="{Binding Blocks.Count}" Classes="caption" FontSize="11" />
+                      <TextBlock Text="段" Classes="caption" FontSize="11" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <!-- Preview -->
+      <Border Grid.Column="1" Classes="card" Padding="0">
+        <Grid RowDefinitions="Auto,*">
+          <Grid Margin="20,16,20,10" ColumnDefinitions="*,Auto">
+            <StackPanel>
+              <TextBlock Text="解析结果" Classes="title" FontSize="15" />
+              <TextBlock Text="按资料原有的页、幻灯片或工作表定位" Classes="caption" FontSize="11" Margin="0,3,0,0" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="quiet" Content="打开文件位置" Click="Reveal_Click" VerticalAlignment="Top" />
+          </Grid>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20,0,20,20">
+            <SelectableTextBlock Text="{Binding Library.SelectedPreview}" FontSize="13" LineHeight="22"
+                                 TextWrapping="Wrap" Foreground="{DynamicResource InkBrush}" />
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>
