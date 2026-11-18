@@ -86,18 +86,19 @@
 | VoiceProfile.swift | 86 | 未移植 |  |
 | WebLookupPromptBuilder.swift | 41 | 未移植 |  |
 | WebSearchNeed.swift | 129 | 未移植 |  |
-| Workspace.swift | 1460 | 未移植 |  |
+| Workspace.swift | 1460 | 部分移植 | Core/Workspace.cs（系列、经验与 workspace.json；知识库/候选人/合并未移植） |
 | WorkspaceArchiveOwnership.swift | 35 | 未移植 |  |
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 8，部分移植 2，基线简化版 7，未移植 63。
+统计：已移植 8，部分移植 3，基线简化版 7，未移植 62。
 
-测试：`tests/NextThought.Core.Tests` 73 项通过（SubtitleBar 12、AudioTimeline 10、
-TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16）。
+测试：`tests/NextThought.Core.Tests` 79 项通过（SubtitleBar 12、AudioTimeline 10、
+TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
-（鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）。
+（鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
+系列与经验（workspace.json；系列页可新建系列、把会议归档进系列、记一句话经验）。
 
-未接入/未移植的重点：
-`Workspace`（系列/经验库）、`NotesTemplates`（模板与校对提示）、`Glossary`、`SpeakerClustering`。
+未接入/未移植的重点：`Workspace` 的知识库、变更候选与 `KnowledgeMerger`、
+`NotesTemplates`（模板与校对提示）、`Glossary`、`SpeakerClustering`、双屏演讲、同传与自动更新。
