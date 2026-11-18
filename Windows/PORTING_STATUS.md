@@ -1,4 +1,18 @@
 
+# P5 文档结构 · 0.35.0
+
+0.35.0 移植 `DocumentStructure.swift`（210 行）为 `Core/DocumentStructure.cs`，测试 317 → 328。
+
+- **块解析**：标题（1–6 级）维护标题路径；代码围栏、`\$\$`/`\\[` 公式、`<table>` 与管道表格各自成原子块；
+  段落按空行/标题/围栏/表格边界合并。每个块带稳定 id（位置 + 内容指纹）与 locator（页码/幻灯片/工作表/标题路径/段号）。
+- **表格分片**：HTML 表格按 `rowspan` 连通行分组，每组重复表头；管道表格按行分组并重复两行表头；
+  长段落按 target 切分并保留 120 字重叠。
+- **结构化文档**：`StructuredDocument` 带 schema、pipeline、warnings 状态与 Markdown 拼接。
+- **测试**：11 项 —— 标题路径、代码/公式原子性、管道表、表格分片重复表头、HTML 表头分组、长段落重叠、
+  locator 文案、稳定 id、状态与 Markdown。
+
+统计：已移植 39 / 部分 9 / 基线 5 / 未移植 28。
+
 # P6 增量备份恢复点 · 0.34.0
 
 0.34.0 移植 `IncrementalBackup.swift`（123 行）为 `Core/IncrementalBackup.cs`，测试 301 → 317。

@@ -31,7 +31,7 @@
 | DocumentFeatureAvailability.swift | 27 | 已移植 | Core/DocumentFeatureAvailability.cs（依赖齐备才可用） |
 | DocumentJobs.swift | 466 | 未移植 |  |
 | DocumentNotice.swift | 53 | 已移植 | Core/DocumentNotice.cs（提示与警告区分、页码汇总） |
-| DocumentStructure.swift | 210 | 未移植 |  |
+| DocumentStructure.swift | 210 | 已移植 | Core/DocumentStructure.cs（标题路径/代码/公式/表格块、HTML 表格分片、检索分块；11 项测试） |
 | EchoSuppression.swift | 177 | 已移植 | Core/EchoSuppression.cs（8 项测试；已接入转写回声判定） |
 | GazeEstimator.swift | 188 | 未移植 |  |
 | Glossary.swift | 572 | 部分移植 | Core/Glossary.cs（9 项测试；规范写法已接入热词与转写纠正） |
@@ -91,11 +91,11 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 38，部分移植 9，基线简化版 5，未移植 29。
+统计：已移植 39，部分移植 9，基线简化版 5，未移植 28。
 
-测试：`tests/NextThought.Core.Tests` 317 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 328 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
