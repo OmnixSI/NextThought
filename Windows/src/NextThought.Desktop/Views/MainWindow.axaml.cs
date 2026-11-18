@@ -100,6 +100,7 @@ public partial class MainWindow : Window
             if (StartupOptions.DocumentJobCheck is { } documentJob) await RunDocumentJobCheckAsync(documentJob);
             if (StartupOptions.PageCheck is { } pageCheck) await RunPageCheckAsync(pageCheck);
             if (StartupOptions.ArchivePersistenceCheck is { } archiveCheck) await RunArchivePersistenceCheckAsync(archiveCheck);
+            if (StartupOptions.AcceptanceCheck is { } acceptance) await RunAcceptanceCheckAsync(acceptance);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -1479,6 +1480,91 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "archive-persistence-check: passed" : "archive-persistence-check: failed");
+        Close();
+    }
+
+    /// <summary>One process run over the portable Core features added since 0.47.0.</summary>
+    private async Task RunAcceptanceCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var checks = new List<(string Name, bool Passed)>();
+        void Check(string name, bool passed) => checks.Add((name, passed));
+
+        var glossary = new NextThought.Core.Glossary([
+            new NextThought.Core.GlossaryEntry("Kubernetes", variants: ["K8s"])
+        ]).Normalized();
+        var search = glossary.Search("k8s 部署");
+        Check("glossary-search", search.Forms.Contains("Kubernetes 部署") && search.Matches("Kubernetes 部署"));
+
+        var fields = new[] { new NextThought.Core.SessionSearchField(NextThought.Core.SessionSearchFieldKind.Transcript, "Kubernetes 部署", Id: "l1") };
+        Check("content-search", NextThought.Core.SessionContentSearch.FirstHit(fields, glossary.Search("Kubernetes")) is { Kind: NextThought.Core.SessionSearchFieldKind.Transcript });
+
+        var sessionId = Guid.NewGuid();
+        var progress = NextThought.Core.SessionSearch.Search([sessionId],
+            glossary.Search("Kubernetes"), new Dictionary<Guid, NextThought.Core.SessionSearchSnapshot>
+            {
+                [sessionId] = new([new NextThought.Core.SessionSearchField(NextThought.Core.SessionSearchFieldKind.Transcript, "Kubernetes", Id: "l")])
+            });
+        Check("history-search", progress.Hits.Count == 1 && progress.Hits[sessionId].Label() == "转写");
+
+        var series = new NextThought.Core.WorkspaceSeries("s", "系列", DateTimeOffset.UtcNow, [sessionId.ToString("D")],
+            [new NextThought.Core.WorkspaceLesson { Text = "经验", Pinned = true }]);
+        var briefing = NextThought.Core.SeriesBriefingBuilder.Build(series,
+            [new NextThought.Core.SessionMeta { Id = sessionId, Title = "会议", StartedAt = DateTimeOffset.UtcNow }]);
+        Check("series-briefing", briefing.SessionCount == 1 && briefing.Lessons.Count == 1);
+
+        var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
+        var rejected = false;
+        try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
+        Check("backup-manifest", rejected && NextThought.Core.SettingsSnapshot.IsSecretAccount("answer.api.x"));
+
+        var plan = new NextThought.Core.MeetingPlan { Mode = NextThought.Core.MeetingMode.Custom, CustomBaseMode = NextThought.Core.MeetingMode.Academic };
+        Check("meeting-plan", plan.EffectiveMode == NextThought.Core.MeetingMode.Academic);
+
+        Check("evidence", NextThought.Core.SessionEvidenceSupport.Quoted.Label().Contains("引文"));
+
+        var temporary = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "acceptance");
+        var saved = NextThought.Core.SessionUserContentStore.Save(new NextThought.Core.SessionUserContent { PersonalNotes = "笔记" }, temporary);
+        Check("user-content", saved.Revision == 1 && NextThought.Core.SessionUserContentStore.Load(temporary).PersonalNotes == "笔记");
+
+        var deleteRoot = Path.Combine(temporary, "delete");
+        Directory.CreateDirectory(deleteRoot);
+        var file = Path.Combine(deleteRoot, "a.txt");
+        await File.WriteAllTextAsync(file, "A");
+        var moves = NextThought.Core.WorkspaceDeletionFileStaging.Manifest([file], Path.Combine(deleteRoot, "staging"));
+        NextThought.Core.WorkspaceDeletionFileStaging.Stage(moves);
+        NextThought.Core.WorkspaceDeletionFileStaging.Rollback(moves);
+        Check("workspace-deletion", File.Exists(file) && File.ReadAllText(file) == "A");
+
+        var job = NextThought.Core.DocumentJob.Create("w", "a.pdf") with { Stage = NextThought.Core.DocumentJob.StageValue.Embedding, Completed = 1, Total = 2 };
+        Check("document-job", job.ProgressText == "建立语义索引 1/2");
+
+        var archive = Path.Combine(temporary, "archive");
+        var transcript = Path.Combine(archive, "transcript.jsonl");
+        NextThought.Core.SessionArchiveFileAppender.Live().AppendLine("{}", transcript);
+        NextThought.Core.SessionArchiveContentMarker.Record(Path.Combine(archive, ".marker"));
+        Check("archive", File.ReadAllLines(transcript).Length == 1 && NextThought.Core.SessionArchiveLeftover.IsLeftover(["notes.json"]));
+
+        var passed = checks.All(check => check.Passed);
+        var report = new
+        {
+            passed,
+            total = checks.Count,
+            failed = checks.Where(check => !check.Passed).Select(check => check.Name).ToList(),
+            checks = checks.Select(check => new { check.Name, check.Passed })
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? $"acceptance-check: passed ({checks.Count})" : "acceptance-check: failed");
         Close();
     }
 

@@ -54,7 +54,7 @@
 | QuestionEvalCorpus+Extended.swift | 110 | 已移植 | Core/QuestionEvalCorpus.cs（Extended 集；评估器见 QuestionDetectionEvaluator.cs） |
 | QuestionEvalCorpus+HeldOut.swift | 49 | 已移植 | Core/QuestionEvalCorpus.cs（HeldOut 集） |
 | QuestionEvalCorpus.swift | 8 | 已移植 | Core/QuestionEvalCorpus.cs（139 条标注语料：Extended + HeldOut） |
-| QuestionIntent.swift | 532 | 基线简化版 | QuestionIntent.cs + QuestionCandidateTracker.cs + QuestionVocabulary.cs（精简重写） |
+| QuestionIntent.swift | 532 | 已移植（等价重写） | QuestionIntent.cs + QuestionCandidateTracker.cs + QuestionVocabulary.cs；阈值/追问/候选跟踪/评测器齐备，139 条语料 82/82、误报 0 |
 | QuestionTurn.swift | 96 | 已移植 | Core/QuestionTurn.cs（整轮提问、词数、何时该答；14 项测试） |
 | RealtimeSetupReadiness.swift | 77 | 已移植 | Core/RealtimeSetupReadiness.cs（录音就绪与可请求启动） |
 | Scene.swift | 427 | 已移植 | Core/Scene.cs（11 项测试；场景/提词/教练已接入界面） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 部分移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、暂存/回滚/清理、授权事务；9 项测试。DocumentJob 与共享原件判定未移植） |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 55，部分移植 20，基线简化版 2，未移植 4。
+统计：已移植 56，部分移植 20，基线简化版 1，未移植 4。
 
 测试：`tests/NextThought.Core.Tests` 544 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
