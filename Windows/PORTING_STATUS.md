@@ -1,4 +1,18 @@
 
+# P1 进程与取消 · 0.49.0
+
+0.49.0 移植 `ProcessLineReader.swift`（67 行）与 `CancellableTaskValue.swift`（34 行），测试 457 → 462。
+
+- **ProcessLineReader**：在独立阻塞读取线程上把流按 `\n` 切成行（去掉 `\r`），通过 Channel 流式返回；
+  错误随流结束抛出，取消调用方不会取消底层读取。
+- **ProcessExitWaiter**：启动前注册退出事件，同步/异步等待都能拿到真实退出码；超时返回 null。
+- **CancellableTask**：共享任务 + 调用方取消 —— 先检查取消，再 `WaitAsync`；取消一个调用方不会取消共享任务。
+- **自检**：`--process-check` 读内存流三行、等待 `cmd /c exit 5`、等待共享任务
+  （`qa\process-0490\process-check.json`）。
+- 5 项测试：换行/CRLF/空行/中文、退出码、取消不杀进程、共享任务正常与取消。
+
+统计：已移植 54 / 部分 10 / 基线 2 / 未移植 15。
+
 # P2 术语检索与合并 · 0.48.0
 
 0.48.0 补齐 `Glossary.swift` 的检索/合并部分（由「部分移植」转为「已移植」），测试 448 → 457。

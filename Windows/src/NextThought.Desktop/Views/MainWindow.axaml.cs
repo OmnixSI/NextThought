@@ -83,6 +83,7 @@ public partial class MainWindow : Window
             if (StartupOptions.GazeCheck is { } gazeCheck) await RunGazeCheckAsync(gazeCheck);
             if (StartupOptions.BpeCheck is { } bpeCheck) await RunBpeCheckAsync(bpeCheck);
             if (StartupOptions.GlossarySearchCheck is { } glossarySearch) await RunGlossarySearchCheckAsync(glossarySearch);
+            if (StartupOptions.ProcessCheck is { } processCheck) await RunProcessCheckAsync(processCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -976,6 +977,44 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "glossary-search-check: passed" : "glossary-search-check: failed");
+        Close();
+    }
+
+    /// <summary>Reads lines from a stream, waits for a child process and awaits a shared task.</summary>
+    private async Task RunProcessCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var lines = new List<string>();
+        using (var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("alpha\nbeta\r\ngamma")))
+            await foreach (var line in NextThought.Core.ProcessLineReader.Lines(stream)) lines.Add(line);
+
+        var status = -1;
+        using (var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = "/c exit 5",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        })!)
+        using (var waiter = new NextThought.Core.ProcessExitWaiter(process))
+            status = await waiter.WaitAsync();
+
+        var shared = Task.FromResult(42);
+        var value = await NextThought.Core.CancellableTask.Value(shared);
+        var passed = lines.SequenceEqual(["alpha", "beta", "gamma"]) && status == 5 && value == 42;
+        var report = new { passed, lines, status, value };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "process-check: passed" : "process-check: failed");
         Close();
     }
 
