@@ -1746,6 +1746,17 @@ public partial class MainWindow : Window
                               && mergeResult.Merged[0].SourceDeletionTombstones!.Contains("s3")
                               && mergeResult.Updated == 1);
 
+        var notesFieldsProjection = NextThought.Core.SessionProjectionBuilder.Build(Guid.NewGuid(), DateTimeOffset.UtcNow,
+            [new NextThought.Core.TranscriptLine { Text = "正文", Date = DateTimeOffset.UtcNow }], []);
+        var notesFieldsPayload = new NextThought.Core.StructuredNotesPayload(NextThought.Core.NotesFormat.Outline,
+            outline: new NextThought.Core.OutlineNotes(
+                [new NextThought.Core.OutlineSection("结论", Points: [new NextThought.Core.OutlinePoint("灰度发布")])]));
+        var notesFields = NextThought.Core.SessionContentSearch.Fields(notesFieldsProjection, notesFieldsPayload, [], "t1");
+        Check("content-notes-fields", notesFields.Any(field => field.Kind == NextThought.Core.SessionSearchFieldKind.Notes
+                                                               && field.Text == "灰度发布")
+                                     && NextThought.Core.SessionContentSearch.FirstHit(notesFields, glossary.Search("灰度"))?.Kind
+                                         == NextThought.Core.SessionSearchFieldKind.Notes);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

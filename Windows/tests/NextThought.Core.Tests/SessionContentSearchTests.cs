@@ -53,6 +53,36 @@ public sealed class SessionContentSearchTests
     }
 
     [Fact]
+    public void StructuredNotesBecomeSearchableNoteFields()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var lines = new[] { new TranscriptLine { Text = "先演练再上线", Date = now } };
+        var notes = new StructuredNotesPayload(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("发布", Points: [new OutlinePoint("灰度发布", 65)])]));
+        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), now, lines, []);
+        var fields = SessionContentSearch.Fields(projection, notes, lines, "t1");
+        Assert.Contains(fields, field => field.Kind == SessionSearchFieldKind.Notes
+                                         && field.Text == "灰度发布"
+                                         && field.AlternateText == "发布"
+                                         && field.Location == "01:05"
+                                         && field.Id!.StartsWith("notes:"));
+
+        var hit = SessionContentSearch.FirstHit(fields, Terms("灰度"));
+        Assert.NotNull(hit);
+        Assert.Equal(SessionSearchFieldKind.Notes, hit!.Kind);
+        Assert.Equal(projection.SearchableText.Count + 1, fields.Count);
+    }
+
+    [Fact]
+    public void NullNotesLeaveTheProjectionFieldsUnchanged()
+    {
+        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), DateTimeOffset.UtcNow,
+            [new TranscriptLine { Text = "Kubernetes", Date = DateTimeOffset.UtcNow }], []);
+        Assert.Equal(SessionContentSearch.Fields(projection).Count,
+            SessionContentSearch.Fields(projection, null, [], "t1").Count);
+    }
+
+    [Fact]
     public void DirectMatchReturnsKindExcerptAndLocation()
     {
         var fields = new[]

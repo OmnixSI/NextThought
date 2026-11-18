@@ -80,6 +80,25 @@ public static class SessionContentSearch
     }
 
 
+    /// <summary>
+    /// Adds the structured-notes nodes as searchable note fields, keeping their evidence ids and
+    /// locations so a hit can open the exact node (port of the structured fields builder).
+    /// </summary>
+    public static IReadOnlyList<SessionSearchField> Fields(SessionTextProjection projection,
+        StructuredNotesPayload? notes, IReadOnlyList<TranscriptLine> lines, string transcriptSourceRevision)
+    {
+        var fields = Fields(projection).ToList();
+        if (notes is null) return fields;
+        foreach (var reference in SessionNotesEvidence.References(notes, lines, transcriptSourceRevision))
+        {
+            fields.Add(new SessionSearchField(SessionSearchFieldKind.Notes, reference.Claim, reference.Location,
+                Id: reference.Id, SourceRevision: reference.StructuredTarget?.PayloadRevision,
+                IsStale: reference.ReviewIsStale, SourceStatus: reference.SourceStatus,
+                AlternateText: reference.Title));
+        }
+        return fields;
+    }
+
     public static SessionSearchHit? FirstHit(IReadOnlyList<SessionSearchField> fields, GlossarySearch terms) =>
         Hits(fields, terms).FirstOrDefault();
 
