@@ -63,7 +63,7 @@
 | ScrollFollowInputClassifier.swift | 21 | 已移植 | Core/ScrollFollowState.cs（滚动导航键与命中测试） |
 | ScrollFollowState.swift | 48 | 已移植 | Core/ScrollFollowState.cs（跟随/读历史/选中文字） |
 | SemanticRetrieval.swift | 277 | 已移植 | Core/SemanticRetrieval.cs（指纹、分块、SemanticIndex、RRF、HybridContextIndex.retrieve 与显式页码/文件名优先；11 项测试） |
-| SeriesBriefing.swift | 327 | 部分移植 | Core/SeriesBriefing.cs（近期会议/经验/题库/候选限制 + 决定/待办/已完成/过期项；14 项测试。证据引用合并未移植） |
+| SeriesBriefing.swift | 327 | 部分移植 | Core/SeriesBriefing.cs（近期会议/经验/题库/候选限制 + 决定/待办/已完成/过期项 + 证据时效过滤；16 项测试。系列变更候选未移植） |
 | SessionArchivePersistence.swift | 513 | 已移植 | Core/SessionArchivePersistence.cs + 迁移发布/写队列/快照缓存（目录读取、标记、元数据读取、旧版回答迁移、迁移发布、写队列、回执、追加器、残留；20 项测试） |
 | SessionContentSearch.swift | 293 | 已移植 | Core/SessionContentSearch.cs（字段/命中/摘录/去重/首命中 + 投影字段 + 结构化笔记字段；13 项测试） |
 | SessionContext.swift | 265 | 已移植 | Core/SessionContext.cs + SessionPreset.cs（词法索引、手动提问、Office XML、AnswerStyle、摘录、模式/资料文档/预置；5 项测试） |

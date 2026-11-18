@@ -1771,6 +1771,31 @@ public partial class MainWindow : Window
                                 && NextThought.Core.SessionExportFormat.Docx.Title() == "Word 文档"
                                 && NextThought.Core.SessionExportFormat.Vtt.Title() == "WebVTT 字幕");
 
+        var evidenceItem = new NextThought.Core.WorkspaceSeriesItem
+        {
+            Kind = NextThought.Core.WorkspaceSeriesItem.KindValue.Decision,
+            Text = "决定",
+            SourceSessionId = sessionId.ToString("D"),
+            EvidenceId = "e",
+            ClaimRevision = "c",
+            SourceRevision = "s",
+            TranscriptSourceRevision = "t"
+        };
+        var evidenceSeries = series with { SeriesItems = [evidenceItem] };
+        var supportedEvidence = new NextThought.Core.SessionEvidenceReference("e", "标题", "决定",
+            NextThought.Core.SessionEvidenceSupport.Quoted, NextThought.Core.SessionEvidenceOrigin.TextNotes,
+            ReviewDecision: NextThought.Core.SessionEvidenceDecision.Supported,
+            ClaimRevision: "c", SourceRevision: "s", TranscriptSourceRevision: "t");
+        var supportedBriefing = NextThought.Core.SeriesBriefingBuilder.Build(evidenceSeries,
+            [new NextThought.Core.SessionMeta { Id = sessionId, Title = "会议", StartedAt = DateTimeOffset.UtcNow }],
+            evidenceReferences: [supportedEvidence]);
+        var staleBriefing = NextThought.Core.SeriesBriefingBuilder.Build(evidenceSeries,
+            [new NextThought.Core.SessionMeta { Id = sessionId, Title = "会议", StartedAt = DateTimeOffset.UtcNow }],
+            evidenceReferences: []);
+        Check("briefing-evidence", supportedBriefing.Decisions.Count == 1
+                                   && staleBriefing.Decisions.Count == 0
+                                   && staleBriefing.StaleItems.Count == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

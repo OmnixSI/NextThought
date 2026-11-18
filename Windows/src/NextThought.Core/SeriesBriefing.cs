@@ -25,7 +25,8 @@ public static class SeriesBriefingBuilder
     /// then newest, the most-asked questions, and pending candidates whose source still exists.
     /// </summary>
     public static SeriesBriefing Build(WorkspaceSeries series, IReadOnlyList<SessionMeta> sessions,
-        int meetingLimit = 3, int knowledgeLimit = 3)
+        int meetingLimit = 3, int knowledgeLimit = 3,
+        IReadOnlyList<SessionEvidenceReference>? evidenceReferences = null)
     {
         var membership = series.SessionIds.ToHashSet(StringComparer.Ordinal);
         var seriesSessions = sessions
@@ -74,6 +75,11 @@ public static class SeriesBriefingBuilder
                     stale.Add(item with { SourceMissing = true, SourceQuote = null, Location = null });
                     continue;
                 }
+                if (evidenceReferences is not null && !HasCurrentEvidence(item, evidenceReferences))
+                {
+                    stale.Add(item);
+                    continue;
+                }
                 active.Add(item);
             }
         }
@@ -95,4 +101,17 @@ public static class SeriesBriefingBuilder
         return new SeriesBriefing(series.Id, series.Name, seriesSessions.Count, series.UseKnowledge,
             recent, lessons, questionBank, pending, decisions, openActions, resolvedActions, stale);
     }
+
+    /// <summary>A review counts only while it is supported, fresh, and saw the same revisions.</summary>
+    private static bool HasCurrentEvidence(WorkspaceSeriesItem item, IReadOnlyList<SessionEvidenceReference> references) =>
+        references.Any(reference =>
+            reference.Id == item.EvidenceId
+            && (reference.SessionId is not { } sessionId
+                || string.Equals(sessionId.ToString("D"), item.SourceSessionId, StringComparison.OrdinalIgnoreCase))
+            && reference.ReviewDecision == SessionEvidenceDecision.Supported
+            && !reference.ReviewIsStale
+            && reference.ClaimRevision == item.ClaimRevision
+            && reference.SourceRevision == item.SourceRevision
+            && reference.TranscriptSourceRevision == item.TranscriptSourceRevision);
+
 }

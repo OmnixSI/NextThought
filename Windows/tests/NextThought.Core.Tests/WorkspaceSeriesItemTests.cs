@@ -91,6 +91,45 @@ public sealed class WorkspaceSeriesItemTests
     }
 
     [Fact]
+    public void EvidenceMustBeSupportedCurrentAndOnTheSameRevisions()
+    {
+        var item = Item(WorkspaceSeriesItem.KindValue.Decision, "决定") with
+        {
+            EvidenceId = "e",
+            ClaimRevision = "c",
+            SourceRevision = "s",
+            TranscriptSourceRevision = "t"
+        };
+        var current = new SessionEvidenceReference("e", "标题", "决定", SessionEvidenceSupport.Quoted,
+            SessionEvidenceOrigin.TextNotes, Quote: "原话", ReviewDecision: SessionEvidenceDecision.Supported,
+            ClaimRevision: "c", SourceRevision: "s", TranscriptSourceRevision: "t");
+        var withEvidence = SeriesBriefingBuilder.Build(Series(item), [Session()], evidenceReferences: [current]);
+        Assert.Single(withEvidence.Decisions);
+        Assert.Empty(withEvidence.StaleItems);
+
+        var staleReview = current with { ReviewIsStale = true };
+        Assert.Empty(SeriesBriefingBuilder.Build(Series(item), [Session()], evidenceReferences: [staleReview]).Decisions);
+
+        var unsupported = current with { ReviewDecision = SessionEvidenceDecision.Unsupported };
+        Assert.Empty(SeriesBriefingBuilder.Build(Series(item), [Session()], evidenceReferences: [unsupported]).Decisions);
+
+        var oldRevision = current with { ClaimRevision = "old" };
+        Assert.Empty(SeriesBriefingBuilder.Build(Series(item), [Session()], evidenceReferences: [oldRevision]).Decisions);
+
+        var missingEvidence = SeriesBriefingBuilder.Build(Series(item), [Session()], evidenceReferences: []);
+        Assert.Empty(missingEvidence.Decisions);
+        Assert.Single(missingEvidence.StaleItems);
+    }
+
+    [Fact]
+    public void RetainedItemsNeedNoEvidenceWhenTheirSourceIsGone()
+    {
+        var retained = Item(WorkspaceSeriesItem.KindValue.Decision, "保留", sourceMissing: true, retained: true);
+        var briefing = SeriesBriefingBuilder.Build(Series(retained), [], evidenceReferences: []);
+        Assert.Single(briefing.Decisions);
+    }
+
+    [Fact]
     public void ItemsFromSessionsOutsideTheSeriesBecomeStale()
     {
         var unknown = Item(WorkspaceSeriesItem.KindValue.Decision, "别的会议", sessionId: Guid.NewGuid().ToString("D"));
