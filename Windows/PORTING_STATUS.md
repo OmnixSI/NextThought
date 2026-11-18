@@ -1,5 +1,20 @@
 
+# 1.0.0 功能完备里程碑
+
+1.0.0 不新增 Core 文件，做一次口径校准与里程碑发布：
+
+- ``AnswerPromptBuilder.swift``：指令原文、预算化 JSON、整份资料、精炼，加上单独的 PreparationPrompt/ModeProfile，转为**已移植**。
+- ``SessionEvidence.swift``：模型/匹配/时效/笔记证据提取/节点编辑/摘要回写，转为**已移植**。
+- 统计：已移植 **65** / 部分 **15** / 基线 0 / 未移植 0；测试 750；验收 47 项。
+- **1.0.0 安装版实测**：发布门禁 **17/17 PASS**（``qa\rc-1000\summary.json``）；
+  启动 3.7 秒、工作集 **121.9 MiB**、私有 52.6 MiB、线程 30；全部 7 页访问后 **146.7 MiB**。
+- **已知限制**（不阻塞 1.0.0，但仍是目标未完成项）：
+  1. 发布包未做 Authenticode 签名（无证书）；更新器已支持 ``NEXTTHOUGHT_REQUIRE_SIGNATURE=1`` 强制校验。
+  2. 双屏与伴侣蓝牙/中转只有合成/本机验证，缺少第二块屏与真机联调。
+  3. 15 个文件仍为部分移植（备份归档写入、SQLite 队列、LiveInsights 截图、文档编辑等）。
+
 # P2 导出格式 · 0.100.0
+
 
 0.100.0 补上 ``SessionExportFormat``，测试 747 → 750；``SessionExport.swift`` 转为**已移植**。
 
