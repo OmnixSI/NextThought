@@ -1696,6 +1696,17 @@ public partial class MainWindow : Window
                                   && legacyAnswers.Count == 1
                                   && legacyAnswers[0].Question.Contains("旧版回答", StringComparison.Ordinal));
 
+        var preset = new NextThought.Core.SessionPreset
+        {
+            Name = "技术面",
+            Mode = NextThought.Core.SessionMode.Interview,
+            Documents = [new NextThought.Core.ContextDocument { Name = "简历", Pages = ["内容"] }]
+        };
+        Check("session-preset", preset.Mode.ToMeetingMode() == NextThought.Core.MeetingMode.Interview
+                                && preset.EnabledDocumentCount == 1
+                                && NextThought.Core.SessionPreset.TemplatePreferences(NextThought.Core.SessionMode.Interview)
+                                    .StartsWith("我是候选人", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
