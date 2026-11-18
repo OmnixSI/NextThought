@@ -71,6 +71,9 @@ public sealed record WorkspaceSeries(
     /// <summary>Review queue: suggestions stay inert until accepted or rejected.</summary>
     public IReadOnlyList<WorkspaceKnowledgeCandidate> KnowledgeCandidates { get; init; } = [];
 
+    /// <summary>Accepted decisions and actions carried by this series.</summary>
+    public IReadOnlyList<WorkspaceSeriesItem> SeriesItems { get; init; } = [];
+
     /// <summary>Feed lessons and the question bank back into answers (default on).</summary>
     public bool UseKnowledge { get; init; } = true;
 

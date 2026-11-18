@@ -1515,6 +1515,22 @@ public partial class MainWindow : Window
             [new NextThought.Core.SessionMeta { Id = sessionId, Title = "会议", StartedAt = DateTimeOffset.UtcNow }]);
         Check("series-briefing", briefing.SessionCount == 1 && briefing.Lessons.Count == 1);
 
+        var itemSeries = series with
+        {
+            SeriesItems = [new NextThought.Core.WorkspaceSeriesItem
+            {
+                Kind = NextThought.Core.WorkspaceSeriesItem.KindValue.Decision,
+                Text = "决定",
+                SourceSessionId = sessionId.ToString("D"),
+                EvidenceId = "e",
+                ClaimRevision = "c",
+                SourceRevision = "s"
+            }]
+        };
+        var itemBriefing = NextThought.Core.SeriesBriefingBuilder.Build(itemSeries,
+            [new NextThought.Core.SessionMeta { Id = sessionId, Title = "会议", StartedAt = DateTimeOffset.UtcNow }]);
+        Check("series-items", itemBriefing.Decisions.Count == 1 && itemBriefing.OpenActions.Count == 0);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

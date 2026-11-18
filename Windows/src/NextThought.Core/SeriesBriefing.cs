@@ -12,7 +12,11 @@ public sealed record SeriesBriefing(
     IReadOnlyList<SessionMeta> LatestSessions,
     IReadOnlyList<WorkspaceLesson> Lessons,
     IReadOnlyList<QuestionBankItem> QuestionBank,
-    IReadOnlyList<WorkspaceKnowledgeCandidate> PendingCandidates);
+    IReadOnlyList<WorkspaceKnowledgeCandidate> PendingCandidates,
+    IReadOnlyList<WorkspaceSeriesItem> Decisions,
+    IReadOnlyList<WorkspaceSeriesItem> OpenActions,
+    IReadOnlyList<WorkspaceSeriesItem> ResolvedActions,
+    IReadOnlyList<WorkspaceSeriesItem> StaleItems);
 
 public static class SeriesBriefingBuilder
 {
@@ -53,7 +57,42 @@ public static class SeriesBriefingBuilder
                 .ToList()
             : [];
 
+        var active = new List<WorkspaceSeriesItem>();
+        var stale = new List<WorkspaceSeriesItem>();
+        if (series.UseKnowledge)
+        {
+            foreach (var item in series.SeriesItems)
+            {
+                if (item.SourceMissing == true)
+                {
+                    if (item.IndependentlyRetained == true) active.Add(item);
+                    else stale.Add(item);
+                    continue;
+                }
+                if (!membership.Contains(item.SourceSessionId))
+                {
+                    stale.Add(item with { SourceMissing = true, SourceQuote = null, Location = null });
+                    continue;
+                }
+                active.Add(item);
+            }
+        }
+        stale.Sort((left, right) => right.UpdatedAt.CompareTo(left.UpdatedAt));
+        var decisions = active.Where(item => item.Kind == WorkspaceSeriesItem.KindValue.Decision)
+            .OrderByDescending(item => item.UpdatedAt).ToList();
+        var openActions = active.Where(item => item.Kind == WorkspaceSeriesItem.KindValue.Action
+                                               && (item.ActionState is null or WorkspaceSeriesItem.ActionStateValue.Open
+                                                   or WorkspaceSeriesItem.ActionStateValue.InProgress))
+            .OrderBy(item => item.DueDate is null ? 1 : 0)
+            .ThenBy(item => item.DueDate ?? DateTimeOffset.MaxValue)
+            .ThenByDescending(item => item.UpdatedAt).ToList();
+        var resolvedActions = active.Where(item => item.Kind == WorkspaceSeriesItem.KindValue.Action
+                                                   && (item.ActionState is WorkspaceSeriesItem.ActionStateValue.Done
+                                                       or WorkspaceSeriesItem.ActionStateValue.Cancelled
+                                                       or WorkspaceSeriesItem.ActionStateValue.Superseded))
+            .OrderByDescending(item => item.UpdatedAt).ToList();
+
         return new SeriesBriefing(series.Id, series.Name, seriesSessions.Count, series.UseKnowledge,
-            recent, lessons, questionBank, pending);
+            recent, lessons, questionBank, pending, decisions, openActions, resolvedActions, stale);
     }
 }
