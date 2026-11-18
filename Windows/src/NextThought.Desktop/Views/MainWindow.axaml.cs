@@ -34,6 +34,7 @@ public partial class MainWindow : Window
         {
             await state.InitializeAsync();
             if (StartupOptions.Island) ToggleCueIsland();
+            if (StartupOptions.Teleprompter) { ToggleTeleprompter(); if (StartupOptions.TeleprompterThrough) teleprompter?.ApplyClickThrough(true); }
             if (StartupOptions.CaptureTest is { } captureTest) await RunCaptureTestAsync(captureTest);
             if (StartupOptions.CheckReport is { } report) await WriteStartupReportAsync(report);
         };
@@ -94,6 +95,7 @@ public partial class MainWindow : Window
     private CueIslandWindow? island;
     private SubtitleBarWindow? subtitleBar;
     private GlobalHotkeys? hotkeys;
+    private TeleprompterWindow? teleprompter;
 
     /// <summary>Ctrl+Alt shortcuts for the actions the Mac app binds to ⌘⇧ (plan §7 table).</summary>
     private void RegisterHotkeys()
@@ -104,6 +106,7 @@ public partial class MainWindow : Window
             new GlobalHotkeys.Binding("Ctrl+Alt+O 显示或隐藏提词岛", 0x4F, ToggleCueIsland),
             new GlobalHotkeys.Binding("Ctrl+Alt+M 纪要窗口/字幕条/隐藏", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
             new GlobalHotkeys.Binding("Ctrl+Alt+S 区域截图", 0x53, () => _ = CaptureRegionAsync()),
+            new GlobalHotkeys.Binding("Ctrl+Alt+T 提词器", 0x54, ToggleTeleprompter),
             new GlobalHotkeys.Binding("Ctrl+Alt+N 唤起主窗口", 0x4E, RestoreMainWindow)
         ]);
         if (hotkeys.Unregistered.Count > 0)
@@ -188,6 +191,15 @@ public partial class MainWindow : Window
             await File.WriteAllTextAsync(path + ".json", "{\"error\":" + System.Text.Json.JsonSerializer.Serialize(ex.Message) + "}");
         }
         Close();
+    }
+
+    /// <summary>Floating teleprompter window (plan §9 提词器).</summary>
+    public void ToggleTeleprompter()
+    {
+        if (teleprompter is { IsVisible: true }) { teleprompter.Hide(); return; }
+        teleprompter ??= new TeleprompterWindow(state);
+        teleprompter.Show();
+        teleprompter.ApplyClickThrough(teleprompter.ClickThrough);
     }
 
     /// <summary>Show or hide the floating cue island (the Mac app's notch panel).</summary>

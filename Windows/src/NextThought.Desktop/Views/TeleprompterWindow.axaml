@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.TeleprompterWindow"
+        x:DataType="local:AppState"
+        Title="NextThought 提词器"
+        Width="640" Height="320" MinWidth="360" MinHeight="160"
+        CanResize="True" ShowInTaskbar="False"
+        WindowDecorations="None" Topmost="True"
+        Background="Transparent" TransparencyLevelHint="Transparent"
+        WindowStartupLocation="Manual">
+  <Border x:Name="Shell" Background="#E6121110" BorderBrush="#33ECEBE8" BorderThickness="0.5"
+          CornerRadius="16" Padding="6" BoxShadow="0 12 26 0 #50000000">
+    <Grid RowDefinitions="Auto,*">
+      <!-- Drag handle + controls -->
+      <Grid x:Name="DragBar" ColumnDefinitions="*,Auto" Margin="10,6,6,6" Background="Transparent"
+            PointerPressed="DragBar_PointerPressed">
+        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+          <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource Seal}" />
+          <TextBlock Text="提词器" Foreground="#A3A19B" FontSize="11" VerticalAlignment="Center" />
+          <TextBlock x:Name="ModeText" Text="拖动可移动 · 双击隐藏控件" Foreground="#6B6963" FontSize="10"
+                     VerticalAlignment="Center" Margin="4,0,0,0" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+          <Button Classes="tp" Content="A-" Click="Smaller_Click" ToolTip.Tip="缩小字号" />
+          <Button Classes="tp" Content="A+" Click="Larger_Click" ToolTip.Tip="放大字号" />
+          <Button Classes="tp" Content="−" Click="Fade_Click" ToolTip.Tip="降低不透明度" />
+          <Button Classes="tp" Content="+" Click="Solid_Click" ToolTip.Tip="提高不透明度" />
+          <Button Classes="tp" x:Name="ThroughButton" Content="穿透" Click="Through_Click"
+                  ToolTip.Tip="切换鼠标穿透（穿透后只能用快捷键改回）" />
+          <Button Classes="tp" Content="✕" Click="Close_Click" ToolTip.Tip="关闭提词器" />
+        </StackPanel>
+      </Grid>
+
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="14,4,14,12">
+        <SelectableTextBlock x:Name="BodyText" Text="{Binding PlainAnswer}" Foreground="#F5F3EE"
+                             FontSize="26" LineHeight="38" TextWrapping="Wrap" />
+      </ScrollViewer>
+    </Grid>
+  </Border>
+</Window>

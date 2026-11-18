@@ -171,6 +171,29 @@
     <Setter Property="Stroke" Value="#FFFFFF" />
   </Style>
 
+  <!-- Small controls used inside the teleprompter's dark surface. -->
+  <Style Selector="Button.tp">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="#D9D6CE" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="7,2" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+          <ContentPresenter Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.tp:pointerover /template/ Border#Root">
+    <Setter Property="Background" Value="#26ECEBE8" />
+  </Style>
+
   <!-- TextBox: paper field, 32 high, 8 radius -->
   <Style Selector="TextBox">
     <Setter Property="Background" Value="{DynamicResource Surface}" />

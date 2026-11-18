@@ -48,6 +48,11 @@ public partial class LiveView : UserControl
         if (state.AskCommand.CanExecute(null)) state.AskCommand.Execute(null);
     }
 
+    private void Teleprompter_Click(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleTeleprompter();
+    }
+
     private async void Capture_Click(object? sender, RoutedEventArgs e)
     {
         if (TopLevel.GetTopLevel(this) is MainWindow window) await window.CaptureRegionAsync();

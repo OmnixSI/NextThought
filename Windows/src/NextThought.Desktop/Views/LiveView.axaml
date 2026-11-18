@@ -17,6 +17,7 @@
         <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" VerticalAlignment="Center"
                   ToolTip.Tip="系统声音里出现提问时自动生成回答" />
         <Button Content="{Binding LiveModeLabel}" Command="{Binding CycleLiveModeCommand}" ToolTip.Tip="纪要窗口 → 字幕条 → 隐藏" />
+        <Button Content="提词器" Click="Teleprompter_Click" ToolTip.Tip="浮在屏幕上的大字提词窗（Ctrl+Alt+T）" />
         <Button Content="截图" Click="Capture_Click" ToolTip.Tip="框选屏幕区域，存入资料库并 OCR（Ctrl+Alt+S）" />
         <Button Content="提词岛" Click="Island_Click" ToolTip.Tip="在屏幕顶部显示问题与回答，不抢焦点" />
         <Button Content="补译" Command="{Binding TranslateMissingCommand}" ToolTip.Tip="把还没有译文的完整句发送到当前回答服务" />

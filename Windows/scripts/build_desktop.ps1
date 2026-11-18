@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Version = "0.5.0",
     [string]$Configuration = "Release",
     [switch]$SkipInstaller,
@@ -23,7 +23,12 @@ function Invoke-Dotnet {
 
 Push-Location -LiteralPath $projectRoot
 try {
-    Invoke-Dotnet build "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration --verbosity minimal
+    # A crashed MSBuild node can leave stale intermediates that crash the Avalonia XAML
+    # compiler (MSB4166 / 0xC0000005); start every packaging run from a clean Desktop obj.
+    foreach ($stale in @('src\NextThought.Desktop\obj', 'src\NextThought.Desktop\bin')) {
+        if (Test-Path -LiteralPath $stale) { Remove-Item -LiteralPath $stale -Recurse -Force }
+    }
+    Invoke-Dotnet build "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration /m:1 --verbosity minimal
     if (Test-Path -LiteralPath $payload) { Remove-Item -LiteralPath $payload -Recurse -Force }
     Invoke-Dotnet publish "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration -r win-x64 --self-contained true -p:PublishSingleFile=false -o $payload --verbosity minimal
 

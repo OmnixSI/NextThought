@@ -1,4 +1,4 @@
-namespace NextThought.Desktop;
+﻿namespace NextThought.Desktop;
 
 /// <summary>Command-line switches that make the interface inspectable without a live meeting.</summary>
 public static class StartupOptions
@@ -11,6 +11,8 @@ public static class StartupOptions
     public static bool Subtitles { get; private set; }
     public static bool Companion { get; private set; }
     public static string? CaptureTest { get; private set; }
+    public static bool Teleprompter { get; private set; }
+    public static bool TeleprompterThrough { get; private set; }
 
     public static void Parse(IReadOnlyList<string> args)
     {
@@ -21,6 +23,8 @@ public static class StartupOptions
             else if (argument is "--island") Island = true;
             else if (argument is "--subtitles") Subtitles = true;
             else if (argument is "--companion") Companion = true;
+            else if (argument is "--teleprompter") Teleprompter = true;
+            else if (argument is "--teleprompter-through") { Teleprompter = true; TeleprompterThrough = true; }
             else if (argument.StartsWith("--capture-test=", StringComparison.OrdinalIgnoreCase)) CaptureTest = argument["--capture-test=".Length..];
             else if (argument.StartsWith("--startup-check=", StringComparison.OrdinalIgnoreCase)) CheckReport = argument["--startup-check=".Length..];
             else if (argument.StartsWith("--section=", StringComparison.OrdinalIgnoreCase)
