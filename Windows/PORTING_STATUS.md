@@ -1,4 +1,19 @@
 
+# P6 系列文档归档 · 0.63.0
+
+0.63.0 移植 `WorkspaceArchiveOwnership.swift`（35 行），按 Windows 的资料模型适配，测试 551 → 557。
+
+- **归属目录**：系列在 `Materials/<seriesId>/` 下拥有提取后的 `<documentId>.md` 与 `<documentId>.json`。
+- **修复**：逐份资料确保两个文件存在；已存在则复用、绝不覆盖（人工改过的正文保留）；缺失时用块文本拼 Markdown、
+  用资料元数据写 JSON，均为临时文件 + 移动的原子写。
+- **安全**：资料/系列 id 含路径分隔符或 `..` 时拒绝，避免写出目录。
+- **差异**：Windows 资料是全局内容寻址共享，系列记录没有 `markdownPath` 可回写，因此返回归档清单而不是改系列。
+- **自检**：`--acceptance-check` 增加第 13 项，真实目录生成 md/json 并校验存在
+  （`qa\install-smoke-0630\acceptance.json`）。
+- 6 项测试：目录/内容、幂等且保留手改、无块资料、多份顺序、非法 id、空清单。
+
+统计：已移植 56 / 部分 22 / 基线 1 / 未移植 2。
+
 # P2 会话投影模型 · 0.62.0
 
 0.62.0 移植 `SessionTextProjection.swift`（497 行）的投影模型部分，测试 544 → 551。

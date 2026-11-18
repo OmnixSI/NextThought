@@ -1545,6 +1545,11 @@ public partial class MainWindow : Window
         NextThought.Core.SessionArchiveContentMarker.Record(Path.Combine(archive, ".marker"));
         Check("archive", File.ReadAllLines(transcript).Length == 1 && NextThought.Core.SessionArchiveLeftover.IsLeftover(["notes.json"]));
 
+        var ownedSeries = new NextThought.Core.WorkspaceSeries("own", "归档系列", DateTimeOffset.UtcNow, [], []);
+        var owned = NextThought.Core.WorkspaceArchiveOwnership.Repair(ownedSeries,
+            [new NextThought.Core.MaterialDocument { Id = "doc", Name = "资料" }], Path.Combine(temporary, "materials"));
+        Check("archive-ownership", owned.Count == 1 && File.Exists(owned[0].MarkdownPath) && File.Exists(owned[0].MetadataPath));
+
         var projection = new NextThought.Core.SessionTextProjection(sessionId, "rev", "t1",
             new NextThought.Core.SessionProjectionOptions(), [],
             [new NextThought.Core.SessionProjectedText("n", NextThought.Core.SessionProjectionTextKind.Notes, "n",
