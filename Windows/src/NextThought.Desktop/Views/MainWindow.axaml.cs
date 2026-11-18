@@ -1578,6 +1578,16 @@ public partial class MainWindow : Window
             "c", "t", "l");
         Check("evidence-builder", evidenceSupport == NextThought.Core.SessionEvidenceSupport.Quoted && evidenceCurrent);
 
+        var writeQueue = new NextThought.Core.SessionArchiveWriteQueue(maximumPendingEvents: 2);
+        writeQueue.Enqueue("a", [1]);
+        writeQueue.Enqueue("b", [2]);
+        var overflowedWrite = writeQueue.Enqueue("c", [3]);
+        writeQueue.Acknowledge(2);
+        var acknowledgedLoss = writeQueue.AcknowledgeDataLossAndResume();
+        Check("write-queue", !overflowedWrite.Queued && acknowledgedLoss
+                             && writeQueue.Snapshot.AcknowledgedUnqueuedWriteCount == 1
+                             && writeQueue.Enqueue("d", [4]).Queued);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
