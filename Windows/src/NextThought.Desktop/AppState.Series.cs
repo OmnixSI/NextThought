@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
@@ -120,11 +120,15 @@ public partial class AppState
     private void AssignCurrentToSeries()
     {
         if (CurrentSession is not { } meta || SelectedSeries is not { } row) return;
+        // A meeting belongs to one series at most, so assigning may move it: say where it came from.
+        var previous = workspace.SeriesOfSession(meta.Id.ToString());
         workspace = workspace.Assign(meta.Id.ToString(), row.Id);
         SaveWorkspace();
         RefreshSeries();
         SelectedSeries = SeriesRows.FirstOrDefault(item => item.Id == row.Id);
-        SetStatus($"已把「{meta.Title}」放进系列「{row.Name}」。");
+        SetStatus(previous is { } from && from.Id != row.Id
+            ? $"已把「{meta.Title}」从「{from.Name}」移到系列「{row.Name}」。"
+            : $"已把「{meta.Title}」放进系列「{row.Name}」。");
     }
 
     private bool CanAssignCurrent() => CurrentSession is not null && SelectedSeries is not null;
