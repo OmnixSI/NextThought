@@ -97,7 +97,7 @@
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
-（鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图绘制）。
+（鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）。
 
-未接入/未移植的重点：观点对照的矩阵表格绘制（目前以带时间的 Markdown 呈现）、
+未接入/未移植的重点：
 `Workspace`（系列/经验库）、`NotesTemplates`（模板与校对提示）、`Glossary`、`SpeakerClustering`。
