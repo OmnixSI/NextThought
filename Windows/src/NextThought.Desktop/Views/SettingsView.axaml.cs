@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 
@@ -7,6 +7,13 @@ namespace NextThought.Desktop.Views;
 public partial class SettingsView : UserControl
 {
     public SettingsView() => InitializeComponent();
+
+    /// <summary>--settings-scroll lets the screenshot tool show a card below the fold.</summary>
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        if (StartupOptions.SettingsScroll is { } offset) SettingsScroll.Offset = new Avalonia.Vector(0, offset);
+    }
 
     private async void RefreshDevices_Click(object? sender, RoutedEventArgs e)
     {

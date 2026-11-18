@@ -4,7 +4,7 @@
              xmlns:platform="using:NextThought.Platform"
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+  <ScrollViewer Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="32,18,32,36" MaxWidth="860" Spacing="18">
       <StackPanel Spacing="6">
         <TextBlock Text="设置" Classes="display" />
@@ -85,6 +85,23 @@
                          Classes="caption" FontSize="11" />
             </StackPanel>
           </Border>
+        </StackPanel>
+      </Border>
+
+      <!-- Dual-screen presenting (PresenterMode.swift) -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="双屏演讲" Classes="section" />
+          <CheckBox Content="开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口"
+                    IsChecked="{Binding Settings.PresenterMode}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="幻灯片所在屏" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.ScreenChoices}"
+                      SelectedItem="{Binding Settings.SelectedSlidesScreen}" MinWidth="240" />
+          </StackPanel>
+          <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11" />
+          <TextBlock Text="开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。幻灯片自动翻页识别（LiveInsights 页面匹配）尚未移植。"
+                     Classes="caption" FontSize="11" />
         </StackPanel>
       </Border>
 

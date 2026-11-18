@@ -12,6 +12,7 @@ public partial class MainWindow : Window
 {
     private readonly AppState state;
     private bool closing;
+    private bool openedOnce;
 
     public MainWindow(AppState state)
     {
@@ -29,10 +30,23 @@ public partial class MainWindow : Window
         };
         state.Notify = ShowMessageAsync;
         state.Initialized += HandleInitialized;
-        state.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(AppState.LiveMode)) ApplyLiveMode(state.LiveMode); };
+        state.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.LiveMode)) ApplyLiveMode(state.LiveMode);
+            else if (e.PropertyName == nameof(AppState.Recording))
+            {
+                if (state.Recording) ApplyPresenterModeForRecording();
+                else ExitPresenterMode();
+            }
+        };
         Opened += async (_, _) =>
         {
+            // Hide()/Show() (hide-all, presenter mode) raises Opened again; the startup work runs once.
+            if (openedOnce) return;
+            openedOnce = true;
             await state.InitializeAsync();
+            RefreshDisplays();
+            if (StartupOptions.Presenter) state.Settings.PresenterMode = true;
             SetupTray();
             if (StartupOptions.Scene is { } scene) state.SetSceneCommand.Execute(scene);
             if (StartupOptions.HistoryFilter is { } filter) state.HistoryFilter = filter;
@@ -49,6 +63,7 @@ public partial class MainWindow : Window
             }
             if (StartupOptions.CheckReport is { } report) await WriteStartupReportAsync(report);
             if (StartupOptions.KnowledgeCheck is { } knowledge) await RunKnowledgeCheckAsync(knowledge);
+            if (StartupOptions.PresenterCheck is { } presenterCheck) await RunPresenterCheckAsync(presenterCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -56,6 +71,10 @@ public partial class MainWindow : Window
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(MaximizeButton, WindowDecorationsElementRole.MaximizeButton);
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(CloseButton, WindowDecorationsElementRole.CloseButton);
         RegisterHotkeys();
+        RefreshDisplays();
+        // Dual-screen topologies change while the app runs (docking, projector plugged in).
+        try { Screens.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(RefreshDisplays); }
+        catch { /* headless test hosts have no screen manager */ }
     }
 
     private void Minimize_Click(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
@@ -74,6 +93,7 @@ public partial class MainWindow : Window
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            var presenterPlan = CurrentPresenterPlan();
             var report = new
             {
                 testedAt = DateTimeOffset.Now,
@@ -94,7 +114,25 @@ public partial class MainWindow : Window
                     "tray", "hide-all", "auto-end", "notes-templates-9", "notes-fishbone",
                     "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
                     "glossary", "update-check", "companion-lan",
-                    "workspace-knowledge", "knowledge-merge", "question-bank", "live-translation", "translation-gate"
+                    "workspace-knowledge", "knowledge-merge", "question-bank", "live-translation", "translation-gate",
+                    "presenter-mode"
+                },
+                screens = BuildDisplays().Select(display => new
+                {
+                    id = display.Id,
+                    name = display.Name,
+                    bounds = display.Bounds,
+                    primary = display.IsPrimary
+                }),
+                presenter = new
+                {
+                    enabled = state.SettingsSnapshot.PresenterMode,
+                    preferred = state.SettingsSnapshot.PresenterSlidesScreen,
+                    canActivate = presenterPlan.CanActivate,
+                    camera = presenterPlan.Camera?.Name,
+                    slides = presenterPlan.Slides?.Name,
+                    summary = presenterPlan.Summary,
+                    active = presenterActive
                 },
                 version = typeof(AppState).Assembly.GetName().Version?.ToString(3),
                 framework = Environment.Version.ToString(),
@@ -141,6 +179,79 @@ public partial class MainWindow : Window
             report = report with { Passed = false };
         }
         Console.WriteLine(report.Passed ? "knowledge-check: passed" : "knowledge-check: failed");
+        Close();
+    }
+
+    /// <summary>
+    /// Dual-screen self-check on a machine with one display: a synthetic second display goes
+    /// through the real layout code, then the window side effects are exercised and the real
+    /// single-display topology must refuse to activate.
+    /// </summary>
+    private async Task RunPresenterCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var steps = new List<PresenterCheckStep>();
+        var real = BuildDisplays().ToList();
+        var summary = "";
+        try
+        {
+            var primary = real.FirstOrDefault(display => display.IsPrimary) ?? real.FirstOrDefault()
+                          ?? new DisplayInfo("display:0", "主屏", 0, 0, 1920, 1080, true, true);
+            var fake = new List<DisplayInfo>(real.Count > 0 ? real : [primary])
+            {
+                new("fake:external", "外接显示器（自检）", primary.X + primary.Width, primary.Y, 1920, 1080, false, false)
+            };
+            DisplayCatalog.Refresh(fake);
+            state.Settings.PresenterMode = true;
+            var plan = CurrentPresenterPlan();
+            summary = plan.Summary;
+            steps.Add(new PresenterCheckStep("plan-with-second-display", plan.CanActivate && plan.SlidesIsSeparate, plan.Summary));
+
+            ApplyPresenterModeForRecording();
+            await Task.Delay(200);
+            steps.Add(new PresenterCheckStep("page-steps-aside",
+                presenterActive && !IsVisible && island is { IsVisible: true },
+                $"active={presenterActive} mainVisible={IsVisible} island={island?.IsVisible}"));
+
+            ExitPresenterMode();
+            await Task.Delay(200);
+            steps.Add(new PresenterCheckStep("restored", !presenterActive && IsVisible, $"mainVisible={IsVisible}"));
+
+            var single = PresenterLayout.Resolve(real, null);
+            steps.Add(new PresenterCheckStep("single-display-refuses", !single.CanActivate, single.Summary));
+        }
+        catch (Exception ex)
+        {
+            steps.Add(new PresenterCheckStep("exception", false, ex.Message));
+        }
+        finally
+        {
+            ExitPresenterMode();
+            DisplayCatalog.Refresh(real);
+            state.Settings.PresenterMode = false;
+        }
+        var report = new PresenterCheckReport
+        {
+            Passed = steps.Count > 0 && steps.All(step => step.Passed),
+            Steps = steps,
+            RealScreens = string.Join(" | ", real.Select(display => $"{display.Name} {display.Bounds}")),
+            PlanSummary = summary
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            }));
+        }
+        catch
+        {
+            // The console line still reports the result if the report file cannot be written.
+        }
+        Console.WriteLine(report.Passed ? "presenter-check: passed" : "presenter-check: failed");
         Close();
     }
 
@@ -339,6 +450,83 @@ public partial class MainWindow : Window
         island.Activate();
     }
 
+    // ---- 双屏演讲（PresenterMode.swift） ----
+
+    private bool presenterActive;
+
+    /// <summary>The displays as PresenterLayout sees them (primary = the one with the camera).</summary>
+    public IReadOnlyList<DisplayInfo> BuildDisplays()
+    {
+        try
+        {
+            return Screens.All.Select((screen, index) => new DisplayInfo(
+                // Avalonia 12's Screen has no DisplayIndex; the origin is stable for a given topology.
+                $"display:{screen.Bounds.X}x{screen.Bounds.Y}",
+                screen.IsPrimary ? "主屏（摄像头）" : $"显示器 {index + 1}",
+                screen.Bounds.X, screen.Bounds.Y, screen.Bounds.Width, screen.Bounds.Height,
+                screen.IsPrimary,
+                // Avalonia does not expose the built-in panel; in the common laptop case it is the primary display.
+                screen.IsPrimary)).ToList();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private void RefreshDisplays()
+    {
+        try
+        {
+            DisplayCatalog.Refresh(BuildDisplays());
+            state.Settings.RefreshScreens();
+        }
+        catch
+        {
+            // The window may not have a screen manager yet during construction.
+        }
+        if (!presenterActive) return;
+        var plan = CurrentPresenterPlan();
+        if (!plan.CanActivate) ExitPresenterMode("外接屏已断开，双屏演讲已退出，主窗口已恢复。");
+        else state.SetStatus("双屏演讲：" + plan.Summary + "；Ctrl+Alt+N 唤回主窗口。");
+    }
+
+    private PresenterPlan CurrentPresenterPlan() =>
+        PresenterLayout.Resolve(DisplayCatalog.Displays, state.SettingsSnapshot.PresenterSlidesScreen);
+
+    /// <summary>
+    /// Mac PresenterMode.begin: with a second display the island carries the meeting on the
+    /// camera display and the page steps aside. One display only: nothing is hidden, because
+    /// hiding the page would hide the meeting itself.
+    /// </summary>
+    private void ApplyPresenterModeForRecording()
+    {
+        if (presenterActive || !state.SettingsSnapshot.PresenterMode) return;
+        var plan = CurrentPresenterPlan();
+        if (!plan.CanActivate)
+        {
+            state.SetStatus("双屏演讲：" + plan.Summary + "（会议窗口保持显示）");
+            return;
+        }
+        presenterActive = true;
+        if (island is not { IsVisible: true })
+        {
+            island ??= new CueIslandWindow(state);
+            island.Show();
+        }
+        Hide();
+        state.SetStatus($"双屏演讲：{plan.Summary}；Ctrl+Alt+N 唤回主窗口。");
+    }
+
+    private void ExitPresenterMode(string? message = null)
+    {
+        if (!presenterActive) return;
+        presenterActive = false;
+        Show();
+        Activate();
+        state.SetStatus(message ?? "双屏演讲已结束，主窗口已恢复。");
+    }
+
     /// <summary>The subtitle bar follows the three-state live window mode from Core.</summary>
     private void ApplyLiveMode(LiveWindowMode mode)
     {
@@ -449,6 +637,12 @@ public partial class MainWindow : Window
         {
             // Never block exit on shutdown errors; everything already written stays on disk.
         }
+        // Floating windows keep the process alive under OnLastWindowClose: close them first,
+        // then shut the lifetime down instead of leaving an invisible process behind.
+        island?.Close();
+        subtitleBar?.Close();
+        teleprompter?.Close();
+        (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         Close();
     }
 }

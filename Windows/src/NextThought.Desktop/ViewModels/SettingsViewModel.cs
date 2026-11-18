@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Avalonia.Threading;
@@ -55,6 +55,35 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string codexModel = "";
     [ObservableProperty] private string autoEndMode = "prompt";
     private string autoEndMinutes = "10";
+
+    // 双屏演讲（PresenterMode.swift）：开关、幻灯片所在屏、以及给设置页看的一行说明。
+    [ObservableProperty] private bool presenterMode;
+    [ObservableProperty] private string presenterSlidesScreen = "";
+    [ObservableProperty] private ScreenChoice? selectedSlidesScreen;
+
+    public ObservableCollection<ScreenChoice> ScreenChoices { get; } = [];
+
+    public string PresenterSummary => PresenterLayout.Summary(DisplayCatalog.Displays, PresenterSlidesScreen, PresenterMode);
+
+    partial void OnPresenterModeChanged(bool value) => OnPropertyChanged(nameof(PresenterSummary));
+
+    partial void OnPresenterSlidesScreenChanged(string value) => OnPropertyChanged(nameof(PresenterSummary));
+
+    partial void OnSelectedSlidesScreenChanged(ScreenChoice? value)
+    {
+        if (value is not null) PresenterSlidesScreen = value.Id;
+    }
+
+    /// <summary>Rebuilds the display picker after the window refreshed its topology.</summary>
+    public void RefreshScreens()
+    {
+        var previous = SelectedSlidesScreen?.Id ?? PresenterSlidesScreen;
+        ScreenChoices.Clear();
+        foreach (var choice in DisplayCatalog.Choices) ScreenChoices.Add(choice);
+        if (ScreenChoices.Count == 0) ScreenChoices.Add(new ScreenChoice("", "自动（第一块外接屏）"));
+        SelectedSlidesScreen = ScreenChoices.FirstOrDefault(choice => choice.Id == previous) ?? ScreenChoices[0];
+        OnPropertyChanged(nameof(PresenterSummary));
+    }
 
     /// <summary>ComboBox SelectedItem writes null before its items exist; keep the last good value.</summary>
     public string AutoEndMinutes
@@ -128,6 +157,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         UseMaterials = settings.UseMaterials;
         UseCodex = settings.UseCodex;
         CodexModel = settings.CodexModel;
+        PresenterMode = settings.PresenterMode;
+        PresenterSlidesScreen = settings.PresenterSlidesScreen;
         AutoEndMode = settings.MeetingAutoEndMode;
         AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
         SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
@@ -150,6 +181,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
             HasApiKey = false;
         }
         SelectedProcess = Processes.FirstOrDefault();
+        RefreshScreens();
     }
 
     public AppSettings Build() => new()
@@ -175,6 +207,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         UseMaterials = UseMaterials,
         UseCodex = UseCodex,
         CodexModel = CodexModel.Trim(),
+        PresenterMode = PresenterMode,
+        PresenterSlidesScreen = SelectedSlidesScreen?.Id ?? PresenterSlidesScreen,
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,

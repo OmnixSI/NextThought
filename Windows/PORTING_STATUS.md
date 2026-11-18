@@ -1,5 +1,24 @@
 
-# P5/P7 逐字同传 · 0.21.0
+# P5 双屏演讲 · 0.22.0
+
+0.22.0 把 `PresenterMode.swift` 的窗口规则搬到 Windows：幻灯片屏不出现 NextThought 的任何窗口，
+摄像头这一屏由提词岛承载会议。Mac 版的「读幻灯片屏、按页匹配讲稿」还没有对应实现，见下。
+
+- **Core/PresenterMode.cs**：`DisplayInfo` + `PresenterLayout` 纯函数 ——
+  摄像头屏 = 内置屏（Windows 用主屏代表）→ 主屏 → 第一块；幻灯片屏 = 指定 id 的非摄像头屏 → 第一块非摄像头屏；
+  只有一块屏时 `CanActivate=false`，绝不把唯一窗口藏起来。
+- **设置**：新增「双屏演讲」开关与「幻灯片所在屏」选择，键名沿用 Mac 的 `presenterMode` /
+  `presenterSlidesScreen`；摘要行直接说明「幻灯片在 X，提示在 Y」或「接上外接屏后可用」。
+- **会中行为**：开始记录时若可启用，提词岛显示、主窗口 `Hide()`；Ctrl+Alt+N 唤回；停止记录或外接屏断开时恢复。
+  显示器拓扑变化通过 `Screens.Changed` 重新计算。
+- **自检**：`--presenter-check=<json>` 用合成第二块屏走同一套布局与窗口副作用
+  （主窗口收起 → 提词岛留下 → 主窗口恢复 → 真实单屏拒绝启用），4 项全过。
+- **顺手修的坑**：`Hide()`/`Show()` 会再次触发 `Opened`，原来会重复 `InitializeAsync` 与 `SetupTray`；
+  已加 `openedOnce` 守卫。关闭主窗口时若还有浮窗，进程原本会留在后台；现在先关浮窗再 `Shutdown`。
+- 测试：Core 144 → 154（10 项布局测试）。
+- 未做：幻灯片屏截图取字与 `LiveInsights` 页码匹配、`showsSlideNotes`、真实双屏验收（本机只有一块屏）。
+
+## P5/P7 逐字同传 · 0.21.0
 
 0.21.0 把「同传」从整句翻译补到逐字：识别还在变化时，字幕条和提词岛上的译文也会跟着更新，
 但旧快照的译文不会盖住新句子。
