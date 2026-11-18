@@ -1,3 +1,24 @@
+# P4/P5 历史页与 Core 批次 · 0.8.0
+
+0.8.0 增加独立的历史页，并把 Core 批次 A 又推进三步：
+
+- **历史页**（`Views/HistoryView.axaml`）：标题/日期/模式搜索，`全部 / 有纪要 / 未整理` 筛选，
+  计数（`N 场会议 · 共 M 场`），空结果提示，点行回到该会议原话。实测：筛选「未整理」
+  时 3 场里只显示 1 场（`qa\shots\v07-history-filter.png`）。
+- **Core 移植**：`AudioTimeline`（10 测试）、`TranscriptDeduplicator`（8 测试）、
+  `EchoSuppression`（8 测试，已接入转写回声判定）。Core 测试 38 项全部通过，
+  详见 `CORE_PARITY.md`。
+- **桌面端链路实测**：`--import-wave=<wav>` 走与界面按钮相同的 `AppState.ImportWaveFileAsync`，
+  用真实 X-ASR 模型归档出 `transcript.jsonl`（1 行）与会话目录，证明
+  界面 → AppState → 识别引擎 → 归档 全链路可用。
+- **DPI 结论**：界面在 175% 缩放下布局正确；此前「截断」是截图脚本不是 DPI 感知导致的
+  虚拟化坐标裁剪，脚本已修（`SetProcessDpiAwarenessContext(-4)`），启动自检会记录
+  `renderScaling`。
+- 发布：0.8.0 自包含目录、ZIP、安装包；自检与安装后自检通过（1.7 秒、154 MiB）。
+
+仍未做：双屏演讲、同传上岛、手机伴侣蓝牙/中转、系统托盘、结构化纪要（提纲/鱼骨图/观点对照）、
+场景预设、系列与经验库，以及 Core 其余 69 个文件。
+
 # P5 提词器与区域截图 · 0.7.0
 
 0.7.0 补齐方案第 9 节剩下的两个浮窗类界面，并把它们接入快捷键与资料库：
