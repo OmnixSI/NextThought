@@ -83,6 +83,25 @@ public sealed record SessionSearchSnapshot(IReadOnlyList<SessionSearchField> Fie
 /// </summary>
 public static class SessionSearch
 {
+/// <summary>
+/// Builds a searchable snapshot from a loaded session: transcript, translations, answers and the
+/// summary Markdown, using the same projection that the meeting page exports.
+/// </summary>
+public static SessionSearchSnapshot FromSession(SessionData session)
+{
+    var answers = session.Answers.Select(answer => new SessionProjectedAnswer(
+        answer.Id, answer.Date, answer.Question, answer.Answer, "")).ToList();
+    SessionProjectedSummary? summary = session.Summary.Trim().Length > 0
+        ? new SessionProjectedSummary(session.Meta.Title, session.Summary,
+            SourceStatus: SessionDerivedContentStatus.Unknown)
+        : null;
+    var projection = SessionProjectionBuilder.Build(session.Meta.Id, session.Meta.StartedAt, session.Lines,
+        answers, summary);
+    var issues = new List<string>();
+    if (session.Meta.SummaryError is { Length: > 0 } error) issues.Add("摘要：" + error);
+    return new SessionSearchSnapshot(SessionContentSearch.Fields(projection), issues);
+}
+
     public static SessionSearchProgress Search(
         IReadOnlyList<Guid> ids, GlossarySearch terms, IReadOnlyDictionary<Guid, SessionSearchSnapshot> snapshots,
         IReadOnlyDictionary<Guid, GlossarySearch>? termsBySession = null,

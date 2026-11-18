@@ -1674,6 +1674,13 @@ public partial class MainWindow : Window
                                   && answerState.Evidence.RequestId == answerState.Id
                                   && searchDecision is { Search: true, Query: "问题" });
 
+        var loadedMeta = new NextThought.Core.SessionMeta { Id = Guid.NewGuid(), Title = "会话", StartedAt = DateTimeOffset.UtcNow };
+        var loadedSnapshot = NextThought.Core.SessionSearch.FromSession(new NextThought.Core.SessionData(loadedMeta,
+            [new NextThought.Core.TranscriptLine { Text = "Kubernetes", Date = DateTimeOffset.UtcNow }], [], ""));
+        var loadedHits = NextThought.Core.SessionSearch.Search([loadedMeta.Id], glossary.Search("Kubernetes"),
+            new Dictionary<Guid, NextThought.Core.SessionSearchSnapshot> { [loadedMeta.Id] = loadedSnapshot });
+        Check("session-snapshot", loadedSnapshot.Fields.Count > 0 && loadedHits.Hits.Count == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

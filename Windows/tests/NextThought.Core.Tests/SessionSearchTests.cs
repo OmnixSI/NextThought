@@ -11,6 +11,35 @@ public sealed class SessionSearchTests
         new(kind, "…Kubernetes…", "12:00", form, misheard, id, lineId);
 
     [Fact]
+    public void FromSessionIndexesTranscriptAnswersAndSummary()
+    {
+        var meta = new SessionMeta { Id = Guid.NewGuid(), Title = "会议", StartedAt = DateTimeOffset.UtcNow };
+        var line = new TranscriptLine { Id = Guid.NewGuid(), Text = "Kubernetes 部署", Date = meta.StartedAt };
+        var answer = new AnswerRecord
+        {
+            Id = Guid.NewGuid(), Date = meta.StartedAt, Question = "怎么部署？", Answer = "用 Kubernetes 部署"
+        };
+        var snapshot = SessionSearch.FromSession(new SessionData(meta, [line], [answer], "## 摘要\n总结内容"));
+        Assert.Contains(snapshot.Fields, field => field.Kind == SessionSearchFieldKind.Transcript);
+        Assert.Contains(snapshot.Fields, field => field.Kind == SessionSearchFieldKind.Answer);
+        Assert.Contains(snapshot.Fields, field => field.Kind == SessionSearchFieldKind.Notes);
+        Assert.True(snapshot.ByteCount > 0);
+
+        var terms = new Glossary([new GlossaryEntry("Kubernetes")]).Normalized().Search("Kubernetes");
+        var result = SessionSearch.Search([meta.Id], terms, new Dictionary<Guid, SessionSearchSnapshot> { [meta.Id] = snapshot });
+        Assert.Single(result.Hits);
+    }
+
+    [Fact]
+    public void FromSessionCarriesTheSummaryErrorAsAReadIssue()
+    {
+        var meta = new SessionMeta { Id = Guid.NewGuid(), Title = "会议", StartedAt = DateTimeOffset.UtcNow, SummaryError = "模型超时" };
+        var snapshot = SessionSearch.FromSession(new SessionData(meta, [], [], ""));
+        Assert.Empty(snapshot.Fields);
+        Assert.Contains(snapshot.ReadIssues!, issue => issue.Contains("模型超时"));
+    }
+
+    [Fact]
     public void LabelsCoverKindsAndUserContent()
     {
         Assert.Equal("转写", Hit("a").Label());
