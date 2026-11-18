@@ -17,8 +17,8 @@
 | AnswerStreaming.swift | 267 | 未移植 |  |
 | AudioTimeline.swift | 119 | 已移植 | Core/AudioTimeline.cs（10 项测试） |
 | Backup.swift | 667 | 未移植 |  |
-| BackupArchivePolicy.swift | 33 | 未移植 |  |
-| BackupContent.swift | 36 | 未移植 |  |
+| BackupArchivePolicy.swift | 33 | 已移植 | Core/BackupContent.cs（路径/符号链接/资源上限预检） |
+| BackupContent.swift | 36 | 已移植 | Core/BackupContent.cs（内容指纹与导入状态） |
 | ByteLevelBPETokenizer.swift | 219 | 未移植 |  |
 | CancellableTaskValue.swift | 34 | 未移植 |  |
 | CloudTranscription.swift | 293 | 未移植 |  |
@@ -30,7 +30,7 @@
 | DocumentClassifier.swift | 74 | 未移植 |  |
 | DocumentFeatureAvailability.swift | 27 | 已移植 | Core/DocumentFeatureAvailability.cs（依赖齐备才可用） |
 | DocumentJobs.swift | 466 | 未移植 |  |
-| DocumentNotice.swift | 53 | 未移植 |  |
+| DocumentNotice.swift | 53 | 已移植 | Core/DocumentNotice.cs（提示与警告区分、页码汇总） |
 | DocumentStructure.swift | 210 | 未移植 |  |
 | EchoSuppression.swift | 177 | 已移植 | Core/EchoSuppression.cs（8 项测试；已接入转写回声判定） |
 | GazeEstimator.swift | 188 | 未移植 |  |
@@ -46,11 +46,11 @@
 | MeetingPreparation.swift | 43 | 未移植 |  |
 | MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults（场景 → 纪要模板与实时模式；自定义类型未移植） |
 | NotesTemplates.swift | 873 | 部分移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/渲染/提示/校对/到期日） |
-| OnboardingFlow.swift | 55 | 未移植 |  |
+| OnboardingFlow.swift | 55 | 已移植 | Core/OnboardingFlow.cs（步骤/可跳过/待办） |
 | OnboardingVersion.swift | 16 | 已移植 | Core/OnboardingVersion.cs（与 TranscriptContextBuilder 同文件） |
 | PDFTextLayout.swift | 171 | 基线简化版 | LayoutReadingOrder.cs（简化版） |
 | ProcessLineReader.swift | 67 | 未移植 |  |
-| QuestionDetector.swift | 115 | 未移植 |  |
+| QuestionDetector.swift | 115 | 已移植 | Core/QuestionDetector.cs（片段合并、15 秒去重、问句判定；7 项测试） |
 | QuestionEvalCorpus+Extended.swift | 110 | 未移植 |  |
 | QuestionEvalCorpus+HeldOut.swift | 49 | 未移植 |  |
 | QuestionEvalCorpus.swift | 8 | 未移植 |  |
@@ -72,7 +72,7 @@
 | SessionRecord.swift | 740 | 基线简化版 | Models.cs（只覆盖部分字段） |
 | SessionSearch.swift | 173 | 未移植 |  |
 | SessionTextProjection.swift | 497 | 未移植 |  |
-| SessionTranscriptLocator.swift | 31 | 未移植 |  |
+| SessionTranscriptLocator.swift | 31 | 已移植 | Core/SessionTranscriptLocator.cs（按 id 或 3 秒容差定位） |
 | SessionUserContent.swift | 143 | 未移植 |  |
 | ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |
 | Skill.swift | 84 | 未移植 |  |
@@ -84,18 +84,18 @@
 | UpdateCatalog.swift | 164 | 部分移植 | Core/UpdateCatalog.cs（7 项测试；设置页「检查更新」已接入） |
 | VoiceActivitySegmenter.swift | 153 | 基线简化版 | VoiceActivitySegmenter.cs（简化版） |
 | VoiceProfile.swift | 86 | 未移植 |  |
-| WebLookupPromptBuilder.swift | 41 | 未移植 |  |
+| WebLookupPromptBuilder.swift | 41 | 已移植 | Core/WebLookupPromptBuilder.cs（字段预算与最近两轮） |
 | WebSearchNeed.swift | 129 | 已移植 | Core/WebSearchNeed.cs（17 条标注语料逐条断言；联网搜索提供方仍未接） |
 | Workspace.swift | 1460 | 部分移植 | Core/Workspace.cs + WorkspaceKnowledge.cs（系列、经验版本历史、题库、候选与回执、KnowledgeMerger；16 项测试。seriesItems、源删除完整性、SeriesBriefing 未移植） |
 | WorkspaceArchiveOwnership.swift | 35 | 未移植 |  |
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 21，部分移植 9，基线简化版 7，未移植 44。
+统计：已移植 28，部分移植 9，基线简化版 7，未移植 37。
 
-测试：`tests/NextThought.Core.Tests` 222 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 247 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、

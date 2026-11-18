@@ -1,4 +1,20 @@
 
+# P1 Core 小文件批次三 · 0.29.0
+
+0.29.0 继续补自包含 Core 文件（+7 已移植，测试 222 → 247）。
+
+| Swift | C# | 测试 | 说明 |
+| --- | --- | --- | --- |
+| `QuestionDetector.swift` | `Core/QuestionDetector.cs` | 8 | 片段合并、8 秒过期、15 秒同文去重、问句/追问判定、中文二元组归一化 |
+| `DocumentNotice.swift` | `Core/DocumentNotice.cs` | 2 | 提示 vs 警告、页码/幻灯片汇总 |
+| `BackupContent.swift` | `Core/BackupContent.cs` | 2 | 相对路径 + 内容 SHA-256 指纹、新/相同/冲突 |
+| `BackupArchivePolicy.swift` | `Core/BackupContent.cs` | 4 | 不安全路径、符号链接、重复项、文件数与解压上限 |
+| `OnboardingFlow.swift` | `Core/OnboardingFlow.cs` | 2 | 步骤钳制/前后跳转/可跳过/待办列表 |
+| `WebLookupPromptBuilder.swift` | `Core/WebLookupPromptBuilder.cs` | 3 | 字段预算、最近两轮回答、资料总预算、坏 JSON 兜底 |
+| `SessionTranscriptLocator.swift` | `Core/SessionTranscriptLocator.cs` | 4 | 按 id 或 3 秒容差定位，旧归档用打印时间 |
+
+统计：已移植 28 / 部分 9 / 基线 7 / 未移植 37。
+
 # P7 资料术语进热词 · 0.28.0
 
 0.28.0 把已移植的 `MaterialTerms` 接进识别链路：资料里的技术术语和术语表一起成为热词。
