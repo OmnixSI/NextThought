@@ -16,7 +16,7 @@
 | AnswerServiceSupport.swift | 242 | 已移植 | Core/AnswerServiceSupport.cs（默认后端、服务商表、Key 清洗/掩码、失败解释、时间线；8 项测试） |
 | AnswerStreaming.swift | 267 | 已移植 | Core/AnswerStreaming.cs（Codex 协议、SSE 解析、模型列表、请求体；11 项测试） |
 | AudioTimeline.swift | 119 | 已移植 | Core/AudioTimeline.cs（10 项测试） |
-| Backup.swift | 667 | 部分移植 | Core/Backup.cs（清单校验、模板合并、待导入会议、设置快照/密钥过滤；9 项测试。工作区与知识合并、归档写入未移植） |
+| Backup.swift | 667 | 部分移植 | Core/Backup.cs（清单校验、模板/工作区与知识合并、待导入会议、设置快照/密钥过滤；14 项测试。归档写入未移植） |
 | BackupArchivePolicy.swift | 33 | 已移植 | Core/BackupContent.cs（路径/符号链接/资源上限预检） |
 | BackupContent.swift | 36 | 已移植 | Core/BackupContent.cs（内容指纹与导入状态） |
 | ByteLevelBPETokenizer.swift | 219 | 已移植 | Core/ByteLevelBPETokenizer.cs（tokenizer.json、字节表、合并与解码；8 项测试） |

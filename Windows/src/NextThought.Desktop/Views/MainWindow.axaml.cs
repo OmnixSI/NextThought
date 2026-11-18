@@ -1734,6 +1734,18 @@ public partial class MainWindow : Window
                                && matchedSeries == seriesCandidate.Id
                                && NextThought.Core.SeriesMatcher.BaseTitle("第 3 讲 线性代数") == "线性代数");
 
+        var localSeries = new NextThought.Core.WorkspaceSeries("a", "本地系列", DateTimeOffset.UtcNow, ["s1"], []);
+        var backupSeries = new NextThought.Core.WorkspaceSeries("a", "备份系列", DateTimeOffset.UtcNow.AddDays(-1), ["s2"], [])
+        {
+            SourceDeletionTombstones = ["s3"]
+        };
+        var mergeResult = NextThought.Core.BackupMerge.Workspaces([localSeries], [backupSeries]);
+        Check("backup-merge", mergeResult.Merged.Count == 1
+                              && mergeResult.Merged[0].Name == "本地系列"
+                              && mergeResult.Merged[0].SessionIds.SequenceEqual(["s1", "s2"])
+                              && mergeResult.Merged[0].SourceDeletionTombstones!.Contains("s3")
+                              && mergeResult.Updated == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

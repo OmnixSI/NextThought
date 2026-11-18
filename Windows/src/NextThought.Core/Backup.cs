@@ -77,6 +77,76 @@ public static class BackupMerge
 
     public static IReadOnlyList<Guid> SessionsToImport(IReadOnlySet<Guid> existing, IReadOnlyList<Guid> incoming) =>
         incoming.Where(id => !existing.Contains(id)).ToList();
+
+    public sealed record WorkspaceResult(IReadOnlyList<WorkspaceSeries> Merged, int Added, int Updated, int Skipped);
+
+    /// <summary>
+    /// Series are matched by id; the more recently touched copy wins, so importing an old backup
+    /// never overwrites newer work, and knowledge is unioned either way (port of workspaces merge).
+    /// </summary>
+    public static WorkspaceResult Workspaces(IReadOnlyList<WorkspaceSeries> existing, IReadOnlyList<WorkspaceSeries> incoming)
+    {
+        var merged = existing.ToList();
+        var added = 0;
+        var updated = 0;
+        var skipped = 0;
+        foreach (var item in incoming)
+        {
+            var index = merged.FindIndex(current => current.Id == item.Id);
+            if (index < 0)
+            {
+                merged.Add(item);
+                added++;
+                continue;
+            }
+            var current = merged[index];
+            var primary = Touched(item) > Touched(current) ? item : current;
+            var secondary = ReferenceEquals(primary, item) ? current : item;
+            var union = primary with
+            {
+                SessionIds = current.SessionIds.Concat(item.SessionIds).Distinct(StringComparer.Ordinal).ToList(),
+                Lessons = UnionById(current.Lessons, item.Lessons, lesson => lesson.Id),
+                QuestionBank = UnionById(current.QuestionBank, item.QuestionBank, question => question.Id),
+                KnowledgeCandidates = UnionById(current.KnowledgeCandidates, item.KnowledgeCandidates, candidate => candidate.Id),
+                SeriesItems = UnionById(current.SeriesItems, item.SeriesItems, seriesItem => seriesItem.Id),
+                SourceDeletionTombstones = (primary.SourceDeletionTombstones ?? [])
+                    .Concat(secondary.SourceDeletionTombstones ?? []).Distinct(StringComparer.Ordinal).ToList()
+            };
+            if (ContentEquals(union, current)) { skipped++; continue; }
+            merged[index] = union;
+            updated++;
+        }
+        return new WorkspaceResult(merged, added, updated, skipped);
+    }
+
+    private static bool ContentEquals(WorkspaceSeries left, WorkspaceSeries right) =>
+        left.Name == right.Name
+        && left.UseKnowledge == right.UseKnowledge
+        && left.SessionIds.SequenceEqual(right.SessionIds)
+        && left.Lessons.Select(lesson => lesson.Id + "\u0000" + lesson.Text)
+            .SequenceEqual(right.Lessons.Select(lesson => lesson.Id + "\u0000" + lesson.Text))
+        && left.QuestionBank.Select(question => question.Id).SequenceEqual(right.QuestionBank.Select(question => question.Id))
+        && left.KnowledgeCandidates.Select(candidate => candidate.Id)
+            .SequenceEqual(right.KnowledgeCandidates.Select(candidate => candidate.Id))
+        && left.SeriesItems.Select(item => item.Id).SequenceEqual(right.SeriesItems.Select(item => item.Id))
+        && (left.SourceDeletionTombstones ?? []).SequenceEqual(right.SourceDeletionTombstones ?? []);
+
+    private static DateTimeOffset Touched(WorkspaceSeries series) => new[]
+    {
+        series.CreatedAt,
+        series.Lessons.Select(lesson => lesson.UpdatedAt).DefaultIfEmpty(series.CreatedAt).Max(),
+        series.KnowledgeCandidates.Select(candidate => candidate.CreatedAt).DefaultIfEmpty(series.CreatedAt).Max(),
+        series.SeriesItems.Select(item => item.UpdatedAt).DefaultIfEmpty(series.CreatedAt).Max()
+    }.Max();
+
+    private static List<T> UnionById<T>(IReadOnlyList<T> primary, IReadOnlyList<T> secondary, Func<T, string> id)
+    {
+        var result = primary.ToList();
+        var known = result.Select(id).ToHashSet(StringComparer.Ordinal);
+        foreach (var item in secondary)
+            if (known.Add(id(item))) result.Add(item);
+        return result;
+    }
 }
 
 /// <summary>Which preferences travel in a backup (port of SettingsSnapshot).</summary>
