@@ -1,4 +1,21 @@
 
+# P1 历史检索 · 0.52.0
+
+0.52.0 移植 `SessionSearch.swift`（173 行）的检索外壳与命中导航，测试 478 → 486。
+
+- **打开目标**：`SessionContentTarget`（转写行/会中回答/纪要/个人笔记/重点标记）；按 id 前缀与行号推断，
+  历史列表点开命中时知道该跳到哪。
+- **展示**：`Label`（转写/校对转写/译文/问题/会中回答/纪要/个人笔记/重点标记）、`Snippet`、`MisheardForm`。
+- **进度与快照**：`SessionSearchProgress`（已查/总数/不可读/每条命中与命中列表/问题）、
+  `SessionSearchSnapshot.ByteCount`（正文 + 备用文本 + id + 160）。
+- **检索**：按 id 顺序、每场取第一条、支持每场自定义 GlossarySearch、每 20 条回调进度、取消即停。
+- **自检**：`--history-search-check` 搜一场存在 + 一场缺失，命中标签「转写」、打开目标 Transcript
+  （`qa\history-search-0520\history-search-check.json`）。
+- 8 项测试：标签、目标、片段/误听、字节数、命中/不可读/进度、每场词表、取消、空检索。
+- 未移植：磁盘快照加载器（读 meta/transcript/answers 等）与按字节上限的 LRU 缓存。
+
+统计：已移植 54 / 部分 13 / 基线 2 / 未移植 12。
+
 # P6 系列简报 · 0.51.0
 
 0.51.0 移植 `SeriesBriefing.swift`（327 行）的简报主体，测试 471 → 478。
