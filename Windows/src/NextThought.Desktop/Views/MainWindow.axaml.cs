@@ -103,6 +103,7 @@ public partial class MainWindow : Window
             if (StartupOptions.AcceptanceCheck is { } acceptance) await RunAcceptanceCheckAsync(acceptance);
             if (StartupOptions.UpdateBackupCheck is { } updateBackup) await RunUpdateBackupCheckAsync(updateBackup);
             if (StartupOptions.UpdateRestoreCheck is { } updateRestore) await RunUpdateRestoreCheckAsync(updateRestore);
+            if (StartupOptions.SignatureCheck is { } signatureCheck) await RunSignatureCheckAsync(signatureCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -1839,7 +1840,47 @@ public partial class MainWindow : Window
         Close();
     }
 
+
+    /// <summary>Reports the Authenticode status of a file and whether signatures are required.</summary>
+    private async Task RunSignatureCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var status = "Unknown";
+        var error = "";
+        try
+        {
+            status = await NextThought.Platform.Authenticode.StatusAsync(path);
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+        }
+        var passed = error.Length == 0 && status.Length > 0;
+        var report = new
+        {
+            passed,
+            status,
+            valid = NextThought.Platform.Authenticode.IsValid(status),
+            required = NextThought.Platform.Authenticode.IsRequired,
+            error
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            var target = Path.Combine(directory ?? Path.GetTempPath(), "signature-check.json");
+            await File.WriteAllTextAsync(target, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "signature-check: passed (" + status + ")" : "signature-check: failed");
+        Close();
+    }
+
     // The design-time constructor required by the XAML compiler for previews.
+
 
 
     public MainWindow() : this(new AppState()) { }

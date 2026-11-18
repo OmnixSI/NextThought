@@ -159,6 +159,15 @@ public partial class AppState
                 throw new InvalidOperationException("安装包校验失败，已删除下载文件。");
             }
 
+            UpdateInstallStatus = "正在检查安装包签名…";
+            var signature = await NextThought.Platform.Authenticode.StatusAsync(installer);
+            if (NextThought.Platform.Authenticode.IsRequired && !NextThought.Platform.Authenticode.IsValid(signature))
+            {
+                File.Delete(installer);
+                throw new InvalidOperationException($"安装包签名校验未通过（{signature}）。");
+            }
+            SetStatus("安装包签名：" + signature);
+
             // The QA switch lets the installer step be observed without replacing this build.
             var launch = Environment.GetEnvironmentVariable("NEXTTHOUGHT_UPDATE_LAUNCH");
             if (launch is { Length: > 0 })

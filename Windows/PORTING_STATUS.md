@@ -1,5 +1,19 @@
 
+# P7 安装包签名门禁 · 0.89.0
+
+0.89.0 给应用内更新加上 Authenticode 检查，测试数保持 696。
+
+- **检查**：下载并通过 SHA-256 后，用 ``Get-AuthenticodeSignature`` 读取安装包状态（Valid / NotSigned / UnknownError…）。
+- **门禁**：``NEXTTHOUGHT_REQUIRE_SIGNATURE=1`` 时，签名不是 Valid 就删除安装包并中止更新；
+  未设置时保留现有 QA 流程，只把状态写进状态栏。
+- **自检**：``--signature-check=<文件>`` 报告 status/valid/required；0.89.0 安装包实测 **NotSigned**，
+  设置环境变量后 ``required=true``（``qa\signature-0890``）。
+- **仍缺**：没有 EV/OV 证书，发布包仍未签名；脚本 ``sign_release.ps1`` 已支持签名后在证书可用时启用。
+
+统计：已移植 56 / 部分 24 / 基线 0 / 未移植 0。
+
 # P7 默认软件渲染 · 0.88.0
+
 
 0.88.0 把 Avalonia 默认渲染从 GPU 合成改为 Skia 软件渲染，内存目标达标；测试数保持 696。
 
