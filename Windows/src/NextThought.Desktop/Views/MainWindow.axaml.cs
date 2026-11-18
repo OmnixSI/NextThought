@@ -1805,6 +1805,16 @@ public partial class MainWindow : Window
                                   && notesProjection.SearchableText.Any(text => text.Kind == NextThought.Core.SessionProjectionTextKind.Notes
                                                                                  && text.Text.Contains("投影笔记", StringComparison.Ordinal)));
 
+        var archivePath = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "acceptance.ntbackup");
+        NextThought.Core.BackupArchive.Write(archivePath,
+            new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 0 },
+            new NextThought.Core.WorkspaceData([
+                new NextThought.Core.WorkspaceSeries("a", "系列", DateTimeOffset.UtcNow, [], [])
+            ]),
+            new Dictionary<string, object?> { ["appearance"] = "dark", ["notExported"] = 1 });
+        var archiveManifest = NextThought.Core.BackupArchive.ReadManifest(archivePath);
+        Check("backup-archive", archiveManifest?.WorkspaceCount == 1 && File.Exists(archivePath));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

@@ -16,7 +16,7 @@
 | AnswerServiceSupport.swift | 242 | 已移植 | Core/AnswerServiceSupport.cs（默认后端、服务商表、Key 清洗/掩码、失败解释、时间线；8 项测试） |
 | AnswerStreaming.swift | 267 | 已移植 | Core/AnswerStreaming.cs（Codex 协议、SSE 解析、模型列表、请求体；11 项测试） |
 | AudioTimeline.swift | 119 | 已移植 | Core/AudioTimeline.cs（10 项测试） |
-| Backup.swift | 667 | 部分移植 | Core/Backup.cs（清单校验、模板/工作区与知识合并、待导入会议、设置快照/密钥过滤；14 项测试。归档写入未移植） |
+| Backup.swift | 667 | 已移植 | Core/Backup.cs + BackupArchive.cs（清单校验、模板/工作区与知识合并、待导入会议、设置快照/密钥过滤、.ntbackup 归档写入与清单读取；18 项测试） |
 | BackupArchivePolicy.swift | 33 | 已移植 | Core/BackupContent.cs（路径/符号链接/资源上限预检） |
 | BackupContent.swift | 36 | 已移植 | Core/BackupContent.cs（内容指纹与导入状态） |
 | ByteLevelBPETokenizer.swift | 219 | 已移植 | Core/ByteLevelBPETokenizer.cs（tokenizer.json、字节表、合并与解码；8 项测试） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 66，部分移植 14，基线简化版 0，未移植 0。
+统计：已移植 67，部分移植 13，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
