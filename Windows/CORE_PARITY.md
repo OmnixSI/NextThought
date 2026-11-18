@@ -73,7 +73,7 @@
 | SessionSearch.swift | 173 | 部分移植 | Core/SessionSearch.cs（命中标签/打开目标/进度与快照字节数/无缓存检索；8 项测试。磁盘快照加载与字节上限缓存未移植） |
 | SessionTextProjection.swift | 497 | 未移植 |  |
 | SessionTranscriptLocator.swift | 31 | 已移植 | Core/SessionTranscriptLocator.cs（按 id 或 3 秒容差定位） |
-| SessionUserContent.swift | 143 | 未移植 |  |
+| SessionUserContent.swift | 143 | 已移植 | Core/SessionUserContent.cs（个人笔记/重点/编辑稿/校对决定/修订存储；7 项测试） |
 | ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |
 | Skill.swift | 84 | 已移植 | Core/Skill.cs（front matter、标题回退、启用/全局筛选） |
 | SpeakerClustering.swift | 272 | 已移植 | Core/SpeakerClustering.cs（VoiceClusterer 合并/判定 + SpeakerLabels 编号与提示词；12 项测试；VoiceGroups 委托至此） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 54，部分移植 17，基线简化版 2，未移植 8。
+统计：已移植 55，部分移植 17，基线简化版 2，未移植 7。
 
-测试：`tests/NextThought.Core.Tests` 507 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 514 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 

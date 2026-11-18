@@ -90,6 +90,7 @@ public partial class MainWindow : Window
             if (StartupOptions.BackupManifestCheck is { } backupManifest) await RunBackupManifestCheckAsync(backupManifest);
             if (StartupOptions.MeetingPlanCheck is { } meetingPlan) await RunMeetingPlanCheckAsync(meetingPlan);
             if (StartupOptions.EvidenceCheck is { } evidence) await RunEvidenceCheckAsync(evidence);
+            if (StartupOptions.UserContentCheck is { } userContent) await RunUserContentCheckAsync(userContent);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -1260,6 +1261,43 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "evidence-check: passed" : "evidence-check: failed");
+        Close();
+    }
+
+    /// <summary>Writes and reloads user content, then checks the revision guard.</summary>
+    private async Task RunUserContentCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var directory = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "user-content");
+        var saved = NextThought.Core.SessionUserContentStore.Save(new NextThought.Core.SessionUserContent
+        {
+            PersonalNotes = "我的笔记",
+            Highlights = [new NextThought.Core.SessionHighlight { LineId = Guid.NewGuid(), OffsetSeconds = 30, Quote = "重点" }]
+        }, directory);
+        var loaded = NextThought.Core.SessionUserContentStore.Load(directory);
+        var refused = false;
+        try
+        {
+            NextThought.Core.SessionUserContentStore.Save(new NextThought.Core.SessionUserContent { PersonalNotes = "旧草稿" }, directory);
+        }
+        catch (NextThought.Core.SessionUserContentStore.ChangedElsewhereException)
+        {
+            refused = true;
+        }
+        var passed = saved.Revision == 1 && loaded.Revision == 1
+                     && loaded.PersonalNotes == "我的笔记" && loaded.Highlights.Count == 1
+                     && loaded.HasContent && refused;
+        var report = new { passed, revision = loaded.Revision, refused, notes = loaded.PersonalNotes };
+        try
+        {
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "user-content-check: passed" : "user-content-check: failed");
         Close();
     }
 
