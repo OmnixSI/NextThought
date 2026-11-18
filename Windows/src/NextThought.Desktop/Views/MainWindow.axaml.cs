@@ -1606,6 +1606,15 @@ public partial class MainWindow : Window
         Check("notes-export", notesExport.Contains("## 纪要", StringComparison.Ordinal)
                               && notesExport.Contains("先演练再上线", StringComparison.Ordinal));
 
+        var editorPayload = new NextThought.Core.StructuredNotesPayload(NextThought.Core.NotesFormat.Outline,
+            outline: new NextThought.Core.OutlineNotes([new NextThought.Core.OutlineSection("旧标题")]));
+        var editorTarget = new NextThought.Core.SessionStructuredNotesTarget(NextThought.Core.NotesFormat.Outline,
+            "section:0", NextThought.Core.SessionNotesEditor.PayloadRevision(editorPayload));
+        var editedPayload = NextThought.Core.SessionNotesEditor.Apply(editorPayload, editorTarget, "新标题");
+        Check("notes-editor", editedPayload?.Outline?.Sections[0].Title == "新标题"
+                               && NextThought.Core.SessionNotesEditor.Apply(editorPayload,
+                                   editorTarget with { PayloadRevision = "stale" }, "x") is null);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

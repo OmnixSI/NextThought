@@ -1,5 +1,20 @@
 
+# P2 结构化笔记编辑 · 0.80.0
+
+0.80.0 移植 ``SessionEvidenceEditor`` 的节点编辑部分，测试 654 → 660，版本到 0.80.0 里程碑。
+
+- **路径**：冒号分隔（``section:0:point:1``、``category:0:cause:1``、``issue:0:position:1:text`` 等）。
+- **格式**：鱼骨（head/cause）、大纲（section/point/child/concept 的 term/meaning/review）、
+  观点矩阵（topic/position 的 party/text/consensus/disagreement/owner 的 who/task）。
+- **修订校验**：目标载荷修订必须等于当前载荷 SHA-256，否则拒绝；格式不符或路径越界也拒绝，
+  避免重新生成后改错节点。
+- **自检**：``--acceptance-check`` 增加第 29 项（编辑成功 + 旧修订拒绝）。
+- 6 项测试：修订稳定、大纲三级、概念/复习/非法路径、鱼骨、观点矩阵、旧修订/不支持格式。
+
+统计：已移植 56 / 部分 24 / 基线 0 / 未移植 0。
+
 # P2 纪要导出 · 0.79.0
+
 
 0.79.0 给 Markdown 导出接入结构化纪要渲染，测试 652 → 654。
 
