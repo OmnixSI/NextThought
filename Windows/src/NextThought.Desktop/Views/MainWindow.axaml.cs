@@ -82,6 +82,7 @@ public partial class MainWindow : Window
             if (StartupOptions.PdfCheck is { } pdfCheck) await RunPdfCheckAsync(pdfCheck);
             if (StartupOptions.GazeCheck is { } gazeCheck) await RunGazeCheckAsync(gazeCheck);
             if (StartupOptions.BpeCheck is { } bpeCheck) await RunBpeCheckAsync(bpeCheck);
+            if (StartupOptions.GlossarySearchCheck is { } glossarySearch) await RunGlossarySearchCheckAsync(glossarySearch);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -945,6 +946,36 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "bpe-check: passed" : "bpe-check: failed");
+        Close();
+    }
+
+    /// <summary>Builds a glossary, expands a misheard search and reports the forms.</summary>
+    private async Task RunGlossarySearchCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var glossary = new NextThought.Core.Glossary([
+            new NextThought.Core.GlossaryEntry("Kubernetes", variants: ["K8s"]),
+            new NextThought.Core.GlossaryEntry("Open AI", variants: ["open-ai"])
+        ]).Normalized();
+        var search = glossary.Search("k8s 部署");
+        var canonicalHit = glossary.Search("Kubernetes").FirstMatch("k8s cluster");
+        var passed = search.Forms.Contains("Kubernetes 部署")
+                     && search.Matches("Kubernetes 部署")
+                     && canonicalHit is { Form: "K8s", IsMisheard: true }
+                     && glossary.EntryMatching("open ai")?.Canonical == "Open AI";
+        var report = new { passed, forms = search.Forms, misheard = canonicalHit?.IsMisheard ?? false, canonical = canonicalHit?.Form ?? "" };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "glossary-search-check: passed" : "glossary-search-check: failed");
         Close();
     }
 

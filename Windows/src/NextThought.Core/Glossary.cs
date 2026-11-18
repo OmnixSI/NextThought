@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -242,6 +242,92 @@ public sealed record Glossary
         }
     }
 
+    /// <summary>The entry whose canonical spelling or a variant equals the text under LooseKey.</summary>
+    public GlossaryEntry? EntryMatching(string text)
+    {
+        var key = LooseKey(text);
+        if (key.Length == 0) return null;
+        return Entries.FirstOrDefault(entry => entry.Spellings.Any(spelling => LooseKey(spelling) == key));
+    }
+
+    /// <summary>Every spelling to look for when the person searches for the query (query first).</summary>
+    public IReadOnlyList<string> Expand(string query) => Search(query).Forms;
+
+    /// <summary>
+    /// Expansion plus which spellings are recorded misheard ones. The typed query comes first;
+    /// when it equals an entry's spelling all spellings follow, otherwise a contained spelling is
+    /// replaced by each other spelling of its entry. At most 32 forms.
+    /// </summary>
+    public GlossarySearch Search(string query)
+    {
+        var typed = query.Trim();
+        if (typed.Length == 0) return new GlossarySearch("", [], new HashSet<string>());
+        var forms = new List<string> { typed };
+        var seen = new HashSet<string>(StringComparer.Ordinal) { StrictKey(typed) };
+        var misheard = new HashSet<string>(StringComparer.Ordinal);
+
+        void Add(string form)
+        {
+            var key = StrictKey(form);
+            if (key.Length == 0 || forms.Count >= MaxExpansion || !seen.Add(key)) return;
+            forms.Add(form);
+        }
+
+        var canonicalKeys = Entries.Select(entry => StrictKey(entry.Canonical)).ToHashSet(StringComparer.Ordinal);
+        foreach (var entry in Entries)
+            foreach (var variant in entry.Variants)
+                if (!canonicalKeys.Contains(StrictKey(variant))) misheard.Add(StrictKey(variant));
+
+        var loose = LooseKey(typed);
+        var found = false;
+        if (loose.Length > 0)
+        {
+            foreach (var entry in Entries.Where(entry => entry.Spellings.Any(spelling => LooseKey(spelling) == loose)))
+            {
+                found = true;
+                foreach (var spelling in entry.Spellings) Add(spelling);
+            }
+        }
+        if (!found)
+        {
+            var chars = typed.ToCharArray();
+            foreach (var span in Scan(chars, caseSensitiveCanonical: false))
+            {
+                var entry = Entries[span.Candidate.EntryIndex];
+                var before = new string(chars, 0, span.Start);
+                var after = new string(chars, span.End, chars.Length - span.End);
+                var original = StrictKey(new string(chars, span.Start, span.End - span.Start));
+                foreach (var spelling in entry.Spellings.Where(spelling => StrictKey(spelling) != original))
+                {
+                    var composed = before + spelling + after;
+                    if (entry.Variants.Contains(spelling) && !canonicalKeys.Contains(StrictKey(spelling)))
+                        misheard.Add(StrictKey(composed));
+                    Add(composed);
+                }
+            }
+        }
+        return new GlossarySearch(typed, forms, misheard);
+    }
+
+    /// <summary>This table followed by <paramref name="other"/>, normalized; variants are united.</summary>
+    public Glossary Merging(Glossary other) => new Glossary(Entries.Concat(other.Entries).ToList()).Normalized();
+
+    /// <summary>The table in force for a series: the global table plus the series' own.</summary>
+    public static Glossary Layered(Glossary global, Glossary? series) =>
+        series is null || series.IsEmpty ? global.Normalized() : global.Merging(series);
+
+    private const int MaxExpansion = 32;
+
+    private static bool ContainsFold(string text, string form)
+    {
+        var haystack = text.Select(character => Fold(character, lowercase: true)).ToArray();
+        var needle = form.Select(character => Fold(character, lowercase: true)).ToArray();
+        if (needle.Length == 0 || haystack.Length < needle.Length) return false;
+        for (var index = 0; index <= haystack.Length - needle.Length; index++)
+            if (haystack.AsSpan(index, needle.Length).SequenceEqual(needle)) return true;
+        return false;
+    }
+
     // ---- matching engine ----
 
     private sealed record Candidate(int EntryIndex, bool IsCanonical, int Order, char[] Lower, char[] Kept,
@@ -337,6 +423,32 @@ public sealed record Glossary
 }
 
 public sealed record GlossaryReplacement(string From, string To, int Count);
+
+/// <summary>The spelling found in the text; misheard means a recorded wrong spelling the person did not type.</summary>
+public sealed record GlossarySearchHit(string Form, bool IsMisheard);
+
+/// <summary>A search term together with every spelling the glossary knows for it.</summary>
+public sealed record GlossarySearch(string Query, IReadOnlyList<string> Forms, IReadOnlySet<string> MisheardKeys)
+{
+    /// <summary>The first spelling found in the text; the typed query wins over other spellings.</summary>
+    public GlossarySearchHit? FirstMatch(string text)
+    {
+        for (var index = 0; index < Forms.Count; index++)
+        {
+            var form = Forms[index];
+            if (!FormFold(text).Contains(form, StringComparison.OrdinalIgnoreCase)) continue;
+            var misheard = index > 0 && MisheardKeys.Contains(Glossary.StrictKey(form));
+            return new GlossarySearchHit(form, misheard);
+        }
+        return null;
+    }
+
+    public bool Matches(string text) => FirstMatch(text) is not null;
+
+    private static string FormFold(string text) =>
+        new(text.Select(character => character is >= '\uFF01' and <= '\uFF5E' ? (char)(character - 0xFEE0)
+            : character == '\u3000' ? ' ' : character).ToArray());
+}
 
 public sealed record GlossaryCanonicalization(string Text, IReadOnlyList<GlossaryReplacement> Replacements)
 {

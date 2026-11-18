@@ -1,4 +1,19 @@
 
+# P2 术语检索与合并 · 0.48.0
+
+0.48.0 补齐 `Glossary.swift` 的检索/合并部分（由「部分移植」转为「已移植」），测试 448 → 457。
+
+- **GlossarySearch / GlossarySearchHit**：查询先原样，再补上该词条的全部写法；查询里含某个写法时，
+  按「把该写法换成词条其它写法」生成组合（如 `k8s 部署` → `Kubernetes 部署`），最多 32 个；
+  记录哪些写法属于「听错的写法」，`FirstMatch` 优先返回用户输入的原样，避免把普通命中报成误听。
+- **EntryMatching**：按宽松键（忽略大小写、全半角、空白与标点）找词条。
+- **Merging / Layered**：全局表与系列表合并（同词条保留前者 id/分类/备注，别名合并），系列为空时直接用全局。
+- **自检**：`--glossary-search-check` 在真实进程执行 `k8s 部署` 展开、误听标记与 `open ai` 匹配
+  （`qa\glossary-search-0480\glossary-check.json`）。
+- 9 项测试：展开顺序、宽松键、误听标记、包含式展开、32 上限、词条匹配、合并/分层、空查询、全角匹配。
+
+统计：已移植 52 / 部分 10 / 基线 2 / 未移植 17。
+
 # P5 字节级 BPE · 0.47.0
 
 0.47.0 移植 `ByteLevelBPETokenizer.swift`（219 行）为 `Core/ByteLevelBPETokenizer.cs`，测试 440 → 448。
