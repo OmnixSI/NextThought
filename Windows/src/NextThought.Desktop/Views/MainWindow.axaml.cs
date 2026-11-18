@@ -78,6 +78,7 @@ public partial class MainWindow : Window
             if (StartupOptions.RetrievalCheck is { } retrievalCheck) await RunRetrievalCheckAsync(retrievalCheck);
             if (StartupOptions.CloudCheck is { } cloudCheck) await RunCloudCheckAsync(cloudCheck);
             if (StartupOptions.StreamCheck is { } streamCheck) await RunStreamCheckAsync(streamCheck);
+            if (StartupOptions.QuestionCheck is { } questionCheck) await RunQuestionCheckAsync(questionCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -804,6 +805,43 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "stream-check: passed" : "stream-check: failed");
+        Close();
+    }
+
+    /// <summary>Runs the first-layer rules over the labeled corpus and reports recall/false triggers.</summary>
+    private async Task RunQuestionCheckAsync(string path)
+    {
+        await Task.Delay(250);
+        var report = NextThought.Core.QuestionDetectionEvaluator.Evaluate(NextThought.Core.QuestionEvalCorpus.All);
+        var passed = NextThought.Core.QuestionEvalCorpus.All.Count >= 100
+                     && report.Questions + report.Statements == NextThought.Core.QuestionEvalCorpus.All.Count
+                     && report.Detected <= report.Questions
+                     && report.FalseTriggers <= report.Statements;
+        var payload = new
+        {
+            passed,
+            samples = NextThought.Core.QuestionEvalCorpus.All.Count,
+            report.Questions,
+            report.Detected,
+            report.Statements,
+            report.FalseTriggers,
+            recall = Math.Round(report.Recall, 3),
+            falsePerHour = Math.Round(report.FalseTriggersPerHour, 2),
+            missed = report.Missed.Take(5),
+            falsePositives = report.FalsePositives.Take(5)
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(payload, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "question-check: passed" : "question-check: failed");
         Close();
     }
 

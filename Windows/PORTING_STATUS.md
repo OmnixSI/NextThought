@@ -1,4 +1,18 @@
 
+# P4 问句语料与离线评估 · 0.44.0
+
+0.44.0 移植三份 QuestionEvalCorpus 与 QuestionDetectionEvaluator（在 QuestionIntent.swift 末尾），测试 420 → 423。
+
+- **139 条标注语料**：Extended（面试/会议风格、无标点、口头语、中英夹杂）+ HeldOut，标签为「对方是否在等我回答」。
+  语料由 Swift 源自动提取，避免手抄偏差。
+- **离线评估**：按 6 秒间隔逐条喂给 QuestionCandidateTracker（HasPriorAnswer = true），
+  统计问题数/命中数/陈述数/误触发数、召回率与每小时误触发；未命中与误触发各保留前 5 条。
+- **实测**：--question-check 在真实进程跑完整语料：139 条、82 个问题、82 命中、0 误触发（召回 1.0，
+  qa\question-0440\question-check.json）。注意这是「语料 + 当前规则」的结果，不是现场录音的保证。
+- 3 项 Core 测试：语料完整性、计数守恒、空集/漏检边界。
+
+统计：已移植 48 / 部分 11 / 基线 3 / 未移植 19。
+
 # P2 流式协议 · 0.43.0
 
 0.43.0 移植 `AnswerStreaming.swift`（267 行）为 `Core/AnswerStreaming.cs`，测试 409 → 420。

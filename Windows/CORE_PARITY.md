@@ -51,9 +51,9 @@
 | PDFTextLayout.swift | 171 | 基线简化版 | LayoutReadingOrder.cs（简化版） |
 | ProcessLineReader.swift | 67 | 未移植 |  |
 | QuestionDetector.swift | 115 | 已移植 | Core/QuestionDetector.cs（片段合并、15 秒去重、问句判定；7 项测试） |
-| QuestionEvalCorpus+Extended.swift | 110 | 未移植 |  |
-| QuestionEvalCorpus+HeldOut.swift | 49 | 未移植 |  |
-| QuestionEvalCorpus.swift | 8 | 未移植 |  |
+| QuestionEvalCorpus+Extended.swift | 110 | 已移植 | Core/QuestionEvalCorpus.cs（Extended 集；评估器见 QuestionDetectionEvaluator.cs） |
+| QuestionEvalCorpus+HeldOut.swift | 49 | 已移植 | Core/QuestionEvalCorpus.cs（HeldOut 集） |
+| QuestionEvalCorpus.swift | 8 | 已移植 | Core/QuestionEvalCorpus.cs（139 条标注语料：Extended + HeldOut） |
 | QuestionIntent.swift | 532 | 基线简化版 | QuestionIntent.cs + QuestionCandidateTracker.cs + QuestionVocabulary.cs（精简重写） |
 | QuestionTurn.swift | 96 | 已移植 | Core/QuestionTurn.cs（整轮提问、词数、何时该答；14 项测试） |
 | RealtimeSetupReadiness.swift | 77 | 已移植 | Core/RealtimeSetupReadiness.cs（录音就绪与可请求启动） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 45，部分移植 11，基线简化版 3，未移植 22。
+统计：已移植 48，部分移植 11，基线简化版 3，未移植 19。
 
-测试：`tests/NextThought.Core.Tests` 420 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 423 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 
