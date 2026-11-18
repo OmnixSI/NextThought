@@ -1644,6 +1644,12 @@ public partial class MainWindow : Window
                                     && prepOutput.Contains("## 要讲清楚的重点", StringComparison.Ordinal)
                                     && prepOutput.Contains("## 可能被问到的问题", StringComparison.Ordinal));
 
+        var interviewProfile = NextThought.Core.ModeProfile.For(NextThought.Core.MeetingMode.Interview);
+        Check("mode-profiles", interviewProfile.Fields.Count == 6
+                              && interviewProfile.Fields[0].Id == "domain"
+                              && interviewProfile.DocumentCategories.Contains("简历")
+                              && interviewProfile.TemplatePreferences.StartsWith("我是候选人", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

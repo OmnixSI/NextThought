@@ -12,7 +12,7 @@
 | --- | ---: | --- | --- |
 | AnswerEvidence.swift | 57 | 部分移植 | Core/AnswerEvidence.cs（SearchDecision.parse + AnswerGrounding；EvidenceBundle/AnswerState 等 ContextExcerpt/ScreenContext/WebResult 移植） |
 | AnswerLanguage.swift | 38 | 已移植 | Core/AnswerLanguage.cs（4 项测试） |
-| AnswerPromptBuilder.swift | 328 | 部分移植 | Core/AnswerPromptBuilder.cs（指令原文、预算化 JSON、整份资料、精炼；PreparationPrompt 与 ModeProfile 已补） |
+| AnswerPromptBuilder.swift | 328 | 部分移植 | Core/AnswerPromptBuilder.cs（指令原文、预算化 JSON、整份资料、精炼；PreparationPrompt 与 ModeProfile（角色/字段/资料分类/回答偏好）已补） |
 | AnswerServiceSupport.swift | 242 | 已移植 | Core/AnswerServiceSupport.cs（默认后端、服务商表、Key 清洗/掩码、失败解释、时间线；8 项测试） |
 | AnswerStreaming.swift | 267 | 已移植 | Core/AnswerStreaming.cs（Codex 协议、SSE 解析、模型列表、请求体；11 项测试） |
 | AudioTimeline.swift | 119 | 已移植 | Core/AudioTimeline.cs（10 项测试） |

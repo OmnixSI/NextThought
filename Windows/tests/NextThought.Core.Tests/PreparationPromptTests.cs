@@ -49,6 +49,42 @@ public sealed class PreparationPromptTests
     }
 
     [Fact]
+    public void ModeFieldsStartWithTheDomainAndMarkLongInputs()
+    {
+        var interview = ModeProfile.For(MeetingMode.Interview);
+        Assert.Equal("domain", interview.Fields[0].Id);
+        Assert.Equal(6, interview.Fields.Count);
+        Assert.True(interview.Fields.Single(field => field.Id == "highlights").Long);
+        Assert.False(interview.Fields.Single(field => field.Id == "company").Long);
+        Assert.Contains("专业词", ModeField.Domain.Placeholder);
+    }
+
+    [Fact]
+    public void EveryModeHasFieldsCategoriesAndPreferences()
+    {
+        foreach (var mode in Enum.GetValues<MeetingMode>())
+        {
+            var profile = ModeProfile.For(mode);
+            Assert.NotEmpty(profile.Fields);
+            Assert.Equal("domain", profile.Fields[0].Id);
+            Assert.NotEmpty(profile.DocumentCategories);
+            Assert.NotEmpty(profile.TemplatePreferences);
+        }
+        Assert.Contains("简历", ModeProfile.For(MeetingMode.Interview).DocumentCategories);
+        Assert.Contains("论文", ModeProfile.For(MeetingMode.Academic).DocumentCategories);
+        Assert.Contains("报价 / 合同", ModeProfile.For(MeetingMode.Client).DocumentCategories);
+    }
+
+    [Fact]
+    public void AnswerPreferencesNameTheRightIdentity()
+    {
+        Assert.StartsWith("我是候选人", ModeProfile.For(MeetingMode.Interview).TemplatePreferences);
+        Assert.StartsWith("我是报告人", ModeProfile.For(MeetingMode.Academic).TemplatePreferences);
+        Assert.StartsWith("我在组会上汇报", ModeProfile.For(MeetingMode.LabMeeting).TemplatePreferences);
+        Assert.StartsWith("直接回答当前问题", ModeProfile.For(MeetingMode.General).TemplatePreferences);
+    }
+
+    [Fact]
     public void CustomUsesTheGeneralDefaults()
     {
         Assert.Equal(ModeProfile.For(MeetingMode.General).Role, ModeProfile.For(MeetingMode.Custom).Role);
