@@ -10,8 +10,8 @@
 
 | Swift 文件 | 行数 | 状态 | C# 对应 / 备注 |
 | --- | ---: | --- | --- |
-| AnswerEvidence.swift | 57 | 未移植 |  |
-| AnswerLanguage.swift | 38 | 未移植 |  |
+| AnswerEvidence.swift | 57 | 部分移植 | Core/AnswerEvidence.cs（SearchDecision.parse + AnswerGrounding；EvidenceBundle/AnswerState 等 ContextExcerpt/ScreenContext/WebResult 移植） |
+| AnswerLanguage.swift | 38 | 已移植 | Core/AnswerLanguage.cs（4 项测试） |
 | AnswerPromptBuilder.swift | 328 | 未移植 |  |
 | AnswerServiceSupport.swift | 242 | 未移植 |  |
 | AnswerStreaming.swift | 267 | 未移植 |  |
@@ -23,7 +23,7 @@
 | CancellableTaskValue.swift | 34 | 未移植 |  |
 | CloudTranscription.swift | 293 | 未移植 |  |
 | CoachSummary.swift | 69 | 已移植 | Core/CoachSummary.cs（随 Scene 测试覆盖） |
-| CodexEventParser.swift | 31 | 未移植 |  |
+| CodexEventParser.swift | 31 | 已移植 | Core/CodexEventParser.cs（2 项测试） |
 | Companion.swift | 110 | 部分移植 | Platform/CompanionServer.cs（`CompanionSnapshot` / `CompanionEnvelope` / 局域网命令去重）+ Core/CompanionRelayCrypto.cs（`CompanionCommandCache`）；`CompanionHTTP` 的完整动作表仍在 Platform |
 | CompanionBLEProtocol.swift | 93 | 未移植 |  |
 | CompanionCrypto.swift | 68 | 已移植 | Core/CompanionRelayCrypto.cs（9 项测试；HKDF 用 RFC 5869 向量、AES-GCM 信封、配对链接、命令新鲜度与去重） |
@@ -40,14 +40,14 @@
 | LiveInsights.swift | 403 | 部分移植 | Core/AnswerPoints.cs（仅 Split / StripMarkup，供提词使用） |
 | LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 未移植 |  |
-| MaterialTerms.swift | 57 | 未移植 |  |
+| MaterialTerms.swift | 57 | 已移植 | Core/MaterialTerms.cs（3 项测试，含 9 个 IsTerm 用例） |
 | MeetingCarry.swift | 38 | 未移植 |  |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 43 | 未移植 |  |
 | MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults（场景 → 纪要模板与实时模式；自定义类型未移植） |
 | NotesTemplates.swift | 873 | 部分移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/渲染/提示/校对/到期日） |
 | OnboardingFlow.swift | 55 | 未移植 |  |
-| OnboardingVersion.swift | 16 | 未移植 |  |
+| OnboardingVersion.swift | 16 | 已移植 | Core/OnboardingVersion.cs（与 TranscriptContextBuilder 同文件） |
 | PDFTextLayout.swift | 171 | 基线简化版 | LayoutReadingOrder.cs（简化版） |
 | ProcessLineReader.swift | 67 | 未移植 |  |
 | QuestionDetector.swift | 115 | 未移植 |  |
@@ -74,12 +74,12 @@
 | SessionTextProjection.swift | 497 | 未移植 |  |
 | SessionTranscriptLocator.swift | 31 | 未移植 |  |
 | SessionUserContent.swift | 143 | 未移植 |  |
-| ShortcutBinding.swift | 26 | 未移植 |  |
+| ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |
 | Skill.swift | 84 | 未移植 |  |
 | SpeakerClustering.swift | 272 | 基线简化版 | SpeakerFeatures.cs（仅特征） |
 | StructuredNotes.swift | 962 | 已移植 | Core/StructuredNotes.cs + StructuredNotesCleaner.cs（16 项测试；鱼骨图/大纲/观点对照已接入纪要页，含核对与丢弃） |
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
-| TranscriptContextBuilder.swift | 8 | 未移植 |  |
+| TranscriptContextBuilder.swift | 8 | 已移植 | Core/OnboardingVersion.cs（TranscriptContextBuilder） |
 | TranscriptDeduplicator.swift | 98 | 已移植 | Core/TranscriptDeduplicator.cs（8 项测试） |
 | UpdateCatalog.swift | 164 | 部分移植 | Core/UpdateCatalog.cs（7 项测试；设置页「检查更新」已接入） |
 | VoiceActivitySegmenter.swift | 153 | 基线简化版 | VoiceActivitySegmenter.cs（简化版） |
@@ -91,11 +91,11 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 10，部分移植 7，基线简化版 7，未移植 57。
+统计：已移植 16，部分移植 8，基线简化版 7，未移植 50。
 
-测试：`tests/NextThought.Core.Tests` 163 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 193 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、

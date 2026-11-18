@@ -732,6 +732,8 @@ public partial class AppState : ObservableObject
         try
         {
             await Settings.SaveAsync();
+            // Endpoints are enumerated lazily; make sure a saved device choice is applied.
+            await Settings.RefreshDevicesAsync();
             var settings = Settings.Build();
             CancelRequest();
             ResetDisplay();
@@ -1346,6 +1348,7 @@ public partial class AppState : ObservableObject
         await RunWorkAsync(async ct =>
         {
             await Settings.SaveAsync();
+            await Settings.RefreshDevicesAsync();
             var settings = Settings.Build();
             CancelRequest();
             ResetDisplay();

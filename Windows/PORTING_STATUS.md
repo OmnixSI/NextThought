@@ -1,5 +1,40 @@
 
-# P8 应用内更新 · 0.24.0
+# P1/内存 小文件批次与内存测量 · 0.25.0
+
+0.25.0 做两件事：补一批自包含的 Core 小文件，把「内存目标」用可复现的测量说清楚。
+
+## Core 小文件批次（+6 已移植、+1 部分移植）
+
+| Swift | C# | 测试 | 说明 |
+| --- | --- | --- | --- |
+| `AnswerLanguage.swift` | `Core/AnswerLanguage.cs` | 4 | 中英判断（英文里带中文术语仍是英文）、gloss 语言 |
+| `AnswerEvidence.swift` | `Core/AnswerEvidence.cs` | 2 | `SearchDecision.parse` 宽容 JSON、`AnswerGrounding` 的改写/核实/搜索短语；`EvidenceBundle`、`AnswerState` 依赖未移植的 `ContextExcerpt`/`ScreenContext`/`WebResult` |
+| `MaterialTerms.swift` | `Core/MaterialTerms.cs` | 12 | XL-MIMO/TSIR/DeepMIMO/RQ2 抽取、普通词与姓氏排除、稳定排序与上限 |
+| `ShortcutBinding.swift` | `Core/ShortcutBinding.cs` | 2 | ⌃⌥⇧⌘ 标签、安全性与重复校验 |
+| `CodexEventParser.swift` | `Core/CodexEventParser.cs` | 2 | `item.completed/agent_message` 与三种错误形态 |
+| `TranscriptContextBuilder.swift` | `Core/OnboardingVersion.cs` | 1 | 最近五分钟上下文 |
+| `OnboardingVersion.swift` | `Core/OnboardingVersion.cs` | 1（含多断言） | 功能版本才重新引导 |
+
+合计新增 193 - 168 = 25 项测试；`CORE_PARITY.md` 统计变为 已移植 16 / 部分 8 / 基线 7 / 未移植 50。
+
+## 内存：测量与结论
+
+- 现状（0.25.0 构建，3 次 `--startup-check`）：工作集 **168–173 MiB**、私有提交 **186–191 MiB**、
+  托管堆 **15 MiB**、线程 **118**。目标 150 MiB 未达到。
+- 自检报告现在带 `workingSetMiB`、`privateMiB`、`gcHeapMiB`、`gcCommittedMiB`、`threads`，
+  以后每次发布都能直接看到趋势。
+- 试过并回退的优化：
+  - GC `ConserveMemory` / `RetainVM` / `ServerGarbageCollection=false`：工作集无变化（只是把默认值写死）。
+  - 去掉内嵌 Inter 字体：工作集约 −4 MiB，但拉丁字形改走系统字体，视觉有变化，回退。
+  - 延迟音频设备/进程枚举到设置页：启动快 0.2 秒，但私有提交反而 +30 MiB 且保存的设备选择会失效，
+    回退。
+  - `PublishTrimmed`（partial）：启动即崩溃（0xC0000409/启动报告未生成），回退。
+  - 空闲时 `EmptyWorkingSet`：工作集报成 **0.8 MiB**，但私有提交不变、下次交互全部缺页；
+    这是指标游戏，删除，不做。
+- 结论：剩下的占用在 .NET/Avalonia/Skia 与音频/OCR 原生库，应用层能省的不多；
+  要真正下探需要换 UI 框架或 Native AOT（本机缺 MSVC 工具链），已记为后续专项。
+
+## P8 应用内更新 · 0.24.0
 
 0.24.0 把「检查更新」从只开下载页补成应用内替换：下载 Setup → 校验 SHA-256 → 静默安装 → 退出重启。
 
