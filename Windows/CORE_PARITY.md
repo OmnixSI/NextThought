@@ -34,7 +34,7 @@
 | DocumentStructure.swift | 210 | 未移植 |  |
 | EchoSuppression.swift | 177 | 已移植 | Core/EchoSuppression.cs（8 项测试；已接入转写回声判定） |
 | GazeEstimator.swift | 188 | 未移植 |  |
-| Glossary.swift | 572 | 未移植 |  |
+| Glossary.swift | 572 | 部分移植 | Core/Glossary.cs（9 项测试；规范写法已接入热词与转写纠正） |
 | IncrementalBackup.swift | 123 | 未移植 |  |
 | LaTeXMath.swift | 545 | 未移植 |  |
 | LiveInsights.swift | 403 | 部分移植 | Core/AnswerPoints.cs（仅 Split / StripMarkup，供提词使用） |
@@ -91,14 +91,15 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 8，部分移植 3，基线简化版 7，未移植 62。
+统计：已移植 8，部分移植 4，基线简化版 7，未移植 61。
 
-测试：`tests/NextThought.Core.Tests` 79 项通过（SubtitleBar 12、AudioTimeline 10、
-TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6）。
+测试：`tests/NextThought.Core.Tests` 88 项通过（SubtitleBar 12、AudioTimeline 10、
+TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、Glossary 9）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
-系列与经验（workspace.json；系列页可新建系列、把会议归档进系列、记一句话经验）。
+系列与经验（workspace.json；系列页可新建系列、把会议归档进系列、记一句话经验）、
+术语表（正确写法作为识别热词，错写法在转写里被改回，并进入提示词的术语段）。
 
 未接入/未移植的重点：`Workspace` 的知识库、变更候选与 `KnowledgeMerger`、
-`NotesTemplates`（模板与校对提示）、`Glossary`、`SpeakerClustering`、双屏演讲、同传与自动更新。
+`NotesTemplates`（模板与校对提示）、`SpeakerClustering`、双屏演讲、同传与自动更新。
