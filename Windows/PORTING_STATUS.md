@@ -1,4 +1,20 @@
 
+# P5 文档任务模型 · 0.58.0
+
+0.58.0 移植 `DocumentJobs.swift`（466 行）的任务模型部分，测试 523 → 533。
+
+- **限制**：512 MB 单文件、2000 页、2 GB 展开后上限。
+- **DocumentJob**：工作区、文件名、原始路径/哈希、分类、提供方/模型/推理强度/回退/超时、阶段、进度、等待原因、
+  文档 id、时间戳；`Create` 填默认值；`ProgressText` 在知道总数时显示 `已完成/总数`。
+- **阶段**：13 个阶段的中文文案，`Receiving/Queued/Parsing/Ocr/...`；终态只有 Ready/Warning/Failed/Cancelled。
+- **依赖错误/事件/产物**：等待原因 + 文案；阶段进度事件；`DocumentArtifact`（结构化文档 + 源哈希 + 转换器 + 版本）。
+- **自检**：`--document-job-check` 创建任务并校验默认值、阶段文案、进度与终态
+  （`qa\document-job-0580\job-check.json`）。
+- 10 项测试：限制、阶段文案、终态集合、默认值/时间戳、进度文案、依赖错误、事件/产物。
+- 未移植：Mac 的 SQLite 任务队列与工作区删除日志（Windows 导入是同步 + 原子目录）。
+
+统计：已移植 55 / 部分 19 / 基线 2 / 未移植 5。
+
 # P6 工作区删除事务 · 0.57.0
 
 0.57.0 移植 `WorkspaceDeletionTransaction.swift`（151 行）的文件事务部分，测试 514 → 523。
