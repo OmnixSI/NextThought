@@ -73,6 +73,7 @@ public partial class MainWindow : Window
             if (StartupOptions.HotwordsCheck is { } hotwordsCheck) await RunHotwordsCheckAsync(hotwordsCheck);
             if (StartupOptions.FormulaCheck is { } formulaCheck) await RunFormulaCheckAsync(formulaCheck);
             if (StartupOptions.BackupCheck is { } backupCheck) await RunBackupCheckAsync(backupCheck);
+            if (StartupOptions.PromptCheck is { } promptCheck) await RunPromptCheckAsync(promptCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -621,6 +622,45 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "backup-check: passed" : "backup-check: failed");
+        Close();
+    }
+
+    /// <summary>
+    /// Builds a real answer prompt through the ported builder and checks the system section,
+    /// the user JSON and the budgets.
+    /// </summary>
+    private async Task RunPromptCheckAsync(string path)
+    {
+        await Task.Delay(120);
+        var (system, user) = AnswerPromptBuilder.MakeParts(
+            "为什么温度补偿后残差仍集中在支座附近？",
+            "对方：温度补偿后残差还是集中在支座附近。",
+            "我做过连续刚构桥监测。",
+            [new AnswerTurn("上一问", "上一答")],
+            hasScreenshot: false,
+            mode: NextThought.Core.MeetingMode.LabMeeting,
+            style: "concise",
+            excerpts: [new PromptExcerpt(new string('资', 900), "监测报告", new DocumentLocator { Page = 12 })],
+            today: DateTimeOffset.Now);
+        var passed = system.Contains("你是 NextThought", StringComparison.Ordinal)
+                     && system.Contains("不要使用工具", StringComparison.Ordinal)
+                     && user.Contains("为什么温度补偿", StringComparison.Ordinal)
+                     && user.Contains("\"labMeeting\"", StringComparison.Ordinal)
+                     && user.Contains("\"retrieved_material\"", StringComparison.Ordinal)
+                     && system.Length > 2000;
+        var report = new { passed, systemChars = system.Length, userChars = user.Length, user };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "prompt-check: passed" : "prompt-check: failed");
         Close();
     }
 

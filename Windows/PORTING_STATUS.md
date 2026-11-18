@@ -1,4 +1,19 @@
 
+# P2 答案提示词 · 0.38.0
+
+0.38.0 移植 `AnswerPromptBuilder.swift`（328 行）的主体，测试 352 → 361。
+
+- **指令原文**：从 Swift 源自动提取 4,235 字的系统指令（含联网/不联网两种工具策略），没有手抄偏差。
+- **预算化 JSON**：question 8000、transcript 12000（保留尾部）、profile 8000、偏好 4000、经验 2500、
+  screen 2500、术语 2500、最近 6 轮问答（1000/2000）、检索片段 8000/最多 8 条、技能最多 8 条共 12000。
+- **整份资料**：按「文档 · p.N」分组，超过 160,000 字返回 null；**精炼**：更简短/展开/举例/STAR/英文/中文/澄清/反问，
+  `原问题：` 标记支持链式精炼并取回原问题。
+- **自检**：`--prompt-check` 用真实构建器生成 prompt，校验系统指令、`labMeeting` 模式、检索片段与长度
+  （`qa\prompt-0380\prompt-check.json`，system 4250 字 / user 1447 字）。
+- 未移植：`PreparationPrompt`（依赖未移植的 `ModeProfile` 角色与 reviewFocus）。
+
+统计：已移植 41 / 部分 10 / 基线 4 / 未移植 26。
+
 # P3 屏幕上下文 · 0.37.0
 
 0.37.0 移植 `ScreenContext.swift`（44 行），并补上它依赖的 `TextSimilarity` 二元组工具，测试 342 → 352。
