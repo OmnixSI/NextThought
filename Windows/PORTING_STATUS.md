@@ -1,3 +1,23 @@
+# P4/P6 场景与临场教练 · 0.10.0
+
+0.10.0 落地 Mac 版的差异化主干——九个场景、提词样式与临场教练：
+
+- **Core/Scene.cs**：逐文件移植 `Scene.swift`（`CueStyle`、`CoachingProfile`、`ScenePreset.For`、
+  `CueLine`、`BilingualAnswer`、`CueScript` 要点/讲稿解析、`SpeechUnits`、`SpokenSegment`、
+  `CoachSnapshot`、`SpeakingCoach`）；`CoachSummary.cs` 移植会议级统计；`AnswerPoints` 的
+  `Split`/`StripMarkup` 从 `LiveInsights.swift` 先取过来供提词使用（标注为部分移植）。
+  新增 11 项测试，Core 合计 57 项。
+- **九个场景**：首页「下一场会议」卡片上的场景胶囊（面试 / 汇报答辩 / 组会 / 小组作业 / 客户沟通 /
+  工作会议 / 讲座课程 / 小组讨论 / 通用），选中即写入会议 `mode`（实测 `interview` 落盘），
+  并决定提词样式（按要点 / 按句）与教练规则。
+- **提词岛升级**：不再显示原始回答，而是 `CueScript` 解析后的关键点（或逐句讲稿），右侧显示当前场景名。
+- **临场教练**：会议中每 5 秒看一次语速、独白时长与发言占比，按场景阈值提示（独白超限 / 语速偏快 /
+  讲得太多 / 讲得太少），会议页提示条可「知道了」。
+- 发布：0.10.0 自包含目录、ZIP、安装包；自检与安装后自检通过（1.75 秒、168 MiB）。
+
+仍未做：结构化纪要（`NotesTemplates` / `StructuredNotes`）、系列与经验库（`Workspace`）、
+双屏演讲、同传上岛、伴侣蓝牙/中转、自动更新，以及 Core 其余 64 个文件。
+
 # P5/P7 托盘、自动收尾 · 0.9.0
 
 0.9.0 补齐桌面集成与「无人发言自动结束」：
