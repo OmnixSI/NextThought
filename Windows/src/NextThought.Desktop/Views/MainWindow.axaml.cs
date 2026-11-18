@@ -1538,6 +1538,12 @@ public partial class MainWindow : Window
                                   && deletion.MarkedItems == 1
                                   && deletion.Series.SeriesItems[0].SourceMissing == true);
 
+        var parsedSummary = NextThought.Core.SessionSummaryParser.ParseAll(
+            "# 标题\n*复盘*\n# 问题\n1. 为什么？我的回答要点：因为\n# 经验\n- 先演练\n# 题库\n问：q\n答：a");
+        Check("summary-parser", parsedSummary.Title == "复盘" && parsedSummary.Questions.Count == 1
+                                && parsedSummary.Questions[0].AnswerGist == "因为"
+                                && parsedSummary.Lessons.Count == 1 && parsedSummary.Bank.Count == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
