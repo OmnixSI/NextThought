@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         Opened += async (_, _) =>
         {
             await state.InitializeAsync();
+            SetupTray();
             if (StartupOptions.HistoryFilter is { } filter) state.HistoryFilter = filter;
             if (StartupOptions.HistoryQuery is { } query) state.HistoryQuery = query;
             if (StartupOptions.ImportWave is { } wave) await RunImportWaveTestAsync(wave);
@@ -106,6 +107,8 @@ public partial class MainWindow : Window
     private SubtitleBarWindow? subtitleBar;
     private GlobalHotkeys? hotkeys;
     private TeleprompterWindow? teleprompter;
+    private TrayIntegration? tray;
+    private bool hiddenAll;
 
     /// <summary>Ctrl+Alt shortcuts for the actions the Mac app binds to ⌘⇧ (plan §7 table).</summary>
     private void RegisterHotkeys()
@@ -117,11 +120,50 @@ public partial class MainWindow : Window
             new GlobalHotkeys.Binding("Ctrl+Alt+M 纪要窗口/字幕条/隐藏", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
             new GlobalHotkeys.Binding("Ctrl+Alt+S 区域截图", 0x53, () => _ = CaptureRegionAsync()),
             new GlobalHotkeys.Binding("Ctrl+Alt+T 提词器", 0x54, ToggleTeleprompter),
+            new GlobalHotkeys.Binding("Ctrl+Alt+\\ 隐藏或恢复所有窗口", 0xDC, ToggleHideAll),
             new GlobalHotkeys.Binding("Ctrl+Alt+N 唤起主窗口", 0x4E, RestoreMainWindow)
         ]);
         if (hotkeys.Unregistered.Count > 0)
             state.SetStatus("以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。", true);
     }
+
+    /// <summary>Tray icon: restore, hide everything while recording continues, record toggle, quit.</summary>
+    private void SetupTray()
+    {
+        tray = new TrayIntegration(RestoreMainWindow, HideAllWindows, ToggleRecording, RequestExit);
+        state.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(AppState.Recording)) tray?.SetRecording(state.Recording); };
+    }
+
+    /// <summary>一键隐藏：主窗口与全部浮窗一起收起，会议继续记录（plan §9）。</summary>
+    private void HideAllWindows()
+    {
+        hiddenAll = true;
+        island?.Hide();
+        subtitleBar?.Hide();
+        teleprompter?.Hide();
+        Hide();
+        state.SetStatus("所有窗口已收起，会议继续记录。Ctrl+Alt+\\ 或托盘图标可恢复。");
+    }
+
+    private void ToggleHideAll()
+    {
+        if (hiddenAll)
+        {
+            hiddenAll = false;
+            RestoreMainWindow();
+            ApplyLiveMode(state.LiveMode);
+            return;
+        }
+        HideAllWindows();
+    }
+
+    private void RequestExit()
+    {
+        ExitRequested = true;
+        Close();
+    }
+
+    public bool ExitRequested { get; private set; }
 
     private void ToggleRecording()
     {
@@ -343,8 +385,18 @@ public partial class MainWindow : Window
     private async void OnClosing(object? sender, WindowClosingEventArgs e)
     {
         if (closing) return;
+        // AppState+Lifecycle.swift: a meeting in progress never exits on the window's close button;
+        // the window goes to the tray and the recording continues.
+        if (state.Recording && !ExitRequested)
+        {
+            e.Cancel = true;
+            HideAllWindows();
+            return;
+        }
         e.Cancel = true;
         closing = true;
+        tray?.Dispose();
+        tray = null;
         try
         {
             await state.ShutdownAsync();
