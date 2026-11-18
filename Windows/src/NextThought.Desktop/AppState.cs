@@ -140,6 +140,10 @@ public partial class AppState : ObservableObject
     partial void OnSummarizingChanged(bool value) => RaiseBusy();
     partial void OnCurrentSessionChanged(SessionMeta? value) => OnPropertyChanged(nameof(StatsText));
     partial void OnLiveModeChanged(LiveWindowMode value) => OnPropertyChanged(nameof(LiveModeLabel));
+    partial void OnAnswerTextChanged(string value) => OnPropertyChanged(nameof(PlainAnswer));
+
+    /// <summary>Answer text without Markdown markers, for the single-line cue island.</summary>
+    public string PlainAnswer => MarkdownPlain.Strip(AnswerText);
 
     private void RaiseBusy()
     {

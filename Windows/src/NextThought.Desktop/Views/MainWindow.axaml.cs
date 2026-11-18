@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -40,6 +40,7 @@ public partial class MainWindow : Window
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(MinimizeButton, WindowDecorationsElementRole.MinimizeButton);
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(MaximizeButton, WindowDecorationsElementRole.MaximizeButton);
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(CloseButton, WindowDecorationsElementRole.CloseButton);
+        RegisterHotkeys();
     }
 
     private void Minimize_Click(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
@@ -90,6 +91,35 @@ public partial class MainWindow : Window
 
     private CueIslandWindow? island;
     private SubtitleBarWindow? subtitleBar;
+    private GlobalHotkeys? hotkeys;
+
+    /// <summary>Ctrl+Alt shortcuts for the actions the Mac app binds to ⌘⇧ (plan §7 table).</summary>
+    private void RegisterHotkeys()
+    {
+        hotkeys = new GlobalHotkeys(
+        [
+            new GlobalHotkeys.Binding("Ctrl+Alt+R 开始或停止记录", 0x52, ToggleRecording),
+            new GlobalHotkeys.Binding("Ctrl+Alt+O 显示或隐藏提词岛", 0x4F, ToggleCueIsland),
+            new GlobalHotkeys.Binding("Ctrl+Alt+M 纪要窗口/字幕条/隐藏", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+N 唤起主窗口", 0x4E, RestoreMainWindow)
+        ]);
+        if (hotkeys.Unregistered.Count > 0)
+            state.SetStatus("以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。", true);
+    }
+
+    private void ToggleRecording()
+    {
+        if (state.Recording) { if (state.StopRecordingCommand.CanExecute(null)) state.StopRecordingCommand.Execute(null); }
+        else if (state.StartRecordingCommand.CanExecute(null)) state.StartRecordingCommand.Execute(null);
+        else state.SetStatus("还不能开始记录：请先在设置里准备语音组件。", true);
+    }
+
+    private void RestoreMainWindow()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+    }
 
     /// <summary>Show or hide the floating cue island (the Mac app's notch panel).</summary>
     public void ToggleCueIsland()
