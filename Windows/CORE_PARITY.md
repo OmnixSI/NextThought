@@ -33,7 +33,7 @@
 | DocumentNotice.swift | 53 | 已移植 | Core/DocumentNotice.cs（提示与警告区分、页码汇总） |
 | DocumentStructure.swift | 210 | 已移植 | Core/DocumentStructure.cs（标题路径/代码/公式/表格块、HTML 表格分片、检索分块；11 项测试） |
 | EchoSuppression.swift | 177 | 已移植 | Core/EchoSuppression.cs（8 项测试；已接入转写回声判定） |
-| GazeEstimator.swift | 188 | 未移植 |  |
+| GazeEstimator.swift | 188 | 已移植 | Core/GazeEstimator.cs（眼部几何、标定中位数、平滑与迟滞、注视比例；8 项测试） |
 | Glossary.swift | 572 | 部分移植 | Core/Glossary.cs（9 项测试；规范写法已接入热词与转写纠正） |
 | IncrementalBackup.swift | 123 | 已移植 | Core/IncrementalBackup.cs（内容寻址恢复点、校验、去重与裁剪；16 项测试） |
 | LaTeXMath.swift | 545 | 已移植 | Core/LaTeXMath.cs（Unicode 转换 + Markdown 预处理；17 项测试；接入答案与纪要渲染） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 49，部分移植 11，基线简化版 2，未移植 19。
+统计：已移植 50，部分移植 11，基线简化版 2，未移植 18。
 
-测试：`tests/NextThought.Core.Tests` 432 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 440 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 
