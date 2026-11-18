@@ -90,6 +90,24 @@ public sealed record WorkspaceSeries(
     public WorkspaceSeries WithoutSession(string sessionId) =>
         SessionIds.Contains(sessionId) ? this with { SessionIds = SessionIds.Where(id => id != sessionId).ToList() } : this;
 
+    /// <summary>Lessons as prompt bullets: pinned first, then newest, bounded (port of experienceNotes).</summary>
+    public string ExperienceNotes(int limit = 2_000)
+    {
+        if (!UseKnowledge) return "";
+        var ordered = Lessons.Where(lesson => lesson.Pinned)
+            .Concat(Lessons.Where(lesson => !lesson.Pinned).OrderByDescending(lesson => lesson.CreatedAt));
+        var lines = new List<string>();
+        var used = 0;
+        foreach (var lesson in ordered)
+        {
+            var line = "- " + lesson.Text;
+            if (used + line.Length > limit) break;
+            lines.Add(line);
+            used += line.Length;
+        }
+        return string.Join("\n", lines);
+    }
+
     /// <summary>Pending suggestions, newest first (what the series page lists).</summary>
     [JsonIgnore]
     public IReadOnlyList<WorkspaceKnowledgeCandidate> PendingCandidates =>

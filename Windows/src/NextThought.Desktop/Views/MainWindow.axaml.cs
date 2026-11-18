@@ -1625,6 +1625,13 @@ public partial class MainWindow : Window
                                 && !evidenceRefs[0].NeedsConfirmation
                                 && evidenceRefs[0].StructuredTarget?.PayloadRevision == NextThought.Core.SessionNotesEditor.PayloadRevision(evidenceNotes));
 
+        var experienceSeries = new NextThought.Core.WorkspaceSeries("s", "组会", DateTimeOffset.UtcNow, [],
+            [new NextThought.Core.WorkspaceLesson { Text = "经验", Pinned = true }]);
+        var summaryForWrite = new NextThought.Core.SessionSummary { Structured = editorPayload };
+        var writtenSummary = NextThought.Core.SessionNotesEditor.UpdateSummary(summaryForWrite, editorTarget, "写回标题");
+        Check("summary-writeback", experienceSeries.ExperienceNotes().Contains("经验", StringComparison.Ordinal)
+                                   && writtenSummary?.Structured?.Outline?.Sections[0].Title == "写回标题");
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

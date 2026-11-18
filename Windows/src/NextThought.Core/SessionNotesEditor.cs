@@ -34,6 +34,15 @@ public static class SessionNotesEditor
         };
     }
 
+    /// <summary>Writes an edited node back into the summary's stored payload (port of store(payload)).</summary>
+    public static SessionSummary? UpdateSummary(SessionSummary summary, SessionStructuredNotesTarget target,
+        string text)
+    {
+        if (summary.Structured is not { } current || current.Format != target.Format) return null;
+        var edited = Apply(current, target, text);
+        return edited is null ? null : summary with { Structured = edited };
+    }
+
     private static StructuredNotesPayload? EditFishbone(StructuredNotesPayload payload, string[] parts, string text)
     {
         if (payload.Fishbone is not { } notes) return null;
