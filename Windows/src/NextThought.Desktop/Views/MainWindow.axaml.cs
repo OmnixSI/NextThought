@@ -1531,6 +1531,13 @@ public partial class MainWindow : Window
             [new NextThought.Core.SessionMeta { Id = sessionId, Title = "会议", StartedAt = DateTimeOffset.UtcNow }]);
         Check("series-items", itemBriefing.Decisions.Count == 1 && itemBriefing.OpenActions.Count == 0);
 
+        var deletion = NextThought.Core.WorkspaceSessionDeletion.Apply(itemSeries, sessionId.ToString("D"));
+        Check("session-deletion", deletion.RemovedSessions == 1
+                                  && deletion.Series.SessionIds.Count == 0
+                                  && deletion.Series.SourceDeletionTombstones!.Contains(sessionId.ToString("D"))
+                                  && deletion.MarkedItems == 1
+                                  && deletion.Series.SeriesItems[0].SourceMissing == true);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

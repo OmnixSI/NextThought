@@ -74,6 +74,10 @@ public sealed record WorkspaceSeries(
     /// <summary>Accepted decisions and actions carried by this series.</summary>
     public IReadOnlyList<WorkspaceSeriesItem> SeriesItems { get; init; } = [];
 
+    /// <summary>Deleted meetings whose knowledge must not be resurrected by a stale copy.</summary>
+    [JsonPropertyName("sourceDeletionTombstones")]
+    public IReadOnlyList<string>? SourceDeletionTombstones { get; init; }
+
     /// <summary>Feed lessons and the question bank back into answers (default on).</summary>
     public bool UseKnowledge { get; init; } = true;
 
