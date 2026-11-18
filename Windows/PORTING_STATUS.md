@@ -1,4 +1,19 @@
 
+# P3 云端转写 · 0.42.0
+
+0.42.0 移植 `CloudTranscription.swift`（293 行）为 `Core/CloudTranscription.cs`，测试 400 → 409。
+
+- **三家服务商**：Soniox（16 kHz、websocket 配置消息、keepalive）、OpenAI Realtime（24 kHz、base64 追加消息、
+  session.update）、Deepgram（URL 参数、50 个 keyterm、Token 认证）；含默认模型、采样率、废弃 Whisper 识别。
+- **转写装配**：Soniox 的 final/tail 与 `<end>`/`finished`；Deepgram 的 `Results`/`UtteranceEnd`/
+  `speech_final`；OpenAI 的 per-item delta/completed/failed；错误统一抛 `CloudTranscriptException`。
+- **重采样**：16 kHz → 24 kHz 线性插值（2:3）与小端 PCM 打包。
+- **自检**：`--cloud-check` 在真实进程里生成 Soniox 配置、装配「你好」、重采样 4 个样本
+  （`qa\cloud-0420\cloud-check.json`）。
+- 未移植：WebSocket 传输与设置界面仍属应用层（本项目当前没有开启云转写的 UI）。
+
+统计：已移植 44 / 部分 11 / 基线 3 / 未移植 23。
+
 # P5 词法检索与会话上下文 · 0.41.0
 
 0.41.0 补上 `SessionContext.swift`（265 行）中的可用部分，并完成 `HybridContextIndex.retrieve`，测试 392 → 400。
