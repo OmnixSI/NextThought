@@ -45,7 +45,7 @@
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 43 | 未移植 |  |
 | MeetingType.swift | 168 | 未移植 |  |
-| NotesTemplates.swift | 873 | 部分移植 | Core/NotesTime.cs（仅 NotesTime 与结构化纪要的 Markdown 渲染；模板与校对提示未移植） |
+| NotesTemplates.swift | 873 | 部分移植 | Core/NotesTime.cs（仅 NotesTime、NotesVerifier.IsSupported；模板与校对提示未移植） |
 | OnboardingFlow.swift | 55 | 未移植 |  |
 | OnboardingVersion.swift | 16 | 未移植 |  |
 | PDFTextLayout.swift | 171 | 基线简化版 | LayoutReadingOrder.cs（简化版） |
@@ -77,7 +77,7 @@
 | ShortcutBinding.swift | 26 | 未移植 |  |
 | Skill.swift | 84 | 未移植 |  |
 | SpeakerClustering.swift | 272 | 基线简化版 | SpeakerFeatures.cs（仅特征） |
-| StructuredNotes.swift | 962 | 已移植 | Core/StructuredNotes.cs（8 项测试；鱼骨图/大纲/观点对照已接入纪要页） |
+| StructuredNotes.swift | 962 | 已移植 | Core/StructuredNotes.cs + StructuredNotesCleaner.cs（16 项测试；鱼骨图/大纲/观点对照已接入纪要页，含核对与丢弃） |
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
 | TranscriptContextBuilder.swift | 8 | 未移植 |  |
 | TranscriptDeduplicator.swift | 98 | 已移植 | Core/TranscriptDeduplicator.cs（8 项测试） |
@@ -93,12 +93,11 @@
 
 统计：已移植 8，部分移植 2，基线简化版 7，未移植 63。
 
-测试：`tests/NextThought.Core.Tests` 65 项通过（SubtitleBar 12、AudioTimeline 10、
-TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、StructuredNotes 8）。
+测试：`tests/NextThought.Core.Tests` 73 项通过（SubtitleBar 12、AudioTimeline 10、
+TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
-（鱼骨图 / 要点大纲 / 观点对照，含提示词与 Markdown 缓存）。
+（鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图绘制）。
 
-未接入/未移植的重点：`StructuredNotesCleaner`（依赖 `NotesVerifier`，需要 `NotesTemplates`）、
-结构化纪要的可视化绘制（鱼骨图曲线、观点矩阵表格，目前以带时间的 Markdown 呈现）、
+未接入/未移植的重点：观点对照的矩阵表格绘制（目前以带时间的 Markdown 呈现）、
 `Workspace`（系列/经验库）、`NotesTemplates`（模板与校对提示）、`Glossary`、`SpeakerClustering`。

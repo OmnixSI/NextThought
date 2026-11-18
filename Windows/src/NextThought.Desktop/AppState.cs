@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -132,6 +132,16 @@ public partial class AppState : ObservableObject
 
     [ObservableProperty] private NotesFormat selectedNotesFormat = NotesFormat.Standard;
     [ObservableProperty] private string structuredMarkdown = "";
+    [ObservableProperty] private StructuredNotesPayload? structuredPayload;
+    public bool HasFishboneDrawing => StructuredPayload?.Fishbone is { Categories.Count: > 0 };
+    /// <summary>The Markdown copy is only shown when there is no drawing to stand in for it.</summary>
+    public bool ShowStructuredMarkdown => HasStructuredNotes && !HasFishboneDrawing;
+    partial void OnStructuredPayloadChanged(StructuredNotesPayload? value)
+    {
+        OnPropertyChanged(nameof(HasFishboneDrawing));
+        OnPropertyChanged(nameof(ShowStructuredMarkdown));
+    }
+    partial void OnStructuredMarkdownChanged(string value) => OnPropertyChanged(nameof(ShowStructuredMarkdown));
     public bool HasStructuredNotes => StructuredMarkdown.Length > 0;
     public bool NotesFormatIsStandard => SelectedNotesFormat == NotesFormat.Standard;
     public bool NotesFormatIsFishbone => SelectedNotesFormat == NotesFormat.Fishbone;
@@ -158,13 +168,31 @@ public partial class AppState : ObservableObject
     private string StructuredPath(SessionMeta session, NotesFormat format) =>
         Path.Combine(Sessions.Folder(session.Id), $"structured-{format.Raw()}.md");
 
+    private string StructuredJsonPath(SessionMeta session, NotesFormat format) =>
+        Path.Combine(Sessions.Folder(session.Id), $"structured-{format.Raw()}.json");
+
     private async Task LoadStructuredAsync(SessionMeta session, NotesFormat format)
     {
         if (!format.IsStructured()) return;
+        StructuredPayload = null;
         try
         {
             var path = StructuredPath(session, format);
             if (File.Exists(path)) StructuredMarkdown = await File.ReadAllTextAsync(path);
+            // The JSON keeps the drawing available; the Markdown alone cannot be turned back into one.
+            var json = StructuredJsonPath(session, format);
+            if (File.Exists(json))
+            {
+                try
+                {
+                    StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(
+                        await File.ReadAllTextAsync(json), JsonDefaults.Options);
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                    StructuredPayload = null;
+                }
+            }
             OnPropertyChanged(nameof(HasStructuredNotes));
         }
         catch
@@ -209,11 +237,14 @@ public partial class AppState : ObservableObject
                 return;
             }
             payload = cleaned;
+            StructuredPayload = payload;
             StructuredMarkdown = StructuredNotesMarkdown.Render(payload);
             OnPropertyChanged(nameof(HasStructuredNotes));
             try
             {
                 await File.WriteAllTextAsync(StructuredPath(session, format), StructuredMarkdown);
+                await File.WriteAllTextAsync(StructuredJsonPath(session, format),
+                    System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.Options));
             }
             catch
             {
@@ -545,6 +576,7 @@ public partial class AppState : ObservableObject
         if (demoFishbone is not null)
         {
             SelectedNotesFormat = NotesFormat.Fishbone;
+            StructuredPayload = demoFishbone;
             StructuredMarkdown = StructuredNotesMarkdown.Render(demoFishbone);
             OnPropertyChanged(nameof(HasStructuredNotes));
             OnPropertyChanged(nameof(NotesFormatIsStandard));
