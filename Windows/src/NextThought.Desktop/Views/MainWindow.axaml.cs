@@ -1856,6 +1856,17 @@ public partial class MainWindow : Window
                                  && prepResult.Documents.Any(document => document.Id == "doc-1")
                                  && prepResult.DocumentIds.Contains("transcript"));
 
+        var queueDirectory = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "job-queue");
+        var jobQueue = new NextThought.Core.DocumentJobQueue(queueDirectory);
+        jobQueue.Clear();
+        var queuedJob = NextThought.Core.DocumentJob.Create("ws", "a.pdf") with
+        {
+            Id = "acceptance-job", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+        };
+        var queued = jobQueue.Enqueue(queuedJob);
+        var reloadedQueue = new NextThought.Core.DocumentJobQueue(queueDirectory);
+        Check("document-queue", queued && reloadedQueue.Count == 1 && reloadedQueue.Next()?.Id == "acceptance-job");
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

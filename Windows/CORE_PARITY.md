@@ -29,7 +29,7 @@
 | CompanionCrypto.swift | 68 | 已移植 | Core/CompanionRelayCrypto.cs（9 项测试；HKDF 用 RFC 5869 向量、AES-GCM 信封、配对链接、命令新鲜度与去重） |
 | DocumentClassifier.swift | 74 | 已移植 | Core/DocumentClassifier.cs（文件名优先 + 正文前 2000 字） |
 | DocumentFeatureAvailability.swift | 27 | 已移植 | Core/DocumentFeatureAvailability.cs（依赖齐备才可用） |
-| DocumentJobs.swift | 466 | 部分移植 | Core/DocumentJobs.cs（限制、任务模型与阶段文案、依赖错误/事件/产物；10 项测试。SQLite 队列与工作区删除日志未移植） |
+| DocumentJobs.swift | 411 | 已移植 | Core/DocumentJobs.cs + DocumentJobQueue.cs（限制/任务模型/阶段/依赖错误/事件/产物 + 文件持久队列；15 项测试。Windows 用 JSON 文件队列替代 SQLite） |
 | DocumentNotice.swift | 53 | 已移植 | Core/DocumentNotice.cs（提示与警告区分、页码汇总） |
 | DocumentStructure.swift | 210 | 已移植 | Core/DocumentStructure.cs（标题路径/代码/公式/表格块、HTML 表格分片、检索分块；11 项测试） |
 | EchoSuppression.swift | 177 | 已移植 | Core/EchoSuppression.cs（8 项测试；已接入转写回声判定） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 73，部分移植 7，基线简化版 0，未移植 0。
+统计：已移植 74，部分移植 6，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
