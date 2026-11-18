@@ -71,6 +71,20 @@ public static class DemoContent
         Text = text
     };
 
+    /// <summary>A frozen fishbone reply, so the structured notes view can be reviewed without a model.</summary>
+    public const string FishboneJson = """
+    {"head": "为什么温度补偿后残差仍集中在支座附近", "headTime": "03:05", "categories": [
+      {"name": "数据", "causes": [
+        {"text": "支座位移传感器只有两个测点", "time": "05:20"},
+        {"text": "八站风速数据尚未接入", "time": "06:40"}]},
+      {"name": "模型", "causes": [
+        {"text": "支座用简化弹簧建模，刚度未标定", "time": "07:10"},
+        {"text": "未做刚度敏感性分析", "time": "08:02"}]},
+      {"name": "流程", "causes": [
+        {"text": "温度补偿后未复核残差阈值", "time": "09:15"}]}
+    ]}
+    """;
+
     public const string Summary = """
         ## 结构组会 · 连续刚构桥监测
 

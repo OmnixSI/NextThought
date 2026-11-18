@@ -128,6 +128,122 @@ public partial class AppState : ObservableObject
     public bool HistoryFilterHasSummary => HistoryFilter == "有纪要";
     public bool HistoryFilterUnfiled => HistoryFilter == "未整理";
 
+    // ---- 结构化纪要（Core StructuredNotes：鱼骨图 / 要点大纲 / 观点对照） ----
+
+    [ObservableProperty] private NotesFormat selectedNotesFormat = NotesFormat.Standard;
+    [ObservableProperty] private string structuredMarkdown = "";
+    public bool HasStructuredNotes => StructuredMarkdown.Length > 0;
+    public bool NotesFormatIsStandard => SelectedNotesFormat == NotesFormat.Standard;
+    public bool NotesFormatIsFishbone => SelectedNotesFormat == NotesFormat.Fishbone;
+    public bool NotesFormatIsOutline => SelectedNotesFormat == NotesFormat.Outline;
+    public bool NotesFormatIsViewpoints => SelectedNotesFormat == NotesFormat.Viewpoints;
+    public string StructuredHint => SelectedNotesFormat == NotesFormat.Standard
+        ? "文字纪要由模板整理；鱼骨图、大纲与观点对照是同一场会议的另一种看法。"
+        : $"将调用回答服务把转写整理成「{SelectedNotesFormat.Title(false)}」；每条都带原话时间，找不到依据的不写。";
+
+    [RelayCommand]
+    private async Task SetNotesFormatAsync(NotesFormat format)
+    {
+        SelectedNotesFormat = format;
+        StructuredMarkdown = "";
+        OnPropertyChanged(nameof(HasStructuredNotes));
+        OnPropertyChanged(nameof(NotesFormatIsStandard));
+        OnPropertyChanged(nameof(NotesFormatIsFishbone));
+        OnPropertyChanged(nameof(NotesFormatIsOutline));
+        OnPropertyChanged(nameof(NotesFormatIsViewpoints));
+        OnPropertyChanged(nameof(StructuredHint));
+        if (CurrentSession is { } session) await LoadStructuredAsync(session, format);
+    }
+
+    private string StructuredPath(SessionMeta session, NotesFormat format) =>
+        Path.Combine(Sessions.Folder(session.Id), $"structured-{format.Raw()}.md");
+
+    private async Task LoadStructuredAsync(SessionMeta session, NotesFormat format)
+    {
+        if (!format.IsStructured()) return;
+        try
+        {
+            var path = StructuredPath(session, format);
+            if (File.Exists(path)) StructuredMarkdown = await File.ReadAllTextAsync(path);
+            OnPropertyChanged(nameof(HasStructuredNotes));
+        }
+        catch
+        {
+            // A missing or unreadable file is the same as "not generated yet".
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanGenerateStructured))]
+    private async Task GenerateStructuredNotesAsync()
+    {
+        if (CurrentSession is not { } session || !SelectedNotesFormat.IsStructured()) return;
+        if (currentLines.Count == 0) { SetStatus("这场会议还没有转写，无法整理。", true); return; }
+        var format = SelectedNotesFormat;
+        CancelRequest();
+        var generation = ++requestEpoch;
+        var cancellation = new CancellationTokenSource();
+        requestCancellation = cancellation;
+        Answering = true;
+        ProgressIndeterminate = true;
+        RaiseBusy();
+        try
+        {
+            SetStatus($"正在整理成{format.Title(false)}…");
+            var transcript = BuildNumberedTranscript(session);
+            var header = $"# {session.Title}\n\n会议时间：{session.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 场景：{SceneTitle}";
+            var system = StructuredNotesPrompt.System(format, english: false);
+            var user = StructuredNotesPrompt.User(header, transcript);
+            var reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system, user, null, cancellation.Token, 180);
+            if (generation != requestEpoch) return;
+            var payload = StructuredNotesParser.Parse(reply, format, fallbackTitle: session.Title, model: AnswerOptions(true).Model);
+            if (payload is null)
+            {
+                SetStatus("整理结果不是可用的 JSON，稍后可重试。", true);
+                return;
+            }
+            StructuredMarkdown = StructuredNotesMarkdown.Render(payload);
+            OnPropertyChanged(nameof(HasStructuredNotes));
+            try
+            {
+                await File.WriteAllTextAsync(StructuredPath(session, format), StructuredMarkdown);
+            }
+            catch
+            {
+                // The view is still useful without the cached copy.
+            }
+            SetStatus($"已整理成{format.Title(false)}，可复制或导出。");
+        }
+        catch (OperationCanceledException) { if (generation == requestEpoch) SetStatus("整理已取消。"); }
+        catch (Exception ex) { if (generation == requestEpoch) SetStatus(ex.Message, true); }
+        finally
+        {
+            cancellation.Dispose();
+            if (generation == requestEpoch)
+            {
+                requestCancellation = null;
+                Answering = false;
+                ProgressIndeterminate = false;
+                RaiseBusy();
+            }
+        }
+    }
+
+    private bool CanGenerateStructured() => IsIdle && !Answering && CurrentSession != null
+        && SelectedNotesFormat.IsStructured() && currentLines.Count > 0;
+
+    /// <summary>"[12:41] 说话人：…" lines, the format the structured prompts expect.</summary>
+    private string BuildNumberedTranscript(SessionMeta session)
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var line in currentLines)
+        {
+            var offset = Math.Max(0, (int)((line.StartedAt ?? line.Date) - session.StartedAt).TotalSeconds);
+            var speaker = line.Speaker == "remote" ? "对方" : line.Speaker == "room" ? "现场" : "我";
+            builder.Append('[').Append(NotesTime.Text(offset)).Append("] ").Append(speaker).Append('：').AppendLine(line.Text);
+        }
+        return builder.ToString();
+    }
+
     // ---- 九个场景（Core ScenePreset 的界面映射） ----
 
     [ObservableProperty] private MeetingMode selectedMode = MeetingMode.Meeting;
@@ -263,6 +379,7 @@ public partial class AppState : ObservableObject
         NewMeetingCommand.NotifyCanExecuteChanged();
         ImportWaveCommand.NotifyCanExecuteChanged();
         ExportCommand.NotifyCanExecuteChanged();
+        GenerateStructuredNotesCommand.NotifyCanExecuteChanged();
         BackupCommand.NotifyCanExecuteChanged();
         RestoreCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged();
@@ -401,6 +518,18 @@ public partial class AppState : ObservableObject
         ApplyHistoryFilter();
         OnPropertyChanged(nameof(StatsText));
         ModelStatusText = "演示模式：未加载识别模型";
+        var demoFishbone = StructuredNotesParser.Parse(DemoContent.FishboneJson, NotesFormat.Fishbone, fallbackTitle: "结构组会");
+        if (demoFishbone is not null)
+        {
+            SelectedNotesFormat = NotesFormat.Fishbone;
+            StructuredMarkdown = StructuredNotesMarkdown.Render(demoFishbone);
+            OnPropertyChanged(nameof(HasStructuredNotes));
+            OnPropertyChanged(nameof(NotesFormatIsStandard));
+            OnPropertyChanged(nameof(NotesFormatIsFishbone));
+            OnPropertyChanged(nameof(NotesFormatIsOutline));
+            OnPropertyChanged(nameof(NotesFormatIsViewpoints));
+            OnPropertyChanged(nameof(StructuredHint));
+        }
         StartDemoFeeder();
         if (StartupOptions.Subtitles) LiveMode = LiveWindowMode.Subtitles;
     }
@@ -1217,6 +1346,17 @@ public partial class AppState : ObservableObject
             AnswerText = data.Answers.LastOrDefault()?.Answer ?? "";
             DetectedQuestion = data.Answers.LastOrDefault()?.Question ?? "可以继续对这场会议提问。";
             SummaryText = data.Summary.Length > 0 ? data.Summary : "这场会议还没有纪要，点击上方整理。";
+            // Each scene recommends a notes format (plan §8 纪要格式); the cached copy is loaded with it.
+            var mode = Enum.TryParse<MeetingMode>(data.Meta.Mode, true, out var parsed) ? parsed : MeetingMode.Meeting;
+            SelectedNotesFormat = NotesFormats.Recommended(mode);
+            StructuredMarkdown = "";
+            OnPropertyChanged(nameof(HasStructuredNotes));
+            OnPropertyChanged(nameof(NotesFormatIsStandard));
+            OnPropertyChanged(nameof(NotesFormatIsFishbone));
+            OnPropertyChanged(nameof(NotesFormatIsOutline));
+            OnPropertyChanged(nameof(NotesFormatIsViewpoints));
+            OnPropertyChanged(nameof(StructuredHint));
+            await LoadStructuredAsync(data.Meta, SelectedNotesFormat);
             Section = AppSection.Live;
             RefreshHistory(meta.Id);
             RaiseBusy();

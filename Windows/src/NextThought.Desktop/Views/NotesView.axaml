@@ -1,10 +1,11 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.NotesView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,*" Margin="32,18,32,0">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="32,18,32,0">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="6">
         <TextBlock Text="会后纪要" Classes="display" />
@@ -20,19 +21,61 @@
       </StackPanel>
     </Grid>
 
-    <Border Grid.Row="1" Classes="card" Padding="0" Margin="0,18,0,16">
+    <!-- 纪要格式：文字纪要 / 因果鱼骨图 / 要点大纲 / 观点对照 -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <RadioButton Classes="chip" GroupName="notesformat"
+                     IsChecked="{Binding NotesFormatIsStandard, Mode=OneWay}"
+                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Standard}">
+          <TextBlock Text="文字纪要" Foreground="{Binding $parent[RadioButton].Foreground}" />
+        </RadioButton>
+        <RadioButton Classes="chip" GroupName="notesformat"
+                     IsChecked="{Binding NotesFormatIsFishbone, Mode=OneWay}"
+                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Fishbone}">
+          <TextBlock Text="鱼骨图" Foreground="{Binding $parent[RadioButton].Foreground}" />
+        </RadioButton>
+        <RadioButton Classes="chip" GroupName="notesformat"
+                     IsChecked="{Binding NotesFormatIsOutline, Mode=OneWay}"
+                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Outline}">
+          <TextBlock Text="要点大纲" Foreground="{Binding $parent[RadioButton].Foreground}" />
+        </RadioButton>
+        <RadioButton Classes="chip" GroupName="notesformat"
+                     IsChecked="{Binding NotesFormatIsViewpoints, Mode=OneWay}"
+                     Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Viewpoints}">
+          <TextBlock Text="观点对照" Foreground="{Binding $parent[RadioButton].Foreground}" />
+        </RadioButton>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+        <Button Content="生成这种纪要" Command="{Binding GenerateStructuredNotesCommand}"
+                IsVisible="{Binding !NotesFormatIsStandard}" />
+      </StackPanel>
+    </Grid>
+
+    <Border Grid.Row="2" Classes="card" Padding="0" Margin="0,12,0,16">
       <Grid RowDefinitions="Auto,*">
         <Grid Margin="22,16,22,10" ColumnDefinitions="*,Auto">
           <StackPanel>
             <TextBlock Text="{Binding MeetingTitle}" Classes="title" FontSize="15" />
             <TextBlock Text="{Binding PageSubtitle}" Classes="caption" FontSize="11" Margin="0,3,0,0" />
+            <TextBlock Text="{Binding StructuredHint}" Classes="caption" FontSize="11" Margin="0,4,0,0" />
           </StackPanel>
           <Border Grid.Column="1" Classes="chip" VerticalAlignment="Top">
             <TextBlock Text="Markdown" Classes="overline" FontSize="10" />
           </Border>
         </Grid>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="22,0,22,22">
-          <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14" />
+          <StackPanel Spacing="12">
+            <!-- 文字纪要 -->
+            <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14"
+                                IsVisible="{Binding NotesFormatIsStandard}" />
+            <!-- 结构化纪要：鱼骨图 / 大纲 / 观点对照都以带时间的 Markdown 呈现 -->
+            <StackPanel Spacing="10" IsVisible="{Binding !NotesFormatIsStandard}">
+              <views:MarkdownText Text="{Binding StructuredMarkdown}" BaseFontSize="14"
+                                  IsVisible="{Binding HasStructuredNotes}" />
+              <TextBlock Text="还没有生成这种纪要。点右上角「生成这种纪要」，会用当前回答服务把转写整理成它；每条都带原话时间。"
+                         Classes="caption" IsVisible="{Binding !HasStructuredNotes}" />
+            </StackPanel>
+          </StackPanel>
         </ScrollViewer>
       </Grid>
     </Border>
