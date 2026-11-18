@@ -1202,7 +1202,7 @@ public partial class AppState : ObservableObject
             var sources = retrieved?.Sources ?? [];
             if (!check) { Sources.Clear(); }
             IReadOnlyList<WebResult> web = [];
-            if (!check && WebSearchNeed.Assess(question).NeedsSearch && WebSearch() is { } searchProvider)
+            if (!check && Settings.WebSearch && WebSearchNeed.Assess(question).NeedsSearch && WebSearch() is { } searchProvider)
             {
                 SetStatus("正在联网核实…");
                 var webResponse = await searchProvider.SearchAsync(question, 5, cancellation.Token);

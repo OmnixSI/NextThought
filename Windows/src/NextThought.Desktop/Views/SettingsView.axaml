@@ -137,6 +137,9 @@
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="12">
           <TextBlock Text="回答服务" Classes="section" />
+          <CheckBox Content="允许联网核实（需 TAVILY_API_KEY）" IsChecked="{Binding Settings.WebSearch}" />
+          <TextBlock Text="问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。"
+                     Classes="caption" FontSize="11" />
           <CheckBox Content="使用本机 Codex CLI 账号" IsChecked="{Binding Settings.UseCodex}" />
           <TextBlock Text="Codex 模型（留空沿用账号默认模型）" Classes="label" />
           <TextBox Text="{Binding Settings.CodexModel}" PlaceholderText="gpt-5.2-codex" />

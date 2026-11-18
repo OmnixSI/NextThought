@@ -77,6 +77,7 @@ public sealed record AppSettings
     public bool SeparateSpeakers { get; set; }
     public bool TranslateSpeech { get; set; }
     public bool UseMaterials { get; set; }
+    public bool WebSearch { get; set; } = true;
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";
     /// <summary>Mac key <c>presenterMode</c>: dual-screen presenting (PresenterMode.swift).</summary>

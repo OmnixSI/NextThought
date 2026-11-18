@@ -1928,6 +1928,9 @@ public partial class MainWindow : Window
         Check("web-search-config", webKey is null && !webEnabled
                                    && NextThought.Platform.WebSearchConfiguration.CreateProvider(read: _ => null) is null);
 
+        Check("web-search-setting", new NextThought.Core.AppSettings().WebSearch
+                                     && !new NextThought.Core.AppSettings { WebSearch = false }.WebSearch);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

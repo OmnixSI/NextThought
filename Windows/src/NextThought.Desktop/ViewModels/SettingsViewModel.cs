@@ -52,6 +52,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool translateSpeech;
     [ObservableProperty] private bool useMaterials;
     [ObservableProperty] private bool useCodex;
+    [ObservableProperty] private bool webSearch;
     [ObservableProperty] private string codexModel = "";
     [ObservableProperty] private string autoEndMode = "prompt";
     private string autoEndMinutes = "10";
@@ -159,6 +160,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         TranslateSpeech = settings.TranslateSpeech;
         UseMaterials = settings.UseMaterials;
         UseCodex = settings.UseCodex;
+        WebSearch = settings.WebSearch;
         CodexModel = settings.CodexModel;
         PresenterMode = settings.PresenterMode;
         PresenterSlidesScreen = settings.PresenterSlidesScreen;
@@ -206,6 +208,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AutomaticAnswers = AutomaticAnswers,
         AutoSummarize = AutoSummarize,
         UseSemanticRetrieval = UseSemanticRetrieval,
+        WebSearch = WebSearch,
         SeparateSpeakers = SeparateSpeakers,
         TranslateSpeech = TranslateSpeech,
         UseMaterials = UseMaterials,
