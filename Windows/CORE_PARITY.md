@@ -44,8 +44,8 @@
 | MeetingCarry.swift | 38 | 未移植 |  |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 43 | 未移植 |  |
-| MeetingType.swift | 168 | 未移植 |  |
-| NotesTemplates.swift | 873 | 部分移植 | Core/NotesTime.cs（仅 NotesTime、NotesVerifier.IsSupported；模板与校对提示未移植） |
+| MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults（场景 → 纪要模板与实时模式；自定义类型未移植） |
+| NotesTemplates.swift | 873 | 部分移植 | Core/NotesTemplates.cs + NotesTime.cs（模板/解析/渲染/整理提示；校对与到期日未移植） |
 | OnboardingFlow.swift | 55 | 未移植 |  |
 | OnboardingVersion.swift | 16 | 未移植 |  |
 | PDFTextLayout.swift | 171 | 基线简化版 | LayoutReadingOrder.cs（简化版） |
@@ -91,16 +91,17 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 8，部分移植 5，基线简化版 7，未移植 60。
+统计：已移植 8，部分移植 6，基线简化版 7，未移植 59。
 
-测试：`tests/NextThought.Core.Tests` 95 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 103 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、Glossary 9）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
 系列与经验（workspace.json；系列页可新建系列、把会议归档进系列、记一句话经验）、
 术语表（正确写法作为识别热词，错写法在转写里被改回）、
-检查更新（正式/main 频道、语义版本比较、只提示并打开下载页）。
+检查更新（正式/main 频道、语义版本比较、只提示并打开下载页）、
+模板纪要（九个模板、按场景默认、按模板整理并保存 summary.md）。
 
 未接入/未移植的重点：`Workspace` 的知识库、变更候选与 `KnowledgeMerger`、
-`NotesTemplates`（模板与校对提示）、`SpeakerClustering`、双屏演讲、同传、应用内自动替换安装包。
+`NotesTemplates` 的校对（proofread）与到期日解析、`SpeakerClustering`、双屏演讲、同传、应用内自动替换安装包。
