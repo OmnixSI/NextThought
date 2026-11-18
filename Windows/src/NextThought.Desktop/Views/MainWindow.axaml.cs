@@ -1681,6 +1681,13 @@ public partial class MainWindow : Window
             new Dictionary<Guid, NextThought.Core.SessionSearchSnapshot> { [loadedMeta.Id] = loadedSnapshot });
         Check("session-snapshot", loadedSnapshot.Fields.Count > 0 && loadedHits.Hits.Count == 1);
 
+        var snapshotCache = new NextThought.Core.SessionSearchCache(4_000);
+        var cacheId = Guid.NewGuid();
+        var cached = snapshotCache.Add(cacheId, "v1", new NextThought.Core.SessionSearchSnapshot(
+            [new NextThought.Core.SessionSearchField(NextThought.Core.SessionSearchFieldKind.Transcript, "缓存", Id: "line:1")]));
+        Check("session-cache", cached && snapshotCache.Get(cacheId) is not null
+                              && snapshotCache.Bytes > 0 && snapshotCache.Count == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
