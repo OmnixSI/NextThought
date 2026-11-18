@@ -1757,6 +1757,15 @@ public partial class MainWindow : Window
                                      && NextThought.Core.SessionContentSearch.FirstHit(notesFields, glossary.Search("灰度"))?.Kind
                                          == NextThought.Core.SessionSearchFieldKind.Notes);
 
+        var carrySeries = new NextThought.Core.WorkspaceSeries("c", "系列", DateTimeOffset.UtcNow, [], [])
+        {
+            DocumentIds = ["doc-1"]
+        };
+        var carriedDocuments = NextThought.Core.MeetingCarry.Standard.WorkspaceSnapshot(carrySeries, new HashSet<string>());
+        var droppedDocuments = (NextThought.Core.MeetingCarry.Standard with { Materials = false })
+            .WorkspaceSnapshot(carrySeries, new HashSet<string>());
+        Check("meeting-carry-materials", carriedDocuments.DocumentIds.Count == 1 && droppedDocuments.DocumentIds.Count == 0);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

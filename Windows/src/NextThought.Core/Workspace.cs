@@ -74,6 +74,9 @@ public sealed record WorkspaceSeries(
     /// <summary>Accepted decisions and actions carried by this series.</summary>
     public IReadOnlyList<WorkspaceSeriesItem> SeriesItems { get; init; } = [];
 
+    /// <summary>Materials that belong to this series (Windows ids of enabled documents).</summary>
+    public IReadOnlyList<string> DocumentIds { get; init; } = [];
+
     /// <summary>Deleted meetings whose knowledge must not be resurrected by a stale copy.</summary>
     [JsonPropertyName("sourceDeletionTombstones")]
     public IReadOnlyList<string>? SourceDeletionTombstones { get; init; }

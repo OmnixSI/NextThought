@@ -25,6 +25,7 @@ public sealed record MeetingCarry
     public WorkspaceSeries WorkspaceSnapshot(WorkspaceSeries series, IReadOnlySet<string> baselineDocumentIds)
     {
         var workspace = series;
+        if (!Materials) workspace = workspace with { DocumentIds = [] };
         if (!series.UseKnowledge || !Review) workspace = workspace with { QuestionBank = [] };
         if (!series.UseKnowledge || !Lessons) workspace = workspace with { Lessons = [] };
         return workspace;

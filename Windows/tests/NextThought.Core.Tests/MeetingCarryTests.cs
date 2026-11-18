@@ -56,6 +56,18 @@ public sealed class MeetingCarryTests
     }
 
     [Fact]
+    public void MaterialsFlagControlsTheSeriesDocuments()
+    {
+        var series = Series() with { DocumentIds = ["doc-1", "doc-2"] };
+        var carried = MeetingCarry.Standard.WorkspaceSnapshot(series, new HashSet<string>());
+        Assert.Equal(["doc-1", "doc-2"], carried.DocumentIds);
+        var dropped = (MeetingCarry.Standard with { Materials = false }).WorkspaceSnapshot(series, new HashSet<string>());
+        Assert.Empty(dropped.DocumentIds);
+        Assert.Single(dropped.Lessons);
+        Assert.Single(dropped.QuestionBank);
+    }
+
+    [Fact]
     public void MaterialsFlagIsInertWithoutSeriesDocuments()
     {
         var snapshot = (MeetingCarry.Standard with { Materials = false }).WorkspaceSnapshot(Series(), new HashSet<string> { "doc" });

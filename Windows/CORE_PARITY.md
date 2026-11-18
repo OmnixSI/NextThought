@@ -41,7 +41,7 @@
 | LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 已移植 | Core/LocalModelReuse.cs（按名字搜索、大小/哈希校验、原子复用；4 项测试） |
 | MaterialTerms.swift | 57 | 已移植 | Core/MaterialTerms.cs（3 项测试，含 9 个 IsTerm 用例） |
-| MeetingCarry.swift | 38 | 部分移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关与快照过滤；4 项测试。系列无文档列表，材料开关暂不生效） |
+| MeetingCarry.swift | 38 | 部分移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关与快照过滤；5 项测试。系列已带资料 id，材料开关生效；上一场转写附件未建模） |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 43 | 部分移植 | Core/MeetingPreparation.cs（MeetingPlan 有效模式、携带选择与快照；3 项测试。风格/文档继承未移植） |
 | MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults + MeetingTypeGuesser.cs（场景默认、标题猜类型、系列基准标题/相似度/最佳匹配；19 项测试。自定义场景类型未移植） |
