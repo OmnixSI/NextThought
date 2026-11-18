@@ -1615,6 +1615,16 @@ public partial class MainWindow : Window
                                && NextThought.Core.SessionNotesEditor.Apply(editorPayload,
                                    editorTarget with { PayloadRevision = "stale" }, "x") is null);
 
+        var evidenceNotes = new NextThought.Core.StructuredNotesPayload(NextThought.Core.NotesFormat.Outline,
+            outline: new NextThought.Core.OutlineNotes(
+                [new NextThought.Core.OutlineSection("结论", Points: [new NextThought.Core.OutlinePoint("先演练再上线")])]));
+        var evidenceRefs = NextThought.Core.SessionNotesEvidence.References(evidenceNotes,
+            [new NextThought.Core.TranscriptLine { Text = "先演练再上线", Date = DateTimeOffset.UtcNow }], "t1");
+        Check("notes-evidence", evidenceRefs.Count == 1
+                                && evidenceRefs[0].Support == NextThought.Core.SessionEvidenceSupport.Quoted
+                                && !evidenceRefs[0].NeedsConfirmation
+                                && evidenceRefs[0].StructuredTarget?.PayloadRevision == NextThought.Core.SessionNotesEditor.PayloadRevision(evidenceNotes));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
