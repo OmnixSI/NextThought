@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -85,6 +85,15 @@ public partial class MainWindow : Window
                 historyCount = state.History.Count,
                 transcriptCount = state.Transcript.Count,
                 initTimings = state.InitTimings,
+                // What this build actually carries, so a self-check report is also a capability report.
+                features = new[]
+                {
+                    "capture-dual", "asr-local", "sessions", "summary-markdown", "scenes-9",
+                    "cue-island", "subtitles", "teleprompter", "region-capture", "hotkeys-7",
+                    "tray", "hide-all", "auto-end", "notes-templates-9", "notes-fishbone",
+                    "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
+                    "glossary", "update-check", "companion-lan"
+                },
                 version = typeof(AppState).Assembly.GetName().Version?.ToString(3),
                 framework = Environment.Version.ToString(),
                 workingSetMiB = Math.Round(Environment.WorkingSet / 1048576.0, 1),
