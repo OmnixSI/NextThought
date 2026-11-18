@@ -33,13 +33,22 @@ try {
     Invoke-Dotnet publish "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration -r win-x64 --self-contained true -p:PublishSingleFile=false -o $payload --verbosity minimal
 
     # Startup self-check on the published build, in an isolated data directory.
+    # The first launch of a freshly published payload occasionally dies in the XAML/CLR
+    # startup path (0xC0000005/0x80131506) on this machine and succeeds on the next run;
+    # retry a couple of times so a hardware/AV hiccup does not fail an otherwise good build.
     $smoke = Join-Path $distRoot 'smoke'
     New-Item -ItemType Directory -Force -Path $smoke | Out-Null
     $env:NEXTTHOUGHT_DATA_DIR = $smoke
     $startup = Join-Path $smoke 'startup.json'
-    if (Test-Path $startup) { Remove-Item $startup -Force }
-    $process = Start-Process -FilePath (Join-Path $payload 'NextThought.exe') -ArgumentList @("--startup-check=$startup") -PassThru -Wait
-    if ($process.ExitCode -ne 0) { throw "Startup self-check failed (exit $($process.ExitCode))." }
+    $processExited = $false
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        if (Test-Path $startup) { Remove-Item $startup -Force }
+        $process = Start-Process -FilePath (Join-Path $payload 'NextThought.exe') -ArgumentList @("--startup-check=$startup") -PassThru -Wait
+        if ($process.ExitCode -eq 0 -and (Test-Path $startup)) { $processExited = $true; break }
+        Write-Output ("startup attempt {0} failed (exit {1}); retrying" -f $attempt, $process.ExitCode)
+        Start-Sleep -Milliseconds 1500
+    }
+    if (-not $processExited) { throw 'Startup self-check failed after 3 attempts.' }
     $report = Get-Content -LiteralPath $startup -Raw -Encoding UTF8 | ConvertFrom-Json
     Write-Output ("startup: passed={0} seconds={1} workingSetMiB={2} steps={3}" -f $report.passed, $report.seconds, $report.workingSetMiB, $report.initTimings)
 

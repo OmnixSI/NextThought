@@ -1,4 +1,18 @@
 
+# P6 字幕导出 · 0.27.0
+
+0.27.0 把 SessionExport.swift 的字幕半边接上：纪要页可以直接导出 SRT / VTT。
+
+- **Core/SessionExport.cs**：SessionSubtitleExporter —— 起始时间取 startedAt ?? date 相对会议开始；
+  结束时间有效就用，否则按去空白字数 ÷5 估算（1.2–12 秒），再用下一句起点封顶、至少 0.25 秒；
+  SRT 用逗号毫秒、VTT 带 `WEBVTT` 头；有译文时追加「译文：」行；返回值带估算条数。
+- **界面**：纪要页「导出 SRT / 导出 VTT」，保存对话框、UTF-8 无 BOM；状态栏说明有多少条是估算时间。
+- **自检**：`--demo --subtitle-export-check=<dir>` 导出 `demo.srt`/`demo.vtt` 与 `export-check.json`；
+  实测 10 条转写、0 条估算、VTT 头正确、含译文（`qa\subtitle-export-0270`）。
+- 测试：Core 211 → 222（11 项：SRT/VTT 结构、估算与上下限、下一句封顶、译文、空会议、时间戳补零）。
+- 未移植：Markdown/Word/PDF 导出仍走既有实现；`SessionTextProjection` 的语言视图与过期译文字段没有对应物，
+  译文一律按「译文：」追加。
+
 # P1 小文件批次二 · 0.26.0
 
 0.26.0 继续补自包含的 Core 小文件（+5 已移植，测试 193 → 211）。

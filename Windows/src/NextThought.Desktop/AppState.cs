@@ -448,6 +448,8 @@ public partial class AppState : ObservableObject
         NewMeetingCommand.NotifyCanExecuteChanged();
         ImportWaveCommand.NotifyCanExecuteChanged();
         ExportCommand.NotifyCanExecuteChanged();
+        ExportSrtCommand.NotifyCanExecuteChanged();
+        ExportVttCommand.NotifyCanExecuteChanged();
         GenerateStructuredNotesCommand.NotifyCanExecuteChanged();
         SummarizeWithTemplateCommand.NotifyCanExecuteChanged();
         ProofreadTranscriptCommand.NotifyCanExecuteChanged();
@@ -1333,6 +1335,39 @@ public partial class AppState : ObservableObject
     }
 
     private bool CanExport() => !Working && !Recording && CurrentSession != null;
+    [RelayCommand(CanExecute = nameof(CanExportSubtitles))]
+    private Task ExportSrtAsync() => ExportSubtitlesAsync(SessionSubtitleFormat.Srt);
+
+    [RelayCommand(CanExecute = nameof(CanExportSubtitles))]
+    private Task ExportVttAsync() => ExportSubtitlesAsync(SessionSubtitleFormat.Vtt);
+
+    /// <summary>SRT/VTT from the archived transcript (SessionSubtitleExporter in Core).</summary>
+    private async Task ExportSubtitlesAsync(SessionSubtitleFormat format)
+    {
+        if (CurrentSession is not { } meta || PickSaveFile is null) return;
+        var extension = format == SessionSubtitleFormat.Srt ? "srt" : "vtt";
+        var name = Regex.Replace(meta.Title, "[<>:\"/\\\\|?*]", "_") + "." + extension;
+        if (await PickSaveFile($"{extension.ToUpperInvariant()} 字幕 (*.{extension})|*.{extension}", name) is not { } file) return;
+        try
+        {
+            var export = SessionSubtitleExporter.Export(meta, currentLines, format);
+            await File.WriteAllTextAsync(file, export.Text, new System.Text.UTF8Encoding(false));
+            var estimated = export.EstimatedTimingCount > 0 ? $"，其中 {export.EstimatedTimingCount} 条按文字长度估算结束时间" : "";
+            SetStatus($"字幕已导出（{extension.ToUpperInvariant()}）{estimated}。");
+        }
+        catch (Exception ex) { SetStatus(ex.Message, true); }
+    }
+
+    private bool CanExportSubtitles() => !Working && CurrentSession != null && currentLines.Count > 0;
+
+    /// <summary>The current session's transcript lines (read-only, for exports and self-checks).</summary>
+    public IReadOnlyList<TranscriptLine> CurrentLines => currentLines;
+
+    /// <summary>SRT/VTT for the current session without a file dialog (self-check path).</summary>
+    public SessionSubtitleExport ExportCurrentSubtitles(SessionSubtitleFormat format) =>
+        CurrentSession is { } meta
+            ? SessionSubtitleExporter.Export(meta, currentLines, format)
+            : new SessionSubtitleExport("", 0, 0);
 
     [RelayCommand(CanExecute = nameof(CanImportWave))]
     private async Task ImportWaveAsync()

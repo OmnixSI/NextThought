@@ -68,7 +68,7 @@
 | SessionContentSearch.swift | 293 | 未移植 |  |
 | SessionContext.swift | 265 | 未移植 |  |
 | SessionEvidence.swift | 456 | 未移植 |  |
-| SessionExport.swift | 129 | 未移植 |  |
+| SessionExport.swift | 129 | 部分移植 | Core/SessionExport.cs（SRT/VTT 字幕与时间戳；Markdown/Word/PDF 导出走既有实现） |
 | SessionRecord.swift | 740 | 基线简化版 | Models.cs（只覆盖部分字段） |
 | SessionSearch.swift | 173 | 未移植 |  |
 | SessionTextProjection.swift | 497 | 未移植 |  |
@@ -91,11 +91,11 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 21，部分移植 8，基线简化版 7，未移植 45。
+统计：已移植 21，部分移植 9，基线简化版 7，未移植 44。
 
-测试：`tests/NextThought.Core.Tests` 211 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 222 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
