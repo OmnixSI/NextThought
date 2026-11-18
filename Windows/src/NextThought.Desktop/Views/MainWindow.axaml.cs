@@ -1585,6 +1585,18 @@ public partial class MainWindow : Window
         var saved = NextThought.Core.SessionUserContentStore.Save(new NextThought.Core.SessionUserContent { PersonalNotes = "笔记" }, temporary);
         Check("user-content", saved.Revision == 1 && NextThought.Core.SessionUserContentStore.Load(temporary).PersonalNotes == "笔记");
 
+        var migrationRoot = Path.Combine(temporary, "migration-sessions");
+        NextThought.Core.SessionArchiveMigrationPublisher.Publish(["m"], migrationRoot,
+            (_, folder) =>
+            {
+                Directory.CreateDirectory(folder);
+                File.WriteAllText(Path.Combine(folder, "meta.json"), "{}");
+            },
+            (_, _) => { });
+        Check("migration-publish", File.Exists(Path.Combine(migrationRoot, "m", "meta.json"))
+                                   && NextThought.Core.SessionArchiveMigrationPublisher.PendingRecoveryDirectory(migrationRoot) is null);
+
+
         var deleteRoot = Path.Combine(temporary, "delete");
         Directory.CreateDirectory(deleteRoot);
         var file = Path.Combine(deleteRoot, "a.txt");
