@@ -104,6 +104,8 @@ public static class TextSimilarity
         }
         foreach (var character in text.ToLowerInvariant())
         {
+            // OCR often inserts spaces between CJK characters; keep the pair chain across them.
+            if (char.IsWhiteSpace(character) && previousCjk is not null) continue;
             var isCjk = char.ConvertToUtf32(character.ToString(), 0) >= 0x2E80;
             if (isCjk && char.IsLetterOrDigit(character))
             {

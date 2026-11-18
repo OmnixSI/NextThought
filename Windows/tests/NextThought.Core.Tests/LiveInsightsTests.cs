@@ -27,6 +27,16 @@ public sealed class LiveInsightsTests
     }
 
     [Fact]
+    public void TermsBridgeSpacesBetweenCjkCharactersFromOcr()
+    {
+        var terms = TextSimilarity.Terms("缓 存 一 致 性 与 读 写 时 序");
+        Assert.Contains("缓存", terms);
+        Assert.Contains("读写", terms);
+        Assert.Contains("时序", terms);
+        Assert.Equal(TextSimilarity.Terms("缓存一致性与读写时序"), terms);
+    }
+
+    [Fact]
     public void TermsUseWordsForLatinAndPairsForCjk()
     {
         var terms = TextSimilarity.Terms("Kubernetes 缓存 一致性 cache");

@@ -104,6 +104,7 @@ public partial class MainWindow : Window
             if (StartupOptions.UpdateBackupCheck is { } updateBackup) await RunUpdateBackupCheckAsync(updateBackup);
             if (StartupOptions.UpdateRestoreCheck is { } updateRestore) await RunUpdateRestoreCheckAsync(updateRestore);
             if (StartupOptions.SignatureCheck is { } signatureCheck) await RunSignatureCheckAsync(signatureCheck);
+            if (StartupOptions.SlideFollowCheck is { } slideFollow) await RunSlideFollowCheckAsync(slideFollow);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -1822,6 +1823,8 @@ public partial class MainWindow : Window
         Check("slide-follower", followedPage?.Page == 1
                                 && follower.LastDecision?.Kind == NextThought.Core.SlideDecisionKind.Page);
 
+        Check("ocr-spacing", NextThought.Core.TextSimilarity.Terms("缓 存 一 致 性").Contains("缓存"));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
@@ -2033,7 +2036,69 @@ public partial class MainWindow : Window
         Close();
     }
 
+
+    /// <summary>Shows slide text on screen, captures it, OCRs it and follows the matching page.</summary>
+    private async Task RunSlideFollowCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var passed = false;
+        var error = "";
+        var screenText = "";
+        SlidePage? matched = null;
+        var window = new Window
+        {
+            Width = 900,
+            Height = 260,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            Topmost = true,
+            Content = new TextBlock
+            {
+                Text = "缓存一致性 读写时序 方案",
+                FontSize = 56,
+                Margin = new Thickness(40),
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap
+            }
+        };
+        try
+        {
+            window.Show();
+            await Task.Delay(800);
+            var capture = ScreenCapture.VirtualScreen();
+            var imagePath = path + ".png";
+            capture.Image.Save(imagePath);
+            window.Close();
+            var reader = new DocumentReader();
+            var (blocks, warnings) = await reader.ReadAsync(imagePath);
+            screenText = string.Join("\n", blocks.Select(block => block.Text));
+            var pages = new[] { new SlidePage { Page = 1, PageCount = 2, DocumentName = "check.pptx", Text = "缓存一致性 读写时序 方案" } };
+            var follower = new SlideFollower(pages);
+            matched = follower.Observe(screenText);
+            passed = matched?.Page == 1;
+            if (!passed) error = warnings.Count > 0 ? string.Join("；", warnings) : "OCR 文本未匹配到幻灯片。";
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+            try { window.Close(); } catch { }
+        }
+        var report = new { passed, ocrChars = screenText.Length, matchedPage = matched?.Page, error };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "slide-follow-check: passed" : "slide-follow-check: failed");
+        Close();
+    }
+
     // The design-time constructor required by the XAML compiler for previews.
+
 
 
 

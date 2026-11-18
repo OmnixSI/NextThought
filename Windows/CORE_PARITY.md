@@ -37,7 +37,7 @@
 | Glossary.swift | 572 | 已移植 | Core/Glossary.cs（词条/分类/宽松键/归一/合并/检索展开/规范替换/热词/提示词；17 项测试） |
 | IncrementalBackup.swift | 123 | 已移植 | Core/IncrementalBackup.cs（内容寻址恢复点、校验、去重与裁剪；16 项测试） |
 | LaTeXMath.swift | 545 | 已移植 | Core/LaTeXMath.cs（Unicode 转换 + Markdown 预处理；17 项测试；接入答案与纪要渲染） |
-| LiveInsights.swift | 403 | 部分移植 | Core/AnswerPoints.cs + LiveInsights.cs（文本相似度、屏幕判定、幻灯片页/匹配/决定/跟随状态、讲稿解析与提示、回答进度；14 项测试。Mac 窗口截图捕获未移植） |
+| LiveInsights.swift | 403 | 部分移植 | Core/AnswerPoints.cs + LiveInsights.cs（文本相似度/OCR 空格桥接、屏幕判定、幻灯片页/匹配/决定/跟随状态、讲稿解析与提示、回答进度；15 项测试。截图→OCR→跟随由 ``--slide-follow-check`` 实测，Mac 的实时窗口选择未移植） |
 | LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 已移植 | Core/LocalModelReuse.cs（按名字搜索、大小/哈希校验、原子复用；4 项测试） |
 | MaterialTerms.swift | 57 | 已移植 | Core/MaterialTerms.cs（3 项测试，含 9 个 IsTerm 用例） |
