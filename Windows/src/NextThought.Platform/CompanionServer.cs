@@ -36,6 +36,9 @@ public sealed class CompanionServer : IAsyncDisposable
     public string PairingUrl { get; }
     public bool Running => !lifetime.IsCancellationRequested;
     public int ConnectionCount => clients.Count;
+
+    /// <summary>The last state published to the phone (also the first frame the relay sends).</summary>
+    public CompanionSnapshot Current { get { lock (sync) return envelope.Snapshot; } }
     public static bool IsLanAddress(IPAddress address)
     {
         if (IPAddress.IsLoopback(address)) return true;

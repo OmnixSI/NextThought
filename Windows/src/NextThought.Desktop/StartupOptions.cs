@@ -9,6 +9,7 @@ public static class StartupOptions
     public static string? CheckReport { get; private set; }
     public static string? KnowledgeCheck { get; private set; }
     public static string? PresenterCheck { get; private set; }
+    public static string? RelayCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -56,6 +57,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--startup-check=", StringComparison.OrdinalIgnoreCase)) CheckReport = argument["--startup-check=".Length..];
             else if (argument.StartsWith("--knowledge-check=", StringComparison.OrdinalIgnoreCase)) KnowledgeCheck = argument["--knowledge-check=".Length..];
             else if (argument.StartsWith("--presenter-check=", StringComparison.OrdinalIgnoreCase)) PresenterCheck = argument["--presenter-check=".Length..];
+            else if (argument.StartsWith("--relay-check=", StringComparison.OrdinalIgnoreCase)) RelayCheck = argument["--relay-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)

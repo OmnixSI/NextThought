@@ -83,6 +83,8 @@ public sealed record AppSettings
     public bool PresenterMode { get; set; }
     /// <summary>Mac key <c>presenterSlidesScreen</c>: display id the slides are on; empty picks the first non-camera display.</summary>
     public string PresenterSlidesScreen { get; set; } = "";
+    /// <summary>Optional HTTPS relay origin for the phone companion (CompanionRelayClient).</summary>
+    public string CompanionRelayUrl { get; set; } = "";
     /// <summary>Mac key <c>meetingAutoEndMode</c>: prompt / end / off (MeetingEndWatch).</summary>
     public string MeetingAutoEndMode { get; set; } = "prompt";
     /// <summary>Mac key <c>meetingAutoEndMinutes</c>: how long without recognised words counts as the end.</summary>

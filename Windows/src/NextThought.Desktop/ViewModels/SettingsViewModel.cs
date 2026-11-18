@@ -61,6 +61,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string presenterSlidesScreen = "";
     [ObservableProperty] private ScreenChoice? selectedSlidesScreen;
 
+    /// <summary>Optional HTTPS relay origin; empty keeps the companion on the LAN channel only.</summary>
+    [ObservableProperty] private string companionRelayUrl = "";
+
     public ObservableCollection<ScreenChoice> ScreenChoices { get; } = [];
 
     public string PresenterSummary => PresenterLayout.Summary(DisplayCatalog.Displays, PresenterSlidesScreen, PresenterMode);
@@ -159,6 +162,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CodexModel = settings.CodexModel;
         PresenterMode = settings.PresenterMode;
         PresenterSlidesScreen = settings.PresenterSlidesScreen;
+        CompanionRelayUrl = settings.CompanionRelayUrl;
         AutoEndMode = settings.MeetingAutoEndMode;
         AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
         SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
@@ -209,6 +213,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CodexModel = CodexModel.Trim(),
         PresenterMode = PresenterMode,
         PresenterSlidesScreen = SelectedSlidesScreen?.Id ?? PresenterSlidesScreen,
+        CompanionRelayUrl = CompanionRelayUrl.Trim(),
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,

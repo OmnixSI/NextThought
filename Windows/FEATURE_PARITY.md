@@ -48,7 +48,7 @@ Windows 当前目标为 Windows 10 build 19041+ / 11、x64、中文界面；进�
 | 全局/系列 SKILL.md 导入 | 未移植 | 当前 Codex 后端不代表已复刻 Mac 技能管理 |
 | 中文/English 界面 | 中文界面；双语转写与回答 | 英文界面本地化未完成；回答语言可由问题控制 |
 | LAN 手机页面、配对、命令与重连 | 协议后台测试通过，实机未整体验收 | 0.3.1 修正 RFC 6598 地址；用户确认热点下页面实时同步，命令和重连依要求暂跳；校园网互访根因未确证 |
-| WSS 中转、BLE | 未接入 Windows | ARM64 和 BLE 需单独运行、权限、设备和网络验收；LAN 通过不代替这些结果 |
+| WSS 中转、BLE | 中转已接入（0.23.0），BLE 明确不可用 | 中转：本地中继 + 模拟手机端到端（HKDF/AES-GCM）通过；真实手机与公网 TLS 未联调。BLE：手机端仍按 `IH-` 名字过滤，Windows 不能自定义广播名，等手机端改动 |
 | 本机凭据 | Windows 用户 DPAPI | 不迁移 Mac Keychain，不把密钥加入备份、安装包或报告 |
 | 完整 .ntbackup 与旧 .ihbackup | Windows 往返及 Mac 结构样本通过 | P2 路径/哈希/失败撤回；同 ID 保留当前项，Mac 未映射信息保存在 Migration 原档 |
 | 增量 .ntrestore、含 secrets.plist 备份 | 未支持 | 明确拒绝；应从 Mac 导出无凭据的完整备份 |

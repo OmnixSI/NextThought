@@ -1626,6 +1626,7 @@ public partial class AppState : ObservableObject
     // ---- 手机伴侣（方案第 12 节，局域网通道；平台层 CompanionServer 已验收） ----
 
     private CompanionServer? companion;
+    private CompanionRelayClient? relay;
 
     [RelayCommand]
     private void RefreshCompanionAddresses()
@@ -1641,37 +1642,55 @@ public partial class AppState : ObservableObject
     [RelayCommand(CanExecute = nameof(CanToggleCompanion))]
     private async Task ToggleCompanionAsync()
     {
-        if (companion is not null)
+        if (companion is not null || relay is not null)
         {
-            await companion.DisposeAsync();
-            companion = null;
+            if (companion is not null) { await companion.DisposeAsync(); companion = null; }
+            if (relay is not null) { await relay.DisposeAsync(); relay = null; }
             CompanionRunning = false;
             CompanionQr = null;
             CompanionLink = "";
             SetStatus("手机伴侣已关闭。");
             return;
         }
-        if (SelectedCompanionAddress is not { } address)
+        var relayUrl = Settings.Build().CompanionRelayUrl.Trim();
+        var address = SelectedCompanionAddress;
+        if (address is null && relayUrl.Length == 0)
         {
-            SetStatus("请先选择一个局域网地址。", true);
+            SetStatus("请先选择一个局域网地址，或在设置里填写中转地址。", true);
             return;
         }
         try
         {
-            companion = new CompanionServer(address.Address, HandleCompanionActionAsync);
+            if (address is not null)
+            {
+                companion = new CompanionServer(address.Address, HandleCompanionActionAsync);
+                CompanionLink = companion.PairingUrl;
+                CompanionInfo = $"已在 {address.Address}:{companion.BaseUri.Port} 监听 · 配对链接相当于临时遥控密钥，只在可信网络使用。";
+            }
+            if (relayUrl.Length > 0) await StartRelayAsync(relayUrl);
             CompanionRunning = true;
-            CompanionLink = companion.PairingUrl;
-            CompanionQr = BuildQr(companion.PairingUrl);
-            CompanionInfo = $"已在 {address.Address}:{companion.BaseUri.Port} 监听 · 配对链接相当于临时遥控密钥，只在可信网络使用。";
+            CompanionQr = BuildQr(CompanionLink);
             PublishCompanionSnapshot();
-            SetStatus("手机伴侣已开启；手机扫码即可查看当前问题与回答。");
+            SetStatus(relayUrl.Length > 0 ? "手机伴侣已开启（中转通道）；手机扫码即可查看当前问题与回答。" : "手机伴侣已开启；手机扫码即可查看当前问题与回答。");
         }
         catch (Exception ex)
         {
-            companion = null;
+            if (companion is not null) { await companion.DisposeAsync(); companion = null; }
+            if (relay is not null) { await relay.DisposeAsync(); relay = null; }
             CompanionRunning = false;
             SetStatus("手机伴侣启动失败：" + ex.Message, true);
         }
+    }
+
+    /// <summary>Optional encrypted relay: the pairing link goes through the relay origin, not the LAN URL.</summary>
+    private async Task StartRelayAsync(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var baseUri)) throw new InvalidOperationException("中转地址不是有效的 URL。");
+        relay = new CompanionRelayClient(CurrentCompanionSnapshot, HandleCompanionActionAsync,
+            message => Dispatcher.UIThread.Post(() => CompanionInfo = message));
+        var pairing = await relay.StartAsync(baseUri, new CompanionPairing(), allowLoopback: false);
+        CompanionLink = pairing.Url(baseUri).AbsoluteUri;
+        CompanionInfo = "中转已连接 · 端到端加密。配对链接走中转，不必在同一局域网。";
     }
 
     private bool CanToggleCompanion() => !ShuttingDown;
@@ -1700,16 +1719,20 @@ public partial class AppState : ObservableObject
         }
     }
 
+    private CompanionSnapshot CurrentCompanionSnapshot() => new(
+        Status: Recording ? "正在记录" : Answering ? "正在生成回答" : "待机",
+        Question: DetectedQuestion,
+        Answer: PlainAnswer,
+        Answering: Answering,
+        Candidate: DetectedQuestion,
+        SessionID: CurrentSession?.Id.ToString("D"),
+        Sources: Sources.Count == 0 ? null : string.Join("、", Sources.Take(3).Select(x => x.Label)));
+
     private void PublishCompanionSnapshot()
     {
-        companion?.Publish(new CompanionSnapshot(
-            Status: Recording ? "正在记录" : Answering ? "正在生成回答" : "待机",
-            Question: DetectedQuestion,
-            Answer: PlainAnswer,
-            Answering: Answering,
-            Candidate: DetectedQuestion,
-            SessionID: CurrentSession?.Id.ToString("D"),
-            Sources: Sources.Count == 0 ? null : string.Join("、", Sources.Take(3).Select(x => x.Label))));
+        var snapshot = CurrentCompanionSnapshot();
+        companion?.Publish(snapshot);
+        relay?.Publish(snapshot);
     }
 
     private static Avalonia.Media.Imaging.Bitmap? BuildQr(string text)
@@ -1743,6 +1766,7 @@ public partial class AppState : ObservableObject
             await Settings.SaveAsync();
         }
         catch { }
+        if (relay is not null) { await relay.DisposeAsync(); relay = null; }
         if (companion is not null) { await companion.DisposeAsync(); companion = null; }
         Retrieval.Dispose();
         allowClose = true;

@@ -179,6 +179,14 @@
           <TextBlock Text="局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。"
                      Classes="caption" FontSize="11" />
           <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="中转地址（可选）" Classes="label" VerticalAlignment="Center" />
+            <TextBox Text="{Binding Settings.CompanionRelayUrl}" PlaceholderText="https://relay.example.com" MinWidth="320" />
+          </StackPanel>
+          <TextBlock Text="填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。"
+                     Classes="caption" FontSize="11" />
+          <TextBlock Text="蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。"
+                     Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <ComboBox ItemsSource="{Binding CompanionAddresses}" SelectedItem="{Binding SelectedCompanionAddress}"
                       MinWidth="260">
               <ComboBox.ItemTemplate>

@@ -1,5 +1,23 @@
 
-# P5 双屏演讲 · 0.22.0
+# P5 伴侣中转 · 0.23.0
+
+0.23.0 把手机伴侣的第三条通道补上：中转。中继只转发密文，桌面端负责建房、发状态、收命令、回回执。
+
+- **Core/CompanionRelayCrypto.cs**：逐文件移植 `CompanionCrypto.swift` —— `CompanionPairing`（含二维码
+  fragment）、HKDF-SHA256（salt = 房间号，info = `ih-companion-v1/<kind>`）、AES-256-GCM
+  （AAD = `房间号/kind`）、`CompanionCommand` 30 秒新鲜度、`CompanionCommandCache` 5 分钟去重。
+- **Platform/CompanionRelayClient.cs**：`POST /rooms` 建房 → WSS `/socket` 以 publisher 加入 →
+  状态帧加密上行（只发最新一帧）→ 命令下行解密后交给与局域网相同的动作处理 → 成功回 ack；
+  断线指数退避重连，退出时 `POST /rooms/<id>/close` 关房。
+- **设置**：新增「中转地址（可选）」；填了就用 HTTPS 配对链接与中转，留空仍只用局域网；
+  两者都没有时明确提示。
+- **蓝牙**：按方案在设置页与文档里标记为不可用（手机端仍按 `IH-` 广播名过滤，Windows 不能自定义广播名）。
+- **验证**：9 项 Core 加密测试（HKDF 用 RFC 5869 测试向量）+ `--relay-check` 端到端：
+  C# 加密状态 → Node 中继 → 模拟手机（Node `crypto`）解密并发命令 → C# 解密执行 → ack 回传。
+  本机实测 `commandHandled=true`、`stateReceived/ackReceived=true`（`qa\relay-check-0230`）。
+- 未做：真实手机联调、公网 TLS 部署、蓝牙（等手机端改动）、中继容量与限流压测。
+
+## P5 双屏演讲 · 0.22.0
 
 0.22.0 把 `PresenterMode.swift` 的窗口规则搬到 Windows：幻灯片屏不出现 NextThought 的任何窗口，
 摄像头这一屏由提词岛承载会议。Mac 版的「读幻灯片屏、按页匹配讲稿」还没有对应实现，见下。
