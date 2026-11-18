@@ -59,6 +59,77 @@ public static class SessionArchiveContentMarker
     }
 }
 
+/// <summary>Why an archive metadata file could not be used, without turning it into "absent".</summary>
+public abstract record SessionArchiveMetadataReadIssue
+{
+    public sealed record Missing(string Path) : SessionArchiveMetadataReadIssue;
+    public sealed record Unreadable(string Path, string Reason) : SessionArchiveMetadataReadIssue;
+    public sealed record Malformed(string Path, string Reason) : SessionArchiveMetadataReadIssue;
+}
+
+public abstract record SessionArchiveMetadataReadResult<T>
+{
+    public sealed record Success(T Value) : SessionArchiveMetadataReadResult<T>;
+    public sealed record Failure(SessionArchiveMetadataReadIssue Issue) : SessionArchiveMetadataReadResult<T>;
+}
+
+/// <summary>
+/// Keeps file-read failures distinct from decoding failures so callers never turn an unreadable
+/// or malformed metadata file into an absent meeting (port of SessionArchiveMetadataReader).
+/// </summary>
+public static class SessionArchiveMetadataReader
+{
+    public static SessionArchiveMetadataReadResult<T> Read<T>(string path, Func<string, byte[]> load,
+        Func<byte[], T> decode, Func<Exception, bool> isMissing)
+    {
+        byte[] bytes;
+        try
+        {
+            bytes = load(path);
+        }
+        catch (Exception exception)
+        {
+            return new SessionArchiveMetadataReadResult<T>.Failure(isMissing(exception)
+                ? new SessionArchiveMetadataReadIssue.Missing(path)
+                : new SessionArchiveMetadataReadIssue.Unreadable(path, exception.Message));
+        }
+        try
+        {
+            return new SessionArchiveMetadataReadResult<T>.Success(decode(bytes));
+        }
+        catch (Exception exception)
+        {
+            return new SessionArchiveMetadataReadResult<T>.Failure(
+                new SessionArchiveMetadataReadIssue.Malformed(path, exception.Message));
+        }
+    }
+}
+
+/// <summary>One answer event of the archive (port of the SessionAnswerEvent fields used here).</summary>
+public sealed record SessionAnswerEvent
+{
+    public string Id { get; init; } = Guid.NewGuid().ToString("D");
+    public DateTimeOffset Date { get; init; }
+    public string Question { get; init; } = "";
+    public string Answer { get; init; } = "";
+    public string Model { get; init; } = "";
+    public bool Automatic { get; init; }
+}
+
+/// <summary>Earliest sessions.json stored answers without prompts; keep them explicitly labelled.</summary>
+public static class LegacySessionAnswerMigration
+{
+    public static IReadOnlyList<SessionAnswerEvent> Events(IReadOnlyList<string> answers, DateTimeOffset date) =>
+        answers.Select((answer, index) => new SessionAnswerEvent
+        {
+            Date = date,
+            Question = $"旧版回答 {index + 1}（问题未保存）",
+            Answer = answer,
+            Model = "旧版记录",
+            Automatic = false
+        }).ToList();
+}
+
 /// <summary>Tracks submitted translation revisions until the archive reports them persisted.</summary>
 public sealed class SessionTranslationWriteReceipts
 {

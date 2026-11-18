@@ -41,6 +41,44 @@ public sealed class SessionArchivePersistenceTests : IDisposable
     }
 
     [Fact]
+    public void MetadataReaderSeparatesMissingUnreadableAndMalformed()
+    {
+        var path = Path.Combine(root, "meta.json");
+        var ok = SessionArchiveMetadataReader.Read(path, _ => "{}"u8.ToArray(),
+            bytes => System.Text.Json.JsonDocument.Parse(bytes), _ => false);
+        Assert.IsType<SessionArchiveMetadataReadResult<System.Text.Json.JsonDocument>.Success>(ok);
+
+        var missing = SessionArchiveMetadataReader.Read<int>(path, _ => throw new FileNotFoundException(), _ => 1, _ => true);
+        var missingIssue = Assert.IsType<SessionArchiveMetadataReadIssue.Missing>(
+            Assert.IsType<SessionArchiveMetadataReadResult<int>.Failure>(missing).Issue);
+        Assert.Equal(path, missingIssue.Path);
+
+        var unreadable = SessionArchiveMetadataReader.Read<int>(path, _ => throw new IOException("拒绝访问"), _ => 1, _ => false);
+        var unreadableIssue = Assert.IsType<SessionArchiveMetadataReadIssue.Unreadable>(
+            Assert.IsType<SessionArchiveMetadataReadResult<int>.Failure>(unreadable).Issue);
+        Assert.Equal("拒绝访问", unreadableIssue.Reason);
+
+        var malformed = SessionArchiveMetadataReader.Read<int>(path, _ => [1, 2], _ => throw new InvalidDataException("坏 JSON"), _ => false);
+        var malformedIssue = Assert.IsType<SessionArchiveMetadataReadIssue.Malformed>(
+            Assert.IsType<SessionArchiveMetadataReadResult<int>.Failure>(malformed).Issue);
+        Assert.Equal("坏 JSON", malformedIssue.Reason);
+    }
+
+    [Fact]
+    public void LegacyAnswersBecomeLabelledEvents()
+    {
+        var date = DateTimeOffset.UtcNow;
+        var events = LegacySessionAnswerMigration.Events(["答案一", "答案二"], date);
+        Assert.Equal(2, events.Count);
+        Assert.Equal("旧版回答 1（问题未保存）", events[0].Question);
+        Assert.Equal("答案二", events[1].Answer);
+        Assert.Equal("旧版记录", events[1].Model);
+        Assert.False(events[1].Automatic);
+        Assert.Equal(date, events[0].Date);
+        Assert.Empty(LegacySessionAnswerMigration.Events([], date));
+    }
+
+    [Fact]
     public void ContentMarkerRecordsItsEvidence()
     {
         var marker = Path.Combine(root, "marker", ".sessions-archive");

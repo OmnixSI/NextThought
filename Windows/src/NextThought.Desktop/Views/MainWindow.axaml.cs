@@ -1688,6 +1688,14 @@ public partial class MainWindow : Window
         Check("session-cache", cached && snapshotCache.Get(cacheId) is not null
                               && snapshotCache.Bytes > 0 && snapshotCache.Count == 1);
 
+        var metadataPath = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "meta.json");
+        var metadataRead = NextThought.Core.SessionArchiveMetadataReader.Read(metadataPath,
+            _ => "{}"u8.ToArray(), bytes => System.Text.Json.JsonDocument.Parse(bytes), _ => false);
+        var legacyAnswers = NextThought.Core.LegacySessionAnswerMigration.Events(["答案"], DateTimeOffset.UtcNow);
+        Check("archive-metadata", metadataRead is NextThought.Core.SessionArchiveMetadataReadResult<System.Text.Json.JsonDocument>.Success
+                                  && legacyAnswers.Count == 1
+                                  && legacyAnswers[0].Question.Contains("旧版回答", StringComparison.Ordinal));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
