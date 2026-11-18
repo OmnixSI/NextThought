@@ -34,6 +34,72 @@ public sealed class WorkspaceDeletionTests : IDisposable
     }
 
     [Fact]
+    public void SharedOriginalsAreKeptWhenAnotherJobReferencesThem()
+    {
+        var originals = Path.Combine(root, "Originals");
+        var sharedPath = Path.Combine(originals, "shared.pdf");
+        Directory.CreateDirectory(originals);
+        File.WriteAllText(sharedPath, "x");
+        var deleting = new[] { Job("job-1", sharedPath, "hash-1"), Job("job-2", sharedPath, "hash-1") };
+        var moves = WorkspaceDeletionFileStaging.Manifest([sharedPath], Path.Combine(root, "staging"));
+
+        var keptByHash = WorkspaceDeletionFileStaging.ExcludingSharedOriginals(moves, deleting,
+            [Job("job-3", Path.Combine(originals, "other.pdf"), "hash-1")], new HashSet<string>(), originals);
+        Assert.Empty(keptByHash);
+
+        var keptByPath = WorkspaceDeletionFileStaging.ExcludingSharedOriginals(moves, deleting,
+            [Job("job-3", sharedPath, "other-hash")], new HashSet<string>(), originals);
+        Assert.Empty(keptByPath);
+
+        var keptByWorkspace = WorkspaceDeletionFileStaging.ExcludingSharedOriginals(moves, deleting, [],
+            new HashSet<string> { "hash-1" }, originals);
+        Assert.Empty(keptByWorkspace);
+    }
+
+    [Fact]
+    public void UnsharedOriginalsAndOtherFilesStayInTheMoveSet()
+    {
+        var originals = Path.Combine(root, "Originals");
+        var original = Path.Combine(originals, "only.pdf");
+        var other = Path.Combine(root, "data", "notes.json");
+        Directory.CreateDirectory(originals);
+        Directory.CreateDirectory(Path.GetDirectoryName(other)!);
+        File.WriteAllText(original, "x");
+        File.WriteAllText(other, "y");
+        var deleting = new[] { Job("job-1", original, "hash-1") };
+        var moves = WorkspaceDeletionFileStaging.Manifest([original, other], Path.Combine(root, "staging"));
+        var kept = WorkspaceDeletionFileStaging.ExcludingSharedOriginals(moves, deleting, [],
+            new HashSet<string>(), originals);
+        Assert.Equal([Path.GetFullPath(original), Path.GetFullPath(other)], kept.Select(move => move.Source));
+
+        var noDeletingJob = WorkspaceDeletionFileStaging.ExcludingSharedOriginals(moves, [], [],
+            new HashSet<string>(), originals);
+        Assert.Equal(2, noDeletingJob.Count);
+    }
+
+    [Fact]
+    public void ADocumentJobNotBeingDeletedDoesNotRetainItself()
+    {
+        var originals = Path.Combine(root, "Originals");
+        var original = Path.Combine(originals, "only.pdf");
+        Directory.CreateDirectory(originals);
+        File.WriteAllText(original, "x");
+        var sameJob = Job("job-1", original, "hash-1");
+        var moves = WorkspaceDeletionFileStaging.Manifest([original], Path.Combine(root, "staging"));
+        var kept = WorkspaceDeletionFileStaging.ExcludingSharedOriginals(moves, [sameJob], [sameJob],
+            new HashSet<string>(), originals);
+        Assert.Single(kept);
+    }
+
+    private static NextThought.Core.DocumentJob Job(string id, string path, string hash) =>
+        NextThought.Core.DocumentJob.Create("ws", Path.GetFileName(path)) with
+        {
+            Id = id,
+            OriginalPath = path,
+            SourceHash = hash
+        };
+
+    [Fact]
     public void StageMovesOnlyExistingSources()
     {
         var existing = FileWith("a.txt");

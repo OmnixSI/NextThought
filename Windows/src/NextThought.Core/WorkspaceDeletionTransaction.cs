@@ -43,6 +43,43 @@ public static class WorkspaceDeletionFileStaging
         return moves;
     }
 
+    /// <summary>
+    /// Removes an original from the move set if a current, non-deleted job or workspace still
+    /// references its hash/path. Call immediately before staging, after all awaits that could add
+    /// a reference (port of excludingSharedOriginals).
+    /// </summary>
+    public static IReadOnlyList<WorkspaceDeletionFileMove> ExcludingSharedOriginals(
+        IReadOnlyList<WorkspaceDeletionFileMove> moves,
+        IReadOnlyList<DocumentJob> deletingJobs,
+        IReadOnlyList<DocumentJob> currentJobs,
+        IReadOnlySet<string> currentWorkspaceSourceHashes,
+        string originalsRoot)
+    {
+        var deletingIds = deletingJobs.Select(job => job.Id).ToHashSet(StringComparer.Ordinal);
+        var remainingJobs = currentJobs.Where(job => !deletingIds.Contains(job.Id)).ToList();
+        var retainedHashes = remainingJobs.Select(job => job.SourceHash).Where(hash => hash is { Length: > 0 })
+            .Select(hash => hash!).ToHashSet(StringComparer.Ordinal);
+        retainedHashes.UnionWith(currentWorkspaceSourceHashes);
+        var retainedPaths = remainingJobs.Select(job => job.OriginalPath).Where(path => path is { Length: > 0 })
+            .Select(path => Path.GetFullPath(path!)).ToHashSet(StringComparer.Ordinal);
+        var originalsPrefix = Path.GetFullPath(originalsRoot).TrimEnd(Path.DirectorySeparatorChar)
+                              + Path.DirectorySeparatorChar;
+        var deletingHashesByPath = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var job in deletingJobs)
+        {
+            if (job.OriginalPath is { Length: > 0 } path && job.SourceHash is { Length: > 0 } hash)
+                deletingHashesByPath[Path.GetFullPath(path)] = hash;
+        }
+
+        return moves.Where(move =>
+        {
+            var path = Path.GetFullPath(move.Source);
+            if (!path.StartsWith(originalsPrefix, StringComparison.OrdinalIgnoreCase)) return true;
+            if (!deletingHashesByPath.TryGetValue(path, out var hash)) return true;
+            return !retainedPaths.Contains(path) && !retainedHashes.Contains(hash);
+        }).ToList();
+    }
+
     public static void Stage(IReadOnlyList<WorkspaceDeletionFileMove> moves)
     {
         if (moves.Count == 0) return;

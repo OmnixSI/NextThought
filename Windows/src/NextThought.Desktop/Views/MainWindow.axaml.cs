@@ -1707,6 +1707,24 @@ public partial class MainWindow : Window
                                 && NextThought.Core.SessionPreset.TemplatePreferences(NextThought.Core.SessionMode.Interview)
                                     .StartsWith("我是候选人", StringComparison.Ordinal));
 
+        var originalRoot = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "Originals");
+        Directory.CreateDirectory(originalRoot);
+        var originalFile = Path.Combine(originalRoot, "shared.pdf");
+        await File.WriteAllTextAsync(originalFile, "x");
+        var originalMoves = NextThought.Core.WorkspaceDeletionFileStaging.Manifest([originalFile],
+            Path.Combine(originalRoot, "..", "staging-shared"));
+        var deletingJob = NextThought.Core.DocumentJob.Create("w", "shared.pdf") with
+        {
+            OriginalPath = originalFile,
+            SourceHash = "hash"
+        };
+        var keptMove = NextThought.Core.WorkspaceDeletionFileStaging.ExcludingSharedOriginals(originalMoves,
+            [deletingJob], [deletingJob], new HashSet<string>(), originalRoot);
+        var retainedMove = NextThought.Core.WorkspaceDeletionFileStaging.ExcludingSharedOriginals(originalMoves,
+            [deletingJob], [NextThought.Core.DocumentJob.Create("w", "other.pdf") with { SourceHash = "hash" }],
+            new HashSet<string>(), originalRoot);
+        Check("shared-originals", keptMove.Count == 1 && retainedMove.Count == 0);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
