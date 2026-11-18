@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -201,6 +201,14 @@ public partial class AppState : ObservableObject
                 SetStatus("整理结果不是可用的 JSON，稍后可重试。", true);
                 return;
             }
+            // 核对：时间点必须在会议内、且附近有转写行，找不到依据的节点丢弃（NotesVerifier / Cleaner）。
+            var cleaned = StructuredNotesCleaner.Clean(payload, LineOffsets(session), MeetingSeconds(session));
+            if (cleaned is null)
+            {
+                SetStatus($"整理出的{format.Title(false)}缺少可核对的转写依据，已丢弃；可重试，或改用文字纪要。", true);
+                return;
+            }
+            payload = cleaned;
             StructuredMarkdown = StructuredNotesMarkdown.Render(payload);
             OnPropertyChanged(nameof(HasStructuredNotes));
             try
@@ -211,7 +219,9 @@ public partial class AppState : ObservableObject
             {
                 // The view is still useful without the cached copy.
             }
-            SetStatus($"已整理成{format.Title(false)}，可复制或导出。");
+            SetStatus(payload.DroppedCount > 0
+                ? $"已整理成{format.Title(false)}；{payload.DroppedCount} 条找不到原话依据的内容已丢弃。"
+                : $"已整理成{format.Title(false)}，可复制或导出。");
         }
         catch (OperationCanceledException) { if (generation == requestEpoch) SetStatus("整理已取消。"); }
         catch (Exception ex) { if (generation == requestEpoch) SetStatus(ex.Message, true); }
@@ -230,6 +240,19 @@ public partial class AppState : ObservableObject
 
     private bool CanGenerateStructured() => IsIdle && !Answering && CurrentSession != null
         && SelectedNotesFormat.IsStructured() && currentLines.Count > 0;
+
+    /// <summary>Seconds from the meeting start of each transcript line (the evidence check needs them).</summary>
+    private IReadOnlyList<int> LineOffsets(SessionMeta session) =>
+        currentLines.Select(line => Math.Max(0, (int)((line.StartedAt ?? line.Date) - session.StartedAt).TotalSeconds)).ToList();
+
+    /// <summary>How long the meeting ran, at least as long as its last line.</summary>
+    private static double MeetingSeconds(SessionMeta session, IReadOnlyList<int>? offsets = null)
+    {
+        var end = session.EndedAt ?? DateTimeOffset.UtcNow;
+        var seconds = Math.Max(0, (end - session.StartedAt).TotalSeconds);
+        if (offsets is { Count: > 0 }) seconds = Math.Max(seconds, offsets[^1]);
+        return seconds;
+    }
 
     /// <summary>"[12:41] 说话人：…" lines, the format the structured prompts expect.</summary>
     private string BuildNumberedTranscript(SessionMeta session)
