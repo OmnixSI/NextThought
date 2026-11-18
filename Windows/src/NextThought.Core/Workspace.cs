@@ -90,6 +90,29 @@ public sealed record WorkspaceSeries(
     public WorkspaceSeries WithoutSession(string sessionId) =>
         SessionIds.Contains(sessionId) ? this with { SessionIds = SessionIds.Where(id => id != sessionId).ToList() } : this;
 
+    /// <summary>
+    /// Template fields as prompt text: known fields in profile order, then values from another
+    /// mode in key order (port of Workspace.materialText; empty values are skipped).
+    /// </summary>
+    public string MaterialText(IReadOnlyList<(string Id, string Title)> profileFields,
+        IReadOnlyDictionary<string, string> fields)
+    {
+        var lines = new List<string>();
+        var known = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (id, title) in profileFields)
+        {
+            known.Add(id);
+            if (fields.TryGetValue(id, out var value) && value.Trim().Length > 0)
+                lines.Add(title + "：" + value.Trim());
+        }
+        foreach (var (key, value) in fields.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            if (known.Contains(key) || value.Trim().Length == 0) continue;
+            lines.Add(key + "：" + value.Trim());
+        }
+        return string.Join("\n", lines);
+    }
+
     /// <summary>Lessons as prompt bullets: pinned first, then newest, bounded (port of experienceNotes).</summary>
     public string ExperienceNotes(int limit = 2_000)
     {

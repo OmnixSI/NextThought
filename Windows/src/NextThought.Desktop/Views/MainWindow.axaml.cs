@@ -1632,6 +1632,11 @@ public partial class MainWindow : Window
         Check("summary-writeback", experienceSeries.ExperienceNotes().Contains("经验", StringComparison.Ordinal)
                                    && writtenSummary?.Structured?.Outline?.Sections[0].Title == "写回标题");
 
+        var materialSeries = new NextThought.Core.WorkspaceSeries("s", "组会", DateTimeOffset.UtcNow, [], []);
+        var materialText = materialSeries.MaterialText([("role", "岗位")],
+            new Dictionary<string, string> { ["role"] = "后端", ["other"] = "备注" });
+        Check("workspace-material", materialText == "岗位：后端\nother：备注");
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

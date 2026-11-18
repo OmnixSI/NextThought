@@ -39,6 +39,30 @@ public sealed class WorkspacePromptContentTests
     }
 
     [Fact]
+    public void MaterialTextUsesProfileOrderThenUnknownKeys()
+    {
+        var series = Series();
+        var fields = new Dictionary<string, string>
+        {
+            ["role"] = " 后端 ",
+            ["company"] = "某公司",
+            ["extra"] = "额外",
+            ["empty"] = "   "
+        };
+        var text = series.MaterialText([("company", "公司"), ("role", "岗位")], fields);
+        Assert.Equal("公司：某公司\n岗位：后端\nextra：额外", text);
+    }
+
+    [Fact]
+    public void MaterialTextSkipsEmptyValuesAndUnknownOrderingIsStable()
+    {
+        var series = Series();
+        Assert.Equal("", series.MaterialText([], new Dictionary<string, string>()));
+        Assert.Equal("", series.MaterialText([("a", "A")], new Dictionary<string, string> { ["a"] = " " }));
+        Assert.Equal("a：1\nb：2", series.MaterialText([], new Dictionary<string, string> { ["b"] = "2", ["a"] = "1" }));
+    }
+
+    [Fact]
     public void SummaryWriteBackUpdatesTheStoredPayload()
     {
         var payload = new StructuredNotesPayload(NotesFormat.Outline,
