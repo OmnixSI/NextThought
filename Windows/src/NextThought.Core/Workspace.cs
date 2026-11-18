@@ -80,6 +80,9 @@ public sealed record WorkspaceSeries(
     /// <summary>Material metadata of this series (port of Workspace.documents).</summary>
     public IReadOnlyList<ContextDocument> Documents { get; init; } = [];
 
+    /// <summary>Reviewed-evidence proposals awaiting accept/reject.</summary>
+    public IReadOnlyList<WorkspaceSeriesChangeCandidate> SeriesChangeCandidates { get; init; } = [];
+
     /// <summary>Deleted meetings whose knowledge must not be resurrected by a stale copy.</summary>
     [JsonPropertyName("sourceDeletionTombstones")]
     public IReadOnlyList<string>? SourceDeletionTombstones { get; init; }

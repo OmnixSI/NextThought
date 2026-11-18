@@ -1867,6 +1867,22 @@ public partial class MainWindow : Window
         var reloadedQueue = new NextThought.Core.DocumentJobQueue(queueDirectory);
         Check("document-queue", queued && reloadedQueue.Count == 1 && reloadedQueue.Next()?.Id == "acceptance-job");
 
+        var changeCandidate = new NextThought.Core.WorkspaceSeriesChangeCandidate
+        {
+            Id = "change-1",
+            Kind = NextThought.Core.WorkspaceSeriesItem.KindValue.Action,
+            Text = "补充压测",
+            SourceSessionId = sessionId.ToString("D"),
+            EvidenceId = "e1"
+        };
+        var (changedSeries, changeReceipt) = NextThought.Core.WorkspaceSeriesChangeMerger.Apply(
+            series with { SeriesChangeCandidates = [changeCandidate] }, "change-1",
+            NextThought.Core.WorkspaceSeriesChangeDecision.Accepted);
+        Check("series-change", changeReceipt is not null
+                               && changedSeries.SeriesItems.Count == 1
+                               && changedSeries.SeriesChangeCandidates[0].Status
+                                   == NextThought.Core.WorkspaceSeriesChangeCandidate.StatusValue.Accepted);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

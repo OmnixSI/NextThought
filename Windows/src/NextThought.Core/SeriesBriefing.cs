@@ -16,7 +16,8 @@ public sealed record SeriesBriefing(
     IReadOnlyList<WorkspaceSeriesItem> Decisions,
     IReadOnlyList<WorkspaceSeriesItem> OpenActions,
     IReadOnlyList<WorkspaceSeriesItem> ResolvedActions,
-    IReadOnlyList<WorkspaceSeriesItem> StaleItems);
+    IReadOnlyList<WorkspaceSeriesItem> StaleItems,
+    IReadOnlyList<WorkspaceSeriesChangeCandidate>? PendingSeriesChanges = null);
 
 public static class SeriesBriefingBuilder
 {
@@ -98,8 +99,14 @@ public static class SeriesBriefingBuilder
                                                        or WorkspaceSeriesItem.ActionStateValue.Superseded))
             .OrderByDescending(item => item.UpdatedAt).ToList();
 
+        var pendingChanges = !series.UseKnowledge
+            ? []
+            : WorkspaceSeriesChangeMerger.Pending(series).Where(candidate =>
+                membership.Contains(candidate.SourceSessionId)
+                && (evidenceReferences is null || evidenceReferences.Any(reference =>
+                    WorkspaceSeriesChangeMerger.MatchesCurrentEvidence(candidate, reference)))).ToList();
         return new SeriesBriefing(series.Id, series.Name, seriesSessions.Count, series.UseKnowledge,
-            recent, lessons, questionBank, pending, decisions, openActions, resolvedActions, stale);
+            recent, lessons, questionBank, pending, decisions, openActions, resolvedActions, stale, pendingChanges);
     }
 
     /// <summary>A review counts only while it is supported, fresh, and saw the same revisions.</summary>
