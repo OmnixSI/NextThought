@@ -1,9 +1,10 @@
-using System.IO;
+﻿using System.IO;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using NextThought.Core;
+using Avalonia;
 
 namespace NextThought.Desktop.Views;
 
@@ -33,6 +34,7 @@ public partial class MainWindow : Window
         {
             await state.InitializeAsync();
             if (StartupOptions.Island) ToggleCueIsland();
+            if (StartupOptions.CaptureTest is { } captureTest) await RunCaptureTestAsync(captureTest);
             if (StartupOptions.CheckReport is { } report) await WriteStartupReportAsync(report);
         };
         Closing += OnClosing;
@@ -101,6 +103,7 @@ public partial class MainWindow : Window
             new GlobalHotkeys.Binding("Ctrl+Alt+R 开始或停止记录", 0x52, ToggleRecording),
             new GlobalHotkeys.Binding("Ctrl+Alt+O 显示或隐藏提词岛", 0x4F, ToggleCueIsland),
             new GlobalHotkeys.Binding("Ctrl+Alt+M 纪要窗口/字幕条/隐藏", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+S 区域截图", 0x53, () => _ = CaptureRegionAsync()),
             new GlobalHotkeys.Binding("Ctrl+Alt+N 唤起主窗口", 0x4E, RestoreMainWindow)
         ]);
         if (hotkeys.Unregistered.Count > 0)
@@ -119,6 +122,72 @@ public partial class MainWindow : Window
         Show();
         WindowState = WindowState.Normal;
         Activate();
+    }
+
+    /// <summary>
+    /// 区域截图（方案第 9 节）：先隐藏自己的窗口再抓屏，框选后裁切，然后存入资料库并由
+    /// Windows.Media.Ocr 读取文字。
+    /// </summary>
+    public async Task CaptureRegionAsync()
+    {
+        if (state.Working) { state.SetStatus("当前有任务在进行，稍后再截图。"); return; }
+        var wasVisible = IsVisible;
+        try
+        {
+            WindowState = WindowState.Minimized; // definitely off the screen, unlike a deferred Hide()
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
+            await Task.Delay(360);
+            var capture = ScreenCapture.VirtualScreen();
+            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            var picker = new RegionCaptureWindow(capture);
+            var cropped = await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
+            if (cropped is null) { state.SetStatus("已取消截图。"); return; }
+            var path = Path.Combine(Path.GetTempPath(), $"nextthought-shot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
+            cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            await state.Library.ImportAsync([path]);
+            state.Section = AppSection.Library;
+            state.SetStatus("截图已存入资料库，并已用系统 OCR 读取其中的文字。");
+        }
+        catch (Exception ex)
+        {
+            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            state.SetStatus("截图失败：" + ex.Message, true);
+        }
+    }
+
+    /// <summary>Unattended capture check: grab the screen, crop the centre, save it and OCR it.</summary>
+    private async Task RunCaptureTestAsync(string path)
+    {
+        try
+        {
+            Hide();
+            await Task.Delay(250);
+            var capture = ScreenCapture.VirtualScreen();
+            Show();
+            var rect = new PixelRect(capture.Width / 4, capture.Height / 4, capture.Width / 2, capture.Height / 2);
+            var cropped = ScreenCapture.Crop(capture, rect);
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            await state.Library.ImportAsync([path]);
+            var report = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                capturedAt = DateTimeOffset.Now,
+                screenWidth = capture.Width,
+                screenHeight = capture.Height,
+                cropWidth = rect.Width,
+                cropHeight = rect.Height,
+                saved = File.Exists(path),
+                bytes = File.Exists(path) ? new FileInfo(path).Length : 0,
+                materials = state.Library.Materials.Count
+            }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(path + ".json", report);
+        }
+        catch (Exception ex)
+        {
+            await File.WriteAllTextAsync(path + ".json", "{\"error\":" + System.Text.Json.JsonSerializer.Serialize(ex.Message) + "}");
+        }
+        Close();
     }
 
     /// <summary>Show or hide the floating cue island (the Mac app's notch panel).</summary>

@@ -48,6 +48,11 @@ public partial class LiveView : UserControl
         if (state.AskCommand.CanExecute(null)) state.AskCommand.Execute(null);
     }
 
+    private async void Capture_Click(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is MainWindow window) await window.CaptureRegionAsync();
+    }
+
     private void Island_Click(object? sender, RoutedEventArgs e)
     {
         if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleCueIsland();
