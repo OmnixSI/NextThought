@@ -1144,6 +1144,18 @@ public partial class AppState : ObservableObject
 
     public IAnswerClient CurrentClient() => Settings.UseCodex ? new CodexAnswerClient() : Api;
 
+    private IWebSearchProvider? webSearchProvider;
+    private bool webSearchResolved;
+
+    private IWebSearchProvider? WebSearch()
+    {
+        if (webSearchResolved) return webSearchProvider;
+        webSearchResolved = true;
+        try { webSearchProvider = WebSearchConfiguration.CreateProvider(); }
+        catch { webSearchProvider = null; }
+        return webSearchProvider;
+    }
+
     [RelayCommand(CanExecute = nameof(CanAsk))]
     private async Task AskAsync()
     {
@@ -1189,9 +1201,17 @@ public partial class AppState : ObservableObject
             else if (!check) RetrievalInfo = "未使用资料库";
             var sources = retrieved?.Sources ?? [];
             if (!check) { Sources.Clear(); }
+            IReadOnlyList<WebResult> web = [];
+            if (!check && WebSearchNeed.Assess(question).NeedsSearch && WebSearch() is { } searchProvider)
+            {
+                SetStatus("正在联网核实…");
+                var webResponse = await searchProvider.SearchAsync(question, 5, cancellation.Token);
+                if (webResponse.Error is null) web = webResponse.Results;
+                else SetStatus(webResponse.Error);
+            }
             var result = await CurrentClient().AnswerAsync(options,
                 check ? "严格按用户要求回复。" : BuildAnswerSystemPrompt(meta),
-                check ? question : BuildAnswerUserPrompt(meta, context, sources, question),
+                check ? question : BuildAnswerUserPrompt(meta, context, sources, question, web),
                 text => ((IProgress<string>)progress).Report(text), cancellation.Token);
             if (generation != requestEpoch) return;
             if (!check)
@@ -1252,11 +1272,16 @@ public partial class AppState : ObservableObject
     }
 
     /// <summary>User prompt with the series question bank as extra reference material.</summary>
-    private string BuildAnswerUserPrompt(SessionMeta? meta, string transcript, IReadOnlyList<SourceCitation> sources, string question)
+    private string BuildAnswerUserPrompt(SessionMeta? meta, string transcript, IReadOnlyList<SourceCitation> sources, string question,
+        IReadOnlyList<WebResult>? web = null)
     {
         var bank = QuestionBankPromptFor(meta);
         var bankBlock = bank.Length == 0 ? "" : $"\n这个系列的题库（历次复盘确认过的回答）：\n{bank}\n";
-        return $"最近的会议转写：\n{transcript}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n{bankBlock}\n当前问题：{question}";
+        var webBlock = web is { Count: > 0 }
+            ? "\n联网搜索结果（可能过时，引用时标注链接）：\n" + string.Join("\n", web.Select(result =>
+                $"- {result.Title}（{result.Url}）：{result.Snippet}")) + "\n"
+            : "";
+        return $"最近的会议转写：\n{transcript}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n{bankBlock}{webBlock}\n当前问题：{question}";
     }
 
     [RelayCommand(CanExecute = nameof(CanSummarize))]

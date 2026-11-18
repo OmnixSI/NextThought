@@ -1924,6 +1924,10 @@ public partial class MainWindow : Window
                                 && sessionRecord.Summary == "摘要"
                                 && sessionRecord.Transcript.Count == 1);
 
+        var (webKey, webEnabled) = NextThought.Platform.WebSearchConfiguration.FromEnvironment(_ => null);
+        Check("web-search-config", webKey is null && !webEnabled
+                                   && NextThought.Platform.WebSearchConfiguration.CreateProvider(read: _ => null) is null);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
