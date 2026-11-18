@@ -1,5 +1,18 @@
 
+# P7 签名链路测试 · 1.3.1（验证）
+
+用自签名测试证书把 Authenticode 链路走通（不替换发布包、不修改信任库）：
+
+- 生成代码签名证书 ``CN=NextThought Test Signing``，对 1.3.1 安装包副本执行 ``Set-AuthenticodeSignature``（SHA-256）。
+- ``Get-AuthenticodeSignature`` 能读回签名者；安装版 ``--signature-check`` 报告 ``status=UnknownError``、
+  ``valid=false``、无异常——符合「有签名但证书不受信任」的预期。
+- 尝试临时加入 CurrentUser Root/TrustedPublisher 时证书库操作挂起，已中止并确认信任库未被修改；
+  测试证书也已从「个人」库删除。
+- **结论**：签名/校验代码路径可用，缺的只是正式 EV/OV 证书；``sign_release.ps1`` 仍要求有效证书与 SignTool。
+- 证据：``qa\signing-1310\signing.json``、``qa\signing-1310\signature-check.json``。
+
 # P7 报告校准 · 1.3.1（文档）
+
 
 把 PARITY_REPORT 的「还差的」从旧状态（LiveInsights、Core 1 个文件）改为当前剩余的外部条件：真机双屏、伴侣真机/蓝牙、Authenticode、AOT、真实联网检索。
 
