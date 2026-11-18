@@ -1,4 +1,21 @@
 
+# P5 词法检索与会话上下文 · 0.41.0
+
+0.41.0 补上 `SessionContext.swift`（265 行）中的可用部分，并完成 `HybridContextIndex.retrieve`，测试 392 → 400。
+
+- **SessionContextIndex**：离线词法索引 —— 拉丁词（>1 字母、去停用词）与中文单字/二元组；
+  按「重叠词 IDF 之和 / √块词数」打分，按分数降序、序号升序；`Retrieve` 最多 8 段、字符预算封顶。
+- **HybridContextIndex.retrieve**：显式「第 N 页 / p.N / 幻灯片 N」与文件名优先，其余用 RRF 融合；
+  语义分数低于 0.43 的块不进入语义排序，词法块若被语义标记低分也会被剔除。
+- **ManualQuestionBuilder**：有手动输入用输入（≤8000 字），否则取最近 3 句 + 半句（≤4000 字）并加固定引导语。
+- **OfficeXMLText**：从 pptx/docx/xlsx 的 XML 中按段落抽文本、实体解码、文件名自然排序。
+- **AnswerStyle / ContextExcerpt** 一并移植。
+- **自检**：`--retrieval-check` 增加「第 1 页」显式请求断言
+  （`qa\retrieval-0410\retrieval-check.json`，explicitPage=1）。
+- 未移植：`ContextDocument`/`SessionMode`/`SessionPreset`（应用层会话/预设模型）。
+
+统计：已移植 43 / 部分 11 / 基线 3 / 未移植 24。
+
 # P5 语义检索组件 · 0.40.0
 
 0.40.0 移植 `SemanticRetrieval.swift`（277 行）的核心组件，测试 385 → 392。

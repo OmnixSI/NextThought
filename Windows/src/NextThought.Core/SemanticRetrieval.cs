@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace NextThought.Core;
 
 /// <summary>One piece of a material: the unit the lexical and semantic indexes share.</summary>
@@ -176,4 +178,85 @@ public static class RetrievalPolicy
 {
     /// <summary>Validation midpoint (v2); a low-similarity list may be empty.</summary>
     public const double MinimumSemanticScore = 0.43;
+}
+
+/// <summary>
+/// The retrieval the app uses (port of HybridContextIndex): the lexical index plus the semantic
+/// index when an embedding model is installed. Explicit page or file requests win over similarity.
+/// </summary>
+public sealed class HybridContextIndex
+{
+    private static readonly Regex PagePattern =
+        new("(?:第\\s*(\\d+)\\s*[页張张]|p\\.?\\s*(\\d+)|(?:slide|幻灯片)\\s*(\\d+))", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    public HybridContextIndex(IReadOnlyList<MaterialDocument> documents, SemanticIndex? semantic = null)
+    {
+        Chunks = ContextChunker.Chunks(documents);
+        Lexical = new SessionContextIndex(Chunks);
+        Semantic = semantic ?? new SemanticIndex();
+    }
+
+    public IReadOnlyList<ContextChunk> Chunks { get; }
+    public SessionContextIndex Lexical { get; }
+    public SemanticIndex Semantic { get; }
+
+    /// <summary>True when the semantic index can contribute to the ranking.</summary>
+    public bool HasVectors => !Semantic.IsEmpty;
+
+    public IReadOnlyList<ContextExcerpt> Retrieve(
+        string question, float[]? queryVector = null, int maximumCharacters = 8000,
+        double minimumSemanticScore = RetrievalPolicy.MinimumSemanticScore)
+    {
+        if (maximumCharacters <= 0) return [];
+        var lexicalOrders = Lexical.RankedOrders(question);
+        var fingerprints = Chunks.Select(chunk => chunk.Fingerprint).ToList();
+        var semanticRanking = queryVector is null ? [] : Semantic.RankedOrders(queryVector, fingerprints);
+        var scores = semanticRanking.ToDictionary(item => item.Order, item => item.Score);
+        var semanticOrders = semanticRanking.Where(item => item.Score >= minimumSemanticScore).Select(item => item.Order).ToList();
+        var eligibleLexical = lexicalOrders.Where(order => !scores.TryGetValue(order, out var score) || score >= minimumSemanticScore).ToList();
+        IReadOnlyList<(int Order, double Score)> fused = semanticOrders.Count == 0
+            ? eligibleLexical.Select(order => (order, 0.0)).ToList()
+            : HybridRanker.Fuse(eligibleLexical, semanticOrders);
+
+        var lower = question.ToLowerInvariant();
+        var pageMatch = PagePattern.Match(lower);
+        int? page = null;
+        if (pageMatch.Success)
+            for (var group = 1; group < pageMatch.Groups.Count; group++)
+                if (pageMatch.Groups[group].Success && int.TryParse(pageMatch.Groups[group].Value, out var number)) { page = number; break; }
+
+        static string Normalize(string text) => new(text.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
+        var questionKey = Normalize(lower);
+        var named = Chunks.Where(chunk =>
+        {
+            var file = Path.GetFileNameWithoutExtension(chunk.Source);
+            var stem = file.Split('_').FirstOrDefault() ?? chunk.Source;
+            var key = Normalize(stem);
+            return key.Length >= 4 && questionKey.Contains(key, StringComparison.Ordinal);
+        }).Select(chunk => chunk.Source).ToHashSet(StringComparer.Ordinal);
+
+        var explicitOrders = Chunks.Where(chunk =>
+        {
+            var physical = chunk.Locator?.Page ?? chunk.Locator?.Slide;
+            return (page is not null && physical == page && (named.Count == 0 || named.Contains(chunk.Source)))
+                   || (page is null && named.Contains(chunk.Source));
+        }).Select(chunk => chunk.Order).ToList();
+        var explicitSet = explicitOrders.ToHashSet();
+        var ranking = explicitOrders.Select(order => (Order: order, Score: 1.0))
+            .Concat(fused.Where(item => !explicitSet.Contains(item.Order))).ToList();
+
+        var remaining = Math.Min(maximumCharacters, 16000);
+        var result = new List<ContextExcerpt>();
+        foreach (var entry in ranking.Take(8))
+        {
+            if (remaining <= 0) break;
+            if (entry.Order < 0 || entry.Order >= Chunks.Count) continue;
+            var chunk = Chunks[entry.Order];
+            if (chunk.Text.Length > remaining) continue;
+            if (chunk.Text.Trim().Length == 0) continue;
+            result.Add(new ContextExcerpt(chunk.Source, chunk.Page, chunk.Text, chunk.Locator, chunk.Fingerprint, chunk.BlockId));
+            remaining -= chunk.Text.Length;
+        }
+        return result;
+    }
 }
