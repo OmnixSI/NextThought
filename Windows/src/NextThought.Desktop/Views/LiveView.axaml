@@ -1,11 +1,11 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.LiveView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,*" Margin="32,18,32,0">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="32,18,32,0">
     <!-- Header -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="6">
@@ -28,8 +28,21 @@
       </StackPanel>
     </Grid>
 
+    <!-- Auto-end reminder: counts down, speech or "继续记录" cancels it -->
+    <Border Grid.Row="1" Classes="aiBlock" Padding="16,10" Margin="0,14,0,0"
+            IsVisible="{Binding HasAutoEndNotice}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+                     Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding AutoEndNotice}" Classes="label" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="继续记录" Command="{Binding KeepRecordingCommand}" />
+      </Grid>
+    </Border>
+
     <!-- Body -->
-    <Grid Grid.Row="1" ColumnDefinitions="1.12*,*" ColumnSpacing="16" Margin="0,18,0,16">
+    <Grid Grid.Row="2" ColumnDefinitions="1.12*,*" ColumnSpacing="16" Margin="0,16,0,16">
       <!-- Transcript -->
       <Border Classes="card" Padding="0">
         <Grid RowDefinitions="Auto,*,Auto">

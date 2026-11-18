@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
              xmlns:platform="using:NextThought.Platform"
@@ -78,6 +78,23 @@
                          Classes="caption" FontSize="11" />
             </StackPanel>
           </Border>
+        </StackPanel>
+      </Border>
+
+      <!-- Meeting auto-end -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="会议自动收尾" Classes="section" />
+          <TextBlock Text="忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。"
+                     Classes="caption" FontSize="11" />
+          <ComboBox ItemsSource="{Binding Settings.AutoEndModes}" SelectedItem="{Binding Settings.SelectedAutoEndMode}"
+                    HorizontalAlignment="Left" MinWidth="280" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="静音多久后收尾" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.AutoEndMinuteChoices}"
+                      SelectedItem="{Binding Settings.AutoEndMinutes}" Width="90" />
+            <TextBlock Text="分钟" Classes="label" VerticalAlignment="Center" />
+          </StackPanel>
         </StackPanel>
       </Border>
 

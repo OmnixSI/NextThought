@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Security.Cryptography;
@@ -30,6 +30,10 @@ public partial class AppState : ObservableObject
     private bool lastRequestAutomatic;
     private DateTimeOffset lastMicrophoneSpeech;
     private AudioCaptureService? capture;
+    private MeetingEndWatch? autoEnd;
+    private DispatcherTimer? autoEndTimer;
+    private bool sawSpeech;
+    private DateTimeOffset? lastSpeechEnd;
     private LiveSpeechEngine? engine;
     private MeetingVoiceTagger? voiceTagger;
     private MeetingTranslator? translator;
@@ -448,6 +452,7 @@ public partial class AppState : ObservableObject
             await Sessions.CreateAsync(meta);
             CurrentSession = meta;
             sessionLease = Sessions.AcquireLease(meta.Id);
+            BeginAutoEnd(meta);
             var generation = ++epoch;
             SetStatus("正在加载本地语音模型…");
             if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
@@ -528,6 +533,7 @@ public partial class AppState : ObservableObject
             translator?.Dispose(); translator = null;
             voiceTagger?.Dispose(); voiceTagger = null;
             sessionLease?.Dispose(); sessionLease = null;
+            StopAutoEnd();
             Recording = Stopping = false;
             RefreshHistory(meta.Id);
             RaiseBusy();
@@ -573,8 +579,87 @@ public partial class AppState : ObservableObject
         if (translator is { } translationService) writes.Add(TranslateLineAsync(meta, line, translationService, write));
         _ = write.ContinueWith(task => Dispatcher.UIThread.Post(() => HandleAudioFailure("会议写入失败：" + task.Exception!.GetBaseException().Message)), TaskContinuationOptions.OnlyOnFaulted);
         if (automatic && update.Source == AudioSource.System && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, true, update.Id, DateTimeOffset.UtcNow));
+        NoteSpeechHeard(line);
         OnPropertyChanged(nameof(StatsText));
         OnPropertyChanged(nameof(HasTranscript));
+    }
+
+    // ---- 会议自动收尾（AppState+AutoEnd.swift → MeetingEndWatch in Core） ----
+
+    [ObservableProperty] private string autoEndNotice = "";
+    public bool HasAutoEndNotice => AutoEndNotice.Length > 0;
+    partial void OnAutoEndNoticeChanged(string value) => OnPropertyChanged(nameof(HasAutoEndNotice));
+
+    private void BeginAutoEnd(SessionMeta meta)
+    {
+        var settings = Settings.Build();
+        autoEnd = new MeetingEndWatch(
+            MeetingEndWatch.Config.FromSettings(settings.MeetingAutoEndMode, settings.MeetingAutoEndMinutes), meta.StartedAt);
+        sawSpeech = false;
+        lastSpeechEnd = null;
+        AutoEndNotice = "";
+        autoEndTimer?.Stop();
+        autoEndTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        autoEndTimer.Tick += (_, _) => AutoEndTick();
+        autoEndTimer.Start();
+    }
+
+    private void StopAutoEnd()
+    {
+        autoEndTimer?.Stop();
+        autoEndTimer = null;
+        autoEnd = null;
+        AutoEndNotice = "";
+    }
+
+    private void NoteSpeechHeard(TranscriptLine line)
+    {
+        if (!Recording || autoEnd is null) return;
+        if (string.IsNullOrWhiteSpace(line.Text)) return;
+        sawSpeech = true;
+        var end = line.EndedAt ?? line.Date;
+        lastSpeechEnd = lastSpeechEnd is { } previous && previous > end ? previous : end;
+        autoEnd.Heard(DateTimeOffset.UtcNow);
+        AutoEndNotice = "";
+    }
+
+    private int autoEndTicks;
+
+    private void AutoEndTick()
+    {
+        if (!Recording || Stopping || autoEnd is null || CurrentSession is not { } meta) return;
+        autoEndTicks++;
+        var now = DateTimeOffset.UtcNow;
+        var settings = Settings.Build();
+        var reason = autoEnd.Tick(now, sawSpeech, settings.MeetingAutoEndMode == "off");
+        if (reason is not null || autoEndTicks % 15 == 0)
+            GlobalHotkeys.Log($"autoend tick={autoEndTicks} mode={settings.MeetingAutoEndMode} minutes={settings.MeetingAutoEndMinutes} raw={Settings.AutoEndMinutes} selected={Settings.SelectedAutoEndMode?.Value} said={sawSpeech} quiet={Math.Round((now - autoEnd.QuietSince).TotalSeconds)}s reason={reason}");
+        if (reason is { } value)
+        {
+            // The record ends where the talking ended, not minutes of silence later.
+            if (value == MeetingEndWatch.Reason.Silence)
+                meta.EndedAt = MeetingEndWatch.EndTime(lastSpeechEnd, meta.StartedAt, now);
+            var message = value == MeetingEndWatch.Reason.Silence
+                ? "长时间没有新的发言，会议已自动结束。"
+                : "这场会议没有任何发言，已自动停止。";
+            AutoEndNotice = message;
+            StopAutoEnd();
+            _ = StopRecordingCoreAsync(message);
+            return;
+        }
+        if (autoEnd.Remaining(now) is { } remaining)
+        {
+            AutoEndNotice = $"{(int)Math.Ceiling(remaining)} 秒后自动结束；说话或点「继续记录」可取消。";
+            SetStatus(AutoEndNotice);
+        }
+    }
+
+    [RelayCommand]
+    private void KeepRecording()
+    {
+        autoEnd?.KeepGoing(DateTimeOffset.UtcNow);
+        AutoEndNotice = "";
+        SetStatus("继续记录。");
     }
 
     /// <summary>

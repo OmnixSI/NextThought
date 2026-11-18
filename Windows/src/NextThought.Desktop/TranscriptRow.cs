@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using NextThought.Core;
 
 namespace NextThought.Desktop;
@@ -53,6 +53,11 @@ public sealed record ModelChoice(string Id, string Title)
 }
 
 public sealed record EffortChoice(string Value, string Title)
+{
+    public override string ToString() => Title;
+}
+
+public sealed record AutoEndChoice(string Value, string Title)
 {
     public override string ToString() => Title;
 }

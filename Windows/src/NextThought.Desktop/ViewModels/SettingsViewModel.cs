@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using Avalonia.Threading;
@@ -53,6 +53,16 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool useMaterials;
     [ObservableProperty] private bool useCodex;
     [ObservableProperty] private string codexModel = "";
+    [ObservableProperty] private string autoEndMode = "prompt";
+    private string autoEndMinutes = "10";
+
+    /// <summary>ComboBox SelectedItem writes null before its items exist; keep the last good value.</summary>
+    public string AutoEndMinutes
+    {
+        get => autoEndMinutes;
+        set => SetProperty(ref autoEndMinutes, string.IsNullOrEmpty(value) ? autoEndMinutes : value);
+    }
+    [ObservableProperty] private AutoEndChoice? selectedAutoEndMode;
     [ObservableProperty] private string lastMeetingTitle = "";
     [ObservableProperty] private DeviceChoice? selectedSystemDevice;
     [ObservableProperty] private DeviceChoice? selectedMicrophoneDevice;
@@ -66,6 +76,13 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     public ObservableCollection<ProcessChoice> Processes { get; } = [];
     public IReadOnlyList<ModelChoice> ModelChoicesList => ModelChoices;
     public IReadOnlyList<EffortChoice> EffortChoicesList => EffortChoices;
+    public IReadOnlyList<AutoEndChoice> AutoEndModes { get; } =
+    [
+        new("prompt", "静音后先提示，再结束（推荐）"),
+        new("end", "静音后直接结束"),
+        new("off", "不自动结束")
+    ];
+    public IReadOnlyList<string> AutoEndMinuteChoices { get; } = ["5", "10", "20", "30"];
 
     partial void OnSelectedModelChoiceChanged(ModelChoice? value)
     {
@@ -77,6 +94,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     partial void OnSelectedEffortChanged(EffortChoice? value)
     {
         if (value is not null) ReasoningEffort = value.Value;
+    }
+
+    partial void OnSelectedAutoEndModeChanged(AutoEndChoice? value)
+    {
+        if (value is not null) AutoEndMode = value.Value;
     }
 
     partial void OnSecondPassChanged(bool value) => state.RefreshModelState();
@@ -106,6 +128,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         UseMaterials = settings.UseMaterials;
         UseCodex = settings.UseCodex;
         CodexModel = settings.CodexModel;
+        AutoEndMode = settings.MeetingAutoEndMode;
+        AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
+        SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
         LastMeetingTitle = settings.LastMeetingTitle;
         SelectedModelChoice = ModelChoices.FirstOrDefault(x => x.Id == settings.LocalModel) ?? ModelChoices[0];
         SelectedEffort = EffortChoices.FirstOrDefault(x => x.Value == settings.ReasoningEffort) ?? EffortChoices[0];
@@ -150,6 +175,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         UseMaterials = UseMaterials,
         UseCodex = UseCodex,
         CodexModel = CodexModel.Trim(),
+        MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
+        MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,
         CaptureProcessStartTicks = SelectedProcess?.StartTicks ?? 0
     };

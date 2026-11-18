@@ -79,6 +79,10 @@ public sealed record AppSettings
     public bool UseMaterials { get; set; }
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";
+    /// <summary>Mac key <c>meetingAutoEndMode</c>: prompt / end / off (MeetingEndWatch).</summary>
+    public string MeetingAutoEndMode { get; set; } = "prompt";
+    /// <summary>Mac key <c>meetingAutoEndMinutes</c>: how long without recognised words counts as the end.</summary>
+    public int MeetingAutoEndMinutes { get; set; } = MeetingEndWatch.Config.DefaultMinutes;
     [JsonIgnore] public int CaptureProcessId { get; set; }
     [JsonIgnore] public long CaptureProcessStartTicks { get; set; }
 }
