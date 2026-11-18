@@ -65,7 +65,7 @@
 | SemanticRetrieval.swift | 277 | 已移植 | Core/SemanticRetrieval.cs（指纹、分块、SemanticIndex、RRF、HybridContextIndex.retrieve 与显式页码/文件名优先；11 项测试） |
 | SeriesBriefing.swift | 327 | 部分移植 | Core/SeriesBriefing.cs（近期会议/经验/题库/候选限制 + 决定/待办/已完成/过期项；14 项测试。证据引用合并未移植） |
 | SessionArchivePersistence.swift | 513 | 部分移植 | Core/SessionArchivePersistence.cs（目录读取结果、内容标记、写入收据、原子追加/替换、残留判定；11 项测试。迁移发布与有界写队列已移植；翻译回执跟踪未移植） |
-| SessionContentSearch.swift | 293 | 部分移植 | Core/SessionContentSearch.cs（字段/命中/摘录/去重/按会话首命中；9 项测试。fields 构建器依赖 SessionTextProjection/SessionSummary，未移植） |
+| SessionContentSearch.swift | 293 | 部分移植 | Core/SessionContentSearch.cs（字段/命中/摘录/去重/按会话首命中 + 投影字段构建器；11 项测试。笔记结构化字段未移植） |
 | SessionContext.swift | 265 | 部分移植 | Core/SessionContext.cs（词法索引、手动提问、Office XML 文本、AnswerStyle、ContextExcerpt；ContextDocument/SessionMode/SessionPreset 未移植） |
 | SessionEvidence.swift | 456 | 部分移植 | Core/SessionEvidence.cs + SessionEvidenceBuilder.cs（评审/依据等级/来源/结构定位/引用 + 引文与时间匹配、评审时效；11 项测试。结构化笔记节点编辑器、证据提取与摘要回写已补） |
 | SessionExport.swift | 129 | 部分移植 | Core/SessionExport.cs（SRT/VTT 字幕与时间戳；Markdown/Word/PDF 导出走既有实现） |

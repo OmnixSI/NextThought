@@ -55,6 +55,31 @@ public sealed record SessionSearchResult(Guid SessionId, SessionSearchHit Hit);
 /// </summary>
 public static class SessionContentSearch
 {
+    /// <summary>
+    /// Searchable fields for a projection: every indexed text becomes one field, keeping its
+    /// location, line id, revisions and freshness (port of the projection-backed fields builder).
+    /// </summary>
+    public static IReadOnlyList<SessionSearchField> Fields(SessionTextProjection projection)
+    {
+        var fields = new List<SessionSearchField>();
+        foreach (var text in projection.SearchableText)
+        {
+            var kind = text.Kind switch
+            {
+                SessionProjectionTextKind.Transcript => SessionSearchFieldKind.Transcript,
+                SessionProjectionTextKind.CorrectedTranscript => SessionSearchFieldKind.CorrectedTranscript,
+                SessionProjectionTextKind.Translation => SessionSearchFieldKind.Translation,
+                SessionProjectionTextKind.Question => SessionSearchFieldKind.Question,
+                SessionProjectionTextKind.Answer => SessionSearchFieldKind.Answer,
+                _ => SessionSearchFieldKind.Notes
+            };
+            fields.Add(new SessionSearchField(kind, text.Text, text.Location, text.AlternateText, text.Id,
+                text.LineId, text.SourceRevision, text.IsStale, text.SourceStatus));
+        }
+        return fields;
+    }
+
+
     public static SessionSearchHit? FirstHit(IReadOnlyList<SessionSearchField> fields, GlossarySearch terms) =>
         Hits(fields, terms).FirstOrDefault();
 

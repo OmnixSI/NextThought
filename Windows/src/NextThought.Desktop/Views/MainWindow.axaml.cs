@@ -1661,6 +1661,12 @@ public partial class MainWindow : Window
                                  && slideDecision.Page?.Page == 1
                                  && NextThought.Core.SlideMatcher.IsDeck("talk.pptx", 2));
 
+        var searchFieldsProjection = NextThought.Core.SessionProjectionBuilder.Build(Guid.NewGuid(), DateTimeOffset.UtcNow,
+            [new NextThought.Core.TranscriptLine { Text = "Kubernetes", Date = DateTimeOffset.UtcNow }], []);
+        var searchFields = NextThought.Core.SessionContentSearch.Fields(searchFieldsProjection);
+        Check("content-fields", searchFields.Count == 1
+                                && NextThought.Core.SessionContentSearch.FirstHit(searchFields, glossary.Search("Kubernetes")) is not null);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

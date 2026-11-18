@@ -11,6 +11,48 @@ public sealed class SessionContentSearchTests
     ]).Normalized().Search(query);
 
     [Fact]
+    public void FieldsMapEveryProjectionEntry()
+    {
+        var lineId = Guid.NewGuid();
+        var projection = new SessionTextProjection(Guid.NewGuid(), "r", "t1", new SessionProjectionOptions(),
+            [new SessionProjectedAnswer(Guid.NewGuid(), DateTimeOffset.UtcNow, "为什么？", "因为。", "a")],
+            [
+                new SessionProjectedText("line:1", SessionProjectionTextKind.Transcript, "Kubernetes 部署",
+                    LineId: lineId, Location: "01:05", SourceRevision: "rev", AlternateText: "原话"),
+                new SessionProjectedText("translation:1", SessionProjectionTextKind.Translation, "deploy", LineId: lineId),
+                new SessionProjectedText("question:1", SessionProjectionTextKind.Question, "怎么做？"),
+                new SessionProjectedText("answer:1", SessionProjectionTextKind.Answer, "因为。"),
+                new SessionProjectedText("summary", SessionProjectionTextKind.Summary, "纪要",
+                    IsStale: true, SourceStatus: SessionDerivedContentStatus.Stale)
+            ]);
+        var fields = SessionContentSearch.Fields(projection);
+        Assert.Equal(5, fields.Count);
+        Assert.Equal(SessionSearchFieldKind.Transcript, fields[0].Kind);
+        Assert.Equal(lineId, fields[0].LineId);
+        Assert.Equal("01:05", fields[0].Location);
+        Assert.Equal("原话", fields[0].AlternateText);
+        Assert.Equal(SessionSearchFieldKind.Translation, fields[1].Kind);
+        Assert.Equal(SessionSearchFieldKind.Question, fields[2].Kind);
+        Assert.Equal(SessionSearchFieldKind.Answer, fields[3].Kind);
+        Assert.Equal(SessionSearchFieldKind.Notes, fields[4].Kind);
+        Assert.True(fields[4].IsStale);
+        Assert.Equal(SessionDerivedContentStatus.Stale, fields[4].SourceStatus);
+    }
+
+    [Fact]
+    public void FieldsCanBeSearchedDirectly()
+    {
+        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), DateTimeOffset.UtcNow,
+            [new TranscriptLine { Text = "Kubernetes 部署", Date = DateTimeOffset.UtcNow }], []);
+        var fields = SessionContentSearch.Fields(projection);
+        var hit = SessionContentSearch.FirstHit(fields, Terms("Kubernetes"));
+        Assert.NotNull(hit);
+        Assert.Equal(SessionSearchFieldKind.Transcript, hit!.Kind);
+        Assert.Empty(SessionContentSearch.Fields(new SessionTextProjection(Guid.NewGuid(), "r", "t",
+            new SessionProjectionOptions(), [], [])));
+    }
+
+    [Fact]
     public void DirectMatchReturnsKindExcerptAndLocation()
     {
         var fields = new[]
