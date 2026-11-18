@@ -13,7 +13,8 @@ public static class SessionProjectionBuilder
     public static SessionTextProjection Build(Guid sessionId, DateTimeOffset startedAt,
         IReadOnlyList<TranscriptLine> lines, IReadOnlyList<SessionProjectedAnswer> answers,
         SessionProjectedSummary? summary = null, IReadOnlyList<SessionQuestionEvent>? detected = null,
-        SessionProjectionOptions? options = null, IReadOnlyList<TranscriptCorrection>? corrections = null)
+        SessionProjectionOptions? options = null, IReadOnlyList<TranscriptCorrection>? corrections = null,
+        StructuredNotesPayload? notes = null)
     {
         options ??= new SessionProjectionOptions();
         corrections ??= [];
@@ -58,11 +59,21 @@ public static class SessionProjectionBuilder
                 SourceRevision: projected.SourceTranscriptRevision, IsStale: projected.SourceStatus == SessionDerivedContentStatus.Stale,
                 SourceStatus: projected.SourceStatus));
         }
+        if (notes is not null)
+        {
+            var rendered = StructuredNotesMarkdown.Render(notes);
+            if (rendered.Length > 0)
+                text.Add(new SessionProjectedText("notes:" + notes.Format,
+                    SessionProjectionTextKind.Notes, rendered,
+                    SourceRevision: notes.TranscriptSourceRevision,
+                    SourceStatus: SessionDerivedContentStatus.Current));
+        }
 
         var revision = Revision(text);
         return new SessionTextProjection(sessionId, revision, "", options, answers, text, summary)
         {
-            Transcript = transcript
+            Transcript = transcript,
+            Notes = notes
         };
     }
 

@@ -1796,6 +1796,15 @@ public partial class MainWindow : Window
                                    && staleBriefing.Decisions.Count == 0
                                    && staleBriefing.StaleItems.Count == 1);
 
+        var projectionNotesPayload = new NextThought.Core.StructuredNotesPayload(NextThought.Core.NotesFormat.Outline,
+            outline: new NextThought.Core.OutlineNotes(
+                [new NextThought.Core.OutlineSection("结论", Points: [new NextThought.Core.OutlinePoint("投影笔记")])]));
+        var notesProjection = NextThought.Core.SessionProjectionBuilder.Build(Guid.NewGuid(), DateTimeOffset.UtcNow,
+            [], [], notes: projectionNotesPayload);
+        Check("projection-notes", notesProjection.Notes == projectionNotesPayload
+                                  && notesProjection.SearchableText.Any(text => text.Kind == NextThought.Core.SessionProjectionTextKind.Notes
+                                                                                 && text.Text.Contains("投影笔记", StringComparison.Ordinal)));
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

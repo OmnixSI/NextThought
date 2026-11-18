@@ -80,6 +80,9 @@ public sealed record SessionTextProjection(
     /// <summary>Projected transcript lines; populated by the projection builder when available.</summary>
     public IReadOnlyList<SessionProjectedTranscriptLine> Transcript { get; init; } = [];
 
+    /// <summary>The structured notes represented by this projection (null when no notes exist).</summary>
+    public StructuredNotesPayload? Notes { get; init; }
+
     public SessionDerivedContentStatus DerivedContentStatus
     {
         get

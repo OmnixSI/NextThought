@@ -57,6 +57,24 @@ public sealed class SessionProjectionBuilderTests
     }
 
     [Fact]
+    public void NotesBecomeANotesEntryAndStayOnTheProjection()
+    {
+        var notes = new StructuredNotesPayload(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("结论", Points: [new OutlinePoint("先演练")])]));
+        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [], [], notes: notes);
+        Assert.Same(notes, projection.Notes);
+        var entry = Assert.Single(projection.SearchableText, item => item.Kind == SessionProjectionTextKind.Notes);
+        Assert.Contains("先演练", entry.Text);
+        Assert.Equal("notes:Outline", entry.Id);
+        Assert.Equal(SessionDerivedContentStatus.Current, projection.DerivedContentStatus);
+
+        var without = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [], []);
+        Assert.Null(without.Notes);
+        Assert.DoesNotContain(without.SearchableText, item => item.Kind == SessionProjectionTextKind.Notes);
+        Assert.NotEqual(projection.Revision, without.Revision);
+    }
+
+    [Fact]
     public void RevisionIsStableAndChangesWithText()
     {
         var line = Line("同一句", 1);

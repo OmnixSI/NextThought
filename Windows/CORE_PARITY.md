@@ -71,7 +71,7 @@
 | SessionExport.swift | 129 | 已移植 | Core/SessionExport.cs（导出格式/扩展名/标题 + SRT/VTT 字幕与时间戳；Word/PDF 文档生成由既有实现承担） |
 | SessionRecord.swift | 740 | 部分移植 | Models.cs + Platform/SessionStore + SessionSummaryParser + SessionMarkdownExporter（会话读写、恢复中断记录、摘要解析、Markdown 导出、汇总/阶段复盘提示词；验收覆盖） |
 | SessionSearch.swift | 173 | 已移植 | Core/SessionSearch.cs + SessionSearchCache.cs（标签/打开目标/进度/快照/加载器/字节上限 LRU；15 项测试） |
-| SessionTextProjection.swift | 497 | 部分移植 | Core/SessionTextProjection.cs + SessionProjectionBuilder.cs（选项/可搜索文本/回答/摘要/新鲜度 + 转写/译文/问题/回答/摘要条目与修订；13 项测试。完整转写行投影与结构化纪要渲染已补；笔记编辑未移植） |
+| SessionTextProjection.swift | 497 | 已移植 | Core/SessionTextProjection.cs + SessionProjectionBuilder.cs + SessionProjectedTranscriptLine.cs（选项/可搜索文本/回答/摘要/笔记/新鲜度 + 转写/译文/问题/回答/摘要/笔记条目与稳定修订；14 项测试） |
 | SessionTranscriptLocator.swift | 31 | 已移植 | Core/SessionTranscriptLocator.cs（按 id 或 3 秒容差定位） |
 | SessionUserContent.swift | 143 | 已移植 | Core/SessionUserContent.cs（个人笔记/重点/编辑稿/校对决定/修订存储；7 项测试） |
 | ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 65，部分移植 15，基线简化版 0，未移植 0。
+统计：已移植 66，部分移植 14，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
