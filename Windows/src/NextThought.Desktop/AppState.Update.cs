@@ -87,6 +87,35 @@ public partial class AppState
     [RelayCommand]
     private async Task CheckUpdateAsync() => await CheckForUpdatesAsync();
 
+    public static string UpdateBackupRoot => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NextThought", "UpdateBackups");
+
+    public bool HasUpdateBackup => UpdateBackup.List(UpdateBackupRoot).Count > 0;
+
+    /// <summary>Restores the newest pre-update backup after this process exits.</summary>
+    [RelayCommand]
+    private void RestoreUpdateBackup()
+    {
+        var backup = UpdateBackup.List(UpdateBackupRoot).FirstOrDefault();
+        if (backup is null)
+        {
+            SetStatus("没有可用的更新备份。", true);
+            return;
+        }
+        try
+        {
+            var executable = Path.Combine(AppContext.BaseDirectory, "NextThought.exe");
+            UpdateRestore.Launch(backup.Path, AppContext.BaseDirectory, executable, Environment.ProcessId);
+            UpdateInstallStatus = $"将在退出后恢复 {backup.Version}，并重新打开 NextThought。";
+            SetStatus(UpdateInstallStatus);
+            UpdateInstalled?.Invoke();
+        }
+        catch (Exception exception)
+        {
+            SetStatus("回滚失败：" + exception.Message, true);
+        }
+    }
+
     [RelayCommand(CanExecute = nameof(CanInstallUpdateInApp))]
     private async Task InstallUpdateAsync()
     {

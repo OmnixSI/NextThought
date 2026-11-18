@@ -39,6 +39,7 @@ public static class StartupOptions
     public static string? ArchivePersistenceCheck { get; private set; }
     public static string? AcceptanceCheck { get; private set; }
     public static string? UpdateBackupCheck { get; private set; }
+    public static string? UpdateRestoreCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -116,6 +117,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--archive-persistence-check=", StringComparison.OrdinalIgnoreCase)) ArchivePersistenceCheck = argument["--archive-persistence-check=".Length..];
             else if (argument.StartsWith("--acceptance-check=", StringComparison.OrdinalIgnoreCase)) AcceptanceCheck = argument["--acceptance-check=".Length..];
             else if (argument.StartsWith("--update-backup-check=", StringComparison.OrdinalIgnoreCase)) UpdateBackupCheck = argument["--update-backup-check=".Length..];
+            else if (argument.StartsWith("--update-restore-check=", StringComparison.OrdinalIgnoreCase)) UpdateRestoreCheck = argument["--update-restore-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)
