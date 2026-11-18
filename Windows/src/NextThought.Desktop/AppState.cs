@@ -786,6 +786,12 @@ public partial class AppState : ObservableObject
     {
         if (PickOpenFile is null) return;
         if (await PickOpenFile("WAV 录音 (*.wav)|*.wav") is not { } file) return;
+        await ImportWaveFileAsync(file);
+    }
+
+    /// <summary>Transcribe a WAV into a new archived session (also used by the unattended QA switch).</summary>
+    public async Task ImportWaveFileAsync(string file)
+    {
         await RunWorkAsync(async ct =>
         {
             await Settings.SaveAsync();

@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         Opened += async (_, _) =>
         {
             await state.InitializeAsync();
+            if (StartupOptions.ImportWave is { } wave) await RunImportWaveTestAsync(wave);
             if (StartupOptions.Island) ToggleCueIsland();
             if (StartupOptions.Teleprompter) { ToggleTeleprompter(); if (StartupOptions.TeleprompterThrough) teleprompter?.ApplyClickThrough(true); }
             if (StartupOptions.CaptureTest is { } captureTest) await RunCaptureTestAsync(captureTest);
@@ -163,6 +164,38 @@ public partial class MainWindow : Window
             if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
             state.SetStatus("截图失败：" + ex.Message, true);
         }
+    }
+
+    /// <summary>
+    /// Unattended end-to-end check of the desktop transcription path: import a WAV, wait for the
+    /// session to be archived, then record the outcome next to the input.
+    /// </summary>
+    private async Task RunImportWaveTestAsync(string wave)
+    {
+        var report = wave + ".json";
+        try
+        {
+            await state.ImportWaveFileAsync(wave);
+            var session = state.CurrentSession;
+            var body = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                importedAt = DateTimeOffset.Now,
+                wave,
+                sessionId = session?.Id.ToString("D"),
+                title = session?.Title,
+                transcriptRows = state.Transcript.Count,
+                historyCount = state.History.Count,
+                summaryState = session?.SummaryState,
+                status = state.Status,
+                dataRoot = state.Paths.Root
+            }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(report, body);
+        }
+        catch (Exception ex)
+        {
+            await File.WriteAllTextAsync(report, "{\"error\":" + System.Text.Json.JsonSerializer.Serialize(ex.Message) + "}");
+        }
+        Close();
     }
 
     /// <summary>Unattended capture check: grab the screen, crop the centre, save it and OCR it.</summary>
