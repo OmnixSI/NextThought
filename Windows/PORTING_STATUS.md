@@ -1,3 +1,22 @@
+# P8 检查更新 · 0.16.0
+
+0.16.0 加上方案 §14 的更新检查：
+
+- **Core/UpdateCatalog.cs**：移植 `UpdateCatalog.swift` —— GitHub 发布页的 JSON、`update.json` 清单、
+  正式版本与 main 最新构建两个频道、语义版本比较（预发布排在正式版之前，`beta.10 > beta.2`）、
+  `shasum -a 256` 列表里的哈希查找。7 项测试（Core 合计 95）。
+- **Desktop/UpdateFeed.cs**：从 HTTP(S) 或本地文件读发布页；挑出带 Windows 资产的候选，
+  与当前程序集版本比较，生成 `UpdateReport`（当前版本、候选标签、是否可更新、下载地址、错误）。
+- **界面**：设置页新增「更新」卡片（频道选择、检查更新、状态、打开下载页）。
+  检查只提示并打开浏览器下载页，**不在应用内替换文件**——Windows 侧还没有签名安装包与发布流水线。
+- **验收**：`--update-check=<feed> --update-report=<path>` 写出 JSON 报告；
+  本地 feed 实测「有新版 v0.16.0 → available=true、下载地址取自 windows-x64.zip」，
+  以及「已是最新 v0.15.0 → available=false」两条分支。
+- 发布：0.16.0 自包含目录、ZIP、安装包；自检与安装后自检通过（1.75 秒、170 MiB）。
+
+仍未做：应用内下载并校验后自动替换（需要签名与发布流水线）、`NotesTemplates`（模板与校对提示）、
+`Workspace` 知识库与合并、`SpeakerClustering`、双屏演讲、同传上岛、伴侣蓝牙/中转。
+
 # P7 术语表 · 0.15.0
 
 0.15.0 把「术语与人名」从一行逗号分隔的热词升级成真正的术语表：

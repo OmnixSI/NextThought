@@ -81,7 +81,7 @@
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
 | TranscriptContextBuilder.swift | 8 | 未移植 |  |
 | TranscriptDeduplicator.swift | 98 | 已移植 | Core/TranscriptDeduplicator.cs（8 项测试） |
-| UpdateCatalog.swift | 164 | 未移植 |  |
+| UpdateCatalog.swift | 164 | 部分移植 | Core/UpdateCatalog.cs（7 项测试；设置页「检查更新」已接入） |
 | VoiceActivitySegmenter.swift | 153 | 基线简化版 | VoiceActivitySegmenter.cs（简化版） |
 | VoiceProfile.swift | 86 | 未移植 |  |
 | WebLookupPromptBuilder.swift | 41 | 未移植 |  |
@@ -91,15 +91,16 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 8，部分移植 4，基线简化版 7，未移植 61。
+统计：已移植 8，部分移植 5，基线简化版 7，未移植 60。
 
-测试：`tests/NextThought.Core.Tests` 88 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 95 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、Glossary 9）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
 系列与经验（workspace.json；系列页可新建系列、把会议归档进系列、记一句话经验）、
-术语表（正确写法作为识别热词，错写法在转写里被改回，并进入提示词的术语段）。
+术语表（正确写法作为识别热词，错写法在转写里被改回）、
+检查更新（正式/main 频道、语义版本比较、只提示并打开下载页）。
 
 未接入/未移植的重点：`Workspace` 的知识库、变更候选与 `KnowledgeMerger`、
-`NotesTemplates`（模板与校对提示）、`SpeakerClustering`、双屏演讲、同传与自动更新。
+`NotesTemplates`（模板与校对提示）、`SpeakerClustering`、双屏演讲、同传、应用内自动替换安装包。
