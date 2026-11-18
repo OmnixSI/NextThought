@@ -1,4 +1,20 @@
 
+# P5 语义检索组件 · 0.40.0
+
+0.40.0 移植 `SemanticRetrieval.swift`（277 行）的核心组件，测试 385 → 392。
+
+- **ContextFingerprint**：FNV-1a，只用于发现文本变化（非加密）。
+- **ContextChunker**：900 字/块、120 字重叠；同页短段落合并，标题不进块但进入路径；
+  表格/代码/公式保持完整；指纹 = 版本 + 文档 id + 块 id + 分片序号 + 正文。
+- **SemanticIndex**：按块顺序存 L2 归一化向量，向量记住对应文本指纹；文本变了就视为缺失；
+  `RankedOrders` 只对当前指纹匹配且维度一致的向量算点积，按分数降序、序号升序。
+- **HybridRanker**：RRF（k=60）融合词法与语义排序；**RetrievalPolicy** 语义最低分 0.43。
+- **自检**：`--retrieval-check` 在真实进程里分块、建索引、查排名
+  （`qa\retrieval-0400\retrieval-check.json`，1 块、score=1）。
+- 未移植：`HybridContextIndex.retrieve` 与词法 `SessionContextIndex`（依赖未移植的 ContextDocument/会话上下文）。
+
+统计：已移植 42 / 部分 11 / 基线 3 / 未移植 25。
+
 # P2 答案服务支持 · 0.39.0
 
 0.39.0 移植 `AnswerServiceSupport.swift`（242 行），测试 361 → 385。

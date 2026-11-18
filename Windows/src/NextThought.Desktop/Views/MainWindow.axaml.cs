@@ -75,6 +75,7 @@ public partial class MainWindow : Window
             if (StartupOptions.BackupCheck is { } backupCheck) await RunBackupCheckAsync(backupCheck);
             if (StartupOptions.PromptCheck is { } promptCheck) await RunPromptCheckAsync(promptCheck);
             if (StartupOptions.ApiCheck is { } apiCheck) await RunApiCheckAsync(apiCheck);
+            if (StartupOptions.RetrievalCheck is { } retrievalCheck) await RunRetrievalCheckAsync(retrievalCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -701,6 +702,42 @@ public partial class MainWindow : Window
         }
         catch { }
         Console.WriteLine(passed ? "api-check: passed" : "api-check: failed");
+        Close();
+    }
+
+    /// <summary>Exercises chunking, the semantic index and rank fusion in the shipped process.</summary>
+    private async Task RunRetrievalCheckAsync(string path)
+    {
+        await Task.Delay(100);
+        var document = new NextThought.Core.MaterialDocument
+        {
+            Id = "check",
+            Name = "check.pdf",
+            Blocks = [new NextThought.Core.DocumentBlock("p.1", "# 方法\n短一\n短二", 1)]
+        };
+        var chunks = NextThought.Core.ContextChunker.Chunks([document]);
+        var index = new NextThought.Core.SemanticIndex();
+        index.SetVector([1f, 0f], chunks[0].Fingerprint, 0);
+        var ranking = index.RankedOrders([1f, 0f], chunks.Select(chunk => chunk.Fingerprint).ToList());
+        var fused = NextThought.Core.HybridRanker.Fuse([0], [0]);
+        var passed = chunks.Count == 1
+                     && chunks[0].Text.Contains("方法", StringComparison.Ordinal)
+                     && chunks[0].Page == 1
+                     && ranking.Count == 1 && Math.Abs(ranking[0].Score - 1) < 1e-6
+                     && fused.Count == 1 && fused[0].Order == 0;
+        var report = new { passed, chunks = chunks.Count, fingerprint = chunks[0].Fingerprint, text = chunks[0].Text, score = ranking.Count > 0 ? ranking[0].Score : 0 };
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "retrieval-check: passed" : "retrieval-check: failed");
         Close();
     }
 
