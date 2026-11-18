@@ -1566,6 +1566,11 @@ public partial class MainWindow : Window
                                  && summaryHeader.Contains("时长：30 分钟", StringComparison.Ordinal)
                                  && NextThought.Core.SessionSummaryPrompt.Chunks("a\nb", 100).Count == 1);
 
+        var builtProjection = NextThought.Core.SessionProjectionBuilder.Build(Guid.NewGuid(), DateTimeOffset.UtcNow,
+            [new NextThought.Core.TranscriptLine { Text = "Kubernetes", Date = DateTimeOffset.UtcNow }], []);
+        Check("projection-builder", builtProjection.SearchableText.Any(text => text.Kind == NextThought.Core.SessionProjectionTextKind.Transcript)
+                                   && builtProjection.Revision.Length == 64);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
