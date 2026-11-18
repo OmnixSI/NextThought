@@ -1550,6 +1550,13 @@ public partial class MainWindow : Window
             [new NextThought.Core.MaterialDocument { Id = "doc", Name = "资料" }], Path.Combine(temporary, "materials"));
         Check("archive-ownership", owned.Count == 1 && File.Exists(owned[0].MarkdownPath) && File.Exists(owned[0].MetadataPath));
 
+        var zipformer = NextThought.Core.OnlineTransducerModel.LegacyBilingual(Path.Combine(temporary, "model"));
+        var hotwords = NextThought.Core.ZipformerHotwords.Clean("Kubernetes，开源");
+        Check("zipformer", zipformer.RequiredFiles.Count == 4
+                           && zipformer.ModelType == "zipformer"
+                           && hotwords.SequenceEqual(["Kubernetes", "开源"])
+                           && NextThought.Core.ZipformerModelFiles.SampleRate == 16000);
+
         var projection = new NextThought.Core.SessionTextProjection(sessionId, "rev", "t1",
             new NextThought.Core.SessionProjectionOptions(), [],
             [new NextThought.Core.SessionProjectedText("n", NextThought.Core.SessionProjectionTextKind.Notes, "n",

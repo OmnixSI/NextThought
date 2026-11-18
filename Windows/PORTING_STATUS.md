@@ -1,4 +1,24 @@
 
+# P3 Zipformer 模型描述 · 0.64.0
+
+0.64.0 移植 `ZipformerStreaming.swift`（496 行）的模型/热词/错误部分，测试 557 → 566。
+
+- **模型文件名**：encoder/decoder/joiner/tokens/bpe.vocab 与 16 kHz 采样率常量。
+- **在线模型**：目录、四个文件名、SentencePiece 词表、modelingUnit、modelType；`LegacyBilingual`
+  （cjkchar+bpe + zipformer）与 `XasrStreaming`（encoder.int8/decoder/joiner.int8、modelType 留空）两套预设；
+  `RequiredFiles` 与 `HasVocabulary` 检查实际文件。
+- **离线模型**：同样的文件描述与 `XasrOffline` 预设，用于整句重解码。
+- **热词**：按中英文逗号/顿号/分号/换行切分、去空白；写入临时文件供识别器加载。
+- **结果与错误**：`ZipformerHypothesis`（文本、是否终稿、起止、推理/音频秒数）；
+  五种运行时错误与 Mac 相同的中文文案。
+- **自检**：`--acceptance-check` 增加第 14 项，校验预设文件名、词表与热词切分
+  （`qa\install-smoke-0640\acceptance.json`）。
+- 9 项测试：常量、Legacy 预设、X-ASR 在线/离线、必需文件与词表、热词切分/写入、结果计时、错误文案。
+- 未移植：`ZipformerRuntime` 的 native sherpa-onnx 调用与双流管理；Windows 由 `SpeechRecognizerSession` +
+  `Utf8SherpaInterop` 直接承担（真实 WAV 转写已有证据）。
+
+统计：已移植 56 / 部分 23 / 基线 1 / 未移植 1。
+
 # P6 系列文档归档 · 0.63.0
 
 0.63.0 移植 `WorkspaceArchiveOwnership.swift`（35 行），按 Windows 的资料模型适配，测试 551 → 557。
