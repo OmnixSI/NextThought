@@ -1,4 +1,19 @@
 
+# P5 字节级 BPE · 0.47.0
+
+0.47.0 移植 `ByteLevelBPETokenizer.swift`（219 行）为 `Core/ByteLevelBPETokenizer.cs`，测试 440 → 448。
+
+- **词表来源**：直接读模型的 `tokenizer.json`（`model.type` 必须为 BPE、`vocab`、`merges` 两种写法、`added_tokens`），
+  自定义 split 正则与 NFC 归一化可配置，默认追加 `<|endoftext|>`（151643）。
+- **字节级**：GPT-2 可逆字节表（33–126、161–172、174–255 原样，其余映射到 256+），
+  文本 → UTF-8 字节 → 可见码点 → 按最低 rank 合并 → token id；`decode` 反向还原 UTF-8。
+- **自检**：`--bpe-check` 现场生成一个小 tokenizer.json，编码 `ab`、`中` 并解码回原文
+  （`qa\bpe-0470\bpe-check.json`）。
+- 8 项测试覆盖合并、追加/不追加结束符、字符串形式 merges、中文三字节往返、NFC 合成、坏文件与默认配置。
+- 说明：应用内嵌入仍用 `Platform/QwenTokenizer.cs`（同一算法、已对参考输出校验）；本文件是 Core 参考实现。
+
+统计：已移植 51 / 部分 11 / 基线 2 / 未移植 17。
+
 # P4 注视估计 · 0.46.0
 
 0.46.0 移植 `GazeEstimator.swift`（188 行）为 `Core/GazeEstimator.cs`，测试 432 → 440。

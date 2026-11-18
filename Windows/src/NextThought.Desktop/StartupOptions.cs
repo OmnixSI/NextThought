@@ -23,6 +23,7 @@ public static class StartupOptions
     public static string? QuestionCheck { get; private set; }
     public static string? PdfCheck { get; private set; }
     public static string? GazeCheck { get; private set; }
+    public static string? BpeCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -84,6 +85,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--question-check=", StringComparison.OrdinalIgnoreCase)) QuestionCheck = argument["--question-check=".Length..];
             else if (argument.StartsWith("--pdf-check=", StringComparison.OrdinalIgnoreCase)) PdfCheck = argument["--pdf-check=".Length..];
             else if (argument.StartsWith("--gaze-check=", StringComparison.OrdinalIgnoreCase)) GazeCheck = argument["--gaze-check=".Length..];
+            else if (argument.StartsWith("--bpe-check=", StringComparison.OrdinalIgnoreCase)) BpeCheck = argument["--bpe-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)

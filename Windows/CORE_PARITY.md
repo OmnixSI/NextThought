@@ -19,7 +19,7 @@
 | Backup.swift | 667 | 未移植 |  |
 | BackupArchivePolicy.swift | 33 | 已移植 | Core/BackupContent.cs（路径/符号链接/资源上限预检） |
 | BackupContent.swift | 36 | 已移植 | Core/BackupContent.cs（内容指纹与导入状态） |
-| ByteLevelBPETokenizer.swift | 219 | 未移植 |  |
+| ByteLevelBPETokenizer.swift | 219 | 已移植 | Core/ByteLevelBPETokenizer.cs（tokenizer.json、字节表、合并与解码；8 项测试） |
 | CancellableTaskValue.swift | 34 | 未移植 |  |
 | CloudTranscription.swift | 293 | 已移植 | Core/CloudTranscription.cs（三家服务商配置、转写消息装配、16→24 kHz 重采样；9 项测试。WebSocket 传输仍在应用层） |
 | CoachSummary.swift | 69 | 已移植 | Core/CoachSummary.cs（随 Scene 测试覆盖） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 50，部分移植 11，基线简化版 2，未移植 18。
+统计：已移植 51，部分移植 11，基线简化版 2，未移植 17。
 
-测试：`tests/NextThought.Core.Tests` 440 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 448 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 
