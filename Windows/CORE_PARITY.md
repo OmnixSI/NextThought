@@ -10,7 +10,7 @@
 
 | Swift 文件 | 行数 | 状态 | C# 对应 / 备注 |
 | --- | ---: | --- | --- |
-| AnswerEvidence.swift | 57 | 部分移植 | Core/AnswerEvidence.cs（SearchDecision.parse + AnswerGrounding；EvidenceBundle/AnswerState 等 ContextExcerpt/ScreenContext/WebResult 移植） |
+| AnswerEvidence.swift | 57 | 已移植 | Core/AnswerEvidence.cs（SearchDecision/AnswerGrounding + EvidenceBundle/AnswerState；7 项测试） |
 | AnswerLanguage.swift | 38 | 已移植 | Core/AnswerLanguage.cs（4 项测试） |
 | AnswerPromptBuilder.swift | 328 | 部分移植 | Core/AnswerPromptBuilder.cs（指令原文、预算化 JSON、整份资料、精炼；PreparationPrompt 与 ModeProfile（角色/字段/资料分类/回答偏好）已补） |
 | AnswerServiceSupport.swift | 242 | 已移植 | Core/AnswerServiceSupport.cs（默认后端、服务商表、Key 清洗/掩码、失败解释、时间线；8 项测试） |
@@ -91,7 +91,7 @@
 | WorkspaceDeletionTransaction.swift | 151 | 部分移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、暂存/回滚/清理、授权事务；9 项测试。DocumentJob 与共享原件判定未移植） |
 | ZipformerStreaming.swift | 496 | 部分移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时仍由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 56，部分移植 24，基线简化版 0，未移植 0。
+统计：已移植 57，部分移植 23，基线简化版 0，未移植 0。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、

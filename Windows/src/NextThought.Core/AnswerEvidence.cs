@@ -38,6 +38,48 @@ public sealed record SearchDecision(bool Search, string Reason, string Query, st
 }
 
 /// <summary>Rewrite/search detection before answering (port of AnswerGrounding in AnswerEvidence.swift).</summary>
+/// <summary>Everything the answer was grounded on, frozen per request (port of EvidenceBundle).</summary>
+public sealed record EvidenceBundle(Guid RequestId)
+{
+    public IReadOnlyList<ContextExcerpt> Materials { get; init; } = [];
+    public ScreenContext? Screen { get; init; }
+    public bool ScreenImageAttached { get; init; }
+    public string Retrieval { get; init; } = "关键词查找";
+    public SearchDecision? Search { get; init; }
+    public IReadOnlyList<WebResult> WebSources { get; init; } = [];
+    public IReadOnlyList<string> Notes { get; init; } = [];
+}
+
+/// <summary>One answer as the floating answer card shows it (port of AnswerState).</summary>
+public sealed record AnswerState
+{
+    public enum PhaseValue
+    {
+        Waiting,
+        Generating,
+        Complete,
+        Cancelled,
+        Failed
+    }
+
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public string Question { get; init; } = "";
+    public string Text { get; init; } = "";
+    public PhaseValue Phase { get; init; } = PhaseValue.Waiting;
+    public int Revision { get; init; }
+    public string? Error { get; init; }
+    public EvidenceBundle Evidence { get; init; }
+
+    public AnswerState(Guid id, string question) : this()
+    {
+        Id = id;
+        Question = question;
+        Evidence = new EvidenceBundle(id);
+    }
+
+    public AnswerState() => Evidence = new EvidenceBundle(Id);
+}
+
 public static class AnswerGrounding
 {
     private static readonly string[] RewritePrefixes = ["把上一条回答压缩", "Rewrite the previous answer", "把上一条回答改写为"];

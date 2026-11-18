@@ -1668,6 +1668,12 @@ public partial class MainWindow : Window
         Check("content-fields", searchFields.Count == 1
                                 && NextThought.Core.SessionContentSearch.FirstHit(searchFields, glossary.Search("Kubernetes")) is not null);
 
+        var answerState = new NextThought.Core.AnswerState(Guid.NewGuid(), "问题");
+        var searchDecision = NextThought.Core.SearchDecision.Parse("{\"needsSearch\":true,\"reason\":\"需要最新\"}", "问题");
+        Check("answer-evidence", answerState.Phase == NextThought.Core.AnswerState.PhaseValue.Waiting
+                                  && answerState.Evidence.RequestId == answerState.Id
+                                  && searchDecision is { Search: true, Query: "问题" });
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }
