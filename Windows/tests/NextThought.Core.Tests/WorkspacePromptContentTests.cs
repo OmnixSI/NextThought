@@ -39,6 +39,24 @@ public sealed class WorkspacePromptContentTests
     }
 
     [Fact]
+    public void DocumentsOfASeriesCanFilterDisabledOnes()
+    {
+        var series = Series() with
+        {
+            Documents =
+            [
+                new ContextDocument { Name = "简历", Pages = ["内容"], Enabled = true },
+                new ContextDocument { Name = "JD", Pages = ["要求"], Enabled = false }
+            ]
+        };
+        Assert.Equal(2, series.DocumentsOf().Count);
+        var enabled = series.DocumentsOf(enabledOnly: true);
+        Assert.Single(enabled);
+        Assert.Equal("简历", enabled[0].Name);
+        Assert.Empty(Series().DocumentsOf(enabledOnly: true));
+    }
+
+    [Fact]
     public void MaterialTextUsesProfileOrderThenUnknownKeys()
     {
         var series = Series();

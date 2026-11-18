@@ -1825,6 +1825,17 @@ public partial class MainWindow : Window
 
         Check("ocr-spacing", NextThought.Core.TextSimilarity.Terms("缓 存 一 致 性").Contains("缓存"));
 
+        var documentsSeries = new NextThought.Core.WorkspaceSeries("d", "系列", DateTimeOffset.UtcNow, [], [])
+        {
+            Documents =
+            [
+                new NextThought.Core.ContextDocument { Name = "简历", Enabled = true },
+                new NextThought.Core.ContextDocument { Name = "JD", Enabled = false }
+            ]
+        };
+        Check("workspace-documents", documentsSeries.DocumentsOf().Count == 2
+                                     && documentsSeries.DocumentsOf(enabledOnly: true).Count == 1);
+
         var manifest = new NextThought.Core.BackupManifest { WorkspaceCount = 1, SessionCount = 1 };
         var rejected = false;
         try { (manifest with { Version = 2 }).Validate(); } catch (NextThought.Core.BackupManifest.ValidationException) { rejected = true; }

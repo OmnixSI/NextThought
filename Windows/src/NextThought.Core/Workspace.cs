@@ -77,6 +77,9 @@ public sealed record WorkspaceSeries(
     /// <summary>Materials that belong to this series (Windows ids of enabled documents).</summary>
     public IReadOnlyList<string> DocumentIds { get; init; } = [];
 
+    /// <summary>Material metadata of this series (port of Workspace.documents).</summary>
+    public IReadOnlyList<ContextDocument> Documents { get; init; } = [];
+
     /// <summary>Deleted meetings whose knowledge must not be resurrected by a stale copy.</summary>
     [JsonPropertyName("sourceDeletionTombstones")]
     public IReadOnlyList<string>? SourceDeletionTombstones { get; init; }
@@ -95,6 +98,10 @@ public sealed record WorkspaceSeries(
 
     /// <summary>
     /// Template fields as prompt text: known fields in profile order, then values from another
+    /// <summary>Documents of this series, optionally only the enabled ones.</summary>
+    public IReadOnlyList<ContextDocument> DocumentsOf(bool enabledOnly = false) =>
+        enabledOnly ? Documents.Where(document => document.Enabled).ToList() : Documents;
+
     /// mode in key order (port of Workspace.materialText; empty values are skipped).
     /// </summary>
     public string MaterialText(IReadOnlyList<(string Id, string Title)> profileFields,
