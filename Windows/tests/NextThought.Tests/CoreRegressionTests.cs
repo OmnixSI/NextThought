@@ -67,12 +67,16 @@ public sealed class CoreRegressionTests
     public void VadClosesOneUtteranceAndNeverDuplicatesAnOverlapTail()
     {
         var vad = new VoiceActivitySegmenter(); var voice = Enumerable.Range(0, 1600).Select(i => (short)(Math.Sin(i*.15)*4000)).ToArray();
-        for (var i = 0; i < 8; i++) Assert.Null(vad.Append(voice));
-        SpeechSegment? final = null;
-        for (var i = 0; i < 8; i++) final ??= vad.Append(new short[1600]);
-        Assert.NotNull(final); Assert.True(final!.Samples.Length >= 12800); Assert.Null(vad.Flush());
-        vad = new(); var events = new List<SpeechSegment>();
-        for (var i = 0; i < 120; i++) if (vad.Append(voice) is { } segment) events.Add(segment);
-        Assert.Single(events); Assert.Null(vad.Flush());
+        var finals = new List<SpeechSegmentEvent>();
+        for (var i = 0; i < 8; i++) finals.AddRange(vad.Append(voice).Where(e => e.Kind == SpeechSegmentEvent.KindValue.Final));
+        for (var i = 0; i < 8; i++) finals.AddRange(vad.Append(new short[1600]).Where(e => e.Kind == SpeechSegmentEvent.KindValue.Final));
+        var single = Assert.Single(finals);
+        Assert.True(single.Samples.Length >= 12800);
+        Assert.Null(vad.Flush());
+
+        vad = new(); var longFinals = new List<SpeechSegmentEvent>();
+        for (var i = 0; i < 120; i++) longFinals.AddRange(vad.Append(voice).Where(e => e.Kind == SpeechSegmentEvent.KindValue.Final));
+        Assert.Single(longFinals);
+        Assert.Null(vad.Flush());
     }
 }

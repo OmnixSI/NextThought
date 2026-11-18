@@ -83,7 +83,7 @@ public sealed class SpeechRecognizerSession : IDisposable
         FrameObserved?.Invoke(frame);
         if (!states.TryGetValue(frame.Source, out var state)) { state = new(online.CreateStream()) { Origin = frame.Origin, StartSample = frame.StartSample }; states[frame.Source] = state; }
         var clock = Stopwatch.StartNew();
-        var segment = state.Vad.Append(frame.Samples);
+        var segments = state.Vad.Append(frame.Samples);
         state.Stream.AcceptWaveform(16000, frame.Samples.Select(x => x / 32768f).ToArray()); Decode(state);
         var text = online.GetText(state.Stream).Trim();
         if (text.Length > 0 && text != state.LastText && frame.StartSample-state.LastPartialSample >= 3200)
@@ -91,7 +91,9 @@ public sealed class SpeechRecognizerSession : IDisposable
             state.LastText = text; state.LastPartialSample = frame.StartSample;
             Updated?.Invoke(new(state.Utterance, frame.Source, text, false, state.Origin.AddSeconds(state.StartSample/16000.0), state.Origin.AddSeconds((frame.StartSample+frame.Samples.Length)/16000.0)));
         }
-        if (segment != null) Commit(frame.Source, state, segment, frame.StartSample + frame.Samples.Length);
+        foreach (var segment in segments)
+            if (segment.Kind == SpeechSegmentEvent.KindValue.Final)
+                Commit(frame.Source, state, new SpeechSegment(segment.Id, segment.StartSample, segment.EndSample, segment.Samples), frame.StartSample + frame.Samples.Length);
         InferenceSeconds += clock.Elapsed.TotalSeconds; AudioSeconds += frame.Samples.Length/16000.0;
     }
     private void Decode(State state) { while (online.IsReady(state.Stream)) online.Decode(state.Stream); }
@@ -116,7 +118,7 @@ public sealed class SpeechRecognizerSession : IDisposable
     {
         var clock = Stopwatch.StartNew();
         foreach (var (source, state) in states)
-            if (state.Vad.Flush() is { } segment) Commit(source, state, segment, segment.EndSample);
+            if (state.Vad.Flush() is { } segment) Commit(source, state, new SpeechSegment(segment.Id, segment.StartSample, segment.EndSample, segment.Samples), segment.EndSample);
         InferenceSeconds += clock.Elapsed.TotalSeconds;
     }
     public void Dispose()
