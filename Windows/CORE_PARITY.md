@@ -71,7 +71,7 @@
 | SessionExport.swift | 129 | 部分移植 | Core/SessionExport.cs（SRT/VTT 字幕与时间戳；Markdown/Word/PDF 导出走既有实现） |
 | SessionRecord.swift | 740 | 基线简化版 | Models.cs（只覆盖部分字段） |
 | SessionSearch.swift | 173 | 部分移植 | Core/SessionSearch.cs（命中标签/打开目标/进度与快照字节数/无缓存检索；8 项测试。磁盘快照加载与字节上限缓存未移植） |
-| SessionTextProjection.swift | 497 | 未移植 |  |
+| SessionTextProjection.swift | 497 | 部分移植 | Core/SessionTextProjection.cs（选项/可搜索文本/回答/摘要/新鲜度；7 项测试。转写行投影与 builder 未移植） |
 | SessionTranscriptLocator.swift | 31 | 已移植 | Core/SessionTranscriptLocator.cs（按 id 或 3 秒容差定位） |
 | SessionUserContent.swift | 143 | 已移植 | Core/SessionUserContent.cs（个人笔记/重点/编辑稿/校对决定/修订存储；7 项测试） |
 | ShortcutBinding.swift | 26 | 已移植 | Core/ShortcutBinding.cs（2 项测试） |
@@ -91,9 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 部分移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、暂存/回滚/清理、授权事务；9 项测试。DocumentJob 与共享原件判定未移植） |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 56，部分移植 20，基线简化版 1，未移植 4。
+统计：已移植 56，部分移植 21，基线简化版 1，未移植 3。
 
-测试：`tests/NextThought.Core.Tests` 544 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 551 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
 Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、双屏布局 10、伴侣中转加密 9、小文件批次 25、小文件批次二 18、字幕导出 11、小文件批次三 25、音频与模型 11、说话人 12、公式 17、小文件批次四 14、增量备份 16、文档结构 11、提问轮次 14、其余 28）。
 

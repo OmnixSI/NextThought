@@ -1545,6 +1545,14 @@ public partial class MainWindow : Window
         NextThought.Core.SessionArchiveContentMarker.Record(Path.Combine(archive, ".marker"));
         Check("archive", File.ReadAllLines(transcript).Length == 1 && NextThought.Core.SessionArchiveLeftover.IsLeftover(["notes.json"]));
 
+        var projection = new NextThought.Core.SessionTextProjection(sessionId, "rev", "t1",
+            new NextThought.Core.SessionProjectionOptions(), [],
+            [new NextThought.Core.SessionProjectedText("n", NextThought.Core.SessionProjectionTextKind.Notes, "n",
+                SourceStatus: NextThought.Core.SessionDerivedContentStatus.Stale)]);
+        Check("projection", projection.DerivedContentStatus == NextThought.Core.SessionDerivedContentStatus.Stale
+                            && new NextThought.Core.SessionProjectedAnswer(Guid.NewGuid(), DateTimeOffset.UtcNow, "q", "a", "r",
+                                NextThought.Core.AnswerCompletion.Interrupted).IsComplete == false);
+
         var passed = checks.All(check => check.Passed);
         var report = new
         {

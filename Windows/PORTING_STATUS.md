@@ -1,4 +1,22 @@
 
+# P2 会话投影模型 · 0.62.0
+
+0.62.0 移植 `SessionTextProjection.swift`（497 行）的投影模型部分，测试 544 → 551。
+
+- **选项**：转写版本（原文/校对后）与语言视图（原文/译文/双语），默认校对后 + 双语。
+- **投影文本**：稳定 id、类型（转写/校对转写/译文/问题/回答/摘要/纪要）、来源 id、行 id、位置、
+  来源修订、过期标记、来源状态、正文与可搜索的备用写法。
+- **回答/摘要**：回答携带问题、答案、来源修订与完成状态（缺省/完成算完成，中断/失败不算）；
+  摘要携带标题、Markdown、来源转写修订与新鲜度。
+- **整体新鲜度**：搜索文本与摘要里任一 Stale → Stale；否则任一 Unknown → Unknown；否则 Current；
+  纯原文转写视为 Current。
+- **自检**：`--acceptance-check` 增加第 12 项，验证 Stale 优先与中断回答不算完成
+  （`qa\install-smoke-0620\acceptance.json`）。
+- 7 项测试：默认选项、投影文本定位/备用写法、回答完成状态、Stale/Unknown/Current、摘要默认未知。
+- 未移植：转写行投影（`SessionProjectedTranscriptLine`）、笔记/检测问题与 `SessionProjectionBuilder` 主体。
+
+统计：已移植 56 / 部分 21 / 基线 1 / 未移植 3。
+
 # P2 验收汇总与 QuestionIntent 口径 · 0.61.0
 
 0.61.0 增加一次进程内验收汇总，并把 ``QuestionIntent.swift``（532 行）的 Windows 等价重写按「已移植（等价重写）」记录。
