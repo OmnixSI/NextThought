@@ -41,6 +41,12 @@ public partial class MainWindow : Window
             if (StartupOptions.Island) ToggleCueIsland();
             if (StartupOptions.Teleprompter) { ToggleTeleprompter(); if (StartupOptions.TeleprompterThrough) teleprompter?.ApplyClickThrough(true); }
             if (StartupOptions.CaptureTest is { } captureTest) await RunCaptureTestAsync(captureTest);
+            if (StartupOptions.UpdateCheck is { } feed)
+            {
+                var update = await state.CheckForUpdatesAsync(feed);
+                var target = StartupOptions.UpdateReport ?? feed + ".report.json";
+                await File.WriteAllTextAsync(target, System.Text.Json.JsonSerializer.Serialize(update, UpdateReport.Options));
+            }
             if (StartupOptions.CheckReport is { } report) await WriteStartupReportAsync(report);
         };
         Closing += OnClosing;

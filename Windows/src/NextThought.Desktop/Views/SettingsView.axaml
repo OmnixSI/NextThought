@@ -183,6 +183,21 @@
         </StackPanel>
       </Border>
 
+      <!-- Updates -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="更新" Classes="section" />
+          <TextBlock Text="检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。只在浏览器打开下载页，不在应用内替换文件。"
+                     Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding SelectedUpdateChannel}" MinWidth="170" />
+            <Button Content="检查更新" Command="{Binding CheckUpdateCommand}" />
+            <Button Content="打开下载页" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding CanOpenUpdatePage}" />
+          </StackPanel>
+          <TextBlock Text="{Binding UpdateStatus}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
       <!-- Data and about -->
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="12">

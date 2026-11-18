@@ -18,6 +18,8 @@ public static class StartupOptions
     public static string? HistoryQuery { get; private set; }
     public static NextThought.Core.MeetingMode? Scene { get; private set; }
     public static NextThought.Core.NotesFormat? NotesFormat { get; private set; }
+    public static string? UpdateCheck { get; private set; }
+    public static string? UpdateReport { get; private set; }
 
     public static void Parse(IReadOnlyList<string> args)
     {
@@ -29,6 +31,8 @@ public static class StartupOptions
             else if (argument is "--subtitles") Subtitles = true;
             else if (argument is "--companion") Companion = true;
             else if (argument is "--teleprompter") Teleprompter = true;
+            else if (argument.StartsWith("--update-check=", StringComparison.OrdinalIgnoreCase)) UpdateCheck = argument["--update-check=".Length..];
+            else if (argument.StartsWith("--update-report=", StringComparison.OrdinalIgnoreCase)) UpdateReport = argument["--update-report=".Length..];
             else if (argument.StartsWith("--notes-format=", StringComparison.OrdinalIgnoreCase))
                 NotesFormat = argument["--notes-format=".Length..].ToLowerInvariant() switch {
                     "fishbone" => NextThought.Core.NotesFormat.Fishbone,
