@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
+using QRCoder;
 using NextThought.Platform;
 
 namespace NextThought.Desktop;
@@ -80,6 +81,10 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private bool ready;
     [ObservableProperty] private bool modelReady;
     [ObservableProperty] private bool companionRunning;
+    [ObservableProperty] private CompanionAddress? selectedCompanionAddress;
+    [ObservableProperty] private string companionInfo = "默认关闭；手机与电脑需在同一可信网络。只发送当前问题、回答与状态，不发送资料、完整转写、音频或密钥。";
+    [ObservableProperty] private string companionLink = "";
+    [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
     [ObservableProperty] private string meetingTitle = "新会议";
     [ObservableProperty] private string pageSubtitle = "选择声音来源，开始记录。";
     [ObservableProperty] private string status = "正在准备…";
@@ -102,6 +107,9 @@ public partial class AppState : ObservableObject
     public ObservableCollection<TranscriptRow> Transcript { get; }
     public ObservableCollection<RecentMeetingRow> History { get; }
     public ObservableCollection<SourceCitation> Sources { get; }
+    public ObservableCollection<CompanionAddress> CompanionAddresses { get; } = [];
+
+    public string CompanionToggleLabel => CompanionRunning ? "关闭局域网手机伴侣" : "开启局域网手机伴侣";
 
     public AppSettings SettingsSnapshot => Settings.Build();
 
@@ -134,7 +142,7 @@ public partial class AppState : ObservableObject
     }
 
     partial void OnWorkingChanged(bool value) => RaiseBusy();
-    partial void OnRecordingChanged(bool value) => RaiseBusy();
+    partial void OnRecordingChanged(bool value) { RaiseBusy(); PublishCompanionSnapshot(); }
     partial void OnStoppingChanged(bool value) => RaiseBusy();
     partial void OnAnsweringChanged(bool value) { RaiseBusy(); OnPropertyChanged(nameof(CanCancel)); }
     partial void OnSummarizingChanged(bool value) => RaiseBusy();
@@ -190,6 +198,7 @@ public partial class AppState : ObservableObject
             Settings.LoadFromStore();
             Mark("settings");
             RefreshProcesses();
+            RefreshCompanionAddresses();
             Mark("processes");
             await Settings.RefreshDevicesAsync();
             Mark("devices");
@@ -215,6 +224,7 @@ public partial class AppState : ObservableObject
                     ? $"已处理 {recovered.Count} 场中断会议；可在历史中继续查看或整理纪要。"
                     : ModelReady ? "语音已就绪。可以开始记录，或先导入 WAV 验证。" : "先到设置准备语音组件；未连接回答服务时也可以只记录。");
             }
+            if (StartupOptions.Companion && SelectedCompanionAddress is not null) await ToggleCompanionAsync();
             if (StartupOptions.Section is { } requested) Section = requested;
         }
         catch (Exception ex)
@@ -1029,6 +1039,110 @@ public partial class AppState : ObservableObject
 
     private void LatchCompanionCommandState() => OnPropertyChanged(nameof(CompanionRunning));
 
+    // ---- 手机伴侣（方案第 12 节，局域网通道；平台层 CompanionServer 已验收） ----
+
+    private CompanionServer? companion;
+
+    [RelayCommand]
+    private void RefreshCompanionAddresses()
+    {
+        CompanionAddresses.Clear();
+        foreach (var address in CompanionServer.Addresses()) CompanionAddresses.Add(address);
+        SelectedCompanionAddress = CompanionAddresses.FirstOrDefault();
+        CompanionInfo = CompanionAddresses.Count == 0
+            ? "没有找到可用的局域网 IPv4 地址；请先连接 Wi-Fi 或以太网。"
+            : "默认关闭；开启后手机与电脑需在同一可信网络。首次监听时 Windows 防火墙会询问，请只允许专用网络。";
+    }
+
+    [RelayCommand(CanExecute = nameof(CanToggleCompanion))]
+    private async Task ToggleCompanionAsync()
+    {
+        if (companion is not null)
+        {
+            await companion.DisposeAsync();
+            companion = null;
+            CompanionRunning = false;
+            CompanionQr = null;
+            CompanionLink = "";
+            SetStatus("手机伴侣已关闭。");
+            return;
+        }
+        if (SelectedCompanionAddress is not { } address)
+        {
+            SetStatus("请先选择一个局域网地址。", true);
+            return;
+        }
+        try
+        {
+            companion = new CompanionServer(address.Address, HandleCompanionActionAsync);
+            CompanionRunning = true;
+            CompanionLink = companion.PairingUrl;
+            CompanionQr = BuildQr(companion.PairingUrl);
+            CompanionInfo = $"已在 {address.Address}:{companion.BaseUri.Port} 监听 · 配对链接相当于临时遥控密钥，只在可信网络使用。";
+            PublishCompanionSnapshot();
+            SetStatus("手机伴侣已开启；手机扫码即可查看当前问题与回答。");
+        }
+        catch (Exception ex)
+        {
+            companion = null;
+            CompanionRunning = false;
+            SetStatus("手机伴侣启动失败：" + ex.Message, true);
+        }
+    }
+
+    private bool CanToggleCompanion() => !ShuttingDown;
+
+    private async Task<bool> HandleCompanionActionAsync(string action)
+    {
+        switch (action)
+        {
+            case "answer":
+                await AnswerAsync(string.IsNullOrWhiteSpace(DetectedQuestion) ? "请总结当前讨论" : DetectedQuestion, false);
+                return true;
+            case "regenerate":
+                await AnswerAsync(string.IsNullOrWhiteSpace(DetectedQuestion) ? "请总结当前讨论" : DetectedQuestion, false);
+                return true;
+            case "shorter":
+                await AnswerAsync("请把上一个回答压缩到三句话以内，只保留结论。", false);
+                return true;
+            case "example":
+                await AnswerAsync("请针对上一个回答给出一个具体例子。", false);
+                return true;
+            case "cancel":
+                CancelRequest();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void PublishCompanionSnapshot()
+    {
+        companion?.Publish(new CompanionSnapshot(
+            Status: Recording ? "正在记录" : Answering ? "正在生成回答" : "待机",
+            Question: DetectedQuestion,
+            Answer: PlainAnswer,
+            Answering: Answering,
+            Candidate: DetectedQuestion,
+            SessionID: CurrentSession?.Id.ToString("D"),
+            Sources: Sources.Count == 0 ? null : string.Join("、", Sources.Take(3).Select(x => x.Label))));
+    }
+
+    private static Avalonia.Media.Imaging.Bitmap? BuildQr(string text)
+    {
+        try
+        {
+            using var generator = new QRCodeGenerator();
+            using var data = generator.CreateQrCode(text, QRCodeGenerator.ECCLevel.M);
+            var png = new PngByteQRCode(data).GetGraphic(6);
+            return new Avalonia.Media.Imaging.Bitmap(new MemoryStream(png));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public bool ShuttingDown => closing;
 
     public async Task ShutdownAsync()
@@ -1045,6 +1159,7 @@ public partial class AppState : ObservableObject
             await Settings.SaveAsync();
         }
         catch { }
+        if (companion is not null) { await companion.DisposeAsync(); companion = null; }
         Retrieval.Dispose();
         allowClose = true;
     }

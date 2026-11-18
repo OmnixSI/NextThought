@@ -1,3 +1,26 @@
+# P4/P5 浮窗与快捷键 · 0.6.0（Avalonia）
+
+0.6.0 在 0.5.0 的 Avalonia 外壳上补齐方案第 9 节的首批浮窗与第 7 节的全局快捷键：
+
+- **提词岛**：无边框、透明、置顶、不激活的窗口，屏幕顶部居中，显示当前问题与三行回答，
+  回答文本去掉 Markdown 标记；Ctrl+Alt+O 或会议页按钮开关。
+- **字幕条**：底部居中一句，带译文时译文为主、原文在下；Core 新增 `SubtitleBar.cs`
+  （LiveWindowMode、SubtitleBarTiming、SubtitleFeed、SubtitleText 半角宽度截断）逐文件移植自
+  `SubtitleBar.swift`，12 项 xunit 测试通过；4 秒保持 + 0.5 秒淡出。
+- **三态切换**：纪要窗口 / 字幕条 / 隐藏，界面按钮与 Ctrl+Alt+M 循环。
+- **全局快捷键**：`GlobalHotkeys` 在独立消息泵线程上用线程级 `RegisterHotKey` 注册
+  Ctrl+Alt+R/O/M/N，`WM_HOTKEY` 回投 UI 线程；实测四组注册成功并可用。
+  注意 HWND_MESSAGE 窗口注册会返回 1408，不可用。
+- **手机伴侣（局域网通道）**：地址列表、开启/关闭、配对二维码与链接、快照发布，
+  复用 Platform 已有 `CompanionServer`；首次开启触发 Windows 防火墙询问，与方案第 12 节一致。
+- **真实识别复核**：X-ASR 480 ms + 整句精修，10.05 秒样例输出两行、RTF 0.078；
+  证据 `qa\asr\xasr480-0.json`。
+
+发布：`build_desktop.ps1 -Version 0.6.0` 一次完成构建、自检、安装包与 ZIP；自检通过，
+安装后自检通过，冷启动约 1.6 秒（含 400 ms 等待），空闲内存约 166 MiB。
+
+仍未做：提词器浮窗、区域截图、双屏演讲、同传上岛、蓝牙/中转、Core 其余 79 个文件的逐文件移植。
+
 # P4 界面主线 · 0.5.0（Avalonia）
 
 0.5.0 用 Avalonia 12.1.6 重写界面，取代 WPF 预览窗口（WPF 工程暂留作对照，下一阶段删除）。

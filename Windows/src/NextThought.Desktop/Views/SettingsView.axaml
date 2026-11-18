@@ -1,6 +1,7 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
+             xmlns:platform="using:NextThought.Platform"
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -125,6 +126,36 @@
           </StackPanel>
           <TextBlock Text="转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。"
                      Classes="caption" FontSize="11" />
+        </StackPanel>
+      </Border>
+
+      <!-- Phone companion (LAN channel) -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="手机伴侣" Classes="section" />
+          <TextBlock Text="手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。"
+                     Classes="caption" FontSize="11" />
+          <TextBlock Text="局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。"
+                     Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ComboBox ItemsSource="{Binding CompanionAddresses}" SelectedItem="{Binding SelectedCompanionAddress}"
+                      MinWidth="260">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="platform:CompanionAddress">
+                  <TextBlock Text="{Binding}" FontSize="13" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="刷新网络地址" Command="{Binding RefreshCompanionAddressesCommand}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Command="{Binding ToggleCompanionCommand}" Content="{Binding CompanionToggleLabel}" />
+            <Button Content="复制配对链接" Click="CopyCompanion_Click" />
+          </StackPanel>
+          <Image Source="{Binding CompanionQr}" Width="220" Height="220" HorizontalAlignment="Left"
+                 IsVisible="{Binding CompanionRunning}" />
+          <TextBox Text="{Binding CompanionLink}" IsReadOnly="True" TextWrapping="Wrap" FontSize="12" />
+          <TextBlock Text="{Binding CompanionInfo}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
