@@ -42,6 +42,9 @@ public partial class AppState : ObservableObject
     private LiveSpeechEngine? engine;
     private MeetingVoiceTagger? voiceTagger;
     private MeetingTranslator? translator;
+    // 逐字同传：每一路只保留最新一版译文，过期结果不覆盖当前句子（LiveTranslationCoordinator）。
+    private LiveTranslationCoordinator? remoteLiveTranslation;
+    private LiveTranslationCoordinator? microphoneLiveTranslation;
     private FileStream? sessionLease;
     private CancellationTokenSource? workCancellation, requestCancellation;
     private Task? workTask;
@@ -100,6 +103,13 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private bool statusIsError;
     [ObservableProperty] private string systemPartial = "";
     [ObservableProperty] private string microphonePartial = "";
+    [ObservableProperty] private string systemPartialTranslation = "";
+    [ObservableProperty] private string microphonePartialTranslation = "";
+    [ObservableProperty] private string islandTranslation = "";
+
+    public bool HasIslandTranslation => IslandTranslation.Length > 0;
+
+    partial void OnIslandTranslationChanged(string value) => OnPropertyChanged(nameof(HasIslandTranslation));
     [ObservableProperty] private string detectedQuestion = "手动提问，或开启自动回答。";
     [ObservableProperty] private string answerText = "";
     [ObservableProperty] private string questionInput = "";
@@ -555,6 +565,8 @@ public partial class AppState : ObservableObject
         DetectedQuestion = DemoContent.Question;
         AnswerText = DemoContent.Answer;
         SummaryText = DemoContent.Summary;
+        // 同传上岛：演示模式给一句固定译文，没有模型和密钥也能验收岛上那一行。
+        IslandTranslation = DemoContent.IslandTranslation;
         RetrievalInfo = "关键词 + 语义 · 3 段 · 0.42 秒";
         currentLines.Clear();
         Transcript.Clear();
@@ -733,6 +745,7 @@ public partial class AppState : ObservableObject
             SetStatus("正在加载本地语音模型…");
             if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
             if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
+            BeginLiveTranslation();
             engine = await Task.Run(() => new LiveSpeechEngine(Models, settings));
             if (closing) throw new OperationCanceledException("程序正在退出，已取消开始记录。");
             engine.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, true); });
@@ -762,6 +775,7 @@ public partial class AppState : ObservableObject
             if (engine != null) { await engine.DisposeAsync(); engine = null; }
             voiceTagger?.Dispose(); voiceTagger = null;
             translator?.Dispose(); translator = null;
+            ResetLiveTranslation();
             if (meta != null) await Sessions.EndAsync(meta);
             SetStatus(ex.Message, true);
         }
@@ -796,6 +810,7 @@ public partial class AppState : ObservableObject
             translator?.Cancel();
             await Task.WhenAll(writes.ToArray());
             translator?.Dispose(); translator = null;
+            ResetLiveTranslation();
             voiceTagger?.Dispose(); voiceTagger = null;
             await Sessions.EndAsync(meta);
             ++epoch;
@@ -807,6 +822,7 @@ public partial class AppState : ObservableObject
         finally
         {
             translator?.Dispose(); translator = null;
+            ResetLiveTranslation();
             voiceTagger?.Dispose(); voiceTagger = null;
             sessionLease?.Dispose(); sessionLease = null;
             StopAutoEnd();
@@ -836,9 +852,21 @@ public partial class AppState : ObservableObject
                 if (automatic && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, false, update.Id, DateTimeOffset.UtcNow));
             }
             else MicrophonePartial = "麦克风 · " + update.Text;
+            RequestPartialTranslation(update.Source, update.Text);
             return;
         }
-        if (update.Source == AudioSource.System) SystemPartial = ""; else MicrophonePartial = "";
+        if (update.Source == AudioSource.System)
+        {
+            SystemPartial = "";
+            SystemPartialTranslation = "";
+            remoteLiveTranslation?.Invalidate();
+        }
+        else
+        {
+            MicrophonePartial = "";
+            MicrophonePartialTranslation = "";
+            microphoneLiveTranslation?.Invalidate();
+        }
         var echo = IsTextEcho(update, currentLines, meta.InPerson);
         // 术语表：识别错的写法改回正确写法（原话只在内存里更正，识别器本身的输出不动）。
         var text = Canonicalize(update.Text);
@@ -860,6 +888,52 @@ public partial class AppState : ObservableObject
         NoteSpeechHeard(line);
         OnPropertyChanged(nameof(StatsText));
         OnPropertyChanged(nameof(HasTranscript));
+    }
+
+    /// <summary>
+    /// 逐字同传：把一次识别快照交给限流的翻译协调器（LiveTranslationCoordinator）。
+    /// 只有最新一版译文会显示，过期结果由协调器丢弃；翻译失败不影响转写。
+    /// </summary>
+    private void RequestPartialTranslation(AudioSource source, string text)
+    {
+        if (!Recording || translator is not { } service) return;
+        var coordinator = source == AudioSource.System ? remoteLiveTranslation : microphoneLiveTranslation;
+        if (coordinator is null) return;
+        var request = coordinator.Observe(source == AudioSource.System ? "remote" : "me", text, Environment.TickCount64 / 1000.0);
+        if (request is null) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var translation = await service.TranslateAsync(Guid.NewGuid(), request.Text).ConfigureAwait(false);
+                if (translation is null || !coordinator.Complete(request.Revision, translation.Text)) return;
+                var value = coordinator.Translation;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (source == AudioSource.System) { SystemPartialTranslation = value; IslandTranslation = value; }
+                    else MicrophonePartialTranslation = value;
+                });
+            }
+            catch (Exception)
+            {
+                // 同传是附加信息：失败时保留原文，不打断会议。
+            }
+        });
+    }
+
+    /// <summary>Prepares the two live-translation channels (called when a translator is created).</summary>
+    private void BeginLiveTranslation()
+    {
+        remoteLiveTranslation = new LiveTranslationCoordinator();
+        microphoneLiveTranslation = new LiveTranslationCoordinator();
+        SystemPartialTranslation = MicrophonePartialTranslation = IslandTranslation = "";
+    }
+
+    private void ResetLiveTranslation()
+    {
+        remoteLiveTranslation = null;
+        microphoneLiveTranslation = null;
+        SystemPartialTranslation = MicrophonePartialTranslation = IslandTranslation = "";
     }
 
     // ---- 会议自动收尾（AppState+AutoEnd.swift → MeetingEndWatch in Core） ----
@@ -1289,6 +1363,7 @@ public partial class AppState : ObservableObject
             {
                 if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, AudioSource.System), ct);
                 if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
+                BeginLiveTranslation();
                 var tagger = voiceTagger;
                 await Task.Run(() =>
                 {
@@ -1303,6 +1378,7 @@ public partial class AppState : ObservableObject
             {
                 await Task.WhenAll(writes.ToArray());
                 translator?.Dispose(); translator = null;
+                ResetLiveTranslation();
                 voiceTagger?.Dispose(); voiceTagger = null;
                 await Sessions.EndAsync(meta);
                 ++epoch;
@@ -1464,6 +1540,7 @@ public partial class AppState : ObservableObject
         currentLines.Clear();
         writes.Clear();
         SystemPartial = MicrophonePartial = "";
+        SystemPartialTranslation = MicrophonePartialTranslation = IslandTranslation = "";
         RetrievalInfo = "";
         Sources.Clear();
         AnswerText = "";

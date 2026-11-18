@@ -14,7 +14,7 @@
   <Border Background="#F0121110" CornerRadius="20" Padding="16,11" Margin="0,8,0,0"
           BoxShadow="0 10 22 0 #40000000">
     <Border Background="#F2121110" BorderBrush="#33ECEBE8" BorderThickness="0.5" CornerRadius="16" Padding="16,10">
-      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
         <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
                 Background="{DynamicResource Seal}" Margin="0,0,10,0" IsVisible="{Binding Recording}" />
         <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center"
@@ -29,6 +29,13 @@
         <TextBlock Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding IslandDetail}" Foreground="#B8B6AF"
                    FontSize="11.5" LineHeight="17" Margin="18,3,0,0" MaxLines="2"
                    TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+        <!-- 同传上岛：对方那句话的译文（逐字更新，过期结果不会覆盖新句子）。 -->
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="6" Margin="18,5,0,0"
+                    IsVisible="{Binding HasIslandTranslation}">
+          <TextBlock Text="译" Foreground="#7A7871" FontSize="10" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding IslandTranslation}" Foreground="#DCE3EA" FontSize="12" LineHeight="17"
+                     MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxWidth="470" />
+        </StackPanel>
       </Grid>
     </Border>
   </Border>

@@ -1,4 +1,4 @@
-﻿using NextThought.Core;
+using NextThought.Core;
 
 namespace NextThought.Desktop;
 
@@ -9,6 +9,9 @@ namespace NextThought.Desktop;
 /// </summary>
 public static class DemoContent
 {
+    /// <summary>Stand-in for a live translation so the cue island can be reviewed without a model.</summary>
+    public const string IslandTranslation = "The residual is about twelve percent of the original signal, mainly near the bearings.";
+
     private static readonly DateTimeOffset Base = DateTimeOffset.Now.AddMinutes(-38);
 
     public static IReadOnlyList<SessionMeta> Meetings() =>

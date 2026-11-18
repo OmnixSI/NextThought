@@ -94,7 +94,7 @@ public partial class MainWindow : Window
                     "tray", "hide-all", "auto-end", "notes-templates-9", "notes-fishbone",
                     "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
                     "glossary", "update-check", "companion-lan",
-                    "workspace-knowledge", "knowledge-merge", "question-bank"
+                    "workspace-knowledge", "knowledge-merge", "question-bank", "live-translation", "translation-gate"
                 },
                 version = typeof(AppState).Assembly.GetName().Version?.ToString(3),
                 framework = Environment.Version.ToString(),

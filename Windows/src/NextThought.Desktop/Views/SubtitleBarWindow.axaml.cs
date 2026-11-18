@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using NextThought.Core;
@@ -55,8 +55,8 @@ public partial class SubtitleBarWindow : Window
         var inPerson = state.CurrentSession?.InPerson == true;
         var channels = new List<SubtitleChannel>
         {
-            new("remote", Strip(state.SystemPartial)),
-            new(inPerson ? "room" : "me", Strip(state.MicrophonePartial))
+            new("remote", Strip(state.SystemPartial), state.SystemPartialTranslation),
+            new(inPerson ? "room" : "me", Strip(state.MicrophonePartial), state.MicrophonePartialTranslation)
         };
         var lastFinal = state.Transcript.Count > 0 ? state.Transcript[^1] : null;
         var final = lastFinal is null ? null : new SubtitleLine(lastFinal.Speaker, lastFinal.Text, lastFinal.TranslationRaw);

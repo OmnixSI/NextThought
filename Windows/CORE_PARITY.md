@@ -38,7 +38,7 @@
 | IncrementalBackup.swift | 123 | 未移植 |  |
 | LaTeXMath.swift | 545 | 未移植 |  |
 | LiveInsights.swift | 403 | 部分移植 | Core/AnswerPoints.cs（仅 Split / StripMarkup，供提词使用） |
-| LiveTranslationRevisionGate.swift | 76 | 未移植 |  |
+| LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 未移植 |  |
 | MaterialTerms.swift | 57 | 未移植 |  |
 | MeetingCarry.swift | 38 | 未移植 |  |
@@ -91,21 +91,22 @@
 | WorkspaceDeletionTransaction.swift | 151 | 未移植 |  |
 | ZipformerStreaming.swift | 496 | 未移植 |  |
 
-统计：已移植 8，部分移植 6，基线简化版 7，未移植 59。
+统计：已移植 9，部分移植 6，基线简化版 7，未移植 58。
 
-测试：`tests/NextThought.Core.Tests` 132 项通过（SubtitleBar 12、AudioTimeline 10、
+测试：`tests/NextThought.Core.Tests` 144 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、
-Glossary 9、知识库与 KnowledgeMerger 16、其余 28）。
+Glossary 9、知识库与 KnowledgeMerger 16、逐字同传门控 12、其余 28）。
 
 已接入运行时：回声过滤、会议自动收尾、场景预设与提词、临场教练、结构化纪要
 （鱼骨图 / 要点大纲 / 观点对照，含提示词、逐条核对丢弃与鱼骨图、观点矩阵绘制）、
 系列与经验（workspace.json；系列页可新建系列、把会议归档进系列、记一句话经验）、
 系列知识库（模板里 NotesCarry 的章节变成待确认候选，系列页逐条采纳/替换/忽略，
 确认后的经验与题库进入回答提示词；离线自检 `--knowledge-check`）、
+逐字同传（`LiveTranslationCoordinator` 限流 + 过期结果丢弃；译文进字幕条与提词岛）、
 术语表（正确写法作为识别热词，错写法在转写里被改回）、
 检查更新（正式/main 频道、语义版本比较、只提示并打开下载页）、
 模板纪要（九个模板、按场景默认、按模板整理并保存 summary.md）、
 转写校对（按行定位、修订指纹、原子重写 transcript.jsonl 并留 corrections.json）。
 
 未接入/未移植的重点：`Workspace` 的决定/待办（`WorkspaceSeriesItem`）与源删除完整性、`SeriesBriefing`、
-`SpeakerClustering`、双屏演讲、同传、应用内自动替换安装包。
+`SpeakerClustering`、双屏演讲、应用内自动替换安装包。

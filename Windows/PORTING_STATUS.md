@@ -1,5 +1,22 @@
 
-# P7 系列知识库与合并 · 0.20.0
+# P5/P7 逐字同传 · 0.21.0
+
+0.21.0 把「同传」从整句翻译补到逐字：识别还在变化时，字幕条和提词岛上的译文也会跟着更新，
+但旧快照的译文不会盖住新句子。
+
+- **Core/LiveTranslation.cs**：逐文件移植 `LiveTranslationRevision`、`LiveTranslationRevisionGate`
+  （generation/value、`revise`/`invalidate`/`isLatest`/`accept`）与 `LiveTranslationPartialThrottle`
+  （固定间隔而不是 debounce：长句子也会持续出结果）；新增 `LiveTranslationCoordinator`
+  把「限流 → 发请求 → 只接受最新一版」串起来，网络与 UI 都不进 Core。
+- **接入**：`ReceiveTranscript` 的 partial 分支把快照交给协调器，每 0.7 秒最多一次翻译请求；
+  整句落地时 `Invalidate`，在途的旧译文直接丢弃。字幕条的两个通道带上 `PartialTranslation`
+  （Core 的 `SubtitleBar` 早已支持「译文为主、原文为辅」的显示）。
+- **同传上岛**：提词岛新增一行「译」，显示对方那句话的最新译文；`--demo --island` 用固定译文验收界面。
+- 测试：Core 132 → 144（12 项门控/限流/乱序完成/换通道/新句子作废）。
+- 已知边界：逐字译文要真实回答服务；没有密钥时界面与门控已由测试覆盖，真实译文未端到端跑。
+  双屏演讲仍未移植。
+
+## P7 系列知识库与合并 · 0.20.0
 
 0.20.0 补上「越用越懂你」这条链路：模板纪要 → 待确认候选 → 用户确认 → 经验/题库 → 回答提示词。
 
