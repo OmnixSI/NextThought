@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 备份恢复设置与术语表 · 0.5.8
+
+- **设置恢复**：导入 `settings.json` 后写回非密钥设置（API Key 不在备份内），回执新增 `SettingsRestored`。
+- **术语表恢复**：导入 `Glossary/glossary.json` 覆盖本地术语表。
+- **测试**：`RoundTripRestoresNonSecretSettings` 覆盖 settings.json 入包、恢复模型/地址与术语表。
+- **0.5.8 实测**：Core 788 + 基线 92；验收 61/61、门禁 17/17；启动 1.13 秒、
+  工作集 109.6 MiB、私有 43.1 MiB。
+- 仍未完成：技能/自定义模板恢复、Mac summary/context 完整字段、双向恢复实机验收。
+
 # P0 备份补全与 Mac 系列导入 · 0.5.7
+
 
 - **备份内容**：`PortableDirectories` 增加 `Glossary`，并额外打包 `settings.json`（API Key 仍只存 DPAPI、不进备份）。
 - **Mac 系列导入**：导入时读取 `Workspaces/*.json`，按 id 合并到 WorkspaceStore，回执增加 `WorkspacesAdded`，

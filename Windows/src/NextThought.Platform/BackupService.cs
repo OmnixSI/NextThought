@@ -6,7 +6,7 @@ using NextThought.Core;
 
 namespace NextThought.Platform;
 
-public sealed record BackupImportResult(int SessionsAdded, int MaterialsAdded, int ConflictsSkipped, string SafetyBackup, string PreservedArchive, int WorkspacesAdded = 0);
+public sealed record BackupImportResult(int SessionsAdded, int MaterialsAdded, int ConflictsSkipped, string SafetyBackup, string PreservedArchive, int WorkspacesAdded = 0, bool SettingsRestored = false);
 public sealed class BackupService(AppPaths paths)
 {
     private static readonly string[] PortableDirectories = ["Sessions", "Materials", "Migration", "Workspaces", "Originals", "Glossary"];
@@ -189,10 +189,36 @@ public sealed class BackupService(AppPaths paths)
                     }
                 }
             }
+            // Restore non-secret settings from our own backups; the API key stays in DPAPI.
+            var settingsRestored = false;
+            var settingsFile = Path.Combine(root, "settings.json");
+            if (File.Exists(settingsFile))
+            {
+                try
+                {
+                    if (JsonSerializer.Deserialize<AppSettings>(await File.ReadAllTextAsync(settingsFile, ct), JsonDefaults.Options) is { } importedSettings)
+                    {
+                        await new SettingsStore(paths).SaveAsync(importedSettings, ct).ConfigureAwait(false);
+                        settingsRestored = true;
+                    }
+                }
+                catch (JsonException) { }
+            }
+            var glossarySource = Path.Combine(root, "Glossary", "glossary.json");
+            if (File.Exists(glossarySource))
+            {
+                try
+                {
+                    var glossaryTarget = Path.Combine(paths.Root, "Glossary");
+                    Directory.CreateDirectory(glossaryTarget);
+                    File.Copy(glossarySource, Path.Combine(glossaryTarget, "glossary.json"), true);
+                }
+                catch (IOException) { }
+            }
             // Preserve the complete source archive, including Mac-only fields, workspaces, skills, notes, and originals.
             var preserved = Path.Combine(paths.Root, "Migration", Hash(archive) + ".ntbackup"); Directory.CreateDirectory(Path.GetDirectoryName(preserved)!);
             if (!File.Exists(preserved)) { File.Copy(archive, preserved); committed.Add(preserved); }
-            return new(addedSessions, addedMaterials, conflicts, safetyBackup, preserved, addedWorkspaces);
+            return new(addedSessions, addedMaterials, conflicts, safetyBackup, preserved, addedWorkspaces, settingsRestored);
         }
         catch
         {

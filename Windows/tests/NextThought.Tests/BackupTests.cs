@@ -115,6 +115,32 @@ public sealed class BackupTests
     }
 
     [Fact]
+    public async Task RoundTripRestoresNonSecretSettings()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-settings-backup-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var source = new AppPaths(Path.Combine(root, "source"));
+            await new SettingsStore(source).SaveAsync(new AppSettings { BaseUrl = "https://example.test/v1", Model = "backup-model" });
+            new GlossaryStore(source.Root).Save(new Glossary([new GlossaryEntry("Kubernetes", GlossaryKind.Product)]));
+            var archive = Path.Combine(root, "settings.ntbackup");
+            await new BackupService(source).ExportAsync(archive);
+            using (var zip = ZipFile.OpenRead(archive))
+                Assert.Contains(zip.Entries, entry => entry.FullName == "settings.json");
+
+            var target = new AppPaths(Path.Combine(root, "target"));
+            var result = await new BackupService(target).ImportAsync(archive);
+            Assert.True(result.SettingsRestored);
+            var restored = new SettingsStore(target).Load();
+            Assert.Equal("backup-model", restored.Model);
+            Assert.Equal("https://example.test/v1", restored.BaseUrl);
+            Assert.Contains(new GlossaryStore(target.Root).Load().Entries, entry => entry.Canonical == "Kubernetes");
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+
+    [Fact]
     public async Task CorruptedPayloadAndFutureVersionAreRejectedBeforeCommit()
     {
         var root = Path.Combine(Path.GetTempPath(), "nt-hash-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);

@@ -1529,7 +1529,7 @@ public partial class AppState : ObservableObject
             var result = await Task.Run(() => new BackupService(Paths).ImportAsync(file, ct), ct);
             RefreshHistory();
             Library.Refresh();
-            SetStatus($"已导入 {result.SessionsAdded} 场会议、{result.MaterialsAdded} 份资料、{result.WorkspacesAdded} 个系列；{result.ConflictsSkipped} 个重复项保留现有版本。导入前备份：{result.SafetyBackup}。");
+            SetStatus($"已导入 {result.SessionsAdded} 场会议、{result.MaterialsAdded} 份资料、{result.WorkspacesAdded} 个系列" + (result.SettingsRestored ? "，并恢复设置" : "") + $"；{result.ConflictsSkipped} 个重复项保留现有版本。导入前备份：{result.SafetyBackup}。");
         });
     }
 
