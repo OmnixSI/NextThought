@@ -16,6 +16,7 @@ public partial class AppState
 
     public ObservableCollection<SeriesRow> SeriesRows { get; } = [];
     public ObservableCollection<RecentMeetingRow> SeriesMeetings { get; } = [];
+    public ObservableCollection<SeriesSkillRow> SeriesSkills { get; } = [];
 
     [ObservableProperty] private SeriesRow? selectedSeries;
     [ObservableProperty] private string newSeriesName = "";
@@ -39,6 +40,7 @@ public partial class AppState
         OnPropertyChanged(nameof(SelectedSeriesMeta));
         RefreshSeriesMeetings();
         RefreshSeriesLessons();
+        RefreshSeriesSkills();
         AssignCurrentToSeriesCommand.NotifyCanExecuteChanged();
         AddLessonCommand.NotifyCanExecuteChanged();
     }
@@ -48,6 +50,29 @@ public partial class AppState
         workspaceStore = new WorkspaceStore(Paths.Root);
         workspace = workspaceStore.Load();
         RefreshSeries();
+    }
+
+    private void RefreshSeriesSkills()
+    {
+        SeriesSkills.Clear();
+        if (SelectedSeries is null) return;
+        var series = workspace.Find(SelectedSeries.Id);
+        var attached = series?.SkillIds ?? [];
+        foreach (var skill in skills)
+        {
+            var isAttached = attached.Any(id => Guid.TryParse(id, out var parsed) && parsed == Guid.Parse(skill.Id));
+            SeriesSkills.Add(new SeriesSkillRow(skill, isAttached, ToggleSeriesSkill));
+        }
+    }
+
+    private void ToggleSeriesSkill(SeriesSkillRow row)
+    {
+        if (SelectedSeries is null || workspace.Find(SelectedSeries.Id) is not { } series) return;
+        var ids = (series.SkillIds ?? []).Where(id => Guid.TryParse(id, out var parsed) && parsed != Guid.Parse(row.SkillId)).ToList();
+        if (row.IsAttached) ids.Add(row.SkillId);
+        workspace = workspace.WithSeries(series with { SkillIds = ids });
+        SaveWorkspace();
+        SetStatus(row.IsAttached ? $"已把「{row.Name}」附着到「{series.Name}」。" : $"已从「{series.Name}」移除「{row.Name}」。");
     }
 
     private void SaveWorkspace()
@@ -332,4 +357,26 @@ public partial class AppState
     }
 
     public IReadOnlyList<RecentMeetingRow> SeriesMeetingRows => SeriesMeetings;
+}
+
+
+/// <summary>One skill attachment checkbox for the selected series.</summary>
+public sealed partial class SeriesSkillRow : ObservableObject
+{
+    private readonly Action<SeriesSkillRow> changed;
+
+    public SeriesSkillRow(Skill skill, bool isAttached, Action<SeriesSkillRow> changed)
+    {
+        SkillId = skill.Id;
+        Name = skill.Name;
+        this.changed = changed;
+        this.isAttached = isAttached;
+    }
+
+    public string SkillId { get; }
+    public string Name { get; }
+
+    [ObservableProperty] private bool isAttached;
+
+    partial void OnIsAttachedChanged(bool value) => changed(this);
 }

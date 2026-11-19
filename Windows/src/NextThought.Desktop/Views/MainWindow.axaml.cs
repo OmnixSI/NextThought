@@ -151,7 +151,7 @@ public partial class MainWindow : Window
                 state.InitTimings,
                 [
                     "capture-dual", "asr-local", "sessions", "summary-markdown", "scenes-9",
-                    "cue-island", "subtitles", "teleprompter", "region-capture", "hotkeys-7",
+                    "cue-island", "subtitles", "teleprompter", "region-capture", "hotkeys-16",
                     "tray", "hide-all", "auto-end", "notes-templates-9", "notes-fishbone",
                     "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
                     "glossary", "update-check", "companion-lan",

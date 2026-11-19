@@ -43,6 +43,7 @@ public partial class AppState
         SkillsText = SkillStore.ToText(merged);
         SkillCount = merged.Count;
         RefreshSkillRows();
+        RefreshSeriesSkills();
         SkillsStatus = $"已导入，共 {merged.Count} 个技能。";
         SetStatus(SkillsStatus);
     }

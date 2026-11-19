@@ -77,6 +77,17 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
+            <TextBlock Text="附着技能" Classes="overline" />
+            <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding SeriesSkills}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:SeriesSkillRow">
+                    <CheckBox IsChecked="{Binding IsAttached}" Content="{Binding Name}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Text="勾选的技能只加入这个系列的回答；全局技能仍然生效。" Classes="caption" FontSize="11" />
           </StackPanel>
 
           <!-- 经验 / 待确认 / 题库：只有确认过的知识会进入回答 -->
