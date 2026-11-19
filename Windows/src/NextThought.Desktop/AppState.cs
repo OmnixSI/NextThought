@@ -920,7 +920,19 @@ public partial class AppState : ObservableObject
                 catch (Exception cloudError)
                 {
                     cloudStt = null;
-                    SetStatus("云端识别启动失败：" + cloudError.Message, true);
+                    if (ModelReady)
+                    {
+                        engine = await Task.Run(() => new LiveSpeechEngine(Models, settings, RecognitionHotwords()));
+                        engine.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, true); });
+                        engine.Failed += message => Dispatcher.UIThread.Post(() => HandleAudioFailure(message));
+                        engine.Warning += message => Dispatcher.UIThread.Post(() => SetStatus(message, true));
+                        ownedEngine = engine;
+                        SetStatus("云端识别启动失败，已回退本机识别：" + cloudError.Message, true);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("云端识别启动失败，且本机语音模型未就绪：" + cloudError.Message, cloudError);
+                    }
                 }
             }
 
