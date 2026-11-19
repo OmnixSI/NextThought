@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 手机页点击动作回传测试 · 0.5.78
+
+- `CompanionPageTests` 在读取 DOM 后，通过 CDP 点击页面「上一条」按钮，验证桌面端收到
+  `previous` 动作；CDP 的 undefined 返回值也已兼容。
+- 仍是本机 Chromium，不是实体手机；公网 TLS 中转未验证。基线测试 108。
+- **0.5.78 实测**：Core 840 + 基线 108；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 109.0 MiB、私有 42.9 MiB。
+
 # P0 来源引用保留未知字段 · 0.5.77
+
 
 - `SourceCitation` 加 `JsonExtensionData`：回答来源里的未建模字段在 JSON 往返中保留。
 - 结构化纪要测试增加嵌套 `outline.sections/points` 反序列化断言；Core 840。

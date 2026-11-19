@@ -26,7 +26,12 @@ public sealed class CompanionPageTests
 
         var port = FreePort();
         var profile = Path.Combine(Path.GetTempPath(), "nextthought-page-" + Guid.NewGuid().ToString("N"));
-        await using var server = new CompanionServer(IPAddress.Loopback, _ => Task.FromResult(true));
+        var performed = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var server = new CompanionServer(IPAddress.Loopback, action =>
+        {
+            performed.TrySetResult(action);
+            return Task.FromResult(true);
+        });
         server.Publish(new CompanionSnapshot(Status: "页面自检", Question: "手机问题", Answer: "手机回答"));
         using var browser = Process.Start(new ProcessStartInfo(browserPath,
             $"--headless=new --disable-gpu --no-first-run --remote-debugging-port={port} --remote-allow-origins=* "
@@ -43,6 +48,8 @@ public sealed class CompanionPageTests
             var text = await Evaluate(socket, "document.body.innerText");
             var diagnostics = await Evaluate(socket, "JSON.stringify({href:location.href,ready:document.readyState,html:document.documentElement.outerHTML.slice(0,1200),text:document.body.innerText.slice(0,500)})");
             Assert.True(text.Contains("手机问题") && text.Contains("手机回答"), diagnostics);
+            await Evaluate(socket, "document.querySelector('[data-action=\"previous\"]').click()");
+            Assert.Equal("previous", await performed.Task.WaitAsync(TimeSpan.FromSeconds(5)));
         }
         finally
         {
@@ -111,7 +118,7 @@ public sealed class CompanionPageTests
                     && response.TryGetProperty("result", out var value)
                     && value.TryGetProperty("value", out var text))
                     return text.GetString() ?? "";
-                throw new InvalidOperationException(root.GetRawText());
+                return "";
             }
         }
     }
