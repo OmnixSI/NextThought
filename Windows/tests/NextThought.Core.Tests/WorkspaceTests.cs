@@ -92,7 +92,7 @@ public sealed class WorkspaceTests : IDisposable
         var json = "{\"series\":[{\"id\":\"" + id + "\",\"name\":\"客户会\",\"createdAt\":\"2026-01-01T00:00:00Z\","
             + "\"sessionIDs\":[],\"lessons\":[],\"mode\":\"client\",\"style\":\"detailed\","
             + "\"preferences\":\"先讲风险\",\"notes\":\"内部备注\",\"customTypeName\":\"投标复盘\","
-            + "\"customBaseMode\":\"client\",\"archived\":true,"
+            + "\"customBaseMode\":\"client\",\"archived\":true,\"fields\":{\"客户\":\"某公司\"},\"standing\":true,"
             + "\"glossary\":{\"entries\":[{\"canonical\":\"Kubernetes\",\"kind\":\"product\"}]}}]}";
         var store = new WorkspaceStore(directory);
         Directory.CreateDirectory(Path.GetDirectoryName(store.Path_)!);
@@ -105,6 +105,8 @@ public sealed class WorkspaceTests : IDisposable
         Assert.Equal("投标复盘", series.CustomTypeName);
         Assert.Equal("client", series.CustomBaseMode);
         Assert.True(series.Archived);
+        Assert.Equal("某公司", series.Fields!["客户"]);
+        Assert.True(series.Standing);
         Assert.Equal(GlossaryKind.Product, series.Glossary!.Entries.Single().Kind);
 
         store.Save(new WorkspaceData([series]));

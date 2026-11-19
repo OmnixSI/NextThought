@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 Mac Workspace fields/standing · 0.5.47
+
+- `WorkspaceSeries` 再保留 `fields`（每场景键值）与 `standing`（常设场景）。
+  至此 Mac Workspace 的已知字段都能在 Windows 备份往返中保留。
+- 测试扩大到 fields/standing；Core 801。
+- **0.5.47 实测**：Core 801 + 基线 105；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 108.9 MiB、私有 42.9 MiB。
+- 仍未完成：真机/TLS、正式证书、Mac 测试全量逐项翻译。
+
 # P0 Mac Workspace 场景字段保留 · 0.5.46
+
 
 - `WorkspaceSeries` 新增并保留 `mode`、`style`、`preferences`、`notes`、`customTypeName`、
   `customBaseMode`、`glossary`、`archived`；JSON 键名与 Mac 一致。

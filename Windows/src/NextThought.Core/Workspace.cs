@@ -117,6 +117,14 @@ public sealed record WorkspaceSeries(
     [JsonPropertyName("archived")]
     public bool? Archived { get; init; }
 
+    /// <summary>Mac Workspace.fields: per-scene labelled values.</summary>
+    [JsonPropertyName("fields")]
+    public IReadOnlyDictionary<string, string>? Fields { get; init; }
+
+    /// <summary>A standing scene reused for recurring meetings.</summary>
+    [JsonPropertyName("standing")]
+    public bool? Standing { get; init; }
+
     /// <summary>Feed lessons and the question bank back into answers (default on).</summary>
     public bool UseKnowledge { get; init; } = true;
 
