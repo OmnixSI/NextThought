@@ -38,23 +38,16 @@ public sealed record UpdateReport(
 /// <summary>Reads a release feed from an HTTP(S) URL or a local file (the QA path).</summary>
 public static class UpdateFeed
 {
-    public const string Default = "https://api.github.com/repos/OmnixSI/NextThought/releases";
+    public const string Default = NextThought.Platform.UpdateFeedPolicy.Default;
 
-    public static string Source => Environment.GetEnvironmentVariable("NEXTTHOUGHT_UPDATE_FEED") is { Length: > 0 } value
-        ? value
-        : Default;
+    /// <summary>
+    /// The feed is fixed to HTTPS in normal runs; overrides only work with
+    /// NEXTTHOUGHT_QA=1 and never over plain HTTP.
+    /// </summary>
+    public static string Source => NextThought.Platform.UpdateFeedPolicy.ResolveSource(Environment.GetEnvironmentVariable);
 
-    public static async Task<string> ReadAsync(string source, CancellationToken cancellationToken = default)
-    {
-        if (source.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            || source.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("NextThought-Windows/" + UpdateCheck.CurrentVersion);
-            return await client.GetStringAsync(source, cancellationToken);
-        }
-        return await File.ReadAllTextAsync(source, cancellationToken);
-    }
+    public static Task<string> ReadAsync(string source, CancellationToken cancellationToken = default) =>
+        NextThought.Platform.UpdateFeedPolicy.ReadAsync(source, cancellationToken);
 }
 
 /// <summary>The update check itself: read the feed, pick a candidate, compare with this build.</summary>

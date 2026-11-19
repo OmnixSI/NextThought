@@ -84,3 +84,55 @@ public sealed class WebSearchTests
             new HttpClient(new Handler(_ => Json("""{"results":[]}"""))), name => name == "TAVILY_API_KEY" ? "k" : null));
     }
 }
+
+
+
+
+/// <summary>The update feed must not be redirected by an ordinary environment variable.</summary>
+public sealed class UpdateFeedSecurityTests
+{
+    [Fact]
+    public void DefaultsToTheHttpsFeed()
+    {
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.ResolveSource(_ => null));
+    }
+
+    [Fact]
+    public void IgnoresTheOverrideWithoutQa()
+    {
+        string? Read(string name) => name switch
+        {
+            "NEXTTHOUGHT_UPDATE_FEED" => "https://evil.example/feed",
+            _ => null
+        };
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.ResolveSource(Read));
+    }
+
+    [Fact]
+    public void QaMayUseHttpsOrLocalFilesButNotPlainHttp()
+    {
+        string? ReadQa(string name) => name switch
+        {
+            "NEXTTHOUGHT_UPDATE_FEED" => "https://example.test/feed",
+            "NEXTTHOUGHT_QA" => "1",
+            _ => null
+        };
+        Assert.Equal("https://example.test/feed", UpdateFeedPolicy.ResolveSource(ReadQa));
+
+        string? ReadHttp(string name) => name switch
+        {
+            "NEXTTHOUGHT_UPDATE_FEED" => "http://example.test/feed",
+            "NEXTTHOUGHT_QA" => "1",
+            _ => null
+        };
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.ResolveSource(ReadHttp));
+
+        string? ReadFile(string name) => name switch
+        {
+            "NEXTTHOUGHT_UPDATE_FEED" => @"C:\\qa\\feed.json",
+            "NEXTTHOUGHT_QA" => "1",
+            _ => null
+        };
+        Assert.Equal(@"C:\\qa\\feed.json", UpdateFeedPolicy.ResolveSource(ReadFile));
+    }
+}

@@ -27,6 +27,8 @@ internal sealed class MonoSampleProvider(ISampleProvider source) : ISampleProvid
 public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFrame = null) : IAsyncDisposable
 {
     private readonly List<CapturePipe> pipes = [];
+    private readonly List<CapturePipe> retired = [];
+    private readonly object pipesGate = new();
     private CancellationTokenSource? lifetime;
     private Task? pump;
     private MMDeviceEnumerator? monitor;
@@ -69,7 +71,7 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
             }
             if (settings.CaptureMicrophone) Add(AudioSource.Microphone, settings.MicrophoneDeviceId);
             monitor = new MMDeviceEnumerator();
-            notifications = new DeviceNotifications(pipes.Select(p => p.DeviceId).ToHashSet(StringComparer.OrdinalIgnoreCase), ReportFailure);
+            notifications = new DeviceNotifications(this, ReportFailure);
             monitor.RegisterEndpointNotificationCallback(notifications);
             foreach (var pipe in pipes) pipe.Start();
             origin = DateTimeOffset.UtcNow;
@@ -100,7 +102,9 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
     }
     private void EmitFrame()
     {
-        foreach (var pipe in pipes)
+        CapturePipe[] snapshot;
+        lock (pipesGate) snapshot = pipes.ToArray();
+        foreach (var pipe in snapshot)
         {
             var pcm = pipe.Read(); if (pipe.Source == AudioSource.Microphone) PcmAudio.ApplyGain(pcm, microphoneGain);
             double power = 0;
@@ -117,10 +121,53 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
     }
     private void Add(AudioSource source, string? id)
     {
+        var pipe = CreatePipe(source, id);
+        lock (pipesGate) pipes.Add(pipe);
+    }
+
+    private CapturePipe CreatePipe(AudioSource source, string? id)
+    {
         using var enumerator = new MMDeviceEnumerator();
-        var device = string.IsNullOrWhiteSpace(id) ? enumerator.GetDefaultAudioEndpoint(source == AudioSource.System ? DataFlow.Render : DataFlow.Capture, Role.Multimedia) : enumerator.GetDevice(id);
-        try { pipes.Add(new CapturePipe(source, device, ReportFailure)); }
+        var device = string.IsNullOrWhiteSpace(id)
+            ? enumerator.GetDefaultAudioEndpoint(source == AudioSource.System ? DataFlow.Render : DataFlow.Capture, Role.Multimedia)
+            : enumerator.GetDevice(id);
+        try { return new CapturePipe(source, device, ReportFailure); }
         catch { device.Dispose(); throw; }
+    }
+
+    private bool IsTracked(string id)
+    {
+        lock (pipesGate) return pipes.Any(pipe => pipe.DeviceId == id);
+    }
+
+    /// <summary>COM notification thread: move the switch off the callback and keep the old pipe alive.</summary>
+    private void ScheduleDefaultDeviceChange(DataFlow flow, string id)
+    {
+        if (lifetime is null || Volatile.Read(ref stopping) != 0) return;
+        _ = Task.Run(() => SwitchDefaultDevice(flow, id));
+    }
+
+    private void SwitchDefaultDevice(DataFlow flow, string id)
+    {
+        var source = flow == DataFlow.Render ? AudioSource.System : AudioSource.Microphone;
+        CapturePipe? current;
+        lock (pipesGate) current = pipes.FirstOrDefault(pipe => pipe.Source == source);
+        if (current is null || current.DeviceId == id || current.DeviceId == "process-loopback") return;
+        CapturePipe replacement;
+        try { replacement = CreatePipe(source, id); replacement.Start(); }
+        catch (Exception exception)
+        {
+            ReportFailure("默认音频设备切换失败，会议继续使用原设备：" + exception.Message);
+            return;
+        }
+        CapturePipe? previous = null;
+        lock (pipesGate)
+        {
+            var index = pipes.FindIndex(pipe => pipe.Source == source);
+            if (index < 0) pipes.Add(replacement);
+            else { previous = pipes[index]; pipes[index] = replacement; }
+        }
+        if (previous is not null) lock (pipesGate) retired.Add(previous);
     }
     public async ValueTask DisposeAsync()
     {
@@ -137,8 +184,9 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
         }
         finally
         {
-            foreach (var pipe in pipes) pipe.Dispose();
-            pipes.Clear(); DisposeMonitor(); lifetime.Dispose(); lifetime = null;
+            CapturePipe[] snapshot; lock (pipesGate) { snapshot = pipes.ToArray(); pipes.Clear(); snapshot = snapshot.Concat(retired).ToArray(); retired.Clear(); }
+            foreach (var pipe in snapshot) pipe.Dispose();
+            DisposeMonitor(); lifetime.Dispose(); lifetime = null;
         }
     }
     private void DisposeMonitor()
@@ -148,12 +196,12 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
         catch (System.Runtime.InteropServices.COMException) { }
         monitor.Dispose(); monitor = null; notifications = null;
     }
-    private sealed class DeviceNotifications(HashSet<string> ids, Action<string> failure) : IMMNotificationClient
+    private sealed class DeviceNotifications(AudioCaptureService owner, Action<string> failure) : IMMNotificationClient
     {
-        public void OnDeviceStateChanged(string id, DeviceState state) { if (ids.Contains(id) && state != DeviceState.Active) failure("所选音频设备已断开或不可用，记录已停止，已识别内容将保留。"); }
-        public void OnDeviceRemoved(string id) { if (ids.Contains(id)) failure("所选音频设备已移除，记录已停止，重新连接后可开始新会议。"); }
+        public void OnDeviceStateChanged(string id, DeviceState state) { if (state != DeviceState.Active && owner.IsTracked(id)) failure("所选音频设备已断开或不可用，记录已停止，已识别内容将保留。"); }
+        public void OnDeviceRemoved(string id) { if (owner.IsTracked(id)) failure("所选音频设备已移除，记录已停止，重新连接后可开始新会议。"); }
         public void OnDeviceAdded(string id) { }
-        public void OnDefaultDeviceChanged(DataFlow flow, Role role, string id) { }
+        public void OnDefaultDeviceChanged(DataFlow flow, Role role, string id) { if (role == Role.Multimedia) owner.ScheduleDefaultDeviceChange(flow, id); }
         public void OnPropertyValueChanged(string id, PropertyKey key) { }
     }
     private sealed class CapturePipe : IDisposable
