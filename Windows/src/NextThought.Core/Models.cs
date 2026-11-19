@@ -17,7 +17,19 @@ public sealed record TranscriptLine
     public DateTimeOffset? EndedAt { get; init; }
     public bool? SuspectedEcho { get; init; }
     public int? Voice { get; init; }
+
+    /// <summary>Mac session transcript stores the translation on the line itself.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("translatedText")]
+    public string? TranslatedText { get; init; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("translationInputRevision")]
+    public string? TranslationInputRevision { get; init; }
+
     public SessionTranslation? Translation { get; init; }
+
+    /// <summary>Unknown Mac line fields survive an import/export round-trip.</summary>
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
 }
 public sealed record SessionVoiceTag(Guid Id, int Voice);
 public sealed record SessionTranslation(Guid Id, int Revision, string SourceHash, string Direction, string Text, string Model, DateTimeOffset Date);

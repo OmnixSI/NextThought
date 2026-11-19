@@ -95,4 +95,20 @@ public sealed class SessionRecordTests
         Assert.Contains("\"documents\"", saved);
         Assert.Contains("\"title\":\"客户会\"", saved);
     }
+
+    [Fact]
+    public void TranscriptLineKeepsMacTranslationAndUnknownFields()
+    {
+        const string json = """
+            {"id":"11111111-1111-1111-1111-111111111111","date":"2026-01-01T00:00:00Z","speaker":"room",
+             "text":"原文","translatedText":"translation","translationInputRevision":"rev","futureLine":"x"}
+            """;
+        var line = System.Text.Json.JsonSerializer.Deserialize<TranscriptLine>(json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.Equal("translation", line.TranslatedText);
+        Assert.Equal("rev", line.TranslationInputRevision);
+        var saved = System.Text.Json.JsonSerializer.Serialize(line, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"translatedText\"", saved);
+        Assert.Contains("\"translationInputRevision\"", saved);
+        Assert.Contains("\"futureLine\"", saved);
+    }
 }
