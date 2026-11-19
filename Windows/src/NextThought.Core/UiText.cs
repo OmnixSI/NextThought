@@ -9,8 +9,12 @@ public static class UiText
     public static bool IsEnglish(string? language) =>
         !string.IsNullOrWhiteSpace(language) && language.StartsWith("en", StringComparison.OrdinalIgnoreCase);
 
-    private static readonly Dictionary<string, string> English = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> English = BuildEnglish();
+
+    private static Dictionary<string, string> BuildEnglish()
     {
+        var dictionary = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
         ["首页"] = "Home",
         ["会议"] = "Meetings",
         ["纪要"] = "Notes",
@@ -319,7 +323,10 @@ public static class UiText
         ["云服务 API Key"] = "Cloud service API key",
         ["模型（留空用默认）"] = "Model (empty uses default)",
         ["选云端后，导入 WAV 走云端识别；实时记录仍用本机。音频会发送到所选服务。"] = "With cloud selected, WAV import uses the cloud; live recording stays on-device. Audio is sent to the chosen service.",
-    };
+        };
+        foreach (var pair in UiTextMacEnglish.Strings) dictionary.TryAdd(pair.Key, pair.Value);
+        return dictionary;
+    }
 
     private static readonly Dictionary<string, string> Chinese = English
         .GroupBy(pair => pair.Value, StringComparer.Ordinal)
