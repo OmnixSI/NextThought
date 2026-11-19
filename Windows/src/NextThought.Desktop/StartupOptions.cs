@@ -44,6 +44,7 @@ public static class StartupOptions
     public static string? SlideFollowCheck { get; private set; }
     public static string? PrepareModelsCheck { get; private set; }
     public static string? CompanionCheck { get; private set; }
+    public static string? ShortcutCheck { get; private set; }
     public static string? CaptureHideCheck { get; private set; }
     public static string? AudioSwitchCheck { get; private set; }
     public static string? TeleprompterHandleCheck { get; private set; }
@@ -129,6 +130,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--slide-follow-check=", StringComparison.OrdinalIgnoreCase)) SlideFollowCheck = argument["--slide-follow-check=".Length..];
             else if (argument.StartsWith("--prepare-models-check=", StringComparison.OrdinalIgnoreCase)) PrepareModelsCheck = argument["--prepare-models-check=".Length..];
             else if (argument.StartsWith("--companion-check=", StringComparison.OrdinalIgnoreCase)) CompanionCheck = argument["--companion-check=".Length..];
+            else if (argument.StartsWith("--shortcut-check=", StringComparison.OrdinalIgnoreCase)) ShortcutCheck = argument["--shortcut-check=".Length..];
             else if (argument.StartsWith("--capture-hide-check=", StringComparison.OrdinalIgnoreCase)) CaptureHideCheck = argument["--capture-hide-check=".Length..];
             else if (argument.StartsWith("--audio-switch-check=", StringComparison.OrdinalIgnoreCase)) AudioSwitchCheck = argument["--audio-switch-check=".Length..];
             else if (argument.StartsWith("--teleprompter-handle-check=", StringComparison.OrdinalIgnoreCase)) TeleprompterHandleCheck = argument["--teleprompter-handle-check=".Length..];

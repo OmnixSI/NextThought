@@ -57,6 +57,7 @@ public partial class AppState : ObservableObject
     {
         Paths = new AppPaths();
         SettingsStore = new SettingsStore(Paths);
+        LoadShortcutOverrides();
         Sessions = new SessionStore(Paths);
         Models = new ModelStore(Paths);
         Retrieval = new RetrievalService(Paths);
@@ -97,6 +98,9 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private CompanionAddress? selectedCompanionAddress;
     [ObservableProperty] private string companionInfo = "默认关闭；手机与电脑需在同一可信网络。只发送当前问题、回答与状态，不发送资料、完整转写、音频或密钥。";
     [ObservableProperty] private string companionLink = "";
+    [ObservableProperty] private string shortcutText = "";
+    private Dictionary<string, string> shortcutOverrides = [];
+    public event Action? ShortcutsChanged;
     public IReadOnlyList<string> SubtitleExportModes { get; } = ["双语", "原文", "译文"];
     [ObservableProperty] private string subtitleExportMode = "双语";
     [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
@@ -1508,6 +1512,58 @@ public partial class AppState : ObservableObject
             SetStatus("会议已导出为 PDF。");
         }
         catch (Exception ex) { SetStatus(ex.Message, true); }
+    }
+
+    private void LoadShortcutOverrides()
+    {
+        try { shortcutOverrides = new Dictionary<string, string>(SettingsStore.Load().Shortcuts ?? []); }
+        catch { shortcutOverrides = []; }
+        ShortcutText = BuildShortcutText();
+    }
+
+    private string BuildShortcutText()
+    {
+        var lines = new List<string>();
+        foreach (var action in ShortcutKeys.Actions)
+        {
+            var key = ShortcutKeys.Parse(shortcutOverrides.GetValueOrDefault(action.Id), action.Default);
+            lines.Add(action.Id + "=" + ShortcutKeys.Name(key));
+        }
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>The configured key for an action, or its built-in default.</summary>
+    public uint ShortcutKey(string id, uint fallback) =>
+        ShortcutKeys.Parse(shortcutOverrides.GetValueOrDefault(id), fallback);
+
+    [RelayCommand]
+    private async Task SaveShortcutsAsync()
+    {
+        try
+        {
+            var known = ShortcutKeys.Actions.Select(action => action.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var map = new Dictionary<string, string>();
+            foreach (var raw in ShortcutText.Replace("\r\n", "\n").Split('\n'))
+            {
+                var line = raw.Trim();
+                if (line.Length == 0 || line.StartsWith('#')) continue;
+                var separator = line.IndexOf('=');
+                if (separator <= 0) throw new FormatException("快捷键行要写成 动作=按键，例如 record=R。");
+                var id = line[..separator].Trim();
+                if (!known.Contains(id)) throw new FormatException("未知快捷键动作：" + id);
+                var key = ShortcutKeys.Parse(line[(separator + 1)..], 0);
+                if (key == 0) throw new FormatException("无法识别按键：" + line[(separator + 1)..].Trim());
+                map[id] = ShortcutKeys.Name(key);
+            }
+            var settings = SettingsStore.Load();
+            settings.Shortcuts = map;
+            await SettingsStore.SaveAsync(settings);
+            shortcutOverrides = map;
+            ShortcutText = BuildShortcutText();
+            ShortcutsChanged?.Invoke();
+            SetStatus("全局快捷键已保存并重新注册。");
+        }
+        catch (Exception ex) { SetStatus("快捷键保存失败：" + ex.Message, true); }
     }
 
     private bool CanExport() => !Working && !Recording && CurrentSession != null;

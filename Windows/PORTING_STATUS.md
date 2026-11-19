@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 全局快捷键可改键 · 0.5.87
+
+- 新增 `ShortcutKeys`（19 个动作、按键解析/格式化）与 `AppSettings.Shortcuts`；
+  设置页「全局快捷键」文本区按 `动作=按键` 编辑，保存后写 settings.json 并立即重新注册。
+- 修饰键仍固定 Ctrl+Alt（Mac 用 ShortcutBinding），可用 A–Z/0–9/F1–F24/方向/PageUp/PageDown/Space/Backslash。
+- `--shortcut-check` 在 settings.json 写 `record=F9` 后实测：key=F9、19 个注册全部成功。
+- **0.5.87 实测**：Core 851 + 基线 109；验收 63/63、门禁 17/17；启动 1.21 秒、
+  工作集 109.0 MiB、私有 42.9 MiB。
+
 # P1 结构化纪要英文提示 · 0.5.86
+
 
 - 结构化纪要（鱼骨/大纲/观点矩阵）也用 `AnswerLanguage.Spoken(transcript)` 判英文：
   英文 header、`StructuredNotesPrompt.System(..., english: true)`、`Parse(..., english: true)`，

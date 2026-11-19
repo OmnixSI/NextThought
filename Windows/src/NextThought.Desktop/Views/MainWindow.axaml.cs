@@ -107,6 +107,7 @@ public partial class MainWindow : Window
             if (StartupOptions.SlideFollowCheck is { } slideFollow) await RunSlideFollowCheckAsync(slideFollow);
             if (StartupOptions.PrepareModelsCheck is { } prepareModels) await RunPrepareModelsCheckAsync(prepareModels);
             if (StartupOptions.CompanionCheck is { } companionCheck) await RunCompanionCheckAsync(companionCheck);
+            if (StartupOptions.ShortcutCheck is { } shortcutCheck) await RunShortcutCheckAsync(shortcutCheck);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
             if (StartupOptions.TeleprompterHandleCheck is { } handleCheck) await RunTeleprompterHandleCheckAsync(handleCheck);
@@ -117,6 +118,7 @@ public partial class MainWindow : Window
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(MaximizeButton, WindowDecorationsElementRole.MaximizeButton);
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(CloseButton, WindowDecorationsElementRole.CloseButton);
         RegisterHotkeys();
+        state.ShortcutsChanged += ReloadHotkeys;
         RefreshDisplays();
         // Dual-screen topologies change while the app runs (docking, projector plugged in).
         try { Screens.Changed += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(RefreshDisplays); }
@@ -2432,6 +2434,30 @@ public partial class MainWindow : Window
         Close();
     }
 
+    /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
+    private async Task RunShortcutCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var key = state.ShortcutKey("record", 0x52);
+        var passed = key == 0x78 && hotkeys is { Unregistered.Count: 0 };
+        var report = new
+        {
+            passed, key = NextThought.Core.ShortcutKeys.Name(key), unregistered = hotkeys?.Unregistered ?? []
+        };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "shortcut-check: passed" : "shortcut-check: failed");
+        Close();
+    }
+
     private async Task RunCaptureHideCheckAsync(string path)
     {
         await Task.Delay(300);
@@ -2526,29 +2552,41 @@ public partial class MainWindow : Window
     private bool hiddenAll;
 
     /// <summary>Ctrl+Alt shortcuts for the actions the Mac app binds to ⌘⇧ (plan §7 table).</summary>
+    private void ReloadHotkeys()
+    {
+        hotkeys?.Dispose();
+        hotkeys = null;
+        RegisterHotkeys();
+    }
+
     private void RegisterHotkeys()
     {
+        GlobalHotkeys.Binding B(string id, string label, uint fallback, Action action)
+        {
+            var key = state.ShortcutKey(id, fallback);
+            return new GlobalHotkeys.Binding($"Ctrl+Alt+{NextThought.Core.ShortcutKeys.Name(key)} {label}", key, action);
+        }
         hotkeys = new GlobalHotkeys(
         [
-            new GlobalHotkeys.Binding("Ctrl+Alt+R 开始或停止记录", 0x52, ToggleRecording),
-            new GlobalHotkeys.Binding("Ctrl+Alt+I 显示或隐藏提示岛", 0x49, ToggleCueIsland),
-            new GlobalHotkeys.Binding("Ctrl+Alt+M 切换会中窗口", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+S 区域截图", 0x53, () => _ = CaptureRegionAsync()),
-            new GlobalHotkeys.Binding("Ctrl+Alt+U 提词器", 0x55, ToggleTeleprompter),
-            new GlobalHotkeys.Binding("Ctrl+Alt+\\ 隐藏或恢复所有窗口", 0xDC, ToggleHideAll),
-            new GlobalHotkeys.Binding("Ctrl+Alt+N 唤起主窗口", 0x4E, RestoreMainWindow),
-            new GlobalHotkeys.Binding("Ctrl+Alt+H 复制当前回答", 0x48, () => state.CopyAnswerCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+G 重新生成上一题", 0x47, () => state.RegenerateAnswerCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+K 把回答改短", 0x4B, () => state.ShorterAnswerCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+X 取消当前回答", 0x58, () => state.CancelCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+Left 上一条回答", 0x25, () => state.PreviousAnswerCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+Right 下一条回答", 0x27, () => state.NextAnswerCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+J 提词浮窗鼠标穿透", 0x4A, ToggleTeleprompterClickThrough),
-            new GlobalHotkeys.Binding("Ctrl+Alt+PageDown 下一页幻灯片", 0x22, () => state.NextSlideCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+PageUp 上一页幻灯片", 0x21, () => state.PreviousSlideCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+Q 立即回答最新转写", 0x51, () => state.ForceAnswerCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+W 窗口截图", 0x57, () => _ = CaptureWindowAsync()),
-            new GlobalHotkeys.Binding("Ctrl+Alt+Space 暂停或恢复聆听", 0x20, () => state.TogglePauseListeningCommand.Execute(null))
+            B("record", "开始或停止记录", 0x52, ToggleRecording),
+            B("island", "显示或隐藏提示岛", 0x49, ToggleCueIsland),
+            B("live", "切换会中窗口", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
+            B("region", "区域截图", 0x53, () => _ = CaptureRegionAsync()),
+            B("teleprompter", "提词器", 0x55, ToggleTeleprompter),
+            B("hide", "隐藏或恢复所有窗口", 0xDC, ToggleHideAll),
+            B("main", "唤起主窗口", 0x4E, RestoreMainWindow),
+            B("copy", "复制当前回答", 0x48, () => state.CopyAnswerCommand.Execute(null)),
+            B("regenerate", "重新生成上一题", 0x47, () => state.RegenerateAnswerCommand.Execute(null)),
+            B("shorter", "把回答改短", 0x4B, () => state.ShorterAnswerCommand.Execute(null)),
+            B("cancel", "取消当前回答", 0x58, () => state.CancelCommand.Execute(null)),
+            B("previous", "上一条回答", 0x25, () => state.PreviousAnswerCommand.Execute(null)),
+            B("next", "下一条回答", 0x27, () => state.NextAnswerCommand.Execute(null)),
+            B("through", "提词浮窗鼠标穿透", 0x4A, ToggleTeleprompterClickThrough),
+            B("slideNext", "下一页幻灯片", 0x22, () => state.NextSlideCommand.Execute(null)),
+            B("slidePrevious", "上一页幻灯片", 0x21, () => state.PreviousSlideCommand.Execute(null)),
+            B("force", "立即回答最新转写", 0x51, () => state.ForceAnswerCommand.Execute(null)),
+            B("window", "窗口截图", 0x57, () => _ = CaptureWindowAsync()),
+            B("pause", "暂停或恢复聆听", 0x20, () => state.TogglePauseListeningCommand.Execute(null))
         ]);
         if (hotkeys.Unregistered.Count > 0)
             state.SetStatus("以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。", true);
