@@ -579,7 +579,9 @@ public partial class AppState : ObservableObject
             Mark("processes");
             await Settings.RefreshDevicesAsync();
             Mark("devices");
-            MeetingTitle = string.IsNullOrWhiteSpace(Settings.LastMeetingTitle) ? "新会议" : Settings.LastMeetingTitle;
+            MeetingTitle = string.IsNullOrWhiteSpace(Settings.LastMeetingTitle)
+                ? (UiText.EnglishUi ? "New meeting" : "新会议")
+                : Settings.LastMeetingTitle;
             var recovered = await Sessions.RecoverInterruptedAsync();
             Mark("recover");
             RefreshHistory();
@@ -798,9 +800,13 @@ public partial class AppState : ObservableObject
         }
     }
 
+    private static bool IsNewMeetingTitle(string title) => title is "新会议" or "New meeting";
+
     private SessionMeta NewMeta(AppSettings settings, string? title = null) => new()
     {
-        Title = string.IsNullOrWhiteSpace(title ?? settings.LastMeetingTitle) ? "会议 " + DateTime.Now.ToString("MM-dd HH:mm") : (title ?? settings.LastMeetingTitle),
+        Title = string.IsNullOrWhiteSpace(title ?? settings.LastMeetingTitle)
+            ? (UiText.EnglishUi ? "Meeting " : "会议 ") + DateTime.Now.ToString("MM-dd HH:mm")
+            : (title ?? settings.LastMeetingTitle),
         Mode = ModeKey(SelectedMode),
         AudioSource = settings.CaptureSystem && settings.CaptureProcessId > 0
             ? settings.CaptureMicrophone ? "process-tree+microphone" : "process-tree"
@@ -832,7 +838,7 @@ public partial class AppState : ObservableObject
             var settings = Settings.Build();
             CancelRequest();
             ResetDisplay();
-            meta = NewMeta(settings, string.IsNullOrWhiteSpace(MeetingTitle) || MeetingTitle == "新会议" ? null : MeetingTitle);
+            meta = NewMeta(settings, string.IsNullOrWhiteSpace(MeetingTitle) || IsNewMeetingTitle(MeetingTitle) ? null : MeetingTitle);
             MeetingTitle = meta.Title;
             var context = new SessionContextSnapshot
             {
@@ -1831,7 +1837,7 @@ public partial class AppState : ObservableObject
         CancelRequest();
         CurrentSession = null;
         ResetDisplay();
-        MeetingTitle = "新会议";
+        MeetingTitle = UiText.EnglishUi ? "New meeting" : "新会议";
         SetPageSubtitle("选择声音来源，开始记录。");
         Section = AppSection.Live;
         RaiseBusy();
@@ -1882,13 +1888,13 @@ public partial class AppState : ObservableObject
             foreach (var line in lines.TakeLast(400)) Transcript.Add(new TranscriptRow(line));
             SystemPartial = MicrophonePartial = "";
             MeetingTitle = data.Meta.Title;
-            PageSubtitle = "会议归档 · " + data.Meta.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+            PageSubtitle = (UiText.EnglishUi ? "Meeting archived · " : "会议归档 · ") + data.Meta.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
             Sources.Clear();
             foreach (var source in data.Answers.LastOrDefault()?.Sources ?? []) Sources.Add(source);
             RetrievalInfo = data.Answers.LastOrDefault()?.Sources?.Count > 0 ? "历史回答的引用已保存，可查看来源。" : "";
             AnswerText = data.Answers.LastOrDefault()?.Answer ?? "";
-            DetectedQuestion = data.Answers.LastOrDefault()?.Question ?? "可以继续对这场会议提问。";
-            SummaryText = data.Summary.Length > 0 ? data.Summary : "这场会议还没有纪要，点击上方整理。";
+            DetectedQuestion = data.Answers.LastOrDefault()?.Question ?? UiText.T("可以继续对这场会议提问。");
+            SummaryText = data.Summary.Length > 0 ? data.Summary : UiText.T("这场会议还没有纪要，点击上方整理。");
             // Each scene recommends a notes format (plan §8 纪要格式); the cached copy is loaded with it.
             var mode = Enum.TryParse<MeetingMode>(data.Meta.Mode, true, out var parsed) ? parsed : MeetingMode.Meeting;
             SelectedNotesFormat = NotesFormats.Recommended(mode);

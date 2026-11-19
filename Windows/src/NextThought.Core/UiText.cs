@@ -302,6 +302,8 @@ public static class UiText
         ["深色"] = "Dark",
         ["外观"] = "Appearance",
         ["保存后立即应用；跟随系统会随后台主题切换。"] = "Applied after saving; Follow system tracks the OS theme.",
+        ["可以继续对这场会议提问。"] = "You can keep asking about this meeting.",
+        ["这场会议还没有纪要，点击上方整理。"] = "This meeting has no notes yet; organize it above.",
     };
 
     private static readonly Dictionary<string, string> Chinese = English
