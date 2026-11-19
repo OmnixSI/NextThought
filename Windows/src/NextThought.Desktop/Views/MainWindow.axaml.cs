@@ -1430,7 +1430,12 @@ public partial class MainWindow : Window
             };
             pages[section] = page;
         }
-        if (!ReferenceEquals(PageHost.Content, page)) PageHost.Content = page;
+        if (!ReferenceEquals(PageHost.Content, page))
+        {
+            PageHost.Content = page;
+            page.Opacity = 0;
+            _ = FadeInAsync(page);
+        }
     }
 
     /// <summary>Measures the lazy page host: pages built at startup, then working set after visiting all.</summary>
