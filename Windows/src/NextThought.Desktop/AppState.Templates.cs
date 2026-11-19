@@ -11,6 +11,8 @@ public partial class AppState
     [ObservableProperty] private NotesTemplateKind templateKind = NotesTemplateKind.General;
     [ObservableProperty] private string selectedTemplateId = NotesTemplateKind.General.Raw();
     [ObservableProperty] private bool templating;
+    [ObservableProperty] private string customTemplateText = "";
+    [ObservableProperty] private string customTemplateStatus = "";
 
     private NotesTemplateStore? templateStore;
 
@@ -58,9 +60,28 @@ public partial class AppState
     private void LoadCustomTemplates()
     {
         templateStore = new NotesTemplateStore(Paths.Root);
-        foreach (var template in templateStore.Load())
+        var custom = templateStore.Load();
+        foreach (var template in custom)
             if (TemplateChoices.All(choice => choice.Template.Id != template.Id))
                 TemplateChoices.Add(new NotesTemplateChoice(template, null));
+        CustomTemplateText = NotesTemplateStore.ToText(custom);
+        CustomTemplateStatus = custom.Count == 0 ? "尚无自定义模板。" : $"{custom.Count} 个自定义模板。";
+    }
+
+    [RelayCommand]
+    private void SaveCustomTemplates()
+    {
+        try
+        {
+            var imported = NotesTemplateStore.ParseText(CustomTemplateText);
+            foreach (var choice in TemplateChoices.Where(choice => choice.Kind is null).ToList()) TemplateChoices.Remove(choice);
+            foreach (var template in imported) TemplateChoices.Add(new NotesTemplateChoice(template, null));
+            templateStore ??= new NotesTemplateStore(Paths.Root);
+            templateStore.Save(imported);
+            CustomTemplateStatus = imported.Count == 0 ? "自定义模板已清空。" : $"已保存 {imported.Count} 个自定义模板。";
+            SetStatus(CustomTemplateStatus);
+        }
+        catch (Exception ex) { CustomTemplateStatus = "模板保存失败：" + ex.Message; SetStatus(CustomTemplateStatus, true); }
     }
 
     /// <summary>Adds imported custom templates (same id replaces) and persists them.</summary>
@@ -74,7 +95,9 @@ public partial class AppState
             TemplateChoices.Add(new NotesTemplateChoice(template, null));
         }
         templateStore.Save(TemplateChoices.Where(choice => choice.Kind is null).Select(choice => choice.Template).ToList());
-        SetStatus($"已导入模板，共 {TemplateChoices.Count(choice => choice.Kind is null)} 个自定义模板。");
+        CustomTemplateText = NotesTemplateStore.ToText(TemplateChoices.Where(choice => choice.Kind is null).Select(choice => choice.Template).ToList());
+        CustomTemplateStatus = $"已导入模板，共 {TemplateChoices.Count(choice => choice.Kind is null)} 个自定义模板。";
+        SetStatus(CustomTemplateStatus);
     }
 
     [RelayCommand(CanExecute = nameof(CanTemplate))]

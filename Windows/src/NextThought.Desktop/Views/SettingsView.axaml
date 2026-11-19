@@ -74,9 +74,16 @@
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="12">
           <TextBlock Text="自定义纪要模板" Classes="section" />
-          <TextBlock Text="导入 Mac 的 note-templates.json（模板数组）后，会在纪要页的模板下拉框出现；原有内置模板不变。"
+          <TextBlock Text="每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。"
                      Classes="caption" FontSize="11" />
-          <Button Content="导入模板 .json…" Click="ImportTemplate_Click" HorizontalAlignment="Left" />
+          <TextBox Text="{Binding CustomTemplateText}" AcceptsReturn="True" Height="120" TextWrapping="Wrap"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   PlaceholderText="## 客户会&#10;### 决定&#10;只写已经拍板的事。&#10;### 待办&#10;写清负责人和日期。" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="保存模板" Command="{Binding SaveCustomTemplatesCommand}" />
+            <Button Content="导入 .json…" Click="ImportTemplate_Click" />
+            <TextBlock Text="{Binding CustomTemplateStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
+          </StackPanel>
         </StackPanel>
       </Border>
 

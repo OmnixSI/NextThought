@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 自定义模板文本编辑器 · 0.5.25
+
+- `NotesTemplateStore.ParseText/ToText`：`## 模板名`、`### 章节标题`、下一行写要求。
+- 设置页可直接编辑并保存；保存后重建自定义模板选择项，模板下拉框立即使用。
+- **测试**：`CustomTemplateTextRoundTripsSections`；Core 795。
+- **0.5.25 实测**：Core 795 + 基线 99；验收 61/61、门禁 17/17；启动 1.19 秒、
+  工作集 108.7 MiB、私有 42.7 MiB。
+- 仍未完成：拖拽式可视化模板编辑、技能按系列附着、幻灯片快捷键、双向实机验收。
+
 # P1 自定义纪要模板导入 · 0.5.24
+
 
 - 新增 `NotesTemplateStore`（Mac 兼容 `note-templates.json`）；设置页可导入模板数组。
 - 模板选择从枚举改为 `NotesTemplateChoice` 集合：内置模板 + 自定义模板；生成纪要时使用所选模板对象。

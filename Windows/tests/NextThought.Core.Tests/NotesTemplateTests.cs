@@ -128,6 +128,19 @@ public sealed class NotesTemplateTests
 
 
     [Fact]
+    public void CustomTemplateTextRoundTripsSections()
+    {
+        var parsed = NotesTemplateStore.ParseText("## 客户会\n### 决定\n只写已经拍板的事。\n### 待办\n写清负责人和日期。");
+        var template = Assert.Single(parsed);
+        Assert.Equal("客户会", template.Name);
+        Assert.Equal(2, template.Sections.Count);
+        Assert.Equal("决定", template.Sections[0].Title);
+        Assert.Equal("写清负责人和日期。", template.Sections[1].Instruction);
+        Assert.Contains("## 客户会", NotesTemplateStore.ToText(parsed));
+        Assert.Contains("### 待办", NotesTemplateStore.ToText(parsed));
+    }
+
+    [Fact]
     public void CustomTemplateStoreRoundTrips()
     {
         var directory = Path.Combine(Path.GetTempPath(), "nt-template-" + Guid.NewGuid().ToString("N"));
