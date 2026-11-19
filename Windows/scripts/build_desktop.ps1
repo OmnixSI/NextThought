@@ -3,7 +3,7 @@ param(
     [string]$Configuration = "Release",
     [switch]$SkipInstaller,
     [switch]$SkipZip,
-    [switch]$ReadyToRun
+    [switch]$NoReadyToRun
 )
 # Build, publish, package and verify the Avalonia desktop app (NextThought.exe).
 # Outputs land in <repo>/../../dist by default so downloaded tooling, intermediates
@@ -33,7 +33,7 @@ try {
     if (Test-Path -LiteralPath $payload) { Remove-Item -LiteralPath $payload -Recurse -Force }
     $publishArgs = @("src\NextThought.Desktop\NextThought.Desktop.csproj", "-c", $Configuration, "-r", "win-x64",
         "--self-contained", "true", "-p:PublishSingleFile=false", "-o", $payload, "--verbosity", "minimal")
-    if ($ReadyToRun) { $publishArgs += "-p:PublishReadyToRun=true" }
+    if (-not $NoReadyToRun) { $publishArgs += "-p:PublishReadyToRun=true" }
     Invoke-Dotnet publish @publishArgs
 
     # Startup self-check on the published build, in an isolated data directory.

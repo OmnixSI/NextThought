@@ -1,5 +1,16 @@
 
+# P1 ReadyToRun 默认 · 1.3.3
+
+1.3.3 把 ReadyToRun 设为默认发布方式（`-NoReadyToRun` 可退回），安装包 57.2 MiB（+12.5 MiB），换来明显收益：
+
+- **实测**：安装版热启动 **1.03 秒**（普通包 1.38–1.49 秒），工作集 **108.1 MiB**、私有 42.2 MiB、
+  线程 30；`--page-check` 初始 108.5 MiB、访问全部 7 页 **133.6 MiB**（此前 121/146）。
+- **门禁**：安装版验收 **61/61**、发布门禁 **17/17 PASS**；测试 779 + 83。
+- **脚本**：`build_desktop.ps1` 默认加 `PublishReadyToRun=true`，`-NoReadyToRun` 关闭。
+- AOT 仍因 NAudio COM 设备枚举 `InvalidProgramException` 与 492 条 IL 警告不启用。
+
 # P1 AOT 试编与 ReadyToRun · 1.3.2
+
 
 安装 Visual Studio Build Tools（MSVC 14.52 + Windows SDK 10.0.26100）后做了 AOT 试验，并顺带修掉两个
 AOT/裁剪问题：
