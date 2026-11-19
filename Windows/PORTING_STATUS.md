@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 屏幕/删除日志键名与备份清单稳定性 · 0.5.55–0.5.56
+
+- `ScreenContext` 的 `frameID`/`targetID`、`WorkspaceDeletionJournal` 的 `transactionID`/`workspaceID`
+  改为 Mac 键名；新增 JSON 往返测试。
+- 0.5.55 的发布门禁在 `backup-manifest` 一次报 CLR 内部错误（0x80131506）；单跑与重跑均通过。
+  0.5.56 把 `SessionsToImport` 的 LINQ 改成普通循环，连续两轮 17/17 通过。
+- **0.5.56 实测**：Core 826 + 基线 105；验收 61/61、门禁 17/17（连续两次）；
+  启动 1.20 秒、工作集 108.9 MiB、私有 43.0 MiB。
+
 # P0 系列变更候选 Mac 键名 · 0.5.54
+
 
 - `WorkspaceSeriesChangeCandidate` 的 `sourceSessionId`/`evidenceId` 改为 Mac 的
   `sourceSessionID`/`evidenceID`；系列条目原本已是正确键名。

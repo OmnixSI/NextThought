@@ -10,7 +10,10 @@ public sealed record WorkspaceDeletionJournal
         Committed
     }
 
+    [System.Text.Json.Serialization.JsonPropertyName("transactionID")]
     public string TransactionId { get; init; } = Guid.NewGuid().ToString("D");
+
+    [System.Text.Json.Serialization.JsonPropertyName("workspaceID")]
     public string WorkspaceId { get; init; } = "";
     public PhaseValue Phase { get; init; } = PhaseValue.Staging;
     public string StagingRoot { get; init; } = "";

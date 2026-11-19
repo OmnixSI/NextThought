@@ -4,7 +4,10 @@ public sealed record ScreenTextRegion(string Text, IReadOnlyList<double> Bounds,
 
 public sealed record ScreenContext
 {
+    [System.Text.Json.Serialization.JsonPropertyName("frameID")]
     public string FrameId { get; init; } = "";
+
+    [System.Text.Json.Serialization.JsonPropertyName("targetID")]
     public string TargetId { get; init; } = "";
     public string Source { get; init; } = "";
     public DateTimeOffset CapturedAt { get; init; }

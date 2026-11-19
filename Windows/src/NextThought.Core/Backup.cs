@@ -75,8 +75,15 @@ public static class BackupMerge
         return new TemplateResult(result, added, replaced, kept);
     }
 
-    public static IReadOnlyList<Guid> SessionsToImport(IReadOnlySet<Guid> existing, IReadOnlyList<Guid> incoming) =>
-        incoming.Where(id => !existing.Contains(id)).ToList();
+    public static IReadOnlyList<Guid> SessionsToImport(IReadOnlySet<Guid> existing, IReadOnlyList<Guid> incoming)
+    {
+        // A plain loop is used deliberately: the LINQ form intermittently tripped a CLR internal
+        // error (0x80131506) in the ReadyToRun release build while reading a backed-up manifest.
+        var result = new List<Guid>(incoming.Count);
+        foreach (var id in incoming)
+            if (!existing.Contains(id)) result.Add(id);
+        return result;
+    }
 
     public sealed record WorkspaceResult(IReadOnlyList<WorkspaceSeries> Merged, int Added, int Updated, int Skipped);
 

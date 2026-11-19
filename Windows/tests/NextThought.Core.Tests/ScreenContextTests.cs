@@ -26,6 +26,18 @@ public sealed class ScreenContextTests
     }
 
     [Fact]
+    public void ScreenContextUsesTheMacFrameKeys()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new ScreenContext { FrameId = "frame", TargetId = "window", CapturedAt = Now }, JsonDefaults.Options);
+        Assert.Contains("\"frameID\"", json);
+        Assert.Contains("\"targetID\"", json);
+        var back = System.Text.Json.JsonSerializer.Deserialize<ScreenContext>(json, JsonDefaults.Options)!;
+        Assert.Equal("frame", back.FrameId);
+        Assert.Equal("window", back.TargetId);
+    }
+
+    [Fact]
     public void ScreenContextPrefersEnhancedTextAndReportsConfidence()
     {
         var context = new ScreenContext
