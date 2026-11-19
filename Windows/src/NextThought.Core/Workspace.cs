@@ -3,6 +3,16 @@ using System.Text.Json.Serialization;
 
 namespace NextThought.Core;
 
+/// <summary>Minimal deletion metadata for one accepted series item (Mac WorkspaceSeriesItemSourceTombstone).</summary>
+public sealed record WorkspaceSeriesItemSourceTombstone
+{
+    [JsonPropertyName("itemID")]
+    public string ItemId { get; init; } = "";
+
+    [JsonPropertyName("sourceSessionID")]
+    public string SourceSessionId { get; init; } = "";
+}
+
 /// <summary>
 /// 一条经验：这场（或这个系列）总结出来、下次还用得上的一句话。
 /// Port of <c>WorkspaceLesson</c> (Workspace.swift): accepted text plus the provenance and
@@ -86,6 +96,10 @@ public sealed record WorkspaceSeries(
     /// <summary>Deleted meetings whose knowledge must not be resurrected by a stale copy.</summary>
     [JsonPropertyName("sourceDeletionTombstones")]
     public IReadOnlyList<string>? SourceDeletionTombstones { get; init; }
+
+    /// <summary>Mac seriesItemSourceTombstones: deleted accepted item/source pairs.</summary>
+    [JsonPropertyName("seriesItemSourceTombstones")]
+    public IReadOnlyList<WorkspaceSeriesItemSourceTombstone>? SeriesItemSourceTombstones { get; init; }
 
     /// <summary>Skills from the library attached to this series (Mac Workspace.skillIDs).</summary>
     [JsonPropertyName("skillIDs")]

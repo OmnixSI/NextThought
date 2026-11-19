@@ -93,6 +93,7 @@ public sealed class WorkspaceTests : IDisposable
             + "\"sessionIDs\":[],\"lessons\":[],\"mode\":\"client\",\"style\":\"detailed\","
             + "\"preferences\":\"先讲风险\",\"notes\":\"内部备注\",\"customTypeName\":\"投标复盘\","
             + "\"customBaseMode\":\"client\",\"archived\":true,\"fields\":{\"客户\":\"某公司\"},\"standing\":true,"
+            + "\"seriesItemSourceTombstones\":[{\"itemID\":\"item\",\"sourceSessionID\":\"session\"}],"
             + "\"glossary\":{\"entries\":[{\"canonical\":\"Kubernetes\",\"kind\":\"product\"}]}}]}";
         var store = new WorkspaceStore(directory);
         Directory.CreateDirectory(Path.GetDirectoryName(store.Path_)!);
@@ -108,12 +109,16 @@ public sealed class WorkspaceTests : IDisposable
         Assert.Equal("某公司", series.Fields!["客户"]);
         Assert.True(series.Standing);
         Assert.Equal(GlossaryKind.Product, series.Glossary!.Entries.Single().Kind);
+        Assert.Equal("item", series.SeriesItemSourceTombstones!.Single().ItemId);
+        Assert.Equal("session", series.SeriesItemSourceTombstones.Single().SourceSessionId);
 
         store.Save(new WorkspaceData([series]));
         var saved = File.ReadAllText(Path.Combine(directory, "Workspaces", id + ".json"));
         Assert.Contains("\"customTypeName\"", saved);
         Assert.Contains("\"glossary\"", saved);
         Assert.Contains("\"sourceKind\": \"product\"", saved);
+        Assert.Contains("\"seriesItemSourceTombstones\"", saved);
+        Assert.Contains("\"itemID\"", saved);
     }
 
     [Fact]
