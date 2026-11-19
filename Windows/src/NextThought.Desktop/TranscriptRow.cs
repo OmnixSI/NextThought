@@ -37,6 +37,16 @@ public partial class TranscriptRow : ObservableObject
         (line.SuspectedEcho == true ? " · 可能回声" : "");
 }
 
+public sealed record CloudSttChoice(string Value, string Label)
+{
+    public override string ToString() => UiText.T(Label);
+}
+
+public sealed record CloudLanguageChoice(string Value, string Label)
+{
+    public override string ToString() => UiText.T(Label);
+}
+
 public sealed record AppearanceOption(string Value, string Label)
 {
     public override string ToString() => UiText.T(Label);

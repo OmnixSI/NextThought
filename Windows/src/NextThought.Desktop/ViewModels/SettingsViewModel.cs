@@ -75,6 +75,25 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     public IReadOnlyList<string> UiLanguages { get; } = ["中文", "English"];
     [ObservableProperty] private string uiLanguage = "中文";
 
+    public IReadOnlyList<CloudSttChoice> CloudSttChoices { get; } =
+    [
+        new("", "本地（默认）"),
+        new("soniox", "Soniox · 中英混说"),
+        new("openai", "OpenAI Realtime"),
+        new("deepgram", "Deepgram Nova-3")
+    ];
+    public IReadOnlyList<CloudLanguageChoice> CloudSttLanguages { get; } =
+    [
+        new("auto", "自动"),
+        new("zh", "中文"),
+        new("en", "英文")
+    ];
+    [ObservableProperty] private CloudSttChoice? selectedCloudStt;
+    [ObservableProperty] private string cloudSttModel = "";
+    [ObservableProperty] private string cloudSttKey = "";
+    [ObservableProperty] private string cloudSttEndpointValue = "";
+    [ObservableProperty] private CloudLanguageChoice? selectedCloudLanguage;
+
     public IReadOnlyList<AppearanceOption> AppearanceChoices { get; } =
     [
         new("system", "跟随系统"),
@@ -173,6 +192,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         catch { settings = new AppSettings(); }
         UiLanguage = UiText.IsEnglish(settings.Language) ? "English" : "中文";
         SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
+        SelectedCloudStt = CloudSttChoices.FirstOrDefault(choice => choice.Value == settings.CloudStt) ?? CloudSttChoices[0];
+        CloudSttModel = settings.CloudSttModel;
+        SelectedCloudLanguage = CloudSttLanguages.FirstOrDefault(choice => choice.Value == settings.CloudSttLanguage) ?? CloudSttLanguages[0];
+        CloudSttKey = state.SettingsStore.ReadCloudSttKey();
+        CloudSttEndpointValue = settings.CloudSttEndpoint;
         BaseUrl = settings.BaseUrl;
         Model = settings.Model;
         NotesModel = settings.NotesModel;
@@ -228,6 +252,10 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         BaseUrl = BaseUrl.Trim(),
         Language = UiLanguage == "English" ? "en" : "zh",
         Appearance = SelectedAppearance?.Value ?? "system",
+        CloudStt = SelectedCloudStt?.Value ?? "",
+        CloudSttModel = CloudSttModel.Trim(),
+        CloudSttLanguage = SelectedCloudLanguage?.Value ?? "auto",
+        CloudSttEndpoint = CloudSttEndpointValue.Trim(),
         Model = Model.Trim(),
         NotesModel = NotesModel.Trim(),
         ReasoningEffort = ReasoningEffort,

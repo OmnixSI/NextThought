@@ -29,7 +29,19 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 云端识别接入 · 0.5.124
+
+- 设置页「云端识别（实验）」：Soniox / OpenAI / Deepgram、模型、语言、API Key（DPAPI
+  存 `Credentials/cloud-stt.dpapi`，不进备份）。
+- 导入 WAV 时若选了云端，走 `CloudSttClient`；实时记录仍用本机识别器。
+- `--cloud-settings-check`（provider/model/key 回环）与 `--cloud-import-check`
+  （本机 WebSocket 返回 `cloud hello`，归档 1 行）均通过。
+- **仍未验证真实 Soniox/OpenAI/Deepgram 服务**（无 Key）；接口协议按 Mac 兼容实现。
+- **0.5.124 实测**：Core 863 + 基线 110；验收 63/63、门禁 17/17；环境负载下启动
+  4.77 秒、工作集 124.1 MiB、私有 55.8 MiB。
+
 # P1 云端 STT 客户端（WAV） · 0.5.123
+
 
 - 新增 `CloudSttClient`：WAV → 单声道 PCM16 → 重采样到 16/24 kHz → WebSocket 发送配置/音频/
   关闭；用 Mac 兼容的 `CloudTranscriptAssembler` 汇总 Soniox/OpenAI/Deepgram 更新。

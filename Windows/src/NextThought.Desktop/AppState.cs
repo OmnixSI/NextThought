@@ -1688,15 +1688,50 @@ public partial class AppState : ObservableObject
                 if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, AudioSource.System), ct);
                 if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
                 BeginLiveTranslation();
-                var tagger = voiceTagger;
-                await Task.Run(() =>
+                if (settings.CloudStt.Length > 0)
                 {
-                    using var recognizer = new SpeechRecognizerSession(Models, settings, RecognitionHotwords());
-                    recognizer.FrameObserved += frame => tagger?.Add(frame);
-                    recognizer.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, false); });
-                    recognizer.TranscribeWave(file, AudioSource.System, ct);
-                }, ct);
-                SetStatus("录音已转写并归档，未保存原始音频。");
+                    var provider = settings.CloudStt switch
+                    {
+                        "soniox" => CloudSTTProvider.Soniox,
+                        "openai" => CloudSTTProvider.OpenAI,
+                        "deepgram" => CloudSTTProvider.Deepgram,
+                        _ => (CloudSTTProvider?)null
+                    } ?? throw new InvalidOperationException("未知的云端识别服务。");
+                    SetStatus(UiText.EnglishUi ? "Transcribing the WAV in the cloud…" : "正在通过云端识别转写 WAV…");
+                    var endpoint = string.IsNullOrWhiteSpace(settings.CloudSttEndpoint) ? null : new Uri(settings.CloudSttEndpoint);
+                    var updates = await CloudSttClient.TranscribeWavAsync(
+                        file, provider, SettingsStore.ReadCloudSttKey(), settings.CloudSttModel,
+                        settings.CloudSttLanguage, RecognitionHotwords(), null, endpoint, ct);
+                    foreach (var update in updates)
+                    {
+                        var start = meta.StartedAt.AddMilliseconds(Math.Max(0, update.StartMs ?? 0));
+                        var end = update.EndMs is { } endMs ? meta.StartedAt.AddMilliseconds(Math.Max(0, endMs)) : (DateTimeOffset?)null;
+                        var cloudLine = new TranscriptLine
+                        {
+                            Id = Guid.NewGuid(), Date = start, StartedAt = start, EndedAt = end,
+                            Speaker = "remote", Text = Canonicalize(update.Text)
+                        };
+                        currentLines.Add(cloudLine);
+                        Transcript.Add(new TranscriptRow(cloudLine));
+                        writes.Add(Sessions.AppendTranscriptAsync(meta, cloudLine));
+                    }
+                    if (currentLines.Count == 0) throw new CloudTranscriptException("云端没有返回可用的文字。");
+                    OnPropertyChanged(nameof(StatsText));
+                    OnPropertyChanged(nameof(HasTranscript));
+                    SetStatus(UiText.EnglishUi ? "WAV transcribed by the cloud and archived; raw audio was not kept." : "录音已通过云端转写并归档，未保存原始音频。");
+                }
+                else
+                {
+                    var tagger = voiceTagger;
+                    await Task.Run(() =>
+                    {
+                        using var recognizer = new SpeechRecognizerSession(Models, settings, RecognitionHotwords());
+                        recognizer.FrameObserved += frame => tagger?.Add(frame);
+                        recognizer.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, false); });
+                        recognizer.TranscribeWave(file, AudioSource.System, ct);
+                    }, ct);
+                    SetStatus("录音已转写并归档，未保存原始音频。");
+                }
             }
             finally
             {
@@ -1713,7 +1748,7 @@ public partial class AppState : ObservableObject
         });
     }
 
-    private bool CanImportWave() => IsIdle && !Answering && ModelReady;
+    private bool CanImportWave() => IsIdle && !Answering && (ModelReady || Settings.SelectedCloudStt is { Value.Length: > 0 });
 
     [RelayCommand(CanExecute = nameof(CanBackup))]
     private async Task BackupAsync()
@@ -1752,6 +1787,7 @@ public partial class AppState : ObservableObject
         try
         {
             await Settings.SaveAsync();
+            SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
             LanguageChanged?.Invoke(Settings.UiLanguage == "English");
             ApplyAppearance();
             RefreshModelState();

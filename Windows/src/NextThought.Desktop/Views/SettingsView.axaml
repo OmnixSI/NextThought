@@ -93,6 +93,20 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="10">
+          <TextBlock Text="云端识别（实验）" Classes="section" />
+          <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
+                    Width="240" HorizontalAlignment="Left" />
+          <TextBox Text="{Binding Settings.CloudSttKey}" PasswordChar="•" PlaceholderText="云服务 API Key" />
+          <TextBox Text="{Binding Settings.CloudSttModel}" PlaceholderText="模型（留空用默认）" />
+          <ComboBox ItemsSource="{Binding Settings.CloudSttLanguages}" SelectedItem="{Binding Settings.SelectedCloudLanguage}"
+                    Width="160" HorizontalAlignment="Left" />
+          <TextBlock Text="选云端后，导入 WAV 走云端识别；实时记录仍用本机。音频会发送到所选服务。"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="10">

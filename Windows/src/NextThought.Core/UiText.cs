@@ -310,6 +310,15 @@ public static class UiText
         ["未导入 PPT"] = "No PPT imported",
         ["待确认"] = "To confirm",
         ["题库"] = "Question bank",
+        ["云端识别（实验）"] = "Cloud transcription (experimental)",
+        ["本地（默认）"] = "Local (default)",
+        ["Soniox · 中英混说"] = "Soniox · bilingual",
+        ["自动"] = "Automatic",
+        ["中文"] = "Chinese",
+        ["英文"] = "English",
+        ["云服务 API Key"] = "Cloud service API key",
+        ["模型（留空用默认）"] = "Model (empty uses default)",
+        ["选云端后，导入 WAV 走云端识别；实时记录仍用本机。音频会发送到所选服务。"] = "With cloud selected, WAV import uses the cloud; live recording stays on-device. Audio is sent to the chosen service.",
     };
 
     private static readonly Dictionary<string, string> Chinese = English

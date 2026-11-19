@@ -111,6 +111,17 @@ public sealed record AppSettings
 
     /// <summary>Appearance: "system" (default), "light" or "dark".</summary>
     public string Appearance { get; set; } = "system";
+
+    /// <summary>Cloud STT provider id ("", "soniox", "openai", "deepgram").</summary>
+    public string CloudStt { get; set; } = "";
+
+    public string CloudSttModel { get; set; } = "";
+
+    /// <summary>"auto", "zh" or "en".</summary>
+    public string CloudSttLanguage { get; set; } = "auto";
+
+    /// <summary>Optional WebSocket override (loopback QA only).</summary>
+    public string CloudSttEndpoint { get; set; } = "";
     /// <summary>Mac key <c>presenterMode</c>: dual-screen presenting (PresenterMode.swift).</summary>
     public bool PresenterMode { get; set; }
     /// <summary>Mac key <c>presenterSlidesScreen</c>: display id the slides are on; empty picks the first non-camera display.</summary>
