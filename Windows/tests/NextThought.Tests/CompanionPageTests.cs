@@ -48,6 +48,9 @@ public sealed class CompanionPageTests
             var text = await Evaluate(socket, "document.body.innerText");
             var diagnostics = await Evaluate(socket, "JSON.stringify({href:location.href,ready:document.readyState,html:document.documentElement.outerHTML.slice(0,1200),text:document.body.innerText.slice(0,500)})");
             Assert.True(text.Contains("手机问题") && text.Contains("手机回答"), diagnostics);
+            server.Publish(new CompanionSnapshot(Status: "页面自检", Question: "更新问题", Answer: "更新回答"));
+            var updated = await WaitForText(socket, "更新问题", TimeSpan.FromSeconds(8));
+            Assert.Contains("更新回答", updated);
             await Evaluate(socket, "document.querySelector('[data-action=\"previous\"]').click()");
             Assert.Equal("previous", await performed.Task.WaitAsync(TimeSpan.FromSeconds(5)));
         }
@@ -89,6 +92,18 @@ public sealed class CompanionPageTests
             await Task.Delay(250);
         }
         throw new TimeoutException("Chromium DevTools endpoint did not appear.");
+    }
+
+    private static async Task<string> WaitForText(ClientWebSocket socket, string expected, TimeSpan timeout)
+    {
+        var deadline = DateTimeOffset.UtcNow + timeout;
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            var text = await Evaluate(socket, "document.body.innerText");
+            if (text.Contains(expected, StringComparison.Ordinal)) return text;
+            await Task.Delay(200);
+        }
+        throw new TimeoutException("Phone page did not show: " + expected);
     }
 
     private static async Task<string> Evaluate(ClientWebSocket socket, string expression)
