@@ -121,6 +121,22 @@ public sealed class SessionContextTests
     }
 
     [Fact]
+    public void LowSimilarityReturnsNothingAndExplicitPageWins()
+    {
+        var documents = new[]
+        {
+            Document("paper.pdf", new DocumentBlock("p.7", "cache consistency", 7))
+        };
+        var index = new HybridContextIndex(documents);
+        var semantic = new SemanticIndex();
+        semantic.SetVector([1f, 0f], index.Chunks[0].Fingerprint, 0);
+        var hybrid = new HybridContextIndex(documents, semantic);
+        Assert.Empty(hybrid.Retrieve("unrelated astronomy", queryVector: [0f, 1f]));
+        var page = hybrid.Retrieve("paper.pdf 第7页", queryVector: [0f, 1f]);
+        Assert.Equal(7, page[0].Page);
+    }
+
+    [Fact]
     public void HybridRetrievalFusesSemanticVectors()
     {
         var documents = new[]
