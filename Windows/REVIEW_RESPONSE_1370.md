@@ -23,6 +23,13 @@
 | 13 | 语义检索误开增强 OCR | **已修** | `LibraryViewModel` 不再把 `UseSemanticRetrieval` 传给 `enhancedOcr`。 |
 | 14 | 伴侣内容不更新/跨线程/缺动作 | **部分** | 问题/回答变化即 `Publish`；动作统一切到 UI 线程；补 english/chinese/previous/next。`--companion-check` 仍用假动作回调，未覆盖真实回答，也无真机。 |
 
+## 提示岛 S0（0.5.23 追加）
+
+- 开始记录自动显示提示岛；停止记录自动隐藏；回答/问题变化时若岛被手动关掉会重新显示（W2 部分）。
+- `--capture-hide-check` 现在同时验证 S0：`affinity=17`、`ShowActivated=false`、`Topmost=true`、
+  `onScreen=true`、可见；0.5.23 安装版全部通过。
+- 仍未做：「穿透后仍能点按钮」的交互方案与完整 8 项 S0 清单。
+
 ## 快捷键（0.5.12 追加）
 
 Mac 的 15+ 个动作里，Windows 从 7 个扩到 **14 个**可执行快捷键：
@@ -67,10 +74,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.22 实测
+## 0.5.23 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **793**、基线 **99**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.21 秒，工作集 **108.7 MiB**、私有 42.8 MiB
+- 启动 1.20 秒，工作集 **108.8 MiB**、私有 43.0 MiB

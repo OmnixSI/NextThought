@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 提示岛自动显隐与 S0 探针 · 0.5.23
+
+- 开始记录自动显示提示岛，停止隐藏；回答/问题变化时重新显示（`UpdateCueIslandForMeeting`）。
+- `--capture-hide-check` 扩展为 S0 探针：录屏 affinity、`ShowActivated`、`Topmost`、屏幕内、可见。
+  0.5.23 安装版报告 `affinity=17, showActivated=false, topmost=true, onScreen=true`。
+- **0.5.23 实测**：Core 793 + 基线 99；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.8 MiB、私有 43.0 MiB。
+- 仍未完成：穿透后按钮交互、完整 8 项 S0 清单、自定义模板、幻灯片快捷键、双向实机验收。
+
 # P1 技能 .md 导入 · 0.5.22
+
 
 - 设置页「技能」增加「导入 .md…」：解析 YAML front matter / `# 标题` / `## 名称`，同名技能替换并保留 Id。
 - 导入后立即写入 `skills.json`，下一场回答注入。

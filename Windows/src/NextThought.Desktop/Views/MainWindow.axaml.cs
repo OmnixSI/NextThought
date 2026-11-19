@@ -2333,6 +2333,9 @@ public partial class MainWindow : Window
         var affinity = 0u;
         var passed = false;
         var error = "";
+        var showActivated = true;
+        var topmost = false;
+        var onScreen = false;
         Window? probe = null;
         try
         {
@@ -2340,7 +2343,13 @@ public partial class MainWindow : Window
             probe.Show();
             await Task.Delay(600);
             affinity = WindowCaptureHiding.Affinity(probe);
-            passed = affinity == 0x11;
+            showActivated = probe.ShowActivated;
+            topmost = probe.Topmost;
+            onScreen = Screens.All.Any(screen => screen.Bounds.X <= probe.Position.X
+                && probe.Position.X < screen.Bounds.X + screen.Bounds.Width
+                && screen.Bounds.Y <= probe.Position.Y
+                && probe.Position.Y < screen.Bounds.Y + screen.Bounds.Height);
+            passed = affinity == 0x11 && !showActivated && topmost && onScreen && probe.IsVisible;
         }
         catch (Exception exception)
         {
@@ -2350,7 +2359,7 @@ public partial class MainWindow : Window
         {
             probe?.Close();
         }
-        var report = new { passed, affinity, error };
+        var report = new { passed, affinity, showActivated, topmost, onScreen, error };
         try
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));
@@ -2412,7 +2421,18 @@ public partial class MainWindow : Window
     private void SetupTray()
     {
         tray = new TrayIntegration(RestoreMainWindow, HideAllWindows, ToggleRecording, RequestExit);
-        state.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(AppState.Recording)) tray?.SetRecording(state.Recording); };
+        state.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.Recording))
+            {
+                tray?.SetRecording(state.Recording);
+                UpdateCueIslandForMeeting();
+            }
+            else if (e.PropertyName == nameof(AppState.Answering) || e.PropertyName == nameof(AppState.DetectedQuestion))
+            {
+                if (state.Recording && !hiddenAll) ShowCueIsland();
+            }
+        };
     }
 
     /// <summary>一键隐藏：主窗口与全部浮窗一起收起，会议继续记录（plan §9）。</summary>
@@ -2622,8 +2642,27 @@ public partial class MainWindow : Window
     public void ToggleCueIsland()
     {
         if (island is { IsVisible: true }) { island.Hide(); return; }
+        ShowCueIsland();
+    }
+
+    /// <summary>Meeting start shows the island automatically; stop hides it (W2).</summary>
+    private void UpdateCueIslandForMeeting()
+    {
+        if (state.Recording)
+        {
+            if (!hiddenAll) ShowCueIsland();
+        }
+        else if (island is { IsVisible: true })
+        {
+            island.Hide();
+        }
+    }
+
+    public void ShowCueIsland()
+    {
+        if (hiddenAll) return;
         island ??= new CueIslandWindow(state);
-        island.Show();
+        if (!island.IsVisible) island.Show();
     }
 
     // ---- 双屏演讲（PresenterMode.swift） ----
