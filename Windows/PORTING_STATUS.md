@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 更新签名者白名单 · 0.5.27
+
+- `Authenticode.SignerThumbprintAsync` 读取签名者证书指纹；`TrustedSigners` / `SignerAllowed`
+  支持 `NEXTTHOUGHT_SIGNER_THUMBPRINT` 逗号分隔白名单。
+- `NEXTTHOUGHT_REQUIRE_SIGNATURE=1` 时必须同时满足 `Valid` 且签名者在白名单，否则删除安装包并报错。
+- **测试**：指纹规范化/空白名单拒绝；基线 101。
+- **0.5.27 实测**：Core 795 + 基线 101；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 108.6 MiB、私有 42.6 MiB。
+- 仍未完成：正式代码签名证书（发布前事项）、#10 实机切换、#14 真机/TLS。
+
 # P1 技能启停勾选 · 0.5.26
+
 
 - 设置页技能区显示 `SkillRows` 勾选框；勾选立即写回 `skills.json` 的 `enabled`，
   回答提示只取启用项。

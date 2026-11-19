@@ -161,12 +161,16 @@ public partial class AppState
 
             UpdateInstallStatus = "正在检查安装包签名…";
             var signature = await NextThought.Platform.Authenticode.StatusAsync(installer);
-            if (NextThought.Platform.Authenticode.IsRequired && !NextThought.Platform.Authenticode.IsValid(signature))
+            var signer = await NextThought.Platform.Authenticode.SignerThumbprintAsync(installer);
+            if (NextThought.Platform.Authenticode.IsRequired
+                && (!NextThought.Platform.Authenticode.IsValid(signature) || !NextThought.Platform.Authenticode.SignerAllowed(signer)))
             {
                 File.Delete(installer);
-                throw new InvalidOperationException($"安装包签名校验未通过（{signature}）。");
+                throw new InvalidOperationException(signature != "Valid"
+                    ? $"安装包签名校验未通过（{signature}）。"
+                    : "安装包签名有效，但签名者不在允许列表（NEXTTHOUGHT_SIGNER_THUMBPRINT）。");
             }
-            SetStatus("安装包签名：" + signature);
+            SetStatus("安装包签名：" + signature + (signer.Length > 0 ? "，签名者 " + signer[..Math.Min(12, signer.Length)] : ""));
 
             // The QA switch lets the installer step be observed without replacing this build.
             var launch = Environment.GetEnvironmentVariable("NEXTTHOUGHT_UPDATE_LAUNCH");
