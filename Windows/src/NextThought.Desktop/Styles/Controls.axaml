@@ -73,6 +73,15 @@
         </Border>
       </ControlTemplate>    </Setter>
   </Style>
+  <!-- Keyboard focus ring: custom button templates otherwise drop Fluent's adorner. -->
+  <Style Selector="Button:focus-visible /template/ Border#Root">
+    <Setter Property="BorderBrush" Value="{DynamicResource Seal}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Button:focus-visible /template/ ContentPresenter">
+    <Setter Property="TextBlock.Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
   <Style Selector="Button.primary:pointerover /template/ Border#Root">
     <Setter Property="Background" Value="{DynamicResource PrimaryHover}" />
   </Style>
