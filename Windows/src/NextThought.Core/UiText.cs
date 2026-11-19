@@ -185,7 +185,26 @@ public static class UiText
         ["检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。"] = "Checks the GitHub release page: stable builds use vX.Y.Z, latest follows main. When a release has an installer and checksum, it downloads, verifies and installs; otherwise it opens the download page.",
         ["「下载并安装」会下载安装包并校验发布里的 SHA-256，校验通过后静默安装并重新打开；发布没有校验文件时只提供下载页。"] = "Download and install fetches the installer and verifies its published SHA-256, then installs silently and reopens; without a checksum only the download page is offered.",
         [".ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。"] = ".ntbackup contains meetings, materials and settings; it excludes API keys, speech models and device settings. Uninstalling does not delete the data folder.",
-        ["Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。"] = "Windows has no system translation framework: complete sentences go to the chosen answer service, unlike on-device translation on Mac."
+        ["Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。"] = "Windows has no system translation framework: complete sentences go to the chosen answer service, unlike on-device translation on Mac.",
+        ["段"] = "segment",
+        ["模板名"] = "Template name",
+        ["章节标题"] = "Section title",
+        ["这一节要整理什么"] = "What should this section collect?",
+        ["新系列的名字"] = "New series name",
+        ["中转地址（可选）"] = "Relay URL (optional)",
+        ["Codex 模型（留空沿用账号默认模型）"] = "Codex model (empty uses the account default)",
+        ["兼容 Chat Completions 的 API 地址"] = "Chat Completions-compatible API URL",
+        ["纪要模型（留空沿用回答模型）"] = "Notes model (empty uses the answer model)",
+        ["更新"] = "Update",
+        ["回滚到上一版本"] = "Roll back to the previous version",
+        ["第三方许可与版权说明"] = "Third-party licenses and copyright",
+        ["截图会裁切到选中范围，然后存入资料库并由系统 OCR 读取文字。请把题目、代码或公式完整框入。"] = "The screenshot is cropped to the selection, saved to the library and read with system OCR. Frame the question, code or formula completely.",
+        ["一句话经验，例如：先说结论，再说依据"] = "One-line lesson, e.g. lead with the conclusion, then the evidence",
+        ["搜索会议标题、日期或模式"] = "Search meeting title, date or mode",
+        ["没有匹配的会议。换个关键词，或把筛选切回「全部」。"] = "No matching meetings. Try another keyword or switch the filter back to All.",
+        ["筛选资料名称"] = "Filter material names",
+        ["蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。"] = "The Bluetooth fallback is unavailable: the phone still filters by the IH- broadcast name, Windows cannot rename its broadcast, and it stays closed until the phone scans by service ID.",
+        ["会后纪要"] = "Meeting notes"
     };
 
     private static readonly Dictionary<string, string> Chinese = English
