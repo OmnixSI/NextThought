@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
@@ -10,6 +11,8 @@ public partial class AppState
     private SkillStore? skillStore;
     private IReadOnlyList<Skill> skills = [];
 
+    public ObservableCollection<SkillRow> SkillRows { get; } = [];
+
     [ObservableProperty] private string skillsText = "";
     [ObservableProperty] private int skillCount;
     [ObservableProperty] private string skillsStatus = "";
@@ -21,6 +24,7 @@ public partial class AppState
         SkillsText = SkillStore.ToText(skills);
         SkillCount = skills.Count;
         SkillsStatus = skills.Count == 0 ? "尚未加载技能。" : $"{skills.Count} 个技能；回答时按需遵守。";
+        RefreshSkillRows();
     }
 
     /// <summary>Adds imported .md skills, replacing a skill with the same name.</summary>
@@ -38,6 +42,7 @@ public partial class AppState
         skills = merged;
         SkillsText = SkillStore.ToText(merged);
         SkillCount = merged.Count;
+        RefreshSkillRows();
         SkillsStatus = $"已导入，共 {merged.Count} 个技能。";
         SetStatus(SkillsStatus);
     }
@@ -51,11 +56,28 @@ public partial class AppState
             skillStore ??= new SkillStore(Paths.Root);
             skillStore.Save(parsed);
             skills = parsed;
+            RefreshSkillRows();
             SkillCount = parsed.Count;
             SkillsStatus = parsed.Count == 0 ? "技能已清空。" : $"已保存 {parsed.Count} 个技能，下一场回答生效。";
             SetStatus(SkillsStatus);
         }
         catch (Exception ex) { SkillsStatus = "技能保存失败：" + ex.Message; SetStatus(SkillsStatus, true); }
+    }
+
+    private void RefreshSkillRows()
+    {
+        SkillRows.Clear();
+        foreach (var skill in skills) SkillRows.Add(new SkillRow(skill, PersistSkillRows));
+    }
+
+    private void PersistSkillRows()
+    {
+        skills = SkillRows.Select(row => row.Skill).ToList();
+        skillStore ??= new SkillStore(Paths.Root);
+        skillStore.Save(skills);
+        SkillCount = skills.Count;
+        SkillsText = SkillStore.ToText(skills);
+        SkillsStatus = $"{skills.Count} 个技能；已保存启停状态。";
     }
 
     /// <summary>Enabled skill instructions for the answer prompt (capped so a huge file cannot crowd out the meeting).</summary>
@@ -66,5 +88,31 @@ public partial class AppState
         var text = string.Join("\n\n", enabled.Select(skill =>
             "### " + skill.Name + (skill.Summary.Length > 0 ? " — " + skill.Summary : "") + "\n" + skill.Content));
         return text.Length <= 6000 ? text : text[..6000];
+    }
+}
+
+
+/// <summary>One editable skill row: checking it enables the skill for answers.</summary>
+public sealed partial class SkillRow : ObservableObject
+{
+    private readonly Action changed;
+
+    public SkillRow(Skill skill, Action changed)
+    {
+        Skill = skill;
+        this.changed = changed;
+        isEnabled = skill.Enabled;
+    }
+
+    public Skill Skill { get; private set; }
+    public string Name => Skill.Name;
+    public string Summary => Skill.Summary;
+
+    [ObservableProperty] private bool isEnabled;
+
+    partial void OnIsEnabledChanged(bool value)
+    {
+        Skill = Skill with { Enabled = value };
+        changed();
     }
 }
