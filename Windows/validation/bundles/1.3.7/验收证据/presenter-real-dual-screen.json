@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "scope": "real multi-display topology; window visibility and island, not projector pixels",
+  "steps": [
+    {
+      "name": "plan-with-second-display",
+      "passed": true,
+      "detail": "\u5E7B\u706F\u7247\u5728 \u663E\u793A\u5668 1\uFF0C\u63D0\u793A\u5728 \u4E3B\u5C4F\uFF08\u6444\u50CF\u5934\uFF09"
+    },
+    {
+      "name": "page-steps-aside",
+      "passed": true,
+      "detail": "active=True mainVisible=False island=True"
+    },
+    {
+      "name": "restored",
+      "passed": true,
+      "detail": "mainVisible=True"
+    },
+    {
+      "name": "single-display-refuses",
+      "passed": true,
+      "detail": "\u63A5\u4E0A\u5916\u63A5\u5C4F\u540E\u53EF\u7528"
+    }
+  ],
+  "realScreens": "\u663E\u793A\u5668 1 2560,0,2560,1440 | \u4E3B\u5C4F\uFF08\u6444\u50CF\u5934\uFF09 0,0,2560,1440",
+  "planSummary": "\u5E7B\u706F\u7247\u5728 \u663E\u793A\u5668 1\uFF0C\u63D0\u793A\u5728 \u4E3B\u5C4F\uFF08\u6444\u50CF\u5934\uFF09"
+}
