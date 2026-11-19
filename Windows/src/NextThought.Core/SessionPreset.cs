@@ -89,6 +89,8 @@ public sealed record SessionContextSnapshot
     public string? EffectiveMode { get; init; }
     public string? TypeName { get; init; }
     public string? Experience { get; init; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("previousSessionID")]
     public string? PreviousSessionId { get; init; }
     public Glossary? Glossary { get; init; }
 

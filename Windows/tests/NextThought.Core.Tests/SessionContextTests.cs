@@ -10,9 +10,12 @@ public sealed class SessionContextTests
     public void ContextSnapshotKeepsUnknownMacFields()
     {
         const string json = "{\"mode\":\"client\",\"style\":\"concise\",\"preferences\":\"\",\"profile\":\"\",\"documents\":[],"
+            + "\"previousSessionID\":\"11111111-1111-1111-1111-111111111111\","
             + "\"futureMode\":\"x\",\"futureNested\":{\"a\":1}}";
         var snapshot = System.Text.Json.JsonSerializer.Deserialize<SessionContextSnapshot>(json, NextThought.Core.JsonDefaults.Options)!;
         var saved = System.Text.Json.JsonSerializer.Serialize(snapshot, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"previousSessionID\"", saved);
+        Assert.DoesNotContain("previousSessionId", saved);
         Assert.Contains("\"futureMode\"", saved);
         Assert.Contains("\"futureNested\"", saved);
         Assert.Contains("\"mode\":\"client\"", saved);

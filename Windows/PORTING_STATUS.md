@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 context.json 上一场键名 · 0.5.69
+
+- `SessionContextSnapshot.PreviousSessionId` 改为 Mac 的 `previousSessionID`；
+  Mac 读取上下文时不再丢掉“上一场”。
+- 扩展现有 context 往返测试，确保不写 `previousSessionId`。Core 834。
+- **0.5.69 实测**：Core 834 + 基线 106；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 108.9 MiB、私有 43.1 MiB。
+
 # P0 结构化纪要补 Mac 字段 · 0.5.68
+
 
 - `StructuredNotesDoc` 增加 `corrections`、`droppedCount`、`generatedAt`、`model`、
   `transcriptSourceRevision`；notes.json 往返保留校对记录、丢弃计数、模型与转写修订。
