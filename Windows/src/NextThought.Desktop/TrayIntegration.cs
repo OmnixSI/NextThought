@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using NextThought.Core;
 
 namespace NextThought.Desktop;
 
@@ -18,9 +19,12 @@ internal sealed class TrayIntegration : IDisposable
     private readonly NativeMenuItem record = new("开始或停止记录");
     private readonly NativeMenuItem quit = new("退出 NextThought");
     private Action? actions;
+    private bool english;
+    private bool recording;
 
-    public TrayIntegration(Action show, Action hideAll, Action toggleRecording, Action exit)
+    public TrayIntegration(Action show, Action hideAll, Action toggleRecording, Action exit, bool english = false)
     {
+        this.english = english;
         open.Click += (_, _) => show();
         hide.Click += (_, _) => hideAll();
         record.Click += (_, _) => toggleRecording();
@@ -33,7 +37,7 @@ internal sealed class TrayIntegration : IDisposable
         menu.Items.Add(quit);
         icon = new TrayIcon
         {
-            ToolTipText = "NextThought · 把讨论留下来",
+            ToolTipText = T("NextThought · 把讨论留下来"),
             Menu = menu,
             IsVisible = true,
             Icon = LoadIcon()
@@ -41,9 +45,26 @@ internal sealed class TrayIntegration : IDisposable
         icon.Clicked += (_, _) => show();
         TrayIcon.SetIcons(Application.Current!, new TrayIcons { icon });
         actions = show;
+        SetLanguage(english);
     }
 
-    public void SetRecording(bool recording) => record.Header = recording ? "结束会议" : "开始记录";
+    public void SetRecording(bool recording)
+    {
+        this.recording = recording;
+        record.Header = T(recording ? "结束会议" : "开始记录");
+    }
+
+    public void SetLanguage(bool value)
+    {
+        english = value;
+        open.Header = T("打开主窗口");
+        hide.Header = T("隐藏所有窗口");
+        record.Header = T(recording ? "结束会议" : "开始记录");
+        quit.Header = T("退出 NextThought");
+        icon.ToolTipText = T("NextThought · 把讨论留下来");
+    }
+
+    private string T(string text) => UiText.Translate(text, english);
 
     private static WindowIcon? LoadIcon()
     {

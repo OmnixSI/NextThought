@@ -13,6 +13,8 @@ public static class UiTranslation
 {
     public static void Apply(Visual root, bool english)
     {
+        if (root is Window rootWindow) TranslateWindowTitle(rootWindow, english);
+        foreach (var window in root.GetVisualDescendants().OfType<Window>()) TranslateWindowTitle(window, english);
         foreach (var text in root.GetVisualDescendants().OfType<TextBlock>())
         {
             if (string.IsNullOrEmpty(text.Text)) continue;
@@ -37,5 +39,13 @@ public static class UiTranslation
             var translated = UiText.Translate(value, english);
             if (!string.Equals(translated, value, StringComparison.Ordinal)) control.Content = translated;
         }
+    }
+
+    private static void TranslateWindowTitle(Window window, bool english)
+    {
+        var title = window.Title ?? "";
+        if (title.Length == 0) return;
+        var translated = UiText.Translate(title, english);
+        if (!string.Equals(translated, title, StringComparison.Ordinal)) window.Title = translated;
     }
 }

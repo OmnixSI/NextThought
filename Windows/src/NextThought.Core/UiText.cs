@@ -250,6 +250,15 @@ public static class UiText
         ["正在联网核实…"] = "Checking online…",
         ["正在校对转写…"] = "Proofreading the transcript…",
         ["选择自定义模板"] = "Select custom template",
+        ["NextThought 提词岛"] = "NextThought Cue island",
+        ["区域截图"] = "Region capture",
+        ["NextThought 字幕条"] = "NextThought Subtitles",
+        ["NextThought 提词器"] = "NextThought Teleprompter",
+        ["打开主窗口"] = "Open main window",
+        ["隐藏所有窗口"] = "Hide all windows",
+        ["开始或停止记录"] = "Start or stop recording",
+        ["退出 NextThought"] = "Quit NextThought",
+        ["NextThought · 把讨论留下来"] = "NextThought · Keep the discussion"
     };
 
     private static readonly Dictionary<string, string> Chinese = English

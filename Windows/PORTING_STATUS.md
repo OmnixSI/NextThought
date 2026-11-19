@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 窗口/托盘本地化 · 0.5.106
+
+- `UiTranslation` 翻译窗口标题、TextBox/ComboBox 占位；`TrayIntegration` 菜单与 tooltip 随语言切换。
+- 去掉每次 `LayoutUpdated` 全树遍历，改为初始一次 + 切页/换语言时翻译，降低布局开销。
+- 词典 248 条；`--ui-language-check` 7/7 + 反向通过；Core 862。
+- **0.5.106 实测**：Core 862 + 基线 109；验收 63/63、门禁 17/17；2560×1440 环境下启动
+  6.38 秒、工作集 109.6 MiB、私有 43.3 MiB（同一环境 0.5.104/0.5.105 也为 6.3 秒，
+  非本版回归；此前 1488×880 为 1.2 秒）。
+
 # P2 英文占位文字 · 0.5.104
+
 
 - `UiTranslation` 同时翻译 `TextBox.PlaceholderText` 与 `ComboBox.PlaceholderText`；
   模板名/章节标题/搜索/筛选/问题输入等占位文字切英文。

@@ -54,8 +54,18 @@ public partial class MainWindow : Window
             openedOnce = true;
             await state.InitializeAsync();
             UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
-            state.LanguageChanged += english => UiTranslation.Apply(this, english);
-            LayoutUpdated += (_, _) => UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
+            state.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AppState.Section))
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => UiTranslation.Apply(this, state.Settings.UiLanguage == "English"));
+            };
+            state.LanguageChanged += english =>
+            {
+                UiTranslation.Apply(this, english);
+                if (island is not null) UiTranslation.Apply(island, english);
+                if (teleprompter is not null) UiTranslation.Apply(teleprompter, english);
+                tray?.SetLanguage(english);
+            };
             RefreshDisplays();
             if (StartupOptions.Presenter) state.Settings.PresenterMode = true;
             SetupTray();
@@ -2717,7 +2727,7 @@ public partial class MainWindow : Window
     /// <summary>Tray icon: restore, hide everything while recording continues, record toggle, quit.</summary>
     private void SetupTray()
     {
-        tray = new TrayIntegration(RestoreMainWindow, HideAllWindows, ToggleRecording, RequestExit);
+        tray = new TrayIntegration(RestoreMainWindow, HideAllWindows, ToggleRecording, RequestExit, state.Settings.UiLanguage == "English");
         state.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AppState.Recording))
