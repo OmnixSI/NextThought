@@ -66,6 +66,19 @@ public sealed class StorageAndTransportTests : IDisposable
         Assert.DoesNotContain(key, Encoding.UTF8.GetString(await File.ReadAllBytesAsync(Path.Combine(directory, "Credentials", "answer-api.dpapi"))));
         store.SaveApiKey(""); Assert.Equal("", store.ReadApiKey());
     }
+    [Fact]
+    public async Task CorruptApiSecretSurvivesSavingOtherSettings()
+    {
+        var paths = new AppPaths(directory); var store = new SettingsStore(paths);
+        store.SaveApiKey("test-only-secret");
+        var secret = Path.Combine(directory, "Credentials", "answer-api.dpapi");
+        await File.WriteAllBytesAsync(secret, [1, 2, 3, 4]);
+        Assert.ThrowsAny<System.Security.Cryptography.CryptographicException>(() => store.ReadApiKey());
+        await store.SaveAsync(new AppSettings { Model = "after-read-failure" });
+        Assert.True(File.Exists(secret));
+        Assert.Equal([1, 2, 3, 4], await File.ReadAllBytesAsync(secret));
+    }
+
     [Theory]
     [InlineData("https://example.com", "https://example.com/v1/chat/completions")]
     [InlineData("https://example.com/v1/", "https://example.com/v1/chat/completions")]

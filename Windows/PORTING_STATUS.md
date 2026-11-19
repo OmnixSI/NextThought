@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 API Key 损坏保留测试 · 0.5.43
+
+- 新增 `CorruptApiSecretSurvivesSavingOtherSettings`：DPAPI 文件损坏时读取抛错，
+  保存其他设置不会删除/改写该文件。
+- 校正 `REVIEW_RESPONSE.md` 中 #3/#4/#8/#10/#14 的过时状态（此前仍写未修/部分）。
+- **0.5.43 实测**：Core 800 + 基线 105；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.8 MiB、私有 43.0 MiB。
+
 # P1 提词器穿透控制条 · 0.5.42
+
 
 - 穿透开启时创建独立 `TeleprompterHandleWindow`（210×40，Topmost，不抢焦点），
   提供「恢复点击」按钮；穿透关闭时隐藏。
