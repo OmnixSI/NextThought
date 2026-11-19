@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 系列保留未知 Mac 字段 · 0.5.66
+
+- `WorkspaceSeries` 加 `JsonExtensionData`：未来/未识别的 Mac 系列字段在备份往返中原样保留。
+- 扩展现有 Workspace JSON 测试（`futureColor` / `futureNested`）；Core 833。
+- **0.5.66 实测**：Core 833 + 基线 106；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 108.6 MiB、私有 42.5 MiB。
+
 # P0 会议记录保留未知 Mac 字段 · 0.5.65
+
 
 - `SessionRecord` 加 `JsonExtensionData`：直接导入/导出 Mac 会议 JSON 时，
   `workspaceID`/`workspaceName`/`documents`/`mode` 等未建模字段原样保留。

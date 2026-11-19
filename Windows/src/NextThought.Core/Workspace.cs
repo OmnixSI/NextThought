@@ -101,6 +101,10 @@ public sealed record WorkspaceSeries(
     [JsonPropertyName("seriesItemSourceTombstones")]
     public IReadOnlyList<WorkspaceSeriesItemSourceTombstone>? SeriesItemSourceTombstones { get; init; }
 
+    /// <summary>Unknown/future Mac fields are kept so a backup round-trip stays lossless.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; init; }
+
     /// <summary>Skills from the library attached to this series (Mac Workspace.skillIDs).</summary>
     [JsonPropertyName("skillIDs")]
     public IReadOnlyList<string>? SkillIds { get; init; }

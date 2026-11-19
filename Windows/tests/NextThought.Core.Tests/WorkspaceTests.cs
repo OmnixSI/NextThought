@@ -95,6 +95,7 @@ public sealed class WorkspaceTests : IDisposable
             + "\"customBaseMode\":\"client\",\"archived\":true,\"fields\":{\"客户\":\"某公司\"},\"standing\":true,"
             + "\"seriesItemSourceTombstones\":[{\"itemID\":\"item\",\"sourceSessionID\":\"session\"}],"
             + "\"stageReview\":\"整体准备充分\",\"stageReviewAt\":\"2026-02-01T08:00:00Z\","
+            + "\"futureColor\":\"indigo\",\"futureNested\":{\"x\":1},"
             + "\"glossary\":{\"entries\":[{\"canonical\":\"Kubernetes\",\"kind\":\"product\"}]}}]}";
         var store = new WorkspaceStore(directory);
         Directory.CreateDirectory(Path.GetDirectoryName(store.Path_)!);
@@ -123,6 +124,8 @@ public sealed class WorkspaceTests : IDisposable
         Assert.Contains("\"seriesItemSourceTombstones\"", saved);
         Assert.Contains("\"itemID\"", saved);
         Assert.Contains("\"stageReview\"", saved);
+        Assert.Contains("\"futureColor\"", saved);
+        Assert.Contains("\"futureNested\"", saved);
     }
 
     [Fact]
