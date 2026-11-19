@@ -18,10 +18,8 @@ public static class PdfWriter
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         using var stream = File.Create(path);
         using var document = SKDocument.CreatePdf(stream);
-        using var regular = SKTypeface.FromFamilyName("SimHei")
-            ?? SKTypeface.FromFamilyName("Microsoft YaHei") ?? SKTypeface.Default;
-        using var bold = SKTypeface.FromFamilyName("SimHei", SKFontStyle.Bold)
-            ?? SKTypeface.FromFamilyName("Microsoft YaHei", SKFontStyle.Bold) ?? regular;
+        using var regular = LoadCjkFont();
+        using var bold = regular;
         using var paint = new SKPaint { IsAntialias = true, Color = SKColors.Black };
         using var font = new SKFont();
 
@@ -70,6 +68,21 @@ public static class PdfWriter
 
         document.EndPage();
         document.Close();
+    }
+
+    private static SKTypeface LoadCjkFont()
+    {
+        // SimHei is smaller than YaHei; embed it when present so exported PDFs stay moderate.
+        var fonts = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
+        foreach (var name in new[] { "simhei.ttf", "msyh.ttc", "simsun.ttc" })
+        {
+            var path = Path.Combine(fonts, name);
+            if (File.Exists(path))
+            {
+                try { return SKTypeface.FromFile(path); } catch { }
+            }
+        }
+        return SKTypeface.FromFamilyName("Microsoft YaHei") ?? SKTypeface.Default;
     }
 
     private static IEnumerable<string> Wrap(string text, SKFont font, float width)

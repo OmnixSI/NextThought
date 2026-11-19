@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 PDF 字体体积优化 · 0.5.82
+
+- PDF 导出改为直接加载 `C:\Windows\Fonts\simhei.ttf`（缺失时回退 YaHei），
+  单份验收 PDF 从 **23 MB** 降到 **约 5 MB**，中文仍可被 PdfPig 读回。
+- **0.5.82 实测**：Core 841 + 基线 109；验收 63/63、门禁 17/17；启动 1.22 秒、
+  工作集 108.8 MiB、私有 42.7 MiB。
+
 # P1 PDF 导出 · 0.5.81
+
 
 - `PdfWriter`（Platform）用 SkiaSharp 生成 A4 PDF，内嵌中文字体，自动换行/分页；Notes 页
   「导出 PDF」；验收 `export-pdf` 用 PdfPig 读回「验收」中文（63 项）。
