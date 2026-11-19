@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 幻灯片跟随探针修正 · 0.5.39
+
+- `--slide-follow-check` 只截取 900×260 探针窗口，不再用全屏 OCR；报告增加
+  `screenExcerpt` 与每页 `score`，便于诊断。
+- 安装版通过：`ocrChars=28`、`matchedPage=1`、`score=1`。
+- 失败排查：Windows 防火墙提示窗盖住探针时 OCR 会读到系统对话框；关闭该提示后通过。
+- **0.5.39 实测**：Core 799 + 基线 104；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 108.8 MiB、私有 44.1 MiB。
+
 # P1 中转 HTTPS 策略测试 · 0.5.38
+
 
 - 新增 `CompanionRelaySecurityTests`：明文 HTTP 被拒、loopback 只有自检开关可用、
   URL 内嵌用户名/密码被拒。
