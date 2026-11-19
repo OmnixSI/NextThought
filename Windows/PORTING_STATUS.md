@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 user-content 键名与旧 id 对齐 · 0.5.9
+
+- **lineID**：`SessionHighlight` / `SessionCorrectionDecision` 的 `LineId` 输出为 Mac 的 `lineID` 键。
+- **schema-1 旧 id**：无 id 的校正改用 `TranscriptRevisions.Of(lineID, "字节数:原文+修正")` 的前 32 位
+  生成 UUID，固定向量测试 `98f8941a-...`。
+- **0.5.9 实测**：Core 790 + 基线 92；验收 61/61、门禁 17/17；启动 1.16 秒、
+  工作集 109.2 MiB、私有 43.5 MiB。
+- 仍未完成：技能/模板恢复、Mac summary/context 完整字段、双向恢复实机验收。
+
 # P0 备份恢复设置与术语表 · 0.5.8
+
 
 - **设置恢复**：导入 `settings.json` 后写回非密钥设置（API Key 不在备份内），回执新增 `SettingsRestored`。
 - **术语表恢复**：导入 `Glossary/glossary.json` 覆盖本地术语表。

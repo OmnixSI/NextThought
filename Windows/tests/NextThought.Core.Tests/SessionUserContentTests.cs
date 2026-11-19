@@ -119,4 +119,25 @@ public sealed class SessionUserContentTests : IDisposable
         Assert.True(decision.Id.Length == 36);
         Assert.Equal("Kubernetes", decision.Corrected);
     }
+
+
+    [Fact]
+    public void LegacyCorrectionIdsUseTheMacTranscriptRevision()
+    {
+        var json = """{"lineID":"11111111-2222-3333-3333-444444444444","original":"缓存","corrected":"缓存"}""";
+        var decision = System.Text.Json.JsonSerializer.Deserialize<SessionCorrectionDecision>(json, JsonDefaults.Options)!;
+        Assert.Equal("98f8941a-7f83-b14a-a2f0-47d2791c5595", decision.Id);
+    }
+
+    [Fact]
+    public void UserContentWritesTheMacLineIdKey()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(new SessionUserContent
+        {
+            Highlights = [new SessionHighlight { LineId = Guid.NewGuid(), Quote = "quote" }],
+            CorrectionDecisions = [new SessionCorrectionDecision("id", Guid.NewGuid(), "a", "b", false)]
+        }, JsonDefaults.ArchiveOptions);
+        Assert.Contains("\"lineID\"", json);
+        Assert.DoesNotContain("\"lineId\"", json);
+    }
 }

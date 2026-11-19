@@ -24,6 +24,7 @@ public enum AnswerCompletion
 public sealed record SessionHighlight
 {
     public string Id { get; init; } = Guid.NewGuid().ToString("D");
+    [System.Text.Json.Serialization.JsonPropertyName("lineID")]
     public Guid LineId { get; init; }
     public int OffsetSeconds { get; init; }
     public string Quote { get; init; } = "";
@@ -33,6 +34,7 @@ public sealed record SessionHighlight
 public sealed record SessionCorrectionDecision
 {
     public string Id { get; init; } = Guid.NewGuid().ToString("D");
+    [System.Text.Json.Serialization.JsonPropertyName("lineID")]
     public Guid LineId { get; init; }
     public string Original { get; init; } = "";
     public string Corrected { get; init; } = "";
@@ -55,8 +57,8 @@ public sealed record SessionCorrectionDecision
     /// </summary>
     private static string LegacyId(Guid lineId, string original, string corrected)
     {
-        var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(
-            lineId.ToString("D") + "\u0000" + original.Length + ":" + original + corrected)));
+        // Mac: transcriptRevision(lineID, "\(utf8.count):\(original)\(corrected)"), prefix 32 as a UUID.
+        var hash = TranscriptRevisions.Of(lineId, $"{Encoding.UTF8.GetByteCount(original)}:{original}{corrected}");
         var compact = hash[..32];
         return $"{compact[..8]}-{compact[8..12]}-{compact[12..16]}-{compact[16..20]}-{compact[20..]}";
     }
