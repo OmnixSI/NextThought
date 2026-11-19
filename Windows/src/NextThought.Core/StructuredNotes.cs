@@ -150,7 +150,7 @@ public sealed record StructuredNotesPayload
 {
     public StructuredNotesPayload(NotesFormat format, FishboneNotes? fishbone = null, OutlineNotes? outline = null,
         ViewpointMatrix? viewpoints = null, string language = "zh", int droppedCount = 0,
-        DateTimeOffset? generatedAt = null, string model = "", bool? failed = null, string? transcriptSourceRevision = null)
+        DateTimeOffset generatedAt = default, string model = "", bool? failed = null, string? transcriptSourceRevision = null)
     {
         Format = format;
         Fishbone = fishbone;
@@ -158,7 +158,7 @@ public sealed record StructuredNotesPayload
         Viewpoints = viewpoints;
         Language = language;
         DroppedCount = droppedCount;
-        GeneratedAt = generatedAt ?? DateTimeOffset.UtcNow;
+        GeneratedAt = generatedAt == default ? DateTimeOffset.UtcNow : generatedAt;
         Model = model;
         Failed = failed;
         TranscriptSourceRevision = transcriptSourceRevision;
@@ -175,6 +175,10 @@ public sealed record StructuredNotesPayload
     public string Model { get; init; }
     public bool? Failed { get; init; }
     public string? TranscriptSourceRevision { get; init; }
+
+    /// <summary>Unknown Mac structured-notes fields survive summary.json round-trips.</summary>
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
 
     public bool IsEnglish => Language == "en";
 

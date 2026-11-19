@@ -170,4 +170,18 @@ public sealed class StructuredNotesTests
             new Dictionary<string, string> { ["meeting"] = "outline" }));
         Assert.Equal(NotesFormat.Fishbone, NotesFormats.Resolve(MeetingMode.LabMeeting, null));
     }
+
+    [Fact]
+    public void PayloadKeepsUnknownMacFields()
+    {
+        const string json = """
+            {"format":"outline","language":"zh","droppedCount":1,"model":"m","futureNotes":"x"}
+            """;
+        var payload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(
+            json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.Equal(NotesFormat.Outline, payload.Format);
+        var saved = System.Text.Json.JsonSerializer.Serialize(payload, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"futureNotes\"", saved);
+        Assert.Contains("\"format\"", saved);
+    }
 }

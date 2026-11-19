@@ -85,7 +85,7 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
   0.5.57 伴侣快照补齐 `answerID`/`phase`/`slide`/`updateAvailable`；
   0.5.58 证据包改为 Mac 的 `requestID`；0.5.59 更正 `lineID` 与 `templateID`；0.5.60 回答事件补 `seconds`/`firstTokenSeconds`/
   `screenshotPath`/`webAnswer`/`webSources`/`evidence`；0.5.61 上下文文档保留 Mac `content`；0.5.62 摘录改为 `chunkID`/`blockID`；0.5.63 保留系列条目的 `seriesItemSourceTombstones`；0.5.64 保留 `stageReview`/`stageReviewAt`；0.5.65 会议记录保留未知 Mac 字段；0.5.66 系列也保留未知字段；0.5.67 `context.json` 同样保留；0.5.68 纪要补 `corrections`/`droppedCount`/`model`/生成时间/转写修订；
-  0.5.69 `context.json` 的上一场改为 `previousSessionID`；0.5.70 条目历史保留 Mac 溯源字段；0.5.71 转写行保留译文与修订及未知字段；0.5.72 回答记录补首字延迟/截图/联网/证据；0.5.73 用 Chromium+CDP 实测手机页渲染；0.5.74 用本机 WebSocket 中转实测收状态/发命令；0.5.75 问题事件保留未知 Mac 字段。
+  0.5.69 `context.json` 的上一场改为 `previousSessionID`；0.5.70 条目历史保留 Mac 溯源字段；0.5.71 转写行保留译文与修订及未知字段；0.5.72 回答记录补首字延迟/截图/联网/证据；0.5.73 用 Chromium+CDP 实测手机页渲染；0.5.74 用本机 WebSocket 中转实测收状态/发命令；0.5.75 问题事件保留未知 Mac 字段；0.5.76 修复 `StructuredNotesPayload` 无法反序列化并保留未知字段。
   备份清单的会话筛选改为普通循环，规避一次 ReadyToRun 下的 CLR 内部错误。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
 - 0.5.4 起结构化纪要写入 `summary.json → structured`；0.5.14 起改为直接写 Mac 的 StructuredNotesPayload，
@@ -110,11 +110,11 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.75 实测
+## 0.5.76 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
-- 测试：Core **838**、基线 **108**
+- 测试：Core **839**、基线 **108**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（岛/字幕条/提词器 affinity=17）；
   `--companion-check` passed；手机页 Chromium 渲染与本机中转协议测试通过
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.22 秒，工作集 **108.7 MiB**、私有 42.2 MiB
+- 启动 1.21 秒，工作集 **108.9 MiB**、私有 42.9 MiB
