@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 术语表提示词上限与英文版 · 0.5.84
+
+- `Glossary.PromptSection(maxCharacters=1500, english=false)` 按 Mac 实现：有误听写法的条目先列、
+  规范写法/变体/备注截断、放不下时末尾写「另 N 条未列出」，一个都放不下返回空。
+- 英文 header、`(person)` 与人名标注；旧中文提示词断言同步更新。Core 843。
+- **0.5.84 实测**：Core 843 + 基线 109；验收 63/63、门禁 17/17；启动 1.21 秒、
+  工作集 108.8 MiB、私有 42.7 MiB。
+- 仍缺：审查第 17 条英文内置纪要模板。
+
 # P1 字幕导出语言选择 · 0.5.83
+
 
 - `SessionSubtitleExporter.Export` 增加 `SessionSubtitleContent`（原文/译文/双语）；
   Notes 页下拉框选择，SRT/VTT 只写所选内容（无译文时译文模式回退原文）。

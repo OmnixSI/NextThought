@@ -79,8 +79,8 @@ public sealed class GlossaryTests
     {
         var glossary = new Glossary([new GlossaryEntry("NextThought", GlossaryKind.Product, ["next thought"], "应用名")]);
         var prompt = glossary.PromptSection();
-        Assert.Contains("## 术语表", prompt);
-        Assert.Contains("NextThought（不写成：next thought）：应用名", prompt);
+        Assert.Contains("术语与人名对照", prompt);
+        Assert.Contains("NextThought ← next thought：应用名", prompt);
         Assert.Equal("", Glossary.Empty.PromptSection());
     }
 
@@ -178,5 +178,30 @@ public sealed class GlossaryTests
         {
             try { Directory.Delete(directory, true); } catch { /* best effort */ }
         }
+    }
+
+    [Fact]
+    public void PromptSectionCapsAt1500AndHasAnEnglishVersion()
+    {
+        var glossary = new Glossary([
+            new GlossaryEntry("Kubernetes", GlossaryKind.Product, ["K8s"]),
+            new GlossaryEntry("Alice", GlossaryKind.Person, ["alice"]),
+            new GlossaryEntry("C#", GlossaryKind.Term, ["c sharp"])
+        ]);
+        var chinese = glossary.PromptSection();
+        Assert.Contains("术语与人名对照", chinese);
+        Assert.Contains("←", chinese);
+        Assert.Contains("（人名）", chinese);
+        var english = glossary.PromptSection(english: true);
+        Assert.Contains("canonical spelling", english);
+        Assert.Contains("(person)", english);
+        Assert.DoesNotContain("未列出", english);
+
+        var many = new Glossary(Enumerable.Range(0, 100)
+            .Select(index => new GlossaryEntry(new string((char)('a' + index % 26), 60) + index, GlossaryKind.Term))
+            .ToList());
+        var capped = many.PromptSection();
+        Assert.True(capped.Length <= 1500, capped.Length.ToString());
+        Assert.Contains("未列出", capped);
     }
 }

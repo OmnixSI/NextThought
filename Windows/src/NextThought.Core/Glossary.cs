@@ -233,19 +233,52 @@ public sealed record Glossary
             .Take(limit)
             .ToList();
 
-    /// <summary>The glossary as a prompt section for notes and answers (empty when there is nothing to say).</summary>
-    public string PromptSection()
+    /// <summary>
+    /// The glossary as a prompt section, capped like Mac <c>promptSection(maxCharacters: 1500)</c>:
+    /// entries with misheard spellings come first; entries that do not fit are counted in a last line.
+    /// </summary>
+    public string PromptSection(int maxCharacters = 1500, bool english = false)
     {
-        if (IsEmpty) return "";
-        var builder = new StringBuilder("## 术语表\n在转写、回答与纪要中一律使用下面的写法：\n");
-        foreach (var entry in Entries)
+        var usable = Entries.Where(entry => Tidy(entry.Canonical).Length > 0).ToList();
+        if (usable.Count == 0) return "";
+        var header = english
+            ? "Names and terms (canonical spelling ← spellings the speech recognizer often gets wrong). Treat a misheard spelling as the canonical one and always write the canonical spelling:"
+            : "术语与人名对照（规范写法 ← 语音识别常听错的写法）。遇到听错的写法，按规范写法理解；你输出的内容一律写规范写法：";
+        var ordered = usable.OrderBy(entry => entry.Variants.Count == 0 ? 1 : 0).ToList();
+        var lines = ordered.Select(entry => PromptLine(entry, english)).ToList();
+        var total = header.Length + lines.Sum(line => line.Length + 1);
+        if (total <= maxCharacters) return string.Join("\n", [header, .. lines]);
+
+        var reserve = Marker(lines.Count, english).Length + 1;
+        var used = header.Length;
+        var included = new List<string>();
+        foreach (var line in lines)
         {
-            builder.Append("- ").Append(entry.Canonical);
-            if (entry.Variants.Count > 0) builder.Append("（不写成：").Append(string.Join("、", entry.Variants)).Append('）');
-            if (entry.Note is { Length: > 0 } note) builder.Append("：").Append(note);
-            builder.Append('\n');
+            if (used + line.Length + 1 + reserve > maxCharacters) break;
+            included.Add(line);
+            used += line.Length + 1;
         }
-        return builder.ToString().TrimEnd();
+        if (included.Count == 0) return "";
+        return string.Join("\n", [header, .. included, Marker(lines.Count - included.Count, english)]);
+    }
+
+    private static string Marker(int omitted, bool english) =>
+        english ? $"({omitted} more not shown)" : $"（另 {omitted} 条未列出）";
+
+    private static string PromptLine(GlossaryEntry entry, bool english)
+    {
+        var canonical = Tidy(entry.Canonical);
+        if (canonical.Length > 60) canonical = canonical[..60];
+        var line = "- " + canonical;
+        if (entry.Kind == GlossaryKind.Person) line += english ? " (person)" : "（人名）";
+        var variants = entry.Variants.Select(Tidy)
+            .Where(variant => variant.Length > 0)
+            .Select(variant => variant.Length > 30 ? variant[..30] : variant)
+            .Take(6).ToList();
+        if (variants.Count > 0) line += " ← " + string.Join(english ? ", " : "、", variants);
+        if (entry.Note is { } rawNote && Tidy(rawNote) is { Length: > 0 } note)
+            line += (english ? " — " : "：") + (note.Length > 40 ? note[..40] : note);
+        return line;
     }
 
     /// <summary>"每行一个术语；别名用 | 分隔；# 开头是人名/项目等分类"。 Also accepts a JSON array of entries.</summary>
