@@ -16,6 +16,7 @@ public sealed class CloudSttSession : IAsyncDisposable
     private readonly SemaphoreSlim sendLock = new(1, 1);
     private readonly CancellationTokenSource lifetime = new();
     private Task? receive;
+    private int openAiSamples;
 
     private CloudSttSession(CloudSTTProvider provider)
     {
@@ -54,9 +55,21 @@ public sealed class CloudSttSession : IAsyncDisposable
         {
             if (socket.State != WebSocketState.Open) return;
             if (provider.SendsBinaryAudio())
+            {
                 await socket.SendAsync(bytes, WebSocketMessageType.Binary, true, ct);
+            }
             else
+            {
                 await socket.SendAsync(Encoding.UTF8.GetBytes(CloudSTTProviders.OpenAiAppendMessage(bytes)), WebSocketMessageType.Text, true, ct);
+                // With turn_detection disabled, commit about every two seconds so partial items
+                // are transcribed during the meeting instead of only at stop.
+                openAiSamples += samples.Length;
+                if (openAiSamples >= 32000)
+                {
+                    openAiSamples = 0;
+                    await socket.SendAsync(Encoding.UTF8.GetBytes(provider.CloseMessage()), WebSocketMessageType.Text, true, ct);
+                }
+            }
         }
         catch (Exception ex) when (ex is WebSocketException or OperationCanceledException) { }
         finally { sendLock.Release(); }
@@ -91,8 +104,7 @@ public sealed class CloudSttSession : IAsyncDisposable
                 var close = provider.CloseMessage();
                 if (close.Length > 0)
                     await socket.SendAsync(Encoding.UTF8.GetBytes(close), WebSocketMessageType.Text, true, lifetime.Token);
-                else
-                    await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", lifetime.Token);
+                await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", lifetime.Token);
             }
             if (receive is not null) await receive.WaitAsync(TimeSpan.FromSeconds(2));
         }

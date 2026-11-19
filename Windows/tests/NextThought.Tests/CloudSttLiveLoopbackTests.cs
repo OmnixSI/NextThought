@@ -56,4 +56,45 @@ public sealed class CloudSttLiveLoopbackTests
         await server;
         Assert.Contains("live", finals);
     }
+
+    [Fact]
+    public async Task OpenAiLiveSessionCommitsAudioWhileRecording()
+    {
+        var probe = new TcpListener(IPAddress.Loopback, 0);
+        probe.Start();
+        var port = ((IPEndPoint)probe.LocalEndpoint).Port;
+        probe.Stop();
+        using var listener = new HttpListener();
+        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+        listener.Start();
+        var commits = 0;
+        var committed = new TaskCompletionSource();
+        var server = Task.Run(async () =>
+        {
+            var context = await listener.GetContextAsync();
+            using var socket = (await context.AcceptWebSocketAsync(null)).WebSocket;
+            var buffer = new byte[16 * 1024];
+            while (true)
+            {
+                var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
+                if (result.MessageType == WebSocketMessageType.Close) break;
+                var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                if (text.Contains("input_audio_buffer.commit", StringComparison.Ordinal))
+                {
+                    commits++;
+                    if (!committed.Task.IsCompleted) committed.SetResult();
+                }
+            }
+            try { await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); } catch { }
+        });
+
+        await using var session = await CloudSttSession.StartAsync(
+            CloudSTTProvider.OpenAI, "test-key", "", "auto", [],
+            endpointOverride: new Uri($"ws://127.0.0.1:{port}/stt"));
+        for (var index = 0; index < 21; index++) await session.SendAsync(new short[1600]);
+        await committed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await session.StopAsync();
+        await server;
+        Assert.True(commits >= 1);
+    }
 }

@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 OpenAI 实时提交 · 0.5.129
+
+- OpenAI Realtime 的实时会话每约 2 秒音频发送一次 `input_audio_buffer.commit`，
+  部分转写在会议中即可出现；`StopAsync` 发送剩余提交并关闭输出，避免服务端挂起。
+- 新增实时提交回环测试；基线 114。
+- **0.5.129 实测**：Core 863 + 基线 114；验收 63/63、门禁 17/17；环境负载下启动
+  4.28 秒、工作集 124.3 MiB、私有 56.5 MiB。
+
 # P2 云端 STT 协议测试 · 0.5.128
+
 
 - 新增 OpenAI（JSON base64 append + completed）与 Deepgram（二进制 + Token 头 +
   speech_final）本机 WebSocket 回环测试；三种 provider 的 WAV 客户端路径均有覆盖。
