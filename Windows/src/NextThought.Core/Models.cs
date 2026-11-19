@@ -103,6 +103,9 @@ public sealed record AppSettings
 
     /// <summary>Per-action key overrides for the Ctrl+Alt global shortcuts (id → key name).</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = [];
+
+    /// <summary>UI language: "zh" (default) or "en".</summary>
+    public string Language { get; set; } = "zh";
     /// <summary>Mac key <c>presenterMode</c>: dual-screen presenting (PresenterMode.swift).</summary>
     public bool PresenterMode { get; set; }
     /// <summary>Mac key <c>presenterSlidesScreen</c>: display id the slides are on; empty picks the first non-camera display.</summary>

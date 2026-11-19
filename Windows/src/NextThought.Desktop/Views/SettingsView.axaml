@@ -70,6 +70,16 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="10">
+          <TextBlock Text="界面语言 / Language" Classes="section" />
+          <ComboBox ItemsSource="{Binding Settings.UiLanguages}" SelectedItem="{Binding Settings.UiLanguage}"
+                    Width="160" HorizontalAlignment="Left" />
+          <TextBlock Text="切换后重启生效；当前覆盖主导航、设置分节与常用按钮，动态状态和会议内容保持原文。"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="10">

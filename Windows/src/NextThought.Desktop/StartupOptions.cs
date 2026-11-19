@@ -47,6 +47,7 @@ public static class StartupOptions
     public static string? ShortcutCheck { get; private set; }
     public static string? DemoCheck { get; private set; }
     public static string? WindowShotCheck { get; private set; }
+    public static string? UiLanguageCheck { get; private set; }
     public static string? CaptureHideCheck { get; private set; }
     public static string? AudioSwitchCheck { get; private set; }
     public static string? TeleprompterHandleCheck { get; private set; }
@@ -135,6 +136,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--shortcut-check=", StringComparison.OrdinalIgnoreCase)) ShortcutCheck = argument["--shortcut-check=".Length..];
             else if (argument.StartsWith("--demo-check=", StringComparison.OrdinalIgnoreCase)) DemoCheck = argument["--demo-check=".Length..];
             else if (argument.StartsWith("--window-shot-check=", StringComparison.OrdinalIgnoreCase)) WindowShotCheck = argument["--window-shot-check=".Length..];
+            else if (argument.StartsWith("--ui-language-check=", StringComparison.OrdinalIgnoreCase)) UiLanguageCheck = argument["--ui-language-check=".Length..];
             else if (argument.StartsWith("--capture-hide-check=", StringComparison.OrdinalIgnoreCase)) CaptureHideCheck = argument["--capture-hide-check=".Length..];
             else if (argument.StartsWith("--audio-switch-check=", StringComparison.OrdinalIgnoreCase)) AudioSwitchCheck = argument["--audio-switch-check=".Length..];
             else if (argument.StartsWith("--teleprompter-handle-check=", StringComparison.OrdinalIgnoreCase)) TeleprompterHandleCheck = argument["--teleprompter-handle-check=".Length..];

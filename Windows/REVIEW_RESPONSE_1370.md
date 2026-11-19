@@ -85,7 +85,7 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
   0.5.57 伴侣快照补齐 `answerID`/`phase`/`slide`/`updateAvailable`；
   0.5.58 证据包改为 Mac 的 `requestID`；0.5.59 更正 `lineID` 与 `templateID`；0.5.60 回答事件补 `seconds`/`firstTokenSeconds`/
   `screenshotPath`/`webAnswer`/`webSources`/`evidence`；0.5.61 上下文文档保留 Mac `content`；0.5.62 摘录改为 `chunkID`/`blockID`；0.5.63 保留系列条目的 `seriesItemSourceTombstones`；0.5.64 保留 `stageReview`/`stageReviewAt`；0.5.65 会议记录保留未知 Mac 字段；0.5.66 系列也保留未知字段；0.5.67 `context.json` 同样保留；0.5.68 纪要补 `corrections`/`droppedCount`/`model`/生成时间/转写修订；
-  0.5.69 `context.json` 的上一场改为 `previousSessionID`；0.5.70 条目历史保留 Mac 溯源字段；0.5.71 转写行保留译文与修订及未知字段；0.5.72 回答记录补首字延迟/截图/联网/证据；0.5.73 用 Chromium+CDP 实测手机页渲染；0.5.74 用本机 WebSocket 中转实测收状态/发命令；0.5.75 问题事件保留未知 Mac 字段；0.5.76 修复 `StructuredNotesPayload` 无法反序列化并保留未知字段；0.5.77 来源引用保留未知字段；0.5.78 Chromium 手机页点击「上一条」触发桌面动作；0.5.79 手机页收到新快照后自动更新；0.5.80 增加 Word（DOCX）导出；0.5.81 增加 PDF 导出；0.5.82 改用 SimHei 文件嵌入，单份约 5 MB；0.5.83 字幕可导出原文/译文/双语；0.5.84 术语表提示词上限 1500 字并支持英文版；0.5.85 九个内置纪要模板补齐英文版；0.5.86 结构化纪要也按英文转写使用英文提示；0.5.87 全局快捷键可改键；0.5.88 支持 Ctrl/Alt/Shift/Win 组合（如 Ctrl+Shift+R）；0.5.89 复验 `--demo` 演示模式不写数据；0.5.90 PDF 增加页码与标题元数据；0.5.91 补屏幕变化检测；0.5.92 补屏幕指代/新鲜度与通用科学回答提示的断言；0.5.93 补低相似度不返材料、显式页码优先的测试；0.5.94 用红色探针窗实测窗口截图裁剪；0.5.95 补提示条分句边界测试；0.5.96 提示岛/提词器加 160ms 淡入；0.5.97 隐藏时 120ms 淡出。
+  0.5.69 `context.json` 的上一场改为 `previousSessionID`；0.5.70 条目历史保留 Mac 溯源字段；0.5.71 转写行保留译文与修订及未知字段；0.5.72 回答记录补首字延迟/截图/联网/证据；0.5.73 用 Chromium+CDP 实测手机页渲染；0.5.74 用本机 WebSocket 中转实测收状态/发命令；0.5.75 问题事件保留未知 Mac 字段；0.5.76 修复 `StructuredNotesPayload` 无法反序列化并保留未知字段；0.5.77 来源引用保留未知字段；0.5.78 Chromium 手机页点击「上一条」触发桌面动作；0.5.79 手机页收到新快照后自动更新；0.5.80 增加 Word（DOCX）导出；0.5.81 增加 PDF 导出；0.5.82 改用 SimHei 文件嵌入，单份约 5 MB；0.5.83 字幕可导出原文/译文/双语；0.5.84 术语表提示词上限 1500 字并支持英文版；0.5.85 九个内置纪要模板补齐英文版；0.5.86 结构化纪要也按英文转写使用英文提示；0.5.87 全局快捷键可改键；0.5.88 支持 Ctrl/Alt/Shift/Win 组合（如 Ctrl+Shift+R）；0.5.89 复验 `--demo` 演示模式不写数据；0.5.90 PDF 增加页码与标题元数据；0.5.91 补屏幕变化检测；0.5.92 补屏幕指代/新鲜度与通用科学回答提示的断言；0.5.93 补低相似度不返材料、显式页码优先的测试；0.5.94 用红色探针窗实测窗口截图裁剪；0.5.95 补提示条分句边界测试；0.5.96 提示岛/提词器加 160ms 淡入；0.5.97 隐藏时 120ms 淡出；0.5.98 界面语言机制落地（中文/English）。
   备份清单的会话筛选改为普通循环，规避一次 ReadyToRun 下的 CLR 内部错误。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
 - 0.5.4 起结构化纪要写入 `summary.json → structured`；0.5.14 起改为直接写 Mac 的 StructuredNotesPayload，
@@ -109,6 +109,14 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 术语表提示词：按 Mac `promptSection` 排序（有误听写法的先列）、截断、1500 字上限，
   并提供英文 header/“人名”标注；不再无限挤占提示词。
 
+## 界面本地化（0.5.98，机制已落地）
+
+- 设置页「界面语言 / Language」可选中文/English，写 `settings.json` 的 `language`；
+- 启动后把英文词典应用到已实现控件：主导航 7 项、设置分节、常用按钮等 60 条；
+- 动态会议标题/转写/状态不翻译，未知文本原样保留；`--ui-language-check` 实测
+  Home/Meetings/Notes/History/Series/Library/Settings 全部出现。
+- 仍未覆盖全部约 500 条界面文案，属于机制先行。
+
 ## 窗口截图（0.5.94 实测）
 
 - `--window-shot-check` 弹一个纯红探针窗，取前台窗口矩形、截整屏并裁剪；
@@ -129,11 +137,11 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.97 实测
+## 0.5.98 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
-- 测试：Core **856**、基线 **109**
+- 测试：Core **862**、基线 **109**
 - 安装版验收：**63/63**；`--capture-hide-check` passed（岛/字幕条/提词器 affinity=17）；
   `--companion-check` passed；手机页 Chromium 渲染与本机中转协议测试通过
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.30 秒，工作集 **110.6 MiB**、私有 43.6 MiB
+- 启动 1.27 秒，工作集 **97.6 MiB**、私有 36.4 MiB

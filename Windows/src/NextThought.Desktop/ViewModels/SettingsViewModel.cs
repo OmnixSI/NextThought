@@ -55,6 +55,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool useCodex;
     [ObservableProperty] private bool webSearch;
     [ObservableProperty] private string codexModel = "";
+    public IReadOnlyList<string> UiLanguages { get; } = ["中文", "English"];
+    [ObservableProperty] private string uiLanguage = "中文";
     [ObservableProperty] private string autoEndMode = "prompt";
     private string autoEndMinutes = "10";
 
@@ -144,6 +146,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AppSettings settings;
         try { settings = state.SettingsStore.Load(); }
         catch { settings = new AppSettings(); }
+        UiLanguage = UiText.IsEnglish(settings.Language) ? "English" : "中文";
         BaseUrl = settings.BaseUrl;
         Model = settings.Model;
         NotesModel = settings.NotesModel;
@@ -197,6 +200,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     public AppSettings Build() => new()
     {
         BaseUrl = BaseUrl.Trim(),
+        Language = UiLanguage == "English" ? "en" : "zh",
         Model = Model.Trim(),
         NotesModel = NotesModel.Trim(),
         ReasoningEffort = ReasoningEffort,

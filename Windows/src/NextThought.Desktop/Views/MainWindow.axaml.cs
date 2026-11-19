@@ -53,6 +53,8 @@ public partial class MainWindow : Window
             if (openedOnce) return;
             openedOnce = true;
             await state.InitializeAsync();
+            UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
+            LayoutUpdated += (_, _) => UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
             RefreshDisplays();
             if (StartupOptions.Presenter) state.Settings.PresenterMode = true;
             SetupTray();
@@ -110,6 +112,7 @@ public partial class MainWindow : Window
             if (StartupOptions.ShortcutCheck is { } shortcutCheck) await RunShortcutCheckAsync(shortcutCheck);
             if (StartupOptions.DemoCheck is { } demoCheck) await RunDemoCheckAsync(demoCheck);
             if (StartupOptions.WindowShotCheck is { } windowShot) await RunWindowShotCheckAsync(windowShot);
+            if (StartupOptions.UiLanguageCheck is { } uiLanguage) await RunUiLanguageCheckAsync(uiLanguage);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
             if (StartupOptions.TeleprompterHandleCheck is { } handleCheck) await RunTeleprompterHandleCheckAsync(handleCheck);
@@ -2438,6 +2441,31 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: with language=en the shell actually shows translated labels.</summary>
+    private async Task RunUiLanguageCheckAsync(string path)
+    {
+        await Task.Delay(400);
+        UiTranslation.Apply(this, true);
+        var texts = this.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
+            .Select(block => block.Text ?? "").ToHashSet(StringComparer.Ordinal);
+        var labels = new[] { "Home", "Meetings", "Notes", "History", "Series", "Library", "Settings" };
+        var found = labels.Where(texts.Contains).ToArray();
+        var passed = found.Length == labels.Length;
+        var report = new { passed, found, missing = labels.Except(found).ToArray() };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "ui-language-check: passed" : "ui-language-check: failed");
+        Close();
+    }
+
     /// <summary>QA: the window-capture crop really contains the foreground window's pixels.</summary>
     private async Task RunWindowShotCheckAsync(string path)
     {
