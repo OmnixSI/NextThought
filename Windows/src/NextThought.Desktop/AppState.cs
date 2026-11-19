@@ -67,6 +67,7 @@ public partial class AppState : ObservableObject
         History = [];
         Transcript = [];
         Sources = [];
+        LanguageChanged += english => PageSubtitle = UiText.Translate(PageSubtitle, english);
     }
 
     public AppPaths Paths { get; }
@@ -538,6 +539,10 @@ public partial class AppState : ObservableObject
         StatusIsError = error;
     }
 
+    /// <summary>Header subtitle; the fixed ones follow the interface language.</summary>
+    private void SetPageSubtitle(string text) =>
+        PageSubtitle = UiText.Translate(text, Settings.UiLanguage == "English");
+
     public async Task InitializeAsync()
     {
         var clock = Stopwatch.StartNew();
@@ -633,7 +638,7 @@ public partial class AppState : ObservableObject
     public void LoadDemo()
     {
         MeetingTitle = "结构组会 · 连续刚构桥监测";
-        PageSubtitle = "演示数据 · 不会写入你的资料";
+        SetPageSubtitle("演示数据 · 不会写入你的资料");
         DetectedQuestion = DemoContent.Question;
         AnswerText = DemoContent.Answer;
         SummaryText = DemoContent.Summary;
@@ -855,7 +860,7 @@ public partial class AppState : ObservableObject
             Recording = true;
             ListeningPaused = false;
             candidateTimer.Start();
-            PageSubtitle = "进行中 · 转写持续保存在本机";
+            SetPageSubtitle("进行中 · 转写持续保存在本机");
             Section = AppSection.Live;
             RefreshHistory(meta.Id);
             SetStatus(settings.CaptureProcessId > 0 ? "正在记录所选应用及其子进程的声音。" : "正在记录。系统声音为所选输出设备混音。");
@@ -906,7 +911,7 @@ public partial class AppState : ObservableObject
             await Sessions.EndAsync(meta);
             ++epoch;
             SystemPartial = MicrophonePartial = "";
-            PageSubtitle = "已结束 · 会议已归档";
+            SetPageSubtitle("已结束 · 会议已归档");
             SetStatus(reason == null ? "会议已保存，可以整理纪要。" : reason + "；已经记录的内容已保存。", reason != null);
         }
         catch (Exception ex) { SetStatus("会议结束时遇到问题：" + ex.Message, true); }
@@ -1636,7 +1641,7 @@ public partial class AppState : ObservableObject
             CurrentSession = meta;
             var generation = ++epoch;
             MeetingTitle = meta.Title;
-            PageSubtitle = "正在本机读取录音…";
+            SetPageSubtitle("正在本机读取录音…");
             Section = AppSection.Live;
             SetStatus("正在加载模型并转写 WAV…");
             try
@@ -1663,7 +1668,7 @@ public partial class AppState : ObservableObject
                 await Sessions.EndAsync(meta);
                 ++epoch;
                 SystemPartial = MicrophonePartial = "";
-                PageSubtitle = "录音转写 · 已归档";
+                SetPageSubtitle("录音转写 · 已归档");
                 RefreshHistory(meta.Id);
             }
         });
@@ -1795,7 +1800,7 @@ public partial class AppState : ObservableObject
         CurrentSession = null;
         ResetDisplay();
         MeetingTitle = "新会议";
-        PageSubtitle = "选择声音来源，开始记录。";
+        SetPageSubtitle("选择声音来源，开始记录。");
         Section = AppSection.Live;
         RaiseBusy();
     }

@@ -258,7 +258,13 @@ public static class UiText
         ["隐藏所有窗口"] = "Hide all windows",
         ["开始或停止记录"] = "Start or stop recording",
         ["退出 NextThought"] = "Quit NextThought",
-        ["NextThought · 把讨论留下来"] = "NextThought · Keep the discussion"
+        ["NextThought · 把讨论留下来"] = "NextThought · Keep the discussion",
+        ["选择声音来源，开始记录。"] = "Choose an audio source and start recording.",
+        ["演示数据 · 不会写入你的资料"] = "Demo data · nothing is written to your materials",
+        ["进行中 · 转写持续保存在本机"] = "In progress · transcript saved locally",
+        ["已结束 · 会议已归档"] = "Ended · meeting archived",
+        ["正在本机读取录音…"] = "Reading the recording on this device…",
+        ["录音转写 · 已归档"] = "Recording transcribed · archived",
     };
 
     private static readonly Dictionary<string, string> Chinese = English
