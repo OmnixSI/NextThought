@@ -1346,7 +1346,7 @@ public partial class AppState : ObservableObject
     private string BuildAnswerSystemPrompt(SessionMeta? meta)
     {
         var experience = ExperiencePromptFor(meta);
-        var skills = SkillPrompt();
+        var skills = SkillPrompt(meta);
         var prompt = experience.Length == 0
             ? AnswerPrompt
             : AnswerPrompt + "\n\n这个系列已经确认的经验（优先遵守）：\n" + experience;

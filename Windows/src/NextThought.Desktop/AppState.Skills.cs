@@ -81,9 +81,11 @@ public partial class AppState
     }
 
     /// <summary>Enabled skill instructions for the answer prompt (capped so a huge file cannot crowd out the meeting).</summary>
-    public string SkillPrompt()
+    public string SkillPrompt(SessionMeta? meta = null)
     {
-        var enabled = skills.Where(skill => skill.Enabled).ToList();
+        var attached = (meta is null ? null : workspace.SeriesOfSession(meta.Id.ToString()))?.SkillIds ?? [];
+        var enabled = skills.Where(skill => skill.Enabled
+            && (skill.Global || attached.Any(id => Guid.TryParse(id, out var parsed) && parsed == Guid.Parse(skill.Id)))).ToList();
         if (enabled.Count == 0) return "";
         var text = string.Join("\n\n", enabled.Select(skill =>
             "### " + skill.Name + (skill.Summary.Length > 0 ? " — " + skill.Summary : "") + "\n" + skill.Content));

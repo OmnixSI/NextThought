@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 系列 skillIDs 与附着技能 · 0.5.28
+
+- `WorkspaceSeries` 新增 `[JsonPropertyName("skillIDs")] SkillIds`，保存/读取 Mac 的附着技能。
+- 回答提示只取「启用 +（全局或附着到本系列）」的技能；Mac 导入的 workspace 现在能带上技能。
+- **测试**：`StoreKeepsTheMacSkillIDs`；Core 796。
+- **0.5.28 实测**：Core 796 + 基线 101；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.6 MiB、私有 43.8 MiB。
+- 仍未完成：Windows 系列页的「附着技能」按钮、幻灯片快捷键、双向实机验收。
+
 # P0 更新签名者白名单 · 0.5.27
+
 
 - `Authenticode.SignerThumbprintAsync` 读取签名者证书指纹；`TrustedSigners` / `SignerAllowed`
   支持 `NEXTTHOUGHT_SIGNER_THUMBPRINT` 逗号分隔白名单。

@@ -87,6 +87,10 @@ public sealed record WorkspaceSeries(
     [JsonPropertyName("sourceDeletionTombstones")]
     public IReadOnlyList<string>? SourceDeletionTombstones { get; init; }
 
+    /// <summary>Skills from the library attached to this series (Mac Workspace.skillIDs).</summary>
+    [JsonPropertyName("skillIDs")]
+    public IReadOnlyList<string>? SkillIds { get; init; }
+
     /// <summary>Feed lessons and the question bank back into answers (default on).</summary>
     public bool UseKnowledge { get; init; } = true;
 

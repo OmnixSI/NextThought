@@ -86,6 +86,20 @@ public sealed class WorkspaceTests : IDisposable
     }
 
     [Fact]
+    public void StoreKeepsTheMacSkillIDs()
+    {
+        var skillId = Guid.NewGuid().ToString("D").ToUpperInvariant();
+        var data = new WorkspaceData([
+            new WorkspaceSeries("s1", "客户会", DateTimeOffset.UnixEpoch, [], []) { SkillIds = [skillId] }
+        ]);
+        var store = new WorkspaceStore(directory);
+        store.Save(data);
+        var loaded = store.Load();
+        Assert.Equal([skillId], loaded.Series.Single().SkillIds);
+        Assert.Contains("\"skillIDs\"", File.ReadAllText(store.Path_));
+    }
+
+    [Fact]
     public void LessonRevisionIdUsesTheMacByteOrder()
     {
         var lesson = new WorkspaceLesson { Id = "lesson-1", Text = "经验", Revision = 1, UpdatedAt = DateTimeOffset.UnixEpoch };
