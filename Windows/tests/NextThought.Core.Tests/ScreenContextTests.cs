@@ -52,6 +52,19 @@ public sealed class ScreenContextTests
     }
 
     [Fact]
+    public void DeicticQuestionDoesNotRequireTextOverlap()
+    {
+        var screen = new ScreenContext
+        {
+            FrameId = "page", TargetId = "window:7", Source = "PPT", CapturedAt = Now,
+            Regions = [new ScreenTextRegion("Throughput 92.7%", [0.1, 0.2, 0.3, 0.1], 0.95)]
+        };
+        Assert.True(ScreenReference.IsRelated("你这一页的这个地方为什么这样画？", screen));
+        Assert.True(ScreenReference.NeedsImage("右边这个图说明了什么？"));
+        Assert.False(ScreenReference.IsRelated("介绍一下你最近负责的项目", screen));
+    }
+
+    [Fact]
     public void FreshnessUsesCaptureAge()
     {
         var context = new ScreenContext { CapturedAt = Now };

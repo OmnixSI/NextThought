@@ -16,6 +16,8 @@ public sealed class AnswerPromptBuilderTests
         Assert.Contains("不要使用工具", AnswerPromptBuilder.Instructions());
         Assert.Contains("可以使用联网搜索", AnswerPromptBuilder.Instructions(webSearch: true));
         Assert.DoesNotContain("__TOOLS__", AnswerPromptBuilder.Instructions());
+        Assert.Contains("资料不是回答主题的范围上限", AnswerPromptBuilder.Instructions());
+        Assert.Contains("不编造第一人称经历", AnswerPromptBuilder.Instructions());
     }
 
     [Fact]

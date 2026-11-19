@@ -11,7 +11,7 @@ public sealed class ScreenDeltaTests
     {
         const int width = 100, height = 100;
         var empty = new byte[width * height * 4];
-        Assert.Equal([0d, 0d, 1d, 1d], ScreenDelta.Region(null, empty, width, height));
+        Assert.Equal([0d, 0d, 1d, 1d], ScreenDelta.Region(null, empty, width, height)!);
         Assert.Null(ScreenDelta.Region(empty, empty, width, height));
 
         var changed = (byte[])empty.Clone();
