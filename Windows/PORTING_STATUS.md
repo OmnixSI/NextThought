@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 英文日期格式 · 0.5.112
+
+- `SessionMeta.LocalStartedAt` 在英文界面输出 `MMM d, HH:mm`（InvariantCulture），
+  中文仍为 `MM-dd HH:mm`；设置页「界面语言 / Language」标题也翻译。
+- 词典 274 条；`--island --ui-language-check` 通过；Core 863。
+- **0.5.112 实测**：Core 863 + 基线 109；验收 63/63、门禁 17/17；启动 3.74 秒、
+  工作集 109.2 MiB、私有 42.4 MiB。
+
 # P2 浮窗打开时本地化 · 0.5.111
+
 
 - 提词岛、字幕条、提词器、区域截图窗口在 `Opened` 时按当前语言应用词典；
   英文启动后首次打开的浮窗标题为 `NextThought Cue island` 等，不再是中文。

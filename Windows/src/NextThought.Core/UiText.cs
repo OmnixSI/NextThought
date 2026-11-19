@@ -284,6 +284,7 @@ public static class UiText
         ["被问到 1 次"] = "Asked once",
         ["采纳后进入这个系列的经验，下次回答会带上它"] = "Accepted lessons join this series and are used in later answers",
         ["题库里已有相似问题时，「替换」会用新回答覆盖旧的，旧回答留在历史里"] = "If a similar question exists, Replace overwrites its answer; the old one stays in history",
+        ["界面语言 / Language"] = "Interface language",
     };
 
     private static readonly Dictionary<string, string> Chinese = English

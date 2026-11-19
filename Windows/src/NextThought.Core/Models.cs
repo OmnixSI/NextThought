@@ -69,7 +69,9 @@ public sealed record SessionMeta
     public string? SummaryError { get; set; }
     public bool InPerson { get; set; }
     public string Platform { get; init; } = "windows";
-    [JsonIgnore] public string LocalStartedAt => StartedAt.ToLocalTime().ToString("MM-dd HH:mm");
+    [JsonIgnore] public string LocalStartedAt => UiText.EnglishUi
+        ? StartedAt.ToLocalTime().ToString("MMM d, HH:mm", System.Globalization.CultureInfo.InvariantCulture)
+        : StartedAt.ToLocalTime().ToString("MM-dd HH:mm");
     [JsonExtensionData] public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
     public override string ToString() => $"{StartedAt.ToLocalTime():MM-dd HH:mm}  {Title}";
 }
