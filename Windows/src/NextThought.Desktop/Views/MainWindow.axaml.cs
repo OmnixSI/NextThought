@@ -152,7 +152,7 @@ public partial class MainWindow : Window
                 state.InitTimings,
                 [
                     "capture-dual", "asr-local", "sessions", "summary-markdown", "scenes-9",
-                    "cue-island", "subtitles", "teleprompter", "region-capture", "hotkeys-18",
+                    "cue-island", "subtitles", "teleprompter", "region-capture", "hotkeys-19",
                     "tray", "hide-all", "auto-end", "notes-templates-9", "notes-fishbone",
                     "notes-outline", "notes-viewpoints", "proofread", "due-dates", "series",
                     "glossary", "update-check", "companion-lan",
@@ -2453,6 +2453,7 @@ public partial class MainWindow : Window
             new GlobalHotkeys.Binding("Ctrl+Alt+J 提词浮窗鼠标穿透", 0x4A, ToggleTeleprompterClickThrough),
             new GlobalHotkeys.Binding("Ctrl+Alt+PageDown 下一页幻灯片", 0x22, () => state.NextSlideCommand.Execute(null)),
             new GlobalHotkeys.Binding("Ctrl+Alt+PageUp 上一页幻灯片", 0x21, () => state.PreviousSlideCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+Q 立即回答最新转写", 0x51, () => state.ForceAnswerCommand.Execute(null)),
             new GlobalHotkeys.Binding("Ctrl+Alt+W 窗口截图", 0x57, () => _ = CaptureWindowAsync()),
             new GlobalHotkeys.Binding("Ctrl+Alt+Space 暂停或恢复聆听", 0x20, () => state.TogglePauseListeningCommand.Execute(null))
         ]);

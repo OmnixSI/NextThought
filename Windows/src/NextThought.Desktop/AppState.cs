@@ -1638,6 +1638,21 @@ public partial class AppState : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ForceAnswerAsync()
+    {
+        if (Answering) return;
+        var question = !string.IsNullOrWhiteSpace(DetectedQuestion)
+            ? DetectedQuestion
+            : currentLines.LastOrDefault()?.Text.Trim() ?? "";
+        if (question.Length == 0)
+        {
+            SetStatus("还没有可回答的转写。");
+            return;
+        }
+        await AnswerAsync(question, false);
+    }
+
+    [RelayCommand]
     private async Task RegenerateAnswerAsync()
     {
         if (Answering) return;
