@@ -67,7 +67,12 @@ public partial class AppState : ObservableObject
         History = [];
         Transcript = [];
         Sources = [];
-        LanguageChanged += english => PageSubtitle = UiText.Translate(PageSubtitle, english);
+        LanguageChanged += english =>
+        {
+            PageSubtitle = UiText.Translate(PageSubtitle, english);
+            OnPropertyChanged(nameof(StatsText));
+            OnPropertyChanged(nameof(Greeting));
+        };
     }
 
     public AppPaths Paths { get; }
@@ -443,8 +448,17 @@ public partial class AppState : ObservableObject
     public bool OnSeries => Section == AppSection.Series;
     public bool OnSettings => Section == AppSection.Settings;
     public bool HasTranscript => Transcript.Count > 0;
-    public string StatsText => Recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(CurrentSession?.AnswerCount ?? 0)} 条回答";
-    public string Greeting => DateTime.Now.Hour switch
+    public string StatsText => Settings.UiLanguage == "English"
+        ? Recording ? $"Recording · {currentLines.Count} lines" : $"{currentLines.Count} lines · {(CurrentSession?.AnswerCount ?? 0)} answers"
+        : Recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(CurrentSession?.AnswerCount ?? 0)} 条回答";
+    public string Greeting => Settings.UiLanguage == "English" ? DateTime.Now.Hour switch
+    {
+        < 6 => "Late night. Want to keep a thought?",
+        < 11 => "Good morning. What should we capture today?",
+        < 14 => "Good noon. The meeting goes on.",
+        < 18 => "Good afternoon. Keep the discussion.",
+        _ => "Good evening. What conclusions are worth keeping today?"
+    } : DateTime.Now.Hour switch
     {
         < 6 => "夜深了。要把想法留下来吗？",
         < 11 => "早上好。今天要记下什么？",
