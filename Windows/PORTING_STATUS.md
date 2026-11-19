@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 summary.lessons/bank · 0.5.17
+
+- 模板纪要生成后，`NotesKnowledge.Extract` 的经验与题库写入 `summary.json` 的
+  `lessons` / `bank`，`appliedToWorkspace=false`（候选仍等用户确认）。
+- **测试**：`SummaryKnowledgeCarriesLessonsAndBank`；基线 97。
+- **0.5.17 实测**：Core 791 + 基线 97；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.6 MiB、私有 42.1 MiB。
+- 仍未完成：技能/模板、幻灯片快捷键、双向实机验收。
+
 # P0 context.json 完整字段 · 0.5.16
+
 
 - 新增 `SessionContextSnapshot`：mode/style/preferences/profile/documents/effectiveMode/typeName/
   experience/previousSessionID/glossary。

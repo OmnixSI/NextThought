@@ -66,6 +66,23 @@ public sealed class SessionDataSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task SummaryKnowledgeCarriesLessonsAndBank()
+    {
+        var store = new SessionStore(new AppPaths(root));
+        var meta = new SessionMeta { Title = "会议" };
+        await store.CreateAsync(meta);
+        await store.SaveSummaryAsync(meta, "# 纪要", "m");
+        await store.SaveSummaryKnowledgeAsync(meta, ["先讲结论"], [new QuestionBankEntry("预算？", "一百万。")], false);
+        using var summary = System.Text.Json.JsonDocument.Parse(
+            await File.ReadAllTextAsync(Path.Combine(store.Folder(meta.Id), "summary.json")));
+        Assert.Equal("先讲结论", Assert.Single(summary.RootElement.GetProperty("lessons").EnumerateArray()).GetString());
+        var bank = Assert.Single(summary.RootElement.GetProperty("bank").EnumerateArray());
+        Assert.Equal("预算？", bank.GetProperty("question").GetString());
+        Assert.Equal("一百万。", bank.GetProperty("answer").GetString());
+        Assert.False(summary.RootElement.GetProperty("appliedToWorkspace").GetBoolean());
+    }
+
+    [Fact]
     public async Task ContextJsonCarriesTheMacInputs()
     {
         var store = new SessionStore(new AppPaths(root));

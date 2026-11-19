@@ -151,6 +151,34 @@ public sealed class SessionStore(AppPaths paths)
         }
         finally { gate.Release(); }
     }
+    /// <summary>Writes the lessons/bank a template summary carried, before the user accepts them.</summary>
+    public async Task SaveSummaryKnowledgeAsync(SessionMeta meta, IReadOnlyList<string> lessons,
+        IReadOnlyList<QuestionBankEntry> bank, bool appliedToWorkspace, CancellationToken ct = default)
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var summaryPath = Path.Combine(Folder(meta.Id), "summary.json");
+            System.Text.Json.Nodes.JsonObject summary;
+            try
+            {
+                summary = (File.Exists(summaryPath)
+                    ? System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(summaryPath, ct).ConfigureAwait(false)) as System.Text.Json.Nodes.JsonObject
+                    : null) ?? new System.Text.Json.Nodes.JsonObject();
+            }
+            catch (JsonException) { summary = new System.Text.Json.Nodes.JsonObject(); }
+            summary["lessons"] = new System.Text.Json.Nodes.JsonArray(lessons.Select(text => System.Text.Json.Nodes.JsonValue.Create(text)).ToArray());
+            summary["bank"] = new System.Text.Json.Nodes.JsonArray(bank.Select(entry => new System.Text.Json.Nodes.JsonObject
+            {
+                ["question"] = entry.Question,
+                ["answer"] = entry.Answer
+            }).ToArray());
+            summary["appliedToWorkspace"] = appliedToWorkspace;
+            await AppPaths.AtomicWriteAsync(summaryPath, summary.ToJsonString(JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
+
     public async Task AppendTranslationAsync(Guid session, SessionTranslation translation, CancellationToken ct = default)
     {
         if (translation.Revision < 1 || translation.Direction is not ("zh-en" or "en-zh") || translation.Text.Length > 32000)

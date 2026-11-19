@@ -80,7 +80,10 @@ public partial class AppState
             await Sessions.SaveSummaryAsync(meta, markdown, AnswerOptions(true).Model, cancellation.Token);
             meta.SummaryState = "saved";
             // The template marks sections that carry into the series (NotesCarry): queue them for review.
+            var (lessons, bank) = NotesKnowledge.Extract(doc, template);
             CollectFromNotes(meta, doc, template);
+            if (lessons.Count + bank.Count > 0)
+                await Sessions.SaveSummaryKnowledgeAsync(meta, lessons, bank, appliedToWorkspace: false, cancellation.Token);
             SetStatus(truncated
                 ? $"已按「{template.Name}」整理（会议较长，只整理了前 {maxCharacters} 字）。"
                 : $"已按「{template.Name}」整理，可导出 Markdown。");
