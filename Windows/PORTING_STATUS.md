@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 中转 HTTPS 策略测试 · 0.5.38
+
+- 新增 `CompanionRelaySecurityTests`：明文 HTTP 被拒、loopback 只有自检开关可用、
+  URL 内嵌用户名/密码被拒。
+- 这对应 Mac 的 relay 入口约束；真实公网 TLS 中转仍未连接验证。
+- **0.5.38 实测**：Core 799 + 基线 104；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 97.5 MiB、私有 36.9 MiB。
+- 仍未完成：真手机、公网 TLS 中转。
+
 # P0 签名者检测实测 · 0.5.37
+
 
 - `--signature-check` 报告新增 `signer` 与 `allowed`；自签名副本（CN=NextThought Test）实测：
   `signer=8571AF7BA94B8AC6A24349CF5B3B5C68CA81C753`、`allowed=true`、
