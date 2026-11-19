@@ -29,7 +29,19 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 伴侣加密跨平台向量 · 0.5.36
+
+- `CompanionCrypto.Json` 改为 UTF-8 原字符（与 Swift JSONEncoder 一致），修复 Windows 帧与 Mac
+  固定向量不一致的问题。
+- 新增 Mac `CompanionCryptoTests.crossPlatformVectorAndAuthentication` 的 C# 向量：
+  room-one、key=7×32、nonce=4×12、`secret 可靠 -3.7 dBm`，得到
+  `n=BAQEBAQEBAQEBAQE`、`body=4p2rT4wvtodvAZxobxrsTNxx8zyhDXC7TyxE1esTaHBCIhkoLHmlIw==`。
+- **0.5.36 实测**：Core 799 + 基线 101；验收 61/61、门禁 17/17；启动 1.17 秒、
+  工作集 97.3 MiB、私有 36.5 MiB。
+- 仍未完成：真手机、公网 TLS/中转。
+
 # P1 立即回答最新转写 · 0.5.35
+
 
 - 新增 `ForceAnswerAsync`：优先回答当前检测问题，否则回答最后一条转写。
 - `Ctrl+Alt+Q` 绑定；Mac 的 19 个动作现在都有 Windows 快捷键，安装版 **19/19 注册成功**。

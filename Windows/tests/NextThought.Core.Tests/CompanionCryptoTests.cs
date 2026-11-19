@@ -43,6 +43,23 @@ public sealed class CompanionCryptoTests
     }
 
     [Fact]
+    public void CrossPlatformVectorMatchesTheMacTest()
+    {
+        var pairing = new CompanionPairing
+        {
+            Room = "room-one",
+            Key = Convert.ToBase64String(Enumerable.Repeat((byte)7, 32).ToArray())
+        };
+        var value = "secret 可靠 -3.7 dBm";
+        var frame = CompanionCrypto.Seal(value, "state", pairing, Enumerable.Repeat((byte)4, 12).ToArray());
+        Assert.Equal("BAQEBAQEBAQEBAQE", frame.N);
+        Assert.Equal("4p2rT4wvtodvAZxobxrsTNxx8zyhDXC7TyxE1esTaHBCIhkoLHmlIw==", frame.Body);
+        Assert.Equal(value, CompanionCrypto.Open<string>(frame, pairing));
+        var wrong = pairing with { Room = "wrong" };
+        Assert.ThrowsAny<Exception>(() => CompanionCrypto.Open<string>(frame, wrong));
+    }
+
+    [Fact]
     public void OpeningWithAnotherKindFails()
     {
         var pairing = Pairing();
