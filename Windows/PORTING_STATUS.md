@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 技能编辑与注入 · 0.5.21
+
+- 新增 `Skill` / `SkillStore`（Mac 兼容 `skills.json`）：支持 YAML front matter、`# 标题`、
+  `## 名称` 文本编辑格式；启用/全局/附着的选择逻辑在 `Skill.Active`。
+- 设置页新增「技能」卡片（`SkillsText` + 保存）；启用的技能注入回答 System Prompt（上限 6000 字）。
+- **测试**：`SkillTextRoundTripsNameSummaryAndContent`、既有 `Skill.Parse`/`Active` 测试；Core 793。
+- **0.5.21 实测**：Core 793 + 基线 99；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 108.7 MiB、私有 42.7 MiB。
+- 仍未完成：从 .md 文件导入/按系列附着、自定义模板编辑器、幻灯片快捷键、双向实机验收。
+
 # P1 技能/模板随备份保留 · 0.5.20
+
 
 - 导出时若数据目录已有 `skills.json` / `note-templates.json`，写入真实内容而不是空数组；
   导入时恢复到数据目录。

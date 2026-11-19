@@ -550,6 +550,7 @@ public partial class AppState : ObservableObject
             RefreshHistory();
             LoadWorkspace();
             LoadGlossary();
+            LoadSkills();
             Mark("history");
             LatchCompanionCommandState();
             initialized = true;
@@ -1344,9 +1345,11 @@ public partial class AppState : ObservableObject
     private string BuildAnswerSystemPrompt(SessionMeta? meta)
     {
         var experience = ExperiencePromptFor(meta);
-        return experience.Length == 0
+        var skills = SkillPrompt();
+        var prompt = experience.Length == 0
             ? AnswerPrompt
             : AnswerPrompt + "\n\n这个系列已经确认的经验（优先遵守）：\n" + experience;
+        return skills.Length == 0 ? prompt : prompt + "\n\n用户加载的技能（按适用部分执行）：\n" + skills;
     }
 
     /// <summary>User prompt with the series question bank as extra reference material.</summary>

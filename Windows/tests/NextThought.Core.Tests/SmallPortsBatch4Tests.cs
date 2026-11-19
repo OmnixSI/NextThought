@@ -84,6 +84,19 @@ public sealed class SmallPortsBatch4Tests
     }
 
     [Fact]
+    public void SkillTextRoundTripsNameSummaryAndContent()
+    {
+        var skills = SkillStore.ParseText("## 简洁回答\n摘要：先说结论\n第一行\n第二行\n\n## 举例\n用具体例子。");
+        Assert.Equal(2, skills.Count);
+        Assert.Equal("简洁回答", skills[0].Name);
+        Assert.Equal("先说结论", skills[0].Summary);
+        Assert.Contains("第二行", skills[0].Content);
+        var again = SkillStore.ParseText(SkillStore.ToText(skills));
+        Assert.Equal(skills.Select(skill => skill.Name), again.Select(skill => skill.Name));
+        Assert.Equal(skills[0].Summary, again[0].Summary);
+    }
+
+    [Fact]
     public void ActiveSkillsAreEnabledAndAttachedOrGlobal()
     {
         var a = new Skill { Name = "a", Global = true };

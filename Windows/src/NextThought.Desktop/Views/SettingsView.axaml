@@ -70,6 +70,22 @@
         </StackPanel>
       </Border>
 
+      <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="技能（回答时遵守的说明）" Classes="section" />
+          <TextBlock Text="每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。"
+                     Classes="caption" FontSize="11" />
+          <TextBox Text="{Binding SkillsText}" AcceptsReturn="True" Height="120" TextWrapping="Wrap"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   PlaceholderText="## 简洁回答&#10;摘要：先说结论&#10;回答不超过三句话，先给结论再给理由。" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="保存技能" Command="{Binding SaveSkillsCommand}" />
+            <TextBlock Text="{Binding SkillsStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
       <!-- Speakers and translation -->
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="12">
