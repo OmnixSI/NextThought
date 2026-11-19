@@ -38,9 +38,9 @@ public sealed class WorkspaceSeriesChangeTests
     {
         var series = Series(Candidate());
         var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(series, "c1",
-            WorkspaceSeriesChangeDecision.Accepted, new WorkspaceSeriesChangeReviewDetails("小李", "本周五"));
+            WorkspaceSeriesChangeDecision.Add, new WorkspaceSeriesChangeReviewDetails("小李", "本周五"));
         Assert.NotNull(receipt);
-        Assert.Equal(WorkspaceSeriesChangeDecision.Accepted, receipt!.Decision);
+        Assert.Equal(WorkspaceSeriesChangeDecision.Add, receipt!.Decision);
         Assert.Equal("c1", receipt.CandidateId);
         var item = Assert.Single(updated.SeriesItems);
         Assert.Equal("补充压测", item.Text);
@@ -56,7 +56,7 @@ public sealed class WorkspaceSeriesChangeTests
     public void ReceiptJsonUsesTheMacKeysAndDecisionNames()
     {
         var receipt = new WorkspaceSeriesChangeReceipt(Guid.Parse("11111111-2222-3333-3333-444444444444"),
-            "c1", WorkspaceSeriesChangeDecision.Rejected, DateTimeOffset.UnixEpoch, null);
+            "c1", WorkspaceSeriesChangeDecision.Reject, DateTimeOffset.UnixEpoch, null);
         var json = System.Text.Json.JsonSerializer.Serialize(receipt, JsonDefaults.ArchiveOptions);
         Assert.Contains("\"operationID\"", json);
         Assert.Contains("\"candidateID\"", json);
@@ -65,10 +65,43 @@ public sealed class WorkspaceSeriesChangeTests
     }
 
     [Fact]
+    public void ReplaceUpdatesTheTargetAndKeepsItsHistory()
+    {
+        var candidate = Candidate() with { TranscriptSourceRevision = "t1" };
+        var existing = new WorkspaceSeriesItem
+        {
+            Id = "item-1", Kind = WorkspaceSeriesItem.KindValue.Action, Text = "旧待办",
+            Revision = 2, SourceSessionId = SessionId.ToString("D"), EvidenceId = "e0",
+            ActionState = WorkspaceSeriesItem.ActionStateValue.Done
+        };
+        var series = Series(candidate) with { SeriesItems = [existing] };
+        var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(series, "c1",
+            WorkspaceSeriesChangeDecision.Replace, new WorkspaceSeriesChangeReviewDetails("小李", "本周五"),
+            targetItemId: "item-1", expectedRevision: 2);
+        Assert.NotNull(receipt);
+        var item = Assert.Single(updated.SeriesItems);
+        Assert.Equal("item-1", item.Id);
+        Assert.Equal("补充压测", item.Text);
+        Assert.Equal("小李", item.Owner);
+        Assert.Equal(3, item.Revision);
+        Assert.Equal(WorkspaceSeriesItem.ActionStateValue.Open, item.ActionState);
+        var previous = Assert.Single(item.History);
+        Assert.Equal("旧待办", previous.Text);
+        Assert.Equal(2, previous.Revision);
+        Assert.Equal("item-1", receipt!.ResultItemId);
+
+        var (unchanged, refused) = WorkspaceSeriesChangeMerger.Apply(series, "c1",
+            WorkspaceSeriesChangeDecision.Replace, targetItemId: "item-1", expectedRevision: 99);
+        Assert.Null(refused);
+        Assert.Single(unchanged.SeriesItems);
+        Assert.Equal("旧待办", unchanged.SeriesItems[0].Text);
+    }
+
+    [Fact]
     public void RejectedCandidatesLeaveTheSeriesUnchangedButRecordTheDecision()
     {
         var series = Series(Candidate());
-        var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(series, "c1", WorkspaceSeriesChangeDecision.Rejected);
+        var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(series, "c1", WorkspaceSeriesChangeDecision.Reject);
         Assert.NotNull(receipt);
         Assert.Empty(updated.SeriesItems);
         Assert.Equal(WorkspaceSeriesChangeCandidate.StatusValue.Rejected, updated.SeriesChangeCandidates[0].Status);
@@ -79,13 +112,13 @@ public sealed class WorkspaceSeriesChangeTests
     public void ACandidateCanOnlyBeReviewedOnce()
     {
         var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(Series(Candidate()), "c1",
-            WorkspaceSeriesChangeDecision.Accepted);
+            WorkspaceSeriesChangeDecision.Add);
         Assert.NotNull(receipt);
-        var (again, second) = WorkspaceSeriesChangeMerger.Apply(updated, "c1", WorkspaceSeriesChangeDecision.Rejected);
+        var (again, second) = WorkspaceSeriesChangeMerger.Apply(updated, "c1", WorkspaceSeriesChangeDecision.Reject);
         Assert.Null(second);
         Assert.Single(again.SeriesItems);
         Assert.Equal(WorkspaceSeriesChangeCandidate.StatusValue.Accepted, again.SeriesChangeCandidates[0].Status);
-        Assert.Null(WorkspaceSeriesChangeMerger.Apply(Series(Candidate()), "missing", WorkspaceSeriesChangeDecision.Accepted).Receipt);
+        Assert.Null(WorkspaceSeriesChangeMerger.Apply(Series(Candidate()), "missing", WorkspaceSeriesChangeDecision.Add).Receipt);
     }
 
     [Fact]

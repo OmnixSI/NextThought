@@ -1875,11 +1875,12 @@ public partial class MainWindow : Window
             Kind = NextThought.Core.WorkspaceSeriesItem.KindValue.Action,
             Text = "补充压测",
             SourceSessionId = sessionId.ToString("D"),
-            EvidenceId = "e1"
+            EvidenceId = "e1",
+            TranscriptSourceRevision = "t1"
         };
         var (changedSeries, changeReceipt) = NextThought.Core.WorkspaceSeriesChangeMerger.Apply(
             series with { SeriesChangeCandidates = [changeCandidate] }, "change-1",
-            NextThought.Core.WorkspaceSeriesChangeDecision.Accepted);
+            NextThought.Core.WorkspaceSeriesChangeDecision.Add);
         Check("series-change", changeReceipt is not null
                                && changedSeries.SeriesItems.Count == 1
                                && changedSeries.SeriesChangeCandidates[0].Status

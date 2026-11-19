@@ -3,9 +3,11 @@ namespace NextThought.Core;
 public enum WorkspaceSeriesChangeDecision
 {
     [System.Text.Json.Serialization.JsonStringEnumMemberName("add")]
-    Accepted,
+    Add,
+    [System.Text.Json.Serialization.JsonStringEnumMemberName("replace")]
+    Replace,
     [System.Text.Json.Serialization.JsonStringEnumMemberName("reject")]
-    Rejected
+    Reject
 }
 
 public sealed record WorkspaceSeriesChangeReviewDetails(string? Owner = null, string? Due = null);
@@ -135,20 +137,24 @@ public static class WorkspaceSeriesChangeMerger
             .ToLowerInvariant()[..24];
     }
 
-    /// <summary>Accepts or rejects a pending candidate; accepted ones become series items.</summary>
+    /// <summary>Adds, replaces or rejects a pending candidate; a replace checks the item revision.</summary>
     public static (WorkspaceSeries Series, WorkspaceSeriesChangeReceipt? Receipt) Apply(
         WorkspaceSeries series, string candidateId, WorkspaceSeriesChangeDecision decision,
-        WorkspaceSeriesChangeReviewDetails? reviewedDetails = null, DateTimeOffset? now = null)
+        WorkspaceSeriesChangeReviewDetails? reviewedDetails = null, string? targetItemId = null,
+        int? expectedRevision = null, DateTimeOffset? now = null)
     {
         var candidates = series.SeriesChangeCandidates.ToList();
         var index = candidates.FindIndex(candidate => candidate.Id == candidateId);
         if (index < 0 || candidates[index].Status != WorkspaceSeriesChangeCandidate.StatusValue.Pending) return (series, null);
         var candidate = candidates[index];
+        if (decision != WorkspaceSeriesChangeDecision.Reject && string.IsNullOrEmpty(candidate.TranscriptSourceRevision))
+            return (series, null);
         var reviewedAt = now ?? DateTimeOffset.UtcNow;
-        WorkspaceSeriesItem? item = null;
-        if (decision == WorkspaceSeriesChangeDecision.Accepted)
+        var items = series.SeriesItems.ToList();
+        string? resultItemId = null;
+        if (decision == WorkspaceSeriesChangeDecision.Add)
         {
-            item = new WorkspaceSeriesItem
+            var item = new WorkspaceSeriesItem
             {
                 Kind = candidate.Kind,
                 Text = candidate.Text,
@@ -162,23 +168,66 @@ public static class WorkspaceSeriesChangeMerger
                 Owner = reviewedDetails?.Owner ?? candidate.Owner,
                 Due = reviewedDetails?.Due ?? candidate.Due,
                 DueDate = candidate.DueDate,
+                ActionState = candidate.Kind == WorkspaceSeriesItem.KindValue.Action
+                    ? WorkspaceSeriesItem.ActionStateValue.Open
+                    : null,
                 ConfirmedAt = reviewedAt,
                 UpdatedAt = reviewedAt
             };
+            items.Add(item);
+            resultItemId = item.Id;
         }
-        var receipt = new WorkspaceSeriesChangeReceipt(Guid.NewGuid(), candidate.Id, decision, reviewedAt, item?.Id);
+        else if (decision == WorkspaceSeriesChangeDecision.Replace)
+        {
+            if (targetItemId is null || expectedRevision is null) return (series, null);
+            var itemIndex = items.FindIndex(item => item.Id == targetItemId);
+            if (itemIndex < 0 || items[itemIndex].Kind != candidate.Kind || items[itemIndex].Revision != expectedRevision)
+                return (series, null);
+            var item = items[itemIndex];
+            var history = item.History.ToList();
+            history.Add(new WorkspaceSeriesItemRevision
+            {
+                Text = item.Text, Owner = item.Owner, Due = item.Due, DueDate = item.DueDate,
+                ActionState = item.ActionState, Revision = item.Revision, At = item.UpdatedAt
+            });
+            items[itemIndex] = item with
+            {
+                Text = candidate.Text,
+                Owner = reviewedDetails?.Owner ?? candidate.Owner,
+                Due = reviewedDetails?.Due ?? candidate.Due,
+                DueDate = candidate.DueDate,
+                SourceSessionId = candidate.SourceSessionId,
+                EvidenceId = candidate.EvidenceId,
+                ClaimRevision = candidate.ClaimRevision,
+                SourceRevision = candidate.SourceRevision,
+                SourceQuote = candidate.SourceQuote,
+                Location = candidate.Location,
+                TranscriptSourceRevision = candidate.TranscriptSourceRevision,
+                SourceMissing = false,
+                IndependentlyRetained = false,
+                ActionState = candidate.Kind == WorkspaceSeriesItem.KindValue.Action
+                    ? WorkspaceSeriesItem.ActionStateValue.Open
+                    : item.ActionState,
+                Revision = item.Revision + 1,
+                History = history,
+                ConfirmedAt = reviewedAt,
+                UpdatedAt = reviewedAt
+            };
+            resultItemId = item.Id;
+        }
+        var receipt = new WorkspaceSeriesChangeReceipt(Guid.NewGuid(), candidate.Id, decision, reviewedAt, resultItemId);
         candidates[index] = candidate with
         {
-            Status = decision == WorkspaceSeriesChangeDecision.Accepted
-                ? WorkspaceSeriesChangeCandidate.StatusValue.Accepted
-                : WorkspaceSeriesChangeCandidate.StatusValue.Rejected,
+            Status = decision == WorkspaceSeriesChangeDecision.Reject
+                ? WorkspaceSeriesChangeCandidate.StatusValue.Rejected
+                : WorkspaceSeriesChangeCandidate.StatusValue.Accepted,
             Receipt = receipt,
             ReceiptHistory = [.. candidate.ReceiptHistory ?? [], receipt]
         };
         var updated = series with
         {
             SeriesChangeCandidates = candidates,
-            SeriesItems = item is null ? series.SeriesItems : [.. series.SeriesItems, item]
+            SeriesItems = items
         };
         return (updated, receipt);
     }

@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 系列变更 replace 语义 · 0.5.6
+
+- **决策**：`WorkspaceSeriesChangeDecision` 改为 Mac 的 `add/replace/reject`。
+- **replace**：校验 targetItemId 与 expectedRevision、条目类型一致；旧值写入 history，
+  revision+1，动作重新打开，确认/更新时间刷新；回执 resultItemID 指向原条目。
+- **测试**：新增 `ReplaceUpdatesTheTargetAndKeepsItsHistory`，覆盖成功、修订不符拒绝、历史保留。
+- **0.5.6 实测**：Core 788 + 基线 90；验收 61/61、门禁 17/17；启动 1.13 秒、
+  工作集 109.4 MiB、私有 43.0 MiB。
+- 仍未完成：Workspace/summary/context 完整字段、技能/模板、Mac 备份双向恢复。
+
 # P0 Mac 指纹与 JSON 对齐 · 0.5.5
+
 
 - **转写指纹**：`TranscriptRevisions.Of` 改为大写 UUID/文本 + 8 字节大端长度 + 完整 SHA-256（64 位十六进制）。
 - **经验修订号**：`DigestUuid` 不再用 `new Guid(bytes)` 重排字节，直接按 Swift 的 16 字节顺序格式化。
