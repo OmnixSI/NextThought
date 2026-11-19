@@ -48,7 +48,11 @@ public partial class AppState
             glossary = parsed;
             GlossaryText = GlossaryStore.ToText(parsed);
             GlossaryCount = parsed.Entries.Count;
-            SetStatus(parsed.Entries.Count == 0 ? "术语表已清空。" : $"术语表已保存 {parsed.Entries.Count} 条，下一场会议生效。");
+            SetStatus(parsed.Entries.Count == 0
+                ? NextThought.Core.UiText.EnglishUi ? "Glossary cleared." : "术语表已清空。"
+                : NextThought.Core.UiText.EnglishUi
+                    ? $"Glossary saved ({parsed.Entries.Count} entries); applies to the next meeting."
+                    : $"术语表已保存 {parsed.Entries.Count} 条，下一场会议生效。");
         }
         catch (Exception ex)
         {

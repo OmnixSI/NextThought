@@ -293,7 +293,7 @@ public partial class AppState
         SaveWorkspace();
         RefreshSeries();
         SelectedSeries = SeriesRows.FirstOrDefault(row => row.Name == name);
-        SetStatus($"已新建系列「{name}」。");
+        SetStatus(NextThought.Core.UiText.EnglishUi ? $"Series \"{name}\" created." : $"已新建系列「{name}」。");
     }
 
     [RelayCommand(CanExecute = nameof(CanAssignCurrent))]

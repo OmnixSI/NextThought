@@ -163,7 +163,7 @@ public partial class AppState
         var template = new NotesTemplate(id, name, sections);
         AddTemplates([template]);
         EditTemplateChoice = EditableTemplates.FirstOrDefault(choice => choice.Template.Id == id);
-        SetStatus($"模板「{name}」已保存。");
+        SetStatus(NextThought.Core.UiText.EnglishUi ? $"Template \"{name}\" saved." : $"模板「{name}」已保存。");
     }
 
     [RelayCommand(CanExecute = nameof(CanTemplate))]

@@ -1618,7 +1618,9 @@ public partial class AppState : ObservableObject
             var export = SessionSubtitleExporter.Export(meta, currentLines, format, content);
             await File.WriteAllTextAsync(file, export.Text, new System.Text.UTF8Encoding(false));
             var estimated = export.EstimatedTimingCount > 0 ? $"，其中 {export.EstimatedTimingCount} 条按文字长度估算结束时间" : "";
-            SetStatus($"字幕已导出（{extension.ToUpperInvariant()}）{estimated}。");
+            SetStatus(UiText.EnglishUi
+                ? $"Subtitles exported ({extension.ToUpperInvariant()}){estimated}."
+                : $"字幕已导出（{extension.ToUpperInvariant()}）{estimated}。");
         }
         catch (Exception ex) { SetStatus(ex.Message, true); }
     }

@@ -43,7 +43,7 @@ public partial class AppState
             if (valid.Count == 0)
             {
                 ProofreadStatus = "没有需要更正的地方。";
-                SetStatus("校对完成：没有需要更正的地方。");
+                SetStatus(NextThought.Core.UiText.EnglishUi ? "Proofreading finished: nothing to correct." : "校对完成：没有需要更正的地方。");
                 return;
             }
             var corrected = NotesCorrections.Apply(valid, original);
@@ -75,7 +75,9 @@ public partial class AppState
                 SetStatus("转写已在界面更正，但用户更正记录写入失败：" + ex.Message, true);
             }
             ProofreadStatus = $"更正 {valid.Count} 处" + (truncated ? $"（会议较长，只校对了前 {maxCharacters} 字）" : "");
-            SetStatus($"校对完成：{valid.Count} 处识别错误已在显示中更正；原始转写未改写，决定存于 user-content.json。");
+            SetStatus(NextThought.Core.UiText.EnglishUi
+                ? $"Proofreading finished: {valid.Count} recognition errors corrected in the view; the raw transcript is unchanged and decisions live in user-content.json."
+                : $"校对完成：{valid.Count} 处识别错误已在显示中更正；原始转写未改写，决定存于 user-content.json。");
         }
         catch (OperationCanceledException)
         {
