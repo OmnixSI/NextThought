@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 summary.json structured 直写 · 0.5.14
+
+- `summary.json → structured` 现在直接保存 `StructuredNotesPayload`（Mac 形状），不再包一层
+  `{format,payload,...}`；旧的包装仍可读。
+- 同步维护 `structuredAll`（按 format 替换）和 `transcriptSourceRevision`。
+- **0.5.14 实测**：Core 791 + 基线 94；验收 61/61、门禁 17/17；启动 1.13 秒、
+  工作集 109.0 MiB、私有 43.2 MiB。
+- 仍未完成：技能/模板、summary.questions/bank/lessons 的填充、context 完整字段、双向实机验收。
+
 # P1 窗口截图与暂停聆听 · 0.5.13
+
 
 - **窗口截图**：`Ctrl+Alt+W` 最小化主窗后截取当时前台窗口，存入资料库并跑系统 OCR。
 - **暂停/恢复聆听**：`Ctrl+Alt+Space` 在记录中暂停接收转写，音频采集继续，恢复即时生效；

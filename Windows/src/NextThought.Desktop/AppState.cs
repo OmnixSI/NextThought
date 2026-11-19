@@ -196,14 +196,16 @@ public partial class AppState : ObservableObject
                 try
                 {
                     using var document = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(summary));
-                    if (document.RootElement.TryGetProperty("structured", out var structured)
-                        && structured.TryGetProperty("format", out var savedFormat)
-                        && savedFormat.GetString() == format.Raw()
-                        && structured.TryGetProperty("payload", out var savedPayload))
+                    if (document.RootElement.TryGetProperty("structured", out var structured))
                     {
-                        StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(savedPayload.GetRawText(), JsonDefaults.Options);
-                        if (structured.TryGetProperty("markdown", out var savedMarkdown) && savedMarkdown.GetString() is { } text)
-                            StructuredMarkdown = text;
+                        // Mac writes StructuredNotesPayload directly; 0.5.4-0.5.4 wrote {payload:...}.
+                        var payloadElement = structured.TryGetProperty("payload", out var legacyPayload) ? legacyPayload : structured;
+                        if (payloadElement.TryGetProperty("format", out var savedFormat) && savedFormat.GetString() == format.Raw())
+                        {
+                            StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(payloadElement.GetRawText(), JsonDefaults.Options);
+                            if (structured.TryGetProperty("markdown", out var savedMarkdown) && savedMarkdown.GetString() is { } text)
+                                StructuredMarkdown = text;
+                        }
                     }
                 }
                 catch (System.Text.Json.JsonException) { }
@@ -283,13 +285,18 @@ public partial class AppState : ObservableObject
                         : null) ?? new System.Text.Json.Nodes.JsonObject();
                 }
                 catch (System.Text.Json.JsonException) { summary = new System.Text.Json.Nodes.JsonObject(); }
-                summary["structured"] = new System.Text.Json.Nodes.JsonObject
-                {
-                    ["format"] = format.Raw(),
-                    ["payload"] = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.Options)),
-                    ["markdown"] = StructuredMarkdown,
-                    ["generatedAt"] = DateTimeOffset.UtcNow
-                };
+                // Mac stores a StructuredNotesPayload directly (and all formats in structuredAll).
+                var payloadNode = System.Text.Json.Nodes.JsonNode.Parse(
+                    System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.Options));
+                summary["structured"] = payloadNode;
+                var all = summary["structuredAll"] as System.Text.Json.Nodes.JsonArray
+                    ?? new System.Text.Json.Nodes.JsonArray();
+                for (var index = all.Count - 1; index >= 0; index--)
+                    if (all[index]?["format"]?.GetValue<string>() == format.Raw()) all.RemoveAt(index);
+                all.Add(payloadNode!.DeepClone());
+                summary["structuredAll"] = all;
+                if (payload.TranscriptSourceRevision is { Length: > 0 } sourceRevision)
+                    summary["transcriptSourceRevision"] = sourceRevision;
                 summary["title"] ??= session.Title;
                 summary["markdown"] ??= StructuredMarkdown;
                 await File.WriteAllTextAsync(summaryPath, summary.ToJsonString(JsonDefaults.ArchiveOptions));
