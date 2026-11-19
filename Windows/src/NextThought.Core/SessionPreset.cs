@@ -71,6 +71,10 @@ public sealed record ContextDocument
     public string? Category { get; init; }
     public string? MarkdownPath { get; init; }
     public string? SourceFormat { get; init; }
+
+    /// <summary>Opaque Mac DocumentContent (pipeline + blocks); kept verbatim for round-trips.</summary>
+    public System.Text.Json.JsonElement? Content { get; init; }
+
     public int CharacterCount => Pages.Sum(page => page.Length);
 }
 

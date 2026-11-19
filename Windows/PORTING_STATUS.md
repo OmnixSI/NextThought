@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 上下文文档保留 Mac content · 0.5.61
+
+- `ContextDocument` 增加 `Content`（`JsonElement?`），原样保存 Mac 的
+  `DocumentContent`（pipeline/blocks），`context.json` 往返不再丢掉结构化正文。
+- 新增往返测试；Core 831。
+- **0.5.61 实测**：Core 831 + 基线 106；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 109.2 MiB、私有 43.0 MiB。
+
 # P0 回答事件保留 Mac 字段 · 0.5.60
+
 
 - `SessionAnswerEvent` 补 `seconds`、`firstTokenSeconds`、`screenshotPath`、`webAnswer`、
   `webSources`、`evidence`；导入/导出 Mac 会议时不再丢回答耗时、截图、联网答案与证据包。
