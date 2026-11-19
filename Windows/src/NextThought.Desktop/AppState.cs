@@ -911,10 +911,30 @@ public partial class AppState : ObservableObject
                         ReceiveTranscript(meta, new TranscriptUpdate(Guid.NewGuid(), cloudSource, update.Text,
                             update.IsFinal, start, end), true);
                     });
-                    cloudStt.Failed += message => Dispatcher.UIThread.Post(() =>
+                    cloudStt.Failed += message => Dispatcher.UIThread.Post(async () =>
                     {
-                        SetStatus("云端识别：" + message, true);
+                        if (cloudStt is not { } failed) return;
                         cloudStt = null;
+                        try { await failed.DisposeAsync(); } catch { }
+                        if (!Recording) return;
+                        if (ModelReady)
+                        {
+                            try
+                            {
+                                engine = await Task.Run(() => new LiveSpeechEngine(Models, settings, RecognitionHotwords()));
+                                engine.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, true); });
+                                engine.Failed += failure => Dispatcher.UIThread.Post(() => HandleAudioFailure(failure));
+                                engine.Warning += warning => Dispatcher.UIThread.Post(() => SetStatus(warning, true));
+                                ownedEngine = engine;
+                                SetStatus("云端识别中断，已回退本机识别：" + message, true);
+                                return;
+                            }
+                            catch (Exception localError)
+                            {
+                                message += "；本机回退失败：" + localError.Message;
+                            }
+                        }
+                        HandleAudioFailure("云端识别中断：" + message);
                     });
                     SetStatus("云端识别已连接；转写发送到所选服务。");
                 }
