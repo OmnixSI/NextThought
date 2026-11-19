@@ -48,6 +48,45 @@ public static class ShortcutKeys
         return fallback;
     }
 
+    public const uint ControlModifier = 0x0002;
+    public const uint AltModifier = 0x0001;
+    public const uint ShiftModifier = 0x0004;
+    public const uint WindowsModifier = 0x0008;
+
+    /// <summary>"Ctrl+Shift+R" → modifiers and key; a bare "R" keeps the Ctrl+Alt default.</summary>
+    public static (uint Modifiers, uint Key) ParseBinding(string? text, uint fallbackKey)
+    {
+        var trimmed = (text ?? "").Trim();
+        if (trimmed.Length == 0) return (ControlModifier | AltModifier, fallbackKey);
+        var parts = trimmed.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0) return (ControlModifier | AltModifier, fallbackKey);
+        if (parts.Length == 1) return (ControlModifier | AltModifier, Parse(parts[0], fallbackKey));
+        var modifiers = 0u;
+        for (var index = 0; index < parts.Length - 1; index++)
+        {
+            modifiers |= parts[index].ToUpperInvariant() switch
+            {
+                "CTRL" or "CONTROL" => ControlModifier,
+                "ALT" => AltModifier,
+                "SHIFT" => ShiftModifier,
+                "WIN" or "WINDOWS" or "META" => WindowsModifier,
+                _ => 0u
+            };
+        }
+        return (modifiers, Parse(parts[^1], fallbackKey));
+    }
+
+    public static string Format(uint modifiers, uint key)
+    {
+        var parts = new List<string>();
+        if ((modifiers & ControlModifier) != 0) parts.Add("Ctrl");
+        if ((modifiers & AltModifier) != 0) parts.Add("Alt");
+        if ((modifiers & ShiftModifier) != 0) parts.Add("Shift");
+        if ((modifiers & WindowsModifier) != 0) parts.Add("Win");
+        parts.Add(Name(key));
+        return string.Join("+", parts);
+    }
+
     public static string Name(uint virtualKey) => virtualKey switch
     {
         0x25 => "Left", 0x27 => "Right", 0x26 => "Up", 0x28 => "Down",
@@ -58,5 +97,5 @@ public static class ShortcutKeys
     };
 
     public static string DefaultText() =>
-        string.Join("\n", Actions.Select(action => action.Id + "=" + Name(action.Default)));
+        string.Join("\n", Actions.Select(action => action.Id + "=" + Format(ControlModifier | AltModifier, action.Default)));
 }

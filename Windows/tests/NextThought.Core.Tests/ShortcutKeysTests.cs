@@ -15,6 +15,21 @@ public sealed class ShortcutKeysTests
     public void ParsesNamesAndKeys(string name, uint expected) => Assert.Equal(expected, ShortcutKeys.Parse(name, 0));
 
     [Fact]
+    public void ParsesModifierCombos()
+    {
+        var bare = ShortcutKeys.ParseBinding("F9", 0);
+        Assert.Equal(ShortcutKeys.ControlModifier | ShortcutKeys.AltModifier, bare.Modifiers);
+        Assert.Equal(0x78u, bare.Key);
+        var ctrlShift = ShortcutKeys.ParseBinding("Ctrl+Shift+R", 0);
+        Assert.Equal(ShortcutKeys.ControlModifier | ShortcutKeys.ShiftModifier, ctrlShift.Modifiers);
+        Assert.Equal(0x52u, ctrlShift.Key);
+        Assert.Equal("Ctrl+Shift+R", ShortcutKeys.Format(ctrlShift.Modifiers, ctrlShift.Key));
+        var alt = ShortcutKeys.ParseBinding("Alt+F12", 0);
+        Assert.Equal(ShortcutKeys.AltModifier, alt.Modifiers);
+        Assert.Equal(0x7Bu, alt.Key);
+    }
+
+    [Fact]
     public void InvalidNamesFallBackAndNamesRoundTrip()
     {
         Assert.Equal(0x52u, ShortcutKeys.Parse("", 0x52));
@@ -22,7 +37,7 @@ public sealed class ShortcutKeysTests
         Assert.Equal("Left", ShortcutKeys.Name(0x25));
         Assert.Equal("F12", ShortcutKeys.Name(0x7B));
         Assert.Equal(19, ShortcutKeys.Actions.Count);
-        Assert.Contains("record=R", ShortcutKeys.DefaultText());
-        Assert.Contains("slideNext=PageDown", ShortcutKeys.DefaultText());
+        Assert.Contains("record=Ctrl+Alt+R", ShortcutKeys.DefaultText());
+        Assert.Contains("slideNext=Ctrl+Alt+PageDown", ShortcutKeys.DefaultText());
     }
 }

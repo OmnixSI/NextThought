@@ -11,7 +11,10 @@ namespace NextThought.Desktop;
 /// </summary>
 internal sealed class GlobalHotkeys : IDisposable
 {
-    public sealed record Binding(string Name, uint VirtualKey, Action Action);
+    public sealed record Binding(string Name, uint VirtualKey, Action Action)
+    {
+        public uint Modifiers { get; init; } = ModControl | ModAlt;
+    }
 
     private const int WmHotkey = 0x0312;
     private const int WmQuit = 0x0400 + 1;
@@ -46,7 +49,7 @@ internal sealed class GlobalHotkeys : IDisposable
         {
             var binding = bindings[index];
             var id = index + 1;
-            var ok = RegisterHotKey(IntPtr.Zero, id, ModControl | ModAlt | ModNoRepeat, binding.VirtualKey);
+            var ok = RegisterHotKey(IntPtr.Zero, id, binding.Modifiers | ModNoRepeat, binding.VirtualKey);
             Log($"register {binding.Name} vk=0x{binding.VirtualKey:X2} ok={ok} err={(ok ? 0 : Marshal.GetLastWin32Error())}");
             if (!ok) unregistered.Add(binding.Name);
         }

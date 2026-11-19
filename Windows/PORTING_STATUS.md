@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 快捷键修饰键组合 · 0.5.88
+
+- 快捷键值支持 `Ctrl/Alt/Shift/Win` 组合（如 `Ctrl+Shift+R`），裸键如 `F9` 仍表示 Ctrl+Alt+F9。
+- `GlobalHotkeys.Binding` 带 `Modifiers`，注册使用绑定修饰键；设置页提示同步。
+- 新增解析/格式化测试；Core 852。
+- **0.5.88 实测**：Core 852 + 基线 109；验收 63/63、门禁 17/17；启动 1.12 秒、
+  工作集 109.2 MiB、私有 42.8 MiB。
+
 # P1 全局快捷键可改键 · 0.5.87
+
 
 - 新增 `ShortcutKeys`（19 个动作、按键解析/格式化）与 `AppSettings.Shortcuts`；
   设置页「全局快捷键」文本区按 `动作=按键` 编辑，保存后写 settings.json 并立即重新注册。

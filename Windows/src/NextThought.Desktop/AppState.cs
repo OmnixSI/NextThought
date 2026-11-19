@@ -1526,15 +1526,18 @@ public partial class AppState : ObservableObject
         var lines = new List<string>();
         foreach (var action in ShortcutKeys.Actions)
         {
-            var key = ShortcutKeys.Parse(shortcutOverrides.GetValueOrDefault(action.Id), action.Default);
-            lines.Add(action.Id + "=" + ShortcutKeys.Name(key));
+            var binding = ShortcutKeys.ParseBinding(shortcutOverrides.GetValueOrDefault(action.Id), action.Default);
+            lines.Add(action.Id + "=" + ShortcutKeys.Format(binding.Modifiers, binding.Key));
         }
         return string.Join("\n", lines);
     }
 
     /// <summary>The configured key for an action, or its built-in default.</summary>
     public uint ShortcutKey(string id, uint fallback) =>
-        ShortcutKeys.Parse(shortcutOverrides.GetValueOrDefault(id), fallback);
+        ShortcutKeys.ParseBinding(shortcutOverrides.GetValueOrDefault(id), fallback).Key;
+
+    public (uint Modifiers, uint Key) ShortcutBinding(string id, uint fallbackKey) =>
+        ShortcutKeys.ParseBinding(shortcutOverrides.GetValueOrDefault(id), fallbackKey);
 
     [RelayCommand]
     private async Task SaveShortcutsAsync()
@@ -1551,9 +1554,9 @@ public partial class AppState : ObservableObject
                 if (separator <= 0) throw new FormatException("快捷键行要写成 动作=按键，例如 record=R。");
                 var id = line[..separator].Trim();
                 if (!known.Contains(id)) throw new FormatException("未知快捷键动作：" + id);
-                var key = ShortcutKeys.Parse(line[(separator + 1)..], 0);
-                if (key == 0) throw new FormatException("无法识别按键：" + line[(separator + 1)..].Trim());
-                map[id] = ShortcutKeys.Name(key);
+                var binding = ShortcutKeys.ParseBinding(line[(separator + 1)..], 0);
+                if (binding.Key == 0) throw new FormatException("无法识别按键：" + line[(separator + 1)..].Trim());
+                map[id] = ShortcutKeys.Format(binding.Modifiers, binding.Key);
             }
             var settings = SettingsStore.Load();
             settings.Shortcuts = map;

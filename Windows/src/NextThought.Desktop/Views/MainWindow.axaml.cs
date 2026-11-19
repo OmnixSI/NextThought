@@ -2563,8 +2563,12 @@ public partial class MainWindow : Window
     {
         GlobalHotkeys.Binding B(string id, string label, uint fallback, Action action)
         {
-            var key = state.ShortcutKey(id, fallback);
-            return new GlobalHotkeys.Binding($"Ctrl+Alt+{NextThought.Core.ShortcutKeys.Name(key)} {label}", key, action);
+            var binding = state.ShortcutBinding(id, fallback);
+            return new GlobalHotkeys.Binding(
+                $"{NextThought.Core.ShortcutKeys.Format(binding.Modifiers, binding.Key)} {label}", binding.Key, action)
+            {
+                Modifiers = binding.Modifiers
+            };
         }
         hotkeys = new GlobalHotkeys(
         [
