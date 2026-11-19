@@ -34,6 +34,14 @@ public enum SessionSubtitleFormat
     Vtt
 }
 
+/// <summary>Which language goes into the subtitle cues (Mac SessionExport subtitle mode).</summary>
+public enum SessionSubtitleContent
+{
+    Original,
+    Translation,
+    Bilingual
+}
+
 /// <summary>Deterministic subtitles plus how many cues had to estimate their end time.</summary>
 public sealed record SessionSubtitleExport(string Text, int EstimatedTimingCount, int StaleTranslationCount);
 
@@ -44,7 +52,8 @@ public sealed record SessionSubtitleExport(string Text, int EstimatedTimingCount
 /// </summary>
 public static class SessionSubtitleExporter
 {
-    public static SessionSubtitleExport Export(SessionMeta meta, IReadOnlyList<TranscriptLine> lines, SessionSubtitleFormat format)
+    public static SessionSubtitleExport Export(SessionMeta meta, IReadOnlyList<TranscriptLine> lines, SessionSubtitleFormat format,
+        SessionSubtitleContent content = SessionSubtitleContent.Bilingual)
     {
         var cues = new List<(double Start, double End, string Text)>();
         var estimated = 0;
@@ -71,9 +80,15 @@ public static class SessionSubtitleExporter
                     : start + duration;
             }
 
-            var text = $"{SpeakerLabel(line.Speaker)}：{line.Text}";
-            if (line.Translation is { } translation && !string.IsNullOrWhiteSpace(translation.Text))
-                text += $"\n译文：{translation.Text.Trim()}";
+            var source = $"{SpeakerLabel(line.Speaker)}：{line.Text}";
+            var translated = line.Translation is { } translation && !string.IsNullOrWhiteSpace(translation.Text)
+                ? $"译文：{translation.Text.Trim()}" : "";
+            var text = content switch
+            {
+                SessionSubtitleContent.Original => source,
+                SessionSubtitleContent.Translation => translated.Length > 0 ? translated : source,
+                _ => translated.Length > 0 ? source + "\n" + translated : source
+            };
             cues.Add((start, end, text));
         }
 

@@ -21,6 +21,21 @@ public sealed class SessionExportTests
     };
 
     [Fact]
+    public void SubtitleContentSelectsOriginalTranslationOrBoth()
+    {
+        var lines = new[] { Line(0, 2, "original", "me", "translated") };
+        var original = SessionSubtitleExporter.Export(Meta(), lines, SessionSubtitleFormat.Srt, SessionSubtitleContent.Original).Text;
+        Assert.Contains("original", original);
+        Assert.DoesNotContain("translated", original);
+        var translated = SessionSubtitleExporter.Export(Meta(), lines, SessionSubtitleFormat.Srt, SessionSubtitleContent.Translation).Text;
+        Assert.Contains("translated", translated);
+        Assert.DoesNotContain("original", translated);
+        var both = SessionSubtitleExporter.Export(Meta(), lines, SessionSubtitleFormat.Srt, SessionSubtitleContent.Bilingual).Text;
+        Assert.Contains("original", both);
+        Assert.Contains("translated", both);
+    }
+
+    [Fact]
     public void SrtHasSequentialCuesAndCommaTimestamps()
     {
         var export = SessionSubtitleExporter.Export(Meta(),

@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 字幕导出语言选择 · 0.5.83
+
+- `SessionSubtitleExporter.Export` 增加 `SessionSubtitleContent`（原文/译文/双语）；
+  Notes 页下拉框选择，SRT/VTT 只写所选内容（无译文时译文模式回退原文）。
+- 新增 Core 测试；Core 842。
+- **0.5.83 实测**：Core 842 + 基线 109；验收 63/63、门禁 17/17；启动 1.24 秒、
+  工作集 108.7 MiB、私有 42.1 MiB。
+- 仍缺：英文内置纪要模板（审查第 17 条）、术语表长度上限/英文版（第 18 条）。
+
 # P1 PDF 字体体积优化 · 0.5.82
+
 
 - PDF 导出改为直接加载 `C:\Windows\Fonts\simhei.ttf`（缺失时回退 YaHei），
   单份验收 PDF 从 **23 MB** 降到 **约 5 MB**，中文仍可被 PdfPig 读回。

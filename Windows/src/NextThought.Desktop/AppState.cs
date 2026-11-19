@@ -97,6 +97,8 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private CompanionAddress? selectedCompanionAddress;
     [ObservableProperty] private string companionInfo = "默认关闭；手机与电脑需在同一可信网络。只发送当前问题、回答与状态，不发送资料、完整转写、音频或密钥。";
     [ObservableProperty] private string companionLink = "";
+    public IReadOnlyList<string> SubtitleExportModes { get; } = ["双语", "原文", "译文"];
+    [ObservableProperty] private string subtitleExportMode = "双语";
     [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
     [ObservableProperty] private string meetingTitle = "新会议";
     [ObservableProperty] private string pageSubtitle = "选择声音来源，开始记录。";
@@ -1521,7 +1523,13 @@ public partial class AppState : ObservableObject
         if (await PickSaveFile($"{extension.ToUpperInvariant()} 字幕 (*.{extension})|*.{extension}", name) is not { } file) return;
         try
         {
-            var export = SessionSubtitleExporter.Export(meta, currentLines, format);
+            var content = SubtitleExportMode switch
+            {
+                "原文" => SessionSubtitleContent.Original,
+                "译文" => SessionSubtitleContent.Translation,
+                _ => SessionSubtitleContent.Bilingual
+            };
+            var export = SessionSubtitleExporter.Export(meta, currentLines, format, content);
             await File.WriteAllTextAsync(file, export.Text, new System.Text.UTF8Encoding(false));
             var estimated = export.EstimatedTimingCount > 0 ? $"，其中 {export.EstimatedTimingCount} 条按文字长度估算结束时间" : "";
             SetStatus($"字幕已导出（{extension.ToUpperInvariant()}）{estimated}。");

@@ -16,6 +16,7 @@
         <Button Content="导出 Markdown" Command="{Binding ExportCommand}" />
         <Button Content="导出 Word" Command="{Binding ExportDocxCommand}" />
         <Button Content="导出 PDF" Command="{Binding ExportPdfCommand}" />
+        <ComboBox ItemsSource="{Binding SubtitleExportModes}" SelectedItem="{Binding SubtitleExportMode}" Width="86" />
         <Button Content="导出 SRT" Command="{Binding ExportSrtCommand}" />
         <Button Content="导出 VTT" Command="{Binding ExportVttCommand}" />
         <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="36" Padding="18,0">
