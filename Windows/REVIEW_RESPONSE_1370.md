@@ -34,9 +34,10 @@
 | W5 穿透关不掉 | **已修**（0.5.0） | 隐藏/关闭前 `DisableClickThrough()`。 |
 | #10 音频设备切换 | **已实现、待实机** | 默认设备变化时替换管道；无第二设备验证。 |
 
-## 第 5 节的数据层问题（未修，下一阶段主线）
+## 第 5 节的数据层问题（部分，下一阶段主线）
 
-- Workspace 仍是单个 `workspace.json` 自定结构，不是 Mac 的 `Workspaces/<ID>.json`，缺场景/偏好/技能/术语等字段。
+- 0.5.3 起系列按 `Workspaces/<ID>.json` 保存并优先读取，旧 `Workspace/workspace.json` 继续兼容；
+  但字段仍是简化结构，缺场景/偏好/技能/术语等十多个 Mac 字段。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
 - 结构化纪要仍分文件存放，未读写 Mac 的 `summary.json → structured`。
 - 会议只写核心文件；`questions.jsonl`、`context.json`、技能与自定义模板未写入。
@@ -52,10 +53,10 @@
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.2 实测
+## 0.5.3 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
-- 测试：Core **782**、基线 **89**
+- 测试：Core **783**、基线 **89**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.15 秒，工作集 **109.6 MiB**、私有 43.1 MiB
+- 启动 1.14 秒，工作集 **109.2 MiB**、私有 43.4 MiB

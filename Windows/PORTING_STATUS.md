@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 数据层起步：系列分文件 · 0.5.3
+
+- **Workspaces 分文件**：`WorkspaceStore.Save` 写 `Workspaces/<ID>.json`，删除已移除系列的文件；
+  `Load` 优先读分文件，缺失时回退旧 `Workspace/workspace.json`。备份导出因此自动带上 Workspaces。
+- **测试**：`StoreWritesOneFilePerSeriesAndLoadsItAfterLegacyFileIsGone`；旧损坏文件测试更新。
+- **0.5.3 实测**：Core 783 + 基线 89；验收 61/61、门禁 17/17；启动 1.14 秒、
+  工作集 109.2 MiB、私有 43.4 MiB。
+- 仍未完成：Mac Workspace 字段（场景/偏好/技能/术语）、`summary.json structured`、修订指纹、
+  `questions.jsonl`/`context.json`、Mac 备份双向恢复。
+
 # P0 审查修复续二 · 0.5.2
+
 
 - **U2 更新源**：`UpdateFeedPolicy` 规定正常启动只用 HTTPS 默认源；`NEXTTHOUGHT_UPDATE_FEED`
   仅在 `NEXTTHOUGHT_QA=1` 时生效且拒绝 `http://`；新增 3 项测试。

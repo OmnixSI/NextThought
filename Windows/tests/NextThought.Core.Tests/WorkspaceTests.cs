@@ -76,10 +76,31 @@ public sealed class WorkspaceTests : IDisposable
         Assert.Equal("s1", loaded.Series[0].SessionIds[0]);
         Assert.Equal("一条经验", loaded.Series[0].Lessons[0].Text);
 
+        // Per-series files are authoritative now; a damaged legacy copy is ignored.
         File.WriteAllText(store.Path_, "{ not json");
+        Assert.Single(store.Load().Series);
+        Directory.Delete(Path.Combine(directory, "Workspaces"), true);
         Assert.Empty(store.Load().Series);
         _ = data;
         _ = id;
+    }
+
+    [Fact]
+    public void StoreWritesOneFilePerSeriesAndLoadsItAfterLegacyFileIsGone()
+    {
+        var store = new WorkspaceStore(directory);
+        var data = WorkspaceData.Empty.AddSeries("开题").AddSeries("答辩");
+        var id = data.Series[0].Id;
+        store.Save(data);
+        var seriesFile = Path.Combine(directory, "Workspaces", id + ".json");
+        Assert.True(File.Exists(seriesFile));
+        File.Delete(store.Path_);
+        var loaded = store.Load();
+        Assert.Equal(2, loaded.Series.Count);
+        Assert.Contains(loaded.Series, series => series.Name == "开题");
+
+        store.Save(new WorkspaceData([data.Series[0]]));
+        Assert.False(File.Exists(Path.Combine(directory, "Workspaces", data.Series[1].Id + ".json")));
     }
 
     [Fact]

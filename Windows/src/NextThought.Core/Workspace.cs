@@ -246,10 +246,12 @@ public sealed class WorkspaceStore
     private static readonly JsonSerializerOptions ReadOptions = new(Options) { PropertyNameCaseInsensitive = true };
 
     private readonly string path;
+    private readonly string seriesDirectory;
 
     public WorkspaceStore(string dataDirectory)
     {
         path = Path.Combine(dataDirectory, "Workspace", "workspace.json");
+        seriesDirectory = Path.Combine(dataDirectory, "Workspaces");
     }
 
     public string Path_ => path;
@@ -258,6 +260,22 @@ public sealed class WorkspaceStore
     {
         try
         {
+            // Mac keeps one file per series. Prefer that layout when present, then fall back to
+            // the single Windows workspace.json so older data keeps working.
+            if (Directory.Exists(seriesDirectory))
+            {
+                var series = new List<WorkspaceSeries>();
+                foreach (var file in Directory.EnumerateFiles(seriesDirectory, "*.json"))
+                {
+                    try
+                    {
+                        if (JsonSerializer.Deserialize<WorkspaceSeries>(File.ReadAllText(file), ReadOptions) is { } item)
+                            series.Add(item);
+                    }
+                    catch (JsonException) { }
+                }
+                if (series.Count > 0) return Sanitise(new WorkspaceData(series));
+            }
             if (!File.Exists(path)) return WorkspaceData.Empty;
             var json = File.ReadAllText(path);
             var data = JsonSerializer.Deserialize<WorkspaceData>(json, ReadOptions);
@@ -273,6 +291,17 @@ public sealed class WorkspaceStore
     public void Save(WorkspaceData data)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        Directory.CreateDirectory(seriesDirectory);
+        var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var series in data.Series)
+        {
+            var name = series.Id + ".json";
+            keep.Add(name);
+            File.WriteAllText(Path.Combine(seriesDirectory, name), JsonSerializer.Serialize(series, Options));
+        }
+        foreach (var file in Directory.EnumerateFiles(seriesDirectory, "*.json"))
+            if (!keep.Contains(Path.GetFileName(file))) File.Delete(file);
+        // Legacy single-file copy for older Windows builds; Mac reads Workspaces/.
         File.WriteAllText(path, JsonSerializer.Serialize(data, Options));
     }
 
