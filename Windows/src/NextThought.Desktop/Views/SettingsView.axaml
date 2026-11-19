@@ -1,0 +1,260 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:platform="using:NextThought.Platform"
+             x:Class="NextThought.Desktop.Views.SettingsView"
+             x:DataType="local:AppState">
+  <ScrollViewer Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="32,18,32,36" MaxWidth="860" Spacing="18">
+      <StackPanel Spacing="6">
+        <TextBlock Text="设置" Classes="display" />
+        <TextBlock Text="所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。"
+                   Classes="caption" />
+      </StackPanel>
+
+      <!-- Sound sources -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="声音来源" Classes="section" />
+          <CheckBox Content="系统输出设备混音" IsChecked="{Binding Settings.CaptureSystem}" />
+          <ComboBox ItemsSource="{Binding Settings.SystemDevices}" SelectedItem="{Binding Settings.SelectedSystemDevice}"
+                    HorizontalAlignment="Stretch" PlaceholderText="选择输出设备" />
+          <TextBlock Text="系统声音范围（每次开始前选择）" Classes="label" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ComboBox ItemsSource="{Binding Settings.Processes}" SelectedItem="{Binding Settings.SelectedProcess}"
+                      Width="380" PlaceholderText="整个输出设备混音" />
+            <Button Content="刷新应用列表" Command="{Binding ReloadProcessesCommand}" />
+          </StackPanel>
+          <TextBlock Text="选应用时仅采集该进程及其子进程的声音；选整个设备时采集该设备全部混音。需要 Windows 10 build 20348 以上。"
+                     Classes="caption" FontSize="11" />
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="0,6,0,0" Padding="0,12,0,0">
+            <StackPanel Spacing="12">
+              <CheckBox Content="麦克风" IsChecked="{Binding Settings.CaptureMicrophone}" />
+              <ComboBox ItemsSource="{Binding Settings.MicrophoneDevices}" SelectedItem="{Binding Settings.SelectedMicrophoneDevice}"
+                        HorizontalAlignment="Stretch" PlaceholderText="选择麦克风" />
+              <TextBlock Text="麦克风增益（1–8 倍，声音偏小时调高）" Classes="label" />
+              <Slider Minimum="1" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True"
+                      Value="{Binding Settings.MicrophoneGain}" Width="280" HorizontalAlignment="Left" />
+              <Button Content="刷新设备" Click="RefreshDevices_Click" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <!-- Recognition -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="本机语音识别" Classes="section" />
+          <TextBlock Text="识别模型" Classes="label" />
+          <ComboBox ItemsSource="{Binding Settings.ModelChoicesList}" SelectedItem="{Binding Settings.SelectedModelChoice}"
+                    HorizontalAlignment="Left" MinWidth="300" />
+          <CheckBox Content="整句精修，提高最终转写质量" IsChecked="{Binding Settings.SecondPass}" />
+          <TextBlock Text="{Binding ModelStatusText}" Classes="caption" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Classes="primary" Command="{Binding PrepareModelsCommand}">
+          <TextBlock Text="准备语音组件" Foreground="{DynamicResource OnInk}" />
+        </Button>
+            <TextBlock Text="首次需下载流式模型约 134 MB；整句精修另约 136 MB，下载后离线运行。"
+                       Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
+          </StackPanel>
+          <TextBlock Text="术语表（人名与专有名词）" Classes="label" />
+          <TextBlock Text="每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。"
+                     Classes="caption" FontSize="11" />
+          <TextBox Text="{Binding GlossaryText}" AcceptsReturn="True" Height="96" TextWrapping="Wrap"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   PlaceholderText="Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="保存术语表" Command="{Binding SaveGlossaryCommand}" />
+            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Speakers and translation -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="说话人与翻译" Classes="section" />
+          <CheckBox Content="区分会议中的说话人（本机实验功能）" IsChecked="{Binding Settings.SeparateSpeakers}" />
+          <TextBlock Text="仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。"
+                     Classes="caption" FontSize="11" />
+          <Button Content="准备声纹组件（约 26 MB）" Command="{Binding PrepareSpeakersCommand}" HorizontalAlignment="Left" />
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="0,4,0,0" Padding="0,12,0,0">
+            <StackPanel Spacing="10">
+              <CheckBox Content="记录时将完整句中英互译（使用当前回答服务）" IsChecked="{Binding Settings.TranslateSpeech}" />
+              <TextBlock Text="Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。"
+                         Classes="caption" FontSize="11" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <!-- Dual-screen presenting (PresenterMode.swift) -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="双屏演讲" Classes="section" />
+          <CheckBox Content="开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口"
+                    IsChecked="{Binding Settings.PresenterMode}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="幻灯片所在屏" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.ScreenChoices}"
+                      SelectedItem="{Binding Settings.SelectedSlidesScreen}" MinWidth="240" />
+          </StackPanel>
+          <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11" />
+          <TextBlock Text="开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。幻灯片自动翻页识别（LiveInsights 页面匹配）尚未移植。"
+                     Classes="caption" FontSize="11" />
+        </StackPanel>
+      </Border>
+
+      <!-- Meeting auto-end -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="会议自动收尾" Classes="section" />
+          <TextBlock Text="忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。"
+                     Classes="caption" FontSize="11" />
+          <ComboBox ItemsSource="{Binding Settings.AutoEndModes}" SelectedItem="{Binding Settings.SelectedAutoEndMode}"
+                    HorizontalAlignment="Left" MinWidth="280" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="静音多久后收尾" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.AutoEndMinuteChoices}"
+                      SelectedItem="{Binding Settings.AutoEndMinutes}" Width="90" />
+            <TextBlock Text="分钟" Classes="label" VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Library and retrieval -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="资料与检索" Classes="section" />
+          <CheckBox Content="参考资料库时使用语义与关键词混合检索" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
+          <TextBlock Text="Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。"
+                     Classes="caption" FontSize="11" />
+          <Button Content="准备检索组件" Command="{Binding PrepareRetrievalCommand}" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
+      <!-- Answer service -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="回答服务" Classes="section" />
+          <CheckBox Content="允许联网核实（需 TAVILY_API_KEY）" IsChecked="{Binding Settings.WebSearch}" />
+          <TextBlock Text="问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。"
+                     Classes="caption" FontSize="11" />
+          <CheckBox Content="使用本机 Codex CLI 账号" IsChecked="{Binding Settings.UseCodex}" />
+          <TextBlock Text="Codex 模型（留空沿用账号默认模型）" Classes="label" />
+          <TextBox Text="{Binding Settings.CodexModel}" PlaceholderText="gpt-5.2-codex" />
+          <TextBlock Text="兼容 Chat Completions 的 API 地址" Classes="label" />
+          <TextBox Text="{Binding Settings.BaseUrl}" PlaceholderText="https://api.openai.com/v1" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+            <StackPanel Spacing="6">
+              <TextBlock Text="回答模型名称" Classes="label" />
+              <TextBox Text="{Binding Settings.Model}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="6">
+              <TextBlock Text="纪要模型（留空沿用回答模型）" Classes="label" />
+              <TextBox Text="{Binding Settings.NotesModel}" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Text="API Key" Classes="label" />
+          <TextBox Text="{Binding Settings.ApiKey}" PasswordChar="•" PlaceholderText="sk-…" />
+          <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" FontSize="11" />
+          <TextBlock Text="推理强度" Classes="label" />
+          <ComboBox ItemsSource="{Binding Settings.EffortChoicesList}" SelectedItem="{Binding Settings.SelectedEffort}"
+                    HorizontalAlignment="Left" MinWidth="220" />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+            <Button Classes="primary" Command="{Binding SaveSettingsCommand}">
+          <TextBlock Text="保存设置" Foreground="{DynamicResource OnInk}" />
+        </Button>
+            <Button Content="检查回答服务" Command="{Binding CheckServiceCommand}" />
+            <TextBlock Text="{Binding Settings.SavedHint}" Classes="caption" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。"
+                     Classes="caption" FontSize="11" />
+        </StackPanel>
+      </Border>
+
+      <!-- Phone companion (LAN channel) -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="手机伴侣" Classes="section" />
+          <TextBlock Text="手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。"
+                     Classes="caption" FontSize="11" />
+          <TextBlock Text="局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。"
+                     Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="中转地址（可选）" Classes="label" VerticalAlignment="Center" />
+            <TextBox Text="{Binding Settings.CompanionRelayUrl}" PlaceholderText="https://relay.example.com" MinWidth="320" />
+          </StackPanel>
+          <TextBlock Text="填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。"
+                     Classes="caption" FontSize="11" />
+          <TextBlock Text="蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。"
+                     Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ComboBox ItemsSource="{Binding CompanionAddresses}" SelectedItem="{Binding SelectedCompanionAddress}"
+                      MinWidth="260">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="platform:CompanionAddress">
+                  <TextBlock Text="{Binding}" FontSize="13" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="刷新网络地址" Command="{Binding RefreshCompanionAddressesCommand}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Command="{Binding ToggleCompanionCommand}" Content="{Binding CompanionToggleLabel}" />
+            <Button Content="复制配对链接" Click="CopyCompanion_Click" />
+          </StackPanel>
+          <Image Source="{Binding CompanionQr}" Width="220" Height="220" HorizontalAlignment="Left"
+                 IsVisible="{Binding CompanionRunning}" />
+          <TextBox Text="{Binding CompanionLink}" IsReadOnly="True" TextWrapping="Wrap" FontSize="12" />
+          <TextBlock Text="{Binding CompanionInfo}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- Updates -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="更新" Classes="section" />
+          <TextBlock Text="检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。"
+                     Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding SelectedUpdateChannel}" MinWidth="170" />
+            <Button Content="检查更新" Command="{Binding CheckUpdateCommand}" />
+            <Button Content="下载并安装" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanInstallUpdateInApp}" />
+            <Button Content="打开下载页" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding CanOpenUpdatePage}" />
+            <Button Content="回滚到上一版本" Command="{Binding RestoreUpdateBackupCommand}" IsVisible="{Binding HasUpdateBackup}" />
+          </StackPanel>
+          <TextBlock Text="{Binding UpdateStatus}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+          <ProgressBar Value="{Binding UpdateInstallProgress}" Maximum="1" IsVisible="{Binding InstallingUpdate}" MaxWidth="420" HorizontalAlignment="Left" />
+          <TextBlock Text="{Binding UpdateInstallStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+                     IsVisible="{Binding InstallingUpdate}" HorizontalAlignment="Left" />
+          <TextBlock Text="「下载并安装」会下载安装包并校验发布里的 SHA-256，校验通过后静默安装并重新打开；发布没有校验文件时只提供下载页。"
+                     Classes="caption" FontSize="11" />
+        </StackPanel>
+      </Border>
+
+      <!-- Data and about -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="数据与关于" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="导出备份" Command="{Binding BackupCommand}" />
+            <Button Content="导入备份" Command="{Binding RestoreCommand}" />
+            <Button Content="打开数据目录" Command="{Binding OpenDataCommand}" />
+          </StackPanel>
+          <TextBlock Text=".ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。"
+                     Classes="caption" FontSize="11" />
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="0,6,0,0" Padding="0,12,0,0">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding VersionText}" Classes="overline" />
+              <TextBlock Text="NextThought 把会议讨论留在本机，变成可以带走的结论。"
+                         Classes="caption" FontSize="11" />
+              <Button Classes="quiet" Content="第三方许可与版权说明" HorizontalAlignment="Left" Margin="-10,4,0,0"
+                      Click="Notices_Click" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

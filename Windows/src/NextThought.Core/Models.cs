@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace NextThought.Core;
 
 public enum AudioSource { System, Microphone }
-public enum MeetingMode { General, Meeting, Client, Academic, LabMeeting, Lesson, Discussion, Interview, Custom }
+public enum MeetingMode { General, Meeting, Client, Academic, LabMeeting, Lesson, Discussion, Interview, GroupProject, Custom }
 public sealed record AudioFrame(AudioSource Source, short[] Samples, long StartSample, DateTimeOffset Origin);
 public sealed record TranscriptUpdate(Guid Id, AudioSource Source, string Text, bool IsFinal, DateTimeOffset Start, DateTimeOffset End, double InferenceSeconds = 0);
 public sealed record TranscriptLine
@@ -77,8 +77,19 @@ public sealed record AppSettings
     public bool SeparateSpeakers { get; set; }
     public bool TranslateSpeech { get; set; }
     public bool UseMaterials { get; set; }
+    public bool WebSearch { get; set; } = true;
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";
+    /// <summary>Mac key <c>presenterMode</c>: dual-screen presenting (PresenterMode.swift).</summary>
+    public bool PresenterMode { get; set; }
+    /// <summary>Mac key <c>presenterSlidesScreen</c>: display id the slides are on; empty picks the first non-camera display.</summary>
+    public string PresenterSlidesScreen { get; set; } = "";
+    /// <summary>Optional HTTPS relay origin for the phone companion (CompanionRelayClient).</summary>
+    public string CompanionRelayUrl { get; set; } = "";
+    /// <summary>Mac key <c>meetingAutoEndMode</c>: prompt / end / off (MeetingEndWatch).</summary>
+    public string MeetingAutoEndMode { get; set; } = "prompt";
+    /// <summary>Mac key <c>meetingAutoEndMinutes</c>: how long without recognised words counts as the end.</summary>
+    public int MeetingAutoEndMinutes { get; set; } = MeetingEndWatch.Config.DefaultMinutes;
     [JsonIgnore] public int CaptureProcessId { get; set; }
     [JsonIgnore] public long CaptureProcessStartTicks { get; set; }
 }

@@ -11,7 +11,8 @@ public sealed class SpeakerTests
         var first = new float[256]; first[0] = 1; var other = new float[256]; other[1] = 1;
         var groups = new VoiceGroups(); Assert.Null(groups.Assign(first, .6)); Assert.Equal(0, groups.Assign(first, 3)); Assert.Equal(0, groups.Assign(first, 1));
         Assert.Equal(1, groups.Assign(other, 3)); var ambiguous = new float[256]; ambiguous[0] = ambiguous[1] = (float)Math.Sqrt(.5);
-        Assert.Null(groups.Assign(ambiguous, 3)); Assert.Null(groups.Assign(new float[256], 4)); Assert.Null(groups.Assign([float.NaN], 3));
+        Assert.Equal(0, groups.Assign(ambiguous, 3)); var orthogonal = new float[256]; orthogonal[2] = 1;
+        Assert.Null(groups.Assign(orthogonal, 1)); Assert.Null(groups.Assign(new float[256], 4)); Assert.Null(groups.Assign([float.NaN], 3));
         var nextMeeting = new VoiceGroups(); Assert.Equal(0, nextMeeting.VoiceCount);
     }
     [Fact]

@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
+             x:Class="NextThought.Desktop.Views.SeriesView"
+             x:DataType="local:AppState">
+  <UserControl.Styles>
+    <!-- Fluent's tab headers are far larger than the rest of this page's type scale. -->
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="12,4" />
+    </Style>
+    <Style Selector="TabItem /template/ ContentPresenter">
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto,*" Margin="32,18,32,0">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="6">
+        <TextBlock Text="系列" Classes="display" />
+        <TextBlock Text="同一门课、同一个项目、同一类面试放在一个系列里；每场会议的结论与经验会攒在一起。" Classes="caption" />
+        <TextBlock Text="{Binding SeriesSummary}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <TextBox Text="{Binding NewSeriesName}" PlaceholderText="新系列的名字" Width="180" MinHeight="34" />
+        <Button Content="新建系列" Command="{Binding CreateSeriesCommand}" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="330,*" ColumnSpacing="16" Margin="0,18,0,16">
+      <!-- 系列列表 -->
+      <Border Classes="card" Padding="8">
+        <Grid RowDefinitions="*,Auto">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ListBox Name="SeriesList" ItemsSource="{Binding SeriesRows}" Background="Transparent"
+                     SelectionChanged="Series_SelectionChanged">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="local:SeriesRow">
+                  <StackPanel Spacing="3" Margin="0,6">
+                    <TextBlock Text="{Binding Name}" Classes="title" FontSize="14" />
+                    <TextBlock Text="{Binding Meta}" Classes="caption" FontSize="11" />
+                    <TextBlock Text="{Binding Preview}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </ScrollViewer>
+          <TextBlock Grid.Row="1" Text="还没有系列。上面的输入框新建一个，再把会议放进来。"
+                     Classes="caption" Margin="8,8,8,4" IsVisible="{Binding SeriesIsEmpty}" TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+
+      <!-- 选中的系列 -->
+      <Border Grid.Column="1" Classes="card" Padding="22,16">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding SelectedSeriesTitle}" FontFamily="{StaticResource SerifFamily}"
+                         FontSize="22" FontWeight="Medium" Foreground="{DynamicResource InkBrush}" />
+              <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <Button Content="把这场景加入" Command="{Binding AssignCurrentToSeriesCommand}" />
+              <Button Content="移出" Command="{Binding RemoveCurrentFromSeriesCommand}" />
+            </StackPanel>
+          </Grid>
+
+          <StackPanel Grid.Row="1" Spacing="4" Margin="0,14,0,0">
+            <TextBlock Text="会议" Classes="overline" />
+            <ScrollViewer MaxHeight="88" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding SeriesMeetings}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:RecentMeetingRow">
+                    <TextBlock Text="{Binding Meta.Title}" Classes="label" Margin="0,3" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </StackPanel>
+
+          <!-- 经验 / 待确认 / 题库：只有确认过的知识会进入回答 -->
+          <TabControl Name="Tabs" Grid.Row="2" Margin="0,10,0,0" Background="Transparent" Padding="0">
+            <TabItem Header="{Binding SeriesLessonsHeader}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="2" Margin="0,8,0,0">
+                  <ItemsControl ItemsSource="{Binding SeriesLessons}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:WorkspaceLesson">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                          <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
+                          <Button Grid.Column="1" Content="删除" Classes="ghost" Tag="{Binding}"
+                                  Click="RemoveLesson_Click" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="还没有经验。整理纪要时会从「下次改进」这类章节提炼候选，确认后才会记下来；也可以手写一条。" Classes="caption"
+                             IsVisible="{Binding !HasSeriesLessons}" TextWrapping="Wrap" />
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="{Binding SeriesCandidatesHeader}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="2" Margin="0,8,0,0">
+                  <ItemsControl ItemsSource="{Binding SeriesCandidates}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:KnowledgeCandidateRow">
+                        <Border Classes="card" Padding="12,10" Margin="0,0,0,8">
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <StackPanel Spacing="4">
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Border Classes="chip" VerticalAlignment="Top">
+                                  <TextBlock Text="{Binding KindLabel}" Classes="faint" FontSize="11" />
+                                </Border>
+                                <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" MaxWidth="380" />
+                              </StackPanel>
+                              <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap"
+                                         IsVisible="{Binding HasAnswer}" MaxWidth="420" />
+                              <TextBlock Text="{Binding Hint}" Classes="faint" FontSize="11" TextWrapping="Wrap" MaxWidth="420" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                              <Button Classes="primary" Tag="{Binding}" Click="AcceptCandidate_Click" Padding="14,0" MinHeight="30">
+                                <TextBlock Text="采纳" Foreground="{DynamicResource OnInk}" FontSize="13" />
+                              </Button>
+                              <Button Content="替换回答" Classes="ghost" Tag="{Binding}" Click="ReplaceCandidate_Click"
+                                      IsVisible="{Binding CanReplace}" />
+                              <Button Content="忽略" Classes="ghost" Tag="{Binding}" Click="RejectCandidate_Click" />
+                            </StackPanel>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="没有待确认的知识。按模板整理一份纪要后，模板里标了「带出经验」的章节会排到这里。"
+                             Classes="caption" IsVisible="{Binding !HasSeriesCandidates}" TextWrapping="Wrap" />
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="{Binding SeriesBankHeader}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="2" Margin="0,8,0,0">
+                  <ItemsControl ItemsSource="{Binding SeriesBank}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:QuestionBankRow">
+                        <Border Classes="card" Padding="12,10" Margin="0,0,0,8">
+                          <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap"
+                                       IsVisible="{Binding HasAnswer}" />
+                            <TextBlock Text="{Binding Meta}" Classes="faint" FontSize="11" />
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="题库还空着。面试、汇报这类模板的「逐题回放」章节会在确认后进入题库。"
+                             Classes="caption" IsVisible="{Binding !HasSeriesBank}" TextWrapping="Wrap" />
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+          </TabControl>
+
+          <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,12,0,0">
+            <TextBox Text="{Binding NewLessonText}" PlaceholderText="一句话经验，例如：先说结论，再说依据" MinHeight="34" />
+            <Button Grid.Column="1" Classes="primary" Margin="8,0,0,0" Padding="16,0" MinHeight="34"
+                    Command="{Binding AddLessonCommand}">
+              <TextBlock Text="记下" Foreground="{DynamicResource OnInk}" FontSize="13" />
+            </Button>
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

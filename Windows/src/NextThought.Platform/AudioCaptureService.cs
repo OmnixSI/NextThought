@@ -41,6 +41,9 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
     public event Action<AudioSource, double>? LevelChanged;
     public static IReadOnlyList<AudioDeviceInfo> Devices(bool system)
     {
+        // Diagnostic switch for the Native AOT probe: NAudio's COM enumerator is not AOT-safe,
+        // so the AOT build can start and report timings/memory without touching audio.
+        if (Environment.GetEnvironmentVariable("NEXTTHOUGHT_DISABLE_AUDIO_DEVICES") is "1" or "true") return [];
         using var enumerator = new MMDeviceEnumerator();
         var flow = system ? DataFlow.Render : DataFlow.Capture;
         var collection = enumerator.EnumerateAudioEndPoints(flow, DeviceState.Active);

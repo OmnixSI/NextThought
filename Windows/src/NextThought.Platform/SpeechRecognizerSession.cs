@@ -30,14 +30,17 @@ public sealed class SpeechRecognizerSession : IDisposable
         public string LastText = "";
         public long LastPartialSample;
     }
-    public SpeechRecognizerSession(ModelStore store, AppSettings settings)
+    public SpeechRecognizerSession(ModelStore store, AppSettings settings, IReadOnlyList<string>? extraHotwords = null)
     {
         if (!store.IsInstalled(settings.LocalModel)) throw new InvalidOperationException("请先准备并校验语音模型。");
         if (settings.SecondPass && !store.IsInstalled("xasrOffline")) throw new InvalidOperationException("整句精修模型尚未准备，可先关闭整句精修。");
         if (Native.ActiveCodePage() != 65001 && store.DirectoryFor(settings.LocalModel).Any(c => c > 127))
             throw new InvalidOperationException("中文模型路径需要应用的 UTF-8 清单。请通过 NextThought.exe 或 NextThought.Cli.exe 启动，避免直接用 dotnet 执行 DLL。");
         var hotwords = Path.Combine(Path.GetTempPath(), "nextthought-hotwords-" + Guid.NewGuid().ToString("N") + ".txt");
-        var words = settings.Vocabulary.Split([',', '，', '、', '\r', '\n', ';', '；'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var words = settings.Vocabulary.Split([',', '，', '、', '\r', '\n', ';', '；'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Concat(extraHotwords ?? [])
+            .Distinct()
+            .ToArray();
         try
         {
             if (words.Length > 0) File.WriteAllText(hotwords, string.Join('\n', words));
@@ -80,7 +83,7 @@ public sealed class SpeechRecognizerSession : IDisposable
         FrameObserved?.Invoke(frame);
         if (!states.TryGetValue(frame.Source, out var state)) { state = new(online.CreateStream()) { Origin = frame.Origin, StartSample = frame.StartSample }; states[frame.Source] = state; }
         var clock = Stopwatch.StartNew();
-        var segment = state.Vad.Append(frame.Samples);
+        var segments = state.Vad.Append(frame.Samples);
         state.Stream.AcceptWaveform(16000, frame.Samples.Select(x => x / 32768f).ToArray()); Decode(state);
         var text = online.GetText(state.Stream).Trim();
         if (text.Length > 0 && text != state.LastText && frame.StartSample-state.LastPartialSample >= 3200)
@@ -88,7 +91,9 @@ public sealed class SpeechRecognizerSession : IDisposable
             state.LastText = text; state.LastPartialSample = frame.StartSample;
             Updated?.Invoke(new(state.Utterance, frame.Source, text, false, state.Origin.AddSeconds(state.StartSample/16000.0), state.Origin.AddSeconds((frame.StartSample+frame.Samples.Length)/16000.0)));
         }
-        if (segment != null) Commit(frame.Source, state, segment, frame.StartSample + frame.Samples.Length);
+        foreach (var segment in segments)
+            if (segment.Kind == SpeechSegmentEvent.KindValue.Final)
+                Commit(frame.Source, state, new SpeechSegment(segment.Id, segment.StartSample, segment.EndSample, segment.Samples), frame.StartSample + frame.Samples.Length);
         InferenceSeconds += clock.Elapsed.TotalSeconds; AudioSeconds += frame.Samples.Length/16000.0;
     }
     private void Decode(State state) { while (online.IsReady(state.Stream)) online.Decode(state.Stream); }
@@ -113,7 +118,7 @@ public sealed class SpeechRecognizerSession : IDisposable
     {
         var clock = Stopwatch.StartNew();
         foreach (var (source, state) in states)
-            if (state.Vad.Flush() is { } segment) Commit(source, state, segment, segment.EndSample);
+            if (state.Vad.Flush() is { } segment) Commit(source, state, new SpeechSegment(segment.Id, segment.StartSample, segment.EndSample, segment.Samples), segment.EndSample);
         InferenceSeconds += clock.Elapsed.TotalSeconds;
     }
     public void Dispose()
@@ -143,9 +148,9 @@ public sealed class LiveSpeechEngine : IAsyncDisposable
     public event Action<TranscriptUpdate>? Updated;
     public event Action<string>? Failed;
     public event Action<string>? Warning;
-    public LiveSpeechEngine(ModelStore store, AppSettings settings)
+    public LiveSpeechEngine(ModelStore store, AppSettings settings, IReadOnlyList<string>? extraHotwords = null)
     {
-        session = new(store, settings);
+        session = new(store, settings, extraHotwords);
         session.Updated += update => Updated?.Invoke(update); session.Warning += message => Warning?.Invoke(message);
         processing = Task.Run(async () =>
         {

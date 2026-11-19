@@ -1,0 +1,25 @@
+﻿NextThought Windows 源码包
+=========================
+版本: 1.3.7
+提交: d99ec15deff823f47d5967df5407e00aa6a8785a
+生成时间: 2026-11-19 14:10:39 +08:00
+
+内容
+----
+Sources/                 Swift 原始 Core 源码（80 个文件）
+Windows/                 Windows 移植源码（Core / Platform / Desktop / Cli / tests / scripts / installer）
+Tests/                   原 Swift 测试
+CompanionRelay/          伴侣中转服务
+Mobile/                  手机端伴侣页面
+Resources/               图标与资源
+WINDOWS_PORT_README.md   Windows 移植说明
+WINDOWS_PORT_DOCS/       进度报告、DECISIONS 等文档
+
+未包含
+------
+.git、.cache、.tools、bin、obj、node_modules、artifacts、PDB 等构建产物。
+
+构建
+----
+Windows: 见 WINDOWS_PORT_README.md；使用 Windows/.tools 或本机 .NET 10 SDK。
+Swift:   Package.swift（macOS 端参考实现）。

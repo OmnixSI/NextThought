@@ -6,7 +6,21 @@ using NextThought.Core;
 
 namespace NextThought.Platform;
 
-public sealed record ModelPackage(string Id, string Title, string Archive, string Sha256, string VocabularySha256, Dictionary<string, long> Files);
+public sealed class ModelPackage
+{
+    public string Id { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string Archive { get; init; } = "";
+    public string Sha256 { get; init; } = "";
+    public string VocabularySha256 { get; init; } = "";
+    public Dictionary<string, long> Files { get; init; } = [];
+}
+[System.Text.Json.Serialization.JsonSourceGenerationOptions(PropertyNamingPolicy = System.Text.Json.Serialization.JsonKnownNamingPolicy.CamelCase)]
+[System.Text.Json.Serialization.JsonSerializable(typeof(ModelPackage[]))]
+internal sealed partial class ModelCatalogJsonContext : System.Text.Json.Serialization.JsonSerializerContext
+{
+}
+
 public sealed class ModelStore(AppPaths paths)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -103,5 +117,5 @@ public sealed class ModelStore(AppPaths paths)
     { await using var input = File.OpenRead(file); return Convert.ToHexStringLower(await SHA256.HashDataAsync(input, ct)); }
     private static Stream Resource(string suffix) => typeof(ModelStore).Assembly.GetManifestResourceStream("NextThought.Platform.Resources." + suffix) ?? throw new InvalidDataException("缺少模型目录资源。");
     private static IReadOnlyList<ModelPackage> LoadCatalog()
-    { using var resource = Resource("models.json"); return JsonSerializer.Deserialize<ModelPackage[]>(resource, JsonDefaults.Options) ?? throw new InvalidDataException("模型目录无效。"); }
+    { using var resource = Resource("models.json"); return JsonSerializer.Deserialize(resource, ModelCatalogJsonContext.Default.ModelPackageArray) ?? throw new InvalidDataException("模型目录无效。"); }
 }

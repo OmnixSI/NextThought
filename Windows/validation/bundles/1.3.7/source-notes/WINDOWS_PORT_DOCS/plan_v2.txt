@@ -1,0 +1,3808 @@
+
+
+===== PAGE 1 =====
+NextThought Windows 移植方案 v2
+​Nov 18, 2026 · ​@Homing
+本文是 NextThought 从 macOS 移植到 Windows 的唯一执行依据：照本文加仓库里的 Swift
+源码即可完成移植，不需要翻聊天记录。技术栈沿用 v1 的定稿（C# / .NET 10 + Avalonia 12 +
+Native AOT），但 v1 有 9 处错误或过期，下面先逐条给出结论，其余各节是修正后的完整方
+案。
+核对依据：主分支 5ddb9e5 （Mac v3.3.0）、分支 port/windows-native 的 01606e2
+（Windows 0.4.0）。本文作者没有 Windows 机器，凡未实测的 Windows 行为都在第 17 节标
+为待验证。
+0. v1 逐条审查
+v1 的方向正确，问题集中在三处：把已经做完的事当成没做、把 AOT 风险找错了对象、漏掉了
+Mac 版在基线之后的一个大版本。
+必须改的 9 条
+#
+v1 的说法
+结论
+依据与修正
+1
+§5、R1：sherpa-onnx 的 native 到
+managed 回调是 AOT 头号风险，要
+改 UnmanagedCallersOnly
+有误
+流式识别是轮询式 C API
+（AcceptWaveform、IsReady、
+Decode、GetResult），Mac 和
+Windows 基线都没有用回调。真正的
+AOT 风险是另外三处，见下一行
+2
+（v1 没提）
+缺失
+AOT 的三个真实阻碍：NAudio 2.2.1 和
+ProcessLoopbackCapture.cs 用
+[ComImport] ，Native AOT 不支持；
+Utf8SherpaInterop.cs 用反射读结构
+体字段；全分支约 60 处反射式
+JsonSerializer 调用。修法见第 2、
+4、7 节
+3
+R1 回退：AOT 只对 UI 层开，ASR 侧
+保留 JIT
+不可
+行
+Native AOT 是整个进程的发布方式，同
+一进程不能一半 AOT 一半 JIT。回退只有
+两种：整体改用 ReadyToRun 自包含发
+布，或把 ASR 拆成子进程
+4
+§0：WPF 版是草稿，降级为对照参考
+需修
+正
+分支已到 P4：12 个提交、79 项测试、安
+装器、7200 秒回放验收。Platform 30 个
+文件与界面无关，应直接并入新方案，只
+有 WPF 工程（11 个文件）被替换
+NextThought Windows 移植方案 v2
+Page 1 of 63
+
+
+===== PAGE 2 =====
+其余条目
+#
+v1 的说法
+结论
+依据与修正
+5
+#66：五块 Apple 独占能力的替换清
+单进行中；§10 里 OCR、翻译、声纹
+写「#66 定」
+过期
+分支在 P2、P3 已实现并验收：进程回环
+采音、WeSpeaker ONNX 声纹、Qwen
+ONNX 向量检索、系统 OCR 加 Paddle
+CPU、回答服务整句翻译。#66 改为确认
+沿用，见第 7、10、11 节
+6
+（v1 没提）
+缺失
+基线和 FEATURE_PARITY.md 对照的是
+Mac v2.3.1（快照 af60a4d ）。主分支现
+在是 v3.3.0，中间 86 个提交、Sources
+新增 2.4 万行：九个场景、提词岛、临场
+教练、双屏演讲、讲稿跟随、同传上岛。
+功能对照必须按 v3.3.0 重做
+7
+§3、§10：会议归档用 SQLite；本地
+加密用 DPAPI
+有误
+归档是 JSON 加 JSONL 文件，SQLite
+只在 DocumentJobs.swift 一处使用。
+DPAPI 只负责保存 API Key；Core 里的
+SHA-256 和 AES-GCM/HKDF 必须和
+Mac 逐字节一致，否则备份和手机伴侣不
+通
+8
+§3：提词岛是独立的 Win32 直调窗
+口，只负责显示一段文本
+有误
+岛的内容是 1390 行界面：会议面板、场
+景启动器、按钮、教练提示，展开后要接
+收点击。它必须是 Avalonia 窗口，再对
+其 HWND 加扩展样式，见第 9 节
+9
+§3：架构是 View、Core、Platform
+三层
+缺一
+层
+Mac 的 App 目标里约 2.3 万行不是视
+图：AppState 系列、
+SessionArchive 、
+DocumentPipeline 、Updater 等。v1
+的图里没有它们的位置。本文加一层应用
+层，见第 3 节
+v1 条目
+结论
+说明
+§1 路线 B、主仓库分支、Avalonia 定
+稿、本机构建、作废 Swift 路线
+成立
+分支和提交已核对。分支里有
+windows.yml ，保留但不作为验收依据
+§2 第 1 至 4 条依据
+成立
+LiquidGlass.swift:16 、
+CueIsland.swift:277 已核对。2.8 万行是
+「引用了 SwiftUI 的文件」的总行数，含少
+量逻辑
+NextThought Windows 移植方案 v2
+Page 2 of 63
+
+
+===== PAGE 3 =====
+v1 条目
+结论
+说明
+§3 三条硬约束
+成立
+第 3 条改为：窗口层不含业务判断，但要转
+发点击
+§3 80 ms 轮询做穿透判定
+成立
+CueIsland.swift:321 。另有两个时间：停
+留 0.22 秒才展开，离开 0.2 秒才收起
+#57 虚拟摄像头的 EV 证书
+范围
+外
+只有眼神矫正需要虚拟摄像头，见 #62
+#62 NVIDIA Maxine 眼神矫正
+范围
+外
+Mac 版只有「留意眼神」的提醒
+（LiveCoach 加 GazeEstimator ），不修改
+画面。眼神矫正是新功能，不属于移植，移
+出本线
+#64 验收腾讯会议、Zoom、飞书
+需补
+Mac 的名单是六家，补 Teams、钉钉、
+Webex
+§5 #65 no-go 就换 WinUI 3
+需修
+正
+AOT 不过只关 AOT，不换界面框架。只有窗
+口三项不过才考虑换框架
+§5 #63、R3、§11 第 2 条：富文本编辑
+器是缺口
+不成
+立
+Mac 版没有富文本编辑。六处编辑都是纯文
+本 TextEditor ；Markdown 显示是自写的
+MarkdownText （Theme.swift:7 ），公式
+转成 Unicode 字符。Windows 用 TextBox
+加一个自写的 Markdown 控件即可，不需要
+WebView
+#61、R5：Windows 查不到摄像头在哪
+块屏
+需修
+正
+可以查到笔记本内置屏
+（QueryDisplayConfig 的输出类型为内
+置），默认放在内置屏顶部居中，没有内置屏
+再用主屏，用户可改
+§6 M2：12 月 1 日前 Core 基线跑通
+偏紧
+Core 是 80 个文件 1.7 万行，现有 C# Core
+只有 14 个文件约 740 行。改为按批次验收，
+见第 16 节
+§6 只有一台机器能验
+可缓
+解
+Avalonia 界面可以在 Mac 上开发和对照，只
+有平台层必须在 Windows 上验
+§7 构建政策与三条命令
+成立
+SDK 10.0.403 与 global.json 一致。需补
+AOT 发布命令，见第 14 节
+§9 Swift 约 7.6 万行、190 个文件
+有误
+实际 335 个文件、78,488 行；其中
+Sources 249 个文件、67,840 行
+§9 其余事实
+成立
+801 个文件、PR 的 12 个提交和 167 个变更文
+件已核对
+NextThought Windows 移植方案 v2
+Page 3 of 63
+
+
+===== PAGE 4 =====
+1. 目标与范围
+目标是让 Windows 版在功能、界面和数据上与 Mac v3.3.0（5ddb9e5 ）对等，并能与 Mac 版
+互相恢复备份、共用手机伴侣。
+完成的判定标准
+1. 功能：第 15 节验收表的每一行都有实机记录，或明确标为「本版不做」并写明原因。
+2. 逻辑：Mac 的 592 项 Core 测试在 C# 侧都有对应测试并全部通过。
+3. 数据：Mac 导出的 .ntbackup 能在 Windows 恢复，Windows 导出的能在 Mac 恢复，字
+段不丢失。
+4. 界面：同一批页面的 Mac 截图与 Windows 截图左右对照，颜色、间距、圆角、字号与第 8
+节的令牌一致。
+5. 性能：冷启动到主窗口可操作不超过 1.0 秒；空闲内存（未加载识别模型）不超过 150
+MiB；最终句延迟 p95 不超过 0.8 秒。基线已测到 0.445 秒。
+第 5 条的启动和内存数值是目标值，尚无实测；第一次 AOT 发布后按实测修订。
+v1 条目
+结论
+说明
+§10 IAudioSource 用 NAudio
+需修
+正
+升到 NAudio 3.x（已支持 AOT），自写的回
+环激活改用源生成 COM
+§10 端口清单
+不全
+缺热键、凭据、显示器拓扑、更新、蓝牙、
+文档运行包、剪贴板、文件选择，见第 3 节
+§11 第 1 条 Avalonia 小版本
+已定
+锁 12.1.x 的当前补丁版本，写进集中包管理文
+件
+§11 第 3 条 功能优先还是离线优先
+已定
+OCR、声纹、向量检索已是离线。翻译先沿
+用回答服务，离线翻译列为二期
+§11 第 4 条 WPF 分支去留
+已定
+Avalonia 主窗口达到同等功能后删除 WPF 工
+程，其余四个工程保留
+§11 第 6 条 英文 README
+过期
+主分支 5ddb9e5 已加 README.en.md
+R2、R4、R6 至 R9、§12
+成立
+并入第 16、17 节
+NextThought Windows 移植方案 v2
+Page 4 of 63
+
+
+===== PAGE 5 =====
+要移植的功能
+不在本次范围内
+眼神矫正（NVIDIA Maxine）和虚拟摄像头：Mac 版没有，属于新功能。
+Apple Speech 识别：系统独有，Windows 不提供对应选项。云端识别
+（CloudTranscription ）照常移植。
+离线翻译：Windows 没有系统翻译框架。本版用回答服务翻译，设置里写明文本会发送给
+回答服务；离线模型列为二期。
+刘海形态：Windows 没有刘海，只做圆角药丸形态。
+Mac 源码和签名：Sources/ 、scripts/ 、签名身份一律不改。所有新代码在 Windows/
+下。
+ARM64 和 GPU 加速：本版只交付 x64 CPU，结构上不阻挡以后加。
+分
+组
+内容
+Windows 基线现状
+听
+系统声与麦克风双路采集、流式识别加整句
+精修、回声抑制、说话人分组、我的声音、
+术语表
+采集、识别、分组已有；我的声音、术语表
+未做
+答
+问题识别、自动与手动回答、OpenAI 兼容
+接口、Codex、联网搜索、技能、截图提
+问、屏幕感知
+回答和 Codex 已有；联网、技能、截图、
+屏幕感知未做
+提
+词
+提词岛、一直展开、双屏演讲与讲稿跟随、
+临场教练、字幕条、提词器、同声传译
+只有普通浮窗和整句翻译
+记
+会后纪要、提纲、鱼骨图、观点对照、证据
+核对、高亮与修订、导出
+只有通用 Markdown 纪要和导出
+场
+景
+九个场景加自定义、系列、议程、经验库、
+题库、无人发言自动结束
+只有通用模式
+资
+料
+PDF、Word、PPT、Excel、Markdown、
+图片导入，关键词加语义检索，引用定位
+基础导入、检索、引用已有
+管
+理
+历史搜索筛选、备份与增量恢复点、设置六
+页、引导四步、演示模式、40 个自检命令
+完整备份已有，其余未做
+连
+接
+手机伴侣：局域网、蓝牙、中转
+局域网已有
+发
+布
+安装、后台自动更新、回退、签名、中英双
+语界面
+安装和回退已有；只有中文界面
+NextThought Windows 移植方案 v2
+Page 5 of 63
+
+
+===== PAGE 6 =====
+最低系统为 Windows 10 build 19041（沿用基线）。按应用采音需要 build 20348 以上，低于此
+版本时退回整机系统声。
+2. 技术栈定版
+语言 C# 14，运行时 .NET 10 LTS，界面 Avalonia 12，发布方式 Native AOT，Windows 专有能
+力用 CsWin32 和 CsWinRT 直接调系统 API。选型理由见第 0 节「其余条目」中 §2 的核对结
+论，这里只列定版。
+版本与依赖
+标「最新稳定版」的包在第一次还原时取当时版本，写进 Directory.Packages.props 和
+packages.lock.json 后不再浮动。不引入本表以外的运行时依赖；确需新增时先确认其支持
+AOT 和裁剪。
+用途
+包或工具
+版本
+来源与说明
+SDK
+.NET SDK
+10.0.403
+Windows/global.json ，由
+bootstrap_sdk.py 安装，不依赖机器环境
+语言
+C#
+14.0
+Directory.Build.props ，开启 Nullable 和
+锁定还原
+界面
+Avalonia、Avalonia.Desktop、
+Avalonia.Fonts.Inter
+12.1.x 当前补丁（撰写
+时为 12.1.4）
+全部 Avalonia 包同一版本，锁到补丁号
+绑定
+CommunityToolkit.Mvvm
+8.x 最新稳定版
+源生成器，支持 AOT
+系统
+API
+Microsoft.Windows.CsWin32
+最新稳定版
+NativeMethods.json 里设 allowMarshaling:
+false ，生成不依赖运行时封送的代码
+WinRT
+目标框架 net10.0-windows10.0.19041.0 自带的
+投影
+随 SDK
+蓝牙、系统 OCR、截图用
+音频
+NAudio.Core、NAudio.Wasapi
+3.x 最新稳定版
+基线是 2.2.1，必须升级：2.x 用 [ComImport] ，
+AOT 下不可用
+识别
+sherpa-onnx 运行库 win-x64
+1.13.8
+与 Mac 的 Package.swift 同版本，不要单独升
+级
+推理
+Microsoft.ML.OnnxRuntime.Managed
+1.28.0
+共用 sherpa 自带的 ORT 1.28.2 原生库，不引入第
+二份
+PDF
+PdfPig
+0.1.16
+基线已用。AOT 兼容性未验证，见第 17 节
+数据库
+Microsoft.Data.Sqlite
+与 .NET 10 同代
+只给 DocumentJobs 用
+二维码
+QRCoder
+1.7.0
+基线已用
+凭据
+System.Security.Cryptography.ProtectedData
+10.0.0
+基线已用
+测试
+xunit、Avalonia.Headless.XUnit
+xunit 2.9.3
+基线已用 xunit；Headless 用于界面截图测试
+安装包
+Inno Setup
+基线已固定
+Windows/installer/NextThought.iss ，每用
+户安装，不换
+NextThought Windows 移植方案 v2
+Page 6 of 63
+
+
+===== PAGE 7 =====
+Native AOT 的四条硬规则
+AOT 下运行时不能生成代码，反射只能访问编译期可见的成员。下面四条从第一行代码开始执
+行，不要等到发布时再改。
+1. JSON 一律用源生成。每个工程一个 JsonSerializerContext ，所有可序列化类型用
+[JsonSerializable] 登记。工程文件设
+JsonSerializerIsReflectionEnabledByDefault=false ，让漏登记的类型在运行时立
+即报错。
+2. COM 一律用源生成。接口用 [GeneratedComInterface] ，回调对象用
+[GeneratedComClass] ，不写 [ComImport] 。基线的 ProcessLoopbackCapture.cs 按
+此重写。
+3. P/Invoke 用 [LibraryImport] ，结构体全部可直接内存复制，字符串用 UTF-8 指针。不
+用 Marshal.SizeOf(Type) 、GetFields() 这类反射写法。
+4. 所有工程开启分析器：IsAotCompatible=true 、TreatWarningsAsErrors=true 。
+IL2xxx 和 IL3xxx 警告等同编译错误，这样 AOT 问题在普通 Debug 构建时就暴露。
+sherpa-onnx 的绑定方式
+基线用官方托管程序集的结构体，再用反射把字符串改成 UTF-8（官方绑定按系统 ANSI 编码传
+路径，中文路径会失败）。AOT 下改为自写薄绑定：
+在 Platform 里声明与 sherpa-onnx 1.13.8 的 c-api.h 逐字段一致的结构体，字符串字段
+为 byte* 。
+函数用 [LibraryImport("sherpa-onnx-c-api")] 声明，只声明用到的：在线与离线识
+别器、流、说话人嵌入。清单以 ZipformerStreaming.swift 调用到的函数为准。
+结构体布局错误不会编译报错，只会识别失败或崩溃。所以必须保留基线的 4 段 WAV 回归
+（NextThought.Cli 的 asr 诊断），并在 AOT 发布产物上重跑。
+升级 sherpa-onnx 版本时，Mac 和 Windows 同时升，并逐字段复核结构体。
+AOT 不过时的回退
+回退不改变任何源码结构，只改发布参数：PublishAot=false 、
+PublishReadyToRun=true 、SelfContained=true 、TieredPGO=true 。代价是安装包变
+大、冷启动变慢，功能不受影响。四条硬规则在回退后继续执行，以便以后重新打开 AOT。
+3. 工程结构
+解决方案分四层：界面、应用、Core、平台。比 v1 多出的应用层承接 Mac App 目标里约 2.3
+万行非视图代码。
+NextThought Windows 移植方案 v2
+Page 7 of 63
+
+
+===== PAGE 8 =====
+实线箭头是工程引用的方向。界面只在组合根 Program.cs 里引用平台层（虚线），把端口的实
+现注入应用层；在 Mac 上开发时这条虚线指向 Platform.Stub 。
+工程划分
+所有工程在 Windows/ 下，解决方案文件仍是 NextThought.Windows.sln 。
+工程分层 · 四层与引用方向
+工程
+目标框架
+内容
+与基线的关系
+src/NextThought.Core
+net10.0
+Mac NextThoughtCore 80
+个文件的逐文件移植，只依赖
+基础类库
+现有 14 个文件被逐文件移植取
+代
+src/NextThought.App
+net10.0
+应用层：AppState 系列、归
+档、资料管线、回答客户端、
+更新检查、端口接口
+新建；基线 Platform 中不碰
+系统 API 的文件迁入
+src/NextThought.Platform
+net10.0-
+windows10.0.19041.0
+端口的 Windows 实现
+保留，按 AOT 规则改造
+src/NextThought.Platform.Stub
+net10.0
+端口的假实现，用演示数据驱
+动界面
+新建，用于在 Mac 上开发界面
+和跑界面测试
+src/NextThought.Desktop
+两个：net10.0-
+windows10.0.19041.0 和
+net10.0
+Avalonia 界面和组合根，输
+出 NextThought.exe
+新建，取代
+NextThought.Windows
+（WPF）
+src/NextThought.Cli
+net10.0-
+windows10.0.19041.0
+诊断与自检命令
+保留，去掉 UseWPF
+tests/NextThought.Core.Tests
+net10.0
+Mac 592 项 Core 测试的移植
+新建
+tests/NextThought.Tests
+net10.0-
+windows10.0.19041.0
+平台与集成测试
+保留现有 79 项
+tests/NextThought.Desktop.Tests
+net10.0
+无窗口模式下的截图与交互测
+试
+新建
+NextThought Windows 移植方案 v2
+Page 8 of 63
+
+
+===== PAGE 9 =====
+依赖规则
+1. Core 不引用任何其他工程，不出现 using Avalonia 、using NAudio 、using
+Windows.* 。
+2. App 只引用 Core 。需要系统能力时调用自己定义的端口接口。
+3. Platform 引用 App 和 Core ，只实现端口，不含业务判断。
+4. Desktop 引用 App 和 Core 。只有组合根 Program.cs 引用 Platform （Windows 目
+标）或 Platform.Stub （其他目标），视图文件不引用。
+5. 依赖方向用一项架构测试固定：扫描各程序集的引用列表，违反上述规则即测试失败。
+命名与同步规则
+Swift 源码是唯一的行为标准，C# 侧不重新设计。
+文件同名：Workspace.swift 对应 Workspace.cs ；AppState+Live.swift 对应
+AppState.Live.cs （partial class ）。
+类型同名：类型、枚举成员、属性沿用 Swift 的名字，只按 C# 习惯改大小写。
+顺序一致：文件内成员顺序与 Swift 一致，便于并排比对。
+记录上游：Windows/UPSTREAM 文件记录已对齐的 Mac 提交，初值 5ddb9e5 。
+跟进 Mac 改动：Mac 每次发版后执行 git diff <UPSTREAM>..<新提交> -- Sources
+Tests Resources/Localization ，把改动搬到同名 C# 文件，再更新 UPSTREAM 。
+基线里与 Mac 逻辑重叠的 C# 文件（如 SessionStore.cs 、SummaryService.cs 、
+BackupService.cs 、QuestionIntent.cs 、Models.cs ）是精简重写，数据模型只覆盖
+Mac 的一部分字段。它们被逐文件移植取代，不与新代码并存。取代前先加一项回归测试：
+0.4.0 写出的会议目录能被新代码读取。
+端口清单
+端口定义在 NextThought.App/Ports/ 。签名由应用层决定，平台层只实现。
+端口
+职责
+Mac 对应
+Windows 实现
+基线
+IAudioCapture
+系统
+声、麦
+克风、
+按应用
+采集，
+输出 16
+kHz 单
+声道 16
+位样本
+AudioCaptureService 、
+MicrophoneCaptureService
+WASAPI 与进程回环
+已有
+NextThought Windows 移植方案 v2
+Page 9 of 63
+
+
+===== PAGE 10 =====
+端口
+职责
+Mac 对应
+Windows 实现
+基线
+IAudioDevices
+列出设
+备、监
+听插拔
+CoreAudio
+MMDeviceEnumerator
+部分
+ISpeechEngine
+流式识
+别与整
+句精修
+ZipformerStreaming
+sherpa-onnx 薄绑定
+已有
+ISpeakerEmbedder
+语音片
+段转
+256 维
+声纹
+SpeakerID （CoreML）
+WeSpeaker ONNX
+已有
+ITextEmbedder
+文本转
+1024 维
+向量
+MLXTextEmbedder
+Qwen3-Embedding ONNX
+Q8
+已有
+IOcrEngine
+图片取
+字
+Vision
+Windows.Media.Ocr
+已有
+IPdfReader
+PDF 文
+本层与
+页面渲
+染
+PDFKit
+PdfPig 加
+Windows.Data.Pdf
+部分
+IDocumentRuntime
+启动并
+对话
+Python
+运行包
+DocumentRuntime
+同一套 NDJSON 协议
+部分
+IScreenCapture
+列出窗
+口，窗
+口、区
+域、整
+屏截图
+ScreenshotService
+Windows.Graphics.Capture
+无
+IFaceLandmarks
+摄像头
+画面转
+人脸特
+征点
+LiveCoach 里的
+GazeCamera
+Media Foundation 采集加
+ONNX 人脸网格模型
+无
+ICredentialStore
+保存
+API Key
+钥匙串
+DPAPI
+已有
+IHotkeys
+注册全
+局快捷
+键
+Carbon
+RegisterHotKey
+部分
+IDisplays
+显示器
+列表、
+内置
+屏、变
+化通知
+NSScreen
+QueryDisplayConfig
+无
+NextThought Windows 移植方案 v2
+Page 10 of 63
+
+
+===== PAGE 11 =====
+文件选择和剪贴板用 Avalonia 自带的 StorageProvider 和 Clipboard ，在 Desktop 里直接
+使用，不设端口。回答、纪要、翻译、联网搜索只用 HTTP 和子进程，属于应用层，也不设端
+口。
+4. Swift 到 C# 改写规则
+改写是逐文件的机械翻译，不重构、不合并、不「顺手优化」。下表是必须统一的对应关系，表
+后是五个最容易出错的地方。
+端口
+职责
+Mac 对应
+Windows 实现
+基线
+IOverlayWindow
+置顶、
+不激
+活、点
+击穿
+透、录
+屏隐藏
+NSPanel
+HWND 扩展样式
+无
+IShareDetector
+是否有
+会议软
+件在整
+屏共享
+ShareGuard
+枚举窗口，仅在录屏隐藏不可
+用时启用
+无
+IBluetoothPeripheral
+手机伴
+侣的蓝
+牙外设
+CoreBluetooth
+GattServiceProvider
+无
+IUpdateInstaller
+安装已
+下载并
+校验的
+版本
+Updater
+基线的版本目录与回退
+已有
+ISystem
+单实
+例、打
+开链
+接、在
+资源管
+理器中
+显示、
+减少动
+态效
+果、休
+眠唤醒
+通知
+NSWorkspace 等
+Win32
+部分
+NextThought Windows 移植方案 v2
+Page 11 of 63
+
+
+===== PAGE 12 =====
+语言特性对应
+Swift
+C#
+说明
+struct （数据）
+sealed record ，属性 { get;
+init; }
+修改用 with 生成新值；小而频繁的数值
+类型用 readonly record struct
+struct 的 mutating
+func
+返回新值的方法
+例外：状态机类型（如
+VoiceActivitySegmenter 、
+TranscriptDeduplicator ）用 sealed
+class ，由单一持有者修改
+enum （带字符串原始值）
+enum 加
+[JsonStringEnumMemberName("原始
+值")]
+Core 里所有 Codable 枚举都是这一种，
+原始值必须逐字一致
+enum （带关联值）
+abstract record 加嵌套 sealed
+record 子类
+用 switch 模式匹配，末尾分支抛
+UnreachableException
+Optional
+可空类型 T?
+guard let 改为提前返回；?? 、?. 直
+接对应
+protocol
+interface
+协议扩展的默认实现改为扩展方法或接口
+默认成员
+extension
+partial 或扩展成员
+同一类型的扩展合并进 partial ；对外
+部类型的扩展用 C# 14 扩展成员
+throws 、try 、Result
+异常
+try? 改为 try { } catch { return
+null; } ，只捕获原代码能抛出的异常类
+型
+LocalizedError
+自定义异常，Message 取本地化文本
+文案键与 Mac 相同
+async 、await 、Task
+async 、await 、Task
+每个异步方法末位加
+CancellationToken ；
+Task.isCancelled 对应
+ThrowIfCancellationRequested()
+actor
+sealed class 加私有
+SemaphoreSlim(1,1)
+每个公开异步方法进门加锁。顺序敏感的
+（归档写入、识别队列）改用单读者
+Channel<T>
+@MainActor
+界面线程
+应用层通过注入的 IUiDispatcher 回到
+界面线程，不直接引用 Avalonia
+@Observable
+ObservableObject 加
+[ObservableProperty]
+AppState 等单例保持单例，视图直接绑
+定
+AsyncStream
+IAsyncEnumerable<T> 或
+Channel<T>
+DispatchQueue （串行）
+单读者 Channel 或专用线程
+音频回调线程上不分配、不加会阻塞的锁
+Codable
+System.Text.Json 源生成
+属性加 [JsonPropertyName] ，键名与
+Swift 属性名逐字一致
+NextThought Windows 移植方案 v2
+Page 12 of 63
+
+
+===== PAGE 13 =====
+五个最容易出错的地方
+1. 值语义。Swift 的结构体和数组赋值即复制，C# 的 List 和类是引用。Swift 里 var copy
+= original; copy.items.append(x) 不影响 original ，照抄到 C# 会改到原对象。规
+则：数据类型全部不可变，集合属性用 ImmutableArray<T> 或每次新建。
+2. 字符串长度。Swift 的 count 按字素簇计，C# 的 Length 按 UTF-16 码元计，表情符号和
+部分汉字会差出来。Core 大量按字数截断和计分。规则：在 Core 里提供
+Text.Count(s) 、Text.Prefix(s, n) 、Text.Suffix(s, n) ，内部用 StringInfo
+按字素簇处理；禁止在移植代码里直接用 Length 和 Substring 表达字数。
+3. 字符串比较与大小写。Swift 的 == 、hasPrefix 、contains 按 Unicode 规范等价比
+较，不看区域。C# 一律显式写 StringComparison.Ordinal ；lowercased() 对应
+ToLowerInvariant() 。localizedCaseInsensitiveContains 对应
+CompareInfo.IndexOf(..., IgnoreCase) 。
+4. 遍历顺序。Swift 的 Dictionary 和 Set 遍历顺序不固定，源码里凡是需要顺序的地方都
+显式排了序。移植时保留每一个 sorted ，排序键用 StringComparer.Ordinal 。Swift
+的 sort 不稳定而 OrderBy 稳定，这一点不会造成错误。
+5. 整数与浮点。Swift 的 Int 是 64 位，溢出会崩溃；C# 的 int 是 32 位，默认静默溢出。
+规则：计数与下标用 int ，字节数、样本数、时间戳用 long ，Core 工程开启
+CheckForOverflowUnderflow 。Float 对应 float ，声学特征和向量运算不要升成
+double ，否则与 Mac 的结果对不上。
+Swift
+C#
+说明
+自定义 init(from:) 、
+encode(to:)
+自定义 JsonConverter<T>
+Core 里有 21 处，分布在 9 个文件，见第
+5 节。默认值和旧字段兼容逻辑都在这
+里，必须逐行搬
+UUID
+Guid
+写成字符串时一律大写，见下文
+Date
+DateTimeOffset
+编码方式按调用点区分，见第 6 节
+Data
+byte[]
+JSON 里都是 Base64，两边一致
+URL （文件）
+string 路径
+持久化的只能是相对路径
+String.count 、下标、
+prefix
+按字素簇处理
+见下文
+[T] 、[K: V] 、Set
+List<T> 、Dictionary 、
+HashSet ；对外暴露
+IReadOnlyList<T>
+依赖遍历顺序的地方见下文
+String(localized:)
+L.T("键")
+见第 13 节
+#if DEBUG 、环境变量开
+关
+同名环境变量
+NEXTTHOUGHT_DATA_DIR 等名字不变
+NextThought Windows 移植方案 v2
+Page 13 of 63
+
+
+===== PAGE 14 =====
+正则与文本处理
+Core 有 9 处正则。NSRegularExpression 的语法是 ICU，与 .NET 基本兼容，但有三点要
+改。第一，汉字脚本属性 \p{Han} 在 .NET 里不存在，改写成块名
+\p{IsCJKUnifiedIdeographs} 。第二，匹配位置两边都是 UTF-16 偏移，直接用
+Match.Index ，不要再换算。第三，正则用 [GeneratedRegex] 声明，AOT 下不能用运行时
+编译。每个正则移植后用原测试里的样例验证。
+测试的改写
+Swift Testing 的 @Test func name() 对应 xunit 的 [Fact] public void Name() ，测试类
+和方法名保持一致。#expect(a == b) 对应 Assert.Equal(b, a) ；参数化的
+@Test(arguments:) 对应 [Theory] 加 [InlineData] 。测试里的输入字符串和期望值一字
+不改。
+5. Core 移植清单
+Sources/NextThoughtCore 的 80 个文件、17,202 行全部移植到 NextThought.Core ，分四
+批，每批以对应测试全部通过为退出条件。测试文件默认与源文件同名加 Tests ，例外在「注
+意」列注明。
+批次 A：无依赖的算法与规则（39 个文件）
+文件
+行
+数
+内容
+注意
+QuestionDetector
+115
+判断一句话
+是否是提问
+QuestionIntent
+532
+意图分类、
+候选问题跟
+踪与稳定
+另有
+RealtimeRegressionTests ；取
+代基线的 144 行版本
+QuestionTurn
+96
+一轮提问的
+合并与修订
+QuestionEvalCorpus 及两个扩展
+167
+问题识别评
+测语料
+导出为 JSON 夹具，两端共用；测
+试为 QuestionCorpus* 三个文件
+TranscriptDeduplicator
+98
+重叠片段去
+重
+TranscriptContextBuilder
+8
+拼接转写上
+下文
+NextThought Windows 移植方案 v2
+Page 14 of 63
+
+
+===== PAGE 15 =====
+文件
+行
+数
+内容
+注意
+VoiceActivitySegmenter
+153
+按音量自适
+应切句
+取代基线的 66 行版本
+AudioTimeline
+119
+采样位置与
+时钟时间换
+算
+EchoSuppression
+177
+双路串音检
+测、回声文
+本过滤
+CancellableTaskValue
+34
+可取消任务
+的包装
+ProcessLineReader
+67
+子进程按行
+读取与退出
+等待
+Darwin 调用改用
+System.Diagnostics.Process ；
+测试含 ProcessExitWaiterTests
+ShortcutBinding
+26
+快捷键绑定
+结构
+keyCode 是 Mac 虚拟键码，换算
+见第 7 节
+AnswerLanguage
+38
+回答语言选
+择
+LaTeXMath
+545
+LaTeX 转
+Unicode、
+公式定界
+ByteLevelBPETokenizer
+219
+向量模型分
+词器
+夹具 byte-bpe-fixture*.json
+直接复用；取代基线的
+QwenTokenizer.cs
+PDFTextLayout
+171
+PDF 文本块
+按版面排序
+ScrollFollowInputClassifier 、
+ScrollFollowState
+69
+讲稿滚动跟
+随的输入判
+断与状态
+CoreGraphics 的点和矩形换成
+Core 自定义结构
+ScreenDelta 、ScreenContext
+67
+屏幕文字变
+化量、文字
+区域与引用
+测试含 ScreenEvidenceTests
+NextThought Windows 移植方案 v2
+Page 15 of 63
+
+
+===== PAGE 16 =====
+文件
+行
+数
+内容
+注意
+GazeEstimator
+188
+由眼部特征
+点判断视线
+是否离开镜
+头
+测试在 SceneAndGazeTests
+SpeakerClustering
+272
+声纹在线聚
+类与说话人
+标签
+全程 float
+VoiceProfile
+86
+「我的声
+音」档案与
+录入
+MeetingEndWatch
+130
+无人发言自
+动结束的判
+定
+CoachSummary
+69
+临场教练统
+计
+OnboardingFlow 、
+OnboardingVersion
+71
+引导步骤与
+版本
+WebSearchNeed 、
+WebLookupPromptBuilder
+170
+是否需要联
+网、联网提
+示词
+Skill
+84
+SKILL.md
+解析
+自定义解码 1 处
+MaterialTerms
+57
+从资料提取
+术语
+DocumentClassifier 、
+DocumentFeatureAvailability 、
+DocumentNotice
+154
+资料类型、
+功能可用
+性、提示
+RealtimeSetupReadiness
+77
+开会前的权
+限与就绪判
+断
+权限项改为 Windows 的麦克风隐
+私开关，没有屏幕录制权限
+LiveTranslationRevisionGate
+76
+同传修订节
+流
+NextThought Windows 移植方案 v2
+Page 16 of 63
+
+
+===== PAGE 17 =====
+批次 B：数据模型（22 个文件）
+这一批决定数据能否与 Mac 互通。每个类型移植后，用 Mac 写出的真实 JSON 做「读入再写
+出、内容等价」的往返测试，见第 6 节。
+文件
+行
+数
+内容
+注意
+SubtitleBar
+295
+字幕条的
+行、通道与
+计时
+文件
+行数
+内容
+注意
+SessionContext
+265
+场景枚举
+SessionMode 、
+回答风格、上下
+文资料
+自定义编解码 2 处
+MeetingType
+168
+会中模式、纪要
+模板类型、按标
+题猜场景
+测试在
+MeetingTypeAndNotesTests
+Scene
+427
+场景预设、提词
+样式、教练配
+置、提词行解析
+测试在 SceneAndGazeTests
+NotesTemplates
+873
+纪要模板与段落
+规格
+自定义编解码 5 处；提示词文
+本逐字搬
+StructuredNotes
+962
+提纲、鱼骨图、
+观点对照的结构
+与解析
+自定义编解码 2 处
+SessionRecord
+740
+会议记录的全部
+持久化结构
+日期用 ISO 8601；自定义编解
+码 1 处；取代基线的
+Models.cs
+SessionUserContent
+143
+高亮、修订、用
+户编辑
+自定义编解码 3 处
+SessionTextProjection
+497
+转写的原文、修
+订、译文视图与
+指纹
+SHA-256
+SessionEvidence
+456
+纪要要点与原话
+的证据核对
+含对 JSON 字节求哈希，见第
+6 节
+NextThought Windows 移植方案 v2
+Page 17 of 63
+
+
+===== PAGE 18 =====
+批次 C：持久化与协议（11 个文件）
+文件
+行数
+内容
+注意
+SessionTranscriptLocator
+31
+要点跳回原话的
+定位
+SessionExport
+129
+导出格式与字幕
+导出
+SessionSearch 、
+SessionContentSearch
+466
+历史搜索
+Glossary
+572
+术语与人名表、
+检索
+自定义编解码 4 处
+Workspace
+1460
+系列、资料夹、
+经验、题库、议
+程
+自定义编解码 2 处；用 SHA-
+256 派生修订号；测试 1259 行
+WorkspaceArchiveOwnership 、
+WorkspaceDeletionTransaction
+186
+归属判定、可回
+滚的删除
+文件移动用 File.Move ，跨
+卷时退回复制加删除
+SeriesBriefing
+327
+系列简报与变更
+合并
+SHA-256
+MeetingCarry 、
+MeetingPreparation
+81
+会议接续、会前
+计划
+DocumentStructure
+210
+文档定位、内容
+块、结构
+LiveInsights
+403
+文本相似度、屏
+幕类型、幻灯片
+页匹配
+自定义编解码 1 处
+文件
+行
+数
+内容
+注意
+SessionArchivePersistence
+513
+归档目录读写、
+有界写队列、落
+盘确认
+fsync 对应
+FileStream.Flush(true) ；取
+代基线的 SessionStore.cs
+Backup 、
+BackupArchivePolicy 、
+BackupContent
+736
+备份清单、合
+并、设置快照
+取代基线的 BackupService.cs
+NextThought Windows 移植方案 v2
+Page 18 of 63
+
+
+===== PAGE 19 =====
+文件
+行
+数
+内容
+注意
+IncrementalBackup
+123
+增量恢复点
+.ntrestore
+基线明确拒绝此格式，这里补上
+LocalModelReuse
+112
+发现并复用本机
+已有模型
+Spotlight 查询改为只遍历目录
+DocumentJobs
+466
+文档任务队列
+改用
+Microsoft.Data.Sqlite ，表
+结构和 SQL 语句不变；测试为
+DocumentJobTests 、
+DocumentDependencyTests
+Companion 、
+CompanionBLEProtocol 、
+CompanionCrypto
+271
+伴侣快照、蓝牙
+分片、加密帧
+用 AesGcm 和 HKDF ，原测试里
+的加密向量必须通过；测试含
+CompanionBLETests
+UpdateCatalog
+164
+GitHub
+Releases 解析
+与更新清单
+增加 Windows 安装包的文件名
+规则，见第 14 节
+NextThought Windows 移植方案 v2
+Page 19 of 63
+
+
+===== PAGE 20 =====
+批次 D：回答与检索（7 个文件）
+特例：ZipformerStreaming （496 行）
+这个文件在 Mac 上直接调 sherpa-onnx，不能整体放进 Core。拆成两部分：
+模型文件描述、热词文件生成、句尾补 0.4 秒静音、队列与重建流的策略进 Core （文件名
+不变）。
+对 C API 的调用进 Platform 的 SherpaSpeechEngine.cs ，实现 ISpeechEngine 。
+ZipformerStreamingIntegrationTests 需要模型文件，放进 NextThought.Tests ，没
+有模型时跳过并在报告里写明。
+不对应单个源文件的测试
+ProductArchiveUXTests 、StabilityTests 、RealtimeRegressionTests 跨多个类型，
+放在批次 C 结束时移植。全部 68 个测试文件、592 个 @Test 都要有对应；移植完成时在
+Windows/CORE_PARITY.md 里列出每个 Swift 测试文件的测试数与 C# 侧的测试数，两列必须
+相等。
+文件
+行
+数
+内容
+注意
+AnswerPromptBuilder
+328
+回答提示词拼装
+提示词逐字搬；其中一处输出排序
+后的 JSON，按第 6 节的规范写法
+AnswerStreaming
+267
+Codex 应用服务协议、
+流式片段解析、模型列
+表解析
+Swift 用动态字典读 JSON，C# 用
+JsonDocument 只读遍历，不用
+dynamic
+AnswerServiceSupport
+242
+接口服务商预设与切换
+AnswerEvidence
+57
+回答的证据与状态
+CodexEventParser
+31
+Codex 输出事件解析
+CloudTranscription
+293
+云端识别服务商与结果
+拼装
+SemanticRetrieval
+277
+切片、指纹、语义索引
+取代基线的
+DocumentChunks.cs 、
+KeywordIndex.cs
+NextThought Windows 移植方案 v2
+Page 20 of 63
+
+
+===== PAGE 21 =====
+6. 数据格式兼容
+Windows 版的磁盘格式与 Mac 版完全相同：同样的目录、同样的文件名、同样的 JSON 键。
+兼容性靠下面的规则和一组从 Mac 生成的夹具来保证。
+数据目录
+根目录是 %LOCALAPPDATA%\NextThought （Mac 是 ~/Library/Application
+Support/NextThought ），环境变量 NEXTTHOUGHT_DATA_DIR 可覆盖。子目录与
+AppPaths.swift 一致：
+<ID> 是大写的 UUID 字符串。Mac 专有的 InterviewHacker/Signing 目录和旧数据迁移逻
+辑不移植。
+JSON 规则
+路径
+内容
+Workspaces/<ID>.json
+系列及其资料、经验、题库
+Sessions/<ID>/
+一场会议：meta.json 、transcript.jsonl 、
+answers.jsonl 、questions.jsonl 、
+voices.jsonl 、translations.jsonl 、
+summary.json 、notes.json 、context.json 、
+user-content.json
+Skills/library.json
+技能库
+Backups/
+自动备份与恢复点
+models/
+识别、声纹、向量、OCR 模型
+Index/
+向量缓存，可重建
+Logs/
+日志
+settings.json
+偏好设置，见第 13 节
+项目
+规则
+原因
+键名
+与 Swift 属性名逐字一
+致，小驼峰
+Swift 的合成编码直接用属性名
+空值
+值为空的可选字段不写出
+Swift 省略空值；设 DefaultIgnoreCondition =
+WhenWritingNull
+未知字段
+读入时忽略
+两端版本不同步时不报错
+NextThought Windows 移植方案 v2
+Page 21 of 63
+
+
+===== PAGE 22 =====
+实现方式：在 Core 里提供两组预设选项 Json.Lines （对应 JSONLines ）和 Json.Default
+（对应裸 JSONEncoder() ），移植每个调用点时按 Swift 原文用的是哪一个来选，不要统一成
+一种。
+唯一需要逐字节一致的地方
+SessionEvidence.swift:58 的 structuredPayloadRevision 对「按键排序的 JSON 字节」
+求 SHA-256，结果存进用户的高亮和修订记录。两端算出的值不同，跨平台恢复后结构化纪要
+上的高亮会失效。
+这里不能用 System.Text.Json 的输出，要写一个专用的规范写法 SwiftCanonicalJson ，
+复现 Mac 的输出：
+键按 Mac 的排序规则排列（不区分大小写、数字按数值比较）。
+斜杠写成 \/ （该调用点没有开 withoutEscapingSlashes ）。
+项目
+规则
+原因
+UUID
+大写，带连字符
+Swift 的 uuidString 是大写；Guid.ToString() 默
+认小写，必须用自定义转换器
+日期（主
+数据）
+yyyy-MM-
+ddTHH:mm:ssZ ，UTC，
+不带小数秒
+归档、系列、备份清单、技能、术语表都经
+JSONLines 编码（SessionRecord.swift:325 ）。
+Mac 的解码器遇到小数秒会报错，所以 Windows 绝
+不能写小数秒
+日期（默
+认编码）
+浮点数，含义是 2001-01-
+01 UTC 起的秒数
+直接用 JSONEncoder() 的调用点：
+IncrementalBackup 的恢复点、DocumentJobs 的
+任务、DocumentContent 元数据、偏好设置里的
+JSON 数据块
+时间戳
+（伴侣）
+1970 年起的毫秒数
+Companion.swift:38 显式计算，与编码器无关
+二进制
+Base64 字符串
+两端默认一致
+非 ASCII
+字符
+直接写 UTF-8，不转义
+设 Encoder =
+JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+；否则中文会变成 \uXXXX ，文件膨胀且难读
+键顺序
+JSONL 和归档文件按键名
+排序写出
+与 Mac 的 sortedKeys 一致，便于比对
+JSONL
+每条记录一行，行尾
+\n ，不写 \r\n
+末行不完整时按基线已有的恢复逻辑丢弃
+文本编码
+UTF-8，不带 BOM
+NextThought Windows 移植方案 v2
+Page 22 of 63
+
+
+===== PAGE 23 =====
+非 ASCII 字符直接写 UTF-8，控制字符写 \uXXXX 。
+无空格、无换行，空值字段省略。
+以上细节我没有在 Mac 上逐项验证，数值的写法也未确认。实现时以 Mac 生成的夹具为准：夹
+具里给出若干 StructuredNotesPayload 及其 Mac 算出的修订值，C# 算出的必须相等。
+其余哈希（SessionTextProjection 、SeriesBriefing 、Workspace 的修订号）都是对拼
+接出的 UTF-8 字符串求值，只要字符串拼法照搬就一致。十六进制输出一律小写。
+夹具：从 Mac 生成，两端共用
+在 Windows/fixtures-gen/ 建一个独立的 Swift 包，按路径依赖仓库根目录的
+NextThoughtCore ，不改动 Mac 源码。它在 Mac 上运行一次，把结果写到
+Windows/tests/Fixtures/mac/ 并提交：
+基线的 Fixtures/question-corpus.json 只有 60 条，用新生成的全量语料替换。
+备份包
+.ntbackup 是 ZIP，内含 manifest.json 、settings.plist 、可选的 secrets.plist 、
+skills.json 、glossary.json 、note-templates.json 、Workspaces/ 、Sessions/ 。
+读：Mac 用 ditto --keepParent 打包，内容在一层父目录里，还可能带 __MACOSX 条
+目。解包后在根目录或第一层子目录找 manifest.json ，忽略 __MACOSX 。路径逐条校
+验，拒绝绝对路径和 .. （规则在 BackupArchivePolicy ）。
+写：用 System.IO.Compression ，同样包一层父目录，条目名用正斜杠。
+夹具
+内容
+C# 侧断言
+records/*.json
+每个持久化类型各若干实例，覆盖所有可
+选字段和旧版本字段
+读入再写出，与原文语
+义相等
+revisions.json
+结构化纪要及其修订哈希
+哈希相等
+fingerprints.json
+文本投影、系列简报、经验修订号的输入
+与输出
+输出相等
+companion-
+vectors.json
+配对密钥、明文、随机数、密文
+解密成功；固定随机数
+加密后密文相等
+question-
+corpus.json
+QuestionEvalCorpus 全部条目及 Mac
+的判定结果
+逐条判定相等
+sample.ntbackup
+一个含两场会议、一个系列的完整备份
+能恢复；再导出后 Mac
+能恢复
+NextThought Windows 移植方案 v2
+Page 23 of 63
+
+
+===== PAGE 24 =====
+设置：settings.plist 是 XML 属性列表。写一个只支持字典、数组、字符串、整数、浮
+点、布尔、日期、数据八种节点的读写器，约 150 行，不引入第三方库。只读写
+SettingsSnapshot.exportedKeys （Backup.swift:622 ）列出的键。
+密钥：支持 secrets.plist 。导入时写入凭据存储，导出时仅在用户勾选后写出。基线拒
+绝此文件，这里改为支持。
+平台标记：Windows 写出的 manifest.json 增加字段 "platform": "windows" 。Mac
+解码时会忽略未知字段；没有该字段的备份视为来自 Mac。
+跨平台恢复时跳过的设置：customShortcuts 、cueScreen 、localOCRModelID 、
+documentOCRProvider 、transcriptionBackend （值为系统识别时）、
+microphoneVoiceProcessing 。这些值依赖具体机器或系统，恢复报告里列出被跳过的
+项。
+恢复点：.ntrestore 是单个 JSON 文件，引用 Backups/objects/ 里按哈希命名的对
+象，按 IncrementalBackup.swift 照搬。
+路径
+持久化的路径一律是相对于数据目录的正斜杠路径（Mac 已经如此，如 markdownPath ）。读入
+时用 Path.Combine 拼成本机路径，写出前把反斜杠换回正斜杠。文件名要过滤 Windows 不
+允许的字符（< > : " / \ | ? * ）和保留名（CON 、NUL 等），导入 Mac 备份时遇到这类
+文件名要改名并同步更新引用。
+7. 平台层
+平台层实现第 3 节的 18 个端口。其中 7 个基线已有并验收过，只需按 AOT 规则改造；其余按本
+节新写。
+音频采集（IAudioCapture ）
+输出统一为 16 kHz、单声道、16 位整数、每帧 100 ms，与 Mac 和基线一致。
+模式
+实现
+说明
+系统声，整
+机
+进程回环，模式为「排除目标进
+程树」，目标是自己的进程号
+默认模式。收到除 NextThought 自身以外的
+全部声音。build 20348 以下改用默认输出设
+备的普通回环
+系统声，指
+定应用
+进程回环，模式为「包含目标进
+程树」
+对应 Mac 的「只采所选 App」。候选列表取当
+前有音频会话的进程，按根进程合并。需要
+build 20348 以上
+麦克风
+默认录音设备，共享模式
+设备插拔或默认设备变化时自动重连
+NextThought Windows 移植方案 v2
+Page 24 of 63
+
+
+===== PAGE 25 =====
+实现要点：
+进程回环要调 ActivateAudioInterfaceAsync 并传入完成回调对象。这是全项目唯一的
+「系统回调托管代码」的地方，回调类用 [GeneratedComClass] 。
+重采样用纯托管的 WDL 重采样器，不用 Media Foundation 重采样器，避开又一处
+COM。
+采集线程只做复制和入队，不分配大对象、不等锁。识别在另一条专用线程上从队列取帧。
+休眠唤醒、设备丢失后的恢复沿用基线已验证的逻辑（AppState+Resilience.swift 对
+应的部分）。
+麦克风被系统隐私设置禁用时，打开流会返回拒绝访问。此时提示用户并打开 ms-
+settings:privacy-microphone 。Windows 没有屏幕录制权限，引导里的对应步骤删
+除。
+语音识别（ISpeechEngine ）
+沿用基线：X-ASR 流式 480 ms 加同词表的整句精修，CPU 推理，sherpa-onnx 1.13.8。需要补
+的是：
+按第 2 节改成自写薄绑定，删除 Utf8SherpaInterop.cs 的反射。
+模型目录与下载清单从 LocalASRModels.swift 和 ZipformerModelStore.swift 搬，
+地址和 SHA-256 与 Mac 相同。
+热词来自术语表和资料术语，生成逻辑在 Core；XASRVocabulary.swift （5008 行，纯
+数据）对应基线已有的 xasr-bpe.vocab 资源文件。
+160 ms 模型通路基线未验收，补一次回归。
+云端识别（CloudStreamingTranscriber.swift ）只用 WebSocket，属于应用层，照
+搬。
+声纹（ISpeakerEmbedder ）
+沿用基线的 WeSpeaker ONNX。Mac 用同一权重转成的 CoreML 模型，特征提取参数必须与
+SpeakerID.swift:22 一致：16 kHz、25 ms 窗、10 ms 步长、预加重 0.97、512 点频谱、80
+个梅尔滤波器（20 Hz 到 8 kHz）、自然对数。
+验收：同一段 WAV 在两端算出的向量余弦相似度不低于 0.99。达标则「我的声音」档案
+（me.json ）可以跨平台恢复；不达标则跨平台恢复时丢弃档案并提示重新录入。
+模式
+实现
+说明
+麦克风语音
+处理
+打开流时把类别设为通信
+对应设置项
+microphoneVoiceProcessing 。效果取决于
+声卡驱动，未验证；回声的主要防线仍是
+Core 的 EchoSuppression
+NextThought Windows 移植方案 v2
+Page 25 of 63
+
+
+===== PAGE 26 =====
+全局快捷键（IHotkeys ）
+用 RegisterHotKey ，消息通过 Avalonia 的窗口过程钩子接收。存储结构沿用
+ShortcutBinding ，字段含义在 Windows 上重新解释：command 是 Ctrl，option 是 Alt，
+shift 是 Shift，control 是 Win 键。keyCode 仍存 Mac 虚拟键码，在平台层换算。
+Mac 的默认组合是 ⌘⇧，直接换成 Ctrl+Shift 会撞上浏览器和系统（Ctrl+Shift+Esc 是任务管
+理器）。Windows 默认用 Ctrl+Alt，与基线已用的三个快捷键一致：
+编号是 HotkeyAction 的原始值，存储以它为键，不能改。应用内快捷键（⌘N、⌘, 等）把 ⌘
+换成 Ctrl。键码换算表放在 Platform/KeyCodes.cs ，默认组合用到的有：
+动作
+编号
+Mac 默认
+Windows 默认
+窗口截图
+1
+⌘⇧A
+Ctrl+Alt+A
+区域截图
+2
+⌘⇧S
+Ctrl+Alt+S
+开始或停止记录
+3
+⌘⇧M
+Ctrl+Alt+M
+重新生成上一题
+4
+⌘⇧R
+Ctrl+Alt+R
+立即回答最新转写
+5
+⌘⇧↩
+Ctrl+Alt+Enter
+暂停或恢复聆听
+6
+⌘⇧P
+Ctrl+Alt+P
+显示或隐藏提词
+7
+⌘⇧O
+Ctrl+Alt+O
+取消当前回答
+8
+⌘⇧Esc
+Ctrl+Alt+Esc
+复制当前回答
+9
+⌘⇧Y
+Ctrl+Alt+Y
+提词浮窗鼠标穿透
+10
+⌘⇧K
+Ctrl+Alt+K
+隐藏或恢复所有窗口
+11
+⌘⇧\
+Ctrl+Alt+\
+上一条回答
+12
+⌃⌘←
+Ctrl+Alt+←
+下一条回答
+13
+⌃⌘→
+Ctrl+Alt+→
+把回答改短
+14
+⌘⇧1
+Ctrl+Alt+1
+切换会中窗口
+40
+⌃⌥S
+Ctrl+Alt+Shift+S
+提词岛一直展开或恢复
+41
+⌘⇧E
+Ctrl+Alt+E
+讲稿上一页
+42
+⌃⌥,
+Ctrl+Alt+Shift+,
+讲稿下一页
+43
+⌃⌥.
+Ctrl+Alt+Shift+.
+NextThought Windows 移植方案 v2
+Page 26 of 63
+
+
+===== PAGE 27 =====
+其余键按 Carbon 的 kVK_ANSI_* 常量表补全。在有 AltGr 的键盘布局上 Ctrl+Alt 等同于
+AltGr，会吃掉部分字符输入；设置页允许改键，并在该布局下给出提示。
+其余端口
+Mac 键码
+键
+Windows 虚拟键
+0、1、14、15、16、31、35、
+40、46
+A、S、E、R、Y、O、P、
+K、M
+对应字母的 ASCII 码（0x41 到
+0x5A）
+18
+1
+0x31
+36
+回车
+0x0D
+53
+Esc
+0x1B
+42
+反斜杠
+0xDC
+43、47
+逗号、句号
+0xBC、0xBE
+123、124
+左、右方向键
+0x25、0x27
+端口
+实现要点
+ICredentialStore
+沿用基线的 DPAPI（当前用户范围）。账户名与 Mac
+钥匙串一致：answer.api 、answer.api.<预设
+ID> 、github.token 、websearch.tavily 及各云
+端识别服务商
+IOcrEngine
+Windows.Media.Ocr ，语言为简体中文和英文。启动
+时检查两种语言包是否已装，缺失时在设置页提示安
+装方法
+IScreenCapture
+整屏和区域用屏幕 DC 复制；单个窗口用
+PrintWindow ，失败时退回
+Windows.Graphics.Capture 。截图时自己的窗口要
+排除：截图前给自己的窗口临时设「录屏隐藏」，截完
+恢复
+IDisplays
+边界和缩放取 Avalonia 的 Screens ；内置屏用
+QueryDisplayConfig 判断输出类型；显示器增减监
+听 WM_DISPLAYCHANGE
+NextThought Windows 移植方案 v2
+Page 27 of 63
+
+
+===== PAGE 28 =====
+8. 界面还原
+界面按 Mac 的设计令牌逐项复刻：同样的颜色、字号、间距、圆角和动画参数，每个 SwiftUI
+视图对应一个同名的 Avalonia 控件。数值全部取自 DesignSystem.swift 和 Stage.swift ，
+单位在两端都是逻辑像素，按 1:1 使用。
+颜色
+所有颜色写在 Styles/Ink.axaml 的 ThemeDictionaries 里，浅色和深色各一份，键名与
+Swift 的 Ink 成员相同。带透明度的颜色写成 #AARRGGBB 。
+端口
+实现要点
+IFaceLandmarks
+摄像头用 WinRT 的 MediaCapture ，640×480。特征
+点模型需要选型（候选：带虹膜点的人脸网格 ONNX
+模型），输出要能拼成 GazeFrame ：左右眼轮廓点、
+瞳孔中心、偏航角、俯仰角。这是全方案里唯一还没
+有选定替代品的能力，排在最后一个里程碑
+IShareDetector
+默认不启用。只有当录屏隐藏在当前系统上不可用
+时，才按 ShareGuard 的思路枚举会议软件的全屏边
+框窗口
+ISystem
+单实例用命名互斥量，第二个实例通过命名管道让第
+一个实例到前台后退出；重启时等旧进程最多 4 秒
+（与 SingleInstance.swift 一致）。减少动态效果
+读系统的动画开关。休眠唤醒监听
+WM_POWERBROADCAST
+令牌
+浅色
+深色
+用途
+paper
+#F7F5F0
+#121110
+窗口背景
+surface
+#FFFFFF
+#1B1B19
+卡片
+surfaceRaised
+#FFFFFF
+#242422
+浮层、分段控件的滑块
+sunken
+#1C1B19 4%
+#ECEBE8 5%
+凹陷的轨道和输入框
+hover
+#1C1B19 6%
+#ECEBE8 8%
+悬停
+pressed
+#1C1B19 11%
+#ECEBE8 14%
+按下
+ink
+#1C1B19
+#ECEBE8
+正文和主按钮填充
+onInk
+#FFFFFF
+#131312
+主按钮上的文字
+NextThought Windows 移植方案 v2
+Page 28 of 63
+
+
+===== PAGE 29 =====
+场景颜料（Stage.swift ），每个场景有主色和深色：
+令牌
+浅色
+深色
+用途
+secondary
+#6B6963
+#A3A19B
+次要文字
+tertiary
+#706E68
+#95938C
+占位和装饰，不用于需要阅读的文字
+hairline
+#1C1B19 9%
+#ECEBE8 11%
+细线边框
+ai
+#595751
+#B8B6AF
+AI 内容的标记、焦点环
+aiSoft
+#1C1B19
+4.5%
+#ECEBE8 7%
+AI 内容块背景
+promptPanel
+#F0EFEC
+#242422
+提词面板
+seal
+#C4452C
+#F07055
+唯一的强调色：录制中、下一句、品牌标
+记
+ready
+#237542
+#4CC38A
+就绪
+caution
+#8A5707
+#F0B24A
+需要注意
+floatShadow
+#1C1B19 12%
+#000000
+50%
+浮层阴影
+contactShadow
+#1C1B19 7%
+#000000
+40%
+卡片贴地阴影
+ambientShadow
+#1C1B19 6%
+#000000
+32%
+卡片环境阴影
+NextThought Windows 移植方案 v2
+Page 29 of 63
+
+
+===== PAGE 30 =====
+字体与字号
+Mac 用系统字体（SF Pro、苹方、New York、宋体），这些字体不能随 Windows 安装包分
+发。Windows 版随包携带开源字体，保证中等和半粗字重可用（系统自带的微软雅黑没有这两
+个字重）：
+四款字体都是 SIL 开源字体许可，许可文本放进 Windows/licenses/ 。中文字体每个字重约 10
+MB，四个文件合计约 40 MB，这是估算值。如果不接受这个体积，退而用系统的微软雅黑和宋
+体，代价是中等字重显示为常规或粗体，见第 17 节的待定项。
+字号（Typo ）：
+场景
+主色 浅 / 深
+深色 浅 / 深
+面试
+#3F5B8C / #93AEE0
+#2C4370 / #6F8CC4
+组会
+#4A7D68 / #8CC7AD
+#355E4D / #66A88C
+汇报 / 答辩
+#775A9C / #B9A0E0
+#5A417C / #957BC2
+小组作业
+#A5683C / #E0A476
+#824E28 / #C28555
+客户沟通
+#2F7A8C / #7CC3D4
+#1F5C6B / #57A3B5
+工作会议
+#5B6573 / #A9B3C1
+#434C58 / #8691A1
+讲座 / 课程
+#5F7D40 / #A8CB85
+#475F2D / #86AC63
+小组讨论
+#A5526B / #E395AD
+#813A51 / #C4748D
+通用、自定义
+#6B6862 / #B5B2AB
+#4D4A45 / #93908A
+用途
+拉丁文
+中文
+字重
+无衬线（正文、
+标签）
+Inter
+思源黑体简体（Noto
+Sans SC）
+常规、中等、
+半粗
+衬线（标题）
+Source Serif 4
+思源宋体简体（Noto
+Serif SC）
+中等
+等宽
+Cascadia Mono，没有时用
+Consolas
+同无衬线中文
+常规
+令牌
+字号
+字重
+字体
+hero
+38
+中等
+衬线
+NextThought Windows 移植方案 v2
+Page 30 of 63
+
+
+===== PAGE 31 =====
+间距、尺寸与阴影
+三种表面（写成样式类，对应 Swift 的同名修饰符）：
+paperCard ：surface 填充，圆角 14，0.5 像素 hairline 边框，两层阴影：
+contactShadow 模糊 1、下移 1；ambientShadow 模糊 14、下移 8。内边距 16。
+aiBlock ：aiSoft 填充，圆角 14，无边框，内边距 16。
+floatingSurface ：surfaceRaised 填充，圆角 22，0.5 像素 hairline 边框，
+floatShadow 模糊 16、下移 12。
+令牌
+字号
+字重
+字体
+display
+30
+中等
+衬线
+section
+19
+中等
+衬线
+prompt
+22
+中等
+无衬线
+title
+15
+半粗
+无衬线
+body
+15
+常规
+无衬线
+label
+13
+中等
+无衬线
+caption
+12
+常规
+无衬线
+overline
+11
+半粗，字距 0.66
+无衬线
+code
+13
+常规
+等宽
+令牌
+值
+间距 s1 s2 s3 s4 s6 s8 s10 s12
+4、8、12、16、24、32、40、48
+控件高度 control 、controlLarge
+32、40
+点击目标 Hit.minHeight 、Hit.icon 、Hit.row
+32、36、36
+侧栏宽 sidebar ，内容最大宽 content
+220、720
+圆角 radiusSmall 、radiusMedium 、
+radiusLarge
+8、14、22
+主窗口默认、最小
+1120×820、960×660
+标题行高
+52
+NextThought Windows 移植方案 v2
+Page 31 of 63
+
+
+===== PAGE 32 =====
+SwiftUI 的阴影半径与 Avalonia BoxShadow 的模糊值定义不同，上面的数值作为起点，以截图
+对照为准微调。LiquidGlass.swift 里的 glassSurface 、glassBackground 、
+glassCapsule 现在都是平面，分别等同于「surface 加 1 像素 hairline 」和「sunken 圆
+角 8」，不要实现任何模糊或亚克力效果。
+动画
+Mac 用五组动画参数（Motion ）。弹簧按「质量 1、刚度 = (2π / 响应时间)²、阻尼 = 4π × 阻尼
+比 / 响应时间」换算：
+实现时用 Avalonia 的 SpringEasing ，持续时间先取响应时间的 2 倍，再对照 Mac 录屏调
+整。系统开启「减少动态效果」时全部动画关闭，与 Motion.reduce 一致。尺寸和位置的动画
+跑在合成线程上（Compositor 动画），不在每帧重新布局。
+SwiftUI 到 Avalonia 的写法对应
+令牌
+Mac 参数
+换算后 刚度 / 阻尼
+用在哪里
+hover
+三次贝塞尔 (0.2, 0.8, 0.2, 1)，0.14 秒
+直接使用
+悬停变色
+expand
+响应 0.32，阻尼比 0.9
+386 / 35.3
+展开收起
+phase
+响应 0.46，阻尼比 0.9
+187 / 24.6
+阶段切换
+snappy
+响应 0.28，阻尼比 0.78
+504 / 35.0
+按压、选中、滑块
+morph
+响应 0.5，阻尼比 0.82
+158 / 20.6
+提词岛、场景卡片展开
+SwiftUI
+Avalonia
+VStack 、HStack （带间距）
+StackPanel 加 Spacing
+Spacer 、弹性布局
+Grid 的星号列或 DockPanel
+ZStack 、.overlay 、.background
+Panel 叠放
+ScrollView
+ScrollViewer
+LazyVStack 、List
+ItemsControl 加 VirtualizingStackPanel
+FlowLayout 、WrappingHStack
+WrapPanel ，或照 DesignSystem.swift:296 写
+自定义面板
+视图修饰符（paperCard() 等）
+样式类：Classes="paperCard"
+ButtonStyle
+ControlTheme
+.onHover 、按下态
+:pointerover 、:pressed 伪类
+NextThought Windows 移植方案 v2
+Page 32 of 63
+
+
+===== PAGE 33 =====
+所有 AXAML 文件开启 x:CompileBindings="True" 并声明 x:DataType ，这是 AOT 的要
+求。不用 ReflectionBinding ，不在运行时加载 AXAML。
+图标
+Mac 用了 87 个 SF Symbols，这套图标不能用在 Windows 上。改用 MIT 许可的 Fluent
+System Icons 的线性款。Styles/Icons.axaml 里为每个用到的 SF Symbols 名字放一条几何
+数据，资源键就是 SF Symbols 的名字，调用处不用改名。完整名单用这条命令取：
+grep -rhoE '(systemName|systemImage): "[a-z0-9.]+"' Sources/NextThought | 
+sort -u
+主窗口
+客户区延伸到标题栏（ExtendClientAreaToDecorationsHint ），自绘 52 高的标题行，
+系统的最小化、最大化、关闭按钮留在右上角。这样保留 Windows 11 的圆角和贴靠布局。
+Mac 的红绿灯在左上角，侧栏顶部为它留了空；Windows 上这块空间放应用标记。
+窗口背景是 paper ，不用 Mica。
+四个主区域（AppSection ）：首页、会议、资料库、设置。设置在主窗口内显示，不开新
+窗口。
+SwiftUI
+Avalonia
+@State
+控件的私有属性或页面视图模型
+@Environment 、单例
+AppState.shared
+绑定到应用层单例
+.sheet
+窗口内的覆盖层对话框（自写 SheetHost ），不开系
+统窗口
+.popover 、Menu 、.contextMenu
+Flyout 、MenuFlyout 、ContextMenu ，全部套
+用 floatingSurface
+.alert 、.confirmationDialog
+自写对话框，按钮样式与主界面一致
+matchedGeometryEffect （6 处）
+单个滑块元素，用位移和宽度过渡移动到选中项
+Canvas 、TimelineView 、Shape
+自定义 Control ，重写 Render
+TextEditor 、TextField
+TextBox ，样式按 PaperTextFieldStyle.swift
+MarkdownText （Theme.swift ）
+自写 MarkdownText 控件，逐行解析规则照搬，行
+内用 InlineCollection
+Image(systemName:)
+PathIcon ，数据来自 Styles/Icons.axaml
+NextThought Windows 移植方案 v2
+Page 33 of 63
+
+
+===== PAGE 34 =====
+关闭主窗口时的行为按 AppState+Lifecycle.swift ：会议进行中不退出。
+视图清单
+每个 Swift 文件对应 NextThought.Desktop/Views/ 下同名的 .axaml 和 .axaml.cs 。文件
+内的私有子视图放进以该文件命名的子目录。
+区域
+Swift 文件
+行数
+视图数
+设计系统与通用控件
+DesignSystem 、LiquidGlass 、Theme 、Stage 、
+HitTargets 、ControlComponents 、
+PaperTextFieldStyle 、UnderlineTabs 、
+WrappingHStack 、OperationFeedback
+1674
+26
+外壳与导航
+NextThoughtApp 、ContentView 、
+AppNavigationSidebar
+770
+13
+首页
+HomeView
+424
+7
+准备
+PrepareView
+1347
+21
+会中
+LiveSessionView 、AssistantView 、
+AssistantLayout 、DetachedModules 、
+InsightsPanel 、LiveTranslation 、
+SpeakerViews 、AutoEndViews 、
+MeetingActionsMenu 、MeetingUserNotes
+3531
+62
+纪要
+NotesPageView 、NotesFormatBar 、
+MeetingNotesEditor 、StructuredNotesView 、
+OutlineView 、FishboneView 、
+ViewpointMatrixView 、SessionInfoView 、
+SessionExportUI 、KnowledgeReviewSection
+3047
+29
+历史
+HistoryView
+1738
+7
+资料库与系列
+WorkspacesView 、ProjectLibrarySupport 、
+GlossaryView 、BackupRestoreReview
+2627
+24
+设置
+SettingsView 、SettingsPages 、
+SettingsAdvanced 、SettingsGeneralData 、
+SettingsPresenter 、SettingsStatusRows 、
+QuickSettings 、NotesSettingsView 、
+InsightSettingsView 、
+DocumentModelSettings 、
+AnswerServiceViews 、ShortcutSettingsView 、
+SubtitleBarSettingsView 、MyVoiceViews
+3586
+57
+引导
+Onboarding 、OnboardingSampleMeeting
+1163
+9
+NextThought Windows 移植方案 v2
+Page 34 of 63
+
+
+===== PAGE 35 =====
+合计约 257 个视图。移植进度记在 Windows/VIEW_PARITY.md ：每个视图一行，状态为未做、
+已做、已对照截图、本版不做（写原因）。
+演示模式先行
+DemoMode.swift （596 行）和 DemoFilm.swift 能用假数据驱动整个界面，Mac 的截图和录
+屏就是这样生成的。界面工作开始前先移植它，并接到 Platform.Stub ：这样不用麦克风和模
+型，在 Mac 或 Windows 上都能打开任意页面的任意状态，用来做左右对照。
+9. 特殊窗口
+提词岛、字幕条、提词器、区域截图四类窗口都是 Avalonia 窗口，内容用普通控件绘制；置
+顶、不激活、穿透、录屏隐藏通过 IOverlayWindow 对窗口句柄设置。这一节的 Windows 行
+为全部未经实测，按下面的验证表逐项确认后才算成立。
+IOverlayWindow 的四个能力
+录屏隐藏由设置项 capturePrivacy 控制，开启时对 Mac 上设置了 sharingType 的每个窗口
+生效（共 4 个文件，用 grep -rn sharingType Sources/NextThought 核对）。Windows 上
+这项能力对整屏共享也有效，所以 IShareDetector 和「共享时收回」的逻辑默认关闭，设置
+项 cueAvoidsSharing 保留但默认不起作用。
+区域
+Swift 文件
+行数
+视图数
+浮窗
+CueIsland 、SubtitleBarView 、
+TeleprompterController 、
+RegionScreenshotPicker 、ScreenRegionSheet
+2028
+11
+能力
+Mac
+Windows
+置顶
+窗口层级高于菜单栏
+Topmost ；每 2 秒检查一次，被其他置顶窗口盖住时
+重新置顶，不激活
+不抢
+焦点
+nonactivatingPanel
+扩展样式 WS_EX_NOACTIVATE 和
+WS_EX_TOOLWINDOW ；对 WM_MOUSEACTIVATE 返回不
+激活。窗口不出现在任务栏和 Alt+Tab
+点击
+穿透
+ignoresMouseEvents
+切换 WS_EX_TRANSPARENT （需配合
+WS_EX_LAYERED ）
+录屏
+隐藏
+sharingType = .none
+（macOS 15.4 起对整屏共享失
+效）
+SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAP
+TURE) ，需要 build 19041 以上，与最低系统一致
+NextThought Windows 移植方案 v2
+Page 35 of 63
+
+
+===== PAGE 36 =====
+提词岛
+源文件 CueIsland.swift （1390 行）。窗口控制器、模型、视图三部分分别移植为
+CueIslandController.cs （应用层逻辑加端口调用）、CueIslandModel.cs 、
+CueIslandView.axaml 。
+窗口
+无边框、背景透明、不可缩放、不在任务栏显示、创建时不激活。
+固定画布 820×660，水平居中、顶边贴屏幕顶边。岛画在画布顶部，其余部分透明。
+所在屏幕：设置项 cueScreen 指定的显示器；为空时取内置屏；没有内置屏取主屏。显示
+器增减或缩放变化时重新定位。
+无刘海参数（CueIsland.swift:277 ）：条高 30，距屏幕顶 6。Mac 上这个距离还要加菜
+单栏高度，Windows 没有菜单栏，只留 6。
+宽度三档（cueWidth ）：窄 440、标准 540、宽 660。
+形态
+Windows 只有无刘海形态：圆角矩形，黑色填充，底边一道场景颜料色。轮廓在
+IslandShape （CueIsland.swift:437 ），外观在 IslandChrome 。
+不开会时不显示。Mac 的「停在刘海上开始一场会」只在有刘海的机器上启用
+（CueIsland.swift:190 ），Windows 不做这个入口，设置项 cueLauncher 隐藏。
+尺寸变化用 Motion.morph 。窗口本身不动，只有画布内的岛在变。
+指针跟踪（track() ，CueIsland.swift:332 ，逐行照搬）
+1. 每 80 ms 用 GetCursorPos 取指针位置，换算成窗口的逻辑坐标。
+2. 命中区域是岛当前的矩形向外扩 6。
+3. 指针在区域内停留满 0.22 秒才算悬停，避免路过时展开。
+4. 离开满 0.2 秒才取消悬停。
+5. 已固定的面板在岛外有鼠标按下时取消固定（用 GetAsyncKeyState 判断左键）。
+6. 「悬停、正在倒计时提醒、已固定」任一为真时窗口接收点击，否则穿透。只在状态变化时
+改扩展样式。
+7. Mac 在悬停开始时有一次触感反馈，Windows 省略。
+内容
+岛的各状态（待机、听到问题、回答要点、悬停全文、会议面板、讲稿要点、教练提醒、自动结
+束倒计时）全部在 CueIslandView （CueIsland.swift:494 起），按视图移植规则照搬。按
+钮点击不能让窗口获得焦点：用户正在会议软件里打字时点岛上的按钮，光标必须留在原处。
+NextThought Windows 移植方案 v2
+Page 36 of 63
+
+
+===== PAGE 37 =====
+提词岛的验证表（S0 的一部分）
+第 8 项是关键：透明、穿透用的分层窗口样式与 Avalonia 自己的透明合成方式是否冲突，我没
+有找到可靠的资料。不通过时按顺序尝试两个退路：
+1. 窗口区域裁剪：不用穿透样式，改用 SetWindowRgn 把窗口裁成岛当前的矩形，岛外根本
+不属于窗口，点击自然落到下方。岛变形时同步更新区域。
+2. 不透明窗口：岛本来就是纯黑填充，可以做成不透明的黑色窗口，窗口大小跟随岛的大小，
+圆角用区域裁剪。代价是圆角边缘没有抗锯齿。
+两个退路都不行时才考虑把这一个窗口改用 WinUI 3 或原生窗口实现，其余界面不受影响。
+字幕条
+源文件 SubtitleBarController.swift 、SubtitleBarView.swift ，状态与计时在 Core 的
+SubtitleBar.swift 。
+无边框、无阴影、置顶、不激活、最小高度 60。
+默认穿透；进入编辑（拖动、调整）时接收鼠标，退出编辑后恢复穿透。
+背景可拖动，位置和宽度存进设置。
+遵守 capturePrivacy 。
+#
+检查
+通过标准
+1
+透明
+岛外画布完全透明，圆角边缘无黑边、无锯齿
+2
+置顶
+盖在最大化的浏览器和 PowerPoint 放映窗口之上
+3
+不抢焦点
+在记事本里打字时点击岛上的按钮，按钮生效，光标
+仍在记事本
+4
+穿透
+岛外的画布区域能点到下方窗口；未悬停时岛本身也
+穿透
+5
+录屏隐藏
+系统截图工具、OBS 显示器采集、六家会议软件的整
+屏共享里都看不到岛，本机屏幕上正常显示
+6
+缩放
+100%、125%、150%、200% 下位置和命中区域正
+确；两块缩放不同的显示器之间切换正确
+7
+系统版本
+Windows 10 22H2 和 Windows 11 各验一遍
+8
+四项叠加
+第 1 至 5 项同时成立，不是分别成立
+NextThought Windows 移植方案 v2
+Page 37 of 63
+
+
+===== PAGE 38 =====
+提词器（浮窗形态）
+源文件 TeleprompterController.swift 。设置项 cueSurface 为 window 时用它代替提词
+岛。
+默认 640×300，最小 360×160，可缩放，背景可拖动，置顶。
+位置和大小持久化（Mac 用窗口自动保存名 NextThought.Teleprompter ，Windows 存
+进设置）。
+透明度（teleprompterOpacity ）、字号（teleprompterFontSize ）、隐藏背景三个选
+项。
+鼠标穿透由快捷键切换。穿透时整个窗口不接收鼠标，所以控制按钮放在另一个无边框的小
+窗口里，跟随主浮窗移动（TeleprompterController.swift:110 ）。
+遵守 capturePrivacy 。
+区域截图
+源文件 RegionScreenshotPicker.swift 。在目标显示器上铺一个无边框的全屏窗口，半透明
+遮罩，拖出矩形后返回物理像素坐标，Esc 取消。这个窗口需要焦点，不设不激活样式。
+双屏演讲
+源文件 PresenterMode.swift 。会议开始且开启此模式时：
+提词岛在摄像头所在屏一直展开。
+主窗口隐藏，用「切换会中窗口」快捷键唤回。
+每隔几秒对幻灯片所在屏截图并取字，用 LiveInsights 的页面匹配定位到讲稿的当前
+页。
+幻灯片所在屏上不出现 NextThought 的任何窗口。
+会议结束或关闭模式时恢复一切。
+一键隐藏
+「隐藏或恢复所有窗口」快捷键隐藏主窗口和全部浮窗，再按恢复到隐藏前的状态。隐藏期间会
+议继续记录。
+10. 文档管线与本地模型
+资料导入的流程、限额、数据结构和进程协议与 Mac 相同，只换掉依赖 Apple 芯片的推理后
+端。Mac 侧的设计见 docs/DOCUMENT-MARKDOWN-PIPELINE.md 。
+NextThought Windows 移植方案 v2
+Page 38 of 63
+
+
+===== PAGE 39 =====
+模型与后端对照
+向量缓存不能跨平台共用：两端的量化实现不同，向量有细微差异。缓存键里的模型修订号在
+Windows 上用自己的值；Index/ 本来就不进备份，恢复后在本机重建。
+运行包
+Mac 下载一个固定哈希的可重定位 CPython 3.12 运行包，用户不需要自己装 Python。基线要
+求用户自备 Python 3.12 环境，这一点要改成与 Mac 一致：
+在 Windows/tools/DocumentRuntime/ 照 Tools/DocumentRuntime/ 建一套构建脚本，
+产出 win-x64 的运行包压缩包和清单。
+Python 用可重定位的独立构建版 3.12；依赖用带哈希的锁定文件，去掉 mlx 、mlx-lm 、
+mlx-metal 、mlx-vlm ，保留 markitdown 、onnxruntime 、numpy 、opencv ，加上
+基线增强 OCR 用到的 Paddle 包。
+工作进程脚本以 Resources/DocumentRuntime/worker.py （354 行）为蓝本写
+Windows 版：convert （MarkItDown）和版面检测照搬；ocr 换成 Paddle CPU；
+embed 和 prepare_embedding 不实现，向量在主进程里算。
+document_mcp.py （94 行）原样使用，只检查路径处理在 Windows 上是否正确。
+用途
+Mac
+Windows
+基线状态
+流式识别、整
+句精修
+X-ASR Zipformer，sherpa-
+onnx
+同一批模型文件
+已验收
+声纹
+WeSpeaker ResNet34-
+LM，CoreML，随包
+同一权重的 ONNX，首
+次使用时下载
+已验收
+文本向量
+Qwen3-Embedding-0.6B，
+MLX 8 位，在 Python 运行
+包里
+同一模型的 ONNX 8
+位，在主进程里用
+ONNX Runtime
+已验收（固定 38 问）
+基础 OCR
+PDFKit 文本层加 Vision
+PdfPig 文本层加系统
+OCR
+已验收
+增强 OCR
+PaddleOCR-VL-1.6，
+MLX；版面模型 PP-
+DocLayoutV3 ONNX
+Paddle CPU 原始权
+重；版面模型不变
+部分验收（三张图加
+一页扫描 PDF）
+Office 转
+Markdown
+运行包里的 MarkItDown
+运行包里的
+MarkItDown
+基线是自写的简化读
+取，需换成
+MarkItDown
+Codex 读文
+档
+Codex CLI 加本地 MCP 工
+具 document_mcp.py
+同一脚本
+未做
+NextThought Windows 移植方案 v2
+Page 39 of 63
+
+
+===== PAGE 40 =====
+下载、校验、安装、删除、取消的流程按 DocumentRuntimeInstaller.swift 和
+ModelStore/ManagedModel.swift 照搬。
+进程协议
+主进程与工作进程用标准输入输出上的 NDJSON 对话，版本号 1。请求：health 、
+convert 、ocr 、prepare_embedding 、embed 、cancel 。响应：result 、error 、
+progress 。标准输出只走协议，日志走标准错误。取消时终止进程。C# 侧按
+DocumentRuntime.swift （166 行）移植，进程读写用 Core 的 ProcessLineReader 。
+启动子进程时设置 PYTHONUTF8=1 和 PYTHONIOENCODING=utf-8 ，否则中文 Windows 上标准
+输入输出默认是 GBK，协议会乱码。
+限额与行为（与 Mac 相同，来自 DocumentJobs.swift 的 DocumentLimits ）
+超限时明确报错，不静默少读。表格和公式不按固定字符截断；切片规则在 Core 的
+SemanticRetrieval 。
+各格式的处理
+项目
+限额
+单次导入
+60 个文件
+单个文件
+20 MiB、20 万字符
+单个系列
+40 个文件、60 万字符
+PDF
+400 页
+Office 压缩包解压后
+100 MiB
+工作表展开区域
+20 万单元格
+语义查询等待
+500 ms，超时用关键词结果
+格式
+Windows 做法
+TXT、Markdown、CSV、JSON、
+HTML
+主进程直接读，不需要运行包。基线缺 CSV 和
+HTML，补上
+PDF
+文本层用 PdfPig 加 PDFTextLayout 排序；扫描页用
+Windows.Data.Pdf 渲染后取字
+Word、PPT、Excel
+运行包里的 MarkItDown；PPT 和 Excel 保留真实的
+页和工作表定位
+NextThought Windows 移植方案 v2
+Page 40 of 63
+
+
+===== PAGE 41 =====
+纪要导出为 PDF
+Mac 用 CoreText 自己排版分页（SessionDocumentRenderer.swift ，665 行）。Windows
+用 Avalonia 已经带的 SkiaSharp 生成 PDF：文字整形用 HarfBuzz，换行规则自写（中文可在
+任意字间断行，英文按词断行，标点不出现在行首）。这是一块独立的排版工作，没有现成实现
+可搬，排在靠后的里程碑。Markdown、纯文本和字幕格式的导出在 Core，直接可用。
+资料预览
+Mac 用系统的快速查看。Windows 上 PDF 和图片在应用内显示渲染结果，Markdown 用
+MarkdownText ，其余格式用系统默认程序打开。
+11. 回答服务与应用层
+应用层承接 Mac App 目标里不是视图的那部分代码，只用 HTTP、WebSocket 和子进程，不碰
+系统 API。它们按第 4 节的规则逐文件移植到 NextThought.App 。
+应用层文件清单
+格式
+Windows 做法
+图片
+系统 OCR；开启增强 OCR 时走运行包
+旧版 .doc 、.odt 、.rtf
+本版不做。Mac 靠系统自带的转换工具，Windows
+没有对应物；导入时提示另存为 .docx
+分组
+Swift 文件
+行数
+注意
+状态
+与编
+排
+AppState 及 14 个 AppState+* 扩展、
+AnswerCoordinator 、Models 、
+AppEnvironment 、AppIdentity 、
+AppPaths 、Diagnostics
+约
+5300
+其中引用 AppKit 的部分（窗
+口、剪贴板、文件面板）改为
+调用端口或由视图层传入
+归档
+SessionArchive 、
+SessionFileExporter 、
+MaterialArchive 、
+CoachSummaryStore 、
+SlideNotesCache
+约
+1640
+写入顺序和落盘确认按原逻
+辑，不简化
+系列
+与资
+料
+WorkspaceStore 、
+WorkspaceActions 、GlossaryStore 、
+SkillLibrary 、SceneSettings 、
+PreparationActions 、
+PreparationPreview
+约
+1660
+NextThought Windows 移植方案 v2
+Page 41 of 63
+
+
+===== PAGE 42 =====
+分组
+Swift 文件
+行数
+注意
+回答
+AnswerEngines 、CodexBridge 、
+CodexModelCatalog 、APIPresets 、
+WebSearch 、SearchAssessment
+约
+1290
+钥匙串部分换成
+ICredentialStore
+纪要
+NotesRegeneration 及
+AppState+Notes 、
+AppState+StructuredNotes
+已计入
+状态
+分段、归并、失败续作
+识别
+编排
+ZipformerStreamingTranscriber 、
+ZipformerModelStore 、
+LocalASRModels 、
+CloudStreamingTranscriber 、
+EchoMonitor
+约 800
+引擎调用走 ISpeechEngine
+声纹
+与教
+练
+SpeakerID （去掉特征提取和模型加载后
+的编排部分）、MyVoice 、LiveCoach （去
+掉摄像头部分）、LiveInsightsState 、
+ScreenContextService
+约
+1280
+模型调用和采集走端口
+文档
+DocumentPipeline 、
+DocumentPreparation 、
+DocumentImporter 、
+DocumentRuntime 、
+DocumentRuntimeInstaller 、
+DocumentCheckpoint 、
+DocumentFeatureSetup 、
+MarkdownConverter 、
+ExternalMarkdownConverter 、
+CodexDocumentReader 、
+LocalDocumentAssets 、
+ModelStore/* 、Embedding/*
+约
+3250
+PDFKit 和 Vision 调用换成
+IPdfReader 、IOcrEngine
+备份
+与更
+新
+DataBackup 、Updater 、
+EnvironmentSetup
+约
+1260
+见第 6、14 节
+伴侣
+CompanionServer 、
+CompanionBluetooth 、
+CompanionRelay
+约 510
+见第 12 节
+翻译
+LiveTranslation 的协调器部分
+约 280
+见下文
+演示
+与自
+检
+DemoMode 、DemoFilm 、
+OnboardingSampleMeeting 的数据部分、
+SelfTest 及 12 个 *SelfTest
+约
+3900
+自检进 NextThought.Cli ，见
+第 15 节
+NextThought Windows 移植方案 v2
+Page 42 of 63
+
+
+===== PAGE 43 =====
+行数是按文件加总的近似值。基线 Platform 里的 ChatCompletionClient 、
+CodexAnswerClient 、SummaryService 、RetrievalService 、MeetingTranslator 、
+MaterialStore 、SettingsStore 与上表重叠，按第 3 节的规则被逐文件移植取代；它们的
+79 项测试保留，改为针对新类型。
+三种回答后端
+Codex 在 Windows 上的差异：
+查找顺序：环境变量 CODEX_CLI_PATH ，然后在 PATH 里找 codex.exe 、codex.cmd 。
+Mac 的 /usr/local/bin 等固定路径删掉。
+.cmd 不能直接作为进程启动，要经 cmd.exe /c ；参数用
+ProcessStartInfo.ArgumentList 传，不要自己拼命令行字符串。
+子进程不显示控制台窗口（CreateNoWindow ）。主进程退出时用作业对象连带结束子进
+程，避免残留。
+Mac 用文件权限配置限制 Codex 只能读本次任务的目录。Codex 在 Windows 上的等效配
+置我没有核实，基线文档也写明「只读配置不是独立的系统沙箱」。实现时查 Codex 当前版
+本的文档，并在设置页如实说明隔离程度。
+分组
+Swift 文件
+行数
+注意
+不移
+植
+AppleSpeechService 、
+LocalSigning 、
+LegacyOfficeConverter 、
+AppPreferences 的旧域迁移
+约 500
+系统独有或 Mac 专有
+后端
+原始值
+做法
+Codex 常驻服务（推
+荐）
+codexAppServer
+启动 codex app-server ，标准输入输出上的
+JSON 消息；协议解析在 Core 的
+AnswerStreaming 。基线已联验流式、取消和
+进程清理
+Codex exec（兼容）
+codexExec
+参数照搬 CodexBridge.swift:91 ：exec --
+json --ephemeral --ignore-user-config -
+-ignore-rules --skip-git-repo-check 等
+OpenAI 兼容接口
+openAICompatible
+HttpClient 流式读取服务器推送事件，片段解
+析在 Core。预设的服务商地址在
+AnswerServiceSupport
+NextThought Windows 移植方案 v2
+Page 43 of 63
+
+
+===== PAGE 44 =====
+联网搜索
+两个提供方（WebSearch.swift ）：Codex 联网，或 Tavily
+（https://api.tavily.com/search ，密钥账户 websearch.tavily ）。是否需要联网的判
+断在 Core 的 WebSearchNeed 。基线未做，整体照搬。
+翻译与同声传译
+Mac 用系统的离线翻译框架，Windows 没有对应物。本版做法：
+翻译请求发给当前的回答服务，沿用基线 MeetingTranslator 已验证的整句翻译、取消和
+修订关联。
+方向判断（按汉字与拉丁字母的比例）、修订节流（LiveTranslationRevisionGate ）、上
+岛显示照搬 LiveTranslation.swift 。
+设置页和数据去向说明里写明：Windows 版开启翻译后，转写文本会发送给回答服务。这
+与 Mac 版「翻译在本机完成」不同，不能沿用 Mac 的文案。
+未配置回答服务时翻译不可用，开关置灰并说明原因。
+网络与密钥
+全应用共用一个 HttpClient ，超时和重试按 Swift 原值。跟随系统代理。
+更新下载在重定向到其他主机时去掉 Authorization 头（Updater.swift:477 ），照
+搬。
+API Key 只经 ICredentialStore 读写，不进 settings.json 、日志、崩溃报告和诊断
+输出。
+12. 手机伴侣
+手机端（Mobile/ ）和中转服务（CompanionRelay/ ）不动，Windows 只实现桌面端的三条
+通道。协议、加密和分片全部在 Core，三条通道共用同一个命令去重缓存。
+协议常量（必须与手机端一致）
+项目
+值
+来源
+密钥
+32 字节随机数，Base64
+CompanionPairing.key
+密钥派生
+HKDF-SHA256，盐是房间号的 UTF-8，信息是
+ih-companion-v1/<kind> ，输出 32 字节
+CompanionCrypto.swift:36
+加密
+AES-256-GCM；kind 只能是 state 、
+command 、ack
+同上
+NextThought Windows 移植方案 v2
+Page 44 of 63
+
+
+===== PAGE 45 =====
+手机只收到当前问题、回答、状态和简要来源，不收资料、完整转写或图片。这条边界在
+CompanionSnapshot 的字段里，不要增加字段。
+三条通道
+局域网的注意点：
+网页资源直接链接仓库根目录的 Resources/Companion/index.html 和 phone.js ，不
+要用基线里另写的简化版，避免两份页面分叉。
+首次监听时 Windows 防火墙会弹窗。开启前在界面上提示用户在「专用网络」上允许。
+地址选择沿用基线 0.3.1 的修正（含校园网常见的 100.64.0.0/10 地址段）。
+项目
+值
+来源
+配对链接
+地址的片段部分 #p= 加 URL 安全的 Base64
+JSON
+CompanionPairing.url
+局域网路
+由
+GET / 、GET /phone.js 、GET /snapshot 、
+GET /events （服务器推送）、POST /ack 、
+POST /action
+CompanionServer.swift:243
+蓝牙服务
+9A8F0001-1C28-4E55-BE7D-C4E9A13277B0
+CompanionBLEProtocol.swift
+蓝牙特征
+状态 9A8F0002-… （通知），命令 9A8F0003-…
+（带响应的写）
+同上
+蓝牙分片
+8 字节大端头：消息号 4 字节、分片序号 2 字
+节、分片总数 2 字节；单片最大 512 字节，重组
+上限 384 KiB
+同上
+时间戳
+1970 年起的毫秒数
+Companion.swift:38
+通道
+Windows 实现
+基线
+局域
+网
+TcpListener 加自写的最小 HTTP 解析（解析
+辅助在 Core 的 CompanionHTTP ）。不用
+HttpListener ：它监听非本机地址需要管理
+员权限
+已有，协议测试通过；命令和重连的
+实机验收被跳过
+中转
+ClientWebSocket 连接用户配置的中转地址，
+按 CompanionRelay.swift （93 行）照搬
+未做
+蓝牙
+WinRT 的 GattServiceProvider ：一个服
+务、两个特征，按
+CompanionBluetooth.swift （98 行）移植
+未做
+NextThought Windows 移植方案 v2
+Page 45 of 63
+
+
+===== PAGE 46 =====
+蓝牙的两个问题
+第一，Mac 版现在的广播名与手机端对不上。 改名提交 af60a4d 把 Mac 的广播名前缀从
+IH- 改成了 NT- （CompanionBluetooth.swift:71 ），但 iOS
+（BluetoothCentral.swift:53 ）和 Android（BluetoothTransport.kt:31 ）仍然只接受
+IH- 加配对码前 8 位。按代码看，改名之后蓝牙备用通道连不上。这是读代码得出的结论，没
+有实机验证。
+第二，Windows 不能自定义广播名。 GattServiceProvider 广播时只带服务标识，名字是电
+脑的设备名，应用改不了。手机端按名字过滤就找不到 Windows。
+两个问题用同一个改动解决，需要改手机端（不属于 Sources/ ，但属于主仓库，要单独提交
+并征得同意）：
+手机端取消按名字过滤，只按服务标识扫描（两端现在已经带了这个过滤）。
+连接后用现有的加密 resync 握手确认身份：解不开第一帧就断开，继续扫描下一个设
+备。身份本来就是靠配对密钥保证的，名字只是省一次连接。
+在这个改动合入之前，Windows 的蓝牙通道标为不可用，局域网和中转不受影响。
+另外，部分蓝牙适配器不支持外设角色。开启前检查
+BluetoothAdapter.IsPeripheralRoleSupported ，不支持时开关置灰并说明。
+13. 本地化与设置
+界面文案和设置项都以 Mac 为唯一来源：文案从字符串目录自动生成，设置项沿用同样的键名
+和默认值。
+文案
+Resources/Localization/Localizable.xcstrings 有 2607 条，源语言是简体中文，每条
+都有英文翻译，没有复数变体。键就是中文原文。
+生成：写一个脚本 Windows/tools/strings/generate.py ，读字符串目录，生成
+Strings.g.cs （一个中文到英文的只读字典）。构建前运行，生成物提交进仓库。不手工
+维护第二份翻译。
+调用：代码里 L.T("中文原文", 参数…) ，AXAML 里 {l:T '中文原文'} 。界面语言为中文
+时直接用键，英文时查字典，查不到时回退到键并记一条日志。
+占位符：目录里用到 %@ （160 处）、%lld （127 处）、%.1f 、%.2f 、%% 。L.T 内置一
+个小的格式化器直接解析这些占位符，也要支持带序号的写法（如 %1$@ ），因为英文译文
+可能调整参数顺序。
+Swift 的插值写法：String(localized: "共 \(count) 项") 在目录里的键是 共 %lld
+项。移植时按目录里的键写，不按 Swift 源码里的字面写。
+NextThought Windows 移植方案 v2
+Page 46 of 63
+
+
+===== PAGE 47 =====
+校验：加一项测试，扫描所有 L.T("…") 和 {l:T '…'} 的键，确认每个键都在目录或
+Windows 覆盖表里。
+切换语言：设置项 appLanguagePreference （跟随系统、中文、英文）。切换后重启应
+用，与 Mac 的做法一致（AppLanguage.swift ）。
+Windows 专用文案
+目录里有 117 条文案带 Mac 专有的说法，不能原样显示：
+做法：维护一个覆盖表 Windows/tools/strings/overrides.json ，每条记录是「原键、
+Windows 中文、Windows 英文」。生成脚本合并时覆盖表优先。生成脚本同时输出一份报告，
+列出仍含上表词语但不在覆盖表里的键，数量必须为零才算完成。数据去向说明里关于翻译的那
+一条也在覆盖表里改写（见第 11 节）。
+设置存储
+Mac 用系统偏好设置，共 113 个键。Windows 存成数据目录下的一个 settings.json ：
+键名与类型与 Mac 一致。取全部键的命令：grep -rhoE '(forKey: ?|AppStorage\()"
+[A-Za-z0-9_.]+"' Sources | sort -u 。
+默认值逐个照搬。Swift 里默认值写在读取处（如 object(forKey:) as? Bool ??
+true ），移植时把每个键的默认值集中登记到 Preferences.Defaults ，并注明来源行。
+数据块：apiPresets 、customNotesTemplates 、customShortcuts 、
+assistantLayout 在 Mac 上是 JSON 编码后的二进制。在 settings.json 里直接存成
+嵌套对象；只在读写备份的 settings.plist 时转成二进制。
+写入：改动后 300 ms 内合并写盘，先写临时文件再替换；退出时立即写盘。
+出现的词
+条
+数
+处理
+Mac、macOS
+40
+改为「电脑」「Windows」，或按语境重写
+⌘、⇧ 等按键符号
+23
+改为运行时拼出的快捷键文字（Ctrl+Alt+…）
+系统设置（隐私与安全性等路径）
+10
+改为 Windows 设置里的对应路径
+钥匙串
+6
+改为「Windows 凭据保护」
+Apple
+5
+涉及系统识别和系统翻译，对应功能不移植，文案随
+之删除或重写
+刘海
+3
+改为「屏幕顶部」
+访达、Finder
+2
+改为「文件资源管理器」
+NextThought Windows 移植方案 v2
+Page 47 of 63
+
+
+===== PAGE 48 =====
+Windows 独有的设置用 win. 前缀（窗口位置、系统声采集模式、所选应用），不进备
+份。
+不移植的键：只与 Mac 系统有关的（AppleLanguages 、签名相关、系统识别相关），在
+Preferences.Defaults 里标为忽略。
+进备份的键以 SettingsSnapshot.exportedKeys 为准，共 75 个左右，不要另列一份。
+设置界面
+轻量面板（点齿轮出现的九项，QuickSettings.swift ）和主窗口内的六页（场景、回答与资
+料、提词与教练、纪要、通用、高级）按 Mac 的结构照搬。设置搜索
+（SettingsSearch.swift ）一并移植。差异只有三处：
+「识别」里去掉系统识别选项。
+「提词与教练」里去掉刘海启动器和「共享时收回」，增加系统声采集模式（整机或指定应
+用）。
+「高级」里去掉本机签名相关的条目。
+14. 构建与发布
+构建、测试、打包都在本机完成，不依赖 GitHub Actions（沿用 v1 的硬规矩）。基线的安装、
+版本目录、回退流程已验收，继续使用；新增的是 AOT 发布和后台自动更新。
+构建机要求
+在 Mac 上只需要 .NET SDK 10.0.403，可以构建 Core 、App 、Desktop （net10.0 目标）
+和两个跨平台测试工程。
+项目
+要求
+系统
+Windows 11 x64
+.NET SDK
+10.0.403，由 Windows/scripts/bootstrap_sdk.py
+安装到仓库内，不用机器上已装的版本
+C++ 生成工具
+Visual Studio 2022 生成工具的「使用 C++ 的桌面开
+发」工作负载。Native AOT 发布要用它的链接器和
+Windows SDK；基线不需要，这是新增的前置条件
+Inno Setup
+由 bootstrap_installer.ps1 准备
+Python 3.12
+只在构建文档运行包和生成文案时需要
+NextThought Windows 移植方案 v2
+Page 48 of 63
+
+
+===== PAGE 49 =====
+标准命令
+在 Windows/ 目录下执行，dotnet 指向固定的 SDK：
+dotnet restore NextThought.Windows.sln --locked-mode --verbosity minimal
+dotnet build NextThought.Windows.sln -c Release --no-restore --verbosity 
+minimal
+dotnet test tests/NextThought.Core.Tests -c Release --no-build --logger 
+"trx;LogFileName=<任务号>-core.trx"
+dotnet test tests/NextThought.Tests -c Release --no-build --logger 
+"trx;LogFileName=<任务号>.trx"
+dotnet test tests/NextThought.Desktop.Tests -c Release --no-build --logger 
+"trx;LogFileName=<任务号>-ui.trx"
+dotnet publish src/NextThought.Desktop -c Release -r win-x64 -f net10.0-
+windows10.0.19041.0 --no-restore
+在 Mac 上开发界面：
+dotnet run --project src/NextThought.Desktop -f net10.0 -- --demo
+dotnet test tests/NextThought.Core.Tests
+dotnet test tests/NextThought.Desktop.Tests
+发布配置
+NextThought.Desktop.csproj 的关键属性：
+<PublishAot>true</PublishAot>
+<TrimMode>full</TrimMode>
+<OptimizationPreference>Speed</OptimizationPreference>
+<InvariantGlobalization>false</InvariantGlobalization>
+<BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflection
+EnabledByDefault>
+<ApplicationManifest>app.manifest</ApplicationManifest>
+Directory.Build.props 对所有工程增加：
+<IsAotCompatible>true</IsAotCompatible>
+<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+app.manifest 保留基线已有的 UTF-8 代码页声明（中文路径依赖它），增加每显示器 DPI 感
+知（PerMonitorV2）。发布目录里除 NextThought.exe 外还应有这些原生库：sherpa-onnx
+的 C 接口库、onnxruntime.dll 、Skia 和 HarfBuzz 的原生库、SQLite 原生库，以及字体和
+许可文件。发布后用基线的 test_release_smoke.ps1 在产物上跑启动自检和一次真实转写。
+NextThought Windows 移植方案 v2
+Page 49 of 63
+
+
+===== PAGE 50 =====
+产物与记录（沿用 v1）
+每次验证的日志、TRX、startup.json 落到 Windows/artifacts/<任务号>/ ，附 SHA-
+256 索引。
+PR 描述固定包含：构建环境（系统版本、SDK、提交）、构建结果（0 警告 0 错误）、测试
+结果（通过数与 TRX 路径）、启动自检、CI 状态及原因。
+换机器从 port/windows-native 克隆，不另起提交历史；两台机器不同时改同一分支。
+不修改 Sources/ 、scripts/ 和 Mac 的签名材料；不提交任何密钥或证书。
+安装包
+沿用基线的 Inno Setup 每用户安装（Windows/installer/NextThought.iss ）：不需要管理
+员权限，每个版本一个独立目录，清单哈希校验，显式回退，卸载保留数据目录。20 项安装生
+命周期测试（test_installer_lifecycle.ps1 ）继续作为发布门槛。字体从应用目录加载，
+不安装到系统。
+自动更新
+按 Updater.swift （544 行）和 Core 的 UpdateCatalog 移植，流程与 Mac 相同：
+1. 访问 GitHub 的 Releases 接口，按更新通道选出最新的可用版本。
+2. 后台下载压缩包，校验 SHA-256。
+3. 解压到新的版本目录，用基线的 DeploymentStore 校验清单。
+4. 标题栏出现「重启以更新」，用户点击后切换版本并重启。会议进行中不切换。
+Windows 侧的约定：
+文件名：压缩包 NextThought-<版本>-windows-x64.zip ，安装器 NextThought-<版本>-
+windows-x64-setup.exe 。UpdateCatalog 里 Mac 按 -macOS-arm64.zip 后缀选资产
+（UpdateCatalog.swift:49 ），C# 侧改为按 -windows-x64.zip 选。
+发布位置：Mac 的 README 用「最新版本」链接下载。如果单独发一个只含 Windows 资
+产的正式版本，这个链接会指向它，Mac 用户下载不到安装包。所以在功能对等之前，
+Windows 版只发预发布版本（标签前缀 windows-v ）；对等之后，Windows 资产挂在与
+Mac 相同的版本下。
+签名校验：Mac 要求新版本与当前版本是同一签名身份。Windows 在有证书后按同样的原
+则校验：新版本的 Authenticode 签名者必须与正在运行的版本一致。没有证书时只校验哈
+希，并在「关于」里标明未签名。
+回退：保留上一个版本目录，设置页提供回退按钮（基线已有）。
+NextThought Windows 移植方案 v2
+Page 50 of 63
+
+
+===== PAGE 51 =====
+签名
+目前没有 Windows 代码签名证书，基线只交付标明未签名的包。未签名的安装器会被系统的安
+全提示拦截，用户需要手动放行。证书来源是第 17 节的待定项；拿到证书前不生成任何替代身
+份。sign_release.ps1 已预留签名步骤。
+版本号
+对等之前继续用 0.x（当前 0.4.0）。第 15 节的验收表全部通过后，版本号改为所对齐的 Mac 版
+本号，此后两端同号发布。
+15. 测试与验收
+验收分四层：逐文件移植的单元测试、与 Mac 共用的夹具、无窗口模式下的界面测试、
+Windows 实机验收。前三层能在任何机器上跑，最后一层只能在 Windows 上做，记录必须来
+自实际操作。
+每个任务的通用要求（沿用 v1 并补两条）
+1. 本机构建通过，0 警告 0 错误，包括 AOT 和裁剪分析器的警告。
+2. 相关测试全过，TRX 和日志落在 Windows/artifacts/<任务号>/ 。
+3. PR 描述写清机器、SDK、提交、测试数和通过数。
+4. 明确写 CI 是否运行及原因。
+5. 不修改 Mac 侧源码和既有 Mac 工作流。
+6. 更新 CORE_PARITY.md 或 VIEW_PARITY.md 里对应的行。
+7. 没有实机验证的能力写「已实现、未验证」，不写「已完成」。
+测试分层
+层
+工程
+内容
+门槛
+Core 单
+元测试
+NextThought.Core.Tests
+Mac 的 68 个测试文件、592
+项测试的逐项移植
+数量与 Mac 相
+等，全部通过
+夹具对照
+同上
+第 6 节的六组 Mac 夹具
+全部通过
+架构测试
+同上
+程序集引用方向；Core 不含
+界面和系统引用
+全部通过
+平台与集
+成
+NextThought.Tests
+基线 79 项，加上新端口的测
+试；需要模型的测试在缺模型
+时跳过并报告
+全部通过，跳过
+项列明
+NextThought Windows 移植方案 v2
+Page 51 of 63
+
+
+===== PAGE 52 =====
+自检命令
+Mac 的 --self-test <名字> 有 40 个命令（SelfTest.swift ），是不启动界面就能跑的集成
+检查。它们进 NextThought.Cli ，命令名不变，与基线已有的诊断命令合并：
+层
+工程
+内容
+门槛
+界面
+NextThought.Desktop.Tests
+无窗口模式下打开每个页面的
+演示状态，浅色和深色各截一
+张图并与基准图比较；导航和
+设置搜索的交互测试
+无未解释的差异
+发布产物
+脚本
+在 AOT 产物上跑启动自检、4
+段 WAV 转写、20 项安装生命
+周期
+全部通过
+分组
+命令
+识别与回答
+asr 、answer-latency 、answer-prompt 、
+question-round 、capacity
+模型
+models 、model-files 、model-readiness 、
+model-delete 、local-models 、embedding-
+speed 、runtime
+资料
+documents 、document-setup 、document-
+lifecycle 、document-edges 、document-
+backup 、large-file 、large-pdf 、import-
+speed 、preparation 、preparation-file 、
+source-integrity
+检索
+retrieval-eval 、search-eval
+会议数据
+data 、meeting-content 、session-backup-
+drain 、session-carry-context 、session-
+edit-receipts 、session-export 、structured-
+notes 、archive-ux
+界面
+live-session-ui 、settings-navigation 、
+fishbone-rendering 、screen-context
+连接与发布
+relay 、update
+不移植
+signing （Mac 本机签名）
+NextThought Windows 移植方案 v2
+Page 52 of 63
+
+
+===== PAGE 53 =====
+功能验收表
+每行要有一条实机记录（日期、机器、版本、结果、证据路径），记在
+Windows/FEATURE_PARITY.md 。这份文件现在对照的是 Mac v2.3.1，按下表重写为对照
+v3.3.0。
+#
+功能
+验收方法
+基线
+1
+系统声加麦克风双路
+六家会议软件各开一场 10 分钟会议，双
+方发言分别进入对应通道
+短时实采通过
+2
+指定应用采音
+会议软件与音乐播放器同时发声，只记录
+会议软件
+两进程隔离通过
+3
+连续实采稳定性
+2 小时真实硬件采音（不是回放），无丢
+帧、无内存持续增长
+只有回放
+4
+流式识别加整句精修
+4 段标准 WAV 输出与 Mac 相同；最终句
+延迟 p95 不超过 0.8 秒
+通过
+5
+回声抑制与「是我说
+的」恢复
+不戴耳机开会，对方的话不重复记到我
+方；手动恢复可用
+未完整
+6
+说话人分组、我的声音
+三人录音分组正确；录入我的声音后标为
+「我」
+分组通过
+7
+术语与人名表
+加入术语后识别结果和纪要中拼写正确
+只有热词
+8
+问题识别与自动回答
+全量评测语料逐条与 Mac 判定一致；实
+际会议中提问后自动出回答
+60 条通过
+9
+三种回答后端
+Codex 常驻、Codex exec、兼容接口各
+完成一次流式回答和一次取消
+两种通过
+10
+联网搜索、技能
+需要最新信息的问题触发联网；导入
+SKILL.md 后回答引用技能
+无
+11
+截图提问、屏幕感知
+窗口截图和区域截图各提问一次；屏幕文
+字进入回答上下文
+无
+12
+提词岛
+第 9 节验证表八项全过；各状态与 Mac
+录屏逐一对照
+无
+13
+一直展开、双屏演讲、
+讲稿跟随
+外接屏放映幻灯片，翻页后岛上要点跟
+随；外接屏上无本应用窗口
+无
+14
+临场教练
+语速、时长、发言占比三种提醒各触发一
+次；眼神提醒见第 7 节
+无
+15
+字幕条、提词器浮窗
+显示、拖动、穿透、录屏隐藏
+无
+NextThought Windows 移植方案 v2
+Page 53 of 63
+
+
+===== PAGE 54 =====
+#
+功能
+验收方法
+基线
+16
+同声传译
+英译中、中译英各一段，译文随修订更新
+并上岛
+整句翻译通过
+17
+九个场景与自定义
+每个场景开一场会，会中模式、回答风
+格、纪要模板与 Mac 一致；按标题自动
+选场景
+只有通用
+18
+系列、议程、经验库、
+题库
+同一系列开两场会，第二场带上第一场确
+认的经验和常见问题
+无
+19
+无人发言自动结束
+静音到达阈值后倒计时并结束，可取消
+无
+20
+会后纪要及四种格式
+纪要、提纲、鱼骨图、观点对照各生成一
+次；要点能跳回原话
+只有通用纪要
+21
+证据核对、高亮、修订
+改一句转写后相关要点标记待核对；高亮
+在重新生成后仍定位正确
+无
+22
+导出
+Markdown、纯文本、字幕、PDF 各导
+出一次，内容与界面一致
+Markdown 通过
+23
+资料导入
+固定样本（PDF、扫描 PDF、Word、
+PPT、Excel、图片、Markdown）导入
+结果与 Mac 的参考输出对照
+基础格式通过
+24
+检索与引用
+固定 38 问命中率不低于基线；引用跳到
+正确的页、幻灯片或工作表
+通过
+25
+历史
+搜索、筛选、批量删除、可回滚删除
+只有列表
+26
+备份往返
+Mac 导出到 Windows 恢复、Windows
+导出到 Mac 恢复，各做一次，逐项核对
+系列、会议、高亮、模板
+只有 Windows 往返
+27
+自动备份与恢复点
+每日和升级前自动生成；从恢复点恢复
+无
+28
+设置与引导
+六页设置每项可改且重启后保留；设置搜
+索可用；四步引导走通
+部分设置
+29
+全局快捷键
+18 个动作逐个触发；改键后生效；冲突
+时提示
+3 个固定键
+30
+手机伴侣
+局域网、中转、蓝牙各完成配对、状态同
+步、命令、断线重连
+局域网页面同步
+31
+中英双语界面
+英文界面下逐页检查无中文残留、无截断
+只有中文
+32
+浅色与深色
+每页两种外观与 Mac 截图对照
+未对照
+NextThought Windows 移植方案 v2
+Page 54 of 63
+
+
+===== PAGE 55 =====
+界面对照的做法
+Mac 的截图由 scripts/capture-screenshots.sh 用演示模式生成，存在
+docs/screenshots/v3/ 。Windows 用同样的演示数据、同样的窗口尺寸生成同名截图到
+Windows/artifacts/screenshots/ ，两张图并排检查。字体不同，文字边缘不要求像素一
+致；要求一致的是布局、间距、颜色、圆角、元素的有无和顺序。
+16. 里程碑
+移植分 9 个阶段，其中 4 个可以在 Mac 上完成。第一件事是 S0 验证，它的结论决定发布方式
+和提词岛的窗口方案。
+#
+功能
+验收方法
+基线
+33
+缩放与多显示器
+100% 到 200% 四档；窗口在缩放不同的
+显示器间拖动
+未验
+34
+键盘与读屏
+全程可用键盘操作；讲述人能读出主要控
+件的名称和状态
+未验
+35
+安装、更新、回退、卸
+载
+干净的第二台机器上全流程一次；后台更
+新一次；回退一次
+安装和回退在开发机
+通过
+36
+性能
+冷启动、空闲内存、会中 CPU 占用、最
+终句延迟各有实测数
+延迟有数据
+37
+异常恢复
+会中强杀进程后重启，会议记录完整可
+续；休眠唤醒后继续记录
+进程恢复通过
+移植路线 · 两条并行线、8 个阶段、1 次对等验收
+NextThought Windows 移植方案 v2
+Page 55 of 63
+
+
+===== PAGE 56 =====
+上排不需要 Windows 机器，可以与下排同时进行；竖向箭头表示下排的阶段要等上排对应的阶
+段（平台层实现的端口定义在应用层，浮窗要用设计系统）。
+各阶段的内容与退出条件
+阶段
+在哪做
+内容
+退出条件
+S0 验证
+Windows
+空的 Avalonia 窗口用 AOT 发
+布；提词岛窗口原型；自写
+sherpa 绑定；NAudio 3 加进
+程回环
+第 9 节验证表八项有结论；
+AOT 产物上 4 段 WAV 转写正
+确；AOT 产物采到系统声和
+麦克风；记录冷启动和内存。
+给出两个明确结论：AOT 用
+还是回退；岛用主方案还是哪
+个退路
+P1 Core
+任意
+夹具生成（需要在 Mac 上跑一
+次）；批次 A 至 D
+592 项测试数量相等且全过；
+六组夹具全过
+P2 应用层
+任意
+第 11 节的文件清单；端口接
+口；Platform.Stub ；演示
+模式
+架构测试通过；用假实现能在
+命令行跑完一场演示会议并写
+出归档；基线重叠文件已删
+除，79 项测试仍通过
+P3 平台层
+改造
+Windows
+第 2 节四条规则在 Platform
+落地；基线已有的 7 个端口按
+新接口实现
+分析器 0 警告；AOT 产物上
+asr 和音频诊断通过；基线
+的 7200 秒回放重跑通过
+P4 界面主
+流程
+任意，最后在
+Windows 确认
+设计系统、外壳、首页、准
+备、会中、纪要、历史
+在 Windows 上用新界面完成
+一场真实会议：开始、转写、
+回答、结束、纪要、重启后重
+载。完成后删除 WPF 工程
+P5 浮窗与
+热键
+Windows
+第 9 节全部窗口；18 个快捷
+键；显示器拓扑；双屏演讲；
+截图
+验收表第 11 至 15、29 行通过
+P6 其余界
+面
+任意
+资料库与系列、术语表、设置
+六页、引导、文案覆盖表、英
+文界面
+VIEW_PARITY.md 无「未
+做」；文案报告里未覆盖的
+Mac 说法为零
+P7 资料、
+伴侣、更
+新
+Windows
+文档运行包、增强 OCR、
+Codex 读文档、联网搜索、中
+转、蓝牙、后台更新、PDF 导
+出
+验收表第 10、22 至 24、27、
+30、35 行通过
+NextThought Windows 移植方案 v2
+Page 56 of 63
+
+
+===== PAGE 57 =====
+顺序与并行
+1. S0 和 P1 同时开始，互不依赖。
+2. P2 等 P1；P3 等 S0，并且要用 P2 定义的端口接口（基线已有的 7 个端口可以先按第 3 节的
+签名写）。
+3. P4 等 P2。设计系统和通用控件最先做，其余页面可以多人或多个代理并行，每人认领
+VIEW_PARITY.md 里的一组文件。
+4. P5 等 S0 的窗口结论和 P4 的设计系统；P6 与 P5 并行。
+5. P7 等 P2 和 P3；P8 最后。
+时间
+v1 给的前两个日期保留：资源确认在 11 月 21 日前，S0 结论在 11 月 24 日前。其余日期在 S0 结
+束后再定，因为 S0 的两个结论会改变 P3 和 P5 的工作量。v1 的「12 月 1 日前 Core 基线跑通」
+不沿用：P1 是 1.7 万行代码加 9400 行测试的逐文件移植，按批次 A 到 D 逐批验收，不绑单一日
+期。
+唯一的 Windows 验证机 12 月要寄修。按上图安排：寄修前完成 S0 和 P3；寄修期间做 P1、
+P2、P4、P6，这些都能在 Mac 上进行；机器回来后做 P5、P7、P8。第二台 Windows 机器在
+P8 之前必须到位。
+17. 风险、未验证项与待定项
+本文的仓库事实都核对过源码；Windows 上的运行行为一项都没有实测。这一节列出哪些地方
+可能不成立、不成立时怎么办，以及需要负责人拍板的事。
+风险登记
+阶段
+在哪做
+内容
+退出条件
+P8 对等验
+收
+Windows，含第
+二台机器
+眼神提醒；验收表剩余行；跨
+平台备份往返；六家会议软
+件；干净机器安装
+验收表 37 行都有实机记录或
+「本版不做」的说明；版本号
+对齐 Mac
+#
+风险
+暴露阶
+段
+应对
+R1
+AOT 发布不通过：COM、原生绑定
+或第三方库的裁剪问题
+S0、
+P3
+改用 ReadyToRun 自包含发布，源码不
+动（第 2 节）
+R2
+提词岛的透明、穿透、不激活、录屏
+隐藏不能同时成立
+S0
+依次用区域裁剪、不透明窗口两个退路
+（第 9 节）
+NextThought Windows 移植方案 v2
+Page 57 of 63
+
+
+===== PAGE 58 =====
+#
+风险
+暴露阶
+段
+应对
+R3
+PdfPig、QRCoder、SQLite 库在
+AOT 下有问题
+P3
+逐个在 AOT 产物上跑其测试；有问题的
+库整体保留不裁剪，或换库
+R4
+结构化纪要的修订哈希与 Mac 算不
+一致
+P1
+以 Mac 夹具为准调整规范写法；确实无
+法一致时，跨平台恢复后把这些高亮标
+为待核对，不静默丢弃
+R5
+声纹向量与 Mac 差异过大
+P3
+跨平台恢复时不带「我的声音」档案，
+提示重录
+R6
+系统 OCR 的中文语言包没装，或识
+别质量不够
+P7
+设置页提示安装语言包；引导用户启用
+增强 OCR
+R7
+进程回环在某家会议软件或旧系统上
+采不到声音
+P8
+该场景退回整机系统声，并在验收表里
+记明
+R8
+麦克风的系统回声消除无效
+P8
+只依赖 Core 的文本回声过滤；建议用户
+戴耳机
+R9
+蓝牙需要改手机端才能连上
+P7
+改动合入前蓝牙通道标为不可用
+R10
+人脸特征点没有合适的模型
+P8
+眼神提醒本版不做；语速、时长、占比
+三种提醒不受影响
+R11
+PDF 导出的排版工作量超出预期
+P7
+先交付 Markdown、文本、字幕导出，
+PDF 延后
+R12
+Avalonia 的文字在 100% 缩放的显示
+器上观感偏软
+P4
+调整文字渲染和微调设置，在 100% 缩
+放的屏幕上对照确认
+R13
+只有一台 Windows 机器，且 12 月寄
+修
+全程
+上排四个阶段在 Mac 上做（第 16 节）
+R14
+Mac 版继续发版，移植目标在移动
+全程
+按 UPSTREAM 同步规则跟进；每次 Mac
+发版后先评估差异再继续
+R15
+Core 有 Swift 和 C# 两份，长期分
+叉
+长期
+共用夹具和 CORE_PARITY.md ；Mac 的
+Core 改动必须同步到 C# 才能发同号版
+本
+R16
+没有代码签名证书，安装时被系统拦
+截
+发布
+只发预发布版本并说明放行步骤，直到
+拿到证书
+R17
+有人照 v1 或 PR #30 的旧描述开工
+现在
+PR #30 的描述加勘误，指向本文
+NextThought Windows 移植方案 v2
+Page 58 of 63
+
+
+===== PAGE 59 =====
+本文中没有实测的论断
+下面这些是根据文档和经验写的，实现时先验证再依赖：
+Avalonia 12 的透明窗口能与分层窗口样式和录屏隐藏同时工作。
+录屏隐藏对六家会议软件的整屏共享都有效。
+NAudio 3.x 在 AOT 下可用（依据是其发布说明）。
+自写的 sherpa-onnx 结构体布局正确。
+Mac 的 JSON 排序规则和数值写法（第 6 节）。
+GattServiceProvider 不能自定义广播名。
+Mac 蓝牙广播名与手机端不匹配（读代码所得，未实机确认）。
+麦克风用通信类别打开后有回声消除。
+Codex 在 Windows 上的文件访问限制方式。
+字体文件的体积、弹簧参数换算后的观感、阴影数值。
+第 1 节的启动时间和内存目标。
+需要负责人决定的事
+每项都给了默认做法；不另行决定时按默认执行。
+#
+问题
+默认做法
+另一种选择
+1
+字体
+随包带开源字体，约多 40
+MB
+用系统字体，安装包小，中等
+字重显示不准
+2
+Windows 默认快捷键
+Ctrl+Alt 组合（第 7 节）
+另定一套
+3
+翻译
+走回答服务，文本会发出本
+机，界面写明
+立项离线翻译模型，本版先不
+提供翻译
+4
+眼神提醒
+排在最后，找不到合适模型
+就本版不做
+作为必做项，延后对等验收
+5
+手机端蓝牙匹配方式的改
+动
+提一个单独的 PR 改
+Mobile/ ，同时修好 Mac
+不改，Windows 不提供蓝牙通
+道
+6
+旧版
+.doc 、.odt 、.rtf
+本版不支持，提示另存为
+另找转换方案
+7
+发布方式
+对等前只发预发布版本
+提前发正式版本，需同时调整
+Mac README 的下载链接
+8
+代码签名证书
+暂无，发未签名包
+购买或申请证书
+9
+第二台 Windows 机器
+P8 之前到位
+无
+NextThought Windows 移植方案 v2
+Page 59 of 63
+
+
+===== PAGE 60 =====
+18. 附录
+接手人开工清单
+1. 读第 0、3、4、16 节。v1 里作废的方案（新仓库、WPF、WebView2、Electron）和第 0
+节标为有误的条目不要再照做。
+2. 从 port/windows-native 克隆，运行 Windows/scripts/bootstrap_sdk.py ，确认
+SDK 是 10.0.403。
+3. 跑第 14 节的标准命令，基线的 79 项测试全部通过后再动代码；不通过先修环境。
+4. 按第 16 节认领一个阶段里的一组文件，在 CORE_PARITY.md 或 VIEW_PARITY.md 登记。
+5. 移植时左边打开 Swift 文件，右边写同名的 C# 文件，测试同步移植。不重构，不合并文
+件。
+6. 本文没有覆盖的行为，以 Swift 源码为准。
+7. Windows 上没有对应物、本文也没给做法的能力，停下来登记到第 17 节的待定项，不自行
+设计替代方案。
+8. 交付按第 15 节的七条通用要求。
+基线文件的去向
+分支 port/windows-native （01606e2 ）的 Windows/src 共 91 个文件（含工程文件和资
+源）：
+#
+问题
+默认做法
+另一种选择
+10
+眼神矫正（Maxine）
+移出本次移植
+另立一条新功能线
+工程
+文件
+去向
+Core （14 个）
+全部
+被 Mac NextThoughtCore
+的逐文件移植取代。
+SpeakerFeatures.cs （声
+学特征）保留在 Core，按
+SpeakerID.swift 的
+Fbank 核对参数
+NextThought Windows 移植方案 v2
+Page 60 of 63
+
+
+===== PAGE 61 =====
+工程
+文件
+去向
+Platform （共 38 个）中
+碰系统或原生库的
+AudioCaptureService 、
+ProcessLoopbackCapture 、
+SpeechRecognizerSession 、
+Utf8SherpaInterop 、
+SpeakerEmbedder 、
+QwenEmbedder 、
+EnhancedOcrService 、
+DocumentPreview 、
+DeploymentStore
+留在 Platform ，按第 2 节
+四条规则改造，实现第 3 节的
+端口
+Platform 中不碰系统的
+AppPaths 、SessionStore 、
+SettingsStore 、
+BackupService 、
+SummaryService 、
+RetrievalService 、
+VectorCache 、
+MaterialStore 、
+DocumentReader 、
+ChatCompletionClient 、
+CodexAnswerClient 、
+IAnswerClient 、
+MeetingTranslator 、
+MeetingVoiceTagger 、
+CompanionServer 、
+ModelStore 、
+EmbeddingModelStore 、
+SpeakerModelStore 、
+QwenTokenizer
+被应用层或 Core 的逐文件移
+植取代；其中已在 Windows
+上踩过的坑（中文路径、校园
+网地址、末行不完整的恢复）
+要带进新代码
+Platform/Resources
+模型清单、词表、OCR 资源
+保留；伴侣网页改为链接仓库
+根目录的
+Resources/Companion
+Windows （WPF，11 个）
+全部
+P4 完成后删除；
+DesktopFeatures.cs 里的
+热键和托盘调用改写进
+Platform
+Cli （28 个）
+全部
+保留，去掉对 WPF 的依赖，
+并入 Mac 的 40 个自检命令
+tests （16 个）
+全部
+保留，改为针对新类型；
+question-corpus.json 换
+成全量夹具
+NextThought Windows 移植方案 v2
+Page 61 of 63
+
+
+===== PAGE 62 =====
+新增的跟踪文件
+仓库事实
+工程
+文件
+去向
+scripts 、installer
+全部
+保留
+FEATURE_PARITY.md
+按第 15 节的验收表重写为对
+照 Mac v3.3.0
+文件
+用途
+Windows/UPSTREAM
+已对齐的 Mac 提交号
+Windows/CORE_PARITY.md
+每个 Core 源文件和测试文件的移植状态与测试数
+Windows/VIEW_PARITY.md
+每个视图的移植与对照状态
+Windows/FEATURE_PARITY.md
+37 行功能验收记录
+Windows/tests/Fixtures/mac/
+Mac 生成的共用夹具
+Windows/tools/strings/overrides.json
+Windows 专用文案
+项目
+值
+主仓库
+OmnixSI/NextThought ，主分支 5ddb9e5 ，Mac
+v3.3.0
+Windows 分支
+port/windows-native ，01606e2 ，Windows
+0.4.0，12 个提交，167 个变更文件
+基线对照的 Mac 快照
+af60a4d ，v2.3.1；到主分支有 86 个提交
+Swift 源码
+335 个文件、78,488 行
+Sources/NextThoughtCore
+80 个文件、17,202 行
+Sources/NextThought
+169 个文件、50,638 行；其中引用 SwiftUI 的文件合计
+27,650 行，约 257 个视图
+Core 测试
+68 个文件、9,406 行、592 项
+界面文案
+2,607 条，中英双语
+设置项
+113 个键，其中约 75 个进备份
+NextThought Windows 移植方案 v2
+Page 62 of 63
+
+
+===== PAGE 63 =====
+参考
+以下链接来自检索结果的摘要，我没有逐页通读，用来指路，不作为结论的依据：
+Avalonia 12.1 发布说明
+Avalonia 的 Native AOT 文档
+Avalonia 窗口用法文档
+NAudio.Wasapi 3.x 包页面
+.NET 运行时关于 AOT 与 COM 的讨论
+sherpa-onnx 的 C# 接口文档
+仓库内的相关文档：docs/DEVELOPMENT.md 、docs/DOCUMENT-MARKDOWN-PIPELINE.md 、
+docs/ASR-MODELS-2026-10.md 、Mobile/README.md ；分支上的
+Windows/PORTING_STATUS.md 、Windows/P1_VALIDATION.md 至 P4_VALIDATION.md 。
+项目
+值
+全局快捷键
+18 个动作
+自检命令
+40 个
+NextThought Windows 移植方案 v2
+Page 63 of 63

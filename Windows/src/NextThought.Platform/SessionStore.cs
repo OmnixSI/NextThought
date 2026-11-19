@@ -32,6 +32,28 @@ public sealed class SessionStore(AppPaths paths)
         }
         finally { gate.Release(); }
     }
+    /// <summary>
+    /// Replaces the transcript file with corrected lines (proofreading). Written atomically so a
+    /// crash cannot leave half a meeting.
+    /// </summary>
+    public async Task RewriteTranscriptAsync(SessionMeta meta, IReadOnlyList<TranscriptLine> lines, CancellationToken ct = default)
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var path = Path.Combine(Folder(meta.Id), "transcript.jsonl");
+            var builder = new System.Text.StringBuilder();
+            foreach (var line in lines)
+                builder.Append(JsonSerializer.Serialize(line, JsonDefaults.ArchiveOptions)).Append('\n');
+            await AppPaths.AtomicWriteAsync(path, builder.ToString(), ct).ConfigureAwait(false);
+            var current = ReadMeta(meta.Id);
+            current.TranscriptCount = lines.Count;
+            await WriteMetaAsync(current, ct).ConfigureAwait(false);
+            CopyState(current, meta);
+        }
+        finally { gate.Release(); }
+    }
+
     public async Task AppendAnswerAsync(SessionMeta meta, AnswerRecord answer, CancellationToken ct = default)
     {
         await gate.WaitAsync(ct).ConfigureAwait(false);

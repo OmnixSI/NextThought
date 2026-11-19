@@ -1,0 +1,128 @@
+using System.Collections.ObjectModel;
+using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using NextThought.Core;
+using NextThought.Platform;
+
+namespace NextThought.Desktop;
+
+/// <summary>资料库：导入、检索、查看引用出处。</summary>
+public partial class LibraryViewModel(AppState state) : ObservableObject
+{
+    private readonly AppState state = state;
+    private MaterialStore? store;
+
+    private MaterialStore Store => store ??= new MaterialStore(state.Paths);
+
+    public ObservableCollection<MaterialDocument> Materials { get; } = [];
+
+    [ObservableProperty] private MaterialDocument? selectedMaterial;
+    [ObservableProperty] private string selectedPreview = "选择一份资料，查看本机解析出的文本。";
+    [ObservableProperty] private string importStatus = "";
+    [ObservableProperty] private bool importing;
+    [ObservableProperty] private string importProgress = "";
+    [ObservableProperty] private string filter = "";
+
+    public IReadOnlyList<MaterialDocument> DocumentsForRetrieval() => Materials.Count > 0 ? Materials.ToList() : Store.List().ToList();
+
+    public bool HasMaterials => Materials.Count > 0;
+    public string MaterialCountText => $"{Materials.Count} 份资料 · 本机解析";
+
+    partial void OnFilterChanged(string value) => ApplyFilter();
+
+    private List<MaterialDocument> all = [];
+
+    public void Refresh()
+    {
+        try
+        {
+            all = Store.List().ToList();
+            ApplyFilter();
+            ImportStatus = all.Count == 0 ? "还没有资料。导入 PDF、Word、PPT、Excel、Markdown 或图片。" : $"共 {all.Count} 份资料，均在本机解析，不上传。";
+        }
+        catch (Exception ex)
+        {
+            ImportStatus = "资料库读取失败：" + ex.Message;
+        }
+    }
+
+    private void ApplyFilter()
+    {
+        var query = Filter.Trim();
+        var visible = query.Length == 0
+            ? all
+            : all.Where(x => x.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+        Materials.Clear();
+        foreach (var material in visible) Materials.Add(material);
+        if (SelectedMaterial is not null && !visible.Contains(SelectedMaterial)) SelectedMaterial = null;
+        OnPropertyChanged(nameof(HasMaterials));
+        OnPropertyChanged(nameof(MaterialCountText));
+    }
+
+    partial void OnSelectedMaterialChanged(MaterialDocument? value)
+    {
+        if (value is null) { SelectedPreview = "选择一份资料，查看本机解析出的文本。"; return; }
+        var builder = new System.Text.StringBuilder();
+        builder.AppendLine($"{value.Name} · {value.Extension} · {value.Blocks.Count} 段 · 解析器 {value.Reader}");
+        if (value.Warnings.Count > 0) builder.AppendLine("提示：" + string.Join("；", value.Warnings));
+        builder.AppendLine();
+        foreach (var block in value.Blocks.Take(120))
+        {
+            builder.AppendLine($"[{block.Location}] {block.Text}");
+            builder.AppendLine();
+        }
+        if (value.Blocks.Count > 120) builder.AppendLine($"…… 其余 {value.Blocks.Count - 120} 段未显示。");
+        SelectedPreview = builder.ToString();
+    }
+
+    public async Task ImportAsync(IEnumerable<string> files)
+    {
+        var list = files.ToList();
+        if (list.Count == 0) return;
+        Importing = true;
+        var added = 0;
+        try
+        {
+            foreach (var file in list)
+            {
+                ImportProgress = $"正在解析 {System.IO.Path.GetFileName(file)}…";
+                try
+                {
+                    await Store.ImportAsync(file, CancellationToken.None, state.Settings.UseSemanticRetrieval);
+                    added++;
+                }
+                catch (Exception ex)
+                {
+                    ImportStatus = $"导入 {System.IO.Path.GetFileName(file)} 失败：{ex.Message}";
+                }
+            }
+            Refresh();
+            state.RefreshMaterialTerms();
+            ImportStatus = added > 0 ? $"已导入 {added} 份资料。" : ImportStatus;
+            ImportProgress = "";
+        }
+        finally
+        {
+            Importing = false;
+        }
+    }
+
+    public void OpenCitation(SourceCitation citation)
+    {
+        var material = Materials.FirstOrDefault(x => x.Id == citation.DocumentId) ?? Store.List().FirstOrDefault(x => x.Id == citation.DocumentId);
+        if (material is null) { ImportStatus = "引用来自已删除的资料：" + citation.DocumentName; return; }
+        SelectedMaterial = material;
+        state.Section = AppSection.Library;
+    }
+
+    public void RevealSourceFile()
+    {
+        if (SelectedMaterial is null) return;
+        try
+        {
+            var path = Store.SourcePath(SelectedMaterial);
+            state.OpenExternal(System.IO.Path.GetDirectoryName(path) ?? state.Paths.Root);
+        }
+        catch (Exception ex) { ImportStatus = ex.Message; }
+    }
+}
