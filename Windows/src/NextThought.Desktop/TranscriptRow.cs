@@ -37,6 +37,11 @@ public partial class TranscriptRow : ObservableObject
         (line.SuspectedEcho == true ? " · 可能回声" : "");
 }
 
+public sealed record ProviderPreset(string Name, string BaseUrl, string Model)
+{
+    public override string ToString() => Name;
+}
+
 public sealed record DeviceChoice(string Id, string Name)
 {
     public override string ToString() => Name;

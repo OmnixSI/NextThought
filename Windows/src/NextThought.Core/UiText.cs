@@ -295,6 +295,8 @@ public static class UiText
         ["自动（第一块外接屏）"] = "Automatic (first external display)",
         ["主屏（摄像头）"] = "Main display (camera)",
         ["搜索设置"] = "Search settings",
+        ["自定义"] = "Custom",
+        ["接口预设"] = "API preset",
     };
 
     private static readonly Dictionary<string, string> Chinese = English

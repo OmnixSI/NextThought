@@ -238,6 +238,9 @@
           <CheckBox Content="使用本机 Codex CLI 账号" IsChecked="{Binding Settings.UseCodex}" />
           <TextBlock Text="Codex 模型（留空沿用账号默认模型）" Classes="label" />
           <TextBox Text="{Binding Settings.CodexModel}" PlaceholderText="gpt-5.2-codex" />
+          <TextBlock Text="接口预设" Classes="label" />
+          <ComboBox ItemsSource="{Binding Settings.ProviderPresets}" SelectedItem="{Binding Settings.SelectedProviderPreset}"
+                    Width="240" HorizontalAlignment="Left" />
           <TextBlock Text="兼容 Chat Completions 的 API 地址" Classes="label" />
           <TextBox Text="{Binding Settings.BaseUrl}" PlaceholderText="https://api.openai.com/v1" />
           <Grid ColumnDefinitions="*,*" ColumnSpacing="12">

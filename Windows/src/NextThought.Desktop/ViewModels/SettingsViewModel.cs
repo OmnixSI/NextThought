@@ -32,6 +32,23 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         new("high", "high")
     ];
 
+    public IReadOnlyList<ProviderPreset> ProviderPresets { get; } =
+    [
+        new("OpenAI", "https://api.openai.com/v1", "gpt-5.2"),
+        new("DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat"),
+        new("OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-4o-mini"),
+        new(UiText.T("自定义"), "", "")
+    ];
+
+    [ObservableProperty] private ProviderPreset? selectedProviderPreset;
+
+    partial void OnSelectedProviderPresetChanged(ProviderPreset? value)
+    {
+        if (value is null || value.BaseUrl.Length == 0) return;
+        BaseUrl = value.BaseUrl;
+        if (value.Model.Length > 0) Model = value.Model;
+    }
+
     [ObservableProperty] private string baseUrl = "https://api.openai.com/v1";
     [ObservableProperty] private string model = "";
     [ObservableProperty] private string notesModel = "";
