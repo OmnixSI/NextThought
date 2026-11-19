@@ -119,6 +119,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         new("dark", "深色")
     ];
     [ObservableProperty] private AppearanceOption? selectedAppearance;
+    [ObservableProperty] private int subtitleWidth = 920;
+    [ObservableProperty] private int subtitleFontSize = 22;
+    [ObservableProperty] private bool subtitleShowTranslation = true;
     [ObservableProperty] private string autoEndMode = "prompt";
     private string autoEndMinutes = "10";
 
@@ -210,6 +213,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         catch { settings = new AppSettings(); }
         UiLanguage = UiText.IsEnglish(settings.Language) ? "English" : "中文";
         SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
+        SubtitleWidth = Math.Clamp(settings.SubtitleWidth, 520, 1400);
+        SubtitleFontSize = Math.Clamp(settings.SubtitleFontSize, 16, 36);
+        SubtitleShowTranslation = settings.SubtitleShowTranslation;
         SelectedCloudStt = CloudSttChoices.FirstOrDefault(choice => choice.Value == settings.CloudStt) ?? CloudSttChoices[0];
         CloudSttModel = settings.CloudSttModel;
         SelectedCloudLanguage = CloudSttLanguages.FirstOrDefault(choice => choice.Value == settings.CloudSttLanguage) ?? CloudSttLanguages[0];
@@ -271,6 +277,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         BaseUrl = BaseUrl.Trim(),
         Language = UiLanguage == "English" ? "en" : "zh",
         Appearance = SelectedAppearance?.Value ?? "system",
+        SubtitleWidth = Math.Clamp(SubtitleWidth, 520, 1400),
+        SubtitleFontSize = Math.Clamp(SubtitleFontSize, 16, 36),
+        SubtitleShowTranslation = SubtitleShowTranslation,
         CloudStt = SelectedCloudStt?.Value ?? "",
         CloudSttModel = CloudSttModel.Trim(),
         CloudSttLanguage = SelectedCloudLanguage?.Value ?? "auto",

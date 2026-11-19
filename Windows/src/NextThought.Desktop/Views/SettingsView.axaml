@@ -95,6 +95,24 @@
 
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="10">
+          <TextBlock Text="字幕条" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="宽度" Classes="label" VerticalAlignment="Center" />
+            <Slider Minimum="520" Maximum="1400" TickFrequency="20" IsSnapToTickEnabled="True"
+                    Value="{Binding Settings.SubtitleWidth}" Width="260" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="字号" Classes="label" VerticalAlignment="Center" />
+            <Slider Minimum="16" Maximum="36" TickFrequency="1" IsSnapToTickEnabled="True"
+                    Value="{Binding Settings.SubtitleFontSize}" Width="260" />
+          </StackPanel>
+          <CheckBox Content="显示译文" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
+          <TextBlock Text="只影响悬浮字幕条；保存后立即生效。" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="10">
           <TextBlock Text="云端识别（实验）" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
                     Width="240" HorizontalAlignment="Left" />

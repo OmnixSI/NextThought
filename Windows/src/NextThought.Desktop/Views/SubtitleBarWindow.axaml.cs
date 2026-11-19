@@ -18,6 +18,8 @@ public partial class SubtitleBarWindow : Window
     private readonly SubtitleFeed feed = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private bool hiddenByTiming;
+    private int layoutWidth = -1;
+    private int layoutFont = -1;
 
     /// <summary>True while the user explicitly chose the subtitles mode; no idle fade-out.</summary>
     public bool Persistent { get; set; }
@@ -32,7 +34,7 @@ public partial class SubtitleBarWindow : Window
         this.state = state;
         Opened += (_, _) =>
         {
-            PlaceAtBottom();
+            ApplyLayout();
             WindowCaptureHiding.Hide(this);
             timer.Start();
         };
@@ -42,6 +44,19 @@ public partial class SubtitleBarWindow : Window
         {
             if (e.PropertyName is nameof(AppState.Recording) && !state.Recording) Hide();
         };
+    }
+
+    private void ApplyLayout()
+    {
+        var width = Math.Clamp(state.Settings.SubtitleWidth, 520, 1400);
+        var font = Math.Clamp(state.Settings.SubtitleFontSize, 16, 36);
+        if (width == layoutWidth && font == layoutFont) return;
+        layoutWidth = width;
+        layoutFont = font;
+        Width = width;
+        PrimaryText.FontSize = font;
+        PrimaryText.LineHeight = font * 1.45;
+        PlaceAtBottom();
     }
 
     private void PlaceAtBottom()
@@ -67,6 +82,7 @@ public partial class SubtitleBarWindow : Window
         var final = lastFinal is null ? null : new SubtitleLine(lastFinal.Speaker, lastFinal.Text, lastFinal.TranslationRaw);
         feed.Update(channels, final, now);
 
+        ApplyLayout();
         var opacity = Persistent ? 1 : Timing.OpacityAt(now, feed.LastActivity);
         if (opacity <= 0.01)
         {
@@ -86,7 +102,7 @@ public partial class SubtitleBarWindow : Window
         var display = SubtitleText.DisplayFor(line, PrimaryUnits, SecondaryUnits);
         PrimaryText.Text = display.Primary;
         SecondaryText.Text = display.Secondary;
-        SecondaryText.IsVisible = display.Secondary.Length > 0;
+        SecondaryText.IsVisible = state.Settings.SubtitleShowTranslation && display.Secondary.Length > 0;
         SpeakerText.Text = display.Speaker == "remote" ? "对方" : display.Speaker == "room" ? "现场" : "我";
         LiveDot.Opacity = display.IsPartial ? 1 : 0.35;
     }

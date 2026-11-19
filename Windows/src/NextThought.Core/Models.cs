@@ -112,6 +112,15 @@ public sealed record AppSettings
     /// <summary>Appearance: "system" (default), "light" or "dark".</summary>
     public string Appearance { get; set; } = "system";
 
+    /// <summary>Floating subtitle bar width in device-independent pixels.</summary>
+    public int SubtitleWidth { get; set; } = 920;
+
+    /// <summary>Primary subtitle line font size.</summary>
+    public int SubtitleFontSize { get; set; } = 22;
+
+    /// <summary>Show the translated second line in the floating subtitle bar.</summary>
+    public bool SubtitleShowTranslation { get; set; } = true;
+
     /// <summary>Cloud STT provider id ("", "soniox", "openai", "deepgram").</summary>
     public string CloudStt { get; set; } = "";
 
