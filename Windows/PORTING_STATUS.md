@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 音频设备切换实机验证 · 0.5.31
+
+- 新增 `--audio-switch-check`：启动系统声采集，列出至少两个播放设备，强制调用默认设备切换路径，
+  验证新设备生效、仍出帧、无错误。
+- 安装版实测：Realtek → Bose SoundLink，`frames=24`、`passed=true`。
+- **0.5.31 实测**：Core 796 + 基线 101；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 108.8 MiB、私有 43.0 MiB。
+- 14 条审查项：**12 完整 / 2 部分（#9 证书 / #14 真机）/ 0 未修**。
+
 # P1 Workspaces 文件名与备份布局 · 0.5.30
+
 
 - `WorkspaceStore.Save` 使用大写 UUID 文件名（Mac 的 `Workspaces/<UUID>.json` 布局）。
 - 往返测试扩展为检查 Mac 根布局：`settings.plist`、`glossary.json`、`skills.json`、

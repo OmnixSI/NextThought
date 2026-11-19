@@ -140,6 +140,16 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
         lock (pipesGate) return pipes.Any(pipe => pipe.DeviceId == id);
     }
 
+    /// <summary>Device currently feeding a source; used by the hardware switch check.</summary>
+    public string? ActiveDeviceId(AudioSource source)
+    {
+        lock (pipesGate) return pipes.FirstOrDefault(pipe => pipe.Source == source)?.DeviceId;
+    }
+
+    /// <summary>QA hook: force the same path the default-device notification takes.</summary>
+    public void SwitchForCheck(AudioSource source, string deviceId) =>
+        SwitchDefaultDevice(source == AudioSource.System ? DataFlow.Render : DataFlow.Capture, deviceId);
+
     /// <summary>COM notification thread: move the switch off the callback and keep the old pipe alive.</summary>
     private void ScheduleDefaultDeviceChange(DataFlow flow, string id)
     {
