@@ -40,6 +40,7 @@ public sealed record DocumentJob
     }
 
     public string Id { get; init; } = Guid.NewGuid().ToString("D");
+    [System.Text.Json.Serialization.JsonPropertyName("workspaceID")]
     public string WorkspaceId { get; init; } = "";
     public string FileName { get; init; } = "";
     public string? OriginalPath { get; init; }
@@ -49,6 +50,7 @@ public sealed record DocumentJob
     public IReadOnlyList<string> Categories { get; init; } = [];
     public string Provider { get; init; } = "system";
     public string Model { get; init; } = "gpt-6-luna";
+    [System.Text.Json.Serialization.JsonPropertyName("localModelID")]
     public string? LocalModelId { get; init; }
     public string Effort { get; init; } = "medium";
     public bool Fallback { get; init; } = true;
@@ -57,7 +59,9 @@ public sealed record DocumentJob
     public int Completed { get; init; }
     public int? Total { get; init; }
     public string Message { get; init; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("waitingReason")]
     public WaitingReason? WaitingFor { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("documentID")]
     public string? DocumentId { get; init; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;

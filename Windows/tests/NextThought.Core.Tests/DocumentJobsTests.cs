@@ -71,6 +71,43 @@ public sealed class DocumentJobsTests
     }
 
     [Fact]
+    public void OlderJobsWithoutWaitingReasonStillDecode()
+    {
+        var original = DocumentJob.Create("ws", "paper.pdf");
+        var json = System.Text.Json.JsonSerializer.Serialize(original, JsonDefaults.Options);
+        var node = System.Text.Json.Nodes.JsonNode.Parse(json)!.AsObject();
+        node.Remove("waitingReason");
+        var recovered = System.Text.Json.JsonSerializer.Deserialize<DocumentJob>(node.ToJsonString(), JsonDefaults.Options)!;
+        Assert.Equal(original.Id, recovered.Id);
+        Assert.Equal(original.WorkspaceId, recovered.WorkspaceId);
+        Assert.Equal(original.FileName, recovered.FileName);
+        Assert.Equal(original.Stage, recovered.Stage);
+        Assert.Null(recovered.WaitingFor);
+    }
+
+    [Fact]
+    public void DependencyReasonSurvivesPersistenceWithReadyText()
+    {
+        var job = DocumentJob.Create("ws", "paper.pdf") with
+        {
+            Stage = DocumentJob.StageValue.Waiting,
+            DocumentId = "doc",
+            WaitingFor = DocumentJob.WaitingReason.Semantic,
+            Message = "文字可用，等待语义组件"
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(job, JsonDefaults.Options);
+        Assert.Contains("\"workspaceID\"", json);
+        Assert.Contains("\"waitingReason\"", json);
+        Assert.Contains("\"documentID\"", json);
+        var recovered = System.Text.Json.JsonSerializer.Deserialize<DocumentJob>(json, JsonDefaults.Options)!;
+        Assert.Equal(job.Id, recovered.Id);
+        Assert.Equal(job.Stage, recovered.Stage);
+        Assert.Equal("doc", recovered.DocumentId);
+        Assert.Equal(DocumentJob.WaitingReason.Semantic, recovered.WaitingFor);
+        Assert.Equal("文字可用，等待语义组件", recovered.Message);
+    }
+
+    [Fact]
     public void EventsAndArtifactsCarryTheirPayloads()
     {
         var progress = new DocumentJobEvent(DocumentJob.StageValue.Lexical, 2, 5, "索引中");

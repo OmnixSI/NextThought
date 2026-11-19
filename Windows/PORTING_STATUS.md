@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 DocumentJob Mac 键名 · 0.5.53
+
+- `workspaceID`、`localModelID`、`waitingReason`、`documentID` 现在按 Mac 键名读写；
+  此前写出的是 `workspaceId`/`waitingFor` 等，Mac 侧读不到。
+- 移植 `DocumentDependencyTests`：旧任务缺 `waitingReason` 仍可解码；等待原因/文档 ID
+  持久化后保留。Core 823。
+- **0.5.53 实测**：Core 823 + 基线 105；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 108.7 MiB、私有 42.6 MiB。
+
 # P0 场景准备应用会议选择 · 0.5.52
+
 
 - `MeetingPlan.PreparedWorkspace` 现在写入 `mode`、`style`、`preferences`、`customTypeName`、
   `customBaseMode`；不同会议类型用本类型默认风格，显式偏好保留。
