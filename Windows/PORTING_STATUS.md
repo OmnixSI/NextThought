@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 签名者检测实测 · 0.5.37
+
+- `--signature-check` 报告新增 `signer` 与 `allowed`；自签名副本（CN=NextThought Test）实测：
+  `signer=8571AF7BA94B8AC6A24349CF5B3B5C68CA81C753`、`allowed=true`、
+  `status=UnknownError`（自签名根未受信任，符合预期）。
+- 正式证书仍需发布前购买并加入信任链；代码路径已不再只检查 `Valid`。
+- **0.5.37 实测**：Core 799 + 基线 101；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 97.4 MiB、私有 36.2 MiB。
+
 # P1 伴侣加密跨平台向量 · 0.5.36
+
 
 - `CompanionCrypto.Json` 改为 UTF-8 原字符（与 Swift JSONEncoder 一致），修复 Windows 帧与 Mac
   固定向量不一致的问题。

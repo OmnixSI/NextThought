@@ -2113,20 +2113,24 @@ public partial class MainWindow : Window
     {
         await Task.Delay(100);
         var status = "Unknown";
+        var signer = "";
         var error = "";
         try
         {
             status = await NextThought.Platform.Authenticode.StatusAsync(path);
+            signer = await NextThought.Platform.Authenticode.SignerThumbprintAsync(path);
         }
         catch (Exception exception)
         {
             error = exception.Message;
         }
-        var passed = error.Length == 0 && status.Length > 0;
+        var passed = error.Length == 0 && status.Length > 0 && signer.Length > 0;
         var report = new
         {
             passed,
             status,
+            signer,
+            allowed = NextThought.Platform.Authenticode.SignerAllowed(signer),
             valid = NextThought.Platform.Authenticode.IsValid(status),
             required = NextThought.Platform.Authenticode.IsRequired,
             error
