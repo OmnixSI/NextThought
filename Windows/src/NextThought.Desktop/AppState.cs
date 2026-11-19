@@ -1354,16 +1354,48 @@ public partial class AppState : ObservableObject
     }
 
     /// <summary>User prompt with the series question bank as extra reference material.</summary>
+    private IReadOnlyList<SlidePageInfo> slides = [];
+    private int slideIndex = -1;
+
+    public string SlideStatus => slides.Count == 0
+        ? "未导入 PPT"
+        : slideIndex < 0 ? $"{slides.Count} 页" : $"第 {slides[slideIndex].Number} 页 / {slides.Count}";
+
+    private SlidePageInfo? CurrentSlide
+    {
+        get
+        {
+            if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());
+            return slideIndex >= 0 && slideIndex < slides.Count ? slides[slideIndex] : null;
+        }
+    }
+
+    [RelayCommand]
+    private void PreviousSlide() => MoveSlide(-1);
+
+    [RelayCommand]
+    private void NextSlide() => MoveSlide(1);
+
+    private void MoveSlide(int delta)
+    {
+        if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());
+        if (slides.Count == 0) { SetStatus("还没有导入 PPTX，导入后可翻页。", true); return; }
+        slideIndex = Math.Clamp(slideIndex + delta, 0, slides.Count - 1);
+        OnPropertyChanged(nameof(SlideStatus));
+        SetStatus($"幻灯片：{SlideStatus} · {slides[slideIndex].Text[..Math.Min(80, slides[slideIndex].Text.Length)]}");
+    }
+
     private string BuildAnswerUserPrompt(SessionMeta? meta, string transcript, IReadOnlyList<SourceCitation> sources, string question,
         IReadOnlyList<WebResult>? web = null)
     {
+        var slide = CurrentSlide is { } page ? $"\n当前幻灯片（第 {page.Number} 页，{page.DocumentName}）：\n{page.Text}\n" : "";
         var bank = QuestionBankPromptFor(meta);
         var bankBlock = bank.Length == 0 ? "" : $"\n这个系列的题库（历次复盘确认过的回答）：\n{bank}\n";
         var webBlock = web is { Count: > 0 }
             ? "\n联网搜索结果（可能过时，引用时标注链接）：\n" + string.Join("\n", web.Select(result =>
                 $"- {result.Title}（{result.Url}）：{result.Snippet}")) + "\n"
             : "";
-        return $"最近的会议转写：\n{transcript}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n{bankBlock}{webBlock}\n当前问题：{question}";
+        return $"最近的会议转写：\n{transcript}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n{slide}{bankBlock}{webBlock}\n当前问题：{question}";
     }
 
     [RelayCommand(CanExecute = nameof(CanSummarize))]

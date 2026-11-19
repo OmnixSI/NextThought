@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 幻灯片翻页快捷键 · 0.5.34
+
+- 新增 `SlideDecks.FromDocuments`：读取第一个导入 PPTX 的「幻灯片 N」页。
+- `Ctrl+Alt+PageDown/PageUp` 上/下页；当前页文字加入回答 User Prompt，状态栏显示页号。
+- 快捷键总数 **18/18 注册成功**；features 标记 `hotkeys-18`。
+- **测试**：`SlideDeckTests`（排序、忽略 PDF、空 deck）；Core 798。
+- **0.5.34 实测**：Core 798 + 基线 101；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 97.3 MiB、私有 36.3 MiB。
+- 仍未完成：Mac 的「立即回答最新转写」、拖拽式模板编辑、真机/TLS、证书。
+
 # P1 伴侣自检走真实动作处理 · 0.5.33
+
 
 - 自检不再用 `Task.FromResult(true)`：`SeedCompanionHistoryForCheck` 预置历史，
   HTTP 动作 `previous` 调用真实 `HandleCompanionActionAsync`，并断言当前问题/回答被切回。
