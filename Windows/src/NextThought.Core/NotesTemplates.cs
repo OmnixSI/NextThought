@@ -242,7 +242,12 @@ public sealed record StructuredNotesDoc(
     string TemplateName,
     string Language,
     string Title,
-    IReadOnlyList<NotesSectionResult> Sections)
+    IReadOnlyList<NotesSectionResult> Sections,
+    IReadOnlyList<TranscriptCorrection>? Corrections = null,
+    int DroppedCount = 0,
+    DateTimeOffset? GeneratedAt = null,
+    string Model = "",
+    string? TranscriptSourceRevision = null)
 {
     public bool HasContent => Sections.Any(section => section.Items.Count > 0);
 }
