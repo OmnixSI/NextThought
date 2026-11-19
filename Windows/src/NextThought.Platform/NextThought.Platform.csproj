@@ -6,6 +6,7 @@
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
     <PackageReference Include="PdfPig" Version="0.1.16" />
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
     <!-- Managed API shares the verified Sherpa ORT 1.28.2 native DLL; do not introduce a second native runtime. -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.28.0" />
     <!-- PackageDownload keeps the official managed API without restoring nine unrelated OS runtimes. -->

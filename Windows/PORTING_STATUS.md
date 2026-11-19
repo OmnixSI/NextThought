@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 PDF 导出 · 0.5.81
+
+- `PdfWriter`（Platform）用 SkiaSharp 生成 A4 PDF，内嵌中文字体，自动换行/分页；Notes 页
+  「导出 PDF」；验收 `export-pdf` 用 PdfPig 读回「验收」中文（63 项）。
+- 注意：Skia 会嵌入完整中文字体，单份 PDF 约 23 MB；文本可复制/检索，体积待后续子集化。
+- **0.5.81 实测**：Core 841 + 基线 109；验收 63/63、门禁 17/17；启动 1.20 秒、
+  工作集 108.9 MiB、私有 42.5 MiB。
+
 # P1 Word（DOCX）导出 · 0.5.80
+
 
 - 新增无第三方依赖的 `DocxWriter`：有效 DOCX 包、标题/列表/引用段落、XML 转义；
   python-docx 打开验证段落样式正确（Heading 1/2、Normal、项目符号）。

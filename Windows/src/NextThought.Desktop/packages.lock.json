@@ -266,6 +266,7 @@
           "NAudio.Wasapi": "[2.2.1, )",
           "NextThought.Core": "[1.0.0, )",
           "PdfPig": "[0.1.16, )",
+          "SkiaSharp": "[3.119.4, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.0, )",
           "org.k2fsa.sherpa.onnx.runtime.win-x64": "[1.13.8, )"
         }

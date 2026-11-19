@@ -505,6 +505,7 @@ public partial class AppState : ObservableObject
         ImportWaveCommand.NotifyCanExecuteChanged();
         ExportCommand.NotifyCanExecuteChanged();
         ExportDocxCommand.NotifyCanExecuteChanged();
+        ExportPdfCommand.NotifyCanExecuteChanged();
         ExportSrtCommand.NotifyCanExecuteChanged();
         ExportVttCommand.NotifyCanExecuteChanged();
         GenerateStructuredNotesCommand.NotifyCanExecuteChanged();
@@ -1485,6 +1486,21 @@ public partial class AppState : ObservableObject
             await Task.WhenAll(writes.ToArray());
             await Sessions.ExportDocxAsync(CurrentSession.Id, file);
             SetStatus("会议已导出为 Word 文档。");
+        }
+        catch (Exception ex) { SetStatus(ex.Message, true); }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExport))]
+    private async Task ExportPdfAsync()
+    {
+        if (CurrentSession is null || PickSaveFile is null) return;
+        var name = Regex.Replace(CurrentSession.Title, "[<>:\"/\\|?*]", "_") + ".pdf";
+        if (await PickSaveFile("PDF (*.pdf)|*.pdf", name) is not { } file) return;
+        try
+        {
+            await Task.WhenAll(writes.ToArray());
+            await Sessions.ExportPdfAsync(CurrentSession.Id, file);
+            SetStatus("会议已导出为 PDF。");
         }
         catch (Exception ex) { SetStatus(ex.Message, true); }
     }

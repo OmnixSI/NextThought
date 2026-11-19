@@ -258,6 +258,14 @@ public sealed class SessionStore(AppPaths paths)
         return Task.CompletedTask;
     }
 
+    /// <summary>PDF export of the same meeting (A4, embedded CJK font).</summary>
+    public Task ExportPdfAsync(Guid id, string destination, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        PdfWriter.Write(BuildMarkdown(Load(id)), destination);
+        return Task.CompletedTask;
+    }
+
     private static string BuildMarkdown(SessionData data)
     {
         var builder = new StringBuilder().AppendLine("# " + data.Meta.Title).AppendLine().AppendLine(data.Summary);

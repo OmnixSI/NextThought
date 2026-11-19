@@ -1783,6 +1783,14 @@ public partial class MainWindow : Window
             docxOk &= docx.GetEntry("word/document.xml") is not null;
         Check("export-docx", docxOk);
 
+        var pdfPath = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "acceptance.pdf");
+        NextThought.Platform.PdfWriter.Write("# 验收\n\n- 条目", pdfPath);
+        var pdfOk = new FileInfo(pdfPath).Length > 0
+                    && File.ReadAllBytes(pdfPath).Take(4).SequenceEqual("%PDF"u8.ToArray());
+        using (var pdf = UglyToad.PdfPig.PdfDocument.Open(pdfPath))
+            pdfOk &= string.Concat(pdf.GetPages().Select(page => page.Text)).Contains("验收");
+        Check("export-pdf", pdfOk);
+
         var evidenceItem = new NextThought.Core.WorkspaceSeriesItem
         {
             Kind = NextThought.Core.WorkspaceSeriesItem.KindValue.Decision,
