@@ -121,6 +121,7 @@ public partial class AppState : ObservableObject
     private Dictionary<string, string> shortcutOverrides = [];
     public event Action? ShortcutsChanged;
     public event Action<bool>? LanguageChanged;
+    public event Action<int>? TranscriptJumpRequested;
     public IReadOnlyList<string> SubtitleExportModes { get; } = ["双语", "原文", "译文"];
     [ObservableProperty] private string subtitleExportMode = "双语";
     [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
@@ -746,6 +747,13 @@ public partial class AppState : ObservableObject
     {
         Settings.RefreshProcesses();
         SetStatus("已刷新可采集的应用程序列表。");
+    }
+
+    /// <summary>Jump from a notes timestamp back to the live transcript.</summary>
+    public void JumpToTranscript(int seconds)
+    {
+        Section = AppSection.Live;
+        Dispatcher.UIThread.Post(() => TranscriptJumpRequested?.Invoke(Math.Max(0, seconds)));
     }
 
     public void RefreshHistory(Guid? select = null)

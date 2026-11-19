@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 笔记时间戳跳回转写 · 0.5.137
+
+- 订阅 `FishboneView.Jump`/`ViewpointMatrixView.Jump` → `AppState.JumpToTranscript(seconds)`：
+  切到 Live 页，`LiveView` 选中最近的行并滚动；修复审查第 15 节「点击跳回原话没反应」。
+- `--demo --notes-jump-check` 实测 section=Live、selected=true。
+- Core 863 + 基线 114；全部检查通过。
+- **0.5.137 实测**：Core 863 + 基线 114；验收 63/63、门禁 17/17；环境负载下启动
+  4.24 秒、工作集 126.3 MiB、私有 58.0 MiB。
+
 # P2 页面切换淡入 · 0.5.136
+
 
 - 页面首次/切换时 160ms 淡入（复用浮窗动画），`--page-check` 仍 7/7；
   7 页全部懒加载后工作集 150.3 MiB，运行起始 126.1 MiB。

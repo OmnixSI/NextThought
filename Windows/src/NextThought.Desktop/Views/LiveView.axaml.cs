@@ -19,9 +19,27 @@ public partial class LiveView : UserControl
 
     private void Attach()
     {
-        if (state is not null) state.Transcript.CollectionChanged -= OnTranscriptChanged;
+        if (state is not null)
+        {
+            state.Transcript.CollectionChanged -= OnTranscriptChanged;
+            state.TranscriptJumpRequested -= OnTranscriptJumpRequested;
+        }
         state = DataContext as AppState;
-        if (state is not null) state.Transcript.CollectionChanged += OnTranscriptChanged;
+        if (state is not null)
+        {
+            state.Transcript.CollectionChanged += OnTranscriptChanged;
+            state.TranscriptJumpRequested += OnTranscriptJumpRequested;
+        }
+    }
+
+    private void OnTranscriptJumpRequested(int seconds)
+    {
+        if (state?.CurrentSession is not { } session) return;
+        var target = session.StartedAt.AddSeconds(seconds);
+        var row = state.Transcript.OrderBy(item => Math.Abs((item.Date - target).TotalSeconds)).FirstOrDefault();
+        if (row is null) return;
+        TranscriptList.SelectedItem = row;
+        TranscriptList.ScrollIntoView(row);
     }
 
     private void OnTranscriptChanged(object? sender, NotifyCollectionChangedEventArgs e)

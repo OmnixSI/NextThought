@@ -53,6 +53,7 @@ public static class StartupOptions
     public static string? AppearanceCheck { get; private set; }
     public static string? CloudSettingsCheck { get; private set; }
     public static string? CloudImportCheck { get; private set; }
+    public static string? NotesJumpCheck { get; private set; }
     public static string? CaptureHideCheck { get; private set; }
     public static string? AudioSwitchCheck { get; private set; }
     public static string? TeleprompterHandleCheck { get; private set; }
@@ -147,6 +148,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--appearance-check=", StringComparison.OrdinalIgnoreCase)) AppearanceCheck = argument["--appearance-check=".Length..];
             else if (argument.StartsWith("--cloud-settings-check=", StringComparison.OrdinalIgnoreCase)) CloudSettingsCheck = argument["--cloud-settings-check=".Length..];
             else if (argument.StartsWith("--cloud-import-check=", StringComparison.OrdinalIgnoreCase)) CloudImportCheck = argument["--cloud-import-check=".Length..];
+            else if (argument.StartsWith("--notes-jump-check=", StringComparison.OrdinalIgnoreCase)) NotesJumpCheck = argument["--notes-jump-check=".Length..];
             else if (argument.StartsWith("--capture-hide-check=", StringComparison.OrdinalIgnoreCase)) CaptureHideCheck = argument["--capture-hide-check=".Length..];
             else if (argument.StartsWith("--audio-switch-check=", StringComparison.OrdinalIgnoreCase)) AudioSwitchCheck = argument["--audio-switch-check=".Length..];
             else if (argument.StartsWith("--teleprompter-handle-check=", StringComparison.OrdinalIgnoreCase)) TeleprompterHandleCheck = argument["--teleprompter-handle-check=".Length..];

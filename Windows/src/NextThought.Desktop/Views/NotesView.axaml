@@ -88,9 +88,9 @@
                                 IsVisible="{Binding NotesFormatIsStandard}" />
             <!-- 结构化纪要：鱼骨图画成骨图，观点对照画成矩阵，大纲以带时间的 Markdown 呈现 -->
             <StackPanel Spacing="10" IsVisible="{Binding !NotesFormatIsStandard}">
-              <views:FishboneView Height="360" Notes="{Binding StructuredPayload.Fishbone}"
+              <views:FishboneView x:Name="Fishbone" Height="360" Notes="{Binding StructuredPayload.Fishbone}"
                                   IsVisible="{Binding HasFishboneDrawing}" />
-              <views:ViewpointMatrixView Matrix="{Binding StructuredPayload.Viewpoints}"
+              <views:ViewpointMatrixView x:Name="Viewpoints" Matrix="{Binding StructuredPayload.Viewpoints}"
                                          IsVisible="{Binding HasViewpointMatrix}" />
               <views:MarkdownText Text="{Binding StructuredMarkdown}" BaseFontSize="14"
                                   IsVisible="{Binding ShowStructuredMarkdown}" />

@@ -35,6 +35,8 @@ public class FishboneView : UserControl
     /// <summary>Raised when a cause with a time is clicked (jump back to the transcript).</summary>
     public event Action<int>? Jump;
 
+    public void RaiseJumpForCheck(int seconds) => Jump?.Invoke(seconds);
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);

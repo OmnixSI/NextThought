@@ -130,6 +130,7 @@ public partial class MainWindow : Window
             if (StartupOptions.AppearanceCheck is { } appearanceCheck) await RunAppearanceCheckAsync(appearanceCheck);
             if (StartupOptions.CloudSettingsCheck is { } cloudSettings) await RunCloudSettingsCheckAsync(cloudSettings);
             if (StartupOptions.CloudImportCheck is { } cloudImport) await RunCloudImportCheckAsync(cloudImport);
+            if (StartupOptions.NotesJumpCheck is { } notesJump) await RunNotesJumpCheckAsync(notesJump);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
             if (StartupOptions.TeleprompterHandleCheck is { } handleCheck) await RunTeleprompterHandleCheckAsync(handleCheck);
@@ -2463,6 +2464,40 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: a note timestamp jumps back to the live transcript.</summary>
+    private async Task RunNotesJumpCheckAsync(string path)
+    {
+        state.Section = AppSection.Notes;
+        await Task.Delay(500);
+        var fishbone = this.GetVisualDescendants().OfType<FishboneView>().FirstOrDefault();
+        var passed = false;
+        var selected = false;
+        var section = "";
+        try
+        {
+            fishbone?.RaiseJumpForCheck(0);
+            await Task.Delay(500);
+            var live = this.GetVisualDescendants().OfType<LiveView>().FirstOrDefault();
+            selected = live?.FindControl<ListBox>("TranscriptList")?.SelectedItem is not null;
+            section = state.Section.ToString();
+            passed = state.Section == AppSection.Live && selected;
+        }
+        catch (Exception ex) { Console.WriteLine("notes-jump-check: " + ex.Message); }
+        var report = new { passed, section, selected };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "notes-jump-check: passed" : "notes-jump-check: failed");
+        Close();
+    }
+
     /// <summary>QA: WAV import goes through the cloud client against a loopback WebSocket.</summary>
     private async Task RunCloudImportCheckAsync(string path)
     {
