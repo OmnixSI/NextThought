@@ -266,8 +266,8 @@
     <Setter Property="Background" Value="{DynamicResource Surface}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
     <Setter Property="BorderThickness" Value="0.5" />
-    <Setter Property="CornerRadius" Value="14" />
-    <Setter Property="BoxShadow" Value="0 1 2 0 #121C1B19, 0 8 14 0 #0F1C1B19" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusMedium}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource PaperCardShadow}" />
     <Setter Property="Padding" Value="16" />
   </Style>
   <Style Selector="Border.aiBlock">
@@ -279,8 +279,8 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
     <Setter Property="BorderThickness" Value="0.5" />
-    <Setter Property="CornerRadius" Value="22" />
-    <Setter Property="BoxShadow" Value="0 12 16 0 #1F1C1B19" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusLarge}" />
+    <Setter Property="BoxShadow" Value="{DynamicResource FloatShadowValue}" />
   </Style>
 
   <!-- Sidebar navigation row -->

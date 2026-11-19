@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 设计 token 落地 · 0.5.143
+
+- `Border.card` 使用 `RadiusMedium` + `PaperCardShadow`；`Border.floating` 使用
+  `RadiusLarge` + `FloatShadowValue`，不再在样式里写死 14/22 与阴影字符串。
+- 审查第 15 节「间距与圆角定义了但没用/阴影不一致」部分修复。
+- Core 863 + 基线 114；全部检查通过。
+- **0.5.143 实测**：Core 863 + 基线 114；验收 63/63、门禁 17/17；环境负载下启动
+  4.18 秒、工作集 126.6 MiB、私有 58.5 MiB。
+
 # P2 字幕条设置 · 0.5.142
+
 
 - 设置页新增字幕条卡片：宽度 520–1400、字号 16–36、是否显示译文，保存到
   `settings.json`；`SubtitleBarWindow.ApplyLayout` 只在实际变化时更新并重定位。
