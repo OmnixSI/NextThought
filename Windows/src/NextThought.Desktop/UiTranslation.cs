@@ -19,6 +19,18 @@ public static class UiTranslation
             var translated = UiText.Translate(text.Text, english);
             if (!string.Equals(translated, text.Text, StringComparison.Ordinal)) text.Text = translated;
         }
+        foreach (var box in root.GetVisualDescendants().OfType<TextBox>())
+        {
+            if (box.PlaceholderText is not { Length: > 0 } watermark) continue;
+            var translated = UiText.Translate(watermark, english);
+            if (!string.Equals(translated, watermark, StringComparison.Ordinal)) box.PlaceholderText = translated;
+        }
+        foreach (var box in root.GetVisualDescendants().OfType<ComboBox>())
+        {
+            if (box.PlaceholderText is not { Length: > 0 } placeholder) continue;
+            var translated = UiText.Translate(placeholder, english);
+            if (!string.Equals(translated, placeholder, StringComparison.Ordinal)) box.PlaceholderText = translated;
+        }
         foreach (var control in root.GetVisualDescendants().OfType<ContentControl>())
         {
             if (control.Content is not string value || value.Length == 0) continue;

@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 英文占位文字 · 0.5.104
+
+- `UiTranslation` 同时翻译 `TextBox.PlaceholderText` 与 `ComboBox.PlaceholderText`；
+  模板名/章节标题/搜索/筛选/问题输入等占位文字切英文。
+- 词典 239 条；`--ui-language-check` 7/7 + 反向通过；Core 862。
+- **0.5.104 实测**：Core 862 + 基线 109；验收 63/63、门禁 17/17；启动 1.26 秒、
+  工作集 98.7 MiB、私有 37.1 MiB。
+
 # P2 英文状态提示 · 0.5.103
+
 
 - `AppState.SetStatus` 走 `UiText.Translate`；词典扩到 **238 条**，覆盖导出/取消/校对/更新/
   伴侣/检索等 40+ 条状态与错误提示（带动态前缀的仍保留原文）。

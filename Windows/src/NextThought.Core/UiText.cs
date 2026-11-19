@@ -248,7 +248,8 @@ public static class UiText
         ["正在加载模型并转写 WAV…"] = "Loading the model and transcribing the WAV…",
         ["正在检索相关资料；首次使用时生成本地索引…"] = "Searching materials; the local index is built on first use…",
         ["正在联网核实…"] = "Checking online…",
-        ["正在校对转写…"] = "Proofreading the transcript…"
+        ["正在校对转写…"] = "Proofreading the transcript…",
+        ["选择自定义模板"] = "Select custom template",
     };
 
     private static readonly Dictionary<string, string> Chinese = English
