@@ -1562,6 +1562,26 @@ public partial class AppState : ObservableObject
     public string LiveModeLabel => LiveMode.Title();
 
     [RelayCommand]
+    private async Task RegenerateAnswerAsync()
+    {
+        if (Answering) return;
+        await AnswerAsync(string.IsNullOrWhiteSpace(DetectedQuestion) ? "请总结当前讨论" : DetectedQuestion, false);
+    }
+
+    [RelayCommand]
+    private async Task ShorterAnswerAsync()
+    {
+        if (Answering) return;
+        await AnswerAsync("请把上一条回答压缩到三句话以内，只保留结论。", false);
+    }
+
+    [RelayCommand]
+    private void PreviousAnswer() => ShowCompanionHistory(-1);
+
+    [RelayCommand]
+    private void NextAnswer() => ShowCompanionHistory(1);
+
+    [RelayCommand]
     private void CopyAnswer()
     {
         if (AnswerText.Length == 0) return;

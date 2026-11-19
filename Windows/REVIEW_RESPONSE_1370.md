@@ -23,6 +23,13 @@
 | 13 | 语义检索误开增强 OCR | **已修** | `LibraryViewModel` 不再把 `UseSemanticRetrieval` 传给 `enhancedOcr`。 |
 | 14 | 伴侣内容不更新/跨线程/缺动作 | **部分** | 问题/回答变化即 `Publish`；动作统一切到 UI 线程；补 english/chinese/previous/next。`--companion-check` 仍用假动作回调，未覆盖真实回答，也无真机。 |
 
+## 快捷键（0.5.12 追加）
+
+Mac 的 15+ 个动作里，Windows 从 7 个扩到 **14 个**可执行快捷键：
+R 记录、I 提示岛、M 会中窗口、S 区域截图、U 提词器、\\ 隐藏/恢复、N 唤回主窗、
+H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、J 提词穿透。
+安装版启动日志 **14/14 注册成功**（0.5.12）。仍缺：窗口截图、暂停/恢复聆听、幻灯片上/下页。
+
 ## 第 6 节的窗口与更新（0.5.1 追加）
 
 | 项 | 状态 | 证据 |
@@ -57,10 +64,10 @@
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.11 实测
+## 0.5.12 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **791**、基线 **94**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.12 秒，工作集 **109.3 MiB**、私有 42.8 MiB
+- 启动 1.13 秒，工作集 **109.1 MiB**、私有 43.5 MiB

@@ -2388,12 +2388,19 @@ public partial class MainWindow : Window
         hotkeys = new GlobalHotkeys(
         [
             new GlobalHotkeys.Binding("Ctrl+Alt+R 开始或停止记录", 0x52, ToggleRecording),
-            new GlobalHotkeys.Binding("Ctrl+Alt+O 显示或隐藏提词岛", 0x4F, ToggleCueIsland),
-            new GlobalHotkeys.Binding("Ctrl+Alt+M 纪要窗口/字幕条/隐藏", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+I 显示或隐藏提示岛", 0x49, ToggleCueIsland),
+            new GlobalHotkeys.Binding("Ctrl+Alt+M 切换会中窗口", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
             new GlobalHotkeys.Binding("Ctrl+Alt+S 区域截图", 0x53, () => _ = CaptureRegionAsync()),
-            new GlobalHotkeys.Binding("Ctrl+Alt+T 提词器", 0x54, ToggleTeleprompter),
+            new GlobalHotkeys.Binding("Ctrl+Alt+U 提词器", 0x55, ToggleTeleprompter),
             new GlobalHotkeys.Binding("Ctrl+Alt+\\ 隐藏或恢复所有窗口", 0xDC, ToggleHideAll),
-            new GlobalHotkeys.Binding("Ctrl+Alt+N 唤起主窗口", 0x4E, RestoreMainWindow)
+            new GlobalHotkeys.Binding("Ctrl+Alt+N 唤起主窗口", 0x4E, RestoreMainWindow),
+            new GlobalHotkeys.Binding("Ctrl+Alt+H 复制当前回答", 0x48, () => state.CopyAnswerCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+G 重新生成上一题", 0x47, () => state.RegenerateAnswerCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+K 把回答改短", 0x4B, () => state.ShorterAnswerCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+X 取消当前回答", 0x58, () => state.CancelCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+Left 上一条回答", 0x25, () => state.PreviousAnswerCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+Right 下一条回答", 0x27, () => state.NextAnswerCommand.Execute(null)),
+            new GlobalHotkeys.Binding("Ctrl+Alt+J 提词浮窗鼠标穿透", 0x4A, ToggleTeleprompterClickThrough)
         ]);
         if (hotkeys.Unregistered.Count > 0)
             state.SetStatus("以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。", true);
@@ -2554,7 +2561,7 @@ public partial class MainWindow : Window
     {
         if (teleprompter is { IsVisible: true })
         {
-            // Hiding must also leave click-through, otherwise Ctrl+Alt+T cannot bring it back.
+            // Hiding must also leave click-through, otherwise Ctrl+Alt+U cannot bring it back.
             teleprompter.DisableClickThrough();
             teleprompter.Hide();
             return;
@@ -2570,6 +2577,17 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Show or hide the floating cue island (the Mac app's notch panel).</summary>
+    private void ToggleTeleprompterClickThrough()
+    {
+        if (teleprompter is null || !teleprompter.IsVisible)
+        {
+            ToggleTeleprompter();
+            if (teleprompter is null || !teleprompter.IsVisible) return;
+        }
+        teleprompter.ToggleClickThrough();
+        state.SetStatus(teleprompter.ClickThrough ? "提词浮窗已开启鼠标穿透，Ctrl+Alt+J 可恢复。" : "提词浮窗已恢复鼠标操作。");
+    }
+
     public void ToggleCueIsland()
     {
         if (island is { IsVisible: true }) { island.Hide(); return; }

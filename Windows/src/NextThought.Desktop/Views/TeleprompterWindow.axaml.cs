@@ -141,6 +141,13 @@ public partial class TeleprompterWindow : Window
 
     public bool ClickThrough => through;
 
+    /// <summary>F7-style toggle from the global hotkey; also persists the choice.</summary>
+    public void ToggleClickThrough()
+    {
+        ApplyClickThrough(!through);
+        Remember();
+    }
+
     /// <summary>Leaves click-through mode and persists it (used by the close/hide paths).</summary>
     public void DisableClickThrough()
     {
