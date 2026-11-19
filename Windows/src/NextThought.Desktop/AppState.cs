@@ -1490,9 +1490,10 @@ public partial class AppState : ObservableObject
     {
         var experience = ExperiencePromptFor(meta);
         var skills = SkillPrompt(meta);
-        var prompt = experience.Length == 0
-            ? AnswerPrompt
-            : AnswerPrompt + "\n\n这个系列已经确认的经验（优先遵守）：\n" + experience;
+        // Use the ported AnswerPromptBuilder instructions (safety, citation, style) instead of
+        // the old three-sentence prompt; series experience and skills stay as extra sections.
+        var prompt = AnswerPromptBuilder.Instructions(Settings.WebSearch);
+        if (experience.Length > 0) prompt += "\n\n这个系列已经确认的经验（优先遵守）：\n" + experience;
         return skills.Length == 0 ? prompt : prompt + "\n\n用户加载的技能（按适用部分执行）：\n" + skills;
     }
 
@@ -2038,6 +2039,8 @@ public partial class AppState : ObservableObject
             SummaryText = data.Summary.Length > 0 ? data.Summary : UiText.T("这场会议还没有纪要，点击上方整理。");
             // Each scene recommends a notes format (plan §8 纪要格式); the cached copy is loaded with it.
             var mode = Enum.TryParse<MeetingMode>(data.Meta.Mode, true, out var parsed) ? parsed : MeetingMode.Meeting;
+            SelectedMode = mode;
+            tracker.Mode = mode;
             SelectedNotesFormat = NotesFormats.Recommended(mode);
             StructuredMarkdown = "";
             OnPropertyChanged(nameof(HasStructuredNotes));
@@ -2069,7 +2072,7 @@ public partial class AppState : ObservableObject
         AnswerText = "";
         SummaryText = "结束会议后，按转写整理总结、决定、待办和未决问题。";
         DetectedQuestion = "手动提问，或开启自动回答。";
-        tracker = new QuestionCandidateTracker { Mode = MeetingMode.Meeting };
+        tracker = new QuestionCandidateTracker { Mode = SelectedMode };
         automaticScheduler = new AutomaticAnswerScheduler();
         lastMicrophoneSpeech = default;
         systemLevel = microphoneLevel = 0;

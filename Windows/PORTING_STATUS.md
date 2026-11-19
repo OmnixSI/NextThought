@@ -29,7 +29,19 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 回答提示词与场景阈值 · 0.5.138
+
+- `BuildAnswerSystemPrompt` 改用 `AnswerPromptBuilder.Instructions(webSearch)`（完整安全/引用/
+  风格要求），系列经验与技能继续追加；不再用旧的三句固定提示。
+- `QuestionCandidateTracker.Mode` 在开始记录/打开会议时使用 `SelectedMode` / 会话
+  `meta.Mode`，面试与讲座使用各自阈值。
+- 审查第 15 节「回答没有用移植提示词」「场景不影响问题识别」两项已修。
+- Core 863 + 基线 114；全部检查通过。
+- **0.5.138 实测**：Core 863 + 基线 114；验收 63/63、门禁 17/17；环境负载下启动
+  4.29 秒、工作集 126.2 MiB、私有 58.0 MiB。
+
 # P1 笔记时间戳跳回转写 · 0.5.137
+
 
 - 订阅 `FishboneView.Jump`/`ViewpointMatrixView.Jump` → `AppState.JumpToTranscript(seconds)`：
   切到 Live 页，`LiveView` 选中最近的行并滚动；修复审查第 15 节「点击跳回原话没反应」。
