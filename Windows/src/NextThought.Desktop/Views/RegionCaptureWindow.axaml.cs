@@ -19,6 +19,7 @@ public partial class RegionCaptureWindow : Window
     {
         this.capture = capture;
         InitializeComponent();
+        Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         ScreenImage.Source = capture.Image;
         CanvasHost.PointerPressed += OnPressed;
         CanvasHost.PointerMoved += OnMoved;

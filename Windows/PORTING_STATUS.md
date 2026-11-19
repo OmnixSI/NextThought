@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 浮窗打开时本地化 · 0.5.111
+
+- 提词岛、字幕条、提词器、区域截图窗口在 `Opened` 时按当前语言应用词典；
+  英文启动后首次打开的浮窗标题为 `NextThought Cue island` 等，不再是中文。
+- `--island --ui-language-check` 实测 `islandTitle=NextThought Cue island`；Core 863。
+- **0.5.111 实测**：Core 863 + 基线 109；验收 63/63、门禁 17/17；启动 2.72 秒、
+  工作集 109.2 MiB、私有 42.7 MiB。
+
 # P2 动态计数本地化 · 0.5.110
+
 
 - `UiText` 增加 `Meetings/Transcripts/Answers/Lessons/Pending/SeriesCount/Materials/Asked`
   与全局 `EnglishUi` 标志；历史行、最近会议行、系列行/摘要、知识候选标签随中英切换。

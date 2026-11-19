@@ -2464,8 +2464,10 @@ public partial class MainWindow : Window
         UiTranslation.Apply(this, false);
         var back = this.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
             .Select(block => block.Text ?? "").ToHashSet(StringComparer.Ordinal);
-        var passed = found.Length == labels.Length && back.Contains("首页") && back.Contains("设置");
-        var report = new { passed, found, missing = labels.Except(found).ToArray(), reversed = back.Contains("首页") };
+        var islandTitle = island?.Title ?? "";
+        var passed = found.Length == labels.Length && back.Contains("首页") && back.Contains("设置")
+                     && (islandTitle.Length == 0 || islandTitle.Contains("Cue island", StringComparison.Ordinal));
+        var report = new { passed, found, missing = labels.Except(found).ToArray(), reversed = back.Contains("首页"), islandTitle };
         try
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));
@@ -2832,6 +2834,7 @@ public partial class MainWindow : Window
             var capture = ScreenCapture.VirtualScreen();
             if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
             var picker = new RegionCaptureWindow(capture);
+            UiTranslation.Apply(picker, state.Settings.UiLanguage == "English");
             var cropped = await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
             if (cropped is null) { state.SetStatus("已取消截图。"); return; }
             var path = Path.Combine(Path.GetTempPath(), $"nextthought-shot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
@@ -2929,6 +2932,7 @@ public partial class MainWindow : Window
             var window = new TeleprompterWindow(state);
             window.Closed += (_, _) => { if (ReferenceEquals(teleprompter, window)) teleprompter = null; };
             teleprompter = window;
+            UiTranslation.Apply(window, state.Settings.UiLanguage == "English");
         }
         teleprompter.Show();
         _ = FadeInAsync(teleprompter);
@@ -2970,6 +2974,7 @@ public partial class MainWindow : Window
     {
         if (hiddenAll) return;
         island ??= new CueIslandWindow(state);
+        UiTranslation.Apply(island, state.Settings.UiLanguage == "English");
         if (!island.IsVisible)
         {
             island.Show();
@@ -3100,6 +3105,7 @@ public partial class MainWindow : Window
         if (island is not { IsVisible: true })
         {
             island ??= new CueIslandWindow(state);
+            UiTranslation.Apply(island, state.Settings.UiLanguage == "English");
             island.Show();
         }
         Hide();
@@ -3129,6 +3135,7 @@ public partial class MainWindow : Window
             return;
         }
         subtitleBar ??= new SubtitleBarWindow(state);
+        UiTranslation.Apply(subtitleBar, state.Settings.UiLanguage == "English");
         if (!subtitleBar.IsVisible) subtitleBar.Show();
     }
 

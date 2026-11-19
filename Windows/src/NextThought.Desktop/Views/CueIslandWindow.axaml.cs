@@ -15,6 +15,7 @@ public partial class CueIslandWindow : Window
     public CueIslandWindow(AppState state)
     {
         InitializeComponent();
+        Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         DataContext = state;
         Opened += (_, _) =>
         {

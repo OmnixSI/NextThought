@@ -24,6 +24,7 @@ public partial class SubtitleBarWindow : Window
     public SubtitleBarWindow(AppState state)
     {
         InitializeComponent();
+        Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         DataContext = state;
         this.state = state;
         Opened += (_, _) =>
