@@ -86,6 +86,35 @@ public sealed class WorkspaceTests : IDisposable
     }
 
     [Fact]
+    public void StoreKeepsMacSceneSetupFields()
+    {
+        var id = Guid.NewGuid().ToString("D").ToUpperInvariant();
+        var json = "{\"series\":[{\"id\":\"" + id + "\",\"name\":\"客户会\",\"createdAt\":\"2026-01-01T00:00:00Z\","
+            + "\"sessionIDs\":[],\"lessons\":[],\"mode\":\"client\",\"style\":\"detailed\","
+            + "\"preferences\":\"先讲风险\",\"notes\":\"内部备注\",\"customTypeName\":\"投标复盘\","
+            + "\"customBaseMode\":\"client\",\"archived\":true,"
+            + "\"glossary\":{\"entries\":[{\"canonical\":\"Kubernetes\",\"kind\":\"product\"}]}}]}";
+        var store = new WorkspaceStore(directory);
+        Directory.CreateDirectory(Path.GetDirectoryName(store.Path_)!);
+        File.WriteAllText(store.Path_, json);
+        var series = store.Load().Series.Single();
+        Assert.Equal("client", series.Mode);
+        Assert.Equal("detailed", series.Style);
+        Assert.Equal("先讲风险", series.Preferences);
+        Assert.Equal("内部备注", series.Notes);
+        Assert.Equal("投标复盘", series.CustomTypeName);
+        Assert.Equal("client", series.CustomBaseMode);
+        Assert.True(series.Archived);
+        Assert.Equal(GlossaryKind.Product, series.Glossary!.Entries.Single().Kind);
+
+        store.Save(new WorkspaceData([series]));
+        var saved = File.ReadAllText(Path.Combine(directory, "Workspaces", id + ".json"));
+        Assert.Contains("\"customTypeName\"", saved);
+        Assert.Contains("\"glossary\"", saved);
+        Assert.Contains("\"sourceKind\": \"product\"", saved);
+    }
+
+    [Fact]
     public void StoreKeepsTheMacSkillIDs()
     {
         var skillId = Guid.NewGuid().ToString("D").ToUpperInvariant();

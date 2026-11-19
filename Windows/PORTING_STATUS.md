@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 Mac Workspace 场景字段保留 · 0.5.46
+
+- `WorkspaceSeries` 新增并保留 `mode`、`style`、`preferences`、`notes`、`customTypeName`、
+  `customBaseMode`、`glossary`、`archived`；JSON 键名与 Mac 一致。
+- `GlossaryEntryConverter` 也用于 Workspace 序列化，术语类型仍按 Mac 规则。
+- **测试**：`StoreKeepsMacSceneSetupFields`；Core 801。
+- **0.5.46 实测**：Core 801 + 基线 105；验收 61/61、门禁 17/17；启动 1.23 秒、
+  工作集 108.8 MiB、私有 42.2 MiB。
+- 仍未完成：`fields`/`standing` 等字段、真机/TLS、正式证书。
+
 # P1 模板章节列表编辑器 · 0.5.45
+
 
 - 设置页自定义模板区新增：模板选择/新建、模板名、章节列表（标题/要求/上移/下移/删除）、
   添加章节、保存结构；保存后进入纪要模板下拉框。

@@ -68,7 +68,8 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
 ## 第 5 节的数据层问题（部分，下一阶段主线）
 
 - 0.5.3 起系列按 `Workspaces/<ID>.json` 保存并优先读取，旧 `Workspace/workspace.json` 继续兼容；
-  但字段仍是简化结构，缺场景/偏好/技能/术语等十多个 Mac 字段。
+  0.5.28/0.5.46 已补 `skillIDs`、`mode`、`style`、`preferences`、`notes`、`customTypeName`、
+  `customBaseMode`、`glossary`、`archived` 等 Mac 字段；仍缺 `fields`/`standing` 等。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
 - 0.5.4 起结构化纪要写入 `summary.json → structured`；0.5.14 起改为直接写 Mac 的 StructuredNotesPayload，
   并维护 `structuredAll` 与 `transcriptSourceRevision`；0.5.15 起 `summary.questions` 由回答记录填充；0.5.17 起模板纪要的经验/题库写入
@@ -92,10 +93,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.45 实测
+## 0.5.46 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.20 秒，工作集 **108.9 MiB**、私有 43.1 MiB
+- 启动 1.23 秒，工作集 **108.8 MiB**、私有 42.2 MiB

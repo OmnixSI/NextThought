@@ -91,6 +91,32 @@ public sealed record WorkspaceSeries(
     [JsonPropertyName("skillIDs")]
     public IReadOnlyList<string>? SkillIds { get; init; }
 
+    // Mac Workspace fields the Windows UI does not expose yet. They are kept so a Mac backup
+    // round-trips without silently dropping the scene's setup.
+    [JsonPropertyName("mode")]
+    public string? Mode { get; init; }
+
+    [JsonPropertyName("style")]
+    public string? Style { get; init; }
+
+    [JsonPropertyName("preferences")]
+    public string? Preferences { get; init; }
+
+    [JsonPropertyName("notes")]
+    public string? Notes { get; init; }
+
+    [JsonPropertyName("customTypeName")]
+    public string? CustomTypeName { get; init; }
+
+    [JsonPropertyName("customBaseMode")]
+    public string? CustomBaseMode { get; init; }
+
+    [JsonPropertyName("glossary")]
+    public Glossary? Glossary { get; init; }
+
+    [JsonPropertyName("archived")]
+    public bool? Archived { get; init; }
+
     /// <summary>Feed lessons and the question bank back into answers (default on).</summary>
     public bool UseKnowledge { get; init; } = true;
 
@@ -244,7 +270,7 @@ public sealed class WorkspaceStore
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
     };
 
     private static readonly JsonSerializerOptions ReadOptions = new(Options) { PropertyNameCaseInsensitive = true };
