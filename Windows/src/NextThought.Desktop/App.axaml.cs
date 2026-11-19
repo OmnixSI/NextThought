@@ -5,6 +5,7 @@ using System.Text;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using NextThought.Desktop.Views;
 
@@ -28,10 +29,18 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        RequestedThemeVariant = StartupOptions.Dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+        RequestedThemeVariant = StartupOptions.Dark ? ThemeVariant.Dark : ThemeVariant.Default;
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var state = new AppState();
+            var appearance = StartupOptions.Dark ? "dark" : "system";
+            try { appearance = StartupOptions.Dark ? "dark" : state.SettingsStore.Load().Appearance; } catch { }
+            RequestedThemeVariant = appearance switch
+            {
+                "dark" => ThemeVariant.Dark,
+                "light" => ThemeVariant.Light,
+                _ => ThemeVariant.Default
+            };
             var root = state.Paths.Root.ToUpperInvariant();
             var name = "Local\\NextThought." + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(root)))[..24];
             instance = new Mutex(true, name, out ownsInstance);

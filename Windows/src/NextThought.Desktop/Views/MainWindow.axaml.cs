@@ -126,6 +126,7 @@ public partial class MainWindow : Window
             if (StartupOptions.UiLanguageCheck is { } uiLanguage) await RunUiLanguageCheckAsync(uiLanguage);
             if (StartupOptions.SettingsSearchCheck is { } settingsSearch) await RunSettingsSearchCheckAsync(settingsSearch);
             if (StartupOptions.ProviderPresetCheck is { } presetCheck) await RunProviderPresetCheckAsync(presetCheck);
+            if (StartupOptions.AppearanceCheck is { } appearanceCheck) await RunAppearanceCheckAsync(appearanceCheck);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
             if (StartupOptions.TeleprompterHandleCheck is { } handleCheck) await RunTeleprompterHandleCheckAsync(handleCheck);
@@ -2454,6 +2455,28 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: the saved appearance (dark) reaches the actual theme variant.</summary>
+    private async Task RunAppearanceCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var selected = state.Settings.SelectedAppearance?.Value ?? "";
+        var actual = ActualThemeVariant;
+        var passed = selected == "dark" && actual == Avalonia.Styling.ThemeVariant.Dark;
+        var report = new { passed, selected, actual = actual.ToString() };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "appearance-check: passed" : "appearance-check: failed");
+        Close();
+    }
+
     /// <summary>QA: choosing a provider preset fills the API URL and model.</summary>
     private async Task RunProviderPresetCheckAsync(string path)
     {

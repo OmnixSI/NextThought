@@ -1732,6 +1732,7 @@ public partial class AppState : ObservableObject
         {
             await Settings.SaveAsync();
             LanguageChanged?.Invoke(Settings.UiLanguage == "English");
+            ApplyAppearance();
             RefreshModelState();
             SetStatus("设置已保存，密钥已用当前 Windows 用户加密。");
         }
@@ -1739,6 +1740,17 @@ public partial class AppState : ObservableObject
     }
 
     private bool CanSaveSettings() => IsIdle;
+
+    private void ApplyAppearance()
+    {
+        if (Avalonia.Application.Current is not { } app) return;
+        app.RequestedThemeVariant = Settings.Build().Appearance switch
+        {
+            "dark" => Avalonia.Styling.ThemeVariant.Dark,
+            "light" => Avalonia.Styling.ThemeVariant.Light,
+            _ => Avalonia.Styling.ThemeVariant.Default
+        };
+    }
 
     [RelayCommand]
     private async Task CheckServiceAsync() => await AnswerAsync("请只回复：连接成功", false, true);

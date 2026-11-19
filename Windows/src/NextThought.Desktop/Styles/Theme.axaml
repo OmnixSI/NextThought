@@ -32,6 +32,8 @@
           <SolidColorBrush x:Key="FloatShadow" Color="#1F1C1B19" />
           <SolidColorBrush x:Key="SidebarTint" Color="#F2F0EA" />
           <SolidColorBrush x:Key="TranscriptBubble" Color="#F4F2ED" />
+          <SolidColorBrush x:Key="PrimaryHover" Color="#33312C" />
+          <SolidColorBrush x:Key="PrimaryPressed" Color="#121110" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="Paper" Color="#121110" />
@@ -57,6 +59,8 @@
           <SolidColorBrush x:Key="FloatShadow" Color="#80000000" />
           <SolidColorBrush x:Key="SidebarTint" Color="#181816" />
           <SolidColorBrush x:Key="TranscriptBubble" Color="#201F1D" />
+          <SolidColorBrush x:Key="PrimaryHover" Color="#D8D6CF" />
+          <SolidColorBrush x:Key="PrimaryPressed" Color="#C2C0B9" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 

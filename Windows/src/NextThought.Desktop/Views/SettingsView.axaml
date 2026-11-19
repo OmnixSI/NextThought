@@ -84,6 +84,15 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="10">
+          <TextBlock Text="外观" Classes="section" />
+          <ComboBox ItemsSource="{Binding Settings.AppearanceChoices}" SelectedItem="{Binding Settings.SelectedAppearance}"
+                    Width="200" HorizontalAlignment="Left" />
+          <TextBlock Text="保存后立即应用；跟随系统会随后台主题切换。" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="10">

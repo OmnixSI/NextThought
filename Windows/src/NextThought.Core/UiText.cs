@@ -297,6 +297,11 @@ public static class UiText
         ["搜索设置"] = "Search settings",
         ["自定义"] = "Custom",
         ["接口预设"] = "API preset",
+        ["跟随系统"] = "Follow system",
+        ["浅色"] = "Light",
+        ["深色"] = "Dark",
+        ["外观"] = "Appearance",
+        ["保存后立即应用；跟随系统会随后台主题切换。"] = "Applied after saving; Follow system tracks the OS theme.",
     };
 
     private static readonly Dictionary<string, string> Chinese = English

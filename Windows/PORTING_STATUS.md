@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 外观设置 · 0.5.117
+
+- 设置页「外观」：跟随系统 / 浅色 / 深色，写入 `settings.json` 的 `appearance`；
+  启动和保存后立即应用（不再只能 `--dark`）。
+- 深色主按钮 hover/pressed 改用 ThemeDictionaries 的 `PrimaryHover/PrimaryPressed`，
+  修复深底深字；`--appearance-check` 实测 selected=dark、actual=Dark。
+- 词典 291 条；Core 863。
+- **0.5.117 实测**：Core 863 + 基线 109；验收 63/63、门禁 17/17；环境负载下启动
+  4.27 秒、工作集 124.2 MiB、私有 56.3 MiB（同构建 1.2–6.9 秒波动）。
+
 # P1 接口预设 · 0.5.116
+
 
 - 设置页「接口预设」：OpenAI / DeepSeek / OpenRouter / 自定义；选择后填 Base URL 与模型。
 - `--provider-preset-check` 实测 DeepSeek → baseUrl/模型正确；4 个预设。

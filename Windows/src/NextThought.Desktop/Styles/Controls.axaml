@@ -74,13 +74,13 @@
       </ControlTemplate>    </Setter>
   </Style>
   <Style Selector="Button.primary:pointerover /template/ Border#Root">
-    <Setter Property="Background" Value="#33312C" />
+    <Setter Property="Background" Value="{DynamicResource PrimaryHover}" />
   </Style>
   <Style Selector="Button.primary /template/ ContentPresenter">
     <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
   </Style>
   <Style Selector="Button.primary:pressed /template/ Border#Root">
-    <Setter Property="Background" Value="#121110" />
+    <Setter Property="Background" Value="{DynamicResource PrimaryPressed}" />
   </Style>
 
   <!-- Quiet: no fill until hover. -->

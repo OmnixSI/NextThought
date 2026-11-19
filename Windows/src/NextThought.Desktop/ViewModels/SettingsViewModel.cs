@@ -74,6 +74,14 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string codexModel = "";
     public IReadOnlyList<string> UiLanguages { get; } = ["中文", "English"];
     [ObservableProperty] private string uiLanguage = "中文";
+
+    public IReadOnlyList<AppearanceOption> AppearanceChoices { get; } =
+    [
+        new("system", "跟随系统"),
+        new("light", "浅色"),
+        new("dark", "深色")
+    ];
+    [ObservableProperty] private AppearanceOption? selectedAppearance;
     [ObservableProperty] private string autoEndMode = "prompt";
     private string autoEndMinutes = "10";
 
@@ -164,6 +172,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         try { settings = state.SettingsStore.Load(); }
         catch { settings = new AppSettings(); }
         UiLanguage = UiText.IsEnglish(settings.Language) ? "English" : "中文";
+        SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
         BaseUrl = settings.BaseUrl;
         Model = settings.Model;
         NotesModel = settings.NotesModel;
@@ -218,6 +227,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     {
         BaseUrl = BaseUrl.Trim(),
         Language = UiLanguage == "English" ? "en" : "zh",
+        Appearance = SelectedAppearance?.Value ?? "system",
         Model = Model.Trim(),
         NotesModel = NotesModel.Trim(),
         ReasoningEffort = ReasoningEffort,
