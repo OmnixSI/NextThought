@@ -17,6 +17,26 @@ public sealed class UiTextTests
         Assert.All(UiText.EnglishStrings, pair => Assert.False(string.IsNullOrWhiteSpace(pair.Value)));
     }
 
+    [Fact]
+    public void CountHelpersFollowTheGlobalLanguage()
+    {
+        var previous = UiText.EnglishUi;
+        try
+        {
+            UiText.EnglishUi = false;
+            Assert.Equal("3 场会议", UiText.Meetings(3));
+            Assert.Equal("1 条转写", UiText.Transcripts(1));
+            Assert.Equal("2 个系列", UiText.SeriesCount(2));
+            UiText.EnglishUi = true;
+            Assert.Equal("3 meetings", UiText.Meetings(3));
+            Assert.Equal("1 line", UiText.Transcripts(1));
+            Assert.Equal("2 series", UiText.SeriesCount(2));
+            Assert.Equal("2 answers", UiText.Answers(2));
+            Assert.Equal("1 lesson", UiText.Lessons(1));
+        }
+        finally { UiText.EnglishUi = previous; }
+    }
+
     [Theory]
     [InlineData("en", true)]
     [InlineData("en-US", true)]

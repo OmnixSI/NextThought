@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 动态计数本地化 · 0.5.110
+
+- `UiText` 增加 `Meetings/Transcripts/Answers/Lessons/Pending/SeriesCount/Materials/Asked`
+  与全局 `EnglishUi` 标志；历史行、最近会议行、系列行/摘要、知识候选标签随中英切换。
+- 新增计数单测；Core 863；`--ui-language-check` 7/7 + 反向通过。
+- **0.5.110 实测**：Core 863 + 基线 109；验收 63/63、门禁 17/17；启动 3.93 秒、
+  工作集 109.6 MiB、私有 44.0 MiB。
+
 # P2 英文词典 264 条 · 0.5.109
+
 
 - 补场景加入、技能附着、自动整理、解析结果、Tavily、音频采集范围、Qwen3/X-ASR 说明等。
 - 去重后 264 条；`--ui-language-check` 7/7 + 反向通过；Core 862。

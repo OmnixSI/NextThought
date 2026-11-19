@@ -69,6 +69,7 @@ public partial class AppState : ObservableObject
         Sources = [];
         LanguageChanged += english =>
         {
+            UiText.EnglishUi = english;
             PageSubtitle = UiText.Translate(PageSubtitle, english);
             OnPropertyChanged(nameof(StatsText));
             OnPropertyChanged(nameof(Greeting));
@@ -146,7 +147,9 @@ public partial class AppState : ObservableObject
     public ObservableCollection<CompanionAddress> CompanionAddresses { get; } = [];
 
     public string CompanionToggleLabel => CompanionRunning ? "关闭局域网手机伴侣" : "开启局域网手机伴侣";
-    public string HistorySummary => $"{FilteredHistory.Count} 场会议 · 共 {History.Count} 场";
+    public string HistorySummary => UiText.EnglishUi
+        ? $"{FilteredHistory.Count} shown · {History.Count} total"
+        : $"{FilteredHistory.Count} 场会议 · 共 {History.Count} 场";
     public bool IsHistoryViewEmpty => FilteredHistory.Count == 0;
     public bool HistoryFilterIsAll => HistoryFilter == "全部";
     public bool HistoryFilterHasSummary => HistoryFilter == "有纪要";
@@ -569,6 +572,7 @@ public partial class AppState : ObservableObject
         try
         {
             Settings.LoadFromStore();
+            UiText.EnglishUi = Settings.UiLanguage == "English";
             Mark("settings");
             RefreshProcesses();
             RefreshCompanionAddresses();

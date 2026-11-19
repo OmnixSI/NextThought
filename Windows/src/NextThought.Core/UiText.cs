@@ -275,6 +275,15 @@ public static class UiText
         ["Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。"] = "Qwen3-Embedding-0.6B Q8 · CPU · about 596 MB on first download. The index is local; missing or failed models fall back to keywords.",
         ["X-ASR 流式识别加整句精修，CPU 离线运行；原始音频只在内存中经过。"] = "X-ASR streaming plus sentence refinement runs offline on CPU; raw audio only passes through memory.",
         ["高级：也可以直接按文本批量编辑。"] = "Advanced: you can also edit everything as text.",
+        ["未命名会议"] = "Untitled meeting",
+        ["还没有选择系列"] = "No series selected",
+        ["在左边选择一个系列，或者先新建一个。"] = "Select a series on the left, or create one first.",
+        ["把同一门课、同一个项目、同一类面试的会议放在一个系列里，经验会攒下来。"] = "Keep meetings from one course, project or interview loop in a series; lessons accumulate.",
+        ["问题"] = "Question",
+        ["经验"] = "Lesson",
+        ["被问到 1 次"] = "Asked once",
+        ["采纳后进入这个系列的经验，下次回答会带上它"] = "Accepted lessons join this series and are used in later answers",
+        ["题库里已有相似问题时，「替换」会用新回答覆盖旧的，旧回答留在历史里"] = "If a similar question exists, Replace overwrites its answer; the old one stays in history",
     };
 
     private static readonly Dictionary<string, string> Chinese = English
@@ -288,4 +297,32 @@ public static class UiText
     }
 
     public static IReadOnlyDictionary<string, string> EnglishStrings => English;
+    /// <summary>Global UI language flag for row/subtitle formatting outside AppState.</summary>
+    public static bool EnglishUi { get; set; }
+
+    public static string T(string text) => Translate(text, EnglishUi);
+
+    public static string Meetings(int count) => EnglishUi
+        ? $"{count} meeting{(count == 1 ? "" : "s")}" : $"{count} 场会议";
+
+    public static string Transcripts(int count) => EnglishUi
+        ? $"{count} line{(count == 1 ? "" : "s")}" : $"{count} 条转写";
+
+    public static string Answers(int count) => EnglishUi
+        ? $"{count} answer{(count == 1 ? "" : "s")}" : $"{count} 条回答";
+
+    public static string Lessons(int count) => EnglishUi
+        ? $"{count} lesson{(count == 1 ? "" : "s")}" : $"{count} 条经验";
+
+    public static string Pending(int count) => EnglishUi
+        ? $"{count} to confirm" : $"{count} 条待确认";
+
+    public static string SeriesCount(int count) => EnglishUi
+        ? $"{count} series" : $"{count} 个系列";
+
+    public static string Asked(int count) => EnglishUi
+        ? $"asked {count} time{(count == 1 ? "" : "s")}" : $"被问到 {count} 次";
+
+    public static string Materials(int count) => EnglishUi
+        ? $"{count} material{(count == 1 ? "" : "s")}" : $"{count} 份资料";
 }

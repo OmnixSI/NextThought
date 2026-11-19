@@ -26,12 +26,12 @@ public partial class AppState
     public bool HasSelectedSeries => SelectedSeries is not null;
     public bool SeriesIsEmpty => SeriesRows.Count == 0;
     public string SeriesSummary => SeriesRows.Count == 0
-        ? "把同一门课、同一个项目、同一类面试的会议放在一个系列里，经验会攒下来。"
-        : $"{SeriesRows.Count} 个系列 · {SeriesRows.Sum(row => row.Count)} 场会议";
-    public string SelectedSeriesTitle => SelectedSeries?.Name ?? "还没有选择系列";
+        ? UiText.T("把同一门课、同一个项目、同一类面试的会议放在一个系列里，经验会攒下来。")
+        : $"{UiText.SeriesCount(SeriesRows.Count)} · {UiText.Meetings(SeriesRows.Sum(row => row.Count))}";
+    public string SelectedSeriesTitle => SelectedSeries?.Name ?? UiText.T("还没有选择系列");
     public string SelectedSeriesMeta => SelectedSeries is not { } row
-        ? "在左边选择一个系列，或者先新建一个。"
-        : $"{row.Count} 场会议 · {row.LessonCount} 条经验" + (SeriesCandidates.Count > 0 ? $" · {SeriesCandidates.Count} 条待确认" : "");
+        ? UiText.T("在左边选择一个系列，或者先新建一个。")
+        : $"{UiText.Meetings(row.Count)} · {UiText.Lessons(row.LessonCount)}" + (SeriesCandidates.Count > 0 ? $" · {UiText.Pending(SeriesCandidates.Count)}" : "");
 
     partial void OnSelectedSeriesChanged(SeriesRow? value)
     {
