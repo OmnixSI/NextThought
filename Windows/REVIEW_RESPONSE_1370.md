@@ -57,10 +57,10 @@
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.6 实测
+## 0.5.7 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
-- 测试：Core **788**、基线 **90**
+- 测试：Core **788**、基线 **91**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.13 秒，工作集 **109.4 MiB**、私有 43.0 MiB
+- 启动 1.15 秒，工作集 **109.3 MiB**、私有 42.8 MiB

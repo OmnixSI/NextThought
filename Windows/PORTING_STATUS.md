@@ -29,7 +29,19 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 备份补全与 Mac 系列导入 · 0.5.7
+
+- **备份内容**：`PortableDirectories` 增加 `Glossary`，并额外打包 `settings.json`（API Key 仍只存 DPAPI、不进备份）。
+- **Mac 系列导入**：导入时读取 `Workspaces/*.json`，按 id 合并到 WorkspaceStore，回执增加 `WorkspacesAdded`，
+  界面状态显示会议/资料/系列数量。
+- **测试**：`ImportsMacWorkspaceFilesIntoTheSeriesStore`；基线 91。
+- **0.5.7 实测**：Core 788 + 基线 91；验收 61/61、门禁 17/17；启动 1.15 秒、
+  工作集 109.3 MiB、私有 42.8 MiB。
+- 仍未完成：设置/技能/模板的完整恢复、Mac summary/context 字段、`SessionUserContentStore`、
+  `IncrementalBackupStore`、双向恢复验收。
+
 # P0 系列变更 replace 语义 · 0.5.6
+
 
 - **决策**：`WorkspaceSeriesChangeDecision` 改为 Mac 的 `add/replace/reject`。
 - **replace**：校验 targetItemId 与 expectedRevision、条目类型一致；旧值写入 history，

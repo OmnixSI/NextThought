@@ -88,6 +88,33 @@ public sealed class BackupTests
     }
 
     [Fact]
+    public async Task ImportsMacWorkspaceFilesIntoTheSeriesStore()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-mac-workspace-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var archive = Path.Combine(root, "mac-workspaces.ntbackup");
+        var id = Guid.NewGuid().ToString("D").ToUpperInvariant();
+        using (var zip = System.IO.Compression.ZipFile.Open(archive, System.IO.Compression.ZipArchiveMode.Create))
+        {
+            void Write(string name, string text)
+            {
+                var entry = zip.CreateEntry(name);
+                using var writer = new StreamWriter(entry.Open());
+                writer.Write(text);
+            }
+            Write("manifest.json", "{\"format\":\"nextthought-backup\",\"version\":1,\"includesSecrets\":false,\"sessionCount\":0,\"workspaceCount\":1}");
+            Write("Workspaces/" + id + ".json",
+                "{\"id\":\"" + id + "\",\"name\":\"Mac 系列\",\"createdAt\":\"2026-01-01T00:00:00Z\",\"sessionIDs\":[\"s1\"],\"lessons\":[]}");
+        }
+        var target = new AppPaths(Path.Combine(root, "target-mac-workspace"));
+        var result = await new BackupService(target).ImportAsync(archive);
+        Assert.Equal(1, result.WorkspacesAdded);
+        var series = Assert.Single(new WorkspaceStore(target.Root).Load().Series);
+        Assert.Equal("Mac 系列", series.Name);
+        Assert.Equal("s1", series.SessionIds.Single());
+    }
+
+    [Fact]
     public async Task CorruptedPayloadAndFutureVersionAreRejectedBeforeCommit()
     {
         var root = Path.Combine(Path.GetTempPath(), "nt-hash-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);

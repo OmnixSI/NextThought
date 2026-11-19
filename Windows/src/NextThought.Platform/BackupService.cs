@@ -6,10 +6,10 @@ using NextThought.Core;
 
 namespace NextThought.Platform;
 
-public sealed record BackupImportResult(int SessionsAdded, int MaterialsAdded, int ConflictsSkipped, string SafetyBackup, string PreservedArchive);
+public sealed record BackupImportResult(int SessionsAdded, int MaterialsAdded, int ConflictsSkipped, string SafetyBackup, string PreservedArchive, int WorkspacesAdded = 0);
 public sealed class BackupService(AppPaths paths)
 {
-    private static readonly string[] PortableDirectories = ["Sessions", "Materials", "Migration", "Workspaces", "Originals"];
+    private static readonly string[] PortableDirectories = ["Sessions", "Materials", "Migration", "Workspaces", "Originals", "Glossary"];
     private static string Hash(string file) { using var stream = File.OpenRead(file); return Convert.ToHexStringLower(SHA256.HashData(stream)); }
     public async Task ExportAsync(string destination, CancellationToken ct = default)
     {
@@ -20,8 +20,11 @@ public sealed class BackupService(AppPaths paths)
             var sessions = new SessionStore(paths); var records = sessions.List();
             foreach (var meta in records) { if (meta.EndedAt is null) throw new IOException("请先结束会议再备份。"); leases.Add(sessions.AcquireLease(meta.Id)); }
             var files = PortableDirectories.SelectMany(name => SafeFiles(Path.Combine(paths.Root, name)))
-                .Where(f => !f.EndsWith(".active.lock", StringComparison.OrdinalIgnoreCase) && !Path.GetRelativePath(paths.Root, f).Split(Path.DirectorySeparatorChar).Any(n => n.StartsWith('.'))).ToArray();
-            files = files.Where(f => !Path.GetFullPath(f).Equals(destination, StringComparison.OrdinalIgnoreCase)).ToArray();
+                .Where(f => !f.EndsWith(".active.lock", StringComparison.OrdinalIgnoreCase) && !Path.GetRelativePath(paths.Root, f).Split(Path.DirectorySeparatorChar).Any(n => n.StartsWith('.'))).ToList();
+            // Settings and the glossary are part of a full backup; API keys live in DPAPI and never enter it.
+            var settingsFile = Path.Combine(paths.Root, "settings.json");
+            if (File.Exists(settingsFile)) files.Add(settingsFile);
+            files = files.Where(f => !Path.GetFullPath(f).Equals(destination, StringComparison.OrdinalIgnoreCase)).ToList();
             if (files.Any(f => (File.GetAttributes(f) & FileAttributes.ReparsePoint) != 0)) throw new IOException("备份不支持重解析点。");
             var hashes = new Dictionary<string, string>();
             using (var zip = ZipFile.Open(temporary, ZipArchiveMode.Create))
@@ -156,10 +159,40 @@ public sealed class BackupService(AppPaths paths)
             }
             foreach (var folder in incomingSessions) { var before = committed.Count; CommitFolder(folder, Path.Combine(paths.Sessions, Path.GetFileName(folder).ToUpperInvariant())); if (committed.Count > before) addedSessions++; }
             foreach (var folder in incomingMaterials) { var before = committed.Count; CommitFolder(folder, Path.Combine(paths.Root, "Materials", Path.GetFileName(folder))); if (committed.Count > before) addedMaterials++; }
+            // Mac series files are per-workspace JSON; merge them instead of discarding them in Migration.
+            var addedWorkspaces = 0;
+            if (Directory.Exists(Path.Combine(root, "Workspaces")))
+            {
+                var importedWorkspaces = new List<WorkspaceSeries>();
+                foreach (var file in Directory.GetFiles(Path.Combine(root, "Workspaces"), "*.json"))
+                {
+                    try
+                    {
+                        if (JsonSerializer.Deserialize<WorkspaceSeries>(await File.ReadAllTextAsync(file, ct), new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                            PropertyNameCaseInsensitive = true,
+                            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+                        }) is { } series) importedWorkspaces.Add(series);
+                    }
+                    catch (JsonException) { }
+                }
+                if (importedWorkspaces.Count > 0)
+                {
+                    var store = new WorkspaceStore(paths.Root);
+                    var current = store.Load();
+                    var merged = BackupMerge.Workspaces(current.Series, importedWorkspaces);
+                    if (merged.Added > 0 || merged.Updated > 0)
+                    {
+                        store.Save(new WorkspaceData(merged.Merged));
+                        addedWorkspaces = merged.Added + merged.Updated;
+                    }
+                }
+            }
             // Preserve the complete source archive, including Mac-only fields, workspaces, skills, notes, and originals.
             var preserved = Path.Combine(paths.Root, "Migration", Hash(archive) + ".ntbackup"); Directory.CreateDirectory(Path.GetDirectoryName(preserved)!);
             if (!File.Exists(preserved)) { File.Copy(archive, preserved); committed.Add(preserved); }
-            return new(addedSessions, addedMaterials, conflicts, safetyBackup, preserved);
+            return new(addedSessions, addedMaterials, conflicts, safetyBackup, preserved, addedWorkspaces);
         }
         catch
         {
