@@ -878,6 +878,7 @@ public partial class AppState : ObservableObject
             if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
             if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
             BeginLiveTranslation();
+            var cloudSource = settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone;
             LiveSpeechEngine? ownedEngine = null;
             if (settings.CloudStt.Length == 0)
             {
@@ -907,7 +908,7 @@ public partial class AppState : ObservableObject
                         if (generation != epoch) return;
                         var start = meta.StartedAt.AddMilliseconds(Math.Max(0, update.StartMs ?? 0));
                         var end = meta.StartedAt.AddMilliseconds(Math.Max(0, update.EndMs ?? ((update.StartMs ?? 0) + 500)));
-                        ReceiveTranscript(meta, new TranscriptUpdate(Guid.NewGuid(), AudioSource.System, update.Text,
+                        ReceiveTranscript(meta, new TranscriptUpdate(Guid.NewGuid(), cloudSource, update.Text,
                             update.IsFinal, start, end), true);
                     });
                     cloudStt.Failed += message => Dispatcher.UIThread.Post(() =>
@@ -936,7 +937,6 @@ public partial class AppState : ObservableObject
                 }
             }
 
-            var cloudSource = settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone;
             capture = new AudioCaptureService();
             capture.FrameReady += frame =>
             {
