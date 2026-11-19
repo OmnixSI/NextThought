@@ -42,6 +42,9 @@ public sealed class SessionStore(AppPaths paths)
         try
         {
             var path = Path.Combine(Folder(meta.Id), "transcript.jsonl");
+            // Keep the raw recognizer output recoverable; proofreading must not destroy it.
+            var originalPath = Path.Combine(Folder(meta.Id), "transcript.original.jsonl");
+            if (File.Exists(path) && !File.Exists(originalPath)) File.Copy(path, originalPath);
             var builder = new System.Text.StringBuilder();
             foreach (var line in lines)
                 builder.Append(JsonSerializer.Serialize(line, JsonDefaults.ArchiveOptions)).Append('\n');
@@ -87,8 +90,22 @@ public sealed class SessionStore(AppPaths paths)
         await gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            var summary = new { title = meta.Title, markdown, questions = Array.Empty<object>(), generatedAt = DateTimeOffset.UtcNow, model };
-            await AppPaths.AtomicWriteAsync(Path.Combine(Folder(meta.Id), "summary.json"), JsonSerializer.Serialize(summary, JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
+            var summaryPath = Path.Combine(Folder(meta.Id), "summary.json");
+            System.Text.Json.Nodes.JsonObject summary;
+            try
+            {
+                summary = (File.Exists(summaryPath)
+                    ? System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(summaryPath, ct).ConfigureAwait(false)) as System.Text.Json.Nodes.JsonObject
+                    : null) ?? new System.Text.Json.Nodes.JsonObject();
+            }
+            catch (System.Text.Json.JsonException) { summary = new System.Text.Json.Nodes.JsonObject(); }
+            // Re-summarizing must keep Mac-only groups (structured notes, evidence, experience, question bank).
+            summary["title"] = meta.Title;
+            summary["markdown"] = markdown;
+            summary["generatedAt"] = DateTimeOffset.UtcNow;
+            summary["model"] = model;
+            summary["questions"] ??= new System.Text.Json.Nodes.JsonArray();
+            await AppPaths.AtomicWriteAsync(summaryPath, summary.ToJsonString(JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
             var current = ReadMeta(meta.Id); current.SummaryState = "ready"; current.SummaryError = null;
             await WriteMetaAsync(current, ct).ConfigureAwait(false); CopyState(current, meta);
         }

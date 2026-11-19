@@ -29,6 +29,7 @@ public partial class SubtitleBarWindow : Window
         Opened += (_, _) =>
         {
             PlaceAtBottom();
+            WindowCaptureHiding.Hide(this);
             timer.Start();
         };
         timer.Tick += (_, _) => Tick();

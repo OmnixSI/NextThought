@@ -476,11 +476,20 @@ public sealed class GlossaryStore
         try
         {
             if (!File.Exists(path)) return Glossary.Empty;
-            return new Glossary(JsonSerializer.Deserialize<List<GlossaryEntry>>(File.ReadAllText(path), Options)).Normalized();
+            var text = File.ReadAllText(path);
+            using var document = System.Text.Json.JsonDocument.Parse(text);
+            // Mac writes {"entries":[...]}; older Windows builds wrote a bare array.
+            if (document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object
+                && document.RootElement.TryGetProperty("entries", out var entries)
+                && entries.ValueKind == System.Text.Json.JsonValueKind.Array)
+                return new Glossary(entries.Deserialize<List<GlossaryEntry>>(Options)).Normalized();
+            if (document.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                return new Glossary(document.RootElement.Deserialize<List<GlossaryEntry>>(Options)).Normalized();
+            return Glossary.Empty;
         }
         catch (Exception)
         {
-            // A damaged table must not stop the app.
+            // A damaged table must not stop the app; saving is blocked by the caller until the user confirms.
             return Glossary.Empty;
         }
     }
@@ -488,7 +497,8 @@ public sealed class GlossaryStore
     public void Save(Glossary glossary)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(glossary.Entries, Options));
+        var document = new Dictionary<string, object> { ["entries"] = glossary.Entries };
+        File.WriteAllText(path, JsonSerializer.Serialize(document, Options));
     }
 
     /// <summary>The table as the text box shows it: canonical | variant | variant.</summary>

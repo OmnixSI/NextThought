@@ -98,6 +98,29 @@ public sealed class GlossaryTests
     }
 
     [Fact]
+    public void StoreReadsTheMacEnvelopeAndWritesItBack()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "nt-glossary-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(directory, "Glossary"));
+            var store = new GlossaryStore(directory);
+            File.WriteAllText(store.FilePath,
+                "{\"entries\":[{\"canonical\":\"Kubernetes\",\"kind\":\"product\",\"variants\":[\"K8s\"],\"note\":\"容器平台\"}]}");
+            var loaded = store.Load();
+            var entry = Assert.Single(loaded.Entries);
+            Assert.Equal("Kubernetes", entry.Canonical);
+            Assert.Equal(GlossaryKind.Product, entry.Kind);
+            Assert.Equal("容器平台", entry.Note);
+            store.Save(loaded);
+            var text = File.ReadAllText(store.FilePath);
+            Assert.Contains("\"entries\"", text);
+            Assert.Equal("Kubernetes", new GlossaryStore(directory).Load().Entries.Single().Canonical);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Fact]
     public void StoreRoundTripsAndRecoversFromDamage()
     {
         var directory = Path.Combine(Path.GetTempPath(), "nt-glossary-" + Guid.NewGuid().ToString("N"));

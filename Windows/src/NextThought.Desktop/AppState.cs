@@ -422,10 +422,12 @@ public partial class AppState : ObservableObject
     partial void OnAnsweringChanged(bool value) { RaiseBusy(); OnPropertyChanged(nameof(CanCancel)); }
     partial void OnSummarizingChanged(bool value) => RaiseBusy();
     partial void OnCurrentSessionChanged(SessionMeta? value) => OnPropertyChanged(nameof(StatsText));
+    partial void OnDetectedQuestionChanged(string value) => PublishCompanionSnapshot();
     partial void OnLiveModeChanged(LiveWindowMode value) => OnPropertyChanged(nameof(LiveModeLabel));
     partial void OnAnswerTextChanged(string value)
     {
         OnPropertyChanged(nameof(PlainAnswer));
+        PublishCompanionSnapshot();
         OnPropertyChanged(nameof(IslandLines));
         OnPropertyChanged(nameof(IslandHeadline));
         OnPropertyChanged(nameof(IslandDetail));
@@ -1220,6 +1222,8 @@ public partial class AppState : ObservableObject
                 Sources.Clear();
                 foreach (var citation in cited) Sources.Add(citation);
                 AnswerText = result;
+                companionHistory.Add((question, result));
+                companionHistoryIndex = companionHistory.Count - 1;
                 if (meta is null)
                 {
                     meta = NewMeta(Settings.Build(), question.Length > 40 ? question[..40] : question);
@@ -1688,6 +1692,8 @@ public partial class AppState : ObservableObject
 
     // ---- 手机伴侣（方案第 12 节，局域网通道；平台层 CompanionServer 已验收） ----
 
+    private readonly List<(string Question, string Answer)> companionHistory = [];
+    private int companionHistoryIndex = -1;
     private CompanionServer? companion;
     private CompanionRelayClient? relay;
 
@@ -1760,6 +1766,19 @@ public partial class AppState : ObservableObject
 
     private async Task<bool> HandleCompanionActionAsync(string action)
     {
+        // Network threads must not touch UI-bound state; marshal and await on the UI thread.
+        if (Dispatcher.UIThread.CheckAccess()) return await HandleCompanionActionCoreAsync(action);
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Dispatcher.UIThread.Post(async () =>
+        {
+            try { completion.SetResult(await HandleCompanionActionCoreAsync(action)); }
+            catch (Exception exception) { completion.SetException(exception); }
+        });
+        return await completion.Task;
+    }
+
+    private async Task<bool> HandleCompanionActionCoreAsync(string action)
+    {
         switch (action)
         {
             case "answer":
@@ -1769,17 +1788,40 @@ public partial class AppState : ObservableObject
                 await AnswerAsync(string.IsNullOrWhiteSpace(DetectedQuestion) ? "请总结当前讨论" : DetectedQuestion, false);
                 return true;
             case "shorter":
-                await AnswerAsync("请把上一个回答压缩到三句话以内，只保留结论。", false);
+                await AnswerAsync("请把上一条回答压缩到三句话以内，只保留结论。", false);
                 return true;
             case "example":
-                await AnswerAsync("请针对上一个回答给出一个具体例子。", false);
+                await AnswerAsync("请针对上一条回答给出一个具体例子。", false);
                 return true;
+            case "english":
+                await AnswerAsync("请用英文重写上一条回答，保留事实与结构。", false);
+                return true;
+            case "chinese":
+                await AnswerAsync("请用中文重写上一条回答，保留事实与结构。", false);
+                return true;
+            case "previous":
+                return ShowCompanionHistory(-1);
+            case "next":
+                return ShowCompanionHistory(1);
             case "cancel":
                 CancelRequest();
                 return true;
             default:
                 return false;
         }
+    }
+
+    private bool ShowCompanionHistory(int delta)
+    {
+        if (companionHistory.Count == 0) return false;
+        var index = Math.Clamp(companionHistoryIndex + delta, 0, companionHistory.Count - 1);
+        if (index == companionHistoryIndex) return true;
+        companionHistoryIndex = index;
+        var item = companionHistory[index];
+        DetectedQuestion = item.Question;
+        AnswerText = item.Answer;
+        PublishCompanionSnapshot();
+        return true;
     }
 
     private CompanionSnapshot CurrentCompanionSnapshot() => new(

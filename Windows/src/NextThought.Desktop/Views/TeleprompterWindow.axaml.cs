@@ -39,11 +39,17 @@ public partial class TeleprompterWindow : Window
         Opened += (_, _) =>
         {
             RestorePosition();
+            WindowCaptureHiding.Hide(this);
             ApplyClickThrough(through);
         };
         PositionChanged += (_, _) => Remember();
         Resized += (_, _) => Remember();
-        Closed += (_, _) => Remember();
+        Closed += (_, _) =>
+        {
+            through = false;
+            ApplyClickThrough(false);
+            Remember();
+        };
         DragBar.DoubleTapped += (_, _) => ToggleControls();
     }
 
@@ -129,6 +135,14 @@ public partial class TeleprompterWindow : Window
     }
 
     public bool ClickThrough => through;
+
+    /// <summary>Leaves click-through mode and persists it (used by the close/hide paths).</summary>
+    public void DisableClickThrough()
+    {
+        through = false;
+        ApplyClickThrough(false);
+        Remember();
+    }
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 

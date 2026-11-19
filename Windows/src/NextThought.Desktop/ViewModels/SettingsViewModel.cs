@@ -37,6 +37,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string notesModel = "";
     [ObservableProperty] private string reasoningEffort = "";
     [ObservableProperty] private string apiKey = "";
+    private bool apiKeyReadFailed;
     [ObservableProperty] private bool hasApiKey;
     [ObservableProperty] private string keyStatus = "";
     [ObservableProperty] private string localModel = "xasr480";
@@ -179,12 +180,15 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         }
         catch (CryptographicException)
         {
+            apiKeyReadFailed = true;
             HasApiKey = false;
             KeyStatus = "原凭据无法由当前用户解密，请重新输入密钥。";
         }
         catch (Exception)
         {
+            apiKeyReadFailed = true;
             HasApiKey = false;
+            KeyStatus = "密钥读取失败，已保留原密钥；如需更换请直接输入新密钥。";
         }
         SelectedProcess = Processes.FirstOrDefault();
         RefreshScreens();
@@ -227,7 +231,12 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     {
         var settings = Build();
         if (settings.BaseUrl.Length > 0) _ = ChatCompletionClient.Endpoint(settings.BaseUrl);
-        state.SettingsStore.SaveApiKey(ApiKey.Trim());
+        // A failed read leaves ApiKey empty; never let "save settings" delete the stored key.
+        if (!apiKeyReadFailed || ApiKey.Trim().Length > 0)
+        {
+            state.SettingsStore.SaveApiKey(ApiKey.Trim());
+            apiKeyReadFailed = false;
+        }
         await state.SettingsStore.SaveAsync(settings);
         HasApiKey = ApiKey.Trim().Length > 0;
         KeyStatus = HasApiKey ? "密钥已保存（当前 Windows 用户加密）" : "尚未保存密钥；本机服务可不填。";

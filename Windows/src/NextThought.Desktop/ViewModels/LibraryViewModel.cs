@@ -88,7 +88,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
                 ImportProgress = $"正在解析 {System.IO.Path.GetFileName(file)}…";
                 try
                 {
-                    await Store.ImportAsync(file, CancellationToken.None, state.Settings.UseSemanticRetrieval);
+                    await Store.ImportAsync(file, CancellationToken.None);
                     added++;
                 }
                 catch (Exception ex)

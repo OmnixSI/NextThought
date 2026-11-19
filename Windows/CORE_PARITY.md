@@ -12,7 +12,7 @@
 | --- | ---: | --- | --- |
 | AnswerEvidence.swift | 57 | 已移植 | Core/AnswerEvidence.cs（SearchDecision/AnswerGrounding + EvidenceBundle/AnswerState；7 项测试） |
 | AnswerLanguage.swift | 38 | 已移植 | Core/AnswerLanguage.cs（4 项测试） |
-| AnswerPromptBuilder.swift | 328 | 已移植 | Core/AnswerPromptBuilder.cs + PreparationPrompt.cs（指令原文、预算化 JSON、整份资料、精炼、备会提示与场景档案） |
+| AnswerPromptBuilder.swift | 328 | 部分移植 | Core/AnswerPromptBuilder.cs + PreparationPrompt.cs（指令原文、预算化 JSON、整份资料、精炼、备会提示与场景档案）（审查：提示词已移植，但运行时仍用写死的三句话（AppState.cs），未接入） |
 | AnswerServiceSupport.swift | 242 | 已移植 | Core/AnswerServiceSupport.cs（默认后端、服务商表、Key 清洗/掩码、失败解释、时间线；8 项测试） |
 | AnswerStreaming.swift | 267 | 已移植 | Core/AnswerStreaming.cs（Codex 协议、SSE 解析、模型列表、请求体；11 项测试） |
 | AudioTimeline.swift | 119 | 已移植 | Core/AudioTimeline.cs（10 项测试） |
@@ -24,7 +24,7 @@
 | CloudTranscription.swift | 293 | 已移植 | Core/CloudTranscription.cs（三家服务商配置、转写消息装配、16→24 kHz 重采样；9 项测试。WebSocket 传输仍在应用层） |
 | CoachSummary.swift | 69 | 已移植 | Core/CoachSummary.cs（随 Scene 测试覆盖） |
 | CodexEventParser.swift | 31 | 已移植 | Core/CodexEventParser.cs（2 项测试） |
-| Companion.swift | 111 | 已移植 | Platform/CompanionServer.cs（局域网 HTTP、动作白名单、令牌校验）+ CompanionRelayClient.cs + Core/CompanionRelayCrypto.cs/CompanionBLEProtocol.cs（快照/信封/去重/缓存/BLE 分帧） |
+| Companion.swift | 111 | 部分移植 | Platform/CompanionServer.cs（局域网 HTTP、动作白名单、令牌校验）+ CompanionRelayClient.cs + Core/CompanionRelayCrypto.cs/CompanionBLEProtocol.cs（快照/信封/去重/缓存/BLE 分帧）（审查：C1 内容不更新、C2 跨线程、C3 缺动作；自检用假回调） |
 | CompanionBLEProtocol.swift | 93 | 已移植 | Core/CompanionBLEProtocol.cs（分片/重组/重发 outbox） |
 | CompanionCrypto.swift | 68 | 已移植 | Core/CompanionRelayCrypto.cs（9 项测试；HKDF 用 RFC 5869 向量、AES-GCM 信封、配对链接、命令新鲜度与去重） |
 | DocumentClassifier.swift | 74 | 已移植 | Core/DocumentClassifier.cs（文件名优先 + 正文前 2000 字） |
@@ -37,15 +37,15 @@
 | Glossary.swift | 572 | 已移植 | Core/Glossary.cs（词条/分类/宽松键/归一/合并/检索展开/规范替换/热词/提示词；17 项测试） |
 | IncrementalBackup.swift | 123 | 已移植 | Core/IncrementalBackup.cs（内容寻址恢复点、校验、去重与裁剪；16 项测试） |
 | LaTeXMath.swift | 545 | 已移植 | Core/LaTeXMath.cs（Unicode 转换 + Markdown 预处理；17 项测试；接入答案与纪要渲染） |
-| LiveInsights.swift | 777 | 已移植 | Core/AnswerPoints.cs + LiveInsights.cs（文本相似度/OCR 空格桥接、屏幕判定、页/匹配/决定/跟随、讲稿解析与提示、回答进度；15 项测试。Windows 用整屏截图 OCR 替代 Mac 单窗口选择，``--slide-follow-check`` 实测通过） |
+| LiveInsights.swift | 777 | 部分移植 | Core/AnswerPoints.cs + LiveInsights.cs（文本相似度/OCR 空格桥接、屏幕判定、页/匹配/决定/跟随、讲稿解析与提示、回答进度；15 项测试。Windows 用整屏截图 OCR 替代 Mac 单窗口选择，``--slide-follow-check`` 实测通过）（审查：只有自检调用，正式流程未接入；行数 777 与 Swift 403 不符） |
 | LiveTranslationRevisionGate.swift | 76 | 已移植 | Core/LiveTranslation.cs（12 项测试；逐字同传给字幕条与提词岛） |
 | LocalModelReuse.swift | 112 | 已移植 | Core/LocalModelReuse.cs（按名字搜索、大小/哈希校验、原子复用；4 项测试） |
 | MaterialTerms.swift | 57 | 已移植 | Core/MaterialTerms.cs（3 项测试，含 9 个 IsTerm 用例） |
 | MeetingCarry.swift | 38 | 已移植 | Core/MeetingCarry.cs（材料/复习/经验/转写开关 + 基线资料过滤 + 快照；7 项测试） |
 | MeetingEndWatch.swift | 130 | 已移植 | Core/MeetingEndWatch.cs（8 项测试；已接入会议自动收尾） |
 | MeetingPreparation.swift | 166 | 已移植 | Core/MeetingPreparation.cs（有效模式/自定义基准/携带选择/基线资料/上一场转写/快照；4 项测试） |
-| MeetingType.swift | 168 | 已移植 | Core.MeetingTypeDefaults + MeetingTypeGuesser.cs + MeetingPlan（场景默认、标题猜类型、系列匹配、自定义名称/基准模式；19 项测试） |
-| NotesTemplates.swift | 570 | 已移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/形状整理/渲染/提示/校对/到期日/转写校对） |
+| MeetingType.swift | 168 | 部分移植 | Core.MeetingTypeDefaults + MeetingTypeGuesser.cs + MeetingPlan（场景默认、标题猜类型、系列匹配、自定义名称/基准模式；19 项测试）（审查：Guess/Series 已有，但自定义场景与界面未接入） |
+| NotesTemplates.swift | 570 | 部分移植 | Core/NotesTemplates.cs + NotesTime.cs + NotesDates.cs + TranscriptCorrections.cs（模板/解析/形状整理/渲染/提示/校对/到期日/转写校对）（审查：缺 NotesVerifier、英文模板、容错与 Markdown 格式不一致；行数 570 与 Swift 873 不符） |
 | OnboardingFlow.swift | 55 | 已移植 | Core/OnboardingFlow.cs（步骤/可跳过/待办） |
 | OnboardingVersion.swift | 16 | 已移植 | Core/OnboardingVersion.cs（与 TranscriptContextBuilder 同文件） |
 | PDFTextLayout.swift | 171 | 已移植 | Core/PDFTextLayout.cs（页眉页脚、页码、换行合并、标题识别；9 项测试；已接入 PDF 读取） |
@@ -67,7 +67,7 @@
 | SessionArchivePersistence.swift | 513 | 已移植 | Core/SessionArchivePersistence.cs + 迁移发布/写队列/快照缓存（目录读取、标记、元数据读取、旧版回答迁移、迁移发布、写队列、回执、追加器、残留；20 项测试） |
 | SessionContentSearch.swift | 293 | 已移植 | Core/SessionContentSearch.cs（字段/命中/摘录/去重/首命中 + 投影字段 + 结构化笔记字段；13 项测试） |
 | SessionContext.swift | 265 | 已移植 | Core/SessionContext.cs + SessionPreset.cs（词法索引、手动提问、Office XML、AnswerStyle、摘录、模式/资料文档/预置；5 项测试） |
-| SessionEvidence.swift | 456 | 已移植 | Core/SessionEvidence.cs + SessionEvidenceBuilder.cs + SessionNotesEvidence.cs/SessionNotesEditor.cs（评审、依据等级、引用、匹配、时效、笔记证据、节点编辑与摘要回写；24 项测试） |
+| SessionEvidence.swift | 456 | 部分移植 | Core/SessionEvidence.cs + SessionEvidenceBuilder.cs + SessionNotesEvidence.cs/SessionNotesEditor.cs（评审、依据等级、引用、匹配、时效、笔记证据、节点编辑与摘要回写；24 项测试）（审查：证据构建仍把论断当引文，验证与 Mac 不一致） |
 | SessionExport.swift | 129 | 已移植 | Core/SessionExport.cs（导出格式/扩展名/标题 + SRT/VTT 字幕与时间戳；Word/PDF 文档生成由既有实现承担） |
 | SessionRecord.swift | 741 | 已移植 | Core/SessionRecord.cs + Models.cs + Platform/SessionStore + SessionSummaryParser + SessionMarkdownExporter（会话记录/转写/译文/问题/回答/摘要模型与读写、恢复、解析、导出；4 项模型测试 + 验收覆盖） |
 | SessionSearch.swift | 173 | 已移植 | Core/SessionSearch.cs + SessionSearchCache.cs（标签/打开目标/进度/快照/加载器/字节上限 LRU；15 项测试） |
@@ -81,7 +81,7 @@
 | SubtitleBar.swift | 295 | 已移植 | Core/SubtitleBar.cs（12 项测试） |
 | TranscriptContextBuilder.swift | 8 | 已移植 | Core/OnboardingVersion.cs（TranscriptContextBuilder） |
 | TranscriptDeduplicator.swift | 98 | 已移植 | Core/TranscriptDeduplicator.cs（8 项测试） |
-| UpdateCatalog.swift | 165 | 已移植 | Core/UpdateCatalog.cs（发布/资产/清单解析、版本比较、候选选择；7 项测试；设置页「检查更新」已接入） |
+| UpdateCatalog.swift | 165 | 部分移植 | Core/UpdateCatalog.cs（发布/资产/清单解析、版本比较、候选选择；7 项测试；设置页「检查更新」已接入）（审查：main 最新通道永远不提示更新；签名未校验签名者） |
 | VoiceActivitySegmenter.swift | 153 | 已移植 | Core/VoiceActivitySegmenter.cs（partial/final、12 秒切分 + 0.5 秒重叠、预卷；7 项测试；已接识别器） |
 | VoiceProfile.swift | 86 | 已移植 | Core/VoiceProfile.cs（0.55 阈值、3 段起建、离群片段丢弃） |
 | WebLookupPromptBuilder.swift | 41 | 已移植 | Core/WebLookupPromptBuilder.cs（字段预算与最近两轮） |
@@ -91,7 +91,9 @@
 | WorkspaceDeletionTransaction.swift | 151 | 已移植 | Core/WorkspaceDeletionTransaction.cs（有序清单、共享原件判定、暂存/回滚/清理、授权事务；12 项测试） |
 | ZipformerStreaming.swift | 144 | 已移植 | Core/ZipformerStreaming.cs（模型文件名/在线与离线模型描述/热词清洗与临时文件/错误文案/识别结果；9 项测试。运行时由 Platform/SpeechRecognizerSession + sherpa-onnx 承担） |
 
-统计：已移植 80，部分移植 0，基线简化版 0，未移植 0。
+统计：已移植 73，部分移植 7，基线简化版 0，未移植 0。
+
+> **口径说明（按 1.3.7 审查报告）**：本表只表示「存在对应实现」，不表示已接入正式流程或行为与 Mac 一致。审查指出 48 个 Core 文件未被正式程序引用；7 个文件从「已移植」恢复为「部分移植」。行数来自旧口径，LiveInsights/NotesTemplates/ZipformerStreaming 等与 Swift 实际行数不符，待逐文件复核。
 
 测试：`tests/NextThought.Core.Tests` 566 项通过（SubtitleBar 12、AudioTimeline 10、
 TranscriptDeduplicator 8、EchoSuppression 8、MeetingEndWatch 8、Scene/Coach 11、结构化纪要 16、Workspace 6、

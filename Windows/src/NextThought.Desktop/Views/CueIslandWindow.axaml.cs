@@ -16,7 +16,11 @@ public partial class CueIslandWindow : Window
     {
         InitializeComponent();
         DataContext = state;
-        Opened += (_, _) => MoveToTopCentre();
+        Opened += (_, _) =>
+        {
+            MoveToTopCentre();
+            WindowCaptureHiding.Hide(this);
+        };
         state.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(AppState.DetectedQuestion) or nameof(AppState.AnswerText)) FitHeight();

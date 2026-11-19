@@ -17,6 +17,11 @@ public sealed class WorkspaceSessionDeletionTests
             new WorkspaceKnowledgeCandidate { SourceSessionId = Deleted, Status = WorkspaceKnowledgeStatus.Pending },
             new WorkspaceKnowledgeCandidate { SourceSessionId = Kept, Status = WorkspaceKnowledgeStatus.Pending }
         ],
+        QuestionBank =
+        [
+            new QuestionBankItem { Id = "q-deleted", Question = "删除的问题", SourceSessionId = Deleted },
+            new QuestionBankItem { Id = "q-kept", Question = "保留的问题", SourceSessionId = Kept }
+        ],
         SeriesItems =
         [
             new WorkspaceSeriesItem
@@ -31,6 +36,16 @@ public sealed class WorkspaceSessionDeletionTests
             }
         ]
     };
+
+    [Fact]
+    public void QuestionsFromTheDeletedMeetingLeaveTheBank()
+    {
+        var result = WorkspaceSessionDeletion.Apply(Series(), Deleted);
+        var question = Assert.Single(result.Series.QuestionBank);
+        Assert.Equal("q-kept", question.Id);
+        Assert.Equal(1, result.RemovedQuestions);
+        Assert.Contains(Deleted, result.Series.SourceDeletionTombstones!);
+    }
 
     [Fact]
     public void NonMemberIsUnchanged()

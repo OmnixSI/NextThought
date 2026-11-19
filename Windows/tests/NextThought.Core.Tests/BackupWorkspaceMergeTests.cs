@@ -54,6 +54,31 @@ public sealed class BackupWorkspaceMergeTests
     }
 
     [Fact]
+    public void TombstonesRemoveKnowledgeResurrectedByAnOldBackup()
+    {
+        var current = Series("a", "当前", DateTimeOffset.UtcNow) with
+        {
+            SourceDeletionTombstones = ["old-meeting"],
+            QuestionBank = [new QuestionBankItem { Id = "q1", SourceSessionId = "keep" }]
+        };
+        var backup = Series("a", "旧备份", DateTimeOffset.UtcNow.AddDays(-3)) with
+        {
+            SessionIds = ["old-meeting", "keep"],
+            QuestionBank =
+            [
+                new QuestionBankItem { Id = "q1", SourceSessionId = "keep" },
+                new QuestionBankItem { Id = "q2", SourceSessionId = "old-meeting" }
+            ],
+            KnowledgeCandidates = [new WorkspaceKnowledgeCandidate { Id = "c1", SourceSessionId = "old-meeting" }]
+        };
+        var merged = Assert.Single(BackupMerge.Workspaces([current], [backup]).Merged);
+        Assert.DoesNotContain("old-meeting", merged.SessionIds);
+        Assert.DoesNotContain(merged.QuestionBank, question => question.Id == "q2");
+        Assert.Single(merged.QuestionBank);
+        Assert.Empty(merged.KnowledgeCandidates);
+    }
+
+    [Fact]
     public void IdenticalSeriesAreSkipped()
     {
         var series = Series("a", "系列", DateTimeOffset.UtcNow);

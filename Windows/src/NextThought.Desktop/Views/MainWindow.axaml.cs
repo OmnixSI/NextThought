@@ -107,6 +107,7 @@ public partial class MainWindow : Window
             if (StartupOptions.SlideFollowCheck is { } slideFollow) await RunSlideFollowCheckAsync(slideFollow);
             if (StartupOptions.PrepareModelsCheck is { } prepareModels) await RunPrepareModelsCheckAsync(prepareModels);
             if (StartupOptions.CompanionCheck is { } companionCheck) await RunCompanionCheckAsync(companionCheck);
+            if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -2323,7 +2324,48 @@ public partial class MainWindow : Window
         Close();
     }
 
+
+    /// <summary>Shows the floating cue island and verifies the OS excludes it from capture.</summary>
+    private async Task RunCaptureHideCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var affinity = 0u;
+        var passed = false;
+        var error = "";
+        Window? probe = null;
+        try
+        {
+            probe = new CueIslandWindow(state) { Width = 360, Height = 120 };
+            probe.Show();
+            await Task.Delay(600);
+            affinity = WindowCaptureHiding.Affinity(probe);
+            passed = affinity == 0x11;
+        }
+        catch (Exception exception)
+        {
+            error = exception.ToString();
+        }
+        finally
+        {
+            probe?.Close();
+        }
+        var report = new { passed, affinity, error };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "capture-hide-check: passed" : "capture-hide-check: failed");
+        Close();
+    }
+
     // The design-time constructor required by the XAML compiler for previews.
+
 
 
 
@@ -2509,8 +2551,19 @@ public partial class MainWindow : Window
     /// <summary>Floating teleprompter window (plan §9 提词器).</summary>
     public void ToggleTeleprompter()
     {
-        if (teleprompter is { IsVisible: true }) { teleprompter.Hide(); return; }
-        teleprompter ??= new TeleprompterWindow(state);
+        if (teleprompter is { IsVisible: true })
+        {
+            // Hiding must also leave click-through, otherwise Ctrl+Alt+T cannot bring it back.
+            teleprompter.DisableClickThrough();
+            teleprompter.Hide();
+            return;
+        }
+        if (teleprompter is null)
+        {
+            var window = new TeleprompterWindow(state);
+            window.Closed += (_, _) => { if (ReferenceEquals(teleprompter, window)) teleprompter = null; };
+            teleprompter = window;
+        }
         teleprompter.Show();
         teleprompter.ApplyClickThrough(teleprompter.ClickThrough);
     }

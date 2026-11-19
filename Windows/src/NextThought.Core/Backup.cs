@@ -112,11 +112,48 @@ public static class BackupMerge
                 SourceDeletionTombstones = (primary.SourceDeletionTombstones ?? [])
                     .Concat(secondary.SourceDeletionTombstones ?? []).Distinct(StringComparer.Ordinal).ToList()
             };
+            union = ApplyTombstones(union);
             if (ContentEquals(union, current)) { skipped++; continue; }
             merged[index] = union;
             updated++;
         }
         return new WorkspaceResult(merged, added, updated, skipped);
+    }
+
+
+    /// <summary>Deletion tombstones win over any copy restored from an older backup.</summary>
+    private static WorkspaceSeries ApplyTombstones(WorkspaceSeries series)
+    {
+        var deleted = (series.SourceDeletionTombstones ?? []).ToHashSet(StringComparer.Ordinal);
+        if (deleted.Count == 0) return series;
+        var lessons = new List<WorkspaceLesson>();
+        foreach (var lesson in series.Lessons)
+        {
+            var allSources = lesson.SourceSessionIds ?? (lesson.SourceSessionId is { } source ? [source] : []);
+            if (allSources.Count == 0) { lessons.Add(lesson); continue; }
+            var sources = allSources.Where(id => !deleted.Contains(id)).ToList();
+            if (sources.Count == 0) continue;
+            lessons.Add(lesson with { SourceSessionId = sources[0], SourceSessionIds = sources });
+        }
+        var questions = new List<QuestionBankItem>();
+        foreach (var question in series.QuestionBank)
+        {
+            var allSources = question.SourceSessionIds ?? (question.SourceSessionId is { } source ? [source] : []);
+            if (allSources.Count == 0) { questions.Add(question); continue; }
+            var sources = allSources.Where(id => !deleted.Contains(id)).ToList();
+            if (sources.Count == 0) continue;
+            questions.Add(question with { SourceSessionId = sources[0], SourceSessionIds = sources });
+        }
+        return series with
+        {
+            SessionIds = series.SessionIds.Where(id => !deleted.Contains(id)).ToList(),
+            Lessons = lessons,
+            QuestionBank = questions,
+            KnowledgeCandidates = series.KnowledgeCandidates.Where(candidate => candidate.SourceSessionId is not { } sourceId || !deleted.Contains(sourceId)).ToList(),
+            SeriesItems = series.SeriesItems.Select(item => item.SourceSessionId is { } sourceId && deleted.Contains(sourceId)
+                ? item with { SourceMissing = true, SourceQuote = null, Location = null }
+                : item).ToList()
+        };
     }
 
     private static bool ContentEquals(WorkspaceSeries left, WorkspaceSeries right) =>
