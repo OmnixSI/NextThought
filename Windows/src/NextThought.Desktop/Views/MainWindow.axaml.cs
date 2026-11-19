@@ -2879,7 +2879,7 @@ public partial class MainWindow : Window
         {
             // Hiding must also leave click-through, otherwise Ctrl+Alt+U cannot bring it back.
             teleprompter.DisableClickThrough();
-            teleprompter.Hide();
+            _ = FadeOutAndHideAsync(teleprompter);
             return;
         }
         if (teleprompter is null)
@@ -2907,7 +2907,7 @@ public partial class MainWindow : Window
 
     public void ToggleCueIsland()
     {
-        if (island is { IsVisible: true }) { island.Hide(); return; }
+        if (island is { IsVisible: true }) { _ = FadeOutAndHideAsync(island); return; }
         ShowCueIsland();
     }
 
@@ -2920,7 +2920,7 @@ public partial class MainWindow : Window
         }
         else if (island is { IsVisible: true })
         {
-            island.Hide();
+            _ = FadeOutAndHideAsync(island);
         }
     }
 
@@ -2960,6 +2960,40 @@ public partial class MainWindow : Window
         };
         try { await animation.RunAsync(visual); } catch { }
         visual.Opacity = 1;
+    }
+
+    /// <summary>Mirror of the fade-in; hiding waits for the 120 ms fade.</summary>
+    private static async Task FadeOutAndHideAsync(Avalonia.Visual visual)
+    {
+        try
+        {
+            var animation = new Avalonia.Animation.Animation
+            {
+                Duration = TimeSpan.FromMilliseconds(120),
+                Easing = new Avalonia.Animation.Easings.CubicEaseIn(),
+                FillMode = Avalonia.Animation.FillMode.Forward,
+                Children =
+                {
+                    new Avalonia.Animation.KeyFrame
+                    {
+                        Cue = new Avalonia.Animation.Cue(0),
+                        Setters = { new Avalonia.Styling.Setter(Avalonia.Visual.OpacityProperty, 1d) }
+                    },
+                    new Avalonia.Animation.KeyFrame
+                    {
+                        Cue = new Avalonia.Animation.Cue(1),
+                        Setters = { new Avalonia.Styling.Setter(Avalonia.Visual.OpacityProperty, 0d) }
+                    }
+                }
+            };
+            await animation.RunAsync(visual);
+        }
+        catch { }
+        if (visual is Avalonia.Controls.Window window && window.IsVisible)
+        {
+            window.Hide();
+            visual.Opacity = 1;
+        }
     }
 
     // ---- 双屏演讲（PresenterMode.swift） ----
