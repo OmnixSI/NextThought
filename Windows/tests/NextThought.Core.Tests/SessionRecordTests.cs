@@ -97,6 +97,20 @@ public sealed class SessionRecordTests
     }
 
     [Fact]
+    public void SourceCitationKeepsUnknownFields()
+    {
+        const string json = """
+            {"label":"论文","documentId":"d","documentName":"paper.pdf","sha256":"s","location":"p.3",
+             "quote":"正文","futureSource":"x"}
+            """;
+        var source = System.Text.Json.JsonSerializer.Deserialize<SourceCitation>(json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.Equal("paper.pdf", source.DocumentName);
+        var saved = System.Text.Json.JsonSerializer.Serialize(source, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"futureSource\"", saved);
+        Assert.Contains("\"documentName\"", saved);
+    }
+
+    [Fact]
     public void QuestionEventKeepsUnknownMacFields()
     {
         const string json = """

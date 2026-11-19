@@ -175,11 +175,14 @@ public sealed class StructuredNotesTests
     public void PayloadKeepsUnknownMacFields()
     {
         const string json = """
-            {"format":"outline","language":"zh","droppedCount":1,"model":"m","futureNotes":"x"}
+            {"format":"outline","outline":{"sections":[{"title":"结论","points":[{"text":"灰度发布","at":12}]}]},
+             "language":"zh","droppedCount":1,"model":"m","futureNotes":"x"}
             """;
         var payload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(
             json, NextThought.Core.JsonDefaults.Options)!;
         Assert.Equal(NotesFormat.Outline, payload.Format);
+        Assert.Equal("结论", payload.Outline!.Sections[0].Title);
+        Assert.Equal("灰度发布", payload.Outline.Sections[0].Points[0].Text);
         var saved = System.Text.Json.JsonSerializer.Serialize(payload, NextThought.Core.JsonDefaults.Options);
         Assert.Contains("\"futureNotes\"", saved);
         Assert.Contains("\"format\"", saved);

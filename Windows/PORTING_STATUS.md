@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 来源引用保留未知字段 · 0.5.77
+
+- `SourceCitation` 加 `JsonExtensionData`：回答来源里的未建模字段在 JSON 往返中保留。
+- 结构化纪要测试增加嵌套 `outline.sections/points` 反序列化断言；Core 840。
+- **0.5.77 实测**：Core 840 + 基线 108；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 108.8 MiB、私有 42.2 MiB。
+
 # P0 结构化纪要载荷可反序列化 · 0.5.76
+
 
 - 修复 `StructuredNotesPayload` 构造函数 `generatedAt` 用 `DateTimeOffset?` 而属性是
   `DateTimeOffset`，导致 System.Text.Json **完全无法反序列化** Mac `summary.structured`。

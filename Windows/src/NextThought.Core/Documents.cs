@@ -15,4 +15,8 @@ public sealed record MaterialDocument
 }
 
 public sealed record SourceCitation(string Label, string DocumentId, string DocumentName, string Sha256,
-    string Location, string Quote, int? Page = null, string? ChunkId = null);
+    string Location, string Quote, int? Page = null, string? ChunkId = null)
+{
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
+}
