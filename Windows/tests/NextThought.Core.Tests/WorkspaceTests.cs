@@ -111,7 +111,7 @@ public sealed class WorkspaceTests : IDisposable
         Assert.True(series.Standing);
         Assert.Equal(GlossaryKind.Product, series.Glossary!.Entries.Single().Kind);
         Assert.Equal("item", series.SeriesItemSourceTombstones!.Single().ItemId);
-        Assert.Equal("session", series.SeriesItemSourceTombstones.Single().SourceSessionId);
+        Assert.Equal("session", series.SeriesItemSourceTombstones!.Single().SourceSessionId);
         Assert.Equal("整体准备充分", series.StageReview);
         Assert.Equal(DateTimeOffset.Parse("2026-02-01T08:00:00Z"), series.StageReviewAt);
 

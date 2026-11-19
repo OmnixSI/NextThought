@@ -78,4 +78,21 @@ public sealed class SessionRecordTests
         Assert.Equal("", record.Summary);
         Assert.Null(record.EndedAt);
     }
+
+    [Fact]
+    public void UnknownMacFieldsRoundTrip()
+    {
+        const string json = """
+            {"id":"11111111-1111-1111-1111-111111111111","title":"客户会","startedAt":"2026-01-01T00:00:00Z",
+             "workspaceID":"22222222-2222-2222-2222-222222222222","workspaceName":"客户项目","mode":"client",
+             "documents":[{"id":"33333333-3333-3333-3333-333333333333","name":"方案","pages":["正文"]}]}
+            """;
+        var record = System.Text.Json.JsonSerializer.Deserialize<SessionRecord>(json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.NotNull(record.AdditionalProperties);
+        var saved = System.Text.Json.JsonSerializer.Serialize(record, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"workspaceID\"", saved);
+        Assert.Contains("\"workspaceName\"", saved);
+        Assert.Contains("\"documents\"", saved);
+        Assert.Contains("\"title\":\"客户会\"", saved);
+    }
 }

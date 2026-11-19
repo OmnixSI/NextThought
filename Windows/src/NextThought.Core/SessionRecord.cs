@@ -15,6 +15,10 @@ public sealed record SessionTranscriptTranslation
 /// </summary>
 public sealed record SessionRecord
 {
+    /// <summary>Unknown Mac fields (workspaceID, documents, mode…) are kept for a lossless round-trip.</summary>
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
+
     public Guid Id { get; init; } = Guid.NewGuid();
     public string Title { get; init; } = "";
     public DateTimeOffset StartedAt { get; init; } = DateTimeOffset.UtcNow;

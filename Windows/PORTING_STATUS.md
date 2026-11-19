@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 会议记录保留未知 Mac 字段 · 0.5.65
+
+- `SessionRecord` 加 `JsonExtensionData`：直接导入/导出 Mac 会议 JSON 时，
+  `workspaceID`/`workspaceName`/`documents`/`mode` 等未建模字段原样保留。
+- 新增往返测试；Core 833。
+- **0.5.65 实测**：Core 833 + 基线 106；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.8 MiB、私有 42.8 MiB。
+
 # P0 系列阶段复盘字段 · 0.5.64
+
 
 - `WorkspaceSeries` 增加 `stageReview`/`stageReviewAt`，Mac 系列的整体复盘与时间点
   在导入/导出后保留。
