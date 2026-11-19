@@ -2465,9 +2465,11 @@ public partial class MainWindow : Window
         var back = this.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
             .Select(block => block.Text ?? "").ToHashSet(StringComparer.Ordinal);
         var islandTitle = island?.Title ?? "";
+        var modelChoice = state.Settings.ModelChoicesList.FirstOrDefault()?.ToString() ?? "";
         var passed = found.Length == labels.Length && back.Contains("首页") && back.Contains("设置")
-                     && (islandTitle.Length == 0 || islandTitle.Contains("Cue island", StringComparison.Ordinal));
-        var report = new { passed, found, missing = labels.Except(found).ToArray(), reversed = back.Contains("首页"), islandTitle };
+                     && (islandTitle.Length == 0 || islandTitle.Contains("Cue island", StringComparison.Ordinal))
+                     && (modelChoice.Length == 0 || modelChoice.Contains("bilingual", StringComparison.Ordinal));
+        var report = new { passed, found, missing = labels.Except(found).ToArray(), reversed = back.Contains("首页"), islandTitle, modelChoice };
         try
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));

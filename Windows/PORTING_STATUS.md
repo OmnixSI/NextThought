@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 下拉选项本地化 · 0.5.113
+
+- `ModelChoice/EffortChoice/SceneChoice/AutoEndChoice` 的 `ToString` 走 `UiText.T`；
+  模型、推理强度、自动收尾、屏选择列表在英文界面显示英文。
+- `--ui-language-check` 报告 `modelChoice=X-ASR bilingual · 480 ms (recommended)`；
+  词典 282 条；Core 863。
+- **0.5.113 实测**：Core 863 + 基线 109；验收 63/63、门禁 17/17；启动 4.11 秒、
+  工作集 109.4 MiB、私有 43.0 MiB。
+
 # P2 英文日期格式 · 0.5.112
+
 
 - `SessionMeta.LocalStartedAt` 在英文界面输出 `MMM d, HH:mm`（InvariantCulture），
   中文仍为 `MM-dd HH:mm`；设置页「界面语言 / Language」标题也翻译。

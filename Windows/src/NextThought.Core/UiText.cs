@@ -285,6 +285,14 @@ public static class UiText
         ["采纳后进入这个系列的经验，下次回答会带上它"] = "Accepted lessons join this series and are used in later answers",
         ["题库里已有相似问题时，「替换」会用新回答覆盖旧的，旧回答留在历史里"] = "If a similar question exists, Replace overwrites its answer; the old one stays in history",
         ["界面语言 / Language"] = "Interface language",
+        ["X-ASR 中英 · 480 ms（推荐）"] = "X-ASR bilingual · 480 ms (recommended)",
+        ["X-ASR 中英 · 160 ms"] = "X-ASR bilingual · 160 ms",
+        ["默认，不指定"] = "Default, not specified",
+        ["none（关闭思考）"] = "none (reasoning off)",
+        ["静音后先提示，再结束（推荐）"] = "Prompt after silence, then end (recommended)",
+        ["静音后直接结束"] = "End immediately after silence",
+        ["不自动结束"] = "Do not auto-end",
+        ["自动（第一块外接屏）"] = "Automatic (first external display)",
     };
 
     private static readonly Dictionary<string, string> Chinese = English
