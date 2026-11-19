@@ -43,6 +43,7 @@ public static class StartupOptions
     public static string? SignatureCheck { get; private set; }
     public static string? SlideFollowCheck { get; private set; }
     public static string? PrepareModelsCheck { get; private set; }
+    public static string? CompanionCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -124,6 +125,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--signature-check=", StringComparison.OrdinalIgnoreCase)) SignatureCheck = argument["--signature-check=".Length..];
             else if (argument.StartsWith("--slide-follow-check=", StringComparison.OrdinalIgnoreCase)) SlideFollowCheck = argument["--slide-follow-check=".Length..];
             else if (argument.StartsWith("--prepare-models-check=", StringComparison.OrdinalIgnoreCase)) PrepareModelsCheck = argument["--prepare-models-check=".Length..];
+            else if (argument.StartsWith("--companion-check=", StringComparison.OrdinalIgnoreCase)) CompanionCheck = argument["--companion-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)

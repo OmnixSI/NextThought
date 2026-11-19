@@ -106,6 +106,7 @@ public partial class MainWindow : Window
             if (StartupOptions.SignatureCheck is { } signatureCheck) await RunSignatureCheckAsync(signatureCheck);
             if (StartupOptions.SlideFollowCheck is { } slideFollow) await RunSlideFollowCheckAsync(slideFollow);
             if (StartupOptions.PrepareModelsCheck is { } prepareModels) await RunPrepareModelsCheckAsync(prepareModels);
+            if (StartupOptions.CompanionCheck is { } companionCheck) await RunCompanionCheckAsync(companionCheck);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -2257,7 +2258,73 @@ public partial class MainWindow : Window
         Close();
     }
 
+
+    /// <summary>Exercises the LAN companion channel without a phone: pairing token, snapshot, action and dedup.</summary>
+    private async Task RunCompanionCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var actions = new List<string>();
+        var error = "";
+        var passed = false;
+        var unauthorized = 0;
+        var duplicate = false;
+        CompanionServer? server = null;
+        try
+        {
+            server = new CompanionServer(System.Net.IPAddress.Loopback, action =>
+            {
+                lock (actions) actions.Add(action);
+                return Task.FromResult(true);
+            });
+            server.Publish(new CompanionSnapshot(Status: "自检中", Question: "问题", Answer: "回答"));
+            var pairing = server.PairingUrl[(server.PairingUrl.IndexOf("#p=", StringComparison.Ordinal) + 3)..];
+            var padded = pairing.Replace('-', '+').Replace('_', '/');
+            padded += new string('=', (4 - padded.Length % 4) % 4);
+            using var pairingJson = System.Text.Json.JsonDocument.Parse(Convert.FromBase64String(padded));
+            var token = pairingJson.RootElement.GetProperty("token").GetString()!;
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var baseUri = server.BaseUri.ToString().TrimEnd('/');
+            using var snapshot = await client.GetAsync($"{baseUri}/snapshot?t={token}");
+            var snapshotBody = await snapshot.Content.ReadAsStringAsync();
+            var unauthorizedResponse = await client.GetAsync($"{baseUri}/snapshot");
+            unauthorized = (int)unauthorizedResponse.StatusCode;
+            var id = Guid.NewGuid().ToString("D");
+            using var first = await client.PostAsync($"{baseUri}/action?id={id}&a=shorter&t={token}", new StringContent(""));
+            using var second = await client.PostAsync($"{baseUri}/action?id={id}&a=shorter&t={token}", new StringContent(""));
+            duplicate = second.StatusCode == System.Net.HttpStatusCode.NoContent && actions.Count == 1;
+            using var snapshotJson = System.Text.Json.JsonDocument.Parse(snapshotBody);
+            var snapshotOk = snapshotJson.RootElement.TryGetProperty("snapshot", out var stateElement)
+                             && stateElement.TryGetProperty("status", out var statusElement)
+                             && statusElement.GetString() == "自检中";
+            passed = snapshot.IsSuccessStatusCode && snapshotOk
+                     && first.StatusCode == System.Net.HttpStatusCode.NoContent && duplicate && unauthorized == 403;
+        }
+        catch (Exception exception)
+        {
+            error = exception.ToString();
+        }
+        finally
+        {
+            if (server is not null) await server.DisposeAsync();
+        }
+        var report = new { passed, actions, duplicate, unauthorized, error };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "companion-check: passed" : "companion-check: failed");
+        Close();
+    }
+
     // The design-time constructor required by the XAML compiler for previews.
+
 
 
 

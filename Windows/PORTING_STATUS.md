@@ -1,5 +1,18 @@
 
+# P4 伴侣局域网通道自检 · 1.3.7
+
+1.3.7 新增 ``--companion-check``，在没有手机的情况下把局域网 HTTP 通道跑通：
+
+- 起真实 ``CompanionServer``（回环），从 ``PairingUrl`` 解出 token；GET ``/snapshot`` 读回状态；
+  POST ``/action`` 触发一次动作；同一命令重放只执行一次；无 token 请求返回 403。
+- 安装版实测：``passed=true``、actions=["shorter"]、duplicate=true、unauthorized=403
+  （``qa\companion-1370\companion.json``）。
+- **1.3.7 门禁**：测试 779 + 83；验收 61/61、发布门禁 17/17；真实双屏 presenter-check 仍通过；
+  启动 1.20–1.21 秒、工作集 108.5 MiB、私有 43 MiB。
+- 真实手机、公网 TLS 与 BLE 仍待设备。
+
 # P3/P4 真实双屏、AOT 探针与模型安装 · 1.3.6
+
 
 本轮按优先级把「签名」移出阻塞项（发布前事项），集中完成三个子目标：
 
