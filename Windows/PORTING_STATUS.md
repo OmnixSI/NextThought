@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 场景准备应用会议选择 · 0.5.52
+
+- `MeetingPlan.PreparedWorkspace` 现在写入 `mode`、`style`、`preferences`、`customTypeName`、
+  `customBaseMode`；不同会议类型用本类型默认风格，显式偏好保留。
+- `Materials=false` 改为只删除 `baselineDocumentIDs` 中的资料，新增文件保留；
+  与 Mac `MeetingCarry.workspaceSnapshot` 一致。
+- 移植 `MeetingPreparationTests` 5 个测试，修正两条旧携带测试；Core 821。
+- **0.5.52 实测**：Core 821 + 基线 105；验收 61/61、门禁 17/17；启动 1.23 秒、
+  工作集 123.0 MiB、私有 55.6 MiB。
+
 # P1 DocumentFeatureAvailability 测试移植 · 0.5.51
+
 
 - 移植 Mac 的 64 种依赖组合测试：Paddle = runtime+OCR+layout，Codex = runtime+connected，
   Semantic = runtime+embedding，Office = runtime，且 checking 时一律 false。

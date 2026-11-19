@@ -1768,7 +1768,7 @@ public partial class MainWindow : Window
         };
         var carriedDocuments = NextThought.Core.MeetingCarry.Standard.WorkspaceSnapshot(carrySeries, new HashSet<string>());
         var droppedDocuments = (NextThought.Core.MeetingCarry.Standard with { Materials = false })
-            .WorkspaceSnapshot(carrySeries, new HashSet<string>());
+            .WorkspaceSnapshot(carrySeries, new HashSet<string> { "doc-1" });
         Check("meeting-carry-materials", carriedDocuments.DocumentIds.Count == 1 && droppedDocuments.DocumentIds.Count == 0);
 
         Check("export-formats", NextThought.Core.SessionExportFormat.Markdown.FileExtension() == "md"
@@ -1852,12 +1852,12 @@ public partial class MainWindow : Window
         var prepPlan = new NextThought.Core.MeetingPlan
         {
             BaselineDocumentIds = new HashSet<string> { "doc-1" },
-            Carry = NextThought.Core.MeetingCarry.Standard with { Transcript = true }
+            Carry = NextThought.Core.MeetingCarry.Standard with { Materials = false, Transcript = true }
         };
         var prepResult = prepPlan.PreparedWorkspace(prepSeries,
             new NextThought.Core.ContextDocument { Id = "transcript", Name = "上一场转写" });
         Check("meeting-prepare", prepResult.Documents.Count == 2
-                                 && prepResult.Documents.Any(document => document.Id == "doc-1")
+                                 && prepResult.Documents.Any(document => document.Id == "doc-2")
                                  && prepResult.DocumentIds.Contains("transcript"));
 
         var queueDirectory = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "job-queue");

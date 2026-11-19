@@ -56,13 +56,23 @@ public sealed class MeetingCarryTests
     }
 
     [Fact]
-    public void MaterialsFlagControlsTheSeriesDocuments()
+    public void MaterialsFlagDropsOnlyBaselineDocuments()
     {
-        var series = Series() with { DocumentIds = ["doc-1", "doc-2"] };
-        var carried = MeetingCarry.Standard.WorkspaceSnapshot(series, new HashSet<string>());
+        var series = Series() with
+        {
+            DocumentIds = ["doc-1", "doc-2"],
+            Documents =
+            [
+                new ContextDocument { Id = "doc-1", Name = "旧资料" },
+                new ContextDocument { Id = "doc-2", Name = "新资料" }
+            ]
+        };
+        var carried = MeetingCarry.Standard.WorkspaceSnapshot(series, new HashSet<string> { "doc-1" });
         Assert.Equal(["doc-1", "doc-2"], carried.DocumentIds);
-        var dropped = (MeetingCarry.Standard with { Materials = false }).WorkspaceSnapshot(series, new HashSet<string>());
-        Assert.Empty(dropped.DocumentIds);
+        var dropped = (MeetingCarry.Standard with { Materials = false })
+            .WorkspaceSnapshot(series, new HashSet<string> { "doc-1" });
+        Assert.Equal(["doc-2"], dropped.DocumentIds);
+        Assert.Equal(["新资料"], dropped.Documents.Select(document => document.Name));
         Assert.Single(dropped.Lessons);
         Assert.Single(dropped.QuestionBank);
     }
@@ -104,7 +114,7 @@ public sealed class MeetingCarryTests
     }
 
     [Fact]
-    public void BaselineDocumentsFilterThePreparedMaterials()
+    public void CarriedMaterialsKeepBaselineAndNewDocuments()
     {
         var series = Series() with
         {
@@ -117,8 +127,7 @@ public sealed class MeetingCarryTests
         };
         var plan = new MeetingPlan { BaselineDocumentIds = new HashSet<string> { "doc-1" } };
         var prepared = plan.PreparedWorkspace(series);
-        Assert.Equal(["doc-1"], prepared.DocumentIds);
-        Assert.Equal(["简历"], prepared.Documents.Select(document => document.Name));
+        Assert.Equal(["doc-1", "doc-2"], prepared.DocumentIds);
         Assert.Equal(2, series.Documents.Count);
     }
 

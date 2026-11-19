@@ -54,6 +54,14 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
 0.5.13 增加 W 窗口截图、Space 暂停/恢复聆听；0.5.34 增加 PageUp/PageDown 幻灯片翻页；0.5.35 增加 Q「立即回答最新转写」。
 安装版启动日志 **19/19 注册成功**，Mac 的 19 个动作都有对应键。
 
+## 场景准备（0.5.52 追加）
+
+- `MeetingPlan.PreparedWorkspace` 现在真正应用本次会议的选择：模式、custom 类型/基准模式、
+  风格、偏好（只有旧类型的默认偏好会被替换，显式要求保留）。
+- 材料携带语义按 Mac 修正：`Materials=false` 只删除准备基线里的资料，准备开始后新增的
+  文件仍保留；`Transcript` 仍只在显式勾选时附加上一场转写。
+- 移植 Mac `MeetingPreparationTests` 5 个测试；另有携带语义测试。
+
 ## 第 6 节的窗口与更新（0.5.1 追加）
 
 | 项 | 状态 | 证据 |
@@ -94,10 +102,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.51 实测
+## 0.5.52 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.23 秒（安装后首次 8.2 秒，Defender 扫描新文件），工作集 **123.0 MiB**、私有 55.5 MiB
+- 启动 1.23 秒，工作集 **123.0 MiB**、私有 55.6 MiB

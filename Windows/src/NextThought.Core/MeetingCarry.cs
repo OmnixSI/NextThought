@@ -26,14 +26,11 @@ public sealed record MeetingCarry
         var workspace = series;
         if (!Materials)
         {
-            workspace = workspace with { DocumentIds = [], Documents = [] };
-        }
-        else if (baselineDocumentIds.Count > 0)
-        {
+            // Only the materials known when preparation began are dropped; files added since stay.
             workspace = workspace with
             {
-                DocumentIds = series.DocumentIds.Where(baselineDocumentIds.Contains).ToList(),
-                Documents = series.Documents.Where(document => baselineDocumentIds.Contains(document.Id)).ToList()
+                DocumentIds = series.DocumentIds.Where(id => !baselineDocumentIds.Contains(id)).ToList(),
+                Documents = series.Documents.Where(document => !baselineDocumentIds.Contains(document.Id)).ToList()
             };
         }
         if (!series.UseKnowledge || !Review) workspace = workspace with { QuestionBank = [] };
