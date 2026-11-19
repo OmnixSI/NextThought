@@ -11,6 +11,7 @@ public sealed class UpdateRestoreTests
     {
         var script = UpdateRestore.Script(@"C:\Backups\0.65.0", @"C:\Program Files\NextThought", @"C:\Program Files\NextThought\NextThought.exe", 4321);
         Assert.Contains("Wait-Process -Id 4321 -Timeout 60", script);
+        Assert.Contains(@"Get-ChildItem -LiteralPath 'C:\Backups\0.65.0' -Force | Copy-Item -Destination 'C:\Program Files\NextThought' -Recurse -Force", script);
         Assert.Contains(@"Copy-Item -LiteralPath 'C:\Backups\0.65.0' -Destination 'C:\Program Files\NextThought' -Recurse -Force", script);
         Assert.Contains(@"Start-Process -FilePath 'C:\Program Files\NextThought\NextThought.exe'", script);
     }

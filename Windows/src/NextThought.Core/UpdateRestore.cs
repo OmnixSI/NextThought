@@ -14,7 +14,11 @@ public static class UpdateRestore
         return $$"""
             $ErrorActionPreference = 'Stop'
             try { Wait-Process -Id {{processId}} -Timeout 60 -ErrorAction SilentlyContinue } catch { }
-            Copy-Item -LiteralPath {{Quote(backupPath)}} -Destination {{Quote(targetDirectory)}} -Recurse -Force
+            if (Test-Path -LiteralPath {{Quote(targetDirectory)}}) {
+                Get-ChildItem -LiteralPath {{Quote(backupPath)}} -Force | Copy-Item -Destination {{Quote(targetDirectory)}} -Recurse -Force
+            } else {
+                Copy-Item -LiteralPath {{Quote(backupPath)}} -Destination {{Quote(targetDirectory)}} -Recurse -Force
+            }
             Start-Process -FilePath {{Quote(executablePath)}}
             """;
     }

@@ -57,8 +57,13 @@ public partial class TeleprompterWindow : Window
     {
         if (!double.IsNaN(geometry.TeleprompterX) && !double.IsNaN(geometry.TeleprompterY))
         {
-            Position = new PixelPoint((int)geometry.TeleprompterX, (int)geometry.TeleprompterY);
-            return;
+            var saved = new PixelPoint((int)geometry.TeleprompterX, (int)geometry.TeleprompterY);
+            if (Screens.All.Any(screen => saved.X >= screen.Bounds.X - 40 && saved.X < screen.Bounds.X + screen.Bounds.Width
+                                          && saved.Y >= screen.Bounds.Y - 40 && saved.Y < screen.Bounds.Y + screen.Bounds.Height))
+            {
+                Position = saved;
+                return;
+            }
         }
         if (Screens.Primary is { } screen)
         {

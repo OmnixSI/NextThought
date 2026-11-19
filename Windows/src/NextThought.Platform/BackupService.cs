@@ -96,11 +96,40 @@ public sealed class BackupService(AppPaths paths)
             foreach (var file in workspaces) { using var workspace = JsonDocument.Parse(await File.ReadAllTextAsync(file, ct)); if (!Guid.TryParse(workspace.RootElement.GetProperty("id").GetString(), out _)) throw new InvalidDataException("Mac 场景 ID 无效。"); }
             var originals = Path.Combine(root, "Originals");
             if (Directory.Exists(originals)) foreach (var file in Directory.GetFiles(originals)) if (!Regex.IsMatch(Path.GetFileNameWithoutExtension(file), "^[a-fA-F0-9]{64}$") || !Hash(file).Equals(Path.GetFileNameWithoutExtension(file), StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Mac 原文件哈希无效。");
-            var incomingMaterials = Folders("Materials").ToList();
-            foreach (var folder in incomingMaterials)
+            var incomingMaterials = new List<string>();
+            var materialIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var folder in Folders("Materials"))
             {
-                var document = JsonSerializer.Deserialize<MaterialDocument>(await File.ReadAllTextAsync(Path.Combine(folder, "document.json"), ct), JsonDefaults.Options)!;
-                if (!Guid.TryParse(document.Id, out _) || Path.GetFileName(folder) != document.Id || !DocumentReader.Extensions.Contains(document.Extension) || Hash(Path.Combine(folder, "source" + document.Extension)) != document.Sha256) throw new InvalidDataException("资料原文件或 ID 校验失败。");
+                if (File.Exists(Path.Combine(folder, "document.json")))
+                {
+                    var document = JsonSerializer.Deserialize<MaterialDocument>(await File.ReadAllTextAsync(Path.Combine(folder, "document.json"), ct), JsonDefaults.Options)!;
+                    if (!Guid.TryParse(document.Id, out _) || Path.GetFileName(folder) != document.Id || !DocumentReader.Extensions.Contains(document.Extension) || Hash(Path.Combine(folder, "source" + document.Extension)) != document.Sha256) throw new InvalidDataException("资料原文件或 ID 校验失败。");
+                    if (materialIds.Add(document.Id)) incomingMaterials.Add(folder);
+                    continue;
+                }
+                // Mac layout: Materials/<series>/<documentID>.md, with no Windows document.json.
+                foreach (var markdown in Directory.GetFiles(folder, "*.md", SearchOption.TopDirectoryOnly))
+                {
+                    if (!Guid.TryParse(Path.GetFileNameWithoutExtension(markdown), out var parsed)) throw new InvalidDataException("Mac 资料文件名不是有效 ID。");
+                    var id = parsed.ToString("N");
+                    if (!materialIds.Add(id)) continue;
+                    var text = await File.ReadAllTextAsync(markdown, ct).ConfigureAwait(false);
+                    var convertedFolder = Path.Combine(staging, "converted", id);
+                    Directory.CreateDirectory(convertedFolder);
+                    var source = Path.Combine(convertedFolder, "source.md");
+                    await File.WriteAllTextAsync(source, text, ct).ConfigureAwait(false);
+                    var converted = new MaterialDocument
+                    {
+                        Id = id,
+                        Name = "Mac 资料 " + id[..8],
+                        Extension = ".md",
+                        Sha256 = Hash(source),
+                        Blocks = [new DocumentBlock("Mac 归档", text, 1)],
+                        Warnings = ["位置来自 Mac 的 Materials 归档；原始备份已保留在 Migration/ 中。"]
+                    };
+                    await File.WriteAllTextAsync(Path.Combine(convertedFolder, "document.json"), JsonSerializer.Serialize(converted, JsonDefaults.Options), ct).ConfigureAwait(false);
+                    incomingMaterials.Add(convertedFolder);
+                }
             }
             foreach (var file in workspaces)
             {

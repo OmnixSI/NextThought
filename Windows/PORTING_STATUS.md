@@ -29,7 +29,23 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 审查修复续 · 0.5.1
+
+0.5.1 继续按审查报告修 W3/W9/U3/U4 与第 2 节第 7 条：
+
+- **W3 浮窗抢焦点**：去掉 `island.Activate()`；岛/字幕条/提词器均 `ShowActivated=False`。
+- **W9 提词器越界**：恢复位置前检查所有屏幕，越界回主屏居中。
+- **U3 静默更新不重启**：安装器 `[Run]` 改用 `Check: ShouldLaunchApp`；更新传 `/LAUNCH=1`，
+  QA 静默安装不启动（实测 `launchedAfterSilent=0`）。
+- **U4 回滚嵌套**：目标目录存在时复制备份内容而不是整个备份目录；测试更新。
+- **#7 Mac 资料导入**：`BackupService` 识别 `Materials/<系列>/<documentID>.md`，
+  转成 Windows 资料并保留原始备份；新增 `ImportsMacMaterialsFolderWithMarkdownOnly`。
+- **0.5.1 实测**：Core **782** + 基线 **86**；验收 61/61、门禁 17/17；
+  `--capture-hide-check` passed（affinity=17）；启动 1.21 秒、工作集 109.3 MiB、私有 42.9 MiB。
+- 14 条状态：**9 完整 / 3 部分 / 2 未修**（#9 签名、#10 音频设备切换）。
+
 # P0 1.3.7 审查报告修复 · 0.5.0
+
 
 按 `NextThought Windows 1.3.7 审查报告.pdf` 先做「止血」与口径校正，版本退回 **0.5.0**。
 

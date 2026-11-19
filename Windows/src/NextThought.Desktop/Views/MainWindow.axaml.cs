@@ -2574,7 +2574,6 @@ public partial class MainWindow : Window
         if (island is { IsVisible: true }) { island.Hide(); return; }
         island ??= new CueIslandWindow(state);
         island.Show();
-        island.Activate();
     }
 
     // ---- 双屏演讲（PresenterMode.swift） ----

@@ -72,7 +72,7 @@ Name: "{userprograms}\NextThought\卸载 NextThought"; Filename: "{uninstallexe}
 Name: "{autodesktop}\NextThought"; Filename: "{app}\NextThought.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\NextThought.exe"; Description: "启动 NextThought"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\NextThought.exe"; Description: "启动 NextThought"; Flags: nowait postinstall; Check: ShouldLaunchApp
 
 [UninstallRun]
 Filename: "{cmd}"; Parameters: "/c taskkill /IM NextThought.exe /F"; Flags: runhidden; RunOnceId: "StopNextThought"
@@ -82,6 +82,12 @@ Type: filesandordirs; Name: "{app}"
 Type: dirifempty; Name: "{userprograms}\NextThought"
 
 [Code]
+function ShouldLaunchApp(): Boolean;
+begin
+  // Silent in-app updates pass /LAUNCH=1; automated install tests stay headless.
+  Result := (not WizardSilent) or (ExpandConstant('{param:LAUNCH|0}') = '1');
+end;
+
 function InitializeSetup(): Boolean;
 begin
   Result := True;

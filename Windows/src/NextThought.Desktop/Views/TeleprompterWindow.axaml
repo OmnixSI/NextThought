@@ -5,7 +5,7 @@
         x:DataType="local:AppState"
         Title="NextThought 提词器"
         Width="640" Height="320" MinWidth="360" MinHeight="160"
-        CanResize="True" ShowInTaskbar="False"
+        CanResize="True" ShowInTaskbar="False" ShowActivated="False"
         WindowDecorations="None" Topmost="True"
         Background="Transparent" TransparencyLevelHint="Transparent"
         WindowStartupLocation="Manual">

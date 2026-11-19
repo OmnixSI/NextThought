@@ -63,6 +63,31 @@ public sealed class BackupTests
         finally { Directory.Delete(root, true); }
     }
     [Fact]
+    public async Task ImportsMacMaterialsFolderWithMarkdownOnly()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-mac-materials-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var archive = Path.Combine(root, "mac-materials.ntbackup");
+        var id = Guid.NewGuid().ToString("D").ToUpperInvariant();
+        using (var zip = System.IO.Compression.ZipFile.Open(archive, System.IO.Compression.ZipArchiveMode.Create))
+        {
+            void Write(string name, string text)
+            {
+                var entry = zip.CreateEntry(name);
+                using var writer = new StreamWriter(entry.Open());
+                writer.Write(text);
+            }
+            Write("manifest.json", "{\"format\":\"nextthought-backup\",\"version\":1,\"includesSecrets\":false,\"sessionCount\":0,\"workspaceCount\":0}");
+            Write("Materials/series/" + id + ".md", "## 第 1 页\nMac 资料正文");
+        }
+        var target = new AppPaths(Path.Combine(root, "target-mac"));
+        var result = await new BackupService(target).ImportAsync(archive);
+        Assert.Equal(1, result.MaterialsAdded);
+        var material = Assert.Single(new MaterialStore(target).List());
+        Assert.Contains("Mac 资料正文", material.Blocks[0].Text);
+    }
+
+    [Fact]
     public async Task CorruptedPayloadAndFutureVersionAreRejectedBeforeCommit()
     {
         var root = Path.Combine(Path.GetTempPath(), "nt-hash-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);

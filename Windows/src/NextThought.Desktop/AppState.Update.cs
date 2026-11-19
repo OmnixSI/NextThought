@@ -21,7 +21,7 @@ public partial class AppState
     [ObservableProperty] private bool updateInstallSucceeded;
 
     /// <summary>Arguments used by the installer smoke tests as well (Inno Setup 7).</summary>
-    public const string SilentInstallArguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS";
+    public const string SilentInstallArguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /LAUNCH=1";
 
     /// <summary>Raised after a verified installer has been started; the window exits.</summary>
     public event Action? UpdateInstalled;
