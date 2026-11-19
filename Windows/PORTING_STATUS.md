@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 系列阶段复盘字段 · 0.5.64
+
+- `WorkspaceSeries` 增加 `stageReview`/`stageReviewAt`，Mac 系列的整体复盘与时间点
+  在导入/导出后保留。
+- 扩展现有 Workspace JSON 测试；Core 832。
+- **0.5.64 实测**：Core 832 + 基线 106；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 109.1 MiB、私有 43.0 MiB。
+
 # P0 系列条目删除墓碑 · 0.5.63
+
 
 - 新增 `WorkspaceSeriesItemSourceTombstone`（`itemID`/`sourceSessionID`）并挂到
   `WorkspaceSeries.SeriesItemSourceTombstones`；Mac 备份往返不再丢失已删条目的来源墓碑。

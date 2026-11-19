@@ -105,6 +105,13 @@ public sealed record WorkspaceSeries(
     [JsonPropertyName("skillIDs")]
     public IReadOnlyList<string>? SkillIds { get; init; }
 
+    /// <summary>Latest stage review across all sessions of this series.</summary>
+    [JsonPropertyName("stageReview")]
+    public string? StageReview { get; init; }
+
+    [JsonPropertyName("stageReviewAt")]
+    public DateTimeOffset? StageReviewAt { get; init; }
+
     // Mac Workspace fields the Windows UI does not expose yet. They are kept so a Mac backup
     // round-trips without silently dropping the scene's setup.
     [JsonPropertyName("mode")]
