@@ -80,6 +80,7 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
   `customBaseMode`、`glossary`、`archived`、`fields`、`standing` 等 Mac 字段；
   Workspace 的已知字段已全部保留。
 - 0.5.53 修正 DocumentJob 的 Mac 键名（`workspaceID` / `waitingReason` / `documentID` / `localModelID`）。
+- 0.5.54 修正系列变更候选的 `sourceSessionID` / `evidenceID` 键名。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
 - 0.5.4 起结构化纪要写入 `summary.json → structured`；0.5.14 起改为直接写 Mac 的 StructuredNotesPayload，
   并维护 `structuredAll` 与 `transcriptSourceRevision`；0.5.15 起 `summary.questions` 由回答记录填充；0.5.17 起模板纪要的经验/题库写入
@@ -103,10 +104,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.53 实测
+## 0.5.54 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.21 秒，工作集 **108.7 MiB**、私有 42.6 MiB
+- 启动 1.22 秒，工作集 **108.7 MiB**、私有 42.8 MiB

@@ -39,7 +39,10 @@ public sealed record WorkspaceSeriesChangeCandidate
     public string? Owner { get; init; }
     public string? Due { get; init; }
     public DateTimeOffset? DueDate { get; init; }
+    [System.Text.Json.Serialization.JsonPropertyName("sourceSessionID")]
     public string SourceSessionId { get; init; } = "";
+
+    [System.Text.Json.Serialization.JsonPropertyName("evidenceID")]
     public string EvidenceId { get; init; } = "";
     public string ClaimRevision { get; init; } = "";
     public string SourceRevision { get; init; } = "";

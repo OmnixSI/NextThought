@@ -34,6 +34,23 @@ public sealed class WorkspaceSeriesChangeTests
         ReviewIsStale: stale, ClaimRevision: "c1", SourceRevision: "s1", TranscriptSourceRevision: "t1");
 
     [Fact]
+    public void CandidateUsesTheMacEvidenceKeys()
+    {
+        var candidate = new WorkspaceSeriesChangeCandidate
+        {
+            Id = "candidate", Kind = WorkspaceSeriesItem.KindValue.Action, Text = "补充压测",
+            SourceSessionId = "session", EvidenceId = "evidence"
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(candidate, JsonDefaults.Options);
+        Assert.Contains("\"sourceSessionID\"", json);
+        Assert.Contains("\"evidenceID\"", json);
+        var back = System.Text.Json.JsonSerializer.Deserialize<WorkspaceSeriesChangeCandidate>(json, JsonDefaults.Options)!;
+        Assert.Equal("session", back.SourceSessionId);
+        Assert.Equal("evidence", back.EvidenceId);
+        Assert.Equal("candidate", back.Id);
+    }
+
+    [Fact]
     public void AcceptedCandidatesBecomeSeriesItemsWithAReceipt()
     {
         var series = Series(Candidate());

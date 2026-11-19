@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 系列变更候选 Mac 键名 · 0.5.54
+
+- `WorkspaceSeriesChangeCandidate` 的 `sourceSessionId`/`evidenceId` 改为 Mac 的
+  `sourceSessionID`/`evidenceID`；系列条目原本已是正确键名。
+- 新增 JSON 往返测试，Core 824。
+- **0.5.54 实测**：Core 824 + 基线 105；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 108.7 MiB、私有 42.8 MiB。
+
 # P0 DocumentJob Mac 键名 · 0.5.53
+
 
 - `workspaceID`、`localModelID`、`waitingReason`、`documentID` 现在按 Mac 键名读写；
   此前写出的是 `workspaceId`/`waitingFor` 等，Mac 侧读不到。
