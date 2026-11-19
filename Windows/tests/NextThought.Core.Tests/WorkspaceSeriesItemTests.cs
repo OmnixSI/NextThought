@@ -158,6 +158,22 @@ public sealed class WorkspaceSeriesItemTests
         Assert.Equal(2, item.Revision);
         Assert.Equal("旧文本", Assert.Single(item.History).Text);
     }
+
+    [Fact]
+    public void RevisionKeepsUnknownMacProvenance()
+    {
+        const string json = """
+            {"text":"旧文本","revision":2,"kind":"decision","sourceSessionID":"11111111-1111-1111-1111-111111111111",
+             "evidenceID":"e","claimRevision":"c","sourceRevision":"s","recordedAt":"2026-01-01T00:00:00Z"}
+            """;
+        var revision = System.Text.Json.JsonSerializer.Deserialize<WorkspaceSeriesItemRevision>(
+            json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.Equal("旧文本", revision.Text);
+        var saved = System.Text.Json.JsonSerializer.Serialize(revision, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"sourceSessionID\"", saved);
+        Assert.Contains("\"evidenceID\"", saved);
+        Assert.Contains("\"recordedAt\"", saved);
+    }
 }
 
 internal static class SeriesBriefingTestExtensions

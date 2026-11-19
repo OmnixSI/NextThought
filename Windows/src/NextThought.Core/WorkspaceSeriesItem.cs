@@ -75,4 +75,8 @@ public sealed record WorkspaceSeriesItemRevision
     public WorkspaceSeriesItem.ActionStateValue? ActionState { get; init; }
     public int Revision { get; init; } = 1;
     public DateTimeOffset At { get; init; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Unknown Mac revision fields (id, kind, sourceSessionID…) survive round-trips.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
 }

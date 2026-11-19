@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 条目历史保留 Mac 溯源字段 · 0.5.70
+
+- `WorkspaceSeriesItemRevision` 加 `JsonExtensionData`：Mac 历史版本里的 `id`、`kind`、
+  `sourceSessionID`、`evidenceID`、`recordedAt` 等字段在备份往返中保留。
+- 新增 JSON 往返测试；Core 835。
+- **0.5.70 实测**：Core 835 + 基线 106；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 108.7 MiB、私有 42.6 MiB。
+
 # P0 context.json 上一场键名 · 0.5.69
+
 
 - `SessionContextSnapshot.PreviousSessionId` 改为 Mac 的 `previousSessionID`；
   Mac 读取上下文时不再丢掉“上一场”。
