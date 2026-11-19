@@ -74,6 +74,21 @@ public sealed record ContextDocument
     public int CharacterCount => Pages.Sum(page => page.Length);
 }
 
+/// <summary>Mac's context.json: the inputs the answers were generated with.</summary>
+public sealed record SessionContextSnapshot
+{
+    public string Mode { get; init; } = "meeting";
+    public string Style { get; init; } = "concise";
+    public string Preferences { get; init; } = "";
+    public string Profile { get; init; } = "";
+    public IReadOnlyList<ContextDocument> Documents { get; init; } = [];
+    public string? EffectiveMode { get; init; }
+    public string? TypeName { get; init; }
+    public string? Experience { get; init; }
+    public string? PreviousSessionId { get; init; }
+    public Glossary? Glossary { get; init; }
+}
+
 /// <summary>A reusable meeting setup: mode, style, preferences, profile and documents.</summary>
 public sealed record SessionPreset
 {

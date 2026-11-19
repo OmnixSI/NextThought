@@ -10,7 +10,9 @@ public sealed class SessionStore(AppPaths paths)
     private readonly SemaphoreSlim gate = new(1, 1);
     public string Folder(Guid id) => Path.Combine(paths.Sessions, id.ToString().ToUpperInvariant());
     public FileStream AcquireLease(Guid id) => new(Path.Combine(Folder(id), ".active.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-    public async Task CreateAsync(SessionMeta meta, CancellationToken ct = default)
+    public Task CreateAsync(SessionMeta meta, CancellationToken ct = default) => CreateAsync(meta, null, ct);
+
+    public async Task CreateAsync(SessionMeta meta, SessionContextSnapshot? context, CancellationToken ct = default)
     {
         await gate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -18,9 +20,10 @@ public sealed class SessionStore(AppPaths paths)
             var folder = Folder(meta.Id);
             if (Directory.Exists(folder)) throw new IOException("会议 ID 已存在。");
             Directory.CreateDirectory(folder); await WriteMetaAsync(meta, ct).ConfigureAwait(false);
-            // Mac writes a context snapshot per meeting; keep a minimal compatible file.
+            // Mac writes a context snapshot per meeting; callers can pass the full input snapshot.
+            context ??= new SessionContextSnapshot { Mode = meta.Mode };
             await File.WriteAllTextAsync(Path.Combine(folder, "context.json"),
-                JsonSerializer.Serialize(new { platform = "windows", createdAt = DateTimeOffset.UtcNow, mode = meta.Mode.ToString() }, JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
+                JsonSerializer.Serialize(context, JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
         }
         finally { gate.Release(); }
     }

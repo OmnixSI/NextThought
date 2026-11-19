@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 context.json 完整字段 · 0.5.16
+
+- 新增 `SessionContextSnapshot`：mode/style/preferences/profile/documents/effectiveMode/typeName/
+  experience/previousSessionID/glossary。
+- 开始记录时按当前场景、资料库与术语表生成；`CreateAsync(meta, snapshot)` 写入。
+- **测试**：`ContextJsonCarriesTheMacInputs`；基线 96。
+- **0.5.16 实测**：Core 791 + 基线 96；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 109.0 MiB、私有 42.7 MiB。
+- 仍未完成：summary.lessons/bank、技能/模板、幻灯片快捷键、双向实机验收。
+
 # P0 summary.questions 填充 · 0.5.15
+
 
 - `SaveSummaryAsync` 在 `questions` 为空时读取 `answers.jsonl`，按 Mac 的
   `{id,text,answerGist}` 写入，`answerGist` 截到 240 字。

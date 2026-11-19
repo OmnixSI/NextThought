@@ -797,7 +797,23 @@ public partial class AppState : ObservableObject
             ResetDisplay();
             meta = NewMeta(settings, string.IsNullOrWhiteSpace(MeetingTitle) || MeetingTitle == "新会议" ? null : MeetingTitle);
             MeetingTitle = meta.Title;
-            await Sessions.CreateAsync(meta);
+            var context = new SessionContextSnapshot
+            {
+                Mode = meta.Mode,
+                Style = "concise",
+                Preferences = "",
+                Profile = "",
+                EffectiveMode = meta.Mode,
+                Documents = Library.DocumentsForRetrieval().Select(document => new ContextDocument
+                {
+                    Id = document.Id,
+                    Name = document.Name,
+                    Pages = document.Blocks.Select(block => block.Text).ToList(),
+                    Enabled = true
+                }).ToList(),
+                Glossary = glossary
+            };
+            await Sessions.CreateAsync(meta, context);
             CurrentSession = meta;
             sessionLease = Sessions.AcquireLease(meta.Id);
             BeginAutoEnd(meta);

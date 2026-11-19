@@ -66,6 +66,29 @@ public sealed class SessionDataSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task ContextJsonCarriesTheMacInputs()
+    {
+        var store = new SessionStore(new AppPaths(root));
+        var meta = new SessionMeta { Title = "会议", Mode = "labMeeting" };
+        var snapshot = new SessionContextSnapshot
+        {
+            Mode = "labMeeting", Style = "detailed", Preferences = "先结论", Profile = "实验室",
+            Documents = [new ContextDocument { Id = Guid.NewGuid().ToString("D"), Name = "论文.pdf", Pages = ["页一"] }],
+            EffectiveMode = "labMeeting", TypeName = "组会", Experience = "先讲结论",
+            Glossary = new Glossary([new GlossaryEntry("Kubernetes")])
+        };
+        await store.CreateAsync(meta, snapshot);
+        using var context = System.Text.Json.JsonDocument.Parse(
+            await File.ReadAllTextAsync(Path.Combine(store.Folder(meta.Id), "context.json")));
+        var rootElement = context.RootElement;
+        Assert.Equal("labMeeting", rootElement.GetProperty("mode").GetString());
+        Assert.Equal("detailed", rootElement.GetProperty("style").GetString());
+        Assert.Equal("先结论", rootElement.GetProperty("preferences").GetString());
+        Assert.Equal("页一", Assert.Single(rootElement.GetProperty("documents")[0].GetProperty("pages").EnumerateArray()).GetString());
+        Assert.Equal("Kubernetes", rootElement.GetProperty("glossary").GetProperty("entries")[0].GetProperty("canonical").GetString());
+    }
+
+    [Fact]
     public async Task ProofreadingKeepsTheRawRecognizerTranscript()
     {
         var store = new SessionStore(new AppPaths(root));
