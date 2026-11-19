@@ -247,7 +247,20 @@ public sealed class SessionStore(AppPaths paths)
     }
     public async Task ExportMarkdownAsync(Guid id, string destination, CancellationToken ct = default)
     {
-        var data = Load(id); var builder = new StringBuilder().AppendLine("# " + data.Meta.Title).AppendLine().AppendLine(data.Summary);
+        await File.WriteAllTextAsync(destination, BuildMarkdown(Load(id)), new UTF8Encoding(false), ct);
+    }
+
+    /// <summary>Word export of the same meeting (headings, lists, quotes).</summary>
+    public Task ExportDocxAsync(Guid id, string destination, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        DocxWriter.Write(BuildMarkdown(Load(id)), destination);
+        return Task.CompletedTask;
+    }
+
+    private static string BuildMarkdown(SessionData data)
+    {
+        var builder = new StringBuilder().AppendLine("# " + data.Meta.Title).AppendLine().AppendLine(data.Summary);
         builder.AppendLine().AppendLine("## 转写");
         foreach (var line in data.Lines)
         {
@@ -260,7 +273,7 @@ public sealed class SessionStore(AppPaths paths)
             builder.AppendLine().AppendLine("### " + answer.Question).AppendLine().AppendLine(answer.Answer);
             foreach (var source in answer.Sources ?? []) builder.AppendLine().AppendLine($"[{source.Label}] {source.DocumentName} · {source.Location}  ").AppendLine($"SHA-256: {source.Sha256}").AppendLine().AppendLine("> " + source.Quote.Replace("\n", "\n> "));
         }
-        await File.WriteAllTextAsync(destination, builder.ToString(), new UTF8Encoding(false), ct);
+        return builder.ToString();
     }
     private Task WriteMetaAsync(SessionMeta meta, CancellationToken ct = default) => AppPaths.AtomicWriteAsync(Path.Combine(Folder(meta.Id), "meta.json"), JsonSerializer.Serialize(meta, JsonDefaults.ArchiveOptions), ct);
     private static Task AppendAsync<T>(string path, T item, CancellationToken ct) => File.AppendAllTextAsync(path, JsonSerializer.Serialize(item, JsonDefaults.ArchiveOptions) + "\n", new UTF8Encoding(false), ct);

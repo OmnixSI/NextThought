@@ -1776,6 +1776,13 @@ public partial class MainWindow : Window
                                 && NextThought.Core.SessionExportFormat.Docx.Title() == "Word 文档"
                                 && NextThought.Core.SessionExportFormat.Vtt.Title() == "WebVTT 字幕");
 
+        var docxPath = Path.Combine(Path.GetDirectoryName(path) ?? Path.GetTempPath(), "acceptance.docx");
+        NextThought.Core.DocxWriter.Write("# 验收\n\n## 摘要\n- 条目", docxPath);
+        var docxOk = new FileInfo(docxPath).Length > 0;
+        using (var docx = System.IO.Compression.ZipFile.OpenRead(docxPath))
+            docxOk &= docx.GetEntry("word/document.xml") is not null;
+        Check("export-docx", docxOk);
+
         var evidenceItem = new NextThought.Core.WorkspaceSeriesItem
         {
             Kind = NextThought.Core.WorkspaceSeriesItem.KindValue.Decision,
