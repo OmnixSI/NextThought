@@ -113,7 +113,13 @@ public sealed record SessionAnswerEvent
     public string Question { get; init; } = "";
     public string Answer { get; init; } = "";
     public string Model { get; init; } = "";
+    public double? Seconds { get; init; }
+    public double? FirstTokenSeconds { get; init; }
     public bool Automatic { get; init; }
+    public string? ScreenshotPath { get; init; }
+    public string? WebAnswer { get; init; }
+    public IReadOnlyList<WebResult>? WebSources { get; init; }
+    public EvidenceBundle? Evidence { get; init; }
 }
 
 /// <summary>Earliest sessions.json stored answers without prompts; keep them explicitly labelled.</summary>

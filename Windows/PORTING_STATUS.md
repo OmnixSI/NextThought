@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 回答事件保留 Mac 字段 · 0.5.60
+
+- `SessionAnswerEvent` 补 `seconds`、`firstTokenSeconds`、`screenshotPath`、`webAnswer`、
+  `webSources`、`evidence`；导入/导出 Mac 会议时不再丢回答耗时、截图、联网答案与证据包。
+- 新增 JSON 往返测试；Core 830。
+- **0.5.60 实测**：Core 830 + 基线 106；验收 61/61、门禁 17/17；启动 1.23 秒、
+  工作集 108.8 MiB、私有 42.8 MiB。
+- 手机页 Chromium 截图自检未纳入发布：Edge 对该页等待加载超过 25 秒；保留为后续工作。
+
 # P0 更正 lineID / templateID · 0.5.59
+
 
 - `TranscriptCorrection.lineID`、`StructuredNotesDoc.templateID` 改为 Mac 键名；
   新增两个 JSON 往返测试。Core 829。

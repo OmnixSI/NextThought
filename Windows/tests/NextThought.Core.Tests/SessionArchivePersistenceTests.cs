@@ -15,6 +15,33 @@ public sealed class SessionArchivePersistenceTests : IDisposable
     }
 
     [Fact]
+    public void AnswerEventKeepsMacTimingAndEvidence()
+    {
+        var request = Guid.NewGuid();
+        var answer = new NextThought.Core.SessionAnswerEvent
+        {
+            Id = "answer", Date = DateTimeOffset.UtcNow, Question = "问", Answer = "答", Model = "m",
+            Seconds = 12.5, FirstTokenSeconds = 1.25, Automatic = true,
+            ScreenshotPath = "screenshots/a.png", WebAnswer = "联网答",
+            WebSources = [new NextThought.Core.WebResult("标题", "https://example.com", "摘要")],
+            Evidence = new NextThought.Core.EvidenceBundle(request) { Notes = ["证据"] }
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(answer, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"seconds\"", json);
+        Assert.Contains("\"firstTokenSeconds\"", json);
+        Assert.Contains("\"screenshotPath\"", json);
+        Assert.Contains("\"webSources\"", json);
+        Assert.Contains("\"requestID\"", json);
+        var back = System.Text.Json.JsonSerializer.Deserialize<NextThought.Core.SessionAnswerEvent>(json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.Equal(12.5, back.Seconds);
+        Assert.Equal(1.25, back.FirstTokenSeconds);
+        Assert.Equal("screenshots/a.png", back.ScreenshotPath);
+        Assert.Equal("联网答", back.WebAnswer);
+        Assert.Single(back.WebSources!);
+        Assert.Equal(request, back.Evidence!.RequestId);
+    }
+
+    [Fact]
     public void MissingRootIsNewUnlessContentWasExpected()
     {
         var fresh = SessionArchiveDirectoryReader.Read(root, false, _ => throw new DirectoryNotFoundException(), _ => true);
