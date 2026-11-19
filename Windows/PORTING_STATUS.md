@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 本机中转协议集成测试 · 0.5.74
+
+- 新增 `CompanionRelayIntegrationTests`：本机 HttpListener 提供 `/rooms` 与 WebSocket `/socket`，
+  验证客户端的加入、状态帧上传和加密命令下发（`previous` 回调触发）。
+- 仍不是公网 TLS 中转，也不是实体手机；基线测试 108。
+- **0.5.74 实测**：Core 837 + 基线 108；验收 61/61、门禁 17/17；启动 1.23 秒、
+  工作集 108.7 MiB、私有 42.3 MiB。
+
 # P1 手机页 Chromium 渲染测试 · 0.5.73
+
 
 - 新增 `CompanionPageTests`：启动伴侣服务器、写入快照，用 Edge/Chrome 无头模式加载真实手机页，
   通过 CDP `Runtime.evaluate` 读取 `document.body.innerText`。
