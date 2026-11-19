@@ -32,7 +32,10 @@
                 <DataTemplate x:DataType="local:SceneChoice">
                   <Button Classes="scene" Tag="{Binding}" Click="Scene_Click" Margin="0,0,6,6"
                           ToolTip.Tip="{Binding Subtitle}">
-                    <TextBlock Text="{Binding Title}" FontSize="12" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Ellipse Width="6" Height="6" Fill="{Binding Tint}" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Title}" FontSize="12" />
+                    </StackPanel>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

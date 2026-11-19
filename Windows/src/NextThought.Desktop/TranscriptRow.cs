@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 using NextThought.Core;
 
 namespace NextThought.Desktop;
@@ -79,6 +80,20 @@ public sealed record EffortChoice(string Value, string Title)
 
 public sealed record SceneChoice(NextThought.Core.MeetingMode Mode, string Title, string Subtitle)
 {
+    /// <summary>Mac Stage.swift scene pigment (light variant), used as the scene tag dot.</summary>
+    public IBrush Tint { get; } = new SolidColorBrush(Color.Parse(Mode switch
+    {
+        NextThought.Core.MeetingMode.Interview => "#3F5B8C",
+        NextThought.Core.MeetingMode.LabMeeting => "#4A7D68",
+        NextThought.Core.MeetingMode.Academic => "#775A9C",
+        NextThought.Core.MeetingMode.GroupProject => "#A5683C",
+        NextThought.Core.MeetingMode.Client => "#2F7A8C",
+        NextThought.Core.MeetingMode.Meeting => "#5B6573",
+        NextThought.Core.MeetingMode.Lesson => "#5F7D40",
+        NextThought.Core.MeetingMode.Discussion => "#A5526B",
+        _ => "#6B6862"
+    }));
+
     public override string ToString() => UiText.T(Title);
 }
 
