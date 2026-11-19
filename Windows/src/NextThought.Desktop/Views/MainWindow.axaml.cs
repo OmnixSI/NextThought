@@ -124,6 +124,7 @@ public partial class MainWindow : Window
             if (StartupOptions.DemoCheck is { } demoCheck) await RunDemoCheckAsync(demoCheck);
             if (StartupOptions.WindowShotCheck is { } windowShot) await RunWindowShotCheckAsync(windowShot);
             if (StartupOptions.UiLanguageCheck is { } uiLanguage) await RunUiLanguageCheckAsync(uiLanguage);
+            if (StartupOptions.SettingsSearchCheck is { } settingsSearch) await RunSettingsSearchCheckAsync(settingsSearch);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
             if (StartupOptions.TeleprompterHandleCheck is { } handleCheck) await RunTeleprompterHandleCheckAsync(handleCheck);
@@ -2452,6 +2453,35 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: the settings search filters the visible cards.</summary>
+    private async Task RunSettingsSearchCheckAsync(string path)
+    {
+        state.Section = AppSection.Settings;
+        await Task.Delay(600);
+        var view = this.GetVisualDescendants().OfType<SettingsView>().FirstOrDefault();
+        var box = view?.FindControl<TextBox>("SettingsSearch");
+        var cards = view?.GetVisualDescendants().OfType<Border>()
+            .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard").ToList() ?? [];
+        var before = cards.Count(card => card.IsVisible);
+        if (box is not null) box.Text = "快捷键";
+        await Task.Delay(300);
+        var after = cards.Count(card => card.IsVisible);
+        var passed = box is not null && after >= 1 && after < cards.Count;
+        var report = new { passed, totalCards = cards.Count, before, after };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "settings-search-check: passed" : "settings-search-check: failed");
+        Close();
+    }
+
     /// <summary>QA: with language=en the shell actually shows translated labels.</summary>
     private async Task RunUiLanguageCheckAsync(string path)
     {

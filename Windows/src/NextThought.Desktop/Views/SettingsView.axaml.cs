@@ -2,6 +2,7 @@ using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 
 namespace NextThought.Desktop.Views;
 
@@ -14,6 +15,21 @@ public partial class SettingsView : UserControl
     {
         base.OnLoaded(e);
         if (StartupOptions.SettingsScroll is { } offset) SettingsScroll.Offset = new Avalonia.Vector(0, offset);
+    }
+
+    /// <summary>Filters the visible setting cards by their text (Mac settings search).</summary>
+    private void SettingsSearch_TextChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (sender is not TextBox box) return;
+        var query = box.Text?.Trim() ?? "";
+        foreach (var card in this.GetVisualDescendants().OfType<Border>()
+                     .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard"))
+        {
+            if (query.Length == 0) { card.IsVisible = true; continue; }
+            var text = string.Join(" ", card.GetVisualDescendants().OfType<TextBlock>().Select(block => block.Text ?? "")
+                .Concat(card.GetVisualDescendants().OfType<ContentControl>().Select(control => control.Content as string ?? "")));
+            card.IsVisible = text.Contains(query, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private async void RefreshDevices_Click(object? sender, RoutedEventArgs e)

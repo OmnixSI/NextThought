@@ -12,6 +12,10 @@
                    Classes="caption" />
       </StackPanel>
 
+      <Border Name="SettingsSearchCard" Classes="card" Padding="16">
+        <TextBox Name="SettingsSearch" PlaceholderText="搜索设置" TextChanged="SettingsSearch_TextChanged" />
+      </Border>
+
       <!-- Sound sources -->
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="12">

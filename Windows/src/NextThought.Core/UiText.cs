@@ -294,6 +294,7 @@ public static class UiText
         ["不自动结束"] = "Do not auto-end",
         ["自动（第一块外接屏）"] = "Automatic (first external display)",
         ["主屏（摄像头）"] = "Main display (camera)",
+        ["搜索设置"] = "Search settings",
     };
 
     private static readonly Dictionary<string, string> Chinese = English

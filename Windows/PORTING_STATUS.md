@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 设置搜索 · 0.5.115
+
+- 设置页顶部搜索框按当前可见文案过滤卡片（Mac 的 settings search）；无匹配时全部隐藏，
+  清空恢复。`--settings-search-check` 实测 14 张卡 → 输入「快捷键」后 1 张。
+- 词典 284 条；Core 863；中英/浮窗检查仍通过。
+- **0.5.115 实测**：Core 863 + 基线 109；验收 63/63、门禁 17/17；启动 1.27 秒、
+  工作集 98.0 MiB、私有 36.6 MiB。
+
 # P2 屏选择本地化 · 0.5.114
+
 
 - `ScreenChoice.ToString` 走 `UiText.T`；「主屏（摄像头）」与「自动（第一块外接屏）」
   在英文界面显示 Main display (camera) / Automatic (first external display)。
