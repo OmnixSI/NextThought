@@ -37,6 +37,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         new("OpenAI", "https://api.openai.com/v1", "gpt-5.2"),
         new("DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat"),
         new("OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-4o-mini"),
+        new("Ollama (local)", "http://127.0.0.1:11434/v1", "qwen2.5:7b"),
+        new("LM Studio (local)", "http://127.0.0.1:1234/v1", "local-model"),
         new(UiText.T("自定义"), "", "")
     ];
 
