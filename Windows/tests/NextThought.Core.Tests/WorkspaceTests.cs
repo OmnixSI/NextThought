@@ -121,7 +121,7 @@ public sealed class WorkspaceTests : IDisposable
         var data = WorkspaceData.Empty.AddSeries("开题").AddSeries("答辩");
         var id = data.Series[0].Id;
         store.Save(data);
-        var seriesFile = Path.Combine(directory, "Workspaces", id + ".json");
+        var seriesFile = Path.Combine(directory, "Workspaces", id.ToUpperInvariant() + ".json");
         Assert.True(File.Exists(seriesFile));
         File.Delete(store.Path_);
         var loaded = store.Load();
@@ -129,7 +129,7 @@ public sealed class WorkspaceTests : IDisposable
         Assert.Contains(loaded.Series, series => series.Name == "开题");
 
         store.Save(new WorkspaceData([data.Series[0]]));
-        Assert.False(File.Exists(Path.Combine(directory, "Workspaces", data.Series[1].Id + ".json")));
+        Assert.False(File.Exists(Path.Combine(directory, "Workspaces", data.Series[1].Id.ToUpperInvariant() + ".json")));
     }
 
     [Fact]

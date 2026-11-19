@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 Workspaces 文件名与备份布局 · 0.5.30
+
+- `WorkspaceStore.Save` 使用大写 UUID 文件名（Mac 的 `Workspaces/<UUID>.json` 布局）。
+- 往返测试扩展为检查 Mac 根布局：`settings.plist`、`glossary.json`、`skills.json`、
+  `note-templates.json`、`Workspaces/<UPPER>.json`、`Sessions/<UPPER>/meta.json`；
+  导入后检查术语表与系列 `skillIDs` 恢复。
+- **0.5.30 实测**：Core 796 + 基线 101；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.9 MiB、私有 42.9 MiB。
+- 仍未完成：幻灯片快捷键、拖拽式模板编辑、Mac 测试翻译、真 Mac 双向验收。
+
 # P1 系列页附着技能 · 0.5.29
+
 
 - 系列详情新增「附着技能」勾选框（`SeriesSkills`）；勾选写入 `WorkspaceSeries.skillIDs` 并保存。
 - 回答提示只取启用且（全局或附着到本系列）的技能。

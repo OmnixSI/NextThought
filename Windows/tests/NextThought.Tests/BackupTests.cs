@@ -16,12 +16,30 @@ public sealed class BackupTests
             var source = new AppPaths(Path.Combine(root, "source")); var sessions = new SessionStore(source); var meta = new SessionMeta { Title = "迁移验收" };
             await sessions.CreateAsync(meta); await sessions.AppendTranscriptAsync(meta, new TranscriptLine { Date = meta.StartedAt, Text = "保留原始转写" }); await sessions.EndAsync(meta);
             var text = Path.Combine(root, "source.md"); await File.WriteAllTextAsync(text, "资料引用测试"); await new MaterialStore(source).ImportAsync(text);
+            var skillId = Guid.NewGuid().ToString("D").ToUpperInvariant();
+            var series = WorkspaceSeries.Create("迁移系列") with { SkillIds = [skillId] };
+            new WorkspaceStore(source.Root).Save(new WorkspaceData([series]));
+            new GlossaryStore(source.Root).Save(new Glossary([new GlossaryEntry("Kubernetes")]));
+            await new SettingsStore(source).SaveAsync(new AppSettings { BaseUrl = "https://example.test/v1", Model = "m" });
+            await File.WriteAllTextAsync(Path.Combine(source.Root, "skills.json"),
+                "[{\"id\":\"" + Guid.NewGuid().ToString("D") + "\",\"name\":\"简洁\",\"content\":\"先说结论\",\"global\":true,\"enabled\":true}]");
             await File.WriteAllTextAsync(Path.Combine(source.Root, "api-key.dpapi"), "excluded-fixture");
             var archive = Path.Combine(root, "test.ntbackup"); await new BackupService(source).ExportAsync(archive);
-            using (var zip = ZipFile.OpenRead(archive)) Assert.DoesNotContain(zip.Entries, e => e.FullName.Contains("api-key"));
+            using (var zip = ZipFile.OpenRead(archive))
+            {
+                Assert.DoesNotContain(zip.Entries, e => e.FullName.Contains("api-key"));
+                Assert.Contains(zip.Entries, e => e.FullName == "settings.plist");
+                Assert.Contains(zip.Entries, e => e.FullName == "glossary.json");
+                Assert.Contains(zip.Entries, e => e.FullName == "skills.json");
+                Assert.Contains(zip.Entries, e => e.FullName == "note-templates.json");
+                Assert.Contains(zip.Entries, e => e.FullName == "Workspaces/" + series.Id.ToUpperInvariant() + ".json");
+                Assert.Contains(zip.Entries, e => e.FullName == "Sessions/" + meta.Id.ToString().ToUpperInvariant() + "/meta.json");
+            }
             var target = new AppPaths(Path.Combine(root, "target")); var importer = new BackupService(target); var result = await importer.ImportAsync(archive);
             Assert.Equal(1, result.SessionsAdded); Assert.Equal(1, result.MaterialsAdded); Assert.True(File.Exists(result.SafetyBackup));
             Assert.Equal("保留原始转写", new SessionStore(target).Load(meta.Id).Lines.Single().Text); Assert.Single(new MaterialStore(target).List());
+            Assert.Contains(new GlossaryStore(target.Root).Load().Entries, entry => entry.Canonical == "Kubernetes");
+            Assert.Contains(new WorkspaceStore(target.Root).Load().Series, series => series.SkillIds!.Contains(skillId));
             var repeated = await importer.ImportAsync(archive); Assert.Equal(2, repeated.ConflictsSkipped); Assert.Equal(0, repeated.SessionsAdded);
             await importer.ExportAsync(Path.Combine(root, "reexport.ntbackup"));
         }

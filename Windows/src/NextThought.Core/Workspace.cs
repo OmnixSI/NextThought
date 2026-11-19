@@ -299,7 +299,7 @@ public sealed class WorkspaceStore
         var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var series in data.Series)
         {
-            var name = series.Id + ".json";
+            var name = series.Id.ToUpperInvariant() + ".json";
             keep.Add(name);
             File.WriteAllText(Path.Combine(seriesDirectory, name), JsonSerializer.Serialize(series, Options));
         }
