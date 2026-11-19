@@ -131,6 +131,7 @@ public partial class MainWindow : Window
             if (StartupOptions.CloudSettingsCheck is { } cloudSettings) await RunCloudSettingsCheckAsync(cloudSettings);
             if (StartupOptions.CloudImportCheck is { } cloudImport) await RunCloudImportCheckAsync(cloudImport);
             if (StartupOptions.NotesJumpCheck is { } notesJump) await RunNotesJumpCheckAsync(notesJump);
+            if (StartupOptions.LiveModeCheck is { } liveMode) await RunLiveModeCheckAsync(liveMode);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
             if (StartupOptions.TeleprompterHandleCheck is { } handleCheck) await RunTeleprompterHandleCheckAsync(handleCheck);
@@ -2464,6 +2465,46 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: Notes/Subtitles/Hidden are three distinct states.</summary>
+    private async Task RunLiveModeCheckAsync(string path)
+    {
+        var passed = false;
+        var notes = false;
+        var hidden = false;
+        var subtitles = false;
+        var restored = false;
+        try
+        {
+            state.Section = AppSection.Live;
+            await Task.Delay(300);
+            notes = IsVisible;
+            state.LiveMode = LiveWindowMode.Hidden;
+            await Task.Delay(250);
+            hidden = !IsVisible && subtitleBar?.IsVisible != true;
+            state.LiveMode = LiveWindowMode.Subtitles;
+            await Task.Delay(250);
+            subtitles = !IsVisible && subtitleBar?.IsVisible == true;
+            state.LiveMode = LiveWindowMode.Notes;
+            await Task.Delay(250);
+            restored = IsVisible && subtitleBar?.IsVisible != true;
+            passed = notes && hidden && subtitles && restored;
+        }
+        catch (Exception ex) { Console.WriteLine("live-mode-check: " + ex.Message); }
+        var report = new { passed, notes, hidden, subtitles, restored };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "live-mode-check: passed" : "live-mode-check: failed");
+        Close();
+    }
+
     /// <summary>QA: a note timestamp jumps back to the live transcript.</summary>
     private async Task RunNotesJumpCheckAsync(string path)
     {
@@ -3372,15 +3413,20 @@ public partial class MainWindow : Window
     {
         if (mode == LiveWindowMode.Notes)
         {
-            if (subtitleBar is { IsVisible: true }) subtitleBar.Hide();
+            if (subtitleBar is { } notesBar) { notesBar.Persistent = false; notesBar.Hide(); }
+            if (!hiddenAll && !IsVisible) { Show(); Activate(); }
             return;
         }
         if (mode == LiveWindowMode.Hidden)
         {
-            if (subtitleBar is { IsVisible: true }) subtitleBar.Hide();
+            if (subtitleBar is { } hiddenBar) { hiddenBar.Persistent = false; hiddenBar.Hide(); }
+            if (IsVisible) Hide();
             return;
         }
+        // Subtitles: the floating bar replaces the main window, so the three modes differ.
+        if (IsVisible) Hide();
         subtitleBar ??= new SubtitleBarWindow(state);
+        subtitleBar.Persistent = true;
         UiTranslation.Apply(subtitleBar, state.Settings.UiLanguage == "English");
         if (!subtitleBar.IsVisible) subtitleBar.Show();
     }

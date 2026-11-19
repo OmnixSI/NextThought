@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 三态切换修复 · 0.5.139
+
+- `ApplyLiveMode`：Notes 恢复主窗口；Hidden 隐藏主窗口；Subtitles 隐藏主窗口并常显字幕条
+  （`SubtitleBarWindow.Persistent` 取消空闲淡出）。修复审查第 15 节「纪要窗口/隐藏做同一件事」。
+- `--demo --live-mode-check` 实测 Notes/Hidden/Subtitles/Restored 全部正确。
+- Core 863 + 基线 114；全部检查通过。
+- **0.5.139 实测**：Core 863 + 基线 114；验收 63/63、门禁 17/17；环境负载下启动
+  4.32 秒、工作集 126.0 MiB、私有 57.7 MiB。
+
 # P1 回答提示词与场景阈值 · 0.5.138
+
 
 - `BuildAnswerSystemPrompt` 改用 `AnswerPromptBuilder.Instructions(webSearch)`（完整安全/引用/
   风格要求），系列经验与技能继续追加；不再用旧的三句固定提示。

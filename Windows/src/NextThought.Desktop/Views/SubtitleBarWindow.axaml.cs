@@ -19,6 +19,9 @@ public partial class SubtitleBarWindow : Window
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private bool hiddenByTiming;
 
+    /// <summary>True while the user explicitly chose the subtitles mode; no idle fade-out.</summary>
+    public bool Persistent { get; set; }
+
     public SubtitleBarWindow() : this(new AppState()) { }
 
     public SubtitleBarWindow(AppState state)
@@ -64,7 +67,7 @@ public partial class SubtitleBarWindow : Window
         var final = lastFinal is null ? null : new SubtitleLine(lastFinal.Speaker, lastFinal.Text, lastFinal.TranslationRaw);
         feed.Update(channels, final, now);
 
-        var opacity = Timing.OpacityAt(now, feed.LastActivity);
+        var opacity = Persistent ? 1 : Timing.OpacityAt(now, feed.LastActivity);
         if (opacity <= 0.01)
         {
             if (!hiddenByTiming) { hiddenByTiming = true; IsVisible = false; }
