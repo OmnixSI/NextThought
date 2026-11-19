@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 手机页 Chromium 渲染测试 · 0.5.73
+
+- 新增 `CompanionPageTests`：启动伴侣服务器、写入快照，用 Edge/Chrome 无头模式加载真实手机页，
+  通过 CDP `Runtime.evaluate` 读取 `document.body.innerText`。
+- 实测页面渲染出「手机问题」「手机回答」；基线测试 107。
+- 仍是本机 Chromium，不是实体手机；公网 TLS 中转未验证。
+- **0.5.73 实测**：Core 837 + 基线 107；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 109.0 MiB、私有 42.5 MiB。
+
 # P0 回答记录补 Mac 字段 · 0.5.72
+
 
 - `AnswerRecord` 补 `firstTokenSeconds`、`screenshotPath`、`webAnswer`、`webSources`、`evidence`，
   并加 `JsonExtensionData`；会议回答不再丢首字延迟、截图、联网答案与证据包。

@@ -22,7 +22,7 @@
 | 11 | 提词器关闭后再开崩溃 | **已修** | 关闭时清空 `teleprompter` 字段；关闭窗口时清除穿透并保存。 |
 | 12 | 提词器穿透关不掉 | **已修** | 隐藏/关闭前 `DisableClickThrough()`；重启不再恢复穿透。 |
 | 13 | 语义检索误开增强 OCR | **已修** | `LibraryViewModel` 不再把 `UseSemanticRetrieval` 传给 `enhancedOcr`。 |
-| 14 | 伴侣内容不更新/跨线程/缺动作 | **部分** | 问题/回答变化即 `Publish`；动作切 UI 线程并补 english/chinese/previous/next。0.5.32 起自检绑定实际网络地址，0.5.33 起走真实 `HandleCompanionActionAsync`，0.5.36 起通过 Mac 的 AES-GCM 固定向量，0.5.38 起中转只接受 HTTPS。仍缺真实手机与公网 TLS 中转。 |
+| 14 | 伴侣内容不更新/跨线程/缺动作 | **部分** | 问题/回答变化即 `Publish`；动作切 UI 线程并补 english/chinese/previous/next。0.5.32 起自检绑定实际网络地址，0.5.33 起走真实 `HandleCompanionActionAsync`，0.5.36 起通过 Mac 的 AES-GCM 固定向量，0.5.38 起中转只接受 HTTPS。0.5.73 已在 Chromium 中通过 CDP 读取真实页面 DOM，确认问题/回答渲染；仍缺真实手机与公网 TLS 中转。 |
 
 ## 提示岛 S0（0.5.23 追加）
 
@@ -85,7 +85,7 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
   0.5.57 伴侣快照补齐 `answerID`/`phase`/`slide`/`updateAvailable`；
   0.5.58 证据包改为 Mac 的 `requestID`；0.5.59 更正 `lineID` 与 `templateID`；0.5.60 回答事件补 `seconds`/`firstTokenSeconds`/
   `screenshotPath`/`webAnswer`/`webSources`/`evidence`；0.5.61 上下文文档保留 Mac `content`；0.5.62 摘录改为 `chunkID`/`blockID`；0.5.63 保留系列条目的 `seriesItemSourceTombstones`；0.5.64 保留 `stageReview`/`stageReviewAt`；0.5.65 会议记录保留未知 Mac 字段；0.5.66 系列也保留未知字段；0.5.67 `context.json` 同样保留；0.5.68 纪要补 `corrections`/`droppedCount`/`model`/生成时间/转写修订；
-  0.5.69 `context.json` 的上一场改为 `previousSessionID`；0.5.70 条目历史保留 Mac 溯源字段；0.5.71 转写行保留译文与修订及未知字段；0.5.72 回答记录补首字延迟/截图/联网/证据。
+  0.5.69 `context.json` 的上一场改为 `previousSessionID`；0.5.70 条目历史保留 Mac 溯源字段；0.5.71 转写行保留译文与修订及未知字段；0.5.72 回答记录补首字延迟/截图/联网/证据；0.5.73 用 Chromium+CDP 实测手机页渲染。
   备份清单的会话筛选改为普通循环，规避一次 ReadyToRun 下的 CLR 内部错误。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
 - 0.5.4 起结构化纪要写入 `summary.json → structured`；0.5.14 起改为直接写 Mac 的 StructuredNotesPayload，
@@ -110,10 +110,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.72 实测
+## 0.5.73 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.21 秒，工作集 **108.6 MiB**、私有 42.6 MiB
+- 启动 1.22 秒，工作集 **109.0 MiB**、私有 42.5 MiB
