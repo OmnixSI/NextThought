@@ -45,6 +45,21 @@ public partial class SettingsView : UserControl
         catch (System.Text.Json.JsonException ex) { state.SetStatus("模板文件格式无效：" + ex.Message, true); }
     }
 
+    private void SectionUp_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state && sender is Control { Tag: TemplateSectionRow row }) state.MoveTemplateSection(row, -1);
+    }
+
+    private void SectionDown_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state && sender is Control { Tag: TemplateSectionRow row }) state.MoveTemplateSection(row, 1);
+    }
+
+    private void SectionDelete_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state && sender is Control { Tag: TemplateSectionRow row }) state.RemoveTemplateSection(row);
+    }
+
     private async void ImportSkill_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AppState state) return;

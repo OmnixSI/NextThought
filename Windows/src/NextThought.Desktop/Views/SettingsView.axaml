@@ -76,6 +76,33 @@
           <TextBlock Text="自定义纪要模板" Classes="section" />
           <TextBlock Text="每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。"
                      Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <ComboBox ItemsSource="{Binding EditableTemplates}" SelectedItem="{Binding EditTemplateChoice}"
+                      PlaceholderText="选择自定义模板" Width="240" />
+            <Button Content="新建模板" Command="{Binding NewTemplateCommand}" />
+            <Button Content="添加章节" Command="{Binding AddTemplateSectionCommand}" />
+            <Button Content="保存结构" Command="{Binding SaveEditedTemplateCommand}" />
+          </StackPanel>
+          <TextBox Text="{Binding EditTemplateName}" PlaceholderText="模板名" />
+          <ItemsControl ItemsSource="{Binding EditSections}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:TemplateSectionRow">
+                <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0,0,0.5" Padding="0,6">
+                  <StackPanel Spacing="6">
+                    <TextBox Text="{Binding Title}" PlaceholderText="章节标题" />
+                    <TextBox Text="{Binding Instruction}" AcceptsReturn="True" Height="52" TextWrapping="Wrap"
+                             PlaceholderText="这一节要整理什么" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Button Content="上移" Click="SectionUp_Click" Tag="{Binding}" />
+                      <Button Content="下移" Click="SectionDown_Click" Tag="{Binding}" />
+                      <Button Content="删除" Click="SectionDelete_Click" Tag="{Binding}" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="高级：也可以直接按文本批量编辑。" Classes="caption" FontSize="11" />
           <TextBox Text="{Binding CustomTemplateText}" AcceptsReturn="True" Height="120" TextWrapping="Wrap"
                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                    PlaceholderText="## 客户会&#10;### 决定&#10;只写已经拍板的事。&#10;### 待办&#10;写清负责人和日期。" />

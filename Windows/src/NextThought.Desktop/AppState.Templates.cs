@@ -13,6 +13,10 @@ public partial class AppState
     [ObservableProperty] private bool templating;
     [ObservableProperty] private string customTemplateText = "";
     [ObservableProperty] private string customTemplateStatus = "";
+    public ObservableCollection<NotesTemplateChoice> EditableTemplates { get; } = [];
+    public ObservableCollection<TemplateSectionRow> EditSections { get; } = [];
+    [ObservableProperty] private NotesTemplateChoice? editTemplateChoice;
+    [ObservableProperty] private string editTemplateName = "";
 
     private NotesTemplateStore? templateStore;
 
@@ -66,6 +70,7 @@ public partial class AppState
                 TemplateChoices.Add(new NotesTemplateChoice(template, null));
         CustomTemplateText = NotesTemplateStore.ToText(custom);
         CustomTemplateStatus = custom.Count == 0 ? "尚无自定义模板。" : $"{custom.Count} 个自定义模板。";
+        RefreshEditableTemplates();
     }
 
     [RelayCommand]
@@ -79,6 +84,7 @@ public partial class AppState
             templateStore ??= new NotesTemplateStore(Paths.Root);
             templateStore.Save(imported);
             CustomTemplateStatus = imported.Count == 0 ? "自定义模板已清空。" : $"已保存 {imported.Count} 个自定义模板。";
+            RefreshEditableTemplates();
             SetStatus(CustomTemplateStatus);
         }
         catch (Exception ex) { CustomTemplateStatus = "模板保存失败：" + ex.Message; SetStatus(CustomTemplateStatus, true); }
@@ -97,7 +103,67 @@ public partial class AppState
         templateStore.Save(TemplateChoices.Where(choice => choice.Kind is null).Select(choice => choice.Template).ToList());
         CustomTemplateText = NotesTemplateStore.ToText(TemplateChoices.Where(choice => choice.Kind is null).Select(choice => choice.Template).ToList());
         CustomTemplateStatus = $"已导入模板，共 {TemplateChoices.Count(choice => choice.Kind is null)} 个自定义模板。";
+        RefreshEditableTemplates();
         SetStatus(CustomTemplateStatus);
+    }
+
+    private void RefreshEditableTemplates()
+    {
+        EditableTemplates.Clear();
+        foreach (var choice in TemplateChoices.Where(choice => choice.Kind is null))
+            EditableTemplates.Add(choice);
+    }
+
+    partial void OnEditTemplateChoiceChanged(NotesTemplateChoice? value)
+    {
+        if (value is null) return;
+        EditTemplateName = value.Template.Name;
+        EditSections.Clear();
+        foreach (var section in value.Template.Sections)
+            EditSections.Add(new TemplateSectionRow(section));
+    }
+
+    [RelayCommand]
+    private void NewTemplate()
+    {
+        EditTemplateChoice = null;
+        EditTemplateName = "新模板";
+        EditSections.Clear();
+        EditSections.Add(new TemplateSectionRow("议题", "写下讨论的主题。"));
+    }
+
+    [RelayCommand]
+    private void AddTemplateSection()
+    {
+        EditSections.Add(new TemplateSectionRow("新章节", "写这一节要整理什么。"));
+    }
+
+    public void RemoveTemplateSection(TemplateSectionRow row) => EditSections.Remove(row);
+
+    public void MoveTemplateSection(TemplateSectionRow row, int delta)
+    {
+        var index = EditSections.IndexOf(row);
+        var target = Math.Clamp(index + delta, 0, EditSections.Count - 1);
+        if (index >= 0 && target != index) EditSections.Move(index, target);
+    }
+
+    [RelayCommand]
+    private void SaveEditedTemplate()
+    {
+        var name = EditTemplateName.Trim();
+        if (name.Length == 0) { SetStatus("模板需要名字。", true); return; }
+        var sections = EditSections
+            .Where(row => row.Title.Trim().Length > 0 && row.Instruction.Trim().Length > 0)
+            .Select((row, index) => new NotesSectionSpec(
+                string.IsNullOrEmpty(row.Id) ? "section-" + (index + 1) : row.Id,
+                row.Title.Trim(), row.Instruction.Trim(), row.Kind, Carry: row.Carry))
+            .ToList();
+        if (sections.Count == 0) { SetStatus("模板至少需要一个有标题和要求的章节。", true); return; }
+        var id = EditTemplateChoice?.Template.Id ?? "custom-" + Guid.NewGuid().ToString("N");
+        var template = new NotesTemplate(id, name, sections);
+        AddTemplates([template]);
+        EditTemplateChoice = EditableTemplates.FirstOrDefault(choice => choice.Template.Id == id);
+        SetStatus($"模板「{name}」已保存。");
     }
 
     [RelayCommand(CanExecute = nameof(CanTemplate))]
@@ -177,4 +243,30 @@ public sealed record NotesTemplateChoice(NotesTemplate Template, NotesTemplateKi
 {
     public string Title => Template.Name;
     public override string ToString() => Title;
+}
+
+
+/// <summary>One editable section in the custom-template editor.</summary>
+public sealed partial class TemplateSectionRow : ObservableObject
+{
+    public TemplateSectionRow(string title, string instruction)
+    {
+        Title = title;
+        Instruction = instruction;
+    }
+
+    public TemplateSectionRow(NotesSectionSpec section)
+    {
+        Id = section.Id;
+        Title = section.Title;
+        Instruction = section.Instruction;
+        Kind = section.Kind;
+        Carry = section.Carry;
+    }
+
+    public string Id { get; } = "";
+    [ObservableProperty] private string title = "";
+    [ObservableProperty] private string instruction = "";
+    public NotesSectionKind Kind { get; } = NotesSectionKind.Items;
+    public NotesCarry Carry { get; } = NotesCarry.None;
 }
