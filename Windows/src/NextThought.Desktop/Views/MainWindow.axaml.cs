@@ -54,6 +54,7 @@ public partial class MainWindow : Window
             openedOnce = true;
             await state.InitializeAsync();
             UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
+            state.LanguageChanged += english => UiTranslation.Apply(this, english);
             LayoutUpdated += (_, _) => UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
             RefreshDisplays();
             if (StartupOptions.Presenter) state.Settings.PresenterMode = true;
@@ -2450,8 +2451,11 @@ public partial class MainWindow : Window
             .Select(block => block.Text ?? "").ToHashSet(StringComparer.Ordinal);
         var labels = new[] { "Home", "Meetings", "Notes", "History", "Series", "Library", "Settings" };
         var found = labels.Where(texts.Contains).ToArray();
-        var passed = found.Length == labels.Length;
-        var report = new { passed, found, missing = labels.Except(found).ToArray() };
+        UiTranslation.Apply(this, false);
+        var back = this.GetVisualDescendants().OfType<Avalonia.Controls.TextBlock>()
+            .Select(block => block.Text ?? "").ToHashSet(StringComparer.Ordinal);
+        var passed = found.Length == labels.Length && back.Contains("首页") && back.Contains("设置");
+        var report = new { passed, found, missing = labels.Except(found).ToArray(), reversed = back.Contains("首页") };
         try
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));

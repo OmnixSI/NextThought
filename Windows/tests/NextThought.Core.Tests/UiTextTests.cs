@@ -11,6 +11,8 @@ public sealed class UiTextTests
         Assert.Equal("Home", UiText.Translate("首页", true));
         Assert.Equal("Settings", UiText.Translate("设置", true));
         Assert.Equal("首页", UiText.Translate("首页", false));
+        Assert.Equal("首页", UiText.Translate("Home", false));
+        Assert.Equal("设置", UiText.Translate("Settings", false));
         Assert.Equal("会议标题", UiText.Translate("会议标题", true));
         Assert.All(UiText.EnglishStrings, pair => Assert.False(string.IsNullOrWhiteSpace(pair.Value)));
     }

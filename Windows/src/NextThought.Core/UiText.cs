@@ -188,8 +188,15 @@ public static class UiText
         ["Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。"] = "Windows has no system translation framework: complete sentences go to the chosen answer service, unlike on-device translation on Mac."
     };
 
-    public static string Translate(string text, bool english) =>
-        english && English.TryGetValue(text, out var translated) ? translated : text;
+    private static readonly Dictionary<string, string> Chinese = English
+        .GroupBy(pair => pair.Value, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.First().Key, StringComparer.Ordinal);
+
+    public static string Translate(string text, bool english)
+    {
+        if (english) return English.TryGetValue(text, out var translated) ? translated : text;
+        return Chinese.TryGetValue(text, out var original) ? original : text;
+    }
 
     public static IReadOnlyDictionary<string, string> EnglishStrings => English;
 }

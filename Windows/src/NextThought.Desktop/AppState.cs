@@ -101,6 +101,7 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private string shortcutText = "";
     private Dictionary<string, string> shortcutOverrides = [];
     public event Action? ShortcutsChanged;
+    public event Action<bool>? LanguageChanged;
     public IReadOnlyList<string> SubtitleExportModes { get; } = ["双语", "原文", "译文"];
     [ObservableProperty] private string subtitleExportMode = "双语";
     [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
@@ -1707,6 +1708,7 @@ public partial class AppState : ObservableObject
         try
         {
             await Settings.SaveAsync();
+            LanguageChanged?.Invoke(Settings.UiLanguage == "English");
             RefreshModelState();
             SetStatus("设置已保存，密钥已用当前 Windows 用户加密。");
         }
