@@ -105,6 +105,7 @@ public partial class MainWindow : Window
             if (StartupOptions.UpdateRestoreCheck is { } updateRestore) await RunUpdateRestoreCheckAsync(updateRestore);
             if (StartupOptions.SignatureCheck is { } signatureCheck) await RunSignatureCheckAsync(signatureCheck);
             if (StartupOptions.SlideFollowCheck is { } slideFollow) await RunSlideFollowCheckAsync(slideFollow);
+            if (StartupOptions.PrepareModelsCheck is { } prepareModels) await RunPrepareModelsCheckAsync(prepareModels);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
@@ -256,7 +257,9 @@ public partial class MainWindow : Window
             await Task.Delay(200);
             steps.Add(new PresenterCheckStep("restored", !presenterActive && IsVisible, $"mainVisible={IsVisible}"));
 
-            var single = PresenterLayout.Resolve(real, null);
+            // Always feed one display: with a real second screen attached, `real` would
+            // legitimately activate and the refusal branch would never be exercised.
+            var single = PresenterLayout.Resolve([primary], null);
             steps.Add(new PresenterCheckStep("single-display-refuses", !single.CanActivate, single.Summary));
         }
         catch (Exception ex)
@@ -272,6 +275,9 @@ public partial class MainWindow : Window
         var report = new PresenterCheckReport
         {
             Passed = steps.Count > 0 && steps.All(step => step.Passed),
+            Scope = real.Count > 1
+                ? "real multi-display topology; window visibility and island, not projector pixels"
+                : "synthetic second display; window visibility and island, not real projector output",
             Steps = steps,
             RealScreens = string.Join(" | ", real.Select(display => $"{display.Name} {display.Bounds}")),
             PlanSummary = summary
@@ -2197,7 +2203,62 @@ public partial class MainWindow : Window
         Close();
     }
 
+
+    /// <summary>Installs the streaming recognizer and (when enabled) the offline refinement model.</summary>
+    private async Task RunPrepareModelsCheckAsync(string path)
+    {
+        await Task.Delay(300);
+        var ids = new List<string>();
+        var installed = new List<object>();
+        var error = "";
+        var seconds = 0.0;
+        try
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var settings = state.Settings.Build();
+            ids.Add(settings.LocalModel);
+            if (settings.SecondPass) ids.Add("xasrOffline");
+            var progress = new Progress<NextThought.Core.ModelProgress>(item => state.SetStatus(item.Message));
+            foreach (var id in ids)
+            {
+                await state.Models.InstallAsync(id, progress);
+                installed.Add(new
+                {
+                    id,
+                    title = NextThought.Platform.ModelStore.Package(id).Title,
+                    isInstalled = state.Models.IsInstalled(id),
+                    directory = state.Models.DirectoryFor(id),
+                    bytes = Directory.Exists(state.Models.DirectoryFor(id))
+                        ? Directory.EnumerateFiles(state.Models.DirectoryFor(id), "*", SearchOption.AllDirectories)
+                            .Sum(file => new FileInfo(file).Length)
+                        : 0
+                });
+            }
+            seconds = Math.Round(watch.Elapsed.TotalSeconds, 1);
+        }
+        catch (Exception exception)
+        {
+            error = exception.ToString();
+        }
+        var passed = error.Length == 0 && ids.Count > 0 && installed.Count == ids.Count;
+        var report = new { passed, ids, installed, seconds, error, dataDirectory = state.Paths.Root };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "prepare-models-check: passed" : "prepare-models-check: failed");
+        Close();
+    }
+
     // The design-time constructor required by the XAML compiler for previews.
+
 
 
 
