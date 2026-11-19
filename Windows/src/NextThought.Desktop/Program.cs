@@ -13,6 +13,9 @@ internal static class Program
         Clock.Start();
         StartedAt = DateTime.Now;
         StartupOptions.Parse(args);
+#if DEBUG
+#else
+#endif
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 

@@ -135,21 +135,18 @@ public partial class MainWindow : Window
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
             var presenterPlan = CurrentPresenterPlan();
-            var report = new
-            {
-                testedAt = DateTimeOffset.Now,
+            var report = new StartupReport(
+                DateTimeOffset.Now,
                 passed,
-                scope = "Avalonia 12 startup self-check; layout and interactive acceptance are measured separately",
-                seconds = Math.Round(Program.Clock.Elapsed.TotalSeconds, 3),
-                section = state.Section.ToString(),
-                ready = state.Ready,
-                error = state.StartupErrorText,
-                historyCount = state.History.Count,
-                transcriptCount = state.Transcript.Count,
-                initTimings = state.InitTimings,
-                // What this build actually carries, so a self-check report is also a capability report.
-                features = new[]
-                {
+                "Avalonia 12 startup self-check; layout and interactive acceptance are measured separately",
+                Math.Round(Program.Clock.Elapsed.TotalSeconds, 3),
+                state.Section.ToString(),
+                state.Ready,
+                state.StartupErrorText,
+                state.History.Count,
+                state.Transcript.Count,
+                state.InitTimings,
+                [
                     "capture-dual", "asr-local", "sessions", "summary-markdown", "scenes-9",
                     "cue-island", "subtitles", "teleprompter", "region-capture", "hotkeys-7",
                     "tray", "hide-all", "auto-end", "notes-templates-9", "notes-fishbone",
@@ -157,45 +154,42 @@ public partial class MainWindow : Window
                     "glossary", "update-check", "companion-lan",
                     "workspace-knowledge", "knowledge-merge", "question-bank", "live-translation", "translation-gate",
                     "presenter-mode", "companion-relay", "update-install", "material-hotwords"
-                },
-                screens = BuildDisplays().Select(display => new
-                {
-                    id = display.Id,
-                    name = display.Name,
-                    bounds = display.Bounds,
-                    primary = display.IsPrimary
-                }),
-                presenter = new
-                {
-                    enabled = state.SettingsSnapshot.PresenterMode,
-                    preferred = state.SettingsSnapshot.PresenterSlidesScreen,
-                    canActivate = presenterPlan.CanActivate,
-                    camera = presenterPlan.Camera?.Name,
-                    slides = presenterPlan.Slides?.Name,
-                    summary = presenterPlan.Summary,
-                    active = presenterActive
-                },
-                version = typeof(AppState).Assembly.GetName().Version?.ToString(3),
-                framework = Environment.Version.ToString(),
-                workingSetMiB = Math.Round(Environment.WorkingSet / 1048576.0, 1),
-                privateMiB = Math.Round(System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1048576.0, 1),
-                gcHeapMiB = Math.Round(GC.GetTotalMemory(false) / 1048576.0, 1),
-                gcCommittedMiB = Math.Round(GC.GetGCMemoryInfo().TotalCommittedBytes / 1048576.0, 1),
-                threads = System.Diagnostics.Process.GetCurrentProcess().Threads.Count,
-                process = Environment.ProcessPath,
-                windowWidth = Width,
-                windowHeight = Height,
-                clientWidth = ClientSize.Width,
-                clientHeight = ClientSize.Height,
-                renderScaling = RenderScaling,
-                screenScaling = Screens.Primary?.Scaling,
-                screenBounds = Screens.Primary?.Bounds.ToString()
-            };
-            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+                ],
+                BuildDisplays().Select(display => new StartupScreen(display.Id, display.Name, display.Bounds.ToString(), display.IsPrimary)).ToList(),
+                new StartupPresenter(
+                    state.SettingsSnapshot.PresenterMode,
+                    state.SettingsSnapshot.PresenterSlidesScreen,
+                    presenterPlan.CanActivate,
+                    presenterPlan.Camera?.Name,
+                    presenterPlan.Slides?.Name,
+                    presenterPlan.Summary,
+                    presenterActive),
+                typeof(AppState).Assembly.GetName().Version?.ToString(3),
+                Environment.Version.ToString(),
+                Math.Round(Environment.WorkingSet / 1048576.0, 1),
+                Math.Round(System.Diagnostics.Process.GetCurrentProcess().PrivateMemorySize64 / 1048576.0, 1),
+                Math.Round(GC.GetTotalMemory(false) / 1048576.0, 1),
+                Math.Round(GC.GetGCMemoryInfo().TotalCommittedBytes / 1048576.0, 1),
+                System.Diagnostics.Process.GetCurrentProcess().Threads.Count,
+                Environment.ProcessPath,
+                Width,
+                Height,
+                ClientSize.Width,
+                ClientSize.Height,
+                RenderScaling,
+                Screens.Primary?.Scaling,
+                Screens.Primary?.Bounds.ToString());
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, StartupJsonContext.Default.StartupReport));
         }
-        catch
+        catch (Exception exception)
         {
             passed = false;
+            try
+            {
+                File.WriteAllText(path + ".error.txt",
+                    "ready=" + state.Ready + "\nstartupError=" + (state.StartupErrorText ?? "") + "\n" + exception);
+            }
+            catch { }
         }
         Console.WriteLine(passed ? "startup-check: passed" : "startup-check: failed");
         Close();
@@ -2171,7 +2165,7 @@ public partial class MainWindow : Window
             await Task.Delay(800);
             var capture = ScreenCapture.VirtualScreen();
             var imagePath = path + ".png";
-            capture.Image.Save(imagePath);
+            capture.Image.Save(imagePath, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
             window.Close();
             var reader = new DocumentReader();
             var (blocks, warnings) = await reader.ReadAsync(imagePath);

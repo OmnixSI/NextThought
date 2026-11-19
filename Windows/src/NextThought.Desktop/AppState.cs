@@ -518,7 +518,7 @@ public partial class AppState : ObservableObject
         catch (Exception ex)
         {
             startupError = ex.Message;
-            StartupErrorText = ex.Message;
+            StartupErrorText = ex.ToString();
             initialized = true;
             Ready = true;
             SetStatus(ex.Message, true);

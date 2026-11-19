@@ -1,5 +1,21 @@
 
+# P1 AOT 试编与 ReadyToRun · 1.3.2
+
+安装 Visual Studio Build Tools（MSVC 14.52 + Windows SDK 10.0.26100）后做了 AOT 试验，并顺带修掉两个
+AOT/裁剪问题：
+
+- **源码生成**：启动报告改为 ``StartupJsonContext``；模型目录 JSON 改为 ``ModelCatalogJsonContext``；
+  ``ModelPackage`` 改为可反序列化的类。正常构建启动自检 1.49 秒、工作集 119.1 MiB。
+- **AOT 结果**：能发布 42.7 MiB 单文件，启动自检 0.65 秒、设备枚举前约 75 MiB；但
+  ``NAudio`` 的 ``MMDeviceEnumeratorComObject`` 在 AOT 下抛 ``InvalidProgramException``（ILC 也报告
+  “will always throw”），并有 492 条 IL2026/IL3050 分析警告。AOT 暂不作为发布方式。
+- **ReadyToRun**：``build_desktop.ps1 -ReadyToRun`` 可选；实测热启动 **0.92 秒**（普通 1.4 秒），
+  工作集 125–127 MiB，仍低于 150 MiB 目标。
+- **1.3.2 安装版**：验收 61/61、发布门禁 **17/17 PASS**；启动 1.38 秒、工作集 **119.3 MiB**、
+  私有 51.2 MiB。
+
 # P7 签名链路测试 · 1.3.1（验证）
+
 
 用自签名测试证书把 Authenticode 链路走通（不替换发布包、不修改信任库）：
 

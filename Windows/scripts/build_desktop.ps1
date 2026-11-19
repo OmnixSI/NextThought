@@ -2,7 +2,8 @@ param(
     [string]$Version = "0.5.0",
     [string]$Configuration = "Release",
     [switch]$SkipInstaller,
-    [switch]$SkipZip
+    [switch]$SkipZip,
+    [switch]$ReadyToRun
 )
 # Build, publish, package and verify the Avalonia desktop app (NextThought.exe).
 # Outputs land in <repo>/../../dist by default so downloaded tooling, intermediates
@@ -30,7 +31,10 @@ try {
     }
     Invoke-Dotnet build "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration /m:1 --verbosity minimal
     if (Test-Path -LiteralPath $payload) { Remove-Item -LiteralPath $payload -Recurse -Force }
-    Invoke-Dotnet publish "src\NextThought.Desktop\NextThought.Desktop.csproj" -c $Configuration -r win-x64 --self-contained true -p:PublishSingleFile=false -o $payload --verbosity minimal
+    $publishArgs = @("src\NextThought.Desktop\NextThought.Desktop.csproj", "-c", $Configuration, "-r", "win-x64",
+        "--self-contained", "true", "-p:PublishSingleFile=false", "-o", $payload, "--verbosity", "minimal")
+    if ($ReadyToRun) { $publishArgs += "-p:PublishReadyToRun=true" }
+    Invoke-Dotnet publish @publishArgs
 
     # Startup self-check on the published build, in an isolated data directory.
     # The first launch of a freshly published payload occasionally dies in the XAML/CLR
