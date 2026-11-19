@@ -45,8 +45,11 @@ public sealed class BackupService(AppPaths paths)
                 }
                 // Mac reads these root files; keep the Windows-only settings.json as well.
                 AddText("settings.plist", System.Text.Encoding.UTF8.GetString(MacSettingsPlist.Write(new SettingsStore(paths).Load())));
-                AddText("skills.json", "[]");
-                AddText("note-templates.json", "[]");
+                // Preserve real skills/templates when the data directory has them; empty otherwise.
+                var skillsFile = Path.Combine(paths.Root, "skills.json");
+                AddText("skills.json", File.Exists(skillsFile) ? await File.ReadAllTextAsync(skillsFile, ct).ConfigureAwait(false) : "[]");
+                var templatesFile = Path.Combine(paths.Root, "note-templates.json");
+                AddText("note-templates.json", File.Exists(templatesFile) ? await File.ReadAllTextAsync(templatesFile, ct).ConfigureAwait(false) : "[]");
                 var glossary = Path.Combine(paths.Root, "Glossary", "glossary.json");
                 if (File.Exists(glossary)) AddText("glossary.json", await File.ReadAllTextAsync(glossary, ct).ConfigureAwait(false));
                 using var writer = new StreamWriter(zip.CreateEntry("manifest.json").Open()); await writer.WriteAsync(JsonSerializer.Serialize(manifest, JsonDefaults.ArchiveOptions).AsMemory(), ct).ConfigureAwait(false);
@@ -230,6 +233,13 @@ public sealed class BackupService(AppPaths paths)
                     Directory.CreateDirectory(glossaryTarget);
                     File.Copy(glossarySource, Path.Combine(glossaryTarget, "glossary.json"), true);
                 }
+                catch (IOException) { }
+            }
+            foreach (var name in new[] { "skills.json", "note-templates.json" })
+            {
+                var source = Path.Combine(root, name);
+                if (!File.Exists(source)) continue;
+                try { File.Copy(source, Path.Combine(paths.Root, name), true); }
                 catch (IOException) { }
             }
             // Preserve the complete source archive, including Mac-only fields, workspaces, skills, notes, and originals.

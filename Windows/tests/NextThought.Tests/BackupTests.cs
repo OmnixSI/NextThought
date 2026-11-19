@@ -141,6 +141,35 @@ public sealed class BackupTests
     }
 
     [Fact]
+    public async Task RoundTripRestoresSkillsAndCustomTemplates()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-skills-backup-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var source = new AppPaths(Path.Combine(root, "source"));
+            Directory.CreateDirectory(source.Root);
+            await File.WriteAllTextAsync(Path.Combine(source.Root, "skills.json"),
+                "[{\"id\":\"" + Guid.NewGuid().ToString("D") + "\",\"name\":\"简洁回答\",\"content\":\"先说结论\"}]");
+            await File.WriteAllTextAsync(Path.Combine(source.Root, "note-templates.json"),
+                "[{\"id\":\"custom-1\",\"name\":\"客户会\",\"sections\":[]}]");
+            var archive = Path.Combine(root, "skills.ntbackup");
+            await new BackupService(source).ExportAsync(archive);
+            using (var zip = ZipFile.OpenRead(archive))
+            {
+                Assert.Contains(zip.Entries, entry => entry.FullName == "skills.json");
+                Assert.Contains(zip.Entries, entry => entry.FullName == "note-templates.json");
+            }
+
+            var target = new AppPaths(Path.Combine(root, "target"));
+            await new BackupService(target).ImportAsync(archive);
+            Assert.Contains("简洁回答", await File.ReadAllTextAsync(Path.Combine(target.Root, "skills.json")));
+            Assert.Contains("客户会", await File.ReadAllTextAsync(Path.Combine(target.Root, "note-templates.json")));
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+
+    [Fact]
     public async Task CorruptedPayloadAndFutureVersionAreRejectedBeforeCommit()
     {
         var root = Path.Combine(Path.GetTempPath(), "nt-hash-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);

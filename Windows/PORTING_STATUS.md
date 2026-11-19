@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 技能/模板随备份保留 · 0.5.20
+
+- 导出时若数据目录已有 `skills.json` / `note-templates.json`，写入真实内容而不是空数组；
+  导入时恢复到数据目录。
+- **测试**：`RoundTripRestoresSkillsAndCustomTemplates`；基线 99。
+- **0.5.20 实测**：Core 792 + 基线 99；验收 61/61、门禁 17/17；启动 1.19 秒、
+  工作集 108.6 MiB、私有 43.0 MiB。
+- 仍未完成：创建/编辑技能与自定义模板的界面、幻灯片快捷键、双向实机验收。
+
 # P0 术语表 JSON 类型对齐 · 0.5.19
+
 
 - `GlossaryEntryConverter`：JSON 的 `kind` 只写 Mac 支持的 `term`/`person`；扩展类型写
   `sourceKind`（product/project/…），Mac 解码忽略，Windows 读回仍保留类型。
