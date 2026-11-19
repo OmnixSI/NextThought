@@ -6,6 +6,18 @@ namespace NextThought.Core.Tests;
 /// <summary>Tests for the lexical index, manual questions, Office XML text and hybrid retrieval.</summary>
 public sealed class SessionContextTests
 {
+    [Fact]
+    public void ContextSnapshotKeepsUnknownMacFields()
+    {
+        const string json = "{\"mode\":\"client\",\"style\":\"concise\",\"preferences\":\"\",\"profile\":\"\",\"documents\":[],"
+            + "\"futureMode\":\"x\",\"futureNested\":{\"a\":1}}";
+        var snapshot = System.Text.Json.JsonSerializer.Deserialize<SessionContextSnapshot>(json, NextThought.Core.JsonDefaults.Options)!;
+        var saved = System.Text.Json.JsonSerializer.Serialize(snapshot, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"futureMode\"", saved);
+        Assert.Contains("\"futureNested\"", saved);
+        Assert.Contains("\"mode\":\"client\"", saved);
+    }
+
     private static MaterialDocument Document(string name, params DocumentBlock[] blocks) => new()
     {
         Id = Guid.NewGuid().ToString("N"),

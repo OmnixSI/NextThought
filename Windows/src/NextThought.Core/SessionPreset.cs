@@ -91,6 +91,10 @@ public sealed record SessionContextSnapshot
     public string? Experience { get; init; }
     public string? PreviousSessionId { get; init; }
     public Glossary? Glossary { get; init; }
+
+    /// <summary>Unknown/future Mac context fields are preserved on round-trips.</summary>
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
 }
 
 /// <summary>A reusable meeting setup: mode, style, preferences, profile and documents.</summary>
