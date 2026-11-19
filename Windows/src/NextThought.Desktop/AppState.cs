@@ -1673,10 +1673,21 @@ public partial class AppState : ObservableObject
             var data = await Task.Run(() => Sessions.Load(meta.Id));
             if (generation != selectionEpoch) return;
             CurrentSession = data.Meta;
+            var lines = data.Lines;
+            try
+            {
+                var userContent = SessionUserContentStore.Load(Sessions.Folder(data.Meta.Id));
+                if (userContent.CorrectionDecisions.Count > 0)
+                {
+                    var corrections = userContent.Corrections([], lines);
+                    if (corrections.Count > 0) lines = NotesCorrections.Apply(corrections, lines);
+                }
+            }
+            catch (Exception) { /* a damaged user-content file leaves the raw transcript visible */ }
             currentLines.Clear();
-            currentLines.AddRange(data.Lines);
+            currentLines.AddRange(lines);
             Transcript.Clear();
-            foreach (var line in data.Lines.TakeLast(400)) Transcript.Add(new TranscriptRow(line));
+            foreach (var line in lines.TakeLast(400)) Transcript.Add(new TranscriptRow(line));
             SystemPartial = MicrophonePartial = "";
             MeetingTitle = data.Meta.Title;
             PageSubtitle = "会议归档 · " + data.Meta.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");

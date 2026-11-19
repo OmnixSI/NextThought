@@ -51,18 +51,31 @@ public partial class AppState
             currentLines.AddRange(corrected);
             Transcript.Clear();
             foreach (var line in corrected) Transcript.Add(new TranscriptRow(line));
-            await Sessions.RewriteTranscriptAsync(meta, corrected, cancellation.Token);
+            // Non-destructive like Mac: transcript.jsonl stays raw, decisions live in user-content.json.
+            var folder = Sessions.Folder(meta.Id);
+            var decisions = valid.Select(correction =>
+            {
+                var line = correction.LineId is { } lineId
+                    ? original.FirstOrDefault(item => item.Id == lineId)
+                    : (correction.Line >= 0 && correction.Line < original.Count ? original[correction.Line] : null);
+                return new SessionCorrectionDecision(null, line?.Id ?? Guid.NewGuid(), correction.Original, correction.Corrected, false);
+            }).ToList();
             try
             {
-                await File.WriteAllTextAsync(Path.Combine(Sessions.Folder(meta.Id), "corrections.json"),
+                var content = SessionUserContentStore.Load(folder);
+                SessionUserContentStore.Save(content with
+                {
+                    CorrectionDecisions = [.. content.CorrectionDecisions, .. decisions]
+                }, folder);
+                await File.WriteAllTextAsync(Path.Combine(folder, "corrections.json"),
                     NotesCorrectionsJson.ToJson(valid), cancellation.Token);
             }
             catch (Exception ex)
             {
-                SetStatus("转写已更正，但更正记录写入失败：" + ex.Message, true);
+                SetStatus("转写已在界面更正，但用户更正记录写入失败：" + ex.Message, true);
             }
             ProofreadStatus = $"更正 {valid.Count} 处" + (truncated ? $"（会议较长，只校对了前 {maxCharacters} 字）" : "");
-            SetStatus($"校对完成：{valid.Count} 处识别错误已更正，原始记录在 corrections.json。");
+            SetStatus($"校对完成：{valid.Count} 处识别错误已在显示中更正；原始转写未改写，决定存于 user-content.json。");
         }
         catch (OperationCanceledException)
         {

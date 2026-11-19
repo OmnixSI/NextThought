@@ -132,6 +132,7 @@ public sealed class SessionUserContentStore
         PropertyNameCaseInsensitive = true,
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         Converters = { new NotesFormatConverter() }
     };
 

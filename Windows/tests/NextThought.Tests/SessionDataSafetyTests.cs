@@ -83,6 +83,32 @@ public sealed class SessionDataSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task ProofreadDecisionsProjectWithoutRewritingTheTranscript()
+    {
+        var store = new SessionStore(new AppPaths(root));
+        var meta = new SessionMeta { Title = "会议" };
+        await store.CreateAsync(meta);
+        var line = new TranscriptLine { Text = "用库伯奈提斯部署", Date = DateTimeOffset.UtcNow };
+        await store.AppendTranscriptAsync(meta, line);
+        var folder = store.Folder(meta.Id);
+        var content = SessionUserContentStore.Load(folder);
+        SessionUserContentStore.Save(content with
+        {
+            CorrectionDecisions = [new SessionCorrectionDecision(null, line.Id, "库伯奈提斯", "Kubernetes", false)]
+        }, folder);
+
+        var raw = (await File.ReadAllTextAsync(Path.Combine(folder, "transcript.jsonl"))).Trim();
+        using (var rawJson = System.Text.Json.JsonDocument.Parse(raw))
+            Assert.Equal("用库伯奈提斯部署", rawJson.RootElement.GetProperty("text").GetString());
+
+        var decisions = SessionUserContentStore.Load(folder);
+        var displayed = NotesCorrections.Apply(decisions.Corrections([], [line]), [line]);
+        Assert.Equal("用Kubernetes部署", displayed.Single().Text);
+        using (var rawJson = System.Text.Json.JsonDocument.Parse(raw))
+            Assert.Equal("用库伯奈提斯部署", rawJson.RootElement.GetProperty("text").GetString());
+    }
+
+    [Fact]
     public async Task ContextJsonCarriesTheMacInputs()
     {
         var store = new SessionStore(new AppPaths(root));

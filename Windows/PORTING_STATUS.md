@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 校对不改写原文 · 0.5.18
+
+- 校对不再调用 `RewriteTranscriptAsync`；更正写入 `user-content.json` 的 `correctionDecisions`，
+  显示层用 `NotesCorrections.Apply` 投影，历史加载时应用。
+- 保留 `corrections.json` 作为旧缓存；`SessionUserContentStore` 的 JSON 改为 UTF-8 原字符。
+- **测试**：`ProofreadDecisionsProjectWithoutRewritingTheTranscript`；基线 98。
+- **0.5.18 实测**：Core 791 + 基线 98；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 109.0 MiB、私有 42.8 MiB。
+- 14 条审查项：**10 完整 / 4 部分（#4/#9/#10/#14）/ 0 未修**。
+
 # P0 summary.lessons/bank · 0.5.17
+
 
 - 模板纪要生成后，`NotesKnowledge.Extract` 的经验与题库写入 `summary.json` 的
   `lessons` / `bank`，`appliedToWorkspace=false`（候选仍等用户确认）。
