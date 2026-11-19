@@ -9,7 +9,7 @@
     <RootNamespace>NextThought.Desktop</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <Version>1.3.3</Version>
+    <Version>1.3.4</Version>
     <Product>NextThought</Product>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
@@ -17,6 +17,8 @@
     <!-- Workstation GC: an idle desktop app does not need a server heap. -->
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <!-- R2R code is already optimized; tiered re-JIT only grows the code heap while idle. -->
+    <TieredCompilation Condition="'$(PublishReadyToRun)' == 'true'">false</TieredCompilation>
   </PropertyGroup>
 
   <ItemGroup>
