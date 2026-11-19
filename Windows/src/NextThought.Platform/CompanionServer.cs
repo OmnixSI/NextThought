@@ -11,7 +11,8 @@ using NextThought.Core;
 namespace NextThought.Platform;
 
 public sealed record CompanionSnapshot(string Status = "待机", string Question = "", string Answer = "", bool Answering = false,
-    string Candidate = "", string Position = "", string? SessionID = null, string? Sources = null);
+    string Candidate = "", string Position = "", string? SessionID = null, string? Sources = null,
+    string? AnswerID = null, string? Phase = null, string? Slide = null, bool? UpdateAvailable = null);
 public sealed record CompanionEnvelope(int Version, string ServerID, long Sequence, double UpdatedAt, CompanionSnapshot Snapshot);
 public sealed record CompanionAddress(IPAddress Address, string Adapter) { public override string ToString() => $"{Adapter} · {Address}"; }
 

@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 伴侣快照字段补齐 · 0.5.57
+
+- `CompanionSnapshot` 补齐 Mac 的可选字段 `answerID`、`phase`、`slide`、`updateAvailable`；
+  `sessionID`/`serverID` 序列化保持 `ID` 大写。手机页可读取完整快照。
+- 新增 JSON 键名测试；基线测试 106。
+- **0.5.57 实测**：Core 826 + 基线 106；验收 61/61、门禁 17/17；伴侣自检通过
+  （地址 100.72.252.201、动作 previous、重复拒绝、未授权 403）；启动 1.22 秒、
+  工作集 108.7 MiB、私有 42.6 MiB。
+
 # P0 屏幕/删除日志键名与备份清单稳定性 · 0.5.55–0.5.56
+
 
 - `ScreenContext` 的 `frameID`/`targetID`、`WorkspaceDeletionJournal` 的 `transactionID`/`workspaceID`
   改为 Mac 键名；新增 JSON 往返测试。
