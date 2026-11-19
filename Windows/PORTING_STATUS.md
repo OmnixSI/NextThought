@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 云端 STT 客户端（WAV） · 0.5.123
+
+- 新增 `CloudSttClient`：WAV → 单声道 PCM16 → 重采样到 16/24 kHz → WebSocket 发送配置/音频/
+  关闭；用 Mac 兼容的 `CloudTranscriptAssembler` 汇总 Soniox/OpenAI/Deepgram 更新。
+- 本机 HttpListener+WebSocket 回环测试验证 Soniox：配置帧到达、音频字节 >0、
+  final 文本 `hello`；基线 110。
+- 尚未接入设置页/WAV 导入 UI，也**未用真实 API Key 连接真实服务**；下一步接入。
+- **0.5.123 实测**：Core 863 + 基线 110；验收 63/63、门禁 17/17；环境负载下启动
+  4.27 秒、工作集 124.2 MiB、私有 55.9 MiB。
+
 # P2 语言切换刷新列表 · 0.5.122
+
 
 - `LanguageChanged` 时重新加载 `History`/`HomeRecent` 与系列行，最近会议/历史/系列列表
   不再保留旧语言；计算属性同步通知。
