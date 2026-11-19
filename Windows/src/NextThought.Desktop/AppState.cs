@@ -189,8 +189,26 @@ public partial class AppState : ObservableObject
         StructuredPayload = null;
         try
         {
+            var summary = Path.Combine(Sessions.Folder(session.Id), "summary.json");
+            if (File.Exists(summary))
+            {
+                try
+                {
+                    using var document = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(summary));
+                    if (document.RootElement.TryGetProperty("structured", out var structured)
+                        && structured.TryGetProperty("format", out var savedFormat)
+                        && savedFormat.GetString() == format.Raw()
+                        && structured.TryGetProperty("payload", out var savedPayload))
+                    {
+                        StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(savedPayload.GetRawText(), JsonDefaults.Options);
+                        if (structured.TryGetProperty("markdown", out var savedMarkdown) && savedMarkdown.GetString() is { } text)
+                            StructuredMarkdown = text;
+                    }
+                }
+                catch (System.Text.Json.JsonException) { }
+            }
             var path = StructuredPath(session, format);
-            if (File.Exists(path)) StructuredMarkdown = await File.ReadAllTextAsync(path);
+            if (StructuredPayload is null && File.Exists(path)) StructuredMarkdown = await File.ReadAllTextAsync(path);
             // The JSON keeps the drawing available; the Markdown alone cannot be turned back into one.
             var json = StructuredJsonPath(session, format);
             if (File.Exists(json))
@@ -254,6 +272,26 @@ public partial class AppState : ObservableObject
             OnPropertyChanged(nameof(HasStructuredNotes));
             try
             {
+                // Mac keeps structured notes inside summary.json; write there as well as the legacy cache.
+                var summaryPath = Path.Combine(Sessions.Folder(session.Id), "summary.json");
+                System.Text.Json.Nodes.JsonObject summary;
+                try
+                {
+                    summary = (File.Exists(summaryPath)
+                        ? System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(summaryPath)) as System.Text.Json.Nodes.JsonObject
+                        : null) ?? new System.Text.Json.Nodes.JsonObject();
+                }
+                catch (System.Text.Json.JsonException) { summary = new System.Text.Json.Nodes.JsonObject(); }
+                summary["structured"] = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["format"] = format.Raw(),
+                    ["payload"] = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.Options)),
+                    ["markdown"] = StructuredMarkdown,
+                    ["generatedAt"] = DateTimeOffset.UtcNow
+                };
+                summary["title"] ??= session.Title;
+                summary["markdown"] ??= StructuredMarkdown;
+                await File.WriteAllTextAsync(summaryPath, summary.ToJsonString(JsonDefaults.ArchiveOptions));
                 await File.WriteAllTextAsync(StructuredPath(session, format), StructuredMarkdown);
                 await File.WriteAllTextAsync(StructuredJsonPath(session, format),
                     System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.Options));
@@ -422,7 +460,15 @@ public partial class AppState : ObservableObject
     partial void OnAnsweringChanged(bool value) { RaiseBusy(); OnPropertyChanged(nameof(CanCancel)); }
     partial void OnSummarizingChanged(bool value) => RaiseBusy();
     partial void OnCurrentSessionChanged(SessionMeta? value) => OnPropertyChanged(nameof(StatsText));
-    partial void OnDetectedQuestionChanged(string value) => PublishCompanionSnapshot();
+    partial void OnDetectedQuestionChanged(string value)
+    {
+        PublishCompanionSnapshot();
+        if (!Recording || string.IsNullOrWhiteSpace(value) || CurrentSession is not { } meta) return;
+        _ = Sessions.AppendQuestionAsync(meta.Id, new SessionQuestionEvent
+        {
+            Date = DateTimeOffset.UtcNow, Text = value, Intent = "detected", Disposition = "candidate"
+        }).ContinueWith(task => _ = task.Exception, TaskScheduler.Default);
+    }
     partial void OnLiveModeChanged(LiveWindowMode value) => OnPropertyChanged(nameof(LiveModeLabel));
     partial void OnAnswerTextChanged(string value)
     {

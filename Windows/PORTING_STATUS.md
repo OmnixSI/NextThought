@@ -29,7 +29,19 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 结构化纪要/问题/上下文 · 0.5.4
+
+- **structured**：模板纪要同时写入 `summary.json → structured`（format/payload/markdown/generatedAt），
+  加载时优先读该字段，旧 `structured-*.json/md` 保留兼容。
+- **questions.jsonl**：问题变化时追加 `SessionQuestionEvent`；`context.json` 在会议创建时写入
+  `platform/createdAt/mode`。
+- **测试**：`CreatingAMeetingWritesContextAndQuestions`；基线 90。
+- **0.5.4 实测**：Core 783 + 基线 90；验收 61/61、门禁 17/17；启动 1.14 秒、
+  工作集 109.7 MiB、私有 43.7 MiB。
+- 仍未完成：Mac 的完整 Workspace/summary/context 字段、修订指纹、技能/模板存储、Mac 备份双向恢复。
+
 # P0 数据层起步：系列分文件 · 0.5.3
+
 
 - **Workspaces 分文件**：`WorkspaceStore.Save` 写 `Workspaces/<ID>.json`，删除已移除系列的文件；
   `Load` 优先读分文件，缺失时回退旧 `Workspace/workspace.json`。备份导出因此自动带上 Workspaces。

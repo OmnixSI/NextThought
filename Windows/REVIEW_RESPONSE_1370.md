@@ -39,8 +39,9 @@
 - 0.5.3 起系列按 `Workspaces/<ID>.json` 保存并优先读取，旧 `Workspace/workspace.json` 继续兼容；
   但字段仍是简化结构，缺场景/偏好/技能/术语等十多个 Mac 字段。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
-- 结构化纪要仍分文件存放，未读写 Mac 的 `summary.json → structured`。
-- 会议只写核心文件；`questions.jsonl`、`context.json`、技能与自定义模板未写入。
+- 0.5.4 起结构化纪要先写入 `summary.json → structured`（format/payload/markdown/generatedAt），
+  旧 `structured-*.json/md` 仍保留；Mac 的完整 structured 结构未逐字段对齐。
+- 0.5.4 起会议创建写 `context.json`，问题变化追加 `questions.jsonl`；技能与自定义模板仍未写入。
 - 转写修订指纹、经验修订号、系列变更回执键名/枚举仍与 Mac 不同。
 
 ## 第 6/8/9 节的其他事项
@@ -53,10 +54,10 @@
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.3 实测
+## 0.5.4 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
-- 测试：Core **783**、基线 **89**
+- 测试：Core **783**、基线 **90**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.14 秒，工作集 **109.2 MiB**、私有 43.4 MiB
+- 启动 1.14 秒，工作集 **109.7 MiB**、私有 43.7 MiB

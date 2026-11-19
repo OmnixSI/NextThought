@@ -37,6 +37,20 @@ public sealed class SessionDataSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task CreatingAMeetingWritesContextAndQuestions()
+    {
+        var store = new SessionStore(new AppPaths(root));
+        var meta = new SessionMeta { Title = "会议" };
+        await store.CreateAsync(meta);
+        var folder = store.Folder(meta.Id);
+        Assert.True(File.Exists(Path.Combine(folder, "context.json")));
+        await store.AppendQuestionAsync(meta.Id, new SessionQuestionEvent { Text = "问题", Date = DateTimeOffset.UtcNow });
+        var line = (await File.ReadAllTextAsync(Path.Combine(folder, "questions.jsonl"))).Trim();
+        using var question = System.Text.Json.JsonDocument.Parse(line);
+        Assert.Equal("问题", question.RootElement.GetProperty("text").GetString());
+    }
+
+    [Fact]
     public async Task ProofreadingKeepsTheRawRecognizerTranscript()
     {
         var store = new SessionStore(new AppPaths(root));

@@ -18,6 +18,9 @@ public sealed class SessionStore(AppPaths paths)
             var folder = Folder(meta.Id);
             if (Directory.Exists(folder)) throw new IOException("会议 ID 已存在。");
             Directory.CreateDirectory(folder); await WriteMetaAsync(meta, ct).ConfigureAwait(false);
+            // Mac writes a context snapshot per meeting; keep a minimal compatible file.
+            await File.WriteAllTextAsync(Path.Combine(folder, "context.json"),
+                JsonSerializer.Serialize(new { platform = "windows", createdAt = DateTimeOffset.UtcNow, mode = meta.Mode.ToString() }, JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
         }
         finally { gate.Release(); }
     }
@@ -54,6 +57,13 @@ public sealed class SessionStore(AppPaths paths)
             await WriteMetaAsync(current, ct).ConfigureAwait(false);
             CopyState(current, meta);
         }
+        finally { gate.Release(); }
+    }
+
+    public async Task AppendQuestionAsync(Guid session, SessionQuestionEvent question, CancellationToken ct = default)
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try { await AppendAsync(Path.Combine(Folder(session), "questions.jsonl"), question, ct).ConfigureAwait(false); }
         finally { gate.Release(); }
     }
 
