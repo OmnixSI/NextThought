@@ -36,6 +36,19 @@ public sealed class BackupService(AppPaths paths)
                 }
                 var manifest = new { format = "nextthought-backup", version = 1, kind = "full", createdAt = DateTimeOffset.UtcNow, appVersion = "0.2.0", appBuild = "windows-p2", includesSecrets = false,
                     workspaceCount = Directory.Exists(Path.Combine(paths.Root, "Workspaces")) ? Directory.GetFiles(Path.Combine(paths.Root, "Workspaces"), "*.json").Length : 0, sessionCount = records.Count, windowsExtensionVersion = 1, fileHashes = hashes };
+                void AddText(string name, string text)
+                {
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(text);
+                    hashes[name] = Convert.ToHexStringLower(SHA256.HashData(bytes));
+                    using var stream = zip.CreateEntry(name).Open();
+                    stream.Write(bytes);
+                }
+                // Mac reads these root files; keep the Windows-only settings.json as well.
+                AddText("settings.plist", System.Text.Encoding.UTF8.GetString(MacSettingsPlist.Write(new SettingsStore(paths).Load())));
+                AddText("skills.json", "[]");
+                AddText("note-templates.json", "[]");
+                var glossary = Path.Combine(paths.Root, "Glossary", "glossary.json");
+                if (File.Exists(glossary)) AddText("glossary.json", await File.ReadAllTextAsync(glossary, ct).ConfigureAwait(false));
                 using var writer = new StreamWriter(zip.CreateEntry("manifest.json").Open()); await writer.WriteAsync(JsonSerializer.Serialize(manifest, JsonDefaults.ArchiveOptions).AsMemory(), ct).ConfigureAwait(false);
             }
             ct.ThrowIfCancellationRequested(); File.Move(temporary, destination, true);
@@ -192,19 +205,23 @@ public sealed class BackupService(AppPaths paths)
             // Restore non-secret settings from our own backups; the API key stays in DPAPI.
             var settingsRestored = false;
             var settingsFile = Path.Combine(root, "settings.json");
-            if (File.Exists(settingsFile))
+            var settingsPlist = Path.Combine(root, "settings.plist");
+            try
             {
-                try
+                AppSettings? importedSettings = null;
+                if (File.Exists(settingsFile))
+                    importedSettings = JsonSerializer.Deserialize<AppSettings>(await File.ReadAllTextAsync(settingsFile, ct), JsonDefaults.Options);
+                else if (File.Exists(settingsPlist))
+                    importedSettings = MacSettingsPlist.Apply(await File.ReadAllBytesAsync(settingsPlist, ct), new SettingsStore(paths).Load());
+                if (importedSettings is not null)
                 {
-                    if (JsonSerializer.Deserialize<AppSettings>(await File.ReadAllTextAsync(settingsFile, ct), JsonDefaults.Options) is { } importedSettings)
-                    {
-                        await new SettingsStore(paths).SaveAsync(importedSettings, ct).ConfigureAwait(false);
-                        settingsRestored = true;
-                    }
+                    await new SettingsStore(paths).SaveAsync(importedSettings, ct).ConfigureAwait(false);
+                    settingsRestored = true;
                 }
-                catch (JsonException) { }
             }
+            catch (JsonException) { }
             var glossarySource = Path.Combine(root, "Glossary", "glossary.json");
+            if (!File.Exists(glossarySource)) glossarySource = Path.Combine(root, "glossary.json");
             if (File.Exists(glossarySource))
             {
                 try

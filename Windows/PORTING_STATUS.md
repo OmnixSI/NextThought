@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 Mac 备份根文件 · 0.5.10
+
+- **导出**：新增 `settings.plist`（映射 apiBaseURL/apiModel/notesModelID/localStreamingModel 等）、
+  `skills.json`、`note-templates.json`、根 `glossary.json`，与 Mac 的备份布局一致；技能/模板暂为空数组。
+- **导入**：支持 Mac 的 `settings.plist`（映射回 AppSettings）和根 `glossary.json`。
+- **测试**：plist 往返、Mac 风格备份恢复设置与术语表；基线 94。
+- **0.5.10 实测**：Core 790 + 基线 94；验收 61/61、门禁 17/17；启动 1.14 秒、
+  工作集 109.1 MiB、私有 42.6 MiB。
+- 仍未完成：技能/模板实际内容、Mac summary/context 完整字段、双向恢复实机验收。
+
 # P0 user-content 键名与旧 id 对齐 · 0.5.9
+
 
 - **lineID**：`SessionHighlight` / `SessionCorrectionDecision` 的 `LineId` 输出为 Mac 的 `lineID` 键。
 - **schema-1 旧 id**：无 id 的校正改用 `TranscriptRevisions.Of(lineID, "字节数:原文+修正")` 的前 32 位
