@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 回答记录补 Mac 字段 · 0.5.72
+
+- `AnswerRecord` 补 `firstTokenSeconds`、`screenshotPath`、`webAnswer`、`webSources`、`evidence`，
+  并加 `JsonExtensionData`；会议回答不再丢首字延迟、截图、联网答案与证据包。
+- 新增 JSON 往返测试；Core 837。
+- **0.5.72 实测**：Core 837 + 基线 106；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 108.6 MiB、私有 42.6 MiB。
+
 # P0 转写行保留 Mac 译文与未知字段 · 0.5.71
+
 
 - `TranscriptLine` 补 `translatedText`、`translationInputRevision`，并加 `JsonExtensionData`；
   Mac 的转写行译文、翻译输入修订及未来字段在导入/导出后保留。

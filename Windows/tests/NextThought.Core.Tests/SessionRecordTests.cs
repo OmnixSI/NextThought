@@ -97,6 +97,25 @@ public sealed class SessionRecordTests
     }
 
     [Fact]
+    public void AnswerRecordKeepsMacExtras()
+    {
+        const string json = """
+            {"id":"11111111-1111-1111-1111-111111111111","date":"2026-01-01T00:00:00Z","question":"问","answer":"答",
+             "model":"m","seconds":2.5,"firstTokenSeconds":0.4,"automatic":true,"screenshotPath":"screenshots/a.png",
+             "webAnswer":"联网答","webSources":[{"title":"标题","url":"https://example.com","snippet":"摘要"}],
+             "futureAnswer":"x"}
+            """;
+        var answer = System.Text.Json.JsonSerializer.Deserialize<AnswerRecord>(json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.Equal(0.4, answer.FirstTokenSeconds);
+        Assert.Equal("screenshots/a.png", answer.ScreenshotPath);
+        Assert.Single(answer.WebSources!);
+        var saved = System.Text.Json.JsonSerializer.Serialize(answer, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"firstTokenSeconds\"", saved);
+        Assert.Contains("\"webSources\"", saved);
+        Assert.Contains("\"futureAnswer\"", saved);
+    }
+
+    [Fact]
     public void TranscriptLineKeepsMacTranslationAndUnknownFields()
     {
         const string json = """
