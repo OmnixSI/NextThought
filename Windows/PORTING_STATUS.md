@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 术语表文本导入对齐 · 0.5.11
+
+- **四段格式**：`规范写法 | 变体1, 变体2 | 类型 | 备注`，支持全角 `｜`、中文类型
+  （人名/项目/缩写/地点/产品/术语）与逗号/顿号/分号分隔的变体；第三列不是类型时按 Mac 当作备注。
+- **测试**：`ParseTextReadsMacKindAndNoteColumns`；Core 791。
+- **0.5.11 实测**：Core 791 + 基线 94；验收 61/61、门禁 17/17；启动 1.12 秒、
+  工作集 109.3 MiB、私有 42.8 MiB。
+- 仍未完成：Mac 只有 term/person 两种类型，Windows 的 project/product 等扩展类型写入 JSON 后 Mac 回落 term。
+
 # P0 Mac 备份根文件 · 0.5.10
+
 
 - **导出**：新增 `settings.plist`（映射 apiBaseURL/apiModel/notesModelID/localStreamingModel 等）、
   `skills.json`、`note-templates.json`、根 `glossary.json`，与 Mac 的备份布局一致；技能/模板暂为空数组。

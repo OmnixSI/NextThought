@@ -222,9 +222,31 @@ public sealed record Glossary
         {
             var line = rawLine.Trim();
             if (line.Length == 0 || line.StartsWith('#')) continue;
-            var parts = line.Split('|').Select(part => Tidy(part)).Where(part => part.Length > 0).ToArray();
-            if (parts.Length == 0) continue;
-            entries.Add(new GlossaryEntry(parts[0], defaultKind, parts.Skip(1).ToList()));
+            // Mac format: canonical | variants (comma separated) | kind | note.
+            var columns = line.Replace('｜', '|').Split('|').Select(Tidy).ToArray();
+            if (columns.Length == 0 || columns[0].Length == 0) continue;
+            var variants = columns.Length > 1
+                ? columns[1].Split([',', '，', '、', ';', '；'], StringSplitOptions.RemoveEmptyEntries).Select(Tidy).Where(part => part.Length > 0).ToList()
+                : [];
+            var kind = defaultKind;
+            string? note = null;
+            if (columns.Length > 2 && columns[2].Length > 0)
+            {
+                var parsedKind = columns[2] switch
+                {
+                    "person" or "人名" or "姓名" or "name" or "people" => GlossaryKind.Person,
+                    "project" or "项目" => GlossaryKind.Project,
+                    "acronym" or "缩写" => GlossaryKind.Acronym,
+                    "place" or "地点" => GlossaryKind.Place,
+                    "product" or "产品" => GlossaryKind.Product,
+                    "term" or "术语" or "词" or "专有名词" or "word" => GlossaryKind.Term,
+                    _ => (GlossaryKind?)null
+                };
+                if (parsedKind is { } value) kind = value;
+                else note = columns[2];
+                if (columns.Length > 3 && columns[3].Length > 0) note = columns[3];
+            }
+            entries.Add(new GlossaryEntry(columns[0], kind, variants, note));
         }
         return new Glossary(entries).Normalized();
     }

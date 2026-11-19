@@ -93,8 +93,22 @@ public sealed class GlossaryTests
             kubernetes | k8s
             """);
         Assert.Equal(2, glossary.Entries.Count);
-        // The later spelling of the same name becomes a variant; duplicates differing only in case stay.
-        Assert.Equal(["K8s", "库伯奈提斯", "kubernetes", "k8s"], glossary.Entries[0].Variants);
+        // Third column is the kind, an unknown third column is a note; the later canonical becomes a variant.
+        Assert.Equal("库伯奈提斯", glossary.Entries[0].Note);
+        Assert.Equal(["K8s", "kubernetes", "k8s"], glossary.Entries[0].Variants);
+    }
+
+    [Fact]
+    public void ParseTextReadsMacKindAndNoteColumns()
+    {
+        var text = "Kubernetes | K8s, kube | 产品 | 容器平台\n张三 | | 人名\nOpenAI | open ai | 术语";
+        var glossary = Glossary.ParseText(text);
+        var kubernetes = glossary.Entries.Single(entry => entry.Canonical == "Kubernetes");
+        Assert.Equal(GlossaryKind.Product, kubernetes.Kind);
+        Assert.Equal("容器平台", kubernetes.Note);
+        Assert.Equal(["K8s", "kube"], kubernetes.Variants);
+        Assert.Equal(GlossaryKind.Person, glossary.Entries.Single(entry => entry.Canonical == "张三").Kind);
+        Assert.Equal(GlossaryKind.Term, glossary.Entries.Single(entry => entry.Canonical == "OpenAI").Kind);
     }
 
     [Fact]
