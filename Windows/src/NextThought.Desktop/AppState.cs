@@ -534,7 +534,7 @@ public partial class AppState : ObservableObject
 
     public void SetStatus(string text, bool error = false)
     {
-        Status = text;
+        Status = UiText.Translate(text, Settings.UiLanguage == "English");
         StatusIsError = error;
     }
 
