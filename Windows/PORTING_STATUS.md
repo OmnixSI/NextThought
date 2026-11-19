@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 OnboardingVersion 测试移植 · 0.5.48
+
+- 移植 Mac `OnboardingVersionTests` 的 4 个测试：首次安装/功能升级显示指南、补丁版不重复、
+  功能版或布局变化重新触发一次、备份保留高级设置但绝不跳过新安装指南。
+- 测试同时覆盖 `SettingsSnapshot.Filter` 的 onboarding 键排除规则。
+- **0.5.48 实测**：Core 805 + 基线 105；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 109.1 MiB、私有 43.1 MiB。
+
 # P0 Mac Workspace fields/standing · 0.5.47
+
 
 - `WorkspaceSeries` 再保留 `fields`（每场景键值）与 `standing`（常设场景）。
   至此 Mac Workspace 的已知字段都能在 Windows 备份往返中保留。
