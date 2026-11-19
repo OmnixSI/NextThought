@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 云端 STT 协议测试 · 0.5.128
+
+- 新增 OpenAI（JSON base64 append + completed）与 Deepgram（二进制 + Token 头 +
+  speech_final）本机 WebSocket 回环测试；三种 provider 的 WAV 客户端路径均有覆盖。
+- 基线 113；Core 863。
+- **0.5.128 实测**：Core 863 + 基线 113；验收 63/63、门禁 17/17；环境负载下启动
+  4.28 秒、工作集 124.2 MiB、私有 56.8 MiB。
+
 # P2 云端失败回退 · 0.5.127
+
 
 - 云端识别连接/配置失败且本机模型就绪时，自动改用本机 `LiveSpeechEngine`，不再出现
   「有录音但没有转写」；本机模型也未就绪时明确中止并报错。
