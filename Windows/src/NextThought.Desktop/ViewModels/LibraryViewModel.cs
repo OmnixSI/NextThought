@@ -26,7 +26,11 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
     public IReadOnlyList<MaterialDocument> DocumentsForRetrieval() => Materials.Count > 0 ? Materials.ToList() : Store.List().ToList();
 
     public bool HasMaterials => Materials.Count > 0;
-    public string MaterialCountText => $"{Materials.Count} 份资料 · 本机解析";
+    public void NotifyLanguageChanged() => OnPropertyChanged(nameof(MaterialCountText));
+
+    public string MaterialCountText => NextThought.Core.UiText.EnglishUi
+        ? $"{NextThought.Core.UiText.Materials(Materials.Count)} · parsed on device"
+        : $"{Materials.Count} 份资料 · 本机解析";
 
     partial void OnFilterChanged(string value) => ApplyFilter();
 

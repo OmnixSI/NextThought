@@ -73,6 +73,15 @@ public partial class AppState : ObservableObject
             PageSubtitle = UiText.Translate(PageSubtitle, english);
             OnPropertyChanged(nameof(StatsText));
             OnPropertyChanged(nameof(Greeting));
+            OnPropertyChanged(nameof(HistorySummary));
+            OnPropertyChanged(nameof(SeriesSummary));
+            OnPropertyChanged(nameof(SelectedSeriesMeta));
+            OnPropertyChanged(nameof(SeriesLessonsHeader));
+            OnPropertyChanged(nameof(SeriesCandidatesHeader));
+            OnPropertyChanged(nameof(SeriesBankHeader));
+            OnPropertyChanged(nameof(SlideStatus));
+            OnPropertyChanged(nameof(CompanionToggleLabel));
+            Library.NotifyLanguageChanged();
         };
     }
 
