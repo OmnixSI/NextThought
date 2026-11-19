@@ -66,6 +66,18 @@ public static class ScreenCapture
         }
     }
 
+    /// <summary>The foreground window's rectangle in virtual-screen coordinates (window capture).</summary>
+    public static PixelRect ForegroundWindowBounds()
+    {
+        var window = GetForegroundWindow();
+        if (window == IntPtr.Zero || !GetWindowRect(window, out var rect)) return default;
+        var left = Math.Max(rect.Left, GetSystemMetrics(SmXVirtualScreen));
+        var top = Math.Max(rect.Top, GetSystemMetrics(SmYVirtualScreen));
+        var right = Math.Min(rect.Right, left + Math.Max(1, GetSystemMetrics(SmCxVirtualScreen)));
+        var bottom = Math.Min(rect.Bottom, top + Math.Max(1, GetSystemMetrics(SmCyVirtualScreen)));
+        return new PixelRect(left, top, Math.Max(1, right - left), Math.Max(1, bottom - top));
+    }
+
     /// <summary>Crop the capture to a rectangle given in physical pixels relative to the image.</summary>
     public static WriteableBitmap Crop(Capture capture, PixelRect rectangle)
     {
@@ -112,6 +124,11 @@ public static class ScreenCapture
         public int biClrImportant;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowRect { public int Left, Top, Right, Bottom; }
+
+    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out WindowRect rect);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr window);
     [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr window, IntPtr dc);

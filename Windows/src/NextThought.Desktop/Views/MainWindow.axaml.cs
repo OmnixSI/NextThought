@@ -2400,7 +2400,9 @@ public partial class MainWindow : Window
             new GlobalHotkeys.Binding("Ctrl+Alt+X 取消当前回答", 0x58, () => state.CancelCommand.Execute(null)),
             new GlobalHotkeys.Binding("Ctrl+Alt+Left 上一条回答", 0x25, () => state.PreviousAnswerCommand.Execute(null)),
             new GlobalHotkeys.Binding("Ctrl+Alt+Right 下一条回答", 0x27, () => state.NextAnswerCommand.Execute(null)),
-            new GlobalHotkeys.Binding("Ctrl+Alt+J 提词浮窗鼠标穿透", 0x4A, ToggleTeleprompterClickThrough)
+            new GlobalHotkeys.Binding("Ctrl+Alt+J 提词浮窗鼠标穿透", 0x4A, ToggleTeleprompterClickThrough),
+            new GlobalHotkeys.Binding("Ctrl+Alt+W 窗口截图", 0x57, () => _ = CaptureWindowAsync()),
+            new GlobalHotkeys.Binding("Ctrl+Alt+Space 暂停或恢复聆听", 0x20, () => state.TogglePauseListeningCommand.Execute(null))
         ]);
         if (hotkeys.Unregistered.Count > 0)
             state.SetStatus("以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。", true);
@@ -2462,6 +2464,35 @@ public partial class MainWindow : Window
     /// 区域截图（方案第 9 节）：先隐藏自己的窗口再抓屏，框选后裁切，然后存入资料库并由
     /// Windows.Media.Ocr 读取文字。
     /// </summary>
+    /// <summary>Capture the window that had focus before NextThought was minimized (Mac captureWindow).</summary>
+    public async Task CaptureWindowAsync()
+    {
+        if (state.Working) { state.SetStatus("当前有任务在进行，稍后再截图。"); return; }
+        var wasVisible = IsVisible;
+        try
+        {
+            WindowState = WindowState.Minimized;
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
+            await Task.Delay(360);
+            var bounds = ScreenCapture.ForegroundWindowBounds();
+            if (bounds.Width <= 1 || bounds.Height <= 1) { state.SetStatus("没有找到可截图的窗口。", true); return; }
+            var capture = ScreenCapture.VirtualScreen();
+            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            var cropped = ScreenCapture.Crop(capture, new Avalonia.PixelRect(
+                bounds.X - capture.X, bounds.Y - capture.Y, bounds.Width, bounds.Height));
+            var path = Path.Combine(Path.GetTempPath(), $"nextthought-window-{DateTime.Now:yyyyMMdd-HHmmss}.png");
+            cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            await state.Library.ImportAsync([path]);
+            state.Section = AppSection.Library;
+            state.SetStatus("窗口截图已存入资料库，并已用系统 OCR 读取其中的文字。");
+        }
+        catch (Exception ex)
+        {
+            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            state.SetStatus("窗口截图失败：" + ex.Message, true);
+        }
+    }
+
     public async Task CaptureRegionAsync()
     {
         if (state.Working) { state.SetStatus("当前有任务在进行，稍后再截图。"); return; }

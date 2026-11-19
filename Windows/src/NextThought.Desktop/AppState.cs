@@ -87,6 +87,7 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private string versionText = "WINDOWS  " + typeof(AppState).Assembly.GetName().Version!.ToString(3);
     [ObservableProperty] private bool working;
     [ObservableProperty] private bool recording;
+    [ObservableProperty] private bool listeningPaused;
     [ObservableProperty] private bool stopping;
     [ObservableProperty] private bool answering;
     [ObservableProperty] private bool summarizing;
@@ -815,6 +816,7 @@ public partial class AppState : ObservableObject
             await Task.Run(() => capture.Start(settings));
             if (capture.LastError is { } captureError) throw new IOException(captureError);
             Recording = true;
+            ListeningPaused = false;
             candidateTimer.Start();
             PageSubtitle = "进行中 · 转写持续保存在本机";
             Section = AppSection.Live;
@@ -879,6 +881,7 @@ public partial class AppState : ObservableObject
             sessionLease?.Dispose(); sessionLease = null;
             StopAutoEnd();
             Recording = Stopping = false;
+            ListeningPaused = false;
             RefreshHistory(meta.Id);
             RaiseBusy();
         }
@@ -895,6 +898,8 @@ public partial class AppState : ObservableObject
     private void ReceiveTranscript(SessionMeta? meta, TranscriptUpdate update, bool automatic)
     {
         if (meta is null) return;
+        // Pause drops updates from this moment; audio capture keeps running, so resuming is instant.
+        if (ListeningPaused) return;
         if (update.Source == AudioSource.Microphone && update.Text.Length > 0) lastMicrophoneSpeech = DateTimeOffset.UtcNow;
         if (!update.IsFinal)
         {
@@ -1560,6 +1565,18 @@ public partial class AppState : ObservableObject
     private void CycleLiveMode() => LiveMode = LiveMode.Next();
 
     public string LiveModeLabel => LiveMode.Title();
+
+    [RelayCommand]
+    private void TogglePauseListening()
+    {
+        if (!Recording)
+        {
+            SetStatus("开始记录后才能暂停聆听。");
+            return;
+        }
+        ListeningPaused = !ListeningPaused;
+        SetStatus(ListeningPaused ? "聆听已暂停；恢复后从当前时刻继续记录。" : "聆听已恢复。");
+    }
 
     [RelayCommand]
     private async Task RegenerateAnswerAsync()
