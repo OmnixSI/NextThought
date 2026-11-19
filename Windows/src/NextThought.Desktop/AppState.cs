@@ -82,6 +82,8 @@ public partial class AppState : ObservableObject
             OnPropertyChanged(nameof(SlideStatus));
             OnPropertyChanged(nameof(CompanionToggleLabel));
             Library.NotifyLanguageChanged();
+            RefreshHistory();
+            RefreshSeries();
         };
     }
 
