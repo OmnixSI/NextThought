@@ -253,12 +253,15 @@ public partial class AppState : ObservableObject
         {
             SetStatus($"正在整理成{format.Title(false)}…");
             var transcript = BuildNumberedTranscript(session);
-            var header = $"# {session.Title}\n\n会议时间：{session.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 场景：{SceneTitle}";
-            var system = StructuredNotesPrompt.System(format, english: false);
+            var english = AnswerLanguage.Spoken(transcript) == "English";
+            var header = english
+                ? $"# {session.Title}\n\nMeeting: {session.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · Scene: {SceneTitle}"
+                : $"# {session.Title}\n\n会议时间：{session.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 场景：{SceneTitle}";
+            var system = StructuredNotesPrompt.System(format, english);
             var user = StructuredNotesPrompt.User(header, transcript);
             var reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system, user, null, cancellation.Token, 180);
             if (generation != requestEpoch) return;
-            var payload = StructuredNotesParser.Parse(reply, format, fallbackTitle: session.Title, model: AnswerOptions(true).Model);
+            var payload = StructuredNotesParser.Parse(reply, format, english, fallbackTitle: session.Title, model: AnswerOptions(true).Model);
             if (payload is null)
             {
                 SetStatus("整理结果不是可用的 JSON，稍后可重试。", true);

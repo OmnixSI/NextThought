@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 结构化纪要英文提示 · 0.5.86
+
+- 结构化纪要（鱼骨/大纲/观点矩阵）也用 `AnswerLanguage.Spoken(transcript)` 判英文：
+  英文 header、`StructuredNotesPrompt.System(..., english: true)`、`Parse(..., english: true)`，
+  生成 `language:"en"`，不再只给英文会议中文结构化纪要。
+- **0.5.86 实测**：Core 844 + 基线 109；验收 63/63、门禁 17/17；启动 1.21 秒、
+  工作集 108.7 MiB、私有 42.5 MiB。
+
 # P1 英文内置纪要模板 · 0.5.85
+
 
 - `NotesTemplate.BuiltIn(kind, english: true)` 按 Mac `builtIn(_:english:)` 补齐九个英文模板：
   章节 ID/类型/携带设置与中文一致，标题/要求/前缀英文。
