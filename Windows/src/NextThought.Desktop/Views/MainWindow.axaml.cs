@@ -2395,6 +2395,9 @@ public partial class MainWindow : Window
         var showActivated = true;
         var topmost = false;
         var onScreen = false;
+        var noTaskbar = false;
+        var hidden = false;
+        var reshown = false;
         Window? probe = null;
         try
         {
@@ -2408,7 +2411,14 @@ public partial class MainWindow : Window
                 && probe.Position.X < screen.Bounds.X + screen.Bounds.Width
                 && screen.Bounds.Y <= probe.Position.Y
                 && probe.Position.Y < screen.Bounds.Y + screen.Bounds.Height);
-            passed = affinity == 0x11 && !showActivated && topmost && onScreen && probe.IsVisible;
+            noTaskbar = !probe.ShowInTaskbar;
+            probe.Hide();
+            await Task.Delay(200);
+            hidden = !probe.IsVisible;
+            probe.Show();
+            await Task.Delay(200);
+            reshown = probe.IsVisible;
+            passed = affinity == 0x11 && !showActivated && topmost && onScreen && noTaskbar && hidden && reshown;
         }
         catch (Exception exception)
         {
@@ -2418,7 +2428,7 @@ public partial class MainWindow : Window
         {
             probe?.Close();
         }
-        var report = new { passed, affinity, showActivated, topmost, onScreen, error };
+        var report = new { passed, affinity, showActivated, topmost, onScreen, noTaskbar, hidden, reshown, error };
         try
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));

@@ -27,9 +27,9 @@
 ## 提示岛 S0（0.5.23 追加）
 
 - 开始记录自动显示提示岛；停止记录自动隐藏；回答/问题变化时若岛被手动关掉会重新显示（W2 部分）。
-- `--capture-hide-check` 现在同时验证 S0：`affinity=17`、`ShowActivated=false`、`Topmost=true`、
-  `onScreen=true`、可见；0.5.23 安装版全部通过。
-- 仍未做：「穿透后仍能点按钮」的交互方案与完整 8 项 S0 清单。
+- `--capture-hide-check` 现在验证完整 8 项 S0：`affinity=17`、`ShowActivated=false`、`Topmost=true`、
+  `onScreen=true`、`noTaskbar=true`、`hidden=true`、`reshown=true`、可见；0.5.40 安装版全部通过。
+- 仍未做：「穿透后仍能点按钮」的交互方案。
 
 ## 幻灯片跟随（0.5.39 追加）
 
@@ -82,10 +82,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.39 实测
+## 0.5.40 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.18 秒，工作集 **108.8 MiB**、私有 44.1 MiB
+- 启动 1.20 秒，工作集 **108.7 MiB**、私有 42.5 MiB
