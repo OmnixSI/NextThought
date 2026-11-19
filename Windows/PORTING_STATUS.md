@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 证据包 requestID · 0.5.58
+
+- `EvidenceBundle` 的请求 ID 改为 Mac 的 `requestID`（此前是 `requestId`）。
+- 新增 JSON 往返测试；Core 827。
+- **0.5.58 实测**：Core 827 + 基线 106；验收 61/61、门禁 17/17；启动 1.23 秒、
+  工作集 108.9 MiB、私有 42.8 MiB。
+
 # P0 伴侣快照字段补齐 · 0.5.57
+
 
 - `CompanionSnapshot` 补齐 Mac 的可选字段 `answerID`、`phase`、`slide`、`updateAvailable`；
   `sessionID`/`serverID` 序列化保持 `ID` 大写。手机页可读取完整快照。

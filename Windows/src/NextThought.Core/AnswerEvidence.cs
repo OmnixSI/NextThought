@@ -39,7 +39,8 @@ public sealed record SearchDecision(bool Search, string Reason, string Query, st
 
 /// <summary>Rewrite/search detection before answering (port of AnswerGrounding in AnswerEvidence.swift).</summary>
 /// <summary>Everything the answer was grounded on, frozen per request (port of EvidenceBundle).</summary>
-public sealed record EvidenceBundle(Guid RequestId)
+public sealed record EvidenceBundle(
+    [property: System.Text.Json.Serialization.JsonPropertyName("requestID")] Guid RequestId)
 {
     public IReadOnlyList<ContextExcerpt> Materials { get; init; } = [];
     public ScreenContext? Screen { get; init; }

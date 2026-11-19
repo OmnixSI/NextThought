@@ -7,6 +7,16 @@ namespace NextThought.Core.Tests;
 public sealed class AnswerEvidenceTests
 {
     [Fact]
+    public void EvidenceBundleUsesTheMacRequestKey()
+    {
+        var id = Guid.NewGuid();
+        var json = System.Text.Json.JsonSerializer.Serialize(new EvidenceBundle(id), JsonDefaults.Options);
+        Assert.Contains("\"requestID\"", json);
+        var back = System.Text.Json.JsonSerializer.Deserialize<EvidenceBundle>(json, JsonDefaults.Options)!;
+        Assert.Equal(id, back.RequestId);
+    }
+
+    [Fact]
     public void SearchDecisionParsesTheOutermostJsonObject()
     {
         var decision = SearchDecision.Parse("""
