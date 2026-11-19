@@ -238,7 +238,7 @@ public sealed record NotesSectionResult(string Id, string Title, NotesSectionKin
 
 /// <summary>The notes of one meeting, section by section.</summary>
 public sealed record StructuredNotesDoc(
-    string TemplateId,
+    [property: System.Text.Json.Serialization.JsonPropertyName("templateID")] string TemplateId,
     string TemplateName,
     string Language,
     string Title,

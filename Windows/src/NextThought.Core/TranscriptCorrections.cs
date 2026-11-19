@@ -18,6 +18,7 @@ public sealed record TranscriptCorrection
     /// <summary>Index of the line in the session transcript.</summary>
     public int Line { get; init; }
     /// <summary>Stable anchor added after the original index-based format.</summary>
+    [JsonPropertyName("lineID")]
     public Guid? LineId { get; init; }
     /// <summary>Source-text fingerprint the correction was reviewed against.</summary>
     public string? BaseRevision { get; init; }

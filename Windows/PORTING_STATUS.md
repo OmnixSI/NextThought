@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 更正 lineID / templateID · 0.5.59
+
+- `TranscriptCorrection.lineID`、`StructuredNotesDoc.templateID` 改为 Mac 键名；
+  新增两个 JSON 往返测试。Core 829。
+- **0.5.59 实测**：Core 829 + 基线 106；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 109.2 MiB、私有 43.0 MiB。
+
 # P0 证据包 requestID · 0.5.58
+
 
 - `EvidenceBundle` 的请求 ID 改为 Mac 的 `requestID`（此前是 `requestId`）。
 - 新增 JSON 往返测试；Core 827。
