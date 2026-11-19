@@ -1,6 +1,7 @@
 using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 namespace NextThought.Desktop.Views;
 
@@ -20,6 +21,31 @@ public partial class SettingsView : UserControl
         if (DataContext is not AppState state) return;
         await state.Settings.RefreshDevicesAsync();
         state.SetStatus("声音设备已刷新。");
+    }
+
+    private async void ImportSkill_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) return;
+        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "导入技能（Markdown）",
+            AllowMultiple = true,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Markdown") { Patterns = ["*.md", "*.markdown", "*.txt"] }
+            ]
+        });
+        var imported = new List<NextThought.Core.Skill>();
+        foreach (var file in files)
+        {
+            var path = file.TryGetLocalPath();
+            if (path is null) continue;
+            try { imported.Add(NextThought.Core.Skill.Parse(await File.ReadAllTextAsync(path), Path.GetFileName(path))); }
+            catch (IOException) { }
+        }
+        if (imported.Count > 0) state.AddSkills(imported);
+        else state.SetStatus("没有可导入的技能文件。");
     }
 
     private async void CopyCompanion_Click(object? sender, RoutedEventArgs e)

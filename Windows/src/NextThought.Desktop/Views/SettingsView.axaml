@@ -81,6 +81,7 @@
                    PlaceholderText="## 简洁回答&#10;摘要：先说结论&#10;回答不超过三句话，先给结论再给理由。" />
           <StackPanel Orientation="Horizontal" Spacing="10">
             <Button Content="保存技能" Command="{Binding SaveSkillsCommand}" />
+            <Button Content="导入 .md…" Click="ImportSkill_Click" />
             <TextBlock Text="{Binding SkillsStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
           </StackPanel>
         </StackPanel>

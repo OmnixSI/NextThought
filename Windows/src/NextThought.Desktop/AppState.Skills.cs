@@ -23,6 +23,25 @@ public partial class AppState
         SkillsStatus = skills.Count == 0 ? "尚未加载技能。" : $"{skills.Count} 个技能；回答时按需遵守。";
     }
 
+    /// <summary>Adds imported .md skills, replacing a skill with the same name.</summary>
+    public void AddSkills(IEnumerable<Skill> imported)
+    {
+        var merged = skills.ToList();
+        foreach (var skill in imported)
+        {
+            var index = merged.FindIndex(item => item.Name.Equals(skill.Name, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0) merged[index] = skill with { Id = merged[index].Id };
+            else merged.Add(skill);
+        }
+        skillStore ??= new SkillStore(Paths.Root);
+        skillStore.Save(merged);
+        skills = merged;
+        SkillsText = SkillStore.ToText(merged);
+        SkillCount = merged.Count;
+        SkillsStatus = $"已导入，共 {merged.Count} 个技能。";
+        SetStatus(SkillsStatus);
+    }
+
     [RelayCommand]
     private void SaveSkills()
     {
