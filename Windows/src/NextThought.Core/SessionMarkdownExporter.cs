@@ -12,6 +12,9 @@ public sealed record SessionQuestionEvent
     public string Intent { get; init; } = "";
     public double Score { get; init; }
     public string? Disposition { get; init; }
+
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
 }
 
 /// <summary>

@@ -97,6 +97,20 @@ public sealed class SessionRecordTests
     }
 
     [Fact]
+    public void QuestionEventKeepsUnknownMacFields()
+    {
+        const string json = """
+            {"id":"11111111-1111-1111-1111-111111111111","date":"2026-01-01T00:00:00Z","text":"为什么？",
+             "intent":"clarify","score":0.8,"disposition":"auto","futureQuestion":"x"}
+            """;
+        var question = System.Text.Json.JsonSerializer.Deserialize<SessionQuestionEvent>(json, NextThought.Core.JsonDefaults.Options)!;
+        Assert.Equal("clarify", question.Intent);
+        var saved = System.Text.Json.JsonSerializer.Serialize(question, NextThought.Core.JsonDefaults.Options);
+        Assert.Contains("\"futureQuestion\"", saved);
+        Assert.Contains("\"disposition\"", saved);
+    }
+
+    [Fact]
     public void AnswerRecordKeepsMacExtras()
     {
         const string json = """

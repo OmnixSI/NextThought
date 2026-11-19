@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 问题事件保留未知 Mac 字段 · 0.5.75
+
+- `SessionQuestionEvent` 加 `JsonExtensionData`，Mac 问题事件的未建模字段在导入/导出后保留。
+- 新增 JSON 往返测试；Core 838。
+- **0.5.75 实测**：Core 838 + 基线 108；验收 61/61、门禁 17/17；启动 1.22 秒、
+  工作集 108.7 MiB、私有 42.2 MiB。
+
 # P1 本机中转协议集成测试 · 0.5.74
+
 
 - 新增 `CompanionRelayIntegrationTests`：本机 HttpListener 提供 `/rooms` 与 WebSocket `/socket`，
   验证客户端的加入、状态帧上传和加密命令下发（`previous` 回调触发）。
