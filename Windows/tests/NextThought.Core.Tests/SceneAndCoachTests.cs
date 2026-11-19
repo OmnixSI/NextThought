@@ -36,6 +36,17 @@ public sealed class SceneAndCoachTests
     }
 
     [Fact]
+    public void CueSplitHeadIgnoresTimesUrlsAndLongClauses()
+    {
+        Assert.Equal("", CueScript.SplitHead("会议 10:30 开始").Head);
+        Assert.Equal("", CueScript.SplitHead("见 https://example.com").Head);
+        Assert.Equal("", CueScript.SplitHead("这是一个超过十四个字的很长很长的前半句：后半句").Head);
+        var (head, tail) = CueScript.SplitHead("**Cache Aside**：先写库");
+        Assert.Equal("Cache Aside", head);
+        Assert.Equal("先写库", tail);
+    }
+
+    [Fact]
     public void KeyPointsLinesPullHeadsAndBullets()
     {
         var answer = """
