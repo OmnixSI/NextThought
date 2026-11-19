@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 云端识别实时化 · 0.5.125
+
+- `CloudSttSession`：录音中的系统音频帧实时发到云端（16k→24k 为重采样 OpenAI），
+  更新映射成 `TranscriptUpdate` 进入现有归档/翻译/说话人管线；本机识别器在云端模式不启动。
+- `--cloud-settings`/`--cloud-import` 仍通过；新增本机实时 WebSocket 测试（基线 111）。
+- **仍未验证真实 Soniox/OpenAI/Deepgram 服务**（无 Key）。
+- **0.5.125 实测**：Core 863 + 基线 111；验收 63/63、门禁 17/17；环境负载下启动
+  5.15 秒、工作集 124.3 MiB、私有 56.2 MiB。
+
 # P1 云端识别接入 · 0.5.124
+
 
 - 设置页「云端识别（实验）」：Soniox / OpenAI / Deepgram、模型、语言、API Key（DPAPI
   存 `Credentials/cloud-stt.dpapi`，不进备份）。

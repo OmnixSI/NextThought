@@ -40,6 +40,7 @@ public partial class AppState : ObservableObject
     private bool sawSpeech;
     private DateTimeOffset? lastSpeechEnd;
     private LiveSpeechEngine? engine;
+    private CloudSttSession? cloudStt;
     private MeetingVoiceTagger? voiceTagger;
     private MeetingTranslator? translator;
     // 逐字同传：每一路只保留最新一版译文，过期结果不覆盖当前句子（LiveTranslationCoordinator）。
@@ -876,14 +877,60 @@ public partial class AppState : ObservableObject
             if (settings.SeparateSpeakers) voiceTagger = await Task.Run(() => new MeetingVoiceTagger(Paths, settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone));
             if (settings.TranslateSpeech) translator = new(CurrentClient(), AnswerOptions());
             BeginLiveTranslation();
-            engine = await Task.Run(() => new LiveSpeechEngine(Models, settings, RecognitionHotwords()));
-            if (closing) throw new OperationCanceledException("程序正在退出，已取消开始记录。");
-            engine.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, true); });
-            engine.Failed += message => Dispatcher.UIThread.Post(() => HandleAudioFailure(message));
-            engine.Warning += message => Dispatcher.UIThread.Post(() => SetStatus(message, true));
-            var ownedEngine = engine;
+            LiveSpeechEngine? ownedEngine = null;
+            if (settings.CloudStt.Length == 0)
+            {
+                engine = await Task.Run(() => new LiveSpeechEngine(Models, settings, RecognitionHotwords()));
+                if (closing) throw new OperationCanceledException("程序正在退出，已取消开始记录。");
+                engine.Updated += update => Dispatcher.UIThread.Post(() => { if (generation == epoch) ReceiveTranscript(meta, update, true); });
+                engine.Failed += message => Dispatcher.UIThread.Post(() => HandleAudioFailure(message));
+                engine.Warning += message => Dispatcher.UIThread.Post(() => SetStatus(message, true));
+                ownedEngine = engine;
+            }
+            else
+            {
+                try
+                {
+                    var cloudProvider = settings.CloudStt switch
+                    {
+                        "soniox" => CloudSTTProvider.Soniox,
+                        "openai" => CloudSTTProvider.OpenAI,
+                        "deepgram" => CloudSTTProvider.Deepgram,
+                        _ => throw new InvalidOperationException("未知的云端识别服务。")
+                    };
+                    var endpoint = string.IsNullOrWhiteSpace(settings.CloudSttEndpoint) ? null : new Uri(settings.CloudSttEndpoint);
+                    cloudStt = await CloudSttSession.StartAsync(cloudProvider, SettingsStore.ReadCloudSttKey(),
+                        settings.CloudSttModel, settings.CloudSttLanguage, RecognitionHotwords(), endpoint);
+                    cloudStt.Updated += update => Dispatcher.UIThread.Post(() =>
+                    {
+                        if (generation != epoch) return;
+                        var start = meta.StartedAt.AddMilliseconds(Math.Max(0, update.StartMs ?? 0));
+                        var end = meta.StartedAt.AddMilliseconds(Math.Max(0, update.EndMs ?? ((update.StartMs ?? 0) + 500)));
+                        ReceiveTranscript(meta, new TranscriptUpdate(Guid.NewGuid(), AudioSource.System, update.Text,
+                            update.IsFinal, start, end), true);
+                    });
+                    cloudStt.Failed += message => Dispatcher.UIThread.Post(() =>
+                    {
+                        SetStatus("云端识别：" + message, true);
+                        cloudStt = null;
+                    });
+                    SetStatus("云端识别已连接；转写发送到所选服务。");
+                }
+                catch (Exception cloudError)
+                {
+                    cloudStt = null;
+                    SetStatus("云端识别启动失败：" + cloudError.Message, true);
+                }
+            }
+
             capture = new AudioCaptureService();
-            capture.FrameReady += frame => { voiceTagger?.Add(frame); ownedEngine.Accept(frame); };
+            capture.FrameReady += frame =>
+            {
+                voiceTagger?.Add(frame);
+                ownedEngine?.Accept(frame);
+                if (frame.Source == AudioSource.System && !ListeningPaused && cloudStt is { } cloud)
+                    _ = cloud.SendAsync(frame.Samples);
+            };
             capture.Failed += message => Dispatcher.UIThread.Post(() => HandleAudioFailure(message));
             capture.LevelChanged += (source, level) => Dispatcher.UIThread.Post(() =>
             {
@@ -903,6 +950,7 @@ public partial class AppState : ObservableObject
         catch (Exception ex)
         {
             if (capture != null) { await capture.DisposeAsync(); capture = null; }
+            if (cloudStt != null) { await cloudStt.DisposeAsync(); cloudStt = null; }
             if (engine != null) { await engine.DisposeAsync(); engine = null; }
             voiceTagger?.Dispose(); voiceTagger = null;
             translator?.Dispose(); translator = null;
@@ -918,7 +966,7 @@ public partial class AppState : ObservableObject
         }
     }
 
-    private bool CanStart() => IsIdle && !Answering && ModelReady;
+    private bool CanStart() => IsIdle && !Answering && (ModelReady || Settings.SelectedCloudStt is { Value.Length: > 0 });
 
     [RelayCommand(CanExecute = nameof(CanStop))]
     private Task StopRecordingAsync() => StopRecordingCoreAsync();
@@ -936,6 +984,7 @@ public partial class AppState : ObservableObject
         try
         {
             if (capture != null) { await capture.DisposeAsync(); capture = null; }
+            if (cloudStt != null) { await cloudStt.DisposeAsync(); cloudStt = null; }
             if (engine != null) { await engine.DisposeAsync(); engine = null; }
             await Task.Delay(30);
             translator?.Cancel();
