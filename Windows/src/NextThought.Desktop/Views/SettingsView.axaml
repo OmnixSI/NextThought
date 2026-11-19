@@ -70,6 +70,16 @@
         </StackPanel>
       </Border>
 
+      <!-- Custom notes templates: imported Mac note-templates.json. -->
+      <Border Classes="card" Padding="22">
+        <StackPanel Spacing="12">
+          <TextBlock Text="自定义纪要模板" Classes="section" />
+          <TextBlock Text="导入 Mac 的 note-templates.json（模板数组）后，会在纪要页的模板下拉框出现；原有内置模板不变。"
+                     Classes="caption" FontSize="11" />
+          <Button Content="导入模板 .json…" Click="ImportTemplate_Click" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
       <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
       <Border Classes="card" Padding="22">
         <StackPanel Spacing="12">

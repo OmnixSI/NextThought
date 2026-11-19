@@ -551,6 +551,7 @@ public partial class AppState : ObservableObject
             LoadWorkspace();
             LoadGlossary();
             LoadSkills();
+            LoadCustomTemplates();
             Mark("history");
             LatchCompanionCommandState();
             initialized = true;

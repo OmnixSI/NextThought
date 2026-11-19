@@ -125,4 +125,26 @@ public sealed class NotesTemplateTests
         var inPerson = NotesPrompt.OrganizeSystem(NotesTemplate.BuiltIn(NotesTemplateKind.Work), inPerson: true);
         Assert.Contains("线下会议", inPerson);
     }
+
+
+    [Fact]
+    public void CustomTemplateStoreRoundTrips()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "nt-template-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var template = new NotesTemplate("custom-client", "客户会", [
+                new NotesSectionSpec("decisions", "决定", "只写已经拍板的事。"),
+                new NotesSectionSpec("actions", "待办", "写清负责人和日期。", NotesSectionKind.Actions, Carry: NotesCarry.Lesson)
+            ]);
+            var store = new NotesTemplateStore(directory);
+            store.Save([template]);
+            var loaded = Assert.Single(store.Load());
+            Assert.Equal("客户会", loaded.Name);
+            Assert.Equal(2, loaded.Sections.Count);
+            Assert.Equal(NotesCarry.Lesson, loaded.Sections[1].Carry);
+            Assert.False(loaded.IsBuiltIn);
+        }
+        finally { try { Directory.Delete(directory, true); } catch { } }
+    }
 }

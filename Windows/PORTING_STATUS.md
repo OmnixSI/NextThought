@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 自定义纪要模板导入 · 0.5.24
+
+- 新增 `NotesTemplateStore`（Mac 兼容 `note-templates.json`）；设置页可导入模板数组。
+- 模板选择从枚举改为 `NotesTemplateChoice` 集合：内置模板 + 自定义模板；生成纪要时使用所选模板对象。
+- **测试**：`CustomTemplateStoreRoundTrips`；Core 794。
+- **0.5.24 实测**：Core 794 + 基线 99；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.9 MiB、私有 42.7 MiB。
+- 仍未完成：可视化模板编辑器、幻灯片快捷键、技能按系列附着、双向实机验收。
+
 # P1 提示岛自动显隐与 S0 探针 · 0.5.23
+
 
 - 开始记录自动显示提示岛，停止隐藏；回答/问题变化时重新显示（`UpdateCueIslandForMeeting`）。
 - `--capture-hide-check` 扩展为 S0 探针：录屏 affinity、`ShowActivated`、`Topmost`、屏幕内、可见。

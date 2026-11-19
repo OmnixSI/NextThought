@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
@@ -8,27 +9,42 @@ namespace NextThought.Desktop;
 public partial class AppState
 {
     [ObservableProperty] private NotesTemplateKind templateKind = NotesTemplateKind.General;
+    [ObservableProperty] private string selectedTemplateId = NotesTemplateKind.General.Raw();
     [ObservableProperty] private bool templating;
 
-    public IReadOnlyList<NotesTemplateChoice> TemplateChoices { get; } = BuildChoices();
+    private NotesTemplateStore? templateStore;
 
-    private static List<NotesTemplateChoice> BuildChoices() =>
-        NotesTemplateKinds.Selectable.Select(kind => new NotesTemplateChoice(kind, NotesTemplate.BuiltIn(kind).Name)).ToList();
+    public ObservableCollection<NotesTemplateChoice> TemplateChoices { get; } = BuildChoices();
+
+    private static ObservableCollection<NotesTemplateChoice> BuildChoices() =>
+        new(NotesTemplateKinds.Selectable.Select(kind => new NotesTemplateChoice(NotesTemplate.BuiltIn(kind), kind)));
 
     public NotesTemplateChoice? SelectedTemplate
     {
-        get => TemplateChoices.FirstOrDefault(choice => choice.Kind == TemplateKind);
-        set { if (value is not null) TemplateKind = value.Kind; }
+        get => TemplateChoices.FirstOrDefault(choice => choice.Template.Id == SelectedTemplateId);
+        set
+        {
+            if (value is null) return;
+            SelectedTemplateId = value.Template.Id;
+            if (value.Kind is { } kind) TemplateKind = kind;
+        }
     }
 
-    partial void OnTemplateKindChanged(NotesTemplateKind value)
+    partial void OnSelectedTemplateIdChanged(string value)
     {
         OnPropertyChanged(nameof(SelectedTemplate));
         OnPropertyChanged(nameof(TemplateIsDefault));
     }
 
+    partial void OnTemplateKindChanged(NotesTemplateKind value)
+    {
+        SelectedTemplateId = value.Raw();
+        OnPropertyChanged(nameof(TemplateIsDefault));
+    }
+
     /// <summary>True when the selected template is the one this scene recommends.</summary>
-    public bool TemplateIsDefault => TemplateKind == MeetingTypeDefaults.TemplateFor(SelectedMode);
+    public bool TemplateIsDefault =>
+        SelectedTemplate?.Kind is { } kind && kind == MeetingTypeDefaults.TemplateFor(SelectedMode);
 
     /// <summary>The scene decides the template until the user picks another one.</summary>
     private void ApplyDefaultTemplate()
@@ -39,6 +55,28 @@ public partial class AppState
     [RelayCommand]
     private void ResetTemplate() => TemplateKind = MeetingTypeDefaults.TemplateFor(SelectedMode);
 
+    private void LoadCustomTemplates()
+    {
+        templateStore = new NotesTemplateStore(Paths.Root);
+        foreach (var template in templateStore.Load())
+            if (TemplateChoices.All(choice => choice.Template.Id != template.Id))
+                TemplateChoices.Add(new NotesTemplateChoice(template, null));
+    }
+
+    /// <summary>Adds imported custom templates (same id replaces) and persists them.</summary>
+    public void AddTemplates(IEnumerable<NotesTemplate> templates)
+    {
+        templateStore ??= new NotesTemplateStore(Paths.Root);
+        foreach (var template in templates)
+        {
+            var existing = TemplateChoices.FirstOrDefault(choice => choice.Template.Id == template.Id);
+            if (existing is not null) TemplateChoices.Remove(existing);
+            TemplateChoices.Add(new NotesTemplateChoice(template, null));
+        }
+        templateStore.Save(TemplateChoices.Where(choice => choice.Kind is null).Select(choice => choice.Template).ToList());
+        SetStatus($"已导入模板，共 {TemplateChoices.Count(choice => choice.Kind is null)} 个自定义模板。");
+    }
+
     [RelayCommand(CanExecute = nameof(CanTemplate))]
     private async Task SummarizeWithTemplateAsync()
     {
@@ -47,7 +85,7 @@ public partial class AppState
         var generation = ++requestEpoch;
         var cancellation = new CancellationTokenSource();
         requestCancellation = cancellation;
-        var template = NotesTemplate.BuiltIn(TemplateKind);
+        var template = SelectedTemplate?.Template ?? NotesTemplate.BuiltIn(TemplateKind);
         Answering = Templating = true;
         ProgressIndeterminate = true;
         Section = AppSection.Notes;
@@ -112,7 +150,8 @@ public partial class AppState
     private bool CanTemplate() => IsIdle && !Answering && CurrentSession is not null && currentLines.Count > 0;
 }
 
-public sealed record NotesTemplateChoice(NotesTemplateKind Kind, string Title)
+public sealed record NotesTemplateChoice(NotesTemplate Template, NotesTemplateKind? Kind)
 {
+    public string Title => Template.Name;
     public override string ToString() => Title;
 }

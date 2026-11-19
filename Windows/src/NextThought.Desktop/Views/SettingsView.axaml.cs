@@ -23,6 +23,28 @@ public partial class SettingsView : UserControl
         state.SetStatus("声音设备已刷新。");
     }
 
+    private async void ImportTemplate_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) return;
+        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "导入纪要模板",
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+        });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (path is null) return;
+        try
+        {
+            var templates = System.Text.Json.JsonSerializer.Deserialize<List<NextThought.Core.NotesTemplate>>(
+                await File.ReadAllTextAsync(path), NextThought.Core.NotesTemplateStore.Options) ?? [];
+            if (templates.Count == 0) { state.SetStatus("模板文件里没有可用模板。", true); return; }
+            state.AddTemplates(templates);
+        }
+        catch (System.Text.Json.JsonException ex) { state.SetStatus("模板文件格式无效：" + ex.Message, true); }
+    }
+
     private async void ImportSkill_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AppState state) return;
