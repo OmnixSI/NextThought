@@ -94,7 +94,23 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string cloudSttModel = "";
     [ObservableProperty] private string cloudSttKey = "";
     [ObservableProperty] private string cloudSttEndpointValue = "";
+    [ObservableProperty] private string cloudSttKeyStatus = "";
     [ObservableProperty] private CloudLanguageChoice? selectedCloudLanguage;
+
+    partial void OnCloudSttKeyChanged(string value) =>
+        CloudSttKeyStatus = value.Length == 0 ? NextThought.Core.UiText.T("未填写") : NextThought.Core.UiText.T("已加密保存");
+
+    partial void OnSelectedCloudSttChanged(CloudSttChoice? value)
+    {
+        if (CloudSttModel.Length > 0) return;
+        CloudSttModel = value?.Value switch
+        {
+            "soniox" => "stt-rt-v5",
+            "openai" => "gpt-live-transcribe",
+            "deepgram" => "nova-3",
+            _ => ""
+        };
+    }
 
     public IReadOnlyList<AppearanceOption> AppearanceChoices { get; } =
     [
@@ -198,6 +214,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CloudSttModel = settings.CloudSttModel;
         SelectedCloudLanguage = CloudSttLanguages.FirstOrDefault(choice => choice.Value == settings.CloudSttLanguage) ?? CloudSttLanguages[0];
         CloudSttKey = state.SettingsStore.ReadCloudSttKey();
+        CloudSttKeyStatus = CloudSttKey.Length == 0 ? UiText.T("未填写") : UiText.T("已加密保存");
         CloudSttEndpointValue = settings.CloudSttEndpoint;
         BaseUrl = settings.BaseUrl;
         Model = settings.Model;

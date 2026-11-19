@@ -99,6 +99,7 @@
           <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
                     Width="240" HorizontalAlignment="Left" />
           <TextBox Text="{Binding Settings.CloudSttKey}" PasswordChar="•" PlaceholderText="云服务 API Key" />
+          <TextBlock Text="{Binding Settings.CloudSttKeyStatus}" Classes="caption" FontSize="11" />
           <TextBox Text="{Binding Settings.CloudSttModel}" PlaceholderText="模型（留空用默认）" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttLanguages}" SelectedItem="{Binding Settings.SelectedCloudLanguage}"
                     Width="160" HorizontalAlignment="Left" />
