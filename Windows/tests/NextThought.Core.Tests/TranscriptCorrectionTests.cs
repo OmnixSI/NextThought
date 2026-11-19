@@ -36,6 +36,15 @@ public sealed class TranscriptCorrectionTests
     }
 
     [Fact]
+    public void FingerprintMatchesTheMacDigest()
+    {
+        var id = Guid.Parse("11111111-2222-3333-3333-444444444444");
+        Assert.Equal("6559b94efabfda1e22db55c54b1579fb9e65ee9c8d7587c18df34272186d5cc3",
+            TranscriptRevisions.Of(id, "缓存"));
+        Assert.Equal(64, TranscriptRevisions.Of(id, "缓存").Length);
+    }
+
+    [Fact]
     public void ValidAnchorsByIdThenIndexThenSingleMatch()
     {
         var first = Line("用库伯奈提斯部署");

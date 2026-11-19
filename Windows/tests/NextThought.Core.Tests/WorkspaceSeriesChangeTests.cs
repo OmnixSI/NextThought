@@ -53,6 +53,18 @@ public sealed class WorkspaceSeriesChangeTests
     }
 
     [Fact]
+    public void ReceiptJsonUsesTheMacKeysAndDecisionNames()
+    {
+        var receipt = new WorkspaceSeriesChangeReceipt(Guid.Parse("11111111-2222-3333-3333-444444444444"),
+            "c1", WorkspaceSeriesChangeDecision.Rejected, DateTimeOffset.UnixEpoch, null);
+        var json = System.Text.Json.JsonSerializer.Serialize(receipt, JsonDefaults.ArchiveOptions);
+        Assert.Contains("\"operationID\"", json);
+        Assert.Contains("\"candidateID\"", json);
+        Assert.Contains("\"reject\"", json);
+        Assert.DoesNotContain("\"accepted\"", json);
+    }
+
+    [Fact]
     public void RejectedCandidatesLeaveTheSeriesUnchangedButRecordTheDecision()
     {
         var series = Series(Candidate());

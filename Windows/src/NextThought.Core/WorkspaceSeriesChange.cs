@@ -2,15 +2,20 @@ namespace NextThought.Core;
 
 public enum WorkspaceSeriesChangeDecision
 {
+    [System.Text.Json.Serialization.JsonStringEnumMemberName("add")]
     Accepted,
+    [System.Text.Json.Serialization.JsonStringEnumMemberName("reject")]
     Rejected
 }
 
 public sealed record WorkspaceSeriesChangeReviewDetails(string? Owner = null, string? Due = null);
 
 public sealed record WorkspaceSeriesChangeReceipt(
-    Guid OperationId, string CandidateId, WorkspaceSeriesChangeDecision Decision,
-    DateTimeOffset ReviewedAt, string? ResultItemId);
+    [property: System.Text.Json.Serialization.JsonPropertyName("operationID")] Guid OperationId,
+    [property: System.Text.Json.Serialization.JsonPropertyName("candidateID")] string CandidateId,
+    WorkspaceSeriesChangeDecision Decision,
+    DateTimeOffset ReviewedAt,
+    [property: System.Text.Json.Serialization.JsonPropertyName("resultItemID")] string? ResultItemId);
 
 /// <summary>
 /// A reviewed-evidence proposal stays separate from active series state until accepted

@@ -29,7 +29,19 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 Mac 指纹与 JSON 对齐 · 0.5.5
+
+- **转写指纹**：`TranscriptRevisions.Of` 改为大写 UUID/文本 + 8 字节大端长度 + 完整 SHA-256（64 位十六进制）。
+- **经验修订号**：`DigestUuid` 不再用 `new Guid(bytes)` 重排字节，直接按 Swift 的 16 字节顺序格式化。
+- **回执键名**：`operationID` / `candidateID` / `resultItemID`；decision 写 `add`/`reject`。
+- **JSON 编码**：档案 JSON 使用 UTF-8 原字符，不再把所有中文转成 `\uXXXX`。
+- **测试**：指纹固定向量、经验修订号固定向量、中文原样输出、回执键名/decision，Core 787。
+- **0.5.5 实测**：Core 787 + 基线 90；验收 61/61、门禁 17/17；启动 1.13 秒、
+  工作集 109.5 MiB、私有 43.8 MiB。
+- 仍未完成：`replace` 决策语义、Workspace/summary/context 完整字段、技能/模板、Mac 备份双向恢复。
+
 # P0 结构化纪要/问题/上下文 · 0.5.4
+
 
 - **structured**：模板纪要同时写入 `summary.json → structured`（format/payload/markdown/generatedAt），
   加载时优先读该字段，旧 `structured-*.json/md` 保留兼容。

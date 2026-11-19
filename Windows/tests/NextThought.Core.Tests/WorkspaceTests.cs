@@ -1,4 +1,4 @@
-﻿using NextThought.Core;
+using NextThought.Core;
 using Xunit;
 
 namespace NextThought.Core.Tests;
@@ -83,6 +83,21 @@ public sealed class WorkspaceTests : IDisposable
         Assert.Empty(store.Load().Series);
         _ = data;
         _ = id;
+    }
+
+    [Fact]
+    public void LessonRevisionIdUsesTheMacByteOrder()
+    {
+        var lesson = new WorkspaceLesson { Id = "lesson-1", Text = "经验", Revision = 1, UpdatedAt = DateTimeOffset.UnixEpoch };
+        Assert.Equal("b32341f9-421d-583f-9842-8766e74cf164", WorkspaceLessonHistory.CurrentRevision(lesson).Id);
+    }
+
+    [Fact]
+    public void ArchiveJsonKeepsChineseReadable()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(new { text = "中文" }, JsonDefaults.ArchiveOptions);
+        Assert.Contains("中文", json);
+        Assert.DoesNotContain("\\u4e2d", json);
     }
 
     [Fact]

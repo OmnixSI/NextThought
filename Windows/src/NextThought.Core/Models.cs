@@ -101,6 +101,8 @@ public static class JsonDefaults
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        // Mac archive JSON is UTF-8 text; escaping every Chinese character made files unreadable.
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
     };
     public static readonly JsonSerializerOptions ArchiveOptions = Archive();

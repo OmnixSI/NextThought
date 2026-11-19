@@ -33,8 +33,20 @@ public static class TranscriptRevisions
     /// <summary>A short fingerprint of one line, so a correction cannot land on changed text.</summary>
     public static string Of(Guid id, string text)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(id.ToString("D") + "\u0000" + text));
-        return Convert.ToHexString(bytes)[..16].ToLowerInvariant();
+        // Mac digest: uppercase UUID and text each prefixed by an 8-byte big-endian length,
+        // SHA-256, full 64-character lowercase hex.
+        static byte[] Component(string value)
+        {
+            var bytes = Encoding.UTF8.GetBytes(value);
+            var buffer = new byte[8 + bytes.Length];
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt64BigEndian(buffer, (ulong)bytes.Length);
+            bytes.CopyTo(buffer, 8);
+            return buffer;
+        }
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        hash.AppendData(Component(id.ToString("D").ToUpperInvariant()));
+        hash.AppendData(Component(text));
+        return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
     }
 }
 
