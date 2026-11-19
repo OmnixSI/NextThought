@@ -9,7 +9,9 @@ public enum AnswerStyle
 }
 
 public sealed record ContextExcerpt(
-    string Source, int Page, string Text, DocumentLocator? Locator = null, string? ChunkId = null, string? BlockId = null);
+    string Source, int Page, string Text, DocumentLocator? Locator = null,
+    [property: System.Text.Json.Serialization.JsonPropertyName("chunkID")] string? ChunkId = null,
+    [property: System.Text.Json.Serialization.JsonPropertyName("blockID")] string? BlockId = null);
 
 /// <summary>
 /// Small, deterministic, offline lexical index (port of SessionContextIndex). This is not

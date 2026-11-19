@@ -17,6 +17,21 @@ public sealed class AnswerEvidenceTests
     }
 
     [Fact]
+    public void ContextExcerptUsesTheMacChunkKeys()
+    {
+        var bundle = new EvidenceBundle(Guid.NewGuid())
+        {
+            Materials = [new ContextExcerpt("doc", 1, "正文", ChunkId: "chunk", BlockId: "block")]
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(bundle, JsonDefaults.Options);
+        Assert.Contains("\"chunkID\"", json);
+        Assert.Contains("\"blockID\"", json);
+        var back = System.Text.Json.JsonSerializer.Deserialize<EvidenceBundle>(json, JsonDefaults.Options)!;
+        Assert.Equal("chunk", back.Materials[0].ChunkId);
+        Assert.Equal("block", back.Materials[0].BlockId);
+    }
+
+    [Fact]
     public void SearchDecisionParsesTheOutermostJsonObject()
     {
         var decision = SearchDecision.Parse("""

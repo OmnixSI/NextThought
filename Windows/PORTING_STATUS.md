@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 摘录改为 Mac chunkID/blockID · 0.5.62
+
+- `ContextExcerpt` 的 `chunkID`/`blockID` 按 Mac 键名读写；证据包内的材料摘录不再丢锚点。
+- 新增证据包 JSON 往返测试；Core 832。
+- **0.5.62 实测**：Core 832 + 基线 106；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.9 MiB、私有 42.8 MiB。
+
 # P0 上下文文档保留 Mac content · 0.5.61
+
 
 - `ContextDocument` 增加 `Content`（`JsonElement?`），原样保存 Mac 的
   `DocumentContent`（pipeline/blocks），`context.json` 往返不再丢掉结构化正文。
