@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 提词器穿透控制条 · 0.5.42
+
+- 穿透开启时创建独立 `TeleprompterHandleWindow`（210×40，Topmost，不抢焦点），
+  提供「恢复点击」按钮；穿透关闭时隐藏。
+- 控制条跟随提词器位置移动，并从录屏中隐藏；关闭提词器时一并关闭。
+- `--teleprompter-handle-check` 安装版通过：`visible=true, restored=true`。
+- **0.5.42 实测**：Core 800 + 基线 104；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 108.7 MiB、私有 42.9 MiB。
+
 # P1 WholeMaterial 幻灯片标记 · 0.5.41
+
 
 - `AnswerPromptBuilder.WholeMaterialOf` 对 PPTX 块使用 Location 的「幻灯片 N」作为标记，
   PDF 仍用 `p.N`；移植 Mac `WholeMaterialTests` 的 deck/page 断言。

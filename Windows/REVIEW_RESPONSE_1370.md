@@ -31,6 +31,12 @@
   `onScreen=true`、`noTaskbar=true`、`hidden=true`、`reshown=true`、可见；0.5.40 安装版全部通过。
 - 仍未做：「穿透后仍能点按钮」的交互方案。
 
+## 提词器穿透控制（0.5.42 追加）
+
+- 穿透开启时显示一个独立的「提词器已穿透 / 恢复点击」小窗；点击即可退出穿透，
+  不再只能靠快捷键。
+- `--teleprompter-handle-check` 验证：穿透时控制条可见、恢复后隐藏；安装版通过。
+
 ## 幻灯片跟随（0.5.39 追加）
 
 - `--slide-follow-check` 改为只截取探针窗口（原来截全屏，主界面与桌面文字会淹没幻灯片）。
@@ -84,10 +90,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.41 实测
+## 0.5.42 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.21 秒，工作集 **108.6 MiB**、私有 42.9 MiB
+- 启动 1.18 秒，工作集 **108.7 MiB**、私有 42.9 MiB

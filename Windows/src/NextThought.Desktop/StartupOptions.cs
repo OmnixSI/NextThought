@@ -46,6 +46,7 @@ public static class StartupOptions
     public static string? CompanionCheck { get; private set; }
     public static string? CaptureHideCheck { get; private set; }
     public static string? AudioSwitchCheck { get; private set; }
+    public static string? TeleprompterHandleCheck { get; private set; }
     public static double? SettingsScroll { get; private set; }
     public static int? SeriesTab { get; private set; }
     public static bool Island { get; private set; }
@@ -130,6 +131,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--companion-check=", StringComparison.OrdinalIgnoreCase)) CompanionCheck = argument["--companion-check=".Length..];
             else if (argument.StartsWith("--capture-hide-check=", StringComparison.OrdinalIgnoreCase)) CaptureHideCheck = argument["--capture-hide-check=".Length..];
             else if (argument.StartsWith("--audio-switch-check=", StringComparison.OrdinalIgnoreCase)) AudioSwitchCheck = argument["--audio-switch-check=".Length..];
+            else if (argument.StartsWith("--teleprompter-handle-check=", StringComparison.OrdinalIgnoreCase)) TeleprompterHandleCheck = argument["--teleprompter-handle-check=".Length..];
             else if (argument.StartsWith("--settings-scroll=", StringComparison.OrdinalIgnoreCase)
                      && double.TryParse(argument["--settings-scroll=".Length..], out var scroll)) SettingsScroll = scroll;
             else if (argument.StartsWith("--series-tab=", StringComparison.OrdinalIgnoreCase)

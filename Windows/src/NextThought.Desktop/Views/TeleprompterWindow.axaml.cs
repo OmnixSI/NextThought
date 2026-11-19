@@ -22,6 +22,7 @@ public partial class TeleprompterWindow : Window
     private readonly WindowLayout geometry;
     private bool through;
     private bool dragBarHidden;
+    private TeleprompterHandleWindow? clickHandle;
 
     public TeleprompterWindow() : this(new AppState()) { }
 
@@ -42,12 +43,18 @@ public partial class TeleprompterWindow : Window
             WindowCaptureHiding.Hide(this);
             ApplyClickThrough(through);
         };
-        PositionChanged += (_, _) => Remember();
+        PositionChanged += (_, _) =>
+        {
+            Remember();
+            clickHandle?.PlaceNear(Position);
+        };
         Resized += (_, _) => Remember();
         Closed += (_, _) =>
         {
             through = false;
             ApplyClickThrough(false);
+            clickHandle?.Close();
+            clickHandle = null;
             Remember();
         };
         DragBar.DoubleTapped += (_, _) => ToggleControls();
@@ -137,7 +144,28 @@ public partial class TeleprompterWindow : Window
         style |= WsExLayered;
         style = enabled ? style | WsExTransparent : style & ~WsExTransparent;
         SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+        UpdateClickHandle(enabled);
     }
+
+    private void UpdateClickHandle(bool enabled)
+    {
+        if (!enabled)
+        {
+            clickHandle?.Hide();
+            return;
+        }
+        if (clickHandle is null)
+        {
+            clickHandle = new TeleprompterHandleWindow();
+            clickHandle.RestoreRequested += DisableClickThrough;
+            clickHandle.Show();
+        }
+        else if (!clickHandle.IsVisible) clickHandle.Show();
+        clickHandle.PlaceNear(Position);
+    }
+
+    /// <summary>QA: the separate control strip is visible while click-through is on.</summary>
+    public bool ClickThroughHandleVisible => clickHandle?.IsVisible == true;
 
     public bool ClickThrough => through;
 
