@@ -262,7 +262,8 @@ public sealed class SessionStore(AppPaths paths)
     public Task ExportPdfAsync(Guid id, string destination, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        PdfWriter.Write(BuildMarkdown(Load(id)), destination);
+        var data = Load(id);
+        PdfWriter.Write(BuildMarkdown(data), destination, data.Meta.Title);
         return Task.CompletedTask;
     }
 

@@ -12,12 +12,17 @@ public static class PdfWriter
     private const float PageHeight = 842f;
     private const float Margin = 56f;
 
-    public static void Write(string markdown, string path)
+    public static void Write(string markdown, string path, string? title = null)
     {
         var directory = Path.GetDirectoryName(Path.GetFullPath(path));
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         using var stream = File.Create(path);
-        using var document = SKDocument.CreatePdf(stream);
+        using var document = SKDocument.CreatePdf(stream, new SKDocumentPdfMetadata
+        {
+            Title = title ?? "NextThought meeting",
+            Creator = "NextThought",
+            Producer = "NextThought / SkiaSharp"
+        });
         using var regular = LoadCjkFont();
         using var bold = regular;
         using var paint = new SKPaint { IsAntialias = true, Color = SKColors.Black };
@@ -25,9 +30,19 @@ public static class PdfWriter
 
         var canvas = document.BeginPage(PageWidth, PageHeight);
         var y = Margin;
+        var pageNumber = 1;
+        void Footer()
+        {
+            font.Size = 8;
+            paint.Color = new SKColor(110, 110, 110);
+            canvas.DrawText(pageNumber.ToString(), PageWidth / 2, PageHeight - 20, SKTextAlign.Center, font, paint);
+            paint.Color = SKColors.Black;
+        }
         void NewPage()
         {
+            Footer();
             document.EndPage();
+            pageNumber++;
             canvas = document.BeginPage(PageWidth, PageHeight);
             y = Margin;
         }
@@ -66,6 +81,7 @@ public static class PdfWriter
             if (typeface == bold) y += 3;
         }
 
+        Footer();
         document.EndPage();
         document.Close();
     }
