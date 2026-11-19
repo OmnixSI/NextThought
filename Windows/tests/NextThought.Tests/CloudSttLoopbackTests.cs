@@ -107,7 +107,7 @@ public sealed class CloudSttLoopbackTests
                     var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Close) break;
                     var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    if (text.Contains("input_audio_buffer.append", StringComparison.Ordinal))
+                    if (text.Contains("input_audio_buffer.commit", StringComparison.Ordinal))
                     {
                         var final = """{"type":"conversation.item.input_audio_transcription.completed","item_id":"item1","transcript":"openai hello"}""";
                         await socket.SendAsync(Encoding.UTF8.GetBytes(final), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -149,7 +149,7 @@ public sealed class CloudSttLoopbackTests
                 {
                     var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
                     if (result.MessageType == WebSocketMessageType.Close) break;
-                    if (result.MessageType == WebSocketMessageType.Binary)
+                    if (result.MessageType == WebSocketMessageType.Text && Encoding.UTF8.GetString(buffer, 0, result.Count).Contains("CloseStream", StringComparison.Ordinal))
                     {
                         var final = """{"type":"Results","channel":{"alternatives":[{"transcript":"deepgram hello"}]},"is_final":true,"speech_final":true,"start":0,"duration":0.5}""";
                         await socket.SendAsync(Encoding.UTF8.GetBytes(final), WebSocketMessageType.Text, true, CancellationToken.None);
