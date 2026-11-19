@@ -5,7 +5,7 @@ namespace NextThought.Desktop;
 /// <summary>One entry of the slides-display picker (empty id = pick automatically).</summary>
 public sealed record ScreenChoice(string Id, string Name)
 {
-    public override string ToString() => Name;
+    public override string ToString() => UiText.T(Name);
 }
 
 /// <summary>

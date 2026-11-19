@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 屏选择本地化 · 0.5.114
+
+- `ScreenChoice.ToString` 走 `UiText.T`；「主屏（摄像头）」与「自动（第一块外接屏）」
+  在英文界面显示 Main display (camera) / Automatic (first external display)。
+- 词典 283 条；Core 863。
+- **0.5.114 实测**：Core 863 + 基线 109；验收 63/63、门禁 17/17；启动 2.83 秒、
+  工作集 109.5 MiB、私有 42.8 MiB。
+
 # P2 下拉选项本地化 · 0.5.113
+
 
 - `ModelChoice/EffortChoice/SceneChoice/AutoEndChoice` 的 `ToString` 走 `UiText.T`；
   模型、推理强度、自动收尾、屏选择列表在英文界面显示英文。
