@@ -845,6 +845,7 @@ public partial class AppState : ObservableObject
         try
         {
             await Settings.SaveAsync();
+            SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
             // Endpoints are enumerated lazily; make sure a saved device choice is applied.
             await Settings.RefreshDevicesAsync();
             var settings = Settings.Build();
@@ -923,12 +924,13 @@ public partial class AppState : ObservableObject
                 }
             }
 
+            var cloudSource = settings.CaptureSystem ? AudioSource.System : AudioSource.Microphone;
             capture = new AudioCaptureService();
             capture.FrameReady += frame =>
             {
                 voiceTagger?.Add(frame);
                 ownedEngine?.Accept(frame);
-                if (frame.Source == AudioSource.System && !ListeningPaused && cloudStt is { } cloud)
+                if (frame.Source == cloudSource && !ListeningPaused && cloudStt is { } cloud)
                     _ = cloud.SendAsync(frame.Samples);
             };
             capture.Failed += message => Dispatcher.UIThread.Post(() => HandleAudioFailure(message));
@@ -1718,6 +1720,7 @@ public partial class AppState : ObservableObject
         await RunWorkAsync(async ct =>
         {
             await Settings.SaveAsync();
+            SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
             await Settings.RefreshDevicesAsync();
             var settings = Settings.Build();
             CancelRequest();
