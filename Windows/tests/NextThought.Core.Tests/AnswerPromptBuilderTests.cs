@@ -75,6 +75,34 @@ public sealed class AnswerPromptBuilderTests
     }
 
     [Fact]
+    public void WholeMaterialKeepsSlideAndPageMarks()
+    {
+        var deck = new MaterialDocument
+        {
+            Name = "deck.pptx", Extension = ".pptx",
+            Blocks = [
+                new DocumentBlock("幻灯片 1", "Title", 1),
+                new DocumentBlock("幻灯片 1", "First point", 1),
+                new DocumentBlock("幻灯片 2", "Results", 2)
+            ]
+        };
+        Assert.Equal("【deck.pptx · 幻灯片 1】\nTitle\nFirst point\n\n【deck.pptx · 幻灯片 2】\nResults",
+            AnswerPromptBuilder.WholeMaterialOf([deck]));
+
+        var report = new MaterialDocument
+        {
+            Name = "report.pdf", Extension = ".pdf",
+            Blocks = [
+                new DocumentBlock("第 1 页", "Intro", 1),
+                new DocumentBlock("第 7 页", "Method", 7),
+                new DocumentBlock("第 7 页", "More method", 7)
+            ]
+        };
+        Assert.Equal("【report.pdf · p.7】\nMethod\nMore method",
+            AnswerPromptBuilder.WholeMaterialOf([report])!.Split("\n\n").Last());
+    }
+
+    [Fact]
     public void WholeMaterialGroupsPagesAndHonoursTheLimit()
     {
         var document = new MaterialDocument

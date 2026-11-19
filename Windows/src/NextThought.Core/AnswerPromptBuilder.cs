@@ -68,7 +68,10 @@ Next, I will run more seeds and more sites.
             }
             foreach (var block in document.Blocks)
             {
-                var place = block.Page is { } page ? "p." + page : null;
+                // PPTX blocks carry "幻灯片 N" in Location; use it instead of the generic p.N mark.
+                var place = block.Page is { } page
+                    ? (block.Location.StartsWith("幻灯片", StringComparison.Ordinal) ? block.Location : "p." + page)
+                    : null;
                 Add(block.Text, place is null ? document.Name : document.Name + " · " + place);
             }
             if (total > limit) return null;

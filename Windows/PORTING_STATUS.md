@@ -29,7 +29,16 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 WholeMaterial 幻灯片标记 · 0.5.41
+
+- `AnswerPromptBuilder.WholeMaterialOf` 对 PPTX 块使用 Location 的「幻灯片 N」作为标记，
+  PDF 仍用 `p.N`；移植 Mac `WholeMaterialTests` 的 deck/page 断言。
+- **0.5.41 实测**：Core 800 + 基线 104；验收 61/61、门禁 17/17；启动 1.21 秒、
+  工作集 108.6 MiB、私有 42.9 MiB。
+- 仍未完成：拖拽式模板编辑、真机/TLS、正式证书。
+
 # P1 提示岛 S0 八项验收 · 0.5.40
+
 
 - `--capture-hide-check` 扩到 8 项：录屏隐藏、不抢焦点、Topmost、屏幕内、无任务栏、
   可隐藏、可重新显示、可见；安装版全部通过。

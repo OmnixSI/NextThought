@@ -37,6 +37,8 @@
 - 探针显示「缓存一致性 读写时序 方案」，OCR 后 `SlideFollower` 匹配第 1 页；安装版
   `ocrChars=28, score=1, passed=true`。
 - 之前失败的原因是 Windows 防火墙提示窗盖住探针；测试前需关闭该系统提示。
+- 0.5.41 修正 `WholeMaterialOf`：PPTX 块按「幻灯片 N」标记，不再统一写成 `p.N`；
+  已移植 Mac `WholeMaterialTests` 的 deck/page 断言。
 
 ## 快捷键（0.5.12 追加）
 
@@ -82,10 +84,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.40 实测
+## 0.5.41 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.20 秒，工作集 **108.7 MiB**、私有 42.5 MiB
+- 启动 1.21 秒，工作集 **108.6 MiB**、私有 42.9 MiB
