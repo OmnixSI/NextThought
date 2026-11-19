@@ -29,7 +29,18 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 术语表 JSON 类型对齐 · 0.5.19
+
+- `GlossaryEntryConverter`：JSON 的 `kind` 只写 Mac 支持的 `term`/`person`；扩展类型写
+  `sourceKind`（product/project/…），Mac 解码忽略，Windows 读回仍保留类型。
+- 旧 Windows 文件里 `kind:"product"` 仍能读；文本四段格式保持 0.5.11 行为。
+- **测试**：`StoreWritesMacKindsAndKeepsExtendedKindsInSourceKind`；Core 792。
+- **0.5.19 实测**：Core 792 + 基线 98；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.7 MiB、私有 43.0 MiB。
+- 14 条审查项：**11 完整 / 3 部分（#9/#10/#14）/ 0 未修**。
+
 # P0 校对不改写原文 · 0.5.18
+
 
 - 校对不再调用 `RewriteTranscriptAsync`；更正写入 `user-content.json` 的 `correctionDecisions`，
   显示层用 `NotesCorrections.Apply` 投影，历史加载时应用。

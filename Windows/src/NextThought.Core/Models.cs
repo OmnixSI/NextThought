@@ -103,7 +103,7 @@ public static class JsonDefaults
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         // Mac archive JSON is UTF-8 text; escaping every Chinese character made files unreadable.
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
     };
     public static readonly JsonSerializerOptions ArchiveOptions = Archive();
     private static JsonSerializerOptions Archive()

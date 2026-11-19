@@ -135,6 +135,28 @@ public sealed class GlossaryTests
     }
 
     [Fact]
+    public void StoreWritesMacKindsAndKeepsExtendedKindsInSourceKind()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "nt-glossary-kind-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new GlossaryStore(directory);
+            store.Save(new Glossary([
+                new GlossaryEntry("Kubernetes", GlossaryKind.Product),
+                new GlossaryEntry("张三", GlossaryKind.Person)
+            ]));
+            var json = File.ReadAllText(store.FilePath);
+            Assert.Contains("\"kind\": \"term\"", json);
+            Assert.Contains("\"kind\": \"person\"", json);
+            Assert.Contains("\"sourceKind\": \"product\"", json);
+            var loaded = store.Load();
+            Assert.Equal(GlossaryKind.Product, loaded.Entries.Single(entry => entry.Canonical == "Kubernetes").Kind);
+            Assert.Equal(GlossaryKind.Person, loaded.Entries.Single(entry => entry.Canonical == "张三").Kind);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Fact]
     public void StoreRoundTripsAndRecoversFromDamage()
     {
         var directory = Path.Combine(Path.GetTempPath(), "nt-glossary-" + Guid.NewGuid().ToString("N"));

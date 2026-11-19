@@ -75,6 +75,42 @@ public sealed record GlossaryEntry
 }
 
 /// <summary>The user's table of names and terms ("术语和人名"). Ported from Glossary.swift.</summary>
+/// <summary>
+/// Mac's glossary only has term/person. Extended Windows kinds are written as term/person
+/// plus a sourceKind field Mac ignores, so the same file stays readable on both sides.
+/// </summary>
+public sealed class GlossaryEntryConverter : JsonConverter<GlossaryEntry>
+{
+    public override GlossaryEntry Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+    {
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        var canonical = root.TryGetProperty("canonical", out var canonicalElement) ? canonicalElement.GetString() ?? "" : "";
+        var rawKind = root.TryGetProperty("sourceKind", out var sourceKind) ? sourceKind.GetString()
+            : root.TryGetProperty("kind", out var kind) ? kind.GetString() : null;
+        var variants = root.TryGetProperty("variants", out var variantsElement) && variantsElement.ValueKind == JsonValueKind.Array
+            ? variantsElement.EnumerateArray().Select(item => item.GetString() ?? "").Where(item => item.Length > 0).ToList()
+            : [];
+        var note = root.TryGetProperty("note", out var noteElement) ? noteElement.GetString() : null;
+        var id = root.TryGetProperty("id", out var idElement) ? idElement.GetString() : null;
+        return new GlossaryEntry(canonical, GlossaryKinds.Parse(rawKind), variants, note, id);
+    }
+
+    public override void Write(Utf8JsonWriter writer, GlossaryEntry value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("id", value.Id);
+        writer.WriteString("canonical", value.Canonical);
+        writer.WriteString("kind", value.Kind == GlossaryKind.Person ? "person" : "term");
+        if (value.Kind is not (GlossaryKind.Term or GlossaryKind.Person)) writer.WriteString("sourceKind", value.Kind.Raw());
+        writer.WriteStartArray("variants");
+        foreach (var variant in value.Variants) writer.WriteStringValue(variant);
+        writer.WriteEndArray();
+        if (value.Note is { Length: > 0 } note) writer.WriteString("note", note);
+        writer.WriteEndObject();
+    }
+}
+
 public sealed record Glossary
 {
     public Glossary(IReadOnlyList<GlossaryEntry>? entries = null) => Entries = entries ?? [];
@@ -484,7 +520,7 @@ public sealed class GlossaryStore
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
     };
 
     private readonly string path;
