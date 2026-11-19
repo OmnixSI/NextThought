@@ -135,9 +135,11 @@ public partial class AppState
     public bool HasSeriesCandidates => SeriesCandidates.Count > 0;
     public bool HasSeriesBank => SeriesBank.Count > 0;
 
-    public string SeriesLessonsHeader => $"经验 {SeriesLessons.Count}";
-    public string SeriesCandidatesHeader => SeriesCandidates.Count > 0 ? $"待确认 {SeriesCandidates.Count}" : "待确认";
-    public string SeriesBankHeader => $"题库 {SeriesBank.Count}";
+    public string SeriesLessonsHeader => UiText.EnglishUi ? $"Lessons {SeriesLessons.Count}" : $"经验 {SeriesLessons.Count}";
+    public string SeriesCandidatesHeader => SeriesCandidates.Count > 0
+        ? (UiText.EnglishUi ? $"To confirm {SeriesCandidates.Count}" : $"待确认 {SeriesCandidates.Count}")
+        : UiText.T("待确认");
+    public string SeriesBankHeader => UiText.EnglishUi ? $"Question bank {SeriesBank.Count}" : $"题库 {SeriesBank.Count}";
 
     private void RefreshSeriesLessons()
     {

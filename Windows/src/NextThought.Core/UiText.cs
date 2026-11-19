@@ -304,6 +304,12 @@ public static class UiText
         ["保存后立即应用；跟随系统会随后台主题切换。"] = "Applied after saving; Follow system tracks the OS theme.",
         ["可以继续对这场会议提问。"] = "You can keep asking about this meeting.",
         ["这场会议还没有纪要，点击上方整理。"] = "This meeting has no notes yet; organize it above.",
+        ["开启局域网手机伴侣"] = "Start LAN phone companion",
+        ["关闭局域网手机伴侣"] = "Stop LAN phone companion",
+        ["通用"] = "General",
+        ["未导入 PPT"] = "No PPT imported",
+        ["待确认"] = "To confirm",
+        ["题库"] = "Question bank",
     };
 
     private static readonly Dictionary<string, string> Chinese = English

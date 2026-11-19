@@ -146,7 +146,7 @@ public partial class AppState : ObservableObject
     public ObservableCollection<SourceCitation> Sources { get; }
     public ObservableCollection<CompanionAddress> CompanionAddresses { get; } = [];
 
-    public string CompanionToggleLabel => CompanionRunning ? "关闭局域网手机伴侣" : "开启局域网手机伴侣";
+    public string CompanionToggleLabel => UiText.T(CompanionRunning ? "关闭局域网手机伴侣" : "开启局域网手机伴侣");
     public string HistorySummary => UiText.EnglishUi
         ? $"{FilteredHistory.Count} shown · {History.Count} total"
         : $"{FilteredHistory.Count} 场会议 · 共 {History.Count} 场";
@@ -398,7 +398,7 @@ public partial class AppState : ObservableObject
         set { if (value is not null) SelectedMode = value.Mode; }
     }
 
-    public string SceneTitle => SelectedScene?.Title ?? "通用";
+    public string SceneTitle => SelectedScene?.Title ?? UiText.T("通用");
 
     /// <summary>The cue surface layout this scene asks for (key points vs. a script).</summary>
     public CueStyle SceneCueStyle => ScenePreset.For(SelectedMode).CueStyle;
@@ -1399,8 +1399,10 @@ public partial class AppState : ObservableObject
     private int slideIndex = -1;
 
     public string SlideStatus => slides.Count == 0
-        ? "未导入 PPT"
-        : slideIndex < 0 ? $"{slides.Count} 页" : $"第 {slides[slideIndex].Number} 页 / {slides.Count}";
+        ? UiText.T("未导入 PPT")
+        : slideIndex < 0
+            ? UiText.EnglishUi ? $"{slides.Count} slides" : $"{slides.Count} 页"
+            : UiText.EnglishUi ? $"Slide {slides[slideIndex].Number} / {slides.Count}" : $"第 {slides[slideIndex].Number} 页 / {slides.Count}";
 
     private SlidePageInfo? CurrentSlide
     {
