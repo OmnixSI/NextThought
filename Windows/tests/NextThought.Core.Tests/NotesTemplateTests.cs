@@ -160,4 +160,24 @@ public sealed class NotesTemplateTests
         }
         finally { try { Directory.Delete(directory, true); } catch { } }
     }
+
+    [Fact]
+    public void EnglishBuiltInsMirrorTheChineseStructure()
+    {
+        foreach (var kind in Enum.GetValues<NotesTemplateKind>())
+        {
+            var chinese = NotesTemplate.BuiltIn(kind);
+            var english = NotesTemplate.BuiltIn(kind, english: true);
+            Assert.Equal(chinese.Sections.Select(section => section.Id), english.Sections.Select(section => section.Id));
+            Assert.Equal(chinese.Sections.Select(section => section.Kind), english.Sections.Select(section => section.Kind));
+            Assert.Equal(chinese.Sections.Select(section => section.Carry), english.Sections.Select(section => section.Carry));
+            Assert.All(english.Sections, section =>
+            {
+                Assert.DoesNotContain("。", section.Instruction);
+            });
+        }
+        Assert.Equal("Interview review", NotesTemplate.BuiltIn(NotesTemplateKind.Interview, english: true).Name);
+        Assert.Equal("Next round", NotesTemplate.BuiltIn(NotesTemplateKind.Interview, english: true).Sections[4].CarryPrefix);
+        Assert.Equal("To do", NotesTemplate.BuiltIn(NotesTemplateKind.Work, english: true).Sections[2].CarryPrefix);
+    }
 }

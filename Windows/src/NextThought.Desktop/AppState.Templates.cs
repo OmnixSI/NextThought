@@ -174,7 +174,6 @@ public partial class AppState
         var generation = ++requestEpoch;
         var cancellation = new CancellationTokenSource();
         requestCancellation = cancellation;
-        var template = SelectedTemplate?.Template ?? NotesTemplate.BuiltIn(TemplateKind);
         Answering = Templating = true;
         ProgressIndeterminate = true;
         Section = AppSection.Notes;
@@ -187,14 +186,18 @@ public partial class AppState
             const int maxCharacters = 12000;
             var truncated = transcript.Length > maxCharacters;
             if (truncated) transcript = transcript[..maxCharacters];
-            var header = $"# {meta.Title}\n\n会议时间：{meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 模板：{template.Name}";
+            var english = AnswerLanguage.Spoken(transcript) == "English";
+            var template = SelectedTemplate?.Template ?? NotesTemplate.BuiltIn(TemplateKind, english);
+            var header = english
+                ? $"# {meta.Title}\n\nMeeting: {meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · Template: {template.Name}"
+                : $"# {meta.Title}\n\n会议时间：{meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 模板：{template.Name}";
             var settings = Settings.Build();
-            var system = NotesPrompt.OrganizeSystem(template, english: false, inPerson: !settings.CaptureSystem);
+            var system = NotesPrompt.OrganizeSystem(template, english, inPerson: !settings.CaptureSystem);
             var user = NotesPrompt.OrganizeUser(header, transcript);
             SetStatus($"正在按「{template.Name}」整理…");
             var reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system, user, null, cancellation.Token, 240);
             if (generation != requestEpoch) return;
-            var doc = NotesJson.Parse(reply, template);
+            var doc = NotesJson.Parse(reply, template, english ? "en" : "zh");
             if (doc is null)
             {
                 SetStatus("这次回复不是可用的 JSON，可以重试；原来的纪要保持不变。", true);

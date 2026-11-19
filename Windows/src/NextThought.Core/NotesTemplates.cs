@@ -129,9 +129,10 @@ public sealed record NotesTemplate(string Id, string Name, IReadOnlyList<NotesSe
 {
     public bool IsBuiltIn => NotesTemplateKinds.Parse(Id).Raw() == Id;
 
-    /// <summary>The built-in templates of 02-scenarios-and-flows.md.</summary>
-    public static NotesTemplate BuiltIn(NotesTemplateKind kind)
+    /// <summary>The built-in templates of 02-scenarios-and-flows.md, in Chinese or English.</summary>
+    public static NotesTemplate BuiltIn(NotesTemplateKind kind, bool english = false)
     {
+        if (english) return EnglishBuiltIn(kind);
         NotesSectionSpec S(string id, string title, string instruction, NotesSectionKind notesKind = NotesSectionKind.Items,
             bool gap = false, NotesCarry carry = NotesCarry.None, string? prefix = null) =>
             new(id, title, instruction, notesKind, gap, carry, prefix);
@@ -204,6 +205,85 @@ public sealed record NotesTemplate(string Id, string Name, IReadOnlyList<NotesSe
                 S("decisions", "决定", "做出的决定。"),
                 S("actions", "待办", "每个待办：谁、做什么、什么时候。", NotesSectionKind.Actions),
                 S("open", "未决问题", "没有结论的问题。", gap: true)
+            ])
+        };
+    }
+
+    /// <summary>English counterparts of the built-in templates (Mac builtIn(_:english: true)).</summary>
+    private static NotesTemplate EnglishBuiltIn(NotesTemplateKind kind)
+    {
+        NotesSectionSpec S(string id, string title, string instruction, NotesSectionKind notesKind = NotesSectionKind.Items,
+            bool gap = false, NotesCarry carry = NotesCarry.None, string? prefix = null) =>
+            new(id, title, instruction, notesKind, gap, carry, prefix);
+        return kind switch
+        {
+            NotesTemplateKind.Interview => new NotesTemplate(kind.Raw(), "Interview review", [
+                S("impression", "In one line", "The overall impression of this interview, in one sentence.", NotesSectionKind.OneLine),
+                S("questions", "Question by question", "Every question they asked: the question, the gist of my answer, a verdict (good / to improve) and a better answer.", NotesSectionKind.Questions, carry: NotesCarry.Bank),
+                S("weak", "Where I fell short", "What I said poorly, vaguely or wrongly, quoting my words.", gap: true),
+                S("missed", "What I didn't mention", "Experience or skills from my résumé or the job description that I should have mentioned but didn't.", gap: true),
+                S("focus", "What they care about, and next round", "What they kept probing, and what the next round is likely to ask.", carry: NotesCarry.Lesson, prefix: "Next round"),
+                S("improve", "Next time", "Three concrete things to do better next time.", carry: NotesCarry.Lesson)
+            ]),
+            NotesTemplateKind.Academic => new NotesTemplate(kind.Raw(), "Lab meeting / Research discussion", [
+                S("summary", "In one line", "The outcome of the discussion, in one sentence.", NotesSectionKind.OneLine),
+                S("topics", "What was discussed", "The questions discussed, one line each."),
+                S("open", "Not settled yet", "Questions that were not settled: what evidence is missing, where it is stuck.", gap: true, carry: NotesCarry.Lesson, prefix: "Open"),
+                S("feedback", "Feedback and requests", "Comments and requests from the advisor, committee or audience."),
+                S("paper", "Next: the paper", "Which section of the paper to change and what to add.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "Next"),
+                S("experiments", "Next: experiments", "Experiments to run: what, against what, with which data.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "Next"),
+                S("reading", "Papers to look up", "Papers someone said to look up or read."),
+                S("deadlines", "Deadlines", "Deadlines mentioned and what they are for.", NotesSectionKind.Actions)
+            ]),
+            NotesTemplateKind.Talk => new NotesTemplate(kind.Raw(), "Talk / Defense", [
+                S("summary", "In one line", "How the talk or defense went and how it was received, in one sentence.", NotesSectionKind.OneLine),
+                S("questions", "Questions from the audience", "Every question from the audience or committee: the question, the gist of my answer, a verdict (good / to improve) and a better answer.", NotesSectionKind.Questions, carry: NotesCarry.Bank),
+                S("unclear", "Unclear or challenged", "Points that were unclear or challenged, and what was missing.", gap: true, carry: NotesCarry.Lesson, prefix: "To fix"),
+                S("revise", "What to change in the slides or paper", "Which slide or section of the paper to change, and how.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "Revise"),
+                S("followups", "Follow-ups promised and deadlines", "What I promised to add or follow up on, and the deadlines.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "Follow up")
+            ]),
+            NotesTemplateKind.Work => new NotesTemplate(kind.Raw(), "Work meeting", [
+                S("summary", "In one line", "What the meeting concluded, in one sentence.", NotesSectionKind.OneLine),
+                S("decisions", "Decisions", "Decisions that were made."),
+                S("actions", "Action items · who · when", "Each action item: who, what, and when it is due.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "To do"),
+                S("risks", "Risks and open questions", "What could go wrong, and questions left open.", gap: true, carry: NotesCarry.Lesson, prefix: "Open"),
+                S("next", "Next meeting", "When the next meeting is and what it should cover.")
+            ]),
+            NotesTemplateKind.Client => new NotesTemplate(kind.Raw(), "Client call", [
+                S("summary", "In one line", "The outcome of the call, in one sentence.", NotesSectionKind.OneLine),
+                S("needs", "Needs and pain points", "Needs and pain points the client mentioned."),
+                S("concerns", "Concerns and our replies", "The client's concerns and how we replied."),
+                S("promises", "What we promised, and when", "What we promised the client, and by when.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "Promised"),
+                S("next", "Next steps", "Next steps both sides agreed on.", NotesSectionKind.Actions),
+                S("internal", "Follow up internally", "Things to check or follow up with the team.", gap: true)
+            ]),
+            NotesTemplateKind.Lecture => new NotesTemplate(kind.Raw(), "Lecture / Class", [
+                S("outline", "Outline", "The main points in the order they were taught."),
+                S("concepts", "Key concepts", "Key concepts and what they mean."),
+                S("examples", "Examples", "Examples that were used."),
+                S("questions", "My questions", "What was unclear and needs asking or checking.", gap: true),
+                S("review", "To review", "What to review, and any assignments.")
+            ]),
+            NotesTemplateKind.GroupProject => new NotesTemplate(kind.Raw(), "Group project", [
+                S("summary", "In one line", "What this meeting settled, in one sentence.", NotesSectionKind.OneLine),
+                S("decisions", "What we decided", "The topic, approach or method everyone agreed on."),
+                S("tasks", "Who does what · by when", "Each task: who owns it, what is delivered, and when it is due.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "Task"),
+                S("mine", "My part", "The tasks I took on and what I promised others.", NotesSectionKind.Actions),
+                S("open", "Still open", "Disagreements, and questions for the teacher or TA.", gap: true, carry: NotesCarry.Lesson, prefix: "Open"),
+                S("next", "Next check-in", "When the group meets next and what each person finishes before then.")
+            ]),
+            NotesTemplateKind.Discussion => new NotesTemplate(kind.Raw(), "Group discussion", [
+                S("topic", "Topic", "The topic, in one sentence.", NotesSectionKind.OneLine),
+                S("views", "Viewpoints", "The viewpoint of each person or side."),
+                S("outcome", "Conclusions and disagreements", "What was agreed, and where people still disagree.", gap: true),
+                S("roles", "Who does what", "Who is responsible for what, and by when.", NotesSectionKind.Actions, carry: NotesCarry.Lesson, prefix: "Owner")
+            ]),
+            _ => new NotesTemplate(kind.Raw(), "General", [
+                S("summary", "In one line", "What came out of the meeting, in one sentence.", NotesSectionKind.OneLine),
+                S("points", "Key points", "The key points discussed."),
+                S("decisions", "Decisions", "Decisions that were made."),
+                S("actions", "Action items", "Each action item: who, what and when.", NotesSectionKind.Actions),
+                S("open", "Open questions", "Questions left open.", gap: true)
             ])
         };
     }

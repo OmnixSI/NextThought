@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 英文内置纪要模板 · 0.5.85
+
+- `NotesTemplate.BuiltIn(kind, english: true)` 按 Mac `builtIn(_:english:)` 补齐九个英文模板：
+  章节 ID/类型/携带设置与中文一致，标题/要求/前缀英文。
+- 纪要生成时用 `AnswerLanguage.Spoken(transcript)` 判英文，自动选英文模板、英文 header 与 `language:"en"`。
+- 新增英文结构镜像测试；Core 844。
+- **0.5.85 实测**：Core 844 + 基线 109；验收 63/63、门禁 17/17；启动 1.22 秒、
+  工作集 108.7 MiB、私有 42.0 MiB。
+
 # P1 术语表提示词上限与英文版 · 0.5.84
+
 
 - `Glossary.PromptSection(maxCharacters=1500, english=false)` 按 Mac 实现：有误听写法的条目先列、
   规范写法/变体/备注截断、放不下时末尾写「另 N 条未列出」，一个都放不下返回空。
