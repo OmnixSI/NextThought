@@ -37,6 +37,21 @@ public sealed class SessionDataSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task SummaryQuestionsComeFromAnswerRecords()
+    {
+        var store = new SessionStore(new AppPaths(root));
+        var meta = new SessionMeta { Title = "会议" };
+        await store.CreateAsync(meta);
+        await store.AppendAnswerAsync(meta, new AnswerRecord { Question = "预算多少？", Answer = "一百万。", Model = "m" });
+        await store.SaveSummaryAsync(meta, "# 纪要", "m");
+        using var summary = System.Text.Json.JsonDocument.Parse(
+            await File.ReadAllTextAsync(Path.Combine(store.Folder(meta.Id), "summary.json")));
+        var question = Assert.Single(summary.RootElement.GetProperty("questions").EnumerateArray());
+        Assert.Equal("预算多少？", question.GetProperty("text").GetString());
+        Assert.Equal("一百万。", question.GetProperty("answerGist").GetString());
+    }
+
+    [Fact]
     public async Task CreatingAMeetingWritesContextAndQuestions()
     {
         var store = new SessionStore(new AppPaths(root));

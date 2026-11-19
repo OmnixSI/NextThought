@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 summary.questions 填充 · 0.5.15
+
+- `SaveSummaryAsync` 在 `questions` 为空时读取 `answers.jsonl`，按 Mac 的
+  `{id,text,answerGist}` 写入，`answerGist` 截到 240 字。
+- **测试**：`SummaryQuestionsComeFromAnswerRecords`；基线 95。
+- **0.5.15 实测**：Core 791 + 基线 95；验收 61/61、门禁 17/17；启动 1.14 秒、
+  工作集 108.6 MiB、私有 43.0 MiB。
+- 仍未完成：summary.lessons/bank、技能/模板、context 完整字段、双向实机验收。
+
 # P0 summary.json structured 直写 · 0.5.14
+
 
 - `summary.json → structured` 现在直接保存 `StructuredNotesPayload`（Mac 形状），不再包一层
   `{format,payload,...}`；旧的包装仍可读。

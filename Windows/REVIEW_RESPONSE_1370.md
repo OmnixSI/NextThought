@@ -48,7 +48,7 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
   但字段仍是简化结构，缺场景/偏好/技能/术语等十多个 Mac 字段。
 - `SessionRecord`/`Workspace`/`Backup`/`Glossary` 的逐文件替换未完成；`SessionUserContentStore`、`IncrementalBackupStore`、`BackupArchive` 的键名/日期/枚举仍不兼容。
 - 0.5.4 起结构化纪要写入 `summary.json → structured`；0.5.14 起改为直接写 Mac 的 StructuredNotesPayload，
-  并维护 `structuredAll` 与 `transcriptSourceRevision`，旧的 `{payload:...}` 包装仍可读。
+  并维护 `structuredAll` 与 `transcriptSourceRevision`；0.5.15 起 `summary.questions` 由回答记录填充。
 - 0.5.4 起会议创建写 `context.json`，问题变化追加 `questions.jsonl`；技能与自定义模板仍未写入。
 - 0.5.5 起转写修订指纹改为 Mac 的「大写 UUID/文本 + 8 字节大端长度 + 完整 SHA-256」；
   经验修订号改为 Swift 的 UUID 字节序；系列变更回执键名改为 operationID/candidateID/resultItemID。
@@ -65,10 +65,10 @@ H 复制回答、G 重新生成、K 改短、X 取消、←/→ 上/下一条、
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.14 实测
+## 0.5.15 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
-- 测试：Core **791**、基线 **94**
+- 测试：Core **791**、基线 **95**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.13 秒，工作集 **109.0 MiB**、私有 43.2 MiB
+- 启动 1.14 秒，工作集 **108.6 MiB**、私有 43.0 MiB

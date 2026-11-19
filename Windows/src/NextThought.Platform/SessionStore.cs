@@ -114,7 +114,34 @@ public sealed class SessionStore(AppPaths paths)
             summary["markdown"] = markdown;
             summary["generatedAt"] = DateTimeOffset.UtcNow;
             summary["model"] = model;
-            summary["questions"] ??= new System.Text.Json.Nodes.JsonArray();
+            if (summary["questions"] is not System.Text.Json.Nodes.JsonArray { Count: > 0 })
+            {
+                // Mac fills questions from the model summary; Windows has answer records, which are
+                // the same user-visible pairing (question + short answer gist).
+                var questions = new System.Text.Json.Nodes.JsonArray();
+                var answersPath = Path.Combine(Folder(meta.Id), "answers.jsonl");
+                if (File.Exists(answersPath))
+                {
+                    foreach (var line in File.ReadLines(answersPath))
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+                        try
+                        {
+                            var answer = JsonSerializer.Deserialize<AnswerRecord>(line, JsonDefaults.Options);
+                            if (answer is null || string.IsNullOrWhiteSpace(answer.Question)) continue;
+                            var gist = answer.Answer.Length <= 240 ? answer.Answer : answer.Answer[..240] + "…";
+                            questions.Add(new System.Text.Json.Nodes.JsonObject
+                            {
+                                ["id"] = answer.Id.ToString("D"),
+                                ["text"] = answer.Question,
+                                ["answerGist"] = gist
+                            });
+                        }
+                        catch (JsonException) { }
+                    }
+                }
+                summary["questions"] = questions;
+            }
             await AppPaths.AtomicWriteAsync(summaryPath, summary.ToJsonString(JsonDefaults.ArchiveOptions), ct).ConfigureAwait(false);
             var current = ReadMeta(meta.Id); current.SummaryState = "ready"; current.SummaryError = null;
             await WriteMetaAsync(current, ct).ConfigureAwait(false); CopyState(current, meta);
