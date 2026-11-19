@@ -2271,10 +2271,15 @@ public partial class MainWindow : Window
         var passed = false;
         var unauthorized = 0;
         var duplicate = false;
+        var address = "";
         CompanionServer? server = null;
         try
         {
-            server = new CompanionServer(System.Net.IPAddress.Loopback, action =>
+            // Bind the LAN interface when one exists: this exercises the address a phone would use.
+            var lan = NextThought.Platform.CompanionServer.Addresses().FirstOrDefault();
+            var bind = lan?.Address ?? System.Net.IPAddress.Loopback;
+            address = bind.ToString();
+            server = new CompanionServer(bind, action =>
             {
                 lock (actions) actions.Add(action);
                 return Task.FromResult(true);
@@ -2310,7 +2315,7 @@ public partial class MainWindow : Window
         {
             if (server is not null) await server.DisposeAsync();
         }
-        var report = new { passed, actions, duplicate, unauthorized, error };
+        var report = new { passed, address, actions, duplicate, unauthorized, error };
         try
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));

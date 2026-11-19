@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 伴侣自检走实际网络地址 · 0.5.32
+
+- `--companion-check` 不再绑定 loopback：选择 `CompanionServer.Addresses()` 的第一个地址，
+  手机可见的同一 URL 完成 token 快照、重复动作、无 token 403。
+- 安装版实测：`address=100.72.252.201`，`duplicate=true`，`unauthorized=403`，`actions=[shorter]`。
+- **0.5.32 实测**：Core 796 + 基线 101；验收 61/61、门禁 17/17；启动 1.29 秒、
+  工作集 108.8 MiB、私有 43.0 MiB。
+- 仍未完成：真实手机连接、公网 TLS/中转、动作回调接真实 AppState（当前为自检假回调）。
+
 # P0 音频设备切换实机验证 · 0.5.31
+
 
 - 新增 `--audio-switch-check`：启动系统声采集，列出至少两个播放设备，强制调用默认设备切换路径，
   验证新设备生效、仍出帧、无错误。
