@@ -29,7 +29,15 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 DocumentFeatureAvailability 测试移植 · 0.5.51
+
+- 移植 Mac 的 64 种依赖组合测试：Paddle = runtime+OCR+layout，Codex = runtime+connected，
+  Semantic = runtime+embedding，Office = runtime，且 checking 时一律 false。
+- **0.5.51 实测**：Core 816 + 基线 105；验收 61/61、门禁 17/17；
+  启动稳定 **1.23 秒**（安装后首次 8.2 秒，Defender 扫描新文件）、工作集 123.0 MiB、私有 55.5 MiB。
+
 # P1 TranscriptLocator 测试移植 · 0.5.50
+
 
 - 移植 Mac `SessionTranscriptLocatorTests` 的 4 个测试：远距离/缝隙不借最近行、
   真实语句区间只有 3 秒边界容差、稳定行 ID 优先、畸形区间不扩大范围。
