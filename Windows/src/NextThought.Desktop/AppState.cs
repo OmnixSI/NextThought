@@ -1885,6 +1885,18 @@ public partial class AppState : ObservableObject
 
     private bool CanToggleCompanion() => !ShuttingDown;
 
+    /// <summary>QA: seed history so the companion self-check can exercise the real previous/next handler.</summary>
+    public void SeedCompanionHistoryForCheck()
+    {
+        companionHistory.Clear();
+        companionHistory.Add(("自检问题", "自检回答"));
+        companionHistoryIndex = 0;
+        DetectedQuestion = "自检问题";
+        AnswerText = "自检回答";
+    }
+
+    public Task<bool> HandleCompanionActionForCheckAsync(string action) => HandleCompanionActionAsync(action);
+
     private async Task<bool> HandleCompanionActionAsync(string action)
     {
         // Network threads must not touch UI-bound state; marshal and await on the UI thread.

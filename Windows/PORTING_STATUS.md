@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P1 伴侣自检走真实动作处理 · 0.5.33
+
+- 自检不再用 `Task.FromResult(true)`：`SeedCompanionHistoryForCheck` 预置历史，
+  HTTP 动作 `previous` 调用真实 `HandleCompanionActionAsync`，并断言当前问题/回答被切回。
+- 安装版结果：`address=100.72.252.201`、`actions=[previous]`、`duplicate=true`、`unauthorized=403`。
+- **0.5.33 实测**：Core 796 + 基线 101；验收 61/61、门禁 17/17；启动 1.18 秒、
+  工作集 97.2 MiB、私有 35.6 MiB。
+- 仍未完成：真实手机连接、公网 TLS/中转。
+
 # P1 伴侣自检走实际网络地址 · 0.5.32
+
 
 - `--companion-check` 不再绑定 loopback：选择 `CompanionServer.Addresses()` 的第一个地址，
   手机可见的同一 URL 完成 token 快照、重复动作、无 token 403。

@@ -2279,10 +2279,11 @@ public partial class MainWindow : Window
             var lan = NextThought.Platform.CompanionServer.Addresses().FirstOrDefault();
             var bind = lan?.Address ?? System.Net.IPAddress.Loopback;
             address = bind.ToString();
+            state.SeedCompanionHistoryForCheck();
             server = new CompanionServer(bind, action =>
             {
                 lock (actions) actions.Add(action);
-                return Task.FromResult(true);
+                return state.HandleCompanionActionForCheckAsync(action);
             });
             server.Publish(new CompanionSnapshot(Status: "自检中", Question: "问题", Answer: "回答"));
             var pairing = server.PairingUrl[(server.PairingUrl.IndexOf("#p=", StringComparison.Ordinal) + 3)..];
@@ -2297,15 +2298,16 @@ public partial class MainWindow : Window
             var unauthorizedResponse = await client.GetAsync($"{baseUri}/snapshot");
             unauthorized = (int)unauthorizedResponse.StatusCode;
             var id = Guid.NewGuid().ToString("D");
-            using var first = await client.PostAsync($"{baseUri}/action?id={id}&a=shorter&t={token}", new StringContent(""));
-            using var second = await client.PostAsync($"{baseUri}/action?id={id}&a=shorter&t={token}", new StringContent(""));
+            using var first = await client.PostAsync($"{baseUri}/action?id={id}&a=previous&t={token}", new StringContent(""));
+            using var second = await client.PostAsync($"{baseUri}/action?id={id}&a=previous&t={token}", new StringContent(""));
             duplicate = second.StatusCode == System.Net.HttpStatusCode.NoContent && actions.Count == 1;
             using var snapshotJson = System.Text.Json.JsonDocument.Parse(snapshotBody);
             var snapshotOk = snapshotJson.RootElement.TryGetProperty("snapshot", out var stateElement)
                              && stateElement.TryGetProperty("status", out var statusElement)
                              && statusElement.GetString() == "自检中";
             passed = snapshot.IsSuccessStatusCode && snapshotOk
-                     && first.StatusCode == System.Net.HttpStatusCode.NoContent && duplicate && unauthorized == 403;
+                     && first.StatusCode == System.Net.HttpStatusCode.NoContent && duplicate && unauthorized == 403
+                     && state.DetectedQuestion == "自检问题" && state.AnswerText == "自检回答";
         }
         catch (Exception exception)
         {
