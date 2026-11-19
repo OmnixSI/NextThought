@@ -2429,7 +2429,11 @@ public partial class MainWindow : Window
         var noTaskbar = false;
         var hidden = false;
         var reshown = false;
+        var subtitleAffinity = 0u;
+        var teleprompterAffinity = 0u;
         Window? probe = null;
+        Window? subtitleProbe = null;
+        Window? teleprompterProbe = null;
         try
         {
             probe = new CueIslandWindow(state) { Width = 360, Height = 120 };
@@ -2449,7 +2453,20 @@ public partial class MainWindow : Window
             probe.Show();
             await Task.Delay(200);
             reshown = probe.IsVisible;
-            passed = affinity == 0x11 && !showActivated && topmost && onScreen && noTaskbar && hidden && reshown;
+            state.SystemPartial = "字幕探针";
+            subtitleProbe = new SubtitleBarWindow(state) { Width = 520, Height = 140 };
+            subtitleProbe.Show();
+            await Task.Delay(500);
+            subtitleAffinity = WindowCaptureHiding.Affinity(subtitleProbe);
+            subtitleProbe.Close();
+            state.SystemPartial = "";
+            teleprompterProbe = new TeleprompterWindow(state) { Width = 520, Height = 220 };
+            teleprompterProbe.Show();
+            await Task.Delay(400);
+            teleprompterAffinity = WindowCaptureHiding.Affinity(teleprompterProbe);
+            teleprompterProbe.Close();
+            passed = affinity == 0x11 && !showActivated && topmost && onScreen && noTaskbar && hidden && reshown
+                     && subtitleAffinity == 0x11 && teleprompterAffinity == 0x11;
         }
         catch (Exception exception)
         {
@@ -2457,9 +2474,11 @@ public partial class MainWindow : Window
         }
         finally
         {
+            try { subtitleProbe?.Close(); } catch { }
+            try { teleprompterProbe?.Close(); } catch { }
             probe?.Close();
         }
-        var report = new { passed, affinity, showActivated, topmost, onScreen, noTaskbar, hidden, reshown, error };
+        var report = new { passed, affinity, subtitleAffinity, teleprompterAffinity, showActivated, topmost, onScreen, noTaskbar, hidden, reshown, error };
         try
         {
             var directory = Path.GetDirectoryName(Path.GetFullPath(path));

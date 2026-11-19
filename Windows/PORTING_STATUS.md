@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P0 三浮窗录屏隐藏验证 · 0.5.44
+
+- `--capture-hide-check` 现在分别创建岛、字幕条、提词器并读回 affinity：
+  `island=17 / subtitle=17 / teleprompter=17`。
+- 字幕条探针先写入 partial 文本，避免 100ms 定时器因静音把它隐藏。
+- **0.5.44 实测**：Core 800 + 基线 105；验收 61/61、门禁 17/17；启动 1.20 秒、
+  工作集 108.8 MiB、私有 43.2 MiB。
+- 仍未完成：Zoom/Teams 实机共享、真机/TLS、正式证书。
+
 # P0 API Key 损坏保留测试 · 0.5.43
+
 
 - 新增 `CorruptApiSecretSurvivesSavingOtherSettings`：DPAPI 文件损坏时读取抛错，
   保存其他设置不会删除/改写该文件。

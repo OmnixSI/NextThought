@@ -8,7 +8,7 @@
 
 | # | 问题 | 当前状态 | 证据 / 剩余 |
 | --- | --- | --- | --- |
-| 1 | 浮窗出现在屏幕共享 | **已修** | `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` 用于岛/字幕条/提词器；`--capture-hide-check` 读回 affinity=17。尚未在 Zoom/Teams 实机共享验证。 |
+| 1 | 浮窗出现在屏幕共享 | **已修** | 0.5.44 起 `--capture-hide-check` 同时验证岛、字幕条、提词器三窗，均读回 `affinity=17`。尚未在 Zoom/Teams 实机共享验证（系统 API 已生效）。 |
 | 2 | 重整理纪要抹掉 Mac 字段 | **已修** | `SaveSummaryAsync` 合并已有 JSON，只更新 title/markdown/generatedAt/model；`ResummarizingKeepsMacOnlySummaryGroups` 覆盖 structured/experience/questionBank。 |
 | 3 | 校对改写转写原文 | **已修** | 0.5.18 起不再改写 `transcript.jsonl`；更正写入 `user-content.json` 的 `correctionDecisions`，显示时投影，历史加载时应用。`ProofreadDecisionsProjectWithoutRewritingTheTranscript` 断言磁盘原文不变。 |
 | 4 | Mac 术语表读成空表 | **已修** | 读取 `{"entries":[...]}` 与裸数组，保存写回 Mac 信封；0.5.11 按 Mac 四段文本解析；0.5.19 起 JSON 只写 term/person，扩展类型写 `sourceKind`（Mac 忽略，Windows 读回保留）。 |
@@ -92,10 +92,10 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.43 实测
+## 0.5.44 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **796**、基线 **101**
 - 安装版验收：**61/61**；`--capture-hide-check` passed（affinity=17）；`--companion-check` passed
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 1.20 秒，工作集 **108.8 MiB**、私有 43.0 MiB
+- 启动 1.20 秒，工作集 **108.8 MiB**、私有 43.2 MiB
