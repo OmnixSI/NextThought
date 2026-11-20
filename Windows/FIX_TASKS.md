@@ -35,6 +35,7 @@ Nov 20, 2026 · @Homing
 | F1 | 已实现、未验证 | 旧采集管道停止并释放；显式设备不被覆盖 |
 | D9 | 已实现、未验证 | 恢复默认 GPU 渲染 |
 | D3 | 已实现、未验证 | 浅/深色 token 部分对齐；逐页截图未做 |
+| A15 | 未做 | MacCodec 包已建；Windows Swift/CryptoKit 阻塞，见 OPEN_QUESTIONS |
 
 ## 1. ⽬标与范围 
 

@@ -1,3 +1,11 @@
+## 2026-11-20 · 0.5.145 · A15（尝试，阻塞）
+改动：新建 `Windows/tools/MacCodec` SwiftPM 包、纯 Swift SHA-256 shim、junction 同步脚本和构建说明；未产出 emit 夹具。
+阻塞：官方 swift-crypto 的 BoringSSL 要求 Clang 22，本机 Clang 21；`CompanionCrypto`（HKDF/AES-GCM）和 SQLite/Darwin/CoreGraphics/Sherpa 文件无法在 Windows 编译，`DocumentJob` 依赖又牵连 `WorkspaceDeletionTransaction`。
+测试：无新增 C# 测试；Core 869/869、NextThought.Tests 128/128 保持不变。
+状态：A15「未做」。
+证据：`Windows/tools/MacCodec/README.md`、`Windows/OPEN_QUESTIONS.md`。
+未解决：H1、H2 未开始；A15 需要在 Mac 上生成夹具、或在 Windows 安装 Clang 22 / 补纯 Swift crypto 后继续。
+
 ## 2026-11-20 · 0.5.145 · D9、D3（部分）
 改动：
 - D9 删除强制 `Win32RenderingMode.Software` 和 `NEXTTHOUGHT_GPU_RENDER`，恢复平台默认 GPU 渲染。
