@@ -130,7 +130,7 @@ public static partial class BackupMerge
                 .OrderBy(id => id, StringComparer.Ordinal).ToList();
             var union = primary with
             {
-                SessionIds = current.SessionIds.Concat(item.SessionIds).Distinct(StringComparer.Ordinal).ToList(),
+                SessionIds = (current.SessionIds ?? []).Concat(item.SessionIds ?? []).Distinct(StringComparer.Ordinal).ToList(),
                 Lessons = MergeLessons(current.Lessons, item.Lessons),
                 QuestionBank = MergeQuestionBank(current.QuestionBank, item.QuestionBank),
                 KnowledgeCandidates = MergeCandidates(current.KnowledgeCandidates ?? [], item.KnowledgeCandidates ?? []),

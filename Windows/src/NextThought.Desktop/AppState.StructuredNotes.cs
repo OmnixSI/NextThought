@@ -880,6 +880,7 @@ public partial class AppState
             var data = await Task.Run(() => Sessions.Load(meta.Id));
             if (generation != selectionEpoch) return;
             CurrentSession = data.Meta;
+            if (data.SkippedLines > 0) SetStatus($"已跳过 {data.SkippedLines} 行损坏记录，其余内容仍可查看。");
             var lines = data.Lines;
             try
             {

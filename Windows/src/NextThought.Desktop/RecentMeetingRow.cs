@@ -47,12 +47,12 @@ public sealed record RecentMeetingRow(SessionMeta Meta) : System.ComponentModel.
             var parts = new List<string> { Meta.LocalStartedAt };
             if (Meta.TranscriptCount > 0) parts.Add(UiText.Transcripts(Meta.TranscriptCount));
             if (Meta.AnswerCount > 0) parts.Add(UiText.Answers(Meta.AnswerCount));
-            if (Meta.SummaryState is "saved" or "complete") parts.Add(UiText.T("有纪要"));
+            if (Meta.SummaryState == "ready") parts.Add(UiText.T("有纪要"));
             return string.Join(" · ", parts);
         }
     }
 
-    public bool HasSummary => Meta.SummaryState is "saved" or "complete";
+    public bool HasSummary => Meta.SummaryState == "ready";
 }
 
 /// <summary>

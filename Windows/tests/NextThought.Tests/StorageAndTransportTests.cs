@@ -29,13 +29,16 @@ public sealed class StorageAndTransportTests : IDisposable
         Assert.Contains("待确认", await File.ReadAllTextAsync(export));
     }
     [Fact]
-    public async Task TornLastAppendRecoversButInteriorCorruptionIsReported()
+    public async Task TornLastAppendRecoversAndInteriorCorruptionIsSkipped()
     {
         var store = new SessionStore(new AppPaths(directory)); var meta = new SessionMeta(); await store.CreateAsync(meta);
         await store.AppendTranscriptAsync(meta, new TranscriptLine { Text = "已提交的句子", Date = DateTimeOffset.UtcNow });
         var file = Path.Combine(store.Folder(meta.Id), "transcript.jsonl"); await File.AppendAllTextAsync(file, "{\"incomplete\":");
         Assert.Single(store.Load(meta.Id).Lines);
-        await File.AppendAllTextAsync(file, "\n{}\n"); Assert.Throws<JsonException>(() => store.Load(meta.Id));
+        await File.AppendAllTextAsync(file, "\n{not json}\n");
+        var loaded = store.Load(meta.Id);
+        Assert.Equal(2, loaded.SkippedLines);
+        Assert.Single(loaded.Lines);
     }
     [Fact]
     public async Task HistoryListingCannotDeadlockBehindAnAppendFromUiContext()

@@ -112,6 +112,7 @@ public sealed class BackupTests
         Directory.CreateDirectory(root);
         var archive = Path.Combine(root, "mac-workspaces.ntbackup");
         var id = Guid.NewGuid().ToString("D").ToUpperInvariant();
+        var sessionId = Guid.NewGuid().ToString("D");
         using (var zip = System.IO.Compression.ZipFile.Open(archive, System.IO.Compression.ZipArchiveMode.Create))
         {
             void Write(string name, string text)
@@ -120,16 +121,18 @@ public sealed class BackupTests
                 using var writer = new StreamWriter(entry.Open());
                 writer.Write(text);
             }
-            Write("manifest.json", "{\"format\":\"nextthought-backup\",\"version\":1,\"includesSecrets\":false,\"sessionCount\":0,\"workspaceCount\":1}");
+            Write("manifest.json", "{\"format\":\"nextthought-backup\",\"version\":1,\"includesSecrets\":false,\"sessionCount\":1,\"workspaceCount\":1}");
+            Write("Sessions/" + sessionId.ToUpperInvariant() + "/meta.json",
+                "{\"id\":\"" + sessionId + "\",\"startedAt\":\"2026-01-01T00:00:00Z\",\"title\":\"Mac\",\"workspaceID\":\"" + id + "\",\"workspaceName\":\"Mac \u7CFB\u5217\"}");
             Write("Workspaces/" + id + ".json",
-                "{\"id\":\"" + id + "\",\"name\":\"Mac 系列\",\"createdAt\":\"2026-01-01T00:00:00Z\",\"sessionIDs\":[\"s1\"],\"lessons\":[]}");
+                "{\"id\":\"" + id + "\",\"name\":\"Mac \u7CFB\u5217\",\"createdAt\":\"2026-01-01T00:00:00Z\",\"lessons\":[]}");
         }
         var target = new AppPaths(Path.Combine(root, "target-mac-workspace"));
         var result = await new BackupService(target).ImportAsync(archive);
         Assert.Equal(1, result.WorkspacesAdded);
         var series = Assert.Single(new WorkspaceStore(target.Root).Load().Series);
         Assert.Equal("Mac 系列", series.Name);
-        Assert.Equal("s1", series.SessionIds.Single());
+        Assert.Equal(sessionId, Assert.Single(series.SessionIds), ignoreCase: true);
     }
 
     [Fact]

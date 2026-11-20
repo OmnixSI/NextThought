@@ -26,9 +26,9 @@ Nov 20, 2026 · @Homing
 | A4 | 已实现、未验证 | 系列条目历史快照补齐 17 个 Mac 字段 | 待逐元素对照或实机验证 |
 | A5 | 已实现、未验证 | summary 完整、notes.json/structuredAll 读写；有字段级限制 | 待逐元素对照或实机验证 |
 | A6 | 已实现、未验证 | 系列/经验/题/候选/系列条目合并改为 `Guid` 规范化比较（`SameId`），`SeriesItemKey` 大小写不敏感；系列文件名写 UUID 大写；`ContextDocument.Id` 默认大写带连字符。新增 `BackupIdentifierCaseTests` 两项：大写 ID 导入不增系列/经验/题、文件名大写 | 尚未用 Windows 导出→全大写→导入的完整备份流程实测；键排序未单独覆盖 |
-| A7 | 未做 | — | 未开始 |
-| A8 | 未做 | — | 未开始 |
-| A9 | 未做 | — | 未开始 |
+| A7 | 已实现、未验证 | `SessionMeta.workspaceID/workspaceName`；`WorkspaceStore.Load` 从 meta 建系列成员并从旧 `sessionIds`/`sessionIDs` 首次迁移写回 meta；`Save` 为每个成员写 meta；系列文件不再写 `sessionIds`；新建会议把选中系列写入 meta。新增 `WorkspaceMembershipTests` 两项 | 需导入真实 Mac 备份确认每场会议回到原系列；旧数据迁移需真机数据 |
+| A8 | 已实现、未验证 | `ReadMeta` 记录原始键集合，重写时缺失的 `title/platform/inPerson` 不再补默认值；`AppendQuestionAsync` 同步 `questionCount`；纪要状态统一用 `ready`（最近会议行、模板整理、演示数据）。新增 `SessionToleranceTests` 一项验证 Mac meta 重写不新增键、提问数正确 | 需用一份真实 Mac `meta.json` 再保存核对键集合；Windows 新建会议仍会写 `platform`（Mac 会议重写不写） |
+| A9 | 已实现、未验证 | `ReadLines` 跳过任意损坏行并计数，`SessionData.SkippedLines` 在界面提示；答案行损坏时去掉 `evidence` 再解一次；说话人上限从 16 改为 32；转写/译文/答案/语音/旧译文行都计入。新增损坏中间行与旧 evidence 两项测试 | 需用真实 Mac 会议文件和损坏样本实测；证据逐字段对照仍待夹具 |
 | A10 | 已实现、未验证 | `SkillStore.PreserveIdentity`：文本编辑后按名称保留原 `Id/ImportedAt/Global/Enabled`；`NotesTemplateStore.PreserveIdentity`：按 Id/名称保留模板 `Id/Base` 与各段 `Id/Kind/IsGap/Carry/CarryPrefix`，只更新段名/说明 | 需在技能与模板文本框实测编辑后系列引用仍有效、其余字段不变 |
 | A11 | 未做 | — | 未开始 |
 | A12 | 未做 | — | 未开始 |

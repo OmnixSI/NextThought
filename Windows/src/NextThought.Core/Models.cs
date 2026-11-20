@@ -65,6 +65,13 @@ public sealed record SessionMeta
     public string AudioSource { get; set; } = "";
     public string Recognizer { get; set; } = "X-ASR";
     public string AnswerModel { get; set; } = "";
+    /// <summary>A7: the series this meeting belongs to (Mac writes these into meta.json).</summary>
+    [JsonPropertyName("workspaceID")]
+    public string? WorkspaceId { get; set; }
+
+    [JsonPropertyName("workspaceName")]
+    public string? WorkspaceName { get; set; }
+
     public string SummaryState { get; set; } = "none";
     public string? SummaryError { get; set; }
 
@@ -110,9 +117,17 @@ public sealed record SessionMeta
         ? StartedAt.ToLocalTime().ToString("MMM d, HH:mm", System.Globalization.CultureInfo.InvariantCulture)
         : StartedAt.ToLocalTime().ToString("MM-dd HH:mm");
     [JsonExtensionData] public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+
+    /// <summary>A8: keys a Mac meta.json actually carried, so a rewrite does not add Windows defaults.</summary>
+    [JsonIgnore] public HashSet<string>? SourceKeys { get; set; }
+
     public override string ToString() => $"{StartedAt.ToLocalTime():MM-dd HH:mm}  {Title}";
 }
-public sealed record SessionData(SessionMeta Meta, IReadOnlyList<TranscriptLine> Lines, IReadOnlyList<AnswerRecord> Answers, string Summary);
+public sealed record SessionData(SessionMeta Meta, IReadOnlyList<TranscriptLine> Lines, IReadOnlyList<AnswerRecord> Answers, string Summary)
+{
+    /// <summary>A9: corrupted append-only lines that were skipped while loading.</summary>
+    public int SkippedLines { get; init; }
+}
 public sealed record ModelProgress(double Fraction, string Message);
 public sealed record AnswerOptions(string BaseUrl, string Model, string ApiKey, string ReasoningEffort = "", int? MaxOutputTokens = null);
 public sealed record AppSettings

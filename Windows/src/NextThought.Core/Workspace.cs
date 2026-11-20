@@ -76,7 +76,7 @@ public sealed record WorkspaceSeries(
     string Id,
     string Name,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<string> SessionIds,
+    [property: JsonIgnore] IReadOnlyList<string> SessionIds,
     IReadOnlyList<WorkspaceLesson> Lessons)
 {
     /// <summary>Questions asked in these meetings and the best answer known so far.</summary>
@@ -161,10 +161,10 @@ public sealed record WorkspaceSeries(
         new(Guid.NewGuid().ToString("D"), name.Trim(), DateTimeOffset.UtcNow, [], []);
 
     public WorkspaceSeries WithSession(string sessionId) =>
-        SessionIds.Contains(sessionId) ? this : this with { SessionIds = [.. SessionIds, sessionId] };
+        (SessionIds ?? []).Contains(sessionId) ? this : this with { SessionIds = [.. SessionIds ?? [], sessionId] };
 
     public WorkspaceSeries WithoutSession(string sessionId) =>
-        SessionIds.Contains(sessionId) ? this with { SessionIds = SessionIds.Where(id => id != sessionId).ToList() } : this;
+        (SessionIds ?? []).Contains(sessionId) ? this with { SessionIds = SessionIds.Where(id => id != sessionId).ToList() } : this;
 
     /// <summary>
     /// Template fields as prompt text: known fields in profile order, then values from another
@@ -281,7 +281,7 @@ public sealed record WorkspaceData(IReadOnlyList<WorkspaceSeries> Series)
     public static readonly WorkspaceData Empty = new([]);
 
     public WorkspaceSeries? SeriesOfSession(string sessionId) =>
-        Series.FirstOrDefault(series => series.SessionIds.Contains(sessionId));
+        Series.FirstOrDefault(series => (series.SessionIds ?? []).Contains(sessionId));
 
     public WorkspaceSeries? Find(string seriesId) => Series.FirstOrDefault(series => series.Id == seriesId);
 
@@ -398,9 +398,10 @@ public sealed class WorkspaceStore
                     var name = Path.GetFileName(file);
                     try
                     {
-                        if (JsonSerializer.Deserialize<WorkspaceSeries>(File.ReadAllText(file), ReadOptions) is { } item)
+                        var text = File.ReadAllText(file);
+                        if (JsonSerializer.Deserialize<WorkspaceSeries>(text, ReadOptions) is { } item)
                         {
-                            series.Add(item);
+                            series.Add(item with { SessionIds = ReadSessionIds(text) });
                             loadedFiles.Add(name);
                         }
                     }
@@ -411,13 +412,35 @@ public sealed class WorkspaceStore
                         LogLoadFailure(name, error);
                     }
                 }
-                if (series.Count > 0) return Sanitise(new WorkspaceData(series));
+                if (series.Count > 0) return SyncSessionMeta(Sanitise(new WorkspaceData(series)));
                 if (unreadableFiles.Count > 0) return WorkspaceData.Empty;
             }
             if (!File.Exists(path)) return WorkspaceData.Empty;
             var json = File.ReadAllText(path);
             var data = JsonSerializer.Deserialize<WorkspaceData>(json, ReadOptions);
-            return data is null ? WorkspaceData.Empty : Sanitise(data);
+            if (data is null) return WorkspaceData.Empty;
+            // The old single Windows file still carries sessionIds; fold them back in memory.
+            var legacy = JsonDocument.Parse(json);
+            if (legacy.RootElement.TryGetProperty("series", out var seriesNode) && seriesNode.ValueKind == JsonValueKind.Array)
+            {
+                var sessionsById = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+                foreach (var node in seriesNode.EnumerateArray())
+                {
+                    if (node.ValueKind != JsonValueKind.Object) continue;
+                    if (!node.TryGetProperty("id", out var idNode) || idNode.ValueKind != JsonValueKind.String) continue;
+                    var sessions = new List<string>();
+                    if (TryGetSessionIdList(node, out var list))
+                        sessions.AddRange(list.EnumerateArray().Where(value => value.ValueKind == JsonValueKind.String)
+                            .Select(value => value.GetString()!).Where(value => value.Length > 0));
+                    sessionsById[idNode.GetString()!] = sessions;
+                }
+                data = data with
+                {
+                    Series = data.Series.Select(item => sessionsById.TryGetValue(item.Id, out var sessions)
+                        ? item with { SessionIds = sessions } : item).ToList()
+                };
+            }
+            return SyncSessionMeta(Sanitise(data));
         }
         catch (Exception error)
         {
@@ -448,6 +471,7 @@ public sealed class WorkspaceStore
             var file = Path.Combine(seriesDirectory, name);
             if (File.Exists(file) && !unreadableFiles.Contains(name)) File.Delete(file);
         }
+        SyncSessionMetaFiles(data);
         // Legacy single-file copy for older Windows builds; Mac reads Workspaces/.
         AtomicWrite(path, JsonSerializer.Serialize(data, Options));
     }
@@ -464,6 +488,104 @@ public sealed class WorkspaceStore
         {
             if (File.Exists(temporary)) File.Delete(temporary);
         }
+    }
+
+    private string SessionsDirectory => Path.Combine(Path.GetDirectoryName(seriesDirectory)!, "Sessions");
+
+    private static IReadOnlyList<string> ReadSessionIds(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (!TryGetSessionIdList(document.RootElement, out var list))
+                return [];
+            return list.EnumerateArray().Where(value => value.ValueKind == JsonValueKind.String)
+                .Select(value => value.GetString()!).Where(value => value.Length > 0).ToList();
+        }
+        catch (JsonException) { return []; }
+    }
+
+    private static bool TryGetSessionIdList(JsonElement root, out JsonElement list)
+    {
+        foreach (var name in new[] { "sessionIds", "sessionIDs" })
+            if (root.TryGetProperty(name, out list) && list.ValueKind == JsonValueKind.Array) return true;
+        list = default;
+        return false;
+    }
+
+    private static bool SameGuid(string left, string right) =>
+        Guid.TryParse(left, out var a) && Guid.TryParse(right, out var b) ? a == b
+            : string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>A7: meta.json is the source of truth for series membership; old series files are migrated once.</summary>
+    private WorkspaceData SyncSessionMeta(WorkspaceData data)
+    {
+        var series = data.Series.ToList();
+        foreach (var (sessionId, file) in SessionMetaFiles())
+        {
+            System.Text.Json.Nodes.JsonObject? node = null;
+            try { node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file)) as System.Text.Json.Nodes.JsonObject; }
+            catch (JsonException) { continue; }
+            if (node is null) continue;
+            var workspaceId = node["workspaceID"]?.GetValue<string>() ?? "";
+            var workspaceName = node["workspaceName"]?.GetValue<string>() ?? "";
+            var index = series.FindIndex(item => SameGuid(item.Id, workspaceId));
+            if (index >= 0)
+            {
+                if (!(series[index].SessionIds ?? []).Any(id => SameGuid(id, sessionId)))
+                    series[index] = series[index].WithSession(sessionId);
+                if (!SameGuid(workspaceId, series[index].Id) || workspaceName != series[index].Name)
+                    WriteSessionMetaWorkspace(file, node, series[index].Id, series[index].Name);
+            }
+            else
+            {
+                var owner = series.FindIndex(item => (item.SessionIds ?? []).Any(id => SameGuid(id, sessionId)));
+                if (owner >= 0) WriteSessionMetaWorkspace(file, node, series[owner].Id, series[owner].Name);
+            }
+        }
+        return new WorkspaceData(series);
+    }
+
+    /// <summary>A7: every meeting of a series records workspaceID/workspaceName in its own meta.</summary>
+    private void SyncSessionMetaFiles(WorkspaceData data)
+    {
+        var files = SessionMetaFiles().ToDictionary(pair => pair.SessionId, pair => pair.File, StringComparer.OrdinalIgnoreCase);
+        foreach (var series in data.Series)
+        foreach (var sessionId in series.SessionIds ?? [])
+        {
+            if (!files.TryGetValue(sessionId, out var file)) continue;
+            try
+            {
+                if (System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file)) is not System.Text.Json.Nodes.JsonObject node) continue;
+                WriteSessionMetaWorkspace(file, node, series.Id, series.Name);
+            }
+            catch (JsonException) { }
+        }
+    }
+
+    private IEnumerable<(string SessionId, string File)> SessionMetaFiles()
+    {
+        if (!Directory.Exists(SessionsDirectory)) yield break;
+        foreach (var folder in Directory.EnumerateDirectories(SessionsDirectory))
+        {
+            var file = Path.Combine(folder, "meta.json");
+            if (!File.Exists(file)) continue;
+            var sessionId = Path.GetFileName(folder);
+            try
+            {
+                if (System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file)) is System.Text.Json.Nodes.JsonObject node
+                    && node["id"]?.GetValue<string>() is { Length: > 0 } id) sessionId = id;
+            }
+            catch (JsonException) { }
+            yield return (sessionId, file);
+        }
+    }
+
+    private static void WriteSessionMetaWorkspace(string file, System.Text.Json.Nodes.JsonObject node, string workspaceId, string workspaceName)
+    {
+        node["workspaceID"] = workspaceId;
+        node["workspaceName"] = workspaceName;
+        AtomicWrite(file, node.ToJsonString(JsonDefaults.ArchiveOptions));
     }
 
     private void LogLoadFailure(string name, Exception error)

@@ -69,6 +69,10 @@ public sealed class WorkspaceTests : IDisposable
         var id = WorkspaceData.Empty.AddSeries("开题").Series[0].Id;
         var saved = WorkspaceData.Empty.AddSeries("开题");
         saved = saved.Assign("s1", saved.Series[0].Id).AddLesson(saved.Series[0].Id, "一条经验", "s1");
+        // A7: membership lives in the meeting meta; create it as Mac does before saving.
+        Directory.CreateDirectory(Path.Combine(directory, "Sessions", "s1"));
+        File.WriteAllText(Path.Combine(directory, "Sessions", "s1", "meta.json"),
+            "{\"id\":\"s1\",\"startedAt\":\"2025-01-01T00:00:00Z\",\"workspaceID\":\"" + saved.Series[0].Id + "\",\"workspaceName\":\"" + saved.Series[0].Name + "\"}");
         store.Save(saved);
         var loaded = store.Load();
         Assert.Single(loaded.Series);

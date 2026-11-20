@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · A7/A8/A9
+改动：会议归属改为 meta 的 `workspaceID/workspaceName`，系列成员从 meta 重建并把旧 `sessionIds` 迁移一次，系列文件不再写该列表；重写 Mac meta 不再补 `title/platform/inPerson` 默认键，追加提问同步 `questionCount`，纪要状态统一 `ready`；转写读取跳过任意损坏行并提示，答案 evidence 兼容旧结构，说话人 0–31 保留。
+测试：Core **1518/1518**，NextThought.Tests **261/261**。
+状态：A7、A8、A9「已实现、未验证」；真实 Mac 备份与损坏样本待实测。
+
 ## 2026-11-20 · 0.5.145 · A6/A10
 改动：标识统一按 GUID 比较，系列文件写大写 UUID，资料标识默认大写带连字符；技能/模板文本编辑保留原标识、导入时间、base/kind/isGap/carry 等字段。
 测试：Core **1516/1516**，NextThought.Tests **258/258**。

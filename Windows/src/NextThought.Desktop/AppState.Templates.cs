@@ -230,7 +230,7 @@ public partial class AppState
             var markdown = NotesMarkdown.Render(doc, title, facts);
             SummaryText = markdown;
             await Sessions.SaveSummaryAsync(meta, markdown, AnswerOptions(true).Model, cancellation.Token);
-            meta.SummaryState = "saved";
+            meta.SummaryState = "ready";
             // The template marks sections that carry into the series (NotesCarry): queue them for review.
             var (lessons, bank) = NotesKnowledge.Extract(doc, template);
             CollectFromNotes(meta, doc, template);

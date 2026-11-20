@@ -132,6 +132,14 @@ public partial class AppState
             ResetDisplay();
             meta = NewMeta(settings, string.IsNullOrWhiteSpace(MeetingTitle) || IsNewMeetingTitle(MeetingTitle) ? null : MeetingTitle);
             MeetingTitle = meta.Title;
+            if (planSeries is { } chosenSeries)
+            {
+                // A7: Mac records the series in meta.json so the meeting survives a backup round-trip.
+                meta.WorkspaceId = chosenSeries.Id;
+                meta.WorkspaceName = chosenSeries.Name;
+                workspace = workspace.Assign(meta.Id.ToString(), chosenSeries.Id);
+                SaveWorkspace();
+            }
             // F20: building the context copies material text; keep it off the UI thread.
             var context = await Task.Run(() => new SessionContextSnapshot
             {

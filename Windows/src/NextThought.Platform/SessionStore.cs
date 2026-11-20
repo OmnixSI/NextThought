@@ -41,6 +41,7 @@ public sealed class SessionStore(AppPaths paths)
         {
             var current = ReadMeta(id);
             current.Title = trimmed;
+            current.SourceKeys?.Add("title");
             await WriteMetaAsync(current, ct).ConfigureAwait(false);
         }
         finally { gate.Release(); }
@@ -60,7 +61,7 @@ public sealed class SessionStore(AppPaths paths)
             {
                 var path = Path.Combine(Folder(meta.Id), "transcript.jsonl");
                 if (!File.Exists(path)) continue;
-                var lines = ReadLines<TranscriptLine>(path);
+                var lines = ReadLines<TranscriptLine>(path, out _);
                 for (var i = 0; i < lines.Count && hits.Count < limit; i++)
                 {
                     var line = lines[i];
@@ -162,7 +163,13 @@ public sealed class SessionStore(AppPaths paths)
     public async Task AppendQuestionAsync(Guid session, SessionQuestionEvent question, CancellationToken ct = default)
     {
         await gate.WaitAsync(ct).ConfigureAwait(false);
-        try { await AppendAsync(Path.Combine(Folder(session), "questions.jsonl"), question, ct).ConfigureAwait(false); }
+        try
+        {
+            await AppendAsync(Path.Combine(Folder(session), "questions.jsonl"), question, ct).ConfigureAwait(false);
+            var current = ReadMeta(session);
+            current.QuestionCount++;
+            await WriteMetaAsync(current, ct).ConfigureAwait(false);
+        }
         finally { gate.Release(); }
     }
 
@@ -189,7 +196,7 @@ public sealed class SessionStore(AppPaths paths)
     }
     public async Task AppendVoiceTagAsync(Guid session, Guid line, int voice, CancellationToken ct = default)
     {
-        if (voice is < 0 or > 15) throw new ArgumentOutOfRangeException(nameof(voice));
+        if (voice is < 0 or > 31) throw new ArgumentOutOfRangeException(nameof(voice));
         await gate.WaitAsync(ct).ConfigureAwait(false);
         try { await AppendAsync(Path.Combine(Folder(session), "voices.jsonl"), new SessionVoiceTag(line, voice), ct).ConfigureAwait(false); }
         finally { gate.Release(); }
@@ -283,7 +290,7 @@ public sealed class SessionStore(AppPaths paths)
         try
         {
             // A late completion must not attach to a revised or missing source line.
-            var line = ReadLines<TranscriptLine>(Path.Combine(Folder(session), "transcript.jsonl")).LastOrDefault(l => l.Id == translation.Id);
+            var line = ReadLines<TranscriptLine>(Path.Combine(Folder(session), "transcript.jsonl"), out _).LastOrDefault(l => l.Id == translation.Id);
             if (line is null || MeetingTranslator.SourceHash(line.Text) != translation.SourceHash) return;
             await AppendAsync(Path.Combine(Folder(session), "translations.jsonl"), translation with { InputRevision = translation.InputRevision ?? translation.SourceHash }, ct).ConfigureAwait(false);
         }
@@ -312,7 +319,7 @@ public sealed class SessionStore(AppPaths paths)
         {
             var file = Path.Combine(folder, "meta.json");
             if (!File.Exists(file)) return null;
-            try { return JsonSerializer.Deserialize<SessionMeta>(File.ReadAllText(file), JsonDefaults.Options); }
+            try { return ReadMeta(Guid.Parse(Path.GetFileName(folder))); }
             catch (JsonException) { return null; }
         }).OfType<SessionMeta>().OrderByDescending(x => x.StartedAt).ToArray();
     }
@@ -328,13 +335,13 @@ public sealed class SessionStore(AppPaths paths)
         var meta = JsonSerializer.Deserialize<SessionMeta>(File.ReadAllText(Path.Combine(folder, "meta.json")), JsonDefaults.Options) ?? throw new InvalidDataException("会议信息无法读取。");
         var summary = ""; var summaryPath = Path.Combine(folder, "summary.json");
         if (File.Exists(summaryPath)) { using var doc = JsonDocument.Parse(File.ReadAllText(summaryPath)); summary = doc.RootElement.GetProperty("markdown").GetString() ?? ""; }
-        var voices = ReadLines<SessionVoiceTag>(Path.Combine(folder, "voices.jsonl")).Where(v => v.Voice is >= 0 and < 16).GroupBy(v => v.Id).ToDictionary(g => g.Key, g => g.Last().Voice);
-        var lines = ReadLines<TranscriptLine>(Path.Combine(folder, "transcript.jsonl")).Select(l => voices.TryGetValue(l.Id, out var voice) ? l with { Voice = voice } : l).ToArray();
+        var voices = ReadLines<SessionVoiceTag>(Path.Combine(folder, "voices.jsonl"), out var skippedVoices).Where(v => v.Voice is >= 0 and < 32).GroupBy(v => v.Id).ToDictionary(g => g.Key, g => g.Last().Voice);
+        var lines = ReadLines<TranscriptLine>(Path.Combine(folder, "transcript.jsonl"), out var skippedTranscript).Select(l => voices.TryGetValue(l.Id, out var voice) ? l with { Voice = voice } : l).ToArray();
         var translationPath = Path.Combine(folder, "translations.jsonl");
-        var translations = ReadLines<SessionTranslation>(translationPath).GroupBy(t => (t.Id, t.SourceHash)).ToDictionary(g => g.Key, g => g.Last());
+        var translations = ReadLines<SessionTranslation>(translationPath, out var skippedTranslations).GroupBy(t => (t.Id, t.SourceHash)).ToDictionary(g => g.Key, g => g.Last());
         // Mac writes {id, text, inputRevision}; it has no Windows SourceHash. Match by line id and
         // expose the text through TranslatedText/Translation so the transcript row renders it.
-        var macTranslations = ReadLines<MacTranslation>(translationPath)
+        var macTranslations = ReadLines<MacTranslation>(translationPath, out var skippedMacTranslations)
             .GroupBy(t => t.Id).ToDictionary(g => g.Key, g => g.Last());
         lines = lines.Select(l =>
         {
@@ -349,10 +356,22 @@ public sealed class SessionStore(AppPaths paths)
                 };
             return l;
         }).ToArray();
-        return new(meta, lines, ReadLines<AnswerRecord>(Path.Combine(folder, "answers.jsonl")), summary);
+        var answers = ReadLines<AnswerRecord>(Path.Combine(folder, "answers.jsonl"), out var skippedAnswers);
+        return new(meta, lines, answers, summary) { SkippedLines = skippedTranscript + skippedTranslations + skippedAnswers + skippedVoices + skippedMacTranslations };
     }
-    private SessionMeta ReadMeta(Guid id) => JsonSerializer.Deserialize<SessionMeta>(
-        File.ReadAllText(Path.Combine(Folder(id), "meta.json")), JsonDefaults.Options) ?? throw new InvalidDataException("会议信息无法读取。");
+    private SessionMeta ReadMeta(Guid id)
+    {
+        var json = File.ReadAllText(Path.Combine(Folder(id), "meta.json"));
+        var meta = JsonSerializer.Deserialize<SessionMeta>(json, JsonDefaults.Options)
+                   ?? throw new InvalidDataException("会议信息无法读取。");
+        try
+        {
+            if (System.Text.Json.Nodes.JsonNode.Parse(json) is System.Text.Json.Nodes.JsonObject node)
+                meta.SourceKeys = node.Select(pair => pair.Key).ToHashSet(StringComparer.Ordinal);
+        }
+        catch (JsonException) { }
+        return meta;
+    }
     private static void CopyState(SessionMeta source, SessionMeta destination)
     {
         destination.EndedAt = source.EndedAt; destination.TranscriptCount = source.TranscriptCount;
@@ -397,19 +416,50 @@ public sealed class SessionStore(AppPaths paths)
         }
         return builder.ToString();
     }
-    private Task WriteMetaAsync(SessionMeta meta, CancellationToken ct = default) => AppPaths.AtomicWriteAsync(Path.Combine(Folder(meta.Id), "meta.json"), JsonSerializer.Serialize(meta, JsonDefaults.ArchiveOptions), ct);
-    private static Task AppendAsync<T>(string path, T item, CancellationToken ct) => File.AppendAllTextAsync(path, JsonSerializer.Serialize(item, JsonDefaults.ArchiveOptions) + "\n", new UTF8Encoding(false), ct);
-    private static IReadOnlyList<T> ReadLines<T>(string file)
+    private Task WriteMetaAsync(SessionMeta meta, CancellationToken ct = default)
     {
+        var node = JsonSerializer.SerializeToNode(meta, JsonDefaults.ArchiveOptions) as System.Text.Json.Nodes.JsonObject
+                   ?? new System.Text.Json.Nodes.JsonObject();
+        if (meta.SourceKeys is { } sourceKeys)
+        {
+            // A8: a Mac meta rewritten on Windows keeps exactly the keys it arrived with.
+            foreach (var key in new[] { "title", "platform", "inPerson" })
+                if (!sourceKeys.Contains(key)) node.Remove(key);
+        }
+        var json = node.ToJsonString(JsonDefaults.ArchiveOptions);
+        return AppPaths.AtomicWriteAsync(Path.Combine(Folder(meta.Id), "meta.json"), json, ct);
+    }
+    private static Task AppendAsync<T>(string path, T item, CancellationToken ct) => File.AppendAllTextAsync(path, JsonSerializer.Serialize(item, JsonDefaults.ArchiveOptions) + "\n", new UTF8Encoding(false), ct);
+    private static IReadOnlyList<T> ReadLines<T>(string file, out int skipped)
+    {
+        skipped = 0;
         if (!File.Exists(file)) return [];
         var lines = File.ReadAllLines(file); var results = new List<T>();
         for (var i = 0; i < lines.Length; i++)
         {
             if (string.IsNullOrWhiteSpace(lines[i])) continue;
             try { if (JsonSerializer.Deserialize<T>(lines[i], JsonDefaults.Options) is { } item) results.Add(item); }
-            catch (JsonException) when (i == lines.Length - 1) { /* Recover a torn final append after an abrupt shutdown. */ }
+            catch (JsonException)
+            {
+                // A9: one damaged append loses that line, never the whole meeting. Answers retry
+                // without the typed evidence envelope, which older builds read differently.
+                if (typeof(T) == typeof(AnswerRecord) && TryReadAnswerLenient(lines[i]) is { } answer) results.Add((T)(object)answer);
+                else skipped++;
+            }
         }
         return results;
+    }
+
+    private static AnswerRecord? TryReadAnswerLenient(string line)
+    {
+        try
+        {
+            var node = System.Text.Json.Nodes.JsonNode.Parse(line) as System.Text.Json.Nodes.JsonObject;
+            if (node is null) return null;
+            node.Remove("evidence");
+            return node.Deserialize<AnswerRecord>(JsonDefaults.Options);
+        }
+        catch (JsonException) { return null; }
     }
     public async Task<IReadOnlyList<SessionRecovery>> RecoverInterruptedAsync(CancellationToken ct = default)
     {
