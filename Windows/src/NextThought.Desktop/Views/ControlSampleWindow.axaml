@@ -28,7 +28,7 @@
           <StackPanel Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="DataStateView · loading / no-match" Classes="title" />
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-              <TextBlock Text="&#xE895;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+              <TextBlock Text="{StaticResource IconSync}" FontFamily="{StaticResource IconFont}" FontSize="15"
                          Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
               <TextBlock Text="{loc:Tr 正在加载本场资料…}" Classes="body" />
             </StackPanel>
@@ -47,8 +47,8 @@
           <StackPanel Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="SourceChip · current / stale" Classes="title" />
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_12}">
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource Ready}" /><TextBlock Text="{loc:Tr 译文 · 当前}" Classes="caption" /></StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource Caution}" /><TextBlock Text="{loc:Tr 译文待更新}" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Ready}" /><TextBlock Text="{loc:Tr 译文 · 当前}" Classes="caption" /></StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Caution}" /><TextBlock Text="{loc:Tr 译文待更新}" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
             </StackPanel>
             <TextBlock Text="{loc:Tr 过期状态来自版本比较；旧内容仍可读。}" Classes="caption" />
           </StackPanel>
@@ -76,8 +76,8 @@
               <TextBlock Text="{loc:Tr 回答正在生成…}" Classes="body" />
               <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 停止生成}" />
             </Grid>
-            <TextBlock Text="{loc:Tr &#xE7BA; 保存受阻 · 有 3 项待保存 · 重试}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" Foreground="{DynamicResource Caution}" />
-            <TextBlock Text="{loc:Tr &#xE73E; 已保存 · 修订 12 · 03:05}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Caution}" /><TextBlock Text="{loc:Tr 保存受阻 · 有 3 项待保存 · 重试}" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" /><TextBlock Text="{loc:Tr 已保存 · 修订 12 · 03:05}" Classes="caption" /></StackPanel>
           </StackPanel>
         </Border>
         <Border Grid.Row="2" Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_16}">
@@ -85,17 +85,17 @@
             <TextBlock Text="RevisionDiff · stale+manual edit" Classes="title" />
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
               <TextBlock Text="{loc:Tr 旧原话：缓存几穿}" Classes="body" />
-              <TextBlock Text="&#xE72A;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="{StaticResource IconArrowRight}" FontFamily="{StaticResource IconFont}" FontSize="13" Foreground="{DynamicResource Secondary}" />
               <TextBlock Text="{loc:Tr 手动校正：缓存击穿}" Classes="body" />
             </StackPanel>
-            <TextBlock Text="{loc:Tr &#xE7BA; 旧正文基于修订前原话；手动校正仍保留。}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" Foreground="{DynamicResource Caution}" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Caution}" /><TextBlock Text="{loc:Tr 旧正文基于修订前原话；手动校正仍保留。}" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
             <TextBlock Text="{loc:Tr 合成版本差异样例；实际过期标记由归档投影版本比较产生。}" Classes="caption" />
           </StackPanel>
         </Border>
         <Border Grid.Row="3" Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_16}">
           <StackPanel Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="InlineNotice · error+existing result / cancel+late callback" Classes="title" />
-            <TextBlock Text="{loc:Tr &#xE7BA; 回答暂时不可用；记录仍在继续。}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" Foreground="{DynamicResource Caution}" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Caution}" /><TextBlock Text="{loc:Tr 回答暂时不可用；记录仍在继续。}" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
             <TextBlock Text="{loc:Tr 之前有效回答仍可读。取消后到达的旧请求结果会被丢弃。}" Classes="caption" />
             <TextBlock Text="{loc:Tr 最近结果：先看命中率和 P95 延迟，再比较灰度前后的错误率。}" Classes="caption" />
           </StackPanel>

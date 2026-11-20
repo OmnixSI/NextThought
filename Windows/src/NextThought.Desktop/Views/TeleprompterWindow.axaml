@@ -31,7 +31,7 @@
           <Button Classes="tp" Content="+" Click="Solid_Click" ToolTip.Tip="{loc:Tr 提高不透明度}" />
           <Button Classes="tp" x:Name="ThroughButton" Content="{loc:Tr 穿透}" Click="Through_Click"
                   ToolTip.Tip="{loc:Tr 切换鼠标穿透（穿透后只能用快捷键改回）}" />
-          <Button Classes="tp" Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Click="Close_Click" ToolTip.Tip="{loc:Tr 关闭提词器}" />
+          <Button Classes="tp" Content="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}" Click="Close_Click" ToolTip.Tip="{loc:Tr 关闭提词器}" />
         </StackPanel>
       </Grid>
 

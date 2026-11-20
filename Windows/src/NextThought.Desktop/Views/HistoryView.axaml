@@ -22,7 +22,7 @@
                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_10_0}" />
                 <Border Grid.Column="1" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
                         VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_14_0}">
-                  <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                  <TextBlock Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}" FontSize="15"
                              Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center"
                              VerticalAlignment="Center" />
                 </Border>
@@ -34,7 +34,7 @@
                   <Border Classes="chip" IsVisible="{Binding HasSummary}">
                     <TextBlock Text="{loc:Tr 有纪要}" Classes="overline" FontSize="10" />
                   </Border>
-                  <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"
+                  <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="12"
                              Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_6_0_0_0}" />
                 </StackPanel>
               </Grid>
@@ -142,7 +142,7 @@
               <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Text="{Binding Name}" Classes="overline" />
-                  <Button Grid.Column="1" Classes="quiet" Content="&#xE712;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                  <Button Grid.Column="1" Classes="quiet" Content="{StaticResource IconEllipsis}" FontFamily="{StaticResource IconFont}"
                           ToolTip.Tip="{loc:Tr 系列管理}">
                     <Button.Flyout>
                       <MenuFlyout>

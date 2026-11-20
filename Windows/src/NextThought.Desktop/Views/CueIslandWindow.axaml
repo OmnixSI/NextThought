@@ -55,8 +55,8 @@
                    Margin="{DynamicResource D4Margin_18_5_0_0}" IsVisible="{Binding HasBilingualQuestion}" />
         <StackPanel x:Name="ActionPanel" Grid.Row="8" Grid.ColumnSpan="3" Orientation="Horizontal"
                     Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_18_7_0_0}" IsVisible="False">
-          <Button Classes="quiet" Content="&#xE76B;" FontFamily="Segoe Fluent Icons" Command="{Binding PreviousAnswerCommand}" />
-          <Button Classes="quiet" Content="&#xE76C;" FontFamily="Segoe Fluent Icons" Command="{Binding NextAnswerCommand}" />
+          <Button Classes="quiet" Content="{StaticResource IconChevronLeft}" FontFamily="{StaticResource IconFont}" Command="{Binding PreviousAnswerCommand}" />
+          <Button Classes="quiet" Content="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" Command="{Binding NextAnswerCommand}" />
           <Button Classes="quiet" Content="{loc:Tr 重新生成}" Command="{Binding RegenerateAnswerCommand}" />
           <Button Classes="quiet" Content="{loc:Tr 改短}" Command="{Binding ShorterAnswerCommand}" />
           <Button Classes="quiet" Content="{loc:Tr 复制}" Command="{Binding CopyAnswerCommand}" />

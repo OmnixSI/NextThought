@@ -1240,7 +1240,9 @@ public sealed class SelfTestStructureTests
                 Assert.DoesNotContain(symbol, text);
         }
         var tp = File.ReadAllText(Path.Combine(views, "TeleprompterWindow.axaml"));
-        Assert.Contains("&#xE711;", tp);
+        // D7: icons are resource references now, not literal glyph codepoints.
+        Assert.Contains("{StaticResource IconXmark}", tp);
+        Assert.Contains("{StaticResource IconFont}", tp);
     }
 
     [Fact]
@@ -1268,7 +1270,11 @@ public sealed class SelfTestStructureTests
         Assert.True(sw.Count >= 50);
         foreach (var symbol in sw)
             Assert.Contains(symbol, map);
-        Assert.Equal(sw.Count, System.Text.RegularExpressions.Regex.Matches(icons, "<x:String x:Key=").Count);
+        // D7: the table also carries the scene-theme symbols and Windows-only icons, so it has at
+        // least one entry per Swift symbol and every entry is a Fluent glyph.
+        var entries = System.Text.RegularExpressions.Regex.Matches(icons, "<x:String x:Key=\"Icon[A-Za-z0-9]+\">&#x[0-9A-F]+;</x:String>");
+        Assert.True(entries.Count >= sw.Count, $"icons: {entries.Count}, swift symbols: {sw.Count}");
+        Assert.Contains("FluentSystemIcons-Regular.ttf", icons);
     }
 
     [Fact]

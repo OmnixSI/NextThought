@@ -19,7 +19,7 @@
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
             <Border Width="44" Height="44" CornerRadius="{DynamicResource D4CornerRadius_10}"
                     Background="{DynamicResource Sunken}" VerticalAlignment="Center">
-              <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+              <TextBlock Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}" FontSize="16"
                          Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"

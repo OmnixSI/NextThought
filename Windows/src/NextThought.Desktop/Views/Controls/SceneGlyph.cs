@@ -6,7 +6,7 @@ using NextThought.Core;
 
 namespace NextThought.Desktop.Views.Controls;
 
-/// <summary>D6: a rounded scene mark filled with its pigment and a glyph.</summary>
+/// <summary>D6/D7: a rounded scene mark filled with its pigment and an icon from Icons.axaml.</summary>
 public sealed class SceneGlyph : Border
 {
     public static readonly StyledProperty<MeetingMode> ModeProperty =
@@ -21,7 +21,6 @@ public sealed class SceneGlyph : Border
     {
         Child = new TextBlock
         {
-            FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -42,25 +41,33 @@ public sealed class SceneGlyph : Border
         Height = Size;
         CornerRadius = new CornerRadius(Size * 0.3);
         Background = new SolidColorBrush(tint, 0.13);
-        if (Child is TextBlock text)
-        {
-            text.Text = Symbol(theme.Symbol);
-            text.FontSize = Size * 0.44;
-            text.Foreground = new SolidColorBrush(tint);
-        }
+        if (Child is not TextBlock text) return;
+        // D7: the glyph comes from the shared Styles/Icons.axaml table (same as every other icon).
+        var key = IconKey(theme.Symbol);
+        text.Text = Lookup(key) as string ?? "";
+        // D7: font and glyph come from the shared Styles/Icons.axaml table, like every other icon.
+        text.FontFamily = Lookup("IconFont") as FontFamily ?? FontFamily.Default;
+        text.FontSize = Size * 0.44;
+        text.Foreground = new SolidColorBrush(tint);
     }
 
-    private static string Symbol(string sf) => sf switch
+    private static string IconKey(string sf) => sf switch
     {
-        "person.crop.rectangle" => "\uE77B",
-        "flask" => "\uE9D9",
-        "graduationcap" => "\uE7BE",
-        "person.3" or "person.2" => "\uE716",
-        "briefcase" => "\uE821",
-        "book" => "\uE8F1",
-        "bubble.left.and.bubble.right" => "\uE8BD",
-        "sparkles" => "\uE945",
-        "slider.horizontal.3" => "\uE9E9",
-        _ => "\uE8A5"
+        "person.crop.rectangle" => "IconPersonCropRectangle",
+        "flask" => "IconFlask",
+        "graduationcap" => "IconGraduationcap",
+        "person.3" => "IconPerson3",
+        "person.2" => "IconPerson2",
+        "briefcase" => "IconBriefcase",
+        "book" => "IconBook",
+        "bubble.left.and.bubble.right" => "IconBubbleLeftAndBubbleRight",
+        "slider.horizontal.3" => "IconSliderHorizontal3",
+        _ => "IconSparkles"
     };
+
+    private static object? Lookup(object key)
+    {
+        if (Application.Current?.Resources.TryGetResource(key, null, out var value) == true) return value;
+        return null;
+    }
 }

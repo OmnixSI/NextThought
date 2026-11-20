@@ -6,6 +6,8 @@ Sherpa-ONNX 1.13.8: Apache-2.0, https://github.com/k2-fsa/sherpa-onnx
 ONNX Runtime distributed with Sherpa-ONNX: MIT, https://github.com/microsoft/onnxruntime
 NAudio.Core / NAudio.Wasapi 2.2.1: MIT, https://github.com/naudio/NAudio
 Microsoft .NET: MIT, https://github.com/dotnet/runtime
+Fluent System Icons: MIT, Copyright (c) 2020 Microsoft Corporation, https://github.com/microsoft/fluentui-system-icons; bundled as src/NextThought.Desktop/Assets/Fonts/FluentSystemIcons-Regular.ttf with license in LICENSE-FluentSystemIcons.txt
+Bundled interface fonts: Inter (OFL-1.1), Noto Sans SC (OFL-1.1), Noto Serif SC (OFL-1.1), Source Serif 4 (OFL-1.1); license texts bundled under src/NextThought.Desktop/Assets/Fonts/.
 X-ASR models: Apache-2.0, https://github.com/Gilgamesh-J/X-ASR
 Models are downloaded separately from official sherpa-onnx releases and checked against the upstream SHA-256 values.
 Additional upstream notices: ../Resources/ThirdPartyNotices.txt in the source tree.

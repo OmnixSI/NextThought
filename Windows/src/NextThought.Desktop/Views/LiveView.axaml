@@ -22,13 +22,13 @@
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
         <CheckBox Content="{loc:Tr 自动回答}" IsChecked="{Binding Settings.AutomaticAnswers}" VerticalAlignment="Center"
                   ToolTip.Tip="{loc:Tr 系统声音里出现提问时自动生成回答}" />
-        <Button Content="&#xE8F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Command="{Binding ToggleCompanionCommand}" ToolTip.Tip="{loc:Tr 手机伴侣}" />
-        <Button Content="&#xE7F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Click="CaptureWindow_Click" ToolTip.Tip="{loc:Tr 截取当前窗口}" />
+        <Button Content="{StaticResource IconIphone}" FontFamily="{StaticResource IconFont}" Command="{Binding ToggleCompanionCommand}" ToolTip.Tip="{loc:Tr 手机伴侣}" />
+        <Button Content="{StaticResource IconCameraViewfinder}" FontFamily="{StaticResource IconFont}" Click="CaptureWindow_Click" ToolTip.Tip="{loc:Tr 截取当前窗口}" />
         <Button Content="{loc:Tr 洞察}" Click="Insights_Click" />
         <Button Content="{loc:Tr 说话人}" Click="Speakers_Click" />
         <Button ToolTip.Tip="{loc:Tr 回答设置}">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-            <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
+            <TextBlock Text="{StaticResource IconGearshape}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
             <TextBlock Text="{loc:Tr 回答设置}" VerticalAlignment="Center" />
           </StackPanel>
           <Button.Flyout>
@@ -59,7 +59,7 @@
             IsVisible="{Binding HasAutoEndNotice}">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}" VerticalAlignment="Center">
-          <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+          <TextBlock Text="{StaticResource IconClock}" FontFamily="{StaticResource IconFont}" FontSize="14"
                      Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding AutoEndNotice}" Classes="label" VerticalAlignment="Center" />
         </StackPanel>
@@ -72,7 +72,7 @@
             IsVisible="{Binding HasCoachHint}">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}" VerticalAlignment="Center">
-          <TextBlock Text="&#xE82F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
+          <TextBlock Text="{StaticResource IconLightbulb}" FontFamily="{StaticResource IconFont}" FontSize="14"
                      Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding CoachHint}" Classes="label" VerticalAlignment="Center" />
         </StackPanel>

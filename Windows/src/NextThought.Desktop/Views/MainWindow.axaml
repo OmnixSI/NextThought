@@ -46,7 +46,7 @@
             </Flyout>
           </Button.Flyout>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-            <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
+            <TextBlock Text="{StaticResource IconGearshape}" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" />
             <TextBlock Text="{loc:Tr 设置}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -73,49 +73,49 @@
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHome, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Home" ToolTip.Tip="{loc:Tr 首页}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="&#xE80F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconHouse}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 首页}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLive, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Live" ToolTip.Tip="{loc:Tr 会议}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="&#xE720;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconListBullet}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 会议}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnNotes, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Notes" ToolTip.Tip="{loc:Tr 纪要}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 纪要}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHistory, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="History" ToolTip.Tip="{loc:Tr 历史}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="&#xE81C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconHistory}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 历史}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSeries, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Series" ToolTip.Tip="{loc:Tr 系列}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="&#xE8F1;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconBook}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 系列}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLibrary, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Library" ToolTip.Tip="{loc:Tr 资料库}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconFolder}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 资料库}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSettings, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="{loc:Tr 设置}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-                <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconGearshape}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 设置}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
@@ -148,7 +148,7 @@
             <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                     Command="{Binding OpenDataCommand}" ToolTip.Tip="{loc:Tr 打开数据目录}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-                <TextBlock Text="&#xE838;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconFolderOpen}" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" />
                 <TextBlock Text="{loc:Tr 数据目录}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
@@ -242,9 +242,9 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:OnboardingCheckRow">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="{DynamicResource D4Margin_0_0_0_4}">
-                  <TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                  <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
                              Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding Ready}" />
-                  <TextBlock Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                  <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
                              Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !Ready}" />
                   <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="label" />
                   <TextBlock Grid.Column="2" Text="{Binding State}" Classes="caption" />
