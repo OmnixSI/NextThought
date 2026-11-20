@@ -371,7 +371,7 @@ public static class NotesJson
                             Verdict = Nullable(String(item, "verdict")),
                             Better = Nullable(String(item, "better")),
                             Quote = Nullable(String(item, "quote")),
-                            Uncertain = item.TryGetProperty("uncertain", out var uncertain) && uncertain.ValueKind == JsonValueKind.True,
+                            Uncertain = Bool(item, "uncertain"),
                             Topic = Nullable(String(item, "topic"))
                         });
                     }
@@ -395,71 +395,150 @@ public static class NotesJson
         return new StructuredNotesDoc(template.Id, template.Name, language, title, results);
     }
 
-    private static string String(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? (value.GetString() ?? "").Trim() : "";
+    /// <summary>B10: strings and numbers both decode; surrounding whitespace is trimmed.</summary>
+    private static string String(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value)) return "";
+        if (value.ValueKind == JsonValueKind.String) return (value.GetString() ?? "").Trim();
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number))
+            return number == Math.Round(number) ? ((long)number).ToString() : number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return "";
+    }
+
+    private static bool Bool(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value)) return false;
+        if (value.ValueKind is JsonValueKind.True or JsonValueKind.False) return value.GetBoolean();
+        if (value.ValueKind == JsonValueKind.String)
+            return value.GetString()?.Trim().ToLowerInvariant() is "true" or "yes" or "1";
+        return false;
+    }
 
     private static string? Nullable(string value) => value.Length == 0 ? null : value;
 
-    /// <summary>Caps the list, drops repeats and empty text (NotesShape.tidy).</summary>
+    /// <summary>B10: NotesShape.tidy 鈥?only point lists are capped/grouped.</summary>
     public static List<NotesItem> Tidy(IEnumerable<NotesItem> items, NotesSectionKind kind, bool isGap)
     {
-        var cap = kind switch
+        var list = items.Where(item => !string.IsNullOrWhiteSpace(item.Text)).ToList();
+        if (kind != NotesSectionKind.Items) return list;
+        for (var index = 0; index < list.Count; index++)
         {
-            NotesSectionKind.OneLine => 1,
-            NotesSectionKind.Items when isGap => 5,
-            NotesSectionKind.Items => 12,
-            _ => 12
-        };
-        var seen = new HashSet<string>();
-        var result = new List<NotesItem>();
-        foreach (var item in items)
-        {
-            if (result.Count >= cap) break;
-            var text = item.Text.Trim();
-            if (text.Length == 0) continue;
-            var key = new string(text.ToLowerInvariant().Where(char.IsLetterOrDigit).ToArray());
-            if (key.Length == 0 || !seen.Add(key)) continue;
-            result.Add(item with { Text = text });
+            var topic = list[index].Topic?.Trim(' ', '\u3000', '\uFF0C', '\u3002', '\u00B7', '-', '\u2014', '*');
+            list[index] = list[index] with { Topic = string.IsNullOrEmpty(topic) ? null : topic[..Math.Min(24, topic.Length)] };
         }
-        return result;
+        var limit = isGap ? 6 : 14;
+        if (list.Count > limit) list = list.Take(limit).ToList();
+        var topics = list.Where(item => item.Topic is not null).Select(item => item.Topic!).ToList();
+        if (topics.Distinct(StringComparer.Ordinal).Count() < 2 || topics.Count < list.Count)
+            return list.Select(item => item with { Topic = null }).ToList();
+        var order = new List<string>();
+        foreach (var topic in topics) if (!order.Contains(topic)) order.Add(topic);
+        return order.SelectMany(topic => list.Where(item => item.Topic == topic)).ToList();
     }
 }
 
 /// <summary>The template-driven notes as Markdown (NotesMarkdown.render).</summary>
 public static class NotesMarkdown
 {
-    public static string Render(StructuredNotesDoc doc)
+    public static string Render(StructuredNotesDoc doc) =>
+        Render(doc, doc.Title.Length > 0 ? doc.Title : doc.TemplateName, "");
+
+    /// <summary>B10: title, facts line, section headings and the Mac line markers.</summary>
+    public static string Render(StructuredNotesDoc doc, string title, string facts)
     {
         var english = doc.Language == "en";
-        var lines = new List<string>();
-        lines.Add("## " + (doc.Title.Length > 0 ? doc.Title : doc.TemplateName));
-        lines.Add("");
+        var lines = new List<string> { "# " + title, "" };
+        if (!string.IsNullOrEmpty(facts)) { lines.Add("> " + facts); lines.Add(""); }
         foreach (var section in doc.Sections)
         {
             if (section.Items.Count == 0) continue;
-            lines.Add("### " + section.Title);
-            if (section.Kind == NotesSectionKind.OneLine)
-            {
-                lines.Add(section.Items[0].Text);
-            }
-            else
-            {
-                foreach (var item in section.Items)
-                {
-                    var suffix = new StringBuilder();
-                    if (item.Owner is { Length: > 0 } owner) suffix.Append(" · ").Append(owner);
-                    if (item.Due is { Length: > 0 } due) suffix.Append(" · ").Append(due);
-                    if (item.Time is { Length: > 0 } time) suffix.Append(" [").Append(time).Append(']');
-                    lines.Add("- " + item.Text + suffix);
-                    if (item.Verdict is { Length: > 0 } verdict)
-                        lines.Add("  - " + (verdict == "improve" ? (english ? "Better" : "更好的答法") : (english ? "Went well" : "答得好")) +
-                                  (item.Better is { Length: > 0 } better ? "：" + better : ""));
-                }
-            }
+            lines.Add("## " + section.Title);
+            lines.Add("");
+            lines.AddRange(Lines(section, english));
             lines.Add("");
         }
         return string.Join('\n', lines).TrimEnd();
     }
+
+    /// <summary>B10: the facts line above rendered notes (Mac notesFacts).</summary>
+    public static string Facts(StructuredNotesDoc doc, DateTimeOffset startedAt, double durationSeconds,
+        bool inPerson, bool english)
+    {
+        var parts = new List<string>
+        {
+            NotesDates.Format(startedAt.DateTime, english) + " " + startedAt.ToLocalTime().ToString("HH:mm")
+        };
+        var minutes = (int)(durationSeconds / 60);
+        if (minutes > 0) parts.Add(english ? $"{minutes} min" : $"{minutes} \u5206\u949F");
+        parts.Add(inPerson ? (english ? "In person" : "\u7EBF\u4E0B") : (english ? "Online" : "\u7EBF\u4E0A"));
+        var fixedCount = doc.Corrections?.Count(correction => !correction.Reverted) ?? 0;
+        if (fixedCount > 0) parts.Add(english ? $"{fixedCount} recognition errors fixed" : $"\u5DF2\u6821\u5BF9 {fixedCount} \u5904\u8BC6\u522B\u9519\u8BEF");
+        return string.Join(" \u00B7 ", parts);
+    }
+
+    public static IReadOnlyList<string> Lines(NotesSectionResult section, bool english)
+    {
+        var output = new List<string>();
+        foreach (var group in Groups(section.Items))
+        {
+            if (group.Topic is { Length: > 0 } topic)
+            {
+                if (output.Count > 0) output.Add("");
+                output.Add("**" + topic + "**");
+                output.Add("");
+            }
+            foreach (var item in group.Items)
+            {
+                output.Add(Line(item, section.Kind, english));
+                if (section.Kind != NotesSectionKind.Questions) continue;
+                if (item.Answer is { Length: > 0 } answer)
+                    output.Add("  - " + (english ? "My answer: " : "\u6211\u7B54\uFF1A") + answer);
+                if (item.Better is { Length: > 0 } better && Improves(item))
+                    output.Add("  - " + (english ? "Better: " : "\u66F4\u597D\u7684\u7B54\u6CD5\uFF1A") + better);
+            }
+        }
+        return output;
+    }
+
+    private sealed record Group(string? Topic, List<NotesItem> Items);
+
+    private static IEnumerable<Group> Groups(IReadOnlyList<NotesItem> items)
+    {
+        var groups = new List<Group>();
+        foreach (var item in items)
+        {
+            if (groups.Count > 0 && groups[^1].Topic == item.Topic) groups[^1].Items.Add(item);
+            else groups.Add(new Group(item.Topic, [item]));
+        }
+        return groups;
+    }
+
+    private static string Line(NotesItem item, NotesSectionKind kind, bool english)
+    {
+        var text = item.Text;
+        switch (kind)
+        {
+            case NotesSectionKind.Actions:
+                var parts = new List<string> { text };
+                if (item.Owner is { Length: > 0 } owner) parts.Add(owner);
+                if (item.Due is { Length: > 0 } due) parts.Add(due);
+                text = string.Join(" \u00B7 ", parts);
+                break;
+            case NotesSectionKind.Questions:
+                if (Improves(item)) text += english ? " (to improve)" : "\uFF08\u5F85\u6539\u8FDB\uFF09";
+                else if (string.Equals(item.Verdict, "good", StringComparison.OrdinalIgnoreCase))
+                    text += english ? " (good)" : "\uFF08\u7B54\u5F97\u597D\uFF09";
+                break;
+        }
+        if (item.Uncertain) text += english ? " (to confirm)" : "\uFF08\u5F85\u786E\u8BA4\uFF09";
+        if (item.Time is { Length: > 0 } time && kind != NotesSectionKind.OneLine) text += " [" + time + "]";
+        return kind == NotesSectionKind.OneLine ? text : "- " + text;
+    }
+
+    private static bool Improves(NotesItem item) =>
+        item.Verdict is { Length: > 0 } verdict
+        && (verdict.ToLowerInvariant().StartsWith("improve", StringComparison.Ordinal)
+            || verdict == "\u5F85\u6539\u8FDB");
 }
 
 /// <summary>

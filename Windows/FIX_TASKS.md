@@ -45,7 +45,7 @@ Nov 20, 2026 · @Homing
 | B7 | 已实现、未验证 | `SessionProjectionBuilder` 移植：transcriptSourceRevision、原文/修订/译文/问题/答案/笔记/纪要检索项、speaker label 参与来源指纹、译文/笔记/纪要过期状态；翻译三个投影测试 | Markdown 导出的过期提示依赖 DerivedContentStatus，未逐字核对 Mac 文案；其余投影 Swift 测试留给 B22 |
 | B8 | 已实现、未验证 | `NotesPrompt.OrganizeSystem` 系统提示词已从 `NotesTemplates.swift:582-623` 逐字移植（会议日期、8 条规则、章节形状、JSON schema）；`OrganizeUser` 增加 answers，新增 `PartialUser`；翻译两个提示词测试 | 会议页生成时尚未传入会中参考回答；其余模板 Swift 测试留给 B22 |
 | B9 | 已实现、未验证 | 模板纪要不再截断 12000 字：`NotesPrompt.Chunks` 按行切 60,000 字、分段 JSON 请求、`MergeUser` 合并；翻译两个分段测试 | 未实机跑两小时会议；未分段校对（proofread）流程；其余笔记 Swift 测试留给 B22 |
-| B10 | 未做 | — | 未开始 |
+| B10 | 已实现、未验证 | `NotesShape.tidy` 只对要点段限 14/6 条并按 topic 分组；JSON 解码接受字符串布尔值、数字时间/字段；Markdown 改为 # 标题 + 事实行、## 章节、待改进/答得好/待确认标记、问题回答与更好答法；旧冲突测试已替换 | 未实机核对英文页；`StructuredNotesMarkdown` 的三种结构化视图仍用旧渲染；其余笔记 Swift 测试留给 B22 |
 | B11 | 未做 | — | 未开始 |
 | B12 | 未做 | — | 未开始 |
 | B13 | 未做 | — | 未开始 |

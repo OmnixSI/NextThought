@@ -220,7 +220,10 @@ public partial class AppState
             }
             // 「周四」「下周一前」按会议日期换成具体日期（模糊说法保持原样）。
             doc = NotesDueDates.Apply(doc, meta.StartedAt);
-            var markdown = NotesMarkdown.Render(doc);
+            var duration = meta.EndedAt is { } ended ? (ended - meta.StartedAt).TotalSeconds : 0;
+            var facts = NotesMarkdown.Facts(doc, meta.StartedAt, duration, meta.InPerson, english);
+            var title = string.IsNullOrWhiteSpace(meta.Title) ? (doc.Title.Length > 0 ? doc.Title : template.Name) : meta.Title.Trim();
+            var markdown = NotesMarkdown.Render(doc, title, facts);
             SummaryText = markdown;
             await Sessions.SaveSummaryAsync(meta, markdown, AnswerOptions(true).Model, cancellation.Token);
             meta.SummaryState = "saved";

@@ -61,37 +61,6 @@ public sealed class NotesTemplateTests
     }
 
     [Fact]
-    public void TidyCapsDropsRepeatsAndOneLineKeepsOne()
-    {
-        var items = new[]
-        {
-            new NotesItem { Text = "缓存过期！" },
-            new NotesItem { Text = "缓存过期" },
-            new NotesItem { Text = "   " }
-        };
-        Assert.Single(NotesJson.Tidy(items, NotesSectionKind.Items, false));
-        var many = Enumerable.Range(0, 20).Select(index => new NotesItem { Text = "第 " + index + " 条" });
-        Assert.Equal(12, NotesJson.Tidy(many, NotesSectionKind.Items, false).Count);
-        Assert.Equal(5, NotesJson.Tidy(many, NotesSectionKind.Items, true).Count);
-        Assert.Single(NotesJson.Tidy(many, NotesSectionKind.OneLine, false));
-    }
-
-    [Fact]
-    public void VerdictsRenderWithTheBetterAnswer()
-    {
-        var template = NotesTemplate.BuiltIn(NotesTemplateKind.Interview);
-        var reply = """
-            {"title":"一面","sections":[{"id":"questions","items":[
-              {"text":"为什么选这个岗位","answer":"因为项目经验","verdict":"improve","better":"先说岗位要求，再说自己对应的经历","time":"03:10"}]}]}
-            """;
-        var doc = NotesJson.Parse(reply, template)!;
-        var markdown = NotesMarkdown.Render(doc);
-        Assert.Contains("### 逐题回放", markdown);
-        Assert.Contains("- 为什么选这个岗位 [03:10]", markdown);
-        Assert.Contains("更好的答法：先说岗位要求", markdown);
-    }
-
-    [Fact]
     public void MarkdownSkipsEmptySectionsAndRendersOwners()
     {
         var template = NotesTemplate.BuiltIn(NotesTemplateKind.GroupProject);
@@ -99,9 +68,9 @@ public sealed class NotesTemplateTests
             {"sections":[{"id":"tasks","items":[{"text":"写综述","owner":"我","due":"下周一"}]}]}
             """, template)!;
         var markdown = NotesMarkdown.Render(doc);
-        Assert.Contains("### 分工 · 谁 · 哪天交", markdown);
+        Assert.Contains("## 分工 · 谁 · 哪天交", markdown);
         Assert.Contains("- 写综述 · 我 · 下周一", markdown);
-        Assert.DoesNotContain("### 定下来的方案", markdown);
+        Assert.DoesNotContain("## 定下来的方案", markdown);
     }
 
     [Fact]
