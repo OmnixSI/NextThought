@@ -24,6 +24,17 @@ public partial class AppState
     private Task DeleteSession(RecentMeetingRow row) => DeleteSessionAsync(row);
 
 
+
+    /// <summary>E18: delete the checkbox-selected meetings.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task DeleteSelectedSessionsAsync()
+    {
+        var rows = FilteredHistory.Where(row => row.IsSelected).ToList();
+        if (rows.Count == 0 || Recording || Working) return;
+        foreach (var row in rows) await DeleteSessionAsync(row);
+        SetStatus($"已删除选中的 {rows.Count} 场会议。");
+    }
+
     /// <summary>E18: batch delete every meeting currently matching the history filters.</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private async Task DeleteFilteredSessionsAsync()

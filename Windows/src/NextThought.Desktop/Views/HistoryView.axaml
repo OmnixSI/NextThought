@@ -17,18 +17,19 @@
                   <MenuItem Header="删除会议" Tag="{Binding}" Tapped="DeleteSession_Tapped" />
                 </ContextMenu>
               </Button.ContextMenu>
-              <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
-                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
+              <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
+                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_10_0}" />
+                <Border Grid.Column="1" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
                         VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_14_0}">
                   <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
                              Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center"
                              VerticalAlignment="Center" />
                 </Border>
-                <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+                <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
                   <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                   <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
                 </StackPanel>
-                <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_6}" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="3" Spacing="{DynamicResource D4Spacing_6}" Orientation="Horizontal" VerticalAlignment="Center">
                   <Border Classes="chip" IsVisible="{Binding HasSummary}">
                     <TextBlock Text="有纪要" Classes="overline" FontSize="10" />
                   </Border>
@@ -65,6 +66,7 @@
         </RadioButton>
         <TextBlock Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
         <Button Classes="quiet" Content="全文搜索" Command="{Binding SearchHistoryContentCommand}" VerticalAlignment="Center" />
+        <Button Classes="quiet" Content="删除选中" Click="DeleteSelected_Click" VerticalAlignment="Center" />
         <Button Classes="quiet" Content="删除筛选结果" Click="DeleteFiltered_Click" VerticalAlignment="Center" />
       </StackPanel>
     </Grid>

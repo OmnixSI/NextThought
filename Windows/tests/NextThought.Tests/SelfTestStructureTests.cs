@@ -98,6 +98,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistorySupportsMultiSelectDelete()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("IsSelected", xaml);
+        Assert.Contains("DeleteSelected_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
+        Assert.Contains("DeleteSelectedSessionsAsync", state);
+    }
+
     [Fact]
     public void DeletingASessionAsksForConfirmation()
     {

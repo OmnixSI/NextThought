@@ -23,8 +23,21 @@ public sealed record SeriesRow(string Id, string Name, int Count, int LessonCoun
 /// <summary>One history section when meetings are grouped by series.</summary>
 public sealed record HistoryGroupRow(string Name, string? SeriesId, IReadOnlyList<RecentMeetingRow> Rows);
 
-public sealed record RecentMeetingRow(SessionMeta Meta)
+public sealed record RecentMeetingRow(SessionMeta Meta) : System.ComponentModel.INotifyPropertyChanged
 {
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+    private bool isSelected;
+    public bool IsSelected
+    {
+        get => isSelected;
+        set
+        {
+            if (isSelected == value) return;
+            isSelected = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(IsSelected)));
+        }
+    }
+
     public string Title => string.IsNullOrWhiteSpace(Meta.Title) ? UiText.T("未命名会议") : Meta.Title;
 
     public string Subtitle
