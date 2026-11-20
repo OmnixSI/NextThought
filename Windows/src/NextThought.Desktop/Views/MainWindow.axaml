@@ -36,6 +36,8 @@
       <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_142_0}" IsVisible="{Binding !Recording}">
         <TextBlock Text="{Binding PageSubtitle}" Classes="caption" VerticalAlignment="Center" MaxWidth="280"
                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+        <Button Classes="primary" Content="重启以更新" Command="{Binding InstallUpdateCommand}"
+                IsVisible="{Binding CanInstallUpdateInApp}" ToolTip.Tip="安装已下载的更新并重新打开" />
         <Button Classes="quiet" ToolTip.Tip="快速设置">
           <Button.Flyout>
             <Flyout Placement="BottomEdgeAlignedRight">

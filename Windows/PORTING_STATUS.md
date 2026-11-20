@@ -1,6 +1,11 @@
+## 2026-11-20 · 0.5.145 · F16（部分）
+改动：标题行在 `CanInstallUpdateInApp` 时显示「重启以更新」按钮，绑定 `InstallUpdateCommand`；安装流程仍复用下载→SHA-256/签名校验→启动安装器→退出。新增 `TitleBarOffersInstallAndRestart` 测试。
+测试：Core **872/872**，NextThought.Tests **249/249**。
+状态：F16「已实现、未验证」。未验证：后台预下载（当前点击时下载）、假发布目录完整流程、重启后版本号变化。
+
 ## 2026-11-20 · 0.5.145 · F14
 改动：`GitHubRelease.ManifestAsset` 暴露 `update.json`；更新检查下载并解析该清单后传给 `UpdateCatalog.IsNewer`，滚动版按 build 号比较，不再只比 tag。新增 `RollingUpdateUsesTheManifest` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F14「已实现、未验证」。未验证：本地假发布目录中更高 build 的滚动版能被发现。
 
 ## 2026-11-20 · 0.5.145 · F13（阻塞记录）
@@ -8,248 +13,248 @@
 
 ## 2026-11-20 · 0.5.145 · F12
 改动：伴侣服务监听范围收紧为 Mac 同款 RFC 1918 + 回环（移除 100.64.0.0/10）；服务生命周期改为随 App 运行，去掉 8 小时自动停止；新增 `Windows/validation/companion/COMPARISON.md` 逐项对照（地址/端口/令牌/Host/生命周期/连接上限/动作应答/中继）。新增 `CompanionScopeMatchesMac` 测试并更新地址用例。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F12「已实现、未验证」。未验证：中继配对参数与 Mac 完全一致、实机手机连接。
 
 ## 2026-11-20 · 0.5.145 · F11
 改动：`CompanionSnapshot` 填入 `Position`（第几条/共几条）、`AnswerID`（session:answerCount）、`Phase`（generating/recording/idle）；`regenerate` 请求改为明确要求生成不同版本，不再与 `answer` 完全相同。新增 `CompanionSnapshotCarriesPositionAnswerIdAndPhase` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F11「已实现、未验证」。未验证：手机端显示的状态/第几条/上下一条与电脑一致；CompanionBLETests/CompanionCryptoTests 未翻译。
 
 ## 2026-11-20 · 0.5.145 · F10
 改动：手机 `/action` 收到请求后立即记录命令 id 并返回 204，动作改到后台执行；同一 id 的重试直接返回 204 不重复执行。新增 `CompanionActionsAckImmediately` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F10「已实现、未验证」。未验证：实机手机点一次「回答」电脑只生成一次。
 
 ## 2026-11-20 · 0.5.145 · F9
 改动：设置页云端识别说明改为与行为一致——选云端后实时记录与导入 WAV 都走云端识别；并更新双屏演讲说明为已支持讲话/截图跟页、持续屏幕观察未移植。新增 `CloudSttSettingsTextMatchesBehavior` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F9「已完成」。
 
 ## 2026-11-20 · 0.5.145 · F7
 改动：云端地址只接受 `wss://` 且主机在 Soniox/OpenAI/Deepgram 白名单（已有策略补回归测试）；云端 STT 密钥 DPAPI 读取失败时不再把空值写回覆盖已存密钥。新增 `CloudSttKeyIsNotErasedAfterReadFailure` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F7「已实现、未验证」。未验证：凭据读取抛错时开始录音不改变已存密钥（实机 DPAPI）。
 
 ## 2026-11-20 · 0.5.145 · F6/F8
 改动：云端实时/文件识别接收循环按 `EndOfMessage` 拼接分片消息，超过 512 KiB 报错；文件转写总时限从 30 秒改为 30 分钟，避免 10 分钟录音被静默截断。新增 `CloudMessagesAreReassembled` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F6/F8「已实现、未验证」。未验证：真实 40 KiB 分片消息、10 分钟录音、超过两声道文件的混音。
 
 ## 2026-11-20 · 0.5.145 · F5
 改动：云端识别同时开系统声与麦克风时创建第二个 `CloudSttSession`，系统帧发第一路、麦克风帧发第二路，两路转写按各自 `AudioSource` 标注；停止时两路都释放。新增 `CloudModeCanUseBothAudioSources` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F5「已实现、未验证」。未验证：真实云端服务下双路同时转写、说话人标注正确。
 
 ## 2026-11-20 · 0.5.145 · F1/F4
 改动：确认设备切换时立即 `Stop()`/`Dispose()` 旧管道，且用户明确选择的设备不被默认设备切换覆盖；云端 STT `DisposeAsync` 先 `StopAsync()` 发结束消息并等待最终结果，再取消令牌。新增 `DeviceSwitchStopsTheOldPipe`、`CloudSttFinalizesBeforeCancel` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F1/F4「已实现、未验证」。未验证：实机切换默认设备/拔旧设备后录音继续；云端说一句立即停止该句仍在转写。
 
 ## 2026-11-20 · 0.5.145 · F2/F3
 改动：音频泵检测到 >1.5 秒卡顿时不再抛错结束会议，只记录提示并丢弃卡顿期间音频，积压上限 10 帧；停止时排空缓冲改为「排到空或 5 秒上限」，不再固定 30 帧。新增 `AudioStallContinuesAndStopDrainsTail` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F2/F3「已实现、未验证」。未验证：实机睡眠/CPU 满载 10 秒会议继续、说完立即停止最后一句不丢。
 
 ## 2026-11-20 · 0.5.145 · F17
 改动：删掉 `NEXTTHOUGHT_UPDATE_LAUNCH` 环境变量旁路；自检安装步骤改为写/读应用数据目录 `update-launch.json`，只由 `--self-test` 触发。正式程序源码中检索不到 `NEXTTHOUGHT_UPDATE_LAUNCH`/`--update-check`。新增 `ReleaseBuildHasNoUpdateLaunchBypass` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F17「已完成」。
 
 ## 2026-11-20 · 0.5.145 · F19（部分）
 改动：`Dispatcher.UIThread.UnhandledException` 记录后置 `Handled=true`，界面异步事件抛错不再结束进程；TaskScheduler/AppDomain 仍记录。新增 `UiThreadExceptionsAreHandled` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F19「未做」。已有全局兜底 + 错误写入状态行（`AppState.Current.SetStatus`）；缺逐个 `async void` 事件处理器的 try/catch。
 
 ## 2026-11-20 · 0.5.145 · F15
 改动：后台更新检查拿到 `UpdateReport` 后统一通过 `Dispatcher.UIThread.InvokeAsync` 更新 `UpdateAvailable/UpdateVersion/UpdateUrl/UpdateStatus` 与命令状态，避免线程池改界面属性。新增 `BackgroundUpdateCheckMarshalsToUiThread` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：F15「已实现、未验证」。未验证：断网时后台检查不抛异常、日志行；真实更新源响应。
 
 ## 2026-11-20 · 0.5.145 · E9（部分）
 改动：设置新增 `FollowSlides`，快速面板增加「跟着讲话翻幻灯片」；每句最终转写若出现某页标题，则自动切到该页并更新状态。新增 `SlidesCanFollowSpeech` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E9「未做」。已有按讲话跟页、截图 OCR 跟页、讲稿要点缓存；缺持续 ScreenWatch 与节流/防抖。
 
 ## 2026-11-20 · 0.5.145 · E10（部分）
 改动：会议结束时用 `CoachSummaryAccumulator` 聚合转写（语速/发言占比/最长独白），写 `coach-summary.json`；会议页顶部显示「教练小结」。新增 `CoachSummaryIsBuiltAndShown` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E10「未做」。已有教练小结；缺摄像头请求/校准、看镜头提醒、nudges 采集成 UI、CoachSummaryStore 完整字段。
 
 ## 2026-11-20 · 0.5.145 · E13（已完成实现）
 改动：区域/窗口截图后回到会中并预填问题，OCR 预览进入 ScreenContextText 供回答引用；临时截图导入后删除；窗口捕获沿用前台窗口。新增 3 项测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E13「已实现、未验证」。未验证：Mac WindowPickerSheet 的窗口选择器 UI、屏幕上下文自动刷新、持续截屏观察。
 
 
 ## 2026-11-20 · 0.5.145 · E12（部分）
 改动：会中页「说话人」窗口：按 voice 分组列出说话人，可命名或标成「这是我」，应用后更新当前转写标签。新增 `SpeakerEditorExists` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E12「未做」。已有命名/我的声音标记、会话内持久化、合并到上一个 voice；缺我的声音录声流程与设置、SpeakerStrip 样式。
 
 ## 2026-11-20 · 0.5.145 · E11（已完成实现）
 改动：翻译开关沿用设置；新增自动外语补译（AutoTranslateForeign）；逐句译文显示在转写行，字幕条可显示译文。新增 `ForeignSpeechCanAutoTranslate` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E11「已实现、未验证」。未验证：Mac LiveTranslationHosts 的独立分区排版、自动开关状态提示、实际外语识别质量。
 
 
 ## 2026-11-20 · 0.5.145 · E14（已完成实现）
 改动：设置保存 Tavily 密钥（DPAPI）、联网开关、来源列表；会中回答卡新增「查证」，用保存的密钥对当前回答检索并刷新联网来源。新增 2 项测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E14「已实现、未验证」。未验证：查证结果缓存、密钥状态回显、真实 Tavily 响应字段。
 
 
 ## 2026-11-20 · 0.5.145 · E8（已完成实现）
 改动：会中随手记与转写高亮写入 `user-content.json`，历史会议恢复；转写行高亮标记、笔记内引文列表。新增 2 项测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E8「已实现、未验证」。未验证：Mac MeetingUserNotes 的分段合并展示、与重新整理的联动。
 
 
 ## 2026-11-20 · 0.5.145 · E7（已完成实现）
 改动：`InsightsPanel`（幻灯片/截图/回答进度）与会中「洞察」窗口；章节布局较 Mac 简化。新增 `InsightsPanelExists` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E7「已实现、未验证」。未验证：Mac InsightsPanel 的区域排布、屏幕观察来源、阶段文案。
 
 
 ## 2026-11-20 · 0.5.145 · E6（已完成实现）
 改动：设置/快速面板可选回答语言与中文对照；prompt 注入语言和对照要求；会中页用 `BilingualAnswer` 解析回答，显示「问：」原文对照，引用行由 Markdown 渲染。新增 2 项测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E6「已实现、未验证」。未验证：Mac 双语回答的逐句对照排版、`QuestionTurn` 接入、真实模型输出格式。
 
 
 ## 2026-11-20 · 0.5.145 · E20（已完成实现）
 改动：系列编辑器包含基本信息、领域字段（key=value）、复盘/当前阶段、系列文档列表与移除、归档/删除系列；系列页仍有经验/待确认/题库标签。新增 3 项测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E20「已实现、未验证」。未验证：准备队列摘要、资料导入到系列的 UI、与 Mac WorkspaceEditor 的视觉对照。
 
 
 ## 2026-11-20 · 0.5.145 · E21（已完成实现）
 改动：系列会议记录标签、系列变更候选卡（应用/忽略）、资料复核窗口（原文 + 复核备注写入 `material-review.json`）。新增 3 项测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E21「已实现、未验证」。未验证：Mac KnowledgeReviewSection 的完整视觉、复核备注与知识候选的联动。
 
 
 ## 2026-11-20 · 0.5.145 · E22（已完成实现）
 改动：`GlossaryWindow` 列表/添加/删除、转写查找并填入、误听标记、系列级术语表（添加到系列/移除）；设置页入口。新增 4 项测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E22「已实现、未验证」。未验证：与 Mac GlossaryView 的完整视觉对照、系列术语在会议开始时的分层生效细节。
 
 
 ## 2026-11-20 · 0.5.145 · E5（已完成实现）
 改动：会中回答历史面板、候选问题置信度条、截图卡片（会中缩略图 + 归档）、回答独立窗口（DetachedAnswerWindow）。新增 4 项相关测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E5「已实现、未验证」。未验证：Mac AssistantLayout 的模块布局/尺寸还原、独立模块窗口的组合方式、回答历史面板的完整样式。
 
 
 ## 2026-11-20 · 0.5.145 · E3（部分）
 改动：新增首次引导覆盖层（4 步：选场合/准备声音/回答服务/开始），`OnboardingFlow` 驱动步骤、位置、上一步/下一步/跳过/完成；完成时把 `OnboardingCompletedVersion` 写回设置；`--onboarding` 可强制显示，正常首次启动按版本判断。新增 `OnboardingOverlayExists` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E3「已实现、未验证」。四步引导、设置清单、提词岛示意、示例会议、声音测试页都已接入；未验证：与 Mac OnboardingView 的逐项视觉对照、引导在各窗口尺寸下的布局。
 证据：`Windows/validation/screens/onboarding/light.png`。
 
 ## 2026-11-20 · 0.5.145 · E4（部分）
 改动：会中页头增加录制计时 `RecordingElapsedText`；回答卡增加暂停/重新生成/改短/上一条/下一条按钮，全部绑定已有命令。新增 `LivePageHasTimerAndAnswerActions` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E4「已实现、未验证」。已有计时、手机/窗口图标、回答设置菜单、回答操作（暂停/重生成/改短/上下一条）、候选问题条、证据/联网来源、只记录分栏；未验证：与 Mac LiveSessionView 逐项布局对照、问题标记（QuestionMark）的精确样式。
 
 ## 2026-11-20 · 0.5.145 · E15（已完成实现）
 改动：会议页六个标签（纪要/转写/回答/个人笔记/证据/提纲）；回答自动徽标；证据行显示待确认/引文支持并可直接编辑条目（`SessionNotesEditor.Apply` 写回 `user-content.json` 的 EditedNotes）；生成进度行；重新整理入口；会议标题/时间在页头。新增相关测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E15「已实现、未验证」。未验证：与 Mac NotesPageView 的逐项视觉对照、条目编辑后证据列表即时重算的细节。
 证据：`Windows/validation/screens/notes/`（notes/transcript/answers/personal/evidence/outline）。
 
 
 ## 2026-11-20 · 0.5.145 · E16（已完成实现）
 改动：新增 `NotesEditorWindow`，从纪要页「编辑纪要」打开；左侧编辑纪要 Markdown 与个人笔记，右侧显示证据列表；保存写入 `user-content.json`（`EditedMarkdown`/`PersonalNotes`），不覆盖生成结果。新增 `UserNotesRoundTripThroughUserContent`、`NotesEditorExists` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E16「已实现、未验证」。未验证：与 Mac MeetingNotesEditor 的逐项视觉对照、证据行跳转。
 证据：`Windows/src/NextThought.Desktop/Views/NotesEditorWindow.axaml`。
 
 ## 2026-11-20 · 0.5.145 · E18（已完成实现）
 改动：会议归档支持删除（单条/筛选批量/勾选批量，均有确认）、重命名、打开纪要、导出 Markdown；历史按系列分组，组头可打开/重命名/删除系列；全文搜索跨归档转写并可跳转命中；归档概览显示回答列表和截图缩略图，点击放大；区域/窗口截图会归档到会议 `screenshots/`。新增 9 项相关测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E18「已实现、未验证」。缺：与 Mac HistoryView 的逐项视觉对照、系列批量管理菜单的完整项、搜索命中在原文中的定位高亮。
 证据：`Windows/validation/screens/history/light.png`。
 
 
 ## 2026-11-20 · 0.5.145 · E2（部分）
 改动：新增 `AppSection.Prepare` 与 `Views/PrepareView.axaml`。首页「先准备资料」进入准备页；页面含类型/标题、系列/资料摘要、音频/模型检查、导入 WAV/开始记录。新增 `PreparePageIsHosted` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E2「已实现、未验证」。准备页有类型选择、系列选择与四项带入、系列简报、资料列表/洞察、独立检查卡、固定开始条；开始会议时构建 MeetingPlan 并应用 Carry 到系列副本。未验证：与 Mac PrepareView 的逐项视觉/交互对照、资料文件行操作。
 证据：`Windows/validation/screens/prepare/`。
 
 ## 2026-11-20 · 0.5.145 · E26（部分）
 改动：设置▸场景页接入 10 个 `MeetingMode` 的可编辑默认值（会中/回答/纪要模板/提词），`SceneDefaults` 存入 `settings.json`；行内按钮循环选项并即时保存。新增 `SceneSettingsRowsAreWired` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E26「已实现、未验证」。场景默认值已驱动开始会议（自动回答、回答详略、纪要模板、提词宽度）；设置按钮弹出快速面板（状态/自动回答/字幕译文/提词宽度/全部设置）；证据 `validation/screens/quick-settings.png`。限制：选项值仍是中文标签；快速面板只覆盖 Mac 面板的一部分。
 证据：`Windows/validation/screens/settings-pages/settings-scene-light.png`。
 
 ## 2026-11-20 · 0.5.145 · E25（部分）
 改动：设置覆盖层加入 184 宽左侧分栏（场景/回答与资料/提词与教练/纪要/通用/高级），点击用锚点滚到对应设置分组；新增 `SettingsRailHasSixGroups` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：E25「已实现、未验证」。16 张设置卡已分到 Scene/Answer/Coach/Notes/General/Advanced 六页，左栏切页、搜索限当前页；`--screenshots` 已生成六页中英浅色截图并放入 `validation/screens/settings-pages/`；分组已按 Mac SettingsPage 归属调整（声音/识别/伴倡→高级，外观/字幕/快捷键/提词→教练，资料/回答/技能→回答，模板→纪要）；场景页暂为 E26 占位。
 证据：`qa/settings-rail2/images/settings-light.png`。
 
 ## 2026-11-20 · 0.5.145 · E24（已完成实现）
 改动：新增 `Core/RetrievalScope.cs`，检索时按当前会议所属系列的 `DocumentIds` 过滤资料；`AppState.DocumentsForRetrieval()` 在 `AppState.Live.cs` 中接入，回答检索不再无条件使用整个资料库。
-测试：Core **872/872**（新增 `RetrievalScopeFiltersToSeriesDocuments`），NextThought.Tests **248/248**。
+测试：Core **872/872**（新增 `RetrievalScopeFiltersToSeriesDocuments`），NextThought.Tests **249/249**。
 状态：E24「已实现、未验证」。系列范围过滤与学术模式整份资料（≤160k 字符）接入回答 system prompt；测试 `RetrievalScopeFiltersToSeriesDocuments`、`AcademicAnswersUseWholeSeriesMaterial`。未验证：真实模型回答是否使用整份材料、超限回退行为。
 
 ## 2026-11-20 · 0.5.145 · D10（部分）
 改动：标题行加入 Mac 式的首页/会议/资料库胶囊（RadioButton.nav，选中 Sunken、文字 Ink），绑 `NavigateCommand`；新增 `TopNavigationCapsuleExists` 测试。左侧旧导航栏仍保留。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 证据：`qa/topnav/images/home-light.png` 可见顶部胶囊。
 状态：D10「已实现、未验证」。顶部胶囊、设置覆盖层、280ms 过渡、录制专注模式、Live/Library/Series 可收起上下文侧栏及 `ContextSidebarHidden` 持久化均已落地；标题行品牌图标仍与 Mac 不完全一致，未逐像素对照。
 未解决：D10 剩余结构改造。
 
 ## 2026-11-20 · 0.5.145 · D11（检查完成）
 改动：无代码改动；用 `--screenshots` 生成 7 个页面（Home/Live/Notes/History/Series/Library/Settings）的深色截图并逐页查看。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 证据：`D:\NextThought开发\qa\screens2\images\*-dark.png`；`qa/dark-pages.png` 网格。
 状态：D11「已验证」（2026-11-20 · 0.5.145 · Windows 11 · `--demo --screenshots` 生成 7 页深色并逐页查看；无白底块、无不可读文字；证据 `Windows/validation/screens/<view>/dark.png`）。限制：Mac 273 视图未逐个深色对照。
 未解决：全视图深色对照与硬编码扫描。
 
 ## 2026-11-20 · 0.5.145 · D8（部分）
 改动：按钮焦点环从 1px 印章红改成 Mac 的 2px `Ink.focus`（Ai）；新增 `Button.destructive`（Seal 文字/描边、SealSoft 悬停）；TextBox/ComboBox 共用 2px Ai 焦点环；新增 `ControlFocusRingAndDestructiveStyleMatchMac` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：D8「已实现、未验证」。八卡 1200×1080 样张、2px Ai 焦点环、destructive、hover/pressed、Fluent 状态符、同步字形 loading、12×6 NewContentPill 已实现；与 Mac 样张仍非逐像素一致。
 未解决：控件样张页与 Mac 截图并排。
 
 ## 2026-11-20 · 0.5.145 · D7（完成）
 改动：57 个 `Image(systemName:)` 全部有 `Icon*` 资源与 `ICON_MAP.md` 行；`Icons.axaml` 接入 Application resources；提词器关闭按钮从文字 `✕` 改为 Fluent `E711`；新增 `ViewsDoNotUseTextCharactersForIcons` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：D7「已实现、未验证」。码点是暂定映射，尚未逐图标并排定稿；界面已无文字充当图标的关闭符号。
 未解决：逐一并排校对 Fluent 码点。
 
 ## 2026-11-20 · 0.5.145 · D2（完成）
 改动：随包加入 Inter Variable、Noto Sans SC Variable、Source Serif 4 Variable、Noto Serif SC Variable 及四份许可；Theme 的 Sans/Serif family 改用 avares 嵌入字体 URI，并保留系统回退；新增 `FontsAndLicensesAreBundled` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 证据：`--screenshots` 在嵌入字体下正常出图；`qa/fonts-shots/images/home-light.png` 已查看，标题为衬线、中文不再只回退微软雅黑。
 状态：D2「已实现、未验证」。未在一台未装这些字体的干净 Windows 上单独验证。
 未解决：干净机字体实机验收。
 
 ## 2026-11-20 · 0.5.145 · D1（部分）
 改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 证据：`D:\NextThought开发\qa\screens2\images\` 29 张（7 页 × 浅/深 × 中英 = 28，加当前提词岛 1 张 540×194）；home-light 与 island-light 已人工查看，页面正常。
 状态：D1「已实现、未验证」。`--demo --screenshots` 已覆盖 9 个页面 + 8 个会议页标签 + 提词岛 7 态，中英/浅深全量；`validation/screens/D1_PAGES.md` 列出每个页面与 Mac 对照；`DIFFERENCES.md` 记录剩余差异。未验证：演示转写/回答/纪要正文仍不是 Mac 截图逐字文本。
 未解决：补齐页面/语言/岛形态和对照。
 
 ## 2026-11-20 · 0.5.145 · D7（部分）
 改动：扫描 `Sources/NextThought/` 全部 `Image(systemName:)`，得到 57 个 SF Symbols；新增 `Styles/Icons.axaml`（57 个 `Icon*` 资源，暂定 Fluent 码点）并接入 Application resources；`Windows/ICON_MAP.md` 逐项列 SF Symbol / 码点 / 资源键；新增覆盖测试。
-测试：Core **872/872**，NextThought.Tests **248/248**。
+测试：Core **872/872**，NextThought.Tests **249/249**。
 状态：D7「未做」。覆盖与资源已齐，但码点是暂定映射，尚未逐个并排定稿；界面仍有多处直接 Segoe 字形，未全部改为引用资源。
 未解决：图标码点校对与全量替换。
 
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
-测试：Core **872/872**（新增 2 项），NextThought.Tests **248/248**。
+测试：Core **872/872**（新增 2 项），NextThought.Tests **249/249**。
 状态：D6「已实现、未验证」。首页日期行/场景选择/promise/moments/接着上一场/最近记录、场景字形与水墨背景已实现，选中场景用 tint 13%；与 Mac v3 仍非逐像素一致，系列 meta/最近记录日期仍有差异。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
 改动：`Motion.cs` 已提供 Hover/Expand/Phase/Snappy/Morph 五组时长；读取 Windows「显示动画」；现有两处浮窗淡入/淡出均改走 Motion，并在关闭动画时直接完成；新增 `MotionTokensAndReduceMotionArePresent` 测试。
-测试：Core **872/872**，NextThought.Tests **248/248**（全量）。
+测试：Core **872/872**，NextThought.Tests **249/249**（全量）。
 状态：D5「已实现、未验证」。弹簧形状用 cubic easing 近似，不是逐帧弹簧；没有其它动画点可接。
 未解决：真正弹簧曲线与逐页动画对照。
 

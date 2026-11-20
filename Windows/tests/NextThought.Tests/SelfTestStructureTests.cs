@@ -199,6 +199,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void TitleBarOffersInstallAndRestart()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("重启以更新", xaml);
+        Assert.Contains("CanInstallUpdateInApp", xaml);
+    }
+
     [Fact]
     public void RollingUpdateUsesTheManifest()
     {
