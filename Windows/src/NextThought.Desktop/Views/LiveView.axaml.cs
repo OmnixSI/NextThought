@@ -110,4 +110,11 @@ public partial class LiveView : UserControl
         if (sender is Button { Tag: TranscriptRow row } && DataContext is AppState state)
             state.HighlightLineCommand.Execute(row);
     }
+
+    private void Speakers_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        state.OpenSpeakerEditorCommand.Execute(null);
+        new SpeakerEditorWindow { DataContext = state }.Show();
+    }
 }

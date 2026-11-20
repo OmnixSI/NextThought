@@ -174,6 +174,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SpeakerEditorExists()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SpeakerEditorWindow.axaml")));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("Speakers_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Speakers.cs"));
+        Assert.Contains("ApplySpeakerNames", state);
+    }
+
     [Fact]
     public void ForeignSpeechCanAutoTranslate()
     {

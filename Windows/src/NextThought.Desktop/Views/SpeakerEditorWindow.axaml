@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.SpeakerEditorWindow"
+        x:DataType="local:AppState"
+        Title="说话人" Width="520" Height="460" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Paper}">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_18}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+      <TextBlock Text="说话人" Classes="display" FontSize="24" />
+      <TextBlock Text="命名后应用到当前转写；也可以把某一声道标成「这是我」。" Classes="caption" TextWrapping="Wrap" />
+    </StackPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_10_0_0}">
+      <ItemsControl ItemsSource="{Binding SpeakerRows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="local:SpeakerRow">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="{DynamicResource D4Margin_0_0_0_8}">
+              <TextBlock Text="{Binding Label}" Classes="label" VerticalAlignment="Center" MinWidth="70" />
+              <TextBox Grid.Column="1" Text="{Binding Name}" PlaceholderText="名字" />
+              <CheckBox Grid.Column="2" Content="这是我" IsChecked="{Binding IsMe}" VerticalAlignment="Center" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
+      <Button Content="关闭" Click="Close_Click" />
+      <Button Classes="primary" Content="应用" Command="{Binding ApplySpeakerNamesCommand}" Click="Close_Click" />
+    </StackPanel>
+  </Grid>
+</Window>
