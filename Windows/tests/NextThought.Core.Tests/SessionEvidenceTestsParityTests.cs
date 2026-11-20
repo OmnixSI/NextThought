@@ -77,16 +77,52 @@ public sealed class SessionEvidenceTestsParityTests
         Assert.Equal("01:22", evidence.Location);
     }
 
-    [Fact(Skip = "Missing C# API: SessionEvidenceBuilder.Build has no corrections parameter (it builds the projection without " +
-                 "StructuredNotesDoc.Corrections), so original-vs-corrected occurrence matching cannot be exercised.")]
+    [Fact]
     public void TimestampChoosesNearestOccurrenceAcrossOriginalAndCorrectedVersions()
     {
+        var nearby = Line(Start, 12, "\u7f13\u5b58\u9e21\u7a7f\u9700\u8981\u4fee\u590d\u3002");
+        var farther = Line(Start, 82, "\u7f13\u5b58\u96c6\u7fa4\u5df2\u7ecf\u51c6\u5907\u597d\u3002");
+        var corrections = new[]
+        {
+            new TranscriptCorrection
+            {
+                Line = 0, LineId = nearby.Id,
+                BaseRevision = TranscriptRevisions.Of(nearby.Id, nearby.Text),
+                Original = "\u9e21\u7a7f", Corrected = "\u96ea\u5d29"
+            },
+            new TranscriptCorrection
+            {
+                Line = 1, LineId = farther.Id,
+                BaseRevision = TranscriptRevisions.Of(farther.Id, farther.Text),
+                Original = "\u96c6\u7fa4", Corrected = "\u9e21\u7a7f"
+            }
+        };
+        var notes = Doc(new NotesSectionResult("decisions", "\u51b3\u5b9a", NotesSectionKind.Items, false,
+            [new NotesItem { Text = "\u7f13\u5b58\u9e21\u7a7f\u9700\u8981\u4fee\u590d", Time = "00:12",
+                Quote = "\u7f13\u5b58\u9e21\u7a7f" }])) with { Corrections = corrections };
+        var evidence = SessionEvidenceBuilder.Build(Meta(Start), [nearby, farther], notes, null).Single();
+        Assert.Equal(nearby.Id, evidence.LineId);
+        Assert.Equal(SessionEvidenceSourceVariant.Original, evidence.SourceVariant);
     }
 
-    [Fact(Skip = "Missing C# API: SessionEvidenceBuilder.Build has no corrections parameter (it builds the projection without " +
-                 "StructuredNotesDoc.Corrections), so a corrected-only quote cannot be matched.")]
+    [Fact]
     public void CorrectedOnlyQuoteIdentifiesTheCorrectedTranscriptVersion()
     {
+        var line = Line(Start, 15, "\u7f13\u5b58\u9e21\u7a7f");
+        var correction = new TranscriptCorrection
+        {
+            Line = 0, LineId = line.Id,
+            BaseRevision = TranscriptRevisions.Of(line.Id, line.Text),
+            Original = "\u9e21\u7a7f", Corrected = "\u96c6\u7fa4"
+        };
+        var notes = Doc(new NotesSectionResult("decisions", "\u51b3\u5b9a", NotesSectionKind.Items, false,
+            [new NotesItem { Text = "\u4f7f\u7528\u7f13\u5b58\u96c6\u7fa4", Time = "00:15",
+                Quote = "\u7f13\u5b58\u96c6\u7fa4" }])) with { Corrections = [correction] };
+        var evidence = SessionEvidenceBuilder.Build(Meta(Start), [line], notes, null).Single();
+        Assert.Equal(SessionEvidenceSupport.Quoted, evidence.Support);
+        Assert.Equal(SessionEvidenceSourceVariant.Corrected, evidence.SourceVariant);
+        Assert.Equal("\u7f13\u5b58\u96c6\u7fa4", evidence.SourceText);
+        Assert.Equal(TranscriptRevisions.Of(line.Id, "\u7f13\u5b58\u96c6\u7fa4"), evidence.SourceRevision);
     }
 
     [Fact]

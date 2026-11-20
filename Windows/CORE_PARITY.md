@@ -178,7 +178,7 @@ python Windows/scripts/core_usage.py
 | DocumentFeatureAvailabilityTests.swift | 1 | 1 |
 | DocumentJobTests.swift | 6 | 0 |
 | DocumentNoticeTests.swift | 11 | 0 |
-| DocumentStructureTests.swift | 5 | 4 |
+| DocumentStructureTests.swift | 5 | 5 |
 | EchoSuppressionTests.swift | 7 | 0 |
 | GlossaryTests.swift | 18 | 0 |
 | LaTeXMathTests.swift | 13 | 0 |

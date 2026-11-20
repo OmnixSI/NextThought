@@ -15,6 +15,40 @@ public static class NotesVerifier
     public static bool IsSupported(int seconds, IReadOnlyList<int> lineOffsets, double duration, int tolerance = 45)
         => seconds <= Math.Max(duration, 0) + 90
            && (lineOffsets.Count == 0 || lineOffsets.Any(offset => Math.Abs(offset - seconds) <= tolerance));
+    /// <summary>B22: the check step for template notes: drop unsupported times, resolve due dates.</summary>
+    public static StructuredNotesDoc Verify(StructuredNotesDoc notes, IReadOnlyList<int> lineOffsets,
+        double duration, DateTimeOffset meetingDate, int tolerance = 45)
+    {
+        var english = notes.Language == "en";
+        var dropped = 0;
+        var sections = notes.Sections.Select(section => section with
+        {
+            Items = section.Items.Select(item =>
+            {
+                var current = item;
+                if (section.Kind != NotesSectionKind.OneLine)
+                {
+                    var seconds = current.Time is { } time ? NotesTime.Seconds(time) : null;
+                    if (seconds is null || !IsSupported(seconds.Value, lineOffsets, duration, tolerance))
+                    {
+                        dropped++;
+                        return null;
+                    }
+                    current = current with { Time = NotesTime.Text(seconds.Value) };
+                }
+                if (current.Due is { Length: > 0 } due && current.DueDate is null)
+                {
+                    if (NotesDates.Resolve(due, meetingDate) is { } date)
+                        current = current with { DueDate = date, Due = NotesDates.Format(date, english) };
+                    else if (NotesDates.LooksLikeDate(due))
+                        current = current with { Uncertain = true };
+                }
+                return (NotesItem?)current;
+            }).Where(item => item is not null).Cast<NotesItem>().ToList()
+        }).ToList();
+        return notes with { Sections = sections, DroppedCount = notes.DroppedCount + dropped };
+    }
+
 }
 
 /// <summary>

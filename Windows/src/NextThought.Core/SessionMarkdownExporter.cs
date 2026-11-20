@@ -103,7 +103,13 @@ public static class SessionMarkdownExporter
             foreach (var line in projection.Transcript)
             {
                 var timestamp = $"- `{line.Offset / 60:00}:{line.Offset % 60:00}` ";
-                var speaker = "**" + line.SpeakerLabel + "**：";
+                var speaker = "**" + line.SpeakerLabel + "**\uFF1A";
+                if (line.LanguageView == SessionLanguageView.Translated && line.TranslationIsStale
+                    && line.TranslationText is { } staleTranslation && staleTranslation.Trim().Length > 0)
+                {
+                    output.Add(timestamp + speaker + "\u8BD1\u6587\uFF08\u5F85\u66F4\u65B0\uFF09\uFF1A" + staleTranslation);
+                    continue;
+                }
                 output.Add(timestamp + speaker + line.DisplayText);
                 if (line.LanguageView == SessionLanguageView.Bilingual
                     && line.TranslationText is { } translated && translated.Trim().Length > 0)

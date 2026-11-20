@@ -97,10 +97,29 @@ public sealed class SessionExportTestsParityTests
         Assert.Equal(2, bilingualExport.Text.Split("translated text").Length);
     }
 
-    [Fact(Skip = "Missing C# API: SessionMarkdownExporter only renders stale translation labels in the bilingual view. " +
-                 "A translated-only projection (SessionLanguageView.Translated) does not emit '译文（待更新）：…'.")]
+    [Fact]
     public void TranslatedOnlyMarkdownLabelsStaleTranslations()
     {
+        var start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+        var lineId = Guid.NewGuid();
+        var line = new TranscriptLine
+        {
+            Id = lineId, Date = start.AddSeconds(5), StartedAt = start.AddSeconds(5), EndedAt = start.AddSeconds(8),
+            Speaker = "remote", Text = "\u4FEE\u6B63\u540E\u7684\u4E2D\u6587",
+            TranslatedText = "old translation", TranslationInputRevision = "old-source"
+        };
+        var correction = new TranscriptCorrection
+        {
+            Line = 0, LineId = lineId, BaseRevision = TranscriptRevisions.Of(lineId, line.Text),
+            Original = "\u4FEE\u6B63\u540E\u7684\u4E2D\u6587", Corrected = "\u5F53\u524D\u4FEE\u6B63\u540E\u7684\u4E2D\u6587"
+        };
+        var notes = new StructuredNotesDoc("general", "\u901A\u7528", "zh", "\u7EAA\u8981", [], Corrections: [correction]);
+        var meta = new SessionMeta { StartedAt = start, EndedAt = start.AddSeconds(20), Mode = "meeting" };
+        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, [line], [], null, null,
+            new SessionProjectionOptions { LanguageView = SessionLanguageView.Translated }, corrections: [correction]);
+        var text = SessionMarkdownExporter.Export("\u7EAA\u8981", "\u4F1A\u8BAE", start, 20, "", projection, [line]);
+        Assert.Contains("\u8BD1\u6587\uFF08\u5F85\u66F4\u65B0\uFF09\uFF1Aold translation", text);
+        Assert.DoesNotContain("\u5F53\u524D\u4FEE\u6B63\u540E\u7684\u4E2D\u6587", text);
     }
 
     [Fact]
@@ -211,10 +230,20 @@ public sealed class NotesShapeTestsParityTests
         Assert.Equal("srt", SessionExportFormat.Srt.FileExtension());
     }
 
-    [Fact(Skip = "Missing C# API: NotesShape.groups (grouped view/list of groups). NotesJson.Tidy exposes ordering " +
-                 "but not the group/topic projection asserted by the Swift test.")]
+    [Fact]
     public void PointsOfOneTopicSitTogether()
     {
+        var tidy = NotesJson.Tidy(
+        [
+            Item("a1", "\u4E0A\u7EBF\u987A\u5E8F"),
+            Item("b1", "\u8D44\u91D1\u5B89\u6392"),
+            Item("a2", "\u4E0A\u7EBF\u987A\u5E8F\uFF1A"),
+            Item("b2", " \u8D44\u91D1\u5B89\u6392")
+        ], NotesSectionKind.Items, false);
+        Assert.Equal(["a1", "a2", "b1", "b2"], tidy.Select(item => item.Text));
+        var groups = NotesJson.Groups(tidy);
+        Assert.Equal(["\u4E0A\u7EBF\u987A\u5E8F", "\u8D44\u91D1\u5B89\u6392"], groups.Select(group => group.Topic));
+        Assert.Equal([2, 2], groups.Select(group => group.Items.Count));
     }
 
     [Fact]

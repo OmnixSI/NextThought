@@ -62,14 +62,44 @@ public static class ContextChunker
     /// <summary>B22: chunk imported ContextDocuments, honouring their enabled flag.</summary>
     public static IReadOnlyList<ContextChunk> Chunks(IReadOnlyList<ContextDocument> documents)
     {
-        var materials = documents.Where(document => document.Enabled).Select(document => new MaterialDocument
+        var result = new List<ContextChunk>();
+        foreach (var document in documents.Where(document => document.Enabled))
         {
-            Id = document.Id,
-            Name = document.Name,
-            Extension = System.IO.Path.GetExtension(document.Name),
-            Blocks = document.Pages.Select((page, index) => new DocumentBlock("第 " + (index + 1) + " 页", page, index + 1)).ToList()
-        }).ToList();
-        return Chunks(materials);
+            if (document.Content is { } content && content.ValueKind == System.Text.Json.JsonValueKind.Object
+                && content.TryGetProperty("blocks", out var blocks) && blocks.ValueKind == System.Text.Json.JsonValueKind.Array)
+            {
+                var material = new MaterialDocument { Id = document.Id, Name = document.Name, Extension = System.IO.Path.GetExtension(document.Name) };
+                foreach (var block in blocks.EnumerateArray())
+                {
+                    var text = block.TryGetProperty("markdown", out var markdown) && markdown.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? markdown.GetString() : block.TryGetProperty("text", out var plain) && plain.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? plain.GetString() : null;
+                    if (string.IsNullOrWhiteSpace(text)) continue;
+                    int? page = null;
+                    if (block.TryGetProperty("locator", out var locator) && locator.ValueKind == System.Text.Json.JsonValueKind.Object
+                        && locator.TryGetProperty("page", out var pageValue) && pageValue.TryGetInt32(out var pageNumber)) page = pageNumber;
+                    material.Blocks.Add(new DocumentBlock("段 " + (material.Blocks.Count + 1), text, page));
+                }
+                result.AddRange(Chunks([material]));
+                continue;
+            }
+            for (var index = 0; index < document.Pages.Count; index++)
+            {
+                var locator = new DocumentLocator { Section = index + 1 };
+                var parsed = DocumentStructure.Parse(document.Pages[index], locator);
+                foreach (var block in Merged(parsed.Where(block => block.Kind != "heading").ToList()))
+                {
+                    var pieces = DocumentStructure.Pieces(block, ChunkCharacters);
+                    for (var part = 0; part < pieces.Count; part++)
+                    {
+                        var body = document.Name + "\n" + pieces[part];
+                        var fingerprint = ContextFingerprint.Hash(Version + document.Id + "\n" + block.Id + "\n" + part + "\n" + body);
+                        result.Add(new ContextChunk(document.Name, locator.Section ?? 0, body, result.Count, fingerprint, locator, block.Id));
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /// <summary>Short paragraphs of one place (same page or slide) become one block.</summary>

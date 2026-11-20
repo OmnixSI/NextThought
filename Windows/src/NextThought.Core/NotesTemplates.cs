@@ -61,6 +61,12 @@ public enum NotesTemplateKind
 
 public static class NotesTemplateKinds
 {
+    public static IReadOnlyList<NotesTemplateKind> All { get; } =
+    [
+        NotesTemplateKind.Interview, NotesTemplateKind.Academic, NotesTemplateKind.Work,
+        NotesTemplateKind.Client, NotesTemplateKind.Lecture, NotesTemplateKind.Discussion,
+        NotesTemplateKind.General, NotesTemplateKind.GroupProject, NotesTemplateKind.Talk
+    ];
     public static string Raw(this NotesTemplateKind kind) => kind switch
     {
         NotesTemplateKind.Interview => "interview",
@@ -97,8 +103,31 @@ public static class NotesTemplateKinds
 }
 
 /// <summary>The defaults a meeting type sets, so nobody has to touch the switches.</summary>
+public enum LiveMode
+{
+    NotesOnly,
+    Prompting
+}
+
+public sealed record MeetingTypeDefault(LiveMode LiveMode, AnswerStyle Style, NotesTemplateKind Template, bool FollowsSlides);
+
 public static class MeetingTypeDefaults
 {
+    /// <summary>B22: the live mode, answer style, notes template and follow-slides defaults per type.</summary>
+    public static MeetingTypeDefault For(MeetingMode mode) => mode switch
+    {
+        MeetingMode.General => new(LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.General, false),
+        MeetingMode.Interview => new(LiveMode.Prompting, AnswerStyle.Concise, NotesTemplateKind.Interview, false),
+        MeetingMode.Academic => new(LiveMode.Prompting, AnswerStyle.Concise, NotesTemplateKind.Talk, true),
+        MeetingMode.LabMeeting => new(LiveMode.NotesOnly, AnswerStyle.Detailed, NotesTemplateKind.Academic, false),
+        MeetingMode.Meeting => new(LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.Work, false),
+        MeetingMode.Client => new(LiveMode.Prompting, AnswerStyle.Concise, NotesTemplateKind.Client, false),
+        MeetingMode.Lesson => new(LiveMode.NotesOnly, AnswerStyle.Detailed, NotesTemplateKind.Lecture, false),
+        MeetingMode.Discussion => new(LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.Discussion, false),
+        MeetingMode.GroupProject => new(LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.GroupProject, false),
+        _ => new(LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.General, false)
+    };
+
     /// <summary>The notes template a scene starts with.</summary>
     public static NotesTemplateKind TemplateFor(MeetingMode mode) => mode switch
     {
@@ -129,8 +158,16 @@ public sealed record NotesTemplate(string Id, string Name, IReadOnlyList<NotesSe
 {
     public bool IsBuiltIn => NotesTemplateKinds.Parse(Id).Raw() == Id;
 
+    /// <summary>The built-in template a custom copy came from (NotesTemplate.base).</summary>
+    public NotesTemplateKind? Base { get; init; }
+
     /// <summary>B11: a user-owned copy with a new id (NotesTemplate.customCopy).</summary>
-    public NotesTemplate CustomCopy(string name) => this with { Id = Guid.NewGuid().ToString("D"), Name = name };
+    public NotesTemplate CustomCopy(string name) => this with
+    {
+        Id = Guid.NewGuid().ToString("D"),
+        Name = name,
+        Base = IsBuiltIn ? NotesTemplateKinds.Parse(Id) : Base
+    };
 
     /// <summary>The built-in templates of 02-scenarios-and-flows.md, in Chinese or English.</summary>
     public static NotesTemplate BuiltIn(NotesTemplateKind kind, bool english = false)
@@ -399,6 +436,9 @@ public static class StructuredNotesModel
             || verdict == "\u5F85\u6539\u8FDB");
 }
 
+/// <summary>B22: a run of notes items sharing a topic.</summary>
+public sealed record NotesGroup(string? Topic, IReadOnlyList<NotesItem> Items);
+
 /// <summary>Reads the model's template-driven reply ({"title": …, "sections": [{"id", "items"}]}).</summary>
 public static class NotesJson
 {
@@ -483,6 +523,20 @@ public static class NotesJson
 
     private static string? Nullable(string value) => value.Length == 0 ? null : value;
 
+    /// <summary>B22: runs of items under one topic, in order; a flat list is one unnamed group.</summary>
+    public static IReadOnlyList<NotesGroup> Groups(IReadOnlyList<NotesItem> items)
+    {
+        var result = new List<NotesGroup>();
+        foreach (var item in items)
+        {
+            if (result.Count > 0 && result[^1].Topic == item.Topic)
+                result[^1] = result[^1] with { Items = [.. result[^1].Items, item] };
+            else
+                result.Add(new NotesGroup(item.Topic, [item]));
+        }
+        return result;
+    }
+
     /// <summary>B10: NotesShape.tidy 鈥?only point lists are capped/grouped.</summary>
     public static List<NotesItem> Tidy(IEnumerable<NotesItem> items, NotesSectionKind kind, bool isGap)
     {
@@ -490,7 +544,7 @@ public static class NotesJson
         if (kind != NotesSectionKind.Items) return list;
         for (var index = 0; index < list.Count; index++)
         {
-            var topic = list[index].Topic?.Trim(' ', '\u3000', '\uFF0C', '\u3002', '\u00B7', '-', '\u2014', '*');
+            var topic = list[index].Topic?.Trim(' ', '\u3000', '\uFF0C', '\u3002', '\u00B7', '-', '\u2014', '*', ':', '\uFF1A');
             list[index] = list[index] with { Topic = string.IsNullOrEmpty(topic) ? null : topic[..Math.Min(24, topic.Length)] };
         }
         var limit = isGap ? 6 : 14;

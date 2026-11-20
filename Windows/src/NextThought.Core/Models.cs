@@ -67,6 +67,35 @@ public sealed record SessionMeta
     public string AnswerModel { get; set; } = "";
     public string SummaryState { get; set; } = "none";
     public string? SummaryError { get; set; }
+
+    /// <summary>Notes were deferred at recording time (Mac notesDeferred).</summary>
+    public bool? NotesDeferred { get; set; }
+
+    /// <summary>True when deferred notes are still owed: finished, recorded and no summary attempt yet.</summary>
+    [JsonIgnore]
+    public bool NeedsDeferredNotes =>
+        NotesDeferred == true && TranscriptCount > 0 && EndedAt is not null && SummaryState == "none";
+
+    /// <summary>
+    /// B22: portable interrupted-recording rule (SessionMeta.recoverInterruptedRecording).
+    /// Returns whether a transcript was found and the meta now reflects it.
+    /// </summary>
+    public bool RecoverInterruptedRecording(byte[]? transcriptData, DateTimeOffset? lastTranscriptWrite)
+    {
+        var lines = JSONLines.Decode<TranscriptLine>(transcriptData ?? []);
+        if (lines.Count > 0)
+        {
+            TranscriptCount = lines.Count;
+            EndedAt = lastTranscriptWrite ?? EndedAt ?? DateTimeOffset.UtcNow;
+            SummaryState = "none";
+            SummaryError = null;
+            return true;
+        }
+        TranscriptCount = lines.Count;
+        SummaryState = "none";
+        SummaryError = null;
+        return false;
+    }
     public bool InPerson { get; set; }
     public string Platform { get; init; } = "windows";
     [JsonIgnore] public string LocalStartedAt => UiText.EnglishUi
@@ -198,7 +227,7 @@ public static class JsonDefaults
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         // Mac archive JSON is UTF-8 text; escaping every Chinese character made files unreadable.
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
+        Converters = { new SessionModeJsonConverter(), new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
     };
     public static readonly JsonSerializerOptions ArchiveOptions = Archive();
     private static JsonSerializerOptions Archive()

@@ -1,6 +1,7 @@
 namespace NextThought.Core;
 
 /// <summary>Stored session mode (port of SessionMode); mirrors the app's MeetingMode.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(SessionModeJsonConverter))]
 public enum SessionMode
 {
     General,
@@ -31,6 +32,43 @@ public static class SessionModes
         _ => "自定义"
     };
 
+    /// <summary>Stable raw value used by Mac JSON ("labMeeting", "custom", ...).</summary>
+    public static string Raw(this SessionMode mode) => mode switch
+    {
+        SessionMode.Interview => "interview",
+        SessionMode.Academic => "academic",
+        SessionMode.LabMeeting => "labMeeting",
+        SessionMode.Meeting => "meeting",
+        SessionMode.Client => "client",
+        SessionMode.Lesson => "lesson",
+        SessionMode.Discussion => "discussion",
+        SessionMode.GroupProject => "groupProject",
+        SessionMode.Custom => "custom",
+        _ => "general"
+    };
+
+    /// <summary>Tolerant decode: unknown future raw values read as General.</summary>
+    public static SessionMode Parse(string? raw) => raw?.Trim() switch
+    {
+        "interview" => SessionMode.Interview,
+        "academic" => SessionMode.Academic,
+        "labMeeting" => SessionMode.LabMeeting,
+        "meeting" => SessionMode.Meeting,
+        "client" => SessionMode.Client,
+        "lesson" => SessionMode.Lesson,
+        "discussion" => SessionMode.Discussion,
+        "groupProject" => SessionMode.GroupProject,
+        "custom" => SessionMode.Custom,
+        _ => SessionMode.General
+    };
+
+    /// <summary>The built-in types; Custom is not one of them (macOS SessionMode.builtIn, 9 values).</summary>
+    public static IReadOnlyList<SessionMode> BuiltIn { get; } =
+    [
+        SessionMode.General, SessionMode.Interview, SessionMode.Academic, SessionMode.LabMeeting,
+        SessionMode.Meeting, SessionMode.Client, SessionMode.Lesson, SessionMode.Discussion, SessionMode.GroupProject
+    ];
+
     public static MeetingMode ToMeetingMode(this SessionMode mode) => mode switch
     {
         SessionMode.Interview => MeetingMode.Interview,
@@ -58,6 +96,16 @@ public static class SessionModes
         MeetingMode.Custom => SessionMode.Custom,
         _ => SessionMode.General
     };
+}
+
+/// <summary>Tolerant Mac JSON: unknown mode strings become General instead of failing the archive.</summary>
+public sealed class SessionModeJsonConverter : System.Text.Json.Serialization.JsonConverter<SessionMode>
+{
+    public override SessionMode Read(ref System.Text.Json.Utf8JsonReader reader, Type type, System.Text.Json.JsonSerializerOptions options) =>
+        reader.TokenType == System.Text.Json.JsonTokenType.String ? SessionModes.Parse(reader.GetString()) : SessionMode.General;
+
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, SessionMode value, System.Text.Json.JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.Raw());
 }
 
 /// <summary>One imported material of a preset (port of ContextDocument).</summary>

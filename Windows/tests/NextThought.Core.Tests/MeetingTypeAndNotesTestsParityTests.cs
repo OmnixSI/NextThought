@@ -14,10 +14,25 @@ public sealed class MeetingTypeAndNotesTestsParityTests
 
     // MARK: Meeting types
 
-    [Fact(Skip = "Missing C# APIs: tolerant SessionMode decoding of unknown raw values ('fromTheFuture' → General), " +
-                 "SessionMode.rawValue and SessionMode.builtIn.")]
+    [Fact]
     public void NewTypesRoundTripAndOldValuesStillDecode()
     {
+        var encoded = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(SessionModes.BuiltIn, JsonDefaults.Options);
+        var decoded = System.Text.Json.JsonSerializer.Deserialize<List<SessionMode>>(encoded, JsonDefaults.Options)!;
+        Assert.Equal(SessionModes.BuiltIn, decoded);
+        Assert.Equal(SessionMode.Interview, System.Text.Json.JsonSerializer.Deserialize<SessionMode>("\"interview\"", JsonDefaults.Options));
+        var tolerant = System.Text.Json.JsonSerializer.Deserialize<List<SessionMode>>("[\"labMeeting\",\"client\",\"discussion\",\"custom\",\"academic\",\"meeting\",\"lesson\",\"fromTheFuture\"]", JsonDefaults.Options)!;
+        Assert.Equal([SessionMode.LabMeeting, SessionMode.Client, SessionMode.Discussion, SessionMode.Custom, SessionMode.Academic, SessionMode.Meeting, SessionMode.Lesson, SessionMode.General], tolerant);
+        Assert.Equal("academic", SessionMode.Academic.Raw());
+        Assert.Equal("\u6c47\u62a5 / \u7b54\u8fa9", SessionMode.Academic.Title());
+        Assert.Equal("meeting", SessionMode.Meeting.Raw());
+        Assert.Equal("\u5de5\u4f5c\u4f1a\u8bae", SessionMode.Meeting.Title());
+        Assert.Equal("lesson", SessionMode.Lesson.Raw());
+        Assert.Equal("\u8bb2\u5ea7 / \u8bfe\u7a0b", SessionMode.Lesson.Title());
+        Assert.Equal(9, SessionModes.BuiltIn.Count);
+        Assert.DoesNotContain(SessionMode.Custom, SessionModes.BuiltIn);
+        Assert.Contains(SessionMode.Interview, SessionModes.BuiltIn);
+        Assert.Contains(NotesTemplateKind.Interview, NotesTemplateKinds.Selectable);
     }
 
     [Fact]
@@ -45,10 +60,28 @@ public sealed class MeetingTypeAndNotesTestsParityTests
         Assert.Equal("custom", again.Mode);
     }
 
-    [Fact(Skip = "Missing C# APIs: MeetingTypeDefaults.For(mode) with LiveMode/Style/Template (C# only has TemplateFor), " +
-                 "MeetingTypeDefaults.followsSlides and SessionMode.builtIn.")]
+    [Fact]
     public void TypeDefaultsFollowTheTable()
     {
+        void Check(SessionMode mode, LiveMode live, AnswerStyle style, NotesTemplateKind template)
+        {
+            var defaults = MeetingTypeDefaults.For(mode.ToMeetingMode());
+            Assert.Equal(live, defaults.LiveMode);
+            Assert.Equal(style, defaults.Style);
+            Assert.Equal(template, defaults.Template);
+        }
+        Check(SessionMode.General, LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.General);
+        Check(SessionMode.Interview, LiveMode.Prompting, AnswerStyle.Concise, NotesTemplateKind.Interview);
+        Check(SessionMode.Academic, LiveMode.Prompting, AnswerStyle.Concise, NotesTemplateKind.Talk);
+        Check(SessionMode.LabMeeting, LiveMode.NotesOnly, AnswerStyle.Detailed, NotesTemplateKind.Academic);
+        Check(SessionMode.Meeting, LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.Work);
+        Check(SessionMode.Client, LiveMode.Prompting, AnswerStyle.Concise, NotesTemplateKind.Client);
+        Check(SessionMode.Lesson, LiveMode.NotesOnly, AnswerStyle.Detailed, NotesTemplateKind.Lecture);
+        Check(SessionMode.Discussion, LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.Discussion);
+        Check(SessionMode.Custom, LiveMode.NotesOnly, AnswerStyle.Concise, NotesTemplateKind.General);
+        Assert.True(MeetingTypeDefaults.For(MeetingMode.Academic).FollowsSlides);
+        Assert.Equal(new HashSet<NotesTemplateKind>(NotesTemplateKinds.Selectable), SessionModes.BuiltIn.Select(mode => MeetingTypeDefaults.For(mode.ToMeetingMode()).Template).ToHashSet());
+        foreach (var mode in Enum.GetValues<SessionMode>()) Assert.NotEmpty(ModeProfile.For(mode.ToMeetingMode()).Fields);
     }
 
     [Fact]
@@ -240,10 +273,28 @@ public sealed class MeetingTypeAndNotesTestsParityTests
 
     // MARK: Templates and notes
 
-    [Fact(Skip = "Missing C# API: NotesTemplate.base (the custom copy's source template). " +
-                 "C# NotesTemplate only keeps Id/Name/Sections and IsBuiltIn.")]
+    [Fact]
     public void BuiltInTemplatesHaveAGapSection()
     {
+        foreach (var kind in NotesTemplateKinds.All)
+        {
+            foreach (var english in new[] { false, true })
+            {
+                var template = NotesTemplate.BuiltIn(kind, english);
+                Assert.Equal(kind.Raw(), template.Id);
+                Assert.True(template.IsBuiltIn);
+                Assert.Contains(template.Sections, section => section.IsGap);
+                Assert.Equal(template.Sections.Select(section => section.Id).Distinct().Count(), template.Sections.Count);
+            }
+        }
+        var copy = NotesTemplate.BuiltIn(NotesTemplateKind.Work).CustomCopy("\u5468\u4f1a");
+        Assert.False(copy.IsBuiltIn);
+        Assert.Equal(NotesTemplateKind.Work, copy.Base);
+        Assert.Equal(NotesTemplate.BuiltIn(NotesTemplateKind.Work).Sections.Select(section => section.Id), copy.Sections.Select(section => section.Id));
+        var encoded = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(copy, JsonDefaults.Options);
+        var decoded = System.Text.Json.JsonSerializer.Deserialize<NotesTemplate>(encoded, JsonDefaults.Options)!;
+        Assert.Equal(copy.Base, decoded.Base);
+        Assert.Equal(copy.Sections.Select(section => section.Id), decoded.Sections.Select(section => section.Id));
     }
 
     [Fact]
@@ -273,10 +324,38 @@ public sealed class MeetingTypeAndNotesTestsParityTests
         Assert.Equal("academic", NotesTemplate.BuiltIn(NotesTemplateKind.Academic).Id);
     }
 
-    [Fact(Skip = "Missing C# API: NotesVerifier.Verify(notes:lineOffsets:duration:meetingDate:calendar:) " +
-                 "(C# only exposes NotesVerifier.IsSupported), so unsupported-time dropping and due-date rewriting cannot be tested.")]
+    [Fact]
     public void ModelReplyIsParsedAndChecked()
     {
+        const string reply = "\u597d\u7684\uff0c\u7eaa\u8981\u5982\u4e0b\uff1a\n```json\n"
+            + "{\"title\": \"\u5468\u4e00\u4f8b\u4f1a\", \"sections\": ["
+            + "{\"id\": \"summary\", \"items\": [{\"text\": \"\u4e0b\u5468\u4e09\u524d\u4e0a\u7ebf\u65b0\u7248\u672c\"}]}, "
+            + "{\"id\": \"actions\", \"items\": ["
+            + "{\"text\": \"\u56de\u5f52\u6d4b\u8bd5\u5e76\u7ed9\u51fa\u7ed3\u679c\", \"time\": \"05:40\", \"owner\": \"\u6211\", \"due\": \"\u5468\u4e8c\u4e0b\u5348\"}, "
+            + "{\"text\": \"\u8bbe\u8ba1\u7a3f\u590d\u5ba1\", \"time\": \"12:30\", \"due\": \"\u5468\u56db\u6216\u8005\u5468\u4e94\", \"uncertain\": \"true\"}, "
+            + "{\"text\": \"\u6ca1\u6709\u4f9d\u636e\u7684\u5f85\u529e\", \"time\": \"30:00\"}"
+            + "]}, {\"title\": \"\u98ce\u9669\u548c\u672a\u51b3\u95ee\u9898\", \"items\": [{\"text\": \"\u5bfc\u51fa\u529f\u80fd\u6ca1\u4eba\u8ba4\u9886\", \"time\": 1268}]}"
+            + "]}\n```";
+        var template = NotesTemplate.BuiltIn(NotesTemplateKind.Work);
+        var notes = NotesJson.Parse(reply, template, "zh")!;
+        Assert.Equal("\u5468\u4e00\u4f8b\u4f1a", notes.Title);
+        Assert.Equal(template.Sections.Select(section => section.Id), notes.Sections.Select(section => section.Id));
+        Assert.Empty(notes.Sections.First(section => section.Id == "decisions").Items);
+        var actions = notes.Sections.First(section => section.Id == "actions");
+        Assert.Equal(3, actions.Items.Count);
+        Assert.Equal("\u6211", actions.Items[0].Owner);
+        Assert.True(actions.Items[1].Uncertain);
+        Assert.Equal("1268", notes.Sections.First(section => section.Id == "risks").Items.First().Time);
+        var monday = new DateTimeOffset(2026, 10, 26, 10, 0, 0, TimeSpan.FromHours(8));
+        notes = NotesVerifier.Verify(notes, [192, 340, 750, 1_268], 1_800, monday);
+        var checkedActions = notes.Sections.First(section => section.Id == "actions");
+        Assert.Equal(["\u56de\u5f52\u6d4b\u8bd5\u5e76\u7ed9\u51fa\u7ed3\u679c", "\u8bbe\u8ba1\u7a3f\u590d\u5ba1"], checkedActions.Items.Select(item => item.Text));
+        Assert.Equal(2, notes.DroppedCount);
+        Assert.Empty(notes.Sections.First(section => section.Id == "risks").Items);
+        Assert.Equal("10 \u6708 27 \u65e5\uff08\u5468\u4e8c\uff09", checkedActions.Items[0].Due);
+        Assert.Equal(new DateTime(2026, 10, 27), checkedActions.Items[0].DueDate);
+        Assert.Single(notes.Sections.First(section => section.Id == "summary").Items);
+        Assert.Equal(2, notes.ActionItemCount());
     }
 
     [Fact]

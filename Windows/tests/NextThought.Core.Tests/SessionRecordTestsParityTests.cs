@@ -9,22 +9,63 @@ public sealed class SessionRecordTestsParityTests
 {
     private static readonly DateTimeOffset Start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
 
-    [Fact(Skip = "Missing C# API: JSONLines.line/decode (torn-last-line tolerant JSON-lines codec). " +
-                 "NextThought.Core has no public JSON-lines helper; SessionStore.ReadLines is private and in NextThought.Platform.")]
+    [Fact]
     public void JsonLinesSurviveATornLastLine()
     {
+        var first = new TranscriptLine { Date = Start, StartedAt = Start, Speaker = "remote", Text = "你好" };
+        var second = new TranscriptLine { Date = Start.AddSeconds(2), StartedAt = Start.AddSeconds(2), Speaker = "me", Text = "我是候选人" };
+        var data = JSONLines.Line(first).Concat(JSONLines.Line(second))
+            .Concat(System.Text.Encoding.UTF8.GetBytes("{\"id\":\"broken")).ToArray();
+        var lines = JSONLines.Decode<TranscriptLine>(data);
+        Assert.Equal(2, lines.Count);
+        Assert.Equal("me", lines[1].Speaker);
+        Assert.Equal(first.Date.AddSeconds(2), lines[1].Date);
     }
 
-    [Fact(Skip = "Missing C# API: SessionMeta.recoverInterruptedRecording(transcriptData:lastTranscriptWrite:). " +
-                 "SessionStore.RecoverInterruptedAsync is file/lease based and records summaryState=failed, not the portable meta rule.")]
+    [Fact]
     public void InterruptedSessionReconcilesTranscriptCountBeforeSummaryRecovery()
     {
+        var transcript = JSONLines.Line(new TranscriptLine { Date = Start, StartedAt = Start, Speaker = "remote", Text = "先确认范围" })
+            .Concat(JSONLines.Line(new TranscriptLine { Date = Start.AddSeconds(2), StartedAt = Start.AddSeconds(2), Speaker = "me", Text = "我来跟进" })).ToArray();
+        var lastWrite = Start.AddSeconds(3);
+        var meta = new SessionMeta
+        {
+            StartedAt = Start, Mode = "interview", TranscriptCount = 0,
+            SummaryState = "pending", SummaryError = "旧错误"
+        };
+        Assert.True(meta.RecoverInterruptedRecording(transcript, lastWrite));
+        Assert.Equal(2, meta.TranscriptCount);
+        Assert.Equal(lastWrite, meta.EndedAt);
+        Assert.Equal("none", meta.SummaryState);
+        Assert.Null(meta.SummaryError);
+
+        var noTranscript = new SessionMeta { StartedAt = Start, Mode = "interview", SummaryState = "pending" };
+        Assert.False(noTranscript.RecoverInterruptedRecording(null, null));
+        Assert.Equal(0, noTranscript.TranscriptCount);
+        Assert.Equal("none", noTranscript.SummaryState);
     }
 
-    [Fact(Skip = "Missing C# API: SessionMeta.notesDeferred / needsDeferredNotes and the SummaryState enum. " +
-                 "C# SessionMeta only has a string SummaryState and no deferred-notes flag.")]
+    [Fact]
     public void DeferredNotesRuleAndBackwardCompatibleDecoding()
     {
+        var meta = new SessionMeta { StartedAt = Start, EndedAt = Start.AddSeconds(60), Mode = "interview", TranscriptCount = 4 };
+        Assert.False(meta.NeedsDeferredNotes);
+        meta.NotesDeferred = true;
+        Assert.True(meta.NeedsDeferredNotes);
+        var empty = meta with { TranscriptCount = 0 };
+        Assert.False(empty.NeedsDeferredNotes);
+        var running = meta with { EndedAt = null };
+        Assert.False(running.NeedsDeferredNotes);
+        foreach (var state in new[] { "pending", "ready", "failed" })
+            Assert.False((meta with { SummaryState = state }).NeedsDeferredNotes);
+
+        var data = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(meta, JsonDefaults.Options);
+        var decoded = System.Text.Json.JsonSerializer.Deserialize<SessionMeta>(data, JsonDefaults.Options)!;
+        Assert.True(decoded.NeedsDeferredNotes);
+
+        const string oldJson = """{"id":"11111111-1111-1111-1111-111111111111","startedAt":"2026-01-01T00:00:00Z","endedAt":"2026-01-01T00:01:00Z","mode":"general","transcriptCount":2}""";
+        var old = System.Text.Json.JsonSerializer.Deserialize<SessionMeta>(oldJson, JsonDefaults.Options)!;
+        Assert.Null(old.NotesDeferred);
     }
 
     [Fact]

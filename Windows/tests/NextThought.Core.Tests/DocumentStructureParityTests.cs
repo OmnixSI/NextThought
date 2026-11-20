@@ -10,12 +10,35 @@ namespace NextThought.Core.Tests;
 /// </summary>
 public sealed class DocumentStructureParityTests
 {
-    [Fact(Skip = "Blocked: ContextDocument.Content is an opaque JsonElement (no typed DocumentContent/"
-        + "StructuredDocument bridge), and ContextChunker maps imported pages to physical page locators, "
-        + "never to the legacy section locator (\"第 N 段\"), so the physical-vs-legacy locator "
-        + "assertions cannot be expressed.")]
+    [Fact]
     public void PhysicalAndLegacyLocationsStayDistinct()
     {
+        var oldDocument = new ContextDocument
+        {
+            Name = "old.pdf",
+            Pages = ["section one", "section two"]
+        };
+        var oldChunks = ContextChunker.Chunks([oldDocument]);
+        Assert.Equal(2, oldChunks[1].Locator?.Section);
+        Assert.Null(oldChunks[1].Locator?.Page);
+        Assert.Equal("\u7B2C 2 \u6BB5", oldChunks[1].Locator?.Label);
+
+        var newDocument = new ContextDocument
+        {
+            Name = "scan.pdf",
+            Pages = ["text"],
+            Content = System.Text.Json.JsonSerializer.SerializeToElement(new
+            {
+                pipeline = "system",
+                blocks = new[]
+                {
+                    new { markdown = "## Heading\n\ntext", locator = new { page = 7 } }
+                }
+            })
+        };
+        var first = ContextChunker.Chunks([newDocument]).First();
+        Assert.Equal(7, first.Locator?.Page);
+        Assert.Contains("scan.pdf > Heading", first.Text);
     }
 
     [Fact]

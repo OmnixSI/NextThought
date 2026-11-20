@@ -8,9 +8,10 @@ namespace NextThought.Core;
 public static partial class SessionEvidenceBuilder
 {
     public static IReadOnlyList<SessionEvidenceReference> Build(SessionMeta meta,
-        IReadOnlyList<TranscriptLine> lines, StructuredNotesDoc? notes, SessionSummary? summary)
+        IReadOnlyList<TranscriptLine> lines, StructuredNotesDoc? notes, SessionSummary? summary,
+        IReadOnlyList<TranscriptCorrection>? corrections = null)
     {
-        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, lines, []);
+        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, lines, [], corrections: corrections ?? notes?.Corrections);
         var transcript = projection.Transcript;
         var currentRevision = projection.TranscriptSourceRevision;
         var references = new List<SessionEvidenceReference>();
