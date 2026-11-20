@@ -1,0 +1,49 @@
+{
+  "version": "3.4.0",
+  "build": 3400,
+  "tag": "v3.4.0",
+  "sourceCommit": "6d036cef30d6376ab9f384107211cd63045a26ed",
+  "release": "https://github.com/OmnixSI/NextThought/releases/tag/v3.4.0",
+  "publishedAt": "2026-11-20T11:38:47Z",
+  "buildLocation": "local macOS; GitHub Actions could not start jobs (account billing)",
+  "swiftTestsPassed": 604,
+  "artifactSelftestsPassed": [
+    "data",
+    "session-export",
+    "session-backup-drain",
+    "session-edit-receipts",
+    "session-carry-context",
+    "meeting-content",
+    "archive-ux",
+    "large-pdf",
+    "structured-notes",
+    "source-integrity",
+    "fishbone-rendering",
+    "settings-navigation",
+    "document-setup",
+    "preparation",
+    "document-lifecycle",
+    "question-round",
+    "question-round (quiet speech fixture)",
+    "live-session-ui",
+    "live-notes"
+  ],
+  "signatureMatchesPreviousRelease": true,
+  "designatedRequirement": "identifier \"com.nextthought.app\" and certificate root = H\"9751fdac3340e375a377f13a0f933115fe6642e7\"",
+  "downloadedChecksumsPassed": true,
+  "downloadedDMGVerified": true,
+  "downloadedAppStrictSignaturePassed": true,
+  "assets": {
+    "NextThought-3.4.0-macOS-arm64.dmg": "6b9a824781f41c8f81d205a3cd92663a79e4c274113d18fb3e9002e43315f3f7",
+    "NextThought-3.4.0-macOS-arm64.zip": "0f12760a62ba6082487de7e4201f20622f7e48c0959d3f0cbb0eeb1e427e3086",
+    "runtime-manifest.json": "d653e611715c53d2d5fa0de97b803ffcd00d0cf3891013dec83cd7f082531097",
+    "update.json": "e096f1edd93d60dd36af4ba40647fca86dd266e403657f103fb8e5fde52f5e6a"
+  },
+  "limitations": [
+    "Live notes ran against the real answer service on a synthetic 24-line transcript (3 rounds, none unusable), not in a meeting with people",
+    "The feature picker before a meeting, the presenter-mode debounce, the first-click handling and the per-line speaker and text menus were checked by unit tests, off-screen renders and the artifact self-tests; they were not replayed by hand in a real meeting",
+    "The pending-utterance watchdog was checked with a recorded quiet-then-loud fixture, not with a live microphone",
+    "scripts/verify-companions.sh --require-ios was not run (Command Line Tools only); mobile code unchanged",
+    "Verify and Release workflows were disabled while tagging and re-enabled after verification"
+  ]
+}
