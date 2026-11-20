@@ -1,3 +1,10 @@
+## 2026-11-20 · 0.5.145 · F1（止损清单收口）
+改动：`AudioCaptureService.SwitchDefaultDevice` 在替换成功后立即 `Stop()` + `Dispose()` 旧管道，旧管道事件被 `disposed` 标志忽略；只有用户没有显式选择设备（`SystemDeviceId`/`MicrophoneDeviceId` 为空）时才跟随系统默认设备变化；显式选择不被默认变化覆盖。
+测试：Core **869/869**，NextThought.Tests **126/126**；新翻译 Swift 测试 0。
+状态：F1「已实现、未验证」。
+证据：无 Windows 实机切换/拔设备记录；尝试 `--audio-switch-check` 时程序在采集等待中未返回，已终止，不作为通过证据。
+未解决：需要 Windows 实机切换默认扬声器/麦克风并拔掉旧设备，验证录音持续 60 秒以上。
+
 ## 2026-11-20 · 0.5.145 · F4、F7、G1
 改动：
 - F4 `CloudSttSession.DisposeAsync` 先 `StopAsync()` 发结束消息并等最终结果，再取消。
