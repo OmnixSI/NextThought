@@ -21,7 +21,9 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
         Dispatcher.UIThread.UnhandledException += (_, e) =>
         {
+            // F19: an exception in an async void handler must not take the app down.
             Log("ui", e.Exception);
+            e.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log("domain", e.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, e) => { Log("task", e.Exception); e.SetObserved(); };

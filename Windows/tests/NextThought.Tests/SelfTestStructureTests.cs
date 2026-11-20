@@ -186,6 +186,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void UiThreadExceptionsAreHandled()
+    {
+        var app = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "App.axaml.cs"));
+        Assert.Contains("UnhandledException", app);
+        Assert.Contains("e.Handled = true", app);
+    }
+
     [Fact]
     public void BackgroundUpdateCheckMarshalsToUiThread()
     {
