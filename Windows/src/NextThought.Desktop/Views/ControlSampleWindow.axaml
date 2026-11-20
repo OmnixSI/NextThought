@@ -88,7 +88,7 @@
               <TextBlock Text="{StaticResource IconArrowRight}" FontFamily="{StaticResource IconFont}" FontSize="13" Foreground="{DynamicResource Secondary}" />
               <TextBlock Text="{loc:Tr 手动校正：缓存击穿}" Classes="body" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Caution}" /><TextBlock Text="{loc:Tr 旧正文基于修订前原话；手动校正仍保留。}" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}"><TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Caution}" /><TextBlock Text="{loc:Tr 旧译文基于修订前原话；手动校正仍保留。}" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
             <TextBlock Text="{loc:Tr 合成版本差异样例；实际过期标记由归档投影版本比较产生。}" Classes="caption" />
           </StackPanel>
         </Border>
