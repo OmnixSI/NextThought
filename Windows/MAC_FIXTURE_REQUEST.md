@@ -74,3 +74,21 @@ nt-mac-fixtures-<macOS版本>-<日期>.zip
 ## 五、当前阻塞
 
 没有真实 Mac 夹具时，Windows 侧只能做本机回环和人工构造 JSON 测试，不能声称“Mac 双向恢复通过”。本任务等到这批夹具后再验收。
+
+## A15：在 Mac 上运行 MacCodec emit
+
+在仓库根目录执行（只运行命令行工具，不构建/安装/签名应用）：
+
+```bash
+swift run --package-path Windows/tools/MacCodecMac emit --output Windows/tests/Fixtures/mac
+```
+
+产物应包含：`session-meta.json`、`transcript.jsonl`、`translations.jsonl`、`questions.jsonl`、`summary.json`、`user-content.json`、`workspace.json`（含一条被替换过的系列条目）、`skills.json`、`templates.json`、`glossary.json`、`backup-manifest.json`、`revisions.json`（A11 三个修订号样本与期望值）。
+
+把这些文件提交到 `windows/parity` 分支的 `Windows/tests/Fixtures/mac/`，并注明 Mac 型号、macOS 版本、NextThought 版本/build。Windows 侧只运行：
+
+```powershell
+Windows\.tools\dotnet\dotnet.exe run --project Windows/tools/MacCodecCheck/MacCodecCheck.csproj -- --fixtures Windows/tests/Fixtures/mac
+```
+
+依赖 7 个 CryptoKit 文件和 4 个平台文件的类型不在 Windows check 范围内，工具会逐项打印跳过原因。
