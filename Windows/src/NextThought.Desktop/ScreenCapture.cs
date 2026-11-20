@@ -139,4 +139,32 @@ public static class ScreenCapture
     [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
     [DllImport("gdi32.dll")] private static extern IntPtr CreateDIBSection(IntPtr dc, ref BitmapInfo info, uint usage, out IntPtr bits, IntPtr section, uint offset);
     [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")] private static extern void CopyMemory(IntPtr destination, IntPtr source, nuint length);
+
+    private const uint WdaExcludeFromCapture = 0x00000011;
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
+
+    /// <summary>E9/C18: keep NextThought windows out of the screen-read frame.</summary>
+    public static void ExcludeOwnWindowsFromCapture()
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is not Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop) return;
+        foreach (var window in desktop.Windows)
+        {
+            try
+            {
+                var handle = window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
+                if (handle != IntPtr.Zero) SetWindowDisplayAffinity(handle, WdaExcludeFromCapture);
+            }
+            catch { }
+        }
+    }
+
+    public static byte[] PngBytes(Bitmap bitmap)
+    {
+        using var stream = new MemoryStream();
+        bitmap.Save(stream);
+        return stream.ToArray();
+    }
+
 }

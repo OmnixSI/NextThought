@@ -253,6 +253,40 @@
         </StackPanel>
       </Border>
 
+      <!-- Screen reading and slide following (InsightSettingsView.swift, E9) -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Name="AnchorCoachScreen" Text="屏幕与讲稿" Classes="section" />
+          <CheckBox Content="会议中每隔几秒读一次屏幕" IsChecked="{Binding Settings.InsightScreenWatch}" />
+          <TextBlock Text="可选窗口、显示器或区域（本应用窗口除外）。系统 OCR 先给快速文字；本机增强会在后台补读复杂画面。"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Settings.InsightScreenWatch}">
+            <TextBlock Text="读取来源" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" Width="140" ItemsSource="{Binding Settings.InsightSourceLabels}"
+                      SelectedItem="{Binding Settings.SelectedInsightSourceLabel}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding Settings.InsightScreenWatch}">
+            <Button Content="立即识别" Command="{Binding ReadScreenNowCommand}" />
+            <Button Content="框选区域" Click="PickScreenRegion_Click" />
+            <Button Content="读取完整来源" Click="ClearScreenRegion_Click" />
+          </StackPanel>
+          <TextBlock Text="{Binding Settings.InsightScreenRegion}" Classes="caption" FontSize="11" IsVisible="{Binding Settings.InsightScreenWatch}" />
+          <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Settings.InsightScreenWatch}">
+            <TextBlock Text="间隔" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" Width="110" ItemsSource="{Binding Settings.InsightIntervals}"
+                      SelectedItem="{Binding Settings.InsightScreenInterval}" />
+          </Grid>
+          <TextBlock Text="{Binding ScreenWatchStatus}" Classes="caption" FontSize="11" />
+          <TextBlock Text="{Binding ScreenWatchError}" Classes="caption" FontSize="11" Foreground="{DynamicResource Caution}" TextWrapping="Wrap" />
+          <CheckBox Content="跟随演示文稿" IsChecked="{Binding Settings.InsightFollowSlides}"
+                    IsEnabled="{Binding Settings.InsightScreenWatch}" />
+          <TextBlock Text="导入 PPT、Keynote 或 PDF 后，放映时认出正在讲第几页，给出这一页的要点与提问。"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding Settings.InsightScreenWatch}" />
+          <TextBlock Text="先打开上面的屏幕读取，才能认出演示文稿翻到了哪一页。"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding !Settings.InsightScreenWatch}" />
+        </StackPanel>
+      </Border>
+
       <!-- Dual-screen presenting (PresenterMode.swift) -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">

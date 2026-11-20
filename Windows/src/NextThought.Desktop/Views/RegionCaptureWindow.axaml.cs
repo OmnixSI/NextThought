@@ -11,6 +11,7 @@ public partial class RegionCaptureWindow : Window
 {
     private readonly ScreenCapture.Capture capture;
     private Point? origin;
+    public PixelRect? SelectedScreenRect { get; private set; }
     private Rect selection;
 
     public RegionCaptureWindow() : this(ScreenCapture.VirtualScreen()) { }
@@ -106,6 +107,7 @@ public partial class RegionCaptureWindow : Window
         var width = (int)Math.Round(selection.Width / scale);
         var height = (int)Math.Round(selection.Height / scale);
         if (width < 4 || height < 4) { Close(null); return; }
+        SelectedScreenRect = new PixelRect(capture.X + x, capture.Y + y, width, height);
         Close(ScreenCapture.Crop(capture, new PixelRect(x, y, width, height)));
     }
 }

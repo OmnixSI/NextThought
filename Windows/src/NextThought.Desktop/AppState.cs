@@ -94,6 +94,7 @@ public partial class AppState : ObservableObject
             OnPropertyChanged(nameof(CompanionToggleLabel));
             Library.NotifyLanguageChanged();
             LoadMyVoice();
+            StartScreenWatchTimer();
             _ = RefreshHistoryAsync();
             RefreshSeries();
         };

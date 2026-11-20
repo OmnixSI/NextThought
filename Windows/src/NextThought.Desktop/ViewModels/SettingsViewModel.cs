@@ -145,6 +145,23 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string answerLanguage = "auto";
     [ObservableProperty] private bool answerGloss;
     [ObservableProperty] private bool followSlides;
+    [ObservableProperty] private bool insightScreenWatch;
+    [ObservableProperty] private double insightScreenInterval = 1;
+    [ObservableProperty] private bool insightFollowSlides = true;
+    [ObservableProperty] private string insightScreenSource = "display";
+    [ObservableProperty] private string insightScreenRegion = "";
+    public IReadOnlyList<string> InsightScreenSources { get; } = ["display", "window", "region"];
+    public IReadOnlyList<string> InsightSourceLabels { get; } = ["显示器", "窗口", "区域"];
+    public IReadOnlyList<double> InsightIntervals { get; } = [1, 2, 4, 8, 15];
+    public string SelectedInsightSourceLabel
+    {
+        get => InsightScreenSource switch { "window" => "窗口", "region" => "区域", _ => "显示器" };
+        set
+        {
+            InsightScreenSource = value switch { "窗口" => "window", "区域" => "region", _ => "display" };
+            OnPropertyChanged();
+        }
+    }
     [ObservableProperty] private bool autoTranslateForeign;
     [ObservableProperty] private string tavilyKey = "";
     [ObservableProperty] private string tavilyKeyStatus = "密钥只保存在当前 Windows 用户；也可以继续用 TAVILY_API_KEY 环境变量。";
@@ -267,6 +284,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerGloss = settings.AnswerGloss;
         AutoTranslateForeign = settings.AutoTranslateForeign;
         FollowSlides = settings.FollowSlides;
+        InsightScreenWatch = settings.InsightScreenWatch;
+        InsightScreenInterval = Math.Max(1, settings.InsightScreenInterval);
+        InsightFollowSlides = settings.InsightFollowSlides;
+        InsightScreenSource = settings.InsightScreenSource;
+        InsightScreenRegion = settings.InsightScreenRegion;
         AutoEndMode = settings.MeetingAutoEndMode;
         AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
         SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
@@ -338,6 +360,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AnswerGloss = AnswerGloss,
         AutoTranslateForeign = AutoTranslateForeign,
         FollowSlides = FollowSlides,
+        InsightScreenWatch = InsightScreenWatch,
+        InsightScreenInterval = Math.Max(1, InsightScreenInterval),
+        InsightFollowSlides = InsightFollowSlides,
+        InsightScreenSource = InsightScreenSource,
+        InsightScreenRegion = InsightScreenRegion,
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,

@@ -115,6 +115,22 @@ public sealed record AppSettings
     /// <summary>E9: follow the speaker by jumping to the slide whose title is mentioned.</summary>
     public bool FollowSlides { get; set; }
 
+    
+    /// <summary>E9: read the screen once every interval during a meeting. Default off.</summary>
+    public bool InsightScreenWatch { get; set; }
+
+    /// <summary>E9: seconds between reads; the UI clamps to at least 1.</summary>
+    public double InsightScreenInterval { get; set; } = 1;
+
+    /// <summary>E9: follow the presentation from the read text. Default on; only effective with watch.</summary>
+    public bool InsightFollowSlides { get; set; } = true;
+
+    /// <summary>E9: display / window / region.</summary>
+    public string InsightScreenSource { get; set; } = "display";
+
+    /// <summary>E9: region rectangle x,y,width,height in physical pixels.</summary>
+    public string InsightScreenRegion { get; set; } = "";
+
     /// <summary>E11: turn translation on automatically when the speech is mostly non-Chinese.</summary>
     public bool AutoTranslateForeign { get; set; }
 

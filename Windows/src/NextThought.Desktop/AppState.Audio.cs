@@ -50,7 +50,12 @@ public partial class AppState
         ? "What's next?"
         : Greeting.Split('。')[0] + "。接下来是什么场合？";
 
-    partial void OnRecordingChanged(bool value) { RaiseBusy(); PublishCompanionSnapshot(); OnPropertyChanged(nameof(ContextSidebarVisible)); }
+    partial void OnRecordingChanged(bool value)
+    {
+        RaiseBusy(); PublishCompanionSnapshot(); OnPropertyChanged(nameof(ContextSidebarVisible));
+        if (!value) { ScreenWatchStatus = ""; ScreenWatchCapturing = false; }
+        else if (Settings.InsightScreenWatch) ScreenWatchStatus = "等待首次读屏…";
+    }
 
     public void RefreshModelState()
     {

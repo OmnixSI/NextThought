@@ -224,6 +224,38 @@ public partial class MainWindow
         }
     }
 
+
+    /// <summary>E9: pick a screen region for the screen watch; the frame itself is discarded.</summary>
+    public async Task PickScreenRegionForWatchAsync()
+    {
+        if (state.Working) { state.SetStatus("当前有任务在进行，稍后再框选。"); return; }
+        var wasVisible = IsVisible;
+        try
+        {
+            WindowState = WindowState.Minimized;
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
+            await Task.Delay(360);
+            var capture = ScreenCapture.VirtualScreen();
+            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            var picker = new RegionCaptureWindow(capture);
+            UiTranslation.Apply(picker, state.Settings.UiLanguage == "English");
+            await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
+            if (picker.SelectedScreenRect is { } rect)
+            {
+                state.Settings.InsightScreenSource = "region";
+                state.Settings.InsightScreenRegion = $"{rect.X},{rect.Y},{rect.Width},{rect.Height}";
+                state.Settings.SelectedInsightSourceLabel = "区域";
+                await state.Settings.SaveAsync();
+                state.SetStatus($"已框选读屏区域：{rect.Width}×{rect.Height}。");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            state.SetStatus("框选读屏区域失败：" + ex.Message, true);
+        }
+    }
+
     public async Task CaptureRegionAsync()
     {
         if (state.Working) { state.SetStatus("当前有任务在进行，稍后再截图。"); return; }

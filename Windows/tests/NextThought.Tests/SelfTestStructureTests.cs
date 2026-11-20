@@ -207,6 +207,26 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ScreenWatchIsSingleFrameDefaultOffAndVisible()
+    {
+        var models = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Core", "Models.cs"));
+        Assert.Contains("InsightScreenWatch", models);
+        Assert.Contains("InsightScreenInterval", models);
+        Assert.Contains("= 1;", models);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.ScreenWatch.cs"));
+        Assert.Contains("ScreenOcrReader", state);
+        Assert.Contains("StartupOptions.Demo", state);
+        Assert.Contains("AddSeconds(20)", state);
+        Assert.Contains("ScreenWatchCapturing", state);
+        var reader = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "ScreenOcrReader.cs"));
+        Assert.Contains("InMemoryRandomAccessStream", reader);
+        Assert.DoesNotContain("File.WriteAllBytes", reader);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("正在截屏读取屏幕", live);
+    }
+
     [Fact]
     public void MyVoiceUsesTheExistingSpeakerEmbedder()
     {

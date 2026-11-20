@@ -14,6 +14,8 @@
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
           <TextBlock Text="{Binding PageSubtitle}" Classes="caption" />
           <TextBlock Text="{Binding RecordingElapsedText}" Classes="caption" />
+          <TextBlock Text="正在截屏读取屏幕…" Classes="caption" Foreground="{DynamicResource Ai}"
+                     IsVisible="{Binding ScreenWatchCapturing}" />
         </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">

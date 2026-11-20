@@ -211,4 +211,25 @@ public partial class SettingsView : UserControl
         catch (Exception ex) { state.SetStatus("打开我的声音失败：" + ex.Message, true); }
     }
 
+
+    private async void PickScreenRegion_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state || TopLevel.GetTopLevel(this) is not MainWindow owner) return;
+        try { await owner.PickScreenRegionForWatchAsync(); }
+        catch (Exception ex) { state.SetStatus("框选读屏区域失败：" + ex.Message, true); }
+    }
+
+    private async void ClearScreenRegion_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        try
+        {
+            state.Settings.InsightScreenSource = "display";
+            state.Settings.InsightScreenRegion = "";
+            state.Settings.SelectedInsightSourceLabel = "显示器";
+            await state.Settings.SaveAsync();
+        }
+        catch (Exception ex) { state.SetStatus("清除读屏区域失败：" + ex.Message, true); }
+    }
+
 }
