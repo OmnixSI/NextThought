@@ -97,7 +97,8 @@
       </Border>
 
       <!-- Answer -->
-      <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_0}">
+      <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_0}"
+                IsVisible="{Binding Settings.AutomaticAnswers}">
         <Grid RowDefinitions="Auto,Auto,*,Auto">
           <Grid Margin="{DynamicResource D4Margin_18_16_18_6}" ColumnDefinitions="*,Auto">
             <StackPanel>
@@ -172,6 +173,15 @@
             </WrapPanel>
           </StackPanel>
         </Grid>
+      </Border>
+      <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_22}"
+              IsVisible="{Binding !Settings.AutomaticAnswers}">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="只记录模式" Classes="section" />
+          <TextBlock Text="这场会只保存转写与纪要，不自动生成回答。需要回答时可随时在输入框提问。" Classes="body" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding StatsText}" Classes="caption" />
+          <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
+        </StackPanel>
       </Border>
     </Grid>
   </Grid>

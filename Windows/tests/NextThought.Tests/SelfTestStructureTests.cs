@@ -108,6 +108,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LivePageHasNotesOnlyColumn()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("只记录模式", xaml);
+        Assert.Contains("!Settings.AutomaticAnswers", xaml);
+    }
+
     [Fact]
     public void LivePageHasEvidenceAndWebSources()
     {
