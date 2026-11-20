@@ -76,6 +76,7 @@ public partial class MainWindow : Window
             };
             RefreshDisplays();
             if (StartupOptions.SelfTest is { Length: > 0 } selfTest) await RunNamedSelfTestAsync(selfTest);
+            if (StartupOptions.Screenshots is { Length: > 0 } screenshots) await RunScreenshotsAsync(screenshots);
         };
         Closing += OnClosing;
         Avalonia.Controls.Chrome.WindowDecorationProperties.SetElementRole(TitleBar, WindowDecorationsElementRole.TitleBar);
