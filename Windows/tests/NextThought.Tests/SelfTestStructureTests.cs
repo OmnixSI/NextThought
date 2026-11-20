@@ -87,6 +87,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryRowsOfferSessionRename()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("重命名会议", xaml);
+        Assert.Contains("RenameSession_Tapped", xaml);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "RenameSessionDialog.axaml")));
+    }
+
     [Fact]
     public void HistoryRowsOfferSessionDeletion()
     {
