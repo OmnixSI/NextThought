@@ -2,6 +2,27 @@ namespace NextThought.Desktop;
 
 public partial class AppState
 {
+
+    /// <summary>E18: rename one archived meeting and update the visible rows.</summary>
+    public async Task RenameSessionAsync(RecentMeetingRow row, string title)
+    {
+        var trimmed = title.Trim();
+        if (trimmed.Length == 0 || trimmed == row.Title) return;
+        try
+        {
+            await Sessions.RenameAsync(row.Meta.Id, trimmed);
+            row.Meta.Title = trimmed;
+            if (CurrentSession?.Id == row.Meta.Id) { CurrentSession.Title = trimmed; MeetingTitle = trimmed; }
+            ApplyHistoryFilter();
+            SetStatus("已重命名会议：" + trimmed);
+        }
+        catch (Exception ex) { SetStatus("重命名失败：" + ex.Message, true); }
+    }
+
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private Task DeleteSession(RecentMeetingRow row) => DeleteSessionAsync(row);
+
     /// <summary>E18: delete one archived meeting, its series membership and visible lists.</summary>
     public async Task DeleteSessionAsync(RecentMeetingRow row)
     {

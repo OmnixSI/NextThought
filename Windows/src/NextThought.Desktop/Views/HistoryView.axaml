@@ -45,7 +45,7 @@
                     Tag="{Binding}" Click="Row_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
               <Button.ContextMenu>
                 <ContextMenu>
-                  <MenuItem Header="删除会议" Tag="{Binding}" Click="DeleteSession_Click" />
+                  <MenuItem Header="删除会议" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.DeleteSessionCommand}" CommandParameter="{Binding}" />
                 </ContextMenu>
               </Button.ContextMenu>
               <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">

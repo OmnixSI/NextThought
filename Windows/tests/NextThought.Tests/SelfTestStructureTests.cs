@@ -92,7 +92,7 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
         Assert.Contains("删除会议", xaml);
-        Assert.Contains("DeleteSession_Click", xaml);
+        Assert.Contains("DeleteSessionCommand", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
         Assert.Contains("Sessions.DeleteAsync", state);
     }

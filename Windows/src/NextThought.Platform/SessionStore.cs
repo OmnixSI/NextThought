@@ -26,6 +26,22 @@ public sealed class SessionStore(AppPaths paths)
         finally { gate.Release(); }
     }
 
+
+    /// <summary>E18: rename an archived meeting; the title is the only mutable field.</summary>
+    public async Task RenameAsync(Guid id, string title, CancellationToken ct = default)
+    {
+        var trimmed = title.Trim();
+        if (trimmed.Length == 0) return;
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var current = ReadMeta(id);
+            current.Title = trimmed;
+            await WriteMetaAsync(current, ct).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
+
     public FileStream AcquireLease(Guid id) => new(Path.Combine(Folder(id), ".active.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
     public Task CreateAsync(SessionMeta meta, CancellationToken ct = default) => CreateAsync(meta, null, ct);
 

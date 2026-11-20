@@ -22,4 +22,18 @@ public sealed class SessionStoreDeletionTests
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
+    [Fact]
+    public async Task RenamingASessionUpdatesTheArchiveMeta()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-rename-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SessionStore(new AppPaths(root));
+            var meta = new SessionMeta { Title = "旧标题" };
+            await store.CreateAsync(meta);
+            await store.RenameAsync(meta.Id, "新标题");
+            Assert.Equal("新标题", store.Load(meta.Id).Meta.Title);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
 }
