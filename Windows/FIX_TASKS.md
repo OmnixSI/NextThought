@@ -16,7 +16,7 @@ Nov 20, 2026 · @Homing
 | 0-3 | 已实现、未验证 | `Windows/validation/bundles/1.3.7/`，无二进制 |
 | 0-4 | 已实现、未验证 | `FEATURE_PARITY.md`（v3.3.0）、`CORE_PARITY.md`、`VIEW_PARITY.md` |
 | 0-5 | 已实现、未验证 | `VIEW_PARITY.md` 273 行；生成器 `Windows/scripts/scan_views.py` |
-| 0-6 | 未做 | 等待补 CORE_PARITY 三列、9 个「部分」与过时数字 |
+| 0-6 | 已实现、未验证 | `CORE_PARITY.md` 已加三列、九个「部分」和复算命令；清单 41 与脚本复算 40 的差异已注明 |
 | 0-7 | 已实现、未验证 | `REVIEW_RESPONSE_1370.md` 更正节；`README.md` 首行 |
 | 0-8 | 已实现、未验证 | 根目录 9 份跟踪文件 + 允许的 5 份；旧文档在 `Windows/archive/` |
 | 0-9 | 已实现、未验证 | `Windows/UPSTREAM` |

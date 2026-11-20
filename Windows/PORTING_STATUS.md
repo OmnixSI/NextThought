@@ -1,9 +1,9 @@
 ## 2026-11-20 · 0.5.145 · 任务组 0（0-1、0-2、0-3、0-4、0-5、0-7、0-8、0-9）
 改动：新建 `windows/parity`；导入 `FIX_TASKS.md`；记录基线；从 port/windows-native 取回 1.3.7 文档（无二进制）；从 fx/78-parity-baseline 取回 FEATURE/CORE/VIEW 并重填状态；用 `Windows/scripts/scan_views.py` 生成 273 行 VIEW_PARITY；在 REVIEW_RESPONSE 加「更正」节并改 README 首行；归档旧文档、建立九份跟踪文件；新建 UPSTREAM。
 测试：Core **866/866**，NextThought.Tests **122/122**；新翻译的 Swift 测试 0。
-状态：0-1/0-2/0-3/0-4/0-5/0-7/0-8/0-9 = 已实现、未验证；0-6 = 未做。
+状态：0-1/0-2/0-3/0-4/0-5/0-7/0-8/0-9 = 已实现、未验证；0-6 = 已实现、未验证（清单 41 与脚本 40 的差异已注明）。
 证据：分支 `windows/parity`；提交 d838850、40e0535、be81e63、d8eb93e、0d89767、0dcf7cd、628e238、2f0645a；`Windows/FIX_TASKS.md`、`FEATURE_PARITY.md`、`VIEW_PARITY.md`、`Windows/validation/bundles/1.3.7/`。
-未解决：0-6 的 CORE_PARITY 三列、9 个「部分」和过时数字尚未改；真实 Mac 夹具仍未到，A/B 组实机验证不能开始。
+未解决：真实 Mac 夹具仍未到，A/B 组实机验证不能开始；0-6 的 41/40 口径差 1 个待人工复核。
 
 ## 2026-11-20 · 0.5.145 · 任务组 0（0-2 基线）
 改动：无代码改动；仅记录 `fx/ed39491-mac-data` + f5278f8 的还原/构建/测试基线。
