@@ -29,6 +29,34 @@ public sealed class ThemeResourceTests
     }
 
 
+
+    [Fact]
+    public void EveryMacPaletteValueMatches()
+    {
+        var theme = File.ReadAllText(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
+        var expected = new[]
+        {
+            ("Paper", "#F7F5F0"), ("Surface", "#FFFFFF"), ("SurfaceRaised", "#FFFFFF"),
+            ("Sunken", "#0A1C1B19"), ("Hover", "#0F1C1B19"), ("Pressed", "#1C1C1B19"),
+            ("InkBrush", "#1C1B19"), ("OnInk", "#FFFFFF"), ("Secondary", "#6B6963"),
+            ("Tertiary", "#706E68"), ("Hairline", "#171C1B19"), ("Ai", "#595751"),
+            ("AiSoft", "#0B1C1B19"), ("PromptPanel", "#F0EFEC"), ("Seal", "#C4452C"),
+            ("Ready", "#237542"), ("Caution", "#8A5707")
+        };
+        foreach (var (key, color) in expected)
+            Assert.Contains($"<SolidColorBrush x:Key=\"{key}\" Color=\"{color}\" />", theme);
+        foreach (var (key, color) in new[]
+        {
+            ("Paper", "#121110"), ("Surface", "#1B1B19"), ("SurfaceRaised", "#242422"),
+            ("Sunken", "#0DECEBE8"), ("Hover", "#14ECEBE8"), ("Pressed", "#24ECEBE8"),
+            ("InkBrush", "#ECEBE8"), ("OnInk", "#131312"), ("Secondary", "#A3A19B"),
+            ("Tertiary", "#95938C"), ("Hairline", "#1CECEBE8"), ("Ai", "#B8B6AF"),
+            ("AiSoft", "#12ECEBE8"), ("PromptPanel", "#242422"), ("Seal", "#F07055"),
+            ("Ready", "#4CC38A"), ("Caution", "#F0B24A")
+        })
+            Assert.Contains($"<SolidColorBrush x:Key=\"{key}\" Color=\"{color}\" />", theme);
+    }
+
     [Fact]
     public void SpacingResourcesMatchMacSpace()
     {
