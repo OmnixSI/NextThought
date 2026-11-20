@@ -15,8 +15,8 @@
             <TextBlock Text="ActionButton · default / hover / pressed / focus / unavailable" Classes="title" />
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
               <Button Classes="primary" Content="默认" />
-              <Button Content="悬停" />
-              <Button Classes="quiet" Content="按下" />
+              <Button Classes="hoverstate" Content="悬停" />
+              <Button Classes="pressedstate" Content="按下" />
               <Button Content="焦点" BorderBrush="{DynamicResource Ai}" BorderThickness="2" />
               <Button Content="不可用" IsEnabled="False" />
             </StackPanel>
@@ -83,7 +83,7 @@
             <TextBlock Text="RevisionDiff · stale+manual edit" Classes="title" />
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
               <TextBlock Text="旧原话：缓存几穿" Classes="body" />
-              <TextBlock Text="→" Classes="body" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="&#xE72A;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource Secondary}" />
               <TextBlock Text="手动校正：缓存击穿" Classes="body" />
             </StackPanel>
             <TextBlock Text="&#xE7BA; 旧正文基于修订前原话；手动校正仍保留。" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" Foreground="{DynamicResource Caution}" />

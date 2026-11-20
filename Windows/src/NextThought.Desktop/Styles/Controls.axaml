@@ -418,4 +418,18 @@
   <Style Selector="Button.scene.selected /template/ ContentPresenter TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
   </Style>
+
+  <!-- Debug sample static interaction states (D8). -->
+  <Style Selector="Button.hoverstate">
+    <Setter Property="Background" Value="{DynamicResource Hover}" />
+  </Style>
+  <Style Selector="Button.hoverstate /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Hover}" />
+  </Style>
+  <Style Selector="Button.pressedstate">
+    <Setter Property="Background" Value="{DynamicResource Pressed}" />
+  </Style>
+  <Style Selector="Button.pressedstate /template/ Border#Root">
+    <Setter Property="Background" Value="{DynamicResource Pressed}" />
+  </Style>
 </Styles>
