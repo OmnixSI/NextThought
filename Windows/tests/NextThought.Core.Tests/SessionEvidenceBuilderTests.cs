@@ -3,72 +3,50 @@ using Xunit;
 
 namespace NextThought.Core.Tests;
 
-/// <summary>Tests for evidence support matching and review freshness.</summary>
+/// <summary>B6: translated from SessionEvidenceTests.swift.</summary>
 public sealed class SessionEvidenceBuilderTests
 {
-    private static readonly DateTimeOffset Start = new(2026, 11, 18, 9, 0, 0, TimeSpan.FromHours(8));
+    private static SessionMeta Meta(DateTimeOffset start) => new() { StartedAt = start, EndedAt = start.AddSeconds(100) };
 
-    private static TranscriptLine Line(string text, int offset) => new() { Text = text, Date = Start.AddSeconds(offset) };
-
-    private static readonly TranscriptLine[] Lines =
-    [
-        Line("我们用 Kubernetes 部署", 60),
-        Line("缓存命中率提升到 95%", 125)
-    ];
+    private static StructuredNotesDoc Doc(params NotesSectionResult[] sections) =>
+        new("general", "通用", "zh", "纪要", sections);
 
     [Fact]
-    public void QuotesAreMatchedCaseInsensitively()
+    public void ValidTimestampAloneNeverClaimsThatAModelFactIsSupported()
     {
-        Assert.Equal(SessionEvidenceSupport.Quoted, SessionEvidenceBuilder.Support("kubernetes", null, Lines));
-        Assert.Equal(SessionEvidenceSupport.QuoteNotFound, SessionEvidenceBuilder.Support("不存在", null, Lines));
+        var start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+        var line = new TranscriptLine
+        {
+            Date = start.AddSeconds(32), StartedAt = start.AddSeconds(32), Speaker = "remote",
+            Text = "我们会等外部数据确认后再提交。"
+        };
+        var notes = Doc(new NotesSectionResult("decisions", "决定", NotesSectionKind.Items, false,
+            [new NotesItem { Text = "已决定周五提交。", Time = "00:32" }]));
+        var evidence = SessionEvidenceBuilder.Build(Meta(start), [line], notes, null);
+        var reference = Assert.Single(evidence);
+        Assert.Equal(SessionEvidenceSupport.TimeOnly, reference.Support);
+        Assert.Equal(line.Id, reference.LineId);
+        Assert.Equal("已决定周五提交。", reference.Claim);
+        Assert.Null(reference.ReviewDecision);
+        Assert.Equal(64, reference.ClaimRevision?.Length);
+        Assert.True(reference.NeedsConfirmation);
     }
 
     [Fact]
-    public void WithoutAQuoteTheLocationCanSupportTheReference()
+    public void ExactQuoteLinksToItsStableLineAndKeepsTheSourceRevision()
     {
-        Assert.Equal(SessionEvidenceSupport.TimeOnly, SessionEvidenceBuilder.Support(null, "01:05", Lines));
-        Assert.Equal(SessionEvidenceSupport.Unlocated, SessionEvidenceBuilder.Support(null, "20:00", Lines));
-        Assert.Equal(SessionEvidenceSupport.Unlocated, SessionEvidenceBuilder.Support(null, null, Lines));
-    }
-
-    [Fact]
-    public void MalformedLocationsAreUnlocated()
-    {
-        Assert.Equal(SessionEvidenceSupport.Unlocated, SessionEvidenceBuilder.Support(null, "abc", Lines));
-        Assert.Equal(SessionEvidenceSupport.Unlocated, SessionEvidenceBuilder.Support(null, "1:2:3:4", Lines));
-    }
-
-    [Fact]
-    public void SecondsParsesMinutesAndHours()
-    {
-        Assert.Equal(65, SessionEvidenceBuilder.Seconds("01:05"));
-        Assert.Equal(3661, SessionEvidenceBuilder.Seconds("1:01:01"));
-        Assert.Equal(42, SessionEvidenceBuilder.Seconds("42"));
-        Assert.Null(SessionEvidenceBuilder.Seconds(""));
-        Assert.Null(SessionEvidenceBuilder.Seconds("a:b"));
-    }
-
-    [Fact]
-    public void ReviewsAreCurrentOnlyWhileAllRevisionsMatch()
-    {
-        var review = new SessionEvidenceReview(SessionEvidenceDecision.Supported, "c1", "t1", "l1", DateTimeOffset.UtcNow);
-        Assert.True(SessionEvidenceBuilder.IsReviewCurrent(review, "c1", "t1", "l1"));
-        Assert.False(SessionEvidenceBuilder.IsReviewCurrent(review, "c2", "t1", "l1"));
-        Assert.False(SessionEvidenceBuilder.IsReviewCurrent(review, "c1", "t2", "l1"));
-        Assert.False(SessionEvidenceBuilder.IsReviewCurrent(review, "c1", "t1", "l2"));
-        Assert.False(SessionEvidenceBuilder.IsReviewCurrent(null, "c1", "t1", "l1"));
-    }
-
-    [Fact]
-    public void AttachingAChangedReviewMarksItStale()
-    {
-        var reference = new SessionEvidenceReference("id", "标题", "结论", SessionEvidenceSupport.Quoted,
-            SessionEvidenceOrigin.TextNotes, ClaimRevision: "old", TranscriptSourceRevision: "old-t");
-        var review = new SessionEvidenceReview(SessionEvidenceDecision.Supported, "new", "new-t", "l", DateTimeOffset.UtcNow);
-        var updated = SessionEvidenceBuilder.WithReview(reference, review, "new", "new-t", "changed");
-        Assert.True(updated.ReviewIsStale);
-        Assert.Equal(SessionEvidenceDecision.Supported, updated.ReviewDecision);
-        var current = SessionEvidenceBuilder.WithReview(reference, review, "new", "new-t", "l");
-        Assert.False(current.ReviewIsStale);
+        var start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+        var line = new TranscriptLine
+        {
+            Date = start.AddSeconds(65), StartedAt = start.AddSeconds(65), Speaker = "remote",
+            Text = "等外部数据确认后再提交。"
+        };
+        var notes = Doc(new NotesSectionResult("actions", "待办", NotesSectionKind.Actions, false,
+            [new NotesItem { Text = "周五前提交", Time = "01:05", Quote = "等外部数据确认后再提交。" }]));
+        var reference = Assert.Single(SessionEvidenceBuilder.Build(Meta(start), [line], notes, null));
+        Assert.Equal(SessionEvidenceSupport.Quoted, reference.Support);
+        Assert.Equal(line.Id, reference.LineId);
+        Assert.Equal(SessionEvidenceSourceVariant.Corrected, reference.SourceVariant);
+        Assert.Equal(TranscriptRevisions.Of(line.Id, line.Text), reference.SourceRevision);
     }
 }

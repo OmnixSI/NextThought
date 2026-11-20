@@ -7,7 +7,7 @@ namespace NextThought.Core;
 /// still current (port of the evidence-builder helpers; note/structured-payload extraction stays
 /// app-side until the full notes model is ported).
 /// </summary>
-public static class SessionEvidenceBuilder
+public static partial class SessionEvidenceBuilder
 {
     /// <summary>The support level a reference can claim from the saved transcript, strongest first.</summary>
     public static SessionEvidenceSupport Support(string? quote, string? location, IReadOnlyList<TranscriptLine> lines)

@@ -12,6 +12,12 @@ public sealed record SessionSummary
     public StructuredNotesPayload? Structured { get; init; }
     public DateTimeOffset? GeneratedAt { get; init; }
 
+    /// <summary>All structured views saved for this meeting (structuredAll).</summary>
+    public IReadOnlyList<StructuredNotesPayload>? StructuredAll { get; init; }
+
+    /// <summary>User reviews keyed by evidence id (evidenceReviews).</summary>
+    public IReadOnlyDictionary<string, SessionEvidenceReview>? EvidenceReviews { get; init; }
+
     /// <summary>
     /// Mac's SessionSummary also carries title/questions/model. Keep every unknown field so a
     /// Mac-authored editedSummary survives a Windows read/write cycle.
