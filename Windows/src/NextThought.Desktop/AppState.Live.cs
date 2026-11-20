@@ -443,6 +443,9 @@ public partial class AppState
                 var webResponse = await searchProvider.SearchAsync(question, 5, cancellation.Token);
                 if (webResponse.Error is null) web = webResponse.Results;
                 else SetStatus(webResponse.Error);
+                WebResults.Clear();
+                foreach (var entry in web) WebResults.Add(entry);
+                OnPropertyChanged(nameof(WebStatusText));
             }
             var result = await CurrentClient().AnswerAsync(options,
                 check ? "严格按用户要求回复。" : BuildAnswerSystemPrompt(meta),

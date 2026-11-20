@@ -107,6 +107,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LivePageHasEvidenceAndWebSources()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("WebStatusText", xaml);
+        Assert.Contains("WebResults", xaml);
+        Assert.Contains("资料引用", xaml);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("WebResults.Clear", live);
+    }
+
     [Fact]
     public void LivePageHasCandidateStrip()
     {

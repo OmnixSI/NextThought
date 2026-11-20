@@ -126,7 +126,29 @@
           </StackPanel>
 
           <ScrollViewer Grid.Row="2" Margin="{DynamicResource D4Margin_12_0_12_0}" VerticalScrollBarVisibility="Auto">
-            <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" Margin="{DynamicResource D4Margin_6_0}" />
+            <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+              <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" Margin="{DynamicResource D4Margin_6_0}" />
+              <Expander Header="{Binding WebStatusText}" IsExpanded="False">
+                <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+                  <TextBlock Text="资料引用" Classes="overline" />
+                  <ItemsControl ItemsSource="{Binding Sources}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:SourceCitation">
+                        <TextBlock Text="{Binding Label}" Classes="caption" TextWrapping="Wrap" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="联网来源" Classes="overline" />
+                  <ItemsControl ItemsSource="{Binding WebResults}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:WebResult">
+                        <TextBlock Text="{Binding Title}" Classes="caption" TextWrapping="Wrap" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Expander>
+            </StackPanel>
           </ScrollViewer>
 
           <StackPanel Grid.Row="3" Margin="{DynamicResource D4Margin_18_10_18_14}" Spacing="{DynamicResource D4Spacing_8}">

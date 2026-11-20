@@ -182,6 +182,9 @@ public partial class AppState : ObservableObject
     public ObservableCollection<TranscriptRow> Transcript { get; }
     public ObservableCollection<RecentMeetingRow> History { get; }
     public ObservableCollection<RecentMeetingRow> FilteredHistory { get; } = [];
+    public ObservableCollection<WebResult> WebResults { get; } = [];
+    public string WebStatusText => WebResults.Count == 0 ? "未联网" : $"联网来源 {WebResults.Count} 条";
+
     public ObservableCollection<SourceCitation> Sources { get; }
     public ObservableCollection<CompanionAddress> CompanionAddresses { get; } = [];
 
