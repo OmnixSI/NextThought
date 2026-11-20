@@ -82,6 +82,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareMaterialsInsightIsShown()
+    {
+        var library = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "ViewModels", "LibraryViewModel.cs"));
+        Assert.Contains("MaterialsInsight", library);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
+        Assert.Contains("Library.MaterialsInsight", xaml);
+    }
+
     [Fact]
     public void PrepareSeriesBriefingIsExposed()
     {

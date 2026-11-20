@@ -25,6 +25,12 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
 
     public IReadOnlyList<MaterialDocument> DocumentsForRetrieval() => Materials.Count > 0 ? Materials.ToList() : Store.List().ToList();
 
+
+    public string MaterialsInsight => Materials.Count == 0
+        ? "还没有资料；导入 PDF、Word、PPT、Excel、Markdown 或图片后，这里显示页数与段落数。"
+        : string.Join("  ·  ", Materials.Take(3).Select(document =>
+            $"{document.Name} {document.Blocks.Count} 段")) + (Materials.Count > 3 ? $"  ·  另 {Materials.Count - 3} 份" : "");
+
     public bool HasMaterials => Materials.Count > 0;
     public void NotifyLanguageChanged() => OnPropertyChanged(nameof(MaterialCountText));
 
@@ -42,6 +48,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
         {
             all = Store.List().ToList();
             ApplyFilter();
+            OnPropertyChanged(nameof(MaterialsInsight));
             ImportStatus = all.Count == 0 ? "还没有资料。导入 PDF、Word、PPT、Excel、Markdown 或图片。" : $"共 {all.Count} 份资料，均在本机解析，不上传。";
         }
         catch (Exception ex)

@@ -67,6 +67,7 @@
             <CheckBox Content="带入上一场转写" IsChecked="{Binding CarryTranscript}" />
           </WrapPanel>
           <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
+          <TextBlock Text="{Binding Library.MaterialsInsight}" Classes="caption" TextWrapping="Wrap" />
           <ItemsControl ItemsSource="{Binding Library.Materials}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="core:MaterialDocument">
