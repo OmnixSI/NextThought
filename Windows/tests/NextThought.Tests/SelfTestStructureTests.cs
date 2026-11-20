@@ -205,6 +205,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryListIsReadOffTheUiThread()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
+        Assert.Contains("RefreshHistoryAsync", state);
+        var startup = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.cs"));
+        Assert.Contains("_ = RefreshHistoryAsync()", startup);
+    }
+
     [Fact]
     public void HistoryAsyncHandlersShowErrors()
     {

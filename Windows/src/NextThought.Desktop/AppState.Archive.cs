@@ -42,6 +42,20 @@ public partial class AppState
         ApplyHistoryFilter();
     }
 
+
+    /// <summary>F20: read the meeting list off the UI thread, then update the history on it.</summary>
+    public async Task RefreshHistoryAsync(Guid? select = null)
+    {
+        var list = await Task.Run(() => Sessions.List());
+        History.Clear();
+        foreach (var item in list) History.Add(new RecentMeetingRow(item));
+        if (select is { } id && list.FirstOrDefault(x => x.Id == id) is { } match) CurrentSession ??= match;
+        HomeRecent.Clear();
+        foreach (var item in list.Take(5)) HomeRecent.Add(new RecentMeetingRow(item));
+        OnPropertyChanged(nameof(IsHistoryEmpty));
+        ApplyHistoryFilter();
+    }
+
     partial void OnHistoryLengthFilterChanged(string value) => ApplyHistoryFilter();
 
     partial void OnHistorySortChanged(string value) => ApplyHistoryFilter();
