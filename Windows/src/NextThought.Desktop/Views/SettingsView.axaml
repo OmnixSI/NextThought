@@ -82,7 +82,10 @@
                    PlaceholderText="Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
             <Button Content="保存术语表" Command="{Binding SaveGlossaryCommand}" />
-            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
+            <Button Classes="quiet" Content="打开术语表" Click="OpenGlossary_Click" />
+          </StackPanel>
           </StackPanel>
         </StackPanel>
       </Border>

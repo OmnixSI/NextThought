@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.GlossaryWindow"
+        x:DataType="local:AppState"
+        Title="术语表" Width="720" Height="640" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Paper}">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_18}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+      <TextBlock Text="术语表" Classes="display" FontSize="24" />
+      <TextBlock Text="添加正确写法与常见误听；识别时作为热词，转写中的错写会改回正确写法。" Classes="caption" TextWrapping="Wrap" />
+    </StackPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
+      <StackPanel>
+      <ItemsControl ItemsSource="{Binding GlossaryRows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="local:GlossaryEntryRow">
+            <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                <TextBlock Text="{Binding Canonical}" Classes="label" />
+                <TextBlock Text="{Binding Variants}" Classes="caption" IsVisible="{Binding HasVariants}" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="quiet" Content="删除" Click="Remove_Click" Tag="{Binding}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Text="{Binding GlossaryEmptyText}" Classes="caption" />
+      </StackPanel>
+    </ScrollViewer>
+    <StackPanel Grid.Row="2" Spacing="{DynamicResource D4Spacing_6}">
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+        <TextBox Text="{Binding NewGlossaryTerm}" PlaceholderText="正确写法，例如 Kubernetes" />
+        <TextBox Grid.Column="1" Text="{Binding NewGlossaryVariants}" PlaceholderText="误听写法，用 | 分隔" />
+      </Grid>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
+        <Button Content="保存到设置" Command="{Binding SaveGlossaryCommand}" />
+        <Button Classes="primary" Content="添加" Command="{Binding AddGlossaryEntryCommand}" />
+        <Button Content="关闭" Click="Close_Click" />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</Window>

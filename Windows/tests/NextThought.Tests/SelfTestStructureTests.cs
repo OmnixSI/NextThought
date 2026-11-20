@@ -156,6 +156,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void GlossaryWindowExists()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml")));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        Assert.Contains("打开术语表", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
+        Assert.Contains("GlossaryRows", state);
+    }
+
     [Fact]
     public void LiveCanDetachTheAnswerWindow()
     {

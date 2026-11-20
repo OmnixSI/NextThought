@@ -24,12 +24,53 @@ public partial class AppState
         OnPropertyChanged(nameof(GlossaryStatus));
     }
 
+
+    public System.Collections.ObjectModel.ObservableCollection<GlossaryEntryRow> GlossaryRows { get; } = [];
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string glossaryQuery = "";
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string newGlossaryTerm = "";
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string newGlossaryVariants = "";
+    public string GlossaryEmptyText => GlossaryRows.Count == 0 ? "还没有术语；添加一个正确写法和常见误听。" : "";
+
+    private void RefreshGlossaryRows()
+    {
+        GlossaryRows.Clear();
+        foreach (var entry in glossary.Entries)
+            GlossaryRows.Add(new GlossaryEntryRow(entry, RemoveGlossaryEntry));
+        OnPropertyChanged(nameof(GlossaryEmptyText));
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void AddGlossaryEntry()
+    {
+        var term = NewGlossaryTerm.Trim();
+        if (term.Length == 0) return;
+        var variants = NewGlossaryVariants.Split(['|', ',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var entries = glossary.Entries.ToList();
+        entries.Add(new GlossaryEntry(term, variants: variants));
+        glossary = new Glossary(entries).Normalized();
+        try { glossaryStore?.Save(glossary); } catch { }
+        GlossaryText = GlossaryStore.ToText(glossary);
+        GlossaryCount = glossary.Entries.Count;
+        NewGlossaryTerm = ""; NewGlossaryVariants = "";
+        RefreshGlossaryRows();
+    }
+
+    private void RemoveGlossaryEntry(GlossaryEntry entry)
+    {
+        glossary = new Glossary(glossary.Entries.Where(item => item.Id != entry.Id).ToList());
+        try { glossaryStore?.Save(glossary); } catch { }
+        GlossaryText = GlossaryStore.ToText(glossary);
+        GlossaryCount = glossary.Entries.Count;
+        RefreshGlossaryRows();
+    }
+
     private void LoadGlossary()
     {
         glossaryStore = new GlossaryStore(Paths.Root);
         glossary = glossaryStore.Load();
         GlossaryText = GlossaryStore.ToText(glossary);
         GlossaryCount = glossary.Entries.Count;
+        RefreshGlossaryRows();
     }
 
     /// <summary>Canonical spellings for the recognizer (settings.Vocabulary stays supported).</summary>

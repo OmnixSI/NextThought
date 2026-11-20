@@ -152,4 +152,10 @@ public partial class SettingsView : UserControl
         if (File.Exists(path)) state.OpenExternal(path);
         else state.SetStatus("未找到第三方许可文件。");
     }
+
+    private async void OpenGlossary_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state || Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
+        await new GlossaryWindow { DataContext = state }.ShowDialog(owner);
+    }
 }
