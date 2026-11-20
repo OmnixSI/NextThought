@@ -15,7 +15,7 @@
 ## 2026-11-20 · 0.5.145 · D8（部分）
 改动：按钮焦点环从 1px 印章红改成 Mac 的 2px `Ink.focus`（Ai）；新增 `Button.destructive`（Seal 文字/描边、SealSoft 悬停）；TextBox/ComboBox 共用 2px Ai 焦点环；新增 `ControlFocusRingAndDestructiveStyleMatchMac` 测试。
 测试：Core **871/871**，NextThought.Tests **150/150**。
-状态：D8「未做」。八卡样张页/焦点环/破坏性按钮/Fluent 状态符完成；并排图 `compare-controls-light.png` 已生成，仍非逐像素一致。
+状态：D8「未做」。八卡样张页/焦点环/破坏性按钮/Fluent 状态符/静态 hover/pressed 已完成；并排图与 Mac 仍非逐像素一致，差异未逐项收口。
 未解决：控件样张页与 Mac 截图并排。
 
 ## 2026-11-20 · 0.5.145 · D7（完成）

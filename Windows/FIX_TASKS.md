@@ -42,7 +42,7 @@ Nov 20, 2026 · @Homing
 | D5 | 已实现、未验证 | Motion 五组时长、减弱动画；两处淡入淡出已接入，弹簧为 cubic 近似 |
 | D6 | 未做 | 首页已按 Mac v3 重排；选中药丸已用场景 tint 13%；截图仍非逐像素 |
 | D7 | 已实现、未验证 | 57 图标资源/对照表；文字关闭符已换 Fluent；码点待并排定稿 |
-| D8 | 未做 | 八卡样张+Fluent 状态符；compare-controls 已出，未逐像素一致 |
+| D8 | 未做 | 八卡样张+hover/pressed/Fluent 状态符；未逐像素一致 |
 | D11 | 已验证 | 2026-11-20 0.5.145 Windows 11 七页深色截图逐页无白块/读不清；证据 validation/screens |
 | D10 | 已实现、未验证 | 胶囊、覆盖层、snappy、专注、上下文侧栏持久化完成；品牌图标未逐像素 |
 | D1 | 未做 | 7 页中英/浅深+岛 7 态已进 validation/screens；缺 Mac 余页/逐字文案 |
