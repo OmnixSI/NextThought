@@ -37,6 +37,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void RecordingHidesNavigationForFocusMode()
+    {
+        var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        var marker = "IsVisible=\"{Binding !Recording}\"";
+        Assert.True(main.Split(marker).Length - 1 >= 3);
+    }
+
     [Fact]
     public void SettingsIsAnOverlay()
     {
