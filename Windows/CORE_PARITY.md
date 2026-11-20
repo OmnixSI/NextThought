@@ -170,15 +170,15 @@ python Windows/scripts/core_usage.py
 | ByteLevelBPETokenizerTests.swift | 4 | 4 |
 | CancellableTaskValueTests.swift | 2 | 2 |
 | CloudTranscriptionTests.swift | 9 | 0 |
-| CoachSummaryTests.swift | 5 | 0 |
+| CoachSummaryTests.swift | 5 | 5 |
 | CodexEventParserTests.swift | 4 | 4 |
 | CompanionBLETests.swift | 4 | 4 |
-| CompanionCryptoTests.swift | 2 | 0 |
-| DocumentDependencyTests.swift | 2 | 1 |
+| CompanionCryptoTests.swift | 2 | 2 |
+| DocumentDependencyTests.swift | 2 | 2 |
 | DocumentFeatureAvailabilityTests.swift | 1 | 1 |
 | DocumentJobTests.swift | 6 | 0 |
 | DocumentNoticeTests.swift | 11 | 0 |
-| DocumentStructureTests.swift | 5 | 0 |
+| DocumentStructureTests.swift | 5 | 4 |
 | EchoSuppressionTests.swift | 7 | 0 |
 | GlossaryTests.swift | 18 | 0 |
 | LaTeXMathTests.swift | 13 | 0 |
@@ -193,7 +193,7 @@ python Windows/scripts/core_usage.py
 | OnboardingVersionTests.swift | 4 | 4 |
 | PDFTextLayoutTests.swift | 7 | 0 |
 | ProcessExitWaiterTests.swift | 1 | 1 |
-| ProcessLineReaderTests.swift | 2 | 0 |
+| ProcessLineReaderTests.swift | 2 | 2 |
 | ProductArchiveUXTests.swift | 8 | 0 |
 | QuestionCorpusExtended.swift | 0 | 0 |
 | QuestionCorpusHeldOut.swift | 0 | 0 |
@@ -227,7 +227,7 @@ python Windows/scripts/core_usage.py
 | VoiceActivitySegmenterTests.swift | 7 | 0 |
 | VoiceProfileTests.swift | 16 | 0 |
 | WebLookupPromptBuilderTests.swift | 3 | 0 |
-| WebSearchNeedTests.swift | 4 | 0 |
+| WebSearchNeedTests.swift | 4 | 4 |
 | WorkspaceDeletionTransactionTests.swift | 5 | 0 |
 | WorkspaceTests.swift | 39 | 1 |
 | ZipformerStreamingIntegrationTests.swift | 1 | 0 |
