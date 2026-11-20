@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace NextThought.Core;
 
@@ -10,6 +11,11 @@ namespace NextThought.Core;
 /// </summary>
 public static class SessionProjectionBuilder
 {
+    /// <summary>B22: a stable revision of the rendered note text; edits change it.</summary>
+    public static string StructuredNotesRevision(StructuredNotesDoc notes) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            JsonSerializer.Serialize(notes, JsonDefaults.Options)))).ToLowerInvariant()[..32];
+
     public static SessionTextProjection Build(Guid sessionId, DateTimeOffset startedAt,
         IReadOnlyList<TranscriptLine> lines, IReadOnlyList<SessionProjectedAnswer> answers,
         SessionProjectedSummary? summary = null, IReadOnlyList<SessionQuestionEvent>? detected = null,

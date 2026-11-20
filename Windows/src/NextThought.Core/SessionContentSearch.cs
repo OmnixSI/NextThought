@@ -99,6 +99,80 @@ public static class SessionContentSearch
         return fields;
     }
 
+    /// <summary>B22: the archived-meta form of the fields builder used by the history UI.</summary>
+    public static IReadOnlyList<SessionSearchField> Fields(SessionMeta meta,
+        IReadOnlyList<TranscriptLine> lines, IReadOnlyList<SessionQuestionEvent> questions,
+        IReadOnlyList<SessionAnswerEvent> answers, SessionSummary? summary, StructuredNotesDoc? notes)
+    {
+        var projectedAnswers = answers.Where(answer => answer.IsComplete).Select(answer =>
+            new SessionProjectedAnswer(Guid.TryParse(answer.Id, out var id) ? id : Guid.NewGuid(), answer.Date,
+                answer.Question, answer.Answer, TranscriptRevisions.Of(Guid.NewGuid(), answer.Answer))).ToList();
+        var projectedSummary = summary is null ? null : new SessionProjectedSummary(
+            summary.Title, summary.Markdown, summary.TranscriptSourceRevision,
+            SessionDerivedContentStatus.Unknown, summary.StructuredNotesSourceRevision,
+            summary.Structured, summary.StructuredAll, summary.Questions, summary.Lessons, summary.Bank);
+        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, lines, projectedAnswers,
+            projectedSummary, questions, textNotes: notes);
+        var fields = Fields(projection)
+            .Where(field => field.Id is null || !field.Id.Contains(":structured:", StringComparison.Ordinal))
+            .ToList();
+        var transcript = projection.Transcript;
+        Guid? Nearest(string? location)
+        {
+            if (location is null || NotesTime.Seconds(location) is not { } seconds) return null;
+            var nearest = transcript.Select(line => (line, distance: Math.Abs(line.Offset - seconds)))
+                .OrderBy(pair => pair.distance).FirstOrDefault();
+            return nearest.line is not null && nearest.distance <= 45 ? nearest.line.Id : null;
+        }
+        for (var index = 0; index < fields.Count; index++)
+        {
+            var field = fields[index];
+            fields[index] = field with { LineId = field.LineId ?? Nearest(field.Location) };
+        }
+        if (summary is not null && notes is not null
+            && summary.StructuredNotesSourceRevision is { } revision
+            && revision != SessionProjectionBuilder.StructuredNotesRevision(notes))
+        {
+            for (var index = 0; index < fields.Count; index++)
+                if (fields[index].Id is { } id && id.StartsWith("summary:", StringComparison.Ordinal))
+                    fields[index] = fields[index] with
+                    {
+                        IsStale = true,
+                        SourceStatus = SessionDerivedContentStatus.Stale
+                    };
+        }
+        foreach (var payload in (summary?.StructuredAll ?? []).Concat(summary?.Structured is { } single
+                     && !(summary.StructuredAll ?? []).Any(existing => existing.Format == single.Format) ? [single] : []))
+        {
+            if (!payload.HasContent) continue;
+            var status = payload.TranscriptSourceRevision is { } payloadRevision && payloadRevision == projection.TranscriptSourceRevision
+                ? SessionDerivedContentStatus.Current : SessionDerivedContentStatus.Unknown;
+            foreach (var (text, location) in StructuredFieldTexts(payload))
+            {
+                if (string.IsNullOrWhiteSpace(text)) continue;
+                fields.Add(new SessionSearchField(SessionSearchFieldKind.Notes, text, location,
+                    Id: "summary:structured:" + payload.Format.Raw() + ":" + fields.Count,
+                    LineId: Nearest(location), SourceRevision: payload.TranscriptSourceRevision,
+                    IsStale: status == SessionDerivedContentStatus.Stale, SourceStatus: status));
+            }
+        }
+        return fields;
+    }
+
+    private static IEnumerable<(string Text, string? Location)> StructuredFieldTexts(StructuredNotesPayload payload) =>
+        payload.Format switch
+        {
+            NotesFormat.Fishbone when payload.Fishbone is { } fishbone =>
+                new[] { (fishbone.Head, fishbone.HeadAt is { } headAt ? NotesTime.Text(headAt) : null) }
+                    .Concat(fishbone.Categories.SelectMany(category => new[] { (category.Name, (string?)null) }
+                        .Concat(category.Causes.Select(cause => (cause.Text, cause.At is { } at ? NotesTime.Text(at) : null))))),
+            NotesFormat.Outline when payload.Outline is { } outline =>
+                outline.Sections.SelectMany(section => new[] { (section.Title, section.At is { } at ? NotesTime.Text(at) : null) }
+                    .Concat(section.Points.SelectMany(point => new[] { (point.Text, point.At is { } pointAt ? NotesTime.Text(pointAt) : null) }
+                        .Concat(point.Children.Select(child => (child.Text, child.At is { } childAt ? NotesTime.Text(childAt) : null)))))),
+            _ => []
+        };
+
     public static SessionSearchHit? FirstHit(IReadOnlyList<SessionSearchField> fields, GlossarySearch terms) =>
         Hits(fields, terms).FirstOrDefault();
 

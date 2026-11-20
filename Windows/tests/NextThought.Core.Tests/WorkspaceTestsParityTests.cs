@@ -251,9 +251,28 @@ public sealed class WorkspaceTestsParityTests
         Assert.Contains("报告人", SessionSummaryPrompt.System("学术报告", profile.Role, profile.ReviewFocus));
     }
 
-    [Fact(Skip = "missing API: BackupMerge.workspaces imported-series rename (\"（导入）\")")]
+    [Fact]
     public void BackupMergeNeverOverwritesNewerWork()
     {
+        var id = Id();
+        var mine = new WorkspaceSeries(id, "A", Now, [], []) { Lessons = [new WorkspaceLesson { Text = "\u6211\u7684\u7ECF\u9A8C" }] };
+        var old = new WorkspaceSeries(id, "A-old", Now.AddSeconds(-100), [], [])
+        {
+            Lessons = [new WorkspaceLesson { Text = "\u5907\u4EFD\u91CC\u7684\u7ECF\u9A8C" }]
+        };
+        var other = new WorkspaceSeries(Id(), "A", Now, [], []);
+        var result = BackupMerge.Workspaces([mine], [old, other]);
+        Assert.Equal(2, result.Merged.Count);
+        Assert.Equal("A", result.Merged[0].Name);
+        Assert.Equal(2, result.Merged[0].Lessons.Count);
+        Assert.Equal("A\uFF08\u5BFC\u5165\uFF09", result.Merged[1].Name);
+        Assert.Equal(1, result.Added);
+        Assert.Equal(1, result.Updated);
+
+        var newer = new WorkspaceSeries(id, "A-new", Now.AddSeconds(100), [], []);
+        var second = BackupMerge.Workspaces([.. result.Merged], [newer]).Merged[0];
+        Assert.Equal("A-new", second.Name);
+        Assert.Equal(2, second.Lessons.Count);
     }
 
     [Fact]

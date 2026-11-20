@@ -214,9 +214,32 @@ public sealed class SessionContentSearchTestsParityTests
             SessionContentSearch.FirstHit(fields, new Glossary().Search("蜂鸟回滚"))!.Location);
     }
 
-    [Fact(Skip = "missing API: SessionContentSearch.Fields(meta:lines:questions:answers:summary:notes:) nearest-transcript-line linking (SessionSearchField.lineID)")]
+    [Fact]
     public void TimedNoteAndStructuredSearchHitsNavigateToNearbyTranscriptLine()
     {
+        var start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+        var line = new TranscriptLine { Date = start.AddSeconds(32), Speaker = "remote", Text = "\u539F\u8BDD\u6240\u5728\u884C" };
+        var meta = new SessionMeta { StartedAt = start, EndedAt = start.AddSeconds(90), Mode = "meeting" };
+        var notes = new StructuredNotesDoc("general", "\u4F1A\u8BAE", "zh", "\u7EAA\u8981",
+            [new NotesSectionResult("actions", "\u5F85\u529E", NotesSectionKind.Actions, false,
+                [new NotesItem { Text = "\u8054\u7CFB\u5916\u90E8\u6570\u636E\u56E2\u961F", Time = "00:32" }])]);
+        var payload = new StructuredNotesPayload(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("\u51B3\u5B9A", 32,
+                [new OutlinePoint("\u5468\u4E00\u63D0\u4EA4\u7ED3\u679C", 32)])]),
+            language: "zh", generatedAt: start, model: "test");
+        var summary = new SessionSummary
+        {
+            Title = "\u4F1A\u8BAE", Markdown = "", Questions = [], GeneratedAt = start, Model = "test",
+            Structured = payload, StructuredAll = [payload]
+        };
+        var fields = SessionContentSearch.Fields(meta, [line], [], [], summary, notes);
+        var noteHit = SessionContentSearch.FirstHit(fields, new Glossary().Search("\u5916\u90E8\u6570\u636E\u56E2\u961F"));
+        var structuredHit = SessionContentSearch.FirstHit(fields, new Glossary().Search("\u5468\u4E00\u63D0\u4EA4\u7ED3\u679C"));
+        Assert.Equal(SessionSearchFieldKind.Notes, noteHit?.Kind);
+        Assert.Equal(line.Id, noteHit?.LineId);
+        Assert.Equal(SessionSearchFieldKind.Notes, structuredHit?.Kind);
+        Assert.Equal(line.Id, structuredHit?.LineId);
+        Assert.Equal("00:32", structuredHit?.Location);
     }
 
     [Fact]
@@ -248,9 +271,38 @@ public sealed class SessionContentSearchTestsParityTests
         Assert.True(summaryHit.IsStale == true);
     }
 
-    [Fact(Skip = "missing API: SessionProjectionBuilder.structuredNotesRevision(StructuredNotes)")]
+    [Fact]
     public void EditedNotesMarkTheirPreviouslyRenderedSummaryAsStaleInSearch()
     {
+        var start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+        var line = new TranscriptLine { Date = start.AddSeconds(5), Speaker = "remote", Text = "\u5F53\u524D\u4F1A\u8BAE\u5185\u5BB9" };
+        var meta = new SessionMeta { StartedAt = start, EndedAt = start.AddSeconds(30), Mode = "meeting" };
+        var notes = new StructuredNotesDoc("general", "\u4F1A\u8BAE", "zh", "\u7EAA\u8981",
+            [new NotesSectionResult("actions", "\u5F85\u529E", NotesSectionKind.Actions, false,
+                [new NotesItem { Text = "\u539F\u59CB\u5F85\u529E\u63AA\u8F9E" }])]);
+        var transcriptRevision = SessionProjectionBuilder.TranscriptSourceRevision(meta.Id, start, [line], []);
+        notes = notes with { TranscriptSourceRevision = transcriptRevision };
+        var summary = new SessionSummary
+        {
+            Title = "\u7EAA\u8981", Markdown = "## \u5F85\u529E\n\n\u539F\u59CB\u5F85\u529E\u63AA\u8F9E",
+            Questions = [], GeneratedAt = start, Model = "test",
+            TranscriptSourceRevision = transcriptRevision,
+            StructuredNotesSourceRevision = SessionProjectionBuilder.StructuredNotesRevision(notes)
+        };
+        notes = notes with
+        {
+            Sections = [new NotesSectionResult("actions", "\u5F85\u529E", NotesSectionKind.Actions, false,
+                [new NotesItem { Text = "\u66F4\u65B0\u540E\u7684\u5F85\u529E\u63AA\u8F9E" }])]
+        };
+        var fields = SessionContentSearch.Fields(meta, [line], [], [], summary, notes);
+        var oldHit = SessionContentSearch.FirstHit(fields, new Glossary().Search("\u539F\u59CB\u5F85\u529E\u63AA\u8F9E"));
+        var currentHit = SessionContentSearch.FirstHit(fields, new Glossary().Search("\u66F4\u65B0\u540E\u7684\u5F85\u529E\u63AA\u8F9E"));
+        Assert.Equal(SessionSearchFieldKind.Notes, oldHit?.Kind);
+        Assert.Equal(SessionDerivedContentStatus.Stale, oldHit?.SourceStatus);
+        Assert.True(oldHit?.IsStale == true);
+        Assert.Equal(SessionSearchFieldKind.Notes, currentHit?.Kind);
+        Assert.Equal(SessionDerivedContentStatus.Current, currentHit?.SourceStatus);
+        Assert.False(currentHit?.IsStale == true);
     }
 
     [Fact]

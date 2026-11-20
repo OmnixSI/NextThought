@@ -102,7 +102,15 @@ public static partial class BackupMerge
             var index = merged.FindIndex(current => current.Id == item.Id);
             if (index < 0)
             {
-                merged.Add(item);
+                var name = item.Name;
+                if (merged.Any(existing => string.Equals(existing.Name, name, StringComparison.Ordinal)))
+                {
+                    var baseName = name + "\uFF08\u5BFC\u5165\uFF09";
+                    name = baseName;
+                    for (var suffix = 2; merged.Any(existing => string.Equals(existing.Name, name, StringComparison.Ordinal)); suffix++)
+                        name = baseName + " " + suffix;
+                }
+                merged.Add(item with { Name = name });
                 added++;
                 continue;
             }
