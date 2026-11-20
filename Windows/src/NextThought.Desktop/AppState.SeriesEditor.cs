@@ -19,6 +19,26 @@ public partial class AppState
         SeriesEditorStyle = series.Style ?? "";
         SeriesEditorPreferences = series.Preferences ?? "";
         SeriesEditorUseKnowledge = series.UseKnowledge;
+        SeriesEditorDocuments.Clear();
+        foreach (var document in series.Documents) SeriesEditorDocuments.Add(document);
+    }
+
+
+    public System.Collections.ObjectModel.ObservableCollection<NextThought.Core.ContextDocument> SeriesEditorDocuments { get; } = [];
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void RemoveSeriesDocument(NextThought.Core.ContextDocument? document)
+    {
+        if (document is null || SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
+        workspace = workspace.WithSeries(series with
+        {
+            Documents = series.Documents.Where(item => item.Id != document.Id).ToList(),
+            DocumentIds = series.DocumentIds.Where(id => id != document.Id).ToList()
+        });
+        SaveWorkspace();
+        RefreshSeries();
+        SeriesEditorDocuments.Remove(document);
+        SetStatus("系列文档已移除。");
     }
 
     [RelayCommand]

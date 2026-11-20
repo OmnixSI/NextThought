@@ -163,6 +163,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SeriesEditorListsDocuments()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesEditorWindow.axaml"));
+        Assert.Contains("SeriesEditorDocuments", xaml);
+        Assert.Contains("RemoveDocument_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SeriesEditor.cs"));
+        Assert.Contains("SeriesEditorDocuments", state);
+    }
+
     [Fact]
     public void SeriesEditorWindowExists()
     {

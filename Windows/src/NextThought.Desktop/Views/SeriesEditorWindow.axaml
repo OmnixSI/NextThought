@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:NextThought.Desktop"
+        xmlns:core="using:NextThought.Core"
         x:Class="NextThought.Desktop.Views.SeriesEditorWindow"
         x:DataType="local:AppState"
         Title="编辑系列" Width="620" Height="520" WindowStartupLocation="CenterOwner"
@@ -16,6 +17,18 @@
     <TextBlock Text="要求 / Preferences" Classes="caption" />
     <TextBox Text="{Binding SeriesEditorPreferences}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" />
     <CheckBox Content="使用系列知识（经验与题库）" IsChecked="{Binding SeriesEditorUseKnowledge}" />
+    <TextBlock Text="系列文档" Classes="section" />
+    <ItemsControl ItemsSource="{Binding SeriesEditorDocuments}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="core:ContextDocument">
+          <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_6}">
+            <TextBlock Text="{Binding Name}" Classes="caption" />
+            <Button Grid.Column="1" Classes="quiet" Content="删除" Tag="{Binding}" Click="RemoveDocument_Click" />
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBlock Text="把资料加入系列请在资料库中选择；这里可移除。" Classes="caption" />
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
       <Button Content="取消" Click="Close_Click" />
       <Button Classes="primary" Content="保存" Command="{Binding SaveSeriesEditorCommand}" Click="Close_Click" />
