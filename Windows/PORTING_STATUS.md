@@ -1,7 +1,7 @@
 ## 2026-11-20 · 0.5.145 · E25（部分）
 改动：设置覆盖层加入 184 宽左侧分栏（场景/回答与资料/提词与教练/纪要/通用/高级），点击用锚点滚到对应设置分组；新增 `SettingsRailHasSixGroups` 测试。
 测试：Core **872/872**，NextThought.Tests **153/153**。
-状态：E25「已实现、未验证」。16 张设置卡已分到 Scene/Answer/Coach/Notes/General/Advanced 六页，左栏切页、搜索限当前页；`--screenshots` 已生成六页中英浅色截图并放入 `validation/screens/settings-pages/`；分组仍按现有卡片近似，未逐项对照 Mac SettingsPages。
+状态：E25「已实现、未验证」。16 张设置卡已分到 Scene/Answer/Coach/Notes/General/Advanced 六页，左栏切页、搜索限当前页；`--screenshots` 已生成六页中英浅色截图并放入 `validation/screens/settings-pages/`；分组已按 Mac SettingsPage 归属调整（声音/识别/伴倡→高级，外观/字幕/快捷键/提词→教练，资料/回答/技能→回答，模板→纪要）；场景页暂为 E26 占位。
 证据：`qa/settings-rail2/images/settings-light.png`。
 
 ## 2026-11-20 · 0.5.145 · E24（已完成实现）
