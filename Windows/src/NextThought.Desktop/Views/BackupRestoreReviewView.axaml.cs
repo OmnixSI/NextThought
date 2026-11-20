@@ -25,6 +25,14 @@ public partial class BackupRestoreReviewView : UserControl
         this.prepared = prepared;
         this.state = state;
         DataContext = new BackupReviewModel(prepared);
+        NextThought.Core.UiTextSource.Instance.PropertyChanged += OnLanguageChanged;
+        DetachedFromVisualTree += (_, _) => NextThought.Core.UiTextSource.Instance.PropertyChanged -= OnLanguageChanged;
+    }
+
+    /// <summary>G8: the planned rows re-read their status text on a live language switch.</summary>
+    private void OnLanguageChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (DataContext is BackupReviewModel model) model.NotifyLanguageChanged();
     }
 
     private async void Apply_Click(object? sender, RoutedEventArgs e)
@@ -90,6 +98,13 @@ public sealed partial class BackupReviewModel : ObservableObject
 
     public IReadOnlySet<string> SelectedTemplates() =>
         Templates.Where(row => row.UseBackup && row.TemplateId is not null).Select(row => row.TemplateId!).ToHashSet();
+
+    /// <summary>G8: the status text of every planned row is translated on demand.</summary>
+    public void NotifyLanguageChanged()
+    {
+        foreach (var row in Sessions) row.NotifyLanguageChanged();
+        foreach (var row in Templates) row.NotifyLanguageChanged();
+    }
 }
 
 /// <summary>One session or template of the review plan.</summary>
@@ -110,11 +125,13 @@ public sealed partial class BackupReviewRow : ObservableObject
     public bool IsConflict => Status == BackupImportStatus.Conflict;
     [ObservableProperty] private bool useBackup;
 
-    /// <summary>BackupRestoreReviewView.status(_:).</summary>
+    /// <summary>BackupRestoreReviewView.status(_:) — the Mac original sentences.</summary>
     public string StatusText => Status switch
     {
-        BackupImportStatus.New => "新增 · 将导入",
-        BackupImportStatus.Identical => "内容相同 · 跳过",
-        _ => "内容不同 · 默认保留本机"
+        BackupImportStatus.New => NextThought.Core.UiText.T("新增 · 将导入"),
+        BackupImportStatus.Identical => NextThought.Core.UiText.T("内容相同 · 跳过"),
+        _ => NextThought.Core.UiText.T("内容不同 · 默认保留本机")
     };
+
+    public void NotifyLanguageChanged() => OnPropertyChanged(nameof(StatusText));
 }

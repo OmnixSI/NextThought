@@ -15,11 +15,24 @@ public partial class BackupSettingsSection : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+        NextThought.Core.UiTextSource.Instance.PropertyChanged += OnLanguageChanged;
         if (DataContext is AppState state)
         {
             state.LoadBackupPreferences();
             _ = state.RefreshBackupsAsync();
         }
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        NextThought.Core.UiTextSource.Instance.PropertyChanged -= OnLanguageChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    /// <summary>G8: the backup list rows and status lines follow a live language switch.</summary>
+    private void OnLanguageChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (DataContext is AppState state) state.NotifyBackupLanguageChanged();
     }
 
     private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;

@@ -231,10 +231,10 @@ public partial class AppState
 
     public ObservableCollection<BackupFileRow> Backups { get; } = [];
     public bool HasBackups => Backups.Count > 0;
-    public string BackupLatestText => Backups.Count == 0 ? "" : "最近备份：" + Backups[0].DateText;
+    public string BackupLatestText => Backups.Count == 0 ? "" : UiText.T("最近备份：") + Backups[0].DateText;
     public string BackupsRoot => new BackupService(Paths).BackupsRoot;
 
-    public string BackupNote => "导入会合并，不删除现有数据；先预览，再决定恢复什么。"
+    public string BackupNote => UiText.T("导入会合并，不删除现有数据；先预览，再决定恢复什么。")
         + (Backups.Count == 0 ? "" : " " + BackupLatestText + "。");
     public bool HasBackupStatus => BackupStatusText.Length > 0;
     public bool ShowBackupRetry => BackupFailed && BackupCanRetry;
@@ -270,7 +270,7 @@ public partial class AppState
     private async Task SaveAutoBackupPreferenceAsync(bool value)
     {
         try { await SettingsStore.SaveMacPreferencesAsync(new Dictionary<string, object?> { ["autoBackup"] = value }); }
-        catch (Exception ex) { SetStatus("保存自动备份设置失败：" + ex.Message, true); }
+        catch (Exception ex) { SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
     /// <summary>Mac <c>autoBackup</c> (AppState.swift: default true); read fresh for the after-session hook.</summary>
@@ -289,14 +289,14 @@ public partial class AppState
     private bool CanRunBackupTask() => IsIdle && !BackupBusy;
 
     [RelayCommand(CanExecute = nameof(CanRunBackupTask))]
-    private async Task BackupNowAsync() => await RunBackupTaskAsync("正在备份…", canRetryBackup: true, async () =>
+    private async Task BackupNowAsync() => await RunBackupTaskAsync(T("正在备份…", "Backing up…"), canRetryBackup: true, async () =>
     {
         var point = await Task.Run(() => new BackupService(Paths).CreateRecoveryPointAsync("manual"));
         await RefreshBackupsAsync();
         RecoveryPointWarning = point.Size > 2L * 1024 * 1024 * 1024
-            ? "最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。"
+            ? T("最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。", "The newest restore point is over the 2 GiB soft budget. The full recovery basis is kept; export manually to manage space.")
             : null;
-        return "已备份到 " + point.Name + "。";
+        return T("已备份到 " + point.Name + "。", "Backed up to " + point.Name + ".");
     });
 
     [RelayCommand(CanExecute = nameof(CanRunBackupTask))]
@@ -304,11 +304,11 @@ public partial class AppState
     {
         if (PickSaveFile is null) return;
         if (await PickSaveFile("NextThought 备份|*.ntbackup", "NextThought-" + DateTime.Now.ToString("yyyyMMdd-HHmm") + ".ntbackup") is not { } file) return;
-        await RunBackupTaskAsync("正在导出…", canRetryBackup: false, async () =>
+        await RunBackupTaskAsync(T("正在导出…", "Exporting…"), canRetryBackup: false, async () =>
         {
             await Task.WhenAll(writes.ToArray());
             await Task.Run(() => new BackupService(Paths).ExportAsync(file));
-            return "已导出到 " + Path.GetFileName(file) + "。";
+            return T("已导出到 " + Path.GetFileName(file) + "。", "Exported to " + Path.GetFileName(file) + ".");
         });
     }
 
@@ -326,7 +326,7 @@ public partial class AppState
         }
         catch (Exception ex)
         {
-            BackupIssue = "读取备份列表失败：" + ex.Message;
+            BackupIssue = UiText.T("操作失败：") + ex.Message;
         }
     }
 
@@ -338,12 +338,12 @@ public partial class AppState
         {
             await Task.Run(() => new BackupService(Paths).DeleteRecoveryPoint(row.File));
             await RefreshBackupsAsync();
-            BackupStatusText = "已删除恢复点：" + row.DateText + "。";
+            BackupStatusText = T("已删除恢复点：" + row.DateText + "。", "Deleted restore point: " + row.DateText + ".");
             BackupFailed = false;
         }
         catch (Exception ex)
         {
-            BackupStatusText = "删除失败：" + ex.Message;
+            BackupStatusText = UiText.T("操作失败：") + ex.Message;
             BackupFailed = true;
             SetStatus(BackupStatusText, true);
         }
@@ -357,7 +357,7 @@ public partial class AppState
             Directory.CreateDirectory(BackupsRoot);
             OpenExternal(BackupsRoot);
         }
-        catch (Exception ex) { SetStatus("打开备份文件夹失败：" + ex.Message, true); }
+        catch (Exception ex) { SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
     private async Task RunBackupTaskAsync(string progress, bool canRetryBackup, Func<Task<string>> work)
@@ -390,17 +390,17 @@ public partial class AppState
     {
         if (Recording || !IsIdle)
         {
-            SetStatus("请先结束记录和正在进行的操作，再导入备份。", true);
+            SetStatus(T("请先结束记录和正在进行的操作，再导入备份。", "End the recording and finish the current operation before importing a backup."), true);
             return null;
         }
         if (BackupBusy) return null;
         BackupBusy = true;
-        BackupStatusText = "正在校验备份并准备预览…";
+        BackupStatusText = UiText.T("正在校验备份并准备预览…");
         BackupFailed = false;
         try
         {
             var prepared = await Task.Run(() => new BackupService(Paths).PrepareImportAsync(path));
-            BackupStatusText = "预览已就绪；确认前不会修改本机数据。";
+            BackupStatusText = UiText.T("预览已就绪；确认前不会修改本机数据。");
             return prepared;
         }
         catch (Exception ex)
@@ -418,7 +418,7 @@ public partial class AppState
         IReadOnlySet<Guid> useBackupSessions, IReadOnlySet<string> useBackupTemplates, bool applySettings)
     {
         BackupBusy = true;
-        BackupStatusText = "正在恢复…";
+        BackupStatusText = T("正在恢复…", "Restoring…");
         BackupFailed = false;
         try
         {
@@ -438,7 +438,7 @@ public partial class AppState
         }
         catch (Exception ex)
         {
-            BackupStatusText = "恢复未全部完成：" + ex.Message + "已有内容请以实际结果为准；如已开始应用，可从恢复前的恢复点找回。";
+            BackupStatusText = UiText.Format("恢复未全部完成：%@ 已有内容请以实际结果为准；如已开始应用，可从恢复前的恢复点找回。", ex.Message);
             BackupFailed = true;
             SetStatus(BackupStatusText, true);
             return null;
@@ -453,16 +453,27 @@ public partial class AppState
     /// <summary>DataBackup.ImportSummary.description, in the wording the Windows restore already used.</summary>
     private static string DescribeImport(BackupImportResult result)
     {
-        var text = "已导入 " + result.SessionsAdded + " 场会议、" + result.MaterialsAdded + " 份资料、" + result.WorkspacesAdded + " 个系列"
-                   + (result.SessionsReplaced > 0 ? "，替换 " + result.SessionsReplaced + " 场会议" : "")
-                   + (result.SessionsKept > 0 ? "，保留本机 " + result.SessionsKept + " 场会议" : "")
-                   + (result.SessionsIdentical > 0 ? "，相同跳过 " + result.SessionsIdentical + " 场会议" : "")
-                   + (result.SettingsRestored ? "，并恢复设置" : "")
+        if (UiText.EnglishUi)
+        {
+            return "Imported " + result.SessionsAdded + " meetings, " + result.MaterialsAdded + " materials, " + result.WorkspacesAdded + " series"
+                   + (result.SessionsReplaced > 0 ? ", replaced " + result.SessionsReplaced + " meetings" : "")
+                   + (result.SessionsKept > 0 ? ", kept " + result.SessionsKept + " local meetings" : "")
+                   + (result.SessionsIdentical > 0 ? ", skipped " + result.SessionsIdentical + " identical meetings" : "")
+                   + (result.SettingsRestored ? ", restored settings" : "")
                    + (result.TemplatesAdded + result.TemplatesReplaced + result.TemplatesKept > 0
-                       ? "，模板 新增 " + result.TemplatesAdded + "、替换 " + result.TemplatesReplaced + "、保留 " + result.TemplatesKept
+                       ? ", templates added " + result.TemplatesAdded + ", replaced " + result.TemplatesReplaced + ", kept " + result.TemplatesKept
                        : "")
-                   + "；" + result.ConflictsSkipped + " 个重复项保留现有版本。";
-        return text;
+                   + "; " + result.ConflictsSkipped + " duplicates kept the local copy.";
+        }
+        return "已导入 " + result.SessionsAdded + " 场会议、" + result.MaterialsAdded + " 份资料、" + result.WorkspacesAdded + " 个系列"
+               + (result.SessionsReplaced > 0 ? "，替换 " + result.SessionsReplaced + " 场会议" : "")
+               + (result.SessionsKept > 0 ? "，保留本机 " + result.SessionsKept + " 场会议" : "")
+               + (result.SessionsIdentical > 0 ? "，相同跳过 " + result.SessionsIdentical + " 场会议" : "")
+               + (result.SettingsRestored ? "，并恢复设置" : "")
+               + (result.TemplatesAdded + result.TemplatesReplaced + result.TemplatesKept > 0
+                   ? "，模板 新增 " + result.TemplatesAdded + "、替换 " + result.TemplatesReplaced + "、保留 " + result.TemplatesKept
+                   : "")
+               + "；" + result.ConflictsSkipped + " 个重复项保留现有版本。";
     }
 
     /// <summary>DataBackup.afterSession: the post-meeting recovery point, started when the meeting stops.</summary>
@@ -474,15 +485,28 @@ public partial class AppState
             var point = await Task.Run(() => new BackupService(Paths).CreateRecoveryPointAsync("session"));
             BackupIssue = null;
             RecoveryPointWarning = point.Size > 2L * 1024 * 1024 * 1024
-                ? "最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。"
+                ? T("最新恢复点超出 2 GiB 软预算，已保留完整恢复依据；可手动导出后管理空间。", "The newest restore point is over the 2 GiB soft budget. The full recovery basis is kept; export manually to manage space.")
                 : null;
             await RefreshBackupsAsync();
         }
         catch (Exception ex)
         {
-            BackupIssue = "会议归档或恢复点创建失败：" + ex.Message;
+            BackupIssue = UiText.T("会议归档或恢复点创建失败：") + ex.Message;
             SetStatus(BackupIssue, true);
         }
+    }
+
+
+    /// <summary>G8/G9: backup messages that have no Mac key stay bilingual instead of hardcoded.</summary>
+    private static string T(string chinese, string english) => UiText.EnglishUi ? english : chinese;
+
+    /// <summary>G8: a live language switch refreshes the backup rows and derived status lines.</summary>
+    public void NotifyBackupLanguageChanged()
+    {
+        foreach (var row in Backups) row.NotifyLanguageChanged();
+        OnPropertyChanged(nameof(BackupNote));
+        OnPropertyChanged(nameof(BackupLatestText));
+        OnPropertyChanged(nameof(BackupStatusLine));
     }
 
     private int companionHistoryIndex = -1;
