@@ -189,6 +189,25 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void DeviceSwitchStopsTheOldPipe()
+    {
+        var audio = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "AudioCaptureService.cs"));
+        Assert.Contains("previous?.Stop();", audio);
+        Assert.Contains("previous?.Dispose();", audio);
+        Assert.Contains("explicitly chosen device is not overridden", audio);
+    }
+
+    [Fact]
+    public void CloudSttFinalizesBeforeCancel()
+    {
+        var cloud = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "CloudSttSession.cs"));
+        Assert.Contains("await StopAsync();", cloud);
+        Assert.Contains("lifetime.Cancel();", cloud);
+        Assert.True(cloud.IndexOf("await StopAsync();", StringComparison.Ordinal) < cloud.IndexOf("lifetime.Cancel();", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void AudioStallContinuesAndStopDrainsTail()
     {
