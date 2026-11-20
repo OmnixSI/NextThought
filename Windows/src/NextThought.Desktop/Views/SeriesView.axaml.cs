@@ -50,4 +50,11 @@ public partial class SeriesView : UserControl
         if (sender is Button { Tag: SeriesChangeRow row } && DataContext is AppState state)
             state.ReviewSeriesChange(row.Id, NextThought.Core.WorkspaceSeriesChangeDecision.Reject);
     }
+
+    private async void EditSeries_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state || TopLevel.GetTopLevel(this) is not Window owner) return;
+        state.LoadSeriesEditor();
+        await new SeriesEditorWindow { DataContext = state }.ShowDialog(owner);
+    }
 }

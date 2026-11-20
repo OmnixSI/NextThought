@@ -162,6 +162,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SeriesEditorWindowExists()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesEditorWindow.axaml")));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesView.axaml"));
+        Assert.Contains("编辑系列", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SeriesEditor.cs"));
+        Assert.Contains("SaveSeriesEditor", state);
+    }
+
     [Fact]
     public void SeriesChangeCardsCanBeReviewed()
     {

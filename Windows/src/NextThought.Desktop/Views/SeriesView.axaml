@@ -61,6 +61,7 @@
               <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+              <Button Content="编辑系列" Click="EditSeries_Click" />
               <Button Content="把这场景加入" Command="{Binding AssignCurrentToSeriesCommand}" />
               <Button Content="移出" Command="{Binding RemoveCurrentFromSeriesCommand}" />
             </StackPanel>
