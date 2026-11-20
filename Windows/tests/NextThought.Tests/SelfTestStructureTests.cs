@@ -170,6 +170,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LiveTranscriptMarksHighlights()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("IsHighlighted", xaml);
+        Assert.Contains("MeetingHighlights", xaml);
+        var row = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "TranscriptRow.cs"));
+        Assert.Contains("isHighlighted", row);
+    }
+
     [Fact]
     public void LivePageHasMeetingNotesAndHighlights()
     {

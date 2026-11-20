@@ -96,7 +96,10 @@
                 <Border Background="{DynamicResource TranscriptBubble}" CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_12_10}"
                         Margin="{DynamicResource D4Margin_0_0_6_8}">
                   <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                      <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                      <TextBlock Text="★ 高亮" FontSize="11" Foreground="{DynamicResource Caution}" IsVisible="{Binding IsHighlighted}" />
+                    </StackPanel>
                     <SelectableTextBlock Text="{Binding Text}" FontSize="14" LineHeight="22" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Translation}" FontSize="13" TextWrapping="Wrap"
                                Foreground="{DynamicResource Ai}" IsVisible="{Binding HasTranslation}" />
@@ -117,6 +120,13 @@
                   <TextBlock Text="{Binding MeetingHighlights.Count}" Classes="caption" VerticalAlignment="Center" />
                   <TextBlock Text="条高亮" Classes="caption" VerticalAlignment="Center" />
                 </StackPanel>
+                <ItemsControl ItemsSource="{Binding MeetingHighlights}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="core:SessionHighlight">
+                      <TextBlock Text="{Binding Quote}" Classes="caption" TextTrimming="CharacterEllipsis" Margin="{DynamicResource D4Margin_0_2_0_0}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
             </Expander>
             <TextBlock Text="{Binding SystemPartial}" Foreground="{DynamicResource Ai}" FontSize="13" />

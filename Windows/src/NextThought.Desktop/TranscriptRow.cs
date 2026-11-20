@@ -28,6 +28,7 @@ public partial class TranscriptRow : ObservableObject
     [ObservableProperty] private string label;
     [ObservableProperty] private string text;
     [ObservableProperty] private string translation;
+    [ObservableProperty] private bool isHighlighted;
     public string TranslationRaw { get; }
     public bool HasTranslation => Translation.Length > 0;
     public bool IsSystem => Speaker == "remote";

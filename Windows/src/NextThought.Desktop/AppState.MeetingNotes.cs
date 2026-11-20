@@ -41,6 +41,7 @@ public partial class AppState
         if (MeetingHighlights.Any(item => item.LineId == row.Id)) return;
         var offset = Math.Max(0, (int)(row.Date - meta.StartedAt).TotalSeconds);
         MeetingHighlights.Add(new SessionHighlight { LineId = row.Id, OffsetSeconds = offset, Quote = row.Text });
+        row.IsHighlighted = true;
         try
         {
             var folder = Sessions.Folder(meta.Id);
