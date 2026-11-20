@@ -34,7 +34,7 @@ public sealed class SelfTestStructureTests
     {
         var path = Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.cs");
         Assert.True(File.ReadAllLines(path).Length < 600);
-        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Methods.cs")));
+        Assert.True(Directory.GetFiles(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop"), "AppState.*.cs").Length >= 15);
     }
 
     [Fact]
