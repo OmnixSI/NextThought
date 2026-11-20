@@ -20,9 +20,16 @@
         <Slider Grid.Column="1" Width="140" Minimum="14" Maximum="36" TickFrequency="1"
                 Value="{Binding Settings.TeleprompterFontSize}" />
       </Grid>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{loc:Tr 提词}" VerticalAlignment="Center" />
+        <ComboBox Grid.Column="1" MinWidth="120" ItemsSource="{Binding Settings.CueSurfaceChoices}"
+                  SelectedItem="{Binding Settings.SelectedCueSurface}" SelectionChanged="CueSurface_SelectionChanged" />
+      </Grid>
       <CheckBox Content="{loc:Tr 双屏演讲}" IsChecked="{Binding Settings.PresenterMode}" />
       <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11"
                  IsVisible="{Binding Settings.PresenterMode}" TextWrapping="Wrap" />
+      <CheckBox Content="{loc:Tr 讲的时候显示这一页的讲稿}" IsChecked="{Binding Settings.PresenterSlideNotes}"
+                IsVisible="{Binding Settings.PresenterMode}" Click="PresenterSlideNotes_Click" />
       <CheckBox Content="{loc:Tr 听到外语自动翻译}" IsChecked="{Binding Settings.AutoTranslateForeign}" />
       <CheckBox Content="{loc:Tr 跟着讲话翻幻灯片}" IsChecked="{Binding Settings.FollowSlides}" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

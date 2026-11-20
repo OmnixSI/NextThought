@@ -20,6 +20,12 @@ public sealed record ApiEffortChoice(string Value, string Title)
     public override string ToString() => UiText.T(Title);
 }
 
+/// <summary>E26b: the cue surface (Mac <c>cueSurface</c>): 提词岛 or 浮窗.</summary>
+public sealed record CueSurfaceChoice(string Value, string Title)
+{
+    public override string ToString() => UiText.T(Title);
+}
+
 /// <summary>E23: how documents are read (Mac <c>DocumentOCRProvider</c>).</summary>
 public sealed record DocumentProviderChoice(string Value, string Title)
 {
@@ -516,6 +522,18 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private CueWidthOption? selectedCueWidth;
     [ObservableProperty] private bool cueAlwaysOpen;
 
+    /// <summary>E26b: Mac quick settings 提词 — 提词岛 (island) or 浮窗 (window).</summary>
+    public IReadOnlyList<CueSurfaceChoice> CueSurfaceChoices { get; } =
+    [
+        new("island", "提词岛"),
+        new("window", "浮窗")
+    ];
+
+    [ObservableProperty] private CueSurfaceChoice? selectedCueSurface;
+
+    /// <summary>E26b: Mac <c>presenterSlideNotes</c> — show this slide's notes on the island while presenting.</summary>
+    [ObservableProperty] private bool presenterSlideNotes = true;
+
     /// <summary>E26: Mac quick settings 提词字号 slider (14–36, default 22).</summary>
     [ObservableProperty] private double teleprompterFontSize = 22;
     [ObservableProperty] private double? subtitleBarX;
@@ -668,6 +686,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
         SelectedCueWidth = CueWidthChoices.FirstOrDefault(choice => choice.Value == settings.CueWidth) ?? CueWidthChoices[1];
         CueAlwaysOpen = settings.CueAlwaysOpen;
+        SelectedCueSurface = CueSurfaceChoices.FirstOrDefault(choice => choice.Value == settings.CueSurface) ?? CueSurfaceChoices[0];
+        PresenterSlideNotes = settings.PresenterSlideNotes;
         TeleprompterFontSize = settings.TeleprompterFontSize;
         SubtitleBarX = settings.SubtitleBarX;
         SubtitleBarY = settings.SubtitleBarY;
@@ -761,6 +781,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         Appearance = SelectedAppearance?.Value ?? "system",
         CueWidth = SelectedCueWidth?.Value ?? "regular",
         CueAlwaysOpen = CueAlwaysOpen,
+        CueSurface = SelectedCueSurface?.Value ?? "island",
+        PresenterSlideNotes = PresenterSlideNotes,
         SubtitleBarX = SubtitleBarX,
         SubtitleBarY = SubtitleBarY,
         CapturePrivacy = CapturePrivacy,

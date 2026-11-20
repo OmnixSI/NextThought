@@ -245,6 +245,9 @@ public sealed record AppSettings
     /// <summary>Mac key <c>cueAlwaysOpen</c>: keep the island expanded during a meeting.</summary>
     public bool CueAlwaysOpen { get; set; }
 
+    /// <summary>E26b: Mac key <c>cueSurface</c> — "island" (提词岛) or "window" (浮窗).</summary>
+    public string CueSurface { get; set; } = "island";
+
     /// <summary>Mac key <c>teleprompterHideBackground</c>: transparent window background, opaque text.</summary>
     public bool TeleprompterHideBackground { get; set; }
 
@@ -293,6 +296,9 @@ public sealed record AppSettings
     public bool PresenterMode { get; set; }
     /// <summary>Mac key <c>presenterSlidesScreen</c>: display id the slides are on; empty picks the first non-camera display.</summary>
     public string PresenterSlidesScreen { get; set; } = "";
+
+    /// <summary>E26b: Mac key <c>presenterSlideNotes</c> — show this slide's notes on the island while presenting.</summary>
+    public bool PresenterSlideNotes { get; set; } = true;
     /// <summary>Optional HTTPS relay origin for the phone companion (CompanionRelayClient).</summary>
     public string CompanionRelayUrl { get; set; } = "";
     /// <summary>Mac key <c>meetingAutoEndMode</c>: prompt / end / off (MeetingEndWatch).</summary>

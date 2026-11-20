@@ -79,6 +79,21 @@ public partial class MainWindow
                             }
                         }
                     }
+                    // E26b: quick settings panel in the same light/dark/English matrix.
+                    var quickSuffix = (english ? "-en" : "") + (dark ? "-dark" : "-light");
+                    var quickPanel = new QuickSettingsPanel { DataContext = state };
+                    var quickWindow = new Avalonia.Controls.Window
+                    {
+                        Content = quickPanel,
+                        SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
+                    };
+                    quickWindow.Show();
+                    await Task.Delay(200);
+                    var quickName = "quick-settings" + quickSuffix;
+                    CaptureVisual(quickPanel, Path.Combine(directory, quickName + ".png"));
+                    var quickRows = await WriteInventoryAsync(quickPanel, textDirectory, quickName);
+                    if (english) englishInventory[quickName] = quickRows;
+                    quickWindow.Close();
                 }
             }
             state.ApplyUiLanguage(false);
@@ -106,19 +121,6 @@ public partial class MainWindow
             CaptureWindow(Path.Combine(directory, "onboarding-last.png"));
             await WriteInventoryAsync(this, textDirectory, "onboarding-last");
             state.OnboardingVisible = false;
-
-            // Quick settings panel (E26)
-            var quick = new QuickSettingsPanel { DataContext = state };
-            var quickWindow = new Avalonia.Controls.Window
-            {
-                Content = quick,
-                SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
-            };
-            quickWindow.Show();
-            await Task.Delay(250);
-            CaptureVisual(quick, Path.Combine(directory, "quick-settings-light.png"));
-            await WriteInventoryAsync(quick, textDirectory, "quick-settings-light");
-            quickWindow.Close();
 
             // The current island has one implemented visual state; capture it as evidence until C5 adds five.
             state.Recording = true;

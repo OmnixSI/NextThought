@@ -17,10 +17,10 @@ public static class MacPreferenceMap
     [
         "baseUrl", "model", "notesModel", "reasoningEffort", "localModel", "secondPass", "captureMicrophone",
         "vocabulary", "autoSummarize", "automaticAnswers", "autoCheckUpdates", "cloudSttModel", "cloudStt",
-        "codexModel", "useCodex", "webSearch", "useSemanticRetrieval", "subtitleFontSize",
+        "codexModel", "useCodex", "webSearch", "useSemanticRetrieval", "subtitleFontSize", "cueSurface", "presenterSlideNotes",
         "onboardingCompletedVersion", "companionRelayUrl", "sceneDefaults", "insightScreenRegion",
         "answerGloss", "answerLanguage", "appearance", "capturePrivacy", "cueAlwaysOpen", "cueWidth",
-        "cueScreen", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen",
+        "cueScreen", "cueSurface", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen", "presenterSlideNotes",
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides",
         "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
         "apiPresets", "activeApiPresetId", "codexFastMode", "updateRepository",
@@ -35,7 +35,7 @@ public static class MacPreferenceMap
     [
         "answerBackend", "answerGloss", "answerLanguage", "apiBaseURL", "apiModel", "appearance", "autoSummarize",
         "automaticAnswers", "automaticUpdateChecks", "capturePrivacy", "cloudModel", "cloudProvider",
-        "codexModelID", "codexReasoning", "companionRelayURL", "cueAlwaysOpen", "cueScreen", "cueWidth",
+        "codexModelID", "codexReasoning", "companionRelayURL", "cueAlwaysOpen", "cueScreen", "cueSurface", "cueWidth", "presenterSlideNotes",
         "insightFollowSlides", "insightScreenInterval", "insightScreenRegion", "insightScreenWatch",
         "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "notesTemplateByType", "secondPassEnabled",
@@ -83,6 +83,8 @@ public static class MacPreferenceMap
         "cueAlwaysOpen" => settings.CueAlwaysOpen,
         "cueWidth" => settings.CueWidth,
         "cueScreen" => settings.CueScreen,
+        "cueSurface" => settings.CueSurface,
+        "presenterSlideNotes" => settings.PresenterSlideNotes,
         "teleprompterHideBackground" => settings.TeleprompterHideBackground,
         "presenterMode" => settings.PresenterMode,
         "presenterSlidesScreen" => settings.PresenterSlidesScreen,
@@ -163,6 +165,15 @@ public static class MacPreferenceMap
                 break;
             case "presenterMode": settings.PresenterMode = normalized is bool presenting ? presenting : settings.PresenterMode; break;
             case "presenterSlidesScreen": settings.PresenterSlidesScreen = AsString(normalized, settings.PresenterSlidesScreen); break;
+            case "cueSurface":
+            {
+                var surface = AsString(normalized, settings.CueSurface);
+                settings.CueSurface = surface is "island" or "window" ? surface : settings.CueSurface;
+                break;
+            }
+            case "presenterSlideNotes":
+                settings.PresenterSlideNotes = normalized is bool notes ? notes : settings.PresenterSlideNotes;
+                break;
             case "insightScreenWatch": settings.InsightScreenWatch = normalized is bool watch ? watch : settings.InsightScreenWatch; break;
             case "insightScreenInterval":
                 settings.InsightScreenInterval = normalized is double interval ? interval : settings.InsightScreenInterval;

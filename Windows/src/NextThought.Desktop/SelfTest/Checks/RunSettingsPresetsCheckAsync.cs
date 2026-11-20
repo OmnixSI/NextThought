@@ -76,6 +76,53 @@ public partial class MainWindow
         Step("github-commands", settings.SaveGithubTokenCommand is not null && settings.ClearGithubTokenCommand is not null
                                 && settings.FetchApiModelsCommand is not null, "");
 
+        // E26b: capture the scene page and the quick settings panel in light/dark/English from
+        // inside the self-test (the full screenshot batch can be interrupted by other QA runs).
+        var evidenceDirectory = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path)) ?? Path.GetTempPath(), "evidence");
+        var previousTheme = Avalonia.Application.Current?.RequestedThemeVariant;
+        foreach (var (dark, english, suffix) in new[] { (false, false, "-light"), (true, false, "-dark"), (false, true, "-en-light"), (true, true, "-en-dark") })
+        {
+            try
+            {
+                UiTextSource.Instance.SetEnglish(english);
+                if (Avalonia.Application.Current is { } app)
+                    app.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+                var settingsView = new SettingsView { DataContext = state };
+                var window = new Avalonia.Controls.Window
+                {
+                    Content = settingsView,
+                    Width = 1120,
+                    Height = 820,
+                    ShowInTaskbar = false
+                };
+                window.Show();
+                settingsView.SelectPage("Scene");
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(settingsView.UpdateLayout, Avalonia.Threading.DispatcherPriority.Background);
+                await Task.Delay(250);
+                CaptureControl(settingsView, Path.Combine(evidenceDirectory, "settings-scene" + suffix + ".png"));
+                window.Close();
+
+                var quick = new QuickSettingsPanel { DataContext = state };
+                var quickWindow = new Avalonia.Controls.Window
+                {
+                    Content = quick,
+                    SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
+                    ShowInTaskbar = false
+                };
+                quickWindow.Show();
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(quick.UpdateLayout, Avalonia.Threading.DispatcherPriority.Background);
+                await Task.Delay(250);
+                CaptureControl(quick, Path.Combine(evidenceDirectory, "quick-settings" + suffix + ".png"));
+                quickWindow.Close();
+            }
+            catch (Exception exception)
+            {
+                steps.Add(new { action = "evidence-" + suffix.Trim('-'), ok = false, detail = exception.Message });
+            }
+        }
+        UiTextSource.Instance.SetEnglish(false);
+        if (Avalonia.Application.Current is { } restore && previousTheme is { } theme) restore.RequestedThemeVariant = theme;
+
         var report = new
         {
             passed,
@@ -95,5 +142,16 @@ public partial class MainWindow
         catch { }
         Console.WriteLine(passed ? "settings-presets-check: passed" : "settings-presets-check: failed");
         Close();
+    }
+
+    private static void CaptureControl(Avalonia.Controls.Control control, string file)
+    {
+        var width = Math.Max(1, (int)Math.Ceiling(control.Bounds.Width));
+        var height = Math.Max(1, (int)Math.Ceiling(control.Bounds.Height));
+        using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(
+            new Avalonia.PixelSize(width, height), new Avalonia.Vector(96, 96));
+        bitmap.Render(control);
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(file))!);
+        bitmap.Save(file);
     }
 }

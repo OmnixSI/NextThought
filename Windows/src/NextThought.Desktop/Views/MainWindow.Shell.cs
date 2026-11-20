@@ -405,6 +405,12 @@ public partial class MainWindow
 
     public void ToggleCueIsland()
     {
+        if (state.SettingsSnapshot.CueSurface == "window" && !presenterActive)
+        {
+            if (teleprompter is { IsVisible: true }) { teleprompter.DisableClickThrough(); _ = FadeOutAndHideAsync(teleprompter); }
+            else ShowCueWindow();
+            return;
+        }
         if (island is { IsVisible: true }) { _ = FadeOutAndHideAsync(island); return; }
         ShowCueIsland();
     }
@@ -416,9 +422,14 @@ public partial class MainWindow
         {
             if (!hiddenAll) ShowCueIsland();
         }
-        else if (island is { IsVisible: true })
+        else
         {
-            _ = FadeOutAndHideAsync(island);
+            if (island is { IsVisible: true }) _ = FadeOutAndHideAsync(island);
+            if (state.SettingsSnapshot.CueSurface == "window" && teleprompter is { IsVisible: true })
+            {
+                teleprompter.DisableClickThrough();
+                _ = FadeOutAndHideAsync(teleprompter);
+            }
         }
     }
 
@@ -428,6 +439,12 @@ public partial class MainWindow
         if (sharingActive)
         {
             state.SetStatus("检测到屏幕共享，提示岛保持收回；共享结束后自动恢复。");
+            return;
+        }
+        // E26b: Mac cueSurface=window shows the floating teleprompter instead of the island.
+        if (state.SettingsSnapshot.CueSurface == "window" && !presenterActive)
+        {
+            ShowCueWindow();
             return;
         }
         if (island is null)
@@ -441,6 +458,12 @@ public partial class MainWindow
             island.Show();
             _ = FadeInAsync(island);
         }
+    }
+
+    /// <summary>E26b: cueSurface=window — bring up the floating cue window.</summary>
+    private void ShowCueWindow()
+    {
+        if (teleprompter is not { IsVisible: true }) ToggleTeleprompter();
     }
 
     /// <summary>A short fade so floating windows do not pop in (plan §8 animation).</summary>
@@ -535,6 +558,7 @@ public partial class MainWindow
             return;
         }
         presenterActive = true;
+        state.PresenterLayoutActive = true;
         if (island is not { IsVisible: true })
         {
             if (island is null)
@@ -553,6 +577,7 @@ public partial class MainWindow
     {
         if (!presenterActive) return;
         presenterActive = false;
+        state.PresenterLayoutActive = false;
         Show();
         Activate();
         state.SetStatus(message ?? "双屏演讲已结束，主窗口已恢复。");

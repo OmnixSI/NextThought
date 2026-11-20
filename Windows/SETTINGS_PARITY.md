@@ -54,7 +54,7 @@ python Windows/scripts/settings_parity.py --write  # 重新生成 MacPreferences
 | `cueLauncher` | Bool | true | 设置 → 提词与教练 → 提词（SettingsPresenter.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 true）；缺口：Windows 提词岛 Launcher 阶段始终可用（C5），没有该开关，无行为消费者；接入任务：E25 |
 | `cueScreen` | String | "" | 设置 → 提词与教练 → 提词（SettingsPresenter.swift） | 已实现、未验证｜AppSettings.CueScreen；SettingsStore 读写；行为：CueIslandWindow.SelectedScreen 顶部居中（C10） |
 | `cueStyle` | String | "scene" | 默认跟随场景；按场景在设置 → 场景「提词」（SettingsPages.swift SceneRow） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 "scene"）；Windows 按场景存 SceneDefaults.CueStyle（SceneSettingRow），全局键无行为消费者；接入任务：E25 |
-| `cueSurface` | String | "island" | 设置 → 提词与教练 → 提词·显示方式（SettingsPresenter.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 "island"）；缺口：Windows 同时提供提词岛与提词浮窗（C14），没有「浮窗/提词岛」二选一开关，无行为消费者；接入任务：E25 |
+| `cueSurface` | String | "island" | 设置 → 提词与教练 → 提词·显示方式（SettingsPresenter.swift） | 已实现、未验证｜MacPreferenceMap↔AppSettings.CueSurface（E26b）；settings.json 用 Mac 键名；行为：快速设置/场景页选「提词岛/浮窗」，MainWindow 按该键在提词岛与浮窗之间切换会中提示；缺口：未实机双屏观感核对 |
 | `cueWidth` | String | "regular" | 设置 → 提词与教练 → 提词·宽度（SettingsPresenter.swift） | 已实现、未验证｜AppSettings.CueWidth；SettingsStore 读写；行为：CueIslandWindow 宽度 440/540/660 |
 | `customNotesTemplates` | Array | [] | 设置 → 纪要 → 自定义模板（NotesSettingsView.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 []，JSON 原样保存）；Windows 自定义模板存 NotesTemplateStore 文件（AppState.Templates），该键无行为消费者；接入任务：E16；缺口：Windows 模板另存文件 |
 | `customShortcuts` | Dict | {} | 设置 → 提词与教练 → 快捷键（ShortcutSettingsView.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 {}，Mac 原始 JSON 原样保留）；缺口：Windows 快捷键存 AppSettings.Shortcuts（动作 id→按键文本，Ctrl+Alt 体系，见 G1–G4），Mac 的 ShortcutBinding 码不互通 |
@@ -96,7 +96,7 @@ python Windows/scripts/settings_parity.py --write  # 重新生成 MacPreferences
 | `onboardingResumeRowDismissedVersion` | String | "" | 首页（HomeView.swift @AppStorage） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 ""）；缺口：Windows 首页没有引导继续行，无行为消费者；接入任务：E3 |
 | `pinnedWorkspaceIDs` | String | "" | 资料夹列表·置顶（WorkspacesView.swift WorkspaceList） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 ""，"id\|id" 串）；缺口：Windows 资料夹列表没有置顶功能，无行为消费者；接入任务：E18 |
 | `presenterMode` | Bool | false | 设置 → 提词与教练 → 双屏演讲（SettingsPresenter.swift） | 已实现、未验证｜AppSettings.PresenterMode；SettingsStore 读写；行为：AppState.Presenter/主窗口收起（C 组双屏演讲） |
-| `presenterSlideNotes` | Bool | true | 设置 → 提词与教练 → 双屏演讲（SettingsPresenter.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 true）；缺口：Windows 双屏演讲的讲稿要点显示尚未按该开关启停（C7 已显示讲稿要点），无独立消费者；接入任务：E25 |
+| `presenterSlideNotes` | Bool | true | 设置 → 提词与教练 → 双屏演讲（SettingsPresenter.swift） | 已实现、未验证｜MacPreferenceMap↔AppSettings.PresenterSlideNotes（E26b）；settings.json 用 Mac 键名；行为：双屏演讲时快速设置开关决定提词岛是否显示当前页讲稿要点；缺口：未实机双屏核对 |
 | `presenterSlidesScreen` | String | "" | 设置 → 提词与教练 → 双屏演讲·幻灯片所在屏（SettingsPresenter.swift） | 已实现、未验证｜AppSettings.PresenterSlidesScreen；SettingsStore 读写；行为：PresenterCheck/AppState 双屏演讲选屏 |
 | `profile` | String | "" | 旧版单场景背景（WorkspaceStore.swift；现为 Workspace.notes） | 本版不做｜Mac 旧版单一场景背景字段；Windows 按系列文件的 Workspace.Notes 存储，不做旧 UserDefaults 迁移，本版不做 |
 | `projectLibrarySort` | String | "recent" | 资料夹列表·排序（WorkspacesView.swift WorkspaceList） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 "recent"，允许值 recent/name 已写入注册表）；缺口：E18 资料库排序控件未实现，无行为消费者；接入任务：E18 |

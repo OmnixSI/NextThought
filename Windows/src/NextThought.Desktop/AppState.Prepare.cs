@@ -46,11 +46,15 @@ public partial class AppState
     public void BeginPreparedMeeting(NextThought.Core.WorkspaceSeries? series)
     {
         ActiveCarry = CarryPlan;
+        var draft = meetingDraft;
         ActivePlan = new NextThought.Core.MeetingPlan
         {
-            Mode = SelectedMode,
+            Title = draft is { Title.Length: > 0 } ? draft.Title.Trim() : null,
+            Mode = draft?.Mode ?? SelectedMode,
+            CustomTypeName = draft?.Mode == NextThought.Core.MeetingMode.Custom ? draft.CustomTypeName : null,
+            CustomBaseMode = draft?.CustomBaseMode ?? NextThought.Core.MeetingMode.General,
             Carry = ActiveCarry,
-            BaselineDocumentIds = series?.DocumentIds.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(),
+            BaselineDocumentIds = draft?.BaselineDocumentIds ?? series?.DocumentIds.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(),
             PreviousSessionId = PreviousTranscriptContext()?.Id
         };
         activePreparedSeries = series is null ? null : ActivePlan.PreparedWorkspace(series, PreviousTranscriptContext());
@@ -103,8 +107,15 @@ public partial class AppState
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void CancelDraft()
     {
+        // Mac cancelDraft: drop the in-memory plan; imported materials stay in their series.
+        meetingDraft = null;
         SelectedMode = NextThought.Core.MeetingMode.General;
         MeetingTitle = "";
+        CarryMaterials = true;
+        CarryReview = true;
+        CarryLessons = true;
+        CarryTranscript = false;
+        RaisePrepareDraft();
         Section = AppSection.Home;
     }
 
@@ -228,7 +239,10 @@ public partial class AppState
         }
     }
 
-    public bool HasCurrentSlidePoints => CurrentSlidePointsText.Length > 0;
+    /// <summary>E26b: while presenting, the Mac presenterSlideNotes key decides whether the island
+    /// shows this slide's notes.</summary>
+    public bool HasCurrentSlidePoints => CurrentSlidePointsText.Length > 0
+                                         && (!PresenterLayoutActive || Settings.PresenterSlideNotes);
 
     private void MoveSlide(int delta)
     {
@@ -253,6 +267,7 @@ public partial class AppState
 
     private void RefreshPrepareSummary()
     {
+        if (meetingDraft is { } draft) draft.Carry = CarryPlan;
         OnPropertyChanged(nameof(PrepareCarrySummary));
         OnPropertyChanged(nameof(PrepareMaterialsLine));
         OnPropertyChanged(nameof(PrepareAudioReady));
