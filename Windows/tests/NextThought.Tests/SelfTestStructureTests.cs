@@ -36,6 +36,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SettingsIsAnOverlay()
+    {
+        var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("IsVisible=\"{Binding OnSettings}\"", main);
+        Assert.Contains("<views:SettingsView", main);
+        Assert.Contains("CommandParameter=\"Home\"", main);
+    }
+
     [Fact]
     public void SidebarIsHiddenAndSettingsIsInTopBar()
     {

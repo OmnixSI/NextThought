@@ -170,6 +170,18 @@
                     Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" />
           </Grid>
         </Border>
+
+        <!-- Settings is an overlay, not a page (D10). -->
+        <Grid Grid.Column="1" Grid.RowSpan="2" ZIndex="10" Background="{DynamicResource Paper}"
+              IsVisible="{Binding OnSettings}">
+          <Grid RowDefinitions="Auto,*">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="32,14,32,0">
+              <Button Grid.Column="1" Classes="quiet" Content="完成" HorizontalAlignment="Right" VerticalAlignment="Center"
+                      Command="{Binding NavigateCommand}" CommandParameter="Home" />
+            </Grid>
+            <views:SettingsView Grid.Row="1" />
+          </Grid>
+        </Grid>
       </Grid>
     </Grid>
   </Grid>
