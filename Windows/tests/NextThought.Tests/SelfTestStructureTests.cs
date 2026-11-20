@@ -104,6 +104,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void NotesEvidenceItemsCanBeEdited()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        Assert.Contains("EditEvidence_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.NotesEditor.cs"));
+        Assert.Contains("ApplyNotesEdit", state);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "EditTextDialog.axaml")));
+    }
+
     [Fact]
     public void NotesEvidenceHasSupportBadges()
     {

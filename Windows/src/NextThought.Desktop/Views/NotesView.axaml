@@ -180,6 +180,7 @@
                   </StackPanel>
                   <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding Claim}" Classes="body" TextWrapping="Wrap" />
+                  <Button Classes="quiet" Content="编辑" Tag="{Binding}" Click="EditEvidence_Click" HorizontalAlignment="Left" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

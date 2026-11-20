@@ -11,4 +11,5 @@ public sealed record SessionEvidenceRow(SessionEvidenceReference Reference)
     public string SupportLabel => Reference.Support.Label();
     public bool NeedsConfirmation => Reference.NeedsConfirmation;
     public string Badge => Reference.NeedsConfirmation ? "待确认" : "引文支持";
+    public SessionStructuredNotesTarget? Target => Reference.StructuredTarget;
 }

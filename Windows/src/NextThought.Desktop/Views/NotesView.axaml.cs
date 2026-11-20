@@ -19,4 +19,13 @@ public partial class NotesView : UserControl
         var dialog = new NotesEditorWindow { DataContext = state };
         await dialog.ShowDialog(owner);
     }
+
+    private async void EditEvidence_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: SessionEvidenceRow row } || DataContext is not AppState state) return;
+        if (row.Target is null || TopLevel.GetTopLevel(this) is not Window owner) return;
+        var dialog = new EditTextDialog(row.Claim);
+        var text = await dialog.ShowDialog<string?>(owner);
+        if (text is not null) state.ApplyNotesEdit(row.Target, text);
+    }
 }
