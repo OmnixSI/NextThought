@@ -323,7 +323,11 @@ public static class UiText
         ["云服务 API Key"] = "Cloud service API key",
         ["模型（留空用默认）"] = "Model (empty uses default)",
         ["选云端后，导入 WAV 走云端识别；实时记录仍用本机。音频会发送到所选服务。"] = "With cloud selected, WAV import uses the cloud; live recording stays on-device. Audio is sent to the chosen service.",
-            ["未填写"] = "Not set",
+            ["提示岛宽度"] = "Cue island width",
+        ["窄"] = "Narrow",
+        ["标准"] = "Regular",
+        ["宽"] = "Wide",
+        ["未填写"] = "Not set",
         ["已加密保存"] = "Saved encrypted",
     };
         foreach (var pair in UiTextMacEnglish.Strings) dictionary.TryAdd(pair.Key, pair.Value);
