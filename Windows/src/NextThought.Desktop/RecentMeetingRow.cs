@@ -194,3 +194,59 @@ public sealed record QuestionBankRow(QuestionBankItem Item)
 
     public string Meta => UiText.Asked(Item.TimesAsked);
 }
+
+/// <summary>
+/// E20 (WorkspaceBasicTab field editor): one mode field of the series, edited in place. The id is
+/// the Mac ModeField id used as the Fields dictionary key.
+/// </summary>
+public sealed class SeriesEditorFieldRow : System.ComponentModel.INotifyPropertyChanged
+{
+    public SeriesEditorFieldRow(ModeField field, string value, bool custom = false)
+    {
+        Id = field.Id;
+        Title = field.Title;
+        Placeholder = field.Placeholder;
+        Long = field.Long;
+        Custom = custom;
+        this.value = value;
+    }
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    public string Id { get; }
+    public string Title { get; }
+    public string Placeholder { get; }
+    public bool Long { get; }
+    /// <summary>A field the mode profile does not know (kept from an older series or a Mac custom type).</summary>
+    public bool Custom { get; }
+    public double EditorHeight => Long ? 92 : 36;
+
+    private string value;
+    public string Value
+    {
+        get => value;
+        set
+        {
+            if (this.value == value) return;
+            this.value = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(Value)));
+        }
+    }
+}
+
+/// <summary>E20 (PreparationQueueSummary): one document-preparation job of the current series.</summary>
+public sealed record SeriesPreparationRow(DocumentJob Job)
+{
+    public string FileName => Job.FileName;
+    public string ProgressText => Job.ProgressText;
+    public string Message => Job.Message;
+    public bool HasMessage => Job.Message.Length > 0;
+    public bool HasTotal => Job.Total is > 0 && !Job.IsTerminal;
+    public double Completed => Job.Completed;
+    public double Total => Job.Total ?? 0;
+    public bool NeedsAttention => Job.Stage is DocumentJob.StageValue.Failed or DocumentJob.StageValue.Warning;
+    public bool CanRetry => Job.Stage is DocumentJob.StageValue.Failed or DocumentJob.StageValue.Warning
+        or DocumentJob.StageValue.Cancelled;
+    public bool CanCancel => !Job.IsTerminal;
+    public string Id => Job.Id;
+}

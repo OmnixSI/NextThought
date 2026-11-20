@@ -1,44 +1,204 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         xmlns:core="using:NextThought.Core"
         x:Class="NextThought.Desktop.Views.SeriesEditorWindow"
         x:DataType="local:AppState"
-        Title="{loc:Tr 编辑系列}" Width="620" Height="520" WindowStartupLocation="CenterOwner"
+        Title="{loc:Tr 编辑系列}" Width="720" Height="680" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Paper}">
-  <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_10}">
-    <TextBlock Text="{loc:Tr 基本信息}" Classes="section" />
-    <TextBlock Text="{loc:Tr 名称}" Classes="caption" />
-    <TextBox Text="{Binding SeriesEditorName}" />
-    <TextBlock Text="{loc:Tr 类型}" Classes="caption" />
-    <TextBox Text="{Binding SeriesEditorMode}" PlaceholderText="interview / meeting / academic…" />
-    <TextBlock Text="{loc:Tr 回答风格}" Classes="caption" />
-    <TextBox Text="{Binding SeriesEditorStyle}" PlaceholderText="concise / detailed" />
-    <TextBlock Text="{loc:Tr 要求 / Preferences}" Classes="caption" />
-    <TextBox Text="{Binding SeriesEditorPreferences}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" />
-    <CheckBox Content="{loc:Tr 使用系列知识（经验与题库）}" IsChecked="{Binding SeriesEditorUseKnowledge}" />
-    <TextBlock Text="{loc:Tr '领域字段（每行 key=value）'}" Classes="section" />
-    <TextBox Text="{Binding SeriesEditorFieldsText}" AcceptsReturn="True" TextWrapping="Wrap" Height="90" />
-    <TextBlock Text="{loc:Tr 复盘 / 当前阶段}" Classes="section" />
-    <TextBox Text="{Binding SeriesEditorStageReview}" AcceptsReturn="True" TextWrapping="Wrap" Height="70" />
-    <TextBlock Text="{loc:Tr 系列文档}" Classes="section" />
-    <ItemsControl ItemsSource="{Binding SeriesEditorDocuments}">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="core:ContextDocument">
-          <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_6}">
-            <TextBlock Text="{Binding Name}" Classes="caption" />
-            <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 删除}" Tag="{Binding}" Click="RemoveDocument_Click" />
-          </Grid>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-    <TextBlock Text="{loc:Tr 把资料加入系列请在资料库中选择；这里可移除。}" Classes="caption" />
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
+  <Window.Styles>
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="12,4" />
+    </Style>
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto" Margin="{DynamicResource D4Margin_22}">
+    <TabControl Grid.Row="0" Background="Transparent" Padding="{DynamicResource D4Padding_0}">
+      <!-- 基本信息：WorkspaceBasicTab -->
+      <TabItem Header="{loc:Tr 基本信息}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_0_10_0_0}">
+            <TextBlock Text="{Binding SeriesEditorModeTitle}" Classes="section" />
+            <TextBlock Text="{loc:Tr 系列名称}" Classes="caption" />
+            <TextBox Text="{Binding SeriesEditorName}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
+              <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{loc:Tr 类型}" Classes="caption" />
+                <ComboBox ItemsSource="{Binding SeriesEditorModeChoices}" SelectedItem="{Binding SeriesEditorMode}"
+                          HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{loc:Tr 回答风格}" Classes="caption" />
+                <TextBox Text="{Binding SeriesEditorStyle}" PlaceholderText="concise / detailed" />
+              </StackPanel>
+            </Grid>
+            <CheckBox Content="{loc:Tr 使用系列知识（经验与题库）}" IsChecked="{Binding SeriesEditorUseKnowledge}" />
+            <TextBlock Text="{loc:Tr 领域字段}" Classes="section" />
+            <TextBlock Text="{Binding SeriesEditorRole}" Classes="caption" />
+            <ItemsControl ItemsSource="{Binding SeriesEditorFieldRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:SeriesEditorFieldRow">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                    <TextBlock Text="{Binding Title}" Classes="caption" />
+                    <TextBox Text="{Binding Value, Mode=TwoWay}" PlaceholderText="{Binding Placeholder}"
+                             AcceptsReturn="{Binding Long}" TextWrapping="Wrap" MinHeight="{Binding EditorHeight}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{loc:Tr 这些字段会进入这个系列的准备页和回答提示；留空表示不用。}" Classes="caption" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- 回答要求：WorkspaceRequirementsTab -->
+      <TabItem Header="{loc:Tr 回答要求}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_0_10_0_0}">
+            <TextBlock Text="{loc:Tr 回答要求}" Classes="section" />
+            <TextBlock Text="{Binding SeriesEditorRole}" Classes="caption" />
+            <TextBlock Text="{Binding SeriesEditorReviewFocus}" Classes="caption" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr 要求 / 偏好}" Classes="caption" />
+            <TextBox Text="{Binding SeriesEditorPreferences}" AcceptsReturn="True" TextWrapping="Wrap" Height="140"
+                     PlaceholderText="{loc:Tr 例如：先说结论再说依据；数据都标注来源。}" />
+            <TextBlock Text="{loc:Tr 复盘 / 当前阶段}" Classes="caption" />
+            <TextBox Text="{Binding SeriesEditorStageReview}" AcceptsReturn="True" TextWrapping="Wrap" Height="120" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- 资料 + 准备队列摘要：WorkspaceDocumentsTab + PreparationQueueSummary -->
+      <TabItem Header="{loc:Tr 资料}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_10_0_0}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{Binding SeriesEditorPreparationSummary}" Classes="label"
+                         TextWrapping="Wrap" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                <ProgressBar IsIndeterminate="True" Width="80" IsVisible="{Binding SeriesEditorImporting}" />
+                <Button Content="{loc:Tr 导入资料}" Click="ImportDocuments_Click" />
+              </StackPanel>
+            </Grid>
+            <TextBlock Text="{Binding SeriesEditorImportStatus}" Classes="caption" />
+            <TextBlock Text="{Binding SeriesEditorAttentionText}" Classes="caption" Foreground="{DynamicResource Caution}"
+                       IsVisible="{Binding SeriesEditorNeedsAttention}" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding SeriesEditorPreparationRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:SeriesPreparationRow">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}"
+                        Margin="{DynamicResource D4Margin_0_0_0_6}">
+                    <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_2}">
+                      <TextBlock Text="{Binding FileName}" Classes="caption" TextTrimming="CharacterEllipsis" />
+                      <ProgressBar Value="{Binding Completed}" Maximum="{Binding Total}" IsVisible="{Binding HasTotal}" />
+                      <TextBlock Text="{Binding ProgressText}" Classes="caption" FontSize="11" />
+                      <TextBlock Text="{Binding Message}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+                                 IsVisible="{Binding HasMessage}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}"
+                                VerticalAlignment="Center">
+                      <Button Classes="quiet" Content="{loc:Tr 重试}" Tag="{Binding}" Click="RetryPreparation_Click"
+                              IsVisible="{Binding CanRetry}" />
+                      <Button Classes="quiet" Content="{loc:Tr 取消}" Tag="{Binding}" Click="CancelPreparation_Click"
+                              IsVisible="{Binding CanCancel}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="{loc:Tr 系列资料}" Classes="section" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+            <TextBlock Text="{loc:Tr 还没有资料。点「导入资料」把 PDF、Word、PPT、Excel、Markdown 或图片加进这个系列。}" Classes="caption"
+                       TextWrapping="Wrap" IsVisible="{Binding SeriesEditorDocumentsEmpty}" />
+            <ItemsControl ItemsSource="{Binding SeriesEditorDocuments}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:SeriesDocumentRow">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}"
+                        Margin="{DynamicResource D4Margin_0_0_0_6}">
+                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" Tag="{Binding}"
+                              Click="DocumentEnabled_Click" ToolTip.Tip="{loc:Tr 开启后，回答时会参考这份资料。}" />
+                    <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_1}">
+                      <TextBlock Text="{Binding Name}" Classes="caption" TextTrimming="CharacterEllipsis" />
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                        <TextBlock Text="{Binding MetaText}" Classes="faint" FontSize="11" />
+                        <TextBlock Text="{Binding FormatLabel}" Classes="faint" FontSize="11" />
+                        <TextBlock Text="{Binding Category}" Classes="faint" FontSize="11" />
+                      </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                      <Button Classes="quiet" Content="{loc:Tr 移动}" Tag="{Binding}" Click="MoveCategory_Click"
+                              ToolTip.Tip="{loc:Tr 选择这份资料所属的分类}" />
+                      <Button Classes="quiet" Content="{loc:Tr 移除}" Tag="{Binding}" Click="RemoveDocument_Click"
+                              ToolTip.Tip="{loc:Tr 从当前系列移除这份资料}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Classes="quiet" Content="{loc:Tr 撤销移除}" Command="{Binding UndoRemoveSeriesDocumentCommand}"
+                    HorizontalAlignment="Left" />
+            <TextBlock Text="{loc:Tr 支持 PDF（含扫描件 OCR）、Word、PowerPoint、Excel、Markdown、TXT 与图片；回答时只把与问题相关的片段交给模型，并标注来源。}"
+                       Classes="caption" TextWrapping="Wrap" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- 复盘 + 经验/题库编辑：ReviewTab / KnowledgeTab -->
+      <TabItem Header="{loc:Tr 复盘}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_10_0_0}">
+            <TextBlock Text="{Binding SeriesEditorStatistics}" Classes="caption" />
+            <TextBlock Text="{loc:Tr 阶段复盘}" Classes="section" />
+            <TextBox Text="{Binding SeriesEditorStageReview}" AcceptsReturn="True" TextWrapping="Wrap" Height="120" />
+            <TextBlock Text="{loc:Tr 经验}" Classes="section" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+            <TextBlock Text="{loc:Tr 还没有经验。}" Classes="caption" IsVisible="{Binding !HasSeriesLessons}" />
+            <ItemsControl ItemsSource="{Binding SeriesLessons}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:WorkspaceLesson">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                        Margin="{DynamicResource D4Margin_0_0_0_4}">
+                    <TextBlock Grid.Column="0" Text="{Binding Text}" Classes="caption" TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+                      <Button Classes="quiet" Content="{loc:Tr 编辑}" Tag="{Binding}" Click="EditLesson_Click" />
+                      <Button Classes="quiet" Content="{loc:Tr 删除}" Tag="{Binding}" Click="DeleteLesson_Click" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{loc:Tr 题库}" Classes="section" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+            <TextBlock Text="{loc:Tr 题库还空着。}" Classes="caption" IsVisible="{Binding !HasSeriesBank}" />
+            <ItemsControl ItemsSource="{Binding SeriesBank}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:QuestionBankRow">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                        Margin="{DynamicResource D4Margin_0_0_0_4}">
+                    <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_1}">
+                      <TextBlock Text="{Binding Question}" Classes="caption" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Answer}" Classes="faint" FontSize="11" TextWrapping="Wrap"
+                                 IsVisible="{Binding HasAnswer}" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+                      <Button Classes="quiet" Content="{loc:Tr 编辑}" Tag="{Binding}" Click="EditBankItem_Click" />
+                      <Button Classes="quiet" Content="{loc:Tr 删除}" Tag="{Binding}" Click="DeleteBankItem_Click" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_12_0_0}">
       <Button Content="{loc:Tr 归档系列}" Command="{Binding ArchiveSeriesCommand}" Click="Close_Click" />
       <Button Content="{loc:Tr 删除系列}" Click="DeleteSeries_Click" Classes="destructive" />
       <Button Content="{loc:Tr 取消}" Click="Close_Click" />
       <Button Classes="primary" Content="{loc:Tr 保存}" Command="{Binding SaveSeriesEditorCommand}" Click="Close_Click" />
     </StackPanel>
-  </StackPanel>
+  </Grid>
 </Window>

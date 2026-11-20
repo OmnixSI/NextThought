@@ -664,7 +664,7 @@ public sealed class SelfTestStructureTests
     public void SeriesEditorHasFieldsAndReview()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesEditorWindow.axaml"));
-        Assert.Contains("SeriesEditorFieldsText", xaml);
+        Assert.Contains("SeriesEditorFieldRows", xaml);
         Assert.Contains("SeriesEditorStageReview", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SeriesEditor.cs"));
         Assert.Contains("StageReview", state);
@@ -686,6 +686,8 @@ public sealed class SelfTestStructureTests
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesEditorWindow.axaml"));
         Assert.Contains("SeriesEditorDocuments", xaml);
         Assert.Contains("RemoveDocument_Click", xaml);
+        Assert.Contains("ImportDocuments_Click", xaml);
+        Assert.Contains("SeriesEditorPreparationRows", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SeriesEditor.cs"));
         Assert.Contains("SeriesEditorDocuments", state);
     }

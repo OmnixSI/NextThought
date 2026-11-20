@@ -1,33 +1,207 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Platform.Storage;
+using NextThought.Core;
 
 namespace NextThought.Desktop.Views;
 
+/// <summary>
+/// E20: the series editor window (WorkspaceEditor + WorkspaceBasicTab / RequirementsTab /
+/// DocumentsTab / PreparationQueueSummary / ReviewTab). Documents import and remove immediately;
+/// the other sections commit through 保存.
+/// </summary>
 public partial class SeriesEditorWindow : Window
 {
     public SeriesEditorWindow() => InitializeComponent();
 
+    private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;
 
     private void RemoveDocument_Click(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: NextThought.Core.ContextDocument document } && DataContext is AppState state)
-            state.RemoveSeriesDocumentCommand.Execute(document);
+        try
+        {
+            if (sender is Button { Tag: SeriesDocumentRow row } && DataContext is AppState state)
+                state.RemoveSeriesDocumentCommand.Execute(row);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    private void DocumentEnabled_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is CheckBox { Tag: SeriesDocumentRow row } && DataContext is AppState state)
+                state.SetSeriesDocumentEnabledCommand.Execute(row);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
 
+    private void MoveCategory_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is Button { Tag: SeriesDocumentRow row } && DataContext is AppState state)
+                state.MoveSeriesDocumentToCategoryCommand.Execute(row);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    private void RetryPreparation_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is Button { Tag: SeriesPreparationRow row } && DataContext is AppState state)
+                state.RetrySeriesPreparationCommand.Execute(row);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    private void CancelPreparation_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is Button { Tag: SeriesPreparationRow row } && DataContext is AppState state)
+                state.CancelSeriesPreparationCommand.Execute(row);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    /// <summary>WorkspaceDocumentsTab: import one or more files into this series.</summary>
+    private async void ImportDocuments_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not AppState state) return;
+            var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+            if (storage is null) return;
+            var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = UiText.T("导入资料"),
+                AllowMultiple = true,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType(UiText.T("资料"))
+                    {
+                        Patterns = ["*.pdf", "*.docx", "*.pptx", "*.xlsx", "*.md", "*.txt", "*.png", "*.jpg",
+                            "*.jpeg", "*.bmp", "*.tif", "*.tiff", "*.rtf", "*.html", "*.csv"]
+                    },
+                    new FilePickerFileType(UiText.T("全部文件")) { Patterns = ["*"] }
+                ]
+            });
+            var paths = files.Select(file => file.TryGetLocalPath()).Where(path => path is not null)
+                .Cast<string>().ToList();
+            if (paths.Count > 0) await state.ImportSeriesDocumentsAsync(paths);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    private async void EditLesson_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is not Button { Tag: WorkspaceLesson lesson } || DataContext is not AppState state) return;
+            var text = await new RenameSessionDialog(lesson.Text, UiText.T("编辑经验")).ShowDialog<string?>(this);
+            if (!string.IsNullOrWhiteSpace(text)) state.UpdateSeriesLesson(lesson, text);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    private async void DeleteLesson_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is not Button { Tag: WorkspaceLesson lesson } || DataContext is not AppState state) return;
+            var confirmed = await new ConfirmDialog(UiText.T("删除这条经验？")).ShowDialog<bool>(this);
+            if (confirmed) state.DeleteSeriesLessonCommand.Execute(lesson);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    private async void EditBankItem_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is not Button { Tag: QuestionBankRow row } || DataContext is not AppState state) return;
+            var (question, answer) = await ShowBankEditorAsync(row.Question, row.Answer, this);
+            if (question is null) return;
+            state.UpdateSeriesQuestionBankItem(row.Item, question, answer ?? "");
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    private async void DeleteBankItem_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is not Button { Tag: QuestionBankRow row } || DataContext is not AppState state) return;
+            var confirmed = await new ConfirmDialog(UiText.T("删除这道题？")).ShowDialog<bool>(this);
+            if (confirmed) state.DeleteSeriesBankItemCommand.Execute(row.Item);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
+    /// <summary>BankRow edits both the question and the best answer (answer history is kept).</summary>
+    private static async Task<(string? Question, string? Answer)> ShowBankEditorAsync(string question, string answer,
+        Window owner)
+    {
+        string? editedQuestion = null;
+        string? editedAnswer = null;
+        var dialog = new Window
+        {
+            Title = UiText.T("编辑题目"),
+            Width = 560,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = owner.FindResource("Paper") as IBrush
+        };
+        var panel = new StackPanel { Spacing = 8, Margin = new Avalonia.Thickness(22) };
+        var questionBox = new TextBox { Text = question };
+        var answerBox = new TextBox { Text = answer, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 120 };
+        panel.Children.Add(new TextBlock { Text = UiText.T("问题"), Classes = { "caption" } });
+        panel.Children.Add(questionBox);
+        panel.Children.Add(new TextBlock { Text = UiText.T("回答"), Classes = { "caption" } });
+        panel.Children.Add(answerBox);
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8
+        };
+        var cancel = new Button { Content = UiText.T("取消"), Classes = { "quiet" } };
+        cancel.Click += (_, _) => dialog.Close();
+        var save = new Button { Content = UiText.T("保存"), Classes = { "primary" } };
+        save.Click += (_, _) =>
+        {
+            editedQuestion = questionBox.Text?.Trim();
+            editedAnswer = answerBox.Text?.Trim();
+            dialog.Close();
+        };
+        buttons.Children.Add(cancel);
+        buttons.Children.Add(save);
+        panel.Children.Add(buttons);
+        dialog.Content = panel;
+        await dialog.ShowDialog(owner);
+        return (editedQuestion, editedAnswer);
+    }
+
+    /// <summary>WorkspaceActions.deleteWorkspace: the series and its meeting records are deleted.</summary>
     private async void DeleteSeries_Click(object? sender, RoutedEventArgs e)
     {
         try
         {
-        if (DataContext is not AppState state || state.SelectedSeries is not { } selected) return;
-        var confirmed = await new ConfirmDialog(UiText.Format("删除系列「%@」？会议记录会保留。", selected.Name)).ShowDialog<bool>(this);
-        if (!confirmed) return;
-        state.DeleteSeriesCommand.Execute(selected.Id);
-        Close();
-    
+            if (DataContext is not AppState state || state.SelectedSeries is not { } selected) return;
+            var confirmed = await new ConfirmDialog(
+                UiText.Format("删除系列“%@”？系列及其会议记录将被永久删除，无法恢复。", selected.Name))
+                .ShowDialog<bool>(this);
+            if (!confirmed) return;
+            await state.DeleteSeriesFromEditorAsync();
+            Close();
         }
-        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
-        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 }
