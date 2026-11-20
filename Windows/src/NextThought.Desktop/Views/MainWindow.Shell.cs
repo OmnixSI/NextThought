@@ -206,8 +206,7 @@ public partial class MainWindow
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
-            state.Section = AppSection.Library;
-            state.SetStatus("窗口截图已存入资料库，并已用系统 OCR 读取其中的文字。");
+            state.PromptAboutScreenshot();
         }
         catch (Exception ex)
         {
@@ -235,8 +234,7 @@ public partial class MainWindow
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
-            state.Section = AppSection.Library;
-            state.SetStatus("截图已存入资料库，并已用系统 OCR 读取其中的文字。");
+            state.PromptAboutScreenshot();
         }
         catch (Exception ex)
         {

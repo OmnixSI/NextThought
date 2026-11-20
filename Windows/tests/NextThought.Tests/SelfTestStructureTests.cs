@@ -175,6 +175,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ScreenshotCanBecomeAQuestion()
+    {
+        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
+        Assert.Contains("PromptAboutScreenshot", shell);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("PromptAboutScreenshot", live);
+    }
+
     [Fact]
     public void SpeakerEditorExists()
     {

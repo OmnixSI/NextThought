@@ -394,6 +394,14 @@ public partial class AppState
         return cjk * 5 < letters;
     }
 
+    /// <summary>E13: make a fresh screenshot the subject of the composer question.</summary>
+    public void PromptAboutScreenshot()
+    {
+        QuestionInput = "请解释这张截图，指出关键信息、数字或风险。";
+        Section = AppSection.Live;
+        SetStatus("截图已就绪；可直接发送，或补充你的问题。");
+    }
+
     private bool CanTranslate() => IsIdle && !Answering && currentLines.Count > 0;
 
     public AnswerOptions AnswerOptions(bool notes = false)
