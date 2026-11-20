@@ -229,6 +229,41 @@ public partial class SettingsView : UserControl
         catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
         }
 
+    /// <summary>E27: Mac APIPresetManager delete confirmation; removes the preset and its key.</summary>
+    private async void DeleteApiPreset_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not AppState state || state.Settings.SelectedApiPreset is not { } preset) return;
+            if (TopLevel.GetTopLevel(this) is not Window owner) return;
+            var confirmed = await new ConfirmDialog(UiText.Format("删除预设“%@”？", preset.Name)).ShowDialog<bool>(owner);
+            if (!confirmed) return;
+            state.Settings.DeleteActiveApiPresetConfirmed();
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+    }
+
+    /// <summary>E27: Mac GitHubAccessSection 保存并检查 — stores the token, then re-checks the feed.</summary>
+    private void SaveGithubToken_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        state.Settings.SaveGithubTokenCommand.Execute(null);
+        if (state.CheckUpdateCommand.CanExecute(null)) state.CheckUpdateCommand.Execute(null);
+    }
+
+    /// <summary>E27: Mac Updater.createTokenURL — opens the fine-grained token page.</summary>
+    private void CreateGithubToken_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/settings/personal-access-tokens/new")
+            {
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("打开令牌页面失败：" + ex.Message, true); }
+    }
+
     private void Notices_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AppState state) return;

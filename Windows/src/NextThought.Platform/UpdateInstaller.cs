@@ -15,7 +15,7 @@ public static class UpdateInstaller
 {
     public static async Task<PreparedInstaller> PrepareAsync(
         string setupUrl, string setupName, string checksumsUrl, string directory,
-        IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+        IProgress<double>? progress = null, string? token = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(setupUrl)) throw new InvalidOperationException("发布里没有安装包下载地址。");
         if (string.IsNullOrWhiteSpace(setupName)) throw new InvalidOperationException("发布里没有安装包文件名。");
@@ -24,8 +24,8 @@ public static class UpdateInstaller
         var target = Path.Combine(directory, Path.GetFileName(setupName));
         try
         {
-            await DownloadAsync(setupUrl, target, progress, cancellationToken);
-            return new PreparedInstaller(target, await VerifyAsync(target, checksumsUrl, cancellationToken));
+            await DownloadAsync(setupUrl, target, progress, token, cancellationToken);
+            return new PreparedInstaller(target, await VerifyAsync(target, checksumsUrl, token, cancellationToken));
         }
         catch
         {
@@ -35,10 +35,10 @@ public static class UpdateInstaller
     }
 
     /// <summary>Re-checks a previously downloaded installer against the release's checksum file.</summary>
-    public static async Task<string> VerifyAsync(string installerPath, string checksumsUrl, CancellationToken cancellationToken = default)
+    public static async Task<string> VerifyAsync(string installerPath, string checksumsUrl, string? token = null, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(installerPath)) throw new InvalidOperationException("安装包不存在，请重新下载。");
-        var checksums = await UpdateFeedPolicy.ReadAsync(checksumsUrl, cancellationToken);
+        var checksums = await UpdateFeedPolicy.ReadAsync(checksumsUrl, token, cancellationToken);
         var expected = UpdateChecksums.Find(checksums, Path.GetFileName(installerPath))
                        ?? throw new InvalidOperationException("发布里没有这个安装包的校验值。");
         if (!UpdateChecksums.Verify(installerPath, expected))
@@ -50,7 +50,7 @@ public static class UpdateInstaller
     }
 
     /// <summary>HTTP(S) streaming download, or a byte copy when the QA feed points at a local file.</summary>
-    private static async Task DownloadAsync(string url, string target, IProgress<double>? progress, CancellationToken ct)
+    private static async Task DownloadAsync(string url, string target, IProgress<double>? progress, string? token, CancellationToken ct)
     {
         var partial = target + ".part";
         if (File.Exists(partial)) File.Delete(partial);
@@ -59,7 +59,10 @@ public static class UpdateInstaller
         {
             using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("NextThought-Windows/0.5");
-            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (!string.IsNullOrWhiteSpace(token))
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Trim());
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
             response.EnsureSuccessStatusCode();
             var total = response.Content.Headers.ContentLength ?? 0;
             await using var source = await response.Content.ReadAsStreamAsync(ct);

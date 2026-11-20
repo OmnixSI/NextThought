@@ -176,7 +176,7 @@
         </StackPanel>
       </Border>
 
-      <!-- Custom notes templates: imported Mac note-templates.json. -->
+
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorNotes" Text="{loc:Tr 自定义纪要模板}" Classes="section" />
@@ -360,9 +360,16 @@
           <CheckBox Content="{loc:Tr 使用本机 Codex CLI 账号}" IsChecked="{Binding Settings.UseCodex}" />
           <TextBlock Text="{loc:Tr Codex 模型（留空沿用账号默认模型）}" Classes="label" />
           <TextBox Text="{Binding Settings.CodexModel}" PlaceholderText="gpt-5.2-codex" />
-          <TextBlock Text="{loc:Tr 接口预设}" Classes="label" />
-          <ComboBox ItemsSource="{Binding Settings.ProviderPresets}" SelectedItem="{Binding Settings.SelectedProviderPreset}"
-                    Width="240" HorizontalAlignment="Left" />
+          <TextBlock Text="{loc:Tr 预设}" Classes="label" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+            <ComboBox ItemsSource="{Binding Settings.ApiPresetChoices}" SelectedItem="{Binding Settings.SelectedApiPreset}"
+                      Width="180" />
+            <TextBox Text="{Binding Settings.ApiPresetName}" Width="140" PlaceholderText="{loc:Tr 名称}" />
+            <Button Content="{loc:Tr 新建预设}" Command="{Binding Settings.AddApiPresetFromDraftCommand}" />
+            <Button Content="{loc:Tr 重命名}" Command="{Binding Settings.RenameActiveApiPresetFromDraftCommand}" />
+            <Button Content="{loc:Tr 删除}" Click="DeleteApiPreset_Click"
+                    IsEnabled="{Binding Settings.CanDeleteApiPreset}" />
+          </StackPanel>
           <TextBlock Text="{loc:Tr 兼容 Chat Completions 的 API 地址}" Classes="label" />
           <TextBox Text="{Binding Settings.BaseUrl}" PlaceholderText="https://api.openai.com/v1" />
           <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
@@ -378,18 +385,67 @@
           <TextBlock Text="API Key" Classes="label" />
           <TextBox Text="{Binding Settings.ApiKey}" PasswordChar="•" PlaceholderText="sk-…" />
           <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" FontSize="11" />
-          <TextBlock Text="{loc:Tr 推理强度}" Classes="label" />
-          <ComboBox ItemsSource="{Binding Settings.EffortChoicesList}" SelectedItem="{Binding Settings.SelectedEffort}"
-                    HorizontalAlignment="Left" MinWidth="220" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 模型}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.ApiModelChoices}" SelectedItem="{Binding Settings.Model}" Width="220" />
+            <Button Content="{loc:Tr 获取列表}" Command="{Binding Settings.FetchApiModelsCommand}" />
+          </StackPanel>
+          <TextBlock Text="{Binding Settings.ApiModelsStatus}" Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 推理强度}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.ApiEffortChoices}" SelectedItem="{Binding Settings.SelectedApiEffort}" Width="180" />
+            <TextBlock Text="{loc:Tr 仅对服务商支持的推理模型有效；不确定时保持默认。}"
+                       Classes="caption" FontSize="11" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="380" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <Button Content="{loc:Tr 检查连接}" Command="{Binding TestAnswerEngineCommand}" />
+            <ProgressBar IsIndeterminate="True" Width="80" IsVisible="{Binding EngineTestRunning}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding EngineTestLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+          </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_6_0_0}">
             <Button Classes="primary" Command="{Binding SaveSettingsCommand}">
           <TextBlock Text="{loc:Tr 保存设置}" Foreground="{DynamicResource OnInk}" />
         </Button>
-            <Button Content="{loc:Tr 检查回答服务}" Command="{Binding CheckServiceCommand}" />
             <TextBlock Text="{Binding Settings.SavedHint}" Classes="caption" VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock Text="{loc:Tr 转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。}"
                      Classes="caption" FontSize="11" />
+        </StackPanel>
+      </Border>
+
+      <!-- E27: Codex 推理强度 / 快速模式 / GitHub 访问（Mac 高级→回答服务 / 高级→更新） -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="{loc:Tr 回答服务（Codex）}" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 推理强度}" Classes="label" VerticalAlignment="Center" />
+            <ComboBox ItemsSource="{Binding Settings.EffortChoicesList}" SelectedItem="{Binding Settings.SelectedEffort}"
+                      Width="200" HorizontalAlignment="Left" />
+          </StackPanel>
+          <CheckBox IsChecked="{Binding Settings.CodexFastMode}" Content="{loc:Tr 快速模式}" />
+          <TextBlock Text="{Binding Settings.CodexFastLabel}" Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr 当前模型或 Codex 版本不支持 Fast。}" Classes="caption" FontSize="11"
+                     IsVisible="{Binding !Settings.CodexFastAvailable}" />
+          <TextBlock Text="{loc:Tr Fast 回答更快，但会消耗更多 ChatGPT 套餐用量。}" Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr GitHub 访问}" Classes="label" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 仓库}" Classes="label" VerticalAlignment="Center" />
+            <TextBox Text="{Binding Settings.GithubRepository}" Width="260" />
+            <TextBlock Text="{Binding Settings.GithubTokenStatus}" Classes="caption" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBox Text="{Binding Settings.GithubToken}" PasswordChar="•" Width="300"
+                     PlaceholderText="{loc:Tr 粘贴访问令牌（github_pat_…）}" />
+            <Button Content="{loc:Tr 保存并检查}" Click="SaveGithubToken_Click" />
+            <Button Content="{loc:Tr 清除}" Command="{Binding Settings.ClearGithubTokenCommand}" />
+          </StackPanel>
+          <Button Classes="quiet" Content="{loc:Tr 去 GitHub 创建令牌}" Click="CreateGithubToken_Click"
+                  HorizontalAlignment="Left" />
+          <TextBlock Text="{loc:Tr 或在终端运行 gh auth login，就不用填令牌}" Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr 3. Permissions → Contents 选 Read-only，其余不动；生成后复制 github_pat_ 开头的整串粘贴到上面}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <TextBlock Text="{loc:Tr 令牌保存在系统钥匙串。组织要求审批时，需要管理员批准后才能用。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
@@ -431,7 +487,7 @@
         </StackPanel>
       </Border>
 
-      <!-- Updates -->
+
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 更新}" Classes="section" />

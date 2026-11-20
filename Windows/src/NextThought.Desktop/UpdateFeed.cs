@@ -13,8 +13,12 @@ public static class UpdateFeed
     /// </summary>
     public static string Source => NextThought.Platform.UpdateFeedPolicy.ResolveSource(Environment.GetEnvironmentVariable);
 
-    public static Task<string> ReadAsync(string source, CancellationToken cancellationToken = default) =>
-        NextThought.Platform.UpdateFeedPolicy.ReadAsync(source, cancellationToken);
+    /// <summary>E27: Mac <c>updateRepository</c> chooses the GitHub repository of the feed.</summary>
+    public static string SourceFor(string repository) =>
+        NextThought.Platform.UpdateFeedPolicy.ResolveSourceFor(repository, Environment.GetEnvironmentVariable);
+
+    public static Task<string> ReadAsync(string source, string? token, CancellationToken cancellationToken = default) =>
+        NextThought.Platform.UpdateFeedPolicy.ReadAsync(source, token, cancellationToken);
 }
 
 /// <summary>The update check itself: read the feed, pick a candidate, compare with this build.</summary>
@@ -35,6 +39,7 @@ public static class UpdateCheck
     /// The check runs in <see cref="NextThought.Platform.UpdateChecker"/> so the fake-release
     /// directory flow is testable; this app supplies its own assembly version and build.
     /// </summary>
-    public static Task<NextThought.Platform.UpdateReport> RunAsync(string source, UpdateChannel channel, CancellationToken cancellationToken = default) =>
-        NextThought.Platform.UpdateChecker.RunAsync(source, channel, CurrentVersion, CurrentBuild, cancellationToken);
+    public static Task<NextThought.Platform.UpdateReport> RunAsync(string source, UpdateChannel channel,
+        string? token = null, CancellationToken cancellationToken = default) =>
+        NextThought.Platform.UpdateChecker.RunAsync(source, channel, CurrentVersion, CurrentBuild, token, cancellationToken);
 }

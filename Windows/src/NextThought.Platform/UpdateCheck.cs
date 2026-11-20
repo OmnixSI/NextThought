@@ -44,11 +44,11 @@ public static class UpdateChecker
 {
     public static async Task<UpdateReport> RunAsync(
         string source, UpdateChannel channel, string currentVersion, int currentBuild,
-        CancellationToken cancellationToken = default)
+        string? token = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            var json = await UpdateFeedPolicy.ReadAsync(source, cancellationToken);
+            var json = await UpdateFeedPolicy.ReadAsync(source, token, cancellationToken);
             var releases = GitHubRelease.DecodeList(json);
             var candidate = UpdateCatalog.Candidate(releases, channel);
             if (candidate is null) return Report(source, channel, currentVersion, currentBuild);
@@ -58,7 +58,7 @@ public static class UpdateChecker
             UpdateManifest? manifest = null;
             if (candidate.ManifestAsset?.BrowserDownloadUrl is { Length: > 0 } manifestUrl)
             {
-                try { manifest = UpdateManifest.Decode(await UpdateFeedPolicy.ReadAsync(manifestUrl, cancellationToken)); }
+                try { manifest = UpdateManifest.Decode(await UpdateFeedPolicy.ReadAsync(manifestUrl, token, cancellationToken)); }
                 catch (Exception) { manifest = null; }
                 // Updater.check: a manifest that does not describe this release is an invalid archive.
                 if (manifest is not null && !Describes(manifest, candidate))

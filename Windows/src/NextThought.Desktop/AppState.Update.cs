@@ -76,13 +76,15 @@ public partial class AppState
     /// <summary>Checks the feed; <paramref name="source"/> is only set by the QA switch.</summary>
     public async Task<UpdateReport> CheckForUpdatesAsync(string? source = null)
     {
-        if (CheckingUpdate) return LastUpdateReport ?? new UpdateReport(DateTimeOffset.UtcNow, source ?? UpdateFeed.Source,
+        var (repository, token) = UpdateAccess();
+        var feed = source ?? UpdateFeed.SourceFor(repository);
+        if (CheckingUpdate) return LastUpdateReport ?? new UpdateReport(DateTimeOffset.UtcNow, feed,
             UpdateChannel.Title(), UpdateCheck.CurrentVersion, UpdateCheck.CurrentBuild, null, null, false, null, "正在检查");
         CheckingUpdate = true;
         UpdateStatus = "正在检查更新…";
         try
         {
-            var report = await UpdateCheck.RunAsync(source ?? UpdateFeed.Source, UpdateChannel);
+            var report = await UpdateCheck.RunAsync(feed, UpdateChannel, token);
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 LastUpdateReport = report;
@@ -105,6 +107,19 @@ public partial class AppState
     }
 
     public UpdateReport? LastUpdateReport { get; private set; }
+
+    /// <summary>E27: Mac Updater reads updateRepository + the Keychain github.token for a private repo.</summary>
+    private (string Repository, string? Token) UpdateAccess()
+    {
+        string repository;
+        try { repository = Settings.Build().UpdateRepository; }
+        catch { repository = "OmnixSI/NextThought"; }
+        if (string.IsNullOrWhiteSpace(repository)) repository = "OmnixSI/NextThought";
+        string token;
+        try { token = SettingsStore.ReadGithubToken(); }
+        catch { token = ""; }
+        return (repository, token.Length > 0 ? token : null);
+    }
 
     [RelayCommand]
     private async Task CheckUpdateAsync() => await CheckForUpdatesAsync();
@@ -187,11 +202,12 @@ public partial class AppState
 
     private async Task PrefetchInstallerAsync(UpdateReport report)
     {
+        var (_, token) = UpdateAccess();
         try
         {
             var directory = Path.Combine(Path.GetTempPath(), "NextThoughtPrefetch");
             var prepared = await UpdateInstaller.PrepareAsync(
-                report.SetupUrl!, report.SetupName!, report.ChecksumsUrl!, directory);
+                report.SetupUrl!, report.SetupName!, report.ChecksumsUrl!, directory, token: token);
             prefetchedInstaller = prepared.Path;
             prefetchedForUrl = report.SetupUrl;
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -222,13 +238,14 @@ public partial class AppState
         UpdateInstallStatus = "正在准备安装包…";
         string? installer = null;
         string expectedSha;
+        var (_, token) = UpdateAccess();
         try
         {
             var cached = prefetchedForUrl == report.SetupUrl ? prefetchedInstaller : null;
             if (cached is not null && File.Exists(cached))
             {
                 UpdateInstallStatus = "正在校验后台下载的安装包…";
-                expectedSha = await UpdateInstaller.VerifyAsync(cached, report.ChecksumsUrl!);
+                expectedSha = await UpdateInstaller.VerifyAsync(cached, report.ChecksumsUrl!, token: token);
                 installer = cached;
                 UpdateInstallProgress = 1;
             }
@@ -238,7 +255,7 @@ public partial class AppState
                 var directory = Path.Combine(Path.GetTempPath(), "NextThoughtUpdate-" + Guid.NewGuid().ToString("N")[..8]);
                 var progress = new Progress<double>(value => UpdateInstallProgress = value);
                 var prepared = await UpdateInstaller.PrepareAsync(
-                    report.SetupUrl!, report.SetupName ?? "NextThought-setup.exe", report.ChecksumsUrl!, directory, progress);
+                    report.SetupUrl!, report.SetupName ?? "NextThought-setup.exe", report.ChecksumsUrl!, directory, progress, token);
                 expectedSha = prepared.Sha256;
                 installer = prepared.Path;
             }

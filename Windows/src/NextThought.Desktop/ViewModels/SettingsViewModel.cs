@@ -95,6 +95,12 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string githubTokenStatus = "";
     public string GithubTokenUrl => "https://github.com/settings/personal-access-tokens/new";
 
+    /// <summary>E27: the name typed in the preset manager (new preset / rename).</summary>
+    [ObservableProperty] private string apiPresetName = "";
+
+    /// <summary>E27: Mac APIPresetManager disables 删除 when only one preset is left.</summary>
+    public bool CanDeleteApiPreset => ApiPresetChoices.Count > 1;
+
     /// <summary>E27: reads the saved API presets and the GitHub access state into the page model.</summary>
     private void LoadApiPresets()
     {
@@ -117,6 +123,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         foreach (var preset in apiPresets) ApiPresetChoices.Add(new ApiPresetChoice(preset.Id, preset.Name));
         selectedApiPreset = ApiPresetChoices.FirstOrDefault(choice => choice.Id == previous) ?? ApiPresetChoices.FirstOrDefault();
         OnPropertyChanged(nameof(SelectedApiPreset));
+        OnPropertyChanged(nameof(CanDeleteApiPreset));
     }
 
     private void ApplyApiPresetToFields(ApiPresetChoice choice)
@@ -136,7 +143,38 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 
     partial void OnSelectedApiPresetChanged(ApiPresetChoice? value)
     {
-        if (value is not null) ApplyApiPresetToFields(value);
+        if (value is not null)
+        {
+            ApiPresetName = value.Name;
+            ApplyApiPresetToFields(value);
+        }
+    }
+
+    /// <summary>E27: 新建预设 from the settings page (name typed in the manager, current address).</summary>
+    [RelayCommand]
+    private void AddApiPresetFromDraft()
+    {
+        var name = ApiPresetName.Trim();
+        if (name.Length == 0) name = UiText.T("默认");
+        AddApiPreset(name, BaseUrl);
+    }
+
+    /// <summary>E27: 重命名预设 from the settings page (name typed in the manager).</summary>
+    [RelayCommand]
+    private void RenameActiveApiPresetFromDraft()
+    {
+        var name = ApiPresetName.Trim();
+        if (name.Length > 0) RenameActiveApiPreset(name);
+    }
+
+    /// <summary>E27: deletes the active preset after the page's confirmation dialog.</summary>
+    public void DeleteActiveApiPresetConfirmed() => DeleteActiveApiPreset();
+
+    /// <summary>E27: 获取列表 chose a model; the model name is what the API request sends.</summary>
+    [RelayCommand]
+    private void ChooseApiModel(string? id)
+    {
+        if (id is { Length: > 0 }) Model = id;
     }
 
     partial void OnCodexFastModeChanged(bool value) => OnPropertyChanged(nameof(CodexFastAvailable));
@@ -662,7 +700,10 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CloudSttEndpoint = CloudSttEndpointValue.Trim(),
         Model = Model.Trim(),
         NotesModel = NotesModel.Trim(),
-        ReasoningEffort = ReasoningEffort,
+        // E27: API reasoning strength belongs to the active preset (Codex keeps its own picker).
+        ReasoningEffort = UseCodex
+            ? ReasoningEffort
+            : (SelectedApiEffort?.Value == "default" ? "" : SelectedApiEffort?.Value ?? ""),
         LocalModel = SelectedModelChoice?.Id ?? "xasr480",
         SecondPass = SecondPass,
         CaptureSystem = CaptureSystem,

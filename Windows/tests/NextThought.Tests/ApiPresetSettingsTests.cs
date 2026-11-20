@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using NextThought.Platform;
 using Xunit;
 
 namespace NextThought.Tests;
@@ -106,6 +107,60 @@ public sealed class ApiPresetSettingsTests
         Assert.Contains("ModelListMessage", client);
         var core = Read(Path.Combine("Windows", "src", "NextThought.Core", "APIPresets.cs"));
         Assert.Contains("/models", core);
+    }
+
+    [Fact]
+    public void TheAnswerPageWiresThePresetManagerAndEngineTest()
+    {
+        var view = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        foreach (var member in new[]
+                 {
+                     "Settings.ApiPresetChoices", "Settings.SelectedApiPreset", "Settings.ApiPresetName",
+                     "Settings.AddApiPresetFromDraftCommand", "Settings.RenameActiveApiPresetFromDraftCommand",
+                     "Settings.FetchApiModelsCommand", "Settings.ApiModelChoices", "Settings.ApiEffortChoices",
+                     "Settings.SelectedApiEffort", "TestAnswerEngineCommand", "EngineTestLabel",
+                     "Settings.GithubRepository", "SaveGithubToken_Click", "CreateGithubToken_Click",
+                     "{loc:Tr 获取列表}", "{loc:Tr 检查连接}", "{loc:Tr 快速模式}", "{loc:Tr 推理强度}"
+                 })
+            Assert.Contains(member, view);
+        var code = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));
+        Assert.Contains("DeleteApiPreset_Click", code);
+        Assert.Contains("ConfirmDialog", code);
+    }
+
+    [Fact]
+    public void TheUpdaterReadsTheRepositoryAndTheToken()
+    {
+        var update = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Update.cs"));
+        Assert.Contains("UpdateAccess", update);
+        Assert.Contains("SettingsStore.ReadGithubToken", update);
+        Assert.Contains("UpdateFeed.SourceFor", update);
+        Assert.Contains("UpdateCheck.RunAsync(feed, UpdateChannel, token)", update);
+        Assert.Contains("UpdateInstaller.PrepareAsync", update);
+        var feed = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "UpdateFeed.cs"));
+        Assert.Contains("SourceFor", feed);
+        Assert.Contains("string? token", feed);
+    }
+
+    [Fact]
+    public void TheFeedUrlFollowsTheSavedRepository()
+    {
+        Assert.Equal("https://api.github.com/repos/OmnixSI/NextThought/releases",
+            UpdateFeedPolicy.DefaultFor("OmnixSI/NextThought"));
+        Assert.Equal("https://api.github.com/repos/Org/Repo/releases", UpdateFeedPolicy.DefaultFor("Org/Repo"));
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.DefaultFor(""));
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.DefaultFor("Org"));
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.DefaultFor("A/B/C"));
+        Assert.Equal(UpdateFeedPolicy.Default, UpdateFeedPolicy.DefaultFor("Bad Repo/Name"));
+        Assert.Equal("https://api.github.com/repos/Org/Repo/releases",
+            UpdateFeedPolicy.ResolveSourceFor("Org/Repo", _ => null));
+        Assert.Equal("https://example.test/feed",
+            UpdateFeedPolicy.ResolveSourceFor("Org/Repo", name => name switch
+            {
+                UpdateFeedPolicy.QaVariable => "1",
+                "NEXTTHOUGHT_UPDATE_FEED" => "https://example.test/feed",
+                _ => null
+            }));
     }
 
     [Fact]
