@@ -109,6 +109,12 @@
           <CheckBox Content="会中一直展开提词岛，不用把鼠标移上去" IsChecked="{Binding Settings.CueAlwaysOpen}" />
           <CheckBox Content="尽力从屏幕共享中排除本应用窗口" IsChecked="{Binding Settings.CapturePrivacy}" />
           <CheckBox Content="隐藏背景，只保留文字、边框与按钮" IsChecked="{Binding Settings.TeleprompterHideBackground}" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+            <TextBlock Text="移到" Classes="label" VerticalAlignment="Center" />
+            <Button Classes="quiet" Content="屏幕顶部居中" Tag="camera" Click="MoveTeleprompter_Click" />
+            <Button Classes="quiet" Content="屏幕底部" Tag="bottom" Click="MoveTeleprompter_Click" />
+            <Button Classes="quiet" Content="右侧" Tag="right" Click="MoveTeleprompter_Click" />
+          </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
             <TextBlock Text="提示岛宽度" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.CueWidthChoices}" SelectedItem="{Binding Settings.SelectedCueWidth}"

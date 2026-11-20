@@ -232,4 +232,10 @@ public partial class SettingsView : UserControl
         catch (Exception ex) { state.SetStatus("清除读屏区域失败：" + ex.Message, true); }
     }
 
+    private void MoveTeleprompter_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is Avalonia.Controls.Button { Tag: string placement }
+            && Avalonia.Controls.TopLevel.GetTopLevel(this) is MainWindow main)
+            main.MoveTeleprompterTo(placement);
+    }
 }

@@ -641,10 +641,14 @@ public partial class AppState
     }
 
     [RelayCommand]
-    private async Task ShorterAnswerAsync()
+    private async Task ShorterAnswerAsync() => await RefineAsync(AnswerRefinement.Shorter);
+
+    /// <summary>C14: the one-tap refinements of the Mac teleprompter footer.</summary>
+    public async Task RefineAsync(AnswerRefinement refinement)
     {
         if (Answering) return;
-        await AnswerAsync("请把上一条回答压缩到三句话以内，只保留结论。", false);
+        var original = string.IsNullOrWhiteSpace(DetectedQuestion) ? QuestionInput : DetectedQuestion;
+        await AnswerAsync(refinement.QuestionFor(original), false);
     }
 
     [RelayCommand]

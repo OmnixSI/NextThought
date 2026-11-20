@@ -22,6 +22,9 @@ public enum AppSection { Home, Prepare, Live, Notes, History, Series, Library, S
 /// </summary>
 public partial class AppState : ObservableObject
 {
+    /// <summary>C14: the teleprompter footer's workbench button.</summary>
+    public Action? ShowWorkbenchRequested { get; set; }
+
     /// <summary>F19: lets the global UI exception logger show a status line.</summary>
     public static AppState? Current { get; private set; }
 

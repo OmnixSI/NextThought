@@ -11,7 +11,7 @@
         WindowStartupLocation="Manual">
   <Border x:Name="Shell" Background="#E6121110" BorderBrush="#33ECEBE8" BorderThickness="0.5"
           CornerRadius="{DynamicResource D4CornerRadius_16}" Padding="{DynamicResource D4Padding_6}" BoxShadow="0 12 26 0 #50000000">
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*,Auto">
       <!-- Drag handle + controls -->
       <Grid x:Name="DragBar" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_10_6_6_6}" Background="Transparent"
             PointerPressed="DragBar_PointerPressed">
@@ -20,6 +20,8 @@
           <TextBlock Text="提词器" Foreground="#A3A19B" FontSize="11" VerticalAlignment="Center" />
           <TextBlock x:Name="ModeText" Text="拖动可移动 · 双击隐藏控件" Foreground="#6B6963" FontSize="10"
                      VerticalAlignment="Center" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <TextBlock Text="{Binding DetectedQuestion}" Foreground="#B8B6AF" FontSize="11" MaxWidth="240"
+                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
           <Button Classes="tp" Content="A-" Click="Smaller_Click" ToolTip.Tip="缩小字号" />
@@ -39,6 +41,17 @@
       <Button x:Name="FollowButton" Grid.Row="1" Content="回到最新" Classes="tp" HorizontalAlignment="Right"
               VerticalAlignment="Bottom" Margin="{DynamicResource D4Margin_0_0_12_12}" IsVisible="False"
               Click="Follow_Click" />
+      <Border x:Name="Footer" Grid.Row="2" Margin="{DynamicResource D4Margin_10_4_10_8}">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
+          <Button Grid.Column="0" Classes="tp" Content="改短" Command="{Binding ShorterAnswerCommand}" />
+          <Button Grid.Column="1" Classes="tp" Content="举例" Tag="Example" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="2" Classes="tp" Content="英文" Tag="English" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="4" Classes="tp" Content="复制" Command="{Binding CopyAnswerCommand}" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="5" Classes="tp" Content="工作台" Click="Workbench_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="8" Classes="tp" Content="停止生成" IsVisible="{Binding Answering}" Command="{Binding CancelCommand}" />
+          <Button Grid.Column="8" Classes="tp" Content="立即回答" IsVisible="{Binding !Answering}" Command="{Binding ForceAnswerCommand}" />
+        </Grid>
+      </Border>
     </Grid>
   </Border>
 </Window>

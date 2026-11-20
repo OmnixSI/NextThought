@@ -180,6 +180,36 @@ public partial class TeleprompterWindow : Window
         ScrollToLatest();
     }
 
+    private void Workbench_Click(object? sender, RoutedEventArgs e) => state.ShowWorkbenchRequested?.Invoke();
+
+    private void Refine_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string name } && Enum.TryParse<AnswerRefinement>(name, true, out var refinement))
+            _ = state.RefineAsync(refinement);
+    }
+
+    /// <summary>C14: the three Mac placements: screen top centre, bottom centre, right side.</summary>
+    public void MoveTo(string placement)
+    {
+        if (Screens.Primary is not { } screen) return;
+        var scale = screen.Scaling;
+        var width = (int)(Width * scale);
+        var height = (int)(Height * scale);
+        Position = placement switch
+        {
+            "bottom" => new PixelPoint(
+                screen.Bounds.X + Math.Max(0, (screen.Bounds.Width - width) / 2),
+                screen.Bounds.Y + Math.Max(0, screen.Bounds.Height - height - (int)(80 * scale))),
+            "right" => new PixelPoint(
+                screen.Bounds.X + Math.Max(0, screen.Bounds.Width - width - (int)(24 * scale)),
+                screen.Bounds.Y + Math.Max(0, (screen.Bounds.Height - height) / 2)),
+            _ => new PixelPoint(
+                screen.Bounds.X + Math.Max(0, (screen.Bounds.Width - width) / 2),
+                screen.Bounds.Y + (int)(8 * scale))
+        };
+        Remember();
+    }
+
     private void ToggleControls()
     {
         dragBarHidden = !dragBarHidden;

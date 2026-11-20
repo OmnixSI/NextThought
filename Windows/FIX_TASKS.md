@@ -73,7 +73,7 @@ Nov 20, 2026 · @Homing
 | C11 | 已实现、未验证 | 浮窗关闭改为隐藏；QA passed | 待逐元素对照或实机验证 |
 | C12 | 已实现、未验证 | 用户隐藏停定时器；QA passed | 待逐元素对照或实机验证 |
 | C13 | 已实现、未验证 | `SubtitleBarWindow.axaml.cs`：指针移入降到 0.15 透明度、静止 0.6 秒进入可拖动、拖动后保存位置并在重启时恢复（`subtitleBar.position` 对应 `SubtitleBarX/Y`）、双击重置到底部居中、窗口非激活（`WS_EX_NOACTIVATE|TOOLWINDOW`）；可跨屏保存 | 需实机拖动、重启、双击重置并截图与 Mac 对照；重置入口是否与 Mac 用户路径完全一致待确认 |
-| C14 | 未做 | — | 提词浮窗页眉页脚未实现 |
+| C14 | 已实现、未验证 | `TeleprompterWindow` 增加页眉（状态点/问题原文/字号/穿透/关闭）与页脚（改短/举例/英文/复制/工作台/停止生成/立即回答）；页脚按钮走 `AnswerRefinements.QuestionFor`；设置页「移到」三个按钮调用 `MoveTeleprompterTo(camera/bottom/right)`，按屏居中/贴底/贴右并记住位置；工作台按钮打开主窗口 | 需三位置各截一张与 Mac 对照；工作台在 Mac 是菜单模式，这里是打开主窗口，逐元素补差 |
 | C15 | 已实现、未验证 | `TeleprompterWindow`：不透明度下限 0.35；`teleprompterHideBackground` 开启时窗口保持 1、只把 Shell 背景变透明并加实线边框；主窗淡入淡出不再把提词器 Opacity 改成 1，也不再存 1；设置页「隐藏背景，只保留文字、边框与按钮」 | 需实机调到 0.5、隐藏再显示、重启后仍 0.5；背景隐藏时文字与按钮始终不透明 |
 | C16 | 已实现、未验证 | `TeleprompterWindow` 接入 `ScrollFollowState`：新回答在跟随态滚到末尾；手动滚动/键盘导航暂停跟随；回到末尾恢复；「回到最新」按钮；`ScrollFollowStateTests` 8 项通过 | 需实机手动滚动后确认暂停与恢复 |
 | C17 | 已实现、未验证 | 「隐藏所有窗口」改用 `TeleprompterWindow.HideForAllWindows()`，同时隐藏提词器与穿透控制小条；提词器与小条加 `WS_EX_NOACTIVATE|TOOLWINDOW` | 需实机在穿透状态按隐藏全部，确认屏幕无残留小条 |

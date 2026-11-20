@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = state;
         WindowCaptureHiding.StartTracking();
+        state.ShowWorkbenchRequested = RestoreMainWindow;
         state.Settings.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SettingsViewModel.CapturePrivacy))

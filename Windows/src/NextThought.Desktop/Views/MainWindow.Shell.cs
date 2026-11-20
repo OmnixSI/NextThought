@@ -356,6 +356,13 @@ public partial class MainWindow
         Close();
     }
 
+    /// <summary>C14: settings buttons move the teleprompter to one of the three Mac placements.</summary>
+    public void MoveTeleprompterTo(string placement)
+    {
+        if (teleprompter is not { IsVisible: true }) ToggleTeleprompter();
+        teleprompter?.MoveTo(placement);
+    }
+
     /// <summary>Floating teleprompter window (plan §9 提词器).</summary>
     public void ToggleTeleprompter()
     {
