@@ -25,6 +25,10 @@ public partial class AppState
     {
         var demo = DemoContent.Create();
         demoData = demo;
+        // The demo is an interview; every stage starts from that scene (Mac's demo workspaces
+        // were installed as an interview set).
+        SelectedMode = MeetingMode.Interview;
+        OnPropertyChanged(nameof(SelectedScene));
         // Series: three Mac workspaces, newest-first as the home page lists them.
         workspace = new WorkspaceData(demo.Series);
         History.Clear();
@@ -148,6 +152,7 @@ public partial class AppState
             {
                 MeetingTitle = "";
             }
+            SetPageSubtitle("演示数据 · 不会写入你的资料");
         }
         OnPropertyChanged(nameof(RecordingElapsedText));
         OnPropertyChanged(nameof(StatsText));
