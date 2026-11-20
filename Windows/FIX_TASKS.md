@@ -40,7 +40,7 @@ Nov 20, 2026 · @Homing
 | H2 | 未做 | AppState 202 行、15 个 Mac 扩展文件已有；179 个 Swift 方法名对 C# 完全匹配 0 |
 | D4 | 未做 | S12/Control 等资源、侧栏/内容宽度已改；逐视图硬编码未清 |
 | D5 | 已实现、未验证 | Motion 五组时长、减弱动画；两处淡入淡出已接入，弹簧为 cubic 近似 |
-| D6 | 未做 | 场景数据已接入首页选择器；SceneGlyph/InkWash/截图未做 |
+| D6 | 未做 | 场景数据+SceneGlyph/SceneTag/InkWash 已接入首页；截图对照未做 |
 
 ## 1. ⽬标与范围 
 
