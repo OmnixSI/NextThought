@@ -182,10 +182,6 @@ public partial class AppState
         {
             await Task.WhenAll(writes.ToArray());
             var transcript = BuildNumberedTranscript(meta);
-            // A very long meeting is cut here; the message says so instead of failing silently.
-            const int maxCharacters = 12000;
-            var truncated = transcript.Length > maxCharacters;
-            if (truncated) transcript = transcript[..maxCharacters];
             var english = AnswerLanguage.Spoken(transcript) == "English";
             var template = SelectedTemplate?.Template ?? NotesTemplate.BuiltIn(TemplateKind, english);
             var header = english
@@ -193,9 +189,28 @@ public partial class AppState
                 : $"# {meta.Title}\n\n会议时间：{meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 模板：{template.Name}";
             var settings = Settings.Build();
             var system = NotesPrompt.OrganizeSystem(template, english, inPerson: !settings.CaptureSystem, meetingDate: meta.StartedAt);
-            var user = NotesPrompt.OrganizeUser(header, transcript);
-            SetStatus($"正在按「{template.Name}」整理…");
-            var reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system, user, null, cancellation.Token, 240);
+            var chunks = NotesPrompt.Chunks(transcript);
+            var reply = "";
+            if (chunks.Count == 1)
+            {
+                reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system,
+                    NotesPrompt.OrganizeUser(header, transcript), null, cancellation.Token, 240);
+            }
+            else
+            {
+                var partials = new List<string>();
+                for (var index = 0; index < chunks.Count; index++)
+                {
+                    if (generation != requestEpoch) return;
+                    SetStatus($"正在按《{template.Name}》整理…（第 {index + 1}/{chunks.Count} 段）");
+                    partials.Add(await CurrentClient().AnswerAsync(AnswerOptions(true), system,
+                        NotesPrompt.PartialUser(header, chunks[index], index, chunks.Count), null,
+                        cancellation.Token, 240));
+                }
+                SetStatus($"正在按《{template.Name}》合并分段结果…");
+                reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system,
+                    NotesPrompt.MergeUser(header, partials), null, cancellation.Token, 240);
+            }
             if (generation != requestEpoch) return;
             var doc = NotesJson.Parse(reply, template, english ? "en" : "zh");
             if (doc is null)
@@ -214,9 +229,7 @@ public partial class AppState
             CollectFromNotes(meta, doc, template);
             if (lessons.Count + bank.Count > 0)
                 await Sessions.SaveSummaryKnowledgeAsync(meta, lessons, bank, appliedToWorkspace: false, cancellation.Token);
-            SetStatus(truncated
-                ? $"已按「{template.Name}」整理（会议较长，只整理了前 {maxCharacters} 字）。"
-                : $"已按「{template.Name}」整理，可导出 Markdown。");
+            SetStatus($"已按《{template.Name}》整理，可导出 Markdown。");
         }
         catch (OperationCanceledException)
         {

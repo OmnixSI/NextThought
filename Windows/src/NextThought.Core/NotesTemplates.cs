@@ -547,6 +547,31 @@ public static class NotesPrompt
         return string.Join("\n\n", parts.Where(part => part.Length > 0));
     }
 
+    /// <summary>B9: split long transcripts on line boundaries (SessionSummaryPrompt.chunks, 60,000 chars).</summary>
+    public static IReadOnlyList<string> Chunks(string text, int limit = 60_000)
+    {
+        if (text.Length <= limit) return [text];
+        var result = new List<string>();
+        var current = new System.Text.StringBuilder();
+        foreach (var line in text.Split('\n'))
+        {
+            if (current.Length + line.Length + 1 > limit && current.Length > 0)
+            {
+                result.Add(current.ToString());
+                current.Clear();
+            }
+            if (current.Length > 0) current.Append('\n');
+            current.Append(line.Length <= limit ? line : line[..limit]);
+        }
+        if (current.Length > 0) result.Add(current.ToString());
+        return result;
+    }
+
+    /// <summary>B9: merge the per-chunk JSON documents into one final notes document.</summary>
+    public static string MergeUser(string header, IReadOnlyList<string> partials) =>
+        header + "\n下面是按时间顺序分段整理出的 JSON。合并成一份最终纪要：同一件事只留一条，相同或相近的 topic 合并成一个，保留每条的 time，按同样的 JSON 格式输出。合并后各部分仍然遵守模板里的条数上限，只留最重要的。\n\n" +
+        string.Join("\n\n", partials.Select((partial, index) => $"### 第 {index + 1} 部分\n{partial}"));
+
     public static string PartialUser(string header, string chunk, int index, int count) =>
         $"{header}\n这是完整转写的第 {index + 1}/{count} 部分。只整理这一部分，按同样的 JSON 格式输出；时间点照这一部分里的方括号写。\n\n{chunk}";
 }
