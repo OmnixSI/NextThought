@@ -410,4 +410,18 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Ai}" />
     <Setter Property="BorderThickness" Value="2" />
   </Style>
+
+  <Style Selector="Button.scene.selected">
+    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
+  <Style Selector="Button.scene.selected /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
+  <Style Selector="Button.scene.selected /template/ ContentPresenter TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
+  <Style Selector="Button.scene.selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
 </Styles>
