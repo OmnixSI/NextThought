@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · H2（部分，扩展文件已拆）
+改动：`AppState.Methods.cs` 拆成 Mac 命名的部分类文件（Archive/Audio/AutoEnd/Glossary/Insights/Launcher/Lifecycle/Live/Meeting/Models/Navigation/Prepare/Resilience/StructuredNotes），另有既有 Hotwords/Proofread/Series/Skills/Templates/Update 扩展；`AppState.cs` **202 行**；`AppState.GlobalUsings.cs` 统一 using。
+测试：Core **869/869**，NextThought.Tests **133/133**。
+状态：H2 **仍未完成**。主文件 <600 已达标，15 个 Mac 扩展文件名已有对应文件；但方法到 Swift 方法名的逐项映射仍是启发式（按关键词归类），没有做到“给定 Swift 方法名能在同名 C# 文件里找到”。
+未解决：逐方法映射与空壳文件（Insights/Resilience/Glossary）补实。
+
 ## 2026-11-20 · 0.5.145 · H2（部分）
 改动：`AppState.cs` 从 2431 行拆到 **204** 行；方法/属性块移到 `AppState.Methods.cs`（2234 行）；新增 `AppStateMainFileIsBelow600Lines` 结构测试。
 测试：Core **869/869**，NextThought.Tests **133/133**。
