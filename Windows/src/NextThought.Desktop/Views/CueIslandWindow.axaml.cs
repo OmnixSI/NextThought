@@ -325,7 +325,7 @@ private void ApplyCueWidth()
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
     }
 
-    /// <summary>D1 evidence: switch the island through the five Mac visual states.</summary>
+    /// <summary>D1 evidence: switch the island through the Mac visual states with the Mac demo copy.</summary>
     public void ApplyStateForCheck(string state)
     {
         checkExpanded = state != "collapsed";
@@ -345,17 +345,24 @@ private void ApplyCueWidth()
                 TranslationPanel.IsVisible = false;
                 break;
             case "deck":
+                QuestionText.Text = NextThought.Platform.DemoScript.LiveQuestion;
                 HeadlineText.IsVisible = true;
                 DetailText.IsVisible = false;
                 TranslationPanel.IsVisible = false;
                 break;
             case "bilingual":
+                // DemoMode snapshotIsland phase "bilingual": an English answer with what was asked
+                // and what each sentence means underneath.
+                this.state.DetectedQuestion = NextThought.Platform.DemoScript.IslandBilingualQuestion;
+                this.state.AnswerText = NextThought.Platform.DemoScript.IslandBilingualAnswer;
+                this.state.IslandTranslation = NextThought.Platform.DemoScript.IslandBilingualTranslation;
+                QuestionText.Text = NextThought.Platform.DemoScript.IslandBilingualQuestion;
                 HeadlineText.IsVisible = true;
                 DetailText.IsVisible = true;
                 TranslationPanel.IsVisible = true;
                 break;
             default:
-                QuestionText.Text = "温度补偿之后残差还剩多少，和有限元对得上吗？";
+                QuestionText.Text = NextThought.Platform.DemoScript.LiveQuestion;
                 HeadlineText.IsVisible = true;
                 DetailText.IsVisible = true;
                 TranslationPanel.IsVisible = false;

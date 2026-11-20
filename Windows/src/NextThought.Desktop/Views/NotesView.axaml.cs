@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 
 namespace NextThought.Desktop.Views;
 
@@ -10,6 +11,14 @@ public partial class NotesView : UserControl
         InitializeComponent();
         Fishbone.Jump += seconds => (DataContext as AppState)?.JumpToTranscript(seconds);
         Viewpoints.Jump += seconds => (DataContext as AppState)?.JumpToTranscript(seconds);
+        // D1: in demo mode the last tab (工作纪要) shows the Mac demo's weekly work meeting, the
+        // way Mac's demoNotes=work capture does; the other tabs stay on the archived interview.
+        Loaded += (_, _) =>
+        {
+            if (this.GetVisualDescendants().OfType<TabControl>().FirstOrDefault() is { } tabs)
+                tabs.SelectionChanged += (_, _) =>
+                    (DataContext as AppState)?.ApplyDemoNotesTab(tabs.SelectedIndex);
+        };
     }
 
     private async void EditNotes_Click(object? sender, RoutedEventArgs e)

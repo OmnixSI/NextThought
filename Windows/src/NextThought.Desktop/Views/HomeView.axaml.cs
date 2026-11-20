@@ -8,10 +8,28 @@ namespace NextThought.Desktop.Views;
 
 public partial class HomeView : UserControl
 {
+    private AppState? syncedState;
+
     public HomeView()
     {
         InitializeComponent();
         Loaded += (_, _) => SyncSceneSelection();
+        // D1: demo mode sets the scene from code, so the highlighted pill has to follow the state.
+        DataContextChanged += (_, _) => AttachSceneSync();
+    }
+
+    private void AttachSceneSync()
+    {
+        if (ReferenceEquals(syncedState, DataContext as AppState)) return;
+        if (syncedState is not null) syncedState.PropertyChanged -= OnStatePropertyChanged;
+        syncedState = DataContext as AppState;
+        if (syncedState is not null) syncedState.PropertyChanged += OnStatePropertyChanged;
+        SyncSceneSelection();
+    }
+
+    private void OnStatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(AppState.SelectedMode) or nameof(AppState.SelectedScene)) SyncSceneSelection();
     }
 
     private void SyncSceneSelection()

@@ -19,10 +19,6 @@ public partial class AppState
 
     private void OnInitialized() => Initialized?.Invoke();
 
-    private DispatcherTimer? demoFeeder;
-
-    private int demoIndex = 10;
-
     [ObservableProperty] private string coachHint = "";
     public bool HasCoachHint => CoachHint.Length > 0;
 

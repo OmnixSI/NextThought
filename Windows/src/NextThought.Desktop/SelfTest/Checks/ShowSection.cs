@@ -5,6 +5,18 @@ public partial class MainWindow
     private void ShowSection()
     {
         var section = state.Section;
+        // D1: demo mode shows each page with the Mac demo section data, like the Mac screenshots
+        // script that re-launches the app per NEXTTHOUGHT_DEMO_SECTION.
+        if (StartupOptions.Demo) state.ApplyDemoSection(section switch
+        {
+            AppSection.Home => "home",
+            AppSection.Prepare => "prepare",
+            AppSection.Live => "live",
+            AppSection.Notes => "notes",
+            AppSection.History => "history",
+            AppSection.Series => "series",
+            _ => ""
+        });
         if (!pages.TryGetValue(section, out var page))
         {
             page = section switch
