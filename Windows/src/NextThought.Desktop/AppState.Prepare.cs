@@ -75,6 +75,14 @@ public partial class AppState
 
     public bool OnSeries => Section == AppSection.Series;
 
+
+    public string CurrentSlideText => CurrentSlide is { } slide
+        ? $"第 {slide.Number} 页 · {slide.DocumentName}\n{slide.Text}"
+        : "还没有幻灯片；导入 PPTX 后可翻页。";
+
+    public int CurrentScreenshotCount => CurrentScreenshots.Count;
+
+
     private SlidePageInfo? CurrentSlide
     {
         get

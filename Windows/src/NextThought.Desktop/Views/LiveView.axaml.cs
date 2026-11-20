@@ -98,4 +98,10 @@ public partial class LiveView : UserControl
         if (DataContext is not AppState state) return;
         new DetachedAnswerWindow { DataContext = state }.Show();
     }
+
+    private void Insights_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        new InsightsPanelWindow { DataContext = state }.Show();
+    }
 }

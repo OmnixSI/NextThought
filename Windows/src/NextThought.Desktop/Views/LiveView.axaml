@@ -21,6 +21,7 @@
                   ToolTip.Tip="系统声音里出现提问时自动生成回答" />
         <Button Content="&#xE8F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Command="{Binding ToggleCompanionCommand}" ToolTip.Tip="手机伴侣" />
         <Button Content="&#xE7F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Click="CaptureWindow_Click" ToolTip.Tip="截取当前窗口" />
+        <Button Content="洞察" Click="Insights_Click" />
         <Button ToolTip.Tip="回答设置">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
             <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />

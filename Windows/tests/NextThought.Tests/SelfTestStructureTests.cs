@@ -168,6 +168,19 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void InsightsPanelExists()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml")));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("Insights_Click", xaml);
+        var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
+        Assert.Contains("幻灯片", panel);
+        Assert.Contains("屏幕与截图", panel);
+        Assert.Contains("回答进度", panel);
+    }
+
     [Fact]
     public void LivePageShowsBilingualQuestionGloss()
     {
