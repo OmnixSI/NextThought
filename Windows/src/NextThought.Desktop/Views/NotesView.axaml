@@ -70,7 +70,9 @@
       </StackPanel>
     </Grid>
 
-    <Border Grid.Row="3" Classes="card" Padding="{DynamicResource D4Padding_0}" Margin="{DynamicResource D4Margin_0_12_0_16}">
+    <TabControl Grid.Row="3" Margin="{DynamicResource D4Margin_0_12_0_16}">
+      <TabItem Header="纪要">
+    <Border Classes="card" Padding="{DynamicResource D4Padding_0}">
       <Grid RowDefinitions="Auto,*">
         <Grid Margin="{DynamicResource D4Margin_22_16_22_10}" ColumnDefinitions="*,Auto">
           <StackPanel>
@@ -102,5 +104,39 @@
         </ScrollViewer>
       </Grid>
     </Border>
+      </TabItem>
+      <TabItem Header="转写">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Transcript}" Margin="{DynamicResource D4Margin_22}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:TranscriptRow">
+                <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_8}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="回答">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}" Margin="{DynamicResource D4Margin_22}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:AnswerRecord">
+                <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
+                  <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="个人笔记">
+        <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
+          <TextBlock Text="个人笔记保存在 user-content.json，不覆盖生成纪要。" Classes="caption" />
+          <TextBox Text="{Binding PersonalNotesText}" AcceptsReturn="True" TextWrapping="Wrap" Height="320" />
+          <Button Classes="primary" Content="保存个人笔记" Command="{Binding SaveNotesEditorCommand}" HorizontalAlignment="Left" />
+        </StackPanel>
+      </TabItem>
+    </TabControl>
   </Grid>
 </UserControl>

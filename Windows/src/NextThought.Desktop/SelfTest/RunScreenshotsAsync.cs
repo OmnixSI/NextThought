@@ -32,6 +32,19 @@ public partial class MainWindow
                     await Task.Delay(250);
                     var suffix = (english ? "-en" : "") + (dark ? "-dark" : "-light") + ".png";
                     CaptureWindow(Path.Combine(directory, name + suffix));
+                    if (section == AppSection.Notes
+                        && PageHost.Content is Avalonia.Controls.Control notesPage
+                        && notesPage.GetVisualDescendants().OfType<TabControl>().FirstOrDefault() is { } tabs)
+                    {
+                        var tabNames = new[] { "notes", "transcript", "answers", "personal" };
+                        for (var index = 0; index < tabs.ItemCount && index < tabNames.Length; index++)
+                        {
+                            tabs.SelectedIndex = index;
+                            await Dispatcher.UIThread.InvokeAsync(notesPage.UpdateLayout, DispatcherPriority.Background);
+                            await Task.Delay(120);
+                            CaptureWindow(Path.Combine(directory, tabNames[index] + suffix));
+                        }
+                    }
                     if (section == AppSection.Settings && this.FindControl<SettingsView>("SettingsOverlay") is { } settings)
                     {
                         foreach (var page in new[] { "Scene", "Answer", "Coach", "Notes", "General", "Advanced" })

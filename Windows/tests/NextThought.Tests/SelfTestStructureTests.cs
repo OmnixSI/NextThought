@@ -100,6 +100,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void NotesPageHasFourTabs()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        foreach (var header in new[] { "Header=\"纪要\"", "Header=\"转写\"", "Header=\"回答\"", "Header=\"个人笔记\"" })
+            Assert.Contains(header, xaml);
+    }
+
     [Fact]
     public void NotesEditorExists()
     {
