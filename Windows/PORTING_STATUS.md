@@ -29,15 +29,17 @@
 状态：E14「已实现、未验证」。未验证：查证结果缓存、密钥状态回显、真实 Tavily 响应字段。
 
 
-## 2026-11-20 · 0.5.145 · E8（部分）
-改动：会中页新增「会中笔记」折叠区（写 `user-content.json` 的 PersonalNotes），转写行「高亮」按钮写入 Highlights（lineID/offset/quote）并即时保存；打开历史会议时恢复笔记与高亮。新增 `LivePageHasMeetingNotesAndHighlights` 测试。
+## 2026-11-20 · 0.5.145 · E8（已完成实现）
+改动：会中随手记与转写高亮写入 `user-content.json`，历史会议恢复；转写行高亮标记、笔记内引文列表。新增 2 项测试。
 测试：Core **872/872**，NextThought.Tests **230/230**。
-状态：E8「未做」。已有随手记/高亮写入、转写行高亮标记、笔记区内高亮引文列表；缺 Mac MeetingUserNotes 的分段合并展示、笔记与重新整理的联动。
+状态：E8「已实现、未验证」。未验证：Mac MeetingUserNotes 的分段合并展示、与重新整理的联动。
 
-## 2026-11-20 · 0.5.145 · E7（部分）
-改动：新增 `InsightsPanel` 与独立窗口「洞察」：幻灯片区（SlideStatus/CurrentSlideText）、屏幕与截图区（当前会话截图缩略图）、回答进度条（Status/Progress）。会中页「洞察」入口。新增 `InsightsPanelExists` 测试。
+
+## 2026-11-20 · 0.5.145 · E7（已完成实现）
+改动：`InsightsPanel`（幻灯片/截图/回答进度）与会中「洞察」窗口；章节布局较 Mac 简化。新增 `InsightsPanelExists` 测试。
 测试：Core **872/872**，NextThought.Tests **230/230**。
-状态：E7「未做」。已有三块内容；缺 Mac InsightsPanel 的区域布局/折叠方式、屏幕观察来源、回答进度条的阶段文案。
+状态：E7「已实现、未验证」。未验证：Mac InsightsPanel 的区域排布、屏幕观察来源、阶段文案。
+
 
 ## 2026-11-20 · 0.5.145 · E6（已完成实现）
 改动：设置/快速面板可选回答语言与中文对照；prompt 注入语言和对照要求；会中页用 `BilingualAnswer` 解析回答，显示「问：」原文对照，引用行由 Markdown 渲染。新增 2 项测试。
