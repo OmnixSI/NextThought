@@ -12,7 +12,7 @@ struct AutoEndBanner: View {
                     let left = max(0, Int(deadline.timeIntervalSince(context.date).rounded(.up)))
                     HStack(spacing: Space.s3) {
                         Image(systemName: "moon.zzz")
-                            .font(.system(size: 13)).foregroundStyle(Ink.secondary)
+                            .font(.zoomed(size: 13)).foregroundStyle(Ink.secondary)
                             .accessibilityHidden(true)
                         Text("好像没人说话了，\(left) 秒后结束记录")
                             .font(Typo.body).foregroundStyle(Ink.ink).lineLimit(1)

@@ -19,6 +19,7 @@ extension AppState {
                 self.releaseDeferredCandidate()
                 self.answerTurnIfDue()
                 self.keepAnswerServiceWarm()
+                self.liveNotes.tick(self)
             }
         }
     }

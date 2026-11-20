@@ -19,6 +19,7 @@
 | 术语表、纠错和别名检索 | `Sources/NextThoughtCore/Glossary.swift`、`Sources/NextThought/GlossaryStore.swift` |
 | 结构化纪要 | `Sources/NextThoughtCore/StructuredNotes.swift` 与 `Sources/NextThought/` 中对应视图 |
 | 可选声纹区分 | `Sources/NextThoughtCore/SpeakerClustering.swift`、`Resources/models/` |
+| 会中实时纪要（每 45 秒带着当前纪要和新增内容更新一次，较早议题定稿，坏回复不替换） | `Sources/NextThoughtCore/LiveNotes.swift`、`Sources/NextThought/LiveNotesEngine.swift`；参照上游 `Sources/Cicada/Notes.swift` 的机制重写，提示词和数据结构是 NextThought 自己的 |
 | “我的声音”本机配置 | `Sources/NextThought/VoiceProfile.swift`、`Sources/NextThought/MyVoice.swift` |
 
 该表描述当前代码路径，不代表音频识别质量、误分率或真机权限流程已经完成实测。具体产品验收与设备边界见 [`docs/VALIDATION-2026-10-14.md`](VALIDATION-2026-10-14.md) 及各版本验证记录。

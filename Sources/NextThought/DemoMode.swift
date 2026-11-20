@@ -55,6 +55,20 @@ enum DemoMode {
             if let number = Int(parts[1]) { UserDefaults.standard.set(number, forKey: parts[0]) } else { UserDefaults.standard.set(parts[1], forKey: parts[0]) }
         }
         let state = AppState.shared
+        // NEXTTHOUGHT_DEMO_LIVE_NOTES=1: the live page opens on notes that are being kept.
+        if environment["NEXTTHOUGHT_DEMO_LIVE_NOTES"] == "1" {
+            var notes = LiveNotes()
+            notes.summary = "面试进行到系统设计：先聊了订单缓存层的项目，现在在追问数据库和缓存的一致性。"
+            notes.topics = [
+                .init(title: "项目经历", points: ["负责订单服务的缓存层", "核心查询从数据库迁到 Redis"]),
+                .init(title: "缓存一致性", points: ["先更新数据库，再删除缓存", "删除失败进重试队列", "面试官追问：删除缓存失败怎么办"]),
+            ]
+            notes.decisions = ["下一步讲热点 key 的处理"]
+            notes.todos = [.init(text: "会后补一张读写时序图", owner: "我")]
+            notes.covered = 6
+            state.liveNotes.installDemo(notes, fresh: ["面试官追问：删除缓存失败怎么办", "会后补一张读写时序图"])
+            state.automaticAnswers = false
+        }
         // demoSettings=1 lays the full settings page over the demo window; settingsGroup
         // (a page name or an old destination) picks the page and section.
         if UserDefaults.standard.integer(forKey: "demoSettings") == 1 { SettingsRoute.shared.presentStored() }
@@ -150,6 +164,17 @@ enum DemoMode {
         // not disturb other displays. Launch hidden (`open -j -g`).
         if environment["NEXTTHOUGHT_DEMO_STAGE"] == "1" {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { beginStage() }
+            // NEXTTHOUGHT_DEMO_CHURN=<file>: measure how often the live page is rebuilt.
+            if let path = environment["NEXTTHOUGHT_DEMO_CHURN"] {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(3))
+                    var line = ""
+                    for count in (environment["NEXTTHOUGHT_DEMO_CHURN_LINES"] ?? "500").split(separator: ",").compactMap({ Int($0) }) {
+                        line += await LiveSessionAcceptanceSelfTest.churn(lines: count) + "\n"
+                    }
+                    try? line.write(toFile: path, atomically: true, encoding: .utf8)
+                }
+            }
             return
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -567,13 +592,31 @@ extension AppState {
                                transcriptCount: 4, questionCount: 0, answerCount: 0, summaryState: .ready,
                                workspaceID: workspace.id, workspaceName: workspace.name)
         meta.actionItemCount = 3
-        let lines = [
+        var lines = [
             SessionTranscriptLine(date: started.addingTimeInterval(192), speaker: .remote, text: "这个版本下周三之前必须上线，客户那边已经在催了。"),
             SessionTranscriptLine(date: started.addingTimeInterval(295), speaker: .remote, text: "好，那就这么定。支付那两个 bug 今天修掉。"),
             SessionTranscriptLine(date: started.addingTimeInterval(340), speaker: .me, text: "回归测试我来排，周二下午给结果。"),
             SessionTranscriptLine(date: started.addingTimeInterval(750), speaker: .remote, text: "设计稿周四之前，或者周五也行，到时候再看。"),
             SessionTranscriptLine(date: started.addingTimeInterval(1_268), speaker: .remote, text: "客户要的导出功能，目前还没人认领。"),
         ]
+        // NEXTTHOUGHT_DEMO_VOICES=1: the same meeting held in a room, its voices told apart,
+        // one of them named and nobody recognised as the user yet.
+        if AppEnvironment.values["NEXTTHOUGHT_DEMO_VOICES"] == "1" {
+            let said: [(Int, String)] = [
+                (1, "这个版本下周三之前必须上线，客户那边已经在催了。"), (1, "支付那两个问题今天之内要修掉。"),
+                (2, "回归测试我来排，周二下午给结果。"), (1, "设计稿周四之前，或者周五也行，到时候再看。"),
+                (2, "导出功能我这周排不进去，需要再找一个人。"), (1, "那导出功能先放到下一个版本的计划里。"),
+                (3, "我可以接导出功能，但要先看一下接口文档。"), (2, "接口文档在共享盘里，我会后发你链接。"),
+                (1, "好，那就这么定，周三上线的范围不变。"), (2, "上线前一天我再把回归结果同步到群里。"),
+                (1, "还有一件事，客户要求周五之前给一份说明。"), (2, "说明文档我来起草，周四给你过目。"),
+            ]
+            lines = said.enumerated().map { index, item in
+                SessionTranscriptLine(date: started.addingTimeInterval(Double(190 + index * 95)), speaker: .room, text: item.1, voice: item.0)
+            }
+            meta.audioSource = "线下 · 麦克风"
+            meta.voiceNames = ["1": "老师"]
+            meta.transcriptCount = lines.count
+        }
         let template = NotesTemplate.builtIn(.work)
         func section(_ id: String, _ items: [NotesItem]) -> NotesSectionResult {
             let spec = template.sections.first { $0.id == id }!

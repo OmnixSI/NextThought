@@ -10,6 +10,9 @@ struct MarkdownText: View, Equatable {
     var lineSpacing: CGFloat = 4
     /// Opt in for reading surfaces that must honor macOS accessibility text sizes.
     var scalesWithDynamicType = false
+    /// The app's text zoom when this was made: the view is skipped while it is equal to
+    /// the last one, and a new zoom must not count as equal.
+    var zoom = TextZoom.shared.factor
 
     var body: some View {
         VStack(alignment: .leading, spacing: size * 0.45) {
@@ -69,9 +72,9 @@ struct MarkdownText: View, Equatable {
     private func font(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default,
                       relativeTo style: Font.TextStyle = .body) -> Font {
         if scalesWithDynamicType {
-            .system(style, design: design).weight(weight)
+            .zoomed(style, design: design, weight: weight)
         } else {
-            .system(size: size, weight: weight, design: design)
+            .zoomed(size: size, weight: weight, design: design)
         }
     }
 
@@ -192,7 +195,7 @@ struct MetricPill: View {
     var tint: Color = .secondary
     var body: some View {
         Label(text, systemImage: symbol)
-            .font(.system(size: 11, weight: .medium))
+            .font(.zoomed(size: 11, weight: .medium))
             .foregroundStyle(tint)
             .padding(.horizontal, 9).padding(.vertical, 4)
             .glassCapsule()

@@ -133,7 +133,7 @@ private struct SoundAdvanced: View {
         if state.transcriptionBackend == "zipformer" {
             HStack {
                 Link("模型来源：sherpa-onnx X-ASR（Apache-2.0）", destination: URL(string: "https://github.com/Gilgamesh-J/X-ASR")!)
-                    .font(.system(size: 11)).foregroundStyle(Color.accentColor)
+                    .font(.zoomed(size: 11)).foregroundStyle(Color.accentColor)
                 Spacer()
                 Button("删除全部模型") { confirmDelete = true }.buttonStyle(.borderless).foregroundStyle(.red).disabled(state.modelControlsDisabled)
             }

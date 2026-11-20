@@ -597,7 +597,7 @@ struct OnboardingView: View {
                     withAnimation(Motion.expand) { showSample.toggle() }
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
+                        Image(systemName: "chevron.right").font(.zoomed(size: 9, weight: .semibold))
                             .rotationEffect(.degrees(showSample ? 90 : 0))
                         Text(LocalizedStringKey(showSample ? "收起示例" : "看一段面试示例"))
                     }
@@ -622,7 +622,7 @@ struct OnboardingView: View {
             HStack(spacing: Space.s3) {
                 SceneGlyph(mode: scene, size: 38)
                     .id(scene).transition(.scale(scale: 0.8).combined(with: .opacity))
-                Text(verbatim: scene.displayName).font(.system(size: 19, weight: .medium))
+                Text(verbatim: scene.displayName).font(.zoomed(size: 19, weight: .medium))
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, Space.s6).padding(.top, Space.s6).padding(.bottom, Space.s4)
@@ -634,7 +634,7 @@ struct OnboardingView: View {
 
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text(verbatim: scene.theme.promise)
-                    .font(.system(size: 17, weight: .medium, design: .serif))
+                    .font(.zoomed(size: 17, weight: .medium, design: .serif))
                     .foregroundStyle(Ink.ink)
                     .fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: 6) {
@@ -907,9 +907,9 @@ private struct CueIslandMock: View {
                     Spacer()
                 }
                 Text(verbatim: String(localized: "能介绍一下你在这个项目里负责的部分吗？"))
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                    .font(.zoomed(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5)).lineLimit(1)
                 Text(verbatim: String(localized: "我负责订单服务的缓存层。"))
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                    .font(.zoomed(size: 16, weight: .semibold)).foregroundStyle(.white)
                     .lineLimit(1)
                 VStack(alignment: .leading, spacing: 6) {
                     cuePoint(String(localized: "规模：日均 2 亿次读取，P99 降到 18 ms"))
@@ -931,7 +931,7 @@ private struct CueIslandMock: View {
     private func cuePoint(_ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Circle().fill(tint).frame(width: 5, height: 5)
-            Text(verbatim: text).font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.8)).lineLimit(1)
+            Text(verbatim: text).font(.zoomed(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.8)).lineLimit(1)
         }
     }
 }

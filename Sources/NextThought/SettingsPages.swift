@@ -114,7 +114,7 @@ private struct SceneMenu<Value: Hashable>: View {
         } label: {
             HStack(spacing: 6) {
                 Text(verbatim: options.first { $0.0 == selection }?.1 ?? "").lineLimit(1)
-                Image(systemName: "chevron.down").font(.system(size: 10, weight: .medium)).foregroundStyle(Ink.secondary)
+                Image(systemName: "chevron.down").font(.zoomed(size: 10, weight: .medium)).foregroundStyle(Ink.secondary)
             }
         }
         .menuStyle(.button).buttonStyle(SecondaryButtonStyle()).menuIndicator(.hidden).fixedSize()

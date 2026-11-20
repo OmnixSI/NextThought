@@ -21,7 +21,7 @@ struct RegionScreenshotPicker: View {
         VStack(spacing: 12) {
             HStack {
                 Label("拖动选择截图区域", systemImage: "viewfinder")
-                    .font(.headline)
+                    .font(.zoomed(.headline))
                 Spacer()
                 Picker("显示器", selection: displaySelection) {
                     ForEach(displays) { display in
@@ -38,7 +38,7 @@ struct RegionScreenshotPicker: View {
 
             HStack {
                 Text("截图会裁切到选中范围。请把题目、代码或公式完整框入。")
-                    .font(.caption)
+                    .font(.zoomed(.caption))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("取消", action: onCancel)

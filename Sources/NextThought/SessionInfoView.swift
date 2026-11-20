@@ -45,7 +45,7 @@ struct SessionInfoView: View {
                         infoGroup("存储") {
                             storageRows
                             Text("大小按本会议存储目录及其子目录中的普通文件总字节数统计。")
-                                .font(.system(size: 11)).foregroundStyle(Ink.tertiary)
+                                .font(.zoomed(size: 11)).foregroundStyle(Ink.tertiary)
                         }
                         infoGroup("归档") {
                             infoRow("写入状态", persistenceDescription)

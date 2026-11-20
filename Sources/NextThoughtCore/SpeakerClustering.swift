@@ -103,24 +103,37 @@ public enum SpeakerLabels {
     /// Voice id → 1-based speaker number, for the voices on show.
     /// `meVoices`: voices recognised as the user ("我"); they are never numbered and don't count towards
     /// the two people needed.
-    public static func voiceNumbers(_ lines: [SessionTranscriptLine], meVoices: Set<Int> = []) -> [Int: Int] {
+    /// `named`: voices the user gave a name, or put a sentence in by hand. They are on show
+    /// however little they said, after the voices that earned their number by talking (whose
+    /// numbers therefore never move: notes already written say "说话人 2").
+    public static func voiceNumbers(_ lines: [SessionTranscriptLine], meVoices: Set<Int> = [], named: Set<Int> = []) -> [Int: Int] {
         var count: [Int: Int] = [:]
         var reached: [Int: Int] = [:]
+        var first: [Int: Int] = [:]
         for (index, line) in lines.enumerated() where line.speaker != .me {
-            guard let voice = line.voice, !meVoices.contains(voice), substantive(line.text) else { continue }
+            guard let voice = line.voice, !meVoices.contains(voice) else { continue }
+            if first[voice] == nil { first[voice] = index }
+            guard substantive(line.text) else { continue }
             count[voice, default: 0] += 1
             if count[voice] == shownAfter { reached[voice] = index }
         }
-        let shown = reached.keys.sorted { (reached[$0] ?? 0) < (reached[$1] ?? 0) }
-        guard shown.count >= 2 else { return [:] }
+        var shown = reached.keys.sorted { (reached[$0] ?? 0) < (reached[$1] ?? 0) }
+        let byHand = named.filter { reached[$0] == nil && first[$0] != nil }.sorted { (first[$0] ?? 0) < (first[$1] ?? 0) }
+        guard shown.count >= 2 || !byHand.isEmpty else { return [:] }
+        shown += byHand
         var numbers: [Int: Int] = [:]
         for (position, voice) in shown.enumerated() { numbers[voice] = position + 1 }
         return numbers
     }
 
-    /// Line id → 1-based speaker number; lines without one keep showing as 对方 / 现场.
-    public static func numbers(_ lines: [SessionTranscriptLine], meVoices: Set<Int> = []) -> [UUID: Int] {
-        let number = voiceNumbers(lines, meVoices: meVoices)
+    /// Voices that carry a name.
+    public static func named(_ voiceNames: [String: String]?) -> Set<Int> {
+        Set((voiceNames ?? [:]).compactMap { key, name in name.isEmpty ? nil : Int(key) })
+    }
+
+    /// Transcript line id → speaker number, for lines whose voice is on show.
+    public static func numbers(_ lines: [SessionTranscriptLine], meVoices: Set<Int> = [], named: Set<Int> = []) -> [UUID: Int] {
+        let number = voiceNumbers(lines, meVoices: meVoices, named: named)
         var out: [UUID: Int] = [:]
         for line in lines where line.speaker != .me {
             if let voice = line.voice, let n = number[voice] { out[line.id] = n }
@@ -132,10 +145,16 @@ public enum SpeakerLabels {
     public static func names(_ voiceNames: [String: String]?, lines: [SessionTranscriptLine], meVoices: Set<Int> = []) -> [Int: String] {
         guard let voiceNames, !voiceNames.isEmpty else { return [:] }
         var out: [Int: String] = [:]
-        for (voice, n) in voiceNumbers(lines, meVoices: meVoices) {
+        for (voice, n) in voiceNumbers(lines, meVoices: meVoices, named: named(voiceNames)) {
             if let name = voiceNames[String(voice)], !name.isEmpty { out[n] = name }
         }
         return out
+    }
+
+    /// A voice id nobody has yet, for a person the user adds by hand.
+    public static func newVoice(_ lines: [SessionTranscriptLine], voiceNames: [String: String]?, meVoices: Set<Int>) -> Int {
+        let used = lines.compactMap(\.voice) + Array(meVoices) + (voiceNames ?? [:]).keys.compactMap { Int($0) }
+        return (used.max() ?? -1) + 1
     }
 
     /// Lines of the other side or the room that are in a voice recognised as the user.

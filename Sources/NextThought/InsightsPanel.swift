@@ -11,7 +11,7 @@ struct InsightsPanel: View {
         let insights = state.insights
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Label("屏幕与讲稿", systemImage: AssistantModule.insights.symbol).font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
+                Label("屏幕与讲稿", systemImage: AssistantModule.insights.symbol).font(.zoomed(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
                 Spacer()
                 Button("立即识别") { Task { await state.readScreen() } }.buttonStyle(ChipButtonStyle()).disabled(insights.isReadingScreen || !insights.screenWatch)
                 if insights.isReadingScreen { ProgressView().controlSize(.mini) }
@@ -66,8 +66,8 @@ private struct SlideSection: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: "rectangle.on.rectangle").foregroundStyle(Brand.accent)
-                Text("第 \(slide.page) / \(slide.pageCount) 页").font(.system(size: 13, weight: .semibold)).monospacedDigit()
-                Text(slide.documentName).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                Text("第 \(slide.page) / \(slide.pageCount) 页").font(.zoomed(size: 13, weight: .semibold)).monospacedDigit()
+                Text(slide.documentName).font(.zoomed(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 Spacer()
                 if insights.generatingNotes.contains(slide.key) { ProgressView().controlSize(.mini) }
                 Button { state.stepSlide(-1) } label: { Image(systemName: "chevron.left") }
@@ -83,20 +83,20 @@ private struct SlideSection: View {
                     let next = !done && AnswerPoints.next(after: covered, count: notes.points.count) == index
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Image(systemName: done ? "checkmark.circle.fill" : next ? "arrow.right.circle.fill" : "circle")
-                            .font(.system(size: 11)).foregroundStyle(done ? .green : next ? Brand.accent : .secondary)
-                        Text(point).font(.system(size: next ? 14 : 13, weight: next ? .semibold : .regular))
+                            .font(.zoomed(size: 11)).foregroundStyle(done ? .green : next ? Brand.accent : .secondary)
+                        Text(point).font(.zoomed(size: next ? 14 : 13, weight: next ? .semibold : .regular))
                             .foregroundStyle(done ? .secondary : .primary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 if !notes.transition.isEmpty {
-                    Text(notes.isScript ? String(localized: "下一页：\(notes.transition)") : String(localized: "过渡：\(notes.transition)")).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Text(notes.isScript ? String(localized: "下一页：\(notes.transition)") : String(localized: "过渡：\(notes.transition)")).font(.zoomed(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if !notes.questions.isEmpty {
-                    Text("听众可能会问（点一下提前准备回答）").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    Text("听众可能会问（点一下提前准备回答）").font(.zoomed(size: 11, weight: .medium)).foregroundStyle(.secondary)
                     ForEach(notes.questions, id: \.self) { question in
                         Button { state.ask(question, screenshot: nil) } label: {
-                            Label(question, systemImage: "questionmark.bubble").font(.system(size: 12)).multilineTextAlignment(.leading)
+                            Label(question, systemImage: "questionmark.bubble").font(.zoomed(size: 12)).multilineTextAlignment(.leading)
                         }
                         .buttonStyle(.tapText).foregroundStyle(Brand.accent)
                     }
@@ -121,17 +121,17 @@ private struct ScreenSection: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Image(systemName: "display").foregroundStyle(.secondary)
-                    Text(screen.kind.map { "屏幕：\($0.title)" } ?? "屏幕").font(.system(size: 12, weight: .semibold))
+                    Text(screen.kind.map { "屏幕：\($0.title)" } ?? "屏幕").font(.zoomed(size: 12, weight: .semibold))
                     Text("已识别 · 是否用于回答见“本次依据”")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(.zoomed(size: 12)).foregroundStyle(.secondary)
                     Spacer()
                     TimelineView(.periodic(from: screen.capturedAt, by: 5)) { context in
-                        Text("\(Int(context.date.timeIntervalSince(screen.capturedAt))) 秒前").font(.system(size: 11)).monospacedDigit().foregroundStyle(.secondary)
+                        Text("\(Int(context.date.timeIntervalSince(screen.capturedAt))) 秒前").font(.zoomed(size: 11)).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
                 if !screen.text.isEmpty {
-                    Text(screen.text).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(expanded ? 30 : 3).textSelection(.enabled)
-                    Button(expanded ? "收起" : "展开识别的文字") { expanded.toggle() }.buttonStyle(.tapText).font(.system(size: 11)).foregroundStyle(Brand.accent)
+                    Text(screen.text).font(.zoomed(size: 12)).foregroundStyle(.secondary).lineLimit(expanded ? 30 : 3).textSelection(.enabled)
+                    Button(expanded ? "收起" : "展开识别的文字") { expanded.toggle() }.buttonStyle(.tapText).font(.zoomed(size: 11)).foregroundStyle(Brand.accent)
                 }
             }
         }
@@ -152,7 +152,7 @@ struct AnswerProgressStrip: View {
                 MetricPill(symbol: "checkmark.circle", text: "已讲 \(min(covered, insights.answerPoints.count))/\(insights.answerPoints.count)",
                            tint: covered >= insights.answerPoints.count ? .green : .secondary)
                 if let next = insights.nextAnswerPoint {
-                    Text("下一句：\(insights.answerPoints[next])").font(.system(size: 12, weight: .medium)).foregroundStyle(Brand.accent).lineLimit(1)
+                    Text("下一句：\(insights.answerPoints[next])").font(.zoomed(size: 12, weight: .medium)).foregroundStyle(Brand.accent).lineLimit(1)
                 }
                 Spacer(minLength: 0)
             }

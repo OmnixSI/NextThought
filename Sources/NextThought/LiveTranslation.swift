@@ -152,11 +152,14 @@ final class LiveTranslationCoordinator {
         }
     }
 
-    func beginMeeting() {
+    /// - Parameter allowed: the meeting uses interpretation (chosen before it started).
+    ///   Left out of a meeting, it stays off whatever language is heard.
+    func beginMeeting(allowed: Bool = true) {
         meetingID = UUID()
-        checkedForeign = false
+        checkedForeign = !allowed
+        if !allowed { setEnabled(false, remember: false) }
         // The choice of the last meeting holds for this one.
-        if choice == true { setEnabled(true, remember: false) }
+        else if choice == true { setEnabled(true, remember: false) }
         clearPartial(.system)
         clearPartial(.microphone)
         if isEnabled { status = readyDirections.count == TranslationDirection.allCases.count ? "自动识别 · 中英互译" : "正在准备中英互译…" }

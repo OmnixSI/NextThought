@@ -43,7 +43,7 @@ struct AppNavigationBar: View {
                         }
                     } label: {
                         Image(systemName: "sidebar.left")
-                            .font(.system(size: 14)).frame(width: 32, height: 32)
+                            .font(.zoomed(size: 14)).frame(width: 32, height: 32)
                             .contentShape(Circle())
                     }
                     .buttonStyle(NavigationTopButtonStyle(selected: contextSidebarHidden))
@@ -64,7 +64,7 @@ struct AppNavigationBar: View {
                 // The gear opens the quick panel; ⌘, opens the full settings page.
                 Button { state.toggleQuickSettings() } label: {
                     Image(systemName: "gearshape")
-                        .font(.system(size: 14)).frame(width: 32, height: 32)
+                        .font(.zoomed(size: 14)).frame(width: 32, height: 32)
                         .contentShape(Circle())
                 }
                 .buttonStyle(NavigationTopButtonStyle())

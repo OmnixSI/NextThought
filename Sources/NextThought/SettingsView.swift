@@ -198,7 +198,7 @@ struct SettingsPageView: View {
                     route.show(item)
                 } label: {
                     HStack(spacing: Space.s3) {
-                        Image(systemName: item.symbol).font(.system(size: 14)).frame(width: 20)
+                        Image(systemName: item.symbol).font(.zoomed(size: 14)).frame(width: 20)
                             .foregroundStyle(selected ? Ink.ink : Ink.secondary)
                         Text(LocalizedStringKey(item.title)).font(Typo.label)
                         Spacer(minLength: 0)
@@ -270,7 +270,7 @@ struct SettingsPageView: View {
                             Text(LocalizedStringKey(item.page.title)).font(Typo.caption).foregroundStyle(Ink.secondary)
                         }
                         Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").font(.system(size: 11)).foregroundStyle(Ink.tertiary)
+                        Image(systemName: "chevron.right").font(.zoomed(size: 11)).foregroundStyle(Ink.tertiary)
                     }
                     .padding(.vertical, Space.s3).frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
@@ -314,12 +314,12 @@ struct SettingsSection<Content: View>: View {
         VStack(alignment: .leading, spacing: Space.s3) {
             if headed {
                 Text(LocalizedStringKey(title))
-                    .font(.system(size: 17, weight: .medium, design: .serif))
+                    .font(.zoomed(size: 17, weight: .medium, design: .serif))
                     .accessibilityAddTraits(.isHeader)
             }
             content
         }
-        .font(.system(size: 13))
+        .font(.zoomed(size: 13))
         .padding(.vertical, Space.s4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
@@ -342,9 +342,9 @@ struct AdvancedGroup<Content: View>: View {
             Button { withAnimation(Motion.expand) { open.toggle() } } label: {
                 HStack {
                     Text(LocalizedStringKey(area.rawValue))
-                        .font(.system(size: 15, weight: .medium, design: .serif))
+                        .font(.zoomed(size: 15, weight: .medium, design: .serif))
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "chevron.right").font(.zoomed(size: 11, weight: .semibold))
                         .foregroundStyle(Ink.secondary).rotationEffect(.degrees(open ? 90 : 0))
                 }
                 .padding(.vertical, Space.s3).contentShape(Rectangle())
@@ -359,7 +359,7 @@ struct AdvancedGroup<Content: View>: View {
                     .transition(.opacity)
             }
         }
-        .font(.system(size: 13))
+        .font(.zoomed(size: 13))
         .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 0.5) }
         .id(area.anchor)
         .background(highlight == area.anchor ? Ink.hover : Color.clear, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
@@ -432,11 +432,11 @@ struct Note: View {
     var body: some View {
         Group {
             if presentation == .inline {
-                Text(LocalizedStringKey(text)).font(.system(size: 12)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
+                Text(LocalizedStringKey(text)).font(.zoomed(size: 12)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
             } else {
                 Button { showingInfo.toggle() } label: {
                     Image(systemName: "info.circle")
-                        .font(.system(size: 12))
+                        .font(.zoomed(size: 12))
                         .foregroundStyle(color)
                         .frame(width: Hit.icon, height: Hit.icon)
                         .background(isHovering || infoFocused ? Ink.hover : Color.clear, in: Circle())
@@ -451,7 +451,7 @@ struct Note: View {
                 .accessibilityHint(Text(LocalizedStringKey(text)))
                 .popover(isPresented: $showingInfo, arrowEdge: .trailing) {
                     Text(LocalizedStringKey(text))
-                        .font(.system(size: 12))
+                        .font(.zoomed(size: 12))
                         .foregroundStyle(.primary)
                         .frame(width: 280, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -507,7 +507,7 @@ struct CompanionSection: View {
     var body: some View {
         SettingsSection(title: "手机伴侣", headed: headed) {
             Toggle("开启手机显示与遥控", isOn: Binding(get: { state.companionEnabled }, set: { state.setCompanion(enabled: $0) }))
-            Text(state.companionStatus).font(.system(size: 12)).foregroundStyle(state.companionStatus.hasPrefix("启动失败") ? .orange : .secondary)
+            Text(state.companionStatus).font(.zoomed(size: 12)).foregroundStyle(state.companionStatus.hasPrefix("启动失败") ? .orange : .secondary)
             if state.companionEnabled {
                 MenuPicker(title: "连接方式", selection: $appPairing,
                            options: [(false, String(localized: "手机网页 · 无需安装")),
@@ -527,11 +527,11 @@ struct CompanionSection: View {
                 }
                 if state.companionBluetoothEnabled {
                     Label("蓝牙备用（仅 App）：" + state.companionBluetoothStatus, systemImage: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(.zoomed(size: 12)).foregroundStyle(.secondary)
                 }
                 if state.companionRelayEnabled {
                     Label("加密中转：" + state.companionRelayStatus, systemImage: "network")
-                        .font(.system(size: 12)).foregroundStyle(state.companionBackupAddress == nil ? .orange : .secondary)
+                        .font(.zoomed(size: 12)).foregroundStyle(state.companionBackupAddress == nil ? .orange : .secondary)
                     if state.companionBackupAddress != nil {
                         Note("备用连接已开启。已配对的手机需要用新的二维码重新配对。", presentation: .inline)
                     }
@@ -547,8 +547,8 @@ struct CompanionSection: View {
             QRCodeView(text: address).frame(width: 168, height: 168).padding(8).background(.white, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityLabel(title + "的配对二维码")
             VStack(alignment: .leading, spacing: 10) {
-                Text(title).font(.system(size: 14, weight: .semibold))
-                Text(detail).font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text(title).font(.zoomed(size: 14, weight: .semibold))
+                Text(detail).font(.zoomed(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button(copiedLink == address ? "已复制" : copyTitle) {
                     NSPasteboard.general.clearContents(); NSPasteboard.general.setString(address, forType: .string); copiedLink = address
                 }.buttonStyle(ChipButtonStyle())
@@ -559,13 +559,13 @@ struct CompanionSection: View {
         @Bindable var state = state
         return VStack(alignment: .leading, spacing: 12) {
             Toggle("启用原生手机 App 的蓝牙备用", isOn: Binding(get: { state.companionBluetoothEnabled }, set: { state.setCompanionBluetooth(enabled: $0) })).disabled(!state.companionEnabled)
-            if !state.companionBluetoothEnabled { Text(state.companionBluetoothStatus).font(.system(size: 12)).foregroundStyle(.secondary) }
+            if !state.companionBluetoothEnabled { Text(state.companionBluetoothStatus).font(.zoomed(size: 12)).foregroundStyle(.secondary) }
             TextField("HTTPS 中转服务根地址", text: $state.companionRelayURL).textFieldStyle(PaperTextFieldStyle())
             Toggle("启用互联网加密备用连接", isOn: Binding(get: { state.companionRelayEnabled }, set: { state.setCompanionRelay(enabled: $0) })).disabled(!state.companionEnabled)
-            if !state.companionRelayEnabled { Text(state.companionRelayStatus).font(.system(size: 12)).foregroundStyle(.secondary) }
+            if !state.companionRelayEnabled { Text(state.companionRelayStatus).font(.zoomed(size: 12)).foregroundStyle(.secondary) }
             Divider()
             HStack(spacing: 8) {
-                Text("首选端口").font(.system(size: 12))
+                Text("首选端口").font(.zoomed(size: 12))
                 TextField("8765", value: $state.companionPort, format: .number.grouping(.never)).textFieldStyle(PaperTextFieldStyle()).frame(width: 80)
                 Button("重新生成链接") { state.setCompanion(enabled: true); copiedLink = nil }.buttonStyle(ChipButtonStyle()).disabled(!state.companionEnabled)
             }
@@ -700,7 +700,7 @@ struct WebSearchAdvanced: View {
                     SecureField("Tavily API Key（保存在系统钥匙串）", text: $state.tavilyKey)
                         .textFieldStyle(PaperTextFieldStyle())
                         .onChange(of: state.tavilyKey) { _, _ in state.saveTavilyKey() }
-                    Link("获取 Key", destination: URL(string: "https://app.tavily.com")!).font(.system(size: 12))
+                    Link("获取 Key", destination: URL(string: "https://app.tavily.com")!).font(.zoomed(size: 12))
                 }
                 Note("问题文本会发送给 Tavily；它返回的网页摘要由当前回答服务整理，并在回答中标注来源。", presentation: .inline)
             }
@@ -723,13 +723,13 @@ struct EngineTestRow: View {
             .controlBusy(state.engineTest == .running)
             .disabled(state.engineTest == .running || state.isAnswering)
             switch state.engineTest {
-            case .idle: Text("发一句测试问题，确认回答服务能正常回答").font(.system(size: 11)).foregroundStyle(.secondary)
-            case .running: Text("正在请求…").font(.system(size: 11)).foregroundStyle(.secondary)
+            case .idle: Text("发一句测试问题，确认回答服务能正常回答").font(.zoomed(size: 11)).foregroundStyle(.secondary)
+            case .running: Text("正在请求…").font(.zoomed(size: 11)).foregroundStyle(.secondary)
             case let .passed(seconds, reply):
                 Label(String(format: "可以使用 · %.1f 秒 · “%@”", seconds, String(reply.prefix(24))), systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 11)).foregroundStyle(.green).lineLimit(1)
+                    .font(.zoomed(size: 11)).foregroundStyle(.green).lineLimit(1)
             case let .failed(message):
-                Label(message, systemImage: "xmark.octagon.fill").font(.system(size: 11)).foregroundStyle(.orange).lineLimit(2)
+                Label(message, systemImage: "xmark.octagon.fill").font(.zoomed(size: 11)).foregroundStyle(.orange).lineLimit(2)
             }
             Spacer(minLength: 0)
         }
@@ -749,7 +749,7 @@ struct SkillSettings: View {
         SettingsSection(title: "技能") {
             HStack(spacing: 6) {
                 Text("技能可用于所有系列，或在资料夹中按系列选择。")
-                    .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    .font(.zoomed(size: 11.5)).foregroundStyle(.secondary)
                 Note("技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在资料夹的“技能”页按系列勾选。", presentation: .info)
                     .accessibilityLabel("技能使用说明")
             }
@@ -780,9 +780,9 @@ struct SkillSettings: View {
         return HStack(spacing: 10) {
             Image(systemName: skill.global ? "globe" : "doc.text").foregroundStyle(skill.enabled ? Brand.accent : .secondary).frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
-                Text(skill.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(skill.enabled ? .primary : .secondary)
-                Text(skill.summary.isEmpty ? "\(skill.content.count) 字" : skill.summary).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
-                if !skill.global { Text(attached == 0 ? "还没有系列使用" : "\(attached) 个系列在用").font(.system(size: 10.5)).foregroundStyle(.tertiary) }
+                Text(skill.name).font(.zoomed(size: 13, weight: .semibold)).foregroundStyle(skill.enabled ? .primary : .secondary)
+                Text(skill.summary.isEmpty ? "\(skill.content.count) 字" : skill.summary).font(.zoomed(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                if !skill.global { Text(attached == 0 ? "还没有系列使用" : "\(attached) 个系列在用").font(.zoomed(size: 10.5)).foregroundStyle(.tertiary) }
             }
             Spacer()
             Toggle("所有系列", isOn: Binding(get: { skill.global }, set: { var next = skill; next.global = $0; library.update(next) }))
@@ -804,18 +804,18 @@ struct SkillEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("编辑技能").font(.headline)
+            Text("编辑技能").font(.zoomed(.headline))
             TextField("名称", text: $skill.name).textFieldStyle(PaperTextFieldStyle())
             TextField("一句话说明（可选）", text: $skill.summary).textFieldStyle(PaperTextFieldStyle())
             TextEditor(text: $skill.content)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.zoomed(size: 13, design: .monospaced))
                 .scrollContentBackground(.hidden)
                 .padding(6)
                 .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
                 .frame(minHeight: 320)
             Toggle("所有系列都使用这个技能", isOn: $skill.global)
             HStack {
-                Text("\(skill.content.count) 字 · 单个技能最多使用约 6000 字").font(.system(size: 11)).foregroundStyle(.secondary)
+                Text("\(skill.content.count) 字 · 单个技能最多使用约 6000 字").font(.zoomed(size: 11)).foregroundStyle(.secondary)
                 Spacer()
                 Button("取消") { dismiss() }
                 Button("保存") { save(skill); dismiss() }.keyboardShortcut(.defaultAction)
@@ -839,7 +839,7 @@ struct UpdateSettings: View {
             HStack(alignment: .center, spacing: 20) {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
-                        Text(verbatim: "NextThought " + updater.currentVersion).font(.system(size: 15, weight: .medium))
+                        Text(verbatim: "NextThought " + updater.currentVersion).font(.zoomed(size: 15, weight: .medium))
                         Text("构建 \(String(updater.currentBuild))").font(Typo.caption).foregroundStyle(Ink.secondary)
                     }
                     Text(statusText).font(Typo.caption).foregroundStyle(statusColor)
@@ -946,10 +946,10 @@ private struct GitHubAccessSection: View {
             HStack(spacing: 8) {
                 Button { NSWorkspace.shared.open(Updater.createTokenURL) } label: { Label("去 GitHub 创建令牌", systemImage: "arrow.up.right.square") }
                     .buttonStyle(SecondaryButtonStyle())
-                Text("或在终端运行 gh auth login，就不用填令牌").font(.system(size: 11.5)).foregroundStyle(.secondary)
+                Text("或在终端运行 gh auth login，就不用填令牌").font(.zoomed(size: 11.5)).foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 3) {
-                Text("创建令牌时这样填：").font(.system(size: 11.5, weight: .semibold))
+                Text("创建令牌时这样填：").font(.zoomed(size: 11.5, weight: .semibold))
                 Note("1. Resource owner 选仓库所属的组织 \(updater.repository.split(separator: "/").first.map(String.init) ?? "")（不是个人账号）")
                 Note("2. Repository access 选 Only select repositories → \(updater.repository.split(separator: "/").last.map(String.init) ?? "")")
                 Note("3. Permissions → Contents 选 Read-only，其余不动；生成后复制 github_pat_ 开头的整串粘贴到上面")

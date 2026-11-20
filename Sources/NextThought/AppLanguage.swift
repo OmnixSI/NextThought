@@ -160,11 +160,11 @@ struct Hint: View {
     var body: some View {
         Group {
             if presentation == .inline {
-                Text(key).font(.system(size: 11.5)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
+                Text(key).font(.zoomed(size: 11.5)).foregroundStyle(color).fixedSize(horizontal: false, vertical: true)
             } else {
                 Button { showingInfo.toggle() } label: {
                     Image(systemName: "info.circle")
-                        .font(.system(size: 12))
+                        .font(.zoomed(size: 12))
                         .foregroundStyle(color)
                         .frame(width: Hit.minHeight, height: Hit.minHeight)
                         .background(isHovering || infoFocused ? Ink.hover : Color.clear, in: Circle())
@@ -179,7 +179,7 @@ struct Hint: View {
                 .accessibilityHint(Text(key))
                 .popover(isPresented: $showingInfo, arrowEdge: .trailing) {
                     Text(key)
-                        .font(.system(size: 12))
+                        .font(.zoomed(size: 12))
                         .foregroundStyle(.primary)
                         .frame(width: 280, alignment: .leading)
                         .fixedSize(horizontal: false, vertical: true)

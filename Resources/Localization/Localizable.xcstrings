@@ -26070,6 +26070,316 @@
           }
         }
       }
+    },
+    "实际大小": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actual Size"
+          }
+        }
+      }
+    },
+    "我是哪个？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which one is me?"
+          }
+        }
+      }
+    },
+    "哪个是你？": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which one is you?"
+          }
+        }
+      }
+    },
+    "还没认出你的声音：点一下，选出哪个是你": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your voice was not recognised: click to say which one is you"
+          }
+        }
+      }
+    },
+    "选了之后，这个声音的每一句都记成“我”。也可以在某一句上点右键，只改那一句。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every sentence in that voice then counts as yours. You can also right-click one sentence to change only that one."
+          }
+        }
+      }
+    },
+    "点名字改名、合并或标成我": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click a name to rename, merge or mark as me"
+          }
+        }
+      }
+    },
+    "这句是谁说的": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Who said this"
+          }
+        }
+      }
+    },
+    "另一个人": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone else"
+          }
+        }
+      }
+    },
+    "新说话人": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New speaker"
+          }
+        }
+      }
+    },
+    "改这一句的文字…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit this sentence…"
+          }
+        }
+      }
+    },
+    "改这一句的文字": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit this sentence"
+          }
+        }
+      }
+    },
+    "恢复原样": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        }
+      }
+    },
+    "原始转写不会被改动，随时可以在“原始转写”里看到。重新整理纪要时用的是改过的文字。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original transcript is never changed and stays under “Original”. Notes are organised from the edited text."
+          }
+        }
+      }
+    },
+    "这场用什么": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What this meeting uses"
+          }
+        }
+      }
+    },
+    "不用的可以关掉": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off what you don’t need"
+          }
+        }
+      }
+    },
+    "始终开启": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always on"
+          }
+        }
+      }
+    },
+    "恢复这个场景的默认": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to this scene’s defaults"
+          }
+        }
+      }
+    },
+    "用了多少": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usage"
+          }
+        }
+      }
+    },
+    "本月": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month"
+          }
+        }
+      }
+    },
+    "累计": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All time"
+          }
+        }
+      }
+    },
+    "场会议": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "meetings"
+          }
+        }
+      }
+    },
+    "记录时长": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "recorded"
+          }
+        }
+      }
+    },
+    "听到的提问": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "questions heard"
+          }
+        }
+      }
+    },
+    "给出的回答": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "answers given"
+          }
+        }
+      }
+    },
+    "时长按每场从开始记录到结束计算；暂停的时间也算在内。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time runs from the start of each recording to its end, pauses included."
+          }
+        }
+      }
+    },
+    "继续一个系列": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue a series"
+          }
+        }
+      }
+    },
+    "开下一场": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next meeting"
+          }
+        }
+      }
+    },
+    "现在更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update now"
+          }
+        }
+      }
+    },
+    "开启实时纪要": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on live notes"
+          }
+        }
+      }
+    },
+    "定下来的": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decided"
+          }
+        }
+      }
+    },
+    "要做的": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To do"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

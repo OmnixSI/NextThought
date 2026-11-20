@@ -229,6 +229,7 @@ final class CueIslandController {
                 UserDefaults.standard.set(mode.rawValue, forKey: "lastScene")
             }
             model.collapsedKey = nil; model.covered = []; model.forceCue = false
+            PresenterMode.shared.meetingStarted()
             PresenterMode.shared.begin()
             if model.surface == .island || model.presenting {
                 show()

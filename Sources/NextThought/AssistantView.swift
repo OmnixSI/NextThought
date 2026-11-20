@@ -39,8 +39,8 @@ private struct AnswerHistoryPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label("回答记录", systemImage: "clock.arrow.circlepath").font(.system(size: 13, weight: .semibold))
-                Text("\(state.answerHistory.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
+                Label("回答记录", systemImage: "clock.arrow.circlepath").font(.zoomed(size: 13, weight: .semibold))
+                Text("\(state.answerHistory.count)").font(Font.zoomed(.caption).monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
                 if state.historyCursor != nil {
                     Button("回到最新") { state.historyCursor = nil }.buttonStyle(ChipButtonStyle())
@@ -48,7 +48,7 @@ private struct AnswerHistoryPanel: View {
             }
             if state.answerHistory.isEmpty {
                 Text("回答过的问题会按时间列在这里，点一下就能回看当时的回答。")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .font(.zoomed(size: 12)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 ScrollView {
@@ -72,12 +72,12 @@ private struct AnswerHistoryPanel: View {
         } label: {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(record.date.formatted(date: .omitted, time: .shortened)).font(.system(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
-                    if web { Image(systemName: "globe").font(.system(size: 9)).foregroundStyle(Brand.accent) }
-                    if !record.automatic { Text("手动").font(.system(size: 9.5)).foregroundStyle(.tertiary) }
+                    Text(record.date.formatted(date: .omitted, time: .shortened)).font(.zoomed(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
+                    if web { Image(systemName: "globe").font(.zoomed(size: 9)).foregroundStyle(Brand.accent) }
+                    if !record.automatic { Text("手动").font(.zoomed(size: 9.5)).foregroundStyle(.tertiary) }
                 }
-                Text(AnswerRefinement.originalQuestion(of: record.question)).font(.system(size: 12.5, weight: .semibold)).lineLimit(2)
-                Text(record.answer.replacingOccurrences(of: "**", with: "")).font(.system(size: 11.5)).foregroundStyle(.secondary).lineLimit(2)
+                Text(AnswerRefinement.originalQuestion(of: record.question)).font(.zoomed(size: 12.5, weight: .semibold)).lineLimit(2)
+                Text(record.answer.replacingOccurrences(of: "**", with: "")).font(.zoomed(size: 11.5)).foregroundStyle(.secondary).lineLimit(2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
@@ -98,8 +98,8 @@ private struct ConversationPanel: View {
         @Bindable var state = state
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                Label("实时对话", systemImage: "text.bubble").font(.system(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
-                Text("\(state.entries.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
+                Label("实时对话", systemImage: "text.bubble").font(.zoomed(size: 13, weight: .semibold)).lineLimit(1).fixedSize()
+                Text("\(state.entries.count)").font(Font.zoomed(.caption).monospacedDigit()).foregroundStyle(.tertiary)
                 Spacer()
                 if state.isRunning {
                     MenuPicker(selection: $state.selectedTargetID, options: state.captureTargets.map { ($0.id, $0.title) }, placeholder: "音频来源")
@@ -157,16 +157,16 @@ private struct TranscriptStatusLine: View {
                 Text("· 遗漏 \(state.droppedAudioSegments) 段").foregroundStyle(.orange)
             }
         }
-        .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+        .font(.zoomed(size: 11)).foregroundStyle(.secondary).lineLimit(1)
     }
 }
 
 private struct EmptyConversationHint: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("开始记录后，参与者的发言会实时出现在这里。").font(.system(size: 12))
+            Text("开始记录后，参与者的发言会实时出现在这里。").font(.zoomed(size: 12))
             Text("· 左侧灰色为对方（系统声音），右侧彩色为我（麦克风）\n· 识别为问题的句子会标出；把鼠标移到任意一句上可以“回答这句”\n· 原始音频不保存；转录与回答保存在“记录”里")
-                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .font(.zoomed(size: 11)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 10)
     }
@@ -185,10 +185,10 @@ private struct ConversationBubble: View {
     private var echoLine: some View {
         HStack(spacing: 6) {
             Spacer(minLength: 40)
-            Image(systemName: "speaker.wave.2").font(.system(size: 10)).foregroundStyle(.tertiary)
-            Text(entry.text).font(.system(size: 11.5)).foregroundStyle(.tertiary).lineLimit(1).strikethrough(color: .secondary.opacity(0.4))
+            Image(systemName: "speaker.wave.2").font(.zoomed(size: 10)).foregroundStyle(.tertiary)
+            Text(entry.text).font(.zoomed(size: 11.5)).foregroundStyle(.tertiary).lineLimit(1).strikethrough(color: .secondary.opacity(0.4))
             Button("是我说的") { state.markNotEcho(entry.id) }
-                .buttonStyle(.tapText).font(.system(size: 11, weight: .medium)).foregroundStyle(Brand.accent)
+                .buttonStyle(.tapText).font(.zoomed(size: 11, weight: .medium)).foregroundStyle(Brand.accent)
         }
         .help("这句和对方刚说的话很像，被当作扬声器回声忽略了（不参与回答）。如果是你说的，点“是我说的”。")
     }
@@ -202,13 +202,13 @@ private struct ConversationBubble: View {
                 HStack(spacing: 5) {
                     if isQuestion {
                         Label("问题", systemImage: "questionmark.bubble.fill")
-                            .font(.system(size: 9.5, weight: .semibold)).foregroundStyle(Brand.accent)
+                            .font(.zoomed(size: 9.5, weight: .semibold)).foregroundStyle(Brand.accent)
                     }
                     Text(entry.date.formatted(date: .omitted, time: .standard))
-                        .font(.system(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
+                        .font(.zoomed(size: 9.5).monospacedDigit()).foregroundStyle(.tertiary)
                 }
                 Text(entry.text)
-                    .font(.system(size: 13)).lineSpacing(2)
+                    .font(.zoomed(size: 13)).lineSpacing(2)
                     .textSelection(.enabled)
                     .padding(.horizontal, 11).padding(.vertical, 7)
                     .background(bubbleColor(isMe: isMe, isQuestion: isQuestion), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -245,8 +245,8 @@ private struct PartialBubbles: View {
         HStack(alignment: .bottom, spacing: 6) {
             if isMe { Spacer(minLength: 40) }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Image(systemName: "waveform").font(.system(size: 10)).foregroundStyle(.tertiary)
-                Text(text).font(.system(size: 13)).foregroundStyle(.secondary).lineSpacing(2)
+                Image(systemName: "waveform").font(.zoomed(size: 10)).foregroundStyle(.tertiary)
+                Text(text).font(.zoomed(size: 13)).foregroundStyle(.secondary).lineSpacing(2)
             }
             .padding(.horizontal, 11).padding(.vertical, 7)
             .background(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.12), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
@@ -272,9 +272,9 @@ struct DetectionStrip: View {
                 if let candidate = live {
                     HStack(spacing: 8) {
                         Image(systemName: candidate.isFinal ? "text.bubble" : "waveform").foregroundStyle(Brand.accent)
-                        Text(candidate.assessment.intent.title).font(.system(size: 11, weight: .semibold)).foregroundStyle(Brand.accent)
+                        Text(candidate.assessment.intent.title).font(.zoomed(size: 11, weight: .semibold)).foregroundStyle(Brand.accent)
                         ConfidenceBar(score: candidate.assessment.score)
-                        Text(candidate.fullText).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+                        Text(candidate.fullText).font(.zoomed(size: 12)).foregroundStyle(.secondary).lineLimit(1)
                         Spacer(minLength: 0)
                         if candidate.state != .triggered, candidate.assessment.intent != .statement {
                             Button("回答") { state.answerCandidate(candidate) }.buttonStyle(ChipButtonStyle(prominent: true))
@@ -284,7 +284,7 @@ struct DetectionStrip: View {
                 ForEach(state.suggestedQuestions.reversed()) { candidate in
                     HStack(spacing: 8) {
                         Image(systemName: "questionmark.bubble").foregroundStyle(.orange)
-                        Text(candidate.fullText).font(.system(size: 12)).lineLimit(1)
+                        Text(candidate.fullText).font(.zoomed(size: 12)).lineLimit(1)
                         Spacer(minLength: 0)
                         Button("回答") { state.answerCandidate(candidate) }.buttonStyle(ChipButtonStyle())
                         Button { state.dismissCandidate(candidate) } label: { Image(systemName: "xmark") }
@@ -296,7 +296,7 @@ struct DetectionStrip: View {
             .transition(.opacity)
         } else if showsEmpty {
             Text("对方提问时，识别到的问题和“可能的问题”会出现在这里。")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(.zoomed(size: 12)).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .card()
         }
@@ -344,11 +344,11 @@ private struct AnswerHeader: View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 Label(state.isAnswering && state.historyCursor == nil ? "正在回答" : "建议回答", systemImage: "sparkles")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(Brand.accent)
+                    .font(.zoomed(size: 12, weight: .semibold)).foregroundStyle(Brand.accent)
                 let question = state.displayedQuestion
                 if !question.isEmpty {
                     Text(question)
-                        .font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary).lineLimit(3).textSelection(.enabled)
+                        .font(.zoomed(size: 13, weight: .medium)).foregroundStyle(.secondary).lineLimit(3).textSelection(.enabled)
                 }
             }
             Spacer()
@@ -356,7 +356,7 @@ private struct AnswerHeader: View {
                 HStack(spacing: 4) {
                     Button { state.showPreviousAnswer() } label: { Image(systemName: "chevron.left") }
                         .buttonStyle(GlassIconButtonStyle(size: 26)).help("上一条 · \(state.shortcutLabel(.previousAnswer))")
-                    Text(position).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    Text(position).font(Font.zoomed(.caption).monospacedDigit()).foregroundStyle(.secondary)
                     Button { state.showNextAnswer() } label: { Image(systemName: "chevron.right") }
                         .buttonStyle(GlassIconButtonStyle(size: 26)).help("下一条 · \(state.shortcutLabel(.nextAnswer))")
                 }
@@ -381,7 +381,7 @@ private struct AnswerBody: View {
                     let text = state.displayedAnswer
                     if text.isEmpty {
                         Text(state.isAnswering ? "正在生成…" : "对方提问时会自动给出回答；也可以在下方输入问题，或按 \(state.shortcutLabel(.forceAnswer)) 立即回答最新的话。")
-                            .font(.system(size: 14)).foregroundStyle(.secondary)
+                            .font(.zoomed(size: 14)).foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         MarkdownText(text: text, size: 16, lineSpacing: 5).equatable()
@@ -433,7 +433,7 @@ private struct WebLookupStrip: View {
                 }
                 if lookup.status == .searching { Spacer(minLength: 0) }
             }
-            .font(.system(size: 12))
+            .font(.zoomed(size: 12))
             .padding(.horizontal, 10).padding(.vertical, 6)
             .background(Brand.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
@@ -452,7 +452,7 @@ private struct WebSourcesList: View {
                         Link(destination: url) {
                             Text("[\(index + 1)] \(source.title)").lineLimit(1)
                         }
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .font(.zoomed(size: 11)).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -541,11 +541,11 @@ private struct AnswerFooter: View {
                 AnswerEvidenceDetails(evidence: evidence).id(id)
             }
             Text(meta)
-                .font(.system(size: 11)).foregroundStyle(.tertiary)
+                .font(.zoomed(size: 11)).foregroundStyle(.tertiary)
                 .lineLimit(1).truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .trailing)
             if !state.appServerNote.isEmpty {
-                Text(state.appServerNote).font(.caption).foregroundStyle(.orange)
+                Text(state.appServerNote).font(.zoomed(.caption)).foregroundStyle(.orange)
             }
         }
     }
@@ -567,14 +567,14 @@ private struct ScreenshotCard: View {
         if let image = state.screenshotPreview {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Label("截图预览", systemImage: "viewfinder").font(.system(size: 13, weight: .semibold))
+                    Label("截图预览", systemImage: "viewfinder").font(.zoomed(size: 13, weight: .semibold))
                     Spacer()
                     Button("取消") { state.clearScreenshot() }.buttonStyle(ChipButtonStyle())
                     Button("分析截图") { state.answerScreenshot() }.buttonStyle(ChipButtonStyle(prominent: true))
                 }
                 Image(nsImage: image).resizable().scaledToFit().frame(maxHeight: 140)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                Text("可在下方输入框补充要求，例如“只指出 bug”。").font(.caption).foregroundStyle(.secondary)
+                Text("可在下方输入框补充要求，例如“只指出 bug”。").font(.zoomed(.caption)).foregroundStyle(.secondary)
             }
             .card()
         }
@@ -602,7 +602,7 @@ private struct AnswerEvidenceDetails: View {
             if !evidence.notes.isEmpty {
                 Button { expanded = true } label: {
                     Label("本次回答有 \(evidence.notes.count) 项限制 · 查看说明", systemImage: "exclamationmark.triangle")
-                        .font(.system(size: 12)).foregroundStyle(.orange)
+                        .font(.zoomed(size: 12)).foregroundStyle(.orange)
                         .fixedSize(horizontal: false, vertical: true)
                 }.buttonStyle(.tapText)
             }
@@ -626,7 +626,7 @@ private struct AnswerEvidenceDetails: View {
                         Label(note, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
-            }.font(.system(size: 12))
+            }.font(.zoomed(size: 12))
         }
     }
 }

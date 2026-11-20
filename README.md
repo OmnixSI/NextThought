@@ -153,7 +153,7 @@ scripts/dev/preview.sh shot home light /tmp/home.png   # 离屏渲染演示页�
 
 ## 文档
 
-- [3.3.0 发布说明](docs/releases/v3.3.0.md) · [更新日志](CHANGELOG.md)（历次版本的完整说明）
+- [3.4.0 发布说明](docs/releases/v3.4.0.md) · [更新日志](CHANGELOG.md)（历次版本的完整说明）
 - [开发与发布](docs/DEVELOPMENT.md)：项目结构、构建、签名、发布流程和自检
 - [资料处理管线](docs/DOCUMENT-MARKDOWN-PIPELINE.md) · [本地语音识别模型调研](docs/ASR-MODELS-2026-10.md)
 - 问题反馈与功能建议：[Issues](../../issues/new/choose)

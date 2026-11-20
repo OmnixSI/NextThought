@@ -128,6 +128,7 @@ enum SelfTest {
                 case "answer-latency": return try await testAnswerLatency(options)
                 case "embedding-speed": return try await testEmbeddingSpeed(options)
                 case "import-speed": return try await testImportSpeed(options)
+                case "live-notes": return try await testLiveNotes(options)
                 default: throw Failure("unknown suite \(suite)")
                 }
             }
@@ -965,6 +966,41 @@ enum SelfTest {
         await DocumentWorker.embedding.unload(); await DocumentWorker.shared.unload()
         guard state.documentPreparation.jobs.allSatisfy({ [.ready, .warning].contains($0.stage) }) else { throw Failure("not every file was read") }
         return String(format: "%d files in %.1f s", report.count, Date().timeIntervalSince(began))
+    }
+
+    /// Live notes through the real answer service: a transcript ("说话人：内容" a line) fed
+    /// in steps, the way a meeting grows, with the notes after each step.
+    private static func testLiveNotes(_ options: [String: String]) async throws -> String {
+        guard let path = options["transcript"] else { throw Failure("pass --transcript <file>") }
+        let raw = try String(contentsOfFile: path, encoding: .utf8).split(separator: "\n").map(String.init).filter { $0.contains("：") }
+        let lines = raw.enumerated().map { index, line -> LiveNotesPrompt.Line in
+            let parts = line.split(separator: "：", maxSplits: 1).map(String.init)
+            return .init(seconds: index * 18, speaker: parts[0], text: parts.count > 1 ? parts[1] : "")
+        }
+        let step = Int(options["step"] ?? "") ?? 8
+        let client = CodexAppServerClient()
+        await client.prewarm()
+        defer { client.shutdown() }
+        var notes = LiveNotes(), rounds = 0, failed = 0
+        for upto in stride(from: min(step, lines.count), through: lines.count, by: step) {
+            let prompt = LiveNotesPrompt.user(notes: notes, lines: Array(lines.prefix(upto)), language: options["language"] ?? "简体中文")
+            let started = Date()
+            let request = AnswerRequest(system: LiveNotesPrompt.system, user: prompt, model: options["model"] ?? "gpt-6-luna", effort: options["effort"] ?? "low", imageURL: nil, serviceTier: "fast")
+            let reply = try await client.answer(request) { _ in }
+            rounds += 1
+            guard let next = LiveNotesPrompt.parse(reply, previous: notes, lines: upto) else {
+                failed += 1; print("SELFTEST   round \(rounds): reply not usable (\(reply.count) characters)"); continue
+            }
+            let added = notes.isEmpty ? 0 : next.statements.subtracting(notes.statements).count
+            notes = next
+            print(String(format: "SELFTEST   round %d (%d lines, %.1f s, prompt %d characters): %d topics, %d decisions, %d to-dos, %d new", rounds, upto, Date().timeIntervalSince(started), prompt.count, next.topics.count, next.decisions.count, next.todos.count, added))
+        }
+        print("SELFTEST   summary: " + notes.summary)
+        for topic in notes.topics { print("SELFTEST   · " + topic.title + "：" + topic.points.joined(separator: "；")) }
+        if !notes.decisions.isEmpty { print("SELFTEST   decisions: " + notes.decisions.joined(separator: "；")) }
+        if !notes.todos.isEmpty { print("SELFTEST   to-dos: " + notes.todos.map { $0.text + ($0.owner.map { "（" + $0 + "）" } ?? "") }.joined(separator: "；")) }
+        guard !notes.isEmpty, failed <= rounds / 2 else { throw Failure("live notes did not come back") }
+        return "\(rounds) rounds, \(failed) unusable"
     }
 
     private final class FirstDelta: @unchecked Sendable {

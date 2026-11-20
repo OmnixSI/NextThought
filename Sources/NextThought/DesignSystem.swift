@@ -66,16 +66,90 @@ enum Ink {
 /// Type scale (01-visual-language.md). Serif styles render as New York, with the
 /// system Song face for Chinese.
 enum Typo {
-    static let hero = Font.system(size: 38, weight: .medium, design: .serif)
-    static let display = Font.system(size: 30, weight: .medium, design: .serif)
-    static let section = Font.system(size: 19, weight: .medium, design: .serif)
-    static let title = Font.system(size: 15, weight: .semibold)
-    static let prompt = Font.system(size: 22, weight: .medium)
-    static let body = Font.system(size: 15)
-    static let label = Font.system(size: 13, weight: .medium)
-    static let caption = Font.system(size: 12)
-    static let overline = Font.system(size: 11, weight: .semibold)
-    static let code = Font.system(size: 13, design: .monospaced)
+    static var hero: Font { .zoomed(size: 38, weight: .medium, design: .serif) }
+    static var display: Font { .zoomed(size: 30, weight: .medium, design: .serif) }
+    static var section: Font { .zoomed(size: 19, weight: .medium, design: .serif) }
+    static var title: Font { .zoomed(size: 15, weight: .semibold) }
+    static var prompt: Font { .zoomed(size: 22, weight: .medium) }
+    static var body: Font { .zoomed(size: 15) }
+    static var label: Font { .zoomed(size: 13, weight: .medium) }
+    static var caption: Font { .zoomed(size: 12) }
+    static var overline: Font { .zoomed(size: 11, weight: .semibold) }
+    static var code: Font { .zoomed(size: 13, design: .monospaced) }
+}
+
+/// The size of the text of the whole app: ⌘+ and ⌘− as everywhere on the Mac, ⌘0 for the
+/// size it came with. Every font of the pages is asked for through `Font.zoomed`, which
+/// reads the factor, so a page redraws itself when the factor changes. The cue island and
+/// the answer window keep their own size (the 小 / 大 buttons on them).
+/// Read wherever a font is made (button styles are not on the main actor); changed only
+/// from the menu, on the main thread.
+@Observable
+final class TextZoom: @unchecked Sendable {
+    static let shared = TextZoom()
+    static let steps: [Double] = [0.9, 1, 1.1, 1.2, 1.3, 1.45]
+
+    private(set) var factor: Double = {
+        // NEXTTHOUGHT_DEMO_TEXT_ZOOM: a size for screenshots, read before any font is made.
+        let saved = AppEnvironment.values["NEXTTHOUGHT_DEMO_TEXT_ZOOM"].flatMap(Double.init) ?? UserDefaults.standard.double(forKey: "textZoom")
+        return TextZoom.steps.contains(saved) ? saved : 1
+    }()
+
+    var canGrow: Bool { factor < Self.steps.last! }
+    var canShrink: Bool { factor > Self.steps.first! }
+
+    func grow() { step(1) }
+    func shrink() { step(-1) }
+    func reset() { set(1) }
+
+    private func step(_ by: Int) {
+        let index = Self.steps.firstIndex(of: factor) ?? 1
+        set(Self.steps[min(max(index + by, 0), Self.steps.count - 1)])
+    }
+
+    private func set(_ value: Double) {
+        guard value != factor else { return }
+        factor = value
+        UserDefaults.standard.set(value, forKey: "textZoom")
+    }
+
+    /// For the text styles of the live page, which follow the system's sizes.
+    var dynamicType: DynamicTypeSize {
+        switch factor {
+        case ..<0.95: .medium
+        case ..<1.05: .large
+        case ..<1.15: .xLarge
+        case ..<1.25: .xxLarge
+        case ..<1.35: .xxxLarge
+        default: .accessibility1
+        }
+    }
+}
+
+extension Font {
+    /// A system text style at the app's text zoom. On the Mac the styles have one fixed
+    /// size each (they do not follow a text size setting as on the iPhone), so the sizes
+    /// are written here and multiplied like every other font of the pages.
+    static func zoomed(_ style: Font.TextStyle, design: Font.Design = .default, weight: Font.Weight? = nil) -> Font {
+        let size: CGFloat, natural: Font.Weight
+        switch style {
+        case .largeTitle: (size, natural) = (26, .regular)
+        case .title: (size, natural) = (22, .regular)
+        case .title2: (size, natural) = (17, .regular)
+        case .title3: (size, natural) = (15, .regular)
+        case .headline: (size, natural) = (13, .bold)
+        case .callout: (size, natural) = (12, .regular)
+        case .subheadline: (size, natural) = (11, .regular)
+        case .footnote, .caption, .caption2: (size, natural) = (10, .regular)
+        default: (size, natural) = (13, .regular)
+        }
+        return zoomed(size: size, weight: weight ?? natural, design: design)
+    }
+
+    /// A system font at `size` times the app's text zoom.
+    static func zoomed(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> Font {
+        .system(size: (size * TextZoom.shared.factor).rounded(.toNearestOrAwayFromZero), weight: weight, design: design)
+    }
 }
 
 /// Spacing, sizes and radii.

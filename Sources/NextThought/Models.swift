@@ -92,7 +92,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .home: "首页"
         case .meetings: "所有记录"
-        case .library: "资料夹"
+        case .library: "系列"
         case .settings: "设置"
         }
     }

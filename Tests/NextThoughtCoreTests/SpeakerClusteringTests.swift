@@ -236,4 +236,29 @@ struct SpeakerClusteringTests {
         for tag in tags { data.append(try JSONLines.line(tag)) }
         #expect(JSONLines.decode(SessionVoiceTag.self, from: data) == tags)
     }
+
+    @Test func aPersonNamedByHandIsShownHoweverLittleTheySaid() {
+        func line(_ voice: Int, _ text: String) -> SessionTranscriptLine {
+            SessionTranscriptLine(id: UUID(), date: Date(), speaker: .room, text: text, voice: voice)
+        }
+        // One voice does all the talking; two others say a sentence each.
+        var lines = (0..<8).map { _ in line(1, "这一页讲的是缓存一致性的方案") }
+        lines.insert(line(4, "我有一个问题想问一下"), at: 3)
+        lines.append(line(7, "好的谢谢老师的解释"))
+        #expect(SpeakerLabels.voiceNumbers(lines).isEmpty)
+        // Naming the quiet ones puts them on show, after the one who earned a number.
+        #expect(SpeakerLabels.voiceNumbers(lines, named: [7, 4]) == [1: 1, 4: 2, 7: 3])
+        #expect(SpeakerLabels.names(["4": "小王"], lines: lines) == [2: "小王"])
+        #expect(SpeakerLabels.numbers(lines, named: [4]).count == 9)
+        #expect(SpeakerLabels.newVoice(lines, voiceNames: ["9": "x"], meVoices: [12]) == 13)
+    }
+
+    @Test func numbersEarnedByTalkingDoNotMoveWhenSomeoneIsNamed() {
+        func line(_ voice: Int) -> SessionTranscriptLine {
+            SessionTranscriptLine(id: UUID(), date: Date(), speaker: .remote, text: "这是一句足够长的话用来计数", voice: voice)
+        }
+        let lines = [line(9)] + (0..<5).map { _ in line(3) } + (0..<5).map { _ in line(5) }
+        #expect(SpeakerLabels.voiceNumbers(lines) == [3: 1, 5: 2])
+        #expect(SpeakerLabels.voiceNumbers(lines, named: [9, 5]) == [3: 1, 5: 2, 9: 3])
+    }
 }

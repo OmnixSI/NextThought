@@ -47,7 +47,7 @@ struct PresenterSettings: View {
                     Slider(value: $state.teleprompterFontSize, in: 14...36, step: 1)
                         .frame(maxWidth: 320)
                         .onChange(of: state.teleprompterFontSize) { _, _ in state.saveAnswerSettings() }
-                    Text("\(Int(state.teleprompterFontSize))").font(.caption.monospacedDigit()).frame(width: 36)
+                    Text("\(Int(state.teleprompterFontSize))").font(Font.zoomed(.caption).monospacedDigit()).frame(width: 36)
                 }
                 Note("每个场景用要点还是逐句，在“场景”页设置。", presentation: .inline)
             }
@@ -90,12 +90,12 @@ struct PresenterSettings: View {
                         .disabled(coach.isCalibrating || coach.cameraAccess != .authorized)
                         if coach.isCalibrating {
                             ProgressView().controlSize(.small)
-                            Text("正在校准，请看着摄像头…").font(.callout).foregroundStyle(.secondary)
+                            Text("正在校准，请看着摄像头…").font(.zoomed(.callout)).foregroundStyle(.secondary)
                         } else if let calibration {
                             Text(calibration ? "已校准" : "没有看清眼睛，请正对摄像头再试一次")
-                                .font(.callout).foregroundStyle(.secondary)
+                                .font(.zoomed(.callout)).foregroundStyle(.secondary)
                         } else if coach.isCalibrated {
-                            Text("已校准过").font(.callout).foregroundStyle(.secondary)
+                            Text("已校准过").font(.zoomed(.callout)).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -138,7 +138,7 @@ private struct ShortcutsSettingsRow: View {
                 HStack {
                     Text("快捷键…").font(Typo.label)
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    Image(systemName: "chevron.right").font(.zoomed(size: 11, weight: .semibold))
                         .foregroundStyle(Ink.secondary).rotationEffect(.degrees(open ? 90 : 0))
                 }
                 .padding(.vertical, Space.s1).contentShape(Rectangle())
@@ -192,7 +192,7 @@ struct CueAdvanced: View {
                 Slider(value: $state.teleprompterOpacity, in: 0.35...1).disabled(state.teleprompterHideBackground)
                     .frame(maxWidth: 320)
                     .onChange(of: state.teleprompterOpacity) { _, _ in state.saveAnswerSettings() }
-                Text("\(Int(state.teleprompterOpacity * 100))%").font(.caption.monospacedDigit()).frame(width: 36)
+                Text("\(Int(state.teleprompterOpacity * 100))%").font(Font.zoomed(.caption).monospacedDigit()).frame(width: 36)
             }
             Toggle("鼠标穿透（点击穿过提词浮窗）", isOn: Binding(get: { state.clickThrough }, set: { _ in state.toggleClickThrough() }))
             Note("隐藏背景时，不透明度不会影响文字与按钮。", presentation: .inline)

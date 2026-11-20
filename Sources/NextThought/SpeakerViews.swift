@@ -26,10 +26,16 @@ struct SpeakerLayout {
     /// Lines in a voice that is the user (not the lines of the microphone, which are always "我").
     let mine: Set<UUID>
 
+    /// A meeting in a room where nobody is the user yet: the saved voiceprint did not
+    /// recognise them (far from the microphone, a different microphone), or none is saved.
+    let asksForMe: Bool
+
     init(lines: [SessionTranscriptLine], voiceNames: [String: String]?, meVoices: Set<Int> = []) {
-        let voiceNumbers = SpeakerLabels.voiceNumbers(lines, meVoices: meVoices)
-        let lineNumbers = SpeakerLabels.numbers(lines, meVoices: meVoices)
+        let named = SpeakerLabels.named(voiceNames)
+        let voiceNumbers = SpeakerLabels.voiceNumbers(lines, meVoices: meVoices, named: named)
+        let lineNumbers = SpeakerLabels.numbers(lines, meVoices: meVoices, named: named)
         let mine = SpeakerLabels.meLines(lines, meVoices: meVoices)
+        asksForMe = mine.isEmpty && !voiceNumbers.isEmpty && lines.contains { $0.speaker == .room }
         self.voiceNumbers = voiceNumbers
         self.lineNumbers = lineNumbers
         self.mine = mine
@@ -72,12 +78,12 @@ struct SpeakerMark: View {
 
     var body: some View {
         if isMe {
-            Image(systemName: "person.fill").font(.system(size: size + 1)).foregroundStyle(Ink.ink)
+            Image(systemName: "person.fill").font(.zoomed(size: size + 1)).foregroundStyle(Ink.ink)
         } else if let number {
             Image(systemName: Self.symbols[max(0, number - 1) % Self.symbols.count])
-                .font(.system(size: size)).foregroundStyle(Ink.secondary)
+                .font(.zoomed(size: size)).foregroundStyle(Ink.secondary)
         } else {
-            Image(systemName: "circle").font(.system(size: size)).foregroundStyle(Ink.tertiary)
+            Image(systemName: "circle").font(.zoomed(size: size)).foregroundStyle(Ink.tertiary)
         }
     }
 }
@@ -90,11 +96,11 @@ struct SpeakerTag: View {
 
     var body: some View {
         let number = layout.lineNumbers[lineID]
-        let isMe = layout.mine.contains(lineID)
+        let isMe = speaker == .me || layout.mine.contains(lineID)
         HStack(spacing: 5) {
             SpeakerMark(number: number, isMe: isMe)
             Text(verbatim: isMe ? layout.meLabel : (number.map { layout.label($0) } ?? layout.fallbackLabel(speaker)))
-                .font(.system(size: 11, weight: .semibold))
+                .font(.zoomed(size: 11, weight: .semibold))
                 .foregroundStyle(number == nil && !isMe ? Ink.secondary : Ink.ink)
                 .lineLimit(1)
         }
@@ -109,6 +115,7 @@ struct SpeakerStrip: View {
     /// Says a voice is (true) or is not (false) the user.
     let mark: (Int, Bool) -> Void
     @State private var editing: Int?
+    @State private var choosingMe = false
 
     var body: some View {
         if layout.isShown {
@@ -138,10 +145,58 @@ struct SpeakerStrip: View {
                             }
                         }
                     }
+                    if layout.asksForMe {
+                        Button { choosingMe = true } label: {
+                            HStack(spacing: 5) {
+                                SpeakerMark(number: nil, isMe: true)
+                                Text("我是哪个？").font(Typo.caption).foregroundStyle(Ink.secondary).lineLimit(1)
+                            }
+                            .padding(.horizontal, Space.s2)
+                            .frame(height: 24)
+                            .overlay(Capsule().strokeBorder(Ink.hairline, style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .help("还没认出你的声音：点一下，选出哪个是你")
+                        .popover(isPresented: $choosingMe, arrowEdge: .bottom) {
+                            VStack(alignment: .leading, spacing: Space.s3) {
+                                Text("哪个是你？").font(Typo.label)
+                                Text("选了之后，这个声音的每一句都记成“我”。也可以在某一句上点右键，只改那一句。")
+                                    .font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+                                FlowLayout(spacing: Space.s2, lineSpacing: Space.s2) {
+                                    ForEach(layout.people.filter { !$0.isMe }) { person in
+                                        Button("\(layout.label(person.number)) · \(person.lines) 句") { mark(person.voice, true); choosingMe = false }
+                                            .buttonStyle(ChipButtonStyle())
+                                    }
+                                }
+                            }
+                            .padding(Space.s4)
+                            .frame(width: 300)
+                        }
+                    }
                 }
                 Spacer(minLength: 0)
-                Text("按声音区分").font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize()
+                Text("点名字改名、合并或标成我").font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize()
             }
+        }
+    }
+}
+
+/// "这句是谁说的": the people of the meeting, the user, or someone new. For a context menu.
+struct LineSpeakerMenu: View {
+    let layout: SpeakerLayout?
+    let assign: (LineSpeaker) -> Void
+
+    var body: some View {
+        Menu("这句是谁说的") {
+            Button("我") { assign(.me) }
+            if let layout {
+                ForEach(layout.people.filter { !$0.isMe }) { person in
+                    Button(layout.label(person.number)) { assign(.voice(person.voice)) }
+                }
+            }
+            Divider()
+            Button("另一个人") { assign(.someoneNew) }
         }
     }
 }

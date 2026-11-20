@@ -19,6 +19,8 @@ struct PrepareView: View {
                 VStack(alignment: .leading, spacing: Space.s10) {
                     PrepareComposer()
                         .appear(appeared, order: 0)
+                    PrepareSection(title: "这场用什么", note: "不用的可以关掉", trailing: { FeatureReset() }) { FeaturePicker() }
+                        .appear(appeared, order: 1)
                     if state.draftContinuesSeries {
                         PrepareSection(title: "接着上一场") { SeriesCarryCard() }
                             .transition(.opacity.combined(with: .offset(y: -6)))
@@ -201,7 +203,7 @@ private struct TypePicker: View {
             }
             VStack(alignment: .leading, spacing: Space.s2) {
                 Text(verbatim: theme.promise)
-                    .font(.system(size: 17, weight: .medium, design: .serif))
+                    .font(.zoomed(size: 17, weight: .medium, design: .serif))
                     .foregroundStyle(Ink.ink)
                 Text(verbatim: summary(draft))
                     .font(Typo.caption).foregroundStyle(Ink.secondary)
@@ -231,7 +233,7 @@ private struct TypePicker: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 if mode == .custom {
-                    Image(systemName: "plus").font(.system(size: 10, weight: .medium))
+                    Image(systemName: "plus").font(.zoomed(size: 10, weight: .medium))
                     Text("自定义…")
                 } else {
                     Text(verbatim: mode.displayName)
@@ -275,6 +277,71 @@ private struct SceneChipStyle: ButtonStyle {
                 .onHover { hovering = $0 }
                 .animation(Motion.hover, value: hovering)
                 .animation(Motion.snappy, value: configuration.isPressed)
+        }
+    }
+}
+
+// MARK: - What the meeting uses
+
+/// 这场用什么: each thing the app can do in a meeting, with a line saying what it is
+/// for, switched on or off before the meeting starts. The choices stay with the series.
+private struct FeaturePicker: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        let engine = state.answerEngineReady
+        VStack(spacing: 0) {
+            row("waveform", "实时转写", "把双方说的话写成文字。回答、纪要和搜索都靠它，一直开着。", isOn: nil)
+            line
+            row("sparkles", "自动回答", engine ? "听到对方提问，参考回答出现在摄像头下方的提词岛和右侧。" : "需要先连接回答服务（开始前检查里可以连接）。",
+                isOn: binding(\.answers), enabled: engine)
+            line
+            row("list.bullet.rectangle", "实时纪要", engine ? "边开边整理议题、决定和待办，大约每 45 秒更新一次；结束后仍会整理完整纪要。" : "需要先连接回答服务。",
+                isOn: binding(\.liveNotes), enabled: engine)
+            line
+            row("character.bubble", "同声传译", "听到对方说英文时自动出现：每句话下面和提词岛上给出中文。在本机翻译，不联网。",
+                isOn: binding(\.translation))
+            line
+            row("person.2.wave.2", "区分说话人", state.speakers.modelAvailable ? "按声音分出每个人，可以起名字；纪要里按人来写。认错了随时能改。" : "这个版本没有附带声纹模型。",
+                isOn: binding(\.speakers), enabled: state.speakers.modelAvailable && state.speakers.enabled)
+        }
+        .padding(.horizontal, Space.s2)
+        .accessibilityIdentifier("prepare.features")
+    }
+
+    private var line: some View { Rectangle().fill(Ink.hairline).frame(height: 0.5).padding(.leading, 36) }
+
+    private func binding(_ path: WritableKeyPath<MeetingFeatures, Bool>) -> Binding<Bool> {
+        Binding(get: { state.meetingFeatures[keyPath: path] },
+                set: { var next = state.meetingFeatures; next[keyPath: path] = $0; state.meetingFeatures = next })
+    }
+
+    private func row(_ symbol: String, _ title: LocalizedStringKey, _ detail: LocalizedStringKey, isOn: Binding<Bool>?, enabled: Bool = true) -> some View {
+        HStack(alignment: .center, spacing: Space.s3) {
+            Image(systemName: symbol).font(.zoomed(size: 14, weight: .medium)).foregroundStyle(Ink.secondary).frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(Typo.label).foregroundStyle(enabled ? Ink.ink : Ink.secondary)
+                Text(detail).font(Typo.caption).foregroundStyle(Ink.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: Space.s3)
+            if let isOn {
+                Toggle("", isOn: Binding(get: { enabled && isOn.wrappedValue }, set: { isOn.wrappedValue = $0 }))
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small).disabled(!enabled)
+                    .accessibilityLabel(Text(title))
+            } else {
+                Text("始终开启").font(Typo.caption).foregroundStyle(Ink.tertiary)
+            }
+        }
+        .padding(.vertical, Space.s3)
+    }
+}
+
+/// Back to what the scene starts with, shown once something was changed.
+private struct FeatureReset: View {
+    @Environment(AppState.self) private var state
+    var body: some View {
+        if state.meetingFeatures != state.standardMeetingFeatures {
+            Button("恢复这个场景的默认") { state.resetMeetingFeatures() }.buttonStyle(.tapText).font(Typo.caption)
         }
     }
 }
@@ -423,7 +490,7 @@ private struct SeriesBriefingPanel: View {
                                 Spacer(minLength: 0)
                                 Text(meta.startedAt.formatted(date: .abbreviated, time: .omitted))
                                     .font(Typo.caption).foregroundStyle(Ink.secondary)
-                                Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .medium))
+                                Image(systemName: "arrow.up.right").font(.zoomed(size: 9, weight: .medium))
                                     .foregroundStyle(Ink.tertiary)
                             }
                             .font(Typo.caption)
@@ -682,7 +749,7 @@ private struct SeriesBriefingPanel: View {
 
     private func sourceButton(_ sessionID: UUID) -> some View {
         Button("来源") { onOpenSession(sessionID) }
-            .font(.system(size: 10, weight: .medium))
+            .font(.zoomed(size: 10, weight: .medium))
             .buttonStyle(.plain)
             .foregroundStyle(Ink.secondary).underline()
             .help("打开产生这条已确认内容的会议")
@@ -811,7 +878,7 @@ private struct MaterialsBlock: View {
         let hint = (state.meetingDraft?.mode == .custom ? state.meetingDraft?.customBaseMode : state.meetingDraft?.mode)?.preparationHint ?? ""
         return VStack(spacing: Space.s1) {
             Image(systemName: "tray.and.arrow.down")
-                .font(.system(size: 18, weight: .light))
+                .font(.zoomed(size: 18, weight: .light))
                 .foregroundStyle(dropTargeted ? Ink.ink : Ink.tertiary)
                 .padding(.bottom, Space.s1)
             Text("把文件拖到这里，或点右上角“添加”").font(Typo.body).foregroundStyle(Ink.secondary)
@@ -859,7 +926,7 @@ private struct FileRow: View {
         VStack(alignment: .leading, spacing: Space.s2) {
           HStack(spacing: Space.s3) {
             Text(verbatim: format)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.zoomed(size: 9, weight: .semibold))
                 .foregroundStyle(Ink.secondary)
                 .frame(width: 32, height: 32)
                 .background(Ink.sunken, in: RoundedRectangle(cornerRadius: Space.radiusSmall, style: .continuous))
@@ -962,7 +1029,7 @@ private struct MaterialsInsight: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
             HStack(spacing: Space.s1) {
-                Image(systemName: "sparkle").font(.system(size: 11, weight: .medium))
+                Image(systemName: "sparkle").font(.zoomed(size: 11, weight: .medium))
                 Text("讨论准备 · AI 可选")
             }
             .overline(tint)

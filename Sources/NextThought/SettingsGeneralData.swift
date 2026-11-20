@@ -219,13 +219,13 @@ struct DataMaintenanceAdvanced: View {
                     ForEach(state.environmentSetupSteps) { step in
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: step.status.symbol)
-                                .font(.system(size: 12))
+                                .font(.zoomed(size: 12))
                                 .foregroundStyle(stepColor(step.status))
                                 .frame(width: 16)
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(step.title).font(.system(size: 12.5, weight: .medium))
+                                Text(step.title).font(.zoomed(size: 12.5, weight: .medium))
                                 if !step.detail.isEmpty {
-                                    Text(step.detail).font(.system(size: 11)).foregroundStyle(.secondary)
+                                    Text(step.detail).font(.zoomed(size: 11)).foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
