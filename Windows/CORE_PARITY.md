@@ -197,11 +197,11 @@ python Windows/scripts/core_usage.py
 | ProductArchiveUXTests.swift | 8 | 0 |
 | QuestionCorpusExtended.swift | 0 | 0 |
 | QuestionCorpusHeldOut.swift | 0 | 0 |
-| QuestionCorpusReportTests.swift | 5 | 0 |
-| QuestionDetectorTests.swift | 8 | 0 |
-| QuestionIntentTests.swift | 8 | 1 |
-| QuestionTurnTests.swift | 8 | 0 |
-| RealtimeRegressionTests.swift | 9 | 0 |
+| QuestionCorpusReportTests.swift | 5 | 5 |
+| QuestionDetectorTests.swift | 8 | 8 |
+| QuestionIntentTests.swift | 8 | 8 |
+| QuestionTurnTests.swift | 8 | 8 |
+| RealtimeRegressionTests.swift | 9 | 9 |
 | RealtimeSetupReadinessTests.swift | 8 | 0 |
 | SceneAndGazeTests.swift | 20 | 1 |
 | ScreenDeltaTests.swift | 1 | 1 |
