@@ -129,6 +129,9 @@ public sealed record NotesTemplate(string Id, string Name, IReadOnlyList<NotesSe
 {
     public bool IsBuiltIn => NotesTemplateKinds.Parse(Id).Raw() == Id;
 
+    /// <summary>B11: a user-owned copy with a new id (NotesTemplate.customCopy).</summary>
+    public NotesTemplate CustomCopy(string name) => this with { Id = Guid.NewGuid().ToString("D"), Name = name };
+
     /// <summary>The built-in templates of 02-scenarios-and-flows.md, in Chinese or English.</summary>
     public static NotesTemplate BuiltIn(NotesTemplateKind kind, bool english = false)
     {
@@ -330,6 +333,70 @@ public sealed record StructuredNotesDoc(
     string? TranscriptSourceRevision = null)
 {
     public bool HasContent => Sections.Any(section => section.Items.Count > 0);
+}
+
+/// <summary>B11: computed views over StructuredNotesDoc (StructuredNotes.swift:350-380).</summary>
+public static class StructuredNotesModel
+{
+    public static IReadOnlyList<TranscriptCorrection> ActiveCorrections(this StructuredNotesDoc doc) =>
+        (doc.Corrections ?? []).Where(correction => !correction.Reverted).ToList();
+
+    public static int ActionItemCount(this StructuredNotesDoc doc) =>
+        doc.Sections.Where(section => section.Kind == NotesSectionKind.Actions).Sum(section => section.Items.Count);
+
+    public static int ImproveCount(this StructuredNotesDoc doc) =>
+        doc.Sections.Where(section => section.Kind == NotesSectionKind.Questions)
+            .Sum(section => section.Items.Count(Improves));
+
+    public static int QuestionCount(this StructuredNotesDoc doc) =>
+        doc.Sections.Where(section => section.Kind == NotesSectionKind.Questions).Sum(section => section.Items.Count);
+
+    public static IReadOnlyList<BankEntry> BankEntries(this StructuredNotesDoc doc) =>
+        doc.Sections.Where(section => section.Kind == NotesSectionKind.Questions)
+            .SelectMany(section => section.Items)
+            .Where(item => Improves(item) && item.Better is { Length: > 0 })
+            .Select(item => new BankEntry { Question = item.Text, Answer = item.Better! })
+            .ToList();
+
+    public static IReadOnlyList<string> Lessons(this StructuredNotesDoc doc, NotesTemplate template)
+    {
+        var result = new List<string>();
+        foreach (var spec in template.Sections.Where(spec => spec.Carry == NotesCarry.Lesson))
+        {
+            var section = doc.Sections.FirstOrDefault(section => section.Id == spec.Id);
+            if (section is null) continue;
+            foreach (var item in section.Items)
+            {
+                var text = item.Text;
+                if (item.Owner is { Length: > 0 } owner) text += " \u00B7 " + owner;
+                if (item.Due is { Length: > 0 } due) text += " \u00B7 " + due;
+                if (spec.CarryPrefix is { Length: > 0 } prefix) text = "[" + prefix + "] " + text;
+                result.Add(text);
+            }
+        }
+        return result;
+    }
+
+    public static StructuredNotesDoc Named(this StructuredNotesDoc doc, IReadOnlyDictionary<int, string> names)
+    {
+        if (names.Count == 0) return doc;
+        var sections = doc.Sections.Select(section => section with
+        {
+            Items = section.Items.Select(item => item with
+            {
+                Text = SpeakerLabels.Naming(item.Text, names),
+                Owner = item.Owner is { } owner ? SpeakerLabels.Naming(owner, names) : null,
+                Answer = item.Answer is { } answer ? SpeakerLabels.Naming(answer, names) : null,
+                Better = item.Better is { } better ? SpeakerLabels.Naming(better, names) : null
+            }).ToList()
+        }).ToList();
+        return doc with { Title = SpeakerLabels.Naming(doc.Title, names), Sections = sections };
+    }
+
+    private static bool Improves(NotesItem item) =>
+        item.Verdict is { Length: > 0 } verdict
+        && (verdict.ToLowerInvariant().StartsWith("improve", StringComparison.Ordinal)
+            || verdict == "\u5F85\u6539\u8FDB");
 }
 
 /// <summary>Reads the model's template-driven reply ({"title": …, "sections": [{"id", "items"}]}).</summary>

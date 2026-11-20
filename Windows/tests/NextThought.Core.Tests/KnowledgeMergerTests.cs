@@ -229,7 +229,7 @@ public sealed class KnowledgeMergerTests
 
         var (lessons, bank) = NotesKnowledge.Extract(doc!, template);
         Assert.Contains("把实验和论证分开讲", lessons);
-        Assert.Contains("下一轮：下一轮可能追问缓存一致性", lessons);
+        Assert.Contains("[下一轮] 下一轮可能追问缓存一致性", lessons);
         var entry = Assert.Single(bank);
         Assert.Equal("为什么用 Redis", entry.Question);
         Assert.Equal("因为读多写少，且能接受短暂不一致", entry.Answer);

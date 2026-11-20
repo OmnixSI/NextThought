@@ -188,13 +188,16 @@ public partial class AppState
                 ? $"# {meta.Title}\n\nMeeting: {meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · Template: {template.Name}"
                 : $"# {meta.Title}\n\n会议时间：{meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 模板：{template.Name}";
             var settings = Settings.Build();
+            var answers = string.Join("\n\n", SelectedSessionAnswers.TakeLast(40)
+                .Where(answer => !string.IsNullOrWhiteSpace(answer.Answer))
+                .Select(answer => "Q\uFF1A" + Truncate(answer.Question, 300) + "\nA\uFF1A" + Truncate(answer.Answer, 600)));
             var system = NotesPrompt.OrganizeSystem(template, english, inPerson: !settings.CaptureSystem, meetingDate: meta.StartedAt);
             var chunks = NotesPrompt.Chunks(transcript);
             var reply = "";
             if (chunks.Count == 1)
             {
                 reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system,
-                    NotesPrompt.OrganizeUser(header, transcript), null, cancellation.Token, 240);
+                    NotesPrompt.OrganizeUser(header, transcript, answers), null, cancellation.Token, 240);
             }
             else
             {
@@ -254,6 +257,9 @@ public partial class AppState
             }
         }
     }
+
+    private static string Truncate(string value, int limit) =>
+        value.Length <= limit ? value : value[..limit];
 
     private bool CanTemplate() => IsIdle && !Answering && CurrentSession is not null && currentLines.Count > 0;
 }

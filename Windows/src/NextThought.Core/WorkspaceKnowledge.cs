@@ -749,28 +749,9 @@ public static class NotesKnowledge
 {
     public static (IReadOnlyList<string> Lessons, IReadOnlyList<QuestionBankEntry> Bank) Extract(StructuredNotesDoc doc, NotesTemplate template)
     {
-        var lessons = new List<string>();
-        var bank = new List<QuestionBankEntry>();
-        foreach (var section in doc.Sections)
-        {
-            var spec = template.Sections.FirstOrDefault(item => item.Id == section.Id);
-            if (spec is null) continue;
-            foreach (var item in section.Items)
-            {
-                var text = item.Text.Trim();
-                if (text.Length == 0) continue;
-                if (spec.Carry == NotesCarry.Lesson)
-                {
-                    lessons.Add(spec.CarryPrefix is { Length: > 0 } prefix ? $"{prefix}：{text}" : text);
-                }
-                else if (spec.Carry == NotesCarry.Bank || section.Kind == NotesSectionKind.Questions)
-                {
-                    var answer = FirstNonEmpty(item.Better, item.Answer);
-                    if (answer is null) continue;
-                    bank.Add(new QuestionBankEntry(text, answer));
-                }
-            }
-        }
+        // B11: the notes model is the single source (StructuredNotes.lessons/bankEntries).
+        var lessons = doc.Lessons(template);
+        var bank = doc.BankEntries().Select(entry => new QuestionBankEntry(entry.Question, entry.Answer)).ToList();
         return (lessons, bank);
     }
 
