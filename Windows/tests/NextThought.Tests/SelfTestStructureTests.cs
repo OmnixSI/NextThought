@@ -95,6 +95,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ArchiveScreenshotsArePreviewed()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("SelectedSessionScreenshots", xaml);
+        var archive = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
+        Assert.Contains("LoadSessionScreenshots", archive);
+    }
+
     [Fact]
     public void ArchiveScreenshotsAreShownInHistory()
     {

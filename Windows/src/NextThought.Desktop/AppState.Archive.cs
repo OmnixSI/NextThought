@@ -87,6 +87,22 @@ public partial class AppState
     }
 
 
+
+    public System.Collections.ObjectModel.ObservableCollection<Avalonia.Media.Imaging.Bitmap> SelectedSessionScreenshots { get; } = [];
+
+    private void LoadSessionScreenshots(Guid id)
+    {
+        foreach (var bitmap in SelectedSessionScreenshots) bitmap.Dispose();
+        SelectedSessionScreenshots.Clear();
+        try
+        {
+            foreach (var path in Sessions.Screenshots(id))
+                SelectedSessionScreenshots.Add(new Avalonia.Media.Imaging.Bitmap(path));
+        }
+        catch { }
+        SelectedSessionScreenshotCount = SelectedSessionScreenshots.Count;
+    }
+
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private int selectedSessionScreenshotCount;
 
     public async Task ArchiveScreenshotAsync(string path)
@@ -95,7 +111,7 @@ public partial class AppState
         try
         {
             await Sessions.SaveScreenshotAsync(meta.Id, path);
-            SelectedSessionScreenshotCount = Sessions.Screenshots(meta.Id).Count;
+            LoadSessionScreenshots(meta.Id);
         }
         catch { }
     }

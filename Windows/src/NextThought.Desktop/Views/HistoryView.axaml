@@ -83,6 +83,18 @@
         <TextBlock Text="{Binding CurrentSession.LocalStartedAt}" Classes="caption" />
         <TextBlock Text="{Binding CurrentSession.AnswerCount}" Classes="caption" />
         <TextBlock Text="{Binding SelectedSessionScreenshotCount}" Classes="caption" />
+        <ItemsControl ItemsSource="{Binding SelectedSessionScreenshots}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Image Source="{Binding}" Width="120" Height="76" Stretch="UniformToFill" Margin="{DynamicResource D4Margin_0_0_6_6}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         <TextBlock Text="回答列表" Classes="overline" />
         <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}">
           <ItemsControl.ItemTemplate>
