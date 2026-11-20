@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform;
 using NextThought.Core;
 using Avalonia.Media;
+using NextThought.Platform;
 
 namespace NextThought.Desktop.Views;
 
@@ -101,8 +102,8 @@ public partial class TeleprompterWindow : Window
     private void ApplyNonActivatingStyle()
     {
         if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
-        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64() | WsExNoActivate | WsExToolWindow;
-        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+        var style = Win32Native.GetWindowLongPtr(handle, GwlExstyle).ToInt64() | WsExNoActivate | WsExToolWindow;
+        Win32Native.SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
     }
 
     /// <summary>C17: hide-all must also take the click-through strip.</summary>
@@ -259,10 +260,10 @@ public partial class TeleprompterWindow : Window
     {
         through = enabled;
         if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
-        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64();
+        var style = Win32Native.GetWindowLongPtr(handle, GwlExstyle).ToInt64();
         style |= WsExLayered;
         style = enabled ? style | WsExTransparent : style & ~WsExTransparent;
-        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+        Win32Native.SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
         UpdateClickHandle(enabled);
     }
 
@@ -305,9 +306,4 @@ public partial class TeleprompterWindow : Window
 
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 
-    [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-    private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-    private static extern IntPtr SetWindowLongPtr(IntPtr window, int index, IntPtr value);
 }

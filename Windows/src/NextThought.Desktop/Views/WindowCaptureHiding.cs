@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using NextThought.Platform;
 
 namespace NextThought.Desktop.Views;
 
@@ -19,24 +20,18 @@ public static class WindowCaptureHiding
     /// <summary>C18: the setting all windows read when they open.</summary>
     public static bool PrivacyEnabled { get; set; } = true;
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool GetWindowDisplayAffinity(IntPtr hwnd, out uint affinity);
-
-    /// <summary>Excludes the window from capture; true when the system accepted it.</summary>
+/// <summary>Excludes the window from capture; true when the system accepted it.</summary>
     public static bool Hide(Window window)
     {
         if (window.TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return false;
-        return SetWindowDisplayAffinity(handle, WdaExcludeFromCapture);
+        return Win32Native.SetWindowDisplayAffinity(handle, WdaExcludeFromCapture);
     }
 
     /// <summary>Reads the current affinity, for the self-check and diagnostics.</summary>
     public static uint Affinity(Window window)
     {
         if (window.TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return 0;
-        return GetWindowDisplayAffinity(handle, out var affinity) ? affinity : 0;
+        return Win32Native.GetWindowDisplayAffinity(handle, out var affinity) ? affinity : 0;
     }
 
     public static bool IsHidden(Window window) => Affinity(window) == WdaExcludeFromCapture;
@@ -45,7 +40,7 @@ public static class WindowCaptureHiding
     public static bool Apply(Window window, bool enabled)
     {
         if (window.TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return false;
-        return SetWindowDisplayAffinity(handle, enabled ? WdaExcludeFromCapture : WdaNone);
+        return Win32Native.SetWindowDisplayAffinity(handle, enabled ? WdaExcludeFromCapture : WdaNone);
     }
 
     private static DispatcherTimer? tracker;

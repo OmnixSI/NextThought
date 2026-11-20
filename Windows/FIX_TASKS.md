@@ -154,7 +154,7 @@ Nov 20, 2026 · @Homing
 | G10 | 未做 | — | 未开始 |
 | H1 | 已实现、未验证 | MainWindow 258 行、56 检查各一文件、旧参数删除、--self-test 实跑通过 | 待逐元素对照或实机验证 |
 | H2 | 未做 | AppState 202 行、15 个 Mac 扩展文件已有；179 个 Swift 方法名对 C# 完全匹配 0 | 方法重命名未开始 |
-| H3 | 未做 | — | 系统调用未集中到 Platform |
+| H3 | 已实现、未验证 | 新增 `Platform/Win32Native.cs` 集中所有 P/Invoke（指针/窗口样式/防截屏/热键消息泵/GDI 截图/系统动画开关）及结构体；Desktop 的 `GlobalHotkeys`、`Motion`、`ScreenCapture`、`WindowCaptureHiding`、提词岛/字幕条/提词器/小条全部改为调用 `Win32Native`，删除本地 `DllImport`；新增源码扫描测试断言 Desktop 无 `DllImport`/`LibraryImport` | `Platform.Stub` 替身尚未建；截图/热键/非激活样式需实机回归 |
 | H4 | 未做 | — | 未使用 Core 文件未归位 |
 | H5 | 未做 | — | 等待是否删除旧工程答复 |
 | H6 | 未做 | — | 未开始 |

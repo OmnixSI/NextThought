@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using NextThought.Platform;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -23,27 +24,27 @@ public static class ScreenCapture
 
     public static Capture VirtualScreen()
     {
-        var x = GetSystemMetrics(SmXVirtualScreen);
-        var y = GetSystemMetrics(SmYVirtualScreen);
-        var width = Math.Max(1, GetSystemMetrics(SmCxVirtualScreen));
-        var height = Math.Max(1, GetSystemMetrics(SmCyVirtualScreen));
+        var x = Win32Native.GetSystemMetrics(SmXVirtualScreen);
+        var y = Win32Native.GetSystemMetrics(SmYVirtualScreen);
+        var width = Math.Max(1, Win32Native.GetSystemMetrics(SmCxVirtualScreen));
+        var height = Math.Max(1, Win32Native.GetSystemMetrics(SmCyVirtualScreen));
 
-        var screenDc = GetDC(IntPtr.Zero);
-        var memoryDc = CreateCompatibleDC(screenDc);
-        var info = new BitmapInfo
+        var screenDc = Win32Native.GetDC(IntPtr.Zero);
+        var memoryDc = Win32Native.CreateCompatibleDC(screenDc);
+        var info = new Win32Native.BitmapInfo
         {
-            biSize = Marshal.SizeOf<BitmapInfo>(),
+            biSize = Marshal.SizeOf<Win32Native.BitmapInfo>(),
             biWidth = width,
             biHeight = -height, // top-down rows
             biPlanes = 1,
             biBitCount = 32,
             biCompression = 0
         };
-        var dib = CreateDIBSection(memoryDc, ref info, 0, out var bits, IntPtr.Zero, 0);
-        var previous = SelectObject(memoryDc, dib);
+        var dib = Win32Native.CreateDIBSection(memoryDc, ref info, 0, out var bits, IntPtr.Zero, 0);
+        var previous = Win32Native.SelectObject(memoryDc, dib);
         try
         {
-            BitBlt(memoryDc, 0, 0, width, height, screenDc, x, y, Srccopy | CaptureBlt);
+            Win32Native.BitBlt(memoryDc, 0, 0, width, height, screenDc, x, y, Srccopy | CaptureBlt);
             var stride = width * 4;
             var bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
             using (var locked = bitmap.Lock())
@@ -52,29 +53,29 @@ public static class ScreenCapture
                 {
                     var source = IntPtr.Add(bits, row * stride);
                     var destination = IntPtr.Add(locked.Address, row * locked.RowBytes);
-                    CopyMemory(destination, source, (nuint)stride);
+                    Win32Native.CopyMemory(destination, source, (nuint)stride);
                 }
             }
             return new Capture(x, y, width, height, bitmap);
         }
         finally
         {
-            SelectObject(memoryDc, previous);
-            DeleteObject(dib);
-            DeleteDC(memoryDc);
-            ReleaseDC(IntPtr.Zero, screenDc);
+            Win32Native.SelectObject(memoryDc, previous);
+            Win32Native.DeleteObject(dib);
+            Win32Native.DeleteDC(memoryDc);
+            Win32Native.ReleaseDC(IntPtr.Zero, screenDc);
         }
     }
 
     /// <summary>The foreground window's rectangle in virtual-screen coordinates (window capture).</summary>
     public static PixelRect ForegroundWindowBounds()
     {
-        var window = GetForegroundWindow();
-        if (window == IntPtr.Zero || !GetWindowRect(window, out var rect)) return default;
-        var left = Math.Max(rect.Left, GetSystemMetrics(SmXVirtualScreen));
-        var top = Math.Max(rect.Top, GetSystemMetrics(SmYVirtualScreen));
-        var right = Math.Min(rect.Right, left + Math.Max(1, GetSystemMetrics(SmCxVirtualScreen)));
-        var bottom = Math.Min(rect.Bottom, top + Math.Max(1, GetSystemMetrics(SmCyVirtualScreen)));
+        var window = Win32Native.GetForegroundWindow();
+        if (window == IntPtr.Zero || !Win32Native.GetWindowRect(window, out var rect)) return default;
+        var left = Math.Max(rect.Left, Win32Native.GetSystemMetrics(SmXVirtualScreen));
+        var top = Math.Max(rect.Top, Win32Native.GetSystemMetrics(SmYVirtualScreen));
+        var right = Math.Min(rect.Right, left + Math.Max(1, Win32Native.GetSystemMetrics(SmCxVirtualScreen)));
+        var bottom = Math.Min(rect.Bottom, top + Math.Max(1, Win32Native.GetSystemMetrics(SmCyVirtualScreen)));
         return new PixelRect(left, top, Math.Max(1, right - left), Math.Max(1, bottom - top));
     }
 
@@ -108,44 +109,18 @@ public static class ScreenCapture
         return cropped;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct BitmapInfo
-    {
-        public int biSize;
-        public int biWidth;
-        public int biHeight;
-        public short biPlanes;
-        public short biBitCount;
-        public int biCompression;
-        public int biSizeImage;
-        public int biXPelsPerMeter;
-        public int biYPelsPerMeter;
-        public int biClrUsed;
-        public int biClrImportant;
-    }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct WindowRect { public int Left, Top, Right, Bottom; }
 
-    [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out WindowRect rect);
-    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
-    [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr window);
-    [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr window, IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern bool BitBlt(IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint raster);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
-    [DllImport("gdi32.dll")] private static extern IntPtr SelectObject(IntPtr dc, IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr obj);
-    [DllImport("gdi32.dll")] private static extern IntPtr CreateDIBSection(IntPtr dc, ref BitmapInfo info, uint usage, out IntPtr bits, IntPtr section, uint offset);
-    [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")] private static extern void CopyMemory(IntPtr destination, IntPtr source, nuint length);
 
-    private const uint WdaExcludeFromCapture = 0x00000011;
 
-    [DllImport("user32.dll")]
-    private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
 
-    /// <summary>E9/C18: keep NextThought windows out of the screen-read frame.</summary>
+
+
+
+
+
+private const uint WdaExcludeFromCapture = 0x00000011;
+/// <summary>E9/C18: keep NextThought windows out of the screen-read frame.</summary>
     public static void ExcludeOwnWindowsFromCapture()
     {
         if (Avalonia.Application.Current?.ApplicationLifetime is not Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop) return;
@@ -154,7 +129,7 @@ public static class ScreenCapture
             try
             {
                 var handle = window.TryGetPlatformHandle()?.Handle ?? IntPtr.Zero;
-                if (handle != IntPtr.Zero) SetWindowDisplayAffinity(handle, WdaExcludeFromCapture);
+                if (handle != IntPtr.Zero) Win32Native.SetWindowDisplayAffinity(handle, WdaExcludeFromCapture);
             }
             catch { }
         }

@@ -42,31 +42,31 @@ internal sealed class GlobalHotkeys : IDisposable
 
     private void Pump()
     {
-        threadId = GetCurrentThreadId();
+        threadId = Win32Native.GetCurrentThreadId();
         // A thread message queue must exist before RegisterHotKey can attach to it.
-        PeekMessage(out _, IntPtr.Zero, 0, 0, 0);
+        Win32Native.PeekMessage(out _, IntPtr.Zero, 0, 0, 0);
         for (var index = 0; index < bindings.Count; index++)
         {
             var binding = bindings[index];
             var id = index + 1;
-            var ok = RegisterHotKey(IntPtr.Zero, id, binding.Modifiers | ModNoRepeat, binding.VirtualKey);
+            var ok = Win32Native.RegisterHotKey(IntPtr.Zero, id, binding.Modifiers | ModNoRepeat, binding.VirtualKey);
             Log($"register {binding.Name} vk=0x{binding.VirtualKey:X2} ok={ok} err={(ok ? 0 : Marshal.GetLastWin32Error())}");
             if (!ok) unregistered.Add(binding.Name);
         }
         ready.Set();
         while (running)
         {
-            var result = GetMessage(out var message, IntPtr.Zero, 0, 0);
+            var result = Win32Native.GetMessage(out var message, IntPtr.Zero, 0, 0);
             if (result == 0 || result == -1) break;
             if (message.message == WmHotkey)
             {
                 var index = (int)message.wParam - 1;
                 if (index >= 0 && index < bindings.Count) Dispatcher.UIThread.Post(bindings[index].Action);
             }
-            TranslateMessage(ref message);
-            DispatchMessage(ref message);
+            Win32Native.TranslateMessage(ref message);
+            Win32Native.DispatchMessage(ref message);
         }
-        for (var index = 0; index < bindings.Count; index++) UnregisterHotKey(IntPtr.Zero, index + 1);
+        for (var index = 0; index < bindings.Count; index++) Win32Native.UnregisterHotKey(IntPtr.Zero, index + 1);
     }
 
     internal static void Log(string message)
@@ -88,29 +88,15 @@ internal sealed class GlobalHotkeys : IDisposable
     public void Dispose()
     {
         running = false;
-        if (threadId != 0) PostThreadMessage(threadId, WmQuit, IntPtr.Zero, IntPtr.Zero);
+        if (threadId != 0) Win32Native.PostThreadMessage(threadId, WmQuit, IntPtr.Zero, IntPtr.Zero);
         if (thread.IsAlive) thread.Join(TimeSpan.FromSeconds(2));
         ready.Dispose();
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Msg
-    {
-        public IntPtr hwnd;
-        public uint message;
-        public IntPtr wParam;
-        public IntPtr lParam;
-        public uint time;
-        public int ptX;
-        public int ptY;
-    }
 
-    [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
-    [DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
-    [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr window, int id);
-    [DllImport("user32.dll")] private static extern int GetMessage(out Msg message, IntPtr window, uint min, uint max);
-    [DllImport("user32.dll")] private static extern bool PeekMessage(out Msg message, IntPtr window, uint min, uint max, uint remove);
-    [DllImport("user32.dll")] private static extern bool TranslateMessage(ref Msg message);
-    [DllImport("user32.dll")] private static extern IntPtr DispatchMessage(ref Msg message);
-    [DllImport("user32.dll")] private static extern bool PostThreadMessage(uint threadId, uint message, IntPtr wParam, IntPtr lParam);
+
+
+
+
+
 }

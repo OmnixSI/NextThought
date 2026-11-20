@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using NextThought.Platform;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Styling;
@@ -15,16 +15,11 @@ public static class Motion
     public enum Kind { Hover, Expand, Phase, Snappy, Morph }
 
     private const uint SpiGetClientAreaAnimation = 0x1042;
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SystemParametersInfo(uint action, uint param, out int value, uint winIni);
-
-    public static bool Reduce
+public static bool Reduce
     {
         get
         {
-            try { return !SystemParametersInfo(SpiGetClientAreaAnimation, 0, out var enabled, 0) || enabled == 0; }
+            try { return !Win32Native.SystemParametersInfo(SpiGetClientAreaAnimation, 0, out var enabled, 0) || enabled == 0; }
             catch { return false; }
         }
     }

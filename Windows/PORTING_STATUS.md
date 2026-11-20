@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · H3
+改动：新增 `Win32Native` 集中 P/Invoke 与结构体；Desktop 热键、动画开关、截图、防截屏、浮窗样式全部改经 Platform；新增源码扫描测试确保 Desktop 无 DllImport/LibraryImport。
+测试：Core **1526/1526**，NextThought.Tests **268/268**。
+状态：H3「已实现、未验证」；Platform.Stub 替身与实机回归待做。
+
 ## 2026-11-20 · 0.5.145 · F21/H7
 改动：Codex 客户端版本号取程序实际版本；模型解压用系统目录下 tar.exe 完整路径；新增 `Windows/verify.ps1`（锁定还原→构建→两套测试→A15 check→D1 截图，失败即停）。
 测试：`verify.ps1 -SkipScreenshots` 运行通过：Core **1526/1526**，NextThought.Tests **267/267**，A15 夹具缺失明确 SKIP。

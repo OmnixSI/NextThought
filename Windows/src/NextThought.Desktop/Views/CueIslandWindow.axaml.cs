@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
+using NextThought.Platform;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
 
@@ -123,12 +124,7 @@ public partial class CueIslandWindow : Window
     public bool Collapsed { get; private set; } = true;
     public bool ClickThrough { get; private set; } = true;
 
-    [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X; public int Y; }
-    [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left; public int Top; public int Right; public int Bottom; }
-    [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out NativeRect rect);
-
-    /// <summary>C2: poll the pointer every 80 ms; only the area over the island takes clicks.</summary>
+/// <summary>C2: poll the pointer every 80 ms; only the area over the island takes clicks.</summary>
     private void StartTracking()
     {
         if (tracker is not null) return;
@@ -195,7 +191,7 @@ public partial class CueIslandWindow : Window
     {
         if (!IsVisible || TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
         var expanded = Hovering || state.Settings.CueAlwaysOpen || checkExpanded;
-        if (!GetCursorPos(out var point) || !GetWindowRect(handle, out var rect))
+        if (!Win32Native.GetCursorPos(out var point) || !Win32Native.GetWindowRect(handle, out var rect))
         {
             ApplyExpanded(expanded, checkExpanded);
             return;
@@ -248,9 +244,9 @@ public partial class CueIslandWindow : Window
     {
         ClickThrough = enabled;
         if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
-        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64();
+        var style = Win32Native.GetWindowLongPtr(handle, GwlExstyle).ToInt64();
         style = enabled ? style | WsExTransparent : style & ~WsExTransparent;
-        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+        Win32Native.SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
     }
 
     private const long WsExNoActivate = 0x08000000L;
@@ -260,24 +256,18 @@ public partial class CueIslandWindow : Window
     private void ApplyNonActivatingStyle()
     {
         if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
-        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64();
+        var style = Win32Native.GetWindowLongPtr(handle, GwlExstyle).ToInt64();
         style |= WsExNoActivate | WsExToolWindow;
-        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+        Win32Native.SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
     }
 
     /// <summary>QA: reads the current extended style for the self-check.</summary>
     public long ExtendedStyle => TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero
-        ? GetWindowLongPtr(handle, GwlExstyle).ToInt64() : 0;
+        ? Win32Native.GetWindowLongPtr(handle, GwlExstyle).ToInt64() : 0;
 
     public bool IsNonActivating => (ExtendedStyle & WsExNoActivate) != 0;
 
-    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-    private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
-
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-    private static extern IntPtr SetWindowLongPtr(IntPtr window, int index, IntPtr value);
-
-    private void ApplyCueWidth()
+private void ApplyCueWidth()
     {
         Width = state.Settings.SelectedCueWidth?.Value switch
         {
