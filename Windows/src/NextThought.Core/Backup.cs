@@ -38,7 +38,7 @@ public sealed record BackupManifest
     }
 }
 
-public static class BackupMerge
+public static partial class BackupMerge
 {
     public sealed record TemplateResult(IReadOnlyList<NotesTemplate> Templates, int Added, int Replaced, int Kept);
 
@@ -109,17 +109,31 @@ public static class BackupMerge
             var current = merged[index];
             var primary = Touched(item) > Touched(current) ? item : current;
             var secondary = ReferenceEquals(primary, item) ? current : item;
+            var deletedSources = (primary.SourceDeletionTombstones ?? [])
+                .Concat(secondary.SourceDeletionTombstones ?? [])
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(id => id, StringComparer.Ordinal).ToList();
             var union = primary with
             {
                 SessionIds = current.SessionIds.Concat(item.SessionIds).Distinct(StringComparer.Ordinal).ToList(),
-                Lessons = UnionById(current.Lessons, item.Lessons, lesson => lesson.Id),
-                QuestionBank = UnionById(current.QuestionBank, item.QuestionBank, question => question.Id),
-                KnowledgeCandidates = UnionById(current.KnowledgeCandidates, item.KnowledgeCandidates, candidate => candidate.Id),
-                SeriesItems = UnionById(current.SeriesItems, item.SeriesItems, seriesItem => seriesItem.Id),
-                SourceDeletionTombstones = (primary.SourceDeletionTombstones ?? [])
-                    .Concat(secondary.SourceDeletionTombstones ?? []).Distinct(StringComparer.Ordinal).ToList()
+                Lessons = MergeLessons(current.Lessons, item.Lessons),
+                QuestionBank = MergeQuestionBank(current.QuestionBank, item.QuestionBank),
+                KnowledgeCandidates = MergeCandidates(current.KnowledgeCandidates, item.KnowledgeCandidates),
+                SeriesChangeCandidates = MergeSeriesCandidates(current.SeriesChangeCandidates, item.SeriesChangeCandidates),
+                SeriesItemSourceTombstones = MergeSeriesItemSourceTombstones(primary.SeriesItemSourceTombstones, secondary.SeriesItemSourceTombstones),
+                SourceDeletionTombstones = deletedSources
             };
-            union = ApplyTombstones(union);
+            union = union with
+            {
+                SeriesItems = MergeSeriesItems(current.SeriesItems, item.SeriesItems,
+                    SeriesItemSourceTombstones([primary, secondary], union.SeriesChangeCandidates))
+            };
+            if (deletedSources.Count > 0)
+            {
+                union = WorkspaceSourceIntegrity.RemoveMeetings(union, deletedSources, false, Touched(union)).Series;
+                union = union with { SessionIds = union.SessionIds.Where(id => !deletedSources.Contains(id, StringComparer.Ordinal)).ToList() };
+            }
             if (ContentEquals(union, current)) { skipped++; continue; }
             merged[index] = union;
             updated++;
