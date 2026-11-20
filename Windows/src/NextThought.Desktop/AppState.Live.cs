@@ -389,7 +389,7 @@ public partial class AppState
             {
                 SetStatus("正在检索相关资料；首次使用时生成本地索引…");
                 retrieved = await Retrieval.SearchAsync(question, Settings.UseSemanticRetrieval, cancellation.Token,
-                    documents: Library.DocumentsForRetrieval());
+                    documents: DocumentsForRetrieval());
                 if (generation != requestEpoch) return;
                 RetrievalInfo = $"{retrieved.Method} · {retrieved.Sources.Count} 段 · {retrieved.Seconds:F2} 秒" + (retrieved.Warning is null ? "" : " · " + retrieved.Warning);
             }
@@ -623,5 +623,15 @@ public partial class AppState
         if (companion is not null) { await companion.DisposeAsync(); companion = null; }
         Retrieval.Dispose();
         allowClose = true;
+    }
+
+    /// <summary>E24: when the current meeting belongs to a series, retrieve only that series' documents.</summary>
+    public IReadOnlyList<NextThought.Core.MaterialDocument> DocumentsForRetrieval()
+    {
+        var documents = Library.DocumentsForRetrieval();
+        var sessionId = CurrentSession?.Id.ToString();
+        if (sessionId is null) return documents;
+        var series = workspace.SeriesOfSession(sessionId);
+        return series is null ? documents : NextThought.Core.RetrievalScope.ForSeries(documents, series.DocumentIds);
     }
 }

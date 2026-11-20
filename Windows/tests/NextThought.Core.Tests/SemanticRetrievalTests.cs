@@ -6,6 +6,19 @@ namespace NextThought.Core.Tests;
 /// <summary>Tests for chunking, the semantic index and rank fusion (SemanticRetrieval.swift).</summary>
 public sealed class SemanticRetrievalTests
 {
+    [Fact]
+    public void RetrievalScopeFiltersToSeriesDocuments()
+    {
+        var documents = new[]
+        {
+            new MaterialDocument { Id = "a", Name = "a.pdf" },
+            new MaterialDocument { Id = "b", Name = "b.pdf" }
+        };
+        Assert.Single(NextThought.Core.RetrievalScope.ForSeries(documents, ["b"]));
+        Assert.Equal(2, NextThought.Core.RetrievalScope.ForSeries(documents, []).Count);
+        Assert.Empty(NextThought.Core.RetrievalScope.ForSeries(documents, ["missing"]));
+    }
+
     private static MaterialDocument Document(string name, params DocumentBlock[] blocks) => new()
     {
         Id = Guid.NewGuid().ToString("N"),
