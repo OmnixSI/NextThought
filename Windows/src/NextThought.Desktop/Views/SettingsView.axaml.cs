@@ -18,6 +18,8 @@ public partial class SettingsView : UserControl
         ShowPage(currentPage);
     }
 
+    public void SelectPage(string page) => ShowPage(page);
+
     private void ShowPage(string page)
     {
         currentPage = page;

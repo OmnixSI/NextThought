@@ -210,7 +210,7 @@
               <Button Grid.Column="1" Classes="quiet" Content="完成" HorizontalAlignment="Right" VerticalAlignment="Center"
                       Command="{Binding NavigateCommand}" CommandParameter="Home" />
             </Grid>
-            <views:SettingsView Grid.Row="1" />
+            <views:SettingsView x:Name="SettingsOverlay" Grid.Row="1" />
           </Grid>
         </Grid>
       </Grid>

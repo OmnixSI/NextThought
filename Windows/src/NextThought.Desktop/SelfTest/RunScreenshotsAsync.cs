@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace NextThought.Desktop.Views;
 
@@ -31,6 +32,16 @@ public partial class MainWindow
                     await Task.Delay(250);
                     var suffix = (english ? "-en" : "") + (dark ? "-dark" : "-light") + ".png";
                     CaptureWindow(Path.Combine(directory, name + suffix));
+                    if (section == AppSection.Settings && this.FindControl<SettingsView>("SettingsOverlay") is { } settings)
+                    {
+                        foreach (var page in new[] { "Scene", "Answer", "Coach", "Notes", "General", "Advanced" })
+                        {
+                            settings.SelectPage(page);
+                            await Dispatcher.UIThread.InvokeAsync(settings.UpdateLayout, DispatcherPriority.Background);
+                            await Task.Delay(120);
+                            CaptureWindow(Path.Combine(directory, "settings-" + page.ToLowerInvariant() + suffix));
+                        }
+                    }
                 }
             }
         }
