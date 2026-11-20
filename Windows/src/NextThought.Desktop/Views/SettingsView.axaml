@@ -237,6 +237,12 @@
           <TextBlock Text="仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。"
                      Classes="caption" FontSize="11" />
           <Button Content="准备声纹组件（约 26 MB）" Command="{Binding PrepareSpeakersCommand}" HorizontalAlignment="Left" />
+          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+            <TextBlock Text="我的声音" Classes="label" />
+            <TextBlock Text="{Binding MyVoiceStatus}" Classes="caption" FontSize="11" />
+            <Button Content="录入 / 管理我的声音" Click="OpenMyVoice_Click" HorizontalAlignment="Left" />
+            <TextBlock Text="只在本机运行，声纹只是一组数字。" Classes="caption" FontSize="11" />
+          </StackPanel>
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_4_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
             <StackPanel Spacing="{DynamicResource D4Spacing_10}">
               <CheckBox Content="记录时将完整句中英互译（使用当前回答服务）" IsChecked="{Binding Settings.TranslateSpeech}" />

@@ -203,4 +203,12 @@ public partial class SettingsView : UserControl
         state.SaveTavilyKeyCommand.Execute(state.Settings.TavilyKey);
         state.Settings.TavilyKeyStatus = "已保存（当前 Windows 用户加密）。";
     }
+
+    private async void OpenMyVoice_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state || TopLevel.GetTopLevel(this) is not Window owner) return;
+        try { await new MyVoiceWindow { DataContext = state }.ShowDialog(owner); }
+        catch (Exception ex) { state.SetStatus("打开我的声音失败：" + ex.Message, true); }
+    }
+
 }

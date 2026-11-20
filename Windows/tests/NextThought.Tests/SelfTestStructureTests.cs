@@ -206,6 +206,21 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void MyVoiceUsesTheExistingSpeakerEmbedder()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.MyVoice.cs"));
+        Assert.Contains("SpeakerEmbedder", state);
+        Assert.Contains("VoiceEnrollment.Make", state);
+        Assert.Contains("VoicePrompts", state);
+        Assert.Contains("Voiceprint", state);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MyVoiceWindow.axaml")));
+        var recorder = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "VoiceRecorder.cs"));
+        Assert.Contains("AudioCaptureService", recorder);
+        Assert.Contains("16000", recorder.Replace("16 kHz", "16000"));
+    }
+
     [Fact]
     public void HistoryListIsReadOffTheUiThread()
     {

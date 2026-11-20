@@ -12,6 +12,7 @@
     <TextBlock Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
       <Button Content="打开设置" Command="{Binding NavigateCommand}" CommandParameter="Settings" Click="Close_Click" />
+      <Button Content="录入我的声音" Click="MyVoice_Click" />
       <Button Classes="primary" Content="关闭" Click="Close_Click" />
     </StackPanel>
   </StackPanel>
