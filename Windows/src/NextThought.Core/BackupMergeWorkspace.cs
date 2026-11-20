@@ -14,8 +14,10 @@ public static partial class BackupMerge
             var index = result.FindIndex(lesson => lesson.Id == incoming.Id);
             if (index < 0) { result.Add(incoming); continue; }
             var existing = result[index];
-            var incomingWins = incoming.Revision > existing.Revision
-                || (incoming.Revision == existing.Revision && incoming.UpdatedAt > existing.UpdatedAt);
+            var existingRevision = Math.Max(1, existing.Revision);
+            var incomingRevision = Math.Max(1, incoming.Revision);
+            var incomingWins = incomingRevision > existingRevision
+                || (incomingRevision == existingRevision && incoming.EffectiveUpdatedAt > existing.EffectiveUpdatedAt);
             var current = incomingWins ? incoming : existing;
             var fallback = incomingWins ? existing : incoming;
             var deleted = (current.SourceMissingSessionIds ?? [])
@@ -263,8 +265,7 @@ public static partial class BackupMerge
                 var otherKey = retainedIsExisting ? incomingKey : existingKey;
                 var otherLive = !tombstones.ContainsKey(otherKey) && otherItem.SourceMissing != true
                     && otherItem.SourceSessionId != retained.SourceSessionId;
-                var otherNewer = otherItem.Revision > retained.Revision
-                    || (otherItem.Revision == retained.Revision && otherItem.UpdatedAt > retained.UpdatedAt);
+                var otherNewer = otherItem.Revision >= retained.Revision;
                 currentIsExisting = otherLive && otherNewer ? !retainedIsExisting : retainedIsExisting;
             }
             else if (existingDeleted != incomingDeleted) currentIsExisting = !existingDeleted;
@@ -318,9 +319,9 @@ public static partial class BackupMerge
         return final;
     }
 
-    private static WorkspaceSeriesItemRevision CurrentRevision(this WorkspaceSeriesItem item) => new()
+    public static WorkspaceSeriesItemRevision CurrentRevision(this WorkspaceSeriesItem item) => new()
     {
-        Id = item.Id + ":" + item.Revision,
+        Id = item.RevisionId(),
         Revision = item.Revision, Kind = item.Kind, Text = item.Text, Owner = item.Owner,
         Due = item.Due, DueDate = item.DueDate, ActionState = item.ActionState,
         SourceSessionId = item.SourceSessionId, EvidenceId = item.EvidenceId,
@@ -358,8 +359,11 @@ public static partial class BackupMerge
         var byId = new Dictionary<string, WorkspaceSeriesItemRevision>(StringComparer.Ordinal);
         foreach (var revision in history)
         {
-            if (!byId.TryGetValue(revision.Id, out var existing) || revision.RecordedAt < existing.RecordedAt)
-                byId[revision.Id] = revision;
+            var key = revision.Revision + "\u0000" + revision.Kind + "\u0000" + revision.Text + "\u0000" + revision.Owner
+                + "\u0000" + revision.Due + "\u0000" + revision.SourceSessionId + "\u0000" + revision.EvidenceId
+                + "\u0000" + revision.ClaimRevision + "\u0000" + revision.SourceRevision + "\u0000" + revision.SourceMissing;
+            if (!byId.TryGetValue(key, out var existing) || revision.RecordedAt < existing.RecordedAt)
+                byId[key] = revision;
         }
         return byId.Values.OrderBy(revision => revision.Revision)
             .ThenBy(revision => revision.RecordedAt)

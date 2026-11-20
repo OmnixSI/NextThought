@@ -64,6 +64,9 @@ public sealed record WorkspaceSeriesItem
     public IReadOnlyList<WorkspaceSeriesItemRevision> History { get; init; } = [];
     public DateTimeOffset ConfirmedAt { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
+
+    [JsonIgnore]
+    public DateTimeOffset EffectiveUpdatedAt => UpdatedAt == default ? ConfirmedAt : UpdatedAt;
 }
 
 public sealed record WorkspaceSeriesItemRevision

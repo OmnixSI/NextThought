@@ -182,7 +182,7 @@ python Windows/scripts/core_usage.py
 | EchoSuppressionTests.swift | 7 | 7 |
 | GlossaryTests.swift | 18 | 18 |
 | LaTeXMathTests.swift | 13 | 13 |
-| LiveInsightsTests.swift | 24 | 1 |
+| LiveInsightsTests.swift | 24 | 24 |
 | LiveTranslationRevisionGateTests.swift | 5 | 5 |
 | LocalModelReuseTests.swift | 5 | 5 |
 | MeetingCarryTests.swift | 2 | 2 |
@@ -208,8 +208,8 @@ python Windows/scripts/core_usage.py
 | ScreenEvidenceTests.swift | 5 | 5 |
 | ScrollFollowStateTests.swift | 8 | 8 |
 | SeriesBriefingTests.swift | 12 | 12 |
-| SessionArchivePersistenceTests.swift | 21 | 0 |
-| SessionContentSearchTests.swift | 13 | 0 |
+| SessionArchivePersistenceTests.swift | 21 | 21 |
+| SessionContentSearchTests.swift | 13 | 13 |
 | SessionEvidenceTests.swift | 8 | 8 |
 | SessionExportTests.swift | 12 | 12 |
 | SessionRecordTests.swift | 9 | 9 |
@@ -229,7 +229,7 @@ python Windows/scripts/core_usage.py
 | WebLookupPromptBuilderTests.swift | 3 | 3 |
 | WebSearchNeedTests.swift | 4 | 4 |
 | WorkspaceDeletionTransactionTests.swift | 5 | 5 |
-| WorkspaceTests.swift | 39 | 1 |
+| WorkspaceTests.swift | 39 | 39 |
 | ZipformerStreamingIntegrationTests.swift | 1 | 1 |
 
 复算：`Select-String -Path "$b\Tests\NextThoughtCoreTests\*.swift" -Pattern '^\s*@Test' | Measure-Object`；逐行数字见上表。

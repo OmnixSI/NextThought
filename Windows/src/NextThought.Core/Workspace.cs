@@ -37,7 +37,11 @@ public sealed record WorkspaceLesson
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 
-    public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; init; }
+
+    /// <summary>Swift defaults updatedAt to createdAt when it is absent.</summary>
+    [JsonIgnore]
+    public DateTimeOffset EffectiveUpdatedAt => UpdatedAt == default ? CreatedAt : UpdatedAt;
 
     public bool Pinned { get; init; }
 
@@ -516,5 +520,28 @@ public sealed class WorkspaceStore
             });
         }
         return new WorkspaceData(series);
+    }
+}
+
+/// <summary>B22: stable revision id computed from the snapshot content (Swift stableID).</summary>
+public static class WorkspaceSeriesItemRevisionIds
+{
+    public static string RevisionId(this WorkspaceSeriesItem item)
+    {
+        var recorded = BitConverter.DoubleToInt64Bits(item.EffectiveUpdatedAt.ToUnixTimeMilliseconds() / 1000.0).ToString("x");
+        var dueDate = item.DueDate is { } date
+            ? BitConverter.DoubleToInt64Bits(date.ToUnixTimeMilliseconds() / 1000.0).ToString("x") : null;
+        var values = new string?[]
+        {
+            item.Id.ToLowerInvariant(), item.Revision.ToString(), System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(item.Kind.ToString()), item.Text, item.Owner, item.Due, dueDate,
+            item.ActionState is { } actionState ? System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(actionState.ToString()) : null, item.SourceSessionId?.ToLowerInvariant(), item.EvidenceId, item.ClaimRevision,
+            item.SourceRevision, item.SourceQuote, item.Location, item.TranscriptSourceRevision,
+            item.SourceMissing?.ToString(), recorded
+        };
+        var material = string.Join("|", values.Select(value => value is null ? "0:" : "1" + System.Text.Encoding.UTF8.GetByteCount(value) + ":" + value));
+        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("series-item-revision-v2|" + material))[..16];
+        bytes[6] = (byte)((bytes[6] & 0x0F) | 0x50);
+        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80);
+        return new Guid(bytes).ToString("D");
     }
 }

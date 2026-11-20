@@ -170,6 +170,28 @@ public sealed class SessionArchiveFileAppender
 
     public static SessionArchiveFileAppender Live() => new(WriteBytes);
 
+    /// <summary>B22: append through an injected writer that can fail mid-write; the file is rolled back.</summary>
+    public static SessionArchiveFileAppender UsingFileHandleAppend(Action<byte[], Stream> append) =>
+        new((data, path, mode) =>
+        {
+            if (mode == SessionArchiveWriteMode.Replace) { WriteBytes(data, path, mode); return; }
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            using var stream = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+            var originalEnd = stream.Length;
+            try
+            {
+                stream.Position = stream.Length;
+                append(data, stream);
+                stream.Flush(flushToDisk: true);
+            }
+            catch
+            {
+                stream.SetLength(originalEnd);
+                throw;
+            }
+        });
+
     public void Append(byte[] data, string path) => Write(data, path, SessionArchiveWriteMode.Append);
 
     public void Replace(byte[] data, string path) => Write(data, path, SessionArchiveWriteMode.Replace);

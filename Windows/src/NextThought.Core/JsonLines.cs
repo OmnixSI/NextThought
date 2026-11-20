@@ -44,4 +44,41 @@ public static class JSONLines
         }
         return result;
     }
+
+    /// <summary>B22: the report form of <see cref="Decode{T}"/>; a torn last line is flagged.</summary>
+    public static JSONLinesDecodeReport<T> DecodeReport<T>(byte[] data, JsonSerializerOptions? options = null)
+    {
+        var report = new JSONLinesDecodeReport<T>();
+        if (data.Length == 0) return report;
+        var terminated = data[^1] == (byte)'\n';
+        var text = Encoding.UTF8.GetString(data);
+        var rawLines = text.Split('\n');
+        var lineCount = terminated ? Math.Max(0, rawLines.Length - 1) : rawLines.Length;
+        for (var index = 0; index < lineCount; index++)
+        {
+            var line = rawLines[index];
+            if (line.Length == 0) continue;
+            try
+            {
+                var value = JsonSerializer.Deserialize<T>(line, options ?? Options);
+                if (value is not null) report.Records.Add(value);
+                else report.MalformedLineNumbers.Add(index + 1);
+            }
+            catch (JsonException)
+            {
+                report.MalformedLineNumbers.Add(index + 1);
+            }
+        }
+        report.TruncatedFinalLine = !terminated && lineCount > 0
+            && report.MalformedLineNumbers.Count > 0 && report.MalformedLineNumbers[^1] == lineCount;
+        return report;
+    }
+}
+
+/// <summary>B22: records decoded from a JSONL file plus where the file was malformed.</summary>
+public sealed class JSONLinesDecodeReport<T>
+{
+    public List<T> Records { get; } = [];
+    public List<int> MalformedLineNumbers { get; } = [];
+    public bool TruncatedFinalLine { get; set; }
 }

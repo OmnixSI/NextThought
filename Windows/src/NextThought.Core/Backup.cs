@@ -181,12 +181,13 @@ public static partial class BackupMerge
         left.Name == right.Name
         && left.UseKnowledge == right.UseKnowledge
         && left.SessionIds.SequenceEqual(right.SessionIds)
-        && left.Lessons.Select(lesson => lesson.Id + "\u0000" + lesson.Text)
-            .SequenceEqual(right.Lessons.Select(lesson => lesson.Id + "\u0000" + lesson.Text))
-        && left.QuestionBank.Select(question => question.Id).SequenceEqual(right.QuestionBank.Select(question => question.Id))
-        && left.KnowledgeCandidates.Select(candidate => candidate.Id)
-            .SequenceEqual(right.KnowledgeCandidates.Select(candidate => candidate.Id))
-        && left.SeriesItems.Select(item => item.Id).SequenceEqual(right.SeriesItems.Select(item => item.Id))
+        && left.Lessons.Select(lesson => lesson.Id + "\u0000" + lesson.Text + "\u0000" + lesson.Revision)
+            .SequenceEqual(right.Lessons.Select(lesson => lesson.Id + "\u0000" + lesson.Text + "\u0000" + lesson.Revision))
+        && left.QuestionBank.Select(question => question.Id + "\u0000" + question.Answer + "\u0000" + question.AnswerRevision)
+            .SequenceEqual(right.QuestionBank.Select(question => question.Id + "\u0000" + question.Answer + "\u0000" + question.AnswerRevision))
+        && left.KnowledgeCandidates.Select(candidate => candidate.Id).SequenceEqual(right.KnowledgeCandidates.Select(candidate => candidate.Id))
+        && System.Text.Json.JsonSerializer.Serialize(left.SeriesItems, WorkspaceStore.Options)
+            == System.Text.Json.JsonSerializer.Serialize(right.SeriesItems, WorkspaceStore.Options)
         && (left.SourceDeletionTombstones ?? []).SequenceEqual(right.SourceDeletionTombstones ?? []);
 
     private static DateTimeOffset Touched(WorkspaceSeries series) => new[]

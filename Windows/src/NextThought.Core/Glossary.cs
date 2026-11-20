@@ -593,36 +593,22 @@ public sealed class GlossaryJsonConverter : System.Text.Json.Serialization.JsonC
         foreach (var item in items)
         {
             if (item.ValueKind != System.Text.Json.JsonValueKind.Object) continue;
-            var canonical = item.TryGetProperty("canonical", out var canonicalValue) && canonicalValue.ValueKind == System.Text.Json.JsonValueKind.String
-                ? canonicalValue.GetString()?.Trim() : null;
-            if (string.IsNullOrEmpty(canonical)) continue;
-            var id = item.TryGetProperty("id", out var idValue) && idValue.ValueKind == System.Text.Json.JsonValueKind.String
-                     && Guid.TryParse(idValue.GetString(), out _) ? idValue.GetString() : null;
-            var kind = GlossaryKind.Term;
-            if (item.TryGetProperty("kind", out var kindValue) && kindValue.ValueKind == System.Text.Json.JsonValueKind.String)
-                kind = GlossaryKinds.Parse(kindValue.GetString());
-            var variants = item.TryGetProperty("variants", out var variantsValue) && variantsValue.ValueKind == System.Text.Json.JsonValueKind.Array
-                ? variantsValue.EnumerateArray().Where(value => value.ValueKind == System.Text.Json.JsonValueKind.String)
-                    .Select(value => value.GetString() ?? "").Where(value => value.Length > 0).ToList()
-                : [];
-            var note = item.TryGetProperty("note", out var noteValue) && noteValue.ValueKind == System.Text.Json.JsonValueKind.String
-                ? noteValue.GetString() : null;
-            result.Add(new GlossaryEntry(canonical, kind, variants, note, id));
+            try
+            {
+                var entry = System.Text.Json.JsonSerializer.Deserialize<GlossaryEntry>(item.GetRawText(), options);
+                if (entry is not null && !string.IsNullOrWhiteSpace(entry.Canonical)) result.Add(entry);
+            }
+            catch (System.Text.Json.JsonException) { }
         }
         return new Glossary(result);
     }
     public override void Write(System.Text.Json.Utf8JsonWriter writer, Glossary value, System.Text.Json.JsonSerializerOptions options)
     {
-        writer.WriteStartObject(); writer.WriteStartArray("entries");
-        foreach (var entry in value.Entries)
-        {
-            writer.WriteStartObject(); writer.WriteString("id", entry.Id); writer.WriteString("canonical", entry.Canonical);
-            writer.WriteString("kind", entry.Kind.Raw());
-            writer.WriteStartArray("variants"); foreach (var variant in entry.Variants) writer.WriteStringValue(variant); writer.WriteEndArray();
-            if (!string.IsNullOrEmpty(entry.Note)) writer.WriteString("note", entry.Note);
-            writer.WriteEndObject();
-        }
-        writer.WriteEndArray(); writer.WriteEndObject();
+        writer.WriteStartObject();
+        writer.WriteStartArray("entries");
+        foreach (var entry in value.Entries) System.Text.Json.JsonSerializer.Serialize(writer, entry, options);
+        writer.WriteEndArray();
+        writer.WriteEndObject();
     }
 }
 
