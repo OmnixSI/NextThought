@@ -185,6 +185,14 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void BackgroundUpdateCheckMarshalsToUiThread()
+    {
+        var update = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Update.cs"));
+        Assert.Contains("Dispatcher.UIThread.InvokeAsync", update);
+    }
+
     [Fact]
     public void SpeakerVoicesCanBeMerged()
     {

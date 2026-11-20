@@ -68,13 +68,16 @@ public partial class AppState
         try
         {
             var report = await UpdateCheck.RunAsync(source ?? UpdateFeed.Source, UpdateChannel);
-            LastUpdateReport = report;
-            UpdateAvailable = report.Available;
-            UpdateVersion = report.LatestVersion ?? "";
-            UpdateUrl = report.DownloadUrl;
-            UpdateStatus = report.Describe();
-            OnPropertyChanged(nameof(CanInstallUpdateInApp));
-            InstallUpdateCommand.NotifyCanExecuteChanged();
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                LastUpdateReport = report;
+                UpdateAvailable = report.Available;
+                UpdateVersion = report.LatestVersion ?? "";
+                UpdateUrl = report.DownloadUrl;
+                UpdateStatus = report.Describe();
+                OnPropertyChanged(nameof(CanInstallUpdateInApp));
+                InstallUpdateCommand.NotifyCanExecuteChanged();
+            });
             return report;
         }
         finally

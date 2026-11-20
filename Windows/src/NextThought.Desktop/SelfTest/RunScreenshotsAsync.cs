@@ -73,10 +73,10 @@ public partial class MainWindow
         state.OnboardingStep = 0;
         state.OnboardingVisible = true;
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        CaptureWindow(Path.Combine(directory, "onboarding-first" + suffix));
+        CaptureWindow(Path.Combine(directory, "onboarding-first.png"));
         state.OnboardingStep = 3;
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        CaptureWindow(Path.Combine(directory, "onboarding-last" + suffix));
+        CaptureWindow(Path.Combine(directory, "onboarding-last.png"));
         state.OnboardingVisible = false;
 
         // Quick settings panel (E26)
