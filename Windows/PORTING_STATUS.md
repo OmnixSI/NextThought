@@ -1,7 +1,7 @@
 # 当前测试口径（唯一权威）· 0.5.145 + ed39491
 
 - **Core：866 通过 / 0 失败**
-- **NextThought.Tests：114 通过 / 0 失败**
+- **NextThought.Tests：122 通过 / 0 失败**
 - 这是 0.5.145 + ed39491 的唯一权威口径。本文件以下历史小节中出现的 863、779、83、109、110、111、113、114 等测试数字，均为当时版本的记录，**已被本节取代**，不再作为门禁依据。
 
 ## 新增的 3 个 Mac 格式兼容测试
@@ -11,6 +11,8 @@
 1. `BackupManifestReadsMacKindAndWritesItBackAsAString`：读入 Mac 的 `kind: "full"` 清单，确认反序列化为枚举；再序列化时仍写字符串 `"full"`，日期回到 ISO-8601 UTC。
 2. `WorkspaceStoreWritesIsoUtcDatesForMac`：带 +08:00 和小数秒的创建时间写入 Workspace 后，文件里必须是 `2026-11-18T02:00:00Z`，不带时区偏移。
 3. `RestorePointUsesFoundationEpochAndReadsMacNumbers`：新建恢复点的 `createdAt` 是 Foundation 纪元秒数字；同时能读入 Mac 写入的数字日期恢复点并通过校验。
+
+另有 8 项 `ScreenShareDetectorTests`（共享标题/窗口类识别）计入基线，所以基线从 114 增至 122。
 
 
 # 启动时间实测（分表）· 0.5.145 + ed39491

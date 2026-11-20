@@ -112,6 +112,9 @@ public sealed record AppSettings
     /// <summary>Appearance: "system" (default), "light" or "dark".</summary>
     public string Appearance { get; set; } = "system";
 
+    /// <summary>Floating cue island width: "narrow" (440), "regular" (540) or "wide" (660).</summary>
+    public string CueWidth { get; set; } = "regular";
+
     /// <summary>Floating subtitle bar width in device-independent pixels.</summary>
     public int SubtitleWidth { get; set; } = 920;
 

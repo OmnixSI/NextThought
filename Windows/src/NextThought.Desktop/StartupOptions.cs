@@ -55,6 +55,7 @@ public static class StartupOptions
     public static string? CloudImportCheck { get; private set; }
     public static string? NotesJumpCheck { get; private set; }
     public static string? LiveModeCheck { get; private set; }
+    public static string? ShareHideCheck { get; private set; }
     public static string? SubtitleSettingsCheck { get; private set; }
     public static string? CaptureHideCheck { get; private set; }
     public static string? AudioSwitchCheck { get; private set; }
@@ -152,6 +153,7 @@ public static class StartupOptions
             else if (argument.StartsWith("--cloud-import-check=", StringComparison.OrdinalIgnoreCase)) CloudImportCheck = argument["--cloud-import-check=".Length..];
             else if (argument.StartsWith("--notes-jump-check=", StringComparison.OrdinalIgnoreCase)) NotesJumpCheck = argument["--notes-jump-check=".Length..];
             else if (argument.StartsWith("--live-mode-check=", StringComparison.OrdinalIgnoreCase)) LiveModeCheck = argument["--live-mode-check=".Length..];
+            else if (argument.StartsWith("--share-hide-check=", StringComparison.OrdinalIgnoreCase)) ShareHideCheck = argument["--share-hide-check=".Length..];
             else if (argument.StartsWith("--subtitle-settings-check=", StringComparison.OrdinalIgnoreCase)) SubtitleSettingsCheck = argument["--subtitle-settings-check=".Length..];
             else if (argument.StartsWith("--capture-hide-check=", StringComparison.OrdinalIgnoreCase)) CaptureHideCheck = argument["--capture-hide-check=".Length..];
             else if (argument.StartsWith("--audio-switch-check=", StringComparison.OrdinalIgnoreCase)) AudioSwitchCheck = argument["--audio-switch-check=".Length..];

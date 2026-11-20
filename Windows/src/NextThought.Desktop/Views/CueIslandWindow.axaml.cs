@@ -10,11 +10,18 @@ namespace NextThought.Desktop.Views;
 /// </summary>
 public partial class CueIslandWindow : Window
 {
+    private readonly AppState state;
     public CueIslandWindow() : this(new AppState()) { }
 
     public CueIslandWindow(AppState state)
     {
         InitializeComponent();
+        this.state = state;
+        ApplyCueWidth();
+        state.Settings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(NextThought.Desktop.SettingsViewModel.SelectedCueWidth)) ApplyCueWidth();
+        };
         Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         DataContext = state;
         Opened += (_, _) =>
@@ -26,6 +33,17 @@ public partial class CueIslandWindow : Window
         {
             if (e.PropertyName is nameof(AppState.DetectedQuestion) or nameof(AppState.AnswerText)) FitHeight();
         };
+    }
+
+    private void ApplyCueWidth()
+    {
+        Width = state.Settings.SelectedCueWidth?.Value switch
+        {
+            "narrow" => 440,
+            "wide" => 660,
+            _ => 540
+        };
+        if (IsVisible) MoveToTopCentre();
     }
 
     private void MoveToTopCentre()

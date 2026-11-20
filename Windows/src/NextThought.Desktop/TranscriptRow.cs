@@ -97,6 +97,11 @@ public sealed record SceneChoice(NextThought.Core.MeetingMode Mode, string Title
     public override string ToString() => UiText.T(Title);
 }
 
+public sealed record CueWidthOption(string Value, string Title)
+{
+    public override string ToString() => UiText.T(Title);
+}
+
 public sealed record AutoEndChoice(string Value, string Title)
 {
     public override string ToString() => UiText.T(Title);

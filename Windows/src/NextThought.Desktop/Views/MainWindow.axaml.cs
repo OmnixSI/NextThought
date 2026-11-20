@@ -7,6 +7,7 @@ using Avalonia.Platform.Storage;
 using NextThought.Core;
 using NextThought.Platform;
 using Avalonia;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace NextThought.Desktop.Views;
@@ -17,6 +18,9 @@ public partial class MainWindow : Window
     private readonly Dictionary<AppSection, Control> pages = [];
     private bool closing;
     private bool openedOnce;
+    private readonly DispatcherTimer screenShareTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private bool sharingActive;
+    private bool sharingRetractedIsland;
 
     public MainWindow(AppState state)
     {
@@ -26,6 +30,8 @@ public partial class MainWindow : Window
         ShowSection();
         state.PickSaveFile = PickSaveFileAsync;
         state.PickOpenFile = PickOpenFileAsync;
+        screenShareTimer.Tick += (_, _) => EvaluateScreenSharing();
+        screenShareTimer.Start();
         state.CopyText = async text =>
         {
             if (Clipboard is null) return;
@@ -133,6 +139,7 @@ public partial class MainWindow : Window
             if (StartupOptions.CloudImportCheck is { } cloudImport) await RunCloudImportCheckAsync(cloudImport);
             if (StartupOptions.NotesJumpCheck is { } notesJump) await RunNotesJumpCheckAsync(notesJump);
             if (StartupOptions.LiveModeCheck is { } liveMode) await RunLiveModeCheckAsync(liveMode);
+            if (StartupOptions.ShareHideCheck is { } shareHide) await RunShareHideCheckAsync(shareHide);
             if (StartupOptions.SubtitleSettingsCheck is { } subtitleCheck) await RunSubtitleSettingsCheckAsync(subtitleCheck);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
@@ -2467,6 +2474,43 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: a detected share retracts the cue island and restores it afterwards.</summary>
+    private async Task RunShareHideCheckAsync(string path)
+    {
+        var passed = false;
+        var hidden = false;
+        var restored = false;
+        try
+        {
+            state.Settings.SelectedCueWidth = state.Settings.CueWidthChoices.First(choice => choice.Value == "wide");
+            ShowCueIsland();
+            await Task.Delay(500);
+            var width = island?.Width ?? 0;
+            var widthOk = Math.Abs(width - 660) < 0.5;
+            ApplyScreenSharingForCheck(true);
+            await Task.Delay(400);
+            hidden = island is not { IsVisible: true };
+            ApplyScreenSharingForCheck(false);
+            await Task.Delay(500);
+            restored = island is { IsVisible: true };
+            passed = widthOk && hidden && restored;
+        }
+        catch (Exception ex) { Console.WriteLine("share-hide-check: " + ex.Message); }
+        var report = new { passed, hidden, restored, width = island?.Width ?? 0 };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "share-hide-check: passed" : "share-hide-check: failed");
+        Close();
+    }
+
     /// <summary>QA: saved subtitle width/font reach the floating bar.</summary>
     private async Task RunSubtitleSettingsCheckAsync(string path)
     {
@@ -2998,6 +3042,45 @@ public partial class MainWindow : Window
 
     public MainWindow() : this(new AppState()) { }
 
+    /// <summary>Retracts the cue island while a known screen share is visible (macOS 15.4 fallback).</summary>
+    private void EvaluateScreenSharing()
+    {
+        if (closing) return;
+        var active = ScreenShareDetector.IsSharingActive();
+        if (active == sharingActive) return;
+        sharingActive = active;
+        if (active)
+        {
+            if (state.Recording && island is { IsVisible: true })
+            {
+                sharingRetractedIsland = true;
+                _ = FadeOutAndHideAsync(island);
+                state.SetStatus("检测到屏幕共享，已自动收回提示岛。");
+            }
+        }
+        else if (sharingRetractedIsland)
+        {
+            sharingRetractedIsland = false;
+            if (state.Recording && !hiddenAll && island is not { IsVisible: true }) ShowCueIsland();
+        }
+    }
+
+    internal void ApplyScreenSharingForCheck(bool active)
+    {
+        screenShareTimer.Stop();
+        sharingActive = active;
+        if (active)
+        {
+            if (island is { IsVisible: true }) sharingRetractedIsland = true;
+            if (island is { IsVisible: true }) _ = FadeOutAndHideAsync(island);
+        }
+        else if (sharingRetractedIsland)
+        {
+            sharingRetractedIsland = false;
+            ShowCueIsland();
+        }
+    }
+
     private CueIslandWindow? island;
     private SubtitleBarWindow? subtitleBar;
     private GlobalHotkeys? hotkeys;
@@ -3297,6 +3380,11 @@ public partial class MainWindow : Window
     public void ShowCueIsland()
     {
         if (hiddenAll) return;
+        if (sharingActive)
+        {
+            state.SetStatus("检测到屏幕共享，提示岛保持收回；共享结束后自动恢复。");
+            return;
+        }
         island ??= new CueIslandWindow(state);
         UiTranslation.Apply(island, state.Settings.UiLanguage == "English");
         if (!island.IsVisible)
