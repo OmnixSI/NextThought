@@ -433,6 +433,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         OnPropertyChanged(nameof(SelectedCloudLanguage));
         OnPropertyChanged(nameof(SelectedAppearance));
         OnPropertyChanged(nameof(SelectedCueWidth));
+        OnPropertyChanged(nameof(CueSurfaceChoices));
+        var cueSurfaceValue = SelectedCueSurface?.Value ?? "island";
+        SelectedCueSurface = CueSurfaceChoices.FirstOrDefault(choice => choice.Value == cueSurfaceValue) ?? CueSurfaceChoices[0];
         OnPropertyChanged(nameof(SelectedAutoEndMode));
         OnPropertyChanged(nameof(SelectedModelChoice));
         OnPropertyChanged(nameof(SelectedEffort));
@@ -524,11 +527,14 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool cueAlwaysOpen;
 
     /// <summary>E26b: Mac quick settings 提词 — 提词岛 (island) or 浮窗 (window).</summary>
-    public IReadOnlyList<CueSurfaceChoice> CueSurfaceChoices { get; } =
+    private static readonly CueSurfaceChoice[] CueSurfaceChoiceValues =
     [
         new("island", "提词岛"),
         new("window", "浮窗")
     ];
+
+    /// <summary>G8: a new list per access so the selected label re-renders on a language switch.</summary>
+    public IReadOnlyList<CueSurfaceChoice> CueSurfaceChoices => CueSurfaceChoiceValues.ToArray();
 
     [ObservableProperty] private CueSurfaceChoice? selectedCueSurface;
 
