@@ -112,6 +112,9 @@ public sealed record AppSettings
     /// <summary>D10: the Live/Library context sidebar is collapsed.</summary>
     public bool ContextSidebarHidden { get; set; }
 
+    /// <summary>E9: follow the speaker by jumping to the slide whose title is mentioned.</summary>
+    public bool FollowSlides { get; set; }
+
     /// <summary>E11: turn translation on automatically when the speech is mostly non-Chinese.</summary>
     public bool AutoTranslateForeign { get; set; }
 

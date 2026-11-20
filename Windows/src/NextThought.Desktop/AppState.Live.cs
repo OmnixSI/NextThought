@@ -366,6 +366,7 @@ public partial class AppState
         _ = write.ContinueWith(task => Dispatcher.UIThread.Post(() => HandleAudioFailure("会议写入失败：" + task.Exception!.GetBaseException().Message)), TaskContinuationOptions.OnlyOnFaulted);
         if (automatic && update.Source == AudioSource.System && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, true, update.Id, DateTimeOffset.UtcNow));
         NoteSpeechHeard(line);
+        TryFollowSlide(text);
         OnPropertyChanged(nameof(StatsText));
         OnPropertyChanged(nameof(HasTranscript));
     }

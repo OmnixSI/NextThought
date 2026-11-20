@@ -92,6 +92,26 @@ public partial class AppState
         }
     }
 
+
+    /// <summary>E9: jump to the first slide whose title appears in the final line.</summary>
+    private void TryFollowSlide(string text)
+    {
+        if (!Settings.FollowSlides || text.Length < 2) return;
+        if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());
+        for (var index = 0; index < slides.Count; index++)
+        {
+            var title = slides[index].Text.Split('\n').FirstOrDefault(line => line.Trim().Length > 0)?.Trim() ?? "";
+            if (title.Length < 2) continue;
+            if (!text.Contains(title, StringComparison.OrdinalIgnoreCase)) continue;
+            if (index == slideIndex) return;
+            slideIndex = index;
+            OnPropertyChanged(nameof(SlideStatus));
+            OnPropertyChanged(nameof(CurrentSlideText));
+            SetStatus($"已跟随讲话切到第 {slides[index].Number} 页。");
+            return;
+        }
+    }
+
     private void MoveSlide(int delta)
     {
         if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());

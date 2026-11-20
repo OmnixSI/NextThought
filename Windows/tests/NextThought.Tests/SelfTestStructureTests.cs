@@ -179,6 +179,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SlidesCanFollowSpeech()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
+        Assert.Contains("TryFollowSlide", state);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("TryFollowSlide", live);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "QuickSettingsPanel.axaml"));
+        Assert.Contains("跟着讲话翻幻灯片", xaml);
+    }
+
     [Fact]
     public void CoachSummaryIsBuiltAndShown()
     {
