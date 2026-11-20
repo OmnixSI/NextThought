@@ -41,7 +41,8 @@ public sealed class SelfTestStructureTests
         foreach (var file in Directory.GetFiles(views, "*.axaml", SearchOption.AllDirectories))
         {
             var text = File.ReadAllText(file);
-            Assert.DoesNotContain("✕", text);
+            foreach (var symbol in new[] { "✕", "✓", "⚠" })
+                Assert.DoesNotContain(symbol, text);
         }
         var tp = File.ReadAllText(Path.Combine(views, "TeleprompterWindow.axaml"));
         Assert.Contains("&#xE711;", tp);

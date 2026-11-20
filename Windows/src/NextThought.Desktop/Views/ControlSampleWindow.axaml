@@ -1,43 +1,117 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="NextThought.Desktop.Views.ControlSampleWindow"
-        Width="760" Height="640" Title="控件样张"
+        Width="1200" Height="1080" Title="控件样张"
         Background="{DynamicResource Paper}">
   <ScrollViewer Padding="28">
-    <StackPanel Spacing="20">
-      <TextBlock Text="控件样张" Classes="display" />
-      <TextBlock Text="主要 / 次要 / 安静 / 破坏性" Classes="overline" />
-      <StackPanel Orientation="Horizontal" Spacing="10">
-        <Button Classes="primary" Content="主要操作" />
-        <Button Content="次要操作" />
-        <Button Classes="quiet" Content="安静操作" />
-        <Button Classes="destructive" Content="删除这场会议" />
+    <StackPanel Spacing="16">
+      <StackPanel Spacing="4">
+        <TextBlock Text="会中组件状态样板" Classes="display" />
+        <TextBlock Text="原生控件样板 · 所有文本与状态均为合成演示，不访问麦克风、ASR、模型、网络或归档。" Classes="caption" />
       </StackPanel>
-      <TextBlock Text="输入与选择" Classes="overline" />
-      <TextBox PlaceholderText="输入问题" Width="360" HorizontalAlignment="Left" />
-      <StackPanel Orientation="Horizontal" Spacing="12">
-        <CheckBox Content="自动回答" IsChecked="True" />
-        <ComboBox SelectedIndex="1" Width="180">
-          <ComboBoxItem>标准</ComboBoxItem>
-          <ComboBoxItem>鱼骨图</ComboBoxItem>
-        </ComboBox>
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <RadioButton Classes="chip" GroupName="sample" Content="全部" IsChecked="True" />
-        <RadioButton Classes="chip" GroupName="sample" Content="有纪要" />
-        <RadioButton Classes="chip" GroupName="sample" Content="未整理" />
-      </StackPanel>
-      <TextBlock Text="标签与卡片" Classes="overline" />
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Border Classes="chip"><TextBlock Text="术语" Classes="overline" /></Border>
-        <Border Classes="chip"><TextBlock Text="人物" Classes="overline" /></Border>
-      </StackPanel>
-      <Border Classes="card" Padding="18">
-        <StackPanel Spacing="6">
-          <TextBlock Text="卡片标题" Classes="title" />
-          <TextBlock Text="卡片正文，说明这张纸上的内容。" Classes="body" />
-        </StackPanel>
-      </Border>
+      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="16">
+        <Border Grid.Row="0" Grid.Column="0" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="ActionButton · default / hover / pressed / focus / unavailable" Classes="title" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Classes="primary" Content="默认" />
+              <Button Content="悬停" />
+              <Button Classes="quiet" Content="按下" />
+              <Button Content="焦点" BorderBrush="{DynamicResource Ai}" BorderThickness="2" />
+              <Button Content="不可用" IsEnabled="False" />
+            </StackPanel>
+            <TextBlock Text="预览态由演示环境注入，不代表鼠标事件录制。" Classes="caption" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="0" Grid.Column="1" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="DataStateView · loading / no-match" Classes="title" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ProgressBar IsIndeterminate="True" Width="18" Height="2" Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+              <TextBlock Text="正在加载本场资料…" Classes="body" />
+            </StackPanel>
+            <Border Background="{DynamicResource Sunken}" CornerRadius="8" Padding="10">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="没有匹配到「数据库迁移」" Classes="label" />
+                  <TextBlock Text="保留查询与范围；可扩大范围或清除查询。" Classes="caption" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="quiet" Content="清除查询" />
+              </Grid>
+            </Border>
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="1" Grid.Column="0" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="SourceChip · current / stale" Classes="title" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <StackPanel Orientation="Horizontal" Spacing="5"><TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource Ready}" /><TextBlock Text="译文 · 当前" Classes="caption" /></StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="5"><TextBlock Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Foreground="{DynamicResource Caution}" /><TextBlock Text="译文待更新" Classes="caption" Foreground="{DynamicResource Caution}" /></StackPanel>
+            </StackPanel>
+            <TextBlock Text="过期状态来自版本比较；旧内容仍可读。" Classes="caption" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="1" Grid.Column="1" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="TranscriptRow · final / streaming / selected+focus" Classes="title" />
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+              <TextBlock Text="对方" Classes="caption" Margin="0,0,12,6" />
+              <TextBlock Grid.Column="1" Text="如果发布窗口需要延长，我们会先核对回滚指标。" Classes="body" Margin="0,0,0,6" />
+              <TextBlock Grid.Row="1" Text="对方 · 流式" Classes="caption" Margin="0,0,12,6" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Text="再决定是否调整……" Classes="body" Foreground="{DynamicResource Secondary}" Margin="0,0,0,6" />
+              <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8">
+                <Border Background="{DynamicResource Hover}" CornerRadius="10" Padding="7,3"><TextBlock Text="已选择原话" Classes="caption" /></Border>
+                <Button Classes="quiet" Content="新增 2 句 · 回到现场" />
+              </StackPanel>
+            </Grid>
+            <TextBlock Text="选中文字荧光为合成标记；原生 textSelection 高亮未伪造。" Classes="caption" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="2" Grid.Column="0" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="TaskRow · busy / warning / saved receipt" Classes="title" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="回答正在生成…" Classes="body" />
+              <Button Grid.Column="1" Classes="quiet" Content="停止生成" />
+            </Grid>
+            <TextBlock Text="&#xE7BA; 保存受阻 · 有 3 项待保存 · 重试" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" Foreground="{DynamicResource Caution}" />
+            <TextBlock Text="&#xE73E; 已保存 · 修订 12 · 03:05" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="2" Grid.Column="1" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="RevisionDiff · stale+manual edit" Classes="title" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="旧原话：缓存几穿" Classes="body" />
+              <TextBlock Text="→" Classes="body" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="手动校正：缓存击穿" Classes="body" />
+            </StackPanel>
+            <TextBlock Text="&#xE7BA; 旧正文基于修订前原话；手动校正仍保留。" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" Foreground="{DynamicResource Caution}" />
+            <TextBlock Text="合成版本差异样例；实际过期标记由归档投影版本比较产生。" Classes="caption" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="3" Grid.Column="0" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="InlineNotice · error+existing result / cancel+late callback" Classes="title" />
+            <TextBlock Text="&#xE7BA; 回答暂时不可用；记录仍在继续。" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Classes="caption" Foreground="{DynamicResource Caution}" />
+            <TextBlock Text="之前有效回答仍可读。取消后到达的旧请求结果会被丢弃。" Classes="caption" />
+            <TextBlock Text="最近结果：先看命中率和 P95 延迟，再比较灰度前后的错误率。" Classes="caption" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Row="3" Grid.Column="1" Classes="card" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="NewContentPill / ComposerDock · keyboard contract" Classes="title" />
+            <Border Background="{DynamicResource Sunken}" CornerRadius="10" Padding="8,4" HorizontalAlignment="Left">
+              <TextBlock Text="新增 6 句 · 回到现场" Classes="caption" />
+            </Border>
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+              <TextBox PlaceholderText="输入问题；回车发送" />
+              <Button Grid.Column="1" Classes="primary" Content="立即回答" Margin="8,0,0,0" />
+            </Grid>
+            <TextBlock Text="⌘L 聚焦输入 · Return 发送 · ⌘⇧↵ 强制回答 · Esc 取消当前回答 · ↑/PageUp 保持阅读位置" Classes="caption" />
+          </StackPanel>
+        </Border>
+      </Grid>
     </StackPanel>
   </ScrollViewer>
 </Window>
