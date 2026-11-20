@@ -16,27 +16,46 @@ public partial class MainWindow
             (AppSection.History, "history"), (AppSection.Series, "series"),
             (AppSection.Library, "library"), (AppSection.Settings, "settings")
         };
-        foreach (var dark in new[] { false, true })
+        foreach (var english in new[] { false, true })
         {
-            if (Application.Current is { } app)
-                app.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
-            foreach (var (section, name) in pages)
+            NextThought.Core.UiText.EnglishUi = english;
+            UiTranslation.Apply(this, english);
+            foreach (var dark in new[] { false, true })
             {
-                state.Section = section;
-                await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-                await Task.Delay(250);
-                CaptureWindow(Path.Combine(directory, name + (dark ? "-dark.png" : "-light.png")));
+                if (Application.Current is { } app)
+                    app.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+                foreach (var (section, name) in pages)
+                {
+                    state.Section = section;
+                    await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                    await Task.Delay(250);
+                    var suffix = (english ? "-en" : "") + (dark ? "-dark" : "-light") + ".png";
+                    CaptureWindow(Path.Combine(directory, name + suffix));
+                }
             }
         }
+        NextThought.Core.UiText.EnglishUi = false;
+        // The current island has one implemented visual state; capture it as evidence until C5 adds five.
+        state.Recording = true;
+        state.DetectedQuestion = NextThought.Desktop.DemoContent.Question;
+        var island = new CueIslandWindow(state);
+        island.Show();
+        await Task.Delay(400);
+        CaptureVisual(island, Path.Combine(directory, "island-light.png"));
+        island.Close();
+        state.Recording = false;
         Close();
     }
 
-    private void CaptureWindow(string path)
+    private void CaptureWindow(string path) => CaptureVisual(this, path);
+
+    private static void CaptureVisual(Avalonia.Visual visual, string path)
     {
-        var width = Math.Max(1, (int)Math.Round(Bounds.Width));
-        var height = Math.Max(1, (int)Math.Round(Bounds.Height));
+        var bounds = visual.Bounds;
+        var width = Math.Max(1, (int)Math.Round(bounds.Width));
+        var height = Math.Max(1, (int)Math.Round(bounds.Height));
         var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
-        bitmap.Render(this);
+        bitmap.Render(visual);
         bitmap.Save(path);
     }
 }
