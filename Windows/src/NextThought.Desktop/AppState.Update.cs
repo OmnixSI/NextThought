@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
+using NextThought.Platform;
 
 namespace NextThought.Desktop;
 
@@ -20,8 +21,11 @@ public partial class AppState
     [ObservableProperty] private double updateInstallProgress;
     [ObservableProperty] private string updateInstallStatus = "";
     [ObservableProperty] private bool updateInstallSucceeded;
+    [ObservableProperty] private bool updateInstallerReady;
     private string? prefetchedInstaller;
     private string? prefetchedForUrl;
+    private Task? installerPrefetch;
+    private string? prefetchUrl;
 
     /// <summary>Arguments used by the installer smoke tests as well (Inno Setup 7).</summary>
     public const string SilentInstallArguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /LAUNCH=1";
@@ -29,8 +33,12 @@ public partial class AppState
     /// <summary>Raised after a verified installer has been started; the window exits.</summary>
     public event Action? UpdateInstalled;
 
+    /// <summary>
+    /// F16: the title-bar "重启以更新" button appears once the background download has finished
+    /// and passed SHA-256 (Updater.phase == .ready), not merely when a release exists.
+    /// </summary>
     public bool CanInstallUpdateInApp =>
-        UpdateAvailable && LastUpdateReport is { CanInstall: true } && !InstallingUpdate;
+        UpdateAvailable && LastUpdateReport is { CanInstall: true } && UpdateInstallerReady && !InstallingUpdate;
 
     public IReadOnlyList<UpdateChannelChoice> UpdateChannels { get; } =
     [
@@ -52,6 +60,11 @@ public partial class AppState
         InstallUpdateCommand.NotifyCanExecuteChanged();
     }
     partial void OnUpdateUrlChanged(string? value) => OnPropertyChanged(nameof(CanOpenUpdatePage));
+    partial void OnUpdateInstallerReadyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanInstallUpdateInApp));
+        InstallUpdateCommand.NotifyCanExecuteChanged();
+    }
     partial void OnInstallingUpdateChanged(bool value)
     {
         OnPropertyChanged(nameof(CanInstallUpdateInApp));
@@ -77,9 +90,12 @@ public partial class AppState
                 UpdateVersion = report.LatestVersion ?? "";
                 UpdateUrl = report.DownloadUrl;
                 UpdateStatus = report.Describe();
+                UpdateInstallerReady = prefetchedForUrl == report.SetupUrl && prefetchedInstaller is { } cached && File.Exists(cached);
                 OnPropertyChanged(nameof(CanInstallUpdateInApp));
                 InstallUpdateCommand.NotifyCanExecuteChanged();
             });
+            // Updater.check: download in the background so "重启以更新" is instant once it is ready.
+            if (report is { Available: true, CanInstall: true }) _ = StartInstallerPrefetch(report);
             return report;
         }
         finally
@@ -155,24 +171,44 @@ public partial class AppState
 
 
     /// <summary>F16: download the installer in the background so the title-bar button is ready.</summary>
+    private Task StartInstallerPrefetch(UpdateReport report)
+    {
+        if (report.SetupUrl is not { Length: > 0 } setupUrl || report.SetupName is not { Length: > 0 }
+            || report.ChecksumsUrl is not { Length: > 0 })
+            return Task.CompletedTask;
+        if (installerPrefetch is { IsCompleted: false } && prefetchUrl == setupUrl) return installerPrefetch;
+        prefetchUrl = setupUrl;
+        installerPrefetch = Task.Run(() => PrefetchInstallerAsync(report));
+        return installerPrefetch;
+    }
+
+    /// <summary>Self-test entry: waits until the background download and SHA-256 check finished.</summary>
+    public Task EnsureInstallerPrefetchedAsync(UpdateReport report) => StartInstallerPrefetch(report);
+
     private async Task PrefetchInstallerAsync(UpdateReport report)
     {
-        if (report.SetupUrl is not { Length: > 0 } || report.SetupName is not { Length: > 0 }) return;
         try
         {
             var directory = Path.Combine(Path.GetTempPath(), "NextThoughtPrefetch");
-            Directory.CreateDirectory(directory);
-            var target = Path.Combine(directory, report.SetupName);
-            if (File.Exists(target) && prefetchedForUrl == report.SetupUrl) { prefetchedInstaller = target; return; }
-            using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
-            await using var source = await http.GetStreamAsync(report.SetupUrl);
-            await using var file = File.Create(target);
-            await source.CopyToAsync(file);
-            prefetchedInstaller = target;
+            var prepared = await UpdateInstaller.PrepareAsync(
+                report.SetupUrl!, report.SetupName!, report.ChecksumsUrl!, directory);
+            prefetchedInstaller = prepared.Path;
             prefetchedForUrl = report.SetupUrl;
-            UpdateInstallStatus = "安装包已在后台下载；点「重启以更新」安装。";
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                UpdateInstallerReady = true;
+                UpdateInstallStatus = "安装包已在后台下载并通过 SHA-256 校验；点「重启以更新」安装。";
+            });
         }
-        catch (Exception) { /* the click path can still download normally */ }
+        catch (Exception ex)
+        {
+            // The click path can still try again and reports its own failure.
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                UpdateInstallerReady = false;
+                UpdateInstallStatus = "后台下载失败：" + ex.Message;
+            });
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanInstallUpdateInApp))]
@@ -183,48 +219,28 @@ public partial class AppState
         InstallingUpdate = true;
         UpdateInstallSucceeded = false;
         UpdateInstallProgress = 0;
-        UpdateInstallStatus = "正在下载安装包…";
+        UpdateInstallStatus = "正在准备安装包…";
         string? installer = null;
+        string expectedSha;
         try
         {
-            using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
             var cached = prefetchedForUrl == report.SetupUrl ? prefetchedInstaller : null;
             if (cached is not null && File.Exists(cached))
             {
+                UpdateInstallStatus = "正在校验后台下载的安装包…";
+                expectedSha = await UpdateInstaller.VerifyAsync(cached, report.ChecksumsUrl!);
                 installer = cached;
                 UpdateInstallProgress = 1;
             }
             else
             {
+                UpdateInstallStatus = "正在下载安装包…";
                 var directory = Path.Combine(Path.GetTempPath(), "NextThoughtUpdate-" + Guid.NewGuid().ToString("N")[..8]);
-                Directory.CreateDirectory(directory);
-                installer = Path.Combine(directory, report.SetupName ?? "NextThought-setup.exe");
-                using (var response = await http.GetAsync(report.SetupUrl, HttpCompletionOption.ResponseHeadersRead))
-                {
-                    response.EnsureSuccessStatusCode();
-                    var total = response.Content.Headers.ContentLength ?? 0;
-                    await using var source = await response.Content.ReadAsStreamAsync();
-                    await using var target = File.Create(installer);
-                    var buffer = new byte[81920];
-                    long done = 0;
-                    int read;
-                    while ((read = await source.ReadAsync(buffer)) > 0)
-                    {
-                        await target.WriteAsync(buffer.AsMemory(0, read));
-                        done += read;
-                        if (total > 0) UpdateInstallProgress = Math.Round((double)done / total, 3);
-                    }
-                }
-            }
-
-            UpdateInstallStatus = "正在校验 SHA-256…";
-            var checksums = await http.GetStringAsync(report.ChecksumsUrl);
-            var expected = UpdateChecksums.Find(checksums, Path.GetFileName(installer));
-            if (expected is null) throw new InvalidOperationException("发布里没有这个安装包的校验值。");
-            if (!UpdateChecksums.Verify(installer, expected))
-            {
-                File.Delete(installer);
-                throw new InvalidOperationException("安装包校验失败，已删除下载文件。");
+                var progress = new Progress<double>(value => UpdateInstallProgress = value);
+                var prepared = await UpdateInstaller.PrepareAsync(
+                    report.SetupUrl!, report.SetupName ?? "NextThought-setup.exe", report.ChecksumsUrl!, directory, progress);
+                expectedSha = prepared.Sha256;
+                installer = prepared.Path;
             }
 
             UpdateInstallStatus = "正在检查安装包签名…";
@@ -247,7 +263,7 @@ public partial class AppState
                 await File.WriteAllTextAsync(launch, JsonSerializer.Serialize(new
                 {
                     installer,
-                    sha256 = expected,
+                    sha256 = expectedSha,
                     args = SilentInstallArguments
                 }, new JsonSerializerOptions { WriteIndented = true }));
                 UpdateInstallStatus = "自检：安装包已下载并通过 SHA-256，启动命令已记录。";

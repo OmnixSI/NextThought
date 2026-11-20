@@ -6,7 +6,9 @@ public partial class MainWindow
     {
         await Task.Delay(200);
         var update = await state.CheckForUpdatesAsync();
-        var markerPath = System.IO.Path.Combine(Path.GetTempPath(), "nextthought-update-launch.json");
+        // F16: the title-bar button appears only after the background download + SHA-256 check.
+        await state.EnsureInstallerPrefetchedAsync(update);
+        var markerPath = System.IO.Path.Combine(state.Paths.Root, "update-launch.json");
         var marker = "";
         var installerExists = false;
         string? sha = null;
@@ -19,9 +21,9 @@ public partial class MainWindow
             }
             else
             {
-                if (markerPath is { Length: > 0 } && File.Exists(markerPath)) File.Delete(markerPath);
+                if (File.Exists(markerPath)) File.Delete(markerPath);
                 await state.InstallUpdateCommand.ExecuteAsync(null).WaitAsync(TimeSpan.FromSeconds(90));
-                if (markerPath is { Length: > 0 } && File.Exists(markerPath))
+                if (File.Exists(markerPath))
                 {
                     marker = await File.ReadAllTextAsync(markerPath);
                     using var document = System.Text.Json.JsonDocument.Parse(marker);
