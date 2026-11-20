@@ -220,5 +220,32 @@
         </Grid>
       </Grid>
     </Grid>
+
+    <!-- E3 first-run guide overlay -->
+    <Grid Grid.RowSpan="2" ZIndex="20" Background="{DynamicResource Paper}" IsVisible="{Binding OnboardingVisible}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_28}" MaxWidth="560"
+              HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Spacing="{DynamicResource D4Spacing_14}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="首次引导" Classes="overline" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{Binding OnboardingPosition}" Classes="caption" VerticalAlignment="Center" />
+              <Button Classes="quiet" Content="关闭" Command="{Binding SkipOnboardingCommand}" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Text="{Binding OnboardingStepTitle}" Classes="display" FontSize="26" />
+          <TextBlock Text="{Binding OnboardingStepBody}" Classes="body" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+            <Button Content="跳过" Command="{Binding SkipOnboardingCommand}" HorizontalAlignment="Left" Classes="quiet" />
+            <Button Grid.Column="1" Content="上一步" Command="{Binding PreviousOnboardingStepCommand}"
+                    IsEnabled="{Binding !OnboardingIsFirst}" />
+            <Button Grid.Column="2" Content="下一步" Command="{Binding NextOnboardingStepCommand}"
+                    IsVisible="{Binding !OnboardingIsLast}" />
+            <Button Grid.Column="3" Classes="primary" Content="完成" Command="{Binding CompleteOnboardingCommand}"
+                    IsVisible="{Binding OnboardingIsLast}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </Window>

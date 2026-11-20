@@ -6,6 +6,7 @@ public static class StartupOptions
     public static bool Demo { get; private set; }
     public static string? Screenshots { get; private set; }
     public static string? SelfTest { get; private set; }
+    public static bool Onboarding { get; private set; }
 
     public static void Parse(IReadOnlyList<string> args)
     {
@@ -17,6 +18,7 @@ public static class StartupOptions
             else if (argument == "--screenshots" && index + 1 < args.Count) Screenshots = args[++index];
             else if (argument.StartsWith("--self-test=", StringComparison.OrdinalIgnoreCase)) SelfTest = argument["--self-test=".Length..];
             else if (argument == "--self-test" && index + 1 < args.Count) SelfTest = args[++index];
+            else if (argument == "--onboarding") Onboarding = true;
         }
     }
 }

@@ -110,6 +110,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void OnboardingOverlayExists()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("OnboardingVisible", xaml);
+        Assert.Contains("NextOnboardingStepCommand", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Onboarding.cs"));
+        Assert.Contains("OnboardingVersion.NeedsGuide", state);
+    }
+
     [Fact]
     public void LiveTopBarHasCompanionAndAnswerSettings()
     {

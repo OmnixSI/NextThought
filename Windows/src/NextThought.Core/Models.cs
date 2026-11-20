@@ -112,6 +112,9 @@ public sealed record AppSettings
     /// <summary>D10: the Live/Library context sidebar is collapsed.</summary>
     public bool ContextSidebarHidden { get; set; }
 
+    /// <summary>E3: last app version whose onboarding guide was completed.</summary>
+    public string OnboardingCompletedVersion { get; set; } = "";
+
     /// <summary>E26: per-scene defaults, keyed by MeetingMode name.</summary>
     public Dictionary<string, SceneDefaults> SceneDefaults { get; set; } = [];
 

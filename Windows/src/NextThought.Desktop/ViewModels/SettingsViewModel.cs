@@ -140,6 +140,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 
     /// <summary>Optional HTTPS relay origin; empty keeps the companion on the LAN channel only.</summary>
     [ObservableProperty] private string companionRelayUrl = "";
+    [ObservableProperty] private string onboardingCompletedVersion = "";
 
     public ObservableCollection<ScreenChoice> ScreenChoices { get; } = [];
 
@@ -254,6 +255,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         PresenterMode = settings.PresenterMode;
         PresenterSlidesScreen = settings.PresenterSlidesScreen;
         CompanionRelayUrl = settings.CompanionRelayUrl;
+        OnboardingCompletedVersion = settings.OnboardingCompletedVersion;
         AutoEndMode = settings.MeetingAutoEndMode;
         AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
         SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
@@ -320,6 +322,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         PresenterMode = PresenterMode,
         PresenterSlidesScreen = SelectedSlidesScreen?.Id ?? PresenterSlidesScreen,
         CompanionRelayUrl = CompanionRelayUrl.Trim(),
+        OnboardingCompletedVersion = OnboardingCompletedVersion,
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,

@@ -66,6 +66,7 @@ public partial class AppState : ObservableObject
         Library = new LibraryViewModel(this);
         try { ContextSidebarHidden = SettingsStore.Load().ContextSidebarHidden; } catch { }
         LoadSceneSettings();
+        LoadOnboarding();
         candidateTimer.Tick += (_, _) => OnCandidateTimer();
         History = [];
         Transcript = [];
