@@ -129,6 +129,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool cueAlwaysOpen;
     [ObservableProperty] private double? subtitleBarX;
     [ObservableProperty] private double? subtitleBarY;
+    [ObservableProperty] private bool capturePrivacy = true;
     [ObservableProperty] private int subtitleWidth = 920;
     [ObservableProperty] private int subtitleFontSize = 22;
     [ObservableProperty] private bool subtitleShowTranslation = true;
@@ -253,6 +254,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CueAlwaysOpen = settings.CueAlwaysOpen;
         SubtitleBarX = settings.SubtitleBarX;
         SubtitleBarY = settings.SubtitleBarY;
+        CapturePrivacy = settings.CapturePrivacy;
         SubtitleWidth = Math.Clamp(settings.SubtitleWidth, 520, 1400);
         SubtitleFontSize = Math.Clamp(settings.SubtitleFontSize, 16, 36);
         SubtitleShowTranslation = settings.SubtitleShowTranslation;
@@ -332,6 +334,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CueAlwaysOpen = CueAlwaysOpen,
         SubtitleBarX = SubtitleBarX,
         SubtitleBarY = SubtitleBarY,
+        CapturePrivacy = CapturePrivacy,
         SubtitleWidth = Math.Clamp(SubtitleWidth, 520, 1400),
         SubtitleFontSize = Math.Clamp(SubtitleFontSize, 16, 36),
         SubtitleShowTranslation = SubtitleShowTranslation,

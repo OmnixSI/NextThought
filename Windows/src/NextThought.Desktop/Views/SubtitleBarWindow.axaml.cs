@@ -64,7 +64,7 @@ public partial class SubtitleBarWindow : Window
         {
             ApplyNonActivatingStyle();
             ApplyLayout();
-            WindowCaptureHiding.Hide(this);
+            WindowCaptureHiding.Apply(this, WindowCaptureHiding.PrivacyEnabled);
             timer.Start();
         };
         timer.Tick += (_, _) => { Tick(); TrackPointer(); };

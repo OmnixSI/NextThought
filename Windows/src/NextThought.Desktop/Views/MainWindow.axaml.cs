@@ -27,6 +27,12 @@ public partial class MainWindow : Window
         this.state = state;
         InitializeComponent();
         DataContext = state;
+        WindowCaptureHiding.StartTracking();
+        state.Settings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.CapturePrivacy))
+                WindowCaptureHiding.ApplyAll(state.Settings.CapturePrivacy);
+        };
         ShowSection();
         state.PickSaveFile = PickSaveFileAsync;
         state.PickOpenFile = PickOpenFileAsync;

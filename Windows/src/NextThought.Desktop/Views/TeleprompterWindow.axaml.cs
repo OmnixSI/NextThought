@@ -41,7 +41,7 @@ public partial class TeleprompterWindow : Window
         Opened += (_, _) =>
         {
             RestorePosition();
-            WindowCaptureHiding.Hide(this);
+            WindowCaptureHiding.Apply(this, WindowCaptureHiding.PrivacyEnabled);
             ApplyClickThrough(through);
         };
         PositionChanged += (_, _) =>

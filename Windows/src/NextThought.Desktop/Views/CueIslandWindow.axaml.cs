@@ -42,7 +42,7 @@ public partial class CueIslandWindow : Window
         {
             ApplyNonActivatingStyle();
             MoveToTopCentre();
-            WindowCaptureHiding.Hide(this);
+            WindowCaptureHiding.Apply(this, WindowCaptureHiding.PrivacyEnabled);
             StartTracking();
             ApplyExpanded(state.Settings.CueAlwaysOpen || !state.Recording, forCheck: false);
         };

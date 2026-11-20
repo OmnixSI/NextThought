@@ -193,6 +193,9 @@ public sealed record AppSettings
     /// <summary>Mac key <c>cueAlwaysOpen</c>: keep the island expanded during a meeting.</summary>
     public bool CueAlwaysOpen { get; set; }
 
+    /// <summary>Mac key <c>capturePrivacy</c>: exclude all app windows from screen sharing.</summary>
+    public bool CapturePrivacy { get; set; } = true;
+
     /// <summary>Saved subtitle-bar position in screen pixels (Mac subtitleBar.position); null = default.</summary>
     public double? SubtitleBarX { get; set; }
     public double? SubtitleBarY { get; set; }

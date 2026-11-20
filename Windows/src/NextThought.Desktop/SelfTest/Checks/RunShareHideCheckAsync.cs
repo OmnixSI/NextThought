@@ -11,6 +11,7 @@ public partial class MainWindow
         try
         {
             state.Settings.SelectedCueWidth = state.Settings.CueWidthChoices.First(choice => choice.Value == "wide");
+            state.Settings.CapturePrivacy = false; // exercise the fallback detector
             state.Recording = true;
             ShowCueIsland();
             await Task.Delay(500);
@@ -35,6 +36,7 @@ public partial class MainWindow
             await Task.Delay(500);
             restored = island is { IsVisible: true };
             state.Recording = false;
+            state.Settings.CapturePrivacy = true;
             passed = widthOk && detected && hidden && restored;
         }
         catch (Exception ex) { Console.WriteLine("share-hide-check: " + ex.Message); }

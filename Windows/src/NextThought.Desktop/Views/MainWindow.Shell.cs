@@ -32,7 +32,10 @@ public partial class MainWindow
     private void EvaluateScreenSharing()
     {
         if (closing) return;
-        var active = ScreenShareDetector.IsSharingActive();
+        // C19: WDA exclusion is the primary protection; the window-title detector is only a fallback.
+        var protectedByCapture = state.Settings.CapturePrivacy
+            && (island is null || WindowCaptureHiding.IsHidden(island));
+        var active = !protectedByCapture && ScreenShareDetector.IsSharingActive();
         if (active == sharingActive) return;
         sharingActive = active;
         if (active)

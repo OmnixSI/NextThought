@@ -1,5 +1,8 @@
 using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
 
 namespace NextThought.Desktop.Views;
 
@@ -11,6 +14,10 @@ namespace NextThought.Desktop.Views;
 public static class WindowCaptureHiding
 {
     private const uint WdaExcludeFromCapture = 0x00000011;
+    private const uint WdaNone = 0;
+
+    /// <summary>C18: the setting all windows read when they open.</summary>
+    public static bool PrivacyEnabled { get; set; } = true;
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
@@ -33,4 +40,31 @@ public static class WindowCaptureHiding
     }
 
     public static bool IsHidden(Window window) => Affinity(window) == WdaExcludeFromCapture;
+
+    /// <summary>C18: apply the capture-privacy setting; false restores normal visibility.</summary>
+    public static bool Apply(Window window, bool enabled)
+    {
+        if (window.TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return false;
+        return SetWindowDisplayAffinity(handle, enabled ? WdaExcludeFromCapture : WdaNone);
+    }
+
+    private static DispatcherTimer? tracker;
+
+    /// <summary>C18: keep applying the current privacy setting to every window, including new ones.</summary>
+    public static void StartTracking()
+    {
+        if (tracker is not null) return;
+        tracker = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        tracker.Tick += (_, _) => ApplyAll(PrivacyEnabled);
+        tracker.Start();
+        ApplyAll(PrivacyEnabled);
+    }
+
+    /// <summary>C18: apply to every open window of the app.</summary>
+    public static void ApplyAll(bool enabled)
+    {
+        PrivacyEnabled = enabled;
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime app) return;
+        foreach (var window in app.Windows) Apply(window, enabled);
+    }
 }

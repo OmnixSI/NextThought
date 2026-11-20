@@ -13,7 +13,7 @@ public partial class TeleprompterHandleWindow : Window
     public TeleprompterHandleWindow()
     {
         InitializeComponent();
-        Opened += (_, _) => WindowCaptureHiding.Hide(this);
+        Opened += (_, _) => WindowCaptureHiding.Apply(this, WindowCaptureHiding.PrivacyEnabled);
     }
 
     public event Action? RestoreRequested;
