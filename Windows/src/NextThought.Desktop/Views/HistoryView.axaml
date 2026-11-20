@@ -3,17 +3,17 @@
              xmlns:local="using:NextThought.Desktop"
              x:Class="NextThought.Desktop.Views.HistoryView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="32,18,32,0">
-    <StackPanel Grid.Row="0" Spacing="6">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
+    <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_6}">
       <TextBlock Text="历史" Classes="display" />
       <TextBlock Text="每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。"
                  Classes="caption" />
     </StackPanel>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,18,0,12">
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_18_0_12}">
       <TextBox Text="{Binding HistoryQuery}" PlaceholderText="搜索会议标题、日期或模式" MaxWidth="420"
                HorizontalAlignment="Left" />
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
         <RadioButton Classes="chip" GroupName="history" IsChecked="{Binding HistoryFilterIsAll, Mode=OneWay}"
                      Command="{Binding SetHistoryFilterCommand}" CommandParameter="全部">
           <TextBlock Text="全部" Foreground="{Binding $parent[RadioButton].Foreground}" />
@@ -26,40 +26,40 @@
                      Command="{Binding SetHistoryFilterCommand}" CommandParameter="未整理">
           <TextBlock Text="未整理" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
-        <TextBlock Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" Margin="8,0,0,0" />
+        <TextBlock Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
       </StackPanel>
     </Grid>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_0_0_12}">
       <ComboBox ItemsSource="{Binding HistoryDateChoices}" SelectedItem="{Binding HistoryDateFilter}" Width="140" />
       <ComboBox ItemsSource="{Binding HistoryLengthChoices}" SelectedItem="{Binding HistoryLengthFilter}" Width="140" />
       <ComboBox ItemsSource="{Binding HistorySortChoices}" SelectedItem="{Binding HistorySort}" Width="140" />
     </StackPanel>
 
-    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
+    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
       <StackPanel>
         <ItemsControl ItemsSource="{Binding FilteredHistory}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="local:RecentMeetingRow">
             <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Tag="{Binding}" Click="Row_Click" Margin="0,0,0,6">
-              <Grid ColumnDefinitions="Auto,*,Auto" Margin="6,4">
-                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="10" Background="{DynamicResource Sunken}"
-                        VerticalAlignment="Center" Margin="0,0,14,0">
+                    Tag="{Binding}" Click="Row_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
+              <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
+                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
+                        VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_14_0}">
                   <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
                              Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center"
                              VerticalAlignment="Center" />
                 </Border>
-                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
                   <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                   <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
                 </StackPanel>
-                <StackPanel Grid.Column="2" Spacing="6" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_6}" Orientation="Horizontal" VerticalAlignment="Center">
                   <Border Classes="chip" IsVisible="{Binding HasSummary}">
                     <TextBlock Text="有纪要" Classes="overline" FontSize="10" />
                   </Border>
                   <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"
-                             Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="6,0,0,0" />
+                             Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_6_0_0_0}" />
                 </StackPanel>
               </Grid>
             </Button>
@@ -67,7 +67,7 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
         <TextBlock Text="没有匹配的会议。换个关键词，或把筛选切回「全部」。"
-                   Classes="caption" IsVisible="{Binding IsHistoryViewEmpty}" Margin="4,12,0,0" />
+                   Classes="caption" IsVisible="{Binding IsHistoryViewEmpty}" Margin="{DynamicResource D4Margin_4_12_0_0}" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

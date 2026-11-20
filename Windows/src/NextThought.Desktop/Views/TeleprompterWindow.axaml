@@ -10,18 +10,18 @@
         Background="Transparent" TransparencyLevelHint="Transparent"
         WindowStartupLocation="Manual">
   <Border x:Name="Shell" Background="#E6121110" BorderBrush="#33ECEBE8" BorderThickness="0.5"
-          CornerRadius="16" Padding="6" BoxShadow="0 12 26 0 #50000000">
+          CornerRadius="{DynamicResource D4CornerRadius_16}" Padding="{DynamicResource D4Padding_6}" BoxShadow="0 12 26 0 #50000000">
     <Grid RowDefinitions="Auto,*">
       <!-- Drag handle + controls -->
-      <Grid x:Name="DragBar" ColumnDefinitions="*,Auto" Margin="10,6,6,6" Background="Transparent"
+      <Grid x:Name="DragBar" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_10_6_6_6}" Background="Transparent"
             PointerPressed="DragBar_PointerPressed">
-        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-          <Border Width="7" Height="7" CornerRadius="4" Background="{DynamicResource Seal}" />
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_7}" VerticalAlignment="Center">
+          <Border Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}" Background="{DynamicResource Seal}" />
           <TextBlock Text="提词器" Foreground="#A3A19B" FontSize="11" VerticalAlignment="Center" />
           <TextBlock x:Name="ModeText" Text="拖动可移动 · 双击隐藏控件" Foreground="#6B6963" FontSize="10"
-                     VerticalAlignment="Center" Margin="4,0,0,0" />
+                     VerticalAlignment="Center" Margin="{DynamicResource D4Margin_4_0_0_0}" />
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
           <Button Classes="tp" Content="A-" Click="Smaller_Click" ToolTip.Tip="缩小字号" />
           <Button Classes="tp" Content="A+" Click="Larger_Click" ToolTip.Tip="放大字号" />
           <Button Classes="tp" Content="−" Click="Fade_Click" ToolTip.Tip="降低不透明度" />
@@ -32,7 +32,7 @@
         </StackPanel>
       </Grid>
 
-      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="14,4,14,12">
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="{DynamicResource D4Padding_14_4_14_12}">
         <SelectableTextBlock x:Name="BodyText" Text="{Binding PlainAnswer}" Foreground="#F5F3EE"
                              FontSize="26" LineHeight="38" TextWrapping="Wrap" />
       </ScrollViewer>

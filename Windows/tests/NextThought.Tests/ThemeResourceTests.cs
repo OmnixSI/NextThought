@@ -57,6 +57,23 @@ public sealed class ThemeResourceTests
             Assert.Contains($"<SolidColorBrush x:Key=\"{key}\" Color=\"{color}\" />", theme);
     }
 
+
+    [Fact]
+    public void ViewsHaveNoNumericSpacingOrRadiusLiterals()
+    {
+        var views = Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Views");
+        foreach (var file in Directory.GetFiles(views, "*.axaml", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            var matches = System.Text.RegularExpressions.Regex.Matches(text,
+                "\\b(Margin|Padding|Spacing|CornerRadius)=\"[0-9.,-]+\"");
+            Assert.True(matches.Count == 0, file + " has " + matches.Count + " numeric spacing values");
+        }
+        var theme = File.ReadAllText(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
+        Assert.Contains("x:Key=\"D4Margin_", theme);
+        Assert.Contains("x:Key=\"D4Padding_", theme);
+    }
+
     [Fact]
     public void SpacingResourcesMatchMacSpace()
     {

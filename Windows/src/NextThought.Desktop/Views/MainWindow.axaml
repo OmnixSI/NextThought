@@ -15,17 +15,17 @@
     <!-- Title row: the client area extends into the title bar; the window keeps only its
          resize border, and the caption buttons are drawn here so the brand reads first. -->
     <Grid Grid.Row="0" Name="TitleBar" Background="Transparent" PointerPressed="TitleBar_PointerPressed">
-      <StackPanel Orientation="Horizontal" Margin="24,0,0,0" VerticalAlignment="Center" Spacing="12" IsVisible="{Binding !Recording}">
-        <Border Width="24" Height="24" CornerRadius="7" Background="{DynamicResource InkBrush}" VerticalAlignment="Center">
+      <StackPanel Orientation="Horizontal" Margin="{DynamicResource D4Margin_24_0_0_0}" VerticalAlignment="Center" Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding !Recording}">
+        <Border Width="24" Height="24" CornerRadius="{DynamicResource D4CornerRadius_7}" Background="{DynamicResource InkBrush}" VerticalAlignment="Center">
           <TextBlock Text="N" Foreground="{DynamicResource OnInk}" FontSize="12" FontWeight="SemiBold"
                      HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <TextBlock Text="NextThought" Classes="title" FontSize="14" VerticalAlignment="Center" />
-        <Border Classes="chip" Margin="4,0,0,0" VerticalAlignment="Center">
+        <Border Classes="chip" Margin="{DynamicResource D4Margin_4_0_0_0}" VerticalAlignment="Center">
           <TextBlock Text="{Binding VersionText}" Classes="overline" FontSize="10" />
         </Border>
       </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !Recording}">
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !Recording}">
         <RadioButton Classes="nav" GroupName="topnav" Content="首页" IsChecked="{Binding OnHome, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Home" />
         <RadioButton Classes="nav" GroupName="topnav" Content="会议" IsChecked="{Binding OnLive, Mode=OneWay}"
@@ -33,17 +33,17 @@
         <RadioButton Classes="nav" GroupName="topnav" Content="资料库" IsChecked="{Binding OnLibrary, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Library" />
       </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,142,0" IsVisible="{Binding !Recording}">
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_142_0}" IsVisible="{Binding !Recording}">
         <TextBlock Text="{Binding PageSubtitle}" Classes="caption" VerticalAlignment="Center" MaxWidth="280"
                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
         <Button Classes="quiet" Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="设置">
-          <StackPanel Orientation="Horizontal" Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
             <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
             <TextBlock Text="设置" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </StackPanel>
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch" Spacing="0">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch" Spacing="{DynamicResource D4Spacing_0}">
         <Button Name="MinimizeButton" Classes="caption" Click="Minimize_Click" ToolTip.Tip="最小化">
           <Path Data="M0,5 H10" StrokeThickness="1" />
         </Button>
@@ -60,70 +60,70 @@
       <!-- Sidebar: brand, sections, recent meetings, data controls -->
       <Border Grid.Column="0" IsVisible="False" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
               BorderThickness="0,0,0.5,0">
-        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="14,6,14,14">
-          <StackPanel Grid.Row="0" Spacing="1">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_14_6_14_14}">
+          <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_1}">
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHome, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Home" ToolTip.Tip="首页">
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE80F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="首页" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLive, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Live" ToolTip.Tip="会议">
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE720;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="会议" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnNotes, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Notes" ToolTip.Tip="纪要">
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="纪要" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHistory, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="History" ToolTip.Tip="历史">
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE81C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="历史" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSeries, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Series" ToolTip.Tip="系列">
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE8F1;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="系列" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLibrary, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Library" ToolTip.Tip="资料库">
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="资料库" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSettings, Mode=OneWay}"
                          Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="设置">
-              <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
                 <TextBlock Text="设置" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
           </StackPanel>
 
-          <StackPanel Grid.Row="1" Margin="10,22,10,8">
+          <StackPanel Grid.Row="1" Margin="{DynamicResource D4Margin_10_22_10_8}">
             <TextBlock Text="最近会议" Classes="overline" />
           </StackPanel>
 
           <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <ListBox Name="HistoryList" ItemsSource="{Binding History}" SelectionChanged="History_SelectionChanged"
-                     Background="Transparent" Margin="0,0,0,0">
+                     Background="Transparent" Margin="{DynamicResource D4Margin_0_0_0_0}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="local:RecentMeetingRow">
-                  <Border Padding="10,8" CornerRadius="8" Background="Transparent">
-                    <StackPanel Spacing="3">
+                  <Border Padding="{DynamicResource D4Padding_10_8}" CornerRadius="{DynamicResource D4CornerRadius_8}" Background="Transparent">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_3}">
                       <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                       <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                     </StackPanel>
@@ -133,13 +133,13 @@
             </ListBox>
           </ScrollViewer>
 
-          <StackPanel Grid.Row="3" Spacing="6" Margin="2,10,2,0">
+          <StackPanel Grid.Row="3" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_2_10_2_0}">
             <Border Classes="chip" HorizontalAlignment="Left">
               <TextBlock Text="{Binding StatsText}" Classes="caption" FontSize="10" />
             </Border>
             <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                     Command="{Binding OpenDataCommand}" ToolTip.Tip="打开数据目录">
-              <StackPanel Orientation="Horizontal" Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
                 <TextBlock Text="&#xE838;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" />
                 <TextBlock Text="数据目录" VerticalAlignment="Center" />
               </StackPanel>
@@ -152,19 +152,19 @@
       <Border Grid.Column="0" Width="260" IsVisible="{Binding ContextSidebarVisible}"
               Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
               BorderThickness="0,0,0.5,0">
-        <Grid RowDefinitions="Auto,*,Auto" Margin="14,8,14,14">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_14_8_14_14}">
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <TextBlock Text="上下文" Classes="overline" VerticalAlignment="Center" />
             <Button Grid.Column="1" Classes="quiet" Content="隐藏" Command="{Binding ToggleContextSidebarCommand}" />
           </Grid>
-          <ScrollViewer Grid.Row="1" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6">
+          <ScrollViewer Grid.Row="1" Margin="{DynamicResource D4Margin_0_10_0_0}" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
               <TextBlock Text="最近会议" Classes="overline" />
               <ListBox ItemsSource="{Binding History}" Background="Transparent" SelectionChanged="History_SelectionChanged">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="local:RecentMeetingRow">
-                    <Border Padding="8,6" CornerRadius="8">
-                      <StackPanel Spacing="2">
+                    <Border Padding="{DynamicResource D4Padding_8_6}" CornerRadius="{DynamicResource D4CornerRadius_8}">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_2}">
                         <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                         <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
                       </StackPanel>
@@ -181,16 +181,16 @@
 
       <!-- Content -->
       <Grid Grid.Column="1" RowDefinitions="*,Auto">
-        <Grid Grid.Row="0" Margin="0">
+        <Grid Grid.Row="0" Margin="{DynamicResource D4Margin_0}">
           <ContentControl x:Name="PageHost" />
         </Grid>
 
         <!-- Status bar -->
-        <Border Grid.Row="1" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Padding="24,10,24,12">
+        <Border Grid.Row="1" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_24_10_24_12}">
           <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Spacing="6">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Border Width="7" Height="7" CornerRadius="4" VerticalAlignment="Center"
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                <Border Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
                         Background="{DynamicResource Seal}" IsVisible="{Binding Recording}" />
                 <TextBlock Text="{Binding Status}" Classes="caption" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
               </StackPanel>
@@ -206,7 +206,7 @@
         <Grid Grid.Column="1" Grid.RowSpan="2" ZIndex="10" Background="{DynamicResource Paper}"
               IsVisible="{Binding OnSettings}">
           <Grid RowDefinitions="Auto,*">
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="32,14,32,0">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_32_14_32_0}">
               <Button Grid.Column="1" Classes="quiet" Content="完成" HorizontalAlignment="Right" VerticalAlignment="Center"
                       Command="{Binding NavigateCommand}" CommandParameter="Home" />
             </Grid>

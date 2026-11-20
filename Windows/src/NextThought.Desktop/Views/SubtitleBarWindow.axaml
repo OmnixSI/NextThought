@@ -10,15 +10,15 @@
         Background="Transparent" TransparencyLevelHint="Transparent"
         WindowStartupLocation="Manual">
   <!-- One sentence, big and centred; its translation small; who is speaking beneath. -->
-  <Border Background="#F2141312" CornerRadius="18" Padding="30,14" Margin="0,0,0,10"
+  <Border Background="#F2141312" CornerRadius="{DynamicResource D4CornerRadius_18}" Padding="{DynamicResource D4Padding_30_14}" Margin="{DynamicResource D4Margin_0_0_0_10}"
           BoxShadow="0 10 26 0 #50000000">
-    <StackPanel Spacing="3">
+    <StackPanel Spacing="{DynamicResource D4Spacing_3}">
       <TextBlock x:Name="PrimaryText" Foreground="#F5F3EE" FontSize="22" LineHeight="32"
                  TextAlignment="Center" TextWrapping="Wrap" />
       <TextBlock x:Name="SecondaryText" Foreground="#A3A19B" FontSize="14" LineHeight="21"
                  TextAlignment="Center" TextWrapping="Wrap" IsVisible="False" />
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="7" Margin="0,4,0,0">
-        <Border x:Name="LiveDot" Width="6" Height="6" CornerRadius="3" VerticalAlignment="Center"
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_7}" Margin="{DynamicResource D4Margin_0_4_0_0}">
+        <Border x:Name="LiveDot" Width="6" Height="6" CornerRadius="{DynamicResource D4CornerRadius_3}" VerticalAlignment="Center"
                 Background="{DynamicResource Seal}" />
         <TextBlock x:Name="SpeakerText" Foreground="#7A7871" FontSize="11" VerticalAlignment="Center" />
       </StackPanel>

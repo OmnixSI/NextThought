@@ -5,15 +5,15 @@
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.LiveView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="32,18,32,0">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <!-- Header -->
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-      <StackPanel Spacing="6">
-        <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="0"
+      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+        <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="{DynamicResource D4Padding_0}"
                  FontFamily="{StaticResource SerifFamily}" FontSize="28" FontWeight="Medium" MinHeight="40" />
         <TextBlock Text="{Binding PageSubtitle}" Classes="caption" />
       </StackPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
         <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" VerticalAlignment="Center"
                   ToolTip.Tip="系统声音里出现提问时自动生成回答" />
         <Button Content="{Binding LiveModeLabel}" Command="{Binding CycleLiveModeCommand}" ToolTip.Tip="纪要窗口 → 字幕条 → 隐藏" />
@@ -22,17 +22,17 @@
         <Button Content="提词岛" Click="Island_Click" ToolTip.Tip="在屏幕顶部显示问题与回答，不抢焦点" />
         <Button Content="补译" Command="{Binding TranslateMissingCommand}" ToolTip.Tip="把还没有译文的完整句发送到当前回答服务" />
         <Button Content="结束会议" Command="{Binding StopRecordingCommand}" />
-        <Button Classes="primary" Command="{Binding StartRecordingCommand}" MinHeight="36" Padding="18,0">
+        <Button Classes="primary" Command="{Binding StartRecordingCommand}" MinHeight="36" Padding="{DynamicResource D4Padding_18_0}">
           <TextBlock Text="开始记录" Foreground="{DynamicResource OnInk}" />
         </Button>
       </StackPanel>
     </Grid>
 
     <!-- Auto-end reminder: counts down, speech or "继续记录" cancels it -->
-    <Border Grid.Row="1" Classes="aiBlock" Padding="16,10" Margin="0,14,0,0"
+    <Border Grid.Row="1" Classes="aiBlock" Padding="{DynamicResource D4Padding_16_10}" Margin="{DynamicResource D4Margin_0_14_0_0}"
             IsVisible="{Binding HasAutoEndNotice}">
       <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}" VerticalAlignment="Center">
           <TextBlock Text="&#xE823;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
                      Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding AutoEndNotice}" Classes="label" VerticalAlignment="Center" />
@@ -42,10 +42,10 @@
     </Border>
 
     <!-- 临场教练：语速、独白时长与发言占比，按当前场景给一次提醒 -->
-    <Border Grid.Row="2" Classes="aiBlock" Padding="16,10" Margin="0,10,0,0"
+    <Border Grid.Row="2" Classes="aiBlock" Padding="{DynamicResource D4Padding_16_10}" Margin="{DynamicResource D4Margin_0_10_0_0}"
             IsVisible="{Binding HasCoachHint}">
       <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}" VerticalAlignment="Center">
           <TextBlock Text="&#xE82F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14"
                      Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding CoachHint}" Classes="label" VerticalAlignment="Center" />
@@ -55,25 +55,25 @@
     </Border>
 
     <!-- Body -->
-    <Grid Grid.Row="3" ColumnDefinitions="1.12*,*" ColumnSpacing="16" Margin="0,16,0,16">
+    <Grid Grid.Row="3" ColumnDefinitions="1.12*,*" ColumnSpacing="16" Margin="{DynamicResource D4Margin_0_16_0_16}">
       <!-- Transcript -->
-      <Border Classes="card" Padding="0">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_0}">
         <Grid RowDefinitions="Auto,*,Auto">
-          <Grid Margin="18,16,18,10" ColumnDefinitions="*,Auto">
+          <Grid Margin="{DynamicResource D4Margin_18_16_18_10}" ColumnDefinitions="*,Auto">
             <StackPanel>
               <TextBlock Text="实时转写" Classes="title" FontSize="16" />
-              <TextBlock Text="系统声音与麦克风分别处理；只在本机保存文字。" Classes="caption" FontSize="11" Margin="0,3,0,0" />
+              <TextBlock Text="系统声音与麦克风分别处理；只在本机保存文字。" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_3_0_0}" />
             </StackPanel>
             <TextBlock Grid.Column="1" Text="{Binding LevelText}" Classes="caption" FontSize="10" VerticalAlignment="Top" />
           </Grid>
 
           <ListBox Name="TranscriptList" Grid.Row="1" ItemsSource="{Binding Transcript}" Background="Transparent"
-                   Margin="10,0,12,0" SelectionMode="Single">
+                   Margin="{DynamicResource D4Margin_10_0_12_0}" SelectionMode="Single">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="local:TranscriptRow">
-                <Border Background="{DynamicResource TranscriptBubble}" CornerRadius="10" Padding="12,10"
-                        Margin="0,0,6,8">
-                  <StackPanel Spacing="6">
+                <Border Background="{DynamicResource TranscriptBubble}" CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_12_10}"
+                        Margin="{DynamicResource D4Margin_0_0_6_8}">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_6}">
                     <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
                     <SelectableTextBlock Text="{Binding Text}" FontSize="14" LineHeight="22" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Translation}" FontSize="13" TextWrapping="Wrap"
@@ -84,52 +84,52 @@
             </ListBox.ItemTemplate>
           </ListBox>
 
-          <StackPanel Grid.Row="2" Margin="18,6,18,16" Spacing="4">
+          <StackPanel Grid.Row="2" Margin="{DynamicResource D4Margin_18_6_18_16}" Spacing="{DynamicResource D4Spacing_4}">
             <TextBlock Text="{Binding SystemPartial}" Foreground="{DynamicResource Ai}" FontSize="13" />
             <TextBlock Text="{Binding MicrophonePartial}" Foreground="{DynamicResource Secondary}" FontSize="13" />
             <TextBlock Text="转写会显示在这里。也可以导入录音 WAV 验证。"
-                       Classes="caption" IsVisible="{Binding !HasTranscript}" Margin="0,10,0,12" />
+                       Classes="caption" IsVisible="{Binding !HasTranscript}" Margin="{DynamicResource D4Margin_0_10_0_12}" />
           </StackPanel>
         </Grid>
       </Border>
 
       <!-- Answer -->
-      <Border Grid.Column="1" Classes="card" Padding="0">
+      <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_0}">
         <Grid RowDefinitions="Auto,Auto,*,Auto">
-          <Grid Margin="18,16,18,6" ColumnDefinitions="*,Auto">
+          <Grid Margin="{DynamicResource D4Margin_18_16_18_6}" ColumnDefinitions="*,Auto">
             <StackPanel>
               <TextBlock Text="参考回答" Classes="title" FontSize="16" />
-              <TextBlock Text="{Binding RetrievalInfo}" Classes="caption" FontSize="11" Margin="0,3,0,0" />
+              <TextBlock Text="{Binding RetrievalInfo}" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_3_0_0}" />
             </StackPanel>
             <Button Grid.Column="1" Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}"
                     VerticalAlignment="Top" />
           </Grid>
 
-          <TextBlock Grid.Row="1" Text="{Binding DetectedQuestion}" Classes="caption" Margin="18,0,18,10"
+          <TextBlock Grid.Row="1" Text="{Binding DetectedQuestion}" Classes="caption" Margin="{DynamicResource D4Margin_18_0_18_10}"
                      TextWrapping="Wrap" MaxHeight="56" TextTrimming="CharacterEllipsis" />
 
-          <ScrollViewer Grid.Row="2" Margin="12,0,12,0" VerticalScrollBarVisibility="Auto">
-            <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" Margin="6,0" />
+          <ScrollViewer Grid.Row="2" Margin="{DynamicResource D4Margin_12_0_12_0}" VerticalScrollBarVisibility="Auto">
+            <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" Margin="{DynamicResource D4Margin_6_0}" />
           </ScrollViewer>
 
-          <StackPanel Grid.Row="3" Margin="18,10,18,14" Spacing="8">
+          <StackPanel Grid.Row="3" Margin="{DynamicResource D4Margin_18_10_18_14}" Spacing="{DynamicResource D4Spacing_8}">
             <TextBox Text="{Binding QuestionInput}" PlaceholderText="输入问题，回车回答" AcceptsReturn="True"
                      MinHeight="58" MaxHeight="110" TextWrapping="Wrap" KeyDown="Question_KeyDown" />
             <WrapPanel Orientation="Horizontal">
-              <Button Classes="primary" Command="{Binding AskCommand}" Margin="0,0,8,6">
+              <Button Classes="primary" Command="{Binding AskCommand}" Margin="{DynamicResource D4Margin_0_0_8_6}">
           <TextBlock Text="回答" Foreground="{DynamicResource OnInk}" />
         </Button>
               <CheckBox Content="参考资料库" IsChecked="{Binding Settings.UseMaterials}" VerticalAlignment="Center"
-                        Margin="0,0,10,6" />
+                        Margin="{DynamicResource D4Margin_0_0_10_6}" />
               <ComboBox Name="SourcesBox" Width="150" ItemsSource="{Binding Sources}" PlaceholderText="引用来源"
-                        Margin="0,0,8,6">
+                        Margin="{DynamicResource D4Margin_0_0_8_6}">
                 <ComboBox.ItemTemplate>
                   <DataTemplate x:DataType="core:SourceCitation">
                     <TextBlock Text="{Binding Label}" FontSize="12" TextTrimming="CharacterEllipsis" />
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
-              <Button Content="查看来源" Click="ViewSource_Click" Margin="0,0,0,6" />
+              <Button Content="查看来源" Click="ViewSource_Click" Margin="{DynamicResource D4Margin_0_0_0_6}" />
             </WrapPanel>
           </StackPanel>
         </Grid>
