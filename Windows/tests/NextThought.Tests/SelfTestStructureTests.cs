@@ -160,6 +160,14 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SeriesMeetingRowsShowRecordTag()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesView.axaml"));
+        Assert.Contains("有纪要", xaml);
+    }
+
     [Fact]
     public void GlossaryHasSeriesOverlay()
     {

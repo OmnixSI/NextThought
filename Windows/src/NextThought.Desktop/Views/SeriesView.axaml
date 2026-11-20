@@ -72,7 +72,12 @@
               <ItemsControl ItemsSource="{Binding SeriesMeetings}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="local:RecentMeetingRow">
-                    <TextBlock Text="{Binding Meta.Title}" Classes="label" Margin="{DynamicResource D4Margin_0_3}" />
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_3}">
+                      <TextBlock Text="{Binding Meta.Title}" Classes="label" />
+                      <Border Classes="chip" IsVisible="{Binding HasSummary}">
+                        <TextBlock Text="有纪要" Classes="overline" FontSize="10" />
+                      </Border>
+                    </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
