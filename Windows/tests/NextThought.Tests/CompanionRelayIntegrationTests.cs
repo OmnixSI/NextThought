@@ -1,3 +1,5 @@
+using CompanionSnapshot = NextThought.Platform.CompanionSnapshot;
+using CompanionEnvelope = NextThought.Platform.CompanionEnvelope;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;

@@ -1,3 +1,5 @@
+using CompanionSnapshot = NextThought.Platform.CompanionSnapshot;
+using CompanionEnvelope = NextThought.Platform.CompanionEnvelope;
 using NextThought.Core;
 using NextThought.Platform;
 using Xunit;

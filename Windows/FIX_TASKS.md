@@ -60,7 +60,7 @@ Nov 20, 2026 · @Homing
 | B22 | 已实现、未验证 | `Windows/CORE_PARITY.md` 592/592 项已翻译；Core 测试 1514 通过、0 失败、0 跳过；各测试文件与 Swift 同名逐项对应 | 无跳过；B22 的「已验证」需要一次对 Mac 原始测试数字的独立复算或实机确认，暂按未验证 |
 | B23 | 未做 | — | 未开始 |
 | B24 | 已实现、未验证 | 进程相关测试改用 `TestShell`：Windows 用 cmd.exe，非 Windows 用 /bin/sh；不再硬编码 cmd.exe；时间相关测试已有显式时区（NotesDates 传 East8） | 尚未在与 UTC 时区的机器上跑全量；`ArchiveDateTests` 使用本机当前时间但只断言 UTC 序列化，未改 |
-| C1 | 未做 | — | 提词岛不抢焦点未实现 |
+| C1 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：`ShowActivated=false`、`Focusable=false`，窗口打开后加 `WS_EX_NOACTIVATE` + `WS_EX_TOOLWINDOW`；提供 `IsNonActivating` 供自检读取 | 需在记事本打字时点岛上按钮，确认焦点/输入不中断（实机记录未做） |
 | C2 | 未做 | — | 静止鼠标穿透与 80ms 指针轮询未实现 |
 | C3 | 未做 | — | 0.22s 悬停展开/0.2s 离开收起未实现 |
 | C4 | 未做 | — | 一直展开模式未实现 |

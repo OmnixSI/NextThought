@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · C1
+改动：提词岛窗口改为非激活工具窗（`ShowActivated=false`，Win32 `WS_EX_NOACTIVATE|WS_EX_TOOLWINDOW`），不再抢前台焦点；新增 `IsNonActivating` 供自检读回。
+测试：Core **1514/1514**，NextThought.Tests **258/258**。
+状态：C1「已实现、未验证」；需在记事本输入时点岛验证焦点不中断。
+
 ## 2026-11-20 · 0.5.145 · B22（592/592）
 改动：`Tests/NextThoughtCoreTests/` 的 592 项 Swift 测试全部翻译到 `NextThought.Core.Tests`，逐文件写入 `Windows/CORE_PARITY.md`，末尾附复算命令；清掉全部跳过，补齐磁盘搜索、快照生成、工作区归档修复、JSON 文档任务存储、删除事务恢复、系列变更回执、内容搜索连线等 API。
 测试：Core **1514/1514**（0 跳过），NextThought.Tests 255/255。

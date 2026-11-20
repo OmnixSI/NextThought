@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using System.Runtime.InteropServices;
 
 namespace NextThought.Desktop.Views;
 
@@ -19,6 +20,10 @@ public partial class CueIslandWindow : Window
     {
         InitializeComponent();
         this.state = state;
+        // C1: a non-activating tool panel; WS_EX_NOACTIVATE keeps the foreground app focused.
+        ShowActivated = false;
+        Focusable = false;
+        Topmost = true;
         ApplyCueWidth();
         state.Settings.PropertyChanged += (_, e) =>
         {
@@ -34,6 +39,7 @@ public partial class CueIslandWindow : Window
         DataContext = state;
         Opened += (_, _) =>
         {
+            ApplyNonActivatingStyle();
             MoveToTopCentre();
             WindowCaptureHiding.Hide(this);
         };
@@ -42,6 +48,31 @@ public partial class CueIslandWindow : Window
             if (e.PropertyName is nameof(AppState.DetectedQuestion) or nameof(AppState.AnswerText)) FitHeight();
         };
     }
+
+    private const int GwlExstyle = -20;
+    private const long WsExNoActivate = 0x08000000L;
+    private const long WsExToolWindow = 0x00000080L;
+
+    /// <summary>C1: never steal focus from the meeting or the user's editor.</summary>
+    private void ApplyNonActivatingStyle()
+    {
+        if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
+        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64();
+        style |= WsExNoActivate | WsExToolWindow;
+        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+    }
+
+    /// <summary>QA: reads the current extended style for the self-check.</summary>
+    public long ExtendedStyle => TryGetPlatformHandle()?.Handle is { } handle && handle != IntPtr.Zero
+        ? GetWindowLongPtr(handle, GwlExstyle).ToInt64() : 0;
+
+    public bool IsNonActivating => (ExtendedStyle & WsExNoActivate) != 0;
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static extern IntPtr SetWindowLongPtr(IntPtr window, int index, IntPtr value);
 
     private void ApplyCueWidth()
     {
