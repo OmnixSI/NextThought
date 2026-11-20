@@ -37,6 +37,7 @@ Nov 20, 2026 · @Homing
 | D3 | 已实现、未验证 | 浅/深色 token 部分对齐；逐页截图未做 |
 | A15 | 未做 | MacCodec 包已建；Windows Swift/CryptoKit 阻塞，见 OPEN_QUESTIONS |
 | H1 | 已实现、未验证 | MainWindow 258 行、56 检查各一文件、旧参数删除、--self-test 实跑通过 |
+| H2 | 未做 | AppState 主文件 204 行；Methods 未按 Mac 扩展拆分 |
 
 ## 1. ⽬标与范围 
 
