@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · 全量截图验证
+改动：重新跑 `--demo --screenshots`，生成 96 张 PNG（含中/英 × 浅/深、会议 8 标签、设置 6 页、引导 first/last），首页 `home-light.png` 正常。
+测试：Core **872/872**，NextThought.Tests **251/251**。
+状态：D1 页面截图流水线可重复运行；演示文案仍非 Mac 逐字，D1 保持「已实现、未验证」。
+
 ## 2026-11-20 · 0.5.145 · F20（部分）
 改动：开会时构建 `SessionContextSnapshot`（会拼接资料全文）移出 UI 线程，用 `Task.Run` 完成后写入 `context.json`。新增 `SessionContextIsBuiltOffTheUiThread` 测试。
 测试：Core **872/872**，NextThought.Tests **251/251**。

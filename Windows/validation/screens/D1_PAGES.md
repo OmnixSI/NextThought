@@ -1,6 +1,6 @@
 # D1 页面截图清单
 
-一条命令：`NextThought.exe --demo --screenshots=<dir>`。截图会生成中/英 × 浅/深全量，再按视图复制到本目录。
+一条命令：`NextThought.exe --demo --screenshots=<dir>`。截图会生成中/英 × 浅/深全量，再按视图复制到本目录。本轮全量批次共 96 张 PNG。
 
 | D1 页面 | Windows 证据 | Mac 对照 |
 |---|---|---|
