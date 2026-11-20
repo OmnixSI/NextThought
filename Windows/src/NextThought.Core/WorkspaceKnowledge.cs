@@ -335,10 +335,11 @@ public static class KnowledgeMerger
         string? sessionId,
         DateTimeOffset? now = null,
         string? transcriptSourceRevision = null,
-        IReadOnlyList<WorkspaceKnowledgeCandidateSource>? contributingSources = null)
+        IReadOnlyList<WorkspaceKnowledgeCandidateSource>? contributingSources = null,
+        string? originId = null)
     {
         var recordedAt = now ?? DateTimeOffset.UtcNow;
-        var originId = sessionId ?? series.Id;
+        var originIdValue = originId ?? sessionId ?? series.Id;
         var sourceSnapshots = CanonicalSources(contributingSources);
         var sourceManifest = SourceManifest(sourceSnapshots);
         var candidates = (series.KnowledgeCandidates ?? []).ToList();
@@ -350,7 +351,7 @@ public static class KnowledgeMerger
             var text = raw.Trim();
             if (text.Length < 4) continue;
             var logicalId = LogicalItemId(WorkspaceKnowledgeKind.Lesson, text);
-            var id = CandidateId(originId, sessionId, WorkspaceKnowledgeKind.Lesson, logicalId, "", transcriptSourceRevision, sourceManifest);
+            var id = CandidateId(originIdValue, sessionId, WorkspaceKnowledgeKind.Lesson, logicalId, "", transcriptSourceRevision, sourceManifest);
             if (!known.Add(id)) continue;
             candidates.Add(new WorkspaceKnowledgeCandidate
             {
@@ -372,7 +373,7 @@ public static class KnowledgeMerger
             var answer = item.Answer.Trim();
             if (question.Length < 3 || answer.Length == 0) continue;
             var logicalId = LogicalItemId(WorkspaceKnowledgeKind.Question, question);
-            var id = CandidateId(originId, sessionId, WorkspaceKnowledgeKind.Question, logicalId, answer, transcriptSourceRevision, sourceManifest);
+            var id = CandidateId(originIdValue, sessionId, WorkspaceKnowledgeKind.Question, logicalId, answer, transcriptSourceRevision, sourceManifest);
             if (!known.Add(id)) continue;
             var match = series.QuestionBank?.FirstOrDefault(entry => SimilarQuestion(entry.Question, question));
             candidates.Add(new WorkspaceKnowledgeCandidate
@@ -394,6 +395,21 @@ public static class KnowledgeMerger
 
         var updated = added.Count == 0 ? series : series with { KnowledgeCandidates = candidates };
         return (updated, added);
+    }
+
+    /// <summary>B17: the queued candidate still matches the archived summary and the live transcript.</summary>
+    public static bool MatchesCurrentSummary(WorkspaceKnowledgeCandidate candidate, SessionSummary summary,
+        string sessionId, string liveTranscriptSourceRevision)
+    {
+        if (candidate.SourceSessionId != sessionId) return false;
+        var revision = candidate.TranscriptSourceRevision;
+        if (string.IsNullOrEmpty(revision)) return false;
+        if (revision != summary.TranscriptSourceRevision || revision != liveTranscriptSourceRevision) return false;
+        var generated = new WorkspaceSeries("candidate-check", "候选核查", DateTimeOffset.UtcNow, [], []);
+        var bank = (summary.Bank ?? []).Select(entry => new QuestionBankEntry(entry.Question, entry.Answer)).ToList();
+        var ids = CollectCandidates(generated, summary.Lessons ?? [], bank, sessionId,
+            originId: sessionId, transcriptSourceRevision: revision);
+        return ids.Added.Contains(candidate.Id);
     }
 
     /// <summary>Applies one reviewed candidate. Returns the receipt, or null when the decision is not valid.</summary>
@@ -738,7 +754,7 @@ public static class KnowledgeMerger
 
     private static string SourceManifest(IReadOnlyList<WorkspaceKnowledgeCandidateSource> sources) =>
         string.Join("|", sources.Select(source =>
-            $"{source.SessionId.ToLowerInvariant()}:{BitConverter.DoubleToInt64Bits(source.StartedAt.ToUnixTimeMilliseconds() / 1000.0).ToString("x")}:{source.TranscriptSourceRevision}:{source.ProjectionRevision}"));
+            $"{source.SessionId.ToLowerInvariant()}:{BitConverter.DoubleToInt64Bits((source.StartedAt - DateTimeOffset.UnixEpoch).TotalSeconds).ToString("x")}:{source.TranscriptSourceRevision}:{source.ProjectionRevision}"));
 }
 
 /// <summary>

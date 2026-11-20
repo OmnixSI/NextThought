@@ -52,7 +52,7 @@ Nov 20, 2026 · @Homing
 | B14 | 已实现、未验证 | `strictKey` 改为小写保留标点/单空格；`looseKey` 按 NFKC、空白/格式字符/标点规则；`tidy` 合并空白；热词 80 条、误听优先、2–40 字、排除冒号/逗号、仅规范写法；新增 `HotwordString`；拉丁扩展字符算词字符；提示省略标记改为「（另有 N 条未列出）」；4 个对齐测试通过 | `GlossaryTests` 其余 14 项尚未翻译；未实机用真实术语表核对热词 |
 | B15 | 已实现、未验证 | 小组作业/组会阈值统一 0.55/0.3；候选跟踪器新增 `Config`、`Reset`、`NoteAnswered`、`Confirm`，稳定/提前触发/线索/片段/去重/最小间隔均由 Config 控制；4 个对齐测试通过 | `QuestionIntentTests` 8 项、`QuestionCorpusReportTests` 5 项、`RealtimeRegressionTests` 9 项尚未全部翻译；可空句子键尚未加入 |
 | B16 | 已实现、未验证 | 新增投影字幕导出：用校对后文本、说话人名字、原文/译文/双语三种模式、无译文回退原文、译文过期标记与计数；SRT/VTT 时间戳；2 个对齐测试通过 | `SessionExportTests` 其余 10 项尚未翻译；会议页导出按钮尚未改接投影字幕导出 |
-| B17 | 未做 | — | 未开始 |
+| B17 | 已实现、未验证 | 新增 `KnowledgeMerger.MatchesCurrentSummary`（来源会议、摘要/实时两个修订号、重新生成候选 id 必须命中）；`CollectCandidates` 增加 `originId`；来源清单时间改用 Unix 秒 double 位模式，保留亚毫秒精度；3 个对齐测试通过 | `WorkspaceTests` 其余 39 项尚未全部翻译；会议页调用尚未改用 `MatchesCurrentSummary` |
 | B18 | 未做 | — | 未开始 |
 | B19 | 未做 | — | 未开始 |
 | B20 | 未做 | — | 未开始 |
