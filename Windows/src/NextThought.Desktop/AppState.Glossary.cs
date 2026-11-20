@@ -25,6 +25,20 @@ public partial class AppState
     }
 
 
+
+    public System.Collections.ObjectModel.ObservableCollection<TranscriptRow> GlossaryTranscriptHits { get; } = [];
+
+    partial void OnGlossaryQueryChanged(string value) => RefreshGlossaryTranscriptHits();
+
+    private void RefreshGlossaryTranscriptHits()
+    {
+        GlossaryTranscriptHits.Clear();
+        var query = GlossaryQuery.Trim();
+        if (query.Length < 1) return;
+        foreach (var row in Transcript.Where(row => row.Text.Contains(query, StringComparison.OrdinalIgnoreCase)).Take(20))
+            GlossaryTranscriptHits.Add(row);
+    }
+
     public System.Collections.ObjectModel.ObservableCollection<GlossaryEntryRow> GlossaryRows { get; } = [];
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string glossaryQuery = "";
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string newGlossaryTerm = "";

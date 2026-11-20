@@ -12,6 +12,17 @@
     </StackPanel>
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
       <StackPanel>
+      <TextBox Text="{Binding GlossaryQuery}" PlaceholderText="在转写中查找…" Margin="{DynamicResource D4Margin_0_0_0_8}" />
+      <ItemsControl ItemsSource="{Binding GlossaryTranscriptHits}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="local:TranscriptRow">
+            <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_6}">
+              <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
+              <Button Grid.Column="1" Classes="quiet" Content="添加" Click="AddFromTranscript_Click" Tag="{Binding}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <ItemsControl ItemsSource="{Binding GlossaryRows}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="local:GlossaryEntryRow">

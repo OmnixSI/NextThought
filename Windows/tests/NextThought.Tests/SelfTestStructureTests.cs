@@ -157,6 +157,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void GlossaryCanSearchAndAddFromTranscript()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
+        Assert.Contains("在转写中查找", xaml);
+        Assert.Contains("GlossaryTranscriptHits", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
+        Assert.Contains("RefreshGlossaryTranscriptHits", state);
+    }
+
     [Fact]
     public void GlossaryWindowExists()
     {
