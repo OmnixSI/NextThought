@@ -162,9 +162,9 @@ python Windows/scripts/core_usage.py
 
 | Swift 测试文件 | Swift 测试数 | 已翻译数 |
 |---|---:|---:|
-| AnswerPromptBuilderTests.swift | 7 | 0 |
-| AnswerServiceSupportTests.swift | 16 | 0 |
-| AnswerStreamingTests.swift | 17 | 0 |
+| AnswerPromptBuilderTests.swift | 7 | 7 |
+| AnswerServiceSupportTests.swift | 16 | 16 |
+| AnswerStreamingTests.swift | 17 | 17 |
 | AudioTimelineTests.swift | 10 | 10 |
 | BackupArchivePolicyTests.swift | 1 | 1 |
 | ByteLevelBPETokenizerTests.swift | 4 | 4 |
@@ -183,7 +183,7 @@ python Windows/scripts/core_usage.py
 | GlossaryTests.swift | 18 | 0 |
 | LaTeXMathTests.swift | 13 | 13 |
 | LiveInsightsTests.swift | 24 | 1 |
-| LiveTranslationRevisionGateTests.swift | 5 | 0 |
+| LiveTranslationRevisionGateTests.swift | 5 | 5 |
 | LocalModelReuseTests.swift | 5 | 0 |
 | MeetingCarryTests.swift | 2 | 2 |
 | MeetingEndWatchTests.swift | 18 | 17 |
@@ -226,7 +226,7 @@ python Windows/scripts/core_usage.py
 | UpdateCatalogTests.swift | 6 | 0 |
 | VoiceActivitySegmenterTests.swift | 7 | 7 |
 | VoiceProfileTests.swift | 16 | 0 |
-| WebLookupPromptBuilderTests.swift | 3 | 0 |
+| WebLookupPromptBuilderTests.swift | 3 | 3 |
 | WebSearchNeedTests.swift | 4 | 4 |
 | WorkspaceDeletionTransactionTests.swift | 5 | 5 |
 | WorkspaceTests.swift | 39 | 1 |
