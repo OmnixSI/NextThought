@@ -50,7 +50,7 @@ Nov 20, 2026 · @Homing
 | B12 | 已实现、未验证 | `NotesDates.Resolve` 增加时区参数，默认按本地日历日计算；全角数字/冒号先归一化，数字解析不再抛异常；翻译 `relativeDatesBecomeDates` 并增加东八区 07:00/UTC 25 日 23:00 的「明天」测试 | 未在非东八区机器实机核对；其余日期 Swift 测试留给 B22 |
 | B13 | 未做 | `SessionSummaryPrompt.TranscriptText` 已按 Mac 区分 `me/房间/对方`（现场发言标「现场」）；翻译 `SessionRecordTests` 的提示词/分段/标题问题清单 3 项通过 | 其余 6 项（JSONLines 撕尾行、录制恢复、deferred notes、standing 系列、设置快照、Markdown 导出）依赖尚未移植的存储 API |
 | B14 | 已实现、未验证 | `strictKey` 改为小写保留标点/单空格；`looseKey` 按 NFKC、空白/格式字符/标点规则；`tidy` 合并空白；热词 80 条、误听优先、2–40 字、排除冒号/逗号、仅规范写法；新增 `HotwordString`；拉丁扩展字符算词字符；提示省略标记改为「（另有 N 条未列出）」；4 个对齐测试通过 | `GlossaryTests` 其余 14 项尚未翻译；未实机用真实术语表核对热词 |
-| B15 | 未做 | — | 未开始 |
+| B15 | 已实现、未验证 | 小组作业/组会阈值统一 0.55/0.3；候选跟踪器新增 `Config`、`Reset`、`NoteAnswered`、`Confirm`，稳定/提前触发/线索/片段/去重/最小间隔均由 Config 控制；4 个对齐测试通过 | `QuestionIntentTests` 8 项、`QuestionCorpusReportTests` 5 项、`RealtimeRegressionTests` 9 项尚未全部翻译；可空句子键尚未加入 |
 | B16 | 未做 | — | 未开始 |
 | B17 | 未做 | — | 未开始 |
 | B18 | 未做 | — | 未开始 |

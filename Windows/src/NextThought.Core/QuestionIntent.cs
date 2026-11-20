@@ -11,7 +11,7 @@ public sealed record IntentAssessment(UtteranceIntent Intent, double Score, IRea
 public static class QuestionIntentClassifier
 {
     public static (double Actionable, double Uncertain) Thresholds(MeetingMode mode) => mode switch
-    { MeetingMode.Lesson => (.6, .35), MeetingMode.Interview => (.45, .25), MeetingMode.LabMeeting => (.55, .3), _ => (.5, .3) };
+    { MeetingMode.Lesson => (.6, .35), MeetingMode.Interview => (.45, .25), MeetingMode.LabMeeting or MeetingMode.GroupProject => (.55, .3), _ => (.5, .3) };
     public static int CjkCount(string text) => text.Count(c => c >= 0x3400 && c <= 0x9fff);
     private static bool Separator(char c) => char.IsWhiteSpace(c) || char.IsPunctuation(c);
     private static string Strip(string text) => text.Trim().Trim('"', '\'', '?', '？', '.', '。', ',', '，', '!', '！', '：', ':', ';', '；', '…');
