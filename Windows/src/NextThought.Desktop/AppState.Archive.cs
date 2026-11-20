@@ -17,6 +17,7 @@ public partial class AppState
         OnPropertyChanged(nameof(OnHistory));
         OnPropertyChanged(nameof(OnSeries));
         OnPropertyChanged(nameof(OnSettings));
+        OnPropertyChanged(nameof(ContextSidebarVisible));
     }
 
     partial void OnHistoryQueryChanged(string value) => ApplyHistoryFilter();

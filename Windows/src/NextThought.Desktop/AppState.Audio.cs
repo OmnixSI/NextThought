@@ -44,7 +44,7 @@ public partial class AppState
         _ => "晚上好。今天有哪些值得留下的结论？"
     };
 
-    partial void OnRecordingChanged(bool value) { RaiseBusy(); PublishCompanionSnapshot(); }
+    partial void OnRecordingChanged(bool value) { RaiseBusy(); PublishCompanionSnapshot(); OnPropertyChanged(nameof(ContextSidebarVisible)); }
 
     public void RefreshModelState()
     {

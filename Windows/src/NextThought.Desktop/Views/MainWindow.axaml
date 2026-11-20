@@ -56,7 +56,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="0,*">
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
       <!-- Sidebar: brand, sections, recent meetings, data controls -->
       <Border Grid.Column="0" IsVisible="False" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
               BorderThickness="0,0,0.5,0">
@@ -145,6 +145,37 @@
               </StackPanel>
             </Button>
           </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- D10 context sidebar for Live/Library/Series -->
+      <Border Grid.Column="0" Width="260" IsVisible="{Binding ContextSidebarVisible}"
+              Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
+              BorderThickness="0,0,0.5,0">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="14,8,14,14">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <TextBlock Text="上下文" Classes="overline" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="quiet" Content="隐藏" Command="{Binding ToggleContextSidebarCommand}" />
+          </Grid>
+          <ScrollViewer Grid.Row="1" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="6">
+              <TextBlock Text="最近会议" Classes="overline" />
+              <ListBox ItemsSource="{Binding History}" Background="Transparent" SelectionChanged="History_SelectionChanged">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:RecentMeetingRow">
+                    <Border Padding="8,6" CornerRadius="8">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                        <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+          </ScrollViewer>
+          <Button Grid.Row="2" Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Command="{Binding OpenDataCommand}" Content="数据目录" />
         </Grid>
       </Border>
 

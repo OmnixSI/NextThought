@@ -109,6 +109,9 @@ public sealed record AppSettings
     /// <summary>UI language: "zh" (default) or "en".</summary>
     public string Language { get; set; } = "zh";
 
+    /// <summary>D10: the Live/Library context sidebar is collapsed.</summary>
+    public bool ContextSidebarHidden { get; set; }
+
     /// <summary>Appearance: "system" (default), "light" or "dark".</summary>
     public string Appearance { get; set; } = "system";
 

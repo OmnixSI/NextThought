@@ -46,6 +46,22 @@ public sealed class SelfTestStructureTests
         Assert.True(main.Split(marker).Length - 1 >= 3);
     }
 
+
+    [Fact]
+    public void ContextSidebarIsCollapsibleAndPersisted()
+    {
+        var root = Root();
+        var main = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("ContextSidebarVisible", main);
+        Assert.Contains("ToggleContextSidebarCommand", main);
+        var nav = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "AppState.Navigation.cs"));
+        Assert.Contains("ContextSidebarHidden", nav);
+        var settings = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Core", "Models.cs"));
+        Assert.Contains("ContextSidebarHidden", settings);
+        var model = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "ViewModels", "SettingsViewModel.cs"));
+        Assert.Contains("ContextSidebarHidden", model);
+    }
+
     [Fact]
     public void SettingsIsAnOverlay()
     {
@@ -59,7 +75,7 @@ public sealed class SelfTestStructureTests
     public void SidebarIsHiddenAndSettingsIsInTopBar()
     {
         var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
-        Assert.Contains("ColumnDefinitions=\"0,*\"", main);
+        Assert.Contains("ColumnDefinitions=\"Auto,*\"", main);
         Assert.Contains("CommandParameter=\"Settings\"", main);
         Assert.Contains("IsVisible=\"False\"", main);
     }

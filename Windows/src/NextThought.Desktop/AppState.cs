@@ -64,6 +64,7 @@ public partial class AppState : ObservableObject
         Retrieval = new RetrievalService(Paths);
         Settings = new SettingsViewModel(this);
         Library = new LibraryViewModel(this);
+        try { ContextSidebarHidden = SettingsStore.Load().ContextSidebarHidden; } catch { }
         candidateTimer.Tick += (_, _) => OnCandidateTimer();
         History = [];
         Transcript = [];

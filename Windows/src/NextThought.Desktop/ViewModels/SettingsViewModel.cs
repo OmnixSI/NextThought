@@ -324,7 +324,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,
         CaptureProcessStartTicks = SelectedProcess?.StartTicks ?? 0,
-        Shortcuts = new Dictionary<string, string>(state.ShortcutOverrides)
+        Shortcuts = new Dictionary<string, string>(state.ShortcutOverrides),
+        ContextSidebarHidden = state.ContextSidebarHidden
     };
 
     public async Task SaveAsync()
