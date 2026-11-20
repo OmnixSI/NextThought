@@ -169,6 +169,13 @@ public partial class AppState : ObservableObject
     public bool HasIslandTranslation => IslandTranslation.Length > 0;
 
     partial void OnIslandTranslationChanged(string value) => OnPropertyChanged(nameof(HasIslandTranslation));
+
+    /// <summary>C5: the partial words the island shows while it hears someone.</summary>
+    public string HearingText => SystemPartial.Length > 0 ? SystemPartial
+        : MicrophonePartial.Length > 0 ? MicrophonePartial : "";
+
+    partial void OnSystemPartialChanged(string value) => OnPropertyChanged(nameof(HearingText));
+    partial void OnMicrophonePartialChanged(string value) => OnPropertyChanged(nameof(HearingText));
     [ObservableProperty] private string detectedQuestion = "手动提问，或开启自动回答。";
     [ObservableProperty] private string answerText = "";
     [ObservableProperty] private string questionInput = "";

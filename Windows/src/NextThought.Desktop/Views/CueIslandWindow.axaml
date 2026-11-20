@@ -13,8 +13,8 @@
        and the first lines of the answer. Ported from CueIsland.swift (Windows has no notch). -->
   <Border Background="#F0121110" CornerRadius="{DynamicResource D4CornerRadius_20}" Padding="{DynamicResource D4Padding_16_11}" Margin="{DynamicResource D4Margin_0_8_0_0}"
           BoxShadow="0 10 22 0 #40000000">
-    <Border Background="#F2121110" BorderBrush="#33ECEBE8" BorderThickness="0.5" CornerRadius="{DynamicResource D4CornerRadius_16}" Padding="{DynamicResource D4Padding_16_10}">
-      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+    <Border x:Name="InnerBorder" Background="#F2121110" BorderBrush="#33ECEBE8" BorderThickness="0.5" CornerRadius="{DynamicResource D4CornerRadius_16}" Padding="{DynamicResource D4Padding_16_10}">
+      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
                 Background="{DynamicResource Seal}" Margin="{DynamicResource D4Margin_0_0_10_0}" IsVisible="{Binding Recording}" />
         <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
@@ -61,6 +61,9 @@
           <Button Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}" />
           <Button Classes="quiet" Content="取消" Command="{Binding CancelCommand}" />
         </StackPanel>
+        <TextBlock x:Name="PhaseText" Grid.Row="9" Grid.ColumnSpan="3" Text="" Foreground="#9FB4C7"
+                   FontSize="12" LineHeight="17" TextWrapping="Wrap" MaxLines="2"
+                   Margin="{DynamicResource D4Margin_18_5_0_0}" IsVisible="False" />
       </Grid>
     </Border>
   </Border>

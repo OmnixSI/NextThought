@@ -46,6 +46,9 @@ public partial class CueIslandWindow : Window
             MoveToTopCentre();
             WindowCaptureHiding.Apply(this, WindowCaptureHiding.PrivacyEnabled);
             StartTracking();
+            ApplySceneTint();
+            springWidth = Width;
+            targetWidth = Width;
             ApplyExpanded(state.Settings.CueAlwaysOpen || !state.Recording, forCheck: false);
         };
         state.Settings.PropertyChanged += (_, e) =>
@@ -66,6 +69,55 @@ public partial class CueIslandWindow : Window
     private DateTimeOffset? pointerLeft;
     private bool checkExpanded;
 
+    /// <summary>C5: the five shapes of the Mac island.</summary>
+    public enum CuePhase { Compact, Hearing, Listening, Cue, Launcher }
+    public CuePhase Phase { get; private set; } = CuePhase.Compact;
+    private bool updatingPhase;
+    private DispatcherTimer? springTimer;
+    private double targetWidth;
+    private double springWidth;
+    private double springVelocity;
+
+    /// <summary>C9: Motion.morph spring (response 0.5 s, damping 0.82).</summary>
+    private void StartSpring()
+    {
+        if (springTimer is not null) return;
+        springTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        springTimer.Tick += (_, _) => StepSpring();
+        springTimer.Start();
+    }
+
+    private void SetTargetWidth(double width)
+    {
+        if (Math.Abs(targetWidth - width) < 0.1) return;
+        targetWidth = width;
+        if (springWidth <= 0) springWidth = Width;
+        StartSpring();
+    }
+
+    private void StepSpring()
+    {
+        const double dt = 0.016, omega = 2 * Math.PI / 0.5, zeta = 0.82;
+        var acceleration = omega * omega * (targetWidth - springWidth) - 2 * zeta * omega * springVelocity;
+        springVelocity += acceleration * dt;
+        springWidth += springVelocity * dt;
+        if (Math.Abs(targetWidth - springWidth) < 0.3 && Math.Abs(springVelocity) < 1)
+        {
+            springWidth = targetWidth;
+            springVelocity = 0;
+            springTimer?.Stop();
+            springTimer = null;
+        }
+        Width = Math.Max(120, springWidth);
+    }
+
+    private void ApplySceneTint()
+    {
+        var mode = SessionModes.Parse(state.CurrentSession?.Mode).ToMeetingMode();
+        var tint = SceneTheme.For(mode).TintDark;
+        InnerBorder.BorderBrush = Brush.Parse(tint);
+    }
+
     /// <summary>C2/C3: hover state exposed to the self-check.</summary>
     public bool Hovering { get; private set; }
     public bool Collapsed { get; private set; } = true;
@@ -81,8 +133,62 @@ public partial class CueIslandWindow : Window
     {
         if (tracker is not null) return;
         tracker = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
-        tracker.Tick += (_, _) => TrackPointer();
+        tracker.Tick += (_, _) => { UpdatePhase(); TrackPointer(); };
         tracker.Start();
+    }
+
+    /// <summary>C5: compact / hearing / listening / cue / launcher widths and content.</summary>
+    private void UpdatePhase()
+    {
+        if (updatingPhase) return;
+        updatingPhase = true;
+        try
+        {
+            var phase = !state.Recording ? CuePhase.Launcher
+                : state.AnswerText.Length > 0 ? CuePhase.Cue
+                : state.HearingText.Length > 0 ? CuePhase.Hearing
+                : state.DetectedQuestion.Length > 0 ? CuePhase.Listening
+                : CuePhase.Compact;
+            Phase = phase;
+            var baseWidth = phase switch
+            {
+                CuePhase.Launcher => 360.0,
+                CuePhase.Compact => 260.0,
+                CuePhase.Hearing => 440.0,
+                CuePhase.Listening => 480.0,
+                _ => state.Settings.SelectedCueWidth?.Value switch
+                {
+                    "narrow" => 440.0, "wide" => 660.0, _ => 540.0
+                }
+            };
+            if (!checkExpanded && phase is not CuePhase.Cue) SetTargetWidth(baseWidth);
+            if (phase is CuePhase.Cue) SetTargetWidth(state.Settings.SelectedCueWidth?.Value switch
+            {
+                "narrow" => 440, "wide" => 660, _ => 540
+            });
+            ApplySceneTint();
+            PhaseText.Text = phase switch
+            {
+                CuePhase.Launcher => "\u51C6\u5907\u5F00\u59CB\u4E00\u573A\u4F1A\u8BAE",
+                CuePhase.Hearing => state.HearingText,
+                CuePhase.Listening => "\u6B63\u5728\u542C\u2026",
+                CuePhase.Compact => "\u63D0\u8BCD\u5C9B\u5DF2\u6536\u8D77\uFF0C\u9F20\u6807\u79FB\u4E0A\u6765\u5C31\u5C55\u5F00",
+                _ => ""
+            };
+            PhaseText.IsVisible = phase is not CuePhase.Cue;
+            if (phase is CuePhase.Cue)
+            {
+                HeadlineText.IsVisible = true;
+                DetailText.IsVisible = true;
+            }
+            else if (phase is CuePhase.Compact or CuePhase.Launcher)
+            {
+                HeadlineText.IsVisible = false;
+                DetailText.IsVisible = false;
+                TranslationPanel.IsVisible = false;
+            }
+        }
+        finally { updatingPhase = false; }
     }
 
     private void TrackPointer()
