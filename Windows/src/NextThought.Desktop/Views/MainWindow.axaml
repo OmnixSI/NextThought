@@ -235,6 +235,28 @@
           </Grid>
           <TextBlock Text="{Binding OnboardingStepTitle}" Classes="display" FontSize="26" />
           <TextBlock Text="{Binding OnboardingStepBody}" Classes="body" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding OnboardingChecks}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:OnboardingCheckRow">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                  <TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                             Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding Ready}" />
+                  <TextBlock Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                             Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !Ready}" />
+                  <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="label" />
+                  <TextBlock Grid.Column="2" Text="{Binding State}" Classes="caption" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Border Background="#F0121110" CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_14}"
+                  IsVisible="{Binding OnboardingIsLast}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+              <TextBlock Text="提词岛示意" Foreground="#B8B6AF" FontSize="10" />
+              <TextBlock Text="温度补偿之后残差还剩多少，和有限元对得上吗？" Foreground="#ECEBE8" FontSize="13" TextWrapping="Wrap" />
+              <TextBlock Text="残差约占 12%，主要集中在支座附近。" Foreground="#B8B6AF" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
           <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
             <Button Content="跳过" Command="{Binding SkipOnboardingCommand}" HorizontalAlignment="Left" Classes="quiet" />
             <Button Grid.Column="1" Content="上一步" Command="{Binding PreviousOnboardingStepCommand}"

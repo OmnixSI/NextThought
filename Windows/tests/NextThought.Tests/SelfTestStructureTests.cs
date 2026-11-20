@@ -111,6 +111,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void OnboardingHasChecklistAndCueMock()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("OnboardingChecks", xaml);
+        Assert.Contains("提词岛示意", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Onboarding.cs"));
+        Assert.Contains("OnboardingCheckRow", state);
+    }
+
     [Fact]
     public void OnboardingOverlayExists()
     {

@@ -9,6 +9,14 @@ public partial class AppState
     [ObservableProperty] private bool onboardingVisible;
     [ObservableProperty] private int onboardingStep;
 
+
+    public IReadOnlyList<OnboardingCheckRow> OnboardingChecks =>
+    [
+        new("声音与识别", ModelReady ? "已就绪" : "未准备", ModelStatusText, ModelReady),
+        new("回答服务", Settings.HasApiKey ? "已保存密钥" : "可选，未配置", Settings.KeyStatus, Settings.HasApiKey),
+        new("资料库", Library.Materials.Count > 0 ? $"已导入 {Library.Materials.Count} 份" : "可选，还没有资料", "准备后可在会中引用", Library.Materials.Count > 0)
+    ];
+
     public string OnboardingStepTitle => OnboardingSteps.Clamped(OnboardingStep) switch
     {
         NextThought.Core.OnboardingStep.Scene => "先选场合",
