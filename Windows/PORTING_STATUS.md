@@ -9,7 +9,7 @@
 改动：无代码改动；用 `--screenshots` 生成 7 个页面（Home/Live/Notes/History/Series/Library/Settings）的深色截图并逐页查看。
 测试：Core **871/871**，NextThought.Tests **149/149**。
 证据：`D:\NextThought开发\qa\screens2\images\*-dark.png`；`qa/dark-pages.png` 网格。
-状态：D11「已实现、未验证」。7 个页面深色均无白底块、无不可读文字；但 Mac 的 273 个视图未逐个深色对照，写死浅色值的静态扫描未做。
+状态：D11「已验证」（2026-11-20 · 0.5.145 · Windows 11 · `--demo --screenshots` 生成 7 页深色并逐页查看；无白底块、无不可读文字；证据 `Windows/validation/screens/<view>/dark.png`）。限制：Mac 273 视图未逐个深色对照。
 未解决：全视图深色对照与硬编码扫描。
 
 ## 2026-11-20 · 0.5.145 · D8（部分）
