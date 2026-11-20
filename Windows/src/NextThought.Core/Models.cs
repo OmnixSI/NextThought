@@ -112,6 +112,12 @@ public sealed record AppSettings
     /// <summary>D10: the Live/Library context sidebar is collapsed.</summary>
     public bool ContextSidebarHidden { get; set; }
 
+    /// <summary>E6: answer language: auto / zh / en.</summary>
+    public string AnswerLanguage { get; set; } = "auto";
+
+    /// <summary>E6: attach a Chinese gloss to English answers.</summary>
+    public bool AnswerGloss { get; set; }
+
     /// <summary>E3: last app version whose onboarding guide was completed.</summary>
     public string OnboardingCompletedVersion { get; set; } = "";
 

@@ -141,6 +141,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     /// <summary>Optional HTTPS relay origin; empty keeps the companion on the LAN channel only.</summary>
     [ObservableProperty] private string companionRelayUrl = "";
     [ObservableProperty] private string onboardingCompletedVersion = "";
+    public IReadOnlyList<string> AnswerLanguageChoices { get; } = ["auto", "zh", "en"];
+    [ObservableProperty] private string answerLanguage = "auto";
+    [ObservableProperty] private bool answerGloss;
 
     public ObservableCollection<ScreenChoice> ScreenChoices { get; } = [];
 
@@ -256,6 +259,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         PresenterSlidesScreen = settings.PresenterSlidesScreen;
         CompanionRelayUrl = settings.CompanionRelayUrl;
         OnboardingCompletedVersion = settings.OnboardingCompletedVersion;
+        AnswerLanguage = settings.AnswerLanguage;
+        AnswerGloss = settings.AnswerGloss;
         AutoEndMode = settings.MeetingAutoEndMode;
         AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
         SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
@@ -323,6 +328,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         PresenterSlidesScreen = SelectedSlidesScreen?.Id ?? PresenterSlidesScreen,
         CompanionRelayUrl = CompanionRelayUrl.Trim(),
         OnboardingCompletedVersion = OnboardingCompletedVersion,
+        AnswerLanguage = AnswerLanguage,
+        AnswerGloss = AnswerGloss,
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,

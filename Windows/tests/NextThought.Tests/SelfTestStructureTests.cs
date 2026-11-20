@@ -166,6 +166,19 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void AnswerLanguageAndGlossAreWired()
+    {
+        var models = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Core", "Models.cs"));
+        Assert.Contains("AnswerLanguage", models);
+        Assert.Contains("AnswerGloss", models);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "QuickSettingsPanel.axaml"));
+        Assert.Contains("回答语言", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.StructuredNotes.cs"));
+        Assert.Contains("Settings.AnswerGloss", state);
+    }
+
     [Fact]
     public void SeriesEditorHasFieldsAndReview()
     {

@@ -677,6 +677,9 @@ public partial class AppState
         // Use the ported AnswerPromptBuilder instructions (safety, citation, style) instead of
         // the old three-sentence prompt; series experience and skills stay as extra sections.
         var prompt = AnswerPromptBuilder.Instructions(Settings.WebSearch);
+        if (Settings.AnswerLanguage == "zh") prompt += "\n\n回答语言：中文。";
+        else if (Settings.AnswerLanguage == "en") prompt += "\n\n回答语言：English。";
+        if (Settings.AnswerGloss) prompt += "\n\n英语回答时，在每句下用 Markdown 引用行 `> 译：中文意思` 附中文对照。";
         if (SelectedMode == MeetingMode.Academic && Settings.UseMaterials
             && AnswerPromptBuilder.WholeMaterialOf(DocumentsForRetrieval()) is { } whole)
             prompt += "\n\n" + AnswerPromptBuilder.WholeMaterial(whole);
