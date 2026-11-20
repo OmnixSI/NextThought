@@ -113,20 +113,59 @@ public partial class SettingsView : UserControl
         if (page is "Answer" or "Advanced" && DataContext is AppState documentState) documentState.RefreshDocumentComponents();
     }
 
-    /// <summary>Filters the visible setting cards by their text (Mac settings search).</summary>
+    /// <summary>
+    /// E25: Mac settings search matches items on every page and lists them with the page name;
+    /// choosing a result navigates to that page (the old filter stayed inside the current page).
+    /// </summary>
     private void SettingsSearch_TextChanged(object? sender, TextChangedEventArgs e)
     {
         if (sender is not TextBox box) return;
         var query = box.Text?.Trim() ?? "";
-        foreach (var card in this.GetVisualDescendants().OfType<Border>()
-                     .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard"))
+        var cards = this.GetVisualDescendants().OfType<Border>()
+            .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard").ToList();
+        SettingsSearchResults.Children.Clear();
+        if (query.Length == 0)
         {
-            if (query.Length == 0) { card.IsVisible = card.Tag as string == currentPage; continue; }
+            SettingsSearchResults.IsVisible = false;
+            foreach (var card in cards) card.IsVisible = card.Tag as string == currentPage;
+            return;
+        }
+        foreach (var card in cards) card.IsVisible = false;
+        SettingsSearchResults.IsVisible = true;
+        foreach (var card in cards)
+        {
+            var heading = card.GetVisualDescendants().OfType<TextBlock>()
+                .FirstOrDefault(block => block.Classes.Contains("section"))?.Text ?? "";
             var text = string.Join(" ", card.GetVisualDescendants().OfType<TextBlock>().Select(block => block.Text ?? "")
                 .Concat(card.GetVisualDescendants().OfType<ContentControl>().Select(control => control.Content as string ?? "")));
-            card.IsVisible = card.Tag as string == currentPage && text.Contains(query, StringComparison.OrdinalIgnoreCase);
+            if (!text.Contains(query, StringComparison.OrdinalIgnoreCase)) continue;
+            var page = card.Tag as string ?? currentPage;
+            var title = heading.Length > 0 ? heading + " · " + PageTitle(page) : PageTitle(page);
+            var result = new Button { Content = title, Classes = { "quiet" }, HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Left };
+            result.Click += (_, _) =>
+            {
+                box.Text = "";
+                ShowPage(page);
+            };
+            SettingsSearchResults.Children.Add(result);
         }
+        if (SettingsSearchResults.Children.Count == 0)
+            SettingsSearchResults.Children.Add(new TextBlock
+            {
+                Text = UiText.T("没有匹配的设置项"),
+                Classes = { "caption" }
+            });
     }
+
+    private static string PageTitle(string page) => UiText.T(page switch
+    {
+        "Answer" => "回答与资料",
+        "Coach" => "提词与教练",
+        "Notes" => "纪要",
+        "General" => "通用",
+        "Advanced" => "高级",
+        _ => "场景"
+    });
 
 
     /// <summary>E25: the left rail switches the six Mac settings pages.</summary>

@@ -1,0 +1,37 @@
+# 设置结构对照（E25）
+
+Mac 参照：`Sources/NextThought/SettingsView.swift` 的 `SettingsPage` / `SettingsPageView`（第 287–300 行 switch 六页）、`SettingsGeneralData.swift` 的 `GeneralSettings`、`SettingsPresenter.swift` 的 `PresenterSettings`、`SettingsPages.swift` 的 `SceneSettingsPage` / `AnswerSettings`、`SettingsSearch.swift` 的 `SettingsSearchItem`；Windows 参照 `Windows/src/NextThought.Desktop/Views/SettingsView.axaml(.cs)`。
+
+## 六页归属
+
+| Mac 页（SettingsPage） | Mac 页内分组（SettingsSection） | Windows 页（Tag） | Windows 卡片 | 结论 |
+|---|---|---|---|---|
+| 场景 `scenes` → `SceneSettingsPage` | 各场景开会时的设置 | Scene | 各场景开会时的设置（E26 四列 + 恢复默认） | ✅ 同页同组 |
+| 回答与资料 `answers` → `AnswerSettings` | 回答服务 / 联网搜索 / 资料（DocumentReadingSettings）/ 技能（SkillSettings） | Answer | 技能、资料、回答服务（API/Codex/引擎测试/预设）、资料与检索（语义） | ✅ 主体同页；⚠ 语义检索在 Mac 高级→资料组件，Windows 仍留在 Answer 的「资料与检索」卡片（E23 已把「资料组件」放高级，两处并存） |
+| 提词与教练 `presenter` → `PresenterSettings` | 提词（显示方式/一直展开/宽度/摄像头所在屏/launcher）/ 双屏演讲 / 临场教练 / 屏幕共享 / 字幕条 / 快捷键 | Coach | 提词（本次把外观里的提示岛项并入，标题改为 提词 + 显示方式）、双屏演讲、字幕条、全局快捷键、说话人与翻译 | ⚠ 临场教练（E10 未做）缺失；说话人与翻译在 Mac 通用→说话人组，Windows 暂留 Coach（标注差异）；其余同页同组 |
+| 纪要 `notes` → `NotesSettingsView` | 会议自动收尾 / 自定义模板 / 纪要高级 | Notes | 会议自动收尾、自定义纪要模板 | ✅ 同页；高级项在 Windows「高级」页（模型/推理强度在回答服务卡） |
+| 通用 `general` → `GeneralSettings` | 语言与外观 / 说话人 / 术语 / 记录每次会议 / 备份与恢复 / 权限 / 更新 | General | 界面语言 / Language（本次并入 外观 下拉）、设置清单→迁高级、备份与恢复、权限、更新（本次并入 自动检查更新）、数据与关于 | ✅ 语言与外观、备份、权限、更新同页；⚠ 「记录每次会议」开关缺失（AppSettings 无对应键）；术语入口在高级声音来源卡；「数据与关于」为 Windows 附加卡（许可说明） |
+| 高级 `advanced` → `AdvancedSettings` | 声音与识别 / 回答服务 / 资料组件 / 纪要 / 提词 / 手机伴侣 / 更新 / 数据与维护（含 SetupChecklist、减少视觉特效、置顶、签名） | Advanced | 声音来源、本机语音识别、云端识别、屏幕与讲稿、资料组件、回答服务（Codex）、手机伴侣、设置清单（本次从通用迁入） | ✅ 主体同页同组；⚠ 更新渠道/GitHub 访问在 E27 的「回答服务（Codex）」卡与通用「更新」卡分置；「数据与关于」的备份文件入口在通用；「减少视觉特效」在系统设置(Windows 无对应) |
+
+## 搜索行为
+
+- Mac `SettingsSearchItem.matching(query)` 在**全部页面**的设置项中匹配（title/words/页名），结果显示「设置项标题 + 所属页」，点击跳到该页并高亮 anchor（`SettingsView.swift` 第 253–284 行）。
+- Windows 原先只在**当前页**过滤卡片（`card.Tag == currentPage && text.Contains`）。本次改为 Mac 行为：搜索框有词时隐藏所有卡片，在 `SettingsSearchResults` 面板列出「卡片标题 · 页名」，点击跳到该页并清空搜索；无结果显示「没有匹配的设置项」。
+- 差异：Mac 有独立 words 关键词表（命中词不在界面文案里，如「刘海」「钉住」）；Windows 只匹配可见文字，词表未移植（可后续补 SettingsSearch 关键词）。
+
+## 六页截图
+
+`Windows/validation/screens/settings-pages/` 下已有 `settings-{scene,answer,coach,notes,general,advanced}-{light,dark,en-light,en-dark}.png`（E29/E26 批次重建）。本次只改卡片归属与搜索，未重新截图；如需重拍可复用 `--demo --screenshots`。
+
+## 点按记录
+
+- 侧栏六页按钮顺序：场景/回答与资料/提词与教练/纪要/通用/高级（`SettingsPage_Click` → `ShowPage`，`SettingsView.axaml.cs`）。
+- 搜索（演示数据）：输入「备份」→ 结果列出「设置清单 / 备份与恢复(·通用)…」，点结果跳到「通用」并定位；输入「提词」→ 列出提词/双屏演讲（·提词与教练），点击跳页；清空后恢复当前页卡片。
+- 本次结构改动：外观下拉从「提词与教练」的旧「外观」卡移到「通用 · 界面语言 / Language」；自动检查更新移到「通用 · 更新」；设置清单移入「高级」；提词卡新增「显示方式」并改标题「提词」。
+
+## 未解决/差异
+
+- 「记录每次会议」开关没有 Windows 设置键（Mac GeneralSettings 有记录开关；Windows 会中保存行为由现有设置决定）。
+- 「说话人与翻译」仍位于「提词与教练」页（Mac 通用→说话人组）；拖动涉及跨页卡片拆分，留待下一轮小改。
+- 语义检索卡片在「回答与资料」与「高级→资料组件」两处（Mac 仅高级资料组件）。
+- 搜索关键词表未移植；临场教练（E10）缺失。
