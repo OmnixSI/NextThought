@@ -45,7 +45,7 @@ Nov 20, 2026 · @Homing
 | D8 | 未做 | 八卡样张+Fluent 状态符；compare-controls 已出，未逐像素一致 |
 | D11 | 已验证 | 2026-11-20 0.5.145 Windows 11 七页深色截图逐页无白块/读不清；证据 validation/screens |
 | D10 | 已实现、未验证 | 胶囊、覆盖层、snappy、专注、上下文侧栏持久化完成；品牌图标未逐像素 |
-| D1 | 未做 | 31 张已进 validation/screens；5 组并排图已出；缺 Mac 余页/岛五态 |
+| D1 | 未做 | 7 页中英/浅深+岛 7 态已进 validation/screens；缺 Mac 余页/逐字文案 |
 | D2 | 已实现、未验证 | 四套字体+许可随包；嵌入 avares，截图正常；干净机未验 |
 
 ## 1. ⽬标与范围 
