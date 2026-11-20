@@ -187,6 +187,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ReleaseBuildHasNoUpdateLaunchBypass()
+    {
+        var dir = Path.Combine(Root(), "Windows", "src", "NextThought.Desktop");
+        foreach (var file in Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories))
+            Assert.DoesNotContain("NEXTTHOUGHT_UPDATE_LAUNCH", File.ReadAllText(file));
+    }
+
     [Fact]
     public void UiThreadExceptionsAreHandled()
     {

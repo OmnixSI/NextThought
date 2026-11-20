@@ -6,7 +6,7 @@ public partial class MainWindow
     {
         await Task.Delay(200);
         var update = await state.CheckForUpdatesAsync();
-        var markerPath = Environment.GetEnvironmentVariable("NEXTTHOUGHT_UPDATE_LAUNCH");
+        var markerPath = System.IO.Path.Combine(Path.GetTempPath(), "nextthought-update-launch.json");
         var marker = "";
         var installerExists = false;
         string? sha = null;

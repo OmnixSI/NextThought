@@ -207,8 +207,8 @@ public partial class AppState
             }
             SetStatus("安装包签名：" + signature + (signer.Length > 0 ? "，签名者 " + signer[..Math.Min(12, signer.Length)] : ""));
 
-            // The QA switch lets the installer step be observed without replacing this build.
-            var launch = Environment.GetEnvironmentVariable("NEXTTHOUGHT_UPDATE_LAUNCH");
+            // F17: the self-test marker lives under the app data directory, not an environment bypass.
+            var launch = StartupOptions.SelfTest is { Length: > 0 } ? Path.Combine(Paths.Root, "update-launch.json") : null;
             if (launch is { Length: > 0 })
             {
                 await File.WriteAllTextAsync(launch, JsonSerializer.Serialize(new
