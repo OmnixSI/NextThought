@@ -61,9 +61,9 @@ Nov 20, 2026 · @Homing
 | B23 | 已实现、未验证 | B22 全量对齐时发现两处旧 C# 测试期望与 Swift 矛盾并按 Swift 改正：`WorkspaceSeriesChangeTests.ACandidateCanOnlyBeReviewedOnce`（Swift 二次复核返回原回执，不是 null）、`KnowledgeMergerTests.ShortLessonsAndAnswersLessQuestionsAreDropped`（知识候选缺失与空列表区分）；Core 1514 项全部通过 | 尚未用独立脚本逐条比对全部旧测试与 Swift 行号，`已验证` 还缺一次人工复核记录 |
 | B24 | 已实现、未验证 | 进程相关测试改用 `TestShell`：Windows 用 cmd.exe，非 Windows 用 /bin/sh；不再硬编码 cmd.exe；时间相关测试已有显式时区（NotesDates 传 East8） | 尚未在与 UTC 时区的机器上跑全量；`ArchiveDateTests` 使用本机当前时间但只断言 UTC 序列化，未改 |
 | C1 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：`ShowActivated=false`、`Focusable=false`，窗口打开后加 `WS_EX_NOACTIVATE` + `WS_EX_TOOLWINDOW`；提供 `IsNonActivating` 供自检读取 | 需在记事本打字时点岛上按钮，确认焦点/输入不中断（实机记录未做） |
-| C2 | 未做 | — | 静止鼠标穿透与 80ms 指针轮询未实现 |
-| C3 | 未做 | — | 0.22s 悬停展开/0.2s 离开收起未实现 |
-| C4 | 未做 | — | 一直展开模式未实现 |
+| C2 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：80 ms `DispatcherTimer` 读取光标与窗口矩形；岛收起时加 `WS_EX_TRANSPARENT`，进入区域后去掉；`ClickThrough` 供自检读回 | 需实机确认收起时能点到下方浏览器标签页 |
+| C3 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：指针停留 0.22 秒展开，离开 0.2 秒收起；展开后恢复回答正文/详情 | 需实机确认 0.22/0.2 秒节奏与动画 |
+| C4 | 已实现、未验证 | `Settings.CueAlwaysOpen`（键 `cueAlwaysOpen`）与设置页「会中一直展开提词岛，不用把鼠标移上去」；窗口打开/录音时按该值保持展开并禁用穿透 | 需实机勾选后确认岛不再自动收起 |
 | C5 | 未做 | — | 各阶段形态未实现 |
 | C6 | 未做 | — | 展开面板与按钮未实现 |
 | C7 | 未做 | — | 讲稿要点/教练提示/自动结束倒计时未实现 |

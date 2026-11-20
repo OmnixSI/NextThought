@@ -1,3 +1,4 @@
+using CompanionSnapshot = NextThought.Platform.CompanionSnapshot;
 namespace NextThought.Desktop;
 
 public partial class AppState

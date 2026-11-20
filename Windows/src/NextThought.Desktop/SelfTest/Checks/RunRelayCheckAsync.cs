@@ -1,3 +1,4 @@
+using CompanionSnapshot = NextThought.Platform.CompanionSnapshot;
 namespace NextThought.Desktop.Views;
 
 public partial class MainWindow

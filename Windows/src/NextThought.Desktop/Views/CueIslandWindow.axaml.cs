@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using System.Runtime.InteropServices;
+using Avalonia.Threading;
 
 namespace NextThought.Desktop.Views;
 
@@ -42,6 +43,13 @@ public partial class CueIslandWindow : Window
             ApplyNonActivatingStyle();
             MoveToTopCentre();
             WindowCaptureHiding.Hide(this);
+            StartTracking();
+            ApplyExpanded(state.Settings.CueAlwaysOpen || !state.Recording, forCheck: false);
+        };
+        state.Settings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.CueAlwaysOpen))
+                ApplyExpanded(state.Settings.CueAlwaysOpen || !state.Recording, forCheck: false);
         };
         state.PropertyChanged += (_, e) =>
         {
@@ -50,6 +58,91 @@ public partial class CueIslandWindow : Window
     }
 
     private const int GwlExstyle = -20;
+    private const long WsExTransparent = 0x00000020L;
+    private DispatcherTimer? tracker;
+    private DateTimeOffset? pointerEntered;
+    private DateTimeOffset? pointerLeft;
+    private bool checkExpanded;
+
+    /// <summary>C2/C3: hover state exposed to the self-check.</summary>
+    public bool Hovering { get; private set; }
+    public bool Collapsed { get; private set; } = true;
+    public bool ClickThrough { get; private set; } = true;
+
+    [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X; public int Y; }
+    [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left; public int Top; public int Right; public int Bottom; }
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out NativeRect rect);
+
+    /// <summary>C2: poll the pointer every 80 ms; only the area over the island takes clicks.</summary>
+    private void StartTracking()
+    {
+        if (tracker is not null) return;
+        tracker = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(80) };
+        tracker.Tick += (_, _) => TrackPointer();
+        tracker.Start();
+    }
+
+    private void TrackPointer()
+    {
+        if (!IsVisible || TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
+        var expanded = Hovering || state.Settings.CueAlwaysOpen || checkExpanded;
+        if (!GetCursorPos(out var point) || !GetWindowRect(handle, out var rect))
+        {
+            ApplyExpanded(expanded, checkExpanded);
+            return;
+        }
+        var inside = point.X >= rect.Left - 6 && point.X <= rect.Right + 6
+                     && point.Y >= rect.Top - 6 && point.Y <= rect.Bottom + 6;
+        var now = DateTimeOffset.UtcNow;
+        if (inside)
+        {
+            pointerLeft = null;
+            pointerEntered ??= now;
+            if (!expanded && now - pointerEntered >= TimeSpan.FromSeconds(0.22)) ApplyExpanded(true, checkExpanded);
+        }
+        else
+        {
+            pointerEntered = null;
+            if (expanded && !state.Settings.CueAlwaysOpen && !checkExpanded)
+            {
+                pointerLeft ??= now;
+                if (now - pointerLeft >= TimeSpan.FromSeconds(0.2)) ApplyExpanded(false, false);
+            }
+        }
+        SetClickThrough(!(Hovering || state.Settings.CueAlwaysOpen || checkExpanded));
+    }
+
+    /// <summary>C3/C4: expand on hover or the always-open setting; collapse after the pointer leaves.</summary>
+    private void ApplyExpanded(bool expanded, bool forCheck)
+    {
+        checkExpanded = forCheck && expanded;
+        Hovering = expanded;
+        Collapsed = !expanded;
+        if (expanded)
+        {
+            HeadlineText.IsVisible = true;
+            DetailText.IsVisible = true;
+            FitHeight();
+        }
+        else
+        {
+            DetailText.IsVisible = false;
+            TranslationPanel.IsVisible = false;
+            FitHeight();
+        }
+        SetClickThrough(!expanded);
+    }
+
+    private void SetClickThrough(bool enabled)
+    {
+        ClickThrough = enabled;
+        if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
+        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64();
+        style = enabled ? style | WsExTransparent : style & ~WsExTransparent;
+        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+    }
+
     private const long WsExNoActivate = 0x08000000L;
     private const long WsExToolWindow = 0x00000080L;
 
@@ -110,6 +203,7 @@ public partial class CueIslandWindow : Window
     /// <summary>D1 evidence: switch the island through the five Mac visual states.</summary>
     public void ApplyStateForCheck(string state)
     {
+        checkExpanded = state != "collapsed";
         Width = state switch { "collapsed" => 220, "launcher" => 360, _ => 540 };
         switch (state)
         {

@@ -126,6 +126,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         new("wide", "宽")
     ];
     [ObservableProperty] private CueWidthOption? selectedCueWidth;
+    [ObservableProperty] private bool cueAlwaysOpen;
     [ObservableProperty] private int subtitleWidth = 920;
     [ObservableProperty] private int subtitleFontSize = 22;
     [ObservableProperty] private bool subtitleShowTranslation = true;
@@ -247,6 +248,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         UiLanguage = UiText.IsEnglish(settings.Language) ? "English" : "中文";
         SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
         SelectedCueWidth = CueWidthChoices.FirstOrDefault(choice => choice.Value == settings.CueWidth) ?? CueWidthChoices[1];
+        CueAlwaysOpen = settings.CueAlwaysOpen;
         SubtitleWidth = Math.Clamp(settings.SubtitleWidth, 520, 1400);
         SubtitleFontSize = Math.Clamp(settings.SubtitleFontSize, 16, 36);
         SubtitleShowTranslation = settings.SubtitleShowTranslation;
@@ -323,6 +325,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         Language = UiLanguage == "English" ? "en" : "zh",
         Appearance = SelectedAppearance?.Value ?? "system",
         CueWidth = SelectedCueWidth?.Value ?? "regular",
+        CueAlwaysOpen = CueAlwaysOpen,
         SubtitleWidth = Math.Clamp(SubtitleWidth, 520, 1400),
         SubtitleFontSize = Math.Clamp(SubtitleFontSize, 16, 36),
         SubtitleShowTranslation = SubtitleShowTranslation,

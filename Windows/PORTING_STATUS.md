@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · C2/C3/C4
+改动：提词岛 80 ms 轮询指针，收起时 `WS_EX_TRANSPARENT` 鼠标穿透；0.22 秒悬停展开、0.2 秒离开收起；新增 `cueAlwaysOpen` 设置与设置页开关，打开时不再自动收起。
+测试：Core **1514/1514**，NextThought.Tests **258/258**。
+状态：C2、C3、C4「已实现、未验证」；需实机点穿、悬停节奏、一直展开三项记录。
+
 ## 2026-11-20 · 0.5.145 · C1
 改动：提词岛窗口改为非激活工具窗（`ShowActivated=false`，Win32 `WS_EX_NOACTIVATE|WS_EX_TOOLWINDOW`），不再抢前台焦点；新增 `IsNonActivating` 供自检读回。
 测试：Core **1514/1514**，NextThought.Tests **258/258**。

@@ -106,6 +106,7 @@
           <ComboBox ItemsSource="{Binding Settings.AppearanceChoices}" SelectedItem="{Binding Settings.SelectedAppearance}"
                     Width="200" HorizontalAlignment="Left" />
           <TextBlock Text="保存后立即应用；跟随系统会随后台主题切换。" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <CheckBox Content="会中一直展开提词岛，不用把鼠标移上去" IsChecked="{Binding Settings.CueAlwaysOpen}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
             <TextBlock Text="提示岛宽度" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.CueWidthChoices}" SelectedItem="{Binding Settings.SelectedCueWidth}"

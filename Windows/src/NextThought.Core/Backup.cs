@@ -238,7 +238,7 @@ public static class SettingsSnapshot
         "localOCRModelID", "codexOCRModel", "codexOCREffort", "codexOCRTimeout",
         "notesModelID", "notesReasoning", "notesLanguage", "notesTemplateByType", "customNotesTemplates",
         "pinnedWorkspaceIDs", "projectLibrarySort",
-        "cueSurface", "cueWidth", "cueStyle", "cueScreen", "cueLauncher", "cueAvoidsSharing",
+        "cueSurface", "cueWidth", "cueAlwaysOpen", "cueStyle", "cueScreen", "cueLauncher", "cueAvoidsSharing",
         "coachEnabled", "coachWatchesGaze", "coachGazeSensitivity", "lastScene", "sceneOverrides"
     ];
 

@@ -190,6 +190,9 @@ public sealed record AppSettings
     /// <summary>Floating cue island width: "narrow" (440), "regular" (540) or "wide" (660).</summary>
     public string CueWidth { get; set; } = "regular";
 
+    /// <summary>Mac key <c>cueAlwaysOpen</c>: keep the island expanded during a meeting.</summary>
+    public bool CueAlwaysOpen { get; set; }
+
     /// <summary>Floating subtitle bar width in device-independent pixels.</summary>
     public int SubtitleWidth { get; set; } = 920;
 
