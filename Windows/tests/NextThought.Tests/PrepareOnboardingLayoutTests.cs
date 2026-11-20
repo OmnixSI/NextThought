@@ -34,14 +34,34 @@ public sealed class PrepareOnboardingLayoutTests
         // Mac PrepareComposer / TypePicker / SeriesCarryCard / SeriesBriefingPanel / Materials / CheckCard / StartBar.
         foreach (var element in new[]
                  {
-                     "给这场会起个名字", "系列与资料", "系列简报", "带入资料", "带入题库", "带入经验", "带入上一场转写",
-                     "PrepareCarrySummary", "PrepareMaterialsLine", "PrepareAudioReady", "ImportPreparedDocumentsCommand",
-                     "CancelDraftCommand", "开始记录"
+                     "这场会议叫什么", "这是什么会", "根据标题选好了，可以改", "自定义…", "线上", "线下",
+                     "系列与资料", "系列简报", "带入资料", "带入题库", "带入经验", "带入上一场转写",
+                     "PrepareCarrySummary", "PrepareMaterialsRows", "PrepareMaterialsLine", "PrepareAudioReady",
+                     "PrepareAnswerLine", "PrepareEngineVerification", "PrepareMicLine",
+                     "ImportPreparedDocumentsCommand", "ContinueWithoutMicrophoneCommand", "UseMicrophoneAgainCommand",
+                     "TestAnswerEngineCommand", "DragDrop.AllowDrop", "CancelDraftCommand", "开始记录"
                  })
             Assert.Contains(element, xaml, StringComparison.Ordinal);
         var state = File.ReadAllText(Path.Combine(Desktop, "AppState.Prepare.cs"));
         Assert.Contains("PreparedMaterialCount", state, StringComparison.Ordinal);
         Assert.Contains("ImportPreparedDocumentsAsync", state, StringComparison.Ordinal);
+        // E2 round 3: the ported MeetingDraft and its page state.
+        var draftModel = File.ReadAllText(Path.Combine(Desktop, "MeetingDraft.cs"));
+        foreach (var element in new[] { "class MeetingDraft", "TypeChosen", "CustomBaseMode", "Carry", "BaselineDocumentIds", "class SceneSummary", "defaultsSummary" })
+            Assert.Contains(element, draftModel, StringComparison.Ordinal);
+        var draftState = File.ReadAllText(Path.Combine(Desktop, "AppState.PrepareDraft.cs"));
+        foreach (var element in new[]
+                 {
+                     "EnsureDraft", "DraftMeetingPlan", "SetDraftType", "SetDraftCustomType", "SetDraftCustomBase",
+                     "DraftGuessNoteVisible", "PrepareMaterialsRows", "ImportDraftDocumentsAsync",
+                     "ContinueWithoutMicrophoneAsync", "UseMicrophoneAgainAsync", "StartPreparedMeetingAsync",
+                     "DraftOffline", "DraftOnline"
+                 })
+            Assert.Contains(element, draftState, StringComparison.Ordinal);
+        // The ComboBox re-entrancy fix must stay explicit.
+        var code = File.ReadAllText(Path.Combine(Desktop, "Views", "PrepareView.axaml.cs"));
+        Assert.Contains("applyingDraft", code, StringComparison.Ordinal);
+        Assert.Contains("TryGetFilesAsync", code, StringComparison.Ordinal);
         // The start path builds the ported MeetingPlan, like Mac startPreparedMeeting.
         var live = File.ReadAllText(Path.Combine(Desktop, "AppState.Live.cs"));
         Assert.Contains("BeginPreparedMeeting(planSeries)", live, StringComparison.Ordinal);

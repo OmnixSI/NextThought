@@ -3,9 +3,26 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
+             xmlns:sys="using:System"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.PrepareView"
              x:DataType="local:AppState">
+  <UserControl.Styles>
+    <Style Selector="Button.scene">
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_10_8}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_14}" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Border.checkRow">
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_4_10}" />
+      <Setter Property="MinHeight" Value="48" />
+    </Style>
+    <Style Selector="TextBlock.checkLabel">
+      <Setter Property="Width" Value="56" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
   <Grid>
     <!-- D6: the same pigment wash as the home page, still on the prepare page (Mac animated: false). -->
     <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" Animated="False" />
@@ -17,40 +34,84 @@
         <TextBlock Text="{loc:Tr 先选场合、补资料、做检查，再开始这场会。}" Classes="caption" />
       </StackPanel>
 
+      <!-- PrepareComposer: title, venue and the scene (the one raised card). -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="{loc:Tr 类型与标题}" Classes="section" />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_12}">
             <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="44" VerticalAlignment="Center" />
-            <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
+            <TextBox Grid.Column="1" Text="{Binding DraftTitle, Mode=TwoWay}" Background="Transparent" BorderThickness="0"
                      FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="{DynamicResource Control}"
-                     PlaceholderText="{loc:Tr 给这场会起个名字}" />
+                     PlaceholderText="{loc:Tr 这场会议叫什么}" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+              <RadioButton GroupName="prepare-venue" Content="{loc:Tr 线上}" IsChecked="{Binding DraftOnline, Mode=TwoWay}" />
+              <RadioButton GroupName="prepare-venue" Content="{loc:Tr 线下}" IsChecked="{Binding DraftOffline, Mode=TwoWay}" />
+            </StackPanel>
           </Grid>
-          <ItemsControl ItemsSource="{Binding Scenes}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:SceneChoice">
-                <Button Classes="scene" Tag="{Binding}" Click="PrepareScene_Click"
-                        Margin="{DynamicResource D4Margin_0_0_4_4}">
-                  <TextBlock Text="{Binding Title}" FontSize="13" />
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="{Binding SelectedScene.Promise}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+
+          <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Text="{loc:Tr 这是什么会}" Classes="overline" />
+              <TextBlock Text="{loc:Tr 根据标题选好了，可以改}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                         IsVisible="{Binding DraftGuessNoteVisible}" />
+            </StackPanel>
+            <WrapPanel Orientation="Horizontal">
+              <ItemsControl ItemsSource="{Binding Scenes}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:SceneChoice">
+                    <Button Classes="scene" Tag="{Binding}" Click="PrepareScene_Click" ToolTip.Tip="{Binding DefaultsSummary}">
+                      <TextBlock Text="{Binding Title}" FontSize="13" />
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Button Classes="scene" Content="{loc:Tr 自定义…}" Click="CustomType_Click" />
+            </WrapPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding DraftIsCustom}">
+              <TextBox Text="{Binding DraftCustomTypeName, Mode=TwoWay}" Width="260"
+                       PlaceholderText="{loc:Tr 类型名称，例如：导师一对一}" />
+              <TextBlock Text="{loc:Tr 基于}" Classes="caption" VerticalAlignment="Center" />
+              <ComboBox x:Name="CustomBaseBox" ItemsSource="{Binding DraftBaseScenes}" SelectedIndex="0"
+                        SelectionChanged="CustomBase_SelectionChanged">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:SceneChoice">
+                    <TextBlock Text="{Binding Title}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+            <TextBlock Text="{Binding DraftPromise}" FontSize="17" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_4_0_0}" />
+            <TextBlock Text="{Binding DraftSummary}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding DraftMoments}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="sys:String">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                    <Ellipse Width="4" Height="4" VerticalAlignment="Center" Fill="{DynamicResource Secondary}" />
+                    <TextBlock Text="{Binding}" Classes="caption" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
         </StackPanel>
       </Border>
 
+      <!-- SeriesCarryCard + MaterialsBlock: the series and the documents this meeting uses. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 系列与资料}" Classes="section" />
           <TextBlock Text="{Binding SeriesSummary}" Classes="body" />
-          <ListBox ItemsSource="{Binding SeriesRows}" SelectedItem="{Binding SelectedSeries}"
-                   Background="Transparent" BorderThickness="0" MaxHeight="160">
+          <ListBox ItemsSource="{Binding SeriesRows}" SelectedItem="{Binding SelectedSeries, Mode=TwoWay}"
+                   Background="Transparent" BorderThickness="0" MaxHeight="140">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="local:SeriesRow">
                 <StackPanel Spacing="{DynamicResource D4Spacing_2}">
@@ -69,15 +130,24 @@
             <CheckBox Content="{loc:Tr 带入上一场转写}" IsChecked="{Binding CarryTranscript}" />
           </WrapPanel>
           <TextBlock Text="{Binding PrepareCarrySummary}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
-          <TextBlock Text="{Binding Library.MaterialsInsight}" Classes="caption" TextWrapping="Wrap" />
-          <ItemsControl ItemsSource="{Binding Library.Materials}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:MaterialDocument">
-                <TextBlock Text="{Binding Name}" Classes="caption" TextTrimming="CharacterEllipsis" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <TextBlock Text="{Binding PrepareMaterialsHeader}" Classes="label" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Library.MaterialsInsight}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+          <Border x:Name="DropZone" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                  Padding="{DynamicResource D4Padding_12_10}" DragDrop.AllowDrop="True">
+            <ItemsControl ItemsSource="{Binding PrepareMaterialsRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:PrepareMaterialRow">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                    <TextBlock Text="{Binding Name}" Classes="caption" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="caption"
+                               Foreground="{DynamicResource Secondary}" IsVisible="{Binding Ready}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Status}" Classes="caption"
+                               Foreground="{DynamicResource Caution}" IsVisible="{Binding Failed}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Border>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <Button Classes="primary" Content="{loc:Tr 导入资料}" Command="{Binding ImportPreparedDocumentsCommand}" />
             <Button Content="{loc:Tr 打开资料库}" Command="{Binding NavigateCommand}" CommandParameter="Library" />
@@ -86,6 +156,7 @@
         </StackPanel>
       </Border>
 
+      <!-- SeriesBriefingPanel: what the series brings from earlier meetings. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="{loc:Tr 系列简报}" Classes="section" />
@@ -118,56 +189,79 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="{loc:Tr 检查}" Classes="section" />
-          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
-            <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
-                    Padding="{DynamicResource D4Padding_12_10}">
-              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="{loc:Tr 采音}" Classes="overline" />
-                <TextBlock Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
+      <!-- CheckCard: the three quiet checks before starting. -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_18_6}">
+        <StackPanel>
+          <Border Classes="checkRow">
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAudioReady}" />
+              <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !PrepareAudioReady}" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr 声音}" Classes="label checkLabel" />
+              <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_4}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding AudioSourceText}" Classes="label" TextWrapping="Wrap" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                    <Button Classes="quiet" Content="{loc:Tr 只记录对方（不用麦克风）}" Command="{Binding ContinueWithoutMicrophoneCommand}"
+                            IsVisible="{Binding PrepareShowRecordOnly}" />
+                    <Button Classes="quiet" Content="{loc:Tr 重新打开麦克风}" Command="{Binding UseMicrophoneAgainCommand}"
+                            IsVisible="{Binding PrepareShowUseMicrophone}" />
+                    <Button Classes="quiet" Content="{loc:Tr 下载}" Command="{Binding PrepareModelsCommand}" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding PrepareMicLine}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="{Binding PrepareAudioProblem}" Classes="caption" Foreground="{DynamicResource Caution}"
+                           TextWrapping="Wrap" IsVisible="{Binding !PrepareAudioReady}" />
+                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
-            <Border Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
-                    Padding="{DynamicResource D4Padding_12_10}">
-              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="{loc:Tr 场地}" Classes="overline" />
-                <TextBlock Text="{loc:Tr 本机 · 不依赖网络}" Classes="caption" />
+            </Grid>
+          </Border>
+          <Border Height="0.5" Background="{DynamicResource Hairline}" />
+          <Border Classes="checkRow">
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAnswerReady}" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr AI 可选}" Classes="label checkLabel" />
+              <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_4}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding PrepareAnswerLine}" Classes="label" TextWrapping="Wrap" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                    <Button Classes="quiet" Content="{loc:Tr 检查回答服务}" Command="{Binding TestAnswerEngineCommand}" />
+                    <Button Classes="quiet" Content="{Binding PrepareAnswerAction}" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding PrepareEngineVerification}" Classes="caption" Foreground="{DynamicResource Secondary}" />
               </StackPanel>
-            </Border>
-            <Border Grid.Row="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
-                    Padding="{DynamicResource D4Padding_12_10}">
-              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="{loc:Tr 回答服务}" Classes="overline" />
-                <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" TextWrapping="Wrap" />
+            </Grid>
+          </Border>
+          <Border Height="0.5" Background="{DynamicResource Hairline}" />
+          <Border Classes="checkRow">
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PreparePhoneReady}" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr 手机}" Classes="label checkLabel" />
+              <TextBlock Grid.Column="2" Text="{Binding PreparePhoneLine}" Classes="label" TextWrapping="Wrap" />
+            </Grid>
+          </Border>
+          <Border Height="0.5" Background="{DynamicResource Hairline}" />
+          <Border Classes="checkRow">
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
+              <TextBlock Grid.Column="1" Text="{loc:Tr 资料与模型}" Classes="label checkLabel" />
+              <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_2}">
+                <TextBlock Text="{Binding PrepareMaterialsLine}" Classes="caption" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
-            <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
-                    Padding="{DynamicResource D4Padding_12_10}">
-              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="{loc:Tr 手机伴侣}" Classes="overline" />
-                <TextBlock Text="{Binding Settings.CompanionRelayUrl}" Classes="caption" TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
-            <Border Grid.Row="2" Grid.ColumnSpan="2" Background="{DynamicResource Sunken}"
-                    CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_12_10}">
-              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="{loc:Tr 资料与模型}" Classes="overline" />
-                <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
-                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
-          </Grid>
-          <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
-          <Button Classes="quiet" Content="{loc:Tr 打开设置}" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+            </Grid>
+          </Border>
         </StackPanel>
       </Border>
+      <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
     </StackPanel>
     </ScrollViewer>
     <Border Grid.Row="1" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}"
             BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_32_12}">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_12}">
         <StackPanel Spacing="{DynamicResource D4Spacing_2}">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_12}">
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
@@ -192,8 +286,9 @@
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
           <Button Classes="quiet" Content="{loc:Tr 取消}" Command="{Binding CancelDraftCommand}" />
+          <Button Content="{loc:Tr 只记录对方}" Command="{Binding ContinueWithoutMicrophoneCommand}" IsVisible="{Binding PrepareShowRecordOnly}" />
           <Button Content="{loc:Tr 导入 WAV}" Command="{Binding ImportWaveCommand}" />
-          <Button Classes="primary" Content="{loc:Tr 开始记录}" Command="{Binding StartRecordingCommand}" />
+          <Button Classes="primary" Content="{loc:Tr 开始记录}" Command="{Binding StartPreparedMeetingCommand}" />
         </StackPanel>
       </Grid>
     </Border>

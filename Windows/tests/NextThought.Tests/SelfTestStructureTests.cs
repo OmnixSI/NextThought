@@ -1087,10 +1087,11 @@ public sealed class SelfTestStructureTests
     public void PrepareCheckCardsArePresent()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
-        Assert.Contains("采音", xaml);
-        Assert.Contains("场地", xaml);
-        Assert.Contains("回答服务", xaml);
-        Assert.Contains("手机伴侣", xaml);
+        // E2 round 3: CheckCard rows now follow PrepareView.swift (声音 / AI 可选 / 手机 / 资料与模型).
+        Assert.Contains("PrepareAudioReady", xaml);
+        Assert.Contains("PrepareAnswerLine", xaml);
+        Assert.Contains("PrepareEngineVerification", xaml);
+        Assert.Contains("PreparePhoneLine", xaml);
         Assert.Contains("资料与模型", xaml);
     }
 

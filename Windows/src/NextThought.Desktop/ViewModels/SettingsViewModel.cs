@@ -441,6 +441,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         OnPropertyChanged(nameof(SelectedMicrophoneDevice));
         OnPropertyChanged(nameof(SelectedProcess));
         OnPropertyChanged(nameof(PresenterSummary));
+        OnPropertyChanged(nameof(SavedHint));
         OnPropertyChanged(nameof(CodexFastLabel));
         OnPropertyChanged(nameof(DocumentProviderChoices));
         OnPropertyChanged(nameof(SelectedDocumentProvider));
@@ -630,7 +631,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private ProcessChoice? selectedProcess;
     [ObservableProperty] private ModelChoice? selectedModelChoice;
     [ObservableProperty] private EffortChoice? selectedEffort;
-    [ObservableProperty] private string savedHint = "";
+    private DateTime? savedHintAt;
+    /// <summary>E2/G9: generated at read time so a language switch re-renders the saved time too.</summary>
+    public string SavedHint => savedHintAt is { } time
+        ? UiText.Format("已保存 · %@", time.ToString("HH:mm:ss"))
+        : "";
 
     public ObservableCollection<DeviceChoice> SystemDevices { get; } = [];
     public ObservableCollection<DeviceChoice> MicrophoneDevices { get; } = [];
@@ -880,7 +885,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         HasApiKey = ApiKey.Trim().Length > 0;
         KeyStatus = HasApiKey ? UiText.T("密钥已保存（当前 Windows 用户加密）") : UiText.T("尚未保存密钥；本机服务可不填。");
         LastMeetingTitle = settings.LastMeetingTitle;
-        SavedHint = "已保存 · " + DateTime.Now.ToString("HH:mm:ss");
+        savedHintAt = DateTime.Now;
+        OnPropertyChanged(nameof(SavedHint));
     }
 
     public async Task RefreshDevicesAsync()
