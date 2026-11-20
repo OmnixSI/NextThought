@@ -190,6 +190,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void UiExceptionIsShownInStatus()
+    {
+        var app = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "App.axaml.cs"));
+        Assert.Contains("界面操作出错", app);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.cs"));
+        Assert.Contains("public static AppState? Current", state);
+    }
+
     [Fact]
     public void DeviceSwitchStopsTheOldPipe()
     {

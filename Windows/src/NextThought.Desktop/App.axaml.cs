@@ -23,6 +23,7 @@ public partial class App : Application
         {
             // F19: an exception in an async void handler must not take the app down.
             Log("ui", e.Exception);
+            try { AppState.Current?.SetStatus("界面操作出错：" + e.Exception.Message, true); } catch { }
             e.Handled = true;
         };
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log("domain", e.ExceptionObject as Exception);

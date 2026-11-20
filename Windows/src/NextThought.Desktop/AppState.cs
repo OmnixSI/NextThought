@@ -22,6 +22,9 @@ public enum AppSection { Home, Prepare, Live, Notes, History, Series, Library, S
 /// </summary>
 public partial class AppState : ObservableObject
 {
+    /// <summary>F19: lets the global UI exception logger show a status line.</summary>
+    public static AppState? Current { get; private set; }
+
     private readonly List<Task> writes = [];
     private readonly List<TranscriptLine> currentLines = [];
     private readonly DispatcherTimer candidateTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
@@ -56,6 +59,7 @@ public partial class AppState : ObservableObject
 
     public AppState()
     {
+        Current = this;
         Paths = new AppPaths();
         SettingsStore = new SettingsStore(Paths);
         LoadShortcutOverrides();
