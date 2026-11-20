@@ -1,72 +1,187 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         x:Class="NextThought.Desktop.Views.GlossaryWindow"
         x:DataType="local:AppState"
-        Title="{loc:Tr 术语表}" Width="720" Height="640" WindowStartupLocation="CenterOwner"
+        Title="{loc:Tr 术语和人名}" Width="820" Height="640" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Paper}">
-  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_18}">
-    <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-      <TextBlock Text="{loc:Tr 术语表}" Classes="display" FontSize="24" />
-      <TextBlock Text="{loc:Tr 添加正确写法与常见误听；识别时作为热词，转写中的错写会改回正确写法。}" Classes="caption" TextWrapping="Wrap" />
-    </StackPanel>
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
-      <StackPanel>
-      <TextBox Text="{Binding GlossaryQuery}" PlaceholderText="{loc:Tr 在转写中查找…}" Margin="{DynamicResource D4Margin_0_0_0_8}" />
-      <ItemsControl ItemsSource="{Binding GlossaryTranscriptHits}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="local:TranscriptRow">
-            <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_6}">
-              <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
-              <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 添加}" Click="AddFromTranscript_Click" Tag="{Binding}" />
-            </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-      <ItemsControl ItemsSource="{Binding GlossaryRows}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="local:GlossaryEntryRow">
-            <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
-              <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_18}">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{Binding GlossaryTitleText}" Classes="section" />
+        <TextBlock Text="{Binding GlossaryHint}" Classes="caption" TextWrapping="Wrap" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="primary" Content="{loc:Tr 完成}" Click="Close_Click" VerticalAlignment="Top" />
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}"
+          Margin="{DynamicResource D4Margin_0_12_0_0}">
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+        <RadioButton GroupName="glossaryscope" Content="{Binding GlossaryScopeGlobalLabel}"
+                     Command="{Binding UseGlobalGlossaryScopeCommand}" />
+        <RadioButton GroupName="glossaryscope" Content="{Binding GlossaryScopeSeriesLabel}"
+                     Command="{Binding UseSeriesGlossaryScopeCommand}" />
+      </StackPanel>
+      <TextBox Grid.Column="1" Text="{Binding GlossaryFilter}" PlaceholderText="{loc:Tr 查找}" Width="170" />
+      <TextBox Grid.Column="2" Text="{Binding GlossaryQuery}"
+               PlaceholderText="{loc:Tr 在转写中查找（听错的写法也会找出来）}" MaxWidth="350" HorizontalAlignment="Left" />
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="{Binding GlossaryMatchCountText}" Classes="caption" VerticalAlignment="Center" />
+        <Button Classes="quiet" Content="{loc:Tr 清空搜索}" Click="ClearFind_Click" />
+        <Button Classes="quiet" Content="{loc:Tr 更多}" ToolTip.Tip="{loc:Tr 批量粘贴、导入导出与整理}">
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuItem Header="{loc:Tr 批量粘贴…}" Click="Paste_Click" />
+              <Separator />
+              <MenuItem Header="{loc:Tr 从文件导入…}" Click="ImportFile_Click" />
+              <MenuItem Header="{loc:Tr 导出为文件…}" Click="ExportFile_Click" />
+              <MenuItem Header="{loc:Tr 复制为文字}" Click="CopyText_Click" />
+              <Separator />
+              <MenuItem Header="{loc:Tr 整理重复项}" Command="{Binding TidyGlossariesCommand}" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- TranscriptFindField 的匹配结果；通过听错写法找到的行显示 MisheardMark -->
+    <Border Grid.Row="2" Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_10}"
+            IsVisible="{Binding HasGlossaryTranscriptHits}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+        <TextBlock Text="{loc:Tr 转写里的匹配}" Classes="overline" />
+        <ItemsControl ItemsSource="{Binding GlossaryTranscriptHits}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="local:GlossaryTranscriptHitRow">
+              <StackPanel Spacing="{DynamicResource D4Spacing_1}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+                <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                  <TextBlock Text="{Binding Canonical}" Classes="label" />
-                  <Border Classes="chip" IsVisible="{Binding HasVariants}">
-                    <TextBlock Text="{loc:Tr 误听}" Classes="overline" FontSize="10" />
-                  </Border>
+                  <TextBlock Text="{Binding MisheardMarkText}" Classes="caption" FontSize="11"
+                             Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasMisheardMark}"
+                             ToolTip.Tip="{Binding MisheardTooltip}" />
+                  <Button Classes="quiet" Content="{loc:Tr 加入术语表…}" Tag="{Binding}" Click="AddFromTranscript_Click" />
                 </StackPanel>
-                <TextBlock Text="{Binding Variants}" Classes="caption" IsVisible="{Binding HasVariants}" />
               </StackPanel>
-              <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 删除}" Click="Remove_Click" Tag="{Binding}" />
-            </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-      <TextBlock Text="{Binding GlossaryEmptyText}" Classes="caption" />
-      <TextBlock Text="{loc:Tr 系列术语}" Classes="overline" Margin="{DynamicResource D4Margin_0_10_0_4}" />
-      <ItemsControl ItemsSource="{Binding SeriesGlossaryRows}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="local:GlossaryEntryRow">
-            <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_6}">
-              <TextBlock Text="{Binding Canonical}" Classes="caption" />
-              <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 移除}" Click="RemoveSeries_Click" Tag="{Binding}" />
-            </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </StackPanel>
-    </ScrollViewer>
-    <StackPanel Grid.Row="2" Spacing="{DynamicResource D4Spacing_6}">
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-        <TextBox Text="{Binding NewGlossaryTerm}" PlaceholderText="{loc:Tr 正确写法，例如 Kubernetes}" />
-        <TextBox Grid.Column="1" Text="{Binding NewGlossaryVariants}" PlaceholderText="{loc:Tr 误听写法，用 | 分隔}" />
-      </Grid>
-      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
-        <Button Content="{loc:Tr 保存到设置}" Command="{Binding SaveGlossaryCommand}" />
-        <Button Content="{loc:Tr 添加到系列}" Command="{Binding AddGlossaryToSeriesCommand}" />
-        <Button Classes="primary" Content="{loc:Tr 添加}" Command="{Binding AddGlossaryEntryCommand}" />
-        <Button Content="{loc:Tr 关闭}" Click="Close_Click" />
-      </StackPanel>
-    </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="3" ColumnDefinitions="300,*" ColumnSpacing="{DynamicResource D4Spacing_10}">
+      <Border Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_10}">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0" Text="{Binding GlossaryListHeading}" Classes="overline" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding GlossaryCountText}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+          </Grid>
+          <Button Grid.Row="1" Classes="quiet" Content="{loc:Tr 新增}" Command="{Binding StartNewGlossaryEntryCommand}"
+                  HorizontalAlignment="Left" Margin="{DynamicResource D4Margin_0_6_0_6}" />
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+              <ItemsControl ItemsSource="{Binding GlossaryRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:GlossaryEntryRow">
+                    <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                            Tag="{Binding}" Click="SelectEntry_Click" Margin="{DynamicResource D4Margin_0_2}">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_1}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                          <TextBlock Text="{Binding Canonical}" Classes="label" />
+                          <Border Classes="chip" IsVisible="{Binding IsPerson}">
+                            <TextBlock Text="{loc:Tr 人名}" Classes="overline" FontSize="10" />
+                          </Border>
+                          <Border Classes="chip" IsVisible="{Binding HasVariants}">
+                            <TextBlock Text="{loc:Tr 误听}" Classes="overline" FontSize="10"
+                                       Foreground="{DynamicResource Caution}" />
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding VariantsLine}" Classes="caption" FontSize="11"
+                                   IsVisible="{Binding HasVariants}" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding GlossaryEmptyText}" Classes="caption" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_4_0_0}" />
+              <TextBlock Text="{Binding GlossaryFilteredEmptyText}" Classes="caption" TextWrapping="Wrap" />
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_14}">
+        <Grid RowDefinitions="Auto,*">
+          <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_2}">
+            <TextBlock Text="{Binding GlossaryEditorHeading}" Classes="section" />
+            <TextBlock Text="{Binding GlossarySeriesHint}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+                       IsVisible="{Binding GlossarySeriesScope}" />
+          </StackPanel>
+
+          <!-- 批量粘贴 -->
+          <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding GlossaryPasteMode}">
+            <TextBlock Text="{Binding GlossaryPasteHeading}" Classes="caption" />
+            <TextBlock Text="{Binding GlossaryPasteHint}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+            <TextBox Text="{Binding GlossaryPasteText}" AcceptsReturn="True" TextWrapping="Wrap" Height="220" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{loc:Tr 没写类型的当作}" Classes="caption" VerticalAlignment="Center" />
+              <RadioButton GroupName="pastekind" Content="{Binding GlossaryKindTermLabel}"
+                           Command="{Binding UsePasteTermKindCommand}" />
+              <RadioButton GroupName="pastekind" Content="{Binding GlossaryKindPersonLabel}"
+                           Command="{Binding UsePastePersonKindCommand}" />
+              <Button Classes="primary" Content="{loc:Tr 加入}" Command="{Binding ImportGlossaryPastedCommand}" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- 编辑 -->
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !GlossaryPasteMode}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{loc:Tr 规范写法}" Classes="caption" />
+                <TextBox Text="{Binding GlossaryEditorCanonical}" PlaceholderText="{loc:Tr 正确的写法，例如 Kubernetes}" />
+              </StackPanel>
+              <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                <TextBlock Text="{loc:Tr 类型}" Classes="caption" />
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                  <RadioButton GroupName="editkind" Content="{Binding GlossaryKindTermLabel}"
+                               Command="{Binding UseGlossaryTermKindCommand}" />
+                  <RadioButton GroupName="editkind" Content="{Binding GlossaryKindPersonLabel}"
+                               Command="{Binding UseGlossaryPersonKindCommand}" />
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{loc:Tr 听错的写法}" Classes="caption" />
+                <TextBox Text="{Binding GlossaryEditorVariants}" PlaceholderText="{Binding GlossaryVariantsPlaceholder}" />
+              </StackPanel>
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{loc:Tr 备注}" Classes="caption" />
+                <TextBox Text="{Binding GlossaryEditorNote}" PlaceholderText="{Binding GlossaryNotePlaceholder}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                <Button Classes="primary" Content="{loc:Tr 保存条目}" Command="{Binding SaveGlossaryEntryCommand}" />
+                <Button Classes="quiet" Content="{loc:Tr 删除}" Tag="{Binding}" Click="DeleteSelected_Click" />
+              </StackPanel>
+              <TextBlock Text="{loc:Tr 系列术语}" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+              <ItemsControl ItemsSource="{Binding SeriesGlossaryRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:GlossaryEntryRow">
+                    <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_2}">
+                      <TextBlock Grid.Column="0" Text="{Binding Canonical}" Classes="caption" VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 移除}" Tag="{Binding}" Click="RemoveSeries_Click" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding GlossarySeriesEmptyText}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+                         IsVisible="{Binding !HasSeriesGlossaryEntries}" />
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_10_0_0}">
+      <TextBlock Grid.Column="0" Text="{Binding GlossaryStatusText}" Classes="caption" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 保存到设置}" Command="{Binding SaveGlossaryCommand}" />
+    </Grid>
   </Grid>
 </Window>

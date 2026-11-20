@@ -234,7 +234,7 @@
       </TabItem>
 
       <TabItem Header="{loc:Tr 转写}">
-        <Grid RowDefinitions="Auto,*">
+        <Grid RowDefinitions="Auto,Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
                       Margin="{DynamicResource D4Margin_22_12_22_0}">
             <Button Content="{loc:Tr 校正原话}" Command="{Binding OpenCorrectedTranscriptCommand}"
@@ -244,11 +244,46 @@
             <TextBlock Text="{Binding NotesJumpNotice}" Classes="caption" FontSize="11" VerticalAlignment="Center"
                        Foreground="{DynamicResource Caution}" IsVisible="{Binding HasNotesJumpNotice}" />
           </StackPanel>
-          <ListBox Grid.Row="1" Name="TranscriptListBox" ItemsSource="{Binding Transcript}"
+          <!-- TranscriptFindField：查找转写，听错的写法也会找出来 -->
+          <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                Margin="{DynamicResource D4Margin_22_8_22_0}">
+            <TextBox Grid.Column="0" Text="{Binding TranscriptFindQuery}" PlaceholderText="{Binding TranscriptFindPlaceholder}" />
+            <TextBlock Grid.Column="1" Text="{Binding TranscriptFindCountText}" Classes="caption" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Classes="quiet" Content="{loc:Tr 清空搜索}"
+                    Command="{Binding ClearTranscriptFindCommand}" IsVisible="{Binding HasTranscriptFindQuery}" />
+          </Grid>
+          <!-- 命中面板（含 MisheardMark 小字：匹配到听错的写法：…） -->
+          <Border Grid.Row="2" Classes="card" Padding="{DynamicResource D4Padding_12_10}"
+                  Margin="{DynamicResource D4Margin_22_8_22_0}" IsVisible="{Binding HasTranscriptFindHits}">
+            <ScrollViewer MaxHeight="170" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding TranscriptFindHits}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:GlossaryTranscriptHitRow">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_1}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+                      <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                        <TextBlock Text="{Binding MisheardMarkText}" Classes="caption" FontSize="11"
+                                   Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasMisheardMark}"
+                                   ToolTip.Tip="{Binding MisheardTooltip}" />
+                        <Button Classes="quiet" Content="{loc:Tr 加入术语表…}" Tag="{Binding}"
+                                Click="AddTranscriptToGlossary_Click" />
+                      </StackPanel>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Border>
+          <ListBox Grid.Row="2" Name="TranscriptListBox" ItemsSource="{Binding Transcript}"
                    Background="Transparent" Margin="{DynamicResource D4Margin_22_0_22_16}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="local:TranscriptRow">
                 <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
+                  <StackPanel.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="{loc:Tr 加入术语表…}" Tag="{Binding}" Click="AddTranscriptToGlossary_Click" />
+                    </ContextMenu>
+                  </StackPanel.ContextMenu>
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                     <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
                     <TextBlock Text="{loc:Tr ★ 高亮}" FontSize="11" Foreground="{DynamicResource Caution}"

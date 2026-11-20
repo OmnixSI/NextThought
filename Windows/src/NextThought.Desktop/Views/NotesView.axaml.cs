@@ -92,6 +92,25 @@ public partial class NotesView : UserControl
         catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    /// <summary>E22: AddToGlossarySheet from a transcript line (or a find hit).</summary>
+    private async void AddTranscriptToGlossary_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not AppState state || TopLevel.GetTopLevel(this) is not Window owner) return;
+            var text = sender switch
+            {
+                MenuItem { Tag: TranscriptRow row } => row.Text,
+                Button { Tag: GlossaryTranscriptHitRow hit } => hit.Text,
+                _ => null
+            };
+            if (string.IsNullOrWhiteSpace(text)) return;
+            state.BeginAddToGlossary(text);
+            await new AddToGlossarySheet { DataContext = state }.ShowDialog(owner);
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
     private void HighlightJump_Click(object? sender, RoutedEventArgs e)
     {
         try

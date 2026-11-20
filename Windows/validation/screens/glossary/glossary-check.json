@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "全局术语加载",
+      "passed": true,
+      "detail": "全局 2 条"
+    },
+    {
+      "step": "在转写中查找（听错写法也会找出来）",
+      "passed": true,
+      "detail": "1 处；匹配到听错的写法：库伯尼提斯"
+    },
+    {
+      "step": "会议页转写查找 + 系列术语叠加",
+      "passed": true,
+      "detail": "1 处；匹配到听错的写法：定单链路"
+    },
+    {
+      "step": "切换到当前系列作用域",
+      "passed": true,
+      "detail": "系列 1 条"
+    },
+    {
+      "step": "保存系列术语（含备注）",
+      "passed": true,
+      "detail": "系列条目 1"
+    },
+    {
+      "step": "从转写加入术语表",
+      "passed": true,
+      "detail": "全局 1 条"
+    },
+    {
+      "step": "批量粘贴导入",
+      "passed": true,
+      "detail": "已加入 4 项"
+    },
+    {
+      "step": "整理与导出文字",
+      "passed": true,
+      "detail": "5 行"
+    },
+    {
+      "step": "资料术语叠加生效",
+      "passed": true,
+      "detail": "有效术语 5 条"
+    }
+  ]
+}
