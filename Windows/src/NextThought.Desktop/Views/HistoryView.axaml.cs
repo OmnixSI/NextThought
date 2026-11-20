@@ -45,7 +45,10 @@ public partial class HistoryView : UserControl
         try
         {
             if (sender is not MenuItem { Tag: RecentMeetingRow row } || StateOf(sender) is not { } state) return;
-            await state.ExportSessionCommand.ExecuteAsync(row);
+            if (OwnerOf(this) is not { } owner) return;
+            // E19: 导出 Markdown… opens the three-option export sheet (Mac MeetingActionsMenu).
+            await state.SelectHistoryAsync(row.Meta);
+            await new SessionExportSheet { DataContext = state }.ShowDialog(owner);
         }
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }

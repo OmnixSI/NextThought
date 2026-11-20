@@ -47,6 +47,7 @@ public partial class MainWindow : Window
             await Clipboard.SetDataAsync(transfer);
         };
         state.Notify = ShowMessageAsync;
+        state.RequestSessionExport = OpenSessionExportSheet;
         state.Initialized += HandleInitialized;
         state.UpdateInstalled += RequestExit;
         state.PropertyChanged += (_, e) =>

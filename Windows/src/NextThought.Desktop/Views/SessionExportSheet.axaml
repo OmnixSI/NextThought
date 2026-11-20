@@ -1,0 +1,54 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.SessionExportSheet"
+        x:DataType="local:AppState"
+        Title="{loc:Tr 导出会议}" Width="820" Height="660" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Paper}">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_22}">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{loc:Tr 导出会议}" Classes="section" />
+        <TextBlock Text="{Binding SessionExportTitle}" Classes="caption" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 关闭}" Click="Close_Click" VerticalAlignment="Top" />
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="180,180,160" ColumnSpacing="{DynamicResource D4Spacing_10}"
+          Margin="{DynamicResource D4Margin_0_14_0_0}">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_4}">
+        <TextBlock Text="{loc:Tr 格式}" Classes="label" />
+        <ComboBox Name="FormatBox" HorizontalAlignment="Stretch" SelectedIndex="0" SelectionChanged="Option_Changed" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_4}">
+        <TextBlock Text="{loc:Tr 转写}" Classes="label" />
+        <ComboBox Name="VariantBox" HorizontalAlignment="Stretch" SelectedIndex="0" SelectionChanged="Option_Changed" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_4}">
+        <TextBlock Text="{loc:Tr 语言}" Classes="label" />
+        <ComboBox Name="LanguageBox" HorizontalAlignment="Stretch" SelectedIndex="0" SelectionChanged="Option_Changed" />
+      </StackPanel>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_10_0_0}">
+      <TextBlock Name="HintText" Classes="caption" TextWrapping="Wrap" />
+      <TextBlock Name="WarningText" Classes="caption" Foreground="{DynamicResource Caution}" TextWrapping="Wrap"
+                 IsVisible="False" />
+    </StackPanel>
+
+    <Border Grid.Row="3" Classes="card" Margin="{DynamicResource D4Margin_0_10_0_0}">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <TextBox Name="PreviewBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                 FontFamily="{StaticResource MonoFamily}" FontSize="11" Background="Transparent"
+                 BorderThickness="0" />
+      </ScrollViewer>
+    </Border>
+
+    <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_10_0_0}">
+      <TextBlock Grid.Column="0" Text="{Binding SessionExportStatus}" Classes="caption" TextWrapping="Wrap"
+                 VerticalAlignment="Center" />
+      <Button Grid.Column="1" Classes="primary" Content="{loc:Tr 导出…}" Click="Export_Click" />
+    </Grid>
+  </Grid>
+</Window>

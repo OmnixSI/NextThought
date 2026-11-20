@@ -18,12 +18,7 @@
         </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
-        <Button Content="{loc:Tr 导出 Markdown}" Command="{Binding ExportCommand}" />
-        <Button Content="{loc:Tr 导出 Word}" Command="{Binding ExportDocxCommand}" />
-        <Button Content="{loc:Tr 导出 PDF}" Command="{Binding ExportPdfCommand}" />
-        <ComboBox ItemsSource="{Binding SubtitleExportModes}" SelectedItem="{Binding SubtitleExportMode}" Width="86" />
-        <Button Content="{loc:Tr 导出 SRT}" Command="{Binding ExportSrtCommand}" />
-        <Button Content="{loc:Tr 导出 VTT}" Command="{Binding ExportVttCommand}" />
+        <Button Content="{loc:Tr 导出…}" Command="{Binding OpenSessionExportCommand}" ToolTip.Tip="{loc:Tr 导出 Markdown}" />
         <Button Content="{loc:Tr 编辑纪要}" Click="EditNotes_Click" />
         <Button Content="{loc:Tr 重新整理}" Command="{Binding SummarizeCommand}" />
         <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="{DynamicResource HitRow}" Padding="{DynamicResource D4Padding_18_0}">
