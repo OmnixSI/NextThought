@@ -1,3 +1,10 @@
+## 2026-11-20 · 0.5.145 · D1（部分）
+改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
+测试：Core **871/871**，NextThought.Tests **138/138**。
+证据：`D:\NextThought开发\qa\screens\images\` 14 张；home-light 1120×820 已人工查看，页面正常。
+状态：D1「未做」。缺 Mac 脚本的另外两页（准备、回顾/工作纪要）、英文一轮、提词岛五种形态、与 Mac 截图并排比对；还没有把截图放进 `Windows/validation/screens/<视图>/`。
+未解决：补齐页面/语言/岛形态和对照。
+
 ## 2026-11-20 · 0.5.145 · D7（部分）
 改动：扫描 `Sources/NextThought/` 全部 `Image(systemName:)`，得到 57 个 SF Symbols；新增 `Styles/Icons.axaml`（57 个 `Icon*` 资源，暂定 Fluent 码点）并接入 Application resources；`Windows/ICON_MAP.md` 逐项列 SF Symbol / 码点 / 资源键；新增覆盖测试。
 测试：Core **871/871**，NextThought.Tests **138/138**。
