@@ -75,6 +75,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SceneDefaultsAlsoSetTemplateAndCue()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("sceneDefaults.NotesTemplate", live);
+        Assert.Contains("sceneDefaults.CueStyle", live);
+        Assert.Contains("SelectedTemplateId = TemplateKind.Raw()", live);
+    }
+
     [Fact]
     public void SceneDefaultsAreAppliedAtMeetingStart()
     {

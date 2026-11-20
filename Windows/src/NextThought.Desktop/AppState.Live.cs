@@ -76,6 +76,15 @@ public partial class AppState
         {
             var sceneDefaults = SceneDefaultsFor(SelectedMode);
             Settings.AutomaticAnswers = sceneDefaults.LiveMode == "自动回答";
+            Settings.SelectedCueWidth = Settings.CueWidthChoices.FirstOrDefault(choice =>
+                choice.Value == (sceneDefaults.CueStyle == "逐句" ? "wide" : "regular")) ?? Settings.CueWidthChoices[1];
+            TemplateKind = sceneDefaults.NotesTemplate switch
+            {
+                "学术汇报" => NextThought.Core.NotesTemplateKind.Academic,
+                "工作会议" => NextThought.Core.NotesTemplateKind.Work,
+                _ => NextThought.Core.NotesTemplateKind.General
+            };
+            SelectedTemplateId = TemplateKind.Raw();
             await Settings.SaveAsync();
             SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
             // Endpoints are enumerated lazily; make sure a saved device choice is applied.
