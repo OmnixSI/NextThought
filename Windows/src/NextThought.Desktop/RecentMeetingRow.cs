@@ -3,11 +3,19 @@ using NextThought.Core;
 namespace NextThought.Desktop;
 
 /// <summary>A row in the recent-meetings list: a saved meeting plus its compact summary line.</summary>
-public sealed record SeriesRow(string Id, string Name, int Count, int LessonCount, string LastTitle, string LastLesson, int PendingCount = 0)
+public sealed record SeriesRow(string Id, string Name, int Count, int LessonCount, string LastTitle, string LastLesson, int PendingCount = 0, int DocumentCount = 0)
 {
-    public string Meta => PendingCount > 0
-        ? $"{UiText.Meetings(Count)} · {UiText.Lessons(LessonCount)} · {UiText.Pending(PendingCount)}"
-        : $"{UiText.Meetings(Count)} · {UiText.Lessons(LessonCount)}";
+    public string Meta
+    {
+        get
+        {
+            var parts = new List<string> { UiText.Meetings(Count) };
+            if (DocumentCount > 0) parts.Add(UiText.Materials(DocumentCount));
+            if (PendingCount > 0) parts.Add(UiText.Pending(PendingCount));
+            else if (LessonCount > 0) parts.Add(UiText.Lessons(LessonCount));
+            return string.Join(" 路 ", parts);
+        }
+    }
     public string Preview => LastLesson.Length > 0 ? LastLesson : LastTitle;
 }
 
