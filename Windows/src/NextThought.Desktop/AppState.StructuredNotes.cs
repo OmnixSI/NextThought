@@ -429,6 +429,13 @@ public partial class AppState
             if (HomeRecent.Count < 5) HomeRecent.Add(new RecentMeetingRow(meeting));
         }
         CurrentSession = DemoContent.Meetings()[0];
+        workspace = workspace.AddSeries("ACL 2026 口头报告")
+            .AddSeries("周一客户例会 · 华东区")
+            .AddSeries("字节后端二面");
+        var demoMeetings = DemoContent.Meetings();
+        for (var i = 0; i < demoMeetings.Count && i < workspace.Series.Count; i++)
+            workspace = workspace.Assign(demoMeetings[i].Id.ToString(), workspace.Series[i].Id);
+        RefreshSeries();
         Sources.Clear();
         Sources.Add(new SourceCitation("监测方案 v3 · 第 2 页", "demo-scheme", "监测方案 v3.pdf", "demo",
             "第 2 页 · 3.1", "支座刚度的取值需要通过敏感性分析标定。", 2));
