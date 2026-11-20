@@ -42,7 +42,7 @@ Nov 20, 2026 · @Homing
 | D5 | 已实现、未验证 | Motion 五组时长、减弱动画；两处淡入淡出已接入，弹簧为 cubic 近似 |
 | D6 | 未做 | 场景数据+SceneGlyph/SceneTag/InkWash 已接入首页；截图对照未做 |
 | D7 | 已实现、未验证 | 57 图标资源/对照表；文字关闭符已换 Fluent；码点待并排定稿 |
-| D8 | 未做 | 2px Ai 焦点环、destructive 按钮已加；样张页/截图未做 |
+| D8 | 未做 | 2px Ai 焦点环、destructive、样张页已完成；与 Mac 并排对照未做 |
 | D1 | 未做 | --screenshots 已出 29 张（7 页中英/浅深+岛）；缺 Mac 余页/岛五态/并排对照 |
 | D2 | 已实现、未验证 | 四套字体+许可随包；嵌入 avares，截图正常；干净机未验 |
 
