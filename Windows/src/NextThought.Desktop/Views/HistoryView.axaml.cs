@@ -9,6 +9,17 @@ public partial class HistoryView : UserControl
 
 
 
+
+    private async void RenameSeries_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string seriesId } || DataContext is not AppState state) return;
+        if (Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
+        var current = state.SeriesRows.FirstOrDefault(row => row.Id == seriesId)?.Name ?? "";
+        var dialog = new RenameSessionDialog(current, "重命名系列");
+        var name = await dialog.ShowDialog<string?>(owner);
+        if (!string.IsNullOrWhiteSpace(name)) state.RenameSeries(seriesId, name);
+    }
+
     private async void RenameSession_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
         if (sender is not MenuItem { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;

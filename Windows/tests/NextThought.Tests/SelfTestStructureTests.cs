@@ -114,6 +114,18 @@ public sealed class SelfTestStructureTests
         Assert.Contains("SelectedSessionScreenshotCount", xaml);
     }
 
+
+    [Fact]
+    public void HistorySeriesMenuCanRenameAndDelete()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("重命名系列", xaml);
+        Assert.Contains("DeleteSeriesCommand", xaml);
+        var series = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Series.cs"));
+        Assert.Contains("RenameSeries(string seriesId", series);
+        Assert.Contains("DeleteSeries(string? seriesId)", series);
+    }
+
     [Fact]
     public void HistoryGroupHasSeriesMenu()
     {

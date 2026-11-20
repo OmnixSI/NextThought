@@ -141,6 +141,8 @@
                     <Button.Flyout>
                       <MenuFlyout>
                         <MenuItem Header="打开系列" Command="{Binding $parent[UserControl].DataContext.OpenSeriesCommand}" CommandParameter="{Binding SeriesId}" />
+                        <MenuItem Header="重命名系列" Tag="{Binding SeriesId}" Tapped="RenameSeries_Tapped" />
+                        <MenuItem Header="删除系列" Command="{Binding $parent[UserControl].DataContext.DeleteSeriesCommand}" CommandParameter="{Binding SeriesId}" />
                       </MenuFlyout>
                     </Button.Flyout>
                   </Button>

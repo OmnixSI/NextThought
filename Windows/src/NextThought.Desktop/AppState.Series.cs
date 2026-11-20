@@ -291,6 +291,27 @@ public partial class AppState
     }
 
 
+
+    public void RenameSeries(string seriesId, string name)
+    {
+        var trimmed = name.Trim();
+        if (trimmed.Length == 0 || workspace.Find(seriesId) is not { } series) return;
+        workspace = workspace.WithSeries(series with { Name = trimmed });
+        SaveWorkspace();
+        RefreshSeries();
+        SetStatus("系列已重命名：" + trimmed);
+    }
+
+    [RelayCommand]
+    private void DeleteSeries(string? seriesId)
+    {
+        if (seriesId is null) return;
+        workspace = workspace.RemoveSeries(seriesId);
+        SaveWorkspace();
+        RefreshSeries();
+        SetStatus("系列已删除；会议记录保留。");
+    }
+
     [RelayCommand]
     private void OpenSeries(string? seriesId)
     {
