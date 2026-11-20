@@ -1,39 +1,6 @@
-using System.Text.Json;
 using NextThought.Core;
 
 namespace NextThought.Desktop;
-
-/// <summary>A checked-for update: what the feed said and what it means for this build.</summary>
-public sealed record UpdateReport(
-    DateTimeOffset CheckedAt,
-    string Feed,
-    string Channel,
-    string CurrentVersion,
-    int CurrentBuild,
-    string? CandidateTag,
-    string? LatestVersion,
-    bool Available,
-    string? DownloadUrl,
-    string? Error,
-    string? SetupUrl = null,
-    string? SetupName = null,
-    string? ChecksumsUrl = null)
-{
-    /// <summary>True when the app can download, verify and run the installer itself.</summary>
-    public bool CanInstall => SetupUrl is { Length: > 0 } && ChecksumsUrl is { Length: > 0 };
-
-    public static readonly JsonSerializerOptions Options = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
-    };
-
-    public string Describe() => Error is not null
-        ? "检查更新失败：" + Error
-        : Available
-            ? $"有新版本 {LatestVersion}（{CandidateTag}），" + (CanInstall ? "可以下载并安装。" : "可以打开下载页。")
-            : $"已是最新：当前 {CurrentVersion}，频道「{Channel}」。";
-}
 
 /// <summary>Reads a release feed from an HTTP(S) URL or a local file (the QA path).</summary>
 public static class UpdateFeed
@@ -64,39 +31,10 @@ public static class UpdateCheck
 
     public static int CurrentBuild => (typeof(UpdateCheck).Assembly.GetName().Version ?? new Version(0, 0, 0)).Revision;
 
-    public static async Task<UpdateReport> RunAsync(string source, UpdateChannel channel, CancellationToken cancellationToken = default)
-    {
-        var version = CurrentVersion;
-        var build = CurrentBuild;
-        try
-        {
-            var json = await UpdateFeed.ReadAsync(source, cancellationToken);
-            var releases = GitHubRelease.DecodeList(json);
-            var candidate = UpdateCatalog.Candidate(releases, channel);
-            if (candidate is null)
-                return new UpdateReport(DateTimeOffset.UtcNow, source, channel.Title(), version, build, null, null, false, null, null);
-            var latest = UpdateCatalog.ParseVersion(candidate.TagName) is { } parsed
-                ? string.Join('.', parsed.Numbers) + (parsed.Prerelease is { } pre ? "-" + pre : "")
-                : candidate.TagName;
-            // F14: feed the release's update.json into the comparison so a rolling build's
-            // build number is used instead of comparing the tag alone.
-            UpdateManifest? manifest = null;
-            if (candidate.ManifestAsset?.BrowserDownloadUrl is { Length: > 0 } manifestUrl)
-            {
-                try { manifest = UpdateManifest.Decode(await UpdateFeed.ReadAsync(manifestUrl, cancellationToken)); }
-                catch (Exception) { /* a malformed manifest falls back to the tag */ }
-            }
-            var available = UpdateCatalog.IsNewer(manifest, candidate.TagName, version, build);
-            var url = candidate.WindowsAsset?.BrowserDownloadUrl;
-            var setup = candidate.SetupAsset;
-            var checksums = setup is null ? null : candidate.ChecksumsAsset(setup.Name);
-            return new UpdateReport(DateTimeOffset.UtcNow, source, channel.Title(), version, build,
-                candidate.TagName, latest, available, url, null,
-                setup?.BrowserDownloadUrl, setup?.Name, checksums?.BrowserDownloadUrl);
-        }
-        catch (Exception ex)
-        {
-            return new UpdateReport(DateTimeOffset.UtcNow, source, channel.Title(), version, build, null, null, false, null, ex.Message);
-        }
-    }
+    /// <summary>
+    /// The check runs in <see cref="NextThought.Platform.UpdateChecker"/> so the fake-release
+    /// directory flow is testable; this app supplies its own assembly version and build.
+    /// </summary>
+    public static Task<NextThought.Platform.UpdateReport> RunAsync(string source, UpdateChannel channel, CancellationToken cancellationToken = default) =>
+        NextThought.Platform.UpdateChecker.RunAsync(source, channel, CurrentVersion, CurrentBuild, cancellationToken);
 }
