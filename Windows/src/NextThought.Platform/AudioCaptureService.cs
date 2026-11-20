@@ -37,6 +37,8 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
     private long sample;
     private int failed, stopping;
     private double microphoneGain = 1;
+    private string? systemDevicePreference;
+    private string? microphoneDevicePreference;
     public string? LastError { get; private set; }
     public event Action<AudioFrame>? FrameReady;
     public event Action<string>? Failed;
@@ -62,6 +64,8 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
         if (!settings.CaptureSystem && !settings.CaptureMicrophone) throw new InvalidOperationException("请至少选择一种声音来源。");
         if (!double.IsFinite(settings.MicrophoneGain) || settings.MicrophoneGain is < 1 or > 8) throw new ArgumentException("麦克风增益必须为 1 至 8 倍。");
         lifetime = new(); microphoneGain = settings.MicrophoneGain; sample = 0; failed = stopping = 0; LastError = null;
+        systemDevicePreference = settings.SystemDeviceId;
+        microphoneDevicePreference = settings.MicrophoneDeviceId;
         try
         {
             if (settings.CaptureSystem)
@@ -163,6 +167,8 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
         CapturePipe? current;
         lock (pipesGate) current = pipes.FirstOrDefault(pipe => pipe.Source == source);
         if (current is null || current.DeviceId == id || current.DeviceId == "process-loopback") return;
+        // An explicitly chosen device is not overridden by a system-default change.
+        if (!string.IsNullOrWhiteSpace(source == AudioSource.System ? systemDevicePreference : microphoneDevicePreference)) return;
         CapturePipe replacement;
         try { replacement = CreatePipe(source, id); replacement.Start(); }
         catch (Exception exception)
@@ -177,7 +183,10 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
             if (index < 0) pipes.Add(replacement);
             else { previous = pipes[index]; pipes[index] = replacement; }
         }
-        if (previous is not null) lock (pipesGate) retired.Add(previous);
+        // Stop and release the old pipe immediately: its 3-second buffer and removed-device
+        // callbacks must not be able to fail the meeting being recorded on the new device.
+        previous?.Stop();
+        previous?.Dispose();
     }
     public async ValueTask DisposeAsync()
     {
@@ -255,6 +264,13 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
             if (stopped || disposed) return; stopped = true;
             try { capture.StopRecording(); } catch (System.Runtime.InteropServices.COMException) { }
         }
-        public void Dispose() { if (disposed) return; Stop(); lock (sync) disposed = true; capture.Dispose(); device?.Dispose(); }
+        public void Dispose()
+        {
+            if (disposed) return;
+            lock (sync) disposed = true;
+            try { capture.StopRecording(); } catch (System.Runtime.InteropServices.COMException) { }
+            try { capture.Dispose(); } catch (System.Runtime.InteropServices.COMException) { }
+            device?.Dispose();
+        }
     }
 }
