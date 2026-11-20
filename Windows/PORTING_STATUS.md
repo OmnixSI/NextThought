@@ -1,3 +1,12 @@
+## 2026-11-20 · 0.5.145 · B1、B2
+改动：
+- B1 `Workspace.cs`：Load 记录读失败的系列文件并写 `Workspace/workspace-load.log`；Save 只删除成功读过且用户移除的系列文件，读失败/未知文件保留；系列与 legacy 都改为临时文件替换；整目录读失败后 Save 拒绝覆盖。
+- B2 `Glossary.cs`：`ToText` 改成 Mac `exportText` 的 `canonical | variants | kind | note`，`ParseText` 只在第三列不是已知类型时当备注；删掉锁定旧行为的测试，新增 Mac 文本往返测试。
+测试：Core **867/867**（B1 新增 1 项，B2 替换 1 项为往返测试），NextThought.Tests **122/122**；新翻译 Swift 测试 0。
+状态：B1、B2 均为「已实现、未验证」。
+证据：`WorkspaceTests.StoreKeepsUnreadableSeriesFilesAndRefusesSaveAfterLoadFailure`、`GlossaryTests.ExportTextRoundTripsMacFormat`。
+未解决：A1–A5 尚未开始；真实 Mac 备份夹具仍未到。
+
 ## 2026-11-20 · 0.5.145 · 任务组 0（0-1、0-2、0-3、0-4、0-5、0-7、0-8、0-9）
 改动：新建 `windows/parity`；导入 `FIX_TASKS.md`；记录基线；从 port/windows-native 取回 1.3.7 文档（无二进制）；从 fx/78-parity-baseline 取回 FEATURE/CORE/VIEW 并重填状态；用 `Windows/scripts/scan_views.py` 生成 273 行 VIEW_PARITY；在 REVIEW_RESPONSE 加「更正」节并改 README 首行；归档旧文档、建立九份跟踪文件；新建 UPSTREAM。
 测试：Core **866/866**，NextThought.Tests **122/122**；新翻译的 Swift 测试 0。
@@ -14,7 +23,7 @@
 
 # 当前测试口径（唯一权威）· 0.5.145 + ed39491
 
-- **Core：866 通过 / 0 失败**
+- **Core：867 通过 / 0 失败**
 - **NextThought.Tests：122 通过 / 0 失败**
 - 这是 0.5.145 + ed39491 的唯一权威口径。本文件以下历史小节中出现的 863、779、83、109、110、111、113、114 等测试数字，均为当时版本的记录，**已被本节取代**，不再作为门禁依据。
 

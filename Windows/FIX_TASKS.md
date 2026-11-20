@@ -20,6 +20,8 @@ Nov 20, 2026 · @Homing
 | 0-7 | 已实现、未验证 | `REVIEW_RESPONSE_1370.md` 更正节；`README.md` 首行 |
 | 0-8 | 已实现、未验证 | 根目录 9 份跟踪文件 + 允许的 5 份；旧文档在 `Windows/archive/` |
 | 0-9 | 已实现、未验证 | `Windows/UPSTREAM` |
+| B1 | 已实现、未验证 | Workspace 读取失败保留、原子写；回归测试 |
+| B2 | 已实现、未验证 | Glossary 导出/解析按 Mac；往返测试 |
 
 ## 1. ⽬标与范围 
 
