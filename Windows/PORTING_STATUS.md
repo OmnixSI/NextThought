@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · A5
+改动：结构化纪要写入时补 `questions`、`generatedAt`、`model`，并写 `notes.json`（Mac StructuredNotes 字段 + Windows payload）；`LoadStructuredAsync` 读取 `structuredAll` 的其他格式和 `notes.json` 的 payload；新增 `SummaryCompletenessTests`。
+测试：Core **869/869**，NextThought.Tests **124/124**；新翻译 Swift 测试 0。
+状态：A5「已实现、未验证」。
+未解决：`notes.json` 的 Mac `sections` 仍为空壳，结构化内容放在 `payload` 扩展字段；真实 Mac 解码未跑。
+
 ## 2026-11-20 · 0.5.145 · A4
 改动：`WorkspaceSeriesItemRevision` 补齐 Mac 的 17 个字段（id/kind/sourceSessionID/evidenceID/claimRevision/sourceRevision/sourceQuote/location/transcriptSourceRevision/sourceMissing/recordedAt），替换系列条目时写入完整历史快照。
 测试：Core **869/869**，NextThought.Tests **123/123**；新增断言在 `ReplaceUpdatesTheTargetAndKeepsItsHistory`。
