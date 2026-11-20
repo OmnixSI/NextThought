@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · A14
+改动：增量备份 `Prune` 读不出清单时保留其引用的对象，不再误删；损坏清单测试通过；`BackupArchive` 的 `settings.json` 继续使用 `SettingsSnapshot.Filter`（A12 同一导出键列表）。
+测试：Core **1519/1519**，NextThought.Tests **261/261**。
+状态：A14「已实现、未验证」；与 A12 夹具一起核对 settings 内容，自动备份界面属 E 组。
+
 ## 2026-11-20 · 0.5.145 · A7/A8/A9
 改动：会议归属改为 meta 的 `workspaceID/workspaceName`，系列成员从 meta 重建并把旧 `sessionIds` 迁移一次，系列文件不再写该列表；重写 Mac meta 不再补 `title/platform/inPerson` 默认键，追加提问同步 `questionCount`，纪要状态统一 `ready`；转写读取跳过任意损坏行并提示，答案 evidence 兼容旧结构，说话人 0–31 保留。
 测试：Core **1518/1518**，NextThought.Tests **261/261**。

@@ -33,7 +33,7 @@ Nov 20, 2026 · @Homing
 | A11 | 未做 | — | 未开始 |
 | A12 | 未做 | — | 未开始 |
 | A13 | 未做 | — | 未开始 |
-| A14 | 未做 | — | 未开始 |
+| A14 | 已实现、未验证 | `IncrementalBackupStore.Prune` 现在从读不出的清单原文里提取 64 位哈希并加入保护集，删除对象前先合并，损坏清单引用的对象不再被删；新增 `PruneKeepsObjectsReferencedByAnUnreadableManifest`；`BackupArchive` 的 `settings.json` 仍走 `SettingsSnapshot.Filter`（与 A12 的 exportedKeys 同一列表） | 需与 A12 夹具一起验证 settings.json 与 Mac 备份内容一致；增量备份/恢复点尚未接到自动备份界面（E 组） |
 | A15 | 已实现、未验证 | macOS 清单 `MacCodecMac` 按相对路径引用 Core；Mac `emit` 12 类夹具；Windows `MacCodecCheck` 解码纯数据夹具并列出跳过项；`MAC_FIXTURE_REQUEST.md` 已写命令 | 等待人在 Mac 上运行 `swift run ... emit` 并提交 `Windows/tests/Fixtures/mac/`；夹具到位前依赖夹具的测试标记等待 |
 | A16 | 未做 | — | 等待 Mac 备份夹具 |
 | B1 | 已实现、未验证 | Workspace 读取失败保留、原子写；回归测试 | 待逐元素对照或实机验证 |

@@ -140,4 +140,15 @@ public sealed class IncrementalBackupTests : IDisposable
         store.Create(new Dictionary<string, byte[]> { ["b.txt"] = Bytes(2) }, keep: 1);
         Assert.Single(Directory.GetFiles(Path.Combine(store.Root, "Objects")));
     }
+
+    [Fact]
+    public void PruneKeepsObjectsReferencedByAnUnreadableManifest()
+    {
+        var store = Store();
+        var first = store.Create(new Dictionary<string, byte[]> { ["a.txt"] = Bytes(1) }, keep: 1);
+        var oldHash = IncrementalBackupStore.Digest(Bytes(1));
+        File.AppendAllText(first, "\n{ broken");
+        store.Create(new Dictionary<string, byte[]> { ["b.txt"] = Bytes(2) }, keep: 1);
+        Assert.True(File.Exists(Path.Combine(store.Root, "Objects", oldHash)));
+    }
 }

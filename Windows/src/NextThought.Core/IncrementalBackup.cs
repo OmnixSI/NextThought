@@ -159,8 +159,11 @@ public sealed class IncrementalBackupStore
         if (point.Fingerprint != expected) throw new InvalidDataException("恢复点校验失败。");
     }
 
-    private List<(string Path, RestorePoint Point)> Manifests()
+    private List<(string Path, RestorePoint Point)> Manifests() => Manifests(out _);
+
+    private List<(string Path, RestorePoint Point)> Manifests(out List<string> unreadable)
     {
+        unreadable = [];
         if (!Directory.Exists(Points)) return [];
         var result = new List<(string Path, RestorePoint Point)>();
         foreach (var file in Directory.EnumerateFiles(Points))
@@ -171,17 +174,21 @@ public sealed class IncrementalBackupStore
             {
                 var point = JsonSerializer.Deserialize<RestorePoint>(File.ReadAllText(file), JsonOptions);
                 if (point is not null) result.Add((file, point));
+                else unreadable.Add(file);
             }
-            catch (JsonException)
-            {
-            }
+            catch (JsonException) { unreadable.Add(file); }
         }
         return result.OrderByDescending(entry => entry.Point.CreatedAt).ToList();
     }
 
     private void Prune(int keep, long budget)
     {
-        var remaining = Manifests();
+        var remaining = Manifests(out var unreadable);
+        // A14: a manifest we cannot read still owns its objects; never delete them.
+        var protectedHashes = unreadable.SelectMany(file => System.Text.RegularExpressions.Regex
+                .Matches(File.ReadAllText(file), @"\b[0-9a-fA-F]{64}\b")
+                .Select(match => match.Value.ToLowerInvariant()))
+            .ToHashSet(StringComparer.Ordinal);
         HashSet<string> Hashes() => remaining.SelectMany(entry => entry.Point.Files.Values).ToHashSet(StringComparer.Ordinal);
         long Size() => Hashes().Sum(hash =>
         {
@@ -197,6 +204,7 @@ public sealed class IncrementalBackupStore
         }
 
         var referenced = Hashes();
+        referenced.UnionWith(protectedHashes);
         foreach (var file in Directory.EnumerateFiles(Objects))
             if (!referenced.Contains(Path.GetFileName(file)))
                 File.Delete(file);
