@@ -158,7 +158,7 @@ Nov 20, 2026 · @Homing
 | H4 | 已实现、未验证 | `Windows/scripts/core_usage.py` 改为按「Core 文件声明的类型是否被 Windows/src 或 tests（含其它 Core 文件）引用」统计；复算 **core_files=129, unused=0**；`CORE_PARITY.md` 口径与复算命令同步更新，旧的文件名启发式 40 已废弃 | 统计仍是类型名文本匹配，非编译器级；需最终验收时再跑一次确认 0 |
 | H5 | 未做 | — | 等待是否删除旧工程答复 |
 | H6 | 已实现、未验证 | 现有 Native AOT JSON 警告清单 `Windows/AOT_JSON_WARNINGS.csv` 保持 161 条；新增 `AotJsonBudgetTests` 锁定不超过 161；本轮新增代码（ProductVersion、Win32Native、字符串生成、备份合并）未增加清单行 | 需真实 AOT 发布重新生成清单确认仍为 161；`AOT_REPORT.md` 记录 AOT 备份 JSON 仍失败 |
-| H7 | 已实现、未验证 | 新增 `Windows/verify.ps1`：锁定模式还原（运行库项目带 win-x64，测试项目 `--no-dependencies`）、Release 构建、两个测试工程、A15 MacCodec check（夹具缺失时明确 SKIP）、D1 截图（`--demo --screenshots`，可用 `-SkipScreenshots`）；任一步失败即停，末尾打印 PASS/FAIL 摘要。已运行 `-SkipScreenshots` 一次：构建与 1526/267 测试通过，A15 因夹具缺失 SKIP | 需夹具到位后跑完整 A15 check 与 D1 截图；脚本尚未在干净机器上验证 |
+| H7 | 已实现、未验证 | `Windows/verify.ps1`：锁定还原（各项目按自身锁定文件，不再强加 RID）、Release 构建、两套测试、A15 MacCodec check（夹具缺失时明确 SKIP）、D1 截图（`--demo --screenshots`，`-SkipScreenshots` 可跳）；任一步失败即停。已完整运行一次：restore/build/两套测试/96 张 D1 截图 PASS，A15 因夹具缺失 SKIP，VERIFY OK | 需夹具到位后跑完整 A15 check；脚本尚未在干净机器验证 |
 
 ## 1. ⽬标与范围 
 

@@ -27,7 +27,7 @@ Push-Location -LiteralPath $projectRoot
 try {
     Invoke-Step 'restore (locked, runtime projects)' {
         foreach ($project in @('src/NextThought.Core', 'src/NextThought.Platform', 'src/NextThought.Desktop')) {
-            & $dotnet restore $project --locked-mode -p:RuntimeIdentifier=win-x64 --verbosity minimal
+            & $dotnet restore $project --locked-mode --verbosity minimal
             if ($LASTEXITCODE -ne 0) { return }
         }
     }
@@ -38,7 +38,7 @@ try {
         }
     }
     Invoke-Step 'build (Release)' {
-        & $dotnet build src/NextThought.Desktop -c Release --no-restore -p:RuntimeIdentifier=win-x64 --verbosity minimal
+        & $dotnet build src/NextThought.Desktop -c Release --no-restore --verbosity minimal
     }
     Invoke-Step 'tests: NextThought.Core.Tests' {
         & $dotnet test tests/NextThought.Core.Tests -c Release --no-build --no-restore `

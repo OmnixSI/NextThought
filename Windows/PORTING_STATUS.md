@@ -21,7 +21,7 @@
 ## 2026-11-20 · 0.5.145 · F21/H7
 改动：Codex 客户端版本号取程序实际版本；模型解压用系统目录下 tar.exe 完整路径；新增 `Windows/verify.ps1`（锁定还原→构建→两套测试→A15 check→D1 截图，失败即停）。
 测试：`verify.ps1 -SkipScreenshots` 运行通过：Core **1526/1526**，NextThought.Tests **267/267**，A15 夹具缺失明确 SKIP。
-状态：F21、H7「已实现、未验证」；需实跑 Codex/模型下载与夹具到位后的完整 verify。
+状态：F21、H7「已实现、未验证」；H7 已完整跑通一次（restore/build/两套测试/96 张 D1 截图 PASS，A15 因夹具缺失 SKIP）。
 
 ## 2026-11-20 · 0.5.145 · G6
 改动：`AppSettings` 增加扩展数据保存不认识的键；settings.json 与 Mac plist 导入/导出都原样保留未知键（含数组/字典）；新增往返测试。
