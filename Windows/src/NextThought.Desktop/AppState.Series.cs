@@ -33,11 +33,17 @@ public partial class AppState
         ? UiText.T("在左边选择一个系列，或者先新建一个。")
         : $"{UiText.Meetings(row.Count)} · {UiText.Lessons(row.LessonCount)}" + (SeriesCandidates.Count > 0 ? $" · {UiText.Pending(SeriesCandidates.Count)}" : "");
 
+
+    public NextThought.Core.SeriesBriefing? SelectedSeriesBriefing => SelectedSeries is { } row && workspace.Find(row.Id) is { } series
+        ? NextThought.Core.SeriesBriefingBuilder.Build(series, History.Select(item => item.Meta).ToList())
+        : null;
+
     partial void OnSelectedSeriesChanged(SeriesRow? value)
     {
         OnPropertyChanged(nameof(HasSelectedSeries));
         OnPropertyChanged(nameof(SelectedSeriesTitle));
         OnPropertyChanged(nameof(SelectedSeriesMeta));
+        OnPropertyChanged(nameof(SelectedSeriesBriefing));
         RefreshSeriesMeetings();
         RefreshSeriesLessons();
         RefreshSeriesSkills();
@@ -162,6 +168,7 @@ public partial class AppState
         OnPropertyChanged(nameof(SeriesCandidatesHeader));
         OnPropertyChanged(nameof(SeriesBankHeader));
         OnPropertyChanged(nameof(SelectedSeriesMeta));
+        OnPropertyChanged(nameof(SelectedSeriesBriefing));
     }
 
     /// <summary>

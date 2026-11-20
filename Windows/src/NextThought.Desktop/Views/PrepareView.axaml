@@ -83,6 +83,38 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="系列简报" Classes="section" />
+          <TextBlock Text="{Binding SelectedSeriesBriefing.WorkspaceName}" Classes="label" />
+          <TextBlock Text="{Binding SelectedSeriesBriefing.SessionCount}" Classes="caption" />
+          <TextBlock Text="最近会议" Classes="overline" />
+          <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.LatestSessions}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:SessionMeta">
+                <TextBlock Text="{Binding Title}" Classes="caption" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="已确认经验" Classes="overline" />
+          <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:WorkspaceLesson">
+                <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="题库" Classes="overline" />
+          <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.QuestionBank}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:QuestionBankItem">
+                <TextBlock Text="{Binding Question}" Classes="caption" TextWrapping="Wrap" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="检查" Classes="section" />
           <StackPanel Spacing="{DynamicResource D4Spacing_8}">
             <Grid ColumnDefinitions="90,*" ColumnSpacing="10">

@@ -81,6 +81,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareSeriesBriefingIsExposed()
+    {
+        var series = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Series.cs"));
+        Assert.Contains("SelectedSeriesBriefing", series);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
+        Assert.Contains("系列简报", xaml);
+        Assert.Contains("SelectedSeriesBriefing.LatestSessions", xaml);
+    }
+
     [Fact]
     public void PrepareTranscriptCarryAttachesPreviousMeeting()
     {
