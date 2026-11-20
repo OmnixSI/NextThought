@@ -19,8 +19,11 @@ public partial class MainWindow
         {
             state.Section = AppSection.Prepare;
             await PumpAsync();
-            foreach (var mode in Enum.GetValues<MeetingMode>())
+            // Drive the scene chips that the prepare page actually shows: the enum also carries
+            // Mac-internal modes (e.g. Custom) that have no chip and no scene card.
+            foreach (var choice in state.Scenes)
             {
+                var mode = choice.Mode;
                 if (!state.SetSceneCommand.CanExecute(mode)) { failures.Add("scene command disabled for " + mode); continue; }
                 state.SetSceneCommand.Execute(mode);
                 if (state.SelectedMode != mode) failures.Add("scene chip did not switch to " + mode);
