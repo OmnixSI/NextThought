@@ -101,7 +101,7 @@ public static class TranscriptDeduplicator
         return text[index..].Trim();
     }
 
-    private static bool IsPunctuation(char character) => char.IsPunctuation(character) || char.IsSymbol(character);
+    private static bool IsPunctuation(char character) => char.IsPunctuation(character);
 
     private static List<string> TextElements(string text)
     {

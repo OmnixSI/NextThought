@@ -8,6 +8,7 @@ namespace NextThought.Core;
 /// </summary>
 public sealed class QuestionDetector
 {
+    private static readonly char[] PunctuationChars = Enumerable.Range(0, 0x10000).Select(value => (char)value).Where(char.IsPunctuation).ToArray();
     private static readonly string[] EnglishStarts =
     [
         "what ", "what's", "why ", "how ", "when ", "where ", "who ", "which ",
@@ -85,7 +86,7 @@ public sealed class QuestionDetector
 
     public static bool IsShortFollowUp(string text)
     {
-        var lower = text.Trim().TrimEnd('.', '!', '?', '。', '！', '？', ',', '，').ToLowerInvariant();
+        var lower = text.Trim().Trim(PunctuationChars).ToLowerInvariant();
         return FollowUps.Contains(lower);
     }
 

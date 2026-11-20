@@ -179,11 +179,24 @@ public static class SpeakerLabels
         Numbers(lines).Values.Distinct().Count();
 
     /// <summary>A name worth keeping: one line, trimmed, at most 24 characters; null when empty.</summary>
+    /// <summary>B21: truncate by Unicode grapheme clusters, never inside one.</summary>
+    private static string TruncateGraphemes(string text, int maximum)
+    {
+        var enumerator = System.Globalization.StringInfo.GetTextElementEnumerator(text);
+        var count = 0;
+        while (enumerator.MoveNext())
+        {
+            count++;
+            if (count == maximum) return text[..(enumerator.ElementIndex + enumerator.GetTextElement().Length)];
+        }
+        return text;
+    }
+
     public static string? CleanName(string raw)
     {
         var single = raw.ReplaceLineEndings(" ");
         var trimmed = single.Trim();
-        if (trimmed.Length > 24) trimmed = trimmed[..24].Trim();
+        trimmed = TruncateGraphemes(trimmed, 24).Trim();
         return trimmed.Length == 0 ? null : trimmed;
     }
 
@@ -278,5 +291,8 @@ public static class SpeakerLabels
                $"按身份理解每句话的分量（导师、评委、客户说的是要求或意见，同学说的是建议），正文里称呼时只写名字，不带括号。{meNote}";
     }
 
-    private static bool IsIdeographic(char character) => character is >= '\u4E00' and <= '\u9FFF';
+    private static bool IsIdeographic(char character) =>
+        character is >= '\u3400' and <= '\u4DBF'
+        || character is >= '\u4E00' and <= '\u9FFF'
+        || character is >= '\uF900' and <= '\uFAFF';
 }

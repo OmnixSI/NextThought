@@ -14,7 +14,15 @@ public static class QuestionIntentClassifier
     { MeetingMode.Lesson => (.6, .35), MeetingMode.Interview => (.45, .25), MeetingMode.LabMeeting or MeetingMode.GroupProject => (.55, .3), _ => (.5, .3) };
     public static int CjkCount(string text) => text.Count(c => c >= 0x3400 && c <= 0x9fff);
     private static bool Separator(char c) => char.IsWhiteSpace(c) || char.IsPunctuation(c);
-    private static string Strip(string text) => text.Trim().Trim('"', '\'', '?', '？', '.', '。', ',', '，', '!', '！', '：', ':', ';', '；', '…');
+    /// <summary>B21: trim whitespace, punctuation and symbols from both ends.</summary>
+    private static string Strip(string text)
+    {
+        var start = 0;
+        var end = text.Length;
+        while (start < end && (char.IsWhiteSpace(text[start]) || char.IsPunctuation(text[start]) || char.IsSymbol(text[start]))) start++;
+        while (end > start && (char.IsWhiteSpace(text[end - 1]) || char.IsPunctuation(text[end - 1]) || char.IsSymbol(text[end - 1]))) end--;
+        return text[start..end];
+    }
     private static string Compact(string text) => string.Concat(text.Where(c => !Separator(c)));
     private static string[] Words(string text) => Regex.Split(text, @"[^\p{L}\p{N}']+").Where(x => x.Length > 0).ToArray();
     private static bool Has(IEnumerable<string> values, string text) => values.Any(text.Contains);

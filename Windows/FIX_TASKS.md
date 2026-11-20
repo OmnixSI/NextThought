@@ -56,7 +56,7 @@ Nov 20, 2026 · @Homing
 | B18 | 已实现、未验证 | 系列新增 `EffectiveMode`（custom 归一到基础类型、嵌套 custom→general）、`Profile`、无参 `MaterialText()`（结构化字段+遗留字段+自由笔记）、`RetrievalDocuments`（题库作为一篇可检索文档）、`ModeProfile.MatchesDefaultTemplatePreferences`；4 个对齐测试通过 | Mac 旧版本对 meeting/client/general 的历史默认偏好字符串未逐字补入；`WorkspaceTests` 其余项留给 B22 |
 | B19 | 已实现、未验证 | 讲稿提示词的相关资料改为 `ContextExcerpt.Budget(4000, 5)`（只取完整片段），引用改为 Mac 的 `[来源 定位]`（无 locator 用「第 N 段」）；新增 2 个对齐测试 | `LiveInsightsTests` 其余 11 项尚未翻译；未实机核对真实幻灯片导出 |
 | B20 | 未做 | — | 未开始 |
-| B21 | 未做 | — | 未开始 |
+| B21 | 已实现、未验证 | 追问判断按 Mac 去掉首尾所有标点；摘要去重只去标点、保留符号；说话人名按字素簇截断 24；表意文字范围补 CJK 扩展 A/兼容区（连字假名/谚文已有）；4 个边界测试通过 | `QuestionDetectorTests`、`TranscriptDeduplicatorTests`(3)、`SpeakerClusteringTests`(20) 尚未全部逐条翻译 |
 | B22 | 未做 | — | 592 项 Swift Core 测试尚未翻译 |
 | B23 | 未做 | — | 未开始 |
 | B24 | 未做 | — | 未开始 |
