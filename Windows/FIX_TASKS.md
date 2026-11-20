@@ -43,7 +43,7 @@ Nov 20, 2026 · @Homing
 | B5 | 已实现、未验证 | `SeriesBriefingBuilder.HasCurrentEvidence` 增加 `origin == textNotes`、`lineID != null` 与证据修订比对；翻译两个证据测试 | 其余简报 Swift 测试未逐项翻译；B22 补齐 |
 | B6 | 已实现、未验证 | 新增 `SessionEvidenceBuilder.Build`：文本笔记引用、引文/时间匹配、原/修订版本、claimRevision、review 当前/过期、三种结构化视图引用；翻译两个 Swift 证据测试 | 会议页尚未改为使用该构建器（需 B9 文本笔记模型）；其余 Swift 证据测试未逐项翻译 |
 | B7 | 已实现、未验证 | `SessionProjectionBuilder` 移植：transcriptSourceRevision、原文/修订/译文/问题/答案/笔记/纪要检索项、speaker label 参与来源指纹、译文/笔记/纪要过期状态；翻译三个投影测试 | Markdown 导出的过期提示依赖 DerivedContentStatus，未逐字核对 Mac 文案；其余投影 Swift 测试留给 B22 |
-| B8 | 未做 | — | 未开始 |
+| B8 | 已实现、未验证 | `NotesPrompt.OrganizeSystem` 系统提示词已从 `NotesTemplates.swift:582-623` 逐字移植（会议日期、8 条规则、章节形状、JSON schema）；`OrganizeUser` 增加 answers，新增 `PartialUser`；翻译两个提示词测试 | 会议页生成时尚未传入会中参考回答；其余模板 Swift 测试留给 B22 |
 | B9 | 未做 | — | 未开始 |
 | B10 | 未做 | — | 未开始 |
 | B11 | 未做 | — | 未开始 |

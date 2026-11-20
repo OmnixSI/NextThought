@@ -192,7 +192,7 @@ public partial class AppState
                 ? $"# {meta.Title}\n\nMeeting: {meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · Template: {template.Name}"
                 : $"# {meta.Title}\n\n会议时间：{meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 模板：{template.Name}";
             var settings = Settings.Build();
-            var system = NotesPrompt.OrganizeSystem(template, english, inPerson: !settings.CaptureSystem);
+            var system = NotesPrompt.OrganizeSystem(template, english, inPerson: !settings.CaptureSystem, meetingDate: meta.StartedAt);
             var user = NotesPrompt.OrganizeUser(header, transcript);
             SetStatus($"正在按「{template.Name}」整理…");
             var reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system, user, null, cancellation.Token, 240);
