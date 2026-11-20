@@ -181,7 +181,7 @@ python Windows/scripts/core_usage.py
 | DocumentStructureTests.swift | 5 | 5 |
 | EchoSuppressionTests.swift | 7 | 7 |
 | GlossaryTests.swift | 18 | 0 |
-| LaTeXMathTests.swift | 13 | 0 |
+| LaTeXMathTests.swift | 13 | 13 |
 | LiveInsightsTests.swift | 24 | 1 |
 | LiveTranslationRevisionGateTests.swift | 5 | 0 |
 | LocalModelReuseTests.swift | 5 | 0 |
@@ -191,10 +191,10 @@ python Windows/scripts/core_usage.py
 | MeetingTypeAndNotesTests.swift | 17 | 17 |
 | OnboardingFlowTests.swift | 6 | 6 |
 | OnboardingVersionTests.swift | 4 | 4 |
-| PDFTextLayoutTests.swift | 7 | 0 |
+| PDFTextLayoutTests.swift | 7 | 7 |
 | ProcessExitWaiterTests.swift | 1 | 1 |
 | ProcessLineReaderTests.swift | 2 | 2 |
-| ProductArchiveUXTests.swift | 8 | 0 |
+| ProductArchiveUXTests.swift | 8 | 8 |
 | QuestionCorpusExtended.swift | 0 | 0 |
 | QuestionCorpusHeldOut.swift | 0 | 0 |
 | QuestionCorpusReportTests.swift | 5 | 5 |
@@ -228,7 +228,7 @@ python Windows/scripts/core_usage.py
 | VoiceProfileTests.swift | 16 | 0 |
 | WebLookupPromptBuilderTests.swift | 3 | 0 |
 | WebSearchNeedTests.swift | 4 | 4 |
-| WorkspaceDeletionTransactionTests.swift | 5 | 0 |
+| WorkspaceDeletionTransactionTests.swift | 5 | 5 |
 | WorkspaceTests.swift | 39 | 1 |
 | ZipformerStreamingIntegrationTests.swift | 1 | 0 |
 
