@@ -87,8 +87,8 @@
 
       <!-- Type families: Inter for Latin, Noto Sans SC / Microsoft YaHei UI for Chinese;
            Source Serif 4 / SimSun for the serif headings (Typo). -->
-      <FontFamily x:Key="SansFamily">Inter, Noto Sans SC, Microsoft YaHei UI, Segoe UI</FontFamily>
-      <FontFamily x:Key="SerifFamily">Source Serif 4, Noto Serif SC, SimSun, Georgia</FontFamily>
+      <FontFamily x:Key="SansFamily">avares://NextThought/Assets/Fonts/InterVariable.ttf#Inter Variable, avares://NextThought/Assets/Fonts/NotoSansSC-VF.ttf#Noto Sans SC, Microsoft YaHei UI, Segoe UI</FontFamily>
+      <FontFamily x:Key="SerifFamily">avares://NextThought/Assets/Fonts/SourceSerif4-VF.ttf#Source Serif 4, avares://NextThought/Assets/Fonts/NotoSerifSC-VF.ttf#Noto Serif SC, SimSun, Georgia</FontFamily>
       <FontFamily x:Key="MonoFamily">Cascadia Mono, Consolas, Noto Sans Mono CJK SC</FontFamily>
 
       <!-- Surfaces: paperCard, aiBlock, floatingSurface; shadows are theme resources. -->
