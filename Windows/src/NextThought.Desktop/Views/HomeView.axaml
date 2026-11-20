@@ -6,7 +6,7 @@
              x:Class="NextThought.Desktop.Views.HomeView"
              x:DataType="local:AppState">
   <Grid>
-    <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" />
+    <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" Animated="True" />
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_26}">
       <!-- Greeting -->
@@ -19,7 +19,7 @@
       <Border Classes="card" Padding="{DynamicResource D4Padding_24}">
         <StackPanel Spacing="{DynamicResource D4Spacing_16}">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-            <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="44" VerticalAlignment="Center" />
+            <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="38" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
                      Padding="{DynamicResource D4Padding_0}" FontFamily="{StaticResource SerifFamily}" FontSize="24"
                      FontWeight="Medium" MinHeight="36" VerticalAlignment="Center"

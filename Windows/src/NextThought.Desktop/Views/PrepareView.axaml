@@ -3,8 +3,12 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.PrepareView"
              x:DataType="local:AppState">
+  <Grid>
+    <!-- D6: the same pigment wash as the home page, still on the prepare page (Mac animated: false). -->
+    <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" Animated="False" />
   <Grid RowDefinitions="*,Auto">
     <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_18}">
@@ -17,11 +21,7 @@
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 类型与标题}" Classes="section" />
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-            <Border Width="44" Height="44" CornerRadius="{DynamicResource D4CornerRadius_10}"
-                    Background="{DynamicResource Sunken}" VerticalAlignment="Center">
-              <TextBlock Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}" FontSize="16"
-                         Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
+            <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="44" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
                      FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="36"
                      PlaceholderText="{loc:Tr 给这场会起个名字}" />
@@ -173,5 +173,6 @@
         </StackPanel>
       </Grid>
     </Border>
+  </Grid>
   </Grid>
 </UserControl>

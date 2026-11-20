@@ -3,6 +3,7 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.LiveView"
              x:DataType="local:AppState">
@@ -13,6 +14,8 @@
         <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="{DynamicResource D4Padding_0}"
                  FontFamily="{StaticResource SerifFamily}" FontSize="28" FontWeight="Medium" MinHeight="40" />
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+          <!-- D6: the live bar names the scene, like Mac LiveSessionView's SceneTag. -->
+          <controls:SceneTag Mode="{Binding SelectedMode}" Name="{Binding SceneTitle}" VerticalAlignment="Center" />
           <TextBlock Text="{Binding PageSubtitle}" Classes="caption" />
           <TextBlock Text="{Binding RecordingElapsedText}" Classes="caption" />
           <TextBlock Text="{loc:Tr 正在截屏读取屏幕…}" Classes="caption" Foreground="{DynamicResource Ai}"

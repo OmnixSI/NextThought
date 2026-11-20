@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using NextThought.Core;
 
 namespace NextThought.Desktop.Views.Controls;
@@ -24,6 +25,7 @@ public sealed class SceneGlyph : Border
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
+        ActualThemeVariantChanged += (_, _) => Rebuild();
         Rebuild();
     }
 
@@ -36,15 +38,14 @@ public sealed class SceneGlyph : Border
     private void Rebuild()
     {
         var theme = SceneTheme.For(Mode);
-        var tint = Color.Parse(theme.TintLight);
+        // Mac tint is a dynamic color: the light pigment on paper, the light-tinted one in dark mode.
+        var tint = Color.Parse(theme.Tint(ActualThemeVariant == ThemeVariant.Dark));
         Width = Size;
         Height = Size;
         CornerRadius = new CornerRadius(Size * 0.3);
         Background = new SolidColorBrush(tint, 0.13);
         if (Child is not TextBlock text) return;
-        // D7: the glyph comes from the shared Styles/Icons.axaml table (same as every other icon).
-        var key = IconKey(theme.Symbol);
-        text.Text = Lookup(key) as string ?? "";
+        text.Text = Lookup(IconKey(theme.Symbol)) as string ?? "";
         // D7: font and glyph come from the shared Styles/Icons.axaml table, like every other icon.
         text.FontFamily = Lookup("IconFont") as FontFamily ?? FontFamily.Default;
         text.FontSize = Size * 0.44;
