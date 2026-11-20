@@ -202,6 +202,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SettingsAsyncHandlersShowErrors()
+    {
+        var view = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));
+        Assert.Contains("刷新声音设备失败", view);
+        Assert.Contains("打开术语表失败", view);
+    }
+
     [Fact]
     public void SessionContextIsBuiltOffTheUiThread()
     {

@@ -72,8 +72,12 @@ public partial class SettingsView : UserControl
     private async void RefreshDevices_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AppState state) return;
-        await state.Settings.RefreshDevicesAsync();
-        state.SetStatus("声音设备已刷新。");
+        try
+        {
+            await state.Settings.RefreshDevicesAsync();
+            state.SetStatus("声音设备已刷新。");
+        }
+        catch (Exception ex) { state.SetStatus("刷新声音设备失败：" + ex.Message, true); }
     }
 
     private async void ImportTemplate_Click(object? sender, RoutedEventArgs e)
@@ -141,8 +145,12 @@ public partial class SettingsView : UserControl
     private async void CopyCompanion_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AppState state || state.CompanionLink.Length == 0) return;
-        if (state.CopyText is { } copy) await copy(state.CompanionLink);
-        state.SetStatus("配对链接已复制。");
+        try
+        {
+            if (state.CopyText is { } copy) await copy(state.CompanionLink);
+            state.SetStatus("配对链接已复制。");
+        }
+        catch (Exception ex) { state.SetStatus("复制配对链接失败：" + ex.Message, true); }
     }
 
     private void Notices_Click(object? sender, RoutedEventArgs e)
@@ -156,8 +164,12 @@ public partial class SettingsView : UserControl
     private async void OpenGlossary_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not AppState state || Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
-        state.RefreshSeriesGlossaryRows();
-        await new GlossaryWindow { DataContext = state }.ShowDialog(owner);
+        try
+        {
+            state.RefreshSeriesGlossaryRows();
+            await new GlossaryWindow { DataContext = state }.ShowDialog(owner);
+        }
+        catch (Exception ex) { state.SetStatus("打开术语表失败：" + ex.Message, true); }
     }
 
     private void SaveTavily_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
