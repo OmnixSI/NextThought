@@ -79,6 +79,7 @@ public sealed class BackupService(AppPaths paths)
     {
         archive = Path.GetFullPath(archive); var staging = Path.Combine(paths.Root, ".restore-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(staging);
         var committed = new List<string>(); string safetyBackup = ""; int addedSessions = 0, addedMaterials = 0, conflicts = 0;
+        var undo = new Dictionary<string, byte[]?>(StringComparer.OrdinalIgnoreCase);
         try
         {
             using (var zip = ZipFile.OpenRead(archive))
@@ -102,7 +103,7 @@ public sealed class BackupService(AppPaths paths)
             if (manifests.Length != 1) throw new InvalidDataException("无法唯一确定备份根目录。");
             var root = Path.GetDirectoryName(manifests[0])!; using var manifest = JsonDocument.Parse(await File.ReadAllTextAsync(manifests[0], ct).ConfigureAwait(false)); var m = manifest.RootElement;
             if (m.GetProperty("format").GetString() is not ("nextthought-backup" or "interviewhacker-backup") || m.GetProperty("version").GetInt32() != 1) throw new InvalidDataException("不支持的备份格式或版本。");
-            if (m.GetProperty("includesSecrets").GetBoolean() || File.Exists(Path.Combine(root, "secrets.plist"))) throw new InvalidDataException("请从 Mac 重新导出不包含凭据的备份；当前导入不会接收 API Key。");
+            // A13: credential-bearing archives are accepted; the secrets stay sealed in Migration/.
             if (m.TryGetProperty("windowsExtensionVersion", out var extension) && extension.GetInt32() != 1) throw new InvalidDataException("Windows 备份扩展版本过新。");
             if (m.TryGetProperty("fileHashes", out var hashes))
             {
@@ -125,8 +126,37 @@ public sealed class BackupService(AppPaths paths)
             foreach (var file in workspaces) { using var workspace = JsonDocument.Parse(await File.ReadAllTextAsync(file, ct)); if (!Guid.TryParse(workspace.RootElement.GetProperty("id").GetString(), out _)) throw new InvalidDataException("Mac 场景 ID 无效。"); }
             var originals = Path.Combine(root, "Originals");
             if (Directory.Exists(originals)) foreach (var file in Directory.GetFiles(originals)) if (!Regex.IsMatch(Path.GetFileNameWithoutExtension(file), "^[a-fA-F0-9]{64}$") || !Hash(file).Equals(Path.GetFileNameWithoutExtension(file), StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Mac 原文件哈希无效。");
-            var incomingMaterials = new List<string>();
+
+            if (Directory.Exists(originals))
+            {
+                var originalsTarget = Path.Combine(paths.Root, "Originals");
+                Directory.CreateDirectory(originalsTarget);
+                foreach (var file in Directory.GetFiles(originals))
+                {
+                    var target = Path.Combine(originalsTarget, Path.GetFileName(file));
+                    if (File.Exists(target)) continue;
+                    File.Copy(file, target);
+                    committed.Add(target);
+                }
+            }            var incomingMaterials = new List<string>();
             var materialIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // A13: real names from the series documents, never a generated "Mac material xxxx".
+            var macMaterialNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var file in workspaces)
+            {
+                try
+                {
+                    using var workspace = JsonDocument.Parse(await File.ReadAllTextAsync(file, ct));
+                    if (!workspace.RootElement.TryGetProperty("documents", out var documents)) continue;
+                    foreach (var document in documents.EnumerateArray())
+                    {
+                        if (!document.TryGetProperty("id", out var idNode) || !Guid.TryParse(idNode.GetString(), out var id)) continue;
+                        if (document.TryGetProperty("name", out var name) && name.GetString() is { Length: > 0 } text)
+                            macMaterialNames[id.ToString("N")] = text;
+                    }
+                }
+                catch (JsonException) { }
+            }
             foreach (var folder in Folders("Materials"))
             {
                 if (File.Exists(Path.Combine(folder, "document.json")))
@@ -215,42 +245,117 @@ public sealed class BackupService(AppPaths paths)
                     }
                 }
             }
-            // Restore non-secret settings from our own backups; the API key stays in DPAPI.
+            // A13: settings, glossary, skills and templates merge into the current data and roll back together.
+            void Remember(string path)
+            {
+                if (!undo.ContainsKey(path)) undo[path] = File.Exists(path) ? File.ReadAllBytes(path) : null;
+            }
             var settingsRestored = false;
             var settingsFile = Path.Combine(root, "settings.json");
             var settingsPlist = Path.Combine(root, "settings.plist");
+            var settingsTarget = paths.Settings;
             try
             {
-                AppSettings? importedSettings = null;
+                var currentSettings = new SettingsStore(paths).Load();
+                AppSettings? mergedSettings = null;
                 if (File.Exists(settingsFile))
-                    importedSettings = JsonSerializer.Deserialize<AppSettings>(await File.ReadAllTextAsync(settingsFile, ct), JsonDefaults.Options);
-                else if (File.Exists(settingsPlist))
-                    importedSettings = MacSettingsPlist.Apply(await File.ReadAllBytesAsync(settingsPlist, ct), new SettingsStore(paths).Load());
-                if (importedSettings is not null)
                 {
-                    await new SettingsStore(paths).SaveAsync(importedSettings, ct).ConfigureAwait(false);
+                    var importedNode = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(settingsFile, ct)) as System.Text.Json.Nodes.JsonObject;
+                    if (importedNode is not null)
+                    {
+                        var current = JsonSerializer.SerializeToNode(currentSettings, JsonDefaults.Options) as System.Text.Json.Nodes.JsonObject
+                                      ?? new System.Text.Json.Nodes.JsonObject();
+                        foreach (var (key, value) in importedNode.ToList())
+                        {
+                            if (value is null) continue;
+                            current[key] = value.DeepClone();
+                        }
+                        mergedSettings = current.Deserialize<AppSettings>(JsonDefaults.Options);
+                    }
+                }
+                else if (File.Exists(settingsPlist))
+                {
+                    mergedSettings = MacSettingsPlist.Apply(await File.ReadAllBytesAsync(settingsPlist, ct), currentSettings);
+                }
+                if (mergedSettings is not null)
+                {
+                    Remember(settingsTarget);
+                    await new SettingsStore(paths).SaveAsync(mergedSettings, ct).ConfigureAwait(false);
                     settingsRestored = true;
                 }
             }
             catch (JsonException) { }
+
             var glossarySource = Path.Combine(root, "Glossary", "glossary.json");
             if (!File.Exists(glossarySource)) glossarySource = Path.Combine(root, "glossary.json");
             if (File.Exists(glossarySource))
             {
                 try
                 {
-                    var glossaryTarget = Path.Combine(paths.Root, "Glossary");
-                    Directory.CreateDirectory(glossaryTarget);
-                    File.Copy(glossarySource, Path.Combine(glossaryTarget, "glossary.json"), true);
+                    var incoming = JsonSerializer.Deserialize<Glossary>(await File.ReadAllTextAsync(glossarySource, ct), JsonDefaults.Options);
+                    if (incoming is not null)
+                    {
+                        var store = new GlossaryStore(paths.Root);
+                        var current = store.Load();
+                        var merged = new List<GlossaryEntry>(current.Entries);
+                        foreach (var entry in incoming.Entries)
+                        {
+                            if (entry.Canonical.Trim().Length == 0) continue;
+                            var index = merged.FindIndex(existing => string.Equals(existing.Canonical, entry.Canonical, StringComparison.OrdinalIgnoreCase));
+                            if (index >= 0) merged[index] = entry; else merged.Add(entry);
+                        }
+                        var target = Path.Combine(paths.Root, "Glossary", "glossary.json");
+                        Remember(target);
+                        store.Save(new Glossary(merged));
+                    }
                 }
-                catch (IOException) { }
+                catch (JsonException) { }
             }
-            foreach (var name in new[] { "skills.json", "note-templates.json" })
+            var skillsSource = Path.Combine(root, "skills.json");
+            if (File.Exists(skillsSource))
             {
-                var source = Path.Combine(root, name);
-                if (!File.Exists(source)) continue;
-                try { File.Copy(source, Path.Combine(paths.Root, name), true); }
-                catch (IOException) { }
+                try
+                {
+                    var incoming = JsonSerializer.Deserialize<List<Skill>>(await File.ReadAllTextAsync(skillsSource, ct), JsonDefaults.Options);
+                    if (incoming is not null)
+                    {
+                        var store = new SkillStore(paths.Root);
+                        var merged = store.Load().ToList();
+                        foreach (var skill in incoming)
+                        {
+                            if (string.IsNullOrWhiteSpace(skill.Name)) continue;
+                            var index = merged.FindIndex(existing => existing.Id == skill.Id
+                                || string.Equals(existing.Name, skill.Name, StringComparison.Ordinal));
+                            if (index >= 0) merged[index] = skill; else merged.Add(skill);
+                        }
+                        Remember(Path.Combine(paths.Root, "skills.json"));
+                        store.Save(merged);
+                    }
+                }
+                catch (JsonException) { }
+            }
+            var templatesSource = Path.Combine(root, "note-templates.json");
+            if (File.Exists(templatesSource))
+            {
+                try
+                {
+                    var incoming = JsonSerializer.Deserialize<List<NotesTemplate>>(await File.ReadAllTextAsync(templatesSource, ct), JsonDefaults.Options);
+                    if (incoming is not null)
+                    {
+                        var store = new NotesTemplateStore(paths.Root);
+                        var merged = store.Load().ToList();
+                        foreach (var template in incoming)
+                        {
+                            if (string.IsNullOrWhiteSpace(template.Name)) continue;
+                            var index = merged.FindIndex(existing => existing.Id == template.Id
+                                || string.Equals(existing.Name, template.Name, StringComparison.Ordinal));
+                            if (index >= 0) merged[index] = template; else merged.Add(template);
+                        }
+                        Remember(Path.Combine(paths.Root, "note-templates.json"));
+                        store.Save(merged);
+                    }
+                }
+                catch (JsonException) { }
             }
             // Preserve the complete source archive, including Mac-only fields, workspaces, skills, notes, and originals.
             var preserved = Path.Combine(paths.Root, "Migration", Hash(archive) + ".ntbackup"); Directory.CreateDirectory(Path.GetDirectoryName(preserved)!);
@@ -260,6 +365,15 @@ public sealed class BackupService(AppPaths paths)
         catch
         {
             foreach (var path in committed.AsEnumerable().Reverse()) { if (Directory.Exists(path)) Directory.Delete(path, true); else if (File.Exists(path)) File.Delete(path); }
+            foreach (var (path, original) in undo)
+            {
+                try
+                {
+                    if (original is null) { if (File.Exists(path)) File.Delete(path); }
+                    else File.WriteAllBytes(path, original);
+                }
+                catch (IOException) { }
+            }
             throw;
         }
         finally { if (Directory.Exists(staging)) Directory.Delete(staging, true); }

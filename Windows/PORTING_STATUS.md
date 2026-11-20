@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · A13
+改动：备份导入改为合并设置/术语/技能/模板并统一回滚；接受带凭据的备份（密钥不导入）；恢复 `Originals/`；资料用系列真实名称；导入上限改为 Mac 的 100000 文件/64 GB；导入成功后界面重新加载。
+测试：Core **1522/1522**，NextThought.Tests **266/266**。
+状态：A13「已实现、未验证」；回滚与真实 Mac 备份待实测。
+
 ## 2026-11-20 · 0.5.145 · A12
 改动：`settings.plist` 写出全部 `SettingsSnapshot.ExportedKeys`（类型分 bool/real/integer/array/dict），XML 声明与 DOCTYPE、`webSearchMode` 改 `off`/`auto`；导出排除 Windows 独有 `structured-*`、`corrections.json`、`summary-job.json`、`*.bak`；新增两项测试。
 测试：Core **1522/1522**，NextThought.Tests **263/263**。
