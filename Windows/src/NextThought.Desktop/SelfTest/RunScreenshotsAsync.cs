@@ -35,6 +35,16 @@ public partial class MainWindow
             }
         }
         NextThought.Core.UiText.EnglishUi = false;
+        foreach (var dark in new[] { false, true })
+        {
+            if (Application.Current is { } app)
+                app.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+            var sample = new ControlSampleWindow();
+            sample.Show();
+            await Task.Delay(300);
+            CaptureVisual(sample, Path.Combine(directory, "controls" + (dark ? "-dark.png" : "-light.png")));
+            sample.Close();
+        }
         // The current island has one implemented visual state; capture it as evidence until C5 adds five.
         state.Recording = true;
         state.DetectedQuestion = NextThought.Desktop.DemoContent.Question;

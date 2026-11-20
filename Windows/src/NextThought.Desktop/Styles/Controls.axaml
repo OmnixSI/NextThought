@@ -52,6 +52,9 @@
   <Style Selector="Button.primary /template/ ContentPresenter">
     <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
   </Style>
+  <Style Selector="Button.primary /template/ ContentPresenter TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
   <Style Selector="Button.caption /template/ ContentPresenter">
     <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
   </Style>
@@ -86,6 +89,9 @@
     <Setter Property="Background" Value="{DynamicResource PrimaryHover}" />
   </Style>
   <Style Selector="Button.primary /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
+  <Style Selector="Button.primary /template/ ContentPresenter TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
   </Style>
   <Style Selector="Button.primary:pressed /template/ Border#Root">
@@ -354,6 +360,9 @@
     <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
   </Style>
   <Style Selector="RadioButton.chip:checked /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+  </Style>
+  <Style Selector="RadioButton.chip:checked /template/ ContentPresenter TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
   </Style>
 

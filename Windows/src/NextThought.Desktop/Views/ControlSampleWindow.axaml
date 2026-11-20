@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="NextThought.Desktop.Views.ControlSampleWindow"
+        Width="760" Height="640" Title="控件样张"
+        Background="{DynamicResource Paper}">
+  <ScrollViewer Padding="28">
+    <StackPanel Spacing="20">
+      <TextBlock Text="控件样张" Classes="display" />
+      <TextBlock Text="主要 / 次要 / 安静 / 破坏性" Classes="overline" />
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Button Classes="primary" Content="主要操作" />
+        <Button Content="次要操作" />
+        <Button Classes="quiet" Content="安静操作" />
+        <Button Classes="destructive" Content="删除这场会议" />
+      </StackPanel>
+      <TextBlock Text="输入与选择" Classes="overline" />
+      <TextBox PlaceholderText="输入问题" Width="360" HorizontalAlignment="Left" />
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <CheckBox Content="自动回答" IsChecked="True" />
+        <ComboBox SelectedIndex="1" Width="180">
+          <ComboBoxItem>标准</ComboBoxItem>
+          <ComboBoxItem>鱼骨图</ComboBoxItem>
+        </ComboBox>
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <RadioButton Classes="chip" GroupName="sample" Content="全部" IsChecked="True" />
+        <RadioButton Classes="chip" GroupName="sample" Content="有纪要" />
+        <RadioButton Classes="chip" GroupName="sample" Content="未整理" />
+      </StackPanel>
+      <TextBlock Text="标签与卡片" Classes="overline" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Classes="chip"><TextBlock Text="术语" Classes="overline" /></Border>
+        <Border Classes="chip"><TextBlock Text="人物" Classes="overline" /></Border>
+      </StackPanel>
+      <Border Classes="card" Padding="18">
+        <StackPanel Spacing="6">
+          <TextBlock Text="卡片标题" Classes="title" />
+          <TextBlock Text="卡片正文，说明这张纸上的内容。" Classes="body" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

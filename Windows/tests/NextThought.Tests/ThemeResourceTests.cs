@@ -73,6 +73,16 @@ public sealed class ThemeResourceTests
     }
 
 
+
+    [Fact]
+    public void PrimaryAndChipContentTextUsesOnInk()
+    {
+        var controls = File.ReadAllText(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Styles", "Controls.axaml"));
+        Assert.Contains("Button.primary /template/ ContentPresenter TextBlock", controls);
+        Assert.Contains("RadioButton.chip:checked /template/ ContentPresenter TextBlock", controls);
+        Assert.True(File.Exists(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Views", "ControlSampleWindow.axaml")));
+    }
+
     [Fact]
     public void ControlFocusRingAndDestructiveStyleMatchMac()
     {
