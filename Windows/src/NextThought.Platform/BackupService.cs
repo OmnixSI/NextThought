@@ -270,7 +270,11 @@ public sealed class BackupService(AppPaths paths)
                             if (value is null) continue;
                             current[key] = value.DeepClone();
                         }
-                        mergedSettings = current.Deserialize<AppSettings>(JsonDefaults.Options);
+                        mergedSettings = MacPreferenceMap.WithoutTypedShapeConflicts(current)
+                            .Deserialize<AppSettings>(JsonDefaults.Options);
+                        // G5: settings.json stores the Mac preference key names; apply them to the
+                        // typed settings so an imported Windows/Mac backup restores them.
+                        if (mergedSettings is not null) MacPreferenceMap.ApplyJson(mergedSettings, current);
                     }
                 }
                 else if (File.Exists(settingsPlist))

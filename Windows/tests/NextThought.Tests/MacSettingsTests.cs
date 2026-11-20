@@ -12,7 +12,7 @@ public sealed class MacSettingsTests
     {
         var settings = new AppSettings
         {
-            BaseUrl = "https://example.test/v1", Model = "m1", NotesModel = "n1", LocalModel = "xasrOffline",
+            BaseUrl = "https://example.test/v1", Model = "m1", NotesModel = "n1", LocalModel = "xasr160",
             SecondPass = false, CaptureMicrophone = false, AutomaticAnswers = true, AutoSummarize = true,
             UseSemanticRetrieval = true, WebSearch = false, CodexModel = "c1"
         };

@@ -145,8 +145,8 @@ public sealed record AppSettings
     public string? MicrophoneDeviceId { get; set; }
     public string Vocabulary { get; set; } = "";
     public string LastMeetingTitle { get; set; } = "";
-    public bool AutomaticAnswers { get; set; }
-    public bool AutoSummarize { get; set; }
+    public bool AutomaticAnswers { get; set; } = true;
+    public bool AutoSummarize { get; set; } = true;
     public bool UseSemanticRetrieval { get; set; }
     public bool SeparateSpeakers { get; set; }
     public bool TranslateSpeech { get; set; }
@@ -193,8 +193,8 @@ public sealed record AppSettings
     /// <summary>E6: answer language: auto / zh / en.</summary>
     public string AnswerLanguage { get; set; } = "auto";
 
-    /// <summary>E6: attach a Chinese gloss to English answers.</summary>
-    public bool AnswerGloss { get; set; }
+    /// <summary>E6: attach a Chinese gloss to English answers (Mac default: on).</summary>
+    public bool AnswerGloss { get; set; } = true;
 
     /// <summary>E3: last app version whose onboarding guide was completed.</summary>
     public string OnboardingCompletedVersion { get; set; } = "";
@@ -228,8 +228,8 @@ public sealed record AppSettings
     /// <summary>Floating subtitle bar width in device-independent pixels.</summary>
     public int SubtitleWidth { get; set; } = 920;
 
-    /// <summary>Primary subtitle line font size.</summary>
-    public int SubtitleFontSize { get; set; } = 22;
+    /// <summary>Primary subtitle line font size (Mac key subtitleBarFontSize, default 24).</summary>
+    public int SubtitleFontSize { get; set; } = 24;
 
     /// <summary>Show the translated second line in the floating subtitle bar.</summary>
     public bool SubtitleShowTranslation { get; set; } = true;

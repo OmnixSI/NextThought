@@ -65,8 +65,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool captureMicrophone = true;
     [ObservableProperty] private double microphoneGain = 1;
     [ObservableProperty] private string vocabulary = "";
-    [ObservableProperty] private bool automaticAnswers;
-    [ObservableProperty] private bool autoSummarize;
+    [ObservableProperty] private bool automaticAnswers = true;
+    [ObservableProperty] private bool autoSummarize = true;
     [ObservableProperty] private bool useSemanticRetrieval;
     [ObservableProperty] private bool separateSpeakers;
     [ObservableProperty] private bool translateSpeech;
@@ -133,7 +133,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool teleprompterHideBackground;
     [ObservableProperty] private string cueScreen = "";
     [ObservableProperty] private int subtitleWidth = 920;
-    [ObservableProperty] private int subtitleFontSize = 22;
+    [ObservableProperty] private int subtitleFontSize = 24;
     [ObservableProperty] private bool subtitleShowTranslation = true;
     [ObservableProperty] private bool autoCheckUpdates = true;
     [ObservableProperty] private string autoEndMode = "prompt";
@@ -149,7 +149,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string onboardingCompletedVersion = "";
     public IReadOnlyList<string> AnswerLanguageChoices { get; } = ["auto", "zh", "en"];
     [ObservableProperty] private string answerLanguage = "auto";
-    [ObservableProperty] private bool answerGloss;
+    [ObservableProperty] private bool answerGloss = true;
     [ObservableProperty] private bool followSlides;
     [ObservableProperty] private bool insightScreenWatch;
     [ObservableProperty] private double insightScreenInterval = 1;
@@ -260,7 +260,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         TeleprompterHideBackground = settings.TeleprompterHideBackground;
         CueScreen = settings.CueScreen;
         SubtitleWidth = Math.Clamp(settings.SubtitleWidth, 520, 1400);
-        SubtitleFontSize = Math.Clamp(settings.SubtitleFontSize, 16, 36);
+        SubtitleFontSize = Math.Clamp(settings.SubtitleFontSize, 16, 44);
         SubtitleShowTranslation = settings.SubtitleShowTranslation;
         AutoCheckUpdates = settings.AutoCheckUpdates;
         SelectedCloudStt = CloudSttChoices.FirstOrDefault(choice => choice.Value == settings.CloudStt) ?? CloudSttChoices[0];
@@ -329,8 +329,15 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         RefreshScreens();
     }
 
-    public AppSettings Build() => new()
+    public AppSettings Build()
     {
+        // G1/G5/G6: save on top of what is on disk, so fields this page does not edit (scene
+        // defaults, Mac keys Windows has no control for, unknown Mac keys) are not dropped.
+        AppSettings disk;
+        try { disk = state.SettingsStore.Load(); }
+        catch { disk = new AppSettings(); }
+        return new AppSettings
+        {
         BaseUrl = BaseUrl.Trim(),
         Language = UiLanguage == "English" ? "en" : "zh",
         Appearance = SelectedAppearance?.Value ?? "system",
@@ -342,7 +349,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         TeleprompterHideBackground = TeleprompterHideBackground,
         CueScreen = CueScreen,
         SubtitleWidth = Math.Clamp(SubtitleWidth, 520, 1400),
-        SubtitleFontSize = Math.Clamp(SubtitleFontSize, 16, 36),
+        SubtitleFontSize = Math.Clamp(SubtitleFontSize, 16, 44),
         SubtitleShowTranslation = SubtitleShowTranslation,
         AutoCheckUpdates = AutoCheckUpdates,
         CloudStt = SelectedCloudStt?.Value ?? "",
@@ -388,8 +395,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CaptureProcessId = SelectedProcess?.Id ?? 0,
         CaptureProcessStartTicks = SelectedProcess?.StartTicks ?? 0,
         Shortcuts = new Dictionary<string, string>(state.ShortcutOverrides),
-        ContextSidebarHidden = state.ContextSidebarHidden
+        ContextSidebarHidden = state.ContextSidebarHidden,
+        SceneDefaults = disk.SceneDefaults,
+        AdditionalProperties = disk.AdditionalProperties
     };
+    }
 
     public async Task SaveAsync()
     {

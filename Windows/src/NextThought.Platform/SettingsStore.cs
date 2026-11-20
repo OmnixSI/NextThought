@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using NextThought.Core;
 
 namespace NextThought.Platform;
@@ -13,9 +14,66 @@ public sealed class SettingsStore(AppPaths paths)
     private static readonly byte[] entropy = Encoding.UTF8.GetBytes("com.nextthought.windows/answer.api/v1");
     private static readonly byte[] cloudSttEntropy = Encoding.UTF8.GetBytes("com.nextthought.windows/cloud.stt/v1");
     private static readonly byte[] tavilyEntropy = Encoding.UTF8.GetBytes("com.nextthought.windows/tavily/v1");
-    public AppSettings Load() => File.Exists(paths.Settings)
-        ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(paths.Settings), JsonDefaults.Options) ?? new() : new();
-    public Task SaveAsync(AppSettings settings, CancellationToken ct = default) => AppPaths.AtomicWriteAsync(paths.Settings, JsonSerializer.Serialize(settings, JsonDefaults.Options), ct);
+
+    private static readonly JsonSerializerOptions WriteOptions = new(JsonDefaults.Options)
+    {
+        WriteIndented = true
+    };
+
+    /// <summary>
+    /// G5: settings.json uses the Mac preference key names for all 113 preferences (G6 keeps
+    /// unknown keys untouched). Files written by older Windows builds keep working: their
+    /// camelCase fields deserialize into <see cref="AppSettings"/> as before and are rewritten
+    /// under the Mac key names on the next save.
+    /// </summary>
+    public AppSettings Load()
+    {
+        if (!File.Exists(paths.Settings)) return new AppSettings();
+        var text = File.ReadAllText(paths.Settings);
+        JsonObject? document = null;
+        try { document = JsonNode.Parse(text) as JsonObject; }
+        catch (JsonException) { }
+        AppSettings settings;
+        if (document is not null)
+        {
+            // Mac-typed keys that do not fit the Windows typed model are applied after deserializing.
+            var typed = MacPreferenceMap.WithoutTypedShapeConflicts(document);
+            settings = typed.Deserialize<AppSettings>(JsonDefaults.Options) ?? new AppSettings();
+            MacPreferenceMap.ApplyJson(settings, document);
+        }
+        else
+        {
+            settings = JsonSerializer.Deserialize<AppSettings>(text, JsonDefaults.Options) ?? new AppSettings();
+        }
+        return settings;
+    }
+
+    public Task SaveAsync(AppSettings settings, CancellationToken ct = default)
+    {
+        var document = MacPreferenceMap.ToJsonObject(settings);
+        return AppPaths.AtomicWriteAsync(paths.Settings, document.ToJsonString(WriteOptions), ct);
+    }
+
+    /// <summary>G5: every Mac preference key with its current value (Mac defaults where unset).</summary>
+    public Dictionary<string, object?> LoadMacPreferences() => MacPreferenceMap.ReadAll(Load());
+
+    /// <summary>G5: one Mac preference key, with the Mac default when the key is not stored.</summary>
+    public object? LoadMacValue(string key)
+    {
+        if (!MacPreferences.IsKnown(key)) throw new ArgumentOutOfRangeException(nameof(key), key, "not a Mac preference key");
+        return LoadMacPreferences()[key];
+    }
+
+    /// <summary>G5: writes Mac preference keys using their Mac names/defaults, then saves.</summary>
+    public async Task SaveMacPreferencesAsync(IReadOnlyDictionary<string, object?> values, CancellationToken ct = default)
+    {
+        foreach (var key in values.Keys)
+            if (!MacPreferences.IsKnown(key)) throw new ArgumentOutOfRangeException(nameof(values), key, "not a Mac preference key");
+        var settings = Load();
+        MacPreferenceMap.ApplyValues(settings, values);
+        await SaveAsync(settings, ct).ConfigureAwait(false);
+    }
+
     public string ReadApiKey()
     {
         if (!File.Exists(secretFile)) return "";
