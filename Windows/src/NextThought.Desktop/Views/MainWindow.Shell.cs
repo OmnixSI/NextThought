@@ -206,7 +206,7 @@ public partial class MainWindow
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
-            state.PromptAboutScreenshot();
+            state.PromptAboutScreenshot(state.Library.SelectedPreview);
         }
         catch (Exception ex)
         {
@@ -234,7 +234,7 @@ public partial class MainWindow
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
-            state.PromptAboutScreenshot();
+            state.PromptAboutScreenshot(state.Library.SelectedPreview);
         }
         catch (Exception ex)
         {

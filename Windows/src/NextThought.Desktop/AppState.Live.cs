@@ -395,11 +395,14 @@ public partial class AppState
     }
 
     /// <summary>E13: make a fresh screenshot the subject of the composer question.</summary>
-    public void PromptAboutScreenshot()
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string screenContextText = "";
+
+    public void PromptAboutScreenshot(string? screenText = null)
     {
+        ScreenContextText = (screenText ?? "").Trim();
         QuestionInput = "请解释这张截图，指出关键信息、数字或风险。";
         Section = AppSection.Live;
-        SetStatus("截图已就绪；可直接发送，或补充你的问题。");
+        SetStatus(ScreenContextText.Length > 0 ? "截图与 OCR 文本已就绪；可直接发送。" : "截图已就绪；可直接发送，或补充你的问题。");
     }
 
     private bool CanTranslate() => IsIdle && !Answering && currentLines.Count > 0;
@@ -546,6 +549,7 @@ public partial class AppState
         IReadOnlyList<WebResult>? web = null)
     {
         var slide = CurrentSlide is { } page ? $"\n当前幻灯片（第 {page.Number} 页，{page.DocumentName}）：\n{page.Text}\n" : "";
+        if (ScreenContextText.Length > 0) slide += $"\n刚截取的屏幕 OCR 文本：\n{ScreenContextText[..Math.Min(ScreenContextText.Length, 3000)]}\n";
         var bank = QuestionBankPromptFor(meta);
         var bankBlock = bank.Length == 0 ? "" : $"\n这个系列的题库（历次复盘确认过的回答）：\n{bank}\n";
         var webBlock = web is { Count: > 0 }

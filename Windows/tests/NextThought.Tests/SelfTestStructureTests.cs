@@ -176,6 +176,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ScreenshotOcrFeedsTheAnswerPrompt()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("ScreenContextText", live);
+        Assert.Contains("屏幕 OCR 文本", live);
+        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
+        Assert.Contains("SelectedPreview", shell);
+    }
+
     [Fact]
     public void ScreenshotCanBecomeAQuestion()
     {
