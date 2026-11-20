@@ -1,3 +1,10 @@
+## 2026-11-20 · 0.5.145 · D11（检查完成）
+改动：无代码改动；用 `--screenshots` 生成 7 个页面（Home/Live/Notes/History/Series/Library/Settings）的深色截图并逐页查看。
+测试：Core **871/871**，NextThought.Tests **142/142**。
+证据：`D:\NextThought开发\qa\screens2\images\*-dark.png`；`qa/dark-pages.png` 网格。
+状态：D11「已实现、未验证」。7 个页面深色均无白底块、无不可读文字；但 Mac 的 273 个视图未逐个深色对照，写死浅色值的静态扫描未做。
+未解决：全视图深色对照与硬编码扫描。
+
 ## 2026-11-20 · 0.5.145 · D8（部分）
 改动：按钮焦点环从 1px 印章红改成 Mac 的 2px `Ink.focus`（Ai）；新增 `Button.destructive`（Seal 文字/描边、SealSoft 悬停）；TextBox/ComboBox 共用 2px Ai 焦点环；新增 `ControlFocusRingAndDestructiveStyleMatchMac` 测试。
 测试：Core **871/871**，NextThought.Tests **142/142**。
