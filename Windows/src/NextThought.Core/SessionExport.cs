@@ -101,6 +101,57 @@ public static class SessionSubtitleExporter
         return new SessionSubtitleExport(output, estimated, 0);
     }
 
+    /// <summary>B16: exported subtitles from the same projected lines the notes page uses.</summary>
+    public static SessionSubtitleExport ExportProjected(SessionMeta meta, IReadOnlyList<SessionProjectedTranscriptLine> lines,
+        SessionSubtitleFormat format, SessionSubtitleContent content = SessionSubtitleContent.Bilingual)
+    {
+        var cues = new List<(double Start, double End, string Text)>();
+        var estimated = 0;
+        var staleTranslations = 0;
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var line = lines[index];
+            var start = Math.Max(0, line.Offset);
+            double? nextStart = index + 1 < lines.Count ? Math.Max(0, lines[index + 1].Offset) : null;
+            double end;
+            if (line.EndedAt is { } ended && (ended - meta.StartedAt).TotalSeconds > start)
+                end = (ended - meta.StartedAt).TotalSeconds;
+            else
+            {
+                estimated++;
+                var length = Math.Max(1, line.DisplayText.Count(character => !char.IsWhiteSpace(character)));
+                var duration = Math.Min(12, Math.Max(1.2, length / 5.0));
+                end = nextStart is { } next && next > start
+                    ? Math.Max(start + 0.25, Math.Min(start + duration, next)) : start + duration;
+            }
+
+            var sourceText = line.TranscriptVariant == SessionTranscriptVariant.Original
+                ? line.OriginalText : line.CorrectedText;
+            var translation = line.TranslationText?.Trim();
+            var hasTranslation = !string.IsNullOrEmpty(translation);
+            var label = line.TranslationIsStale ? "\u8BD1\u6587\uFF08\u53EF\u80FD\u5DF2\u8FC7\u671F\uFF09" : "\u8BD1\u6587";
+            var text = content switch
+            {
+                SessionSubtitleContent.Original => line.SpeakerLabel + "\uFF1A" + sourceText,
+                SessionSubtitleContent.Translation => hasTranslation
+                    ? line.SpeakerLabel + " \u00B7 " + label + "\uFF1A" + translation
+                    : line.SpeakerLabel + " \u00B7 \u65E0\u8BD1\u6587\uFF0C\u663E\u793A\u539F\u6587\uFF1A" + sourceText,
+                _ => line.SpeakerLabel + "\uFF1A" + sourceText
+                     + (hasTranslation ? "\n" + label + "\uFF1A" + translation : "")
+            };
+            if (hasTranslation && line.TranslationIsStale) staleTranslations++;
+            cues.Add((start, end, text));
+        }
+
+        var body = string.Join("\n\n", cues.Select((cue, index) => format == SessionSubtitleFormat.Srt
+            ? $"{index + 1}\n{Stamp(cue.Start, ',')} --> {Stamp(cue.End, ',')}\n{cue.Text}"
+            : $"{Stamp(cue.Start, '.')} --> {Stamp(cue.End, '.')}\n{cue.Text}"));
+        var output = format == SessionSubtitleFormat.Vtt
+            ? "WEBVTT\n\n" + body + (body.Length == 0 ? "" : "\n")
+            : body + (body.Length == 0 ? "" : "\n");
+        return new SessionSubtitleExport(output, estimated, staleTranslations);
+    }
+
     public static string SpeakerLabel(string speaker) => speaker switch
     {
         "remote" => "对方",
