@@ -1,9 +1,10 @@
 # 设置对照（SETTINGS_PARITY）
 
-Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_parity.py` 从 Swift 源码提取；当前提取到 **107** 个键，差 **6** 个未找到（表里没有「未做」以外状态时，G5 仍未完成）。每个键必须使用与 Mac 相同的键名、默认值、取值范围，并在 Windows 真正生效；属于「允许的差异」的标「本版不做」。
+Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_parity.py` 从 Swift 源码（UserDefaults/AppStorage/SceneSettings key/exportedKeys 的并集）提取；当前 **113 / 113**。键名、默认值、取值范围与「真正生效」尚未逐个对齐，因此 G5 仍未完成。
 
 | 键名 | 默认类型 | 默认值 | Mac 设置视图 | Windows 状态 |
 |---|---|---|---|---:|
+| `AppleLanguages` | 未提取 | 未提取 | 未核对 | 未做 |
 | `activeAPIPresetID` | 未提取 | 未提取 | 未核对 | 未做 |
 | `activeWorkspaceID` | 未提取 | 未提取 | 未核对 | 未做 |
 | `advancedSettingsEnabled` | 未提取 | 未提取 | 未核对 | 未做 |
@@ -15,16 +16,17 @@ Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_p
 | `apiBaseURL` | string | "https://api.openai.com/v1" | 未核对 | 未做 |
 | `apiModel` | string | "" | 未核对 | 未做 |
 | `apiPresets` | 未提取 | 未提取 | 未核对 | 未做 |
-| `apiVisionEnabled` | bool | false/0/"" | 未核对 | 未做 |
+| `apiVisionEnabled` | 未提取 | 未提取 | 未核对 | 未做 |
 | `appearance` | string | (UserDefaults.standard.object(forKey: "darkMode") as? Bool == true ? "dark" : "system") | 未核对 | 未做 |
 | `assistantLayout` | 未提取 | 未提取 | 未核对 | 未做 |
 | `autoApplyLessons` | 未提取 | 未提取 | 未核对 | 未做 |
 | `autoBackup` | Bool | true | 未核对 | 未做 |
 | `autoCollectKnowledgeCandidates` | Bool | UserDefaults.standard.object(forKey: "autoApplyLessons") as? Bool ?? true | 未核对 | 未做 |
 | `autoSummarize` | Bool | true | 未核对 | 未做 |
+| `automaticAnswers` | 未提取 | 未提取 | 未核对 | 未做 |
 | `automaticUpdateChecks` | 未提取 | 未提取 | 未核对 | 未做 |
 | `capturePrivacy` | Bool | true | 未核对 | 未做 |
-| `cloudConsent` | bool | false/0/"" | 未核对 | 未做 |
+| `cloudConsent` | 未提取 | 未提取 | 未核对 | 未做 |
 | `cloudModel` | 未提取 | 未提取 | 未核对 | 未做 |
 | `cloudProvider` | 未提取 | 未提取 | 未核对 | 未做 |
 | `coachEnabled` | Bool | true { | 未核对 | 未做 |
@@ -38,7 +40,7 @@ Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_p
 | `codexReasoning` | string | "low" | 未核对 | 未做 |
 | `companionPort` | Int | 8_765 | 未核对 | 未做 |
 | `companionRelayURL` | string | "" | 未核对 | 未做 |
-| `cueAlwaysOpen` | bool | false/0/"" | 未核对 | 未做 |
+| `cueAlwaysOpen` | 未提取 | 未提取 | 未核对 | 未做 |
 | `cueAvoidsSharing` | Bool | true { | 未核对 | 未做 |
 | `cueLauncher` | Bool | true { | 未核对 | 未做 |
 | `cueScreen` | string | "" { | 未核对 | 未做 |
@@ -52,14 +54,15 @@ Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_p
 | `demoOnboarding` | 未提取 | 未提取 | 未核对 | 未做 |
 | `demoSettings` | 未提取 | 未提取 | 未核对 | 未做 |
 | `documentOCRProvider` | 未提取 | 未提取 | 未核对 | 未做 |
-| `documentProviderWasSelected` | bool | false/0/"" | 未核对 | 未做 |
+| `documentProviderWasSelected` | 未提取 | 未提取 | 未核对 | 未做 |
 | `echoSuppression` | Bool | true | 未核对 | 未做 |
+| `globalSkillIDs` | 未提取 | 未提取 | 未核对 | 未做 |
 | `insightAnswerProgress` | Bool | true | 未核对 | 未做 |
 | `insightFollowSlides` | Bool | true | 未核对 | 未做 |
 | `insightScreenInterval` | Double | 1 | 未核对 | 未做 |
 | `insightScreenRegion` | 未提取 | 未提取 | 未核对 | 未做 |
 | `insightScreenTarget` | string | "" | 未核对 | 未做 |
-| `insightScreenWatch` | bool | false/0/"" | 未核对 | 未做 |
+| `insightScreenWatch` | 未提取 | 未提取 | 未核对 | 未做 |
 | `keepOnTop` | Bool | true | 未核对 | 未做 |
 | `keepRecognizerWarm` | Bool | true | 未核对 | 未做 |
 | `lastScene` | 未提取 | 未提取 | 未核对 | 未做 |
@@ -68,7 +71,7 @@ Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_p
 | `localStreamingModel` | 未提取 | 未提取 | 未核对 | 未做 |
 | `meetingVenue` | 未提取 | 未提取 | 未核对 | 未做 |
 | `microphoneEnabled` | Bool | true | 未核对 | 未做 |
-| `microphoneVoiceProcessing` | bool | false/0/"" | 未核对 | 未做 |
+| `microphoneVoiceProcessing` | 未提取 | 未提取 | 未核对 | 未做 |
 | `notesLanguage` | string | "auto" | 未核对 | 未做 |
 | `notesModelID` | string | "" | 未核对 | 未做 |
 | `notesReasoning` | string | "high" | 未核对 | 未做 |
@@ -78,21 +81,24 @@ Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_p
 | `onboardingGuideCompletedVersion` | 未提取 | 未提取 | 未核对 | 未做 |
 | `onboardingGuideDeferredVersion` | 未提取 | 未提取 | 未核对 | 未做 |
 | `onboardingGuideDismissedVersion` | 未提取 | 未提取 | 未核对 | 未做 |
-| `onboardingGuideEnabled` | bool | false/0/"" | 未核对 | 未做 |
+| `onboardingGuideEnabled` | 未提取 | 未提取 | 未核对 | 未做 |
 | `onboardingGuideLayout` | 未提取 | 未提取 | 未核对 | 未做 |
 | `onboardingGuideStartedVersion` | 未提取 | 未提取 | 未核对 | 未做 |
 | `onboardingResumeRowDismissedVersion` | 未提取 | 未提取 | 未核对 | 未做 |
-| `presenterMode` | bool | false/0/"" | 未核对 | 未做 |
+| `pinnedWorkspaceIDs` | 未提取 | 未提取 | 未核对 | 未做 |
+| `presenterMode` | 未提取 | 未提取 | 未核对 | 未做 |
 | `presenterSlideNotes` | Bool | true { | 未核对 | 未做 |
 | `presenterSlidesScreen` | string | "" { | 未核对 | 未做 |
 | `profile` | 未提取 | 未提取 | 未核对 | 未做 |
+| `projectLibrarySort` | 未提取 | 未提取 | 未核对 | 未做 |
 | `quickNotesWorkspaceID` | 未提取 | 未提取 | 未核对 | 未做 |
 | `quickStartStep` | 未提取 | 未提取 | 未核对 | 未做 |
 | `recognitionLanguage` | string | "auto" | 未核对 | 未做 |
 | `recognitionVocabulary` | string | "" | 未核对 | 未做 |
 | `recordSessions` | Bool | true | 未核对 | 未做 |
 | `recordingNoticeShown` | 未提取 | 未提取 | 未核对 | 未做 |
-| `reducedEffects` | bool | false/0/"" | 未核对 | 未做 |
+| `reducedEffects` | 未提取 | 未提取 | 未核对 | 未做 |
+| `sceneOverrides` | 未提取 | 未提取 | 未核对 | 未做 |
 | `secondPassEnabled` | Bool | true | 未核对 | 未做 |
 | `selectedTargetID` | string | "" | 未核对 | 未做 |
 | `semanticRetrievalEnabled` | Bool | false | 未核对 | 未做 |
@@ -106,13 +112,11 @@ Mac 六页设置共 **113** 个偏好键。本表由 `Windows/scripts/settings_p
 | `transcriptionBackend` | 未提取 | 未提取 | 未核对 | 未做 |
 | `updateChannel` | 未提取 | 未提取 | 未核对 | 未做 |
 | `updateRepository` | 未提取 | 未提取 | 未核对 | 未做 |
-| `verifyUncertainWithModel` | bool | false/0/"" | 未核对 | 未做 |
+| `verifyUncertainWithModel` | 未提取 | 未提取 | 未核对 | 未做 |
 | `webSearchMode` | 未提取 | 未提取 | 未核对 | 未做 |
 | `webSearchProvider` | 未提取 | 未提取 | 未核对 | 未做 |
 | `workspaceEditorFocusSection` | 未提取 | 未提取 | 未核对 | 未做 |
 | `workspaceMigrationCompleted` | 未提取 | 未提取 | 未核对 | 未做 |
-
-Mac 参考：`Sources/NextThought/AppState.swift`、`AppState+Live.swift`、`SettingsPresenter.swift`、`InsightSettingsView.swift`、`SettingsGeneralData.swift`；导出键：`Sources/NextThoughtCore/Backup.swift` 的 `exportedKeys`。
 
 复算提取数：
 
