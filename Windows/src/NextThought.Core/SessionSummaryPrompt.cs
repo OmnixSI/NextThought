@@ -123,4 +123,25 @@ public static class SessionSummaryPrompt
         string.Join("\n\n", partials.Select((partial, index) => $"### 第 {index + 1} 部分\n{partial}"));
 
     private static string Prefix(string text, int length) => text.Length <= length ? text : text[..length];
+
+    /// <summary>B22: the archived material a summary is generated from; incomplete answers never enter.</summary>
+    public sealed class Material
+    {
+        public SessionMeta Meta { get; }
+        public IReadOnlyList<TranscriptLine> Lines { get; }
+        public IReadOnlyList<SessionAnswerEvent> Answers { get; }
+        public IReadOnlyList<SessionQuestionEvent> Detected { get; }
+        public SessionContextSnapshot? Context { get; }
+
+        public Material(SessionMeta meta, IReadOnlyList<TranscriptLine> lines,
+            IReadOnlyList<SessionAnswerEvent> answers, IReadOnlyList<SessionQuestionEvent> detected,
+            SessionContextSnapshot? context)
+        {
+            Meta = meta;
+            Lines = lines;
+            Answers = answers.Where(answer => answer.IsComplete).ToList();
+            Detected = detected;
+            Context = context;
+        }
+    }
 }

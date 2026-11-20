@@ -201,7 +201,7 @@ public static class WorkspaceSourceIntegrity
         }
 
         var knowledgeCandidates = new List<WorkspaceKnowledgeCandidate>();
-        foreach (var candidate in workspace.KnowledgeCandidates)
+        foreach (var candidate in workspace.KnowledgeCandidates ?? [])
         {
             var sources = candidate.ContributingSessionIds.ToHashSet(IdOrder);
             if (sources.Count == 0)

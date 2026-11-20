@@ -70,9 +70,14 @@ public sealed class DocumentNoticeParityTests
         Assert.DoesNotContain("第 2", text);
     }
 
-    [Fact(Skip = "missing API: AnswerPromptBuilder.WholeMaterialOf(IReadOnlyList<ContextDocument>) honouring ContextDocument.Enabled (C# WholeMaterialOf only accepts MaterialDocument, which has no enabled flag)")]
+    [Fact]
     public void PlainNotesAndTheLimit()
     {
+        var note = new ContextDocument { Name = "notes.md", Pages = ["Hello"] };
+        Assert.Equal("\u3010notes.md\u3011\nHello", AnswerPromptBuilder.WholeMaterialOf([note]));
+        Assert.Null(AnswerPromptBuilder.WholeMaterialOf([note], 3));
+        var off = note with { Enabled = false };
+        Assert.Null(AnswerPromptBuilder.WholeMaterialOf([off]));
     }
 
     [Fact]

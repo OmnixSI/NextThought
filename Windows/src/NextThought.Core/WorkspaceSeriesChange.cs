@@ -144,12 +144,17 @@ public static class WorkspaceSeriesChangeMerger
     public static (WorkspaceSeries Series, WorkspaceSeriesChangeReceipt? Receipt) Apply(
         WorkspaceSeries series, string candidateId, WorkspaceSeriesChangeDecision decision,
         WorkspaceSeriesChangeReviewDetails? reviewedDetails = null, string? targetItemId = null,
-        int? expectedRevision = null, DateTimeOffset? now = null)
+        int? expectedRevision = null, DateTimeOffset? now = null, Guid? operationId = null)
     {
         var candidates = series.SeriesChangeCandidates.ToList();
         var index = candidates.FindIndex(candidate => candidate.Id == candidateId);
-        if (index < 0 || candidates[index].Status != WorkspaceSeriesChangeCandidate.StatusValue.Pending) return (series, null);
+        if (index < 0) return (series, null);
         var candidate = candidates[index];
+        if (operationId is { } requested
+            && candidate.ReceiptHistory?.FirstOrDefault(receipt => receipt.OperationId == requested) is { } replayed)
+            return (series, replayed);
+        if (candidate.Receipt is { } already) return (series, already);
+        if (candidate.Status != WorkspaceSeriesChangeCandidate.StatusValue.Pending) return (series, null);
         if (decision != WorkspaceSeriesChangeDecision.Reject && string.IsNullOrEmpty(candidate.TranscriptSourceRevision))
             return (series, null);
         var reviewedAt = now ?? DateTimeOffset.UtcNow;
@@ -230,7 +235,7 @@ public static class WorkspaceSeriesChangeMerger
             };
             resultItemId = item.Id;
         }
-        var receipt = new WorkspaceSeriesChangeReceipt(Guid.NewGuid(), candidate.Id, decision, reviewedAt, resultItemId);
+        var receipt = new WorkspaceSeriesChangeReceipt(operationId ?? Guid.NewGuid(), candidate.Id, decision, reviewedAt, resultItemId);
         candidates[index] = candidate with
         {
             Status = decision == WorkspaceSeriesChangeDecision.Reject
@@ -245,6 +250,25 @@ public static class WorkspaceSeriesChangeMerger
             SeriesItems = items
         };
         return (updated, receipt);
+    }
+
+    /// <summary>B22: advances or completes one action, checking the revision the user saw.</summary>
+    public static (WorkspaceSeries Series, bool Changed) SetActionState(
+        WorkspaceSeries series, string itemId, WorkspaceSeriesItem.ActionStateValue newState,
+        int expectedRevision, DateTimeOffset? now = null)
+    {
+        var items = series.SeriesItems.ToList();
+        var index = items.FindIndex(item => item.Id == itemId);
+        if (index < 0 || items[index].Kind != WorkspaceSeriesItem.KindValue.Action
+            || (items[index].SourceMissing == true && items[index].IndependentlyRetained != true)
+            || items[index].Revision != expectedRevision || items[index].ActionState == newState)
+            return (series, false);
+        var at = now ?? DateTimeOffset.UtcNow;
+        var item = items[index];
+        var history = item.History.ToList();
+        history.Add(item.CurrentRevision());
+        items[index] = item with { ActionState = newState, Revision = item.Revision + 1, History = history, UpdatedAt = at };
+        return (series with { SeriesItems = items }, true);
     }
 
     public static IReadOnlyList<WorkspaceSeriesChangeCandidate> Pending(WorkspaceSeries series) =>

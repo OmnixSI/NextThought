@@ -235,7 +235,7 @@ public static class JsonDefaults
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         // Mac archive JSON is UTF-8 text; escaping every Chinese character made files unreadable.
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new SessionModeJsonConverter(), new GlossaryKindJsonConverter(), new GlossaryJsonConverter(), new StructuredNotesPayloadJsonConverter(), new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
+        Converters = { new SessionModeJsonConverter(), new GlossaryKindJsonConverter(), new GlossaryJsonConverter(), new StructuredNotesPayloadJsonConverter(), new AnswerCompletionJsonConverter(), new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
     };
     public static readonly JsonSerializerOptions ArchiveOptions = Archive();
     private static JsonSerializerOptions Archive()
@@ -245,7 +245,10 @@ public static class JsonDefaults
     }
     private sealed class ArchiveDateConverter : JsonConverter<DateTimeOffset>
     {
-        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options) => reader.GetDateTimeOffset();
+        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options) =>
+            reader.TokenType == JsonTokenType.Number
+                ? DateTimeOffset.FromUnixTimeSeconds(reader.GetInt64())
+                : reader.GetDateTimeOffset();
         public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options) => writer.WriteStringValue(value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture));
     }
 }

@@ -139,7 +139,8 @@ public sealed class WorkspaceSeriesChangeTests
             WorkspaceSeriesChangeDecision.Add);
         Assert.NotNull(receipt);
         var (again, second) = WorkspaceSeriesChangeMerger.Apply(updated, "c1", WorkspaceSeriesChangeDecision.Reject);
-        Assert.Null(second);
+        Assert.NotNull(second);
+        Assert.Equal(receipt, second);
         Assert.Single(again.SeriesItems);
         Assert.Equal(WorkspaceSeriesChangeCandidate.StatusValue.Accepted, again.SeriesChangeCandidates[0].Status);
         Assert.Null(WorkspaceSeriesChangeMerger.Apply(Series(Candidate()), "missing", WorkspaceSeriesChangeDecision.Add).Receipt);

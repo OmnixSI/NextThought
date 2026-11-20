@@ -122,6 +122,10 @@ public sealed class DocumentJobQueue
             {
                 if (job.IsTerminal || job.Stage is DocumentJob.StageValue.Failed or DocumentJob.StageValue.Cancelled)
                     return job;
+                // A committed import resumes where it stopped; only uncommitted work restarts.
+                if (job.DocumentId is { Length: > 0 } && job.Stage is DocumentJob.StageValue.Embedding
+                    or DocumentJob.StageValue.Ready or DocumentJob.StageValue.Warning)
+                    return job;
                 changed = true;
                 return job with { Stage = DocumentJob.StageValue.Queued };
             }).ToList();

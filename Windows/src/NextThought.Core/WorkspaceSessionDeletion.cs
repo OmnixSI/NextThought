@@ -61,8 +61,8 @@ public static class WorkspaceSessionDeletion
             });
         }
 
-        var candidates = series.KnowledgeCandidates.Where(candidate => candidate.SourceSessionId != sessionId).ToList();
-        var removedCandidates = series.KnowledgeCandidates.Count - candidates.Count;
+        var candidates = (series.KnowledgeCandidates ?? []).Where(candidate => candidate.SourceSessionId != sessionId).ToList();
+        var removedCandidates = (series.KnowledgeCandidates ?? []).Count - candidates.Count;
         var items = new List<WorkspaceSeriesItem>();
         var marked = 0;
         foreach (var item in series.SeriesItems)

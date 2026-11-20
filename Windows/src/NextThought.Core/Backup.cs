@@ -119,7 +119,7 @@ public static partial class BackupMerge
                 SessionIds = current.SessionIds.Concat(item.SessionIds).Distinct(StringComparer.Ordinal).ToList(),
                 Lessons = MergeLessons(current.Lessons, item.Lessons),
                 QuestionBank = MergeQuestionBank(current.QuestionBank, item.QuestionBank),
-                KnowledgeCandidates = MergeCandidates(current.KnowledgeCandidates, item.KnowledgeCandidates),
+                KnowledgeCandidates = MergeCandidates(current.KnowledgeCandidates ?? [], item.KnowledgeCandidates ?? []),
                 SeriesChangeCandidates = MergeSeriesCandidates(current.SeriesChangeCandidates, item.SeriesChangeCandidates),
                 SeriesItemSourceTombstones = MergeSeriesItemSourceTombstones(primary.SeriesItemSourceTombstones, secondary.SeriesItemSourceTombstones),
                 SourceDeletionTombstones = deletedSources
@@ -170,7 +170,7 @@ public static partial class BackupMerge
             SessionIds = series.SessionIds.Where(id => !deleted.Contains(id)).ToList(),
             Lessons = lessons,
             QuestionBank = questions,
-            KnowledgeCandidates = series.KnowledgeCandidates.Where(candidate => candidate.SourceSessionId is not { } sourceId || !deleted.Contains(sourceId)).ToList(),
+            KnowledgeCandidates = (series.KnowledgeCandidates ?? []).Where(candidate => candidate.SourceSessionId is not { } sourceId || !deleted.Contains(sourceId)).ToList(),
             SeriesItems = series.SeriesItems.Select(item => item.SourceSessionId is { } sourceId && deleted.Contains(sourceId)
                 ? item with { SourceMissing = true, SourceQuote = null, Location = null }
                 : item).ToList()
@@ -185,7 +185,7 @@ public static partial class BackupMerge
             .SequenceEqual(right.Lessons.Select(lesson => lesson.Id + "\u0000" + lesson.Text + "\u0000" + lesson.Revision))
         && left.QuestionBank.Select(question => question.Id + "\u0000" + question.Answer + "\u0000" + question.AnswerRevision)
             .SequenceEqual(right.QuestionBank.Select(question => question.Id + "\u0000" + question.Answer + "\u0000" + question.AnswerRevision))
-        && left.KnowledgeCandidates.Select(candidate => candidate.Id).SequenceEqual(right.KnowledgeCandidates.Select(candidate => candidate.Id))
+        && (left.KnowledgeCandidates ?? []).Select(candidate => candidate.Id).SequenceEqual((right.KnowledgeCandidates ?? []).Select(candidate => candidate.Id))
         && System.Text.Json.JsonSerializer.Serialize(left.SeriesItems, WorkspaceStore.Options)
             == System.Text.Json.JsonSerializer.Serialize(right.SeriesItems, WorkspaceStore.Options)
         && (left.SourceDeletionTombstones ?? []).SequenceEqual(right.SourceDeletionTombstones ?? []);
@@ -194,7 +194,7 @@ public static partial class BackupMerge
     {
         series.CreatedAt,
         series.Lessons.Select(lesson => lesson.UpdatedAt).DefaultIfEmpty(series.CreatedAt).Max(),
-        series.KnowledgeCandidates.Select(candidate => candidate.CreatedAt).DefaultIfEmpty(series.CreatedAt).Max(),
+        (series.KnowledgeCandidates ?? []).Select(candidate => candidate.CreatedAt).DefaultIfEmpty(series.CreatedAt).Max(),
         series.SeriesItems.Select(item => item.UpdatedAt).DefaultIfEmpty(series.CreatedAt).Max()
     }.Max();
 

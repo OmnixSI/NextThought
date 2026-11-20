@@ -120,6 +120,11 @@ public sealed record SessionAnswerEvent
     public string? WebAnswer { get; init; }
     public IReadOnlyList<WebResult>? WebSources { get; init; }
     public EvidenceBundle? Evidence { get; init; }
+
+    /// <summary>Whether the answer finished; missing on old archives and unknown values stay incomplete.</summary>
+    public AnswerCompletion? Completion { get; init; }
+
+    public bool IsComplete => Completion is null or AnswerCompletion.Complete;
 }
 
 /// <summary>Earliest sessions.json stored answers without prompts; keep them explicitly labelled.</summary>

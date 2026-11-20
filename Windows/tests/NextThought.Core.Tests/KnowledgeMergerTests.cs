@@ -65,7 +65,7 @@ public sealed class KnowledgeMergerTests
             [new QuestionBankEntry("什么问题", "")],
             "s1");
         Assert.Empty(added);
-        Assert.Empty(series.KnowledgeCandidates);
+        Assert.Empty(series.KnowledgeCandidates ?? []);
     }
 
     [Fact]

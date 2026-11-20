@@ -80,6 +80,19 @@ Next, I will run more seeds and more sites.
         return parts.Count == 0 ? null : string.Join("\n\n", parts);
     }
 
+    /// <summary>B22: wholeMaterial(of:) for imported ContextDocuments; disabled documents are skipped.</summary>
+    public static string? WholeMaterialOf(IReadOnlyList<ContextDocument> documents, int limit = WholeMaterialLimit)
+    {
+        var material = documents.Where(document => document.Enabled).Select(document => new MaterialDocument
+        {
+            Id = document.Id,
+            Name = document.Name,
+            Extension = Path.GetExtension(document.Name),
+            Blocks = document.Pages.Select(page => new DocumentBlock("", page)).ToList()
+        }).ToList();
+        return material.Count == 0 ? null : WholeMaterialOf(material, limit);
+    }
+
     public static string TodayText(DateTimeOffset date) =>
         date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) + " " +
         date.DayOfWeek switch

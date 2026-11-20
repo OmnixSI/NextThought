@@ -52,7 +52,7 @@ public static class SeriesBriefingBuilder
         }
 
         var pending = series.UseKnowledge
-            ? series.KnowledgeCandidates
+            ? (series.KnowledgeCandidates ?? [])
                 .Where(candidate => candidate.Status == WorkspaceKnowledgeStatus.Pending
                                     && (candidate.SourceSessionId is null || membership.Contains(candidate.SourceSessionId)))
                 .OrderByDescending(candidate => candidate.CreatedAt)
@@ -71,7 +71,8 @@ public static class SeriesBriefingBuilder
                     else stale.Add(item);
                     continue;
                 }
-                if (!membership.Contains(item.SourceSessionId))
+                if (!membership.Contains(item.SourceSessionId)
+                    || !seriesSessions.Any(session => string.Equals(session.Id.ToString("D"), item.SourceSessionId, StringComparison.OrdinalIgnoreCase)))
                 {
                     stale.Add(item with { SourceMissing = true, SourceQuote = null, Location = null });
                     continue;

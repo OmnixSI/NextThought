@@ -1,5 +1,20 @@
 namespace NextThought.Core;
 
+public sealed record DocumentContent
+{
+    public int SchemaVersion { get; init; } = 1;
+    public string Pipeline { get; init; } = "system";
+    public IReadOnlyList<DocumentBlock> Blocks { get; init; } = [];
+    public IReadOnlyList<string> Warnings { get; init; } = [];
+    public string Status { get; init; } = "complete";
+    public Dictionary<string, System.Text.Json.JsonElement>? Components { get; init; }
+    /// <summary>Raw page text kept by older writers; absent in newer content files.</summary>
+    public IReadOnlyList<string>? RawPages { get; init; }
+
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
+}
+
 public sealed record DocumentBlock(string Location, string Text, int? Page = null, string Kind = "text", IReadOnlyList<int>? Box = null);
 public sealed record MaterialDocument
 {

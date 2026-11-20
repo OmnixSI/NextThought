@@ -75,6 +75,29 @@ public enum AnswerCompletion
     Interrupted,
     Failed
 }
+    /// <summary>Old missing status means complete; unknown future statuses stay interrupted.</summary>
+public sealed class AnswerCompletionJsonConverter : System.Text.Json.Serialization.JsonConverter<AnswerCompletion>
+{
+    public override AnswerCompletion Read(ref System.Text.Json.Utf8JsonReader reader, Type type, System.Text.Json.JsonSerializerOptions options)
+    {
+        if (reader.TokenType != System.Text.Json.JsonTokenType.String) return AnswerCompletion.Interrupted;
+        return reader.GetString() switch
+        {
+            "complete" or null => AnswerCompletion.Complete,
+            "interrupted" => AnswerCompletion.Interrupted,
+            "failed" => AnswerCompletion.Failed,
+            _ => AnswerCompletion.Interrupted
+        };
+    }
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, AnswerCompletion value, System.Text.Json.JsonSerializerOptions options) =>
+        writer.WriteStringValue(value switch
+        {
+            AnswerCompletion.Complete => "complete",
+            AnswerCompletion.Failed => "failed",
+            _ => "interrupted"
+        });
+}
+
 
 public sealed record SessionHighlight
 {

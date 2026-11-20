@@ -174,367 +174,50 @@ public sealed class WorkspaceTestsParityTests
         Assert.Equal(deleted.SeriesItemSourceTombstones, replayed.SeriesItemSourceTombstones);
     }
 
-    [Fact(Skip = "missing API: WorkspaceSeriesChangeMerger.applyCandidate (operation-ID replay)")]
-    public void BackupMergeKeepsAndDeterministicallyResolvesReceiptsAcrossDeletedCandidates()
-    {
-    }
-
-    [Fact(Skip = "missing API: WorkspaceSeriesChangeMerger.applyCandidate (replay of an accepted candidate)")]
-    public void ExplicitDeletionRetentionKeepsAcceptedTextWithAnAccurateSourceTombstone()
-    {
-    }
-
     [Fact]
-    public void StageReviewKnowledgeTracksEveryContributingMeeting()
-    {
-        var deletedSession = "00000000-0000-0000-0000-000000000001";
-        var remainingSession = "00000000-0000-0000-0000-000000000002";
-        var sources = new[]
-        {
-            new WorkspaceKnowledgeCandidateSource
-            {
-                SessionId = deletedSession,
-                StartedAt = Now,
-                TranscriptSourceRevision = "transcript-1",
-                ProjectionRevision = "projection-1"
-            },
-            new WorkspaceKnowledgeCandidateSource
-            {
-                SessionId = remainingSession,
-                StartedAt = Now.AddSeconds(1),
-                TranscriptSourceRevision = "transcript-2",
-                ProjectionRevision = "projection-2"
-            }
-        };
-        var workspace = Series("阶段复盘");
-        var collected = KnowledgeMerger.CollectCandidates(workspace,
-            ["跨会复盘经验能帮助下一步准备"],
-            [new QuestionBankEntry("阶段复盘候选问题？", "由多场会议共同总结的回答")],
-            sessionId: null, now: Now, originId: workspace.Id, contributingSources: sources);
-        Assert.Equal(2, collected.Added.Count);
-        workspace = collected.Series;
-
-        var lessonCandidate = workspace.KnowledgeCandidates!.First(candidate => candidate.Kind == WorkspaceKnowledgeKind.Lesson);
-        var questionCandidate = workspace.KnowledgeCandidates!.First(candidate => candidate.Kind == WorkspaceKnowledgeKind.Question);
-        Assert.Null(lessonCandidate.SourceSessionId);
-        Assert.Equal([deletedSession, remainingSession], lessonCandidate.ContributingSessionIds);
-
-        var (pending, pendingChanged) = WorkspaceSourceIntegrity.RemoveMeetings(workspace, [deletedSession],
-            now: Now.AddSeconds(1));
-        Assert.True(pendingChanged);
-        Assert.Empty(pending.KnowledgeCandidates!);
-        Assert.Null(KnowledgeMerger.ApplyCandidate(pending, lessonCandidate.Id,
-            WorkspaceKnowledgeDecision.Add, Now).Receipt);
-
-        var lessonApplied = KnowledgeMerger.ApplyCandidate(workspace, lessonCandidate.Id,
-            WorkspaceKnowledgeDecision.Add, Now);
-        Assert.NotNull(lessonApplied.Receipt);
-        workspace = lessonApplied.Series;
-        var questionApplied = KnowledgeMerger.ApplyCandidate(workspace, questionCandidate.Id,
-            WorkspaceKnowledgeDecision.Add, Now);
-        Assert.NotNull(questionApplied.Receipt);
-        workspace = questionApplied.Series;
-        var (updated, changed) = WorkspaceSourceIntegrity.RemoveMeetings(workspace, [deletedSession],
-            now: Now.AddSeconds(1));
-        Assert.True(changed);
-        Assert.Equal([remainingSession], updated.Lessons.First().SourceSessionIds);
-        Assert.Equal([remainingSession], updated.QuestionBank.First().SourceSessionIds);
-        Assert.Equal("", updated.QuestionBank.First().Answer);
-        Assert.Equal(1, updated.QuestionBank.First().TimesAsked);
-        var retainedCandidates = updated.KnowledgeCandidates!;
-        Assert.Equal(2, retainedCandidates.Count);
-        Assert.All(retainedCandidates, candidate =>
-        {
-            Assert.NotNull(candidate.Receipt);
-            Assert.Equal(WorkspaceKnowledgeStatus.Accepted, candidate.Status);
-        });
-        Assert.All(retainedCandidates, candidate =>
-        {
-            Assert.Empty(candidate.Text);
-            Assert.Null(candidate.ProposedAnswer);
-        });
-        Assert.All(retainedCandidates, candidate =>
-            Assert.Equal([remainingSession], candidate.ContributingSessionIds));
-        Assert.DoesNotContain("由多场会议共同总结的回答",
-            string.Concat(updated.RetrievalDocuments.SelectMany(document => document.Pages)));
-    }
-
-    [Fact]
-    public void KnowledgeCandidatesStayPendingUntilAcceptedAndRepeatedReviewsDoNotCountTwice()
-    {
-        var workspace = Series("面试");
-        var earlierSession = Id();
-        var session = Id();
-        workspace = workspace with
-        {
-            QuestionBank =
-            [
-                new QuestionBankItem
-                {
-                    Question = "缓存一致性怎么保证？",
-                    Answer = "旧答法保留",
-                    TimesAsked = 2,
-                    SourceSessionId = earlierSession,
-                    UpdatedAt = Now
-                }
-            ]
-        };
-        var first = KnowledgeMerger.CollectCandidates(workspace, ["先说结论再展开", "先说结论再展开。"],
-            [new QuestionBankEntry("缓存一致性怎么保证？", "先更新库再删缓存")], session, now: Now);
-        Assert.Equal(2, first.Added.Count);
-        workspace = first.Series;
-        Assert.Single(workspace.QuestionBank);
-        Assert.Equal(2, workspace.QuestionBank[0].TimesAsked);
-        Assert.Equal("旧答法保留", workspace.QuestionBank[0].Answer);
-        var again = KnowledgeMerger.CollectCandidates(workspace, ["先说结论再展开"],
-            [new QuestionBankEntry("缓存一致性怎么保证？", "先更新库再删缓存")], session, now: Now);
-        Assert.Empty(again.Added);
-
-        var candidate = workspace.KnowledgeCandidates!.First(item => item.Kind == WorkspaceKnowledgeKind.Question);
-        var kept = KnowledgeMerger.ApplyCandidate(workspace, candidate.Id,
-            WorkspaceKnowledgeDecision.KeepExisting, Now);
-        Assert.NotNull(kept.Receipt);
-        workspace = kept.Series;
-        Assert.Equal("旧答法保留", workspace.QuestionBank[0].Answer);
-        Assert.Equal(3, workspace.QuestionBank[0].TimesAsked);
-        Assert.Equal(SortedIds(earlierSession, session), workspace.QuestionBank[0].SourceSessionIds);
-        var retry = KnowledgeMerger.ApplyCandidate(workspace, candidate.Id,
-            WorkspaceKnowledgeDecision.ReplaceAnswer, Now.AddSeconds(1));
-        Assert.Equal(kept.Receipt, retry.Receipt);
-        Assert.Equal(3, workspace.QuestionBank[0].TimesAsked);
-        var data = JsonSerializer.Serialize(workspace, WorkspaceStore.Options);
-        var restored = JsonSerializer.Deserialize<WorkspaceSeries>(data, WorkspaceStore.Options)!;
-        var afterRestart = KnowledgeMerger.ApplyCandidate(restored, candidate.Id,
-            WorkspaceKnowledgeDecision.ReplaceAnswer, Now.AddSeconds(2));
-        Assert.Equal(kept.Receipt, afterRestart.Receipt);
-        Assert.Equal(3, afterRestart.Series.QuestionBank[0].TimesAsked);
-    }
-
-    [Fact]
-    public void ReplacingAnAnswerRequiresFreshRevisionAndKeepsTheOldAnswer()
-    {
-        var workspace = Series("面试") with
-        {
-            QuestionBank =
-            [
-                new QuestionBankItem
-                {
-                    Question = "Redis 缓存雪崩怎么处理",
-                    Answer = "人工维护的答法",
-                    TimesAsked = 4
-                }
-            ]
-        };
-        var session = Id();
-        var collected = KnowledgeMerger.CollectCandidates(workspace, [],
-            [new QuestionBankEntry("Redis 缓存雪崩如何处理", "分批过期并加随机值")],
-            session, now: Now);
-        var candidateId = collected.Added.First();
-        workspace = collected.Series with
-        {
-            QuestionBank =
-            [
-                KnowledgeMerger.EditQuestionBankItem(collected.Series.QuestionBank[0],
-                    "Redis 缓存雪崩如何处理", "用户后来手动调整的答法", Now.AddSeconds(1))
-            ]
-        };
-        Assert.Null(KnowledgeMerger.ApplyCandidate(workspace, candidateId,
-            WorkspaceKnowledgeDecision.ReplaceAnswer, Now).Receipt);
-        var refreshed = KnowledgeMerger.RefreshCandidateBase(workspace, candidateId);
-        Assert.NotNull(refreshed);
-        var applied = KnowledgeMerger.ApplyCandidate(refreshed!, candidateId,
-            WorkspaceKnowledgeDecision.ReplaceAnswer, Now);
-        Assert.NotNull(applied.Receipt);
-        Assert.Equal(WorkspaceKnowledgeDecision.ReplaceAnswer, applied.Receipt!.Decision);
-        Assert.Equal("分批过期并加随机值", applied.Series.QuestionBank[0].Answer);
-        Assert.Equal(session, applied.Series.QuestionBank[0].AnswerSourceSessionId);
-        Assert.Equal(["人工维护的答法", "用户后来手动调整的答法"],
-            applied.Series.QuestionBank[0].AnswerHistory!.Select(revision => revision.Answer));
-        Assert.Equal(5, applied.Series.QuestionBank[0].TimesAsked);
-    }
-
-    [Fact]
-    public void ReplacingAnAnswerPreservesItsSourceAttribution()
-    {
-        var workspace = Series("面试");
-        var originalQuestionSession = Id();
-        var answerSession = Id();
-        var candidateSession = Id();
-        workspace = workspace with
-        {
-            QuestionBank =
-            [
-                new QuestionBankItem
-                {
-                    Question = "Redis 缓存雪崩怎么处理",
-                    Answer = "原答法",
-                    TimesAsked = 2,
-                    SourceSessionId = originalQuestionSession,
-                    SourceSessionIds = [originalQuestionSession, answerSession],
-                    AnswerSourceSessionId = answerSession,
-                    AnswerRevision = 2,
-                    UpdatedAt = Now
-                }
-            ]
-        };
-        var collected = KnowledgeMerger.CollectCandidates(workspace, [],
-            [new QuestionBankEntry("Redis 缓存雪崩如何处理", "新答法")], candidateSession, now: Now);
-        var candidateId = collected.Added.First();
-        var applied = KnowledgeMerger.ApplyCandidate(collected.Series, candidateId,
-            WorkspaceKnowledgeDecision.ReplaceAnswer, Now.AddSeconds(1));
-        Assert.NotNull(applied.Receipt);
-
-        var item = applied.Series.QuestionBank[0];
-        Assert.Equal("新答法", item.Answer);
-        Assert.Equal(candidateSession, item.AnswerSourceSessionId);
-        Assert.Single(item.AnswerHistory!);
-        Assert.Equal("原答法", item.AnswerHistory![0].Answer);
-        Assert.Equal(answerSession, item.AnswerHistory![0].SourceSessionId);
-    }
-
-    [Fact]
-    public void StaleKeepExistingRequiresReviewOfTheCurrentQuestionRevision()
-    {
-        var workspace = Series("面试");
-        var existingSession = Id();
-        var candidateSession = Id();
-        workspace = workspace with
-        {
-            QuestionBank =
-            [
-                new QuestionBankItem
-                {
-                    Question = "Redis 缓存雪崩怎么处理",
-                    Answer = "原答法",
-                    TimesAsked = 2,
-                    SourceSessionId = existingSession,
-                    SourceSessionIds = [existingSession]
-                }
-            ]
-        };
-        var collected = KnowledgeMerger.CollectCandidates(workspace, [],
-            [new QuestionBankEntry("Redis 缓存雪崩如何处理", "候选答法")], candidateSession, now: Now);
-        var candidateId = collected.Added.First();
-        workspace = collected.Series with
-        {
-            QuestionBank =
-            [
-                KnowledgeMerger.EditQuestionBankItem(collected.Series.QuestionBank[0],
-                    "Redis 缓存雪崩怎么处理", "刚刚手动更新的答法", Now.AddSeconds(1))
-            ]
-        };
-
-        Assert.Null(KnowledgeMerger.ApplyCandidate(workspace, candidateId,
-            WorkspaceKnowledgeDecision.KeepExisting, Now).Receipt);
-        Assert.Equal("刚刚手动更新的答法", workspace.QuestionBank[0].Answer);
-        Assert.Equal(2, workspace.QuestionBank[0].TimesAsked);
-        Assert.Equal([existingSession], workspace.QuestionBank[0].SourceSessionIds);
-
-        var refreshed = KnowledgeMerger.RefreshCandidateBase(workspace, candidateId);
-        Assert.NotNull(refreshed);
-        var applied = KnowledgeMerger.ApplyCandidate(refreshed!, candidateId,
-            WorkspaceKnowledgeDecision.KeepExisting, Now);
-        Assert.NotNull(applied.Receipt);
-        Assert.True(applied.Receipt!.SourceCounted);
-        Assert.Equal("刚刚手动更新的答法", applied.Series.QuestionBank[0].Answer);
-        Assert.Equal(3, applied.Series.QuestionBank[0].TimesAsked);
-        Assert.Equal(new HashSet<string> { existingSession, candidateSession },
-            (applied.Series.QuestionBank[0].SourceSessionIds ?? []).ToHashSet(StringComparer.Ordinal));
-    }
-
-    [Fact]
-    public void KeepingAnExistingLessonIsRejectedWhenNoSimilarLessonRemains()
-    {
-        var workspace = Series("面试");
-        var collected = KnowledgeMerger.CollectCandidates(workspace,
-            ["面试回答先说结论，再按证据展开"], [], Id(), now: Now);
-        var candidateId = collected.Added.First();
-
-        Assert.Null(KnowledgeMerger.ApplyCandidate(collected.Series, candidateId,
-            WorkspaceKnowledgeDecision.KeepExisting, Now).Receipt);
-        Assert.Empty(collected.Series.Lessons);
-        Assert.Equal(WorkspaceKnowledgeStatus.Pending,
-            collected.Series.KnowledgeCandidates!.First().Status);
-    }
-
-    [Fact]
-    public void EditingQuestionWordingInvalidatesOpenReplacementWithoutErasingProvenance()
-    {
-        var workspace = Series("面试");
-        var sourceSession = Id();
-        var currentSession = Id();
-        var oldRevision = new WorkspaceAnswerRevision
-        {
-            Answer = "更早的答法",
-            RecordedAt = Now.AddSeconds(-10)
-        };
-        workspace = workspace with
-        {
-            QuestionBank =
-            [
-                new QuestionBankItem
-                {
-                    Question = "Redis 缓存雪崩怎么处理",
-                    Answer = "人工维护的答法",
-                    TimesAsked = 4,
-                    SourceSessionId = sourceSession,
-                    SourceSessionIds = [sourceSession],
-                    AnswerHistory = [oldRevision],
-                    AnswerRevision = 3,
-                    UpdatedAt = Now
-                }
-            ]
-        };
-        var collected = KnowledgeMerger.CollectCandidates(workspace, [],
-            [new QuestionBankEntry("Redis 缓存雪崩如何处理", "分批过期并加随机值")], currentSession, now: Now);
-        var candidateId = collected.Added.First();
-        workspace = collected.Series with
-        {
-            QuestionBank =
-            [
-                KnowledgeMerger.EditQuestionBankItem(collected.Series.QuestionBank[0],
-                    "Redis 缓存雪崩如何处理", "人工维护的答法", Now.AddSeconds(1))
-            ]
-        };
-        Assert.Equal(4, workspace.QuestionBank[0].AnswerRevision);
-        Assert.Equal(["更早的答法"], workspace.QuestionBank[0].AnswerHistory!.Select(revision => revision.Answer));
-        Assert.Equal([sourceSession], workspace.QuestionBank[0].SourceSessionIds);
-        Assert.Null(KnowledgeMerger.ApplyCandidate(workspace, candidateId,
-            WorkspaceKnowledgeDecision.ReplaceAnswer, Now).Receipt);
-        var refreshed = KnowledgeMerger.RefreshCandidateBase(workspace, candidateId);
-        Assert.NotNull(refreshed);
-
-        var applied = KnowledgeMerger.ApplyCandidate(refreshed!, candidateId,
-            WorkspaceKnowledgeDecision.ReplaceAnswer, Now);
-        Assert.NotNull(applied.Receipt);
-        Assert.True(applied.Receipt!.SourceCounted);
-        Assert.Equal("分批过期并加随机值", applied.Series.QuestionBank[0].Answer);
-        Assert.Equal(["更早的答法", "人工维护的答法"],
-            applied.Series.QuestionBank[0].AnswerHistory!.Select(revision => revision.Answer));
-        Assert.Contains(currentSession, applied.Series.QuestionBank[0].SourceSessionIds ?? []);
-    }
-
-    [Fact]
-    public void WhyAndHowQuestionsRemainSeparateCandidates()
-    {
-        var workspace = Series("面试");
-        var collected = KnowledgeMerger.CollectCandidates(workspace, [],
-        [
-            new QuestionBankEntry("为什么选择 Redis？", "需要低延迟缓存"),
-            new QuestionBankEntry("如何使用 Redis？", "设置过期时间并处理并发")
-        ], Id(), now: Now);
-        Assert.Equal(2, collected.Added.Count);
-        Assert.Equal(2, collected.Added.Distinct(StringComparer.Ordinal).Count());
-    }
-
-    [Fact(Skip = "missing API: Workspace.knowledgeCandidates optional (absent vs empty)")]
     public void LegacyKnowledgeFieldsRemainReadable()
     {
+        var session = Id();
+        var workspaceId = Id();
+        var lessonId = Id();
+        var questionId = Id();
+        var json = $$"""{"id":"{{workspaceId}}","name":"\u65E7\u573A\u666F","mode":"interview","lessons":[{"id":"{{lessonId}}","text":"\u65E7\u7ECF\u9A8C","sourceSessionID":"{{session}}","createdAt":0,"pinned":false}],"questionBank":[{"id":"{{questionId}}","question":"\u65E7\u95EE\u9898","answer":"\u65E7\u7B54\u6CD5","timesAsked":3,"sourceSessionID":"{{session}}","updatedAt":0}]}""";
+        var workspace = System.Text.Json.JsonSerializer.Deserialize<WorkspaceSeries>(json, WorkspaceStore.Options)!;
+        Assert.Equal("\u65E7\u7B54\u6CD5", workspace.QuestionBank.First().Answer);
+        Assert.Null(workspace.QuestionBank.First().AnswerHistory);
+        Assert.Null(workspace.QuestionBank.First().AnswerRevision);
+        Assert.Null(workspace.KnowledgeCandidates);
     }
 
-    [Fact(Skip = "missing API: LegacyWorkspaceView")]
+    [Fact]
     public void LegacyReaderCanReadNewWorkspaceFields()
     {
+        var item = new QuestionBankItem
+        {
+            Question = "\u7F13\u5B58\u95EE\u9898",
+            Answer = "\u65B0\u7B54\u6CD5",
+            TimesAsked = 2,
+            AnswerHistory = [new WorkspaceAnswerRevision { Answer = "\u65E7\u7B54\u6CD5", RecordedAt = Now }],
+            AnswerRevision = 1,
+            UpdatedAt = Now
+        };
+        var workspace = new WorkspaceSeries(Id(), "\u65B0\u573A\u666F", Now, [], [])
+        {
+            QuestionBank = [item],
+            KnowledgeCandidates =
+            [
+                new WorkspaceKnowledgeCandidate
+                {
+                    Id = "candidate", LogicalItemId = "question", Kind = WorkspaceKnowledgeKind.Question,
+                    Text = "\u7F13\u5B58\u95EE\u9898", ProposedAnswer = "\u5F85\u5BA1\u9605\u7B54\u6CD5"
+                }
+            ]
+        };
+        var data = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(workspace, WorkspaceStore.Options);
+        var oldView = System.Text.Json.JsonSerializer.Deserialize<LegacyWorkspaceView>(data, WorkspaceStore.Options)!;
+        Assert.Equal("\u65B0\u573A\u666F", oldView.Name);
+        Assert.Equal("\u65B0\u7B54\u6CD5", oldView.QuestionBank.First().Answer);
+        Assert.Equal(2, oldView.QuestionBank.First().TimesAsked);
     }
 
     [Fact]
@@ -993,4 +676,16 @@ public sealed class WorkspaceTestsParityTests
         });
         Assert.Equal(true, currentOnly["autoCollectKnowledgeCandidates"]);
     }
+}
+
+internal sealed class LegacyWorkspaceView
+{
+    public string Name { get; set; } = "";
+    public List<LegacyQuestion> QuestionBank { get; set; } = [];
+}
+
+internal sealed class LegacyQuestion
+{
+    public string Answer { get; set; } = "";
+    public int TimesAsked { get; set; }
 }

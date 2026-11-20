@@ -144,8 +144,34 @@ public sealed class SessionUserContentTestsParityTests : IDisposable
         Assert.Equal("existing file", File.ReadAllText(blocked));
     }
 
-    [Fact(Skip = "missing API: SessionSummaryPrompt.Material; AnswerCompletion tolerant decoding")]
+    [Fact]
     public void OldContextsDecodeAndIncompleteAnswersAreExcludedFromNotesInput()
     {
+        var context = new SessionContextSnapshot { Mode = "labMeeting", Style = "detailed" };
+        var decoded = System.Text.Json.JsonSerializer.Deserialize<SessionContextSnapshot>(
+            System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(context, JsonDefaults.Options), JsonDefaults.Options)!;
+        Assert.Null(decoded.EffectiveMode);
+
+        var start = DateTimeOffset.UtcNow;
+        var complete = new SessionAnswerEvent { Date = start, Question = "\u5B8C\u6574\u95EE\u9898", Answer = "\u5B8C\u6574\u7B54\u6848", Model = "m" };
+        var interrupted = new SessionAnswerEvent
+        {
+            Date = start, Question = "\u4E2D\u65AD\u95EE\u9898", Answer = "\u5C1A\u672A\u5B8C\u6210", Model = "m",
+            Completion = AnswerCompletion.Interrupted
+        };
+        var material = new SessionSummaryPrompt.Material(
+            new SessionMeta { StartedAt = start, Mode = "labMeeting" }, [], [complete, interrupted], [], decoded);
+        Assert.Equal([complete], material.Answers);
+
+        var projection = new SessionTextProjection(Guid.NewGuid(), "rev", "transcript", new SessionProjectionOptions(),
+            [new SessionProjectedAnswer(Guid.NewGuid(), start, "\u4E2D\u65AD\u95EE\u9898", "\u5C1A\u672A\u5B8C\u6210", "rev",
+                AnswerCompletion.Interrupted)],
+            []);
+        var exported = SessionMarkdownExporter.Export("\u6807\u9898", "\u5B9E\u9A8C\u5BA4\u4F1A\u8BAE", start, 0, "",
+            projection, []);
+        Assert.Contains("\u672A\u5B8C\u6210\u7684\u56DE\u7B54\u7247\u6BB5", exported);
+
+        var unknown = System.Text.Json.JsonSerializer.Deserialize<AnswerCompletion>("\"new-status\"", JsonDefaults.Options);
+        Assert.Equal(AnswerCompletion.Interrupted, unknown);
     }
 }

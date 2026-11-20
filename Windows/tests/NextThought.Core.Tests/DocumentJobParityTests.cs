@@ -47,9 +47,27 @@ public sealed class DocumentJobParityTests
         }
     }
 
-    [Fact(Skip = "missing API: DocumentJobStore.all(recoverInterrupted:) preserving a committed document's .embedding stage (C# DocumentJobQueue.AllJobs resets every non-terminal stage to Queued)")]
+    [Fact]
     public void CommittedDocumentResumesAtEmbeddingInsteadOfDuplicateImport()
     {
+        var root = Path.Combine(Path.GetTempPath(), "nt-document-job-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new DocumentJobQueue(root);
+            var job = DocumentJob.Create(Guid.NewGuid().ToString("D"), "deck.pptx") with
+            {
+                Stage = DocumentJob.StageValue.Embedding,
+                OriginalPath = "/selected/deck.pptx",
+                DocumentId = Guid.NewGuid().ToString("D")
+            };
+            Assert.True(store.Enqueue(job));
+            var all = new DocumentJobQueue(root).AllJobs(recoverInterrupted: true);
+            Assert.Equal(job.DocumentId, all.First().DocumentId);
+            Assert.Equal(DocumentJob.StageValue.Embedding, all.First().Stage);
+            Assert.Equal(512L * 1024 * 1024, DocumentLimits.MaximumFileBytes);
+            Assert.Equal(2000, DocumentLimits.MaximumPages);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
     }
 
     [Fact]
@@ -85,18 +103,11 @@ public sealed class DocumentJobParityTests
         }
     }
 
-    [Fact(Skip = "missing API: SQLiteRowReader.collect(step:makeRow:)")]
-    public void JournalRowReaderThrowsInsteadOfTreatingSQLiteErrorsAsEndOfRows()
-    {
-    }
-
-    [Fact(Skip = "missing API: DocumentJobStore.recoverWorkspaceDeletionTransactions(at:readJournals:)")]
-    public void FailedJournalQueryAbortsStartupRecoveryBeforeTouchingStagedFiles()
-    {
-    }
-
-    [Fact(Skip = "missing API: DocumentContent.rawPages")]
+    [Fact]
     public void OldDocumentContentDecodesWithoutNewRawText()
     {
+        const string json = """{"schemaVersion":1,"pipeline":"system","blocks":[],"warnings":[],"status":"complete","components":{}}""";
+        var content = System.Text.Json.JsonSerializer.Deserialize<DocumentContent>(json, JsonDefaults.Options)!;
+        Assert.Null(content.RawPages);
     }
 }

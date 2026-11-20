@@ -83,7 +83,7 @@ public sealed record WorkspaceSeries(
     public IReadOnlyList<QuestionBankItem> QuestionBank { get; init; } = [];
 
     /// <summary>Review queue: suggestions stay inert until accepted or rejected.</summary>
-    public IReadOnlyList<WorkspaceKnowledgeCandidate> KnowledgeCandidates { get; init; } = [];
+    public IReadOnlyList<WorkspaceKnowledgeCandidate>? KnowledgeCandidates { get; init; }
 
     /// <summary>Accepted decisions and actions carried by this series.</summary>
     public IReadOnlyList<WorkspaceSeriesItem> SeriesItems { get; init; } = [];

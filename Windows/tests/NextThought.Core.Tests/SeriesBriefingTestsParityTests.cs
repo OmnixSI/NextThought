@@ -99,9 +99,61 @@ public sealed class SeriesBriefingTestsParityTests
         Assert.Empty(snapshot.QuestionBank);
     }
 
-    [Fact(Skip = "missing API: WorkspaceSeriesChangeMerger.Apply idempotent replay receipt")]
+    [Fact]
     public void F07ThreeMeetingsKeepTheCurrentDecisionAndNeverResurrectItsOldRevision()
     {
+        var workspace = new WorkspaceSeries("w", "\u9879\u76EE\u4EA4\u4ED8", Start, [], []) { Mode = "meeting" };
+        var friday = Session(Start, "meeting", "\u7B2C\u4E00\u6B21\u8BA8\u8BBA");
+        var monday = Session(Start.AddSeconds(86_400), "meeting", "\u6570\u636E\u5230\u9F50");
+        var next = Session(Start.AddSeconds(172_800), "meeting", "\u4E0B\u4E00\u6B21");
+        workspace = workspace with { SessionIds = [friday.Id.ToString("D"), monday.Id.ToString("D"), next.Id.ToString("D")] };
+        var firstEvidence = Evidence("notes:decisions:friday", claim: "\u6682\u5B9A\u5468\u4E94\u63D0\u4EA4\uFF0C\u7B49\u5F85\u5916\u90E8\u6570\u636E\u786E\u8BA4\u3002",
+            quote: "\u5148\u6309\u5468\u4E94\u5B89\u6392\uFF0C\u7B49\u6570\u636E\u786E\u8BA4\u540E\u518D\u5B9A\u3002",
+            sourceRevision: "line-friday-v1", claimRevision: "claim-friday-v1");
+
+        var first = WorkspaceSeriesChangeMerger.CollectCandidates(workspace, [firstEvidence], friday.Id.ToString("D"), Start);
+        workspace = first.Series;
+        Assert.Single(first.Added);
+        Assert.Empty(WorkspaceSeriesChangeMerger.CollectCandidates(workspace, [firstEvidence], friday.Id.ToString("D"), Start).Added);
+        var firstID = first.Added.First();
+        var firstReceipt = WorkspaceSeriesChangeMerger.Apply(workspace, firstID, WorkspaceSeriesChangeDecision.Add,
+            now: Start, operationId: Guid.NewGuid());
+        workspace = firstReceipt.Series;
+        Assert.NotNull(firstReceipt.Receipt);
+        var replay = WorkspaceSeriesChangeMerger.Apply(workspace, firstID, WorkspaceSeriesChangeDecision.Add,
+            now: Start.AddSeconds(1), operationId: Guid.NewGuid());
+        Assert.Equal(firstReceipt.Receipt, replay.Receipt);
+        Assert.Single(workspace.SeriesItems!);
+
+        var secondEvidence = Evidence("notes:decisions:monday", claim: "\u6B63\u5F0F\u6539\u4E3A\u4E0B\u5468\u4E00\u63D0\u4EA4\uFF0C\u5916\u90E8\u6570\u636E\u5DF2\u5230\u9F50\u3002",
+            quote: "\u6570\u636E\u4ECA\u5929\u5230\u9F50\u4E86\uFF0C\u6B63\u5F0F\u6539\u5230\u4E0B\u5468\u4E00\u3002",
+            sourceRevision: "line-monday-v1", claimRevision: "claim-monday-v1");
+        var second = WorkspaceSeriesChangeMerger.CollectCandidates(workspace, [secondEvidence], monday.Id.ToString("D"), Start.AddSeconds(86_400));
+        workspace = second.Series;
+        var itemID = workspace.SeriesItems!.First().Id;
+        var changed = WorkspaceSeriesChangeMerger.Apply(workspace, second.Added.First(), WorkspaceSeriesChangeDecision.Replace,
+            targetItemId: itemID, expectedRevision: 1, now: Start.AddSeconds(86_400), operationId: Guid.NewGuid());
+        workspace = changed.Series;
+        Assert.Equal(WorkspaceSeriesChangeDecision.Replace, changed.Receipt!.Decision);
+        Assert.Equal("\u6B63\u5F0F\u6539\u4E3A\u4E0B\u5468\u4E00\u63D0\u4EA4\uFF0C\u5916\u90E8\u6570\u636E\u5DF2\u5230\u9F50\u3002", workspace.SeriesItems!.First().Text);
+        Assert.Equal(2, workspace.SeriesItems!.First().Revision);
+        Assert.Equal(["\u6682\u5B9A\u5468\u4E94\u63D0\u4EA4\uFF0C\u7B49\u5F85\u5916\u90E8\u6570\u636E\u786E\u8BA4\u3002"],
+            workspace.SeriesItems!.First().History.Select(revision => revision.Text));
+
+        var briefing = SeriesBriefingBuilder.Build(workspace, [friday, monday, next], evidenceReferences: [firstEvidence, secondEvidence]);
+        Assert.Equal(3, briefing.SessionCount);
+        Assert.Equal([next.Id, monday.Id, friday.Id], briefing.LatestSessions.Select(session => session.Id));
+        Assert.Equal(["\u6B63\u5F0F\u6539\u4E3A\u4E0B\u5468\u4E00\u63D0\u4EA4\uFF0C\u5916\u90E8\u6570\u636E\u5DF2\u5230\u9F50\u3002"], briefing.Decisions.Select(item => item.Text));
+        Assert.Equal(["\u6682\u5B9A\u5468\u4E94\u63D0\u4EA4\uFF0C\u7B49\u5F85\u5916\u90E8\u6570\u636E\u786E\u8BA4\u3002"], briefing.Decisions.First().History.Select(revision => revision.Text));
+
+        var afterSourceDeletion = SeriesBriefingBuilder.Build(workspace, [friday, next], evidenceReferences: [firstEvidence, secondEvidence]);
+        Assert.Empty(afterSourceDeletion.Decisions);
+        Assert.Equal(["\u6B63\u5F0F\u6539\u4E3A\u4E0B\u5468\u4E00\u63D0\u4EA4\uFF0C\u5916\u90E8\u6570\u636E\u5DF2\u5230\u9F50\u3002"], afterSourceDeletion.StaleItems.Select(item => item.Text));
+        Assert.True(afterSourceDeletion.StaleItems.First().SourceMissing == true);
+        Assert.Null(afterSourceDeletion.StaleItems.First().SourceQuote);
+
+        workspace = workspace with { UseKnowledge = false };
+        Assert.Empty(SeriesBriefingBuilder.Build(workspace, [friday, monday, next], evidenceReferences: [firstEvidence, secondEvidence]).Decisions);
     }
 
     [Fact]
@@ -136,9 +188,35 @@ public sealed class SeriesBriefingTestsParityTests
         Assert.Equal(["改为周一交付"], briefing.StaleItems.Select(item => item.Text));
     }
 
-    [Fact(Skip = "missing API: WorkspaceSeriesChangeMerger.SetActionState")]
+    [Fact]
     public void ReviewingOnTheLatestWorkspacePreservesConcurrentActionProgress()
     {
+        var workspace = new WorkspaceSeries("w", "\u9879\u76EE\u4EA4\u4ED8", Start, [], []) { Mode = "meeting" };
+        var sessionId = Guid.NewGuid();
+        var existingAction = new WorkspaceSeriesItem
+        {
+            Kind = WorkspaceSeriesItem.KindValue.Action, Text = "\u53D1\u9001\u6570\u636E\u8BF7\u6C42",
+            Owner = "A", Due = "\u5468\u4E94", SourceSessionId = sessionId.ToString("D"),
+            EvidenceId = "action-existing", ClaimRevision = "claim-action", SourceRevision = "line-action"
+        };
+        workspace = workspace with { SeriesItems = [existingAction] };
+        var decision = Evidence("notes:decisions:delivery", claim: "\u6B63\u5F0F\u6539\u4E3A\u4E0B\u5468\u4E00\u63D0\u4EA4\u3002",
+            sourceRevision: "line-decision", claimRevision: "claim-decision");
+        var collected = WorkspaceSeriesChangeMerger.CollectCandidates(workspace, [decision], sessionId.ToString("D"));
+        workspace = collected.Series;
+        var candidateID = collected.Added.First();
+
+        var latest = workspace;
+        var actionChange = WorkspaceSeriesChangeMerger.SetActionState(latest, existingAction.Id,
+            WorkspaceSeriesItem.ActionStateValue.Done, 1);
+        latest = actionChange.Series;
+        Assert.True(actionChange.Changed);
+
+        var receipt = WorkspaceSeriesChangeMerger.Apply(latest, candidateID, WorkspaceSeriesChangeDecision.Add, operationId: Guid.NewGuid());
+        latest = receipt.Series;
+        Assert.Equal(WorkspaceSeriesChangeDecision.Add, receipt.Receipt!.Decision);
+        Assert.Equal(WorkspaceSeriesItem.ActionStateValue.Done, latest.SeriesItems!.First(item => item.Id == existingAction.Id).ActionState);
+        Assert.Contains(latest.SeriesItems!, item => item.Text == "\u6B63\u5F0F\u6539\u4E3A\u4E0B\u5468\u4E00\u63D0\u4EA4\u3002");
     }
 
     [Fact]
@@ -183,9 +261,50 @@ public sealed class SeriesBriefingTestsParityTests
         Assert.Null(afterTuesday.SeriesChangeCandidates.First(candidate => candidate.Id == tuesdayID).Receipt);
     }
 
-    [Fact(Skip = "missing API: WorkspaceSeriesChangeMerger.SetActionState")]
+    [Fact]
     public void ActionOwnerAndRelativeDeadlineAreConfirmedAndCompletionCanBeUndone()
     {
+        var workspace = new WorkspaceSeries("w", "\u9879\u76EE\u4EA4\u4ED8", Start, [], []) { Mode = "meeting" };
+        var session = Session(Start, "meeting", "\u9879\u76EE\u4F1A");
+        workspace = workspace with { SessionIds = [session.Id.ToString("D")] };
+        var action = Evidence("notes:actions:data-request", title: "\u5F85\u529E", claim: "\u5411\u5916\u90E8\u56E2\u961F\u53D1\u9001\u6570\u636E\u8BF7\u6C42\u3002",
+            quote: "\u6211\u4ECA\u5929\u4F1A\u628A\u6570\u636E\u8BF7\u6C42\u53D1\u8FC7\u53BB\u3002",
+            sourceRevision: "line-action-v1", claimRevision: "claim-action-v1", kind: NotesSectionKind.Actions,
+            owner: "\u672A\u786E\u8BA4", due: "\u4E0B\u5468\u4E00 15:00\uFF08\u6089\u5C3C\u65F6\u95F4\uFF09");
+        var collected = WorkspaceSeriesChangeMerger.CollectCandidates(workspace, [action], session.Id.ToString("D"), Start);
+        workspace = collected.Series;
+        var candidateID = collected.Added.First();
+        var receipt = WorkspaceSeriesChangeMerger.Apply(workspace, candidateID, WorkspaceSeriesChangeDecision.Add,
+            reviewedDetails: new WorkspaceSeriesChangeReviewDetails("Shiyin", "\u5468\u4E00 16:00\uFF08\u6089\u5C3C\u65F6\u95F4\uFF09"),
+            now: Start, operationId: Guid.NewGuid());
+        workspace = receipt.Series;
+        Assert.Equal(WorkspaceSeriesChangeDecision.Add, receipt.Receipt!.Decision);
+        var item = workspace.SeriesItems!.First();
+        Assert.Equal("Shiyin", item.Owner);
+        Assert.Equal("\u5468\u4E00 16:00\uFF08\u6089\u5C3C\u65F6\u95F4\uFF09", item.Due);
+        Assert.Null(item.DueDate);
+
+        var done = WorkspaceSeriesChangeMerger.SetActionState(workspace, item.Id, WorkspaceSeriesItem.ActionStateValue.Done, 1, Start.AddSeconds(10));
+        workspace = done.Series;
+        Assert.True(done.Changed);
+        item = workspace.SeriesItems!.First();
+        Assert.Equal(WorkspaceSeriesItem.ActionStateValue.Done, item.ActionState);
+        Assert.Equal([WorkspaceSeriesItem.ActionStateValue.Open], item.History.Select(revision => revision.ActionState));
+        var briefing = SeriesBriefingBuilder.Build(workspace, [session], evidenceReferences: [action]);
+        Assert.Empty(briefing.OpenActions);
+        Assert.Equal([item.Id], briefing.ResolvedActions.Select(actionItem => actionItem.Id));
+
+        var open = WorkspaceSeriesChangeMerger.SetActionState(workspace, item.Id, WorkspaceSeriesItem.ActionStateValue.Open, 2, Start.AddSeconds(20));
+        workspace = open.Series;
+        Assert.True(open.Changed);
+        item = workspace.SeriesItems!.First();
+        Assert.Equal(WorkspaceSeriesItem.ActionStateValue.Open, item.ActionState);
+        Assert.Equal("\u5468\u4E00 16:00\uFF08\u6089\u5C3C\u65F6\u95F4\uFF09", item.Due);
+        Assert.Equal([WorkspaceSeriesItem.ActionStateValue.Open, WorkspaceSeriesItem.ActionStateValue.Done], item.History.Select(revision => revision.ActionState));
+        Assert.False(WorkspaceSeriesChangeMerger.SetActionState(workspace, item.Id, WorkspaceSeriesItem.ActionStateValue.Open, 3, Start.AddSeconds(30)).Changed);
+        briefing = SeriesBriefingBuilder.Build(workspace, [session], evidenceReferences: [action]);
+        Assert.Equal([item.Id], briefing.OpenActions.Select(actionItem => actionItem.Id));
+        Assert.Empty(briefing.ResolvedActions);
     }
 
     [Fact]
