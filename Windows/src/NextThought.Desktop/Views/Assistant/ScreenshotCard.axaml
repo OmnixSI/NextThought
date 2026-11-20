@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Assistant.ScreenshotCard"
+             x:DataType="local:AppState"
+             IsVisible="{Binding HasLiveScreenshot}">
+  <Border Classes="card" Padding="{DynamicResource D4Padding_10_8}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+        <TextBlock Text="{StaticResource IconCameraViewfinder}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                   Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{loc:Tr 截图}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <Button Grid.Column="2" Classes="quiet" Content="{loc:Tr 取消}" FontSize="11" Click="Cancel_Click" />
+        <Button Grid.Column="3" Classes="primary" Content="{loc:Tr 分析截图}" FontSize="11" Click="Analyze_Click" />
+      </Grid>
+      <Image Source="{Binding ScreenshotPreview}" MaxHeight="140" Stretch="Uniform" HorizontalAlignment="Left" />
+      <TextBlock Text="{loc:Tr 对截图的补充要求（可留空）}" Classes="caption" FontSize="11"
+                 Foreground="{DynamicResource Secondary}" />
+    </StackPanel>
+  </Border>
+</UserControl>

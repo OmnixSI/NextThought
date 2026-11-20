@@ -41,6 +41,7 @@ public partial class LiveView : UserControl
             state.PropertyChanged += OnStatePropertyChanged;
             state.CurrentAnswerHistory.CollectionChanged += OnAnswerHistoryChanged;
             ShowRightTab(state.Settings.AutomaticAnswers);
+            state.RefreshSessionAnswerHistory();
             state.RaiseLiveAnswerUi();
             state.RaiseLiveSceneUi();
         }
@@ -62,10 +63,38 @@ public partial class LiveView : UserControl
             case nameof(AppState.AnswerModeIsAuto):
                 if (state is not null) ShowRightTab(state.Settings.AutomaticAnswers);
                 break;
+            case nameof(AppState.CurrentSession):
+                state?.RefreshSessionAnswerHistory();
+                break;
         }
     }
 
-    private void OnAnswerHistoryChanged(object? sender, NotifyCollectionChangedEventArgs e) => state?.RaiseLiveAnswerUi();
+    private void OnAnswerHistoryChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        state?.RefreshSessionAnswerHistory();
+        state?.RaiseLiveAnswerUi();
+    }
+
+    private void LatestAnswer_Click(object? sender, RoutedEventArgs e) => state?.ShowLatestAnswer();
+
+    private void LayoutMenu_Click(object? sender, RoutedEventArgs e)
+    {
+        // The flyout opens from the button itself.
+    }
+
+    private void ModuleWindow_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string name } || state is null) return;
+        if (!Enum.TryParse<AssistantModule>(name, ignoreCase: true, out var module)) return;
+        state.OpenDetachedModule(module);
+    }
+
+    private void LayoutPreset_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string name } || state is null) return;
+        if (!Enum.TryParse<AssistantLayout.Preset>(name, ignoreCase: true, out var preset)) return;
+        state.ApplyAssistantPreset(preset);
+    }
 
     private void OnTranscriptJumpRequested(int seconds)
     {
@@ -275,11 +304,8 @@ public partial class LiveView : UserControl
         if (TopLevel.GetTopLevel(this) is MainWindow window) window.ToggleCueIsland();
     }
 
-    private void DetachAnswer_Click(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is not AppState state) return;
-        new DetachedAnswerWindow { DataContext = state }.Show();
-    }
+    private void DetachAnswer_Click(object? sender, RoutedEventArgs e) =>
+        (DataContext as AppState)?.OpenDetachedModule(AssistantModule.Answer);
 
     private void Insights_Click(object? sender, RoutedEventArgs e)
     {

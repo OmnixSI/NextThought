@@ -38,6 +38,7 @@ public partial class AppState
     partial void OnAnswerTextChanged(string value)
     {
         OnPropertyChanged(nameof(PlainAnswer));
+        RaiseLiveAnswerUi();
         PublishCompanionSnapshot();
         OnPropertyChanged(nameof(IslandLines));
         OnPropertyChanged(nameof(IslandHeadline));
@@ -603,6 +604,7 @@ public partial class AppState
                 };
                 await Sessions.AppendAnswerAsync(meta, answerRecord);
                 CurrentAnswerHistory.Add(answerRecord);
+                RefreshSessionAnswerHistory();
                 RaiseLiveAnswerUi();
                 RefreshHistory();
             }
@@ -735,10 +737,10 @@ public partial class AppState
     }
 
     [RelayCommand]
-    private void PreviousAnswer() => ShowCompanionHistory(-1);
+    private void PreviousAnswer() => MoveAnswerHistory(-1);
 
     [RelayCommand]
-    private void NextAnswer() => ShowCompanionHistory(1);
+    private void NextAnswer() => MoveAnswerHistory(1);
 
     [RelayCommand]
     private void CopyAnswer()

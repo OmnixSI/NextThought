@@ -5,6 +5,7 @@
              xmlns:core="using:NextThought.Core"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
              xmlns:views="using:NextThought.Desktop.Views"
+             xmlns:assistant="using:NextThought.Desktop.Views.Assistant"
              x:Class="NextThought.Desktop.Views.LiveView"
              x:DataType="local:AppState">
   <UserControl.Styles>
@@ -321,11 +322,35 @@
                            Foreground="{Binding LiveSceneTintBrush}" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding AnswerColumnTitle}" Classes="overline" VerticalAlignment="Center" />
               </StackPanel>
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" IsVisible="{Binding AnswerHistoryHasMultiple}">
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
                 <Button Classes="quiet" Content="{StaticResource IconChevronLeft}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                        Command="{Binding PreviousAnswerCommand}" ToolTip.Tip="{loc:Tr 上一条}" />
+                        Command="{Binding PreviousAnswerCommand}" ToolTip.Tip="{loc:Tr 上一条}" IsVisible="{Binding AnswerHistoryHasMultiple}" />
+                <TextBlock Text="{Binding HistoryPositionText}" Classes="caption" FontSize="10" Foreground="{DynamicResource Secondary}"
+                           VerticalAlignment="Center" IsVisible="{Binding AnswerHistoryHasMultiple}" />
                 <Button Classes="quiet" Content="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                        Command="{Binding NextAnswerCommand}" ToolTip.Tip="{loc:Tr 下一条}" />
+                        Command="{Binding NextAnswerCommand}" ToolTip.Tip="{loc:Tr 下一条}" IsVisible="{Binding AnswerHistoryHasMultiple}" />
+                <Button Classes="quiet" Content="{loc:Tr 回到最新}" FontSize="11" Click="LatestAnswer_Click" IsVisible="{Binding HistoryCursorActive}" />
+                <Button Classes="quiet" ToolTip.Tip="{loc:Tr 历史回答}" Click="LayoutMenu_Click">
+                  <TextBlock Text="{StaticResource IconRectangleOnRectangle}" FontFamily="{StaticResource IconFont}" FontSize="12" />
+                  <Button.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedRight">
+                      <StackPanel Width="240" Spacing="{DynamicResource D4Spacing_2}">
+                        <TextBlock Text="{loc:Tr 历史回答}" Classes="overline" />
+                        <Button Classes="quiet" Content="{loc:Tr 实时对话}" Tag="Conversation" Click="ModuleWindow_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 问题}" Tag="Question" Click="ModuleWindow_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 建议回答}" Tag="Answer" Click="ModuleWindow_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 历史回答}" Tag="History" Click="ModuleWindow_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="{loc:Tr 屏幕与讲稿}" Tag="Insights" Click="ModuleWindow_Click" FontSize="12" />
+                        <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                        <Button Classes="quiet" Content="standard" Tag="Standard" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="answer-first" Tag="AnswerFirst" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="presenting" Tag="Presenting" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="stacked" Tag="Stacked" Click="LayoutPreset_Click" FontSize="12" />
+                        <Button Classes="quiet" Content="answer-only" Tag="AnswerOnly" Click="LayoutPreset_Click" FontSize="12" />
+                      </StackPanel>
+                    </Flyout>
+                  </Button.Flyout>
+                </Button>
               </StackPanel>
             </Grid>
 
@@ -343,12 +368,12 @@
 
             <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
               <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-                <TextBlock Text="{Binding DetectedQuestion}" Classes="caption" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
-                           IsVisible="{Binding DetectedQuestion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Text="{Binding DisplayedQuestionText}" Classes="caption" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding DisplayedQuestionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 <TextBlock Text="{Binding BilingualQuestionText}" Classes="caption" Foreground="{DynamicResource Ai}" TextWrapping="Wrap"
                            IsVisible="{Binding HasBilingualQuestion}" />
-                <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="17" Margin="{DynamicResource D4Margin_0_0}"
-                                    IsVisible="{Binding HasAnswerText}" />
+                <views:MarkdownText Text="{Binding DisplayedAnswerText}" BaseFontSize="17" Margin="{DynamicResource D4Margin_0_0}"
+                                    IsVisible="{Binding HasDisplayedAnswer}" />
                 <TextBlock Text="{Binding AnswerEmptyHint}" Classes="body" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap"
                            IsVisible="{Binding !HasAnswerText}" />
                 <!-- Numbered web sources (Mac WebSources) -->
@@ -452,16 +477,7 @@
 
             <StackPanel Grid.Row="4" Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_4}">
               <Expander Header="{loc:Tr 历史回答}" IsExpanded="False">
-                <ItemsControl ItemsSource="{Binding CurrentAnswerHistory}" MaxHeight="140">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="core:AnswerRecord">
-                      <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_6}">
-                        <TextBlock Text="{Binding Question}" Classes="caption" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Text="{Binding Answer}" Classes="caption" MaxLines="2" TextTrimming="CharacterEllipsis" />
-                      </StackPanel>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <assistant:AnswerHistoryPanel MaxHeight="180" />
               </Expander>
               <Expander Header="{loc:Tr 截图}" IsExpanded="False">
                 <ItemsControl ItemsSource="{Binding CurrentScreenshots}">
@@ -485,14 +501,7 @@
 
     <!-- ===== Bottom composer (Mac LiveComposer): screenshot strip, input, capture menu, send, 立即回答 ===== -->
     <StackPanel Grid.Row="4" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_14}">
-      <Border IsVisible="{Binding HasLiveScreenshot}" Classes="card" Padding="{DynamicResource D4Padding_12_8}">
-        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-          <Image Source="{Binding ScreenshotPreview}" Height="48" Stretch="Uniform" />
-          <TextBlock Grid.Column="1" Text="{loc:Tr 截图已就绪，可以补充要求后发送}" Classes="caption" VerticalAlignment="Center" />
-          <Button Grid.Column="2" Content="{loc:Tr 取消}" Click="CancelScreenshot_Click" />
-          <Button Grid.Column="3" Classes="primary" Content="{loc:Tr 分析截图}" Click="AnalyzeScreenshot_Click" />
-        </Grid>
-      </Border>
+      <assistant:ScreenshotCard />
       <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
         <Border Classes="card" Padding="{DynamicResource D4Padding_10_6}">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">

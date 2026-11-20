@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        xmlns:views="using:NextThought.Desktop.Views"
+        xmlns:assistant="using:NextThought.Desktop.Views.Assistant"
+        x:Class="NextThought.Desktop.Views.DetachedModuleWindow"
+        x:DataType="local:AppState"
+        Width="460" Height="520" WindowStartupLocation="Manual"
+        Background="{DynamicResource Paper}">
+  <Grid RowDefinitions="Auto,*" Margin="{DynamicResource D4Margin_8_0_0_0}">
+    <!-- E5/DetachedModules.swift: slim header with the dock action, then the module itself. -->
+    <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_8_0_0_6}">
+      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+        <TextBlock x:Name="ModuleIcon" FontFamily="{StaticResource IconFont}" FontSize="12"
+                   Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+        <TextBlock x:Name="ModuleTitle" FontSize="12" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+      </StackPanel>
+      <Button Grid.Column="1" Classes="chip" Content="{loc:Tr 关闭}" FontSize="11" Click="Dock_Click"
+              ToolTip.Tip="{loc:Tr 独立窗口}" />
+    </Grid>
+
+    <Grid Grid.Row="1" Margin="{DynamicResource D4Margin_8_0_8_8}">
+      <!-- 当前问题与候选 -->
+      <ScrollViewer x:Name="QuestionPanel" IsVisible="False" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+          <assistant:DetectionStrip />
+          <TextBlock Text="{loc:Tr 可能的问题}" Classes="caption" IsVisible="{Binding !HasLiveCandidate}" />
+          <TextBlock Text="{Binding DetectedQuestion}" Classes="body" TextWrapping="Wrap" />
+        </StackPanel>
+      </ScrollViewer>
+      <!-- 回答记录 -->
+      <ScrollViewer x:Name="HistoryPanel" IsVisible="False" VerticalScrollBarVisibility="Auto">
+        <assistant:AnswerHistoryPanel />
+      </ScrollViewer>
+      <!-- 实时对话 -->
+      <Grid x:Name="ConversationPanel" IsVisible="False" RowDefinitions="*,Auto">
+        <ListBox ItemsSource="{Binding Transcript}" Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="local:TranscriptRow">
+              <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                <TextBlock Text="{Binding Label}" FontSize="10" Foreground="{DynamicResource Tertiary}" />
+                <TextBlock Text="{Binding Text}" FontSize="13" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Translation}" FontSize="11" Foreground="{DynamicResource Ai}"
+                           IsVisible="{Binding HasTranslation}" TextWrapping="Wrap" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Grid.Row="1" Text="{Binding MicrophonePartial}" Classes="caption" IsVisible="False" />
+      </Grid>
+      <!-- 建议回答 -->
+      <ScrollViewer x:Name="AnswerPanel" IsVisible="False" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+          <assistant:ScreenshotCard />
+          <TextBlock Text="{Binding DisplayedQuestionText}" Classes="caption" TextWrapping="Wrap" />
+          <views:MarkdownText Text="{Binding DisplayedAnswerText}" BaseFontSize="15" IsVisible="{Binding HasDisplayedAnswer}" />
+          <TextBlock Text="{Binding AnswerEmptyHint}" Classes="body" TextWrapping="Wrap" IsVisible="{Binding !HasDisplayedAnswer}" />
+          <TextBlock Text="{Binding EvidenceSummary}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                     IsVisible="{Binding HasDisplayedEvidence}" TextWrapping="Wrap" />
+        </StackPanel>
+      </ScrollViewer>
+      <!-- 屏幕与讲稿 -->
+      <views:InsightsPanel x:Name="InsightsPanelHost" IsVisible="False" />
+    </Grid>
+  </Grid>
+</Window>

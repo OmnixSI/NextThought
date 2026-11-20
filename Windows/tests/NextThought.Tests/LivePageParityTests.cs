@@ -191,9 +191,8 @@ public sealed class LivePageParityTests
         Assert.Contains("{loc:Tr 选择窗口}", live);
         Assert.Contains("{loc:Tr 立即回答}", live);
         Assert.Contains("{Binding ForceAnswerShortcut}", live);
-        Assert.Contains("{Binding HasLiveScreenshot}", live);
-        Assert.Contains("{loc:Tr 截图已就绪，可以补充要求后发送}", live);
-        Assert.Contains("{loc:Tr 分析截图}", live);
+        // E5: the screenshot strip is the shared 截图卡 module.
+        Assert.Contains("assistant:ScreenshotCard", live);
         var state = Read("AppState.LiveUi.cs");
         Assert.Contains("public void SubmitLiveComposer()", state);
         Assert.Contains("AnalyzeScreenshotAsync", state);

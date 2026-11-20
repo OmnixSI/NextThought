@@ -795,10 +795,13 @@ public sealed class SelfTestStructureTests
     public void LivePageHasAnswerHistoryPanel()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("CurrentAnswerHistory", xaml);
+        // E5: the history panel is a module that reads the live or archived answer history.
+        Assert.Contains("assistant:AnswerHistoryPanel", xaml);
         Assert.Contains("历史回答", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("CurrentAnswerHistory.Add", state);
+        var assistant = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Assistant.cs"));
+        Assert.Contains("SelectedSessionAnswers", assistant);
     }
 
     [Fact]

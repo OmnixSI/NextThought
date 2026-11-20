@@ -84,6 +84,7 @@ public partial class AppState
         ApplyHistoryFilter();
         // E1: the home page's own lists (continue-series order, recent outcome lines).
         RefreshHome();
+        RefreshSessionAnswerHistory();
         OnPropertyChanged(nameof(HasTranscript));
         OnPropertyChanged(nameof(IsHistoryEmpty));
         OnPropertyChanged(nameof(StatsText));
@@ -160,6 +161,7 @@ public partial class AppState
         liveCandidateOverride = plan.IsRunning && plan.Name is DemoStages.Live or DemoStages.Home or DemoStages.Assistant
             ? (UiText.EnglishUi ? "What if deleting the cache fails?" : "如果删除缓存失败了怎么办")
             : null;
+        RefreshSessionAnswerHistory();
         OnPropertyChanged(nameof(LiveCandidateText));
         OnPropertyChanged(nameof(HasLiveCandidate));
         OnPropertyChanged(nameof(LiveSeriesName));

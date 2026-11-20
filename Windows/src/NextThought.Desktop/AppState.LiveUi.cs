@@ -161,8 +161,6 @@ public partial class AppState
 
     // ---- answer column: evidence line and details ----------------------------------
 
-    public AnswerRecord? DisplayedAnswerRecord => CurrentAnswerHistory.Count == 0 ? null : CurrentAnswerHistory[^1];
-
     public EvidenceBundle? DisplayedEvidence => DisplayedAnswerRecord?.Evidence;
 
     public bool HasDisplayedEvidence => DisplayedEvidence is not null;
@@ -210,8 +208,6 @@ public partial class AppState
 
     public string ForceAnswerShortcut => "Ctrl+Alt+Enter";
 
-    public bool AnswerHistoryHasMultiple => CurrentAnswerHistory.Count > 1;
-
     /// <summary>Raised when a view needs the computed answer/evidence names refreshed.</summary>
     public void RaiseLiveAnswerUi()
     {
@@ -227,7 +223,11 @@ public partial class AppState
                      nameof(LiveAnswerModelLabel), nameof(LiveFastMode), nameof(LiveFastModeAvailable),
                      nameof(LiveFastModeLabel), nameof(LiveWebSearchIsOn), nameof(LiveCueAlwaysOpen),
                      nameof(LivePresenterMode), nameof(LivePauseButtonText), nameof(LiveListeningStatus),
-                     nameof(LiveCandidateText), nameof(HasLiveCandidate), nameof(LiveSeriesName)
+                     nameof(LiveCandidateText), nameof(HasLiveCandidate), nameof(LiveSeriesName),
+                     nameof(DisplayedAnswerText), nameof(DisplayedQuestionText), nameof(HasDisplayedAnswer),
+                     nameof(DisplayedAnswerRecord), nameof(HistoryPositionText), nameof(HistoryCursorActive),
+                     nameof(AnswerHistoryCountText), nameof(SessionAnswerHistory), nameof(HasSessionAnswerHistory),
+                     nameof(AnswerHistoryHasMultiple)
                  })
             OnPropertyChanged(name);
     }
