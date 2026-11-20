@@ -24,9 +24,20 @@ public sealed class UpdateCatalogParityTests
         Assert.Null(UpdateCatalog.ParseVersion("main-latest"));
     }
 
-    [Fact(Skip = "missing API: UpdateCatalog.Candidate(releases, UpdateChannel.Main) tie-break without publishedAt (Swift max-by keeps the first equal element; the C# port orders by PublishedAt and keeps the last)")]
+    [Fact]
     public void PicksNewestVersionedOrRollingRelease()
     {
+        var releases = new[]
+        {
+            Release("main-latest", prerelease: true),
+            Release("v1.1.0"),
+            Release("v1.2.0-beta.1", prerelease: true),
+            Release("v1.3.0", draft: true),
+            Release("v1.0.9"),
+            Release("v2.0.0", zip: false)
+        };
+        Assert.Equal("v1.2.0-beta.1", UpdateCatalog.Candidate(releases, UpdateChannel.Stable)?.TagName);
+        Assert.Equal("main-latest", UpdateCatalog.Candidate(releases, UpdateChannel.Main)?.TagName);
     }
 
     [Fact]

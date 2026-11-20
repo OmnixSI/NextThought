@@ -15,9 +15,20 @@ public sealed class StructuredNotesTestsParityTests
     private static StructuredNotesPayload? Clean(StructuredNotesPayload payload, int[]? offsets = null,
         double duration = 600) => StructuredNotesCleaner.Clean(payload, offsets ?? [], duration);
 
-    [Fact(Skip = "missing API: NotesFormats.Resolve (explicit standard override)")]
+    [Fact]
     public void EveryTypeHasARecommendedFormat()
     {
+        Assert.Equal(NotesFormat.Outline, NotesFormats.Recommended(MeetingMode.Lesson));
+        Assert.Equal(NotesFormat.Fishbone, NotesFormats.Recommended(MeetingMode.LabMeeting));
+        Assert.Equal(NotesFormat.Viewpoints, NotesFormats.Recommended(MeetingMode.Discussion));
+        foreach (var mode in new[] { SessionMode.Meeting, SessionMode.Client, SessionMode.Academic, SessionMode.General, SessionMode.Interview, SessionMode.Custom })
+            Assert.Equal(NotesFormat.Standard, NotesFormats.Recommended(mode.ToMeetingMode()));
+        Assert.Equal(NotesFormat.Standard, NotesFormats.Resolve(MeetingMode.Lesson, new Dictionary<string, string> { ["lesson"] = "standard" }));
+        Assert.Equal(NotesFormat.Fishbone, NotesFormats.Resolve(MeetingMode.Meeting, new Dictionary<string, string> { ["meeting"] = "fishbone" }));
+        Assert.Equal(NotesFormat.Outline, NotesFormats.Resolve(MeetingMode.Lesson, new Dictionary<string, string> { ["lesson"] = "mindmap" }));
+        Assert.Equal(NotesFormat.Viewpoints, NotesFormats.Resolve(MeetingMode.Discussion, new Dictionary<string, string>()));
+        Assert.False(NotesFormat.Standard.IsStructured());
+        Assert.True(NotesFormat.Fishbone.IsStructured());
     }
 
     [Fact]
@@ -551,39 +562,135 @@ public sealed class StructuredNotesTestsParityTests
         Assert.DoesNotContain("structured", plain);
     }
 
-    [Fact(Skip = "missing API: SessionSummary tolerant structured-notes decoding")]
+    [Fact]
     public void DamagedOrNewerStructuredDataDoesNotBreakTheSummary()
     {
+        const string json = """{"title":"t","markdown":"m","questions":[],"generatedAt":"2026-10-26T10:00:00Z","model":"m","structured":{"format":"mindmap","fishbone":{"head":5},"language":7,"droppedCount":"x"}}""";
+        var summary = JsonSerializer.Deserialize<SessionSummary>(json, JsonDefaults.Options)!;
+        var structured = summary.Structured!;
+        Assert.Equal(NotesFormat.Standard, structured.Format);
+        Assert.Null(structured.Fishbone);
+        Assert.Equal("zh", structured.Language);
+        Assert.Equal(0, structured.DroppedCount);
+        Assert.False(structured.HasContent);
+
+        var failed = JsonSerializer.Deserialize<StructuredNotesPayload>(
+            """{"format":"outline","failed":true,"language":"en"}""", JsonDefaults.Options)!;
+        Assert.Equal(NotesFormat.Outline, failed.Format);
+        Assert.True(failed.Failed);
+        Assert.True(failed.IsEnglish);
+        Assert.False(failed.HasContent);
     }
 
-    [Fact(Skip = "missing API: SessionSummary.preserveStructuredViews(from:)")]
+    [Fact]
     public void TextRewriteKeepsDiagramsCompletedAfterItsSnapshot()
     {
+        SessionSummary Blank() => new() { Title = "t", Markdown = "", Questions = [], GeneratedAt = When, Model = "m" };
+        static StructuredNotesPayload Fishbone(string head) => new(NotesFormat.Fishbone,
+            new FishboneNotes("\u4E0A\u7EBF\u5EF6\u671F", null,
+                [new FishboneCategory("\u4EBA\u5458", [new TimedText("\u540E\u7AEF\u7F3A\u4EBA", 130)])]) with { Head = head },
+            language: "zh", generatedAt: When, model: "m");
+        static StructuredNotesPayload Outline() => new(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("\u5BFC\u6570", null,
+                [new OutlinePoint("\u5B9A\u4E49", 60)])]), language: "zh", generatedAt: When, model: "m");
+
+        var latest = Blank().Store(Fishbone("\u65E7\u7248"));
+        var rewritten = latest with { Markdown = "\u91CD\u65B0\u6574\u7406\u540E\u7684\u6587\u5B57" };
+        latest = latest.Store(Outline());
+        latest = latest.Store(Fishbone("\u65B0\u7248"));
+        rewritten = rewritten.PreserveStructuredViews(latest);
+        Assert.Equal("\u91CD\u65B0\u6574\u7406\u540E\u7684\u6587\u5B57", rewritten.Markdown);
+        Assert.Equal("\u65B0\u7248", rewritten.Payload(NotesFormat.Fishbone)?.Fishbone?.Head);
+        Assert.Equal(latest.Payload(NotesFormat.Outline), rewritten.Payload(NotesFormat.Outline));
     }
 
-    [Fact(Skip = "missing API: SessionSummary.preserveStructuredViews(from:)")]
+    [Fact]
     public void TextRewritePreservesLegacySingleView()
     {
+        SessionSummary Blank() => new() { Title = "t", Markdown = "", Questions = [], GeneratedAt = When, Model = "m" };
+        var fishbone = new StructuredNotesPayload(NotesFormat.Fishbone,
+            new FishboneNotes("\u4E0A\u7EBF\u5EF6\u671F", null,
+                [new FishboneCategory("\u4EBA\u5458", [new TimedText("\u7F3A\u4EBA", 130)])]),
+            language: "zh", generatedAt: When, model: "m");
+        var legacy = Blank() with { Structured = fishbone };
+        var rewritten = Blank().PreserveStructuredViews(legacy);
+        Assert.Equal(legacy.Structured, rewritten.Payload(NotesFormat.Fishbone));
+        Assert.Null(rewritten.StructuredAll);
     }
 
-    [Fact(Skip = "missing API: SessionSummary.payload(for:) / storedFormats")]
+    [Fact]
     public void OldSummaryWithOnlyStructuredStillAnswersForItsFormat()
     {
+        const string json = """{"title":"组会","markdown":"m","questions":[],"generatedAt":"2026-10-26T10:00:00Z","model":"m","structured":{"format":"fishbone","fishbone":{"head":"延期","categories":[{"name":"人员","causes":[{"text":"缺人","at":130}]}]},"language":"zh","droppedCount":0,"generatedAt":"2026-10-26T10:00:00Z","model":"m"}}""";
+        var summary = JsonSerializer.Deserialize<SessionSummary>(json, JsonDefaults.Options)!;
+        Assert.Null(summary.StructuredAll);
+        Assert.Equal("\u5EF6\u671F", summary.Payload(NotesFormat.Fishbone)?.Fishbone?.Head);
+        Assert.Null(summary.Payload(NotesFormat.Outline));
+        Assert.Null(summary.Payload(NotesFormat.Viewpoints));
+        Assert.Equal([NotesFormat.Fishbone], summary.StoredFormats);
     }
 
-    [Fact(Skip = "missing API: SessionSummary.store(_:) / payload(for:) / storedFormats")]
+    [Fact]
     public void StoringKeepsOneViewPerFormatAndNewerReplacesOlder()
     {
+        SessionSummary Blank() => new() { Title = "t", Markdown = "", Questions = [], GeneratedAt = When, Model = "m" };
+        static StructuredNotesPayload Fishbone(string head) => new(NotesFormat.Fishbone,
+            new FishboneNotes(head, null, [new FishboneCategory("\u4EBA\u5458", [new TimedText("\u7F3A\u4EBA", 130)])]),
+            language: "zh", generatedAt: When, model: "m");
+        static StructuredNotesPayload Outline() => new(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("\u5BFC\u6570", null, [new OutlinePoint("\u5B9A\u4E49", 60)])]),
+            language: "zh", generatedAt: When, model: "m");
+        var summary = Blank().Store(Fishbone("\u7B2C\u4E00\u7248"));
+        summary = summary.Store(Outline());
+        Assert.Equal([NotesFormat.Fishbone, NotesFormat.Outline], summary.StoredFormats);
+        Assert.Equal(NotesFormat.Outline, summary.Structured?.Format);
+        summary = summary.Store(Fishbone("\u7B2C\u4E8C\u7248"));
+        Assert.Equal(2, summary.StructuredAll?.Count);
+        Assert.Equal([NotesFormat.Fishbone, NotesFormat.Outline], summary.StructuredAll?.Select(payload => payload.Format));
+        Assert.Equal("\u7B2C\u4E8C\u7248", summary.Payload(NotesFormat.Fishbone)?.Fishbone?.Head);
+        Assert.Equal("\u5BFC\u6570", summary.Payload(NotesFormat.Outline)?.Outline?.Sections.First().Title);
+        Assert.Equal(NotesFormat.Fishbone, summary.Structured?.Format);
     }
 
-    [Fact(Skip = "missing API: SessionSummary.store(_:) / payload(for:)")]
+    [Fact]
     public void ASingleViewFromAnOlderVersionIsKeptWhenAnotherIsStored()
     {
+        SessionSummary Blank() => new() { Title = "t", Markdown = "", Questions = [], GeneratedAt = When, Model = "m" };
+        static StructuredNotesPayload Fishbone(string head) => new(NotesFormat.Fishbone,
+            new FishboneNotes(head, null, [new FishboneCategory("\u4EBA\u5458", [new TimedText("\u7F3A\u4EBA", 130)])]),
+            language: "zh", generatedAt: When, model: "m");
+        static StructuredNotesPayload Outline() => new(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("\u5BFC\u6570", null, [new OutlinePoint("\u5B9A\u4E49", 60)])]),
+            language: "zh", generatedAt: When, model: "m");
+        var summary = Blank() with { Structured = Fishbone("\u65E7\u7248\u81EA\u52A8\u751F\u6210") };
+        summary = summary.Store(Outline());
+        Assert.Equal([NotesFormat.Fishbone, NotesFormat.Outline], summary.StructuredAll?.Select(payload => payload.Format));
+        Assert.Equal("\u65E7\u7248\u81EA\u52A8\u751F\u6210", summary.Payload(NotesFormat.Fishbone)?.Fishbone?.Head);
+        Assert.NotNull(summary.Payload(NotesFormat.Outline));
+        var again = Blank() with { Structured = Fishbone("\u65E7") };
+        again = again.Store(Fishbone("\u65B0"));
+        Assert.Equal(1, again.StructuredAll?.Count);
+        Assert.Equal("\u65B0", again.Payload(NotesFormat.Fishbone)?.Fishbone?.Head);
     }
 
-    [Fact(Skip = "missing API: SessionSummary.store(_:) / payload(for:) / storedFormats")]
+    [Fact]
     public void FailuresAndThePlainFormatAreNeverStored()
     {
+        SessionSummary Blank() => new() { Title = "t", Markdown = "", Questions = [], GeneratedAt = When, Model = "m" };
+        static StructuredNotesPayload Fishbone() => new(NotesFormat.Fishbone,
+            new FishboneNotes("\u4E0A\u7EBF\u5EF6\u671F", null, [new FishboneCategory("\u4EBA\u5458", [new TimedText("\u7F3A\u4EBA", 130)])]),
+            language: "zh", generatedAt: When, model: "m");
+        var summary = Blank().Store(StructuredNotesPayload.Failure(NotesFormat.Fishbone, false));
+        summary = summary.Store(StructuredNotesPayload.Plain(false));
+        Assert.Null(summary.Structured);
+        Assert.Null(summary.StructuredAll);
+        Assert.Empty(summary.StoredFormats);
+        summary = summary.Store(Fishbone());
+        summary = summary.Store(StructuredNotesPayload.Failure(NotesFormat.Fishbone, false));
+        Assert.Equal("\u4E0A\u7EBF\u5EF6\u671F", summary.Payload(NotesFormat.Fishbone)?.Fishbone?.Head);
+        var marked = Blank() with { Structured = StructuredNotesPayload.Failure(NotesFormat.Outline, true) };
+        Assert.Null(marked.Payload(NotesFormat.Outline));
+        Assert.Null(Blank().Payload(NotesFormat.Standard));
     }
 
     [Fact]

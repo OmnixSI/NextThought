@@ -10,6 +10,7 @@ public sealed record SessionSummary
 {
     public string Title { get; init; } = "";
     public string Markdown { get; init; } = "";
+    public string Model { get; init; } = "";
     public string? TranscriptSourceRevision { get; init; }
     public string? StructuredNotesSourceRevision { get; init; }
     public StructuredNotesPayload? Structured { get; init; }
@@ -23,6 +24,41 @@ public sealed record SessionSummary
 
     /// <summary>User reviews keyed by evidence id (evidenceReviews).</summary>
     public IReadOnlyDictionary<string, SessionEvidenceReview>? EvidenceReviews { get; init; }
+
+    /// <summary>A text rewrite keeps the latest saved diagrams, including results completed while it ran.</summary>
+    public SessionSummary PreserveStructuredViews(SessionSummary? latest) => this with
+    {
+        Structured = latest?.Structured,
+        StructuredAll = latest?.StructuredAll,
+        EvidenceReviews = latest?.EvidenceReviews ?? EvidenceReviews
+    };
+
+    /// <summary>The saved view of a format that has something to draw (plain/failure never count).</summary>
+    public StructuredNotesPayload? Payload(NotesFormat format)
+    {
+        if (!format.IsStructured()) return null;
+        var found = StructuredAll?.FirstOrDefault(payload => payload.Format == format && payload.HasContent);
+        if (found is not null) return found;
+        return Structured is { } single && single.Format == format && single.HasContent ? single : null;
+    }
+
+    /// <summary>The formats that have a saved view, in the order of the notes formats.</summary>
+    public IReadOnlyList<NotesFormat> StoredFormats =>
+        new[] { NotesFormat.Fishbone, NotesFormat.Outline, NotesFormat.Viewpoints, NotesFormat.Standard }
+            .Where(format => Payload(format) is not null).ToList();
+
+    /// <summary>Saves a view: newer same-format replaces in place, older single joins first; empty is ignored.</summary>
+    public SessionSummary Store(StructuredNotesPayload payload)
+    {
+        if (!payload.Format.IsStructured() || !payload.HasContent) return this;
+        var all = (StructuredAll ?? []).ToList();
+        if (Structured is { } single && single.Format.IsStructured() && single.HasContent
+            && !all.Any(existing => existing.Format == single.Format))
+            all.Add(single);
+        var index = all.FindIndex(existing => existing.Format == payload.Format);
+        if (index >= 0) all[index] = payload; else all.Add(payload);
+        return this with { StructuredAll = all, Structured = payload };
+    }
 
     /// <summary>
     /// Mac's SessionSummary also carries title/questions/model. Keep every unknown field so a

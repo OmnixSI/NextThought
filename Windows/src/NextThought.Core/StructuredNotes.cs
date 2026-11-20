@@ -39,6 +39,18 @@ public static class NotesFormats
         "viewpoints" => NotesFormat.Viewpoints,
         _ => NotesFormat.Standard
     };
+    /// <summary>True for the four known Mac raw values; unknown strings fall back to the recommendation.</summary>
+    public static bool TryParse(string? raw, out NotesFormat format)
+    {
+        switch (raw)
+        {
+            case "standard": format = NotesFormat.Standard; return true;
+            case "fishbone": format = NotesFormat.Fishbone; return true;
+            case "outline": format = NotesFormat.Outline; return true;
+            case "viewpoints": format = NotesFormat.Viewpoints; return true;
+            default: format = NotesFormat.Standard; return false;
+        }
+    }
 
     /// <summary>The format that fits a meeting type best; the user can change it in Settings → Notes.</summary>
     public static NotesFormat Recommended(MeetingMode mode) => mode switch
@@ -53,7 +65,7 @@ public static class NotesFormats
     public static NotesFormat Resolve(MeetingMode mode, IReadOnlyDictionary<string, string>? overrides)
     {
         var key = char.ToLowerInvariant(mode.ToString()[0]) + mode.ToString()[1..];
-        if (overrides is not null && overrides.TryGetValue(key, out var raw) && NotesFormats.Parse(raw) is var chosen && chosen != NotesFormat.Standard)
+        if (overrides is not null && overrides.TryGetValue(key, out var raw) && NotesFormats.TryParse(raw, out var chosen))
             return chosen;
         return Recommended(mode);
     }
@@ -206,6 +218,70 @@ public sealed record StructuredNotesPayload
                 _ => false
             };
         }
+    }
+}
+
+/// <summary>B22: damaged or newer payload fields degrade to a plain empty view instead of failing the summary.</summary>
+public sealed class StructuredNotesPayloadJsonConverter : System.Text.Json.Serialization.JsonConverter<StructuredNotesPayload>
+{
+    private static readonly HashSet<string> Known = new(StringComparer.Ordinal)
+    {
+        "format", "fishbone", "outline", "viewpoints", "language", "droppedCount", "generatedAt",
+        "model", "failed", "transcriptSourceRevision"
+    };
+
+    public override StructuredNotesPayload Read(ref System.Text.Json.Utf8JsonReader reader, Type type, System.Text.Json.JsonSerializerOptions options)
+    {
+        using var document = System.Text.Json.JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind != System.Text.Json.JsonValueKind.Object) return StructuredNotesPayload.Plain(false);
+        var format = root.TryGetProperty("format", out var formatValue) && formatValue.ValueKind == System.Text.Json.JsonValueKind.String
+            ? NotesFormats.Parse(formatValue.GetString()) : NotesFormat.Standard;
+        T? Try<T>(string name) where T : class
+        {
+            if (!root.TryGetProperty(name, out var element) || element.ValueKind != System.Text.Json.JsonValueKind.Object) return null;
+            try { return System.Text.Json.JsonSerializer.Deserialize<T>(element.GetRawText(), options); }
+            catch (System.Text.Json.JsonException) { return null; }
+            catch (InvalidOperationException) { return null; }
+            catch (NotSupportedException) { return null; }
+        }
+        var language = root.TryGetProperty("language", out var languageValue) && languageValue.ValueKind == System.Text.Json.JsonValueKind.String
+            ? languageValue.GetString() ?? "zh" : "zh";
+        var dropped = root.TryGetProperty("droppedCount", out var droppedValue)
+            && droppedValue.ValueKind == System.Text.Json.JsonValueKind.Number && droppedValue.TryGetInt32(out var count) ? count : 0;
+        var generatedAt = root.TryGetProperty("generatedAt", out var generatedValue) && generatedValue.ValueKind == System.Text.Json.JsonValueKind.String
+            && DateTimeOffset.TryParse(generatedValue.GetString(), out var parsed) ? parsed : DateTimeOffset.UtcNow;
+        var model = root.TryGetProperty("model", out var modelValue) && modelValue.ValueKind == System.Text.Json.JsonValueKind.String
+            ? modelValue.GetString() ?? "" : "";
+        bool? failed = root.TryGetProperty("failed", out var failedValue)
+            ? failedValue.ValueKind == System.Text.Json.JsonValueKind.True : null;
+        var transcript = root.TryGetProperty("transcriptSourceRevision", out var transcriptValue)
+            && transcriptValue.ValueKind == System.Text.Json.JsonValueKind.String ? transcriptValue.GetString() : null;
+        var extras = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal);
+        foreach (var property in root.EnumerateObject())
+            if (!Known.Contains(property.Name)) extras[property.Name] = property.Value.Clone();
+        return new StructuredNotesPayload(format, Try<FishboneNotes>("fishbone"), Try<OutlineNotes>("outline"),
+            Try<ViewpointMatrix>("viewpoints"), language, dropped, generatedAt, model, failed, transcript)
+        {
+            AdditionalProperties = extras.Count == 0 ? null : extras
+        };
+    }
+
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, StructuredNotesPayload value, System.Text.Json.JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("format", value.Format.Raw());
+        if (value.Fishbone is { } fishbone) { writer.WritePropertyName("fishbone"); System.Text.Json.JsonSerializer.Serialize(writer, fishbone, options); }
+        if (value.Outline is { } outline) { writer.WritePropertyName("outline"); System.Text.Json.JsonSerializer.Serialize(writer, outline, options); }
+        if (value.Viewpoints is { } viewpoints) { writer.WritePropertyName("viewpoints"); System.Text.Json.JsonSerializer.Serialize(writer, viewpoints, options); }
+        writer.WriteString("language", value.Language);
+        writer.WriteNumber("droppedCount", value.DroppedCount);
+        writer.WriteString("generatedAt", value.GeneratedAt.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+        writer.WriteString("model", value.Model);
+        if (value.Failed is { } failed) writer.WriteBoolean("failed", failed);
+        if (value.TranscriptSourceRevision is { } revision) writer.WriteString("transcriptSourceRevision", revision);
+        foreach (var pair in value.AdditionalProperties ?? []) { writer.WritePropertyName(pair.Key); pair.Value.WriteTo(writer); }
+        writer.WriteEndObject();
     }
 }
 

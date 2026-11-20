@@ -106,16 +106,27 @@ public static class UpdateCatalog
     public const string RollingTag = "main-latest";
 
     /// <summary>The release to offer on a channel, or null.</summary>
+    /// <summary>Swift max(by:): equal publish times keep the first release, not the last.</summary>
+    private static GitHubRelease? Newest(IEnumerable<GitHubRelease> releases)
+    {
+        GitHubRelease? best = null;
+        var bestAt = DateTimeOffset.MinValue;
+        foreach (var release in releases)
+        {
+            var at = release.PublishedAt ?? DateTimeOffset.MinValue;
+            if (best is null || at > bestAt) { best = release; bestAt = at; }
+        }
+        return best;
+    }
+
     public static GitHubRelease? Candidate(IReadOnlyList<GitHubRelease> releases, UpdateChannel channel)
     {
         var usable = releases.Where(release => !release.Draft && release.WindowsAsset is not null).ToList();
         return channel switch
         {
             // A formal release may be newer than the last rolling build.
-            UpdateChannel.Main => usable
-                .Where(release => release.TagName == RollingTag || ParseVersion(release.TagName) is not null)
-                .OrderBy(release => release.PublishedAt ?? DateTimeOffset.MinValue)
-                .LastOrDefault(),
+            UpdateChannel.Main => Newest(usable
+                .Where(release => release.TagName == RollingTag || ParseVersion(release.TagName) is not null)),
             _ => usable
                 .Where(release => release.TagName != RollingTag && ParseVersion(release.TagName) is not null)
                 .OrderBy(release => release.TagName, Comparer<string>.Create((a, b) => CompareVersions(a, b) switch
