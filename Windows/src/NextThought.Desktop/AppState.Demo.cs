@@ -156,6 +156,13 @@ public partial class AppState
             }
             SetPageSubtitle("演示数据 · 不会写入你的资料");
         }
+        // Mac demo live state: the candidate strip offers the next question.
+        liveCandidateOverride = plan.IsRunning && plan.Name is DemoStages.Live or DemoStages.Home or DemoStages.Assistant
+            ? (UiText.EnglishUi ? "What if deleting the cache fails?" : "如果删除缓存失败了怎么办")
+            : null;
+        OnPropertyChanged(nameof(LiveCandidateText));
+        OnPropertyChanged(nameof(HasLiveCandidate));
+        OnPropertyChanged(nameof(LiveSeriesName));
         OnPropertyChanged(nameof(RecordingElapsedText));
         OnPropertyChanged(nameof(StatsText));
     }

@@ -535,7 +535,24 @@ public partial class AppState
                 WebResults.Clear();
                 foreach (var entry in web) WebResults.Add(entry);
                 OnPropertyChanged(nameof(WebStatusText));
+                RaiseLiveAnswerUi();
             }
+            // E4/Mac EvidenceBundle: freeze what this answer was grounded on so the live page
+            // can show the evidence line ("依据：资料 2 · 屏幕 · 联网 1") and its details.
+            var evidence = !check
+                ? new EvidenceBundle(Guid.NewGuid())
+                {
+                    Materials = sources.Select(citation => new ContextExcerpt(
+                        citation.DocumentName, citation.Page ?? 0,
+                        citation.Quote.Length > 0 ? citation.Quote : citation.Location)).ToList(),
+                    Screen = ScreenContextText.Length > 0
+                        ? new ScreenContext { Source = UiText.T("屏幕"), CapturedAt = DateTimeOffset.Now }
+                        : null,
+                    Retrieval = retrieved?.Method ?? "未使用资料库",
+                    WebSources = web,
+                    Notes = retrieved?.Warning is { } warning ? [warning] : []
+                }
+                : null;
             var parts = BuildAnswerPrompt(meta, question, web);
             var result = await CurrentClient().AnswerAsync(options,
                 check ? "严格按用户要求回复。" : parts.System,
@@ -562,10 +579,12 @@ public partial class AppState
                 var answerRecord = new AnswerRecord
                 {
                     Question = question, Answer = result, Model = options.Model,
-                    Seconds = clock.Elapsed.TotalSeconds, Automatic = automatic, Sources = cited
+                    Seconds = clock.Elapsed.TotalSeconds, Automatic = automatic, Sources = cited,
+                    Evidence = evidence
                 };
                 await Sessions.AppendAnswerAsync(meta, answerRecord);
                 CurrentAnswerHistory.Add(answerRecord);
+                RaiseLiveAnswerUi();
                 RefreshHistory();
             }
             tracker.HasPriorAnswer = true;
@@ -612,7 +631,7 @@ public partial class AppState
             currentLines.Select(line => (line.Date, "["
                 + (line.Speaker == "room" ? "现场 · 麦克风" : line.Speaker == "me" ? "我 · 麦克风" : "对方 · 系统声音")
                 + "] " + line.Text)), DateTimeOffset.Now);
-        var style = series?.Style ?? "concise";
+        var style = CurrentAnswerStyle;
         var fullMaterial = SelectedMode == MeetingMode.Academic && settings.UseMaterials
             ? AnswerPromptBuilder.WholeMaterialOf(DocumentsForRetrieval())
             : null;

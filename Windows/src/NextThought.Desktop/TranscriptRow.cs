@@ -40,6 +40,9 @@ public partial class TranscriptRow : ObservableObject
     public bool HasTranslation => Translation.Length > 0;
     public bool IsSystem => Speaker == "remote";
 
+    /// <summary>E4/QuestionMark: the detector sees a question in this line (remote speakers only).</summary>
+    public bool IsQuestion => Speaker != "me" && !IsEcho && QuestionDetector.LooksLikeQuestion(Text);
+
     /// <summary>G8: the speaker label follows the interface language without rebuilding the collection.</summary>
     public void RefreshLanguage()
     {
@@ -108,6 +111,8 @@ public sealed record SceneChoice(NextThought.Core.MeetingMode Mode, string Title
     public string Subtitle => UiText.T(SubtitleKey);
     public string Promise => UiText.T(Theme.Promise);
     public IReadOnlyList<string> Moments => Theme.Moments.Select(UiText.T).ToArray();
+    /// <summary>E2: Mac SessionMode.defaultsSummary for the chip tooltip and the type line.</summary>
+    public string DefaultsSummary => SceneSummary.Defaults(Mode);
 
     public override string ToString() => Title;
 }

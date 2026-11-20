@@ -366,7 +366,18 @@ public static class DemoScript
             Seconds = 4.2,
             FirstTokenSeconds = 0.9,
             Automatic = true,
-            Evidence = new EvidenceBundle(Guid.NewGuid()) { Retrieval = "演示：关键词查找，未调用模型" }
+            Evidence = new EvidenceBundle(Guid.NewGuid())
+            {
+                Retrieval = "演示：关键词查找，未调用模型",
+                Materials =
+                [
+                    new ContextExcerpt("简历-2026.pdf", 1, "订单服务缓存层，Redis，延迟双删，Canal 订阅 binlog"),
+                    new ContextExcerpt("八股-缓存与数据库.md", 2, "缓存穿透、击穿、雪崩；一致性方案对比")
+                ],
+                Screen = new ScreenContext { Source = "屏幕 · 面试题页面", CapturedAt = started.AddSeconds(290) },
+                WebSources = [new WebResult("Redis 缓存一致性最佳实践", "https://redis.io/docs/latest/operate/oss_and_stack/", "延迟双删与 binlog 兜底的取舍")],
+                Notes = ["联网来源为演示数据，未实际检索"]
+            }
         };
         SessionQuestionEvent question = new()
         {

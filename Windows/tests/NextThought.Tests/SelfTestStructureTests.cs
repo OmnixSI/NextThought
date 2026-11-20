@@ -814,26 +814,33 @@ public sealed class SelfTestStructureTests
     public void LivePageHasNotesOnlyColumn()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("只记录模式", xaml);
-        Assert.Contains("!Settings.AutomaticAnswers", xaml);
+        // E4: 自动回答 / 只记录 is a segmented switch; the 只记录 mode shows the notes column.
+        Assert.Contains("{loc:Tr 只记录}", xaml);
+        Assert.Contains("AnswerModeIsAuto", xaml);
+        Assert.Contains("NotesPanel", xaml);
+        Assert.Contains("{loc:Tr 我的笔记}", xaml);
     }
 
     [Fact]
     public void LivePageHasEvidenceAndWebSources()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("WebStatusText", xaml);
-        Assert.Contains("WebResults", xaml);
-        Assert.Contains("资料引用", xaml);
+        // E4: 联网状态与来源 + 证据行/详情 (Mac WebStatusLine/WebSources/EvidenceLine).
+        Assert.Contains("LiveWebStatusLine", xaml);
+        Assert.Contains("LiveWebSources", xaml);
+        Assert.Contains("EvidenceSummary", xaml);
+        Assert.Contains("EvidenceMaterialRows", xaml);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("WebResults.Clear", live);
+        Assert.Contains("new EvidenceBundle", live);
     }
 
     [Fact]
     public void LivePageHasCandidateStrip()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
-        Assert.Contains("CandidateQuestion", xaml);
+        Assert.Contains("LiveCandidateText", xaml);
+        Assert.Contains("回答这句", xaml);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("CandidateQuestion", live);
     }
@@ -843,7 +850,8 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
         Assert.Contains("RecordingElapsedText", xaml);
-        foreach (var action in new[] { "暂停", "重新生成", "改短", "上一条", "下一条" })
+        Assert.Contains("LiveListeningStatus", xaml);
+        foreach (var action in new[] { "重新生成", "更简短", "上一条", "下一条", "停止生成" })
             Assert.Contains(action, xaml);
     }
 
