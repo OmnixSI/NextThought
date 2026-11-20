@@ -560,6 +560,26 @@ public partial class AppState
         await AnswerAsync(question, false);
     }
 
+
+    [RelayCommand]
+    private async Task LookUpDisplayedAnswerAsync()
+    {
+        if (AnswerText.Length == 0) { SetStatus("还没有可查证的回答。"); return; }
+        if (WebSearch() is not { } provider) { SetStatus("联网未配置：先在设置里保存 Tavily 密钥。", true); return; }
+        SetStatus("正在查证当前回答…");
+        try
+        {
+            var question = DetectedQuestion.Length > 0 ? DetectedQuestion : "核对上一条回答的事实";
+            var response = await provider.SearchAsync(question + " " + AnswerText[..Math.Min(AnswerText.Length, 300)], 5);
+            if (response.Error is not null) { SetStatus(response.Error, true); return; }
+            WebResults.Clear();
+            foreach (var entry in response.Results) WebResults.Add(entry);
+            OnPropertyChanged(nameof(WebStatusText));
+            SetStatus($"查证完成：{response.Results.Count} 条联网来源。");
+        }
+        catch (Exception ex) { SetStatus("联网查证失败：" + ex.Message, true); }
+    }
+
     [RelayCommand]
     private async Task RegenerateAnswerAsync()
     {

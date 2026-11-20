@@ -153,6 +153,7 @@
               <Button Classes="quiet" Content="上一条" Command="{Binding PreviousAnswerCommand}" />
               <Button Classes="quiet" Content="下一条" Command="{Binding NextAnswerCommand}" />
               <Button Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}" />
+              <Button Classes="quiet" Content="查证" Command="{Binding LookUpDisplayedAnswerCommand}" />
               <Button Classes="quiet" Content="独立窗口" Click="DetachAnswer_Click" />
             </StackPanel>
           </Grid>

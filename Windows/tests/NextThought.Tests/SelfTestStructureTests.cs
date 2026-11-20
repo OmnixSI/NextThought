@@ -172,6 +172,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LiveCanLookUpTheDisplayedAnswer()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("LookUpDisplayedAnswerCommand", xaml);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("LookUpDisplayedAnswerAsync", live);
+    }
+
     [Fact]
     public void SettingsCanSaveTavilyKey()
     {
