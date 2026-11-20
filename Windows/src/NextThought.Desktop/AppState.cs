@@ -242,8 +242,38 @@ public partial class AppState : ObservableObject
                                 StructuredMarkdown = text;
                         }
                     }
+                    if (StructuredPayload is null && document.RootElement.TryGetProperty("structuredAll", out var allStructured)
+                        && allStructured.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var item in allStructured.EnumerateArray())
+                        {
+                            if (item.TryGetProperty("payload", out var nested)) item.TryGetProperty("format", out _);
+                            var candidate = item.TryGetProperty("payload", out var payloadNode) ? payloadNode : item;
+                            if (candidate.TryGetProperty("format", out var itemFormat) && itemFormat.GetString() == format.Raw())
+                            {
+                                StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(candidate.GetRawText(), JsonDefaults.ArchiveOptions);
+                                break;
+                            }
+                        }
+                    }
                 }
                 catch (System.Text.Json.JsonException) { }
+            }
+            if (StructuredPayload is null)
+            {
+                var notesPath = Path.Combine(Sessions.Folder(session.Id), "notes.json");
+                if (File.Exists(notesPath))
+                {
+                    try
+                    {
+                        using var notes = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(notesPath));
+                        if (notes.RootElement.TryGetProperty("payload", out var notesPayload)
+                            && notesPayload.TryGetProperty("format", out var notesFormat) && notesFormat.GetString() == format.Raw())
+                            StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(
+                                notesPayload.GetRawText(), JsonDefaults.ArchiveOptions);
+                    }
+                    catch (System.Text.Json.JsonException) { }
+                }
             }
             var path = StructuredPath(session, format);
             if (StructuredPayload is null && File.Exists(path)) StructuredMarkdown = await File.ReadAllTextAsync(path);
@@ -335,12 +365,34 @@ public partial class AppState : ObservableObject
                 summary["structuredAll"] = all;
                 if (payload.TranscriptSourceRevision is { Length: > 0 } sourceRevision)
                     summary["transcriptSourceRevision"] = sourceRevision;
+                var generatedAt = payload.GeneratedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
                 summary["title"] ??= session.Title;
                 summary["markdown"] ??= StructuredMarkdown;
+                summary["questions"] ??= new System.Text.Json.Nodes.JsonArray();
+                summary["generatedAt"] = generatedAt;
+                summary["model"] = payload.Model;
                 await File.WriteAllTextAsync(summaryPath, summary.ToJsonString(JsonDefaults.ArchiveOptions));
                 await File.WriteAllTextAsync(StructuredPath(session, format), StructuredMarkdown);
                 await File.WriteAllTextAsync(StructuredJsonPath(session, format),
                     System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.ArchiveOptions));
+                // Mac's notes.json is a StructuredNotes document; keep Windows' payload beside
+                // the Mac fields so both sides can read the file.
+                var notes = new System.Text.Json.Nodes.JsonObject
+                {
+                    ["templateID"] = "general",
+                    ["templateName"] = format.Title(false),
+                    ["language"] = payload.Language,
+                    ["title"] = session.Title,
+                    ["sections"] = new System.Text.Json.Nodes.JsonArray(),
+                    ["corrections"] = new System.Text.Json.Nodes.JsonArray(),
+                    ["droppedCount"] = payload.DroppedCount,
+                    ["generatedAt"] = generatedAt,
+                    ["model"] = payload.Model,
+                    ["transcriptSourceRevision"] = payload.TranscriptSourceRevision,
+                    ["payload"] = payloadNode!.DeepClone()
+                };
+                await File.WriteAllTextAsync(Path.Combine(Sessions.Folder(session.Id), "notes.json"),
+                    notes.ToJsonString(JsonDefaults.ArchiveOptions));
             }
             catch
             {
