@@ -43,6 +43,11 @@
           <DataTemplate x:DataType="local:RecentMeetingRow">
             <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Tag="{Binding}" Click="Row_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
+              <Button.ContextMenu>
+                <ContextMenu>
+                  <MenuItem Header="删除会议" Tag="{Binding}" Click="DeleteSession_Click" />
+                </ContextMenu>
+              </Button.ContextMenu>
               <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
                 <Border Grid.Column="0" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
                         VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_14_0}">

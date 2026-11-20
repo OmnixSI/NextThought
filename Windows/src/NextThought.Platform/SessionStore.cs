@@ -10,6 +10,22 @@ public sealed class SessionStore(AppPaths paths)
     private readonly SemaphoreSlim gate = new(1, 1);
     private sealed record MacTranslation(Guid Id, string Text, string? InputRevision);
     public string Folder(Guid id) => Path.Combine(paths.Sessions, id.ToString().ToUpperInvariant());
+
+    /// <summary>Deletes one archived meeting folder. Missing folders are harmless.</summary>
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var folder = Folder(id);
+            if (!Directory.Exists(folder)) return;
+            foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                File.SetAttributes(file, FileAttributes.Normal);
+            Directory.Delete(folder, true);
+        }
+        finally { gate.Release(); }
+    }
+
     public FileStream AcquireLease(Guid id) => new(Path.Combine(Folder(id), ".active.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
     public Task CreateAsync(SessionMeta meta, CancellationToken ct = default) => CreateAsync(meta, null, ct);
 

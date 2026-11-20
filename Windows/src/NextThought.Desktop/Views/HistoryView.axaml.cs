@@ -7,6 +7,13 @@ public partial class HistoryView : UserControl
 {
     public HistoryView() => InitializeComponent();
 
+
+    private async void DeleteSession_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: RecentMeetingRow row } && DataContext is AppState state)
+            await state.DeleteSessionAsync(row);
+    }
+
     private async void Row_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
