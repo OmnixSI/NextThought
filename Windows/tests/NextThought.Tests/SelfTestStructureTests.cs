@@ -93,6 +93,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryGroupHasSeriesMenu()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("打开系列", xaml);
+        Assert.Contains("OpenSeriesCommand", xaml);
+        var series = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Series.cs"));
+        Assert.Contains("OpenSeries(string? seriesId)", series);
+    }
+
     [Fact]
     public void HistoryMeetingActionsIncludeOpenAndExport()
     {

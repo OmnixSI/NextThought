@@ -523,8 +523,11 @@ public partial class AppState
         foreach (var row in rows) FilteredHistory.Add(row);
         HistoryGroups.Clear();
         foreach (var group in FilteredHistory.GroupBy(row =>
-                     workspace.SeriesOfSession(row.Meta.Id.ToString())?.Name ?? "未归入系列"))
-            HistoryGroups.Add(new HistoryGroupRow(group.Key, group.ToList()));
+                 {
+                     var series = workspace.SeriesOfSession(row.Meta.Id.ToString());
+                     return (Id: series?.Id, Name: series?.Name ?? "未归入系列");
+                 }))
+            HistoryGroups.Add(new HistoryGroupRow(group.Key.Name, group.Key.Id, group.ToList()));
         OnPropertyChanged(nameof(HistorySummary));
         OnPropertyChanged(nameof(IsHistoryViewEmpty));
     }

@@ -21,7 +21,7 @@ public sealed record SeriesRow(string Id, string Name, int Count, int LessonCoun
 
 
 /// <summary>One history section when meetings are grouped by series.</summary>
-public sealed record HistoryGroupRow(string Name, IReadOnlyList<RecentMeetingRow> Rows);
+public sealed record HistoryGroupRow(string Name, string? SeriesId, IReadOnlyList<RecentMeetingRow> Rows);
 
 public sealed record RecentMeetingRow(SessionMeta Meta)
 {

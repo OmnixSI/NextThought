@@ -121,7 +121,17 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="local:HistoryGroupRow">
               <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
-                <TextBlock Text="{Binding Name}" Classes="overline" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding Name}" Classes="overline" />
+                  <Button Grid.Column="1" Classes="quiet" Content="&#xE712;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                          ToolTip.Tip="系列管理">
+                    <Button.Flyout>
+                      <MenuFlyout>
+                        <MenuItem Header="打开系列" Command="{Binding $parent[UserControl].DataContext.OpenSeriesCommand}" CommandParameter="{Binding SeriesId}" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                </Grid>
                 <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource HistoryRowTemplate}" />
               </StackPanel>
             </DataTemplate>

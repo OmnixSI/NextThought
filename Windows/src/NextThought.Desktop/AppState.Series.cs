@@ -290,6 +290,15 @@ public partial class AppState
         RefreshSeries();
     }
 
+
+    [RelayCommand]
+    private void OpenSeries(string? seriesId)
+    {
+        if (seriesId is null) return;
+        SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == seriesId);
+        Section = AppSection.Series;
+    }
+
     [RelayCommand]
     private void CreateSeries()
     {
