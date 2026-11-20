@@ -20,6 +20,15 @@ public partial class HistoryView : UserControl
         if (!string.IsNullOrWhiteSpace(name)) state.RenameSeries(seriesId, name);
     }
 
+
+    private async void DeleteSession_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
+        if (Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
+        var confirmed = await new ConfirmDialog($"删除会议「{row.Title}」？会议归档会从磁盘移除。").ShowDialog<bool>(owner);
+        if (confirmed) await state.DeleteSessionAsync(row);
+    }
+
     private async void RenameSession_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
         if (sender is not MenuItem { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
@@ -29,6 +38,21 @@ public partial class HistoryView : UserControl
         if (!string.IsNullOrWhiteSpace(title)) await state.RenameSessionAsync(row, title);
     }
 
+
+
+    private void Screenshot_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: Avalonia.Media.Imaging.Bitmap bitmap }) return;
+        var preview = new Window
+        {
+            Title = "归档截图",
+            Width = 900,
+            Height = 620,
+            Content = new Image { Source = bitmap, Stretch = Avalonia.Media.Stretch.Uniform },
+            Background = Avalonia.Media.Brushes.Black
+        };
+        preview.Show();
+    }
 
     private async void SearchHit_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {

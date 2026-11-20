@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="NextThought.Desktop.Views.ConfirmDialog"
+        Title="确认" Width="420" Height="170" WindowStartupLocation="CenterOwner"
+        CanResize="False" Background="{DynamicResource Paper}">
+  <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_12}">
+    <TextBlock x:Name="MessageText" Classes="body" TextWrapping="Wrap" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
+      <Button Content="取消" Click="Cancel_Click" />
+      <Button Classes="destructive" Content="删除" Click="Confirm_Click" />
+    </StackPanel>
+  </StackPanel>
+</Window>

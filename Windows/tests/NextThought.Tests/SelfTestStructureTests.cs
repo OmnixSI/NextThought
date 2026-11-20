@@ -96,6 +96,25 @@ public sealed class SelfTestStructureTests
 
 
 
+
+
+    [Fact]
+    public void DeletingASessionAsksForConfirmation()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("DeleteSession_Tapped", xaml);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "ConfirmDialog.axaml")));
+    }
+
+    [Fact]
+    public void ArchivedScreenshotCanBeEnlarged()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("Screenshot_Click", xaml);
+        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml.cs"));
+        Assert.Contains("Screenshot_Click", code);
+    }
+
     [Fact]
     public void ArchiveScreenshotsArePreviewed()
     {
@@ -199,7 +218,7 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
         Assert.Contains("删除会议", xaml);
-        Assert.Contains("DeleteSessionCommand", xaml);
+        Assert.Contains("DeleteSession_Tapped", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
         Assert.Contains("Sessions.DeleteAsync", state);
     }

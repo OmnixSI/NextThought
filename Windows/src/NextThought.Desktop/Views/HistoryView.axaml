@@ -14,7 +14,7 @@
                   <MenuItem Header="打开纪要" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.OpenSessionCommand}" CommandParameter="{Binding}" />
                   <MenuItem Header="导出 Markdown" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.ExportSessionCommand}" CommandParameter="{Binding}" />
                   <MenuItem Header="重命名会议" Tag="{Binding}" Tapped="RenameSession_Tapped" />
-                  <MenuItem Header="删除会议" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.DeleteSessionCommand}" CommandParameter="{Binding}" />
+                  <MenuItem Header="删除会议" Tag="{Binding}" Tapped="DeleteSession_Tapped" />
                 </ContextMenu>
               </Button.ContextMenu>
               <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
@@ -91,7 +91,10 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Image Source="{Binding}" Width="120" Height="76" Stretch="UniformToFill" Margin="{DynamicResource D4Margin_0_0_6_6}" />
+              <Button Classes="quiet" Padding="{DynamicResource D4Padding_0}" ToolTip.Tip="查看截图"
+                      Click="Screenshot_Click" Margin="{DynamicResource D4Margin_0_0_6_6}">
+                <Image Source="{Binding}" Width="120" Height="76" Stretch="UniformToFill" />
+              </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
