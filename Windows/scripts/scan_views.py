@@ -56,6 +56,84 @@ top_views = {
     "TeleprompterView": "TeleprompterController.swift",
 }
 
+# Views that now have a Windows counterpart beyond the page-level mapping. Each entry is
+# (Windows file, screenshot directory); the directory is relative to Windows/validation/screens.
+# Keep this list to views that were actually ported and reviewed in a task; everything else
+# stays 未做 until its own task lands.
+IMPLEMENTED = {
+    ("HomeView.swift", "HomeView"): ("Views/HomeView.axaml", "home"),
+    ("HomeView.swift", "StartComposer"): ("Views/Home/StartComposer.axaml", "home"),
+    ("HomeView.swift", "ContinueSeries"): ("Views/Home/ContinueSeries.axaml", "home"),
+    ("HomeView.swift", "HomeScreenshotCard"): ("Views/Home/HomeScreenshotCard.axaml", "home"),
+    ("HomeView.swift", "RecentMeetings"): ("Views/Home/RecentMeetings.axaml", "home"),
+    ("Stage.swift", "InkWash"): ("Views/Controls/InkWash.cs", "home"),
+    ("Stage.swift", "SceneGlyph"): ("Views/Controls/SceneGlyph.cs", "home"),
+    ("Stage.swift", "SceneTag"): ("Views/Controls/SceneTag.cs", "live"),
+    ("NotesPageView.swift", "MeetingPage"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "NotesBody"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "NotesSectionView"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "NotesProgressLine"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "SessionEvidencePane"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "NotesItemEditSheet"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "ConfirmBadge"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "VerdictBadge"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "AIHeadingText"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "TimeLink"): ("Views/NotesView.axaml", "notes"),
+    ("NotesPageView.swift", "CorrectedTranscript"): ("Views/CorrectedTranscriptView.axaml", "CorrectedTranscript"),
+    ("OutlineView.swift", "OutlineView"): ("Views/NotesView.axaml", "notes"),
+    ("SessionInfoView.swift", "SessionInfoView"): ("Views/NotesView.axaml", "notes"),
+    ("MeetingNotesEditor.swift", "MeetingNotesEditor"): ("Views/NotesEditorWindow.axaml", "MeetingNotesEditor"),
+    ("MeetingNotesEditor.swift", "MeetingEvidenceSidebar"): ("Views/NotesEditorWindow.axaml", "MeetingNotesEditor"),
+    ("HistoryView.swift", "ArchivedScreenshot"): ("Views/HistoryView.axaml", "history"),
+    ("HistoryView.swift", "HistoryFilterPicker"): ("Views/HistoryView.axaml", "history"),
+    ("HistoryView.swift", "MeetingArchiveOverview"): ("Views/HistoryView.axaml", "history"),
+    ("HistoryView.swift", "SeriesManagementMenuItems"): ("Views/HistoryView.axaml", "history"),
+    ("HistoryView.swift", "SessionAnswersList"): ("Views/HistoryView.axaml", "history"),
+    ("HistoryView.swift", "SessionRow"): ("Views/HistoryView.axaml", "history"),
+    ("SessionExportUI.swift", "SessionExportSheet"): ("Views/SessionExportSheet.axaml", "SessionExportSheet"),
+    ("PrepareView.swift", "PrepareView"): ("Views/PrepareView.axaml", "prepare"),
+    ("PrepareView.swift", "PreparationStartBar"): ("Views/PrepareView.axaml", "prepare"),
+    ("PrepareView.swift", "MaterialsActions"): ("Views/PrepareView.axaml", "prepare"),
+    ("WorkspacesView.swift", "WorkspaceEditor"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "FieldEditor"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceBasicTab"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceRequirementsTab"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceDocumentsTab"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "ReviewTab"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "KnowledgeTab"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "ExperienceLessonRow"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "BankRow"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "PreparationQueueSummary"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceList"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceSectionHeading"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceSingleLineField"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceTextArea"): ("Views/SeriesView.axaml", "series"),
+    ("WorkspacesView.swift", "WorkspaceSkillsSection"): ("Views/SeriesView.axaml", "series"),
+    ("SettingsPages.swift", "SceneRow"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsPages.swift", "SceneSettingsPage"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("QuickSettings.swift", "QuickSettingsPanel"): ("Views/QuickSettingsPanel.axaml", "settings-pages"),
+    ("QuickSettings.swift", "QuickStatusRow"): ("Views/QuickSettingsPanel.axaml", "settings-pages"),
+    ("AnswerServiceViews.swift", "APIPresetManager"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("AnswerServiceViews.swift", "APIEffortRow"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "CodexFastModeToggle"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "CodexReasoningPicker"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "EngineTestRow"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "GitHubAccessSection"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "LanguagePicker"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "SkillEditor"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "SkillSettings"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "SettingsPageView"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsView.swift", "SettingsPageContent"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("SettingsGeneralData.swift", "BackupSettingsSection"): ("Views/BackupSettingsSection.axaml", "backup"),
+    ("SettingsGeneralData.swift", "PermissionSettingsSection"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("InsightSettingsView.swift", "InsightSettings"): ("Views/SettingsView.axaml", "settings-pages"),
+    ("Onboarding.swift", "OnboardingView"): ("Views/OnboardingView.axaml", "onboarding"),
+    ("Onboarding.swift", "GuideRow"): ("Views/OnboardingView.axaml", "onboarding"),
+    ("Onboarding.swift", "CueIslandMock"): ("Views/OnboardingView.axaml", "onboarding"),
+    ("Onboarding.swift", "SetupRow"): ("Views/OnboardingView.axaml", "onboarding"),
+    ("BackupRestoreReview.swift", "BackupRestoreReviewView"): ("Views/BackupRestoreReviewView.axaml", "backup"),
+}
+
 def task_map() -> dict[str, str]:
     result: dict[str, str] = {}
     for line in TASKS.read_text(encoding="utf-8").splitlines():
@@ -83,16 +161,22 @@ def main() -> None:
             rel = path.relative_to(ROOT).as_posix()
             tid = tasks.get(path.name) or fallback.get(path.name, "E4")
             windows = winmap.get(path.name, "—")
-            implemented = top_views.get(name) == path.name
-            status = "已实现、未验证" if implemented else "未做"
-            shot = f"`Windows/validation/screens/{Path(windows).stem}/`" if windows != "—" and implemented else "—"
+            explicit = IMPLEMENTED.get((path.name, name))
+            if explicit is not None:
+                windows, shot_dir = explicit
+                status = "已实现、未验证"
+                shot = f"`Windows/validation/screens/{shot_dir}/`"
+            else:
+                implemented = top_views.get(name) == path.name
+                status = "已实现、未验证" if implemented else "未做"
+                shot = f"`Windows/validation/screens/{Path(windows).stem}/`" if windows != "—" and implemented else "—"
             rows.append((rel, name, tid, windows, status, shot))
     rows.sort(key=lambda row: (row[2], row[0], row[1]))
     text = [
         "# Windows / Mac 视图对照（VIEW_PARITY）", "",
         "由 `Windows/scripts/scan_views.py` 从 `Sources/NextThought/` 扫描生成，共 **%d** 个 `: View` 类型。" % len(rows),
-        "本轮只建表，不改像素。状态只用第 4 节四态；没有 Windows 实机截图，因此没有「已验证」。",
-        "Windows 对应文件按 Mac 页面文件重新映射；子视图只有在实际移植后才写「已实现、未验证」。", "",
+        "状态只用第 4 节四态；没有实机人工对照，因此没有「已验证」。",
+        "页面级对应文件按 Mac 页面文件映射；子视图只有在 `IMPLEMENTED` 表里真正移植并出过截图的才写「已实现、未验证」，其余保持「未做」。", "",
         "| Swift 文件 | 视图名 | 任务编号 | Windows 对应文件 | 状态 | 截图路径 |",
         "|---|---|---|---|---|---|",
     ]

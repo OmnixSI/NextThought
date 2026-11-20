@@ -1,3 +1,27 @@
+## 2026-11-21 · 0.5.145 · 第二波：D4/D6/D8、E1/E2/E3、E15–E20、E23/E26/E27/E29、G9、本轮截图与英文扫描
+改动：
+- D6（b4cf812）：SceneTheme 十场景颜色/符号/承诺逐值对 Stage.swift，moments 十条改 Mac 原文；InkWash 按 Mac 重写（相对尺寸 0.44w×250/0.32w×230、opacity 0.20/0.09、blur80、sin(t*0.18)*18、20fps、Reduce 停、渐变遮罩）；SceneGlyph 按主题取色、Home 38/Prepare 44；SceneTag 接 Live；SceneThemeTests 13 + SceneComponentTests 6。
+- D8（b2132ba）：CheckBox/RadioButton.nav/chip/ListBoxItem 2px Ai 焦点环（Avalonia 12 FocusAdornerTemplate，修掉启动崩溃）、hover/pressed token；新增 `--self-test=controls` 真实启动自检；ControlStateTests 6。
+- D4（641bba9）：HitMin/HitIcon/HitRow token（32/36/36）、Controls 与 Views 点击尺寸收口（白名单例外：提词小条 24、live 提问框 58）；ThemeResourceTests 锁定。
+- E1（f7bbce4）：HomeView 重组为 5 个同名子视图；标题实时猜场景+选场景应用默认、继续系列、最近 4 场（Core MeetingOutcome）、截图卡双态、InkWash 380；HomeParityTests 8 + compare.md。未完成：OnboardingResumeRow 未显示、interruptedNotice 等。
+- E2（db9fb2e）：PrepareView 增加 PreparationStartBar（声音/AI/手机状态、就绪行、取消/导入 WAV/开始记录）、PrepareCarrySummary、资料导入；开始走 BeginPreparedMeeting(planSeries)；--self-test=prepare；compare.md/click-through + 浅深英截图。未完成：VenuePicker、采音电平、测试回答服务等。
+- E3（f948cf4）：新建 OnboardingView 四步引导 + MainWindow 内联引导替换 + AppState.Onboarding 重写；--self-test=onboarding；compare.md/click-through/浅深英截图。未完成：内嵌示例会议时间线、设置页 SetupChecklist、切步动效。
+- E15（8b93e40）：会议页四标签、证据栏常驻、真提纲视图、页内跳转高亮、会议信息窗口、重生成确认；--self-test=notes-ui 6/6；compare.md。
+- E16（cd1f01e）：纪要编辑器脏标记/取消确认/查看 AI 原稿/按 Mac 写 user-content/原话依据侧栏+跳转；compare.md；部分未做（逐节编辑/侧栏上下文）。
+- E18（0d07aa1）：内容搜索改 Core SessionSearch 投影六类命中+导航、Mac 全量会议操作菜单、双选项删除（HasRetainableAcceptedContent）、删除全部、系列批量管理、归档概览+回答列表+截图墙；--self-test=history-ui 12/12；HistorySearchTests 2/2。
+- E19（3d7b244）：SessionExportSheet 三选项（格式/转写版本/语言）+ 同源预览 + 字幕警告 + SavePicker；AppState 导出管线；Core SessionExportContent；PdfWriter 按 SessionDocumentRenderer 对齐（44pt 边距、去页码、表格 CJK 网格等）；--self-test=session-export 30/30；SessionExportContentTests 6。
+- E20（eacf543）：系列编辑器四标签、按模式字段编辑器、资料导入/移除/撤销、准备队列摘要+重试/取消、经验题库编辑保留历史、归档/删除连会议记录；--self-test=series-editor 9/9；SeriesMaterialsTests 5。
+- E23 增量（ad58064）：资料读取方式（系统/本机增强/Codex 代读）、资料组件运行时安装（隔离 venv）/PaddleOCR-VL 模型下载校验、Codex 字段、语义检索；DocumentAssets/DocumentRuntimeInstaller；7 个 Mac 键类型化。未完成：Codex 代读行为、Python 3.12 前置、截图。
+- E26 增量（7aab565、e8bb8f2）：per-mode 场景默认（MeetingTypeDefaults+ScenePreset.cueStyle）、sceneOverrides 只存差异、notesTemplateByType 独立键（修复 typed 往返）、SceneSettingRow 恢复默认、快速面板补提词字号/一直展开/双屏演讲。未完成：快速面板岛/浮窗与讲稿开关、部分截图。
+- E27（9e72622）：预设管理/模型列表/推理强度/引擎测试/GitHub 访问、updateRepository 与 github.token 接更新客户端；--self-test=settings-presets 11 步；settings-pages 截图与 compare。Codex Fast 档位行为未验证。
+- E29（712a77c、a390828）：洞察设置并入高级页、自动收尾移位、备份卡、权限卡（WindowsPermissions）；settings-pages 24+4 张浅深英截图与点按记录。
+- G9（a2bd34a）：提示词改走 Core AnswerPromptBuilder.MakeParts（answer/gloss 语言走 Mac JSON 字段），删除自建中文 prompt；剩余运行时文案入表并随语言刷新；demo 语言切换回归修复；UiTextWindows 1013 行；WORDING 1013 行重生成；英文扫描 48 页/188 含中文行/188 允许/0 残留；--self-test ui-language passed；Core 过滤 16/16。
+- 收尾修复：E2 prepare 自检改为只驱动场景 chip（排除枚举里无场景卡的 Mac 内部模式）；E26 notesTemplateByType typed 往返（e8bb8f2）；`--self-test prepare/onboarding/startup` 最终树通过；VIEW_PARITY 由脚本按 IMPLEMENTED 表重生成（273 行，76 行已实现、197 未做）；本轮 verify.ps1 全量通过，100 张截图 + 48 页英文文字清单。
+测试：Core **1603/1603**，NextThought.Tests **411/411**，0 失败 0 跳过；`verify.ps1` PASS（restore/构建/两套测试/A15 夹具缺失 SKIP/D1 截图）。新增/翻译测试：D6 19、D8 6、D4（ThemeResource 扩展）、E1 8、E15/16/18/19/20 自检与单元测试（HistorySearch 2、SessionExportContent 6、SeriesMaterials 5、ControlState 6 等）、E27 Core 13+App 5、E26 Core 3+App 3、G9 AnswerPromptLanguage/Wording 等，NextThought.Tests 354→411、Core 1576→1603。
+状态：D4、D6、D8、E15、E16、E18、E19、E20、E27、E29、G9「已实现、未验证」；E1、E2、E3、E23、E26 仍有任务清单内的未完成项，保持「未做」并在证据列写明增量与缺口。
+证据：提交 b4cf812、b2132ba、641bba9、f7bbce4、db9fb2e、f948cf4、8b93e40、cd1f01e、0d07aa1、3d7b244、eacf543、ad58064、7aab565、e8bb8f2、9e72622、712a77c、a390828、a2bd34a；`Windows/validation/screens/{home,prepare,onboarding,notes,history,series,SessionExportSheet,MeetingNotesEditor,settings-pages,backup}/compare.md`、`Windows/validation/localization/english-scan.md`。
+未解决：E1 的 OnboardingResumeRow/interruptedNotice、E2 的 VenuePicker/采音电平/测试回答服务/MeetingDraft、E3 的示例会议时间线/SetupChecklist/切步动效、E23 的 Codex 代读、E26 的快速面板两项——下一轮继续；A15 夹具、A16 Mac 备份、E10 模型方案、H5 旧工程答复仍等外部；H2 重命名未开始。
+
 ## 2026-11-21 · 0.5.145 · 第一波：G5/G8/G10、F14/F16/F18/F20/F6/B13、D1/D5/D7、E17/E27 增量/E30/E31
 改动：
 - G5/G5b（a7e5082、19c62d0）：`SETTINGS_PARITY.md` 113/113 键（101「已实现、未验证」+12「本版不做」）补全类型/默认值/范围/Mac 视图/Windows 状态/接入任务，`MacPreferences.g.cs` 注册表与 `MacPreferenceMap`；`SettingsParityDefaultsTests` 逐键断言默认值/枚举/范围；`teleprompterOpacity/FontSize` 改 Settings 键（Mac 默认 1.0/22、下限 0.35、迁移旧 win-ui.json）；`reducedEffects`→Motion.Reduce。
