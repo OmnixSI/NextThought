@@ -72,6 +72,18 @@ public sealed class ThemeResourceTests
         Assert.Contains("MaxWidth=\"720\"", settings);
     }
 
+
+    [Fact]
+    public void ControlFocusRingAndDestructiveStyleMatchMac()
+    {
+        var controls = File.ReadAllText(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Styles", "Controls.axaml"));
+        Assert.Contains("Button:focus-visible /template/ Border#Root", controls);
+        Assert.Contains("Value=\"{DynamicResource Ai}\"", controls);
+        Assert.Contains("Value=\"2\"", controls);
+        Assert.Contains("Button.destructive", controls);
+        Assert.Contains("Button.destructive:pointerover", controls);
+    }
+
     [Fact]
     public void ProgramDoesNotForceSoftwareRendering()
     {
