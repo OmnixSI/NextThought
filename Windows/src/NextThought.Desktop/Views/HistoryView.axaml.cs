@@ -18,6 +18,14 @@ public partial class HistoryView : UserControl
         if (!string.IsNullOrWhiteSpace(title)) await state.RenameSessionAsync(row, title);
     }
 
+
+    private async void SearchHit_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: NextThought.Platform.SessionContentHit hit } || DataContext is not AppState state) return;
+        await state.SelectHistoryAsync(hit.Meta);
+        state.Section = AppSection.Notes;
+    }
+
     private async void DeleteSession_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { Tag: RecentMeetingRow row } && DataContext is AppState state)

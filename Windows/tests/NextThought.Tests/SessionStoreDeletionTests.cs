@@ -36,4 +36,21 @@ public sealed class SessionStoreDeletionTests
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
+    [Fact]
+    public async Task ContentSearchFindsArchivedTranscriptLines()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-search-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SessionStore(new AppPaths(root));
+            var meta = new SessionMeta { Title = "搜索测试" };
+            await store.CreateAsync(meta);
+            await store.AppendTranscriptAsync(meta, new TranscriptLine { Text = "讨论温度补偿", Speaker = "对方", Date = DateTimeOffset.Now });
+            var hit = Assert.Single(store.SearchContent("温度补偿"));
+            Assert.Equal(meta.Id, hit.Meta.Id);
+            Assert.Equal(1, hit.LineNumber);
+            Assert.Empty(store.SearchContent("不存在的词"));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
 }

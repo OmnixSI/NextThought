@@ -48,6 +48,25 @@ public partial class AppState
 
     public System.Collections.ObjectModel.ObservableCollection<HistoryGroupRow> HistoryGroups { get; } = [];
 
+
+    public System.Collections.ObjectModel.ObservableCollection<NextThought.Platform.SessionContentHit> HistoryContentHits { get; } = [];
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task SearchHistoryContentAsync()
+    {
+        if (!initialized) return;
+        var query = HistoryQuery.Trim();
+        if (query.Length < 2) { SetStatus("全文搜索至少输入两个字。"); return; }
+        try
+        {
+            var hits = await Task.Run(() => Sessions.SearchContent(query));
+            HistoryContentHits.Clear();
+            foreach (var hit in hits) HistoryContentHits.Add(hit);
+            SetStatus($"全文搜索：{hits.Count} 条命中。");
+        }
+        catch (Exception ex) { SetStatus("全文搜索失败：" + ex.Message, true); }
+    }
+
     public bool IsHistoryEmpty => History.Count == 0;
 
     [RelayCommand(CanExecute = nameof(CanExport))]

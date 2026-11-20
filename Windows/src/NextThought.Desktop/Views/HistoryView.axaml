@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
+             xmlns:platform="using:NextThought.Platform"
              x:Class="NextThought.Desktop.Views.HistoryView"
              x:DataType="local:AppState">
   <UserControl.Resources>
@@ -36,7 +37,7 @@
               </DataTemplate>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_6}">
       <TextBlock Text="历史" Classes="display" />
       <TextBlock Text="每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。"
@@ -60,6 +61,7 @@
           <TextBlock Text="未整理" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
         <TextBlock Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
+        <Button Classes="quiet" Content="全文搜索" Command="{Binding SearchHistoryContentCommand}" VerticalAlignment="Center" />
         <Button Classes="quiet" Content="删除筛选结果" Command="{Binding DeleteFilteredSessionsCommand}" VerticalAlignment="Center" />
       </StackPanel>
     </Grid>
@@ -70,7 +72,26 @@
       <ComboBox ItemsSource="{Binding HistorySortChoices}" SelectedItem="{Binding HistorySort}" Width="140" />
     </StackPanel>
 
-    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
+    <Border Grid.Row="3" Classes="card" Margin="{DynamicResource D4Margin_0_0_0_10}"
+              IsVisible="{Binding HistoryContentHits.Count}">
+        <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+          <TextBlock Text="全文命中" Classes="overline" />
+          <ItemsControl ItemsSource="{Binding HistoryContentHits}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="platform:SessionContentHit">
+                <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Tag="{Binding}" Click="SearchHit_Click">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                    <TextBlock Text="{Binding Meta.Title}" Classes="label" />
+                    <TextBlock Text="{Binding Text}" Classes="caption" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
       <StackPanel>
         <ItemsControl ItemsSource="{Binding HistoryGroups}">
           <ItemsControl.ItemTemplate>

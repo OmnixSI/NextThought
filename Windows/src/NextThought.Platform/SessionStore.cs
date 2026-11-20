@@ -5,6 +5,10 @@ using NextThought.Core;
 namespace NextThought.Platform;
 
 /// <summary>Append-only transcript/answer files and atomic metadata, compatible with the upstream folder layout.</summary>
+
+/// <summary>E18: one full-text hit in an archived transcript.</summary>
+public sealed record SessionContentHit(SessionMeta Meta, string Text, string Speaker, DateTimeOffset Date, int LineNumber);
+
 public sealed class SessionStore(AppPaths paths)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -38,6 +42,34 @@ public sealed class SessionStore(AppPaths paths)
             var current = ReadMeta(id);
             current.Title = trimmed;
             await WriteMetaAsync(current, ct).ConfigureAwait(false);
+        }
+        finally { gate.Release(); }
+    }
+
+
+    /// <summary>E18: case-insensitive full-text search across archived transcripts.</summary>
+    public IReadOnlyList<SessionContentHit> SearchContent(string query, int limit = 80)
+    {
+        var trimmed = query.Trim();
+        if (trimmed.Length < 2) return [];
+        gate.Wait();
+        try
+        {
+            var hits = new List<SessionContentHit>();
+            foreach (var meta in ListCore())
+            {
+                var path = Path.Combine(Folder(meta.Id), "transcript.jsonl");
+                if (!File.Exists(path)) continue;
+                var lines = ReadLines<TranscriptLine>(path);
+                for (var i = 0; i < lines.Count && hits.Count < limit; i++)
+                {
+                    var line = lines[i];
+                    if (line.Text.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+                        hits.Add(new SessionContentHit(meta, line.Text, line.Speaker, line.Date, i + 1));
+                }
+                if (hits.Count >= limit) break;
+            }
+            return hits;
         }
         finally { gate.Release(); }
     }

@@ -90,6 +90,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryHasFullTextSearchUi()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("全文搜索", xaml);
+        Assert.Contains("SearchHistoryContentCommand", xaml);
+        Assert.Contains("SearchHit_Click", xaml);
+    }
+
     [Fact]
     public void HistoryIsGroupedBySeries()
     {
