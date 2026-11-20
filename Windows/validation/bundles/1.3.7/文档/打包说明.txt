@@ -1,0 +1,28 @@
+﻿NextThought Windows 1.3.7
+=========================
+生成时间: 2026-11-19 13:52:48 +08:00
+版本: 1.3.7
+构建: ReadyToRun (默认), 自包含 win-x64
+保留版本: 1.3.3 / 1.3.4 / 1.3.5 / 1.3.6 / 1.3.7（dist 目录，仅保留最新 5 个版本）
+
+内容
+----
+安装包/便携版：不再进仓库，见 release
+  https://github.com/OmnixSI/NextThought/releases/tag/windows-1.3.7-evidence
+文档\README.md                           使用说明
+文档\PARITY_REPORT.md                    进度报告
+文档\CORE_PARITY.md                      Core 文件移植清单（80/80）
+文档\PORTING_STATUS.md                   逐轮移植记录
+文档\THIRD_PARTY_NOTICES.txt             第三方声明
+验收证据\                                安装版验收、发布门禁、双屏、伴侣局域网、AOT 探针、模型安装
+
+校验（release 资产）
+----
+f07836c06e5472fe4376de988ea3b55289b5bbfc1f31a0410b256b32b415af7a  安装-NextThought-1.3.7-windows-x64.exe
+169daeb4c05a9bdde589ca69a2aac8641b63db0ceeaecc1de97eb9e109e629fd  NextThought-1.3.7-portable.zip
+
+安装
+----
+双击安装包；默认每用户安装。便携版解压后运行 NextThought.exe。
+本地模型位于 %LOCALAPPDATA%\NextThought\models，安装版会用 --prepare-models-check 复验。
+签名: 本阶段未签名（发布前事项）；本地运行不需要签名。

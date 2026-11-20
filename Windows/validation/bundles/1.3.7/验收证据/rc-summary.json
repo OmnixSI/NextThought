@@ -1,0 +1,91 @@
+﻿{
+    "passed":  true,
+    "total":  17,
+    "checks":  [
+                   {
+                       "name":  "startup",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "acceptance",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "page",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "glossary-search",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "process",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "session-search",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "series-briefing",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "history-search",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "backup-manifest",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "meeting-plan",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "evidence",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "user-content",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "workspace-deletion",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "document-job",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "archive-persistence",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "update-backup",
+                       "passed":  true,
+                       "error":  ""
+                   },
+                   {
+                       "name":  "update-restore",
+                       "passed":  true,
+                       "error":  ""
+                   }
+               ]
+}

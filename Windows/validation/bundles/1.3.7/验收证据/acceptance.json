@@ -1,0 +1,246 @@
+{
+  "passed": true,
+  "total": 60,
+  "failed": [],
+  "checks": [
+    {
+      "Name": "glossary-search",
+      "Passed": true
+    },
+    {
+      "Name": "content-search",
+      "Passed": true
+    },
+    {
+      "Name": "history-search",
+      "Passed": true
+    },
+    {
+      "Name": "series-briefing",
+      "Passed": true
+    },
+    {
+      "Name": "series-items",
+      "Passed": true
+    },
+    {
+      "Name": "session-deletion",
+      "Passed": true
+    },
+    {
+      "Name": "summary-parser",
+      "Passed": true
+    },
+    {
+      "Name": "markdown-export",
+      "Passed": true
+    },
+    {
+      "Name": "stage-review",
+      "Passed": true
+    },
+    {
+      "Name": "summary-prompt",
+      "Passed": true
+    },
+    {
+      "Name": "projection-builder",
+      "Passed": true
+    },
+    {
+      "Name": "evidence-builder",
+      "Passed": true
+    },
+    {
+      "Name": "write-queue",
+      "Passed": true
+    },
+    {
+      "Name": "projected-transcript",
+      "Passed": true
+    },
+    {
+      "Name": "notes-export",
+      "Passed": true
+    },
+    {
+      "Name": "notes-editor",
+      "Passed": true
+    },
+    {
+      "Name": "notes-evidence",
+      "Passed": true
+    },
+    {
+      "Name": "summary-writeback",
+      "Passed": true
+    },
+    {
+      "Name": "workspace-material",
+      "Passed": true
+    },
+    {
+      "Name": "preparation-prompt",
+      "Passed": true
+    },
+    {
+      "Name": "mode-profiles",
+      "Passed": true
+    },
+    {
+      "Name": "slide-matching",
+      "Passed": true
+    },
+    {
+      "Name": "content-fields",
+      "Passed": true
+    },
+    {
+      "Name": "answer-evidence",
+      "Passed": true
+    },
+    {
+      "Name": "session-snapshot",
+      "Passed": true
+    },
+    {
+      "Name": "session-cache",
+      "Passed": true
+    },
+    {
+      "Name": "archive-metadata",
+      "Passed": true
+    },
+    {
+      "Name": "session-preset",
+      "Passed": true
+    },
+    {
+      "Name": "shared-originals",
+      "Passed": true
+    },
+    {
+      "Name": "meeting-type",
+      "Passed": true
+    },
+    {
+      "Name": "backup-merge",
+      "Passed": true
+    },
+    {
+      "Name": "content-notes-fields",
+      "Passed": true
+    },
+    {
+      "Name": "meeting-carry-materials",
+      "Passed": true
+    },
+    {
+      "Name": "export-formats",
+      "Passed": true
+    },
+    {
+      "Name": "briefing-evidence",
+      "Passed": true
+    },
+    {
+      "Name": "projection-notes",
+      "Passed": true
+    },
+    {
+      "Name": "backup-archive",
+      "Passed": true
+    },
+    {
+      "Name": "slide-follower",
+      "Passed": true
+    },
+    {
+      "Name": "ocr-spacing",
+      "Passed": true
+    },
+    {
+      "Name": "workspace-documents",
+      "Passed": true
+    },
+    {
+      "Name": "meeting-prepare",
+      "Passed": true
+    },
+    {
+      "Name": "document-queue",
+      "Passed": true
+    },
+    {
+      "Name": "series-change",
+      "Passed": true
+    },
+    {
+      "Name": "series-change-collect",
+      "Passed": true
+    },
+    {
+      "Name": "archive-ownership",
+      "Passed": true
+    },
+    {
+      "Name": "session-record",
+      "Passed": true
+    },
+    {
+      "Name": "web-search-config",
+      "Passed": true
+    },
+    {
+      "Name": "web-search-setting",
+      "Passed": true
+    },
+    {
+      "Name": "backup-manifest",
+      "Passed": true
+    },
+    {
+      "Name": "meeting-plan",
+      "Passed": true
+    },
+    {
+      "Name": "evidence",
+      "Passed": true
+    },
+    {
+      "Name": "user-content",
+      "Passed": true
+    },
+    {
+      "Name": "migration-publish",
+      "Passed": true
+    },
+    {
+      "Name": "workspace-deletion",
+      "Passed": true
+    },
+    {
+      "Name": "document-job",
+      "Passed": true
+    },
+    {
+      "Name": "archive",
+      "Passed": true
+    },
+    {
+      "Name": "zipformer",
+      "Passed": true
+    },
+    {
+      "Name": "session-store",
+      "Passed": true
+    },
+    {
+      "Name": "update-backup",
+      "Passed": true
+    },
+    {
+      "Name": "projection",
+      "Passed": true
+    }  ]
+}
