@@ -38,7 +38,7 @@ public static class MacPreferenceMap
         "codexModelID", "codexReasoning", "companionRelayURL", "cueAlwaysOpen", "cueScreen", "cueWidth",
         "insightFollowSlides", "insightScreenInterval", "insightScreenRegion", "insightScreenWatch",
         "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
-        "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "secondPassEnabled",
+        "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "notesTemplateByType", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
         "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
         "apiPresets", "activeAPIPresetID", "codexFastMode", "updateRepository",
@@ -119,6 +119,7 @@ public static class MacPreferenceMap
         "subtitleBarFontSize" => (double)settings.SubtitleFontSize,
         "onboardingGuideCompletedVersion" => settings.OnboardingCompletedVersion,
         "sceneOverrides" => SceneOverridesToMac(settings.SceneDefaults),
+        "notesTemplateByType" => NotesTemplateByTypeToMac(settings.SceneDefaults),
         _ => null
     };
 
@@ -242,6 +243,7 @@ public static class MacPreferenceMap
                 settings.OnboardingCompletedVersion = AsString(normalized, settings.OnboardingCompletedVersion);
                 break;
             case "sceneOverrides": settings.SceneDefaults = ApplySceneOverrides(settings.SceneDefaults, normalized); break;
+            case "notesTemplateByType": settings.SceneDefaults = ApplyNotesTemplateByType(settings.SceneDefaults, normalized); break;
             case "transcriptionBackend":
             {
                 var path = normalized as string ?? "zipformer";
@@ -478,19 +480,49 @@ public static class MacPreferenceMap
     private static Dictionary<string, object?> SceneOverridesToMac(Dictionary<string, SceneDefaults> scenes)
     {
         var overrides = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var (mode, defaults) in scenes)
+        foreach (var (modeName, defaults) in scenes)
         {
-            var raw = char.ToLowerInvariant(mode[0]) + mode[1..];
+            if (!Enum.TryParse<MeetingMode>(modeName, out var mode)) continue;
+            var raw = char.ToLowerInvariant(modeName[0]) + modeName[1..];
             if (!ModeNames.ContainsKey(raw)) continue;
-            var fields = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["liveMode"] = LiveModeToMac(defaults.LiveMode),
-                ["style"] = AnswerStyleToMac(defaults.AnswerStyle),
-                ["cueStyle"] = CueStyleToMac(defaults.CueStyle)
-            };
-            overrides[raw] = fields;
+            // Mac stores only the fields that differ from the built-in row; the template lives in
+            // notesTemplateByType, never in sceneOverrides.
+            var builtIn = SceneDefaults.For(mode);
+            var fields = new Dictionary<string, object?>(StringComparer.Ordinal);
+            if (defaults.LiveMode != builtIn.LiveMode) fields["liveMode"] = LiveModeToMac(defaults.LiveMode);
+            if (defaults.AnswerStyle != builtIn.AnswerStyle) fields["style"] = AnswerStyleToMac(defaults.AnswerStyle);
+            if (defaults.CueStyle != builtIn.CueStyle) fields["cueStyle"] = CueStyleToMac(defaults.CueStyle);
+            if (fields.Count > 0) overrides[raw] = fields;
         }
         return overrides;
+    }
+
+    private static Dictionary<string, object?> NotesTemplateByTypeToMac(Dictionary<string, SceneDefaults> scenes)
+    {
+        var byType = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var (modeName, defaults) in scenes)
+        {
+            if (!Enum.TryParse<MeetingMode>(modeName, out var mode)) continue;
+            var raw = char.ToLowerInvariant(modeName[0]) + modeName[1..];
+            if (!ModeNames.ContainsKey(raw)) continue;
+            if (defaults.NotesTemplate.Length > 0 && defaults.NotesTemplate != SceneDefaults.For(mode).NotesTemplate)
+                byType[raw] = defaults.NotesTemplate;
+        }
+        return byType;
+    }
+
+    private static Dictionary<string, SceneDefaults> ApplyNotesTemplateByType(Dictionary<string, SceneDefaults> scenes, object? value)
+    {
+        if (value is not IReadOnlyDictionary<string, object?> byType) return scenes;
+        var next = new Dictionary<string, SceneDefaults>(scenes, StringComparer.Ordinal);
+        foreach (var (rawMode, rawId) in byType)
+        {
+            if (!ModeNames.TryGetValue(rawMode, out var modeName) || !Enum.TryParse<MeetingMode>(modeName, out var mode)) continue;
+            if (rawId is not string id || id.Length == 0) continue;
+            var current = next.GetValueOrDefault(modeName) ?? SceneDefaults.For(mode);
+            next[modeName] = current with { NotesTemplate = id };
+        }
+        return next;
     }
 
     private static Dictionary<string, SceneDefaults> ApplySceneOverrides(Dictionary<string, SceneDefaults> scenes,
@@ -501,7 +533,8 @@ public static class MacPreferenceMap
         foreach (var (rawMode, rawFields) in overrides)
         {
             if (!ModeNames.TryGetValue(rawMode, out var modeName) || rawFields is not IReadOnlyDictionary<string, object?> fields) continue;
-            var current = next.GetValueOrDefault(modeName) ?? new SceneDefaults();
+            if (!Enum.TryParse<MeetingMode>(modeName, out var mode)) continue;
+            var current = next.GetValueOrDefault(modeName) ?? SceneDefaults.For(mode);
             next[modeName] = current with
             {
                 LiveMode = fields.TryGetValue("liveMode", out var live) ? LiveModeFromMac(live, current.LiveMode) : current.LiveMode,

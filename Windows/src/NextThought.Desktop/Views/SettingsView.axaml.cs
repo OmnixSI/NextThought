@@ -77,6 +77,12 @@ public partial class SettingsView : UserControl
         }
     }
 
+    /// <summary>E26: Mac SceneRow 恢复默认 — every field of the row back to the built-in table.</summary>
+    private void ResetScene_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: SceneSettingRow row }) row.RestoreDefaults();
+    }
+
     private void SceneOption_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string field, DataContext: SceneSettingRow row }) return;

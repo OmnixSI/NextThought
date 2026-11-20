@@ -14,6 +14,15 @@
       <TextBlock Text="{loc:Tr 偏好}" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
       <CheckBox Content="{loc:Tr 自动回答}" IsChecked="{Binding Settings.AutomaticAnswers}" />
       <CheckBox Content="{loc:Tr 字幕显示译文}" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
+      <CheckBox Content="{loc:Tr 提词岛一直展开}" IsChecked="{Binding Settings.CueAlwaysOpen}" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{loc:Tr 提词字号}" VerticalAlignment="Center" />
+        <Slider Grid.Column="1" Width="140" Minimum="14" Maximum="36" TickFrequency="1"
+                Value="{Binding Settings.TeleprompterFontSize}" />
+      </Grid>
+      <CheckBox Content="{loc:Tr 双屏演讲}" IsChecked="{Binding Settings.PresenterMode}" />
+      <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11"
+                 IsVisible="{Binding Settings.PresenterMode}" TextWrapping="Wrap" />
       <CheckBox Content="{loc:Tr 听到外语自动翻译}" IsChecked="{Binding Settings.AutoTranslateForeign}" />
       <CheckBox Content="{loc:Tr 跟着讲话翻幻灯片}" IsChecked="{Binding Settings.FollowSlides}" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

@@ -126,8 +126,6 @@ public sealed class SettingsParityTableTests
                 {
                     ["labMeeting"] = new Dictionary<string, object?>
                     {
-                        ["liveMode"] = "notesOnly",
-                        ["style"] = "detailed",
                         ["cueStyle"] = "script"
                     }
                 },

@@ -434,6 +434,17 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         OnPropertyChanged(nameof(SelectedMicrophoneDevice));
         OnPropertyChanged(nameof(SelectedProcess));
         OnPropertyChanged(nameof(PresenterSummary));
+        OnPropertyChanged(nameof(CodexFastLabel));
+        OnPropertyChanged(nameof(DocumentProviderChoices));
+        OnPropertyChanged(nameof(SelectedDocumentProvider));
+        OnPropertyChanged(nameof(DocumentProviderHelp));
+        OnPropertyChanged(nameof(ShowCodexDocumentSettings));
+        OnPropertyChanged(nameof(ApiEffortChoices));
+        OnPropertyChanged(nameof(SelectedApiEffort));
+        OnPropertyChanged(nameof(ApiPresetChoices));
+        OnPropertyChanged(nameof(SelectedApiPreset));
+        OnPropertyChanged(nameof(GithubTokenStatus));
+        OnPropertyChanged(nameof(ApiModelsStatus));
         KeyStatus = UiText.Translate(KeyStatus, UiTextSource.Instance.IsEnglish);
         CloudSttKeyStatus = CloudSttKey.Length == 0 ? UiText.T("未填写") : UiText.T("已加密保存");
         TavilyKeyStatus = UiText.T("密钥只保存在当前 Windows 用户；也可以继续用 TAVILY_API_KEY 环境变量。");
@@ -502,6 +513,9 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     public IReadOnlyList<CueWidthOption> CueWidthChoices => CueWidthChoicesValues.ToArray();
     [ObservableProperty] private CueWidthOption? selectedCueWidth;
     [ObservableProperty] private bool cueAlwaysOpen;
+
+    /// <summary>E26: Mac quick settings 提词字号 slider (14–36, default 22).</summary>
+    [ObservableProperty] private double teleprompterFontSize = 22;
     [ObservableProperty] private double? subtitleBarX;
     [ObservableProperty] private double? subtitleBarY;
     [ObservableProperty] private bool capturePrivacy = true;
@@ -652,6 +666,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
         SelectedCueWidth = CueWidthChoices.FirstOrDefault(choice => choice.Value == settings.CueWidth) ?? CueWidthChoices[1];
         CueAlwaysOpen = settings.CueAlwaysOpen;
+        TeleprompterFontSize = settings.TeleprompterFontSize;
         SubtitleBarX = settings.SubtitleBarX;
         SubtitleBarY = settings.SubtitleBarY;
         CapturePrivacy = settings.CapturePrivacy;
@@ -816,7 +831,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         ContextSidebarHidden = state.ContextSidebarHidden,
         // G5b: fields this page has no control for yet keep their on-disk / Mac-key values.
         TeleprompterOpacity = disk.TeleprompterOpacity,
-        TeleprompterFontSize = disk.TeleprompterFontSize,
+        TeleprompterFontSize = Math.Clamp(TeleprompterFontSize, 14, 36),
         ReducedEffects = disk.ReducedEffects,
         SceneDefaults = disk.SceneDefaults,
         AdditionalProperties = disk.AdditionalProperties

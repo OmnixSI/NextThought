@@ -647,6 +647,8 @@
                     <Border Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}"
                             Background="{Binding TintBrush}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding Label}" Classes="label" VerticalAlignment="Center" />
+                    <Button Classes="quiet" Content="{loc:Tr 恢复默认}" Click="ResetScene_Click" Tag="{Binding}"
+                            IsVisible="{Binding Customised}" />
                   </StackPanel>
                   <Button Grid.Column="1" MinWidth="104" Classes="quiet" HorizontalContentAlignment="Left" Content="{Binding LiveMode}" Tag="LiveMode" Click="SceneOption_Click" />
                   <Button Grid.Column="2" MinWidth="104" Classes="quiet" HorizontalContentAlignment="Left" Content="{Binding AnswerStyle}" Tag="AnswerStyle" Click="SceneOption_Click" />
