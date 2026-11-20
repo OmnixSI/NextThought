@@ -94,6 +94,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ArchiveScreenshotsAreShownInHistory()
+    {
+        var archive = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
+        Assert.Contains("ArchiveScreenshotAsync", archive);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("SelectedSessionScreenshotCount", xaml);
+    }
+
     [Fact]
     public void HistoryGroupHasSeriesMenu()
     {

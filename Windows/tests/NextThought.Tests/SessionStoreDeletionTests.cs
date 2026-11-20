@@ -53,4 +53,22 @@ public sealed class SessionStoreDeletionTests
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
+    [Fact]
+    public async Task ScreenshotsAreKeptWithTheSession()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-shot-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new SessionStore(new AppPaths(root));
+            var meta = new SessionMeta { Title = "截图测试" };
+            await store.CreateAsync(meta);
+            var source = Path.Combine(root, "shot.png");
+            Directory.CreateDirectory(root);
+            await File.WriteAllBytesAsync(source, [137, 80, 78, 71]);
+            var archived = await store.SaveScreenshotAsync(meta.Id, source);
+            Assert.True(File.Exists(archived));
+            Assert.Single(store.Screenshots(meta.Id));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
 }

@@ -82,6 +82,7 @@
         <TextBlock Text="{Binding CurrentSession.Title}" Classes="section" />
         <TextBlock Text="{Binding CurrentSession.LocalStartedAt}" Classes="caption" />
         <TextBlock Text="{Binding CurrentSession.AnswerCount}" Classes="caption" />
+        <TextBlock Text="{Binding SelectedSessionScreenshotCount}" Classes="caption" />
         <TextBlock Text="回答列表" Classes="overline" />
         <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}">
           <ItemsControl.ItemTemplate>

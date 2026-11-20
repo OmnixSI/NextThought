@@ -74,6 +74,37 @@ public sealed class SessionStore(AppPaths paths)
         finally { gate.Release(); }
     }
 
+
+    /// <summary>E18: keep a screenshot with the meeting archive; returns the archived path.</summary>
+    public async Task<string> SaveScreenshotAsync(Guid id, string sourcePath, CancellationToken ct = default)
+    {
+        await gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var folder = Path.Combine(Folder(id), "screenshots");
+            Directory.CreateDirectory(folder);
+            var target = Path.Combine(folder, DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss-fff") + Path.GetExtension(sourcePath));
+            await using var input = File.OpenRead(sourcePath);
+            await using var output = File.Create(target);
+            await input.CopyToAsync(output, ct).ConfigureAwait(false);
+            return target;
+        }
+        finally { gate.Release(); }
+    }
+
+    public IReadOnlyList<string> Screenshots(Guid id)
+    {
+        gate.Wait();
+        try
+        {
+            var folder = Path.Combine(Folder(id), "screenshots");
+            return Directory.Exists(folder)
+                ? Directory.EnumerateFiles(folder).OrderBy(path => path, StringComparer.Ordinal).ToList()
+                : [];
+        }
+        finally { gate.Release(); }
+    }
+
     public FileStream AcquireLease(Guid id) => new(Path.Combine(Folder(id), ".active.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
     public Task CreateAsync(SessionMeta meta, CancellationToken ct = default) => CreateAsync(meta, null, ct);
 

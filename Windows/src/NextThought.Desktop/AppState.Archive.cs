@@ -86,6 +86,20 @@ public partial class AppState
         if (CurrentSession is not null) ExportCommand.Execute(null);
     }
 
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private int selectedSessionScreenshotCount;
+
+    public async Task ArchiveScreenshotAsync(string path)
+    {
+        if (CurrentSession is not { } meta) return;
+        try
+        {
+            await Sessions.SaveScreenshotAsync(meta.Id, path);
+            SelectedSessionScreenshotCount = Sessions.Screenshots(meta.Id).Count;
+        }
+        catch { }
+    }
+
     public bool IsHistoryEmpty => History.Count == 0;
 
     [RelayCommand(CanExecute = nameof(CanExport))]

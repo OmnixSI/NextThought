@@ -895,6 +895,7 @@ public partial class AppState
             Sources.Clear();
             foreach (var source in data.Answers.LastOrDefault()?.Sources ?? []) Sources.Add(source);
             RetrievalInfo = data.Answers.LastOrDefault()?.Sources?.Count > 0 ? "历史回答的引用已保存，可查看来源。" : "";
+            SelectedSessionScreenshotCount = Sessions.Screenshots(data.Meta.Id).Count;
             SelectedSessionAnswers.Clear();
             foreach (var answer in data.Answers) SelectedSessionAnswers.Add(answer);
             AnswerText = data.Answers.LastOrDefault()?.Answer ?? "";

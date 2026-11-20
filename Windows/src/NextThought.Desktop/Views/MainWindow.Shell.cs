@@ -204,6 +204,7 @@ public partial class MainWindow
                 bounds.X - capture.X, bounds.Y - capture.Y, bounds.Width, bounds.Height));
             var path = Path.Combine(Path.GetTempPath(), $"nextthought-window-{DateTime.Now:yyyyMMdd-HHmmss}.png");
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
             state.Section = AppSection.Library;
             state.SetStatus("窗口截图已存入资料库，并已用系统 OCR 读取其中的文字。");
@@ -232,6 +233,7 @@ public partial class MainWindow
             if (cropped is null) { state.SetStatus("已取消截图。"); return; }
             var path = Path.Combine(Path.GetTempPath(), $"nextthought-shot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
             state.Section = AppSection.Library;
             state.SetStatus("截图已存入资料库，并已用系统 OCR 读取其中的文字。");
