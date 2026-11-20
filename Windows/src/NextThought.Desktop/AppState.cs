@@ -237,7 +237,7 @@ public partial class AppState : ObservableObject
                         var payloadElement = structured.TryGetProperty("payload", out var legacyPayload) ? legacyPayload : structured;
                         if (payloadElement.TryGetProperty("format", out var savedFormat) && savedFormat.GetString() == format.Raw())
                         {
-                            StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(payloadElement.GetRawText(), JsonDefaults.Options);
+                            StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(payloadElement.GetRawText(), JsonDefaults.ArchiveOptions);
                             if (structured.TryGetProperty("markdown", out var savedMarkdown) && savedMarkdown.GetString() is { } text)
                                 StructuredMarkdown = text;
                         }
@@ -254,7 +254,7 @@ public partial class AppState : ObservableObject
                 try
                 {
                     StructuredPayload = System.Text.Json.JsonSerializer.Deserialize<StructuredNotesPayload>(
-                        await File.ReadAllTextAsync(json), JsonDefaults.Options);
+                        await File.ReadAllTextAsync(json), JsonDefaults.ArchiveOptions);
                 }
                 catch (System.Text.Json.JsonException)
                 {
@@ -325,7 +325,7 @@ public partial class AppState : ObservableObject
                 catch (System.Text.Json.JsonException) { summary = new System.Text.Json.Nodes.JsonObject(); }
                 // Mac stores a StructuredNotesPayload directly (and all formats in structuredAll).
                 var payloadNode = System.Text.Json.Nodes.JsonNode.Parse(
-                    System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.Options));
+                    System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.ArchiveOptions));
                 summary["structured"] = payloadNode;
                 var all = summary["structuredAll"] as System.Text.Json.Nodes.JsonArray
                     ?? new System.Text.Json.Nodes.JsonArray();
@@ -340,7 +340,7 @@ public partial class AppState : ObservableObject
                 await File.WriteAllTextAsync(summaryPath, summary.ToJsonString(JsonDefaults.ArchiveOptions));
                 await File.WriteAllTextAsync(StructuredPath(session, format), StructuredMarkdown);
                 await File.WriteAllTextAsync(StructuredJsonPath(session, format),
-                    System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.Options));
+                    System.Text.Json.JsonSerializer.Serialize(payload, JsonDefaults.ArchiveOptions));
             }
             catch
             {

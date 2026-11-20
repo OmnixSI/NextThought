@@ -126,15 +126,20 @@ public sealed class SessionUserContentStore
     public sealed class ChangedElsewhereException()
         : Exception("这场记录已更新，请载入最新内容后重试。你的草稿仍然保留。");
 
-    public static readonly JsonSerializerOptions Options = new()
+    public static readonly JsonSerializerOptions Options = CreateOptions();
+
+    private static JsonSerializerOptions CreateOptions()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new NotesFormatConverter() }
-    };
+        var options = new JsonSerializerOptions(JsonDefaults.ArchiveOptions)
+        {
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        options.Converters.Add(new NotesFormatConverter());
+        return options;
+    }
 
     public static SessionUserContent Load(string directory)
     {

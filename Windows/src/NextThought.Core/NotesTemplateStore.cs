@@ -5,13 +5,9 @@ namespace NextThought.Core;
 /// <summary>Reads/writes note-templates.json (Mac's custom notes templates).</summary>
 public sealed class NotesTemplateStore
 {
-    public static readonly JsonSerializerOptions Options = new()
+    public static readonly JsonSerializerOptions Options = new(JsonDefaults.ArchiveOptions)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        WriteIndented = true
     };
 
     private readonly string path;

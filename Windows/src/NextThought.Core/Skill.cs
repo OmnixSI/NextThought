@@ -53,12 +53,9 @@ public sealed record Skill
 /// <summary>Reads and writes skills.json (a Mac-compatible array of Skill).</summary>
 public sealed class SkillStore
 {
-    public static readonly JsonSerializerOptions Options = new()
+    public static readonly JsonSerializerOptions Options = new(JsonDefaults.ArchiveOptions)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        WriteIndented = true
     };
 
     private readonly string path;

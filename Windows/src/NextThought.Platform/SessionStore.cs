@@ -115,7 +115,7 @@ public sealed class SessionStore(AppPaths paths)
             // Re-summarizing must keep Mac-only groups (structured notes, evidence, experience, question bank).
             summary["title"] = meta.Title;
             summary["markdown"] = markdown;
-            summary["generatedAt"] = DateTimeOffset.UtcNow;
+            summary["generatedAt"] = DateTimeOffset.UtcNow.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture);
             summary["model"] = model;
             if (summary["questions"] is not System.Text.Json.Nodes.JsonArray { Count: > 0 })
             {
@@ -324,7 +324,7 @@ public sealed class SessionStore(AppPaths paths)
                         if (!meta.EndedAt.HasValue) meta.EndedAt = data.Lines.Count > 0 ? data.Lines.Max(l => l.EndedAt ?? l.Date) : meta.StartedAt;
                         if (meta.SummaryState == "pending") { meta.SummaryState = "failed"; meta.SummaryError = "上次纪要整理中断，可继续整理并复用已完成片段。"; }
                         meta.AdditionalProperties ??= [];
-                        meta.AdditionalProperties["windowsRecoveredAt"] = JsonSerializer.SerializeToElement(DateTimeOffset.UtcNow, JsonDefaults.Options);
+                        meta.AdditionalProperties["windowsRecoveredAt"] = JsonSerializer.SerializeToElement(DateTimeOffset.UtcNow.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", System.Globalization.CultureInfo.InvariantCulture));
                         var metadata = Path.Combine(Folder(meta.Id), "meta.json");
                         File.Copy(metadata, metadata + ".recovery-" + Guid.NewGuid().ToString("N") + ".bak");
                         await WriteMetaAsync(meta, ct).ConfigureAwait(false);
