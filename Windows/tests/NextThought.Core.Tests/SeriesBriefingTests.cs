@@ -3,115 +3,63 @@ using Xunit;
 
 namespace NextThought.Core.Tests;
 
-/// <summary>Tests for the series briefing builder.</summary>
+/// <summary>B5: only explicitly supported current text-notes evidence keeps a series item active.</summary>
 public sealed class SeriesBriefingTests
 {
-    private static SessionMeta Session(string id, int day) => new()
+    private static SessionEvidenceReference Evidence(string id, string sourceRevision, string claimRevision,
+        SessionEvidenceOrigin origin = SessionEvidenceOrigin.TextNotes, Guid? lineId = null) =>
+        new(id, "决定", "改为周一周交付", SessionEvidenceSupport.Quoted, origin,
+            SessionId: null, Quote: null, Location: null, LineId: lineId ?? Guid.NewGuid(),
+            SourceRevision: sourceRevision, ClaimRevision: claimRevision, TranscriptSourceRevision: "transcript-v1",
+            ReviewDecision: SessionEvidenceDecision.Supported, ReviewIsStale: false);
+
+    [Fact]
+    public void ChangedSourceRevisionShowsAcceptedItemAsStale()
     {
-        Id = Guid.Parse(id),
-        Title = "会议" + day,
-        StartedAt = new DateTimeOffset(2026, 11, day, 10, 0, 0, TimeSpan.FromHours(8))
-    };
-
-    private static readonly string IdA = Guid.NewGuid().ToString("D");
-    private static readonly string IdB = Guid.NewGuid().ToString("D");
-    private static readonly string IdC = Guid.NewGuid().ToString("D");
-
-    private static WorkspaceSeries Series(
-        IReadOnlyList<WorkspaceLesson>? lessons = null,
-        IReadOnlyList<QuestionBankItem>? questions = null,
-        IReadOnlyList<WorkspaceKnowledgeCandidate>? candidates = null,
-        bool useKnowledge = true) =>
-        new("series", "结构组会", DateTimeOffset.UtcNow, [IdA, IdB, IdC], lessons ?? [])
+        var sourceId = Guid.NewGuid();
+        var series = new WorkspaceSeries("series", "项目交付", DateTimeOffset.UtcNow, [sourceId.ToString("D")], [])
         {
-            QuestionBank = questions ?? [],
-            KnowledgeCandidates = candidates ?? [],
-            UseKnowledge = useKnowledge
+            SeriesItems =
+            [
+                new WorkspaceSeriesItem
+                {
+                    Kind = WorkspaceSeriesItem.KindValue.Decision, Text = "改为周一交付",
+                    SourceSessionId = sourceId.ToString("D"), EvidenceId = "notes:decisions:delivery",
+                    ClaimRevision = "claim-v1", SourceRevision = "line-v1",
+                    TranscriptSourceRevision = "transcript-v1"
+                }
+            ]
         };
-
-    [Fact]
-    public void LatestSessionsAreNewestFirstAndLimited()
-    {
-        var sessions = new[] { Session(IdA, 1), Session(IdB, 2), Session(IdC, 3) };
-        var briefing = SeriesBriefingBuilder.Build(Series(), sessions, meetingLimit: 2);
-        Assert.Equal(3, briefing.SessionCount);
-        Assert.Equal(["会议3", "会议2"], briefing.LatestSessions.Select(session => session.Title));
-        Assert.Equal("series", briefing.WorkspaceId);
-        Assert.True(briefing.KnowledgeEnabled);
+        var session = new SessionMeta { Id = sourceId, StartedAt = DateTimeOffset.UtcNow };
+        var briefing = SeriesBriefingBuilder.Build(series, [session],
+            evidenceReferences: [Evidence("notes:decisions:delivery", "line-v2", "claim-v2")]);
+        Assert.Empty(briefing.Decisions);
+        Assert.Empty(briefing.OpenActions);
+        Assert.Equal("改为周一交付", Assert.Single(briefing.StaleItems).Text);
     }
 
     [Fact]
-    public void OnlyKnownSessionsCount()
+    public void StructuredNotesOriginDoesNotKeepALegacyItemActive()
     {
-        var sessions = new[] { Session(IdA, 1), Session(Guid.NewGuid().ToString("D"), 2) };
-        Assert.Equal(1, SeriesBriefingBuilder.Build(Series(), sessions).SessionCount);
-        Assert.Empty(SeriesBriefingBuilder.Build(Series(), []).LatestSessions);
-    }
-
-    [Fact]
-    public void PinnedLessonsComeFirstThenNewest()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var lessons = new[]
+        var sourceId = Guid.NewGuid();
+        var series = new WorkspaceSeries("series", "项目交付", DateTimeOffset.UtcNow, [sourceId.ToString("D")], [])
         {
-            new WorkspaceLesson { Text = "旧但置顶", Pinned = true, CreatedAt = now.AddDays(-10) },
-            new WorkspaceLesson { Text = "新未置顶", CreatedAt = now.AddDays(-1) },
-            new WorkspaceLesson { Text = "更旧未置顶", CreatedAt = now.AddDays(-5) }
+            SeriesItems =
+            [
+                new WorkspaceSeriesItem
+                {
+                    Kind = WorkspaceSeriesItem.KindValue.Decision, Text = "改为周一交付",
+                    SourceSessionId = sourceId.ToString("D"), EvidenceId = "notes:decisions:delivery",
+                    ClaimRevision = "claim-v1", SourceRevision = "line-v1",
+                    TranscriptSourceRevision = "transcript-v1"
+                }
+            ]
         };
-        var briefing = SeriesBriefingBuilder.Build(Series(lessons), [], knowledgeLimit: 2);
-        Assert.Equal(["旧但置顶", "新未置顶"], briefing.Lessons.Select(lesson => lesson.Text));
-    }
-
-    [Fact]
-    public void QuestionBankIsOrderedByTimesAsked()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var questions = new[]
-        {
-            new QuestionBankItem { Question = "少问", Answer = "a", TimesAsked = 1, UpdatedAt = now },
-            new QuestionBankItem { Question = "多问", Answer = "b", TimesAsked = 5, UpdatedAt = now.AddDays(-1) }
-        };
-        var briefing = SeriesBriefingBuilder.Build(Series(questions: questions), [], knowledgeLimit: 1);
-        Assert.Equal("多问", Assert.Single(briefing.QuestionBank).Question);
-    }
-
-    [Fact]
-    public void KnowledgeCanBeSwitchedOff()
-    {
-        var lessons = new[] { new WorkspaceLesson { Text = "经验" } };
-        var candidates = new[] { new WorkspaceKnowledgeCandidate { Status = WorkspaceKnowledgeStatus.Pending } };
-        var briefing = SeriesBriefingBuilder.Build(Series(lessons, candidates: candidates, useKnowledge: false), [Session(IdA, 1)]);
-        Assert.False(briefing.KnowledgeEnabled);
-        Assert.Empty(briefing.Lessons);
-        Assert.Empty(briefing.QuestionBank);
-        Assert.Empty(briefing.PendingCandidates);
-        Assert.Single(briefing.LatestSessions);
-    }
-
-    [Fact]
-    public void PendingCandidatesNeedAValidSource()
-    {
-        var now = DateTimeOffset.UtcNow;
-        var candidates = new[]
-        {
-            new WorkspaceKnowledgeCandidate { Status = WorkspaceKnowledgeStatus.Pending, SourceSessionId = IdA, CreatedAt = now.AddDays(-1) },
-            new WorkspaceKnowledgeCandidate { Status = WorkspaceKnowledgeStatus.Pending, SourceSessionId = null, CreatedAt = now.AddDays(-2) },
-            new WorkspaceKnowledgeCandidate { Status = WorkspaceKnowledgeStatus.Pending, SourceSessionId = Guid.NewGuid().ToString("D"), CreatedAt = now },
-            new WorkspaceKnowledgeCandidate { Status = WorkspaceKnowledgeStatus.Accepted, SourceSessionId = IdA, CreatedAt = now }
-        };
-        var briefing = SeriesBriefingBuilder.Build(Series(candidates: candidates), []);
-        Assert.Equal(2, briefing.PendingCandidates.Count);
-        Assert.Equal(now.AddDays(-1), briefing.PendingCandidates[0].CreatedAt);
-    }
-
-    [Fact]
-    public void ZeroLimitsProduceEmptyLists()
-    {
-        var briefing = SeriesBriefingBuilder.Build(
-            Series([new WorkspaceLesson { Text = "x" }], [new QuestionBankItem { Question = "q", Answer = "a" }]),
-            [Session(IdA, 1)], meetingLimit: 0, knowledgeLimit: 0);
-        Assert.Empty(briefing.LatestSessions);
-        Assert.Empty(briefing.Lessons);
-        Assert.Empty(briefing.QuestionBank);
+        var session = new SessionMeta { Id = sourceId, StartedAt = DateTimeOffset.UtcNow };
+        var briefing = SeriesBriefingBuilder.Build(series, [session],
+            evidenceReferences: [Evidence("notes:decisions:delivery", "line-v1", "claim-v1",
+                SessionEvidenceOrigin.StructuredNotes)]);
+        Assert.Empty(briefing.Decisions);
+        Assert.Single(briefing.StaleItems);
     }
 }

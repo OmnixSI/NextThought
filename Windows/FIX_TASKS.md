@@ -40,7 +40,7 @@ Nov 20, 2026 · @Homing
 | B2 | 已实现、未验证 | Glossary 导出/解析按 Mac；往返测试 | 待逐元素对照或实机验证 |
 | B3 | 已实现、未验证 | `WorkspaceSourceIntegrity.RemoveMeetings` 完整移植：经验/历史/题库/系列条目/知识候选/变更候选/墓碑；开会删除接入该路径；翻译 Swift 删除测试 | 未实机删除真实会议；B4 备份合并、B6 证据构建仍待做 |
 | B4 | 已实现、未验证 | `BackupMerge` 增加 `mergeLessons/mergeQuestionBank/mergeSeriesItems/mergeSeriesCandidates/mergeCandidates` 与系列条目墓碑；三个 Swift 合并测试已翻译通过 | 其余备份合并 Swift 测试未逐项翻译；B22 时补齐 |
-| B5 | 未做 | — | 未开始 |
+| B5 | 已实现、未验证 | `SeriesBriefingBuilder.HasCurrentEvidence` 增加 `origin == textNotes`、`lineID != null` 与证据修订比对；翻译两个证据测试 | 其余简报 Swift 测试未逐项翻译；B22 补齐 |
 | B6 | 未做 | — | 未开始 |
 | B7 | 未做 | — | 未开始 |
 | B8 | 未做 | — | 未开始 |

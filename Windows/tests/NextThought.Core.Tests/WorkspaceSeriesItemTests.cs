@@ -101,7 +101,8 @@ public sealed class WorkspaceSeriesItemTests
             TranscriptSourceRevision = "t"
         };
         var current = new SessionEvidenceReference("e", "标题", "决定", SessionEvidenceSupport.Quoted,
-            SessionEvidenceOrigin.TextNotes, Quote: "原话", ReviewDecision: SessionEvidenceDecision.Supported,
+            SessionEvidenceOrigin.TextNotes, Quote: "原话", LineId: Guid.NewGuid(),
+            ReviewDecision: SessionEvidenceDecision.Supported,
             ClaimRevision: "c", SourceRevision: "s", TranscriptSourceRevision: "t");
         var withEvidence = SeriesBriefingBuilder.Build(Series(item), [Session()], evidenceReferences: [current]);
         Assert.Single(withEvidence.Decisions);

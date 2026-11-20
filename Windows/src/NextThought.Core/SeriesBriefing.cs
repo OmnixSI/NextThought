@@ -116,6 +116,8 @@ public static class SeriesBriefingBuilder
             && (reference.SessionId is not { } sessionId
                 || string.Equals(sessionId.ToString("D"), item.SourceSessionId, StringComparison.OrdinalIgnoreCase))
             && reference.ReviewDecision == SessionEvidenceDecision.Supported
+            && reference.Origin == SessionEvidenceOrigin.TextNotes
+            && reference.LineId is not null
             && !reference.ReviewIsStale
             && reference.ClaimRevision == item.ClaimRevision
             && reference.SourceRevision == item.SourceRevision
