@@ -311,9 +311,15 @@ public sealed record Glossary
                     "term" or "术语" or "词" or "专有名词" or "word" => GlossaryKind.Term,
                     _ => (GlossaryKind?)null
                 };
-                if (parsedKind is { } value) kind = value;
-                else note = columns[2];
-                if (columns.Length > 3 && columns[3].Length > 0) note = columns[3];
+                if (parsedKind is { } value)
+                {
+                    kind = value;
+                    if (columns.Length > 3 && columns[3].Length > 0) note = columns[3];
+                }
+                else if (columns[2].Length > 0)
+                {
+                    note = columns[2];
+                }
             }
             entries.Add(new GlossaryEntry(columns[0], kind, variants, note));
         }
@@ -595,5 +601,17 @@ public sealed class GlossaryStore
     /// <summary>The table as the text box shows it: canonical | variant | variant.</summary>
     public static string ToText(Glossary glossary) =>
         string.Join('\n', glossary.Entries.Select(entry =>
-            string.Join(" | ", new[] { entry.Canonical }.Concat(entry.Variants))));
+        {
+            static string Plain(string text) => text.Replace('|', '/').Trim();
+            var note = Plain(entry.Note ?? "");
+            var columns = new List<string>
+            {
+                Plain(entry.Canonical),
+                string.Join(", ", entry.Variants.Select(Plain))
+            };
+            columns.Add(entry.Kind == GlossaryKind.Person ? "人名" : (note.Length == 0 ? "" : "术语"));
+            columns.Add(note);
+            while (columns.Count > 1 && columns[^1].Length == 0) columns.RemoveAt(columns.Count - 1);
+            return string.Join(" | ", columns);
+        }));
 }

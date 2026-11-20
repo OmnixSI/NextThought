@@ -84,18 +84,22 @@ public sealed class GlossaryTests
         Assert.Equal("", Glossary.Empty.PromptSection());
     }
 
+
     [Fact]
-    public void ParseTextTakesPipesAndMergesDuplicates()
+    public void ExportTextRoundTripsMacFormat()
     {
-        var glossary = Glossary.ParseText("""
-            Kubernetes | K8s | 库伯奈提斯
-            OpenAI | open ai
-            kubernetes | k8s
-            """);
-        Assert.Equal(2, glossary.Entries.Count);
-        // Third column is the kind, an unknown third column is a note; the later canonical becomes a variant.
-        Assert.Equal("库伯奈提斯", glossary.Entries[0].Note);
-        Assert.Equal(["K8s", "kubernetes", "k8s"], glossary.Entries[0].Variants);
+        var glossary = new Glossary([
+            new GlossaryEntry("Kubernetes", GlossaryKind.Product, ["K8s", "库伯奈提斯"]),
+            new GlossaryEntry("张三", GlossaryKind.Person),
+            new GlossaryEntry("OpenAI", GlossaryKind.Term, ["open ai"], "模型")
+        ]);
+        var text = GlossaryStore.ToText(glossary);
+        Assert.Equal("Kubernetes | K8s, 库伯奈提斯\n张三 |  | 人名\nOpenAI | open ai | 术语 | 模型", text);
+        var parsed = Glossary.ParseText(text);
+        Assert.Equal(3, parsed.Entries.Count);
+        Assert.Equal(["K8s", "库伯奈提斯"], parsed.Entries[0].Variants);
+        Assert.Equal(GlossaryKind.Person, parsed.Entries[1].Kind);
+        Assert.Equal("模型", parsed.Entries[2].Note);
     }
 
     [Fact]
@@ -169,7 +173,7 @@ public sealed class GlossaryTests
             Assert.Equal(6, loaded.Entries.Count);
             Assert.Equal("Kubernetes", loaded.Entries[0].Canonical);
             Assert.Equal(2, loaded.Entries[0].Variants.Count);
-            Assert.Equal("Kubernetes | K8s | 库伯奈提斯", GlossaryStore.ToText(loaded).Split('\n')[0]);
+            Assert.Equal("Kubernetes | K8s, 库伯奈提斯", GlossaryStore.ToText(loaded).Split('\n')[0]);
 
             File.WriteAllText(store.FilePath, "{ not json");
             Assert.True(store.Load().IsEmpty);
