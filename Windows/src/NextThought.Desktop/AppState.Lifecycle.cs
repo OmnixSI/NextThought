@@ -51,12 +51,16 @@ public partial class AppState
             ? UiText.EnglishUi ? $"{slides.Count} slides" : $"{slides.Count} 页"
             : UiText.EnglishUi ? $"Slide {slides[slideIndex].Number} / {slides.Count}" : $"第 {slides[slideIndex].Number} 页 / {slides.Count}";
 
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string shortcutConflicts = "";
+    public bool HasShortcutConflicts => ShortcutConflicts.Length > 0;
+    partial void OnShortcutConflictsChanged(string value) => OnPropertyChanged(nameof(HasShortcutConflicts));
+
     private string BuildShortcutText()
     {
         var lines = new List<string>();
         foreach (var action in ShortcutKeys.Actions)
         {
-            var binding = ShortcutKeys.ParseBinding(shortcutOverrides.GetValueOrDefault(action.Id), action.Default);
+            var binding = ShortcutKeys.ParseBinding(shortcutOverrides.GetValueOrDefault(action.Id), action.DefaultModifiers, action.DefaultKey);
             lines.Add(action.Id + "=" + ShortcutKeys.Format(binding.Modifiers, binding.Key));
         }
         return string.Join("\n", lines);
@@ -64,6 +68,9 @@ public partial class AppState
 
     public (uint Modifiers, uint Key) ShortcutBinding(string id, uint fallbackKey) =>
         ShortcutKeys.ParseBinding(shortcutOverrides.GetValueOrDefault(id), fallbackKey);
+
+    public (uint Modifiers, uint Key) ShortcutBinding(string id, uint fallbackModifiers, uint fallbackKey) =>
+        ShortcutKeys.ParseBinding(shortcutOverrides.GetValueOrDefault(id), fallbackModifiers, fallbackKey);
 
     public void OpenExternal(string target)
     {

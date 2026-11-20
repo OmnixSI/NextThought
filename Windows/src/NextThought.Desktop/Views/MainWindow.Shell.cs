@@ -87,39 +87,43 @@ public partial class MainWindow
 
     private void RegisterHotkeys()
     {
-        GlobalHotkeys.Binding B(string id, string label, uint fallback, Action action)
+        GlobalHotkeys.Binding B(string id, Action action)
         {
-            var binding = state.ShortcutBinding(id, fallback);
+            var definition = NextThought.Core.ShortcutKeys.Find(id)
+                             ?? throw new InvalidOperationException("Unknown shortcut: " + id);
+            var binding = state.ShortcutBinding(id, definition.DefaultModifiers, definition.DefaultKey);
             return new GlobalHotkeys.Binding(
-                $"{NextThought.Core.ShortcutKeys.Format(binding.Modifiers, binding.Key)} {label}", binding.Key, action)
+                $"{NextThought.Core.ShortcutKeys.Format(binding.Modifiers, binding.Key)} {definition.Label}", binding.Key, action)
             {
                 Modifiers = binding.Modifiers
             };
         }
         hotkeys = new GlobalHotkeys(
         [
-            B("record", "开始或停止记录", 0x52, ToggleRecording),
-            B("island", "显示或隐藏提示岛", 0x49, ToggleCueIsland),
-            B("live", "切换会中窗口", 0x4D, () => state.CycleLiveModeCommand.Execute(null)),
-            B("region", "区域截图", 0x53, () => _ = CaptureRegionAsync()),
-            B("teleprompter", "提词器", 0x55, ToggleTeleprompter),
-            B("hide", "隐藏或恢复所有窗口", 0xDC, ToggleHideAll),
-            B("main", "唤起主窗口", 0x4E, RestoreMainWindow),
-            B("copy", "复制当前回答", 0x48, () => state.CopyAnswerCommand.Execute(null)),
-            B("regenerate", "重新生成上一题", 0x47, () => state.RegenerateAnswerCommand.Execute(null)),
-            B("shorter", "把回答改短", 0x4B, () => state.ShorterAnswerCommand.Execute(null)),
-            B("cancel", "取消当前回答", 0x58, () => state.CancelCommand.Execute(null)),
-            B("previous", "上一条回答", 0x25, () => state.PreviousAnswerCommand.Execute(null)),
-            B("next", "下一条回答", 0x27, () => state.NextAnswerCommand.Execute(null)),
-            B("through", "提词浮窗鼠标穿透", 0x4A, ToggleTeleprompterClickThrough),
-            B("slideNext", "下一页幻灯片", 0x22, () => state.NextSlideCommand.Execute(null)),
-            B("slidePrevious", "上一页幻灯片", 0x21, () => state.PreviousSlideCommand.Execute(null)),
-            B("force", "立即回答最新转写", 0x51, () => state.ForceAnswerCommand.Execute(null)),
-            B("window", "窗口截图", 0x57, () => _ = CaptureWindowAsync()),
-            B("pause", "暂停或恢复聆听", 0x20, () => state.TogglePauseListeningCommand.Execute(null))
+            B("window", () => _ = CaptureWindowAsync()),
+            B("region", () => _ = CaptureRegionAsync()),
+            B("record", ToggleRecording),
+            B("regenerate", () => state.RegenerateAnswerCommand.Execute(null)),
+            B("force", () => state.ForceAnswerCommand.Execute(null)),
+            B("pause", () => state.TogglePauseListeningCommand.Execute(null)),
+            B("teleprompter", ToggleTeleprompter),
+            B("cancel", () => state.CancelCommand.Execute(null)),
+            B("copy", () => state.CopyAnswerCommand.Execute(null)),
+            B("through", ToggleTeleprompterClickThrough),
+            B("hide", ToggleHideAll),
+            B("previous", () => state.PreviousAnswerCommand.Execute(null)),
+            B("next", () => state.NextAnswerCommand.Execute(null)),
+            B("shorter", () => state.ShorterAnswerCommand.Execute(null)),
+            B("live", () => state.CycleLiveModeCommand.Execute(null)),
+            B("island", ToggleCueAlwaysOpen),
+            B("slidePrevious", () => state.PreviousSlideCommand.Execute(null)),
+            B("slideNext", () => state.NextSlideCommand.Execute(null))
         ]);
+        state.ShortcutConflicts = hotkeys.Unregistered.Count == 0
+            ? ""
+            : "以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。";
         if (hotkeys.Unregistered.Count > 0)
-            state.SetStatus("以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。", true);
+            state.SetStatus(state.ShortcutConflicts, true);
     }
 
     /// <summary>Tray icon: restore, hide everything while recording continues, record toggle, quit.</summary>
@@ -364,6 +368,14 @@ public partial class MainWindow
     }
 
     /// <summary>Floating teleprompter window (plan §9 提词器).</summary>
+    /// <summary>G2: the Mac toggleCueOpen action flips the always-open preference.</summary>
+    private void ToggleCueAlwaysOpen()
+    {
+        state.Settings.CueAlwaysOpen = !state.Settings.CueAlwaysOpen;
+        _ = state.Settings.SaveAsync();
+        state.SetStatus(state.Settings.CueAlwaysOpen ? "提词岛会中一直展开。" : "提词岛恢复为鼠标移上去才展开。");
+    }
+
     public void ToggleTeleprompter()
     {
         if (teleprompter is { IsVisible: true })

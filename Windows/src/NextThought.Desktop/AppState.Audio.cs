@@ -186,8 +186,14 @@ public partial class AppState
                 if (!known.Contains(id)) throw new FormatException("未知快捷键动作：" + id);
                 var binding = ShortcutKeys.ParseBinding(line[(separator + 1)..], 0);
                 if (binding.Key == 0) throw new FormatException("无法识别按键：" + line[(separator + 1)..].Trim());
+                if (binding.Modifiers == 0) throw new FormatException("快捷键必须包含 Command、Option 或 Control，不能只使用普通按键。");
                 map[id] = ShortcutKeys.Format(binding.Modifiers, binding.Key);
             }
+            var effective = new Dictionary<string, (uint Modifiers, uint Key)>(StringComparer.OrdinalIgnoreCase);
+            foreach (var action in ShortcutKeys.Actions)
+                effective[action.Id] = ShortcutKeys.ParseBinding(map.GetValueOrDefault(action.Id),
+                    action.DefaultModifiers, action.DefaultKey);
+            if (ShortcutKeys.Validate(effective) is { } validationError) throw new FormatException(validationError);
             var settings = SettingsStore.Load();
             settings.Shortcuts = map;
             await SettingsStore.SaveAsync(settings);
