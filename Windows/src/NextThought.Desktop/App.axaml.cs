@@ -29,12 +29,11 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        RequestedThemeVariant = SelfTestOptions.Dark ? ThemeVariant.Dark : ThemeVariant.Default;
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var state = new AppState();
-            var appearance = SelfTestOptions.Dark ? "dark" : "system";
-            try { appearance = SelfTestOptions.Dark ? "dark" : state.SettingsStore.Load().Appearance; } catch { }
+            var appearance = "system";
+            try { appearance = state.SettingsStore.Load().Appearance; } catch { }
             RequestedThemeVariant = appearance switch
             {
                 "dark" => ThemeVariant.Dark,

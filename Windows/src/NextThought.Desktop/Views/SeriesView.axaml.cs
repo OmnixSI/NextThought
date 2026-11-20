@@ -12,8 +12,7 @@ public partial class SeriesView : UserControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        if (SelfTestOptions.SeriesTab is { } index && index >= 0 && index < Tabs.ItemCount) Tabs.SelectedIndex = index;
-    }
+}
 
     private void Series_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {

@@ -10,11 +10,9 @@ public partial class SettingsView : UserControl
 {
     public SettingsView() => InitializeComponent();
 
-    /// <summary>--settings-scroll lets the screenshot tool show a card below the fold.</summary>
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        if (SelfTestOptions.SettingsScroll is { } offset) SettingsScroll.Offset = new Avalonia.Vector(0, offset);
     }
 
     /// <summary>Filters the visible setting cards by their text (Mac settings search).</summary>

@@ -18,6 +18,16 @@ public sealed class SelfTestStructureTests
     }
 
 
+
+    [Fact]
+    public void LegacyPerCheckFlagsAreGone()
+    {
+        var root = Root();
+        var startup = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "StartupOptions.cs"));
+        Assert.DoesNotContain("SelfTestOptions", startup);
+        Assert.False(File.Exists(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "SelfTestOptions.cs")));
+    }
+
     [Fact]
     public void ProductionStartupOptionsOnlyExposeThreeSwitches()
     {

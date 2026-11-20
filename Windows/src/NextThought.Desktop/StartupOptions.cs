@@ -9,7 +9,6 @@ public static class StartupOptions
 
     public static void Parse(IReadOnlyList<string> args)
     {
-        SelfTestOptions.Parse(args);
         for (var index = 0; index < args.Count; index++)
         {
             var argument = args[index];

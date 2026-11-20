@@ -679,8 +679,6 @@ public partial class AppState : ObservableObject
                     ? $"已处理 {recovered.Count} 场中断会议；可在历史中继续查看或整理纪要。"
                     : ModelReady ? "语音已就绪。可以开始记录，或先导入 WAV 验证。" : "先到设置准备语音组件；未连接回答服务时也可以只记录。");
             }
-            if (SelfTestOptions.Companion && SelectedCompanionAddress is not null) await ToggleCompanionAsync();
-            if (SelfTestOptions.Section is { } requested) Section = requested;
         }
         catch (Exception ex)
         {
@@ -765,7 +763,7 @@ public partial class AppState : ObservableObject
         var demoFishbone = StructuredNotesParser.Parse(DemoContent.FishboneJson, NotesFormat.Fishbone, fallbackTitle: "结构组会");
         var demoViewpoints = StructuredNotesParser.Parse(DemoContent.ViewpointsJson, NotesFormat.Viewpoints, fallbackTitle: "结构组会");
         // The demo follows --notes-format, so each drawn format can be reviewed without a model.
-        var demoPayload = SelfTestOptions.NotesFormat == NotesFormat.Viewpoints ? demoViewpoints : demoFishbone;
+        var demoPayload = demoFishbone;
         if (demoPayload is not null)
         {
             SelectedNotesFormat = demoPayload.Format;
@@ -781,7 +779,6 @@ public partial class AppState : ObservableObject
         // History now holds the demo meetings: the series page lists them by id.
         RefreshSeries();
         StartDemoFeeder();
-        if (SelfTestOptions.Subtitles) LiveMode = LiveWindowMode.Subtitles;
     }
 
     public void RefreshModelState()
