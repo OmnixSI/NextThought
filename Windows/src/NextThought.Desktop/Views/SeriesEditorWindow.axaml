@@ -17,6 +17,10 @@
     <TextBlock Text="要求 / Preferences" Classes="caption" />
     <TextBox Text="{Binding SeriesEditorPreferences}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" />
     <CheckBox Content="使用系列知识（经验与题库）" IsChecked="{Binding SeriesEditorUseKnowledge}" />
+    <TextBlock Text="领域字段（每行 key=value）" Classes="section" />
+    <TextBox Text="{Binding SeriesEditorFieldsText}" AcceptsReturn="True" TextWrapping="Wrap" Height="90" />
+    <TextBlock Text="复盘 / 当前阶段" Classes="section" />
+    <TextBox Text="{Binding SeriesEditorStageReview}" AcceptsReturn="True" TextWrapping="Wrap" Height="70" />
     <TextBlock Text="系列文档" Classes="section" />
     <ItemsControl ItemsSource="{Binding SeriesEditorDocuments}">
       <ItemsControl.ItemTemplate>

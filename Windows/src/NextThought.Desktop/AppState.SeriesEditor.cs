@@ -10,6 +10,8 @@ public partial class AppState
     [ObservableProperty] private string seriesEditorStyle = "";
     [ObservableProperty] private string seriesEditorPreferences = "";
     [ObservableProperty] private bool seriesEditorUseKnowledge = true;
+    [ObservableProperty] private string seriesEditorFieldsText = "";
+    [ObservableProperty] private string seriesEditorStageReview = "";
 
     public void LoadSeriesEditor()
     {
@@ -19,6 +21,9 @@ public partial class AppState
         SeriesEditorStyle = series.Style ?? "";
         SeriesEditorPreferences = series.Preferences ?? "";
         SeriesEditorUseKnowledge = series.UseKnowledge;
+        SeriesEditorFieldsText = string.Join("\n", (series.Fields ?? new Dictionary<string, string>())
+            .OrderBy(pair => pair.Key).Select(pair => pair.Key + "=" + pair.Value));
+        SeriesEditorStageReview = series.StageReview ?? "";
         SeriesEditorDocuments.Clear();
         foreach (var document in series.Documents) SeriesEditorDocuments.Add(document);
     }
@@ -64,7 +69,14 @@ public partial class AppState
             Mode = SeriesEditorMode.Trim(),
             Style = SeriesEditorStyle.Trim(),
             Preferences = SeriesEditorPreferences.Trim(),
-            UseKnowledge = SeriesEditorUseKnowledge
+            UseKnowledge = SeriesEditorUseKnowledge,
+            Fields = SeriesEditorFieldsText.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Split('=', 2))
+                .Where(parts => parts.Length == 2 && parts[0].Trim().Length > 0)
+                .GroupBy(parts => parts[0].Trim())
+                .ToDictionary(group => group.Key, group => group.Last()[1].Trim()),
+            StageReview = SeriesEditorStageReview.Trim().Length == 0 ? null : SeriesEditorStageReview.Trim(),
+            StageReviewAt = SeriesEditorStageReview.Trim().Length == 0 ? null : DateTimeOffset.UtcNow
         });
         SaveWorkspace();
         RefreshSeries();
