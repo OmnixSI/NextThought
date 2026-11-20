@@ -20,7 +20,7 @@
 ## 2026-11-20 · 0.5.145 · D8（部分）
 改动：按钮焦点环从 1px 印章红改成 Mac 的 2px `Ink.focus`（Ai）；新增 `Button.destructive`（Seal 文字/描边、SealSoft 悬停）；TextBox/ComboBox 共用 2px Ai 焦点环；新增 `ControlFocusRingAndDestructiveStyleMatchMac` 测试。
 测试：Core **872/872**，NextThought.Tests **151/151**。
-状态：D8「未做」。八卡样张页/焦点环/破坏性按钮/Fluent 状态符/静态 hover/pressed 已完成；并排图与 Mac 仍非逐像素一致，差异未逐项收口。
+状态：D8「已实现、未验证」。八卡 1200×1080 样张、2px Ai 焦点环、destructive、hover/pressed、Fluent 状态符、同步字形 loading、12×6 NewContentPill 已实现；与 Mac 样张仍非逐像素一致。
 未解决：控件样张页与 Mac 截图并排。
 
 ## 2026-11-20 · 0.5.145 · D7（完成）
@@ -52,7 +52,7 @@
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
 测试：Core **872/872**（新增 2 项），NextThought.Tests **151/151**。
-状态：D6「未做」。首页已按 Mac v3 重排：日期行 + “接下来是什么场合？”标题、场景选择、promise、moments、接着上一场（演示系列已补）、最近记录；选中场景 tint 13%；仍非逐像素一致（胶囊尺寸、系列 meta 资料数、最近记录日期等）。
+状态：D6「已实现、未验证」。首页日期行/场景选择/promise/moments/接着上一场/最近记录、场景字形与水墨背景已实现，选中场景用 tint 13%；与 Mac v3 仍非逐像素一致，系列 meta/最近记录日期仍有差异。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
