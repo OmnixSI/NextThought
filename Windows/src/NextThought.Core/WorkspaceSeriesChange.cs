@@ -190,8 +190,20 @@ public static class WorkspaceSeriesChangeMerger
             var history = item.History.ToList();
             history.Add(new WorkspaceSeriesItemRevision
             {
+                Id = Guid.NewGuid().ToString("D"),
+                Revision = item.Revision,
+                Kind = item.Kind,
                 Text = item.Text, Owner = item.Owner, Due = item.Due, DueDate = item.DueDate,
-                ActionState = item.ActionState, Revision = item.Revision, At = item.UpdatedAt
+                ActionState = item.ActionState,
+                SourceSessionId = item.SourceSessionId,
+                EvidenceId = item.EvidenceId,
+                ClaimRevision = item.ClaimRevision,
+                SourceRevision = item.SourceRevision,
+                SourceQuote = item.SourceQuote,
+                Location = item.Location,
+                TranscriptSourceRevision = item.TranscriptSourceRevision,
+                SourceMissing = item.SourceMissing,
+                RecordedAt = item.UpdatedAt
             });
             items[itemIndex] = item with
             {

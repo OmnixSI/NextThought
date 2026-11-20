@@ -68,15 +68,31 @@ public sealed record WorkspaceSeriesItem
 
 public sealed record WorkspaceSeriesItemRevision
 {
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = "";
+    public int Revision { get; init; } = 1;
+    public WorkspaceSeriesItem.KindValue Kind { get; init; }
     public string Text { get; init; } = "";
     public string? Owner { get; init; }
     public string? Due { get; init; }
     public DateTimeOffset? DueDate { get; init; }
     public WorkspaceSeriesItem.ActionStateValue? ActionState { get; init; }
-    public int Revision { get; init; } = 1;
-    public DateTimeOffset At { get; init; } = DateTimeOffset.UtcNow;
 
-    /// <summary>Unknown Mac revision fields (id, kind, sourceSessionID…) survive round-trips.</summary>
+    [JsonPropertyName("sourceSessionID")]
+    public string SourceSessionId { get; init; } = "";
+    [JsonPropertyName("evidenceID")]
+    public string EvidenceId { get; init; } = "";
+    public string ClaimRevision { get; init; } = "";
+    public string SourceRevision { get; init; } = "";
+    public string? SourceQuote { get; init; }
+    public string? Location { get; init; }
+    public string? TranscriptSourceRevision { get; init; }
+    public bool? SourceMissing { get; init; }
+
+    [JsonPropertyName("recordedAt")]
+    public DateTimeOffset RecordedAt { get; init; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Unknown Mac revision fields survive round-trips.</summary>
     [JsonExtensionData]
     public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
 }

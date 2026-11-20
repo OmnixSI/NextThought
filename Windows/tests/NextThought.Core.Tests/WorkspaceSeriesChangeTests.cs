@@ -105,7 +105,14 @@ public sealed class WorkspaceSeriesChangeTests
         var previous = Assert.Single(item.History);
         Assert.Equal("旧待办", previous.Text);
         Assert.Equal(2, previous.Revision);
+        Assert.Equal(WorkspaceSeriesItem.KindValue.Action, previous.Kind);
+        Assert.Equal(SessionId.ToString("D"), previous.SourceSessionId);
+        Assert.Equal("e0", previous.EvidenceId);
         Assert.Equal("item-1", receipt!.ResultItemId);
+        var historyJson = System.Text.Json.JsonSerializer.Serialize(previous, JsonDefaults.ArchiveOptions);
+        Assert.Contains("\"recordedAt\"", historyJson);
+        Assert.Contains("\"sourceSessionID\"", historyJson);
+        Assert.Contains("\"kind\"", historyJson);
 
         var (unchanged, refused) = WorkspaceSeriesChangeMerger.Apply(series, "c1",
             WorkspaceSeriesChangeDecision.Replace, targetItemId: "item-1", expectedRevision: 99);
