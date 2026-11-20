@@ -29,6 +29,20 @@ public sealed class SelfTestStructureTests
     }
 
 
+
+    [Fact]
+    public void MotionTokensAndReduceMotionArePresent()
+    {
+        var text = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Motion.cs"));
+        foreach (var token in new[] { "Hover", "Expand", "Phase", "Snappy", "Morph", "SystemParametersInfo", "FadeIn", "FadeOut" })
+            Assert.Contains(token, text);
+        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
+        Assert.Contains("Motion.FadeIn()", shell);
+        Assert.Contains("Motion.FadeOut()", shell);
+        Assert.DoesNotContain("TimeSpan.FromMilliseconds(160)", shell);
+        Assert.DoesNotContain("TimeSpan.FromMilliseconds(120)", shell);
+    }
+
     [Fact]
     public void AppStateMainFileIsBelow600Lines()
     {
