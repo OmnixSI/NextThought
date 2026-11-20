@@ -58,7 +58,7 @@ Nov 20, 2026 · @Homing
 | B20 | 已实现、未验证 | 文档任务队列：重开时未完成阶段回到 Queued 并保留进度，失败/取消状态与消息保留；删除记录墓碑、迟到保存不能复活、可恢复；损坏 JSON 拒绝覆盖；容量只淘汰已结束任务，不再静默丢未完成任务；4 个测试通过 | 尚未移植 SQLite 行读取器异常测试与工作区删除日志的完整事务；未在正式导入流程接入恢复调用 |
 | B21 | 已实现、未验证 | 追问判断按 Mac 去掉首尾所有标点；摘要去重只去标点、保留符号；说话人名按字素簇截断 24；表意文字范围补 CJK 扩展 A/兼容区（连字假名/谚文已有）；4 个边界测试通过 | `QuestionDetectorTests`、`TranscriptDeduplicatorTests`(3)、`SpeakerClusteringTests`(20) 尚未全部逐条翻译 |
 | B22 | 已实现、未验证 | `Windows/CORE_PARITY.md` 592/592 项已翻译；Core 测试 1514 通过、0 失败、0 跳过；各测试文件与 Swift 同名逐项对应 | 无跳过；B22 的「已验证」需要一次对 Mac 原始测试数字的独立复算或实机确认，暂按未验证 |
-| B23 | 未做 | — | 未开始 |
+| B23 | 已实现、未验证 | B22 全量对齐时发现两处旧 C# 测试期望与 Swift 矛盾并按 Swift 改正：`WorkspaceSeriesChangeTests.ACandidateCanOnlyBeReviewedOnce`（Swift 二次复核返回原回执，不是 null）、`KnowledgeMergerTests.ShortLessonsAndAnswersLessQuestionsAreDropped`（知识候选缺失与空列表区分）；Core 1514 项全部通过 | 尚未用独立脚本逐条比对全部旧测试与 Swift 行号，`已验证` 还缺一次人工复核记录 |
 | B24 | 已实现、未验证 | 进程相关测试改用 `TestShell`：Windows 用 cmd.exe，非 Windows 用 /bin/sh；不再硬编码 cmd.exe；时间相关测试已有显式时区（NotesDates 传 East8） | 尚未在与 UTC 时区的机器上跑全量；`ArchiveDateTests` 使用本机当前时间但只断言 UTC 序列化，未改 |
 | C1 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：`ShowActivated=false`、`Focusable=false`，窗口打开后加 `WS_EX_NOACTIVATE` + `WS_EX_TOOLWINDOW`；提供 `IsNonActivating` 供自检读取 | 需在记事本打字时点岛上按钮，确认焦点/输入不中断（实机记录未做） |
 | C2 | 未做 | — | 静止鼠标穿透与 80ms 指针轮询未实现 |
