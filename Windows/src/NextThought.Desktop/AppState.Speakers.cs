@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -35,6 +36,36 @@ public partial class AppState
             if (!baseLabel.Contains(suffix, StringComparison.Ordinal)) row.Label = baseLabel + suffix;
         }
         SpeakerEditorVisible = false;
+        try
+        {
+            if (CurrentSession is { } meta)
+            {
+                var path = Path.Combine(Sessions.Folder(meta.Id), "speakers.json");
+                var map = names.ToDictionary(pair => pair.Key.ToString(), pair => new { name = pair.Value.Name, me = pair.Value.IsMe });
+                File.WriteAllText(path, JsonSerializer.Serialize(map, JsonDefaults.Options));
+            }
+        }
+        catch { }
         SetStatus("说话人命名已应用到当前转写。");
+    }
+
+    private void LoadSpeakerNames(Guid sessionId)
+    {
+        try
+        {
+            var path = Path.Combine(Sessions.Folder(sessionId), "speakers.json");
+            if (!File.Exists(path)) return;
+            var map = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(path), JsonDefaults.Options);
+            if (map is null) return;
+            foreach (var row in Transcript)
+            {
+                if (row.Voice is not { } voice || !map.TryGetValue(voice.ToString(), out var info)) continue;
+                var name = info.TryGetProperty("name", out var value) ? value.GetString() ?? "" : "";
+                var isMe = info.TryGetProperty("me", out var me) && me.GetBoolean();
+                var suffix = isMe ? " · 我" : string.IsNullOrWhiteSpace(name) ? "" : " · " + name;
+                if (suffix.Length > 0 && !row.Label.Contains(suffix, StringComparison.Ordinal)) row.Label += suffix;
+            }
+        }
+        catch { }
     }
 }

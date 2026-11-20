@@ -897,6 +897,7 @@ public partial class AppState
             foreach (var line in lines.TakeLast(400)) Transcript.Add(new TranscriptRow(line));
             try { LoadMeetingNotes(SessionUserContentStore.Load(Sessions.Folder(data.Meta.Id))); } catch { }
             LoadCoachSummary(data.Meta.Id);
+            LoadSpeakerNames(data.Meta.Id);
             SystemPartial = MicrophonePartial = "";
             MeetingTitle = data.Meta.Title;
             PageSubtitle = (UiText.EnglishUi ? "Meeting archived · " : "会议归档 · ") + data.Meta.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");

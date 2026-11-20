@@ -183,6 +183,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SpeakerNamesPersistPerSession()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Speakers.cs"));
+        Assert.Contains("speakers.json", state);
+        Assert.Contains("LoadSpeakerNames", state);
+    }
+
     [Fact]
     public void MaterialReviewSheetExists()
     {
