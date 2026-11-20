@@ -37,7 +37,8 @@ Nov 20, 2026 · @Homing
 | D3 | 已实现、未验证 | 浅/深色 token 部分对齐；逐页截图未做 |
 | A15 | 未做 | MacCodec 包已建；Windows Swift/CryptoKit 阻塞，见 OPEN_QUESTIONS |
 | H1 | 已实现、未验证 | MainWindow 258 行、56 检查各一文件、旧参数删除、--self-test 实跑通过 |
-| H2 | 未做 | AppState 202 行、15 个 Mac 扩展文件已有；方法映射仍是启发式 |
+| H2 | 未做 | AppState 202 行、15 个 Mac 扩展文件已有；179 个 Swift 方法名对 C# 完全匹配 0 |
+| D4 | 未做 | S12/Control 等资源、侧栏/内容宽度已改；逐视图硬编码未清 |
 
 ## 1. ⽬标与范围 
 
