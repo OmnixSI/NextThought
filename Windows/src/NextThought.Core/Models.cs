@@ -196,6 +196,9 @@ public sealed record AppSettings
     /// <summary>Mac key <c>teleprompterHideBackground</c>: transparent window background, opaque text.</summary>
     public bool TeleprompterHideBackground { get; set; }
 
+    /// <summary>Mac key <c>cueScreen</c>: display name the cue island sits on; empty picks the built-in/primary.</summary>
+    public string CueScreen { get; set; } = "";
+
     /// <summary>Mac key <c>capturePrivacy</c>: exclude all app windows from screen sharing.</summary>
     public bool CapturePrivacy { get; set; } = true;
 

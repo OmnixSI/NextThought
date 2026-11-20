@@ -69,7 +69,7 @@ Nov 20, 2026 · @Homing
 | C7 | 未做 | — | 讲稿要点/教练提示/自动结束倒计时未实现 |
 | C8 | 未做 | — | 双语回答未实现 |
 | C9 | 未做 | — | 场景颜料描边与 morph 弹簧未实现 |
-| C10 | 未做 | — | 选屏与多屏缩放未实现 |
+| C10 | 已实现、未验证 | `Settings.CueScreen`（Mac 键 `cueScreen`）与设置页「提示岛所在屏」下拉框，列出主屏与全部显示器；`CueIslandWindow.SelectedScreen` 按名字选屏，未选时用主屏/内置屏，位置按 `screen.Bounds` 与 `Scaling` 顶部居中，切换设置即时重定位 | 需实机在 150% 缩放副屏确认水平居中、贴顶 |
 | C11 | 已实现、未验证 | 浮窗关闭改为隐藏；QA passed | 待逐元素对照或实机验证 |
 | C12 | 已实现、未验证 | 用户隐藏停定时器；QA passed | 待逐元素对照或实机验证 |
 | C13 | 已实现、未验证 | `SubtitleBarWindow.axaml.cs`：指针移入降到 0.15 透明度、静止 0.6 秒进入可拖动、拖动后保存位置并在重启时恢复（`subtitleBar.position` 对应 `SubtitleBarX/Y`）、双击重置到底部居中、窗口非激活（`WS_EX_NOACTIVATE|TOOLWINDOW`）；可跨屏保存 | 需实机拖动、重启、双击重置并截图与 Mac 对照；重置入口是否与 Mac 用户路径完全一致待确认 |

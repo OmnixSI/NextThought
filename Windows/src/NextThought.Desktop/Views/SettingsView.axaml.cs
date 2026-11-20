@@ -15,11 +15,44 @@ public partial class SettingsView : UserControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+        RefreshScreens();
         ShowPage(currentPage);
     }
 
 
 
+
+    private bool refreshingScreens;
+
+    private void RefreshScreens()
+    {
+        if (DataContext is not AppState state) return;
+        var top = TopLevel.GetTopLevel(this);
+        if (top is null) return;
+        refreshingScreens = true;
+        CueScreenCombo.Items.Clear();
+        CueScreenCombo.Items.Add(new ComboBoxItem { Content = "内置屏 / 主屏（自动）", Tag = "" });
+        foreach (var screen in top.Screens.All)
+        {
+            var label = screen.DisplayName ?? "显示器";
+            if (ReferenceEquals(screen, top.Screens.Primary)) label += "（主屏）";
+            CueScreenCombo.Items.Add(new ComboBoxItem { Content = label, Tag = screen.DisplayName ?? "" });
+        }
+        var selected = CueScreenCombo.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(item => (string?)item.Tag == state.Settings.CueScreen) ?? CueScreenCombo.Items[0];
+        CueScreenCombo.SelectedItem = selected;
+        refreshingScreens = false;
+    }
+
+    private void CueScreen_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (refreshingScreens || DataContext is not AppState state) return;
+        if (CueScreenCombo.SelectedItem is ComboBoxItem { Tag: string name })
+        {
+            state.Settings.CueScreen = name;
+            _ = state.Settings.SaveAsync();
+        }
+    }
 
     private void SceneOption_Click(object? sender, RoutedEventArgs e)
     {

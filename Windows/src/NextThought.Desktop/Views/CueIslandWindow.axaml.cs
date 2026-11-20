@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Platform;
 using System.Runtime.InteropServices;
 using Avalonia.Threading;
 
@@ -29,6 +30,7 @@ public partial class CueIslandWindow : Window
         state.Settings.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(NextThought.Desktop.SettingsViewModel.SelectedCueWidth)) ApplyCueWidth();
+            if (e.PropertyName == nameof(NextThought.Desktop.SettingsViewModel.CueScreen) && IsVisible) MoveToTopCentre();
         };
         Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         Closing += (_, e) =>
@@ -178,9 +180,21 @@ public partial class CueIslandWindow : Window
         if (IsVisible) MoveToTopCentre();
     }
 
+    /// <summary>C10: the chosen display, else the built-in/primary one (Mac prefers the camera screen).</summary>
+    private Screen? SelectedScreen()
+    {
+        var selected = state.Settings.CueScreen;
+        if (!string.IsNullOrEmpty(selected))
+        {
+            var match = Screens.All.FirstOrDefault(screen => screen.DisplayName == selected);
+            if (match is not null) return match;
+        }
+        return Screens.Primary ?? Screens.All.FirstOrDefault();
+    }
+
     private void MoveToTopCentre()
     {
-        if (Screens.Primary is not { } screen) return;
+        if (SelectedScreen() is not { } screen) return;
         var scale = screen.Scaling;
         var widthPixels = (int)(Width * scale);
         var x = screen.Bounds.X + Math.Max(0, (screen.Bounds.Width - widthPixels) / 2);
