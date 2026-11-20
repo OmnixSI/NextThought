@@ -196,6 +196,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CompanionSnapshotCarriesPositionAnswerIdAndPhase()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("Position: companionHistory.Count", live);
+        Assert.Contains("AnswerID:", live);
+        Assert.Contains("Phase:", live);
+        Assert.Contains("重新生成一版与上一版不同的回答", live);
+    }
+
     [Fact]
     public void CompanionActionsAckImmediately()
     {

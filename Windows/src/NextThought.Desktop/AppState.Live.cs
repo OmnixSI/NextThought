@@ -693,7 +693,9 @@ public partial class AppState
                 await AnswerAsync(string.IsNullOrWhiteSpace(DetectedQuestion) ? "请总结当前讨论" : DetectedQuestion, false);
                 return true;
             case "regenerate":
-                await AnswerAsync(string.IsNullOrWhiteSpace(DetectedQuestion) ? "请总结当前讨论" : DetectedQuestion, false);
+                // F11: regenerate is not just another answer; ask for a different version.
+                await AnswerAsync("请基于当前讨论重新生成一版与上一版不同的回答；" +
+                    (string.IsNullOrWhiteSpace(DetectedQuestion) ? "请总结当前讨论。" : DetectedQuestion), false);
                 return true;
             case "shorter":
                 await AnswerAsync("请把上一条回答压缩到三句话以内，只保留结论。", false);
@@ -738,8 +740,11 @@ public partial class AppState
         Answer: PlainAnswer,
         Answering: Answering,
         Candidate: DetectedQuestion,
+        Position: companionHistory.Count == 0 ? "" : $"{companionHistoryIndex + 1} / {companionHistory.Count}",
         SessionID: CurrentSession?.Id.ToString("D"),
-        Sources: Sources.Count == 0 ? null : string.Join("、", Sources.Take(3).Select(x => x.Label)));
+        Sources: Sources.Count == 0 ? null : string.Join("、", Sources.Take(3).Select(x => x.Label)),
+        AnswerID: CurrentSession is { } meta ? $"{meta.Id:N}:{meta.AnswerCount}" : null,
+        Phase: Answering ? "generating" : Recording ? "recording" : "idle");
 
     public async Task ShutdownAsync()
     {
