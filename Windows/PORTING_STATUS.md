@@ -52,7 +52,7 @@
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
 测试：Core **872/872**（新增 2 项），NextThought.Tests **151/151**。
-状态：D6「未做」。首页已按 Mac v3 重排：日期行 + “接下来是什么场合？”标题、场景选择、promise、moments、接着上一场（演示系列已补）、最近记录；选中场景 tint 13%；仍非逐像素一致（胶囊尺寸、系列 meta、最近记录日期等）。
+状态：D6「未做」。首页已按 Mac v3 重排：日期行 + “接下来是什么场合？”标题、场景选择、promise、moments、接着上一场（演示系列已补）、最近记录；选中场景 tint 13%；仍非逐像素一致（胶囊尺寸、系列 meta 资料数、最近记录日期等）。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
