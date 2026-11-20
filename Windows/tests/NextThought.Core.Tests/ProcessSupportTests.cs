@@ -29,10 +29,11 @@ public sealed class ProcessSupportTests
     [Fact]
     public async Task WaiterSeesTheExitStatus()
     {
+        var exitCommand = TestShell.For("exit 3", "exit 3");
         using var process = Process.Start(new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = "/c exit 3",
+            FileName = exitCommand.FileName,
+            Arguments = exitCommand.Arguments,
             UseShellExecute = false,
             CreateNoWindow = true
         })!;
@@ -44,10 +45,11 @@ public sealed class ProcessSupportTests
     [Fact]
     public async Task WaiterHonoursCancellationWithoutKillingTheProcess()
     {
+        var sleepCommand = TestShell.For("ping -n 10 127.0.0.1 > nul", "sleep 10");
         using var process = Process.Start(new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = "/c ping -n 10 127.0.0.1 > nul",
+            FileName = sleepCommand.FileName,
+            Arguments = sleepCommand.Arguments,
             UseShellExecute = false,
             CreateNoWindow = true
         })!;

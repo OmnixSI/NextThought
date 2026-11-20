@@ -15,10 +15,11 @@ public sealed class ProcessLineReaderParityTests
     public async Task IdlePipeDoesNotBlockAnotherProcess()
     {
         // A child process that stays silent is the idle pipe of the Swift test.
+        var idleCommand = TestShell.For("ping -n 10 127.0.0.1 >nul", "sleep 10");
         using var idle = Process.Start(new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = "/c ping -n 10 127.0.0.1 >nul",
+            FileName = idleCommand.FileName,
+            Arguments = idleCommand.Arguments,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             CreateNoWindow = true
@@ -26,10 +27,11 @@ public sealed class ProcessLineReaderParityTests
         using var idleCancellation = new CancellationTokenSource();
         var idleReader = ConsumeAsync(idle.StandardOutput.BaseStream, idleCancellation.Token);
 
+        var activeCommand = TestShell.For("echo second process ready", "echo second process ready");
         using var active = Process.Start(new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = "/c echo second process ready",
+            FileName = activeCommand.FileName,
+            Arguments = activeCommand.Arguments,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             CreateNoWindow = true

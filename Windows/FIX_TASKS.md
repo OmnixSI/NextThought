@@ -59,7 +59,7 @@ Nov 20, 2026 · @Homing
 | B21 | 已实现、未验证 | 追问判断按 Mac 去掉首尾所有标点；摘要去重只去标点、保留符号；说话人名按字素簇截断 24；表意文字范围补 CJK 扩展 A/兼容区（连字假名/谚文已有）；4 个边界测试通过 | `QuestionDetectorTests`、`TranscriptDeduplicatorTests`(3)、`SpeakerClusteringTests`(20) 尚未全部逐条翻译 |
 | B22 | 未做 | `Windows/CORE_PARITY.md` 69 文件/592 项逐行；已翻译并提交 208 项；Core 1154 通过、0 失败、0 跳过；剩余 384 项未翻译 | 剩余 28 个 Swift 测试文件的 384 项未翻译；尚未逐文件对照 Swift 方法名 |
 | B23 | 未做 | — | 未开始 |
-| B24 | 未做 | — | 未开始 |
+| B24 | 已实现、未验证 | 进程相关测试改用 `TestShell`：Windows 用 cmd.exe，非 Windows 用 /bin/sh；不再硬编码 cmd.exe；时间相关测试已有显式时区（NotesDates 传 East8） | 尚未在与 UTC 时区的机器上跑全量；`ArchiveDateTests` 使用本机当前时间但只断言 UTC 序列化，未改 |
 | C1 | 未做 | — | 提词岛不抢焦点未实现 |
 | C2 | 未做 | — | 静止鼠标穿透与 80ms 指针轮询未实现 |
 | C3 | 未做 | — | 0.22s 悬停展开/0.2s 离开收起未实现 |

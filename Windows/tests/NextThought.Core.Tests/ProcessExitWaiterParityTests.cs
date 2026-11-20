@@ -13,12 +13,13 @@ public sealed class ProcessExitWaiterParityTests
     [Fact]
     public async Task ExitBeforeAwaitIsRecorded()
     {
+        var command = TestShell.For("exit 0", "exit 0");
         for (var iteration = 0; iteration < 20; iteration++)
         {
             using var process = Process.Start(new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = "/c exit 0",
+                FileName = command.FileName,
+                Arguments = command.Arguments,
                 UseShellExecute = false,
                 CreateNoWindow = true
             })!;
