@@ -16,6 +16,7 @@ public partial class MainWindow
         var source = UiTextSource.Instance;
         var previous = source.Preference;
         var failures = new List<string>();
+        var materialsBeforeSwitch = state.Library.Materials.Count;
         string[] Normalized() => LocalizationAudit.Collect(this).Select(row => row.Replace('\u0001', '\t')).ToArray();
         try
         {
@@ -40,6 +41,15 @@ public partial class MainWindow
             if (english.Any(row => row.EndsWith("\t首页", StringComparison.Ordinal)))
                 failures.Add("English page still shows the 首页 navigation label after switching language");
 
+            var demoMaterials = state.Library.Materials.Count;
+            // G8 regression: a language switch must not rebuild the library while the staged demo is
+            // active. The demo installs the interview series' four prepare materials plus two more.
+            if (StartupOptions.Demo && demoMaterials != materialsBeforeSwitch)
+                failures.Add("demo materials changed across the language switch: " + materialsBeforeSwitch + " -> " + demoMaterials);
+            if (StartupOptions.Demo && demoMaterials < 4)
+                failures.Add("demo library material count is " + demoMaterials + ", expected at least 4");
+            if (StartupOptions.Demo && state.PreparedMaterialCount != 4)
+                failures.Add("demo prepare page should carry 4 series materials, has " + state.PreparedMaterialCount);
             var islandTitle = island?.Title ?? "";
             if (islandTitle.Length > 0 && islandTitle != "NextThought Cue island")
                 failures.Add("cue island title not localized: " + islandTitle);
@@ -67,6 +77,9 @@ public partial class MainWindow
                 ["chineseCount"] = chinese.Length,
                 ["englishCount"] = english.Length,
                 ["englishRows"] = english,
+                ["demoMaterialsBefore"] = materialsBeforeSwitch,
+                ["demoMaterials"] = state.Library.Materials.Count,
+                ["demoPrepareMaterials"] = state.PreparedMaterialCount,
                 ["dialogTitleZh"] = "确认",
                 ["dialogTitleEn"] = dialog.Title,
                 ["uiStrings"] = UiText.EnglishStrings.Count,

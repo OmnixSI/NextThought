@@ -578,27 +578,6 @@ public partial class AppState
         return EchoTextFilter.IsEcho(update.Text, update.Start, update.End, remote, 0);
     }
 
-    /// <summary>
-    /// System prompt plus the accepted lessons of this meeting's series (Mac
-    /// Workspace.experienceNotes): pinned first, then newest, capped at 2,000 characters.
-    /// </summary>
-    private string BuildAnswerSystemPrompt(SessionMeta? meta)
-    {
-        var experience = ExperiencePromptFor(meta);
-        var skills = SkillPrompt(meta);
-        // Use the ported AnswerPromptBuilder instructions (safety, citation, style) instead of
-        // the old three-sentence prompt; series experience and skills stay as extra sections.
-        var prompt = AnswerPromptBuilder.Instructions(Settings.WebSearch);
-        if (Settings.AnswerLanguage == "zh") prompt += "\n\n回答语言：中文。";
-        else if (Settings.AnswerLanguage == "en") prompt += "\n\n回答语言：English。";
-        if (Settings.AnswerGloss) prompt += "\n\n英语回答时，在每句下用 Markdown 引用行 `> 译：中文意思` 附中文对照。";
-        if (SelectedMode == MeetingMode.Academic && Settings.UseMaterials
-            && AnswerPromptBuilder.WholeMaterialOf(DocumentsForRetrieval()) is { } whole)
-            prompt += "\n\n" + AnswerPromptBuilder.WholeMaterial(whole);
-        if (experience.Length > 0) prompt += "\n\n这个系列已经确认的经验（优先遵守）：\n" + experience;
-        return skills.Length == 0 ? prompt : prompt + "\n\n用户加载的技能（按适用部分执行）：\n" + skills;
-    }
-
     /// <summary>User prompt with the series question bank as extra reference material.</summary>
     private IReadOnlyList<SlidePageInfo> slides = [];
 

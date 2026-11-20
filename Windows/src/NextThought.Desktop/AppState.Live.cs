@@ -31,7 +31,7 @@ public partial class AppState
         {
             if (!NextThought.Core.BilingualAnswer.IsBilingual(AnswerText)) return "";
             var question = NextThought.Core.BilingualAnswer.Question(AnswerText);
-            return string.IsNullOrWhiteSpace(question) ? "" : "问：" + question;
+            return string.IsNullOrWhiteSpace(question) ? "" : UiText.T("问：") + question;
         }
     }
 
@@ -507,8 +507,6 @@ public partial class AppState
         try
         {
             if (!check) { DetectedQuestion = question; if (automatic) { } else QuestionInput = ""; AnswerText = ""; }
-            var context = string.Join("\n", currentLines.Where(x => x.SuspectedEcho != true).TakeLast(40).Select(x => UiText.Format("[%@] %@：%@", x.Date.ToLocalTime().ToString("HH:mm:ss"), x.Speaker, x.Text)));
-            if (context.Length > 18000) context = context[^18000..];
             SetStatus(check ? "正在检查回答服务…" : "正在生成参考回答…");
             var progress = new Progress<string>(text =>
             {
@@ -538,9 +536,10 @@ public partial class AppState
                 foreach (var entry in web) WebResults.Add(entry);
                 OnPropertyChanged(nameof(WebStatusText));
             }
+            var parts = BuildAnswerPrompt(meta, question, web);
             var result = await CurrentClient().AnswerAsync(options,
-                check ? "严格按用户要求回复。" : BuildAnswerSystemPrompt(meta),
-                check ? question : BuildAnswerUserPrompt(meta, context, sources, question, web),
+                check ? "严格按用户要求回复。" : parts.System,
+                check ? question : parts.User,
                 text => ((IProgress<string>)progress).Report(text), cancellation.Token);
             if (generation != requestEpoch) return;
             if (!check)
@@ -587,23 +586,44 @@ public partial class AppState
         }
     }
 
-    private const string AnswerPrompt =
-        "你是会议中的参考助手。根据已提供的转写回答当前问题，使用简洁中文；问题为英文时可用英文。" +
-        "区分事实与建议，不编造未提供的文件、数据、决定或经历。参考资料库中的具体事实必须有对应摘录支持并标注引用；" +
-        "资料和转写均未提供所需事实时，明确说明资料不足，不猜测金额、日期、人员或参数。";
-
-    private string BuildAnswerUserPrompt(SessionMeta? meta, string transcript, IReadOnlyList<SourceCitation> sources, string question,
-        IReadOnlyList<WebResult>? web = null)
+    /// <summary>
+    /// Mac AppState.answer: the prompt is AnswerPromptBuilder.makeParts over structured data. The
+    /// answer/gloss language travels inside the JSON as answer_language/gloss_language (Mac
+    /// AnswerLanguage.fields), never as Chinese sentences appended in C#.
+    /// </summary>
+    private (string System, string User) BuildAnswerPrompt(SessionMeta? meta, string question, IReadOnlyList<WebResult> web)
     {
-        var slide = CurrentSlide is { } page ? $"\n当前幻灯片（第 {page.Number} 页，{page.DocumentName}）：\n{page.Text}\n" : "";
-        if (ScreenContextText.Length > 0) slide += $"\n刚截取的屏幕 OCR 文本：\n{ScreenContextText[..Math.Min(ScreenContextText.Length, 3000)]}\n";
-        var bank = QuestionBankPromptFor(meta);
-        var bankBlock = bank.Length == 0 ? "" : $"\n这个系列的题库（历次复盘确认过的回答）：\n{bank}\n";
-        var webBlock = web is { Count: > 0 }
-            ? "\n联网搜索结果（可能过时，引用时标注链接）：\n" + string.Join("\n", web.Select(result =>
-                $"- {result.Title}（{result.Url}）：{result.Snippet}")) + "\n"
-            : "";
-        return $"最近的会议转写：\n{transcript}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n{slide}{bankBlock}{webBlock}\n当前问题：{question}";
+        var series = meta is null ? null : workspace.SeriesOfSession(meta.Id.ToString());
+        var settings = Settings.Build();
+        // E6: the gloss toggle is read through the live settings object the Quick settings panel binds.
+        var glossOn = Settings.AnswerGloss;
+        var language = AnswerLanguage.Fields(settings.AnswerLanguage, glossOn, question);
+        var turns = CurrentAnswerHistory.TakeLast(6)
+            .Select(answer => new AnswerTurn(answer.Question, answer.Answer)).ToList();
+        var excerpts = Sources
+            .Select(citation => new PromptExcerpt(
+                citation.Quote.Length > 0 ? citation.Quote : citation.Location,
+                citation.DocumentName,
+                Page: citation.Page ?? 0))
+            .ToList();
+        var snippets = Skill.Active(skills, series?.SkillIds ?? [])
+            .Select(skill => new SkillSnippet(skill.Name, skill.Content)).ToList();
+        var context = TranscriptContextBuilder.Recent(
+            currentLines.Select(line => (line.Date, "["
+                + (line.Speaker == "room" ? "现场 · 麦克风" : line.Speaker == "me" ? "我 · 麦克风" : "对方 · 系统声音")
+                + "] " + line.Text)), DateTimeOffset.Now);
+        var style = series?.Style ?? "concise";
+        var fullMaterial = SelectedMode == MeetingMode.Academic && settings.UseMaterials
+            ? AnswerPromptBuilder.WholeMaterialOf(DocumentsForRetrieval())
+            : null;
+        return AnswerPromptBuilder.MakeParts(question, context, series?.MaterialText() ?? "", turns, hasScreenshot: false,
+            preferences: series?.Preferences ?? "", mode: SelectedMode, style: style,
+            excerpts: excerpts, experience: ExperiencePromptFor(meta), skills: snippets,
+            webResults: web.Count > 0 ? web : null, webSearch: web.Count > 0, today: DateTimeOffset.Now,
+            screen: ScreenContextText.Length > 0 ? ScreenContextText : null,
+            currentSlide: CurrentSlide is { } page ? new PromptExcerpt(page.Text, page.DocumentName, Page: page.Number) : null,
+            glossary: GlossaryPromptSection(meta),
+            answerLanguage: language.Answer, glossLanguage: language.Gloss, fullMaterial: fullMaterial);
     }
 
     private bool CanSummarize() => IsIdle && !Answering && CurrentSession != null && currentLines.Count > 0;

@@ -94,7 +94,8 @@ public partial class MainWindow
                 await WriteInventoryAsync(sample, textDirectory, dark ? "controls-dark" : "controls-light");
                 sample.Close();
             }
-            // First-run guide (E3): first and last step.
+            // First-run guide: first and last step (the per-step batch is deferred; switching the
+            // theme variant between captures made this loop flaky).
             state.OnboardingStep = 0;
             state.OnboardingVisible = true;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
@@ -180,7 +181,9 @@ public partial class MainWindow
         var bounds = visual.Bounds;
         var width = Math.Max(1, (int)Math.Round(bounds.Width));
         var height = Math.Max(1, (int)Math.Round(bounds.Height));
-        var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
+        // Dispose each render target right away: a long batch allocates hundreds of bitmaps and
+        // an undisposed batch was intermittently exhausting a 32-bit-style memory budget.
+        using var bitmap = new RenderTargetBitmap(new PixelSize(width, height), new Vector(96, 96));
         bitmap.Render(visual);
         bitmap.Save(path);
     }

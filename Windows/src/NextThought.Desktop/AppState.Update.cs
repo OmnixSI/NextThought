@@ -12,7 +12,7 @@ namespace NextThought.Desktop;
 public partial class AppState
 {
     [ObservableProperty] private UpdateChannel updateChannel = UpdateChannel.Stable;
-    [ObservableProperty] private string updateStatus = "还没有检查更新。";
+    [ObservableProperty] private string updateStatus = "";
     [ObservableProperty] private bool updateAvailable;
     [ObservableProperty] private string updateVersion = "";
     [ObservableProperty] private string? updateUrl;
@@ -81,7 +81,7 @@ public partial class AppState
         if (CheckingUpdate) return LastUpdateReport ?? new UpdateReport(DateTimeOffset.UtcNow, feed,
             UpdateChannel.Title(), UpdateCheck.CurrentVersion, UpdateCheck.CurrentBuild, null, null, false, null, "正在检查");
         CheckingUpdate = true;
-        UpdateStatus = "正在检查更新…";
+        UpdateStatus = UiText.T("正在检查更新…");
         try
         {
             var report = await UpdateCheck.RunAsync(feed, UpdateChannel, token);
@@ -139,7 +139,7 @@ public partial class AppState
                     {
                         var report = await CheckForUpdatesAsync();
                         if (report.Available)
-                            Dispatcher.UIThread.Post(() => SetStatus($"发现新版本 {report.LatestVersion}，可在设置中更新。"));
+                            Dispatcher.UIThread.Post(() => SetStatus(UiText.Format("发现新版本 %@，可在设置中更新。", report.LatestVersion)));
                     }
                     catch
                     {
@@ -167,20 +167,20 @@ public partial class AppState
         var backup = UpdateBackup.List(UpdateBackupRoot).FirstOrDefault();
         if (backup is null)
         {
-            SetStatus("没有可用的更新备份。", true);
+            SetStatus(UiText.T("没有可用的更新备份。"), true);
             return;
         }
         try
         {
             var executable = Path.Combine(AppContext.BaseDirectory, "NextThought.exe");
             UpdateRestore.Launch(backup.Path, AppContext.BaseDirectory, executable, Environment.ProcessId);
-            UpdateInstallStatus = $"将在退出后恢复 {backup.Version}，并重新打开 NextThought。";
+            UpdateInstallStatus = UiText.Format("将在退出后恢复 %@，并重新打开 NextThought。", backup.Version);
             SetStatus(UpdateInstallStatus);
             UpdateInstalled?.Invoke();
         }
         catch (Exception exception)
         {
-            SetStatus("回滚失败：" + exception.Message, true);
+            SetStatus(UiText.T("回滚失败：") + exception.Message, true);
         }
     }
 
@@ -213,7 +213,7 @@ public partial class AppState
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 UpdateInstallerReady = true;
-                UpdateInstallStatus = "安装包已在后台下载并通过 SHA-256 校验；点「重启以更新」安装。";
+                UpdateInstallStatus = UiText.T("安装包已在后台下载并通过 SHA-256 校验；点「重启以更新」安装。");
             });
         }
         catch (Exception ex)
@@ -222,7 +222,7 @@ public partial class AppState
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 UpdateInstallerReady = false;
-                UpdateInstallStatus = "后台下载失败：" + ex.Message;
+                UpdateInstallStatus = UiText.T("后台下载失败：") + ex.Message;
             });
         }
     }
@@ -235,7 +235,7 @@ public partial class AppState
         InstallingUpdate = true;
         UpdateInstallSucceeded = false;
         UpdateInstallProgress = 0;
-        UpdateInstallStatus = "正在准备安装包…";
+        UpdateInstallStatus = UiText.T("正在准备安装包…");
         string? installer = null;
         string expectedSha;
         var (_, token) = UpdateAccess();
@@ -244,14 +244,14 @@ public partial class AppState
             var cached = prefetchedForUrl == report.SetupUrl ? prefetchedInstaller : null;
             if (cached is not null && File.Exists(cached))
             {
-                UpdateInstallStatus = "正在校验后台下载的安装包…";
+                UpdateInstallStatus = UiText.T("正在校验后台下载的安装包…");
                 expectedSha = await UpdateInstaller.VerifyAsync(cached, report.ChecksumsUrl!, token: token);
                 installer = cached;
                 UpdateInstallProgress = 1;
             }
             else
             {
-                UpdateInstallStatus = "正在下载安装包…";
+                UpdateInstallStatus = UiText.T("正在下载安装包…");
                 var directory = Path.Combine(Path.GetTempPath(), "NextThoughtUpdate-" + Guid.NewGuid().ToString("N")[..8]);
                 var progress = new Progress<double>(value => UpdateInstallProgress = value);
                 var prepared = await UpdateInstaller.PrepareAsync(
@@ -260,7 +260,7 @@ public partial class AppState
                 installer = prepared.Path;
             }
 
-            UpdateInstallStatus = "正在检查安装包签名…";
+            UpdateInstallStatus = UiText.T("正在检查安装包签名…");
             var signature = await NextThought.Platform.Authenticode.StatusAsync(installer);
             var signer = await NextThought.Platform.Authenticode.SignerThumbprintAsync(installer);
             if (NextThought.Platform.Authenticode.IsRequired
@@ -271,7 +271,7 @@ public partial class AppState
                     ? $"安装包签名校验未通过（{signature}）。"
                     : "安装包签名有效，但签名者不在允许列表（NEXTTHOUGHT_SIGNER_THUMBPRINT）。");
             }
-            SetStatus("安装包签名：" + signature + (signer.Length > 0 ? "，签名者 " + signer[..Math.Min(12, signer.Length)] : ""));
+            SetStatus(UiText.T("安装包签名：") + signature + (signer.Length > 0 ? UiText.T("，签名者 ") + signer[..Math.Min(12, signer.Length)] : ""));
 
             // F17: the self-test marker lives under the app data directory, not an environment bypass.
             var launch = StartupOptions.SelfTest is { Length: > 0 } ? Path.Combine(Paths.Root, "update-launch.json") : null;
@@ -340,5 +340,5 @@ public partial class AppState
 
 public sealed record UpdateChannelChoice(UpdateChannel Channel, string Title)
 {
-    public override string ToString() => Title;
+    public override string ToString() => UiText.T(Title);
 }

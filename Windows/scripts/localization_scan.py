@@ -67,6 +67,7 @@ DEMO_TEXT = [
     "残差约占 12%，主要集中在支座附近。",
     "新会议",  # D1 demo seeds an unsaved meeting with this placeholder title (user data)
     "我负责订单服务的缓存层",
+    "RQ2 没有真实信道作标签",
 ]
 
 DEMO_TEXT.extend([

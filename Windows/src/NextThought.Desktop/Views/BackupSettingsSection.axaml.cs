@@ -43,10 +43,10 @@ public partial class BackupSettingsSection : UserControl
         {
             var state = StateOf(sender);
             if (state?.PickOpenFile is null) return;
-            if (await state.PickOpenFile("NextThought 备份|*.ntbackup;*.ihbackup;*.ntrestore;*.ihrestore") is not { } file) return;
+            if (await state.PickOpenFile(UiText.T("NextThought 备份|*.ntbackup;*.ihbackup;*.ntrestore;*.ihrestore")) is not { } file) return;
             await OpenReviewAsync(state, file);
         }
-        catch (Exception ex) { StateOf(sender)?.SetStatus("导入失败：" + ex.Message, true); }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("导入失败：") + ex.Message, true); }
     }
 
     private async void RestoreRow_Click(object? sender, RoutedEventArgs e)
@@ -57,7 +57,7 @@ public partial class BackupSettingsSection : UserControl
             if (state is null || (sender as Control)?.Tag is not BackupFileRow row) return;
             await OpenReviewAsync(state, row.File.Path);
         }
-        catch (Exception ex) { StateOf(sender)?.SetStatus("恢复失败：" + ex.Message, true); }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("恢复失败：") + ex.Message, true); }
     }
 
     private async void DeleteRow_Click(object? sender, RoutedEventArgs e)
@@ -68,7 +68,7 @@ public partial class BackupSettingsSection : UserControl
             if (state is null || (sender as Control)?.Tag is not BackupFileRow row) return;
             await state.DeleteBackupCommand.ExecuteAsync(row);
         }
-        catch (Exception ex) { StateOf(sender)?.SetStatus("删除失败：" + ex.Message, true); }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("删除失败：") + ex.Message, true); }
     }
 
     private void RevealRow_Click(object? sender, RoutedEventArgs e)
@@ -79,7 +79,7 @@ public partial class BackupSettingsSection : UserControl
             if (!File.Exists(row.File.Path)) return;
             Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + row.File.Path + "\"") { UseShellExecute = true });
         }
-        catch (Exception ex) { StateOf(sender)?.SetStatus("打开位置失败：" + ex.Message, true); }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("打开位置失败：") + ex.Message, true); }
     }
 
     private async Task OpenReviewAsync(AppState state, string file)
@@ -90,7 +90,7 @@ public partial class BackupSettingsSection : UserControl
         var owner = TopLevel.GetTopLevel(this) as Window;
         var window = new Window
         {
-            Title = "导入与恢复预览",
+            Title = UiText.T("导入与恢复预览"),
             Width = 820,
             Height = 640,
             MinWidth = 700,

@@ -10,6 +10,16 @@ public partial class AppState
     private GlossaryStore? glossaryStore;
     private Glossary glossary = Glossary.Empty;
 
+    /// <summary>
+    /// Mac effectiveGlossary + promptSection: the global table layered with the meeting's series
+    /// table, capped at 1,500 characters (the live answer prompt passes it as term_glossary).
+    /// </summary>
+    private string GlossaryPromptSection(SessionMeta? meta)
+    {
+        var series = meta is null ? null : workspace.SeriesOfSession(meta.Id.ToString());
+        return Glossary.Layered(glossary, series?.Glossary).PromptSection(1500);
+    }
+
     [ObservableProperty] private string glossaryText = "";
     [ObservableProperty] private int glossaryCount;
 

@@ -109,12 +109,13 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 
     // MARK: - E23 文档读取（Mac DocumentModelSettings / DocumentFeatureSetup）
 
-    public IReadOnlyList<DocumentProviderChoice> DocumentProviderChoices { get; } =
+    private static readonly DocumentProviderChoice[] DocumentProviderChoiceValues =
     [
         new("system", "系统识别"),
         new("paddle", "本机增强"),
         new("codex", "Codex 代读")
     ];
+    public IReadOnlyList<DocumentProviderChoice> DocumentProviderChoices => DocumentProviderChoiceValues.ToArray();
 
     [ObservableProperty] private DocumentProviderChoice? selectedDocumentProvider;
     [ObservableProperty] private bool documentFallbackToVision = true;
@@ -443,6 +444,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         OnPropertyChanged(nameof(SelectedApiEffort));
         OnPropertyChanged(nameof(ApiPresetChoices));
         OnPropertyChanged(nameof(SelectedApiPreset));
+        RefreshGithubTokenStatus();
         OnPropertyChanged(nameof(GithubTokenStatus));
         OnPropertyChanged(nameof(ApiModelsStatus));
         KeyStatus = UiText.Translate(KeyStatus, UiTextSource.Instance.IsEnglish);

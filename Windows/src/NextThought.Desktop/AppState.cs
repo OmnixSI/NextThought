@@ -98,6 +98,14 @@ public partial class AppState : ObservableObject
             OnPropertyChanged(nameof(CompanionToggleLabel));
             OnPropertyChanged(nameof(SubtitleExportModes));
             OnPropertyChanged(nameof(SubtitleExportMode));
+            OnPropertyChanged(nameof(DocumentRuntimeStatusText));
+            OnPropertyChanged(nameof(DocumentOcrModelsStatusText));
+            OnPropertyChanged(nameof(DocumentEmbeddingStatusText));
+            OnPropertyChanged(nameof(DocumentProviderStatus));
+            OnPropertyChanged(nameof(DocumentProviderNeedsSetup));
+            OnPropertyChanged(nameof(DocumentProviderReady));
+            DocumentRuntimeDetail = UiText.Translate(DocumentRuntimeDetail, english);
+            OnPropertyChanged(nameof(DocumentRuntimeDetail));
             OnPropertyChanged(nameof(WebStatusText));
             OnPropertyChanged(nameof(LevelText));
             OnPropertyChanged(nameof(RetrievalInfo));
@@ -147,8 +155,13 @@ public partial class AppState : ObservableObject
             LoadGlossary();
             LoadCustomTemplates();
             LoadSkills();
-            Library.Refresh();
+            // The demo materials live only in memory; a disk refresh would clear them.
+            if (!StartupOptions.Demo) Library.Refresh();
             Library.NotifyLanguageChanged();
+            // The demo library is in memory, so its status line is rebuilt rather than translated
+            // (a format string cannot be mapped back through the table).
+            if (StartupOptions.Demo && Library.Materials.Count > 0) Library.NotifyDemoLoaded();
+            else Library.ImportStatus = UiText.Translate(Library.ImportStatus, english);
             LoadMyVoice();
             StartScreenWatchTimer();
             _ = RefreshHistoryAsync();

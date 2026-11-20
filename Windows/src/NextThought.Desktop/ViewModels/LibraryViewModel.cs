@@ -32,13 +32,22 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
             UiText.Format("%@ %lld 段", document.Name, document.Blocks.Count))) + (Materials.Count > 3 ? UiText.Format("  ·  另 %lld 份", Materials.Count - 3) : "");
 
     public bool HasMaterials => Materials.Count > 0;
+    /// <summary>D1 demo: the in-memory demo materials update the status line without touching the store.</summary>
+    public void NotifyDemoLoaded()
+    {
+        ImportStatus = Materials.Count == 0
+            ? UiText.T("还没有资料。导入 PDF、Word、PPT、Excel、Markdown 或图片。")
+            : UiText.Format("共 %lld 份资料，均在本机解析，不上传。", Materials.Count);
+        OnPropertyChanged(nameof(MaterialsInsight));
+        OnPropertyChanged(nameof(MaterialCountText));
+    }
+
     public void NotifyLanguageChanged()
     {
         OnPropertyChanged(nameof(MaterialCountText));
         OnPropertyChanged(nameof(MaterialsInsight));
         OnPropertyChanged(nameof(HasMaterials));
         SelectedPreview = UiText.T("选择一份资料，查看本机解析出的文本。");
-        OnFilterChanged(Filter);
     }
 
     public string MaterialCountText => NextThought.Core.UiText.EnglishUi

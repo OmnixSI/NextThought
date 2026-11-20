@@ -29,6 +29,8 @@ public sealed class LocalizationCoverageTests
     [
         "温度补偿之后残差还剩多少，和有限元对得上吗？",
         "残差约占 12%，主要集中在支座附近。",
+        // E17 proofreading demo data (sample corrections shown by the demo shell).
+        "我主要负责订单服务", "我主要负责订单业务", "先更新数据库、再删除缓存", "先写数据库、再删缓存",
         "Kubernetes | K8s | 库伯奈提斯\n同济大学 | 同技大学\nOpenSees | open sees"
     ];
 
@@ -55,7 +57,9 @@ public sealed class LocalizationCoverageTests
         "\n这个系列的题库（历次复盘确认过的回答）：\n{bank}\n",
         "- {result.Title}（{result.Url}）：{result.Snippet}",
         "最近的会议转写：\n{transcript}\n\n参考资料：\n{KeywordIndex.Context(sources)}\n{slide}{bankBlock}{webBlock}\n当前问题：{question}",
-        "\u3000"
+        "\u3000",
+        // Role labels are prompt data (Mac TranscriptEntry.roleLabel), never rendered in the UI.
+        "现场 · 麦克风", "我 · 麦克风", "对方 · 系统声音"
     ];
 
     private static string RepoRoot()
