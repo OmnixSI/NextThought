@@ -204,6 +204,14 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryAsyncHandlersShowErrors()
+    {
+        var view = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml.cs"));
+        Assert.Contains("操作失败：", view);
+    }
+
     [Fact]
     public void UpdatesArePrefetchedBeforeInstall()
     {

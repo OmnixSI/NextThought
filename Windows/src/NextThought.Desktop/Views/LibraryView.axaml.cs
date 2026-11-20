@@ -10,6 +10,8 @@ public partial class LibraryView : UserControl
 
     private async void Import_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state) return;
         var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storage is null) return;
@@ -25,7 +27,10 @@ public partial class LibraryView : UserControl
         });
         var paths = files.Select(f => f.TryGetLocalPath()).Where(p => p is not null).Cast<string>().ToList();
         if (paths.Count > 0) await state.Library.ImportAsync(paths);
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private void Reveal_Click(object? sender, RoutedEventArgs e)
     {
@@ -34,8 +39,13 @@ public partial class LibraryView : UserControl
 
     private async void Review_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state || TopLevel.GetTopLevel(this) is not Window owner) return;
         state.LoadMaterialReview();
         await new MaterialReviewWindow { DataContext = state }.ShowDialog(owner);
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 }

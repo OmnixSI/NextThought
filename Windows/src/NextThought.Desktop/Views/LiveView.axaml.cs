@@ -73,8 +73,13 @@ public partial class LiveView : UserControl
 
     private async void Capture_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (TopLevel.GetTopLevel(this) is MainWindow window) await window.CaptureRegionAsync();
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private void Island_Click(object? sender, RoutedEventArgs e)
     {
@@ -90,8 +95,13 @@ public partial class LiveView : UserControl
 
     private async void CaptureWindow_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (TopLevel.GetTopLevel(this) is MainWindow window) await window.CaptureWindowAsync();
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private void DetachAnswer_Click(object? sender, RoutedEventArgs e)
     {

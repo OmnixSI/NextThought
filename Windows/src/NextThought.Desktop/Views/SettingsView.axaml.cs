@@ -71,6 +71,8 @@ public partial class SettingsView : UserControl
 
     private async void RefreshDevices_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state) return;
         try
         {
@@ -78,10 +80,15 @@ public partial class SettingsView : UserControl
             state.SetStatus("声音设备已刷新。");
         }
         catch (Exception ex) { state.SetStatus("刷新声音设备失败：" + ex.Message, true); }
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private async void ImportTemplate_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state) return;
         if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) return;
         var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
@@ -100,7 +107,10 @@ public partial class SettingsView : UserControl
             state.AddTemplates(templates);
         }
         catch (System.Text.Json.JsonException ex) { state.SetStatus("模板文件格式无效：" + ex.Message, true); }
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private void SectionUp_Click(object? sender, RoutedEventArgs e)
     {
@@ -119,6 +129,8 @@ public partial class SettingsView : UserControl
 
     private async void ImportSkill_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state) return;
         if (TopLevel.GetTopLevel(this)?.StorageProvider is not { } storage) return;
         var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
@@ -140,10 +152,15 @@ public partial class SettingsView : UserControl
         }
         if (imported.Count > 0) state.AddSkills(imported);
         else state.SetStatus("没有可导入的技能文件。");
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private async void CopyCompanion_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state || state.CompanionLink.Length == 0) return;
         try
         {
@@ -151,7 +168,10 @@ public partial class SettingsView : UserControl
             state.SetStatus("配对链接已复制。");
         }
         catch (Exception ex) { state.SetStatus("复制配对链接失败：" + ex.Message, true); }
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private void Notices_Click(object? sender, RoutedEventArgs e)
     {
@@ -163,6 +183,8 @@ public partial class SettingsView : UserControl
 
     private async void OpenGlossary_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state || Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
         try
         {
@@ -170,7 +192,10 @@ public partial class SettingsView : UserControl
             await new GlossaryWindow { DataContext = state }.ShowDialog(owner);
         }
         catch (Exception ex) { state.SetStatus("打开术语表失败：" + ex.Message, true); }
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private void SaveTavily_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {

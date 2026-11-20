@@ -31,9 +31,14 @@ public partial class HomeView : UserControl
 
     private async void Recent_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (sender is not Button { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
         await state.SelectHistoryAsync(row.Meta);
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private void Scene_Click(object? sender, RoutedEventArgs e)
     {

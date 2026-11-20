@@ -153,8 +153,13 @@ public partial class MainWindow : Window
 
     private async void History_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
+        try
+        {
         if (HistoryList.SelectedItem is RecentMeetingRow row) await state.SelectHistoryAsync(row.Meta);
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 
     private async void OnClosing(object? sender, WindowClosingEventArgs e)
     {
@@ -191,7 +196,12 @@ public partial class MainWindow : Window
 
     private async void OnboardingVoice_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state) return;
         await new OnboardingVoiceWindow { DataContext = state }.ShowDialog(this);
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 }

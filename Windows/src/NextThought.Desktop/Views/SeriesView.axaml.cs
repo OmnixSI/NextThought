@@ -53,8 +53,13 @@ public partial class SeriesView : UserControl
 
     private async void EditSeries_Click(object? sender, RoutedEventArgs e)
     {
+        try
+        {
         if (DataContext is not AppState state || TopLevel.GetTopLevel(this) is not Window owner) return;
         state.LoadSeriesEditor();
         await new SeriesEditorWindow { DataContext = state }.ShowDialog(owner);
-    }
+    
+        }
+        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
+        }
 }
