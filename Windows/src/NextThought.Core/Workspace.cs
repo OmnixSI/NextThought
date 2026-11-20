@@ -299,11 +299,11 @@ public sealed record WorkspaceData(IReadOnlyList<WorkspaceSeries> Series)
 /// <summary>Reads and writes <c>Workspace/workspace.json</c> in the data directory.</summary>
 public sealed class WorkspaceStore
 {
-    public static readonly JsonSerializerOptions Options = new()
+    // Mac writes workspace files through JSONLines (ISO-8601 UTC dates and camel-case enum
+    // values), so this must use the same archive options rather than the default date writer.
+    public static readonly JsonSerializerOptions Options = new(JsonDefaults.ArchiveOptions)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
+        WriteIndented = true
     };
 
     private static readonly JsonSerializerOptions ReadOptions = new(Options) { PropertyNameCaseInsensitive = true };

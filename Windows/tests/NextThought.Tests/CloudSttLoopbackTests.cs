@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
@@ -10,6 +10,7 @@ using Xunit;
 namespace NextThought.Tests;
 
 /// <summary>Loopback protocol test for the cloud STT WAV client (no real provider key).</summary>
+[Collection("CloudSTT")]
 public sealed class CloudSttLoopbackTests
 {
     private static int FreePort()

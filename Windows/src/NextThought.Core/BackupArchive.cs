@@ -9,11 +9,9 @@ namespace NextThought.Core;
 /// </summary>
 public static class BackupArchive
 {
-    public static readonly JsonSerializerOptions Options = new()
+    public static readonly JsonSerializerOptions Options = new(JsonDefaults.ArchiveOptions)
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        WriteIndented = true
     };
 
     /// <summary>Writes the archive and returns the final path.</summary>
@@ -64,11 +62,8 @@ public static class BackupArchive
         var entry = archive.GetEntry("manifest.json");
         if (entry is null) return null;
         using var stream = entry.Open();
-        var manifest = JsonSerializer.Deserialize<BackupManifest>(stream, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true
-        });
+        var manifest = JsonSerializer.Deserialize<BackupManifest>(stream,
+            new JsonSerializerOptions(Options) { PropertyNameCaseInsensitive = true });
         manifest?.Validate();
         return manifest;
     }

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NextThought.Core;
 
@@ -23,8 +24,27 @@ public sealed class IncrementalBackupStore
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
+        WriteIndented = false,
+        Converters = { new MacRestoreDateConverter() }
     };
+
+    /// <summary>
+    /// Foundation's default JSONEncoder date strategy is seconds since 2001-01-01, not ISO.
+    /// Reads ISO too so restore points written by older Windows builds still open.
+    /// </summary>
+    private sealed class MacRestoreDateConverter : JsonConverter<DateTimeOffset>
+    {
+        private static readonly DateTimeOffset MacEpoch = new(2001, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Number) return MacEpoch.AddSeconds(reader.GetDouble());
+            return reader.GetDateTimeOffset();
+        }
+
+        public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options) =>
+            writer.WriteNumberValue((value.ToUniversalTime() - MacEpoch).TotalSeconds);
+    }
 
     public IncrementalBackupStore(string root)
     {

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
@@ -9,6 +9,7 @@ using Xunit;
 namespace NextThought.Tests;
 
 /// <summary>Loopback test for the live cloud session (audio frames in, final update out).</summary>
+[Collection("CloudSTT")]
 public sealed class CloudSttLiveLoopbackTests
 {
     [Fact]
