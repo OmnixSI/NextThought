@@ -56,4 +56,24 @@ public sealed class SessionProjectionBuilderTests
         Assert.Equal(translationA.Id, translationB.Id);
         Assert.NotEqual(translationA.SourceRevision, translationB.SourceRevision);
     }
+
+    [Fact]
+    public void SummaryQuestionsLessonsAndBankBecomeSearchableText()
+    {
+        var id = Guid.NewGuid();
+        var summary = new SessionProjectedSummary("摘要", "正文", null, SessionDerivedContentStatus.Unknown,
+            Questions: [new SummaryQuestion { Id = "q1", Text = "问题一", AnswerGist = "回答一" }],
+            Lessons: ["经验一"],
+            Bank: [new BankEntry { Question = "题库问题", Answer = "题库答案" }]);
+        var projection = SessionProjectionBuilder.Build(id, Start, [], [], summary);
+        Assert.Contains(projection.SearchableText, text => text.Id == "summary:q1:question"
+            && text.Kind == SessionProjectionTextKind.Question && text.Text == "问题一");
+        Assert.Contains(projection.SearchableText, text => text.Id == "summary:q1:answer"
+            && text.Kind == SessionProjectionTextKind.Answer && text.Text == "回答一");
+        Assert.Contains(projection.SearchableText, text => text.Id == "summary:" + id + ":lesson:0"
+            && text.Text == "经验一");
+        Assert.Contains(projection.SearchableText, text => text.Text == "题库答案"
+            && text.Kind == SessionProjectionTextKind.Answer);
+    }
+
 }

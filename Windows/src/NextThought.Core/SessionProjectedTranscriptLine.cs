@@ -42,6 +42,14 @@ public sealed record SessionProjectedTranscriptLine
         IReadOnlyList<TranscriptCorrection>? appliedCorrections = null)
     {
         var offset = Math.Max(0, (int)((line.StartedAt ?? line.Date) - startedAt).TotalSeconds);
+        var originalRevision = TranscriptRevisions.Of(line.Id, line.Text);
+        var sourceRevision = TranscriptRevisions.Of(line.Id,
+            options.TranscriptVariant == SessionTranscriptVariant.Original ? line.Text : correctedText);
+        var inputRevision = line.TranslationInputRevision
+            ?? (line.Translation is { } translation ? "translation-" + translation.Revision
+                : line.TranslatedText is not null ? originalRevision : null);
+        var translationIsStale = (line.Translation is not null || !string.IsNullOrWhiteSpace(line.TranslatedText))
+            && inputRevision is not null && inputRevision != sourceRevision;
         var label = speakerLabel ?? (line.Speaker == "me" ? "我" : "对方");
         return new SessionProjectedTranscriptLine
         {
@@ -56,10 +64,11 @@ public sealed record SessionProjectedTranscriptLine
             LanguageView = options.LanguageView,
             OriginalText = line.Text,
             CorrectedText = correctedText,
-            TranslationText = line.Translation?.Text,
-            TranslationInputRevision = line.Translation is { } translation ? "translation-" + translation.Revision : null,
-            SourceRevision = TranscriptRevisions.Of(line.Id, options.TranscriptVariant == SessionTranscriptVariant.Original ? line.Text : correctedText),
-            OriginalRevision = TranscriptRevisions.Of(line.Id, line.Text),
+            TranslationText = line.Translation?.Text ?? line.TranslatedText,
+            TranslationInputRevision = inputRevision,
+            TranslationIsStale = translationIsStale,
+            SourceRevision = sourceRevision,
+            OriginalRevision = originalRevision,
             AppliedCorrections = options.TranscriptVariant == SessionTranscriptVariant.Original ? [] : appliedCorrections ?? [],
             Offset = offset
         };

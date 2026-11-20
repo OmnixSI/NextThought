@@ -13,6 +13,9 @@ public sealed record SessionSummary
     public string? TranscriptSourceRevision { get; init; }
     public string? StructuredNotesSourceRevision { get; init; }
     public StructuredNotesPayload? Structured { get; init; }
+    public IReadOnlyList<SummaryQuestion>? Questions { get; init; }
+    public IReadOnlyList<string>? Lessons { get; init; }
+    public IReadOnlyList<BankEntry>? Bank { get; init; }
     public DateTimeOffset? GeneratedAt { get; init; }
 
     /// <summary>All structured views saved for this meeting (structuredAll).</summary>
