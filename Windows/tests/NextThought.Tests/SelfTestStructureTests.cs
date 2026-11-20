@@ -178,6 +178,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CoachSummaryIsBuiltAndShown()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Coach.cs"));
+        Assert.Contains("CoachSummaryAccumulator", state);
+        Assert.Contains("coach-summary.json", state);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        Assert.Contains("CoachSummaryText", xaml);
+    }
+
     [Fact]
     public void ScreenshotTempFilesAreCleaned()
     {

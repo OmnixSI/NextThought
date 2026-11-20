@@ -75,6 +75,14 @@
       </StackPanel>
     </Grid>
 
+    <Border Classes="card" Padding="{DynamicResource D4Padding_14}" Margin="{DynamicResource D4Margin_0_10_0_0}"
+            IsVisible="{Binding CoachSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+        <TextBlock Text="教练小结" Classes="overline" />
+        <TextBlock Text="{Binding CoachSummaryText}" Classes="body" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
     <TabControl Grid.Row="3" Margin="{DynamicResource D4Margin_0_12_0_16}">
       <TabItem Header="纪要">
     <Border Classes="card" Padding="{DynamicResource D4Padding_0}">

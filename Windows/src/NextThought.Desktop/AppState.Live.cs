@@ -273,6 +273,7 @@ public partial class AppState
 
     private async Task StopRecordingCoreAsync(string? reason = null)
     {
+        BuildCoachSummary();
         if (Stopping || CurrentSession is null || !Recording) return;
         Stopping = true;
         candidateTimer.Stop();
