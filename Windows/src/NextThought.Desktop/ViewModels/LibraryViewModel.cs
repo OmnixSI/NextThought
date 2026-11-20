@@ -11,8 +11,10 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
 {
     private readonly AppState state = state;
     private MaterialStore? store;
+    private DocumentPreparation? preparation;
 
     private MaterialStore Store => store ??= new MaterialStore(state.Paths);
+    private DocumentPreparation Preparation => preparation ??= new DocumentPreparation(state.Paths);
 
     public ObservableCollection<MaterialDocument> Materials { get; } = [];
 
@@ -110,21 +112,17 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
         var added = 0;
         try
         {
-            // E23: the saved reading method decides whether the optional enhancement runs for this import.
+            // E23b: every import walks the document-preparation queue; the saved reading method
+            // decides whether the system/paddle reader or the answer-service reader runs.
             var settings = state.Settings.Build();
-            bool enhanced;
-            try { enhanced = DocumentAssets.UseEnhancedOcr(state.Paths, settings.DocumentOcrProvider, settings.OcrFallbackToVision); }
-            catch (Exception exception)
-            {
-                ImportStatus = exception.Message;
-                return;
-            }
+            var options = new DocumentPreparationOptions(settings.DocumentOcrProvider, settings.OcrFallbackToVision,
+                new CodexDocumentOptions(settings.CodexOcrModel, settings.CodexOcrEffort, settings.CodexOcrTimeout));
             foreach (var file in list)
             {
                 ImportProgress = UiText.Format("正在解析 %@…", System.IO.Path.GetFileName(file));
                 try
                 {
-                    await Store.ImportAsync(file, CancellationToken.None, enhanced);
+                    await Preparation.ImportAsync(file, options, CancellationToken.None);
                     added++;
                 }
                 catch (Exception ex)

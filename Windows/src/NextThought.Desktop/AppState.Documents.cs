@@ -26,7 +26,7 @@ public partial class AppState
     public bool DocumentProviderReady => (Settings.SelectedDocumentProvider?.Value ?? "system") switch
     {
         "paddle" => DocumentRuntimeInstalled && DocumentOcrModelsInstalled,
-        "codex" => false,
+        "codex" => CodexDocumentReader.IsAvailable(),
         _ => true
     };
 
@@ -34,7 +34,9 @@ public partial class AppState
 
     public string DocumentProviderStatus => DocumentProviderReady
         ? ""
-        : UiText.T("已选的识别方式还没准备好，当前读取会失败。");
+        : Settings.SelectedDocumentProvider?.Value == "codex"
+            ? UiText.T("未检测到 Codex")
+            : UiText.T("已选的识别方式还没准备好，当前读取会失败。");
 
     public string DocumentRuntimeStatusText => UiText.T(DocumentRuntimeInstalled ? "已安装" : "未安装");
     public string DocumentOcrModelsStatusText => UiText.T(DocumentOcrModelsInstalled ? "已安装" : "未安装");

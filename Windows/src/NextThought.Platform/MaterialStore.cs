@@ -16,7 +16,13 @@ public sealed class MaterialStore(AppPaths paths, AppPaths? ocrComponents = null
             .Select(file => { try { return JsonSerializer.Deserialize<MaterialDocument>(File.ReadAllText(file), JsonDefaults.Options); } catch (JsonException) { return null; } })
             .Where(x => x is not null).Cast<MaterialDocument>().OrderBy(x => x.Name).ToArray();
     }
-    public async Task<MaterialDocument> ImportAsync(string path, CancellationToken ct = default, bool enhancedOcr = false)
+
+    /// <summary>
+    /// E23b: <paramref name="preReadBlocks"/> lets the Codex document reader supply the derived
+    /// content; without it the local readers (system or enhanced OCR) run as before.
+    /// </summary>
+    public async Task<MaterialDocument> ImportAsync(string path, CancellationToken ct = default, bool enhancedOcr = false,
+        IReadOnlyList<DocumentBlock>? preReadBlocks = null, IReadOnlyList<string>? preReadWarnings = null, string? preReadReader = null)
     {
         path = Path.GetFullPath(path); var ext = Path.GetExtension(path).ToLowerInvariant();
         if (!DocumentReader.Extensions.Contains(ext)) throw new NotSupportedException("不支持该资料格式。");
@@ -29,14 +35,29 @@ public sealed class MaterialStore(AppPaths paths, AppPaths? ocrComponents = null
             await using (var input = File.OpenRead(path)) await using (var output = File.Create(source)) await input.CopyToAsync(output, ct);
             string hash;
             await using (var hashInput = File.OpenRead(source)) hash = Convert.ToHexStringLower(await SHA256.HashDataAsync(hashInput, ct));
+            var reader = preReadBlocks is not null
+                ? preReadReader ?? "codex-reader-v1"
+                : enhancedOcr ? "paddle-native-v1" : "windows-basic-v1";
             var existing = List().FirstOrDefault(x => x.Sha256 == hash);
-            if (existing is not null && (!enhancedOcr || existing.Reader == "paddle-native-v1")) return existing;
-            var (blocks, warnings) = await new DocumentReader(enhancedOcr ? new EnhancedOcrService(ocrComponents ?? paths) : null).ReadAsync(source, ct);
-            var document = new MaterialDocument { Name = Path.GetFileName(path), Sha256 = hash, Extension = ext, Blocks = blocks, Warnings = warnings, Reader = enhancedOcr ? "paddle-native-v1" : "windows-basic-v1" };
+            if (existing is not null && existing.Reader == reader) return existing;
+            IReadOnlyList<DocumentBlock> blocks;
+            IReadOnlyList<string> warnings;
+            if (preReadBlocks is not null)
+            {
+                blocks = preReadBlocks;
+                warnings = preReadWarnings ?? [];
+            }
+            else
+            {
+                (blocks, warnings) = await new DocumentReader(enhancedOcr ? new EnhancedOcrService(ocrComponents ?? paths) : null).ReadAsync(source, ct);
+                if (preReadWarnings is { Count: > 0 })
+                    warnings = warnings.Concat(preReadWarnings).ToList();
+            }
+            var document = new MaterialDocument { Name = Path.GetFileName(path), Sha256 = hash, Extension = ext, Blocks = blocks.ToList(), Warnings = warnings.ToList(), Reader = reader };
             if (existing is not null)
             {
                 // Upgrade derived text atomically while preserving the original ID, hash and source bytes.
-                document = existing with { Blocks = blocks, Warnings = warnings, Reader = document.Reader };
+                document = existing with { Blocks = document.Blocks, Warnings = document.Warnings, Reader = document.Reader };
                 await AppPaths.AtomicWriteAsync(Path.Combine(Root, existing.Id, "document.json"), JsonSerializer.Serialize(document, JsonDefaults.Options), ct);
                 return document;
             }

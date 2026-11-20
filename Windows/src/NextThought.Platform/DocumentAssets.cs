@@ -53,8 +53,9 @@ public static class DocumentAssets
     /// </summary>
     public static bool UseEnhancedOcr(AppPaths paths, string provider, bool fallbackToSystem)
     {
-        if (provider == "codex") throw new NotSupportedException("Codex 代读的文件读取尚未移植；请改用系统识别或本机增强。");
-        if (provider != "paddle") return false;
+        // Codex 代读 has its own reader in DocumentPreparation/CodexDocumentReader; it is not the
+        // enhanced-OCR switch, so no runtime/model is required here.
+        if (provider is "codex" or "system") return false;
         if (OcrInstalled(paths) && new DocumentRuntimeInstaller(paths).Installed) return true;
         if (fallbackToSystem) return false;
         throw new InvalidOperationException("已选择本机增强识别，但文档组件尚未安装；请先在设置中准备，或打开系统识别兜底。");
