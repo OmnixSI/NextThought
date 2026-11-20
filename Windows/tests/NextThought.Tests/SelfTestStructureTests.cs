@@ -92,6 +92,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryMeetingActionsIncludeOpenAndExport()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("打开纪要", xaml);
+        Assert.Contains("导出 Markdown", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
+        Assert.Contains("OpenSession(RecentMeetingRow row)", state);
+        Assert.Contains("ExportSession(RecentMeetingRow row)", state);
+    }
+
     [Fact]
     public void HistoryShowsArchiveOverviewAndAnswers()
     {

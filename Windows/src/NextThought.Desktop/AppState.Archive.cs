@@ -71,6 +71,21 @@ public partial class AppState
     public System.Collections.ObjectModel.ObservableCollection<AnswerRecord> SelectedSessionAnswers { get; } = [];
     public bool HasSelectedHistory => CurrentSession is not null;
 
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task OpenSession(RecentMeetingRow row)
+    {
+        await SelectHistoryAsync(row.Meta);
+        Section = AppSection.Notes;
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task ExportSession(RecentMeetingRow row)
+    {
+        await SelectHistoryAsync(row.Meta);
+        if (CurrentSession is not null) ExportCommand.Execute(null);
+    }
+
     public bool IsHistoryEmpty => History.Count == 0;
 
     [RelayCommand(CanExecute = nameof(CanExport))]
