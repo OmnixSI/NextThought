@@ -6,9 +6,9 @@ public partial class AppState
 
     public bool CanCancel => Working || Answering;
 
-    public string StatsText => Settings.UiLanguage == "English"
-        ? Recording ? $"Recording · {currentLines.Count} lines" : $"{currentLines.Count} lines · {(CurrentSession?.AnswerCount ?? 0)} answers"
-        : Recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(CurrentSession?.AnswerCount ?? 0)} 条回答";
+    public string StatsText => Recording
+        ? UiText.Format("正在记录 · %lld 条转写", currentLines.Count)
+        : UiText.Format("%lld 条转写 · %lld 条回答", currentLines.Count, CurrentSession?.AnswerCount ?? 0);
 
     partial void OnAnsweringChanged(bool value) { RaiseBusy(); OnPropertyChanged(nameof(CanCancel)); PublishCompanionSnapshot(); }
 
@@ -276,7 +276,7 @@ public partial class AppState
             capture.LevelChanged += (source, level) => Dispatcher.UIThread.Post(() =>
             {
                 if (source == AudioSource.System) systemLevel = level; else microphoneLevel = level;
-                LevelText = $"系统 {systemLevel * 100:F0} · 麦克风 {microphoneLevel * 100:F0}";
+                LevelText = UiText.Format("系统 %.0f · 麦克风 %.0f", systemLevel * 100, microphoneLevel * 100);
             });
             await Task.Run(() => capture.Start(settings));
             if (capture.LastError is { } captureError) throw new IOException(captureError);
@@ -507,7 +507,7 @@ public partial class AppState
         try
         {
             if (!check) { DetectedQuestion = question; if (automatic) { } else QuestionInput = ""; AnswerText = ""; }
-            var context = string.Join("\n", currentLines.Where(x => x.SuspectedEcho != true).TakeLast(40).Select(x => $"[{x.Date.ToLocalTime():HH:mm:ss}] {x.Speaker}：{x.Text}"));
+            var context = string.Join("\n", currentLines.Where(x => x.SuspectedEcho != true).TakeLast(40).Select(x => UiText.Format("[%@] %@：%@", x.Date.ToLocalTime().ToString("HH:mm:ss"), x.Speaker, x.Text)));
             if (context.Length > 18000) context = context[^18000..];
             SetStatus(check ? "正在检查回答服务…" : "正在生成参考回答…");
             var progress = new Progress<string>(text =>
@@ -521,7 +521,8 @@ public partial class AppState
                 retrieved = await Retrieval.SearchAsync(question, Settings.UseSemanticRetrieval, cancellation.Token,
                     documents: DocumentsForRetrieval());
                 if (generation != requestEpoch) return;
-                RetrievalInfo = $"{retrieved.Method} · {retrieved.Sources.Count} 段 · {retrieved.Seconds:F2} 秒" + (retrieved.Warning is null ? "" : " · " + retrieved.Warning);
+                RetrievalInfo = UiText.Format("%@ · %lld 段 · %.2f 秒", retrieved.Method, retrieved.Sources.Count, retrieved.Seconds)
+    + (retrieved.Warning is null ? "" : " · " + retrieved.Warning);
             }
             else if (!check) RetrievalInfo = "未使用资料库";
             var sources = retrieved?.Sources ?? [];
@@ -646,7 +647,7 @@ public partial class AppState
             WebResults.Clear();
             foreach (var entry in response.Results) WebResults.Add(entry);
             OnPropertyChanged(nameof(WebStatusText));
-            SetStatus($"查证完成：{response.Results.Count} 条联网来源。");
+            SetStatus(UiText.Format("查证完成：%lld 条联网来源。", response.Results.Count));
         }
         catch (Exception ex) { SetStatus("联网查证失败：" + ex.Message, true); }
     }
