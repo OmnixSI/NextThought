@@ -3,9 +3,10 @@ using NextThought.Platform;
 namespace NextThought.Desktop;
 
 /// <summary>
-/// D1: the demo mode. The Mac demo script (DemoMode.swift / DemoFilm.swift) is ported verbatim
-/// into <see cref="DemoScript"/>; this file adapts it to the Windows view state. Nothing here is
-/// ever written to the user's data directory.
+/// E31/D1: the staged demo mode. The Mac demo script (DemoMode.swift / DemoFilm.swift) is ported
+/// verbatim into <see cref="DemoScript"/>/<see cref="DemoStages"/>; this file seeds the data once
+/// and then applies the same stages the Mac <c>NEXTTHOUGHT_DEMO_SECTION</c> entries apply.
+/// Nothing here is ever written to the user's data directory.
 /// </summary>
 public partial class AppState
 {
@@ -14,19 +15,16 @@ public partial class AppState
 
     /// <summary>
     /// Fills the interface with the Mac demonstration data (DemoMode.swift populateDemo,
-    /// demoReviewNotes and demoWeeklyMeeting). Never touches the data directory; the old invented
-    /// activity feeder and its structural-sample copy are gone.
+    /// demoReviewNotes and demoWeeklyMeeting) and applies a Mac demo stage. The Windows shell opens
+    /// on the home page, so the default stage is the idle "home" one; the Mac default "assistant"
+    /// stage (a running meeting) is available for callers that ask for it.
+    /// Never touches the data directory; the old invented activity feeder and its structural-sample
+    /// copy are gone.
     /// </summary>
-    public void LoadDemo()
+    public void LoadDemo(string stage = DemoStages.Home)
     {
         var demo = DemoContent.Create();
         demoData = demo;
-        // Mac: the demo window is the ordinary shell; the running interview starts on the live page.
-        MeetingTitle = "";
-        SelectedMode = MeetingMode.Interview;
-        OnPropertyChanged(nameof(SelectedScene));
-        recordingStartedAt = demo.Live.StartedAt;
-        Recording = false;
         // Series: three Mac workspaces, newest-first as the home page lists them.
         workspace = new WorkspaceData(demo.Series);
         History.Clear();
@@ -38,12 +36,8 @@ public partial class AppState
         }
         CurrentSession = demo.Review.Meta;
         // Live page: the running interview's question and answer.
-        DetectedQuestion = demo.Live.Question;
-        AnswerText = demo.Live.Answer;
-        RetrievalInfo = demo.Live.RetrievalNote;
         SystemPartial = MicrophonePartial = "";
         SystemPartialTranslation = MicrophonePartialTranslation = "";
-        IslandTranslation = DemoContent.IslandTranslation;
         currentLines.Clear();
         Transcript.Clear();
         foreach (var line in demo.Live.Lines)
@@ -96,13 +90,73 @@ public partial class AppState
         OnPropertyChanged(nameof(HasBilingualQuestion));
         OnPropertyChanged(nameof(RecordingElapsedText));
         ModelStatusText = "演示模式：未加载识别模型";
-        SetPageSubtitle("演示数据 · 不会写入你的资料");
+        ApplyDemoStage(stage);
     }
 
     /// <summary>
-    /// D1: per-page demo state, mirroring Mac's NEXTTHOUGHT_DEMO_SECTION: the home and prepare
-    /// pages are idle, the live page is the running interview, the notes page is the archived
-    /// review (and the work-notes capture is the weekly work meeting).
+    /// E31: applies one Mac demo stage. The plan (DemoStages.For) carries the differences the Mac
+    /// apply() makes: a running meeting only for assistant/live/live-notes, the record-only live-notes
+    /// state that clears the visible answer, the prepare draft, and which shell page the stage belongs to.
+    /// </summary>
+    public void ApplyDemoStage(string stage, IReadOnlyDictionary<string, string>? defaults = null)
+    {
+        if (demoData is not { } demo) return;
+        var plan = DemoStages.For(stage);
+        if (defaults is { Count: > 0 }) plan = plan with { Defaults = defaults };
+        // Mac: demo-only live states; every other stage is an idle archived view.
+        if (plan.ClearsAnswerState)
+        {
+            DetectedQuestion = "";
+            AnswerText = "";
+            CurrentAnswerHistory.Clear();
+            RetrievalInfo = "";
+            IslandTranslation = "";
+        }
+        if (plan.IsRunning && (!Recording || plan.Name == DemoStages.LiveNotes))
+            recordingStartedAt = demo.Live.StartedAt;
+        Recording = plan.IsRunning;
+        Settings.AutomaticAnswers = plan.AutomaticAnswers;
+        if (plan.PopulatesDraft)
+        {
+            // Mac populateDemoDraft: the next interview's draft, with the series' documents as baseline.
+            MeetingTitle = demo.Draft.Title;
+            SelectedMode = MeetingMode.Interview;
+            OnPropertyChanged(nameof(SelectedScene));
+            SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id);
+        }
+        else if (plan.Page == DemoPage.Meetings && plan.Defaults.TryGetValue("demoNotes", out var notes) && notes == "work")
+        {
+            // Mac notes-work capture (demoNotes=work): the weekly work meeting instead of the review.
+            MeetingTitle = demo.Weekly.Meta.Title;
+            SummaryText = demo.Weekly.SummaryMarkdown;
+            PageSubtitle = NotesMarkdown.Facts(demo.Weekly.Notes, demo.Weekly.Meta.StartedAt,
+                (demo.Weekly.Meta.EndedAt!.Value - demo.Weekly.Meta.StartedAt).TotalSeconds,
+                demo.Weekly.Meta.InPerson, UiText.EnglishUi);
+        }
+        else if (plan.Name == DemoStages.Home || plan.Name == DemoStages.Assistant)
+        {
+            if (plan.IsRunning)
+            {
+                // Mac's default section: the demo meeting runs behind the home page.
+                MeetingTitle = demo.Live.PlannedMeetingTitle;
+                DetectedQuestion = demo.Live.Question;
+                AnswerText = demo.Live.Answer;
+                RetrievalInfo = demo.Live.RetrievalNote;
+                IslandTranslation = DemoContent.IslandTranslation;
+            }
+            else
+            {
+                MeetingTitle = "";
+            }
+        }
+        OnPropertyChanged(nameof(RecordingElapsedText));
+        OnPropertyChanged(nameof(StatsText));
+    }
+
+    /// <summary>
+    /// D1/E31: per-page demo state, mapping the Windows capture pages to Mac demo stages:
+    /// home→home, prepare→prepare, live→live, notes/history→meetings (archived review),
+    /// series/library→library, settings→settings, work→meetings with demoNotes=work.
     /// </summary>
     public void ApplyDemoSection(string section)
     {
@@ -110,49 +164,51 @@ public partial class AppState
         switch (section)
         {
             case "home":
+                ApplyDemoStage(DemoStages.Home);
                 MeetingTitle = "";
-                Recording = false;
                 SetPageSubtitle("演示数据 · 不会写入你的资料");
                 break;
             case "prepare":
-                MeetingTitle = demo.Draft.Title;
-                Recording = false;
-                SelectedMode = MeetingMode.Interview;
-                OnPropertyChanged(nameof(SelectedScene));
-                SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id);
+                ApplyDemoStage(DemoStages.Prepare);
                 SetPageSubtitle("准备这场会 · 类型、资料与检查");
                 break;
             case "live":
+                ApplyDemoStage(DemoStages.Live);
                 MeetingTitle = demo.Live.PlannedMeetingTitle;
-                Recording = true;
                 DetectedQuestion = demo.Live.Question;
                 AnswerText = demo.Live.Answer;
                 SetPageSubtitle("演示数据 · 不会写入你的资料");
                 break;
             case "notes":
+                ApplyDemoStage(DemoStages.Meetings);
                 MeetingTitle = demo.Review.Meta.Title;
                 SummaryText = demo.Review.SummaryMarkdown;
                 PageSubtitle = ReviewFacts(demo);
                 break;
             case "work":
-                MeetingTitle = demo.Weekly.Meta.Title;
-                SummaryText = demo.Weekly.SummaryMarkdown;
-                PageSubtitle = NotesMarkdown.Facts(demo.Weekly.Notes, demo.Weekly.Meta.StartedAt,
-                    (demo.Weekly.Meta.EndedAt!.Value - demo.Weekly.Meta.StartedAt).TotalSeconds,
-                    demo.Weekly.Meta.InPerson, UiText.EnglishUi);
+                var work = DemoStages.MeetingsWithWorkNotes();
+                ApplyDemoStage(work.Name, work.Defaults);
                 break;
             case "history":
+                ApplyDemoStage(DemoStages.Meetings);
                 MeetingTitle = demo.Review.Meta.Title;
                 break;
             case "series":
+            case "library":
+                ApplyDemoStage(DemoStages.Library);
+                MeetingTitle = "";
                 SelectedSeries = SeriesRows.FirstOrDefault(row => row.Id == demo.InterviewSeries.Id);
+                break;
+            case "settings":
+                ApplyDemoStage(DemoStages.Settings);
+                MeetingTitle = "";
                 break;
         }
         OnPropertyChanged(nameof(RecordingElapsedText));
         OnPropertyChanged(nameof(StatsText));
     }
 
-    /// <summary>D1: the demo's 工作纪要 tab follows Mac demoNotes=work (the weekly work meeting).</summary>
+    /// <summary>D1/E31: the demo's 工作纪要 tab follows Mac demoNotes=work (the weekly work meeting).</summary>
     public void ApplyDemoNotesTab(int index)
     {
         if (demoData is null) return;

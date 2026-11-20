@@ -23,6 +23,18 @@ public static class DemoContent
     /// <summary>The first-run guide's sample interview, in the interface language (Mac localized).</summary>
     public static DemoOnboardingSample Onboarding() => ScriptOnboarding();
 
+    /// <summary>E31: the Mac demo stages (NEXTTHOUGHT_DEMO_SECTION) in script order.</summary>
+    public static IReadOnlyList<string> StageNames => DemoStages.Names;
+
+    /// <summary>E31: the plan of one Mac demo stage (running state, answer clearing, draft, page).</summary>
+    public static DemoStagePlan Stage(string name) => DemoStages.For(name);
+
+    /// <summary>E31: one of the two DemoFilm.swift frame scripts (island / home).</summary>
+    public static DemoFilm Film(string name) => DemoFilms.For(name);
+
+    /// <summary>E31: one DemoMode.snapshotIsland state with the Mac copy it shows.</summary>
+    public static DemoIslandState Island(string name) => DemoIslands.For(name);
+
     private static DemoOnboardingSample ScriptOnboarding() =>
         Platform.DemoScript.Onboarding(NextThought.Core.UiText.EnglishUi);
 }

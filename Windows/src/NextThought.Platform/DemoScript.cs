@@ -106,6 +106,9 @@ public static class DemoScript
     /// <summary>The demo meeting title (DemoMode.swift <c>question</c>).</summary>
     public const string LiveQuestion = "那数据库和缓存同时更新的时候，你们是怎么保证一致性的？";
 
+    /// <summary>The half sentence the demo hears while the answer is being prepared.</summary>
+    public const string LivePartialTranscript = "如果删除缓存失败了怎么办";
+
     /// <summary>The demo answer (DemoMode.swift <c>reply</c>), Markdown kept as written.</summary>
     public const string LiveAnswer = """
         我们采用**先更新数据库、再删除缓存**，并用 binlog 订阅兜底，保证最终一致。
@@ -597,7 +600,7 @@ public static class DemoScript
             now.AddSeconds(-754),
             LiveLines(now),
             ["好，我们先聊聊你最近做的项目吧，简单介绍一下你负责的部分。", LiveQuestion],
-            "如果删除缓存失败了怎么办",
+            LivePartialTranscript,
             LiveQuestion,
             LiveAnswer,
             review.Answers,
