@@ -73,9 +73,11 @@ public sealed class SessionProjectedTranscriptLineTests
         var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [Line], [], corrections: [Correction]);
         var projected = Assert.Single(projection.Transcript);
         Assert.Equal("我们用Kubernetes部署", projected.DisplayText);
-        var text = Assert.Single(projection.SearchableText);
-        Assert.Equal("我们用Kubernetes部署", text.Text);
-        Assert.Equal(Line.Text, text.AlternateText);
+        Assert.Equal(2, projection.SearchableText.Count);
+        var corrected = Assert.Single(projection.SearchableText, text => text.Kind == SessionProjectionTextKind.CorrectedTranscript);
+        Assert.Equal("我们用Kubernetes部署", corrected.Text);
+        Assert.Equal(Line.Text, corrected.AlternateText);
+        Assert.Contains(projection.SearchableText, text => text.Kind == SessionProjectionTextKind.Transcript && text.Text == Line.Text);
     }
 
     [Fact]
