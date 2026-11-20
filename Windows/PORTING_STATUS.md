@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · H1（继续）
+改动：`SelfTestOptions` 接管 65 个 QA/演示开关；`StartupOptions.cs` 缩到 23 行，只剩 `--demo`、`--screenshots`、`--self-test`；Desktop 内引用统一改到 `SelfTestOptions`。
+测试：Core **869/869**，NextThought.Tests **131/131**（新增 StartupOptions 结构测试）。
+状态：H1 **仍未完成**。MainWindow 258 行、StartupOptions 三个参数已达标；但 65 个开关仍是一个个 `--xxx=`，没有收进 `--self-test <名字>` 的分发表，自检也仍是一个大文件而不是每项一个文件。
+未解决：H1 剩余两项；H2 未开始。
+
 ## 2026-11-20 · 0.5.145 · H1（部分）
 改动：`MainWindow.axaml.cs` 从 3742 行降到 **258** 行；全部 `Run*CheckAsync` 移到 `Desktop/SelfTest/MainWindow.SelfTests.cs`；热键、托盘、浮窗、演示模式移到 `MainWindow.Shell.cs`；新增 `SelfTestStructureTests` 2 项。
 测试：Core **869/869**，NextThought.Tests **130/130**。
