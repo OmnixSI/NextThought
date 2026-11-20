@@ -61,8 +61,9 @@ public sealed class LocalizationSourceScanTests
         Assert.All(keys, key =>
         {
             Assert.False(string.IsNullOrWhiteSpace(key));
-            // "English" is the language's own name (Mac LanguageSettingsSection does the same).
-            if (key == "English") return;
+            // "English" is the language's own name and "STAR" is the Mac acronym key used by the
+            // answer bar; both are Mac catalogue keys rather than Chinese sentences.
+            if (key is "English" or "STAR") return;
             Assert.True(Cjk.IsMatch(key), "the key must be the Mac Chinese original sentence: " + key);
             // Chinese mode returns the key unchanged; the English table must not return an empty string.
             Assert.Equal(key, UiText.Lookup(key, false));
