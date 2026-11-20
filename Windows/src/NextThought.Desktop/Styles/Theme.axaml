@@ -12,7 +12,7 @@
           <SolidColorBrush x:Key="Paper" Color="#F7F5F0" />
           <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
           <SolidColorBrush x:Key="SurfaceRaised" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="Sunken" Color="#081C1B19" />
+          <SolidColorBrush x:Key="Sunken" Color="#0A1C1B19" />
           <SolidColorBrush x:Key="Hover" Color="#0F1C1B19" />
           <SolidColorBrush x:Key="Pressed" Color="#1C1C1B19" />
           <SolidColorBrush x:Key="InkBrush" Color="#1C1B19" />
@@ -30,6 +30,8 @@
           <SolidColorBrush x:Key="ContactShadow" Color="#121C1B19" />
           <SolidColorBrush x:Key="AmbientShadow" Color="#0F1C1B19" />
           <SolidColorBrush x:Key="FloatShadow" Color="#1F1C1B19" />
+          <BoxShadows x:Key="PaperCardShadow">0 1 2 0 #121C1B19, 0 8 14 0 #0F1C1B19</BoxShadows>
+          <BoxShadows x:Key="FloatShadowValue">0 12 16 0 #1F1C1B19</BoxShadows>
           <SolidColorBrush x:Key="SidebarTint" Color="#F2F0EA" />
           <SolidColorBrush x:Key="TranscriptBubble" Color="#F4F2ED" />
           <SolidColorBrush x:Key="PrimaryHover" Color="#33312C" />
@@ -57,6 +59,8 @@
           <SolidColorBrush x:Key="ContactShadow" Color="#66000000" />
           <SolidColorBrush x:Key="AmbientShadow" Color="#52000000" />
           <SolidColorBrush x:Key="FloatShadow" Color="#80000000" />
+          <BoxShadows x:Key="PaperCardShadow">0 1 2 0 #66000000, 0 8 14 0 #52000000</BoxShadows>
+          <BoxShadows x:Key="FloatShadowValue">0 12 16 0 #80000000</BoxShadows>
           <SolidColorBrush x:Key="SidebarTint" Color="#181816" />
           <SolidColorBrush x:Key="TranscriptBubble" Color="#201F1D" />
           <SolidColorBrush x:Key="PrimaryHover" Color="#D8D6CF" />
@@ -82,9 +86,7 @@
       <FontFamily x:Key="SerifFamily">Source Serif 4, Noto Serif SC, SimSun, Georgia</FontFamily>
       <FontFamily x:Key="MonoFamily">Cascadia Mono, Consolas, Noto Sans Mono CJK SC</FontFamily>
 
-      <!-- Surfaces: paperCard, aiBlock, floatingSurface -->
-      <BoxShadows x:Key="PaperCardShadow">0 1 2 0 #121C1B19, 0 8 14 0 #0F1C1B19</BoxShadows>
-      <BoxShadows x:Key="FloatShadowValue">0 12 16 0 #1F1C1B19</BoxShadows>
+      <!-- Surfaces: paperCard, aiBlock, floatingSurface; shadows are theme resources. -->
     </ResourceDictionary>
   </Styles.Resources>
 

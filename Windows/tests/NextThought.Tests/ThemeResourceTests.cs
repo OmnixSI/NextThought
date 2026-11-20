@@ -1,0 +1,38 @@
+using Xunit;
+
+namespace NextThought.Tests;
+
+/// <summary>D3/D9: design tokens match the Mac values and GPU rendering is not forced off.</summary>
+public sealed class ThemeResourceTests
+{
+    private static string RepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml")))
+                return directory.FullName;
+            directory = directory.Parent;
+        }
+        throw new DirectoryNotFoundException("repository root not found");
+    }
+
+    [Fact]
+    public void ThemeUsesMacLightSunkenAndDarkShadows()
+    {
+        var theme = File.ReadAllText(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
+        Assert.Contains("<SolidColorBrush x:Key=\"Sunken\" Color=\"#0A1C1B19\" />", theme);
+        Assert.Contains("<SolidColorBrush x:Key=\"ContactShadow\" Color=\"#66000000\" />", theme);
+        Assert.Contains("<SolidColorBrush x:Key=\"AmbientShadow\" Color=\"#52000000\" />", theme);
+        Assert.Contains("<BoxShadows x:Key=\"FloatShadowValue\">0 12 16 0 #80000000</BoxShadows>", theme);
+        Assert.Contains("<BoxShadows x:Key=\"PaperCardShadow\">0 1 2 0 #66000000", theme);
+    }
+
+    [Fact]
+    public void ProgramDoesNotForceSoftwareRendering()
+    {
+        var program = File.ReadAllText(Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop", "Program.cs"));
+        Assert.DoesNotContain("NEXTTHOUGHT_GPU_RENDER", program);
+        Assert.DoesNotContain("Win32RenderingMode.Software", program);
+    }
+}
