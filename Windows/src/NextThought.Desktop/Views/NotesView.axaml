@@ -11,6 +11,10 @@
         <TextBlock Text="会后纪要" Classes="display" />
         <TextBlock Text="按这场会议的转写整理总结、决定、待办和未决问题；原始文字不会被改写。"
                    Classes="caption" TextWrapping="Wrap" />
+        <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding Working}">
+          <TextBlock Text="{Binding Status}" Classes="caption" />
+          <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}" Maximum="1" />
+        </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
         <Button Content="导出 Markdown" Command="{Binding ExportCommand}" />

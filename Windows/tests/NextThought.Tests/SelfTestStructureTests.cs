@@ -102,6 +102,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void NotesShowsGenerationProgressLine()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        Assert.Contains("Binding Status", xaml);
+        Assert.Contains("ProgressBar", xaml);
+    }
+
     [Fact]
     public void NotesAnswersShowAutomaticBadgeAndRegenerate()
     {
