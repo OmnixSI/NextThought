@@ -155,9 +155,9 @@ Nov 20, 2026 · @Homing
 | H1 | 已实现、未验证 | MainWindow 258 行、56 检查各一文件、旧参数删除、--self-test 实跑通过 | 待逐元素对照或实机验证 |
 | H2 | 未做 | AppState 202 行、15 个 Mac 扩展文件已有；179 个 Swift 方法名对 C# 完全匹配 0 | 方法重命名未开始 |
 | H3 | 已实现、未验证 | 新增 `Platform/Win32Native.cs` 集中所有 P/Invoke（指针/窗口样式/防截屏/热键消息泵/GDI 截图/系统动画开关）及结构体；Desktop 的 `GlobalHotkeys`、`Motion`、`ScreenCapture`、`WindowCaptureHiding`、提词岛/字幕条/提词器/小条全部改为调用 `Win32Native`，删除本地 `DllImport`；新增源码扫描测试断言 Desktop 无 `DllImport`/`LibraryImport` | `Platform.Stub` 替身尚未建；截图/热键/非激活样式需实机回归 |
-| H4 | 未做 | — | 未使用 Core 文件未归位 |
+| H4 | 已实现、未验证 | `Windows/scripts/core_usage.py` 改为按「Core 文件声明的类型是否被 Windows/src 或 tests（含其它 Core 文件）引用」统计；复算 **core_files=129, unused=0**；`CORE_PARITY.md` 口径与复算命令同步更新，旧的文件名启发式 40 已废弃 | 统计仍是类型名文本匹配，非编译器级；需最终验收时再跑一次确认 0 |
 | H5 | 未做 | — | 等待是否删除旧工程答复 |
-| H6 | 未做 | — | 未开始 |
+| H6 | 已实现、未验证 | 现有 Native AOT JSON 警告清单 `Windows/AOT_JSON_WARNINGS.csv` 保持 161 条；新增 `AotJsonBudgetTests` 锁定不超过 161；本轮新增代码（ProductVersion、Win32Native、字符串生成、备份合并）未增加清单行 | 需真实 AOT 发布重新生成清单确认仍为 161；`AOT_REPORT.md` 记录 AOT 备份 JSON 仍失败 |
 | H7 | 已实现、未验证 | 新增 `Windows/verify.ps1`：锁定模式还原（运行库项目带 win-x64，测试项目 `--no-dependencies`）、Release 构建、两个测试工程、A15 MacCodec check（夹具缺失时明确 SKIP）、D1 截图（`--demo --screenshots`，可用 `-SkipScreenshots`）；任一步失败即停，末尾打印 PASS/FAIL 摘要。已运行 `-SkipScreenshots` 一次：构建与 1526/267 测试通过，A15 因夹具缺失 SKIP | 需夹具到位后跑完整 A15 check 与 D1 截图；脚本尚未在干净机器上验证 |
 
 ## 1. ⽬标与范围 

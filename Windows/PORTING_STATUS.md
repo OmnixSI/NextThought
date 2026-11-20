@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · H4/H6
+改动：Core 使用统计改为类型级（含 tests 与 Core 内部引用），复算 `core_files=129, unused=0`；新增 AOT JSON 警告预算测试锁定 161 行。
+测试：Core **1526/1526**，NextThought.Tests **269/269**；`core_usage.py` 输出 unused=0。
+状态：H4、H6「已实现、未验证」；需最终验收复算与真实 AOT 发布确认。
+
 ## 2026-11-20 · 0.5.145 · H3
 改动：新增 `Win32Native` 集中 P/Invoke 与结构体；Desktop 热键、动画开关、截图、防截屏、浮窗样式全部改经 Platform；新增源码扫描测试确保 Desktop 无 DllImport/LibraryImport。
 测试：Core **1526/1526**，NextThought.Tests **268/268**。

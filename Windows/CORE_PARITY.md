@@ -141,7 +141,7 @@ WorkspaceDeletionTransaction。
 - 校对结果写入 `user-content.json`，不再「原子重写 transcript.jsonl」。
 - 更新不是「只打开下载页」：已有更新安装、回滚和签名白名单逻辑；系统信任仍由签名证书决定。
 - 提词器模式已接通，不是「未接通」；独立提词窗与穿透恢复控制条已存在。
-- 当前 Windows Core 文件 **120** 个。清单口径写 41 个未引用；`core_usage.py` 按“文件名是否出现在非 Core 源文件”复算为 **40**，差 1 个需人工复核。旧说法 48 个已过期。
+- 当前 Windows Core 文件 **129** 个；`core_usage.py` 改为按「文件声明的类型是否被 Windows/src 或 tests 引用（含其它 Core 文件）」统计，复算 **未被程序用到 = 0**。旧的文件名启发式口径（40）已废弃。
 - 新增三列是**按文件名匹配**的当前统计，不是 Mac 测试逐项翻译数；迁移完成前统一以「部分」为准。
 
 复算命令（在仓库根目录运行）：
@@ -154,7 +154,7 @@ find Tests/NextThoughtCoreTests -name '*.swift' | wc -l
 grep -REhc '@Test|func test' Tests/NextThoughtCoreTests | awk '{s+=$1} END {print s}'
 # Windows Core 文件数
 find Windows/src/NextThought.Core -name '*.cs' | wc -l
-# 未被正式流程引用的 Core 文件数（可人工核对后填入）
+# 未被 Windows/src 或 tests 引用的 Core 文件（必须为 0）
 python Windows/scripts/core_usage.py
 ```
 
