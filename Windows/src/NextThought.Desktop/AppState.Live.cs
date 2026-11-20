@@ -34,6 +34,12 @@ public partial class AppState
 
     public string CandidateQuestion => tracker.Current is { } candidate ? candidate.FullText : "";
 
+    public double CandidateConfidence => tracker.Current?.Assessment.Score ?? 0;
+
+    public string CandidateConfidenceLabel => tracker.Current is { } candidate
+        ? $"{candidate.Assessment.Score * 100:F0}%"
+        : "—";
+
     public string RecordingElapsedText => Recording
         ? (DateTimeOffset.Now - recordingStartedAt).ToString(@"hh\:mm\:ss")
         : "00:00:00";
@@ -42,6 +48,8 @@ public partial class AppState
     {
         if (Recording) OnPropertyChanged(nameof(RecordingElapsedText));
         OnPropertyChanged(nameof(CandidateQuestion));
+        OnPropertyChanged(nameof(CandidateConfidence));
+        OnPropertyChanged(nameof(CandidateConfidenceLabel));
         var now = DateTimeOffset.UtcNow;
         ApplyCandidate(tracker.Tick(now));
         if (!Settings.AutomaticAnswers || !Recording || Stopping) { automaticScheduler.Clear(); return; }

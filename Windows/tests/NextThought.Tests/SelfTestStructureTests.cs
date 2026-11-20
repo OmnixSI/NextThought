@@ -153,6 +153,16 @@ public sealed class SelfTestStructureTests
     }
 
 
+
+    [Fact]
+    public void LiveCandidateShowsConfidence()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("CandidateConfidence", xaml);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("CandidateConfidence", live);
+    }
+
     [Fact]
     public void LivePageHasAnswerHistoryPanel()
     {
