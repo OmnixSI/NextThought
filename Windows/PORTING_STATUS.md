@@ -1,4 +1,22 @@
-## 2026-11-21 · 0.5.145 · F10/F11
+## 2026-11-21 · 0.5.145 · 第一波：G5/G8/G10、F14/F16/F18/F20/F6/B13、D1/D5/D7、E17/E27 增量/E30/E31
+改动：
+- G5/G5b（a7e5082、19c62d0）：`SETTINGS_PARITY.md` 113/113 键（101「已实现、未验证」+12「本版不做」）补全类型/默认值/范围/Mac 视图/Windows 状态/接入任务，`MacPreferences.g.cs` 注册表与 `MacPreferenceMap`；`SettingsParityDefaultsTests` 逐键断言默认值/枚举/范围；`teleprompterOpacity/FontSize` 改 Settings 键（Mac 默认 1.0/22、下限 0.35、迁移旧 win-ui.json）；`reducedEffects`→Motion.Reduce。
+- G8（fd8bd62）：界面文字全部改显式调用（XAML `{loc:Tr Mac 中文原句}`、代码 `UiText.T/Format`），删除 `UiTranslation` 与控件树遍历；`UiTextSource` 即时切换语言、默认跟随系统；`--screenshots` 输出逐页文字清单。
+- G9（456303e、95841b1，**未完成**）：运行时文案入表、36 条拼接句改占位符、切换语言重译瞬时状态；回答提示词多语言仍未做，任务保持「未做」。
+- G10（bf54211）：`WORDING.md` 系统名词替换表 + 905 行逐句表 + 英文逐页扫描（48 页、166 行含中文、残留 0）；`scripts/localization_scan.py`、`WordingTableTests`、`validation/localization/english-scan.md`。
+- F6（4aa0c49）：云端识别按 `EndOfMessage` 拼接分片、发送 80 in-flight 上限与背压报错、关闭握手修正、40 KiB 三分片/512 KiB/400 帧背压测试。
+- F14/F16/F18/F20（e5b3d8b、15eed0d、7a74620、10689d2）：更新清单移入 `Platform/UpdateCheck.cs` 按 build 比较并校验清单描述本发布；后台预下载+SHA-256 校验，标题栏「重启以更新」仅就绪显示；`ShutdownRequested` 先取消再等 `ShutdownAsync` ≤15 秒；历史/会话读取/`context.json` 移出 UI 线程且字段对齐 Mac SessionContextSnapshot。
+- B13：核对后确认 B22 已翻译 `SessionRecordTests` 全部 9 项并通过（29/29），状态改为「已实现、未验证」。
+- D1/D5/D7：演示内容逐字移植（`Platform/DemoScript.cs`、`DemoContent.cs` 薄适配、`AppState.Demo.cs`）；五组运动 token 改真阻尼弹簧（`Platform/MotionModel.cs`、`Desktop/Motion.cs`，暂停=稳定时间）；图标全部资源化到随包 Fluent System Icons（MIT，2.9 MB）+ `ICON_MAP.md` + `IconResourceTests`（Views 无字形字面量）。
+- E17（e12c5d7）：`CorrectedTranscript` 视图（校正/原始切换、查找、逐条撤销/恢复，只改 user-content.json）+ Notes 入口 + compare.md。
+- E27 增量（987b404、fcd275e）：`Core/APIPresets.cs`（Mac 字段/4 档 effort/10 服务商模板逐字）、按预设 DPAPI Key、`FetchModelsAsync`、设置页预设模型、引擎测试状态机、GitHub 访问；SettingsView.axaml 分区 UI 未做。
+- E30（f1fc4b7、a547ab7）：备份设置区（自动备份/恢复点/备份列表/立即备份）、导入前复核页（两阶段导入）、`IncrementalBackup` List/Delete、`BackupRecoveryTests`/`BackupUiStructureTests`、自检 `--self-test=backup-ui` 9 步。
+- E31（3cdf940）：演示模式按 Mac 7 阶段（含旧别名/apply 差异/demoNotes=work）、9 个岛 phase 数据化、DemoFilm 两段脚本数据化。
+测试：Core **1576/1576**，NextThought.Tests **354/354**，0 失败 0 跳过；`verify.ps1` 全量通过（restore/构建/两套测试/A15 因夹具缺失 SKIP/D1 截图 100 张）。本轮新增/翻译测试：D5 15、D1 16、E31 10、G8 13 + 源码扫描/覆盖、D7 6、E17 5、E30 5+4、E27 13+5、G10 WordingTableTests，NextThought.Tests 总数 271→354。
+状态：G5、G8、G10、F6、F14、F16、F18、F20、B13、D1、D5、D7、E17、E30、E31「已实现、未验证」；G9「未做」（提示词多语言未完成）；E27、E29 未完成。
+证据：提交 4aa0c49、bf224fa、a7e5082、e5b3d8b、15eed0d、7a74620、10689d2、5f9b790、fd8bd62、456303e、bf54211、e12c5d7、f1fc4b7、3cdf940、d8de949、a547ab7、987b404、19c62d0、2c11a41、95841b1、fcd275e；`Windows/SETTINGS_PARITY.md`、`Windows/WORDING.md`、`Windows/ICON_MAP.md`、`Windows/validation/screens/backup/`、`Windows/validation/screens/CorrectedTranscript/`、`Windows/validation/localization/english-scan.md`。
+未解决：G9 提示词多语言（`AppState.Live.cs` 自建中文 prompt、`AnswerPromptBuilder` 只有中文模板）与少量 code-behind 弹窗文案；E27/E29 的 SettingsView.axaml 分区 UI、Codex Fast 档位、更新客户端读取 updateRepository/GitHub 令牌；G5 约 40 键待 E 组接入消费者；E17/E30/D7/D1/D5/E31 的实机对照未做；A16/A15 夹具、E10 模型方案、H5 旧工程答复仍等外部。归属说明：fd8bd62 里混入当时在途的 E30/D1/G5 片段、987b404 里混入 2 处 E30 文案（amend 误并入），内容均已核对无缺失。
+
 改动：回答开始/结束都推送手机伴侣快照（`OnAnsweringChanged` 调用 `PublishCompanionSnapshot`）；F10/F11 的既有实现（动作去重立即应答、Position/AnswerID/Phase、regenerate 区分）核对后补状态。
 测试：Core **1526/1526**，NextThought.Tests **271/271**。
 状态：F10、F11「已实现、未验证」；均需手机实机确认。

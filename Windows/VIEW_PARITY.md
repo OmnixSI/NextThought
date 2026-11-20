@@ -82,7 +82,7 @@ Windows 对应文件按 Mac 页面文件重新映射；子视图只有在实际�
 | `Sources/NextThought/NotesFormatBar.swift` | `NotesFormatBar` | E15 | — | 未做 | — |
 | `Sources/NextThought/NotesPageView.swift` | `AIHeadingText` | E15 | Views/NotesView.axaml | 未做 | — |
 | `Sources/NextThought/NotesPageView.swift` | `ConfirmBadge` | E15 | Views/NotesView.axaml | 未做 | — |
-| `Sources/NextThought/NotesPageView.swift` | `CorrectedTranscript` | E15 | Views/NotesView.axaml | 未做 | — |
+| `Sources/NextThought/NotesPageView.swift` | `CorrectedTranscript` | E17 | Views/CorrectedTranscriptView.axaml | 已实现、未验证 | `Windows/validation/screens/CorrectedTranscript/` |
 | `Sources/NextThought/NotesPageView.swift` | `MeetingPage` | E15 | Views/NotesView.axaml | 未做 | — |
 | `Sources/NextThought/NotesPageView.swift` | `NotesBody` | E15 | Views/NotesView.axaml | 未做 | — |
 | `Sources/NextThought/NotesPageView.swift` | `NotesItemEditSheet` | E15 | Views/NotesView.axaml | 未做 | — |
@@ -203,7 +203,7 @@ Windows 对应文件按 Mac 页面文件重新映射；子视图只有在实际�
 | `Sources/NextThought/QuickSettings.swift` | `QuickSettingsPanel` | E26 | — | 未做 | — |
 | `Sources/NextThought/QuickSettings.swift` | `QuickStatusRow` | E26 | — | 未做 | — |
 | `Sources/NextThought/InsightSettingsView.swift` | `InsightSettings` | E29 | — | 未做 | — |
-| `Sources/NextThought/SettingsGeneralData.swift` | `BackupSettingsSection` | E29 | — | 未做 | — |
+| `Sources/NextThought/SettingsGeneralData.swift` | `BackupSettingsSection` | E30 | Views/BackupSettingsSection.axaml | 已实现、未验证 | `Windows/validation/screens/backup/` |
 | `Sources/NextThought/SettingsGeneralData.swift` | `DataMaintenanceAdvanced` | E29 | — | 未做 | — |
 | `Sources/NextThought/SettingsGeneralData.swift` | `GeneralSettings` | E29 | — | 未做 | — |
 | `Sources/NextThought/SettingsGeneralData.swift` | `PermissionSettingsSection` | E29 | — | 未做 | — |
@@ -218,7 +218,7 @@ Windows 对应文件按 Mac 页面文件重新映射；子视图只有在实际�
 | `Sources/NextThought/Onboarding.swift` | `SetupRow` | E3 | — | 未做 | — |
 | `Sources/NextThought/OnboardingSampleMeeting.swift` | `OnboardingSampleMeeting` | E3 | — | 未做 | — |
 | `Sources/NextThought/OnboardingSampleMeeting.swift` | `SampleTag` | E3 | — | 未做 | — |
-| `Sources/NextThought/BackupRestoreReview.swift` | `BackupRestoreReviewView` | E30 | — | 未做 | — |
+| `Sources/NextThought/BackupRestoreReview.swift` | `BackupRestoreReviewView` | E30 | Views/BackupRestoreReviewView.axaml | 已实现、未验证 | `Windows/validation/screens/backup/` |
 | `Sources/NextThought/AppNavigationSidebar.swift` | `AppNavigationBar` | E4 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/AppNavigationSidebar.swift` | `AppNavigationSidebar` | E4 | Views/MainWindow.axaml | 未做 | — |
 | `Sources/NextThought/AppNavigationSidebar.swift` | `TopButtonBody` | E4 | Views/MainWindow.axaml | 未做 | — |

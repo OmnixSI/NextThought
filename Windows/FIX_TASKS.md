@@ -48,7 +48,7 @@ Nov 20, 2026 · @Homing
 | B10 | 已实现、未验证 | `NotesShape.tidy` 只对要点段限 14/6 条并按 topic 分组；JSON 解码接受字符串布尔值、数字时间/字段；Markdown 改为 # 标题 + 事实行、## 章节、待改进/答得好/待确认标记、问题回答与更好答法；旧冲突测试已替换 | 未实机核对英文页；`StructuredNotesMarkdown` 的三种结构化视图仍用旧渲染；其余笔记 Swift 测试留给 B22 |
 | B11 | 已实现、未验证 | 补齐纪要模型：`ActiveCorrections/ActionItemCount/QuestionCount/ImproveCount/BankEntries/Lessons(template)/Named`、`NotesTemplate.CustomCopy`；`NotesKnowledge.Extract` 改用这些方法；模板纪要传入会中参考回答；翻译 `reviewFeedsTheQuestionBank` | 未逐项核对 `named` 与 Mac 在真实姓名上的每个边界；其余纪 Swift 测试留给 B22 |
 | B12 | 已实现、未验证 | `NotesDates.Resolve` 增加时区参数，默认按本地日历日计算；全角数字/冒号先归一化，数字解析不再抛异常；翻译 `relativeDatesBecomeDates` 并增加东八区 07:00/UTC 25 日 23:00 的「明天」测试 | 未在非东八区机器实机核对；其余日期 Swift 测试留给 B22 |
-| B13 | 未做 | `SessionSummaryPrompt.TranscriptText` 已按 Mac 区分 `me/房间/对方`（现场发言标「现场」）；翻译 `SessionRecordTests` 的提示词/分段/标题问题清单 3 项通过 | 其余 6 项（JSONLines 撕尾行、录制恢复、deferred notes、standing 系列、设置快照、Markdown 导出）依赖尚未移植的存储 API |
+| B13 | 已实现、未验证 | 旧记录过时：B22 提交 7cf5f44/07c67fc 已把 `SessionRecordTests` 全部 9 项翻译进 `Windows/tests/NextThought.Core.Tests/SessionRecordTestsParityTests.cs`（JSONLines 撕尾行、录制恢复、deferred notes、standing 系列、设置快照、Markdown 导出），所需存储 API（JSONLines/RecoverInterruptedRecording/NotesDeferred/WorkspaceSeries.Standing/SettingsSnapshot.ExportedKeys/SessionMarkdownExporter）均已存在；逐项对照 Swift 输入/期望一致，过滤运行 SessionRecord/SessionSummaryPrompt 29/29 通过 | 无；待随全量测试确认 |
 | B14 | 已实现、未验证 | `strictKey` 改为小写保留标点/单空格；`looseKey` 按 NFKC、空白/格式字符/标点规则；`tidy` 合并空白；热词 80 条、误听优先、2–40 字、排除冒号/逗号、仅规范写法；新增 `HotwordString`；拉丁扩展字符算词字符；提示省略标记改为「（另有 N 条未列出）」；4 个对齐测试通过 | `GlossaryTests` 其余 14 项尚未翻译；未实机用真实术语表核对热词 |
 | B15 | 已实现、未验证 | 小组作业/组会阈值统一 0.55/0.3；候选跟踪器新增 `Config`、`Reset`、`NoteAnswered`、`Confirm`，稳定/提前触发/线索/片段/去重/最小间隔均由 Config 控制；4 个对齐测试通过 | `QuestionIntentTests` 8 项、`QuestionCorpusReportTests` 5 项、`RealtimeRegressionTests` 9 项尚未全部翻译；可空句子键尚未加入 |
 | B16 | 已实现、未验证 | 新增投影字幕导出：用校对后文本、说话人名字、原文/译文/双语三种模式、无译文回退原文、译文过期标记与计数；SRT/VTT 时间戳；2 个对齐测试通过 | `SessionExportTests` 其余 10 项尚未翻译；会议页导出按钮尚未改接投影字幕导出 |
@@ -79,13 +79,13 @@ Nov 20, 2026 · @Homing
 | C17 | 已实现、未验证 | 「隐藏所有窗口」改用 `TeleprompterWindow.HideForAllWindows()`，同时隐藏提词器与穿透控制小条；提词器与小条加 `WS_EX_NOACTIVATE|TOOLWINDOW` | 需实机在穿透状态按隐藏全部，确认屏幕无残留小条 |
 | C18 | 已实现、未验证 | `Settings.CapturePrivacy`（默认 true，键 `capturePrivacy`）与设置页「尽力从屏幕共享中排除本应用窗口」；`WindowCaptureHiding.ApplyAll` 每秒扫描所有窗口并施加 `WDA_EXCLUDEFROMCAPTURE`，关闭时恢复 `WDA_NONE`；自检读回主窗、岛、字幕条、提词器四个窗口及开关前后 affinity | 需实机在会议共享中确认主窗口与后续新开窗口都不可见 |
 | C19 | 已实现、未验证 | `EvaluateScreenSharing` 仅在 `CapturePrivacy` 关闭或窗口无 WDA 保护时才用窗口标题检测兜底；自检先关闭隐私再验证兜底收回 | 需实机确认隐私开启时屏幕共享不再无谓收回岛，且系统不支持 WDA 时才走兜底 |
-| D1 | 已实现、未验证 | 9 页+8 标签+岛 7 态全量截图；文案非 Mac 逐字 | 待逐元素对照或实机验证 |
+| D1 | 已实现、未验证 | `Platform/DemoScript.cs` 逐字移植 DemoMode.swift/DemoFilm.swift（3 系列、3 技能、2 场归档会议与会中直播、准备 draft、6 份资料、引导示例；含日期/更正/回声行等细节），`DemoContent.cs` 变薄适配层、`AppState.Demo.cs` 承载 LoadDemo/分页演示；演示/截图入口按 Mac `NEXTTHOUGHT_DEMO_SECTION` 语义切页（Home/Prepare/Live/Notes/History/Series，工作纪要=周一例会）；删掉旧自造演示数据；`DemoScriptTests` 16 项逐字断言 + 96 张截图重跑（EXIT=0、文件名不变） | 版式差异属 E2/E4/E15/E16 页面任务；列表计数文案（场会议/场记录）待 G 组；96 张截图仅本机生成，未人工并排对照 |
 | D2 | 已实现、未验证 | 四套字体+许可随包；嵌入 avares，截图正常；干净机未验 | 待逐元素对照或实机验证 |
 | D3 | 已实现、未验证 | 全部 34 个颜色值有测试；逐页截图未做 | 待逐元素对照或实机验证 |
 | D4 | 已实现、未验证 | Views 数值间距/圆角已全部资源化（118 项）；点击区域尺寸未逐项核对 | 待逐元素对照或实机验证 |
-| D5 | 已实现、未验证 | Motion 五组时长、减弱动画；两处淡入淡出已接入，弹簧为 cubic 近似 | 待逐元素对照或实机验证 |
+| D5 | 已实现、未验证 | 五组 Mac 运动 token 真实现：hover 0.14 秒 cubic-bezier(0.2,0.8,0.2,1)；expand 0.32/0.9、phase 0.46/0.9、snappy 0.28/0.78、morph 0.5/0.82 用 SwiftUI spring 的欠阻尼解析解（mass=1、stiffness=(2π/response)²、damping=2ζ√stiffness），时长取稳定时间；`Platform/MotionModel.cs` 承载数学，`Desktop/Motion.cs` 提供 Avalonia Easing 与逐帧 Progress；提词岛 morph 改真弹簧逐帧；`MotionSpringTests` 验证解析解 vs RK4、超调、时长与 Reduce；侧栏 hover 改 0.14 秒 | 未在实机看动画流畅度/录屏；系统「减少动画」与 `reducedEffects` 应用设置都已接，实机观感待验证 |
 | D6 | 已实现、未验证 | 场景数据/图标/水墨/首页场景选择已实现；与 Mac 未逐像素一致 | 待逐元素对照或实机验证 |
-| D7 | 已实现、未验证 | 57 图标资源/对照表；文字关闭符已换 Fluent；码点待并排定稿 | 待逐元素对照或实机验证 |
+| D7 | 已实现、未验证 | 图标全部走资源：`Styles/Icons.axaml` 73 个 Fluent System Icons 资源（57 个 Mac SF 符号 + 10 个 Stage 场景符号 + 6 个 Windows 专用），随包 `FluentSystemIcons-Regular.ttf`（MIT）+ 许可与 THIRD_PARTY_NOTICES；Views 43 处 `&#xE…;`+Segoe 全部换 `{StaticResource IconXxx}`/`IconFont`；SceneGlyph 统一读资源；`ICON_MAP.md` 每行加 Fluent 名称/码点/未用登记；`IconResourceTests` 6 项（字体随包、禁止字形字面量、资源被引用或登记、对照表一致/覆盖） | 12 处按语义取近似（字体无同名 glyph，已逐条写进 ICON_MAP）；44 个资源暂未被界面引用（留给 E 组）；逐图标与 Mac 并排对照待实机 |
 | D8 | 已实现、未验证 | 八卡样张/焦点/破坏性/hover/loading 已实现；未逐像素一致 | 待逐元素对照或实机验证 |
 | D9 | 已实现、未验证 | 恢复默认 GPU 渲染 | 待逐元素对照或实机验证 |
 | D10 | 已实现、未验证 | 胶囊、覆盖层、snappy、专注、上下文侧栏持久化完成；品牌图标未逐像素 | 待逐元素对照或实机验证 |
@@ -106,7 +106,7 @@ Nov 20, 2026 · @Homing
 | E14 | 已实现、未验证 | 密钥保存/联网/来源/查证；缓存未做 | 待逐元素对照或实机验证 |
 | E15 | 已实现、未验证 | 八标签/证据/徽标/条目编辑/进度/提纲/重整理；未逐项对照 Mac | 待逐元素对照或实机验证 |
 | E16 | 已实现、未验证 | 纪要编辑器+证据侧栏+user-content 保存；未逐项对照 Mac | 待逐元素对照或实机验证 |
-| E17 | 未做 | — | 未开始 |
+| E17 | 已实现、未验证 | 新增 `Views/CorrectedTranscriptView.axaml/.cs`（类型名 CorrectedTranscript，与 Swift 同名）：校正转写/原始转写切换、查找（Mac 文案「在转写里查找（听错的写法也会找出来）」+「N 句」）、逐条「撤销校对/恢复校对」只改 user-content.json 不改 transcript.jsonl；Notes 转写标签加「校正原话」入口；`AppState.Proofread.cs` 补投影/命令/demo 决定；`CorrectedTranscriptViewTests` 5 项；compare.md 已写 | 未在实机操作；Mac 是 Notes 详情 pane、Windows 用独立窗口（已在 compare.md 注明）；高亮/术语表/说话人条未移植 |
 | E18 | 已实现、未验证 | 删除/重命名/批量/分组/搜索跳转/概览/回答/系列管理/截图放大；未逐项对照 Mac | 待逐元素对照或实机验证 |
 | E19 | 未做 | — | 未开始 |
 | E20 | 已实现、未验证 | 基本信息/字段/复盘/文档/归档删除；准备队列/导入 UI 未做 | 待逐元素对照或实机验证 |
@@ -116,17 +116,17 @@ Nov 20, 2026 · @Homing
 | E24 | 已实现、未验证 | 系列范围 + 学术模式整份资料 prompt 已接；未跑真实模型 | 待逐元素对照或实机验证 |
 | E25 | 已实现、未验证 | 六页切换/搜索限页/截图/按 Mac 归页完成；场景页已接 E26 | 待逐元素对照或实机验证 |
 | E26 | 已实现、未验证 | 默认值驱动开始+快速面板完成；覆盖少于 Mac | 待逐元素对照或实机验证 |
-| E27 | 未做 | — | 未开始 |
+| E27 | 未做 | 增量已提交（987b404、fcd275e）：`Core/APIPresets.cs` 按 Mac 逐字（字段名 id/name/baseURL/model/effort/keyAccount、4 档 effort、10 个服务商模板、首次迁移/唯一命名/增删改名/选择写回）、`FetchModelsAsync` + 模型列表解析、按预设账号 DPAPI Key、设置页预设模型（选择/编辑/拉取模型/effort/快速模式/GitHub 仓库+令牌）、引擎测试状态机（idle/running/passed/failed + Mac 连通性提示）、`ApiPresetsTests` 13 项 + `ApiPresetSettingsTests` 5 项 | 未完成：SettingsView.axaml 分区 UI、Codex Fast 服务档位行为（协议未核对）、更新客户端读取 updateRepository/GitHub 令牌、截图与逐控件点按 |
 | E28 | 已实现、未验证 | 设置页技能区改为逐个技能的编辑器：名称/摘要/启用/全部会议/正文可编辑，逐条保存与删除；新增「新建技能」「安装示例技能」；`AppState.SaveSkillEdit/AddSkill/DeleteSkill/InstallDemoSkill` 持久化并保留导入时间；原文本整块编辑器移除 | 需与 Mac SkillSettings/SkillEditor 截图对照；技能导入仍走原入口；示例技能文案需按 Mac 原文核对 |
 | E29 | 未做 | — | 未开始 |
-| E30 | 未做 | — | 未开始 |
-| E31 | 未做 | — | 未开始 |
+| E30 | 已实现、未验证 | 新增 `Views/BackupSettingsSection.axaml`（自动备份开关、恢复点创建/删除、备份列表、立即备份）与 `Views/BackupRestoreReviewView.axaml`（导入前复核：内容数量/警告→确认后才应用，两阶段 `PrepareImport/ApplyPreparedImport`）；`IncrementalBackup` 增 List/Delete、`BackupService` 增恢复点创建与导入复核；设置页数据/关于挂载；`RunBackupUiCheckAsync` 自检 8 步（隔离数据目录）；`BackupRecoveryTests`；--demo --self-test=backup-ui 通过 | 未用真实 Mac 备份走完整导入复核；自动备份触发时机的实机验证待做；新视图已用 `{loc:Tr}` 但 LocalizationCoverage 排除列表待移除 |
+| E31 | 已实现、未验证 | `Platform/DemoStage.cs` + `DemoScript.cs` 移植 Mac `NEXTTHOUGHT_DEMO_SECTION` 7 阶段（home/prepare/live/live-notes/meetings/library/settings 及旧别名解析）、各阶段 apply 差异（isRunning/ClearsAnswerState/draft/归档视图）、demoNotes=work 变体、9 个岛 phase 数据化、DemoFilm 两段脚本（island 20fps/12.6s、home 15fps/7.6s）；`DemoStageTests` 10 项 | Mac 的 DemoFilm 帧录制器未移植（开发工具，不新增启动参数）；settings 阶段选页由截图工具负责；需实机看各阶段观感 |
 | F1 | 已实现、未验证 | 旧采集管道停止并释放；显式设备不被覆盖 | 待逐元素对照或实机验证 |
 | F2 | 已实现、未验证 | 卡顿不再结束会议；实机睡眠未验证 | 待逐元素对照或实机验证 |
 | F3 | 已实现、未验证 | 停止排空至空/5 秒；实机尾句未验证 | 待逐元素对照或实机验证 |
 | F4 | 已实现、未验证 | 先发结束/等最终结果再取消 | 待逐元素对照或实机验证 |
 | F5 | 已实现、未验证 | 云端实时识别已建立两路会话：`cloudStt`（系统声音）与 `cloudSttMicrophone`（麦克风），帧按来源分别发送；两路结果各自按 `generating` 代次写入转写，失败分别提示；停止时两路都释放 | 需云端模式同时开系统声+麦克风实机验证双方说话都出现且说话人正确 |
-| F6 | 未做 | — | 未开始 |
+| F6 | 已实现、未验证 | 接收端按 `EndOfMessage` 拼接分片；发送端按 Mac 上限 80 in-flight（`CloudSttSession`），超限/发送异常用 Mac 原句一次性报错；收到 Close 完成握手后退出，停止中不把关闭误报为识别失败；`StopAsync` 先发结束消息、等最终结果≤2s、再发 close 帧（超时也不再跳过关闭）；新增测试：40 KiB 分三片解析为一条 final、>512 KiB 报错、服务器不读时 400×1600 帧触发 80 上限且内存不无界增长 | 需真实云端服务长会话实测；内存增长目前只在回环测试观测 |
 | F7 | 已实现、未验证 | wss+白名单；读密钥失败不覆盖 | 待逐元素对照或实机验证 |
 | F8 | 已实现、未验证 | 文件转写超时由 30 秒改为 30 分钟，超时无结果时抛明确中文提示；连接中断且无转写时提示，已收到 final 后断连不再误报；单声道化支持任意 >2 声道（逐帧平均）；新增三声道 WAV 混音测试 | 需用 10 分钟真实录音与 Soniox/OpenAI/Deepgram 各跑一次；失败提示文案需与 Mac 对照 |
 | F9 | 已实现、未验证 | 设置页云端识别说明改为「实时记录与导入 WAV 都走云端识别」；双屏演讲说明改为已支持讲话/截图跟页 | 实机确认选云端后实时录音确实发往所选服务，关闭时无音频离开本机 |
@@ -134,24 +134,24 @@ Nov 20, 2026 · @Homing
 | F11 | 已实现、未验证 | 快照已填 `Position`（第几条/共几条）、`AnswerID`（会议:回答数）、`Phase`（generating/recording/idle）；回答开始/结束都通过 `OnAnsweringChanged` 推送；`regenerate` 已是“重新生成不同版本”而不是普通 answer；`CompanionBLETests`/`CompanionCryptoTests` 已翻译通过 | 需实机手机看状态、第几条、上一条/下一条与电脑一致 |
 | F12 | 已实现、未验证 | 逐项对照表写入 `Windows/validation/companion/SCOPE_LIFETIME.md`：监听范围仅 RFC 1918+回环（100.64/10 已移除）、配对 fragment 令牌每次轮换、无 8 小时自动停止、配对链接字段与 Mac 相同、中转通道接口相同；`CompanionCryptoTests`/`CompanionBLETests` 已翻译通过 | 需手机实机扫码、跨网段与中转通道验证；对照表基于源码核对，非实机 |
 | F13 | 本版不做 | OPEN_QUESTIONS 已记录；不修改 Mobile/，不实现 Windows 蓝牙外设 | 本版不做；事实更正：Mobile/ 在本仓库，手机端已按服务标识扫描但发现后仍检查 IH- 名字，Mac 广播 NT- 同样过不了，留给以后 |
-| F14 | 未做 | — | 未开始 |
+| F14 | 已实现、未验证 | 更新检查移入 `Platform/UpdateCheck.cs`（`UpdateReport` 一并迁移），滚动版按发布 `update.json` 清单的 build 比较，并补上 Swift `Updater.check` 的「清单必须描述本发布」校验（tag/zip 不符报「更新清单与发布不一致。」）；Desktop `UpdateFeed.cs` 变薄包装并传本程序集版本；`UpdateFeedParityTests` 2 项用本地假发布目录（build 41>40 能发现、同 build 不发现、tag 不符报错）+ B22 的 `UpdateCatalogParityTests` | 需真实发布通道/联网实测；假发布目录之外未跑 |
 | F15 | 已实现、未验证 | 更新状态改到 UI 线程；断网日志未验证 | 待逐元素对照或实机验证 |
-| F16 | 未做 | — | 未开始 |
+| F16 | 已实现、未验证 | 检查到更新后自动后台预下载（`StartInstallerPrefetch`）；新增 `Platform/UpdateInstaller.PrepareAsync/VerifyAsync`（https 流式下载或 QA 本地路径、SHA-256 校验、坏包删除）；`UpdateInstallerReady` 为真才在标题栏显示「重启以更新」；自检改读应用数据目录 `update-launch.json` 并等预下载；`UpdateInstallerTests` 2 项 | 真实 Inno 安装包执行+重启后版本号变化、标题栏按钮出现时机需实机验证 |
 | F17 | 已实现、未验证 | 移除 `NEXTTHOUGHT_UPDATE_LAUNCH` 与 `--update-check`；自检写应用数据目录 `update-launch.json` | 正式发布包扫描确认不含两个字符串 |
-| F18 | 未做 | — | 未开始 |
+| F18 | 已实现、未验证 | `App.axaml.cs` 的 `ShutdownRequested` 从 async void 改为：先取消退出→后台等 `ShutdownAsync` ≤15 秒→再退出；录音中关窗继续托盘录制，真正退出时等待所有写入与 `Sessions.EndAsync`、吞关停异常后关闭浮窗再 Shutdown；`ExitWaitsForShutdownWithATimeout` 通过 | 实机录音中关窗/托盘退出后的 meta.endedAt 与转写完整性待验 |
 | F19 | 已实现、未验证 | 全局兜底+各视图 async void try/catch；实机恢复未验证 | 待逐元素对照或实机验证 |
-| F20 | 未做 | — | 未开始 |
+| F20 | 已实现、未验证 | 历史列表、选中会议读取、截图列举、准备会议会话读取、`context.json` 构建全部移出 UI 线程；`ContextDocument.CharacterCount` 加 `[JsonIgnore]`，`context.json` 字段集合与 Mac SessionContextSnapshot 一致（顶层 mode/style/preferences/profile/documents/effectiveMode，文档层 id/name/pages/enabled/category）；`SessionContextPersistenceTests` | 资料库 50 篇时点开始到开始录音 <1 秒、界面不卡顿需实机测量 |
 | F21 | 已实现、未验证 | Codex 客户端 `initialize.clientInfo.version` 改用 `ProductVersion.Current`（入口程序集版本，去掉 +sha）；模型解压改用 `Environment.SpecialFolder.System` 下 `tar.exe` 的完整路径，缺失时抛 `FileNotFoundException`，不再从 PATH 找 | 未实跑 Codex 初始化与模型下载；需联网/账号实测 |
 | G1 | 已实现、未验证 | 保存设置带快捷键 | 待逐元素对照或实机验证 |
 | G2 | 已实现、未验证 | `ShortcutKeys.Actions` 改为 Mac 的 18 个动作（标识按 Mac 顺序，名称用 Mac 文案），默认键按换算表：⌘⇧/⌘⌃→Ctrl+Alt，⌃⌥→Ctrl+Alt+Shift；去掉 Windows 独有「显示主窗口」，原「显示/隐藏提示岛」改为 Mac 的 `toggleCueOpen`（会中一直展开/恢复）；主窗口注册表同步更新；`ShortcutKeysTests` 逐个断言标识/按键/修饰键 | 需实机按 18 个快捷键逐个触发；与 Mac 名称/顺序的并排核对待做 |
 | G3 | 已实现、未验证 | 新增 `ShortcutKeys.Validate`：必须带修饰键、两个动作不得同键，错误文案用 Mac 原句；保存快捷键时先校验；`AppState.ShortcutConflicts` 记录被其他程序占用的动作并在设置页显示；`ShortcutKeysTests` 新增校验用例 | 需实机占用一个键（如被其他程序注册 Ctrl+Alt+M）确认设置页标出该动作；重复键保存被拒的界面提示待看 |
 | G4 | 已实现、未验证 | 设置页快捷键区改为按动作生成的录制控件：点按键位后直接按下组合键录入（Esc 取消，必须带 Ctrl/Alt/Shift/Win），每个动作有「清除」「默认」；录入后立即写入 `ShortcutText` 并调用保存/重新注册；文本框编辑器移除 | 需与 Mac `ShortcutSettingsView` 截图对照；「清除」目前与「默认」同效（全局热键无法表示禁用），差异待确认 |
-| G5 | 未做 | — | 未开始 | `Windows/SETTINGS_PARITY.md` 已覆盖 **113/113** 个键（UserDefaults/AppStorage/SceneSettings/exportedKeys 并集），每键列默认类型、默认值、Mac 视图、Windows 状态；新增测试锁定 113 行。键名/默认值逐个断言、取值范围与真实生效仍未实现，故保持「未做」 |
+| G5 | 已实现、未验证 | `Windows/SETTINGS_PARITY.md` **113/113**（101「已实现、未验证」+12「本版不做」），每键列类型/默认值/范围/Mac 视图/Windows 状态/接入任务，由 `Windows/scripts/settings_parity.py` 从 Swift 源码复算；新增 `MacPreferences.g.cs` 注册表与 `MacPreferenceMap`，`SettingsParityDefaultsTests` 逐个断言默认值/类型/枚举/范围，`SettingsParityTableTests` 锁定 113 行与 settings.json/plist 的 Mac 键名往返；已接行为：teleprompterOpacity/FontSize 改为 Settings 键（默认 1.0/22、下限 0.35、旧 win-ui.json 一次性迁移）、reducedEffects→Motion.Reduce | 约 40 个键目前只有存储层与读 API，需 E2/E3/E4/E6/E7/E10/E14/E15/E16/E18/E25/E28/E30/F10 接入消费者后才算真正生效；E29 补设置页控件；Windows 专有映射与数据格式差异逐键写在 SETTINGS_PARITY |
 | G6 | 已实现、未验证 | `AppSettings.AdditionalProperties` 保存不认识的 JSON 键；`SettingsStore` 读写原样往返；`MacSettingsPlist.Apply` 把 plist 里非导出键按 bool/string/integer/real/array/dict 转成 JSON 保存，`Write` 再写回 plist；新增未知键往返测试 | 需用真实 Mac 备份 plist（含快捷键码等 Mac 独有键）导入再导出逐键核对一个不少 |
 | G7 | 已实现、未验证 | 新增 `Windows/scripts/generate_ui_text.py`，从 `Resources/Localization/Localizable.xcstrings` 自动生成 `UiTextMac.g.cs`，全部 2607 条英文文案（含占位符、复数 `other` 分支、C# 转义）；`UiText.MacStringCount` 与 `UiTextCoverageTests` 锁定 2607；重新生成后两套 Core/App 测试通过 | 需在英文模式逐页截图扫描中文残留（G10）；占位符调用点是否正确替换仍需逐控件检查 |
-| G8 | 未做 | — | 未开始 |
-| G9 | 未做 | — | 未开始 |
-| G10 | 未做 | — | 未开始 |
+| G8 | 已实现、未验证 | 全部界面文字改显式调用：XAML 用 `{loc:Tr Mac中文原句}` 标记扩展、代码用 `UiText.T/Format`；删除 `UiTranslation.cs` 与整棵控件树遍历；`UiTextSource` 索引器 + INotifyPropertyChanged 实现切换语言即时刷新（`--self-test ui-language` 实测 dialog 标题「确认」→「Confirm」原地变）；默认跟随系统语言（Mac `appLanguagePreference` system/zh-Hans/en），设置页三项；`--screenshots` 额外输出 `text/<页面>.txt` 文字清单供 G9/G10 扫描；新增 UiTextSourceTests 13 项、LocalizationSourceScanTests、LocalizationCoverageTests | E17/E30 新视图尚未迁 `{loc:Tr}`（提交时临时排除，落地后补）；未在英文系统实机验证首启英文；仍有无硬编码文字待 G9 清 |
+| G9 | 未做 | 已提交部分（456303e）：运行时文案入表（状态行/教练提示/历史筛选/场景行/转写标签/模板名/快捷键动作名/空态/音源行），36 条拼接句改占位符模板，`ApplyUiLanguage` 重译瞬时状态并重建代码生成行/下拉，审计只收可见控件；E17/E30 新视图加回覆盖；英文扫描 0 残留（见 G10） | 未完成：回答提示词多语言（`AppState.Live.cs` 仍自建中文 prompt、Core `AnswerPromptBuilder.InstructionsTemplate` 只有中文，G9 要求提示词附加段按 Mac 分语言；已记录 WORDING §4）；少量 code-behind 弹窗文案仍可能中文（E30 backup 个别失败提示、AppState.Update/UpdateFeed 更新文案、AppState.Live「问：」、Proofread「已校对 N 处」）；系统英文实机首启未验证 |
+| G10 | 已实现、未验证 | `Windows/WORDING.md`：系统名词替换表（钥匙串→凭据管理器、访达→文件资源管理器、⌘→Ctrl/Alt、系统语音/翻译/权限等）+ 905 行逐句替换表（中文、英文、可对应的 Mac 原文、位置）+ 英文逐页扫描结果与复算命令；生成/扫描器 `Windows/scripts/localization_scan.py`；证据 `Windows/validation/localization/english-scan.md`（48 个英文页面、166 条含中文行、残留 0，允许项=演示/用户数据与 Windows 设备名）；`WordingTableTests` 锁定每条 Windows-only 文案都在表里 | 需人在英文系统实机逐页抽查；Mac 侧系统名词替换是否可接受由人确认 |
 | H1 | 已实现、未验证 | MainWindow 258 行、56 检查各一文件、旧参数删除、--self-test 实跑通过 | 待逐元素对照或实机验证 |
 | H2 | 未做 | AppState 202 行、15 个 Mac 扩展文件已有；179 个 Swift 方法名对 C# 完全匹配 0 | 方法重命名未开始 |
 | H3 | 已实现、未验证 | 新增 `Platform/Win32Native.cs` 集中所有 P/Invoke（指针/窗口样式/防截屏/热键消息泵/GDI 截图/系统动画开关）及结构体；Desktop 的 `GlobalHotkeys`、`Motion`、`ScreenCapture`、`WindowCaptureHiding`、提词岛/字幕条/提词器/小条全部改为调用 `Win32Native`，删除本地 `DllImport`；新增源码扫描测试断言 Desktop 无 `DllImport`/`LibraryImport` | `Platform.Stub` 替身尚未建；截图/热键/非激活样式需实机回归 |
