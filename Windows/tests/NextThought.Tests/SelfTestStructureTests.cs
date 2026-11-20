@@ -101,6 +101,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void NotesAnswersShowAutomaticBadgeAndRegenerate()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        Assert.Contains("自动", xaml);
+        Assert.Contains("重新整理", xaml);
+    }
+
     [Fact]
     public void NotesPageHasFourTabs()
     {

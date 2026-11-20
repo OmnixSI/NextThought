@@ -20,6 +20,7 @@
         <Button Content="导出 SRT" Command="{Binding ExportSrtCommand}" />
         <Button Content="导出 VTT" Command="{Binding ExportVttCommand}" />
         <Button Content="编辑纪要" Click="EditNotes_Click" />
+        <Button Content="重新整理" Command="{Binding SummarizeCommand}" />
         <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="36" Padding="{DynamicResource D4Padding_18_0}">
           <TextBlock Text="整理这场会议" Foreground="{DynamicResource OnInk}" />
         </Button>
@@ -122,8 +123,14 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="core:AnswerRecord">
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
-                  <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                    <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                    <Border Classes="chip" IsVisible="{Binding Automatic}">
+                      <TextBlock Text="自动" Classes="overline" FontSize="10" />
+                    </Border>
+                  </StackPanel>
                   <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Model}" Classes="caption" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
