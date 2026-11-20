@@ -183,6 +183,10 @@ public sealed record AppSettings
     /// <summary>E9: region rectangle x,y,width,height in physical pixels.</summary>
     public string InsightScreenRegion { get; set; } = "";
 
+    /// <summary>G6: settings this build does not understand survive a JSON round-trip untouched.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+
     /// <summary>E11: turn translation on automatically when the speech is mostly non-Chinese.</summary>
     public bool AutoTranslateForeign { get; set; }
 

@@ -106,6 +106,20 @@ public static class MacSettingsPlist
             ["lastScene"] = ("string", ""),
             ["sceneOverrides"] = ("dict", "")
         };
+        foreach (var (key, value) in settings.AdditionalProperties ?? new Dictionary<string, System.Text.Json.JsonElement>())
+        {
+            if (values.ContainsKey(key)) continue;
+            values[key] = value.ValueKind switch
+            {
+                System.Text.Json.JsonValueKind.True => ("bool", "true"),
+                System.Text.Json.JsonValueKind.False => ("bool", "false"),
+                System.Text.Json.JsonValueKind.Number => value.TryGetInt64(out _) ? ("integer", value.GetRawText()) : ("real", value.GetRawText()),
+                System.Text.Json.JsonValueKind.Array => ("array-json", value.GetRawText()),
+                System.Text.Json.JsonValueKind.Object => ("dict-json", value.GetRawText()),
+                System.Text.Json.JsonValueKind.String => ("string", value.GetString() ?? ""),
+                _ => ("string", "")
+            };
+        }
         foreach (var key in SettingsSnapshot.ExportedKeys)
         {
             if (values.ContainsKey(key)) continue;
@@ -127,6 +141,8 @@ public static class MacSettingsPlist
                         "integer" => new XElement("integer", pair.Value.Value),
                         "array" => new XElement("array"),
                         "dict" => new XElement("dict"),
+                        "array-json" => JsonToPlist(System.Text.Json.JsonDocument.Parse(pair.Value.Value).RootElement),
+                        "dict-json" => JsonToPlist(System.Text.Json.JsonDocument.Parse(pair.Value.Value).RootElement),
                         _ => new XElement("string", pair.Value.Value)
                     }
                 })));
@@ -155,8 +171,19 @@ public static class MacSettingsPlist
             }
             bool Bool(string key, bool fallback) => values.TryGetValue(key, out var text) ? text == "true" : fallback;
             string Text(string key, string fallback) => values.TryGetValue(key, out var text) && text.Length > 0 ? text : fallback;
+            var mergedUnknown = new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal);
+            foreach (var (key, value) in current.AdditionalProperties ?? new Dictionary<string, System.Text.Json.JsonElement>())
+                mergedUnknown[key] = value.Clone();
+            for (var index = 0; index + 1 < children.Count; index += 2)
+            {
+                if (children[index].Name != "key") continue;
+                var key = children[index].Value;
+                if (SettingsSnapshot.ExportedKeys.Contains(key)) continue;
+                mergedUnknown[key] = System.Text.Json.JsonSerializer.SerializeToElement(ElementToNode(children[index + 1]));
+            }
             return current with
             {
+                AdditionalProperties = mergedUnknown,
                 BaseUrl = Text("apiBaseURL", current.BaseUrl),
                 Model = Text("apiModel", current.Model),
                 NotesModel = Text("notesModelID", current.NotesModel),
@@ -172,4 +199,38 @@ public static class MacSettingsPlist
         }
         catch (System.Xml.XmlException) { return current; }
     }
+
+    /// <summary>G6: plist value to JSON, used only for keys this build does not understand.</summary>
+    private static System.Text.Json.Nodes.JsonNode? ElementToNode(XElement element) => element.Name.LocalName switch
+    {
+        "true" => System.Text.Json.Nodes.JsonValue.Create(true),
+        "false" => System.Text.Json.Nodes.JsonValue.Create(false),
+        "integer" => long.TryParse(element.Value, out var integer) ? System.Text.Json.Nodes.JsonValue.Create(integer) : System.Text.Json.Nodes.JsonValue.Create(0),
+        "real" => double.TryParse(element.Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var real) ? System.Text.Json.Nodes.JsonValue.Create(real) : System.Text.Json.Nodes.JsonValue.Create(0),
+        "array" => new System.Text.Json.Nodes.JsonArray(element.Elements().Select(ElementToNode).ToArray()),
+        "dict" => DictToNode(element),
+        _ => System.Text.Json.Nodes.JsonValue.Create(element.Value)
+    };
+
+    private static System.Text.Json.Nodes.JsonObject DictToNode(XElement element)
+    {
+        var result = new System.Text.Json.Nodes.JsonObject();
+        var children = element.Elements().ToList();
+        for (var index = 0; index + 1 < children.Count; index += 2)
+            if (children[index].Name == "key") result[children[index].Value] = ElementToNode(children[index + 1]);
+        return result;
+    }
+
+    private static XElement JsonToPlist(System.Text.Json.JsonElement value) => value.ValueKind switch
+    {
+        System.Text.Json.JsonValueKind.True => new XElement("true"),
+        System.Text.Json.JsonValueKind.False => new XElement("false"),
+        System.Text.Json.JsonValueKind.Number => value.TryGetInt64(out _) ? new XElement("integer", value.GetRawText()) : new XElement("real", value.GetRawText()),
+        System.Text.Json.JsonValueKind.Array => new XElement("array", value.EnumerateArray().Select(JsonToPlist)),
+        System.Text.Json.JsonValueKind.Object => new XElement("dict", value.EnumerateObject().SelectMany(property => new object[]
+        {
+            new XElement("key", property.Name), JsonToPlist(property.Value)
+        })),
+        _ => new XElement("string", value.GetString() ?? "")
+    };
 }

@@ -54,4 +54,24 @@ public sealed class MacSettingsPlistTests
         }
         finally { try { Directory.Delete(root, true); } catch { } }
     }
+
+    [Fact]
+    public void UnknownPlistKeysSurviveApplyAndWrite()
+    {
+        var plist = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><dict>"
+            + "<key>apiModel</key><string>m</string>"
+            + "<key>macShortcutCodes</key><array><integer>1</integer><integer>2</integer></array>"
+            + "<key>macOnlyFlag</key><true/>"
+            + "<key>macNote</key><string>keep me</string>"
+            + "</dict></plist>";
+        var applied = MacSettingsPlist.Apply(System.Text.Encoding.UTF8.GetBytes(plist), new AppSettings());
+        Assert.Equal("m", applied.Model);
+        Assert.NotNull(applied.AdditionalProperties);
+        Assert.True(applied.AdditionalProperties!.ContainsKey("macShortcutCodes"));
+        var output = System.Text.Encoding.UTF8.GetString(MacSettingsPlist.Write(applied));
+        Assert.Contains("macShortcutCodes", output);
+        Assert.Contains("macOnlyFlag", output);
+        Assert.Contains("macNote", output);
+        Assert.Contains("keep me", output);
+    }
 }

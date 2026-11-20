@@ -147,7 +147,7 @@ Nov 20, 2026 · @Homing
 | G3 | 已实现、未验证 | 新增 `ShortcutKeys.Validate`：必须带修饰键、两个动作不得同键，错误文案用 Mac 原句；保存快捷键时先校验；`AppState.ShortcutConflicts` 记录被其他程序占用的动作并在设置页显示；`ShortcutKeysTests` 新增校验用例 | 需实机占用一个键（如被其他程序注册 Ctrl+Alt+M）确认设置页标出该动作；重复键保存被拒的界面提示待看 |
 | G4 | 已实现、未验证 | 设置页快捷键区改为按动作生成的录制控件：点按键位后直接按下组合键录入（Esc 取消，必须带 Ctrl/Alt/Shift/Win），每个动作有「清除」「默认」；录入后立即写入 `ShortcutText` 并调用保存/重新注册；文本框编辑器移除 | 需与 Mac `ShortcutSettingsView` 截图对照；「清除」目前与「默认」同效（全局热键无法表示禁用），差异待确认 |
 | G5 | 未做 | — | 未开始 |
-| G6 | 未做 | — | 未开始 |
+| G6 | 已实现、未验证 | `AppSettings.AdditionalProperties` 保存不认识的 JSON 键；`SettingsStore` 读写原样往返；`MacSettingsPlist.Apply` 把 plist 里非导出键按 bool/string/integer/real/array/dict 转成 JSON 保存，`Write` 再写回 plist；新增未知键往返测试 | 需用真实 Mac 备份 plist（含快捷键码等 Mac 独有键）导入再导出逐键核对一个不少 |
 | G7 | 已实现、未验证 | 新增 `Windows/scripts/generate_ui_text.py`，从 `Resources/Localization/Localizable.xcstrings` 自动生成 `UiTextMac.g.cs`，全部 2607 条英文文案（含占位符、复数 `other` 分支、C# 转义）；`UiText.MacStringCount` 与 `UiTextCoverageTests` 锁定 2607；重新生成后两套 Core/App 测试通过 | 需在英文模式逐页截图扫描中文残留（G10）；占位符调用点是否正确替换仍需逐控件检查 |
 | G8 | 未做 | — | 未开始 |
 | G9 | 未做 | — | 未开始 |
