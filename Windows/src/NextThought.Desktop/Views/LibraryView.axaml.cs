@@ -31,4 +31,11 @@ public partial class LibraryView : UserControl
     {
         if (DataContext is AppState state) state.Library.RevealSourceFile();
     }
+
+    private async void Review_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state || TopLevel.GetTopLevel(this) is not Window owner) return;
+        state.LoadMaterialReview();
+        await new MaterialReviewWindow { DataContext = state }.ShowDialog(owner);
+    }
 }

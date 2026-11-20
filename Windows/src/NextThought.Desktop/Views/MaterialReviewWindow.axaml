@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.MaterialReviewWindow"
+        x:DataType="local:AppState"
+        Title="资料复核" Width="620" Height="520" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Paper}">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_18}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+      <TextBlock Text="资料复核" Classes="display" FontSize="24" />
+      <TextBlock Text="{Binding Library.SelectedMaterial.Name}" Classes="label" />
+      <TextBlock Text="{Binding Library.SelectedMaterial.Blocks.Count}" Classes="caption" />
+    </StackPanel>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_10_0_0}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="原文" Classes="overline" />
+        <SelectableTextBlock Text="{Binding Library.SelectedPreview}" FontSize="13" LineHeight="22" TextWrapping="Wrap" />
+      </StackPanel>
+    </ScrollViewer>
+    <StackPanel Grid.Row="2" Spacing="{DynamicResource D4Spacing_6}">
+      <TextBlock Text="复核备注" Classes="caption" />
+      <TextBox Text="{Binding MaterialReviewNote}" AcceptsReturn="True" TextWrapping="Wrap" Height="80" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
+        <Button Content="关闭" Click="Close_Click" />
+        <Button Classes="primary" Content="保存备注" Command="{Binding SaveMaterialReviewCommand}" Click="Close_Click" />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</Window>

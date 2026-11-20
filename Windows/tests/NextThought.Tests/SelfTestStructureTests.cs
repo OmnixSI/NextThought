@@ -182,6 +182,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void MaterialReviewSheetExists()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MaterialReviewWindow.axaml")));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LibraryView.axaml"));
+        Assert.Contains("Review_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.MaterialReview.cs"));
+        Assert.Contains("SaveMaterialReview", state);
+    }
+
     [Fact]
     public void SlidePointsAreCachedAndShown()
     {

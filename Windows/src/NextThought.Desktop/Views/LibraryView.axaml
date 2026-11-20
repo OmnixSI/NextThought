@@ -57,7 +57,10 @@
               <TextBlock Text="解析结果" Classes="title" FontSize="15" />
               <TextBlock Text="按资料原有的页、幻灯片或工作表定位" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_3_0_0}" />
             </StackPanel>
-            <Button Grid.Column="1" Classes="quiet" Content="打开文件位置" Click="Reveal_Click" VerticalAlignment="Top" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <Button Classes="quiet" Content="复核" Click="Review_Click" />
+              <Button Classes="quiet" Content="打开文件位置" Click="Reveal_Click" />
+            </StackPanel>
           </Grid>
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="{DynamicResource D4Padding_20_0_20_20}">
             <SelectableTextBlock Text="{Binding Library.SelectedPreview}" FontSize="13" LineHeight="22"
