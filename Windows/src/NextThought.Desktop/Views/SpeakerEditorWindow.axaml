@@ -14,10 +14,11 @@
       <ItemsControl ItemsSource="{Binding SpeakerRows}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="local:SpeakerRow">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="{DynamicResource D4Margin_0_0_0_8}">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" Margin="{DynamicResource D4Margin_0_0_0_8}">
               <TextBlock Text="{Binding Label}" Classes="label" VerticalAlignment="Center" MinWidth="70" />
               <TextBox Grid.Column="1" Text="{Binding Name}" PlaceholderText="名字" />
               <CheckBox Grid.Column="2" Content="这是我" IsChecked="{Binding IsMe}" VerticalAlignment="Center" />
+              <Button Grid.Column="3" Classes="quiet" Content="合并到上一个" Tag="{Binding}" Click="MergePrevious_Click" />
             </Grid>
           </DataTemplate>
         </ItemsControl.ItemTemplate>

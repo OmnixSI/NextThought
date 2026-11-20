@@ -184,6 +184,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SpeakerVoicesCanBeMerged()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Speakers.cs"));
+        Assert.Contains("MergeSpeakerVoices", state);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SpeakerEditorWindow.axaml"));
+        Assert.Contains("MergePrevious_Click", xaml);
+    }
+
     [Fact]
     public void SpeakerNamesPersistPerSession()
     {

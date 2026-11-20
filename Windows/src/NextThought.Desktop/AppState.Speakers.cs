@@ -68,4 +68,17 @@ public partial class AppState
         }
         catch { }
     }
+
+    /// <summary>E12: merge one voice into another; transcript rows of the merged voice get the target name.</summary>
+    public void MergeSpeakerVoices(int from, int into)
+    {
+        var target = SpeakerRows.FirstOrDefault(row => row.Voice == into)?.Name ?? $"说话人{into + 1}";
+        foreach (var row in Transcript.Where(row => row.Voice == from))
+        {
+            var suffix = " · " + target;
+            if (!row.Label.Contains(suffix, StringComparison.Ordinal)) row.Label += suffix;
+        }
+        SpeakerRows.Remove(SpeakerRows.FirstOrDefault(row => row.Voice == from)!);
+        SetStatus($"说话人 {from + 1} 已合并到 {into + 1}。");
+    }
 }
