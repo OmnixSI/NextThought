@@ -8,11 +8,23 @@ namespace NextThought.Desktop.Views;
 
 public partial class SettingsView : UserControl
 {
+    private string currentPage = "Scene";
+
     public SettingsView() => InitializeComponent();
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
+        ShowPage(currentPage);
+    }
+
+    private void ShowPage(string page)
+    {
+        currentPage = page;
+        foreach (var card in this.GetVisualDescendants().OfType<Border>()
+                     .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard"))
+            card.IsVisible = card.Tag as string == page;
+        SettingsScroll.Offset = new Avalonia.Vector(0, 0);
     }
 
     /// <summary>Filters the visible setting cards by their text (Mac settings search).</summary>
@@ -23,19 +35,18 @@ public partial class SettingsView : UserControl
         foreach (var card in this.GetVisualDescendants().OfType<Border>()
                      .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard"))
         {
-            if (query.Length == 0) { card.IsVisible = true; continue; }
+            if (query.Length == 0) { card.IsVisible = card.Tag as string == currentPage; continue; }
             var text = string.Join(" ", card.GetVisualDescendants().OfType<TextBlock>().Select(block => block.Text ?? "")
                 .Concat(card.GetVisualDescendants().OfType<ContentControl>().Select(control => control.Content as string ?? "")));
-            card.IsVisible = text.Contains(query, StringComparison.OrdinalIgnoreCase);
+            card.IsVisible = card.Tag as string == currentPage && text.Contains(query, StringComparison.OrdinalIgnoreCase);
         }
     }
 
 
-    /// <summary>E25: the left rail jumps to the Mac settings page groups.</summary>
+    /// <summary>E25: the left rail switches the six Mac settings pages.</summary>
     private void SettingsPage_Click(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string anchor } && this.FindControl<TextBlock>(anchor) is { } target)
-            target.BringIntoView();
+        if (sender is Button { Tag: string page }) ShowPage(page);
     }
 
     private async void RefreshDevices_Click(object? sender, RoutedEventArgs e)

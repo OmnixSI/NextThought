@@ -9,12 +9,12 @@
             BorderThickness="0,0,0.5,0">
       <StackPanel Margin="{DynamicResource D4Margin_14_18_14_14}" Spacing="{DynamicResource D4Spacing_2}">
         <TextBlock Text="设置" Classes="overline" Margin="{DynamicResource D4Margin_10_0_10_8}" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="场景" Tag="AnchorScene" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="回答与资料" Tag="AnchorAnswer" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="提词与教练" Tag="AnchorCoach" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="纪要" Tag="AnchorNotes" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="通用" Tag="AnchorGeneral" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="高级" Tag="AnchorAdvanced" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="场景" Tag="Scene" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="回答与资料" Tag="Answer" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="提词与教练" Tag="Coach" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="纪要" Tag="Notes" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="通用" Tag="General" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="高级" Tag="Advanced" Click="SettingsPage_Click" />
       </StackPanel>
     </Border>
     <ScrollViewer Grid.Column="1" Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -30,7 +30,7 @@
       </Border>
 
       <!-- Sound sources -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorScene" Text="声音来源" Classes="section" />
           <CheckBox Content="系统输出设备混音" IsChecked="{Binding Settings.CaptureSystem}" />
@@ -59,7 +59,7 @@
       </Border>
 
       <!-- Recognition -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer" Text="本机语音识别" Classes="section" />
           <TextBlock Text="识别模型" Classes="label" />
@@ -87,7 +87,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorGeneral" Text="界面语言 / Language" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.UiLanguages}" SelectedItem="{Binding Settings.UiLanguage}"
@@ -97,7 +97,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorCoach" Text="外观" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.AppearanceChoices}" SelectedItem="{Binding Settings.SelectedAppearance}"
@@ -112,7 +112,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorCoach2" Text="字幕条" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
@@ -130,7 +130,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorAdvanced" Text="云端识别（实验）" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
@@ -146,7 +146,7 @@
       </Border>
 
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorGeneral2" Text="全局快捷键（Ctrl+Alt + 按键）" Classes="section" />
           <TextBlock Text="每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。"
@@ -159,7 +159,7 @@
       </Border>
 
       <!-- Custom notes templates: imported Mac note-templates.json. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorNotes" Text="自定义纪要模板" Classes="section" />
           <TextBlock Text="每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。"
@@ -203,7 +203,7 @@
       </Border>
 
       <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAdvanced2" Text="技能（回答时遵守的说明）" Classes="section" />
           <TextBlock Text="每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。"
@@ -227,7 +227,7 @@
       </Border>
 
       <!-- Speakers and translation -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorCoach3" Text="说话人与翻译" Classes="section" />
           <CheckBox Content="区分会议中的说话人（本机实验功能）" IsChecked="{Binding Settings.SeparateSpeakers}" />
@@ -245,7 +245,7 @@
       </Border>
 
       <!-- Dual-screen presenting (PresenterMode.swift) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorCoach4" Text="双屏演讲" Classes="section" />
           <CheckBox Content="开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口"
@@ -262,7 +262,7 @@
       </Border>
 
       <!-- Meeting auto-end -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorGeneral3" Text="会议自动收尾" Classes="section" />
           <TextBlock Text="忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。"
@@ -279,7 +279,7 @@
       </Border>
 
       <!-- Library and retrieval -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer2" Text="资料与检索" Classes="section" />
           <CheckBox Content="参考资料库时使用语义与关键词混合检索" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
@@ -290,7 +290,7 @@
       </Border>
 
       <!-- Answer service -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer3" Text="回答服务" Classes="section" />
           <CheckBox Content="允许联网核实（需 TAVILY_API_KEY）" IsChecked="{Binding Settings.WebSearch}" />
@@ -333,7 +333,7 @@
       </Border>
 
       <!-- Phone companion (LAN channel) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="手机伴侣" Classes="section" />
           <TextBlock Text="手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。"
@@ -371,7 +371,7 @@
       </Border>
 
       <!-- Updates -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="更新" Classes="section" />
           <TextBlock Text="检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。"
@@ -393,7 +393,7 @@
       </Border>
 
       <!-- Data and about -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="数据与关于" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">

@@ -72,11 +72,23 @@ public sealed class SelfTestStructureTests
     }
 
 
+
+    [Fact]
+    public void SettingsCardsAreAssignedToSixPages()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        foreach (var page in new[] { "Scene", "Answer", "Coach", "Notes", "General", "Advanced" })
+            Assert.Contains("Tag=\"" + page + "\"", xaml);
+        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));
+        Assert.Contains("ShowPage", code);
+        Assert.Contains("card.Tag as string == currentPage", code);
+    }
+
     [Fact]
     public void SettingsRailHasSixGroups()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
-        foreach (var tag in new[] { "AnchorScene", "AnchorAnswer", "AnchorCoach", "AnchorNotes", "AnchorGeneral", "AnchorAdvanced" })
+        foreach (var tag in new[] { "Scene", "Answer", "Coach", "Notes", "General", "Advanced" })
             Assert.Contains("Tag=\"" + tag + "\"", xaml);
         var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));
         Assert.Contains("SettingsPage_Click", code);
