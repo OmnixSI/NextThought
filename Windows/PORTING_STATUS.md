@@ -1,3 +1,12 @@
+## 2026-11-20 · 0.5.145 · C11、C12
+改动：
+- C11 `CueIslandWindow` 和 `SubtitleBarWindow` 拦截 `Closing`，Alt+F4 只隐藏；`AllowClose` 仅在主窗口真正退出时设置；`MainWindow` 在 `Closed` 里清空 `island`/`subtitleBar` 字段；两处岛创建路径都安装处理。
+- C12 `SubtitleBarWindow.HideForUser()` 停定时器；`Tick()` 只在 `hiddenByTiming` 时自动恢复；`ResumeAfterUserShow()` 在字幕模式重新显示时重启；`HideAllWindows()` 走 `HideForUser()`。
+- 新增 `--window-close-check` QA。
+测试：Core **869/869**，NextThought.Tests **124/124**；QA `qa/close-window2/close.json` 为 `passed=true, islandHidden=true, islandReshow=true, subtitleHidden=true, subtitleReshow=true`。
+状态：C11、C12「已实现、未验证」（QA 是程序内自检，不是实机 Alt+F4）。
+未解决：没有在 Windows 实机上真按 Alt+F4 验收；A2/A5 仍有字节级/notes sections 限制。
+
 ## 2026-11-20 · 0.5.145 · A5
 改动：结构化纪要写入时补 `questions`、`generatedAt`、`model`，并写 `notes.json`（Mac StructuredNotes 字段 + Windows payload）；`LoadStructuredAsync` 读取 `structuredAll` 的其他格式和 `notes.json` 的 payload；新增 `SummaryCompletenessTests`。
 测试：Core **869/869**，NextThought.Tests **124/124**；新翻译 Swift 测试 0。

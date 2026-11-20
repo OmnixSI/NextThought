@@ -27,6 +27,8 @@ Nov 20, 2026 · @Homing
 | A3 | 已实现、未验证 | Mac translations 按 id 读取/显示；写出 inputRevision |
 | A4 | 已实现、未验证 | 系列条目历史快照补齐 17 个 Mac 字段 |
 | A5 | 已实现、未验证 | summary 完整、notes.json/structuredAll 读写；有字段级限制 |
+| C11 | 已实现、未验证 | 浮窗关闭改为隐藏；QA passed |
+| C12 | 已实现、未验证 | 用户隐藏停定时器；QA passed |
 
 ## 1. ⽬标与范围 
 
