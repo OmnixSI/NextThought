@@ -71,4 +71,23 @@ public sealed class SessionStoreDeletionTests
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
+    [Fact]
+    public void UserNotesRoundTripThroughUserContent()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nt-user-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(root);
+            var saved = SessionUserContentStore.Save(new SessionUserContent
+            {
+                EditedMarkdown = "# 编辑后的纪要",
+                PersonalNotes = "个人笔记"
+            }, root);
+            var loaded = SessionUserContentStore.Load(root);
+            Assert.Equal("# 编辑后的纪要", loaded.EditedMarkdown);
+            Assert.Equal("个人笔记", loaded.PersonalNotes);
+            Assert.Equal(saved.Revision, loaded.Revision);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
 }

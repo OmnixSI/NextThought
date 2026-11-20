@@ -99,6 +99,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void NotesEditorExists()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesEditorWindow.axaml")));
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.NotesEditor.cs"));
+        Assert.Contains("SessionUserContentStore", state);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        Assert.Contains("编辑纪要", xaml);
+    }
+
     [Fact]
     public void HistorySupportsMultiSelectDelete()
     {

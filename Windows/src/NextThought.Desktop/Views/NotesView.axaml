@@ -19,6 +19,7 @@
         <ComboBox ItemsSource="{Binding SubtitleExportModes}" SelectedItem="{Binding SubtitleExportMode}" Width="86" />
         <Button Content="导出 SRT" Command="{Binding ExportSrtCommand}" />
         <Button Content="导出 VTT" Command="{Binding ExportVttCommand}" />
+        <Button Content="编辑纪要" Click="EditNotes_Click" />
         <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="36" Padding="{DynamicResource D4Padding_18_0}">
           <TextBlock Text="整理这场会议" Foreground="{DynamicResource OnInk}" />
         </Button>
