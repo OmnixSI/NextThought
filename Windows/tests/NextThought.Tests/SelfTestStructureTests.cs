@@ -181,6 +181,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SlidePointsAreCachedAndShown()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
+        Assert.Contains("slideNotesCache", state);
+        Assert.Contains("CurrentSlidePointsText", state);
+        var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
+        Assert.Contains("讲稿要点", panel);
+    }
+
     [Fact]
     public void SlidesCanFollowScreenshots()
     {

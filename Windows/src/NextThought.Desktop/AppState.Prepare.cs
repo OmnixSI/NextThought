@@ -132,7 +132,31 @@ public partial class AppState
         slideIndex = index;
         OnPropertyChanged(nameof(SlideStatus));
         OnPropertyChanged(nameof(CurrentSlideText));
+        OnPropertyChanged(nameof(CurrentSlidePointsText));
         SetStatus($"已按屏幕切到第 {matched.Page} 页。");
+    }
+
+
+    private readonly Dictionary<int, string> slideNotesCache = [];
+
+    /// <summary>E9: cached talking points for the current slide (first lines of its text).</summary>
+    public string CurrentSlidePointsText
+    {
+        get
+        {
+            if (CurrentSlide is not { } slide) return "";
+            if (!slideNotesCache.TryGetValue(slide.Number, out var cached))
+            {
+                var lines = slide.Text.Split('\n')
+                    .Select(line => line.Trim().TrimStart('#', '-', '*', ' '))
+                    .Where(line => line.Length > 1)
+                    .Take(4)
+                    .Select((line, index) => $"{index + 1}. {line}");
+                cached = string.Join("\n", lines);
+                slideNotesCache[slide.Number] = cached;
+            }
+            return cached;
+        }
     }
 
     private void MoveSlide(int delta)

@@ -9,6 +9,8 @@
         <TextBlock Text="幻灯片" Classes="overline" />
         <TextBlock Text="{Binding SlideStatus}" Classes="label" />
         <TextBlock Text="{Binding CurrentSlideText}" Classes="caption" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="讲稿要点" Classes="overline" />
+        <TextBlock Text="{Binding CurrentSlidePointsText}" Classes="caption" TextWrapping="Wrap" MaxLines="6" TextTrimming="CharacterEllipsis" />
       </StackPanel>
     </Border>
     <Border Classes="card" Padding="{DynamicResource D4Padding_14}">
