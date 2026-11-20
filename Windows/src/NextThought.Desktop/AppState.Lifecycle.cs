@@ -30,6 +30,9 @@ public partial class AppState
 
     private bool webSearchResolved;
 
+    /// <summary>E14: verification results for automatic background lookups (stale after 30 minutes).</summary>
+    private readonly WebVerificationCache webVerificationCache = new();
+
     private IWebSearchProvider? WebSearch()
     {
         if (webSearchResolved) return webSearchProvider;
@@ -38,6 +41,38 @@ public partial class AppState
         catch { webSearchProvider = null; }
         return webSearchProvider;
     }
+
+    /// <summary>E14: 密钥状态回显 — whether a key (settings or TAVILY_API_KEY) can drive web search.</summary>
+    public bool IsWebSearchConfigured => WebSearch() is not null;
+
+    public string WebSearchProviderLabel => WebSearch()?.Provider ?? "";
+
+    public bool HasStoredWebSearchKey => SettingsStore.ReadTavilyKey().Trim().Length > 0;
+
+    public int WebVerificationCacheCount => webVerificationCache.Count;
+
+    /// <summary>The cache itself, for the self-check (no network calls).</summary>
+    public WebVerificationCache VerificationCacheForCheck => webVerificationCache;
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ClearWebVerificationCache()
+    {
+        webVerificationCache.Invalidate();
+        OnPropertyChanged(nameof(WebVerificationCacheCount));
+        SetStatus(UiText.T("联网查证缓存已清空。"));
+    }
+
+    public string WebSearchKeyStatusLine => HasStoredWebSearchKey
+        ? UiText.T("Tavily 密钥已保存（当前 Windows 用户加密）。")
+        : UiText.T("未填写");
+
+    /// <summary>E14: 密钥状态回显 for the settings page (provider name or the setup hint).</summary>
+    public string WebSearchAvailabilityText => IsWebSearchConfigured
+        ? WebSearchKeyStatusLine + " · " + WebSearchProviderLabel
+        : UiText.T("联网未配置：先在设置里保存 Tavily 密钥。");
+
+    /// <summary>E14: the last automatic answer used cached verification results.</summary>
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool lastWebSearchUsedCache;
 
     private bool CanAsk() => !Working && !Stopping;
 

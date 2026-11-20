@@ -9,6 +9,9 @@ public sealed record WebSearchResponse(IReadOnlyList<WebResult> Results, string 
 
 public interface IWebSearchProvider
 {
+    /// <summary>Provider id used as part of the web-verification cache key.</summary>
+    string Provider { get; }
+
     Task<WebSearchResponse> SearchAsync(string query, int count, CancellationToken cancellationToken = default);
 }
 

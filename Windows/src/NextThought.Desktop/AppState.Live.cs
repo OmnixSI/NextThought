@@ -526,15 +526,34 @@ public partial class AppState
             var sources = retrieved?.Sources ?? [];
             if (!check) { Sources.Clear(); }
             IReadOnlyList<WebResult> web = [];
+
             if (!check && Settings.WebSearch && WebSearchNeed.Assess(question).NeedsSearch && WebSearch() is { } searchProvider)
             {
-                SetStatus("正在联网核实…");
-                var webResponse = await searchProvider.SearchAsync(question, 5, cancellation.Token);
-                if (webResponse.Error is null) web = webResponse.Results;
-                else SetStatus(webResponse.Error);
+                // E14: the same question within 30 minutes reuses the earlier verification results.
+                var now = DateTimeOffset.UtcNow;
+                if (webVerificationCache.TryGet(question, searchProvider.Provider, now, out var cached))
+                {
+                    web = cached.Results;
+                    LastWebSearchUsedCache = true;
+                    SetStatus(UiText.Format("正在联网核实（使用 %@ 的查证结果）…", cached.AgeLabel(now)));
+                }
+                else
+                {
+                    SetStatus("正在联网核实…");
+                    var webResponse = await searchProvider.SearchAsync(question, 5, cancellation.Token);
+                    if (webResponse.Error is null)
+                    {
+                        web = webResponse.Results;
+                        webVerificationCache.Store(new WebVerificationEntry(question, searchProvider.Provider,
+                            question, web, DateTimeOffset.UtcNow));
+                    }
+                    else SetStatus(webResponse.Error);
+                    LastWebSearchUsedCache = false;
+                }
                 WebResults.Clear();
                 foreach (var entry in web) WebResults.Add(entry);
                 OnPropertyChanged(nameof(WebStatusText));
+                OnPropertyChanged(nameof(WebVerificationCacheCount));
                 RaiseLiveAnswerUi();
             }
             // E4/Mac EvidenceBundle: freeze what this answer was grounded on so the live page
@@ -681,8 +700,14 @@ public partial class AppState
         try
         {
             var question = DetectedQuestion.Length > 0 ? DetectedQuestion : "核对上一条回答的事实";
-            var response = await provider.SearchAsync(question + " " + AnswerText[..Math.Min(AnswerText.Length, 300)], 5);
+            var query = question + " " + AnswerText[..Math.Min(AnswerText.Length, 300)];
+            var response = await provider.SearchAsync(query, 5);
             if (response.Error is not null) { SetStatus(response.Error, true); return; }
+            // E14: a manual lookup is always fresh, but its result seeds the automatic cache so the
+            // same question does not hit the network twice within 30 minutes.
+            webVerificationCache.Store(new WebVerificationEntry(question, provider.Provider, query,
+                response.Results, DateTimeOffset.UtcNow));
+            OnPropertyChanged(nameof(WebVerificationCacheCount));
             WebResults.Clear();
             foreach (var entry in response.Results) WebResults.Add(entry);
             OnPropertyChanged(nameof(WebStatusText));
