@@ -74,7 +74,9 @@ public partial class AppState
         SessionMeta? meta = null;
         try
         {
-            BeginPreparedMeeting();
+            var planSeries = SelectedSeries is { } selectedSeriesRow ? workspace.Find(selectedSeriesRow.Id)
+                : CurrentSession is { } currentMeta ? workspace.SeriesOfSession(currentMeta.Id.ToString()) : null;
+            BeginPreparedMeeting(planSeries);
             var sceneDefaults = SceneDefaultsFor(SelectedMode);
             Settings.AutomaticAnswers = sceneDefaults.LiveMode == "自动回答";
             Settings.SelectedCueWidth = Settings.CueWidthChoices.FirstOrDefault(choice =>
@@ -360,6 +362,12 @@ public partial class AppState
 
     private IReadOnlyList<ContextDocument> PreparedDocuments()
     {
+        if (ActivePreparedDocuments is { } prepared)
+        {
+            var carried = prepared.ToList();
+            if (PreviousTranscriptContext() is { } extra && carried.All(document => document.Id != extra.Id)) carried.Add(extra);
+            return carried;
+        }
         var documents = Library.DocumentsForRetrieval().Select(document => new ContextDocument
         {
             Id = document.Id,

@@ -85,6 +85,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareBuildsAMeetingPlan()
+    {
+        var prepare = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
+        Assert.Contains("ActivePlan", prepare);
+        Assert.Contains("PreparedWorkspace", prepare);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("BeginPreparedMeeting(planSeries)", live);
+    }
+
     [Fact]
     public void PrepareCheckCardsArePresent()
     {

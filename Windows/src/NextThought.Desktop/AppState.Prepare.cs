@@ -38,6 +38,27 @@ public partial class AppState
         catch { return null; }
     }
 
+
+    public NextThought.Core.MeetingPlan? ActivePlan { get; private set; }
+    private NextThought.Core.WorkspaceSeries? activePreparedSeries;
+
+    /// <summary>Builds the Mac MeetingPlan and applies the carry switches to a copy of the series.</summary>
+    public void BeginPreparedMeeting(NextThought.Core.WorkspaceSeries? series)
+    {
+        ActiveCarry = CarryPlan;
+        ActivePlan = new NextThought.Core.MeetingPlan
+        {
+            Mode = SelectedMode,
+            Carry = ActiveCarry,
+            BaselineDocumentIds = series?.DocumentIds.ToHashSet(StringComparer.Ordinal) ?? new HashSet<string>(),
+            PreviousSessionId = PreviousTranscriptContext()?.Id
+        };
+        activePreparedSeries = series is null ? null : ActivePlan.PreparedWorkspace(series, PreviousTranscriptContext());
+    }
+
+    public IReadOnlyList<NextThought.Core.ContextDocument>? ActivePreparedDocuments =>
+        activePreparedSeries is { Documents.Count: > 0 } ? activePreparedSeries.Documents : null;
+
     public NextThought.Core.MeetingCarry? ActiveCarry { get; private set; }
 
     public void BeginPreparedMeeting() => ActiveCarry = CarryPlan;
