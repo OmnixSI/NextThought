@@ -75,7 +75,7 @@
                       BorderThickness="0,0,0,0.5" Margin="{DynamicResource D4Margin_0_0_0_2}">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                   <Ellipse Width="7" Height="7" Fill="{DynamicResource Ai}" VerticalAlignment="Center" />
-                  <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
+                  <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_8_0_0_0}">
                     <TextBlock Text="{Binding Name}" Classes="label" />
                     <TextBlock Text="{Binding Meta}" Classes="caption" />
                   </StackPanel>
