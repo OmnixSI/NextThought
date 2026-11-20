@@ -8,6 +8,18 @@ using NextThought.Platform;
 
 namespace NextThought.Desktop;
 
+/// <summary>E27: one saved API provider as the settings page lists it (Mac <c>APIPreset</c>).</summary>
+public sealed record ApiPresetChoice(string Id, string Name)
+{
+    public override string ToString() => Name;
+}
+
+/// <summary>E27: one reasoning-strength choice of the active API provider (Mac <c>APIPreset.efforts</c>).</summary>
+public sealed record ApiEffortChoice(string Value, string Title)
+{
+    public override string ToString() => UiText.T(Title);
+}
+
 /// <summary>
 /// Editable draft of <see cref="AppSettings"/> plus the device, process and model choices
 /// the settings page offers. Mirrors the settings surface of the Mac app; the keys and
@@ -43,6 +55,206 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     ];
 
     [ObservableProperty] private ProviderPreset? selectedProviderPreset;
+
+    // MARK: - E27 回答服务设置：预设、推理强度、快速模式、引擎测试、GitHub 访问
+
+    private List<APIPreset> apiPresets = [];
+
+    public ObservableCollection<ApiPresetChoice> ApiPresetChoices { get; } = [];
+
+    [ObservableProperty] private ApiPresetChoice? selectedApiPreset;
+
+    [ObservableProperty] private string apiModelsStatus = "";
+
+    public ObservableCollection<string> ApiModelChoices { get; } = [];
+
+    public IReadOnlyList<ApiEffortChoice> ApiEffortChoices =>
+        APIPreset.Efforts.Select(effort => new ApiEffortChoice(effort.Value, effort.Title)).ToArray();
+
+    [ObservableProperty] private ApiEffortChoice? selectedApiEffort;
+
+    [ObservableProperty] private bool codexFastMode;
+
+    public string CodexFastLabel => UiText.T("约 1.5 倍速度 · 用量更多");
+
+    /// <summary>False for the API backend: Fast is a Codex service tier only.</summary>
+    public bool CodexFastAvailable => UseCodex;
+
+    [ObservableProperty] private string githubRepository = "OmnixSI/NextThought";
+    [ObservableProperty] private string githubToken = "";
+    [ObservableProperty] private string githubTokenStatus = "";
+    public string GithubTokenUrl => "https://github.com/settings/personal-access-tokens/new";
+
+    /// <summary>E27: reads the saved API presets and the GitHub access state into the page model.</summary>
+    private void LoadApiPresets()
+    {
+        AppSettings settings;
+        try { settings = state.SettingsStore.Load(); }
+        catch { settings = new AppSettings(); }
+        settings = APIPresetLogic.EnsureLoaded(settings);
+        apiPresets = settings.ApiPresets.ToList();
+        RefreshApiPresetChoices(settings.ActiveApiPresetId);
+        SelectedApiEffort = ApiEffortChoices.FirstOrDefault(choice => choice.Value == APIPresetLogic.ActiveEffort(settings))
+                            ?? ApiEffortChoices[0];
+        CodexFastMode = settings.CodexFastMode == true;
+        if (SelectedApiPreset is not null) ApplyApiPresetToFields(SelectedApiPreset);
+    }
+
+    private void RefreshApiPresetChoices(string? activeId)
+    {
+        var previous = activeId ?? selectedApiPreset?.Id;
+        ApiPresetChoices.Clear();
+        foreach (var preset in apiPresets) ApiPresetChoices.Add(new ApiPresetChoice(preset.Id, preset.Name));
+        selectedApiPreset = ApiPresetChoices.FirstOrDefault(choice => choice.Id == previous) ?? ApiPresetChoices.FirstOrDefault();
+        OnPropertyChanged(nameof(SelectedApiPreset));
+    }
+
+    private void ApplyApiPresetToFields(ApiPresetChoice choice)
+    {
+        var preset = apiPresets.FirstOrDefault(item => item.Id == choice.Id);
+        if (preset is null) return;
+        BaseUrl = preset.BaseUrl;
+        Model = preset.Model;
+        SelectedApiEffort = ApiEffortChoices.FirstOrDefault(item => item.Value == preset.Effort) ?? ApiEffortChoices[0];
+        try { ApiKey = state.SettingsStore.ReadSecret(preset.KeyAccount); }
+        catch (CryptographicException) { apiKeyReadFailed = true; }
+        catch (Exception) { apiKeyReadFailed = true; }
+        HasApiKey = ApiKey.Length > 0;
+        ApiModelChoices.Clear();
+        ApiModelsStatus = "";
+    }
+
+    partial void OnSelectedApiPresetChanged(ApiPresetChoice? value)
+    {
+        if (value is not null) ApplyApiPresetToFields(value);
+    }
+
+    partial void OnCodexFastModeChanged(bool value) => OnPropertyChanged(nameof(CodexFastAvailable));
+
+    /// <summary>E27: writes the current address/model/effort back into the active preset list.</summary>
+    private List<APIPreset> EditedApiPresets()
+    {
+        var presets = apiPresets.ToList();
+        var activeId = selectedApiPreset?.Id;
+        var index = presets.FindIndex(preset => preset.Id == activeId);
+        if (index >= 0)
+        {
+            presets[index] = presets[index] with
+            {
+                BaseUrl = BaseUrl.Trim(),
+                Model = Model.Trim(),
+                Effort = SelectedApiEffort?.Value ?? "default"
+            };
+        }
+        return presets;
+    }
+
+    /// <summary>E27: adds a preset with a unique name (Mac <c>addAPIPreset</c>) and activates it.</summary>
+    public void AddApiPreset(string name, string baseUrl)
+    {
+        var settings = state.SettingsStore.Load();
+        settings = APIPresetLogic.EnsureLoaded(settings) with { ApiPresets = EditedApiPresets(), ActiveApiPresetId = selectedApiPreset?.Id ?? "" };
+        settings = APIPresetLogic.StoreActive(settings, SelectedApiEffort?.Value ?? "default");
+        var (next, _) = APIPresetLogic.Add(settings, name, baseUrl);
+        PersistApiPresets(next);
+    }
+
+    /// <summary>E27: Mac <c>renameAPIPreset</c> for the active preset.</summary>
+    public void RenameActiveApiPreset(string name)
+    {
+        if (selectedApiPreset is null) return;
+        var settings = state.SettingsStore.Load();
+        settings = APIPresetLogic.EnsureLoaded(settings) with { ApiPresets = EditedApiPresets(), ActiveApiPresetId = selectedApiPreset.Id };
+        PersistApiPresets(APIPresetLogic.Rename(settings, selectedApiPreset.Id, name));
+    }
+
+    /// <summary>E27: Mac <c>deleteAPIPreset</c>; deleting the active preset activates the first left.</summary>
+    public void DeleteActiveApiPreset()
+    {
+        if (selectedApiPreset is null) return;
+        var settings = state.SettingsStore.Load();
+        settings = APIPresetLogic.EnsureLoaded(settings) with { ApiPresets = EditedApiPresets(), ActiveApiPresetId = selectedApiPreset.Id };
+        var (next, removedAccount) = APIPresetLogic.Delete(settings, selectedApiPreset.Id);
+        if (removedAccount is not null)
+        {
+            try { state.SettingsStore.SaveSecret(removedAccount, ""); }
+            catch { }
+        }
+        PersistApiPresets(next);
+    }
+
+    private void PersistApiPresets(AppSettings settings)
+    {
+        _ = state.SettingsStore.SaveAsync(settings);
+        apiPresets = settings.ApiPresets.ToList();
+        RefreshApiPresetChoices(settings.ActiveApiPresetId);
+        if (SelectedApiPreset is not null) ApplyApiPresetToFields(SelectedApiPreset);
+    }
+
+    /// <summary>E27: Mac <c>fetchAPIModels</c> — GET {base}/models and list the ids.</summary>
+    [RelayCommand]
+    private async Task FetchApiModelsAsync()
+    {
+        ApiModelsStatus = "正在获取…";
+        var (ids, status) = await ChatCompletionClient.FetchModelsAsync(BaseUrl, ApiKey);
+        ApiModelChoices.Clear();
+        foreach (var id in ids) ApiModelChoices.Add(id);
+        ApiModelsStatus = status;
+    }
+
+    /// <summary>E27: a saved alternative to the fixed provider template list (Mac APIProviderSwitch presets).</summary>
+    [RelayCommand]
+    private void SelectApiPreset(string? id)
+    {
+        var choice = ApiPresetChoices.FirstOrDefault(item => item.Id == id);
+        if (choice is not null) SelectedApiPreset = choice;
+    }
+
+    /// <summary>E27: GitHub access section (Mac GitHubAccessSection): repository + token + create link.</summary>
+    private void LoadGitHubAccess()
+    {
+        try { githubRepository = state.SettingsStore.Load().UpdateRepository; }
+        catch { githubRepository = "OmnixSI/NextThought"; }
+        if (githubRepository.Length == 0) githubRepository = "OmnixSI/NextThought";
+        RefreshGithubTokenStatus();
+        OnPropertyChanged(nameof(GithubRepository));
+    }
+
+    private void RefreshGithubTokenStatus()
+    {
+        var token = "";
+        try { token = state.SettingsStore.ReadGithubToken(); }
+        catch { }
+        GithubTokenStatus = token.Length > 0 ? UiText.T("已保存访问令牌") : UiText.T("未保存访问令牌");
+    }
+
+    [RelayCommand]
+    private void SaveGithubToken()
+    {
+        var token = GithubToken.Trim();
+        if (token.Length == 0) return;
+        state.SettingsStore.SaveGithubToken(token);
+        GithubToken = "";
+        RefreshGithubTokenStatus();
+    }
+
+    [RelayCommand]
+    private void ClearGithubToken()
+    {
+        state.SettingsStore.SaveGithubToken("");
+        GithubToken = "";
+        RefreshGithubTokenStatus();
+    }
+
+    /// <summary>E27: writes the active preset's API key into its own credential account.</summary>
+    private void SaveActivePresetSecret()
+    {
+        var preset = apiPresets.FirstOrDefault(item => item.Id == selectedApiPreset?.Id) ?? apiPresets.FirstOrDefault();
+        if (preset is null) return;
+        if (apiKeyReadFailed && ApiKey.Trim().Length == 0) return;
+        try { state.SettingsStore.SaveSecret(preset.KeyAccount, ApiKey.Trim()); }
+        catch { }
+    }
 
     partial void OnSelectedProviderPresetChanged(ProviderPreset? value)
     {
@@ -358,6 +570,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
             KeyStatus = "密钥读取失败，已保留原密钥；如需更换请直接输入新密钥。";
         }
         SelectedProcess = Processes.FirstOrDefault();
+        LoadApiPresets();
+        LoadGitHubAccess();
         RefreshScreens();
     }
 
@@ -409,6 +623,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         UseMaterials = UseMaterials,
         UseCodex = UseCodex,
         CodexModel = CodexModel.Trim(),
+        // E27: saved providers, the active preset and the GitHub access settings.
+        ApiPresets = EditedApiPresets(),
+        ActiveApiPresetId = SelectedApiPreset?.Id ?? "",
+        CodexFastMode = CodexFastMode ? true : null,
+        UpdateRepository = GithubRepository.Trim(),
         PresenterMode = PresenterMode,
         PresenterSlidesScreen = SelectedSlidesScreen?.Id ?? PresenterSlidesScreen,
         CompanionRelayUrl = CompanionRelayUrl.Trim(),
@@ -448,6 +667,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
             apiKeyReadFailed = false;
         }
         await state.SettingsStore.SaveAsync(settings);
+        // E27: the key belongs to the active API preset (Mac keeps one Keychain account per preset).
+        SaveActivePresetSecret();
         // G5b: apply the Mac reducedEffects key to the motion tokens immediately after a save.
         Motion.AppReducedEffects = settings.ReducedEffects;
         HasApiKey = ApiKey.Trim().Length > 0;

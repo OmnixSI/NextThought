@@ -22,7 +22,8 @@ public static class MacPreferenceMap
         "answerGloss", "answerLanguage", "appearance", "capturePrivacy", "cueAlwaysOpen", "cueWidth",
         "cueScreen", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen",
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides",
-        "teleprompterOpacity", "teleprompterFontSize", "reducedEffects"
+        "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
+        "apiPresets", "activeApiPresetId", "codexFastMode", "updateRepository"
     ];
 
     /// <summary>JSON property names of the typed settings that already use the Mac key name.</summary>
@@ -37,7 +38,8 @@ public static class MacPreferenceMap
         "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
-        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects"
+        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
+        "apiPresets", "activeAPIPresetID", "codexFastMode", "updateRepository"
     ];
 
     private static readonly Dictionary<string, string> ModeNames = new(StringComparer.Ordinal)
@@ -87,6 +89,18 @@ public static class MacPreferenceMap
         "teleprompterOpacity" => settings.TeleprompterOpacity,
         "teleprompterFontSize" => settings.TeleprompterFontSize,
         "reducedEffects" => settings.ReducedEffects,
+        "apiPresets" => settings.ApiPresets.Select(preset => (object?)new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["id"] = preset.Id,
+            ["name"] = preset.Name,
+            ["baseURL"] = preset.BaseUrl,
+            ["model"] = preset.Model,
+            ["effort"] = preset.Effort,
+            ["keyAccount"] = preset.KeyAccount
+        }).ToList(),
+        "activeAPIPresetID" => settings.ActiveApiPresetId.Length == 0 ? null : settings.ActiveApiPresetId,
+        "codexFastMode" => settings.CodexFastMode,
+        "updateRepository" => settings.UpdateRepository,
         "cloudModel" => settings.CloudSttModel,
         "cloudProvider" => string.IsNullOrEmpty(settings.CloudStt) ? "soniox" : settings.CloudStt,
         "transcriptionBackend" => string.IsNullOrEmpty(settings.CloudStt) ? "zipformer" : "cloud",
@@ -151,6 +165,23 @@ public static class MacPreferenceMap
                 break;
             case "reducedEffects":
                 settings.ReducedEffects = normalized is bool reduced ? reduced : settings.ReducedEffects;
+                break;
+            case "apiPresets":
+                settings.ApiPresets = ApplyPresets(normalized);
+                break;
+            case "activeAPIPresetID":
+            {
+                var id = normalized as string ?? "";
+                settings.ActiveApiPresetId = Guid.TryParse(id, out var guid)
+                    ? guid.ToString("D").ToUpperInvariant()
+                    : id;
+                break;
+            }
+            case "codexFastMode":
+                settings.CodexFastMode = normalized is bool fast ? fast : null;
+                break;
+            case "updateRepository":
+                settings.UpdateRepository = AsString(normalized, settings.UpdateRepository);
                 break;
             case "cloudModel": settings.CloudSttModel = AsString(normalized, settings.CloudSttModel); break;
             case "companionRelayURL": settings.CompanionRelayUrl = AsString(normalized, settings.CompanionRelayUrl); break;
@@ -473,4 +504,27 @@ public static class MacPreferenceMap
     };
 
     private static string AsString(object? value, string fallback) => value as string ?? fallback;
+
+    /// <summary>Mac <c>apiPresets</c>: an array of APIPreset objects with the Mac field names.</summary>
+    private static List<APIPreset> ApplyPresets(object? value)
+    {
+        var presets = new List<APIPreset>();
+        if (value is null || value is string || value is not System.Collections.IEnumerable items) return presets;
+        foreach (var item in items)
+        {
+            if (item is not IReadOnlyDictionary<string, object?> map) continue;
+            string Text(string field) => map.TryGetValue(field, out var entry)
+                ? Convert.ToString(entry, CultureInfo.InvariantCulture) ?? ""
+                : "";
+            var name = Text("name");
+            if (name.Length == 0) continue;
+            var id = Text("id");
+            if (id.Length == 0) id = APIPreset.NewId();
+            var effort = Text("effort");
+            var keyAccount = Text("keyAccount");
+            presets.Add(new APIPreset(id, name, Text("baseURL"), Text("model"),
+                effort.Length == 0 ? "default" : effort, keyAccount.Length == 0 ? null : keyAccount));
+        }
+        return presets;
+    }
 }

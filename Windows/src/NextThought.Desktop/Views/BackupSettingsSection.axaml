@@ -36,7 +36,7 @@
               <Button Grid.Column="3" Content="{loc:Tr 恢复…}" Classes="quiet" Click="RestoreRow_Click" Tag="{Binding}" />
               <Button Grid.Column="4" Content="{loc:Tr 删除}" Classes="quiet" Click="DeleteRow_Click" Tag="{Binding}"
                       IsVisible="{Binding IsRecoveryPoint}" />
-              <Button Grid.Column="5" Classes="quiet" Content="↗" ToolTip.Tip="{loc:Tr 在资源管理器中显示}"
+              <Button Grid.Column="5" Classes="quiet" Content="↗" ToolTip.Tip="{loc:Tr 打开数据文件夹}"
                       Click="RevealRow_Click" Tag="{Binding}" />
             </Grid>
           </Border>

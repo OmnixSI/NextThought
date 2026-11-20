@@ -17,6 +17,37 @@ public sealed class ChatCompletionClient(HttpClient? http = null) : IAnswerClien
         if (!path.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase)) path += (path.Length == 0 ? "/v1" : "") + "/chat/completions";
         return new UriBuilder(uri) { Path = path }.Uri;
     }
+
+    /// <summary>E27: GET {base}/models — most OpenAI-compatible services list their models there (Mac fetchAPIModels).</summary>
+    public static async Task<(IReadOnlyList<string> Ids, string Status)> FetchModelsAsync(
+        string baseUrl, string apiKey, HttpClient? http = null, CancellationToken ct = default)
+    {
+        var endpoint = APIPresetLogic.ModelListEndpoint(baseUrl);
+        if (endpoint is null) return ([], UiText.T("API 地址无效"));
+        using var client = http ?? new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+            if (!string.IsNullOrWhiteSpace(apiKey))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey.Trim());
+            using var response = await client.SendAsync(request, ct).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+                return ([], UiText.T(APIFailureExplainer.ModelListMessage((int)response.StatusCode)));
+            var ids = ModelListParser.Ids(body);
+            return (ids, ids.Count > 0
+                ? UiText.Format("共 %lld 个模型", ids.Count)
+                : UiText.T("服务没有返回模型列表，请手动填写模型 ID"));
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return ([], UiText.T(APIFailureExplainer.Message(APIFailure.Timeout)));
+        }
+        catch (HttpRequestException)
+        {
+            return ([], UiText.T(APIFailureExplainer.Message(APIFailure.CannotReachHost)));
+        }
+    }
     public async Task<string> AnswerAsync(AnswerOptions options, string system, string user, Action<string>? update = null, CancellationToken ct = default, int timeoutSeconds = 90)
     {
         var uri = Endpoint(options.BaseUrl);

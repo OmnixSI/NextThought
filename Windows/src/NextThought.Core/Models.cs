@@ -155,6 +155,18 @@ public sealed record AppSettings
     public bool UseCodex { get; set; }
     public string CodexModel { get; set; } = "";
 
+    /// <summary>E27: saved OpenAI-compatible providers (Mac key <c>apiPresets</c>, Mac field names).</summary>
+    public List<APIPreset> ApiPresets { get; set; } = [];
+
+    /// <summary>E27: the active provider id (Mac key <c>activeAPIPresetID</c>, uppercase UUID).</summary>
+    public string ActiveApiPresetId { get; set; } = "";
+
+    /// <summary>E27: Mac key <c>updateRepository</c>: GitHub repository the updater reads releases from.</summary>
+    public string UpdateRepository { get; set; } = "OmnixSI/NextThought";
+
+    /// <summary>E27: Mac key <c>codexFastMode</c>; nil follows the model's own default.</summary>
+    public bool? CodexFastMode { get; set; }
+
     /// <summary>Per-action key overrides for the Ctrl+Alt global shortcuts (id → key name).</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = [];
 

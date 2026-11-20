@@ -55,7 +55,8 @@ public partial class BackupRestoreReviewView : UserControl
         catch (Exception ex)
         {
             model.Busy = false;
-            model.Failure = "恢复未全部完成：" + ex.Message;
+            model.Failure = NextThought.Core.UiText.Format(
+                "恢复未全部完成：%@ 已有内容请以实际结果为准；如已开始应用，可从恢复前的恢复点找回。", ex.Message);
         }
     }
 

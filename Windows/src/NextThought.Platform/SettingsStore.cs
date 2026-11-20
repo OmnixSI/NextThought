@@ -134,4 +134,46 @@ public sealed class SettingsStore(AppPaths paths)
         var temporary = tavilySecretFile + ".tmp";
         File.WriteAllBytes(temporary, bytes); File.Move(temporary, tavilySecretFile, true);
     }
+
+    // --- E27: per-account secrets (API presets, GitHub token) -----------------------------
+    // Mac keeps each account in the Keychain; on Windows each account gets its own DPAPI file
+    // under Credentials/ (named by a hash so any account string is safe as a file name).
+
+    public string ReadSecret(string account)
+    {
+        var file = SecretFile(account);
+        if (!File.Exists(file)) return "";
+        return Encoding.UTF8.GetString(ProtectedData.Unprotect(File.ReadAllBytes(file), SecretEntropy(account),
+            DataProtectionScope.CurrentUser));
+    }
+
+    public void SaveSecret(string account, string secret)
+    {
+        var file = SecretFile(account);
+        if (secret.Length == 0)
+        {
+            if (File.Exists(file)) File.Delete(file);
+            return;
+        }
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        var bytes = ProtectedData.Protect(Encoding.UTF8.GetBytes(secret), SecretEntropy(account),
+            DataProtectionScope.CurrentUser);
+        var temporary = file + ".tmp";
+        File.WriteAllBytes(temporary, bytes);
+        File.Move(temporary, file, true);
+    }
+
+    /// <summary>E27: the GitHub token used by the updater (Mac keychain account github.token).</summary>
+    public string ReadGithubToken() => ReadSecret("github.token");
+
+    public void SaveGithubToken(string token) => SaveSecret("github.token", token);
+
+    private string SecretFile(string account)
+    {
+        var name = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(account)))[..24];
+        return Path.Combine(paths.Root, "Credentials", name + ".dpapi");
+    }
+
+    private static byte[] SecretEntropy(string account) =>
+        SHA256.HashData(Encoding.UTF8.GetBytes("com.nextthought.windows/" + account + "/v1"));
 }

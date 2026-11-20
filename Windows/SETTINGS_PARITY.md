@@ -14,7 +14,7 @@ python Windows/scripts/settings_parity.py --write  # 重新生成 MacPreferences
 | 键名 | 默认类型 | 默认值 | Mac 设置视图 | Windows 状态 |
 |---|---|---|---|---|
 | `AppleLanguages` | Array | nil（删除即跟随系统） | 设置 → 通用 → 语言（AppLanguage.swift LanguageSettingsSection） | 本版不做｜Mac 用系统级 AppleLanguages 覆盖界面语言并重启生效；Windows 语言设置按 G8 用独立键并即时生效，机制不同（平台差异，见 FIX_TASKS G8） |
-| `activeAPIPresetID` | String | nil（未设置） | 设置 → 回答与资料 → 回答服务·预设（AnswerServiceViews.swift APIPresetManager） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 nil）；缺口：Windows 尚无保存的接口预设（SettingsViewModel.ProviderPresets 是固定模板，E14 只做了密钥/联网），无行为消费者；接入任务：E14；缺口：接口预设功能未移植 |
+| `activeAPIPresetID` | String | nil（未设置） | 设置 → 回答与资料 → 回答服务·预设（AnswerServiceViews.swift APIPresetManager） | 已实现、未验证｜MacPreferenceMap↔AppSettings.ActiveApiPresetId（E27：APIPresetLogic.Select/Add/Delete 维护，选中的预设地址/模型写回 apiBaseURL/apiModel）；SettingsStore 读写 |
 | `activeWorkspaceID` | String | nil（取第一个系列） | 资料夹列表·当前系列（WorkspacesView.swift WorkspaceList） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 nil）；缺口：Windows 资料夹当前系列未持久化（AppState 只在内存里选），无读写行为；接入任务：E18 |
 | `advancedSettingsEnabled` | Bool | false | 内部派生（AppState.swift simplifiedInterface 取反；无设置控件） | 本版不做｜Mac 内部派生键：由 simplifiedInterface 取反写回，没有设置控件，读它只是初始化同一值；Windows 没有简化界面模式，本版不做 |
 | `answerBackend` | String | "openAICompatible"（未装 Codex 时；装了为 "codexAppServer"） | 设置 → 回答与资料 → 回答服务（SettingsPages.swift AnswerServiceChooser；AnswerServiceViews.swift CodexEngineSection） | 已实现、未验证｜MacPreferenceMap↔AppSettings.UseCodex（openAICompatible=false，codexAppServer/codexExec=true）；SettingsStore 读写；行为：AppState.Live 按 UseCodex 选择回答服务；缺口：Windows 只区分 API / Codex，不区分 codexAppServer 与 codexExec |
@@ -24,7 +24,7 @@ python Windows/scripts/settings_parity.py --write  # 重新生成 MacPreferences
 | `answerStyle` | String | "concise" | 设置 → 场景「回答」（SettingsPages.swift SceneRow）；旧键见 WorkspaceStore.swift | 本版不做｜Mac 旧版单场景键；Windows 的回答长度按系列文件与场景设置（AppSettings.SceneDefaults、SceneSettingRow）存储，本版不做旧键 |
 | `apiBaseURL` | String | "https://api.openai.com/v1" | 设置 → 回答与资料 → 回答服务（AnswerServiceViews.swift APIConnectView） | 已实现、未验证｜MacPreferenceMap↔AppSettings.BaseUrl；SettingsStore 读写；行为：ChatCompletionClient/AnswerStreaming 使用 |
 | `apiModel` | String | "" | 设置 → 回答与资料 → 回答服务（AnswerServiceViews.swift APIConnectView） | 已实现、未验证｜MacPreferenceMap↔AppSettings.Model；SettingsStore 读写；行为：AppState.Live → ChatCompletionClient |
-| `apiPresets` | Array | [] | 设置 → 高级 → 回答服务·预设（AnswerServiceViews.swift APIPresetManager） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 []，JSON 原样保存）；缺口：Windows 无保存的接口预设功能，无行为消费者；接入任务：E14；缺口：接口预设未移植 |
+| `apiPresets` | Array | [] | 设置 → 高级 → 回答服务·预设（AnswerServiceViews.swift APIPresetManager） | 已实现、未验证｜MacPreferenceMap↔AppSettings.ApiPresets（E27：APIPreset 数组，Mac 字段名 id/name/baseURL/model/effort/keyAccount；APIPresetLogic 增删改选 + 首次运行迁移）；SettingsStore 读写；数据形状与 Mac 相同（数组）；Mac 备份里是 Data，Windows plist 导入/导出按数组处理（已有数据格式差异记录） |
 | `apiVisionEnabled` | Bool | false | 设置 → 高级 → 回答服务·屏幕与讲稿（InsightSettingsView.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 false）；缺口：Windows 回答请求尚未按该开关附加截图（E4/E13 截图提问独立），无行为消费者；接入任务：E4 |
 | `appearance` | String | "system" | 设置 → 通用 → 语言与外观（SettingsGeneralData.swift GeneralSettings） | 已实现、未验证｜AppSettings.Appearance；SettingsStore 读写；行为：AppState 应用浅色/深色/跟随系统 |
 | `assistantLayout` | Dict | AssistantLayout.standard（两栏；split 0.44） | 助手页模块布局（AssistantLayout.swift；AssistantView.swift 拖拽） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 AssistantLayout.standard，JSON 原样保存）；缺口：Windows 助手页无模块化布局（只有 ContextSidebarHidden），无行为消费者；接入任务：E15 |
@@ -41,7 +41,7 @@ python Windows/scripts/settings_parity.py --write  # 重新生成 MacPreferences
 | `coachEnabled` | Bool | true | 设置 → 提词与教练 → 临场教练（SettingsPresenter.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 true）；缺口：E10 未做，等待模型方案答复，Windows 尚无临场教练行为消费者；接入任务：E10 |
 | `coachGazeSensitivity` | String | "standard" | 设置 → 提词与教练 → 临场教练（SettingsPresenter.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 "standard"，允许值 relaxed/standard/strict 已写入注册表）；缺口：E10 未做，等待模型方案答复；接入任务：E10 |
 | `coachWatchesGaze` | Bool | false | 设置 → 提词与教练 → 临场教练（SettingsPresenter.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 false）；缺口：E10 未做，等待模型方案答复；接入任务：E10 |
-| `codexFastMode` | Bool | nil（跟随模型默认） | 设置 → 回答与资料 → Codex 快速模式（AnswerServiceViews.swift CodexFastModeToggle） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 nil）；缺口：Windows Codex 客户端尚未接入快速模式/服务档位，无行为消费者；接入任务：E25 |
+| `codexFastMode` | Bool | nil（跟随模型默认） | 设置 → 回答与资料 → Codex 快速模式（AnswerServiceViews.swift CodexFastModeToggle） | 已实现、未验证｜MacPreferenceMap↔AppSettings.CodexFastMode（E27：设置模型与 Codex 状态/快速模式标签已接入）；缺口：Windows CodexAnswerClient 尚未实现服务档位参数（Mac activeServiceTier），行为待 Codex app-server 协议核对；接入任务：E25 |
 | `codexModelID` | String | "" | 设置 → 回答与资料 → Codex（AnswerServiceViews.swift CodexEngineSection） | 已实现、未验证｜MacPreferenceMap↔AppSettings.CodexModel；SettingsStore 读写；行为：CodexAnswerClient |
 | `codexOCREffort` | String | "medium" | 设置 → 高级 → 资料组件（DocumentModelSettings.swift DocumentComponentsAdvanced） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 "medium"）；缺口：Windows 资料读取走本机 OCR/文档组件，没有 Codex 代读路径，无行为消费者；接入任务：E2 |
 | `codexOCRModel` | String | "gpt-6-luna" | 设置 → 高级 → 资料组件（DocumentModelSettings.swift） | 已实现、未验证｜MacPreferences+SettingsStore（Mac 键名/默认 "gpt-6-luna"）；缺口：同上，Windows 无 Codex 文件代读；接入任务：E2 |
