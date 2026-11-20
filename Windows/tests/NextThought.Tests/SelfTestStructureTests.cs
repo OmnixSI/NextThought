@@ -31,6 +31,23 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void IconMapCoversEverySwiftSymbol()
+    {
+        var root = Root();
+        var sw = Directory.GetFiles(Path.Combine(root, "Sources", "NextThought"), "*.swift", SearchOption.AllDirectories)
+            .SelectMany(path => System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(path), "systemName: \"([^\"]+)\"")
+                .Select(match => match.Groups[1].Value))
+            .Distinct().ToList();
+        var icons = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Styles", "Icons.axaml"));
+        var map = File.ReadAllText(Path.Combine(root, "Windows", "ICON_MAP.md"));
+        Assert.True(sw.Count >= 50);
+        foreach (var symbol in sw)
+            Assert.Contains(symbol, map);
+        Assert.Equal(sw.Count, System.Text.RegularExpressions.Regex.Matches(icons, "<x:String x:Key=").Count);
+    }
+
     [Fact]
     public void SceneGlyphTagAndInkWashAreWiredIntoHome()
     {
