@@ -24,6 +24,9 @@ public partial class SubtitleBarWindow : Window
     /// <summary>True while the user explicitly chose the subtitles mode; no idle fade-out.</summary>
     public bool Persistent { get; set; }
 
+    public double AppliedWidth => Width;
+    public double AppliedFontSize => PrimaryText.FontSize;
+
     public SubtitleBarWindow() : this(new AppState()) { }
 
     public SubtitleBarWindow(AppState state)

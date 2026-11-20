@@ -133,6 +133,7 @@ public partial class MainWindow : Window
             if (StartupOptions.CloudImportCheck is { } cloudImport) await RunCloudImportCheckAsync(cloudImport);
             if (StartupOptions.NotesJumpCheck is { } notesJump) await RunNotesJumpCheckAsync(notesJump);
             if (StartupOptions.LiveModeCheck is { } liveMode) await RunLiveModeCheckAsync(liveMode);
+            if (StartupOptions.SubtitleSettingsCheck is { } subtitleCheck) await RunSubtitleSettingsCheckAsync(subtitleCheck);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
             if (StartupOptions.TeleprompterHandleCheck is { } handleCheck) await RunTeleprompterHandleCheckAsync(handleCheck);
@@ -2466,6 +2467,41 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: saved subtitle width/font reach the floating bar.</summary>
+    private async Task RunSubtitleSettingsCheckAsync(string path)
+    {
+        var passed = false;
+        var width = 0d;
+        var font = 0d;
+        try
+        {
+            state.Settings.SubtitleWidth = 760;
+            state.Settings.SubtitleFontSize = 28;
+            state.Settings.SubtitleShowTranslation = false;
+            state.LiveMode = LiveWindowMode.Subtitles;
+            await Task.Delay(500);
+            width = subtitleBar?.AppliedWidth ?? 0;
+            font = subtitleBar?.AppliedFontSize ?? 0;
+            passed = Math.Abs(width - 760) < 0.5 && Math.Abs(font - 28) < 0.5;
+            state.LiveMode = LiveWindowMode.Notes;
+            await Task.Delay(200);
+        }
+        catch (Exception ex) { Console.WriteLine("subtitle-settings-check: " + ex.Message); }
+        var report = new { passed, width, font };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "subtitle-settings-check: passed" : "subtitle-settings-check: failed");
+        Close();
+    }
+
     /// <summary>QA: Notes/Subtitles/Hidden are three distinct states.</summary>
     private async Task RunLiveModeCheckAsync(string path)
     {
