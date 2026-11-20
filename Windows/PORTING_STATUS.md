@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · A4
+改动：`WorkspaceSeriesItemRevision` 补齐 Mac 的 17 个字段（id/kind/sourceSessionID/evidenceID/claimRevision/sourceRevision/sourceQuote/location/transcriptSourceRevision/sourceMissing/recordedAt），替换系列条目时写入完整历史快照。
+测试：Core **869/869**，NextThought.Tests **123/123**；新增断言在 `ReplaceUpdatesTheTargetAndKeepsItsHistory`。
+状态：A4「已实现、未验证」。
+未解决：A5 尚未开始；没有 Mac Swift 解码器实跑，字段名只按 Swift CodingKeys 对照。
+
 ## 2026-11-20 · 0.5.145 · A2、A3
 改动：
 - A2 `SessionSummary` 增加 JsonExtensionData，Mac 的 `editedSummary` 里 title/questions/model 等未知字段读入再保存不丢；测试 `MacEditedSummaryFieldsSurviveUserContentRoundTrip`。

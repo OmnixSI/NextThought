@@ -25,6 +25,7 @@ Nov 20, 2026 · @Homing
 | A1 | 已实现、未验证 | 归档日期统一为 UTC 秒 + Z；ArchiveDateTests |
 | A2 | 已实现、未验证 | editedSummary 未知字段保留；字段级测试 |
 | A3 | 已实现、未验证 | Mac translations 按 id 读取/显示；写出 inputRevision |
+| A4 | 已实现、未验证 | 系列条目历史快照补齐 17 个 Mac 字段 |
 
 ## 1. ⽬标与范围 
 
