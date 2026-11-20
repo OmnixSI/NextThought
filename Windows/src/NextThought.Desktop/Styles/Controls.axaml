@@ -18,7 +18,8 @@
     <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="Padding" Value="12,0" />
-    <Setter Property="MinHeight" Value="32" />
+    <!-- D4: Mac Space.control / Hit.minHeight = 32. -->
+    <Setter Property="MinHeight" Value="{DynamicResource Control}" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -218,7 +219,7 @@
     <Setter Property="BorderThickness" Value="0.5" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Padding" Value="10,7" />
-    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="MinHeight" Value="{DynamicResource Control}" />
     <Setter Property="FontSize" Value="13" />
     <Setter Property="CaretBrush" Value="{DynamicResource InkBrush}" />
   </Style>
@@ -231,7 +232,7 @@
     <Setter Property="BorderThickness" Value="0.5" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Padding" Value="10,5" />
-    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="MinHeight" Value="{DynamicResource Control}" />
     <Setter Property="FontSize" Value="13" />
   </Style>
 
@@ -239,8 +240,8 @@
   <Style Selector="CheckBox">
     <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
     <Setter Property="FontSize" Value="13" />
-    <!-- D8/Mac Hit.minHeight: the least clickable height of a row control is 32. -->
-    <Setter Property="MinHeight" Value="32" />
+    <!-- D8/D4: Mac Hit.minHeight / Space.control = 32. -->
+    <Setter Property="MinHeight" Value="{DynamicResource Control}" />
     <Setter Property="CornerRadius" Value="6" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <!-- D8: every focusable control shows the 2 px Ink.focus ring on keyboard focus. -->
@@ -318,7 +319,8 @@
     <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="FontWeight" Value="Medium" />
-    <Setter Property="MinHeight" Value="36" />
+    <!-- D4: Mac Hit.row = 36 for a whole-row control. -->
+    <Setter Property="MinHeight" Value="{DynamicResource HitRow}" />
     <Setter Property="Padding" Value="18,7" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -381,6 +383,7 @@
     <Setter Property="FontSize" Value="12" />
     <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="Padding" Value="13,5" />
+    <Setter Property="MinHeight" Value="{DynamicResource Control}" />
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Cursor" Value="Hand" />
     <!-- D8: 2 px Ink.focus ring for filter chips. -->
@@ -426,7 +429,7 @@
     <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="12,5" />
-    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="MinHeight" Value="{DynamicResource Control}" />
     <Setter Property="CornerRadius" Value="14" />
   </Style>
   <Style Selector="Button.scene:pointerover /template/ Border#Root">

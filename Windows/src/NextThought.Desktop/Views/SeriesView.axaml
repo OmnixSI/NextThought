@@ -24,7 +24,7 @@
         <TextBlock Text="{Binding SeriesSummary}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
-        <TextBox Text="{Binding NewSeriesName}" PlaceholderText="{loc:Tr 新系列的名字}" Width="180" MinHeight="34" />
+        <TextBox Text="{Binding NewSeriesName}" PlaceholderText="{loc:Tr 新系列的名字}" Width="180" MinHeight="{DynamicResource Control}" />
         <Button Content="{loc:Tr 新建系列}" Command="{Binding CreateSeriesCommand}" />
       </StackPanel>
     </Grid>
@@ -162,7 +162,7 @@
                               <TextBlock Text="{Binding Hint}" Classes="faint" FontSize="11" TextWrapping="Wrap" MaxWidth="420" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
-                              <Button Classes="primary" Tag="{Binding}" Click="AcceptCandidate_Click" Padding="{DynamicResource D4Padding_14_0}" MinHeight="30">
+                              <Button Classes="primary" Tag="{Binding}" Click="AcceptCandidate_Click" Padding="{DynamicResource D4Padding_14_0}" MinHeight="{DynamicResource Control}">
                                 <TextBlock Text="{loc:Tr 采纳}" Foreground="{DynamicResource OnInk}" FontSize="13" />
                               </Button>
                               <Button Content="{loc:Tr 替换回答}" Classes="ghost" Tag="{Binding}" Click="ReplaceCandidate_Click"
@@ -205,8 +205,8 @@
           </TabControl>
 
           <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
-            <TextBox Text="{Binding NewLessonText}" PlaceholderText="{loc:Tr 一句话经验，例如：先说结论，再说依据}" MinHeight="34" />
-            <Button Grid.Column="1" Classes="primary" Margin="{DynamicResource D4Margin_8_0_0_0}" Padding="{DynamicResource D4Padding_16_0}" MinHeight="34"
+            <TextBox Text="{Binding NewLessonText}" PlaceholderText="{loc:Tr 一句话经验，例如：先说结论，再说依据}" MinHeight="{DynamicResource Control}" />
+            <Button Grid.Column="1" Classes="primary" Margin="{DynamicResource D4Margin_8_0_0_0}" Padding="{DynamicResource D4Padding_16_0}" MinHeight="{DynamicResource Control}"
                     Command="{Binding AddLessonCommand}">
               <TextBlock Text="{loc:Tr 记下}" Foreground="{DynamicResource OnInk}" FontSize="13" />
             </Button>

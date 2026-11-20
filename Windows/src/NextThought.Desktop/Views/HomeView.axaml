@@ -22,7 +22,7 @@
             <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="38" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
                      Padding="{DynamicResource D4Padding_0}" FontFamily="{StaticResource SerifFamily}" FontSize="24"
-                     FontWeight="Medium" MinHeight="36" VerticalAlignment="Center"
+                     FontWeight="Medium" MinHeight="{DynamicResource Control}" VerticalAlignment="Center"
                      Watermark="{loc:Tr 给这场会起个名字，比如“字节二面”}" />
           </Grid>
           <ItemsControl ItemsSource="{Binding Scenes}">

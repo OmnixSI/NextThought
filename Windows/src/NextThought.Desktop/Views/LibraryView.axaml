@@ -14,7 +14,7 @@
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
         <TextBlock Text="{Binding Library.ImportProgress}" Classes="caption" VerticalAlignment="Center" />
-        <Button Classes="primary" Click="Import_Click" MinHeight="36" Padding="{DynamicResource D4Padding_18_0}"
+        <Button Classes="primary" Click="Import_Click" MinHeight="{DynamicResource HitRow}" Padding="{DynamicResource D4Padding_18_0}"
                 IsEnabled="{Binding !Library.Importing}">
           <TextBlock Text="{loc:Tr 导入资料}" Foreground="{DynamicResource OnInk}" />
         </Button>

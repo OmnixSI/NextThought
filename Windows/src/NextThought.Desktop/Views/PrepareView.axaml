@@ -23,7 +23,7 @@
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
             <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="44" VerticalAlignment="Center" />
             <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
-                     FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="36"
+                     FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="{DynamicResource Control}"
                      PlaceholderText="{loc:Tr 给这场会起个名字}" />
           </Grid>
           <ItemsControl ItemsSource="{Binding Scenes}">

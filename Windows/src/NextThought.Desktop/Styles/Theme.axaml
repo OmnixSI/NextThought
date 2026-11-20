@@ -1,4 +1,4 @@
-﻿<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
     Design tokens ported from Sources/NextThought/DesignSystem.swift.
@@ -79,6 +79,11 @@
       <x:Double x:Key="S12">48</x:Double>
       <x:Double x:Key="Control">32</x:Double>
       <x:Double x:Key="ControlLarge">40</x:Double>
+      <!-- HitTargets.swift: least clickable height of a text button/chip/row control, an
+           icon-only button and a whole-row switch. -->
+      <x:Double x:Key="HitMin">32</x:Double>
+      <x:Double x:Key="HitIcon">36</x:Double>
+      <x:Double x:Key="HitRow">36</x:Double>
       <x:Double x:Key="Sidebar">220</x:Double>
       <x:Double x:Key="Content">720</x:Double>
       <CornerRadius x:Key="RadiusSmall">8</CornerRadius>

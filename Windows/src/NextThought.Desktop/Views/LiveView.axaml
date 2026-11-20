@@ -12,7 +12,7 @@
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
         <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="{DynamicResource D4Padding_0}"
-                 FontFamily="{StaticResource SerifFamily}" FontSize="28" FontWeight="Medium" MinHeight="40" />
+                 FontFamily="{StaticResource SerifFamily}" FontSize="28" FontWeight="Medium" MinHeight="{DynamicResource Control}" />
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
           <!-- D6: the live bar names the scene, like Mac LiveSessionView's SceneTag. -->
           <controls:SceneTag Mode="{Binding SelectedMode}" Name="{Binding SceneTitle}" VerticalAlignment="Center" />
@@ -51,7 +51,7 @@
         <Button Content="{loc:Tr 提词岛}" Click="Island_Click" ToolTip.Tip="{loc:Tr 在屏幕顶部显示问题与回答，不抢焦点}" />
         <Button Content="{loc:Tr 补译}" Command="{Binding TranslateMissingCommand}" ToolTip.Tip="{loc:Tr 把还没有译文的完整句发送到当前回答服务}" />
         <Button Content="{loc:Tr 结束会议}" Command="{Binding StopRecordingCommand}" />
-        <Button Classes="primary" Command="{Binding StartRecordingCommand}" MinHeight="36" Padding="{DynamicResource D4Padding_18_0}">
+        <Button Classes="primary" Command="{Binding StartRecordingCommand}" MinHeight="{DynamicResource HitRow}" Padding="{DynamicResource D4Padding_18_0}">
           <TextBlock Text="{loc:Tr 开始记录}" Foreground="{DynamicResource OnInk}" />
         </Button>
       </StackPanel>

@@ -79,7 +79,12 @@ public sealed class ThemeResourceTests
     {
         var root = RepoRoot();
         var theme = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
-        foreach (var pair in new[] { ("S12", "48"), ("Control", "32"), ("ControlLarge", "40"), ("Sidebar", "220"), ("Content", "720") })
+        foreach (var pair in new[]
+                 {
+                     ("S12", "48"), ("Control", "32"), ("ControlLarge", "40"), ("Sidebar", "220"), ("Content", "720"),
+                     // D4/HitTargets.swift: least clickable height (32), icon-only button (36), whole row (36).
+                     ("HitMin", "32"), ("HitIcon", "36"), ("HitRow", "36")
+                 })
             Assert.Contains($"<x:Double x:Key=\"{pair.Item1}\">{pair.Item2}</x:Double>", theme);
         var main = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
         Assert.Contains("ColumnDefinitions=\"Auto,*\"", main);
@@ -87,6 +92,70 @@ public sealed class ThemeResourceTests
         Assert.Contains("MaxWidth=\"720\"", home);
         var settings = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
         Assert.Contains("MaxWidth=\"720\"", settings);
+        var sidebar = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("Sidebar", theme);
+        Assert.True(sidebar.Length > 0);
+    }
+
+    [Fact]
+    public void ClickTargetsUseTheMacHitTokens()
+    {
+        var root = RepoRoot();
+        var controls = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Styles", "Controls.axaml"));
+        // Text buttons, text fields and row toggles all use the 32 pt Mac control height.
+        foreach (var selector in new[] { "Button", "TextBox", "ComboBox", "CheckBox" })
+            Assert.Contains("MinHeight\" Value=\"{DynamicResource Control}\"", StyleBlock(controls, selector));
+        // Whole-row controls and chips use the row / control hit targets.
+        Assert.Contains("MinHeight\" Value=\"{DynamicResource HitRow}\"", StyleBlock(controls, "RadioButton.nav"));
+        Assert.Contains("MinHeight\" Value=\"{DynamicResource Control}\"", StyleBlock(controls, "RadioButton.chip"));
+        Assert.Contains("MinHeight\" Value=\"{DynamicResource Control}\"", StyleBlock(controls, "Button.scene"));
+        // The only remaining numeric heights in the style sheet are documented exceptions:
+        // the title-bar buttons (0, laid out by their own template), the compact teleprompter
+        // controls (24) and the 3 px progress bar.
+        var numeric = System.Text.RegularExpressions.Regex.Matches(controls, "Property=\"MinHeight\" Value=\"([0-9]+)\"")
+            .Select(match => match.Groups[1].Value).OrderBy(value => value).ToArray();
+        Assert.Equal(new[] { "0", "24", "3" }, numeric);
+        // Primary action buttons in the pages use the 36 pt row height; the only remaining page
+        // clickable literal is the compact teleprompter handle button.
+        foreach (var view in new[] { "LiveView.axaml", "NotesView.axaml", "LibraryView.axaml" })
+        {
+            var text = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", view));
+            Assert.Contains("MinHeight=\"{DynamicResource HitRow}\"", text);
+        }
+        var series = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "SeriesView.axaml"));
+        Assert.Contains("MinHeight=\"{DynamicResource Control}\"", series);
+        // Two clickable sizes stay literal on purpose: the compact teleprompter handle button
+        // (Mac's floating teleprompter controls are small too) and the live question composer,
+        // which is a taller multi-line field (58) rather than a single-line control.
+        var allowed = new Dictionary<string, string[]>
+        {
+            ["TeleprompterHandleWindow.axaml"] = ["24"],
+            ["LiveView.axaml"] = ["58"]
+        };
+        var offenders = new List<string>();
+        foreach (var file in Directory.GetFiles(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views"), "*.axaml", SearchOption.AllDirectories))
+        {
+            var name = Path.GetFileName(file);
+            var text = File.ReadAllText(file);
+            foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(text,
+                         "<(Button|CheckBox|RadioButton|ListBoxItem|TextBox)[^>]*MinHeight=\"([0-9]+)\""))
+            {
+                var value = match.Groups[2].Value;
+                if (allowed.TryGetValue(name, out var values) && values.Contains(value)) continue;
+                offenders.Add(name + " MinHeight=" + value);
+            }
+        }
+        Assert.Empty(offenders);
+    }
+
+    private static string StyleBlock(string controls, string selector)
+    {
+        var marker = $"<Style Selector=\"{selector}\">";
+        var start = controls.IndexOf(marker, StringComparison.Ordinal);
+        Assert.True(start >= 0, "missing style: " + selector);
+        start += marker.Length;
+        var end = controls.IndexOf("<Style Selector=", start, StringComparison.Ordinal);
+        return controls[start..(end < 0 ? controls.Length : end)];
     }
 
 
