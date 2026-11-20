@@ -20,6 +20,8 @@ public partial class AppState
     [ObservableProperty] private double updateInstallProgress;
     [ObservableProperty] private string updateInstallStatus = "";
     [ObservableProperty] private bool updateInstallSucceeded;
+    private string? prefetchedInstaller;
+    private string? prefetchedForUrl;
 
     /// <summary>Arguments used by the installer smoke tests as well (Inno Setup 7).</summary>
     public const string SilentInstallArguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /LAUNCH=1";
@@ -151,6 +153,28 @@ public partial class AppState
         }
     }
 
+
+    /// <summary>F16: download the installer in the background so the title-bar button is ready.</summary>
+    private async Task PrefetchInstallerAsync(UpdateReport report)
+    {
+        if (report.SetupUrl is not { Length: > 0 } || report.SetupName is not { Length: > 0 }) return;
+        try
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "NextThoughtPrefetch");
+            Directory.CreateDirectory(directory);
+            var target = Path.Combine(directory, report.SetupName);
+            if (File.Exists(target) && prefetchedForUrl == report.SetupUrl) { prefetchedInstaller = target; return; }
+            using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+            await using var source = await http.GetStreamAsync(report.SetupUrl);
+            await using var file = File.Create(target);
+            await source.CopyToAsync(file);
+            prefetchedInstaller = target;
+            prefetchedForUrl = report.SetupUrl;
+            UpdateInstallStatus = "安装包已在后台下载；点「重启以更新」安装。";
+        }
+        catch (Exception) { /* the click path can still download normally */ }
+    }
+
     [RelayCommand(CanExecute = nameof(CanInstallUpdateInApp))]
     private async Task InstallUpdateAsync()
     {
@@ -163,24 +187,33 @@ public partial class AppState
         string? installer = null;
         try
         {
-            var directory = Path.Combine(Path.GetTempPath(), "NextThoughtUpdate-" + Guid.NewGuid().ToString("N")[..8]);
-            Directory.CreateDirectory(directory);
-            installer = Path.Combine(directory, report.SetupName ?? "NextThought-setup.exe");
             using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
-            using (var response = await http.GetAsync(report.SetupUrl, HttpCompletionOption.ResponseHeadersRead))
+            var cached = prefetchedForUrl == report.SetupUrl ? prefetchedInstaller : null;
+            if (cached is not null && File.Exists(cached))
             {
-                response.EnsureSuccessStatusCode();
-                var total = response.Content.Headers.ContentLength ?? 0;
-                await using var source = await response.Content.ReadAsStreamAsync();
-                await using var target = File.Create(installer);
-                var buffer = new byte[81920];
-                long done = 0;
-                int read;
-                while ((read = await source.ReadAsync(buffer)) > 0)
+                installer = cached;
+                UpdateInstallProgress = 1;
+            }
+            else
+            {
+                var directory = Path.Combine(Path.GetTempPath(), "NextThoughtUpdate-" + Guid.NewGuid().ToString("N")[..8]);
+                Directory.CreateDirectory(directory);
+                installer = Path.Combine(directory, report.SetupName ?? "NextThought-setup.exe");
+                using (var response = await http.GetAsync(report.SetupUrl, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    await target.WriteAsync(buffer.AsMemory(0, read));
-                    done += read;
-                    if (total > 0) UpdateInstallProgress = Math.Round((double)done / total, 3);
+                    response.EnsureSuccessStatusCode();
+                    var total = response.Content.Headers.ContentLength ?? 0;
+                    await using var source = await response.Content.ReadAsStreamAsync();
+                    await using var target = File.Create(installer);
+                    var buffer = new byte[81920];
+                    long done = 0;
+                    int read;
+                    while ((read = await source.ReadAsync(buffer)) > 0)
+                    {
+                        await target.WriteAsync(buffer.AsMemory(0, read));
+                        done += read;
+                        if (total > 0) UpdateInstallProgress = Math.Round((double)done / total, 3);
+                    }
                 }
             }
 

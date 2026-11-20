@@ -203,6 +203,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void UpdatesArePrefetchedBeforeInstall()
+    {
+        var update = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Update.cs"));
+        Assert.Contains("PrefetchInstallerAsync", update);
+        Assert.Contains("prefetchedInstaller", update);
+    }
+
     [Fact]
     public void SettingsAsyncHandlersShowErrors()
     {
