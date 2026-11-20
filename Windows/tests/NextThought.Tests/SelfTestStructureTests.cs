@@ -35,6 +35,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SidebarIsHiddenAndSettingsIsInTopBar()
+    {
+        var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("ColumnDefinitions=\"0,*\"", main);
+        Assert.Contains("CommandParameter=\"Settings\"", main);
+        Assert.Contains("IsVisible=\"False\"", main);
+    }
+
     [Fact]
     public void TopNavigationCapsuleExists()
     {

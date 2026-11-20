@@ -33,9 +33,16 @@
         <RadioButton Classes="nav" GroupName="topnav" Content="资料库" IsChecked="{Binding OnLibrary, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Library" />
       </StackPanel>
-      <TextBlock Text="{Binding PageSubtitle}" Classes="caption" HorizontalAlignment="Right"
-                 VerticalAlignment="Center" Margin="0,0,142,0" MaxWidth="340" TextTrimming="CharacterEllipsis"
-                 TextWrapping="NoWrap" />
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,142,0">
+        <TextBlock Text="{Binding PageSubtitle}" Classes="caption" VerticalAlignment="Center" MaxWidth="280"
+                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+        <Button Classes="quiet" Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="设置">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
+            <TextBlock Text="设置" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch" Spacing="0">
         <Button Name="MinimizeButton" Classes="caption" Click="Minimize_Click" ToolTip.Tip="最小化">
           <Path Data="M0,5 H10" StrokeThickness="1" />
@@ -49,9 +56,9 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="220,*">
+    <Grid Grid.Row="1" ColumnDefinitions="0,*">
       <!-- Sidebar: brand, sections, recent meetings, data controls -->
-      <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
+      <Border Grid.Column="0" IsVisible="False" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
               BorderThickness="0,0,0.5,0">
         <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="14,6,14,14">
           <StackPanel Grid.Row="0" Spacing="1">

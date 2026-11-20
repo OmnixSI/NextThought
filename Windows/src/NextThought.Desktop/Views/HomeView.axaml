@@ -7,7 +7,7 @@
   <Grid>
     <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" />
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="40,26,40,36" MaxWidth="720" Spacing="26">
+    <StackPanel Margin="40,26,40,36" MaxWidth="720" HorizontalAlignment="Center" Spacing="26">
       <!-- Greeting -->
       <StackPanel Spacing="10">
         <TextBlock Text="{Binding Greeting}" Classes="overline" />
