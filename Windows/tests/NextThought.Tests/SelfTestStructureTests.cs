@@ -34,6 +34,19 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void TopNavigationCapsuleExists()
+    {
+        var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("GroupName=\"topnav\"", main);
+        Assert.Contains("CommandParameter=\"Home\"", main);
+        Assert.Contains("CommandParameter=\"Live\"", main);
+        Assert.Contains("CommandParameter=\"Library\"", main);
+        var controls = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Styles", "Controls.axaml"));
+        Assert.Contains("RadioButton.nav:checked", controls);
+    }
+
     [Fact]
     public void ViewsDoNotUseTextCharactersForIcons()
     {

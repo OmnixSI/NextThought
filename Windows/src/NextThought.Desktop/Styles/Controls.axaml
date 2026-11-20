@@ -321,6 +321,9 @@
       <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
     </Style>
   </Style>
+  <Style Selector="RadioButton.nav:checked /template/ ContentPresenter TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
 
   <!-- Chip -->
   <Style Selector="Border.chip">
