@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · G7
+改动：新增字符串生成器 `Windows/scripts/generate_ui_text.py`，从 Mac `Localizable.xcstrings` 生成全部 2607 条英文文案（含占位符与复数 other 分支）；`UiText.MacStringCount` + 两项覆盖测试锁定数量。
+测试：Core **1524/1524**，NextThought.Tests **266/266**。
+状态：G7「已实现、未验证」；英文模式逐页扫描与占位符替换属 G8–G10/视觉核对。
+
 ## 2026-11-20 · 0.5.145 · A13
 改动：备份导入改为合并设置/术语/技能/模板并统一回滚；接受带凭据的备份（密钥不导入）；恢复 `Originals/`；资料用系列真实名称；导入上限改为 Mac 的 100000 文件/64 GB；导入成功后界面重新加载。
 测试：Core **1522/1522**，NextThought.Tests **266/266**。

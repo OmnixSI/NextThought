@@ -148,7 +148,7 @@ Nov 20, 2026 · @Homing
 | G4 | 未做 | — | 未开始 |
 | G5 | 未做 | — | 未开始 |
 | G6 | 未做 | — | 未开始 |
-| G7 | 未做 | — | 未开始 |
+| G7 | 已实现、未验证 | 新增 `Windows/scripts/generate_ui_text.py`，从 `Resources/Localization/Localizable.xcstrings` 自动生成 `UiTextMac.g.cs`，全部 2607 条英文文案（含占位符、复数 `other` 分支、C# 转义）；`UiText.MacStringCount` 与 `UiTextCoverageTests` 锁定 2607；重新生成后两套 Core/App 测试通过 | 需在英文模式逐页截图扫描中文残留（G10）；占位符调用点是否正确替换仍需逐控件检查 |
 | G8 | 未做 | — | 未开始 |
 | G9 | 未做 | — | 未开始 |
 | G10 | 未做 | — | 未开始 |

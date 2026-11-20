@@ -11,6 +11,9 @@ public static class UiText
 
     private static readonly Dictionary<string, string> English = BuildEnglish();
 
+    /// <summary>G7: how many Mac catalogue strings the generated table carries.</summary>
+    public static int MacStringCount => UiTextMacEnglish.Count;
+
     private static Dictionary<string, string> BuildEnglish()
     {
         var dictionary = new Dictionary<string, string>(StringComparer.Ordinal)
