@@ -163,7 +163,7 @@ public sealed record HistoryAnswerRow(AnswerRecord Answer, Guid SessionId)
 /// One queued knowledge suggestion (WorkspaceKnowledgeCandidate) as the series page shows it.
 /// Nothing here is active until the user accepts or rejects it.
 /// </summary>
-public sealed record KnowledgeCandidateRow(WorkspaceKnowledgeCandidate Candidate)
+public sealed record KnowledgeCandidateRow(WorkspaceKnowledgeCandidate Candidate, WorkspaceSeries? Series = null)
 {
     public string Text => Candidate.Text;
 
@@ -176,10 +176,37 @@ public sealed record KnowledgeCandidateRow(WorkspaceKnowledgeCandidate Candidate
     /// <summary>Only a question has a stored answer that a review can replace.</summary>
     public bool CanReplace => IsQuestion;
 
-    public string KindLabel => UiText.T(IsQuestion ? "问题" : "经验");
+    // KnowledgeReviewSection.swift KnowledgeCandidateCard: the series' current knowledge is shown
+    // beside the suggestion so the user can keep it or replace it explicitly.
+    public QuestionBankItem? MatchingQuestion => IsQuestion && Series is { } series
+        ? series.QuestionBank.FirstOrDefault(item => KnowledgeMerger.SimilarQuestion(item.Question, Candidate.Text))
+        : null;
+    public WorkspaceLesson? MatchingLesson => !IsQuestion && Series is { } series
+        ? series.Lessons.FirstOrDefault(lesson => KnowledgeMerger.Similarity(lesson.Text, Candidate.Text) >= 0.6)
+        : null;
+    public bool HasMatchingQuestion => MatchingQuestion is not null;
+    public bool HasMatchingLesson => MatchingLesson is not null;
+    public bool ShowQuestionMatching => IsQuestion && HasMatchingQuestion;
+    public bool ShowAddNewQuestion => IsQuestion && !HasMatchingQuestion;
+    public bool ShowLesson => !IsQuestion;
+    public bool ShowAddNewLesson => !IsQuestion && !HasMatchingLesson;
+    public string MatchingQuestionText => MatchingQuestion?.Question ?? "";
+    public string MatchingAnswerText => MatchingQuestion?.Answer ?? "";
+    public string MatchingLessonText => MatchingLesson?.Text ?? "";
+    public string MatchingLessonLine => UiText.Format("系列已有相近经验：%@", MatchingLessonText);
+    public string CurrentQuestionLabel => UiText.T("系列当前问题");
+    public string CurrentAnswerLabel => UiText.T("系列当前答法");
+    public string ProposedAnswerLabel => UiText.T("本次建议");
+    public string NewAnswerLabel => UiText.T("建议答法");
+    public string KeepExistingLabel => IsQuestion ? UiText.T("保留当前答法") : UiText.T("保留现有经验并记下来源");
+    public string ReplaceAnswerLabel => UiText.T("采用建议并保留旧版");
+    public string AddLabel => IsQuestion ? UiText.T("加入题库") : UiText.T("加入经验库");
+    public string RejectLabel => UiText.T("忽略");
+
+    public string KindLabel => UiText.T(IsQuestion ? "答法建议" : "经验建议");
 
     public string Hint => UiText.T(IsQuestion
-        ? "题库里已有相似问题时，「替换」会用新回答覆盖旧的，旧回答留在历史里"
+        ? "题库里已有相似问题时，「采用建议并保留旧版」会用新回答覆盖旧的，旧回答留在历史里"
         : "采纳后进入这个系列的经验，下次回答会带上它");
 }
 

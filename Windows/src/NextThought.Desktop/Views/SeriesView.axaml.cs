@@ -30,6 +30,8 @@ public partial class SeriesView : UserControl
 
     private void ReplaceCandidate_Click(object? sender, RoutedEventArgs e) => ReviewCandidate(sender, WorkspaceKnowledgeDecision.ReplaceAnswer);
 
+    private void KeepCandidate_Click(object? sender, RoutedEventArgs e) => ReviewCandidate(sender, WorkspaceKnowledgeDecision.KeepExisting);
+
     private void RejectCandidate_Click(object? sender, RoutedEventArgs e) => ReviewCandidate(sender, WorkspaceKnowledgeDecision.Reject);
 
     /// <summary>The three review buttons all carry the row they belong to; only the decision differs.</summary>
@@ -39,16 +41,29 @@ public partial class SeriesView : UserControl
             state.ReviewCandidate(row, decision);
     }
 
+    private void CollectSeriesChanges_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AppState state) state.CollectSeriesChangeCandidates();
+    }
+
     private void AcceptSeriesChange_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: SeriesChangeRow row } && DataContext is AppState state)
-            state.ReviewSeriesChange(row.Id, NextThought.Core.WorkspaceSeriesChangeDecision.Add);
+            state.ReviewSeriesChange(row, NextThought.Core.WorkspaceSeriesChangeDecision.Add, null);
     }
 
     private void RejectSeriesChange_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: SeriesChangeRow row } && DataContext is AppState state)
-            state.ReviewSeriesChange(row.Id, NextThought.Core.WorkspaceSeriesChangeDecision.Reject);
+            state.ReviewSeriesChange(row, NextThought.Core.WorkspaceSeriesChangeDecision.Reject, null);
+    }
+
+    /// <summary>A 更新 button carries its target item in DataContext and the proposal in Tag.</summary>
+    private void ReplaceSeriesChange_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: SeriesTargetRow target, Tag: SeriesChangeRow candidate }
+            && DataContext is AppState state)
+            state.ReviewSeriesChange(candidate, NextThought.Core.WorkspaceSeriesChangeDecision.Replace, target);
     }
 
     private async void EditSeries_Click(object? sender, RoutedEventArgs e)

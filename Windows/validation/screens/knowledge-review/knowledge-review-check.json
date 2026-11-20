@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "系列页加载候选与记录",
+      "passed": true,
+      "detail": "变更 3；知识 3；记录 2"
+    },
+    {
+      "step": "行动建议确认负责人/期限后加入",
+      "passed": true,
+      "detail": "Owner=Shiyin；Due=下周一（悉尼时间）"
+    },
+    {
+      "step": "决定建议作为新决定加入",
+      "passed": true,
+      "detail": "决定数 1"
+    },
+    {
+      "step": "更新已有内容保留旧版本",
+      "passed": true,
+      "detail": "revision=2；history=1；targetRev=1；status=已写入系列记录。"
+    },
+    {
+      "step": "复核队列消费完",
+      "passed": true,
+      "detail": "剩余待确认 0；页面剩余 0"
+    },
+    {
+      "step": "知识候选显示系列当前答法",
+      "passed": true,
+      "detail": "先更新数据库再删缓存。"
+    },
+    {
+      "step": "采用建议并保留旧版",
+      "passed": true,
+      "detail": "answer=先更新数据库，再删缓存；上线前压测。；历史 1"
+    },
+    {
+      "step": "加入经验库",
+      "passed": true,
+      "detail": "经验数 2"
+    },
+    {
+      "step": "忽略知识候选",
+      "passed": true,
+      "detail": "剩余待确认 0"
+    },
+    {
+      "step": "记录标签打开会议页",
+      "passed": true,
+      "detail": "section=Notes；会话=E21 复核会议甲"
+    },
+    {
+      "step": "资料复核：警告与提取预览",
+      "passed": true,
+      "detail": "警告 1 条"
+    },
+    {
+      "step": "复核备注写入 material-review.json",
+      "passed": true,
+      "detail": "第 3 页需要人工核对"
+    }
+  ]
+}

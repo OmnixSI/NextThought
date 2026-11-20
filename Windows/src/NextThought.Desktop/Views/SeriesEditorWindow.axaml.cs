@@ -203,5 +203,17 @@ public partial class SeriesEditorWindow : Window
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    /// <summary>WorkspaceRecordsTab: 查看 opens the meeting page for that record.</summary>
+    private async void OpenRecord_Click(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (sender is not Button { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
+            Close();
+            await state.OpenSeriesRecordAsync(row);
+        }
+        catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
+    }
+
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 }

@@ -45,19 +45,69 @@ public partial class AppState
     {
         SeriesChangeRows.Clear();
         if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
-        foreach (var candidate in series.SeriesChangeCandidates.Where(candidate => candidate.Status == WorkspaceSeriesChangeCandidate.StatusValue.Pending))
-            SeriesChangeRows.Add(new SeriesChangeRow(candidate));
+        foreach (var candidate in series.SeriesChangeCandidates
+                     .Where(candidate => candidate.Status == WorkspaceSeriesChangeCandidate.StatusValue.Pending)
+                     .OrderByDescending(candidate => candidate.CreatedAt))
+            SeriesChangeRows.Add(new SeriesChangeRow(candidate, series.SeriesItems));
+        OnPropertyChanged(nameof(HasSeriesChanges));
+        OnPropertyChanged(nameof(SeriesChangesHeader));
     }
 
-    public void ReviewSeriesChange(string candidateId, WorkspaceSeriesChangeDecision decision)
+    public bool HasSeriesChanges => SeriesChangeRows.Count > 0;
+    public string SeriesChangesHeader => UiText.Format("系列变更待确认 · %lld", SeriesChangeRows.Count);
+    public string SeriesChangesHint => UiText.T("决定与行动先留在这里复核；负责人和期限可在这里确认，确认后才进入系列记录。");
+    public string CollectSeriesChangesLabel => UiText.T("收集已核实的决定与行动");
+    public bool CanCollectSeriesChanges => CurrentSession is not null && SelectedSeries is not null;
+
+    public void ReviewSeriesChange(string candidateId, WorkspaceSeriesChangeDecision decision) =>
+        ReviewSeriesChange(new SeriesChangeRow(new WorkspaceSeriesChangeCandidate { Id = candidateId },
+            []), decision, null);
+
+    /// <summary>
+    /// KnowledgeReviewSection's SeriesChangeCandidateCard: owner/due are reviewed here, replace keeps
+    /// the target item's old revision in its history.
+    /// </summary>
+    public void ReviewSeriesChange(SeriesChangeRow row, WorkspaceSeriesChangeDecision decision, SeriesTargetRow? target)
     {
         if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
-        var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(series, candidateId, decision);
+        WorkspaceSeriesChangeReviewDetails? details = row.IsAction
+            ? new WorkspaceSeriesChangeReviewDetails(
+                string.IsNullOrWhiteSpace(row.Owner) ? null : row.Owner.Trim(),
+                string.IsNullOrWhiteSpace(row.Due) ? null : row.Due.Trim())
+            : null;
+        var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(series, row.Id, decision, details,
+            target?.Item.Id, target?.Item.Revision);
+        if (receipt is null)
+        {
+            SetStatus(UiText.T("这条建议对不上了：原话或已有内容在复核之后改过，刷新后再确认。"), true);
+            return;
+        }
         workspace = workspace.WithSeries(updated);
         SaveWorkspace();
         RefreshSeries();
         RefreshSeriesChanges();
-        SetStatus(receipt is null ? "系列变更未应用。" : "系列变更已" + (decision == WorkspaceSeriesChangeDecision.Reject ? "忽略。" : "应用。"));
+        RefreshSeriesLessons();
+        SelectedSeries = SeriesRows.FirstOrDefault(item => item.Id == selected.Id);
+        SetStatus(decision == WorkspaceSeriesChangeDecision.Reject
+            ? UiText.T("这条建议已忽略。")
+            : UiText.T("已写入系列记录。"));
+    }
+
+    /// <summary>Collects reviewed decisions/actions from the current meeting's evidence into the series.</summary>
+    public void CollectSeriesChangeCandidates()
+    {
+        if (CurrentSession is not { } meta || SelectedSeries is not { } selected
+            || workspace.Find(selected.Id) is not { } series) return;
+        var evidence = NotesEvidence.Select(row => row.Reference).ToList();
+        if (evidence.Count == 0) { SetStatus(UiText.T("这场会议还没有可复核的条目。"), true); return; }
+        var (updated, added) = WorkspaceSeriesChangeMerger.CollectCandidates(series, evidence, meta.Id.ToString("D"));
+        workspace = workspace.WithSeries(updated);
+        SaveWorkspace();
+        RefreshSeries();
+        SelectedSeries = SeriesRows.FirstOrDefault(item => item.Id == selected.Id);
+        SetStatus(added.Count == 0
+            ? UiText.T("没有新的已核实决定或行动。")
+            : UiText.Format("已把 %lld 条决定/行动加入待复核。", added.Count));
     }
 
     partial void OnSelectedSeriesChanged(SeriesRow? value)
@@ -143,14 +193,64 @@ public partial class AppState
     private void RefreshSeriesMeetings()
     {
         SeriesMeetings.Clear();
+        SeriesRecords.Clear();
         if (SelectedSeries is { } row && workspace.Find(row.Id) is { } series)
         {
             foreach (var id in series.SessionIds)
             {
                 var meeting = History.FirstOrDefault(item => item.Meta.Id.ToString() == id);
-                if (meeting is not null) SeriesMeetings.Add(meeting);
+                if (meeting is not null) { SeriesMeetings.Add(meeting); SeriesRecords.Add(meeting); }
             }
         }
+        OnPropertyChanged(nameof(HasSeriesRecords));
+        OnPropertyChanged(nameof(SeriesRecordsEmptyText));
+    }
+
+    /// <summary>WorkspaceRecordsTab: this series' meetings, newest first.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<RecentMeetingRow> SeriesRecords { get; } = [];
+    public bool HasSeriesRecords => SeriesRecords.Count > 0;
+    public string SeriesRecordsEmptyText => UiText.T("还没有记录。从这个资料夹开始一场会议，记录和资料会保存在一起。");
+
+    /// <summary>Opens one record in the meeting page (Mac WorkspaceRecordsTab row action).</summary>
+    public async Task OpenSeriesRecordAsync(RecentMeetingRow row)
+    {
+        await SelectHistoryAsync(row.Meta);
+        Section = AppSection.Notes;
+    }
+
+    /// <summary>Collects the current meeting's candidate knowledge into this series (Mac 收集本场候选).</summary>
+    public void CollectKnowledgeCandidates()
+    {
+        if (CurrentSession is not { } meta || SelectedSeries is not { } selected
+            || workspace.Find(selected.Id) is not { } series) return;
+        var summary = LoadCurrentSummaryForCollect();
+        if (summary is null) { SetStatus(UiText.T("这场会议还没有可收集的候选。"), true); return; }
+        var bank = (summary.Bank ?? []).Select(entry => new QuestionBankEntry(entry.Question, entry.Answer)).ToList();
+        var (updated, added) = KnowledgeMerger.CollectCandidates(series, summary.Lessons ?? [], bank,
+            meta.Id.ToString("D"), transcriptSourceRevision: summary.TranscriptSourceRevision);
+        workspace = workspace.WithSeries(updated);
+        SaveWorkspace();
+        RefreshSeries();
+        SelectedSeries = SeriesRows.FirstOrDefault(item => item.Id == selected.Id);
+        SetStatus(added.Count == 0
+            ? UiText.T("没有新的知识候选。")
+            : UiText.Format("已收集 %lld 条知识候选，等待复核。", added.Count));
+    }
+
+    public bool CanCollectKnowledgeCandidates => CurrentSession is not null && SelectedSeries is not null;
+    public string CollectKnowledgeLabel => UiText.T("收集本场候选");
+
+    private SessionSummary? LoadCurrentSummaryForCollect()
+    {
+        if (CurrentSession is not { } meta) return null;
+        try
+        {
+            var path = Path.Combine(Sessions.Folder(meta.Id), "summary.json");
+            if (!File.Exists(path)) return null;
+            return System.Text.Json.JsonSerializer.Deserialize<SessionSummary>(
+                File.ReadAllText(path), JsonDefaults.ArchiveOptions);
+        }
+        catch { return null; }
     }
 
     /// <summary>The current series' lessons, for the list in the series page.</summary>
@@ -180,7 +280,7 @@ public partial class AppState
         if (SelectedSeries is { } row && workspace.Find(row.Id) is { } series)
         {
             foreach (var lesson in series.Lessons.Reverse()) SeriesLessons.Add(lesson);
-            foreach (var candidate in series.PendingCandidates) SeriesCandidates.Add(new KnowledgeCandidateRow(candidate));
+            foreach (var candidate in series.PendingCandidates) SeriesCandidates.Add(new KnowledgeCandidateRow(candidate, series));
             foreach (var item in (series.QuestionBank ?? [])
                          .OrderByDescending(item => item.TimesAsked)
                          .ThenByDescending(item => item.UpdatedAt))
@@ -421,6 +521,9 @@ public partial class AppState
     }
 
     public IReadOnlyList<RecentMeetingRow> SeriesMeetingRows => SeriesMeetings;
+
+    /// <summary>Reloads the knowledge lists now (the review self-check drives them directly).</summary>
+    public void RefreshSeriesLessonsForCheck() => RefreshSeriesLessons();
 }
 
 

@@ -26,6 +26,9 @@ public sealed record MaterialDocument
     public string Reader { get; init; } = "windows-basic-v1";
     public List<DocumentBlock> Blocks { get; init; } = [];
     public List<string> Warnings { get; init; } = [];
+    /// <summary>E21: warnings that need the user to look (the quiet page-image note does not).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool NeedsReview => DocumentNotice.Warnings(Warnings).Count > 0;
     public override string ToString() => $"{Name} · {Blocks.Count} 段";
 }
 
