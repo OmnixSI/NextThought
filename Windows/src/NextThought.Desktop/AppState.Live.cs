@@ -10,7 +10,7 @@ public partial class AppState
         ? Recording ? $"Recording · {currentLines.Count} lines" : $"{currentLines.Count} lines · {(CurrentSession?.AnswerCount ?? 0)} answers"
         : Recording ? $"正在记录 · {currentLines.Count} 条转写" : $"{currentLines.Count} 条转写 · {(CurrentSession?.AnswerCount ?? 0)} 条回答";
 
-    partial void OnAnsweringChanged(bool value) { RaiseBusy(); OnPropertyChanged(nameof(CanCancel)); }
+    partial void OnAnsweringChanged(bool value) { RaiseBusy(); OnPropertyChanged(nameof(CanCancel)); PublishCompanionSnapshot(); }
 
     partial void OnDetectedQuestionChanged(string value)
     {

@@ -1,3 +1,8 @@
+## 2026-11-21 · 0.5.145 · F10/F11
+改动：回答开始/结束都推送手机伴侣快照（`OnAnsweringChanged` 调用 `PublishCompanionSnapshot`）；F10/F11 的既有实现（动作去重立即应答、Position/AnswerID/Phase、regenerate 区分）核对后补状态。
+测试：Core **1526/1526**，NextThought.Tests **271/271**。
+状态：F10、F11「已实现、未验证」；均需手机实机确认。
+
 ## 2026-11-21 · 0.5.145 · F8
 改动：文件转写总时限 30 分钟；超时/连接中断在无转写时给明确提示；已收到 final 后断连不再误报；任意多声道路文件逐帧混为单声道；新增三声道 WAV 测试。
 测试：Core **1526/1526**，NextThought.Tests **271/271**。
