@@ -313,7 +313,7 @@ public partial class AppState
     }
 
     [RelayCommand]
-    private async Task RefreshBackupsAsync()
+    public async Task RefreshBackupsAsync()
     {
         try
         {

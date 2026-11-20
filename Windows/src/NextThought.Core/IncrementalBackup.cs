@@ -14,6 +14,9 @@ public sealed record RestorePoint
     public Dictionary<string, string> Files { get; init; } = [];
 }
 
+/// <summary>E30: one published restore point, for the backup list UI (DataBackup.listBackups).</summary>
+public sealed record RestorePointFile(string Path, DateTimeOffset CreatedAt, string Reason, long Size);
+
 /// <summary>
 /// Content-addressed recovery storage (port of IncrementalBackupStore.swift). A published
 /// manifest is a commit: objects are durable and verified before it appears, and pruning only
@@ -142,6 +145,26 @@ public sealed class IncrementalBackupStore
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             File.WriteAllBytes(file, File.ReadAllBytes(Path.Combine(Objects, hash)));
         }
+    }
+
+    /// <summary>E30: the recovery points this store owns, newest first (DataBackup.listBackups).</summary>
+    public IReadOnlyList<RestorePointFile> List() => Manifests()
+        .Select(entry => new RestorePointFile(entry.Path, entry.Point.CreatedAt, entry.Point.Reason,
+            File.Exists(entry.Path) ? new FileInfo(entry.Path).Length : 0))
+        .ToList();
+
+    /// <summary>
+    /// E30: deletes one published recovery point and then collects objects no other point refers to.
+    /// Unreadable manifests keep their objects protected by <see cref="Prune"/>.
+    /// </summary>
+    public void Delete(string url)
+    {
+        var full = Path.GetFullPath(url);
+        var directory = Path.GetFullPath(Path.GetDirectoryName(full) ?? "");
+        if (!string.Equals(directory, Path.GetFullPath(Points), StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("恢复点不属于这个备份库。");
+        if (File.Exists(full)) File.Delete(full);
+        Prune(int.MaxValue, long.MaxValue);
     }
 
     private void Verify(RestorePoint point)

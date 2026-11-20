@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
+             xmlns:views="using:NextThought.Desktop.Views"
              xmlns:platform="using:NextThought.Platform"
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
@@ -456,13 +457,8 @@
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 数据与关于}" Classes="section" />
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <Button Content="{loc:Tr 导出备份}" Command="{Binding BackupCommand}" />
-            <Button Content="{loc:Tr 导入备份}" Command="{Binding RestoreCommand}" />
-            <Button Content="{loc:Tr 打开数据目录}" Command="{Binding OpenDataCommand}" />
-          </StackPanel>
-          <TextBlock Text="{loc:Tr .ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。}"
-                     Classes="caption" FontSize="11" />
+          <!-- E30: 备份与恢复 (自动备份、恢复点列表、导入与恢复预览) -->
+          <views:BackupSettingsSection />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
             <StackPanel Spacing="{DynamicResource D4Spacing_4}">
               <TextBlock Text="{Binding VersionText}" Classes="overline" />
