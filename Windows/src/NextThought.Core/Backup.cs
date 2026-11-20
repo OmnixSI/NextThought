@@ -52,7 +52,7 @@ public static partial class BackupMerge
         var kept = 0;
         foreach (var template in incoming.Where(template => !template.IsBuiltIn))
         {
-            var index = result.FindIndex(current => current.Id == template.Id);
+            var index = result.FindIndex(current => SameId(current.Id, template.Id));
             if (index >= 0)
             {
                 if (result[index] == template) continue;
@@ -85,6 +85,12 @@ public static partial class BackupMerge
         return result;
     }
 
+    /// <summary>A6: identifiers compare as GUIDs, so Mac's upper-case rewrite is the same series.</summary>
+    private static bool SameId(string left, string right) =>
+        Guid.TryParse(left, out var leftId) && Guid.TryParse(right, out var rightId)
+            ? leftId == rightId
+            : string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+
     public sealed record WorkspaceResult(IReadOnlyList<WorkspaceSeries> Merged, int Added, int Updated, int Skipped);
 
     /// <summary>
@@ -99,7 +105,7 @@ public static partial class BackupMerge
         var skipped = 0;
         foreach (var item in incoming)
         {
-            var index = merged.FindIndex(current => current.Id == item.Id);
+            var index = merged.FindIndex(current => SameId(current.Id, item.Id));
             if (index < 0)
             {
                 var name = item.Name;

@@ -55,6 +55,7 @@ public partial class AppState
         {
             var parsed = SkillStore.ParseText(SkillsText);
             skillStore ??= new SkillStore(Paths.Root);
+            parsed = SkillStore.PreserveIdentity(parsed, skills);
             skillStore.Save(parsed);
             skills = parsed;
             RefreshSkillRows();

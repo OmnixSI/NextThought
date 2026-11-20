@@ -71,6 +71,31 @@ public sealed class NotesTemplateStore
             "## " + template.Name + "\n" + string.Join("\n", template.Sections.Select(section =>
                 "### " + section.Title + "\n" + section.Instruction))));
 
+    /// <summary>A10: editing the Markdown keeps the template id/base and each section's extra fields.</summary>
+    public static IReadOnlyList<NotesTemplate> PreserveIdentity(
+        IReadOnlyList<NotesTemplate> edited, IReadOnlyList<NotesTemplate> existing)
+    {
+        var result = new List<NotesTemplate>();
+        foreach (var template in edited)
+        {
+            var match = existing.FirstOrDefault(candidate =>
+                candidate.Id == template.Id || string.Equals(candidate.Name, template.Name, StringComparison.Ordinal));
+            if (match is null) { result.Add(template); continue; }
+            var sections = template.Sections.Select((section, index) => index < match.Sections.Count
+                ? section with
+                {
+                    Id = match.Sections[index].Id,
+                    Kind = match.Sections[index].Kind,
+                    IsGap = match.Sections[index].IsGap,
+                    Carry = match.Sections[index].Carry,
+                    CarryPrefix = match.Sections[index].CarryPrefix
+                }
+                : section).ToList();
+            result.Add(template with { Id = match.Id, Base = match.Base, Sections = sections });
+        }
+        return result;
+    }
+
     public void Save(IReadOnlyList<NotesTemplate> templates)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

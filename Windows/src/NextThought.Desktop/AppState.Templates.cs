@@ -79,9 +79,10 @@ public partial class AppState
         try
         {
             var imported = NotesTemplateStore.ParseText(CustomTemplateText);
+            templateStore ??= new NotesTemplateStore(Paths.Root);
+            imported = NotesTemplateStore.PreserveIdentity(imported, templateStore.Load());
             foreach (var choice in TemplateChoices.Where(choice => choice.Kind is null).ToList()) TemplateChoices.Remove(choice);
             foreach (var template in imported) TemplateChoices.Add(new NotesTemplateChoice(template, null));
-            templateStore ??= new NotesTemplateStore(Paths.Root);
             templateStore.Save(imported);
             CustomTemplateStatus = imported.Count == 0 ? "自定义模板已清空。" : $"已保存 {imported.Count} 个自定义模板。";
             RefreshEditableTemplates();

@@ -11,7 +11,7 @@ public static partial class BackupMerge
         var result = preferred.ToList();
         foreach (var incoming in other)
         {
-            var index = result.FindIndex(lesson => lesson.Id == incoming.Id);
+            var index = result.FindIndex(lesson => SameId(lesson.Id, incoming.Id));
             if (index < 0) { result.Add(incoming); continue; }
             var existing = result[index];
             var existingRevision = Math.Max(1, existing.Revision);
@@ -115,7 +115,7 @@ public static partial class BackupMerge
         var result = preferred.ToList();
         foreach (var incoming in other)
         {
-            var index = result.FindIndex(question => question.Id == incoming.Id);
+            var index = result.FindIndex(question => SameId(question.Id, incoming.Id));
             if (index < 0) { result.Add(incoming); continue; }
             var existing = result[index];
             var existingRevision = existing.AnswerRevision ?? 0;
@@ -179,7 +179,7 @@ public static partial class BackupMerge
         var result = preferred.ToList();
         foreach (var incoming in other)
         {
-            var index = result.FindIndex(candidate => candidate.Id == incoming.Id);
+            var index = result.FindIndex(candidate => SameId(candidate.Id, incoming.Id));
             if (index < 0) { result.Add(incoming); continue; }
             var existing = result[index];
             bool Accepted(WorkspaceKnowledgeCandidate candidate) =>
@@ -207,7 +207,14 @@ public static partial class BackupMerge
         return result;
     }
 
-    private sealed record SeriesItemKey(string ItemId, string SourceId);
+    private sealed record SeriesItemKey(string ItemId, string SourceId)
+    {
+        public bool Equals(SeriesItemKey? other) => other is not null
+            && string.Equals(ItemId, other.ItemId, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(SourceId, other.SourceId, StringComparison.OrdinalIgnoreCase);
+        public override int GetHashCode() => HashCode.Combine(
+            ItemId.ToUpperInvariant(), SourceId.ToUpperInvariant());
+    }
 
     private static Dictionary<SeriesItemKey, bool> SeriesItemSourceTombstones(
         IReadOnlyList<WorkspaceSeries> workspaces, IReadOnlyList<WorkspaceSeriesChangeCandidate> candidates)
@@ -245,7 +252,7 @@ public static partial class BackupMerge
         var result = preferred.ToList();
         foreach (var incoming in other)
         {
-            var index = result.FindIndex(item => item.Id == incoming.Id);
+            var index = result.FindIndex(item => SameId(item.Id, incoming.Id));
             if (index < 0) { result.Add(incoming); continue; }
             var existing = result[index];
             var existingKey = new SeriesItemKey(existing.Id, existing.SourceSessionId);
@@ -377,7 +384,7 @@ public static partial class BackupMerge
         var result = preferred.ToList();
         foreach (var incoming in other)
         {
-            var index = result.FindIndex(candidate => candidate.Id == incoming.Id);
+            var index = result.FindIndex(candidate => SameId(candidate.Id, incoming.Id));
             if (index < 0)
             {
                 result.Add(incoming.SourceMissing ? TombstoneCandidate(incoming) : incoming);

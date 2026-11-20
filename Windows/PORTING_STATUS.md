@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · A6/A10
+改动：标识统一按 GUID 比较，系列文件写大写 UUID，资料标识默认大写带连字符；技能/模板文本编辑保留原标识、导入时间、base/kind/isGap/carry 等字段。
+测试：Core **1516/1516**，NextThought.Tests **258/258**。
+状态：A6、A10「已实现、未验证」；A6 还需完整备份导出→大写→导入实测，A10 需界面实测。
+
 ## 2026-11-20 · 0.5.145 · C5/C9
 改动：提词岛五阶段（Launcher/Cue/Hearing/Listening/Compact）宽度与内容；边框取场景 `SceneTheme` 颜色；展开收起改用 `Motion.morph` 阻尼弹簧逐帧积分。
 测试：Core **1514/1514**，NextThought.Tests **258/258**。

@@ -25,11 +25,11 @@ Nov 20, 2026 · @Homing
 | A3 | 已实现、未验证 | Mac translations 按 id 读取/显示；写出 inputRevision | 待逐元素对照或实机验证 |
 | A4 | 已实现、未验证 | 系列条目历史快照补齐 17 个 Mac 字段 | 待逐元素对照或实机验证 |
 | A5 | 已实现、未验证 | summary 完整、notes.json/structuredAll 读写；有字段级限制 | 待逐元素对照或实机验证 |
-| A6 | 未做 | — | 未开始 |
+| A6 | 已实现、未验证 | 系列/经验/题/候选/系列条目合并改为 `Guid` 规范化比较（`SameId`），`SeriesItemKey` 大小写不敏感；系列文件名写 UUID 大写；`ContextDocument.Id` 默认大写带连字符。新增 `BackupIdentifierCaseTests` 两项：大写 ID 导入不增系列/经验/题、文件名大写 | 尚未用 Windows 导出→全大写→导入的完整备份流程实测；键排序未单独覆盖 |
 | A7 | 未做 | — | 未开始 |
 | A8 | 未做 | — | 未开始 |
 | A9 | 未做 | — | 未开始 |
-| A10 | 未做 | — | 未开始 |
+| A10 | 已实现、未验证 | `SkillStore.PreserveIdentity`：文本编辑后按名称保留原 `Id/ImportedAt/Global/Enabled`；`NotesTemplateStore.PreserveIdentity`：按 Id/名称保留模板 `Id/Base` 与各段 `Id/Kind/IsGap/Carry/CarryPrefix`，只更新段名/说明 | 需在技能与模板文本框实测编辑后系列引用仍有效、其余字段不变 |
 | A11 | 未做 | — | 未开始 |
 | A12 | 未做 | — | 未开始 |
 | A13 | 未做 | — | 未开始 |

@@ -111,7 +111,7 @@ public sealed class SessionModeJsonConverter : System.Text.Json.Serialization.Js
 /// <summary>One imported material of a preset (port of ContextDocument).</summary>
 public sealed record ContextDocument
 {
-    public string Id { get; init; } = Guid.NewGuid().ToString("D");
+    public string Id { get; init; } = Guid.NewGuid().ToString("D").ToUpperInvariant();
     public string Name { get; init; } = "";
     public IReadOnlyList<string> Pages { get; init; } = [];
     public bool Enabled { get; init; } = true;

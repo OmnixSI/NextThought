@@ -82,6 +82,25 @@ public sealed class SkillStore
     }
 
     /// <summary>Human-editable form: "## name", optional "摘要：…", then Markdown until the next "##".</summary>
+    /// <summary>A10: a text edit keeps the old id, import time and switches for the same skill.</summary>
+    public static IReadOnlyList<Skill> PreserveIdentity(IReadOnlyList<Skill> edited, IReadOnlyList<Skill> existing)
+    {
+        var result = new List<Skill>();
+        var pool = existing.ToList();
+        foreach (var skill in edited)
+        {
+            var match = pool.FirstOrDefault(candidate => string.Equals(candidate.Name, skill.Name, StringComparison.Ordinal))
+                        ?? (result.Count < existing.Count ? existing[result.Count] : null);
+            if (match is not null)
+            {
+                pool.Remove(match);
+                result.Add(skill with { Id = match.Id, ImportedAt = match.ImportedAt, Global = match.Global, Enabled = match.Enabled });
+            }
+            else result.Add(skill);
+        }
+        return result;
+    }
+
     public static IReadOnlyList<Skill> ParseText(string text)
     {
         var skills = new List<Skill>();
