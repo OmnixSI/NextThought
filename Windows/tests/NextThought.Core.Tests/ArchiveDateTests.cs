@@ -30,6 +30,26 @@ public sealed class ArchiveDateTests : IDisposable
         AssertArchiveDate(JsonSerializer.Serialize(payload, JsonDefaults.ArchiveOptions), "generatedAt");
     }
 
+
+    [Fact]
+    public void MacEditedSummaryFieldsSurviveUserContentRoundTrip()
+    {
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, SessionUserContent.FileName);
+        File.WriteAllText(path, """
+        {"schemaVersion":1,"revision":2,"updatedAt":"2026-11-20T00:00:00Z","personalNotes":"",
+         "editedSummary":{"markdown":"m","title":"Mac 标题","questions":[{"text":"q"}],"model":"mac-model","unknown":{"x":1}}}
+        """);
+        var loaded = SessionUserContentStore.Load(directory);
+        Assert.NotNull(loaded.EditedSummary);
+        SessionUserContentStore.Save(loaded, directory);
+        var saved = File.ReadAllText(path);
+        Assert.Contains("\"title\": \"Mac 标题\"", saved);
+        Assert.Contains("\"questions\"", saved);
+        Assert.Contains("\"model\": \"mac-model\"", saved);
+        Assert.Contains("\"unknown\"", saved);
+    }
+
     private static void AssertArchiveDate(string json, string property)
     {
         var match = Regex.Match(json, "\"" + property + "\"\\s*:\\s*\"([^\"]+)\"");

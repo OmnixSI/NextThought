@@ -11,6 +11,13 @@ public sealed record SessionSummary
     public string Markdown { get; init; } = "";
     public StructuredNotesPayload? Structured { get; init; }
     public DateTimeOffset? GeneratedAt { get; init; }
+
+    /// <summary>
+    /// Mac's SessionSummary also carries title/questions/model. Keep every unknown field so a
+    /// Mac-authored editedSummary survives a Windows read/write cycle.
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; init; }
 }
 
 /// <summary>Missing status in an old answer means it finished; unknown future statuses stay incomplete.</summary>
