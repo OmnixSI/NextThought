@@ -21,6 +21,17 @@ public partial class AppState
         }).ContinueWith(task => _ = task.Exception, TaskScheduler.Default);
     }
 
+
+    public string BilingualQuestionText
+    {
+        get
+        {
+            if (!NextThought.Core.BilingualAnswer.IsBilingual(AnswerText)) return "";
+            var question = NextThought.Core.BilingualAnswer.Question(AnswerText);
+            return string.IsNullOrWhiteSpace(question) ? "" : "问：" + question;
+        }
+    }
+
     partial void OnAnswerTextChanged(string value)
     {
         OnPropertyChanged(nameof(PlainAnswer));
@@ -28,6 +39,7 @@ public partial class AppState
         OnPropertyChanged(nameof(IslandLines));
         OnPropertyChanged(nameof(IslandHeadline));
         OnPropertyChanged(nameof(IslandDetail));
+        OnPropertyChanged(nameof(BilingualQuestionText));
     }
 
     private DateTimeOffset recordingStartedAt;

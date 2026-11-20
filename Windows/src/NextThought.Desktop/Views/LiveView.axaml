@@ -136,6 +136,8 @@
 
           <StackPanel Grid.Row="1" Margin="{DynamicResource D4Margin_18_0_18_10}" Spacing="{DynamicResource D4Spacing_4}">
             <TextBlock Text="{Binding DetectedQuestion}" Classes="caption" TextWrapping="Wrap" MaxHeight="56" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding BilingualQuestionText}" Classes="caption" Foreground="{DynamicResource Ai}" TextWrapping="Wrap"
+                       IsVisible="{Binding BilingualQuestionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}" Padding="{DynamicResource D4Padding_8_6}"
                     IsVisible="{Binding CandidateQuestion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
               <StackPanel Spacing="{DynamicResource D4Spacing_4}">

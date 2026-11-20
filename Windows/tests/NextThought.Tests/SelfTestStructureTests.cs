@@ -167,6 +167,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LivePageShowsBilingualQuestionGloss()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("BilingualQuestionText", xaml);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("BilingualAnswer.Question", live);
+    }
+
     [Fact]
     public void AnswerLanguageAndGlossAreWired()
     {
