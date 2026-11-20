@@ -80,8 +80,17 @@ public static class CloudSttClient
                 }
             }
         }
-        catch (OperationCanceledException) { }
-        catch (WebSocketException) { }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            // F8: report a timeout instead of silently truncating the recording.
+            if (finals.Count == 0) throw new CloudTranscriptException("云端转写超时，请重试或改用本机识别。");
+        }
+        catch (WebSocketException)
+        {
+            // A provider may drop the socket right after the final message; only a failure with
+            // no transcript at all is surfaced to the user.
+            if (finals.Count == 0) throw new CloudTranscriptException("云端转写连接中断，请重试或改用本机识别。");
+        }
 
         if (finals.Count == 0 && lastLive.Trim().Length > 0)
             finals.Add(new CloudTranscriptUpdate(lastLive.Trim(), true, 0, null));
@@ -93,7 +102,8 @@ public static class CloudSttClient
     {
         using var reader = new WaveFileReader(wavPath);
         ISampleProvider samples = reader.ToSampleProvider();
-        if (samples.WaveFormat.Channels == 2) samples = new StereoToMonoSampleProvider(samples);
+        // F8: more than two channels are downmixed instead of being rejected/truncated.
+        if (samples.WaveFormat.Channels > 1) samples = new DownmixSampleProvider(samples, samples.WaveFormat.Channels);
         if (samples.WaveFormat.SampleRate != sampleRate) samples = new WdlResamplingSampleProvider(samples, sampleRate);
         var floats = new float[4096];
         using var output = new MemoryStream();
@@ -110,5 +120,34 @@ public static class CloudSttClient
             }
         }
         return output.ToArray();
+    }
+
+    /// <summary>Average every interleaved channel into one mono frame.</summary>
+    private sealed class DownmixSampleProvider : ISampleProvider
+    {
+        private readonly ISampleProvider source;
+        private readonly int channels;
+        private readonly float[] buffer;
+        public DownmixSampleProvider(ISampleProvider source, int channels)
+        {
+            this.source = source;
+            this.channels = channels;
+            buffer = new float[4096 * channels];
+            WaveFormat = WaveFormat.CreateIeeeFloatWaveFormat(source.WaveFormat.SampleRate, 1);
+        }
+        public WaveFormat WaveFormat { get; }
+        public int Read(float[] destination, int offset, int count)
+        {
+            var frames = Math.Min(count, buffer.Length / channels);
+            var read = source.Read(buffer, 0, frames * channels);
+            var completed = read / channels;
+            for (var frame = 0; frame < completed; frame++)
+            {
+                var sum = 0f;
+                for (var channel = 0; channel < channels; channel++) sum += buffer[frame * channels + channel];
+                destination[offset + frame] = sum / channels;
+            }
+            return completed;
+        }
     }
 }
