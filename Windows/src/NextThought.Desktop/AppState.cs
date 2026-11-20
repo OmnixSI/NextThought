@@ -165,6 +165,8 @@ public partial class AppState : ObservableObject
             LoadMyVoice();
             RaiseOnboardingStep();
             OnPropertyChanged(nameof(OnboardingVoiceStatus));
+            OnPropertyChanged(nameof(SetupChecklistRows));
+            RaiseOnboardingResume();
             StartScreenWatchTimer();
             _ = RefreshHistoryAsync();
             RefreshSeries();

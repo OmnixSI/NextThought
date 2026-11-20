@@ -232,6 +232,15 @@ public sealed record AppSettings
     /// <summary>E3: last app version whose onboarding guide was completed.</summary>
     public string OnboardingCompletedVersion { get; set; } = "";
 
+    /// <summary>E1: app version for which 稍后继续 deferred the first-run guide.</summary>
+    public string OnboardingDeferredVersion { get; set; } = "";
+
+    /// <summary>E1: app version for which the home resume row was dismissed.</summary>
+    public string OnboardingDismissedVersion { get; set; } = "";
+
+    /// <summary>E1: the guide step 稍后继续 stopped on (0..3).</summary>
+    public int OnboardingDeferredStep { get; set; }
+
     /// <summary>E26: per-scene defaults, keyed by MeetingMode name.</summary>
     public Dictionary<string, SceneDefaults> SceneDefaults { get; set; } = [];
 

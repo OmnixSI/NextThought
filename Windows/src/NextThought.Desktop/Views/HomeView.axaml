@@ -18,6 +18,19 @@
           <TextBlock Text="{Binding HomeQuestion}" Classes="hero" Foreground="{DynamicResource Tertiary}" Opacity="0.75" />
         </StackPanel>
         <home:OnboardingResumeRow />
+        <!-- E1: Mac interruptedNotice row: 上次会议被中断，已保存到所有记录。 -->
+        <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource RadiusSmall}"
+                Padding="{DynamicResource D4Padding_12_6}" Margin="{DynamicResource D4Margin_0_10_0_0}"
+                IsVisible="{Binding HasInterruptedNotice}">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}"
+                       FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding InterruptedNotice}" Classes="caption" VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
+            <Button Grid.Column="2" Classes="quiet" Content="{loc:Tr 查看}" Command="{Binding ReviewInterruptedCommand}" />
+            <Button Grid.Column="3" Classes="quiet" Content="{loc:Tr 知道了}" Command="{Binding DismissInterruptedNoticeCommand}" />
+          </Grid>
+        </Border>
         <home:StartComposer Margin="{DynamicResource D4Margin_0_32_0_0}" />
         <home:ContinueSeries Margin="{DynamicResource D4Margin_0_48_0_0}" />
         <home:HomeScreenshotCard Margin="{DynamicResource D4Margin_0_24_0_0}" />

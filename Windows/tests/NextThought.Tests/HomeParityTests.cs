@@ -155,8 +155,10 @@ public sealed class HomeParityTests
         Assert.Contains("{Binding OnboardingResumeVisible}", row);
         Assert.Contains("{Binding OnboardingResumeLine}", row);
         Assert.Contains("IconXmark", row);
+        // E3 moved the first-run resume row to its own partial; the E1 demo refresh stays in Home.
+        var resume = Read("AppState.OnboardingResume.cs");
+        Assert.Contains("OnboardingResumeVisible", resume);
         var state = Read("AppState.Home.cs");
-        Assert.Contains("OnboardingResumeVisible", state);
         Assert.Contains("RefreshHome()", state);
         Assert.Contains("RefreshHome();", Read("AppState.Demo.cs"));
     }

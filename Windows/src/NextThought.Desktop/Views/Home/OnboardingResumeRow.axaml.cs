@@ -12,7 +12,7 @@ public partial class OnboardingResumeRow : UserControl
     public OnboardingResumeRow() => InitializeComponent();
 
     private void Resume_Click(object? sender, RoutedEventArgs e) =>
-        (DataContext as AppState)?.ResumeOnboarding();
+        (DataContext as AppState)?.OpenDeferredOnboarding();
 
     private void Dismiss_Click(object? sender, RoutedEventArgs e) =>
         (DataContext as AppState)?.DismissOnboardingResume();

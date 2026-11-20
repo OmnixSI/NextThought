@@ -343,6 +343,7 @@ public partial class AppState
                 ? (UiText.EnglishUi ? "New meeting" : "新会议")
                 : Settings.LastMeetingTitle;
             var recovered = await Sessions.RecoverInterruptedAsync();
+            SetInterruptedNotice(recovered.Count);
             Mark("recover");
             RefreshHistory();
             LoadWorkspace();
