@@ -45,6 +45,31 @@ public static class WorkspaceArchiveOwnership
         return archived;
     }
 
+    /// <summary>B22: series-level repair with inline ContextDocument.pages fallback.</summary>
+    public static WorkspaceSeries Repair(WorkspaceSeries series, string dataRoot)
+    {
+        if (series.Documents.Count == 0) return series;
+        var owner = Path.Combine(Path.GetFullPath(dataRoot), "Materials", SafeName(series.Id));
+        Directory.CreateDirectory(owner);
+        var documents = new List<ContextDocument>();
+        foreach (var document in series.Documents)
+        {
+            var target = Path.Combine(owner, SafeName(document.Id) + ".md");
+            if (!File.Exists(target))
+            {
+                string text;
+                if (document.MarkdownPath is { Length: > 0 } source
+                    && File.Exists(Path.Combine(Path.GetFullPath(dataRoot), source)))
+                    text = File.ReadAllText(Path.Combine(Path.GetFullPath(dataRoot), source));
+                else
+                    text = string.Join("\n\n", document.Pages);
+                WriteAtomic(target, Encoding.UTF8.GetBytes(text));
+            }
+            documents.Add(document with { MarkdownPath = Path.GetRelativePath(Path.GetFullPath(dataRoot), target) });
+        }
+        return series with { Documents = documents };
+    }
+
     /// <summary>
     /// Writes the owned Markdown paths back onto the series documents, so reopening the series
     /// reads the archived copy instead of re-extracting the original.

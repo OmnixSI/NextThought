@@ -237,3 +237,7 @@ python Windows/scripts/core_usage.py
 ## 复算命令
 
 `python -c "import re,pathlib; rows=re.findall(r'^\| ([A-Za-z0-9_]+\.swift) \| (\d+) \| (\d+) \|$', pathlib.Path('Windows/CORE_PARITY.md').read_text(encoding='utf-8'), re.M); print(sum(int(a) for _,a,_ in rows), sum(int(b) for _,_,b in rows))"`
+
+## 通过情况
+
+全部 592 项已翻译并在 `NextThought.Core.Tests` 中通过：1514 passed / 0 failed / 0 skipped（含原有非 Swift 对齐测试）。

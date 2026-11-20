@@ -63,47 +63,162 @@ public sealed class ProductArchiveUXTestsParityTests
         try { Directory.Delete(directory, recursive: true); } catch { }
     }
 
-    [Fact(Skip = "missing API: SessionSearch(root:cacheLimit:) disk snapshot search (search(ids:terms:revision:), cachedByteCount)")]
-    public void SearchCoversMoreThanOneThousandAndEvictionDoesNotLimitCoverage()
+    [Fact]
+    public async Task SearchCoversMoreThanOneThousandAndEvictionDoesNotLimitCoverage()
     {
-        // Source: 1005 session folders with transcript.jsonl (one special line at index 1004) and an
-        // invalid context.json that search must never decode; SessionSearch(root:cacheLimit: 1024)
-        // then expects checked == 1005, unreadable == 0, a hit for the last id, cachedByteCount <= 1024.
+        var root = TemporaryRoot();
+        try
+        {
+            var ids = new List<Guid>();
+            for (var index = 0; index < 1005; index++)
+            {
+                var id = Guid.NewGuid();
+                ids.Add(id);
+                var folder = Path.Combine(root, id.ToString("D"));
+                Directory.CreateDirectory(folder);
+                var line = new TranscriptLine
+                {
+                    Date = DateTimeOffset.UtcNow, Speaker = "remote",
+                    Text = index == 1004 ? "\u7EC4\u4F1A\u8BA8\u8BBA\u7A00\u758F\u6CE8\u610F\u529B" : "\u7B2C " + index + " \u573A\u666E\u901A\u8BB0\u5F55"
+                };
+                File.WriteAllBytes(Path.Combine(folder, "transcript.jsonl"), JSONLines.Line(line));
+                File.WriteAllText(Path.Combine(folder, "context.json"), "not a valid context");
+            }
+            var search = new DiskSessionSearch(root, 1024);
+            var result = await search.SearchAsync(ids, new Glossary().Search("\u7A00\u758F\u6CE8\u610F\u529B"), 0);
+            Assert.Equal(1005, result.Checked);
+            Assert.Equal(0, result.Unreadable);
+            Assert.NotNull(result.Hits[ids[^1]]);
+            Assert.True(search.CachedByteCount <= 1024);
+        }
+        finally { TryDelete(root); }
     }
 
-    [Fact(Skip = "missing API: SessionSearch(root:cacheLimit:) search(ids:terms:revision:) and SessionSearchSnapshot(meta:lines:questions:answers:notes:summary:user:)")]
-    public void SavedUserNotesRefreshAndCarryExactTargets()
+    [Fact]
+    public async Task SavedUserNotesRefreshAndCarryExactTargets()
     {
-        // Source: a transcript hit has target .transcript(lineID); after user-content.json gains
-        // personalNotes "下周补做消融实验" (revision 1) the hit is .personalNotes; revision 2 renames the
-        // note so the old term finds nothing; a corrupted file makes unreadable == 1.
+        var root = TemporaryRoot();
+        try
+        {
+            var id = Guid.NewGuid();
+            var lineId = Guid.NewGuid();
+            var folder = Path.Combine(root, id.ToString("D"));
+            Directory.CreateDirectory(folder);
+            var line = new TranscriptLine { Id = lineId, Date = DateTimeOffset.UtcNow, Speaker = "remote", Text = "\u6A21\u578B\u5BF9\u6BD4\u5B9E\u9A8C" };
+            File.WriteAllBytes(Path.Combine(folder, "transcript.jsonl"), JSONLines.Line(line));
+            var search = new DiskSessionSearch(root);
+            var first = await search.SearchAsync([id], new Glossary().Search("\u6A21\u578B\u5BF9\u6BD4"), 0);
+            Assert.Equal(new SessionContentTarget.Transcript(lineId), first.Hits[id].Target());
+
+            var user = new SessionUserContent { PersonalNotes = "\u4E0B\u5468\u8865\u505A\u6D88\u878D\u5B9E\u9A8C", Revision = 1 };
+            File.WriteAllBytes(Path.Combine(folder, SessionUserContent.FileName), JSONLines.Line(user));
+            var next = await search.SearchAsync([id], new Glossary().Search("\u6D88\u878D\u5B9E\u9A8C"), 1);
+            Assert.Equal(new SessionContentTarget.PersonalNotes(), next.Hits[id].Target());
+
+            user = user with { PersonalNotes = "\u4E0B\u5468\u8865\u505A\u7A33\u5065\u6027\u5B9E\u9A8C", Revision = 2 };
+            File.WriteAllBytes(Path.Combine(folder, SessionUserContent.FileName), JSONLines.Line(user));
+            var removed = await search.SearchAsync([id], new Glossary().Search("\u6D88\u878D\u5B9E\u9A8C"), 2);
+            Assert.Empty(removed.Hits);
+
+            File.WriteAllText(Path.Combine(folder, SessionUserContent.FileName), "broken");
+            var corrupted = await search.SearchAsync([id], new Glossary().Search("\u6A21\u578B"), 3);
+            Assert.Equal(1, corrupted.Unreadable);
+        }
+        finally { TryDelete(root); }
     }
 
-    [Fact(Skip = "missing API: SessionSearchSnapshot(meta:lines:questions:answers:notes:summary:user:) — the latest event per answer request is collapsed there")]
+    [Fact]
     public void SearchUsesTheLatestEventForEachAnswerRequest()
     {
-        // Source: two SessionAnswerEvent values share one id (interrupted old text, then a complete
-        // answer). Old answer/web text must not be found, the final text hits .answer(id), and
-        // snapshot.fields has exactly one .answer field. The Windows snapshot carries fields only;
-        // no initializer collapses answer events.
+        var id = Guid.NewGuid();
+        var partial = new SessionAnswerEvent
+        {
+            Id = id.ToString("D"), Date = DateTimeOffset.UtcNow, Question = "\u5B9E\u9A8C\u7ED3\u8BBA\u662F\u4EC0\u4E48",
+            Answer = "\u65E7\u7247\u6BB5\u72EC\u6709\u63AA\u8F9E", Model = "test",
+            WebAnswer = "\u65E7\u8054\u7F51\u7247\u6BB5\u72EC\u6709\u63AA\u8F9E", Completion = AnswerCompletion.Interrupted
+        };
+        var complete = new SessionAnswerEvent
+        {
+            Id = id.ToString("D"), Date = DateTimeOffset.UtcNow, Question = "\u5B9E\u9A8C\u7ED3\u8BBA\u662F\u4EC0\u4E48",
+            Answer = "\u6700\u7EC8\u5B8C\u6574\u5B9E\u9A8C\u7ED3\u8BBA", Model = "test", Completion = AnswerCompletion.Complete
+        };
+        var snapshot = SessionSearchSnapshotBuilder.Create([], [], [partial, complete], null, null);
+        Assert.Null(SessionContentSearch.FirstHit(snapshot.Fields, new Glossary().Search("\u65E7\u7247\u6BB5\u72EC\u6709\u63AA\u8F9E")));
+        Assert.Null(SessionContentSearch.FirstHit(snapshot.Fields, new Glossary().Search("\u65E7\u8054\u7F51\u7247\u6BB5\u72EC\u6709\u63AA\u8F9E")));
+        var hit = SessionContentSearch.FirstHit(snapshot.Fields, new Glossary().Search("\u6700\u7EC8\u5B8C\u6574\u5B9E\u9A8C\u7ED3\u8BBA"));
+        Assert.Equal(new SessionContentTarget.Answer(id), hit?.Target());
+        Assert.Single(snapshot.Fields.Where(field => field.Kind == SessionSearchFieldKind.Answer));
     }
 
-    [Fact(Skip = "missing API: SessionSearchSnapshot(meta:lines:questions:answers:notes:summary:user:) with effective summary and edited Markdown")]
+    [Fact]
     public void SearchUsesEditedSummaryMarkdownAndStructuredPayload()
     {
-        // Source: generated summary/structured notes and user.editedMarkdown must not be searchable;
-        // user.editedSummary Markdown and its structured outline payload must be (kind .notes).
-        // The Windows snapshot carries fields only; SessionUserContent never feeds it.
+        var date = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+        var generatedPayload = new StructuredNotesPayload(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("AI\u539F\u7ED3\u6784\u56FE", null,
+                [new OutlinePoint("AI\u65E7\u7ED3\u6784\u56FE\u72EC\u6709\u5185\u5BB9")])]));
+        var editedPayload = new StructuredNotesPayload(NotesFormat.Outline,
+            outline: new OutlineNotes([new OutlineSection("\u4EBA\u5DE5\u4FEE\u8BA2\u7ED3\u6784\u56FE", null,
+                [new OutlinePoint("\u4EBA\u5DE5\u7ED3\u6784\u56FE\u72EC\u6709\u5185\u5BB9")])]));
+        var generated = new SessionSummary
+        {
+            Title = "AI\u539F\u6458\u8981", Markdown = "AI\u65E7\u7EAA\u8981\u72EC\u6709\u5185\u5BB9", Questions = [],
+            GeneratedAt = date, Model = "test", Structured = generatedPayload, StructuredAll = [generatedPayload]
+        };
+        var user = new SessionUserContent
+        {
+            EditedMarkdown = "\u65E7\u7248\u4EBA\u5DE5\u6587\u672C\u72EC\u6709\u5185\u5BB9",
+            EditedSummary = new SessionSummary
+            {
+                Title = "\u4EBA\u5DE5\u4FEE\u8BA2\u6458\u8981", Markdown = "\u4EBA\u5DE5\u7EAA\u8981\u72EC\u6709\u5185\u5BB9",
+                Questions = [], GeneratedAt = date, Model = "test",
+                Structured = editedPayload, StructuredAll = [editedPayload]
+            }
+        };
+        var snapshot = SessionSearchSnapshotBuilder.Create([], [], [], null, generated, user);
+        foreach (var text in new[] { "\u4EBA\u5DE5\u7EAA\u8981\u72EC\u6709\u5185\u5BB9", "\u4EBA\u5DE5\u7ED3\u6784\u56FE\u72EC\u6709\u5185\u5BB9" })
+            Assert.Equal(SessionSearchFieldKind.Notes,
+                SessionContentSearch.FirstHit(snapshot.Fields, new Glossary().Search(text))?.Kind);
+        foreach (var text in new[] { "AI\u65E7\u7EAA\u8981\u72EC\u6709\u5185\u5BB9", "AI\u65E7\u7ED3\u6784\u56FE\u72EC\u6709\u5185\u5BB9", "\u65E7\u7248\u4EBA\u5DE5\u6587\u672C\u72EC\u6709\u5185\u5BB9" })
+            Assert.Null(SessionContentSearch.FirstHit(snapshot.Fields, new Glossary().Search(text)));
     }
 
-    [Fact(Skip = "missing API: WorkspaceArchiveOwnership.repair(Workspace, dataRoot:) with inline ContextDocument.pages fallback")]
+    [Fact]
     public void OldCopiedProjectOwnsArchivesBeforeOriginalIsDeleted()
     {
-        // Source: a copied Workspace whose document still points at the original's
-        // Materials/<originalID>/paper.md gets its own Materials/<copyID>/<documentID>.md, keeps
-        // updatedAt, reuses the extracted text, stays idempotent, and materializes the inline pages
-        // when the original archive is missing. The port only repairs a series from MaterialDocument
-        // blocks and returns WorkspaceArchivedDocument values.
+        var root = TemporaryRoot();
+        try
+        {
+            var originalId = Guid.NewGuid();
+            var folder = Path.Combine(root, "Materials", originalId.ToString("D"));
+            Directory.CreateDirectory(folder);
+            File.WriteAllText(Path.Combine(folder, "paper.md"), "\u624B\u5DE5\u6838\u5BF9\u540E\u7684\u63D0\u53D6\u5185\u5BB9");
+            var document = new ContextDocument
+            {
+                Name = "paper.pdf", Pages = ["\u65E7\u7684\u5185\u8054\u5185\u5BB9"],
+                MarkdownPath = Path.Combine("Materials", originalId.ToString("D"), "paper.md")
+            };
+            var copy = new WorkspaceSeries(Guid.NewGuid().ToString("D"), "\u7814\u7A76\u526F\u672C", DateTimeOffset.UtcNow, [], [])
+            {
+                Documents = [document]
+            };
+            var repaired = WorkspaceArchiveOwnership.Repair(copy, root);
+            Assert.Contains(copy.Id, repaired.Documents[0].MarkdownPath);
+            Directory.Delete(folder, true);
+            Assert.Equal("\u624B\u5DE5\u6838\u5BF9\u540E\u7684\u63D0\u53D6\u5185\u5BB9",
+                File.ReadAllText(Path.Combine(root, repaired.Documents[0].MarkdownPath!)));
+            var again = WorkspaceArchiveOwnership.Repair(repaired, root);
+            Assert.Equal(repaired.Documents[0].MarkdownPath, again.Documents[0].MarkdownPath);
+
+            var missing = new WorkspaceSeries(Guid.NewGuid().ToString("D"), "\u65E7\u7248\u8D44\u6599", DateTimeOffset.UtcNow, [], [])
+            {
+                Documents = [document]
+            };
+            var rebuilt = WorkspaceArchiveOwnership.Repair(missing, root);
+            Assert.Equal("\u65E7\u7684\u5185\u8054\u5185\u5BB9",
+                File.ReadAllText(Path.Combine(root, rebuilt.Documents[0].MarkdownPath!)));
+        }
+        finally { TryDelete(root); }
     }
 
     [Fact]
