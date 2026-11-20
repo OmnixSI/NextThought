@@ -167,12 +167,12 @@ python Windows/scripts/core_usage.py
 | AnswerStreamingTests.swift | 17 | 0 |
 | AudioTimelineTests.swift | 10 | 1 |
 | BackupArchivePolicyTests.swift | 1 | 1 |
-| ByteLevelBPETokenizerTests.swift | 4 | 0 |
+| ByteLevelBPETokenizerTests.swift | 4 | 4 |
 | CancellableTaskValueTests.swift | 2 | 2 |
 | CloudTranscriptionTests.swift | 9 | 0 |
 | CoachSummaryTests.swift | 5 | 0 |
-| CodexEventParserTests.swift | 4 | 0 |
-| CompanionBLETests.swift | 4 | 0 |
+| CodexEventParserTests.swift | 4 | 4 |
+| CompanionBLETests.swift | 4 | 4 |
 | CompanionCryptoTests.swift | 2 | 0 |
 | DocumentDependencyTests.swift | 2 | 1 |
 | DocumentFeatureAvailabilityTests.swift | 1 | 1 |
@@ -214,9 +214,9 @@ python Windows/scripts/core_usage.py
 | SessionExportTests.swift | 12 | 0 |
 | SessionRecordTests.swift | 9 | 3 |
 | SessionTextProjectionTests.swift | 8 | 1 |
-| SessionTranscriptLocatorTests.swift | 4 | 3 |
+| SessionTranscriptLocatorTests.swift | 4 | 4 |
 | SessionUserContentTests.swift | 7 | 0 |
-| SkillTests.swift | 4 | 0 |
+| SkillTests.swift | 4 | 4 |
 | SpeakerClusteringTests.swift | 20 | 0 |
 | StabilityTests.swift | 6 | 0 |
 | StructuredNotesTests.swift | 31 | 0 |
