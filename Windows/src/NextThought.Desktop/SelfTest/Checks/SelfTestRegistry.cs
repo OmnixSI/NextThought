@@ -21,8 +21,21 @@ public partial class MainWindow
             ?? throw new ArgumentException("unknown self-test: " + name);
         var output = Path.Combine(Path.GetTempPath(), "nextthought-selftest", normalized);
         Directory.CreateDirectory(Path.GetDirectoryName(output)!);
-        var result = method.Invoke(this, [output]);
-        if (result is Task task) await task;
-        Close();
+        try
+        {
+            var result = method.Invoke(this, [output]);
+            if (result is Task task) await task;
+        }
+        catch (Exception error)
+        {
+            var inner = error is System.Reflection.TargetInvocationException { InnerException: { } cause } ? cause : error;
+            Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+            await File.WriteAllTextAsync(output + ".error.txt", inner.ToString());
+            Console.Error.WriteLine("self-test " + normalized + ": " + inner);
+        }
+        finally
+        {
+            Close();
+        }
     }
 }
