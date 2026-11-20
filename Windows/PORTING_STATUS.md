@@ -1,3 +1,10 @@
+## 2026-11-20 · 0.5.145 · H1（命名入口已打通）
+改动：`Program.Main` 改为调用 `StartupOptions.Parse`（之前被批量替换成了 `SelfTestOptions.Parse`，导致 `StartupOptions.SelfTest` 一直为 null）。
+测试：Core **869/869**，NextThought.Tests **131/131**。
+证据：`--demo --self-test=window-close` 实测 **exit 0**，stdout `window-close-check: passed`，输出 `nextthought-selftest/window-close`。
+状态：H1 **仍未完成**；命名分派已可用，但 65 个旧 `--xxx=` 仍由 SelfTestOptions 解析，尚未删除/合并。
+未解决：旧参数收口；H2 未开始。
+
 ## 2026-11-20 · 0.5.145 · H1（自检文件与入口）
 改动：`SelfTest/MainWindow.SelfTests.cs` 拆成 `Desktop/SelfTest/Checks/` 下 56 个检查文件 + 1 个 GlobalUsings；新增 `SelfTestRegistry`，按 `--self-test <名字>` 反射调用对应 `Run*CheckAsync`；MainWindow 仍是 258 行，StartupOptions 仍是 23 行三入口。
 测试：Core **869/869**，NextThought.Tests **131/131**；构建 0 警告 0 错误。

@@ -36,7 +36,7 @@ Nov 20, 2026 · @Homing
 | D9 | 已实现、未验证 | 恢复默认 GPU 渲染 |
 | D3 | 已实现、未验证 | 浅/深色 token 部分对齐；逐页截图未做 |
 | A15 | 未做 | MacCodec 包已建；Windows Swift/CryptoKit 阻塞，见 OPEN_QUESTIONS |
-| H1 | 未做 | MainWindow 258 行、56 个检查各一文件、--self-test 入口已写；命名实跑挂起、旧参数仍在 |
+| H1 | 未做 | MainWindow 258 行、56 个检查各一文件、--self-test 已实跑通过；旧参数仍在 |
 
 ## 1. ⽬标与范围 
 
