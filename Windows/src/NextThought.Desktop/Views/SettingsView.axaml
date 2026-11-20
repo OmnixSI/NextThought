@@ -30,7 +30,7 @@
       </Border>
 
       <!-- Sound sources -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorScene" Text="声音来源" Classes="section" />
           <CheckBox Content="系统输出设备混音" IsChecked="{Binding Settings.CaptureSystem}" />
@@ -130,7 +130,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorAdvanced" Text="云端识别（实验）" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
@@ -146,7 +146,7 @@
       </Border>
 
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorGeneral2" Text="全局快捷键（Ctrl+Alt + 按键）" Classes="section" />
           <TextBlock Text="每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。"
@@ -203,7 +203,7 @@
       </Border>
 
       <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAdvanced2" Text="技能（回答时遵守的说明）" Classes="section" />
           <TextBlock Text="每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。"
@@ -412,6 +412,13 @@
                       Click="Notices_Click" />
             </StackPanel>
           </Border>
+        </StackPanel>
+      </Border>
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
+        <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+          <TextBlock Text="各场景的默认设置" Classes="section" />
+          <TextBlock Text="场景级默认值（会中、回答、纪要模板、提词）将在 E26 接入；本页暂不显示可编辑项。"
+                     Classes="caption" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
     </StackPanel>
