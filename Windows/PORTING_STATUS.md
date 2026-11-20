@@ -1,3 +1,12 @@
+## 2026-11-20 · 0.5.145 · F4、F7、G1
+改动：
+- F4 `CloudSttSession.DisposeAsync` 先 `StopAsync()` 发结束消息并等最终结果，再取消。
+- F7 新增 `CloudSttEndpointPolicy`：只接受 `wss://` 且主机为 soniox/openai/deepgram 的地址；`SettingsStore.ReadCloudSttKey` 读失败标记后，空值保存不再删除原密钥。
+- G1 `SettingsViewModel.Build` 带上 `Shortcuts`（`AppState.ShortcutOverrides`），开始/结束录音时保存设置不再把快捷键写成空表。
+测试：Core **869/869**，NextThought.Tests **126/126**（F7 新增 2 项）。
+状态：F4、F7、G1「已实现、未验证」。
+未解决：F1（旧采集管道切换）未做；F4/G1 没有云端实机/录音实机验证。
+
 ## 2026-11-20 · 0.5.145 · C11、C12
 改动：
 - C11 `CueIslandWindow` 和 `SubtitleBarWindow` 拦截 `Closing`，Alt+F4 只隐藏；`AllowClose` 仅在主窗口真正退出时设置；`MainWindow` 在 `Closed` 里清空 `island`/`subtitleBar` 字段；两处岛创建路径都安装处理。
