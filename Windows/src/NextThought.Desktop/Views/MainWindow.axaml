@@ -36,7 +36,12 @@
       <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_142_0}" IsVisible="{Binding !Recording}">
         <TextBlock Text="{Binding PageSubtitle}" Classes="caption" VerticalAlignment="Center" MaxWidth="280"
                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-        <Button Classes="quiet" Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="设置">
+        <Button Classes="quiet" ToolTip.Tip="快速设置">
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <views:QuickSettingsPanel />
+            </Flyout>
+          </Button.Flyout>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
             <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
             <TextBlock Text="设置" VerticalAlignment="Center" />

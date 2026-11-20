@@ -76,6 +76,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void QuickSettingsPanelExists()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "QuickSettingsPanel.axaml"));
+        Assert.Contains("自动回答", xaml);
+        Assert.Contains("提词宽度", xaml);
+        Assert.Contains("全部设置", xaml);
+        var main = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("QuickSettingsPanel", main);
+    }
+
     [Fact]
     public void SceneDefaultsAlsoSetTemplateAndCue()
     {

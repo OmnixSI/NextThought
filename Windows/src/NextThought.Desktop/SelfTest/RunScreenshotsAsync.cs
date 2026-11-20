@@ -56,6 +56,18 @@ public partial class MainWindow
             CaptureVisual(sample, Path.Combine(directory, "controls" + (dark ? "-dark.png" : "-light.png")));
             sample.Close();
         }
+        // Quick settings panel (E26)
+        var quick = new QuickSettingsPanel { DataContext = state };
+        var quickWindow = new Avalonia.Controls.Window
+        {
+            Content = quick,
+            SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
+        };
+        quickWindow.Show();
+        await Task.Delay(250);
+        CaptureVisual(quick, Path.Combine(directory, "quick-settings-light.png"));
+        quickWindow.Close();
+
         // The current island has one implemented visual state; capture it as evidence until C5 adds five.
         state.Recording = true;
         state.DetectedQuestion = NextThought.Desktop.DemoContent.Question;
