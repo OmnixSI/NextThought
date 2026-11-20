@@ -181,3 +181,37 @@ public static class SessionContentSearch
         return char.ToLowerInvariant(value);
     }
 }
+
+/// <summary>B22: a revision key for the archived-search cache; live sessions do not churn it.</summary>
+public sealed class SessionSearchArchiveStamp : IEquatable<SessionSearchArchiveStamp>
+{
+    private readonly string canonical;
+
+    public SessionSearchArchiveStamp(IReadOnlyList<SessionMeta> sessions, string? activeSessionId,
+        IReadOnlyList<string>? pendingTranslationSessionIds = null, long searchableContentRevision = 0)
+    {
+        var pending = (pendingTranslationSessionIds ?? []).ToHashSet(StringComparer.Ordinal);
+        var parts = new List<string> { "v1" };
+        foreach (var session in sessions.OrderBy(session => session.Id))
+        {
+            var live = session.Id.ToString("D") == activeSessionId || pending.Contains(session.Id.ToString("D"));
+            parts.Add(string.Join("\u0000", new[]
+            {
+                session.Id.ToString("D"), session.StartedAt.ToUnixTimeSeconds().ToString(),
+                live ? "" : session.EndedAt?.ToUnixTimeSeconds().ToString() ?? "",
+                session.Mode, live ? "" : session.Title,
+                live ? "" : session.TranscriptCount.ToString(),
+                live ? "" : session.QuestionCount.ToString(),
+                live ? "" : session.AnswerCount.ToString(),
+                live ? "" : session.SummaryState
+            }));
+        }
+        parts.Add("live:" + string.Join(",", pending.Select(id => id).Append(activeSessionId ?? "").Where(id => id.Length > 0).OrderBy(id => id, StringComparer.Ordinal)));
+        parts.Add("revision:" + searchableContentRevision);
+        canonical = string.Join("\n", parts);
+    }
+
+    public bool Equals(SessionSearchArchiveStamp? other) => other is not null && canonical == other.canonical;
+    public override bool Equals(object? obj) => obj is SessionSearchArchiveStamp other && Equals(other);
+    public override int GetHashCode() => canonical.GetHashCode(StringComparison.Ordinal);
+}

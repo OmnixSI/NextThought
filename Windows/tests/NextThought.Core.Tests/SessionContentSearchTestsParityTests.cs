@@ -56,19 +56,57 @@ public sealed class SessionContentSearchTestsParityTests
         Assert.Contains("meeting-501", results[1].Hit.Excerpt);
     }
 
-    [Fact(Skip = "missing API: SessionSearchArchiveStamp")]
+    [Fact]
     public void LiveSessionUpdatesDoNotChangeTheArchiveSearchStamp()
     {
+        var activeId = Guid.NewGuid();
+        var active = new SessionMeta
+        {
+            Id = activeId, StartedAt = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000), Mode = "meeting"
+        };
+        var before = new SessionSearchArchiveStamp([active], activeId.ToString("D"), null, 0);
+
+        active.TranscriptCount += 1;
+        active.QuestionCount += 1;
+        active.AnswerCount += 1;
+        var whileRecording = new SessionSearchArchiveStamp([active], activeId.ToString("D"), null, 0);
+        var afterFinalizing = new SessionSearchArchiveStamp([active], null, null, 0);
+
+        Assert.Equal(before, whileRecording);
+        Assert.NotEqual(afterFinalizing, whileRecording);
     }
 
-    [Fact(Skip = "missing API: SessionSearchArchiveStamp")]
+    [Fact]
     public void SavedArchivedContentChangesTheArchiveSearchStamp()
     {
+        var session = new SessionMeta
+        {
+            StartedAt = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000),
+            EndedAt = DateTimeOffset.FromUnixTimeSeconds(1_800_000_100), Mode = "meeting"
+        };
+        var before = new SessionSearchArchiveStamp([session], null, null, 0);
+        var updated = session with { SummaryState = "ready" };
+        var metadataChange = new SessionSearchArchiveStamp([updated], null, null, 0);
+        var savedContentChange = new SessionSearchArchiveStamp([session], null, null, 1);
+        Assert.NotEqual(metadataChange, before);
+        Assert.NotEqual(savedContentChange, before);
     }
 
-    [Fact(Skip = "missing API: SessionSearchArchiveStamp")]
+    [Fact]
     public void FinalizedSessionStaysOutOfSearchUntilFinalTranslationsDrain()
     {
+        var sessionId = Guid.NewGuid();
+        var active = new SessionMeta
+        {
+            Id = sessionId, StartedAt = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000), Mode = "meeting"
+        };
+        var beforeStop = new SessionSearchArchiveStamp([active], sessionId.ToString("D"), null, 0);
+        var finalized = active with { EndedAt = DateTimeOffset.FromUnixTimeSeconds(1_800_000_100) };
+        var whileTranslationsDrain = new SessionSearchArchiveStamp([finalized], null,
+            [sessionId.ToString("D")], 0);
+        var afterDrain = new SessionSearchArchiveStamp([finalized], null, null, 0);
+        Assert.Equal(beforeStop, whileTranslationsDrain);
+        Assert.NotEqual(afterDrain, whileTranslationsDrain);
     }
 
     [Fact]
