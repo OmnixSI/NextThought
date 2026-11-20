@@ -278,7 +278,18 @@ public sealed class SettingsParityDefaultsTests
         ["answerStyle"] = "detailed",
         ["apiBaseURL"] = "http://127.0.0.1:1234/v1",
         ["apiModel"] = "local-model",
-        ["apiPresets"] = new List<object?> { new Dictionary<string, object?> { ["name"] = "x" } },
+        ["apiPresets"] = new List<object?>
+        {
+            new Dictionary<string, object?>
+            {
+                ["id"] = "11111111-1111-1111-1111-111111111111",
+                ["name"] = "x",
+                ["baseURL"] = "https://x.test/v1",
+                ["model"] = "m",
+                ["effort"] = "low",
+                ["keyAccount"] = "answer.api.11111111-1111-1111-1111-111111111111"
+            }
+        },
         ["apiVisionEnabled"] = true,
         ["appearance"] = "dark",
         ["assistantLayout"] = new Dictionary<string, object?>
