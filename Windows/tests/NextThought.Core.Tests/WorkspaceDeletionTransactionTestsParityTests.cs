@@ -65,14 +65,56 @@ public sealed class WorkspaceDeletionTransactionTestsParityTests
         }
     }
 
-    [Fact(Skip = "missing API: DocumentJobStore (Save, StageWorkspaceDeletion, RestoreWorkspaceDeletionRows, All, WorkspaceDeletionJournals) and WorkspaceDeletionFileStaging.Stage(moves, move:)")]
-    public void InjectedSynchronousMoveFailureRestoresEveryWorkspaceResource()
+    [Fact]
+    public async Task InjectedSynchronousMoveFailureRestoresEveryWorkspaceResource()
     {
-        // Source: five workspace resources (session/material/index archives, workspace record and a
-        // preparation directory) plus a staged job row; the third injected move throws
-        // CocoaError(.fileWriteUnknown). The transaction must fail, not commit, move exactly three
-        // sources, restore every payload and leave no staging root. The Windows port has no journal
-        // store to stage/restore rows and Stage takes no injected mover.
+        var root = Path.Combine(Path.GetTempPath(), "wsdel-" + Guid.NewGuid().ToString("N"));
+        var staging = Path.Combine(root, ".stage");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var names = new[] { "Sessions/session", "Materials/workspace", "Index/workspace", "Workspaces/workspace.json", "Preparation/job" };
+            var sources = names.Select(name => Path.Combine(root, name.Replace('/', Path.DirectorySeparatorChar))).ToList();
+            foreach (var source in sources)
+            {
+                if (source.EndsWith(".json", StringComparison.Ordinal))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(source)!); File.WriteAllText(source, "payload");
+                }
+                else
+                {
+                    Directory.CreateDirectory(source); File.WriteAllText(Path.Combine(source, "payload"), Path.GetFileName(source));
+                }
+            }
+            var moves = WorkspaceDeletionFileStaging.Manifest(sources, staging);
+            var job = DocumentJob.Create(Guid.NewGuid().ToString("D"), "source.pdf");
+            var journal = new WorkspaceDeletionJournal { WorkspaceId = job.WorkspaceId, StagingRoot = staging, Jobs = [job], Moves = moves };
+            DocumentJobStore? store = null;
+            var moved = 0; var committed = false;
+            await Assert.ThrowsAsync<IOException>(async () =>
+                await WorkspaceDeletionTransaction.Execute(
+                    prepare: () => { var opened = new DocumentJobStore(Path.Combine(root, "jobs.sqlite")); opened.Save(job); opened.StageWorkspaceDeletion(journal); store = opened; return Task.FromResult(journal); },
+                    isAuthorized: _ => true,
+                    rollback: _ => { WorkspaceDeletionFileStaging.Rollback(moves, staging); store?.RestoreWorkspaceDeletionRows(journal.TransactionId); return Task.CompletedTask; },
+                    stage: _ =>
+                    {
+                        WorkspaceDeletionFileStaging.Stage(moves, (source, staged) =>
+                        {
+                            if (++moved == 3) throw new IOException("injected");
+                            if (Directory.Exists(source)) Directory.Move(source, staged); else File.Move(source, staged);
+                        });
+                        return Task.CompletedTask;
+                    },
+                    commit: _ => { committed = true; return Task.CompletedTask; }));
+
+            Assert.False(committed);
+            Assert.Equal(3, moved);
+            Assert.Equal([job.Id], store!.All().Select(item => item.Id));
+            Assert.Empty(store.WorkspaceDeletionJournals());
+            foreach (var source in sources) Assert.True(Directory.Exists(source) || File.Exists(source));
+            Assert.False(Directory.Exists(staging));
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
     }
 
     [Fact]
@@ -119,18 +161,66 @@ public sealed class WorkspaceDeletionTransactionTestsParityTests
         }
     }
 
-    [Fact(Skip = "missing API: DocumentJobStore and DocumentJobStore.RecoverWorkspaceDeletionTransactions")]
-    public void RestartRecoveryRestoresQueueRowsAndPartiallyMovedWorkspaceFiles()
+    [Fact]
+    public async Task RestartRecoveryRestoresQueueRowsAndPartiallyMovedWorkspaceFiles()
     {
-        // Source: six workspace resources, a saved job and a staged deletion journal, of which the
-        // first three moves happened before the crash. After RecoverWorkspaceDeletionTransactions a
-        // new store reports the job, no journals, every payload restored and no staging root.
+        var root = Path.Combine(Path.GetTempPath(), "wsdel-" + Guid.NewGuid().ToString("N"));
+        var database = Path.Combine(root, "jobs.sqlite");
+        var staging = Path.Combine(root, ".crash");
+        try
+        {
+            var names = new[] { "Sessions/session", "Materials/workspace", "Index/workspace", "Workspaces/workspace.json", "Preparation/job", "Originals/source.pdf" };
+            var sources = names.Select(name => Path.Combine(root, name.Replace('/', Path.DirectorySeparatorChar))).ToList();
+            foreach (var source in sources)
+            {
+                if (source.EndsWith(".json", StringComparison.Ordinal) || source.EndsWith(".pdf", StringComparison.Ordinal))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(source)!); File.WriteAllText(source, "payload");
+                }
+                else { Directory.CreateDirectory(source); File.WriteAllText(Path.Combine(source, "payload"), "payload"); }
+            }
+            var job = DocumentJob.Create(Guid.NewGuid().ToString("D"), "source.pdf");
+            var journal = new WorkspaceDeletionJournal { WorkspaceId = job.WorkspaceId, StagingRoot = staging, Jobs = [job], Moves = WorkspaceDeletionFileStaging.Manifest(sources, staging) };
+            var store = new DocumentJobStore(database); store.Save(job); store.StageWorkspaceDeletion(journal);
+            Directory.CreateDirectory(staging);
+            foreach (var move in journal.Moves.Take(3))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(move.Staged)!);
+                if (Directory.Exists(move.Source)) Directory.Move(move.Source, move.Staged); else File.Move(move.Source, move.Staged);
+            }
+            DocumentJobStore.RecoverWorkspaceDeletionTransactions(database);
+            var restarted = new DocumentJobStore(database);
+            Assert.Equal([job.Id], restarted.All().Select(item => item.Id));
+            Assert.Empty(restarted.WorkspaceDeletionJournals());
+            foreach (var source in sources) Assert.True(Directory.Exists(source) || File.Exists(source));
+            Assert.False(Directory.Exists(staging));
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
     }
 
-    [Fact(Skip = "missing API: DocumentJobStore.MarkWorkspaceDeletionCommitted and DocumentJobStore.RecoverWorkspaceDeletionTransactions")]
-    public void RestartRecoveryFinishesCommittedDeletionCleanup()
+    [Fact]
+    public async Task RestartRecoveryFinishesCommittedDeletionCleanup()
     {
-        // Source: the deletion was committed after staging the workspace record. Recovery must drop
-        // the job and journal, delete the staged workspace file and remove the staging root.
+        var root = Path.Combine(Path.GetTempPath(), "wsdel-" + Guid.NewGuid().ToString("N"));
+        var database = Path.Combine(root, "jobs.sqlite");
+        var staging = Path.Combine(root, ".committed");
+        var workspace = Path.Combine(root, "Workspaces", "workspace.json");
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(workspace)!); File.WriteAllText(workspace, "workspace");
+            var job = DocumentJob.Create(Guid.NewGuid().ToString("D"), "source.pdf");
+            var moves = WorkspaceDeletionFileStaging.Manifest([workspace], staging);
+            var journal = new WorkspaceDeletionJournal { WorkspaceId = job.WorkspaceId, StagingRoot = staging, Jobs = [job], Moves = moves };
+            var store = new DocumentJobStore(database); store.Save(job); store.StageWorkspaceDeletion(journal);
+            WorkspaceDeletionFileStaging.Stage(moves);
+            DocumentJobStore.MarkWorkspaceDeletionCommitted(journal.TransactionId, database);
+            DocumentJobStore.RecoverWorkspaceDeletionTransactions(database);
+            var restarted = new DocumentJobStore(database);
+            Assert.Empty(restarted.All());
+            Assert.Empty(restarted.WorkspaceDeletionJournals());
+            Assert.False(File.Exists(workspace));
+            Assert.False(Directory.Exists(staging));
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
     }
 }

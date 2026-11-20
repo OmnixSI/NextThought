@@ -18,6 +18,7 @@ public sealed record WorkspaceDeletionJournal
     public PhaseValue Phase { get; init; } = PhaseValue.Staging;
     public string StagingRoot { get; init; } = "";
     public IReadOnlyList<WorkspaceDeletionFileMove> Moves { get; init; } = [];
+    public IReadOnlyList<DocumentJob> Jobs { get; init; } = [];
 }
 
 /// <summary>
@@ -83,7 +84,7 @@ public static class WorkspaceDeletionFileStaging
         }).ToList();
     }
 
-    public static void Stage(IReadOnlyList<WorkspaceDeletionFileMove> moves)
+    public static void Stage(IReadOnlyList<WorkspaceDeletionFileMove> moves, Action<string, string>? mover = null)
     {
         if (moves.Count == 0) return;
         var stagingRoot = Path.GetDirectoryName(moves[0].Staged);
@@ -94,7 +95,7 @@ public static class WorkspaceDeletionFileStaging
             if (!File.Exists(move.Source) && !Directory.Exists(move.Source)) continue;
             var parent = Path.GetDirectoryName(move.Staged);
             if (parent is not null) Directory.CreateDirectory(parent);
-            Move(move.Source, move.Staged);
+            if (mover is null) Move(move.Source, move.Staged); else mover(move.Source, move.Staged);
         }
     }
 
@@ -171,5 +172,92 @@ public static class WorkspaceDeletionTransaction
             await rollback(plan);
             throw;
         }
+    }
+}
+
+/// <summary>B22: durable JSON job store with workspace-deletion journals.</summary>
+public sealed class DocumentJobStore
+{
+    private readonly string directory;
+    private readonly DocumentJobQueue queue;
+    private readonly string journalsPath;
+
+    public DocumentJobStore(string path)
+    {
+        directory = Directory.Exists(path) ? path : Path.GetDirectoryName(path)!;
+        Directory.CreateDirectory(directory!);
+        queue = new DocumentJobQueue(directory);
+        journalsPath = Path.Combine(directory, "workspace-deletions.json");
+    }
+
+    public void Save(DocumentJob job)
+    {
+        if (!queue.Update(job)) queue.Enqueue(job);
+    }
+
+    public IReadOnlyList<DocumentJob> All() => queue.All;
+
+    public void StageWorkspaceDeletion(WorkspaceDeletionJournal journal)
+    {
+        if (journal.Jobs.Count > 0) queue.Delete(journal.Jobs.Select(job => job.Id).ToList());
+        var journals = Journals();
+        journals.Add(journal);
+        WriteJournals(journals);
+    }
+
+    public void RestoreWorkspaceDeletionRows(string transactionId)
+    {
+        var journals = Journals();
+        var journal = journals.FirstOrDefault(entry => entry.TransactionId == transactionId);
+        if (journal is null) return;
+        foreach (var job in journal.Jobs) queue.RestoreDeleted([job]);
+        journals.RemoveAll(entry => entry.TransactionId == transactionId);
+        WriteJournals(journals);
+    }
+
+    public IReadOnlyList<WorkspaceDeletionJournal> WorkspaceDeletionJournals() => Journals();
+
+    public static void MarkWorkspaceDeletionCommitted(string transactionId, string path)
+    {
+        var store = new DocumentJobStore(path);
+        var journals = store.Journals();
+        var index = journals.FindIndex(entry => entry.TransactionId == transactionId);
+        if (index >= 0) journals[index] = journals[index] with { Phase = WorkspaceDeletionJournal.PhaseValue.Committed };
+        store.WriteJournals(journals);
+    }
+
+    public static void RecoverWorkspaceDeletionTransactions(string path)
+    {
+        var store = new DocumentJobStore(path);
+        foreach (var journal in store.Journals())
+        {
+            if (journal.Phase == WorkspaceDeletionJournal.PhaseValue.Staging)
+            {
+                WorkspaceDeletionFileStaging.Rollback(journal.Moves, journal.StagingRoot);
+                foreach (var job in journal.Jobs) store.queue.RestoreDeleted([job]);
+            }
+            else
+            {
+                WorkspaceDeletionFileStaging.RemoveStagedFiles(journal.StagingRoot);
+            }
+        }
+        store.WriteJournals([]);
+    }
+
+    private List<WorkspaceDeletionJournal> Journals()
+    {
+        if (!File.Exists(journalsPath)) return [];
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<WorkspaceDeletionJournal>>(
+                File.ReadAllText(journalsPath), JsonDefaults.Options) ?? [];
+        }
+        catch { return []; }
+    }
+
+    private void WriteJournals(List<WorkspaceDeletionJournal> journals)
+    {
+        if (journals.Count == 0) { if (File.Exists(journalsPath)) File.Delete(journalsPath); return; }
+        File.WriteAllText(journalsPath, System.Text.Json.JsonSerializer.Serialize(journals, JsonDefaults.Options));
     }
 }
