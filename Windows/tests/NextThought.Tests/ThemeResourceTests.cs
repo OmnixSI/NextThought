@@ -28,6 +28,22 @@ public sealed class ThemeResourceTests
         Assert.Contains("<BoxShadows x:Key=\"PaperCardShadow\">0 1 2 0 #66000000", theme);
     }
 
+
+    [Fact]
+    public void SpacingResourcesMatchMacSpace()
+    {
+        var root = RepoRoot();
+        var theme = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
+        foreach (var pair in new[] { ("S12", "48"), ("Control", "32"), ("ControlLarge", "40"), ("Sidebar", "220"), ("Content", "720") })
+            Assert.Contains($"<x:Double x:Key=\"{pair.Item1}\">{pair.Item2}</x:Double>", theme);
+        var main = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("ColumnDefinitions=\"220,*\"", main);
+        var home = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "HomeView.axaml"));
+        Assert.Contains("MaxWidth=\"720\"", home);
+        var settings = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        Assert.Contains("MaxWidth=\"720\"", settings);
+    }
+
     [Fact]
     public void ProgramDoesNotForceSoftwareRendering()
     {

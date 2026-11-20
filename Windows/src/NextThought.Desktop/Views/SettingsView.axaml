@@ -5,7 +5,7 @@
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
   <ScrollViewer Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="32,18,32,36" MaxWidth="860" Spacing="18">
+    <StackPanel Margin="32,18,32,36" MaxWidth="720" Spacing="18">
       <StackPanel Spacing="6">
         <TextBlock Text="设置" Classes="display" />
         <TextBlock Text="所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。"

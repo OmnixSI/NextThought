@@ -41,7 +41,7 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" ColumnDefinitions="222,*">
+    <Grid Grid.Row="1" ColumnDefinitions="220,*">
       <!-- Sidebar: brand, sections, recent meetings, data controls -->
       <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
               BorderThickness="0,0,0.5,0">
