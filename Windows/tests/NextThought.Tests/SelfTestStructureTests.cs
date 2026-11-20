@@ -119,15 +119,16 @@ public sealed class SelfTestStructureTests
     public void OnboardingHasVoiceTestPage()
     {
         Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingVoiceWindow.axaml")));
-        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
-        Assert.Contains("OnboardingVoice_Click", xaml);
-        Assert.Contains("声音测试", xaml);
+        var view = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml"));
+        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml.cs"));
+        Assert.Contains("声音测试", view);
+        Assert.Contains("VoiceTest_Click", code);
     }
 
     [Fact]
     public void OnboardingOffersASampleMeeting()
     {
-        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml"));
         Assert.Contains("看一场示例会议", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Onboarding.cs"));
         Assert.Contains("OpenOnboardingSample", state);
@@ -136,7 +137,7 @@ public sealed class SelfTestStructureTests
     [Fact]
     public void OnboardingHasChecklistAndCueMock()
     {
-        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml"));
         Assert.Contains("OnboardingChecks", xaml);
         Assert.Contains("提词岛示意", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Onboarding.cs"));
@@ -146,8 +147,10 @@ public sealed class SelfTestStructureTests
     [Fact]
     public void OnboardingOverlayExists()
     {
-        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
-        Assert.Contains("OnboardingVisible", xaml);
+        var window = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("OnboardingVisible", window);
+        Assert.Contains("<views:OnboardingView", window);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingView.axaml"));
         Assert.Contains("NextOnboardingStepCommand", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Onboarding.cs"));
         Assert.Contains("OnboardingVersion.NeedsGuide", state);

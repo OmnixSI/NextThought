@@ -1,0 +1,243 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             xmlns:sys="using:System"
+             x:Class="NextThought.Desktop.Views.OnboardingView"
+             x:DataType="local:AppState">
+  <UserControl.Styles>
+    <Style Selector="Border.capsule">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="2" />
+      <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_3}" />
+      <Setter Property="Background" Value="{DynamicResource Hairline}" />
+    </Style>
+    <Style Selector="Border.capsule.active">
+      <Setter Property="Background" Value="{DynamicResource Ink}" />
+    </Style>
+    <Style Selector="Border.capsule.done">
+      <Setter Property="Background" Value="{DynamicResource Secondary}" />
+    </Style>
+    <Style Selector="Button.chip">
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_10_8}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_14}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="Border.guideRow">
+      <Setter Property="Padding" Value="0,10" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid Background="{DynamicResource Paper}">
+    <Grid RowDefinitions="Auto,*,Auto" MaxWidth="760" HorizontalAlignment="Center">
+      <!-- Header: four progress capsules, "1 / 4", the step name, its estimate, "稍后继续". -->
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_28_24_28_10}"
+            VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+          <Border Classes="capsule" />
+          <Border Classes="capsule" />
+          <Border Classes="capsule" />
+          <Border Classes="capsule" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding OnboardingPosition}" Classes="caption" Margin="{DynamicResource D4Margin_10_0_0_0}"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding OnboardingStepTitle}" Classes="label" Margin="{DynamicResource D4Margin_10_0_0_0}"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="3" Text="{Binding OnboardingStepTime}" Classes="caption" Margin="{DynamicResource D4Margin_8_0_0_0}"
+                   VerticalAlignment="Center" />
+        <Button Grid.Column="5" Classes="quiet" Content="{loc:Tr 稍后继续}" Command="{Binding SkipOnboardingCommand}" />
+      </Grid>
+
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="{DynamicResource D4Margin_28_8_28_16}">
+          <!-- 1 · Scene: the same sheet as the home composer, minus the title field. -->
+          <StackPanel Spacing="{DynamicResource D4Spacing_18}" IsVisible="{Binding OnboardingIsScene}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{loc:Tr NextThought 按场合帮你开会}" Classes="display" FontSize="26" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 先选一个最常用的场合。每个场合有自己的提示和纪要，开会前随时可以换。}"
+                         Classes="body" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_14}">
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+                  <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="38" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding OnboardingSceneTitle}" FontSize="19" VerticalAlignment="Center" />
+                </StackPanel>
+                  <ItemsControl ItemsSource="{Binding Scenes}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:SceneChoice">
+                        <Button Classes="chip quiet" Content="{Binding Title}" Margin="{DynamicResource D4Margin_0_0_4_4}"
+                                Tag="{Binding}" Click="SceneChip_Click" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                <TextBlock Text="{Binding OnboardingScenePromise}" FontSize="17" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding OnboardingSceneMoments}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="sys:String">
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                        <Ellipse Width="4" Height="4" VerticalAlignment="Center" Fill="{DynamicResource Secondary}" />
+                        <TextBlock Text="{Binding}" Classes="caption" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <Button Classes="quiet caption" Content="{Binding OnboardingSampleToggle}" HorizontalAlignment="Left"
+                      Command="{Binding ToggleOnboardingSampleCommand}" />
+              <TextBlock Text="{loc:Tr 示例不录音、不申请权限、不调用模型，与上面选的场合无关。}" Classes="caption"
+                         IsVisible="{Binding OnboardingShowSample}" TextWrapping="Wrap" />
+              <Button Classes="quiet" Content="{loc:Tr 看一场示例会议}" HorizontalAlignment="Left"
+                      Command="{Binding OpenOnboardingSampleCommand}" IsVisible="{Binding OnboardingShowSample}" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- 2 · Sound: venue, audio sources, the on-device model, my voice. -->
+          <StackPanel Spacing="{DynamicResource D4Spacing_18}" IsVisible="{Binding OnboardingIsSound}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{loc:Tr 让它听得到}" Classes="display" FontSize="26" />
+              <TextBlock Text="{loc:Tr 只在这里问一次。每一项都要你按下按钮才会请求，不允许也可以先往下看。}"
+                         Classes="body" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Classes="card" Padding="{DynamicResource D4Padding_18_6}">
+              <StackPanel>
+                <Border Classes="guideRow">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                      <TextBlock Text="{loc:Tr 系统音频}" Classes="label" />
+                      <TextBlock Text="{loc:Tr 线上：听电脑里会议软件播放的声音。}" Classes="caption" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <CheckBox Grid.Column="1" IsChecked="{Binding Settings.CaptureSystem}" VerticalAlignment="Top" />
+                  </Grid>
+                </Border>
+                <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                <Border Classes="guideRow">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                      <TextBlock Text="{loc:Tr 麦克风}" Classes="label" />
+                      <TextBlock Text="{loc:Tr 线下：只用麦克风，声音标为“现场”。}" Classes="caption" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <CheckBox Grid.Column="1" IsChecked="{Binding Settings.CaptureMicrophone}" VerticalAlignment="Top" />
+                  </Grid>
+                </Border>
+                <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                <Border Classes="guideRow">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                      <TextBlock Text="{loc:Tr 语音识别}" Classes="label" />
+                      <TextBlock Text="{Binding ModelStatusText}" Classes="caption" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 下载}" Margin="{DynamicResource D4Margin_8_0_0_0}"
+                            Command="{Binding PrepareModelsCommand}" />
+                  </Grid>
+                </Border>
+                <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                <Border Classes="guideRow">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                      <TextBlock Text="{loc:Tr 我的声音}" Classes="label" />
+                      <TextBlock Text="{Binding OnboardingVoiceStatus}" Classes="caption" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 声音测试}" Margin="{DynamicResource D4Margin_8_0_0_0}"
+                            Click="VoiceTest_Click" />
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{loc:Tr 系统声音与麦克风分别处理；只在本机保存文字。}" Classes="caption" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <!-- 3 · Answers: the answer service is optional; open settings to connect it. -->
+          <StackPanel Spacing="{DynamicResource D4Spacing_18}" IsVisible="{Binding OnboardingIsAnswers}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{loc:Tr 接上一个回答服务}" Classes="display" FontSize="26" />
+              <TextBlock Text="{loc:Tr 会中的回答和会后的纪要都由它来写。选一个服务商，粘贴 Key，点一下检查。}"
+                         Classes="body" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                    <TextBlock Text="{loc:Tr 回答服务}" Classes="label" />
+                    <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 打开设置}"
+                          Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+                </Grid>
+                <Button Classes="quiet" Content="{loc:Tr 检查回答服务}" HorizontalAlignment="Left"
+                        Command="{Binding CheckServiceCommand}" />
+              </StackPanel>
+            </Border>
+            <TextBlock Text="{loc:Tr 不连接也能记录和转写；回答和会后纪要需要它，可以之后再接。}" Classes="caption" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <!-- 4 · Cue island and start. -->
+          <StackPanel Spacing="{DynamicResource D4Spacing_16}" IsVisible="{Binding OnboardingIsStart}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{loc:Tr 会中，回答在镜头下方}" Classes="display" FontSize="26" />
+              <TextBlock Text="{Binding OnboardingStartHeadline}" Classes="body" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Classes="card" Padding="{DynamicResource D4Padding_16_12}" Background="#141312">
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{loc:Tr 提词岛示意}" Foreground="#8A8780" FontSize="10" />
+                <TextBlock Text="{loc:Tr 温度补偿之后残差还剩多少，和有限元对得上吗？}" Foreground="#ECEBE8"
+                           FontSize="13" TextWrapping="Wrap" />
+                <TextBlock Text="{loc:Tr 残差约占 12%，主要集中在支座附近。}" Foreground="#B8B6AF"
+                           FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+              <TextBlock Text="{loc:Tr 被问到时，回答出现在摄像头下方的提词岛，眼睛不用离开镜头。}" Classes="body" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 鼠标移到提词岛上，可以暂停、结束或立即回答。}" Classes="body" TextWrapping="Wrap" />
+            </StackPanel>
+            <TextBlock Text="{Binding OnboardingReadinessMessage}" Classes="caption" TextWrapping="Wrap" />
+            <Button Classes="quiet" Content="{loc:Tr 回到声音}" HorizontalAlignment="Left"
+                    Command="{Binding GoToOnboardingStepCommand}" CommandParameter="Sound" />
+            <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Text="{loc:Tr 设置清单}" Classes="overline" />
+              <ItemsControl ItemsSource="{Binding OnboardingChecks}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:OnboardingCheckRow">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                      <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                 Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding Ready}" />
+                      <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                 Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !Ready}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="label" />
+                      <TextBlock Grid.Column="2" Text="{Binding State}" Classes="caption" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+
+      <!-- Footer: back on the left; skip, next, "先看看" and "开始第一场" on the right. -->
+      <Border Grid.Row="2" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="{DynamicResource D4Margin_28_14}"
+              ColumnSpacing="{DynamicResource D4Spacing_8}">
+          <Button Content="{loc:Tr 上一步}" Command="{Binding PreviousOnboardingStepCommand}"
+                  IsEnabled="{Binding !OnboardingIsFirst}" />
+          <Button Grid.Column="2" Content="{loc:Tr 跳过}" Classes="quiet" Command="{Binding NextOnboardingStepCommand}"
+                  IsVisible="{Binding OnboardingCanSkipAnswers}" />
+          <Button Grid.Column="3" Content="{loc:Tr 先看看}" Classes="quiet" Command="{Binding CompleteOnboardingCommand}"
+                  IsVisible="{Binding OnboardingIsStart}" />
+          <Button Grid.Column="3" Classes="primary" Content="{loc:Tr 下一步}" Command="{Binding NextOnboardingStepCommand}"
+                  IsVisible="{Binding !OnboardingIsLast}" />
+          <Button Grid.Column="4" Classes="primary" Content="{loc:Tr 开始第一场}" Command="{Binding BeginFirstMeetingCommand}"
+                  IsVisible="{Binding OnboardingIsStart}" IsEnabled="{Binding OnboardingCanStartFirstMeeting}" />
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
@@ -224,57 +224,7 @@
       </Grid>
     </Grid>
 
-    <!-- E3 first-run guide overlay -->
-    <Grid Grid.RowSpan="2" ZIndex="20" Background="{DynamicResource Paper}" IsVisible="{Binding OnboardingVisible}">
-      <Border Classes="card" Padding="{DynamicResource D4Padding_28}" MaxWidth="560"
-              HorizontalAlignment="Center" VerticalAlignment="Center">
-        <StackPanel Spacing="{DynamicResource D4Spacing_14}">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{loc:Tr 首次引导}" Classes="overline" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="{Binding OnboardingPosition}" Classes="caption" VerticalAlignment="Center" />
-              <Button Classes="quiet" Content="{loc:Tr 关闭}" Command="{Binding SkipOnboardingCommand}" />
-            </StackPanel>
-          </Grid>
-          <TextBlock Text="{Binding OnboardingStepTitle}" Classes="display" FontSize="26" />
-          <TextBlock Text="{Binding OnboardingStepBody}" Classes="body" TextWrapping="Wrap" />
-          <ItemsControl ItemsSource="{Binding OnboardingChecks}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:OnboardingCheckRow">
-                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="{DynamicResource D4Margin_0_0_0_4}">
-                  <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                             Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding Ready}" />
-                  <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
-                             Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !Ready}" />
-                  <TextBlock Grid.Column="1" Text="{Binding Label}" Classes="label" />
-                  <TextBlock Grid.Column="2" Text="{Binding State}" Classes="caption" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <Border Background="#F0121110" CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_14}"
-                  IsVisible="{Binding OnboardingIsLast}">
-            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-              <TextBlock Text="{loc:Tr 提词岛示意}" Foreground="#B8B6AF" FontSize="10" />
-              <TextBlock Text="{loc:Tr 温度补偿之后残差还剩多少，和有限元对得上吗？}" Foreground="#ECEBE8" FontSize="13" TextWrapping="Wrap" />
-              <TextBlock Text="{loc:Tr 残差约占 12%，主要集中在支座附近。}" Foreground="#B8B6AF" FontSize="11" TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-          <Button Content="{loc:Tr 声音测试}" Click="OnboardingVoice_Click" IsVisible="{Binding OnboardingIsSound}"
-                  Classes="quiet" HorizontalAlignment="Left" />
-          <Button Content="{loc:Tr 看一场示例会议}" Command="{Binding OpenOnboardingSampleCommand}"
-                  IsVisible="{Binding OnboardingIsLast}" Classes="quiet" HorizontalAlignment="Left" />
-          <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-            <Button Content="{loc:Tr 跳过}" Command="{Binding SkipOnboardingCommand}" HorizontalAlignment="Left" Classes="quiet" />
-            <Button Grid.Column="1" Content="{loc:Tr 上一步}" Command="{Binding PreviousOnboardingStepCommand}"
-                    IsEnabled="{Binding !OnboardingIsFirst}" />
-            <Button Grid.Column="2" Content="{loc:Tr 下一步}" Command="{Binding NextOnboardingStepCommand}"
-                    IsVisible="{Binding !OnboardingIsLast}" />
-            <Button Grid.Column="3" Classes="primary" Content="{loc:Tr 完成}" Command="{Binding CompleteOnboardingCommand}"
-                    IsVisible="{Binding OnboardingIsLast}" />
-          </Grid>
-        </StackPanel>
-      </Border>
-    </Grid>
+    <!-- E3 first-run guide overlay (Views/OnboardingView.axaml) -->
+    <views:OnboardingView Grid.RowSpan="2" ZIndex="20" IsVisible="{Binding OnboardingVisible}" />
   </Grid>
 </Window>

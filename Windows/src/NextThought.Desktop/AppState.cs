@@ -163,6 +163,8 @@ public partial class AppState : ObservableObject
             if (StartupOptions.Demo && Library.Materials.Count > 0) Library.NotifyDemoLoaded();
             else Library.ImportStatus = UiText.Translate(Library.ImportStatus, english);
             LoadMyVoice();
+            RaiseOnboardingStep();
+            OnPropertyChanged(nameof(OnboardingVoiceStatus));
             StartScreenWatchTimer();
             _ = RefreshHistoryAsync();
             RefreshSeries();
