@@ -11,9 +11,9 @@ namespace NextThought.Tests;
 public sealed class CompanionTests
 {
     [Theory]
-    [InlineData("100.64.0.0", true)]
-    [InlineData("100.72.252.201", true)]
-    [InlineData("100.127.255.255", true)]
+    [InlineData("100.64.0.0", false)]
+    [InlineData("100.72.252.201", false)]
+    [InlineData("100.127.255.255", false)]
     [InlineData("100.63.255.255", false)]
     [InlineData("100.128.0.0", false)]
     [InlineData("198.18.0.1", false)]
@@ -21,7 +21,7 @@ public sealed class CompanionTests
     [InlineData("192.168.1.10", true)]
     [InlineData("172.31.255.254", true)]
     [InlineData("10.1.2.3", true)]
-    public void AddressSelectionIncludesSharedCampusSpaceAndExcludesProxyTestAddress(string address, bool accepted)
+    public void AddressSelectionMatchesMacPrivateRanges(string address, bool accepted)
         => Assert.Equal(accepted, CompanionServer.IsLanAddress(IPAddress.Parse(address)));
     [Fact]
     public void PhoneAddressListNeverOffersLoopback()

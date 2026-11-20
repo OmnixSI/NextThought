@@ -197,6 +197,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CompanionScopeMatchesMac()
+    {
+        var server = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "CompanionServer.cs"));
+        Assert.DoesNotContain("100.64", server);
+        Assert.Contains("CancellationTokenSource lifetime = new();", server);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "validation", "companion", "COMPARISON.md")));
+    }
+
     [Fact]
     public void CompanionSnapshotCarriesPositionAnswerIdAndPhase()
     {

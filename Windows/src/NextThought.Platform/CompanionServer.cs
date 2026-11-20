@@ -21,7 +21,7 @@ public sealed record CompanionAddress(IPAddress Address, string Adapter) { publi
 public sealed class CompanionServer : IAsyncDisposable
 {
     private readonly TcpListener listener;
-    private readonly CancellationTokenSource lifetime = new(TimeSpan.FromHours(8));
+    private readonly CancellationTokenSource lifetime = new();
     private readonly ConcurrentDictionary<int, (TcpClient Client, Task Task)> clients = new();
     private readonly Func<string, Task<bool>> action;
     private readonly SemaphoreSlim commandGate = new(1, 1);
@@ -44,9 +44,8 @@ public sealed class CompanionServer : IAsyncDisposable
     {
         if (IPAddress.IsLoopback(address)) return true;
         var b = address.GetAddressBytes();
-        // RFC 6598 shared space is used by this campus WLAN; it is distinct from RFC 1918.
-        return b.Length == 4 && (b[0] == 10 || b[0] == 192 && b[1] == 168 || b[0] == 172 && b[1] is >= 16 and <= 31
-            || b[0] == 100 && b[1] is >= 64 and <= 127);
+        // F12: match Mac's LAN scope exactly (RFC 1918 + loopback only).
+        return b.Length == 4 && (b[0] == 10 || b[0] == 192 && b[1] == 168 || b[0] == 172 && b[1] is >= 16 and <= 31);
     }
     public static IReadOnlyList<CompanionAddress> Addresses() => NetworkInterface.GetAllNetworkInterfaces()
         .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
@@ -55,7 +54,7 @@ public sealed class CompanionServer : IAsyncDisposable
         .ToArray();
     public CompanionServer(IPAddress address, Func<string, Task<bool>> action, int port = 0)
     {
-        if (!IsLanAddress(address)) throw new ArgumentException("请选择本机局域网 IPv4 地址（含校园网 100.64.0.0/10）。");
+        if (!IsLanAddress(address)) throw new ArgumentException("请选择本机局域网 IPv4 地址。");
         this.action = action; tokenBytes = Encoding.ASCII.GetBytes(token); listener = new(address, port); listener.Start(16);
         BaseUri = new($"http://{address}:{((IPEndPoint)listener.LocalEndpoint).Port}");
         // Fragment stays out of the initial page request and Referrer headers. Each service lifetime rotates the token.
