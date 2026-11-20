@@ -153,6 +153,12 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private string? startupErrorText;
     [ObservableProperty] private string historyQuery = "";
     [ObservableProperty] private string historyFilter = "全部";
+    [ObservableProperty] private string historyDateFilter = "全部时间";
+    [ObservableProperty] private string historyLengthFilter = "全部时长";
+    [ObservableProperty] private string historySort = "最新优先";
+    public IReadOnlyList<string> HistoryDateChoices { get; } = ["全部时间", "今天", "近 7 天", "近 30 天", "本年度"];
+    public IReadOnlyList<string> HistoryLengthChoices { get; } = ["全部时长", "1 分钟以内", "1–10 分钟", "10 分钟以上"];
+    public IReadOnlyList<string> HistorySortChoices { get; } = ["最新优先", "最早优先", "时长最长", "时长最短", "问题最多"];
     public ObservableCollection<TranscriptRow> Transcript { get; }
     public ObservableCollection<RecentMeetingRow> History { get; }
     public ObservableCollection<RecentMeetingRow> FilteredHistory { get; } = [];
@@ -776,12 +782,34 @@ public partial class AppState : ObservableObject
     /// Search and status filter for the history page (plan §15 历史：搜索、筛选、批量删除).
     /// Batch delete is not ported yet; the filter and search are.
     /// </summary>
+    partial void OnHistoryDateFilterChanged(string value) => ApplyHistoryFilter();
+    partial void OnHistoryLengthFilterChanged(string value) => ApplyHistoryFilter();
+    partial void OnHistorySortChanged(string value) => ApplyHistoryFilter();
+
     private void ApplyHistoryFilter()
     {
         var query = HistoryQuery.Trim();
         IEnumerable<RecentMeetingRow> rows = History;
         if (HistoryFilter == "有纪要") rows = rows.Where(row => row.HasSummary);
         else if (HistoryFilter == "未整理") rows = rows.Where(row => !row.HasSummary);
+        var now = DateTimeOffset.Now;
+        var today = now.Date;
+        rows = HistoryDateFilter switch
+        {
+            "今天" => rows.Where(row => row.Meta.StartedAt.ToLocalTime().Date == today),
+            "近 7 天" => rows.Where(row => row.Meta.StartedAt.ToLocalTime() >= now.AddDays(-7)),
+            "近 30 天" => rows.Where(row => row.Meta.StartedAt.ToLocalTime() >= now.AddDays(-30)),
+            "本年度" => rows.Where(row => row.Meta.StartedAt.ToLocalTime().Year == now.Year),
+            _ => rows
+        };
+        double Duration(RecentMeetingRow row) => (row.Meta.EndedAt ?? row.Meta.StartedAt).Subtract(row.Meta.StartedAt).TotalSeconds;
+        rows = HistoryLengthFilter switch
+        {
+            "1 分钟以内" => rows.Where(row => Duration(row) < 60),
+            "1–10 分钟" => rows.Where(row => Duration(row) >= 60 && Duration(row) < 600),
+            "10 分钟以上" => rows.Where(row => Duration(row) >= 600),
+            _ => rows
+        };
         if (query.Length > 0)
         {
             rows = rows.Where(row =>
@@ -789,6 +817,14 @@ public partial class AppState : ObservableObject
                 || row.Meta.LocalStartedAt.Contains(query, StringComparison.OrdinalIgnoreCase)
                 || row.Meta.Mode.Contains(query, StringComparison.OrdinalIgnoreCase));
         }
+        rows = HistorySort switch
+        {
+            "最早优先" => rows.OrderBy(row => row.Meta.StartedAt),
+            "时长最长" => rows.OrderByDescending(Duration),
+            "时长最短" => rows.OrderBy(Duration),
+            "问题最多" => rows.OrderByDescending(row => row.Meta.QuestionCount),
+            _ => rows.OrderByDescending(row => row.Meta.StartedAt)
+        };
         FilteredHistory.Clear();
         foreach (var row in rows) FilteredHistory.Add(row);
         OnPropertyChanged(nameof(HistorySummary));

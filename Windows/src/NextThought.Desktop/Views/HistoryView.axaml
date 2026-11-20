@@ -3,7 +3,7 @@
              xmlns:local="using:NextThought.Desktop"
              x:Class="NextThought.Desktop.Views.HistoryView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,Auto,*" Margin="32,18,32,0">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="32,18,32,0">
     <StackPanel Grid.Row="0" Spacing="6">
       <TextBlock Text="历史" Classes="display" />
       <TextBlock Text="每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。"
@@ -30,7 +30,13 @@
       </StackPanel>
     </Grid>
 
-    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+      <ComboBox ItemsSource="{Binding HistoryDateChoices}" SelectedItem="{Binding HistoryDateFilter}" Width="140" />
+      <ComboBox ItemsSource="{Binding HistoryLengthChoices}" SelectedItem="{Binding HistoryLengthFilter}" Width="140" />
+      <ComboBox ItemsSource="{Binding HistorySortChoices}" SelectedItem="{Binding HistorySort}" Width="140" />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,0,16">
       <StackPanel>
         <ItemsControl ItemsSource="{Binding FilteredHistory}">
         <ItemsControl.ItemTemplate>
