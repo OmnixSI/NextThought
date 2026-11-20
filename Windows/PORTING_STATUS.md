@@ -3738,6 +3738,17 @@ P2 五步已完成基础实现与本机验收，49 项回归通过。详细结�
 
 # Windows 移植状态：2026-11-07
 
+
+## 2026-11-20 · 第 1 步（答复落实与 A15/E9/E12）
+
+- 状态表已覆盖 148 个任务：未做 85、已实现未验证 61、已验证 1（D11）、本版不做 1（F13）。
+- OPEN_QUESTIONS 已记录 H2/A15/E9/E12/F13 的答复并关闭；E10 已列出 MediaPipe Face Landmarker（首选）与 MediaPipe Iris+BlazeFace（备选）方案，等待模型答复。
+- A15：新增 macOS 专用清单 `Windows/tools/MacCodecMac`（相对路径引用 Sources/NextThoughtCore，系统 CryptoKit/SQLite），`emit` 覆盖 12 类夹具；新增 Windows `MacCodecCheck` 解码纯数据夹具并逐项打印跳过原因；`MAC_FIXTURE_REQUEST.md` 增加 Mac 命令。等待人在 Mac 上 emit 并提交产物。
+- E9：Platform 新增 `ScreenOcrReader` 单帧内存 OCR；AppState 新增默认关闭的屏幕读取（最小 1 秒、失败 20 秒重试、演示跳过、自身窗口排除），设置卡提供来源/区域/间隔/跟随演示文稿，会中显示「正在截屏读取屏幕…」。需实机验证。
+- E12：复用 `SpeakerEmbedder` 与 `VoiceEnrollment.Make`，4 句提示、7 秒录音、静音裁剪、3 秒下限，保存 `Voiceprint/me.json`（Windows 模型标识），设置与引导入口已接。需实机麦克风验证。
+- 构建 0 错误；Core 872/872；NextThought.Tests 257/257。
+
+
 版本：Windows 预览 0.1.1。P1 的单/双路实采、回答、纪要和异常恢复已验证；完整会议的 30 分钟受控回放单独记录。上游快照 `af60a4def90c750872197f81ac8b91c726d05b63`；分支 `port/windows-native`。所有新实现位于 `Windows/`，并增加独立 Windows CI。Mac 源码及签名资料保持原状。最新逐步进度同步到用户指定的 `D:\md Vault\NextThought移植路线.md`。
 
 ## 实现与验证边界
