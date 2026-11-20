@@ -84,7 +84,16 @@ public sealed class CloudSttSession : IAsyncDisposable
             {
                 var result = await socket.ReceiveAsync(buffer, lifetime.Token);
                 if (result.MessageType == WebSocketMessageType.Close) break;
-                var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                using var message = new MemoryStream();
+                message.Write(buffer, 0, result.Count);
+                while (!result.EndOfMessage)
+                {
+                    result = await socket.ReceiveAsync(buffer, lifetime.Token);
+                    if (result.MessageType == WebSocketMessageType.Close) break;
+                    message.Write(buffer, 0, result.Count);
+                }
+                if (message.Length > 512 * 1024) throw new CloudTranscriptException("云端识别消息超过 512 KiB，已停止。");
+                var text = Encoding.UTF8.GetString(message.ToArray());
                 foreach (var update in assembler.Consume(text)) Updated?.Invoke(update);
             }
         }

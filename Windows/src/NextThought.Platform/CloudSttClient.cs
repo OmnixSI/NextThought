@@ -27,7 +27,8 @@ public static class CloudSttClient
         using var socket = new ClientWebSocket();
         socket.Options.SetRequestHeader("Authorization", provider.AuthorizationHeader(apiKey));
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(30));
+        // F8: a 10-minute recording must not be cut at 30 seconds.
+        timeout.CancelAfter(TimeSpan.FromMinutes(30));
         await socket.ConnectAsync(endpoint, timeout.Token);
         var assembler = new CloudTranscriptAssembler(provider);
         var finals = new List<CloudTranscriptUpdate>();
@@ -63,7 +64,15 @@ public static class CloudSttClient
             {
                 var result = await socket.ReceiveAsync(buffer, timeout.Token);
                 if (result.MessageType == WebSocketMessageType.Close) break;
-                var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                using var message = new MemoryStream();
+                message.Write(buffer, 0, result.Count);
+                while (!result.EndOfMessage)
+                {
+                    result = await socket.ReceiveAsync(buffer, timeout.Token);
+                    if (result.MessageType == WebSocketMessageType.Close) break;
+                    message.Write(buffer, 0, result.Count);
+                }
+                var text = Encoding.UTF8.GetString(message.ToArray());
                 foreach (var update in assembler.Consume(text))
                 {
                     if (update.IsFinal) finals.Add(update);

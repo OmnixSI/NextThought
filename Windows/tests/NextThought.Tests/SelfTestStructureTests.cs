@@ -192,6 +192,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CloudMessagesAreReassembled()
+    {
+        var session = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "CloudSttSession.cs"));
+        Assert.Contains("EndOfMessage", session);
+        var client = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "CloudSttClient.cs"));
+        Assert.Contains("EndOfMessage", client);
+        Assert.Contains("TimeSpan.FromMinutes(30)", client);
+    }
+
     [Fact]
     public void CloudModeCanUseBothAudioSources()
     {
