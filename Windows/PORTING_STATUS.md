@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · D5（完成）
+改动：`Motion.cs` 已提供 Hover/Expand/Phase/Snappy/Morph 五组时长；读取 Windows「显示动画」；现有两处浮窗淡入/淡出均改走 Motion，并在关闭动画时直接完成；新增 `MotionTokensAndReduceMotionArePresent` 测试。
+测试：Core **869/869**，NextThought.Tests **136/136**（全量）。
+状态：D5「已实现、未验证」。弹簧形状用 cubic easing 近似，不是逐帧弹簧；没有其它动画点可接。
+未解决：真正弹簧曲线与逐页动画对照。
+
 ## 2026-11-20 · 0.5.145 · D3（完成）
 改动：浅色/深色全部 17 组颜色值与 Mac DesignSystem.swift 逐项对齐；深色 contact/ambient/float 阴影和浅色 4% Sunken 已有；新增 `EveryMacPaletteValueMatches` 断言全部 34 个值。
 测试：Core **869/869**，NextThought.Tests **135/135**。
