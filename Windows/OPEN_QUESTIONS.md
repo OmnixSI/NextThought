@@ -1,40 +1,71 @@
 # 未决问题（OPEN_QUESTIONS）
 
-记录清单未写、但 Windows 没有对应能力、需要人确认的做法；不自行发明替代方案。
+记录清单未写明、但 Windows 没有对应能力、需要人确认的做法。这里只记录事实与决定，不自行发明替代方案。
 
-| 编号 | 任务 | 问题 | Mac 做法 | 可选做法 | 状态 |
-|---|---|---|---|---|---|
-| — | — | — | — | — | 无 |
-## A15 MacCodec 在 Windows 上编译
+| 编号 | 问题 | 决定 / 状态 |
+|---|---|---|
+| H2 | Swift 方法名与 C# 方法名映射 | 已决定：允许重命名，不建映射层；C# 方法名 = Swift 方法名首字母大写，Windows 独有方法保持原名；排在最后做 |
+| A15 | MacCodec 夹具 | 已决定：Mac 上 emit 并提交产物；Windows 只做 check；不安装 Clang、不写加密/平台替身 |
+| E9 | 持续读屏 | 已决定：批准；单帧、默认关闭、界面可见正在截屏 |
+| E10 | 看镜头 | 等待模型方案答复 |
+| E12 | 我的声音 | 已决定：复用现有 SpeakerEmbedder，不导出 MeetingVoiceTagger |
+| F13 | 蓝牙备用通道 | 本版不做 |
+| H5 | 旧 WPF 工程与命令行工程是否删除 | 等待答复，保持不动 |
+| 视觉 | Mac 截图与逐元素对照 | 人补拍浅/深两套到 `Windows/validation/mac-screens/`；到位前用 `docs/screenshots/v3/` 和 Swift 源码做对照 |
+| 硬件 | 需要其他设备的实机测试 | 步骤写在 `Windows/FINAL_REPORT.md` 与各任务证据中，等待安排 |
 
-- 卡在哪：80 个 Core 文件里，4 个平台文件（SQLite3/Darwin/CoreGraphics/Sherpa）不能在 Windows 编译；7 个 CryptoKit 文件里的 HKDF/AES-GCM 无 Windows 实现；官方 swift-crypto 的 BoringSSL 需要 Clang 22，本机是 Clang 21。
-- Mac 的做法：在 Mac 上用系统 CryptoKit/SQLite 构建同一个工具，`emit` 夹具后把产物提交到 `Windows/tests/Fixtures/mac/`。
-- 可选做法：
-  1. 安装 Clang 22 或更新 VS，再改用官方 swift-crypto；
-  2. 在 Mac 上跑 `MacCodec emit`，把生成物提交，Windows 只负责 `check`；
-  3. Windows 只编译不依赖平台文件的数据模型子集，另写纯 Swift 的 HKDF/AES-GCM 与 DocumentJob 替身。
-- 当前仓库状态：`Windows/tools/MacCodec` 已有 Package、CryptoKit SHA-256 shim、junction 同步脚本；未产出 `emit` 夹具，A15 仍是「未做」。
+## H2 方法重命名
 
-## E9 持续 ScreenWatch 自动跟页
-- 卡在哪：Windows 只有一次性窗口/区域截图 + 资料库 OCR（`MaterialStore.ImportAsync`）路径；没有可复用的“截屏→系统 OCR 文本”公共接口，持续观察会污染资料库。
-- Mac 做法：`startScreenWatch` 定时截屏、走屏幕分类/`SlideFollower` 并节流。
-- 可选做法：在 Platform 暴露 `ScreenCapture + Windows.Media.Ocr` 的单帧只读 API，再由 AppState 定时调用；需要确认截屏频率与隐私提示。
-- 当前实现：讲话标题跟页、截图 OCR 后跟页、讲稿要点缓存已完成；持续观察未做。
+- 决定：允许重命名，不建映射层。
+- 规则：C# 方法名等于 Swift 方法名把首字母改成大写，例如 `beginNewMeeting` → `BeginNewMeeting`、`setDraftCarry` → `SetDraftCarry`。只改 Swift 里有对应物的方法；Windows 独有方法保持原名。
+- 统计口径：按首字母不区分大小写重新统计 179 个 Swift 方法名；现有「完全匹配 0」是大小写不同造成的误判。
+- 执行方式：一个文件一个提交，用 IDE / Roslyn 重命名，不手工替换字符串；每个提交后全部测试通过。排在第三部分第 8 步。
+- 状态：已决定并关闭，等待执行。
 
-## E10 摄像头看镜头提醒
-- 卡在哪：`GazeEstimator` 只有纯几何输入，没有摄像头帧来源；Windows MediaCapture 的预览帧与 Mac AVCapture 生命周期不同，需要单独实现摄像头请求/预览/帧回调。
-- Mac 做法：`requestCameraAndWatch` + `calibrate`，把眼睛 landmarks 喂给 GazeEstimator。
-- 可选做法：用 Windows.Media.Capture.Frames 取灰度帧并接 OpenCV/Mediapipe；或先用系统摄像头预览 + 手动校准占位。
-- 当前实现：会议结束的教练小结（语速/占比/独白）已写 `coach-summary.json` 并展示；看镜头未做。
+## A15 MacCodec
 
-## E12 我的声音录入
-- 卡在哪：`VoiceProfile` 需要 3 段录音的说话人 embedding；仓库里没有可用的 speaker embedding 模型/导出接口，`MeetingVoiceTagger` 的 embedding 不对外。
-- Mac 做法：`MyVoice.swift` 录 3 段、`VoiceEnrollment.Make` 取平均、存本机。
-- 可选做法：暴露 `MeetingVoiceTagger` 的 embedding 或集成 wespeaker onnx；需要确认模型分发与隐私说明。
-- 当前实现：说话人命名/「这是我」/持久化/合并已完成；录音入库未做。
+- 决定：由人在 Mac 上运行 `emit` 并提交产物；Windows 只做 `check`。
+- 不安装或升级 Clang，不写 HKDF/AES-GCM 替身，不写 `DocumentJob` 替身。
+- Windows 负责：
+  1. `Windows/tools/MacCodec` 改成 macOS 可直接构建：清单按相对路径引用 `Sources/NextThoughtCore`，macOS 使用系统 CryptoKit/SQLite，不依赖 junction 同步脚本；Windows 构建方式保留，用条件编译或各自清单分开。不修改 `Sources/` 和仓库根 `Package.swift`。
+  2. `emit` 覆盖 A15 列出的每种文件：会议 meta、转写、译文、提问、纪要、`user-content.json`、系列（含一条被替换过的系列条目）、技能、模板、术语表、备份清单，以及 A11 三个修订号样本和期望值。
+  3. `Windows/MAC_FIXTURE_REQUEST.md` 增加 Mac 执行命令、产物输出到 `Windows/tests/Fixtures/mac/`、提交方式。
+  4. Windows `check`：不依赖 7 个加密文件和 4 个平台文件的类型都要解码校验；跳过项逐条列出原因，不静默跳过。
+- 夹具未提交前 A15 状态为「已实现、未验证」；依赖夹具的测试先写好并标记等待夹具，不用假数据。A11/A16 同样处理。
+- 状态：已决定并关闭，等待夹具与实现。
+
+## E9 持续读屏
+
+- 决定：批准，但三个条件必须同时满足：默认关闭、只截单帧、界面上让用户看见正在截屏。
+- Platform 新增只读接口：截一帧交给 Windows.Media.Ocr 返回文字；文字只在内存，不写资料库、不落盘、不进备份；沿用现有截图方式，不弹出选择器或边框。
+- 行为照 Mac：`insightScreenWatch` 默认关闭；`insightScreenInterval` 默认 1 秒、最小 1 秒；失败后至少 20 秒再试；只在录音、未暂停、未停止时读取；演示模式不读；来源可选窗口/显示器/区域，自己的窗口不出现在来源且不被读到；`insightFollowSlides` 默认开，仅读屏打开时可用；设置说明用 Mac 原句，只替换系统名词；文字接入屏幕分类、幻灯片跟随、节流。
+- 状态：已决定并关闭，开始实现。
+
+## E10 看镜头
+
+- 决定：批准使用摄像头，但放到最后一批；不接受「手动校准占位」。
+- 动手前先回答模型问题：列出打算使用的 ONNX 关键点模型，写明来源、许可证、文件大小、输出关键点是否包含眼眶和瞳孔、如何随包分发。写完继续做别的任务，等答复后再实现。
+- 得到答复后：Windows.Media.Capture 帧读取器 640×480；帧只在内存；设置项「留意眼神是否离开镜头（使用摄像头）」默认关闭并带灵敏度；校准流程和最少帧数照 Mac `LiveCoach.swift`、`SettingsPresenter.swift`、Core `GazeEstimator.swift`。
+- 状态：等待模型方案答复。
+
+## E12 我的声音
+
+- 决定：不需要新模型，直接用现有 `Windows/src/NextThought.Platform/SpeakerEmbedder.cs`（WeSpeaker ResNet34-LM，与 Mac 同一模型）；不导出 `MeetingVoiceTagger`。
+- 流程照 Mac `MyVoice.swift`、`MyVoiceViews.swift`、`SpeakerViews.swift` 的 `MyVoiceSettings`、Core `VoiceProfile.swift`：录三段、取平均、存本机；界面/提示/失败提示照 Mac。
+- 声纹只在本机使用：不导入 Mac 声纹，也不把 Windows 声纹当成 Mac 声纹写出；保存用 Windows 自己的模型标识；两边模型文件格式不同，向量是否一致未验证，不假设互通。
+- 隐私说明用 Mac 原句：全部在本机运行，声纹只是一组数字。
+- 状态：已决定并关闭，开始实现。
 
 ## F13 蓝牙备用通道
-- 卡在哪：Windows 需要 `GattServiceProvider` 做 BLE 外设端；仓库没有该实现。手机端按 `IH-` 名字过滤，任务要求改成按服务 UUID 过滤，手机端不在 Windows 仓库内。
-- Mac 做法：`CompanionBluetooth.swift` 外设广播 + 手机端按名字过滤。
-- 可选做法：Windows 实现 GATT service（固定 UUID），同时改手机端扫描过滤；需要手机端代码权限与实机 BLE 测试。
-- 当前状态：未做，标 F13「未做」，不伪造完成。
+
+- 决定：本版不做。不修改 `Mobile/`，不实现 Windows 蓝牙外设端。
+- 事实更正：手机端代码在本仓库 `Mobile/` 目录下；手机端已经按服务标识扫描，只是在发现设备后多了一道名字必须是 `IH-` 加配对码前 8 位的检查（`Mobile/Shared/Sources/CompanionMobileCore/BluetoothCentral.swift` 第 53 行，`Mobile/Android/.../BluetoothTransport.kt` 第 31 行）。
+- 另记：Mac 广播名是 `NT-` 开头（`Sources/NextThought/CompanionBluetooth.swift` 第 71 行），同样过不了这道检查；这是 Mac 与手机端之间的问题，留给以后单独处理，这里只记录，不改。
+- 设置页蓝牙说明保持「暂不可用」，文字与事实一致。
+- 状态：本版不做。
+
+## 视觉与硬件验证
+
+- 不做逐像素对比，做逐元素并排对照：每个页面把 Mac 截图里的元素、顺序、文案、分组、间距资源、颜色资源、圆角/字号级别列成清单，逐条在 Windows 截图核对；结论写 `Windows/validation/screens/<视图名>/compare.md`。
+- Mac 截图由人补拍浅/深两套到 `Windows/validation/mac-screens/`；到位前用 `docs/screenshots/v3/` 和 Swift 视图源码做标准。
+- 本机可做的实机检查自己做并留记录（日期、版本、步骤、结果、证据），可写「已验证」；需要其他设备的只写步骤。
