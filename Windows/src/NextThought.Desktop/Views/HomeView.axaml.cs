@@ -1,67 +1,36 @@
 using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Interactivity;
-using Avalonia.Media;
-using Avalonia.VisualTree;
 
 namespace NextThought.Desktop.Views;
 
+/// <summary>
+/// E1: the home page (HomeView.swift). The composer, continue-series, screenshot card and recent
+/// meetings are named subviews in Views/Home so each Mac view has a same-named Windows counterpart.
+/// </summary>
 public partial class HomeView : UserControl
 {
-    private AppState? syncedState;
+    private AppState? state;
 
     public HomeView()
     {
         InitializeComponent();
-        Loaded += (_, _) => SyncSceneSelection();
-        // D1: demo mode sets the scene from code, so the highlighted pill has to follow the state.
-        DataContextChanged += (_, _) => AttachSceneSync();
+        Loaded += (_, _) => Refresh();
+        DataContextChanged += (_, _) => Attach();
     }
 
-    private void AttachSceneSync()
+    private void Attach()
     {
-        if (ReferenceEquals(syncedState, DataContext as AppState)) return;
-        if (syncedState is not null) syncedState.PropertyChanged -= OnStatePropertyChanged;
-        syncedState = DataContext as AppState;
-        if (syncedState is not null) syncedState.PropertyChanged += OnStatePropertyChanged;
-        SyncSceneSelection();
+        if (state is not null) state.PropertyChanged -= OnStatePropertyChanged;
+        state = DataContext as AppState;
+        if (state is not null) state.PropertyChanged += OnStatePropertyChanged;
+        Refresh();
     }
 
     private void OnStatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(AppState.SelectedMode) or nameof(AppState.SelectedScene)) SyncSceneSelection();
+        // A new recording, a fresh archive or a scene switch changes the home lists.
+        if (e.PropertyName is nameof(AppState.Recording) or nameof(AppState.CurrentSession)
+            or nameof(AppState.SelectedMode)) Refresh();
     }
 
-    private void SyncSceneSelection()
-    {
-        if (DataContext is not AppState state) return;
-        foreach (var button in this.GetVisualDescendants().OfType<Button>())
-        {
-            if (!button.Classes.Contains("scene") || button.Tag is not SceneChoice scene) continue;
-            var selected = scene.Mode == state.SelectedMode;
-            button.Classes.Set("selected", selected);
-            if (selected)
-                button.Background = new SolidColorBrush(Color.Parse(scene.Theme.TintLight), 0.13);
-            else
-                button.ClearValue(Button.BackgroundProperty);
-        }
-    }
-
-    private async void Recent_Click(object? sender, RoutedEventArgs e)
-    {
-        try
-        {
-        if (sender is not Button { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
-        await state.SelectHistoryAsync(row.Meta);
-    
-        }
-        catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
-        }
-
-    private void Scene_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: SceneChoice scene } || DataContext is not AppState state) return;
-        state.SetSceneCommand.Execute(scene.Mode);
-        SyncSceneSelection();
-    }
+    private void Refresh() => state?.RefreshHome();
 }

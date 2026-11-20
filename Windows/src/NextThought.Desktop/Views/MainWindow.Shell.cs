@@ -218,11 +218,10 @@ public partial class MainWindow
                 bounds.X - capture.X, bounds.Y - capture.Y, bounds.Width, bounds.Height));
             var path = Path.Combine(Path.GetTempPath(), $"nextthought-window-{DateTime.Now:yyyyMMdd-HHmmss}.png");
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
-            await state.ArchiveScreenshotAsync(path);
-            await state.Library.ImportAsync([path]);
-            state.PromptAboutScreenshot(state.Library.SelectedPreview);
-            state.FollowSlideFromCapture(state.Library.SelectedPreview);
-            TryDeleteCapture(path);
+            // E1/Mac captureWindow: a screenshot taken outside a meeting waits on the home card;
+            // during a recording it is analyzed right away, as the live page expects.
+            if (state.Recording) await state.AnalyzeScreenshotFileAsync(path);
+            else state.SetScreenshotPreview(path, cropped);
         }
         catch (Exception ex)
         {
@@ -278,11 +277,9 @@ public partial class MainWindow
             if (cropped is null) { state.SetStatus("已取消截图。"); return; }
             var path = Path.Combine(Path.GetTempPath(), $"nextthought-shot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
-            await state.ArchiveScreenshotAsync(path);
-            await state.Library.ImportAsync([path]);
-            state.PromptAboutScreenshot(state.Library.SelectedPreview);
-            state.FollowSlideFromCapture(state.Library.SelectedPreview);
-            TryDeleteCapture(path);
+            // E1/Mac commitRegionScreenshot: the crop waits on the home card until analyzed.
+            if (state.Recording) await state.AnalyzeScreenshotFileAsync(path);
+            else state.SetScreenshotPreview(path, cropped);
         }
         catch (Exception ex)
         {

@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             x:Class="NextThought.Desktop.Views.Home.ContinueSeries"
+             x:DataType="local:AppState"
+             IsVisible="{Binding HasHomeSeries}">
+  <UserControl.Resources>
+    <controls:ModeTintConverter x:Key="ModeTint" />
+  </UserControl.Resources>
+  <StackPanel Spacing="{DynamicResource D4Spacing_0}">
+    <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
+      <TextBlock Text="{loc:Tr 接着上一场}" Classes="overline" />
+      <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部资料夹}" FontSize="12" VerticalAlignment="Center"
+              Command="{Binding NavigateCommand}" CommandParameter="Series" />
+    </Grid>
+    <Border Height="0.5" Background="{DynamicResource Hairline}" />
+    <ItemsControl ItemsSource="{Binding HomeSeriesRows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:HomeSeriesRow">
+          <StackPanel>
+            <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Tag="{Binding}" Click="Series_Click" ToolTip.Tip="{loc:Tr 准备下一场}">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="{DynamicResource D4Margin_8_12}">
+                <Ellipse Width="7" Height="7" Fill="{Binding Mode, Converter={StaticResource ModeTint}}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Name}" Classes="body" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding TypeName}" Classes="caption" FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Counts}" Classes="caption" FontSize="12" />
+                  <TextBlock Text="{StaticResource IconArrowRight}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                             Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Grid>
+            </Button>
+            <Border Height="0.5" Background="{DynamicResource Hairline}" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

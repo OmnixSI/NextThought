@@ -3,118 +3,26 @@
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             xmlns:home="using:NextThought.Desktop.Views.Home"
              x:Class="NextThought.Desktop.Views.HomeView"
              x:DataType="local:AppState">
   <Grid>
-    <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" Animated="True" />
+    <!-- E1/Mac: the page takes on the pigment of the picked scene (InkWash height 380). -->
+    <controls:InkWash Mode="{Binding SelectedMode}" Height="380" VerticalAlignment="Top" Animated="True" />
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_26}">
-      <!-- Greeting -->
-      <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+      <StackPanel Margin="{DynamicResource D4Margin_32_40_32_40}" MaxWidth="760" HorizontalAlignment="Center">
+        <!-- Date + two-line hero: greeting in ink, the question in tertiary (Mac HomeView). -->
         <TextBlock Text="{Binding DateLine}" Classes="overline" />
-        <TextBlock Text="{Binding GreetingHeadline}" Classes="hero" />
-      </StackPanel>
-
-      <!-- Next meeting -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_24}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_16}">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-            <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="38" VerticalAlignment="Center" />
-            <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
-                     Padding="{DynamicResource D4Padding_0}" FontFamily="{StaticResource SerifFamily}" FontSize="24"
-                     FontWeight="Medium" MinHeight="{DynamicResource Control}" VerticalAlignment="Center"
-                     Watermark="{loc:Tr 给这场会起个名字，比如“字节二面”}" />
-          </Grid>
-          <ItemsControl ItemsSource="{Binding Scenes}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:SceneChoice">
-                <Button Classes="scene" Tag="{Binding}" Click="Scene_Click"
-                        Margin="{DynamicResource D4Margin_0_0_4_4}" ToolTip.Tip="{Binding Promise}">
-                  <TextBlock Text="{Binding Title}" FontSize="13" />
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="{Binding SelectedScene.Promise}" Classes="section" />
-          <ItemsControl ItemsSource="{Binding SelectedScene.Moments}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_2_0_0}">
-                  <TextBlock Text="•" Classes="caption" Foreground="{DynamicResource Secondary}" />
-                  <TextBlock Text="{Binding}" Classes="caption" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-            <TextBlock Text="{loc:Tr Ctrl+Alt+N 不挑场合，立即记录}" Classes="caption" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Content="{loc:Tr 先准备资料}" Command="{Binding NavigateCommand}" CommandParameter="Prepare" />
-            <Button Grid.Column="2" Classes="primary" Content="{loc:Tr 开始}" Command="{Binding StartRecordingCommand}" />
-          </Grid>
+        <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_12_0_0}">
+          <TextBlock Text="{Binding HomeGreeting}" Classes="hero" Foreground="{DynamicResource InkBrush}" />
+          <TextBlock Text="{Binding HomeQuestion}" Classes="hero" Foreground="{DynamicResource Tertiary}" Opacity="0.75" />
         </StackPanel>
-      </Border>
-      <TextBlock Text="{Binding AudioSourceText}" Classes="caption" />
-
-      <!-- Continue previous series -->
-      <StackPanel Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding HasSeries}">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="{loc:Tr 接着上一场}" Classes="section" />
-          <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部资料夹}" VerticalAlignment="Center"
-                  Command="{Binding NavigateCommand}" CommandParameter="Series" />
-        </Grid>
-        <ItemsControl ItemsSource="{Binding SeriesRows}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="local:SeriesRow">
-              <Border Padding="{DynamicResource D4Padding_10_8}" BorderBrush="{DynamicResource Hairline}"
-                      BorderThickness="0,0,0,0.5" Margin="{DynamicResource D4Margin_0_0_0_2}">
-                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                  <Ellipse Width="7" Height="7" Fill="{DynamicResource Ai}" VerticalAlignment="Center" />
-                  <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_8_0_0_0}">
-                    <TextBlock Text="{Binding Name}" Classes="label" />
-                    <TextBlock Text="{Binding Meta}" Classes="caption" />
-                  </StackPanel>
-                  <TextBlock Grid.Column="2" Text="{StaticResource IconArrowRight}" FontFamily="{StaticResource IconFont}"
-                             FontSize="12" Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
-                </Grid>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <home:OnboardingResumeRow />
+        <home:StartComposer Margin="{DynamicResource D4Margin_0_32_0_0}" />
+        <home:ContinueSeries Margin="{DynamicResource D4Margin_0_48_0_0}" />
+        <home:HomeScreenshotCard Margin="{DynamicResource D4Margin_0_24_0_0}" />
+        <home:RecentMeetings Margin="{DynamicResource D4Margin_0_40_0_0}" />
       </StackPanel>
-
-      <!-- Recent meetings -->
-      <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="{loc:Tr 最近记录}" Classes="section" />
-          <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部记录}" VerticalAlignment="Center"
-                  Command="{Binding NavigateCommand}" CommandParameter="Live" />
-        </Grid>
-        <ItemsControl ItemsSource="{Binding HomeRecent}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="local:RecentMeetingRow">
-              <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Tag="{Binding}" Click="Recent_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
-                <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_4_2}">
-                  <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                    <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-                    <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
-                  </StackPanel>
-                  <TextBlock Grid.Column="1" Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}"
-                             FontSize="12" Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
-                </Grid>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock Text="{loc:Tr 还没有会议记录。点击「开始记录」写下第一场。}" Classes="caption"
-                   IsVisible="{Binding IsHistoryEmpty}" />
-      </StackPanel>
-    </StackPanel>
     </ScrollViewer>
   </Grid>
 </UserControl>

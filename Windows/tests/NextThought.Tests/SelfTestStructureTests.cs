@@ -515,8 +515,9 @@ public sealed class SelfTestStructureTests
     {
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
         Assert.Contains("FollowSlideFromScreen", state);
-        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
-        Assert.Contains("FollowSlideFromCapture", shell);
+        // E1: the capture tail (follow the slide) lives in the home state's screenshot analysis.
+        var homeState = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Home.cs"));
+        Assert.Contains("FollowSlideFromCapture", homeState);
     }
 
     [Fact]
@@ -554,15 +555,16 @@ public sealed class SelfTestStructureTests
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("ScreenContextText", live);
         Assert.Contains("screen: ScreenContextText", live);
-        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
-        Assert.Contains("SelectedPreview", shell);
+        // E1: the screenshot analysis moved to AppState.Home.cs (home card / live capture tail).
+        var homeState = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Home.cs"));
+        Assert.Contains("SelectedPreview", homeState);
     }
 
     [Fact]
     public void ScreenshotCanBecomeAQuestion()
     {
-        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
-        Assert.Contains("PromptAboutScreenshot", shell);
+        var homeState = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Home.cs"));
+        Assert.Contains("PromptAboutScreenshot", homeState);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("PromptAboutScreenshot", live);
     }
@@ -882,8 +884,21 @@ public sealed class SelfTestStructureTests
     public void NotesPageHasFourTabs()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
-        foreach (var header in new[] { "{loc:Tr 纪要}", "{loc:Tr 转写}", "{loc:Tr 回答}", "{loc:Tr 个人笔记}", "{loc:Tr 证据}", "{loc:Tr 提纲}", "{loc:Tr 回顾}", "{loc:Tr 工作纪要}" })
+        // E15: MeetingPage has exactly four tabs; the evidence pane and the outline view live inside 纪要.
+        foreach (var header in new[] { "{loc:Tr 纪要}", "{loc:Tr 转写}", "{loc:Tr 回答}", "{loc:Tr 个人笔记}" })
             Assert.Contains(header, xaml);
+        Assert.DoesNotContain("{loc:Tr 工作纪要}", xaml);
+        Assert.DoesNotContain("{loc:Tr 提纲}", xaml);
+        // 证据栏常驻纪要页右侧，不再是单独标签。
+        Assert.Contains("NotesEvidence", xaml);
+        Assert.Contains("JumpEvidence_Click", xaml);
+        // 真提纲视图（不是把 Markdown 当提纲）。
+        Assert.Contains("NotesOutlineRows", xaml);
+        Assert.Contains("OutlineTime_Click", xaml);
+        // 会议信息与重生成确认。
+        Assert.Contains("Info_Click", xaml);
+        Assert.Contains("RegenerateNotes_Click", xaml);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SessionInfoWindow.axaml")));
     }
 
     [Fact]
@@ -1129,8 +1144,9 @@ public sealed class SelfTestStructureTests
         var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "SelfTest", "Checks", "ShowSection.cs"));
         Assert.Contains("AppSection.Prepare => new PrepareView()", shell);
         Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml")));
-        var home = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HomeView.axaml"));
-        Assert.Contains("CommandParameter=\"Prepare\"", home);
+        // E1: the home page's prepare action now lives in the StartComposer subview.
+        var composer = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "Home", "StartComposer.axaml"));
+        Assert.Contains("Click=\"Prepare_Click\"", composer);
     }
 
     [Fact]
@@ -1300,8 +1316,10 @@ public sealed class SelfTestStructureTests
         var root = Root();
         foreach (var name in new[] { "SceneGlyph.cs", "SceneTag.cs", "InkWash.cs" })
             Assert.True(File.Exists(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "Controls", name)));
+        // E1: the glyph lives in the composer subview; the page keeps the scene ink wash.
+        var composer = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "Home", "StartComposer.axaml"));
+        Assert.Contains("<controls:SceneGlyph", composer);
         var home = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "HomeView.axaml"));
-        Assert.Contains("<controls:SceneGlyph", home);
         Assert.Contains("<controls:InkWash", home);
     }
 

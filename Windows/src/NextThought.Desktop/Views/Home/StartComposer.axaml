@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             x:Class="NextThought.Desktop.Views.Home.StartComposer"
+             x:DataType="local:AppState">
+  <Border Classes="card" Padding="{DynamicResource D4Padding_24}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_16}">
+      <!-- Scene glyph + title field (Mac StartComposer: 38 pt glyph, 19 pt medium field). -->
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+        <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="38" VerticalAlignment="Center" />
+        <TextBox x:Name="TitleBox" Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent"
+                 BorderThickness="0.5" BorderBrush="Transparent" CornerRadius="{DynamicResource RadiusMedium}"
+                 Padding="{DynamicResource D4Padding_0}" FontFamily="{StaticResource SerifFamily}" FontSize="19"
+                 FontWeight="Medium" MinHeight="{DynamicResource Control}" VerticalAlignment="Center"
+                 Watermark="{loc:Tr 给这场会起个名字，比如“字节二面”}" TextChanged="Title_Changed" />
+      </Grid>
+      <!-- Scene pills: selected pill takes the scene's pigment at 13% (Mac StartComposer). -->
+      <ItemsControl ItemsSource="{Binding Scenes}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="local:SceneChoice">
+            <Button Classes="scene" Tag="{Binding}" Click="Scene_Click"
+                    Margin="{DynamicResource D4Margin_0_0_4_4}" ToolTip.Tip="{Binding Promise}">
+              <TextBlock Text="{Binding Title}" FontSize="13" />
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+        <TextBlock Text="{Binding SelectedScene.Promise}" FontFamily="{StaticResource SerifFamily}" FontSize="17" FontWeight="Medium" />
+        <ItemsControl x:Name="MomentsList" ItemsSource="{Binding SelectedScene.Moments}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_16}" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                <Ellipse Width="4" Height="4" Fill="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding}" Classes="caption" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <TextBlock Text="{loc:Tr Ctrl+Alt+N 不挑场合，立即记录}" Classes="caption" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="{loc:Tr 先准备资料}" Click="Prepare_Click" />
+        <Button Grid.Column="2" Classes="primary" Click="Start_Click">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+            <Ellipse Width="7" Height="7" Fill="{DynamicResource Seal}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 开始}" Foreground="{DynamicResource OnInk}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </StackPanel>
+  </Border>
+</UserControl>

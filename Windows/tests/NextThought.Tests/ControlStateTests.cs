@@ -107,7 +107,7 @@ public sealed class ControlStateTests
     {
         var controls = Controls();
         // Mac HitTargets.swift: minHeight 32, icon 36, row 36; this task only settles the row control.
-        Assert.Contains("Value=\"32\"", StyleBlock(controls, "CheckBox"));
+        Assert.Contains("Value=\"{DynamicResource Control}\"", StyleBlock(controls, "CheckBox"));
         Assert.Contains("Mac Hit.minHeight", controls);
     }
 

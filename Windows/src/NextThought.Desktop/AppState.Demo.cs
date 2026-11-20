@@ -82,6 +82,8 @@ public partial class AppState
         RefreshSeriesLessons();
         RefreshSeriesSkills();
         ApplyHistoryFilter();
+        // E1: the home page's own lists (continue-series order, recent outcome lines).
+        RefreshHome();
         OnPropertyChanged(nameof(HasTranscript));
         OnPropertyChanged(nameof(IsHistoryEmpty));
         OnPropertyChanged(nameof(StatsText));

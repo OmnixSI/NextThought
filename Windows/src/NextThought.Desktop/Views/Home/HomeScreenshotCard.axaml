@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Home.HomeScreenshotCard"
+             x:DataType="local:AppState"
+             IsVisible="{Binding HasScreenshotPreview}">
+  <Border Classes="card" Padding="{DynamicResource D4Padding_16}">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+      <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+        <TextBlock Text="{loc:Tr 截图}" Classes="section" />
+        <Border CornerRadius="{DynamicResource RadiusMedium}" ClipToBounds="True"
+                Background="{DynamicResource Sunken}" MinHeight="{DynamicResource S8}" MaxHeight="180">
+          <Image Source="{Binding ScreenshotPreview}" Stretch="Uniform" />
+        </Border>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Bottom">
+        <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
+        <Button Classes="primary" Content="{loc:Tr 分析截图}" Click="Analyze_Click" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

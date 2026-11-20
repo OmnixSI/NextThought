@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             x:Class="NextThought.Desktop.Views.Home.RecentMeetings"
+             x:DataType="local:AppState">
+  <UserControl.Resources>
+    <controls:ModeTintConverter x:Key="ModeTint" />
+  </UserControl.Resources>
+  <StackPanel Spacing="{DynamicResource D4Spacing_0}">
+    <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
+      <TextBlock Text="{loc:Tr 最近记录}" Classes="overline" />
+      <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部记录}" FontSize="12" VerticalAlignment="Center"
+              Command="{Binding NavigateCommand}" CommandParameter="Live" />
+    </Grid>
+    <Border Height="0.5" Background="{DynamicResource Hairline}" />
+    <TextBlock Text="{loc:Tr 开过的会都在这里：原话、纪要和下一步，随时找得回来。}" Classes="caption"
+               Foreground="{DynamicResource Secondary}" Margin="{DynamicResource D4Margin_0_12_0_12}"
+               IsVisible="{Binding AreHomeRecentEmpty}" />
+    <ItemsControl ItemsSource="{Binding HomeRecentRows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:HomeRecentRow">
+          <StackPanel>
+            <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Tag="{Binding}" Click="Meeting_Click">
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" Margin="{DynamicResource D4Margin_8_12}">
+                <Ellipse Width="7" Height="7" Fill="{Binding Mode, Converter={StaticResource ModeTint}}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
+                  <TextBlock Text="{Binding Title}" Classes="body" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Outcome}" Classes="caption" FontSize="12" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="{Binding When}" Classes="caption" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}"
+                           FontSize="9" Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+            <Border Height="0.5" Background="{DynamicResource Hairline}" />
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

@@ -88,8 +88,10 @@ public sealed class ThemeResourceTests
             Assert.Contains($"<x:Double x:Key=\"{pair.Item1}\">{pair.Item2}</x:Double>", theme);
         var main = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
         Assert.Contains("ColumnDefinitions=\"Auto,*\"", main);
+        // HomeView.swift uses 760 for the home page; the shared Content token (720) covers the
+        // other pages (settings below).
         var home = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "HomeView.axaml"));
-        Assert.Contains("MaxWidth=\"720\"", home);
+        Assert.Contains("MaxWidth=\"760\"", home);
         var settings = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
         Assert.Contains("MaxWidth=\"720\"", settings);
         var sidebar = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));

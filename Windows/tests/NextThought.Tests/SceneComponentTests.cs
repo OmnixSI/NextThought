@@ -1,4 +1,4 @@
-﻿using Xunit;
+using Xunit;
 
 namespace NextThought.Tests;
 
@@ -60,10 +60,12 @@ public sealed class SceneComponentTests
         var home = View("HomeView.axaml");
         Assert.Contains("<controls:InkWash Mode=\"{Binding SelectedMode}\"", home);
         Assert.Contains("Animated=\"True\"", home);
-        Assert.Contains("<controls:SceneGlyph Mode=\"{Binding SelectedMode}\" Size=\"38\"", home);
+        // E1: the glyph moved into the home composer subview.
+        var composer = File.ReadAllText(Path.Combine(Desktop(), "Views", "Home", "StartComposer.axaml"));
+        Assert.Contains("<controls:SceneGlyph Mode=\"{Binding SelectedMode}\" Size=\"38\"", composer);
         // The scene card shows the promise and the three moments from the theme.
-        Assert.Contains("SelectedScene.Promise", home);
-        Assert.Contains("SelectedScene.Moments", home);
+        Assert.Contains("SelectedScene.Promise", composer);
+        Assert.Contains("SelectedScene.Moments", composer);
     }
 
     [Fact]
