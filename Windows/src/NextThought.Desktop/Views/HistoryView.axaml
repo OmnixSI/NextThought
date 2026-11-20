@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
              xmlns:platform="using:NextThought.Platform"
+             xmlns:core="using:NextThought.Core"
              x:Class="NextThought.Desktop.Views.HistoryView"
              x:DataType="local:AppState">
   <UserControl.Resources>
@@ -37,7 +38,7 @@
               </DataTemplate>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_6}">
       <TextBlock Text="历史" Classes="display" />
       <TextBlock Text="每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。"
@@ -73,6 +74,27 @@
     </StackPanel>
 
     <Border Grid.Row="3" Classes="card" Margin="{DynamicResource D4Margin_0_0_0_10}"
+            IsVisible="{Binding HasSelectedHistory}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="归档概览" Classes="overline" />
+        <TextBlock Text="{Binding CurrentSession.Title}" Classes="section" />
+        <TextBlock Text="{Binding CurrentSession.LocalStartedAt}" Classes="caption" />
+        <TextBlock Text="{Binding CurrentSession.AnswerCount}" Classes="caption" />
+        <TextBlock Text="回答列表" Classes="overline" />
+        <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="core:AnswerRecord">
+              <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+                <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="4" Classes="card" Margin="{DynamicResource D4Margin_0_0_0_10}"
               IsVisible="{Binding HistoryContentHits.Count}">
         <StackPanel Spacing="{DynamicResource D4Spacing_4}">
           <TextBlock Text="全文命中" Classes="overline" />
@@ -91,7 +113,7 @@
           </ItemsControl>
         </StackPanel>
       </Border>
-    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
+    <ScrollViewer Grid.Row="5" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
       <StackPanel>
         <ItemsControl ItemsSource="{Binding HistoryGroups}">
           <ItemsControl.ItemTemplate>

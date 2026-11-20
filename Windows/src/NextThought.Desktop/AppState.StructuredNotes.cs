@@ -892,6 +892,8 @@ public partial class AppState
             Sources.Clear();
             foreach (var source in data.Answers.LastOrDefault()?.Sources ?? []) Sources.Add(source);
             RetrievalInfo = data.Answers.LastOrDefault()?.Sources?.Count > 0 ? "历史回答的引用已保存，可查看来源。" : "";
+            SelectedSessionAnswers.Clear();
+            foreach (var answer in data.Answers) SelectedSessionAnswers.Add(answer);
             AnswerText = data.Answers.LastOrDefault()?.Answer ?? "";
             DetectedQuestion = data.Answers.LastOrDefault()?.Question ?? UiText.T("可以继续对这场会议提问。");
             SummaryText = data.Summary.Length > 0 ? data.Summary : UiText.T("这场会议还没有纪要，点击上方整理。");

@@ -24,7 +24,7 @@ public partial class AppState
 
     partial void OnHistoryQueryChanged(string value) => ApplyHistoryFilter();
 
-    partial void OnCurrentSessionChanged(SessionMeta? value) => OnPropertyChanged(nameof(StatsText));
+    partial void OnCurrentSessionChanged(SessionMeta? value) { OnPropertyChanged(nameof(StatsText)); OnPropertyChanged(nameof(HasSelectedHistory)); }
 
     public void RefreshHistory(Guid? select = null)
     {
@@ -66,6 +66,10 @@ public partial class AppState
         }
         catch (Exception ex) { SetStatus("全文搜索失败：" + ex.Message, true); }
     }
+
+
+    public System.Collections.ObjectModel.ObservableCollection<AnswerRecord> SelectedSessionAnswers { get; } = [];
+    public bool HasSelectedHistory => CurrentSession is not null;
 
     public bool IsHistoryEmpty => History.Count == 0;
 

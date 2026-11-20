@@ -91,6 +91,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryShowsArchiveOverviewAndAnswers()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("归档概览", xaml);
+        Assert.Contains("SelectedSessionAnswers", xaml);
+        var archive = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
+        Assert.Contains("SelectedSessionAnswers", archive);
+    }
+
     [Fact]
     public void HistoryHasFullTextSearchUi()
     {
