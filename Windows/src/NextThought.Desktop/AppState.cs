@@ -44,6 +44,7 @@ public partial class AppState : ObservableObject
     private DateTimeOffset? lastSpeechEnd;
     private LiveSpeechEngine? engine;
     private CloudSttSession? cloudStt;
+    private CloudSttSession? cloudSttMicrophone;
     private MeetingVoiceTagger? voiceTagger;
     private MeetingTranslator? translator;
     // 逐字同传：每一路只保留最新一版译文，过期结果不覆盖当前句子（LiveTranslationCoordinator）。

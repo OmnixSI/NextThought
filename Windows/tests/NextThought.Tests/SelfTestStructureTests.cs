@@ -191,6 +191,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CloudModeCanUseBothAudioSources()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("cloudSttMicrophone", live);
+        Assert.Contains("AudioSource.Microphone", live);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.cs"));
+        Assert.Contains("cloudSttMicrophone", state);
+    }
+
     [Fact]
     public void UiExceptionIsShownInStatus()
     {

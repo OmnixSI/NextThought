@@ -204,6 +204,20 @@ public partial class AppState
                         }
                         HandleAudioFailure("云端识别中断：" + message);
                     });
+                    if (settings.CaptureSystem && settings.CaptureMicrophone)
+                    {
+                        cloudSttMicrophone = await CloudSttSession.StartAsync(cloudProvider, SettingsStore.ReadCloudSttKey(),
+                            settings.CloudSttModel, settings.CloudSttLanguage, RecognitionHotwords(), endpoint);
+                        cloudSttMicrophone.Updated += update => Dispatcher.UIThread.Post(() =>
+                        {
+                            if (generation != epoch) return;
+                            var start = meta.StartedAt.AddMilliseconds(Math.Max(0, update.StartMs ?? 0));
+                            var end = meta.StartedAt.AddMilliseconds(Math.Max(0, update.EndMs ?? ((update.StartMs ?? 0) + 500)));
+                            ReceiveTranscript(meta, new TranscriptUpdate(Guid.NewGuid(), AudioSource.Microphone, update.Text,
+                                update.IsFinal, start, end), true);
+                        });
+                        cloudSttMicrophone.Failed += message => Dispatcher.UIThread.Post(() => SetStatus("麦克风云端识别中断：" + message, true));
+                    }
                     SetStatus("云端识别已连接；转写发送到所选服务。");
                 }
                 catch (Exception cloudError)
@@ -230,8 +244,15 @@ public partial class AppState
             {
                 voiceTagger?.Add(frame);
                 ownedEngine?.Accept(frame);
-                if (frame.Source == cloudSource && !ListeningPaused && cloudStt is { } cloud)
-                    _ = cloud.SendAsync(frame.Samples);
+                if (!ListeningPaused)
+                {
+                    if (frame.Source == AudioSource.System && cloudStt is { } cloud)
+                        _ = cloud.SendAsync(frame.Samples);
+                    else if (frame.Source == AudioSource.Microphone && cloudSttMicrophone is { } mic)
+                        _ = mic.SendAsync(frame.Samples);
+                    else if (frame.Source == cloudSource && cloudStt is { } fallback)
+                        _ = fallback.SendAsync(frame.Samples);
+                }
             };
             capture.Failed += message => Dispatcher.UIThread.Post(() => HandleAudioFailure(message));
             capture.LevelChanged += (source, level) => Dispatcher.UIThread.Post(() =>
@@ -254,6 +275,7 @@ public partial class AppState
         {
             if (capture != null) { await capture.DisposeAsync(); capture = null; }
             if (cloudStt != null) { await cloudStt.DisposeAsync(); cloudStt = null; }
+            if (cloudSttMicrophone != null) { await cloudSttMicrophone.DisposeAsync(); cloudSttMicrophone = null; }
             if (engine != null) { await engine.DisposeAsync(); engine = null; }
             voiceTagger?.Dispose(); voiceTagger = null;
             translator?.Dispose(); translator = null;
@@ -284,6 +306,7 @@ public partial class AppState
         {
             if (capture != null) { await capture.DisposeAsync(); capture = null; }
             if (cloudStt != null) { await cloudStt.DisposeAsync(); cloudStt = null; }
+            if (cloudSttMicrophone != null) { await cloudSttMicrophone.DisposeAsync(); cloudSttMicrophone = null; }
             if (engine != null) { await engine.DisposeAsync(); engine = null; }
             await Task.Delay(30);
             translator?.Cancel();
