@@ -15,7 +15,7 @@
 ## 2026-11-20 · 0.5.145 · D8（部分）
 改动：按钮焦点环从 1px 印章红改成 Mac 的 2px `Ink.focus`（Ai）；新增 `Button.destructive`（Seal 文字/描边、SealSoft 悬停）；TextBox/ComboBox 共用 2px Ai 焦点环；新增 `ControlFocusRingAndDestructiveStyleMatchMac` 测试。
 测试：Core **871/871**，NextThought.Tests **149/149**。
-状态：D8「未做」。焦点环/破坏性按钮/1200×1080 八卡样张页已完成，状态符号改用 Fluent；与 Mac 样本仍不是逐像素一致，并排差异未逐项记录。
+状态：D8「未做」。八卡样张页/焦点环/破坏性按钮/Fluent 状态符完成；并排图 `compare-controls-light.png` 已生成，仍非逐像素一致。
 未解决：控件样张页与 Mac 截图并排。
 
 ## 2026-11-20 · 0.5.145 · D7（完成）
@@ -35,7 +35,7 @@
 改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
 测试：Core **871/871**，NextThought.Tests **149/149**。
 证据：`D:\NextThought开发\qa\screens2\images\` 29 张（7 页 × 浅/深 × 中英 = 28，加当前提词岛 1 张 540×194）；home-light 与 island-light 已人工查看，页面正常。
-状态：D1「未做」。7 页中英/浅深已出；当前提词岛已出一张。缺 Mac 脚本的另外两页（准备、回顾/工作纪要）、提词岛五种形态、并排比对；还没有把截图放进 `Windows/validation/screens/<视图>/`。
+状态：D1「未做」。7 页中英/浅深 + 提词岛共 31 张已按视图放进 `Windows/validation/screens/`；首页/历史/资料库/设置/组件样张已有 Mac 并排图，差异明显；仍缺 Mac 脚本的准备/回顾/工作纪要、提词岛五态和逐项差异清单。
 未解决：补齐页面/语言/岛形态和对照。
 
 ## 2026-11-20 · 0.5.145 · D7（部分）
@@ -47,7 +47,7 @@
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
 测试：Core **871/871**（新增 2 项），NextThought.Tests **149/149**。
-状态：D6「未做」。场景数据已接入首页；新增 SceneGlyph（tint 圆角字形）、SceneTag（色点+名称）、InkWash（模糊晕染）并接入 HomeView；截图对照仍未做。
+状态：D6「未做」。场景数据+SceneGlyph/SceneTag/InkWash 已接入首页；并排图 `Windows/validation/screens/compare-home-light.png` 已生成，显示场景选择器/标题行与 Mac v3 差异仍大。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
