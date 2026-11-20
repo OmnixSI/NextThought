@@ -38,6 +38,28 @@ public partial class AppState
         ? NextThought.Core.SeriesBriefingBuilder.Build(series, History.Select(item => item.Meta).ToList())
         : null;
 
+
+    public System.Collections.ObjectModel.ObservableCollection<SeriesChangeRow> SeriesChangeRows { get; } = [];
+
+    private void RefreshSeriesChanges()
+    {
+        SeriesChangeRows.Clear();
+        if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
+        foreach (var candidate in series.SeriesChangeCandidates.Where(candidate => candidate.Status == WorkspaceSeriesChangeCandidate.StatusValue.Pending))
+            SeriesChangeRows.Add(new SeriesChangeRow(candidate));
+    }
+
+    public void ReviewSeriesChange(string candidateId, WorkspaceSeriesChangeDecision decision)
+    {
+        if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
+        var (updated, receipt) = WorkspaceSeriesChangeMerger.Apply(series, candidateId, decision);
+        workspace = workspace.WithSeries(updated);
+        SaveWorkspace();
+        RefreshSeries();
+        RefreshSeriesChanges();
+        SetStatus(receipt is null ? "系列变更未应用。" : "系列变更已" + (decision == WorkspaceSeriesChangeDecision.Reject ? "忽略。" : "应用。"));
+    }
+
     partial void OnSelectedSeriesChanged(SeriesRow? value)
     {
         OnPropertyChanged(nameof(HasSelectedSeries));
@@ -47,6 +69,7 @@ public partial class AppState
         RefreshSeriesMeetings();
         RefreshSeriesLessons();
         RefreshSeriesSkills();
+        RefreshSeriesChanges();
         AssignCurrentToSeriesCommand.NotifyCanExecuteChanged();
         AddLessonCommand.NotifyCanExecuteChanged();
     }

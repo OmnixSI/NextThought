@@ -161,6 +161,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SeriesChangeCardsCanBeReviewed()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesView.axaml"));
+        Assert.Contains("SeriesChangeRows", xaml);
+        Assert.Contains("AcceptSeriesChange_Click", xaml);
+        var series = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Series.cs"));
+        Assert.Contains("ReviewSeriesChange", series);
+    }
+
     [Fact]
     public void SeriesMeetingRowsShowRecordTag()
     {

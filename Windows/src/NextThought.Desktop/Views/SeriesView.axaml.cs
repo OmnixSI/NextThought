@@ -38,4 +38,16 @@ public partial class SeriesView : UserControl
         if (sender is Button { Tag: KnowledgeCandidateRow row } && DataContext is AppState state)
             state.ReviewCandidate(row, decision);
     }
+
+    private void AcceptSeriesChange_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: SeriesChangeRow row } && DataContext is AppState state)
+            state.ReviewSeriesChange(row.Id, NextThought.Core.WorkspaceSeriesChangeDecision.Add);
+    }
+
+    private void RejectSeriesChange_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: SeriesChangeRow row } && DataContext is AppState state)
+            state.ReviewSeriesChange(row.Id, NextThought.Core.WorkspaceSeriesChangeDecision.Reject);
+    }
 }

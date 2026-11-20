@@ -53,7 +53,7 @@
 
       <!-- 选中的系列 -->
       <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_22_16}">
-        <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Spacing="{DynamicResource D4Spacing_4}">
               <TextBlock Text="{Binding SelectedSeriesTitle}" FontFamily="{StaticResource SerifFamily}"
@@ -96,7 +96,30 @@
           </StackPanel>
 
           <!-- 经验 / 待确认 / 题库：只有确认过的知识会进入回答 -->
-          <TabControl Name="Tabs" Grid.Row="2" Margin="{DynamicResource D4Margin_0_10_0_0}" Background="Transparent" Padding="{DynamicResource D4Padding_0}">
+          <Border Grid.Row="2" Classes="card" Padding="{DynamicResource D4Padding_12}" Margin="{DynamicResource D4Margin_0_8_0_0}"
+                  IsVisible="{Binding SeriesChangeRows.Count}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="系列变更待确认" Classes="overline" />
+              <ItemsControl ItemsSource="{Binding SeriesChangeRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:SeriesChangeRow">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="{DynamicResource D4Margin_0_0_0_6}">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                        <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding SourceQuote}" Classes="caption" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                        <Button Classes="quiet" Content="应用" Tag="{Binding}" Click="AcceptSeriesChange_Click" />
+                        <Button Classes="quiet" Content="忽略" Tag="{Binding}" Click="RejectSeriesChange_Click" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <TabControl Name="Tabs" Grid.Row="3" Margin="{DynamicResource D4Margin_0_10_0_0}" Background="Transparent" Padding="{DynamicResource D4Padding_0}">
             <TabItem Header="{Binding SeriesLessonsHeader}">
               <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_8_0_0}">
@@ -179,7 +202,7 @@
             </TabItem>
           </TabControl>
 
-          <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
+          <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
             <TextBox Text="{Binding NewLessonText}" PlaceholderText="一句话经验，例如：先说结论，再说依据" MinHeight="34" />
             <Button Grid.Column="1" Classes="primary" Margin="{DynamicResource D4Margin_8_0_0_0}" Padding="{DynamicResource D4Padding_16_0}" MinHeight="34"
                     Command="{Binding AddLessonCommand}">
