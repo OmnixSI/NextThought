@@ -28,6 +28,15 @@ public sealed class SelfTestStructureTests
         Assert.False(File.Exists(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "SelfTestOptions.cs")));
     }
 
+
+    [Fact]
+    public void AppStateMainFileIsBelow600Lines()
+    {
+        var path = Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.cs");
+        Assert.True(File.ReadAllLines(path).Length < 600);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Methods.cs")));
+    }
+
     [Fact]
     public void ProductionStartupOptionsOnlyExposeThreeSwitches()
     {
