@@ -130,6 +130,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private double? subtitleBarX;
     [ObservableProperty] private double? subtitleBarY;
     [ObservableProperty] private bool capturePrivacy = true;
+    [ObservableProperty] private bool teleprompterHideBackground;
     [ObservableProperty] private int subtitleWidth = 920;
     [ObservableProperty] private int subtitleFontSize = 22;
     [ObservableProperty] private bool subtitleShowTranslation = true;
@@ -255,6 +256,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         SubtitleBarX = settings.SubtitleBarX;
         SubtitleBarY = settings.SubtitleBarY;
         CapturePrivacy = settings.CapturePrivacy;
+        TeleprompterHideBackground = settings.TeleprompterHideBackground;
         SubtitleWidth = Math.Clamp(settings.SubtitleWidth, 520, 1400);
         SubtitleFontSize = Math.Clamp(settings.SubtitleFontSize, 16, 36);
         SubtitleShowTranslation = settings.SubtitleShowTranslation;
@@ -335,6 +337,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         SubtitleBarX = SubtitleBarX,
         SubtitleBarY = SubtitleBarY,
         CapturePrivacy = CapturePrivacy,
+        TeleprompterHideBackground = TeleprompterHideBackground,
         SubtitleWidth = Math.Clamp(SubtitleWidth, 520, 1400),
         SubtitleFontSize = Math.Clamp(SubtitleFontSize, 16, 36),
         SubtitleShowTranslation = SubtitleShowTranslation,

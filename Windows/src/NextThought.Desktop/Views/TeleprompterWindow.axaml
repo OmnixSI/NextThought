@@ -32,10 +32,13 @@
         </StackPanel>
       </Grid>
 
-      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="{DynamicResource D4Padding_14_4_14_12}">
+      <ScrollViewer x:Name="BodyScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="{DynamicResource D4Padding_14_4_14_12}">
         <SelectableTextBlock x:Name="BodyText" Text="{Binding PlainAnswer}" Foreground="#F5F3EE"
                              FontSize="26" LineHeight="38" TextWrapping="Wrap" />
       </ScrollViewer>
+      <Button x:Name="FollowButton" Grid.Row="1" Content="回到最新" Classes="tp" HorizontalAlignment="Right"
+              VerticalAlignment="Bottom" Margin="{DynamicResource D4Margin_0_0_12_12}" IsVisible="False"
+              Click="Follow_Click" />
     </Grid>
   </Border>
 </Window>

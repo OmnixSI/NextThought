@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform;
 using NextThought.Core;
+using Avalonia.Media;
 
 namespace NextThought.Desktop.Views;
 
@@ -17,12 +18,16 @@ public partial class TeleprompterWindow : Window
     private const int GwlExstyle = -20;
     private const long WsExLayered = 0x00080000;
     private const long WsExTransparent = 0x00000020;
+    private const long WsExNoActivate = 0x08000000;
+    private const long WsExToolWindow = 0x00000080;
 
     private readonly AppState state;
     private readonly WindowLayout geometry;
     private bool through;
     private bool dragBarHidden;
     private TeleprompterHandleWindow? clickHandle;
+    private readonly ScrollFollowState follow = new();
+    private bool programmaticScroll;
 
     public TeleprompterWindow() : this(new AppState()) { }
 
@@ -35,13 +40,19 @@ public partial class TeleprompterWindow : Window
         geometry = WindowLayout.Load(state.Paths);
         Width = geometry.TeleprompterWidth;
         Height = geometry.TeleprompterHeight;
-        Opacity = geometry.TeleprompterOpacity;
         BodyText.FontSize = geometry.TeleprompterFontSize;
         through = geometry.TeleprompterClickThrough;
+        ApplyAppearance();
+        state.Settings.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.TeleprompterHideBackground)) ApplyAppearance();
+        };
         Opened += (_, _) =>
         {
+            ApplyAppearance();
             RestorePosition();
             WindowCaptureHiding.Apply(this, WindowCaptureHiding.PrivacyEnabled);
+            ApplyNonActivatingStyle();
             ApplyClickThrough(through);
         };
         PositionChanged += (_, _) =>
@@ -59,6 +70,46 @@ public partial class TeleprompterWindow : Window
             Remember();
         };
         DragBar.DoubleTapped += (_, _) => ToggleControls();
+        BodyScroll.ScrollChanged += (_, _) => OnBodyScrolled();
+        state.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AppState.PlainAnswer)) OnAnswerChanged();
+        };
+        AddHandler(KeyDownEvent, OnPreviewKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+    }
+
+    /// <summary>C15: the lower bound is 0.35; hiding the background keeps the window opaque and clears only the shell.</summary>
+    private void ApplyAppearance()
+    {
+        if (state.Settings.TeleprompterHideBackground)
+        {
+            Opacity = 1;
+            Shell.Background = Brushes.Transparent;
+            Shell.BorderBrush = Brush.Parse("#CCECEBE8");
+            Shell.BorderThickness = new Avalonia.Thickness(1.5);
+        }
+        else
+        {
+            Shell.Background = Brush.Parse("#E6121110");
+            Shell.BorderBrush = Brush.Parse("#33ECEBE8");
+            Shell.BorderThickness = new Avalonia.Thickness(0.5);
+            Opacity = Math.Clamp(geometry.TeleprompterOpacity, 0.35, 1);
+        }
+    }
+
+    /// <summary>C17: a non-activating tool window like the cue island.</summary>
+    private void ApplyNonActivatingStyle()
+    {
+        if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
+        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64() | WsExNoActivate | WsExToolWindow;
+        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+    }
+
+    /// <summary>C17: hide-all must also take the click-through strip.</summary>
+    public void HideForAllWindows()
+    {
+        Hide();
+        clickHandle?.Hide();
     }
 
     private void RestorePosition()
@@ -88,10 +139,45 @@ public partial class TeleprompterWindow : Window
         geometry.TeleprompterY = Position.Y;
         geometry.TeleprompterWidth = Width;
         geometry.TeleprompterHeight = Height;
-        geometry.TeleprompterOpacity = Opacity;
+        if (!state.Settings.TeleprompterHideBackground) geometry.TeleprompterOpacity = Opacity;
         geometry.TeleprompterFontSize = BodyText.FontSize;
         geometry.TeleprompterClickThrough = through;
         geometry.Save(state.Paths);
+    }
+
+    /// <summary>C16: follow the live edge until the reader scrolls away or selects text.</summary>
+    private void OnAnswerChanged()
+    {
+        follow.ReceivedNewContent();
+        if (follow.IsFollowing) ScrollToLatest();
+        FollowButton.IsVisible = !follow.IsFollowing;
+    }
+
+    private void ScrollToLatest()
+    {
+        programmaticScroll = true;
+        BodyScroll.ScrollToEnd();
+        Dispatcher.UIThread.Post(() => programmaticScroll = false);
+    }
+
+    private void OnBodyScrolled()
+    {
+        if (programmaticScroll) return;
+        var atEnd = BodyScroll.Offset.Y >= Math.Max(0, BodyScroll.Extent.Height - BodyScroll.Viewport.Height) - 2;
+        if (atEnd) follow.ReachedLatest(); else follow.UserScrolledAway();
+        FollowButton.IsVisible = !follow.IsFollowing;
+    }
+
+    private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (ScrollFollowInputClassifier.IsScrollNavigationKeyCode((ushort)e.Key)) follow.UserScrolledAway();
+    }
+
+    private void Follow_Click(object? sender, RoutedEventArgs e)
+    {
+        follow.ReturnToLatest();
+        FollowButton.IsVisible = false;
+        ScrollToLatest();
     }
 
     private void ToggleControls()
@@ -124,7 +210,9 @@ public partial class TeleprompterWindow : Window
 
     private void SetOpacity(double delta)
     {
-        Opacity = Math.Clamp(Opacity + delta, 0.25, 1);
+        if (state.Settings.TeleprompterHideBackground) return;
+        Opacity = Math.Clamp(Opacity + delta, 0.35, 1);
+        geometry.TeleprompterOpacity = Opacity;
         Remember();
     }
 

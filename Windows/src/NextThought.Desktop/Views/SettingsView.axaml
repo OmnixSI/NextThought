@@ -108,6 +108,7 @@
           <TextBlock Text="保存后立即应用；跟随系统会随后台主题切换。" Classes="caption" FontSize="11" TextWrapping="Wrap" />
           <CheckBox Content="会中一直展开提词岛，不用把鼠标移上去" IsChecked="{Binding Settings.CueAlwaysOpen}" />
           <CheckBox Content="尽力从屏幕共享中排除本应用窗口" IsChecked="{Binding Settings.CapturePrivacy}" />
+          <CheckBox Content="隐藏背景，只保留文字、边框与按钮" IsChecked="{Binding Settings.TeleprompterHideBackground}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
             <TextBlock Text="提示岛宽度" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.CueWidthChoices}" SelectedItem="{Binding Settings.SelectedCueWidth}"

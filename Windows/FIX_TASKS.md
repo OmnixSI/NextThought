@@ -74,9 +74,9 @@ Nov 20, 2026 · @Homing
 | C12 | 已实现、未验证 | 用户隐藏停定时器；QA passed | 待逐元素对照或实机验证 |
 | C13 | 已实现、未验证 | `SubtitleBarWindow.axaml.cs`：指针移入降到 0.15 透明度、静止 0.6 秒进入可拖动、拖动后保存位置并在重启时恢复（`subtitleBar.position` 对应 `SubtitleBarX/Y`）、双击重置到底部居中、窗口非激活（`WS_EX_NOACTIVATE|TOOLWINDOW`）；可跨屏保存 | 需实机拖动、重启、双击重置并截图与 Mac 对照；重置入口是否与 Mac 用户路径完全一致待确认 |
 | C14 | 未做 | — | 提词浮窗页眉页脚未实现 |
-| C15 | 未做 | — | 提词浮窗工作台未实现 |
-| C16 | 未做 | — | 提词浮窗三种停靠位置未实现 |
-| C17 | 未做 | — | 提词浮窗透明度/跟随阅读滚动/隐藏联动未实现 |
+| C15 | 已实现、未验证 | `TeleprompterWindow`：不透明度下限 0.35；`teleprompterHideBackground` 开启时窗口保持 1、只把 Shell 背景变透明并加实线边框；主窗淡入淡出不再把提词器 Opacity 改成 1，也不再存 1；设置页「隐藏背景，只保留文字、边框与按钮」 | 需实机调到 0.5、隐藏再显示、重启后仍 0.5；背景隐藏时文字与按钮始终不透明 |
+| C16 | 已实现、未验证 | `TeleprompterWindow` 接入 `ScrollFollowState`：新回答在跟随态滚到末尾；手动滚动/键盘导航暂停跟随；回到末尾恢复；「回到最新」按钮；`ScrollFollowStateTests` 8 项通过 | 需实机手动滚动后确认暂停与恢复 |
+| C17 | 已实现、未验证 | 「隐藏所有窗口」改用 `TeleprompterWindow.HideForAllWindows()`，同时隐藏提词器与穿透控制小条；提词器与小条加 `WS_EX_NOACTIVATE|TOOLWINDOW` | 需实机在穿透状态按隐藏全部，确认屏幕无残留小条 |
 | C18 | 已实现、未验证 | `Settings.CapturePrivacy`（默认 true，键 `capturePrivacy`）与设置页「尽力从屏幕共享中排除本应用窗口」；`WindowCaptureHiding.ApplyAll` 每秒扫描所有窗口并施加 `WDA_EXCLUDEFROMCAPTURE`，关闭时恢复 `WDA_NONE`；自检读回主窗、岛、字幕条、提词器四个窗口及开关前后 affinity | 需实机在会议共享中确认主窗口与后续新开窗口都不可见 |
 | C19 | 已实现、未验证 | `EvaluateScreenSharing` 仅在 `CapturePrivacy` 关闭或窗口无 WDA 保护时才用窗口标题检测兜底；自检先关闭隐私再验证兜底收回 | 需实机确认隐私开启时屏幕共享不再无谓收回岛，且系统不支持 WDA 时才走兜底 |
 | D1 | 已实现、未验证 | 9 页+8 标签+岛 7 态全量截图；文案非 Mac 逐字 | 待逐元素对照或实机验证 |

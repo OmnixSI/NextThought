@@ -146,7 +146,7 @@ public partial class MainWindow
         hiddenAll = true;
         island?.Hide();
         subtitleBar?.HideForUser();
-        teleprompter?.Hide();
+        teleprompter?.HideForAllWindows();
         Hide();
         state.SetStatus("所有窗口已收起，会议继续记录。Ctrl+Alt+\\ 或托盘图标可恢复。");
     }
@@ -434,6 +434,8 @@ public partial class MainWindow
     /// <summary>A short fade so floating windows do not pop in (plan §8 animation).</summary>
     private static async Task FadeInAsync(Avalonia.Visual visual)
     {
+        // C15: the teleprompter's opacity is a user setting; fades must not overwrite it.
+        if (visual is TeleprompterWindow) return;
         var animation = Motion.FadeIn();
         if (animation is null) { visual.Opacity = 1; return; }
         visual.Opacity = 0;
@@ -444,6 +446,11 @@ public partial class MainWindow
     /// <summary>Mirror of the fade-in; hiding waits for the 120 ms fade.</summary>
     private static async Task FadeOutAndHideAsync(Avalonia.Visual visual)
     {
+        if (visual is TeleprompterWindow teleprompter)
+        {
+            teleprompter.Hide();
+            return;
+        }
         try
         {
             var animation = Motion.FadeOut();
