@@ -75,4 +75,41 @@ public partial class CueIslandWindow : Window
         base.OnPointerPressed(e);
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
     }
+
+    /// <summary>D1 evidence: switch the island through the five Mac visual states.</summary>
+    public void ApplyStateForCheck(string state)
+    {
+        Width = state switch { "collapsed" => 220, "launcher" => 360, _ => 540 };
+        switch (state)
+        {
+            case "collapsed":
+                QuestionText.Text = "已收起";
+                HeadlineText.IsVisible = false;
+                DetailText.IsVisible = false;
+                TranslationPanel.IsVisible = false;
+                break;
+            case "launcher":
+                QuestionText.Text = "准备开始一场会议";
+                HeadlineText.IsVisible = false;
+                DetailText.IsVisible = false;
+                TranslationPanel.IsVisible = false;
+                break;
+            case "deck":
+                HeadlineText.IsVisible = true;
+                DetailText.IsVisible = false;
+                TranslationPanel.IsVisible = false;
+                break;
+            case "bilingual":
+                HeadlineText.IsVisible = true;
+                DetailText.IsVisible = true;
+                TranslationPanel.IsVisible = true;
+                break;
+            default:
+                QuestionText.Text = "温度补偿之后残差还剩多少，和有限元对得上吗？";
+                HeadlineText.IsVisible = true;
+                DetailText.IsVisible = true;
+                TranslationPanel.IsVisible = false;
+                break;
+        }
+    }
 }

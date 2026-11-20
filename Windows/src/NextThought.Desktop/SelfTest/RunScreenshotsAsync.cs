@@ -50,8 +50,12 @@ public partial class MainWindow
         state.DetectedQuestion = NextThought.Desktop.DemoContent.Question;
         var island = new CueIslandWindow(state);
         island.Show();
-        await Task.Delay(400);
-        CaptureVisual(island, Path.Combine(directory, "island-light.png"));
+        foreach (var islandState in new[] { "collapsed", "hearing", "listening", "cue", "launcher", "deck", "bilingual" })
+        {
+            island.ApplyStateForCheck(islandState);
+            await Task.Delay(250);
+            CaptureVisual(island, Path.Combine(directory, "island-" + islandState + ".png"));
+        }
         island.Close();
         state.Recording = false;
         Close();

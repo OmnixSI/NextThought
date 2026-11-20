@@ -88,6 +88,18 @@ public sealed class SelfTestStructureTests
         Assert.Contains("BrushTransition Property=\"Background\" Duration=\"0:0:0.28\"", controls);
     }
 
+
+    [Fact]
+    public void CueIslandHasFiveStateEvidenceHook()
+    {
+        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "CueIslandWindow.axaml.cs"));
+        Assert.Contains("ApplyStateForCheck", code);
+        Assert.Contains("\"collapsed\"", code);
+        Assert.Contains("\"launcher\"", code);
+        var runner = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "SelfTest", "RunScreenshotsAsync.cs"));
+        Assert.Contains("island-\" + islandState", runner);
+    }
+
     [Fact]
     public void TopNavigationCapsuleExists()
     {

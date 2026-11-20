@@ -19,18 +19,18 @@
                 Background="{DynamicResource Seal}" Margin="{DynamicResource D4Margin_0_0_10_0}" IsVisible="{Binding Recording}" />
         <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
                 Background="#B8B6AF" Margin="{DynamicResource D4Margin_0_0_10_0}" IsVisible="{Binding !Recording}" />
-        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DetectedQuestion}" Foreground="#ECEBE8"
+        <TextBlock x:Name="QuestionText" Grid.Row="0" Grid.Column="1" Text="{Binding DetectedQuestion}" Foreground="#ECEBE8"
                    FontSize="14" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
-        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SceneTitle}" Foreground="#7A7871" FontSize="10"
+        <TextBlock x:Name="SceneText" Grid.Row="0" Grid.Column="2" Text="{Binding SceneTitle}" Foreground="#7A7871" FontSize="10"
                    VerticalAlignment="Center" Margin="{DynamicResource D4Margin_12_0_0_0}" />
-        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding IslandHeadline}" Foreground="#ECEBE8"
+        <TextBlock x:Name="HeadlineText" Grid.Row="1" Grid.ColumnSpan="3" Text="{Binding IslandHeadline}" Foreground="#ECEBE8"
                    FontSize="13.5" LineHeight="20" Margin="{DynamicResource D4Margin_18_6_0_0}" MaxLines="2"
                    TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
-        <TextBlock Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding IslandDetail}" Foreground="#B8B6AF"
+        <TextBlock x:Name="DetailText" Grid.Row="2" Grid.ColumnSpan="3" Text="{Binding IslandDetail}" Foreground="#B8B6AF"
                    FontSize="11.5" LineHeight="17" Margin="{DynamicResource D4Margin_18_3_0_0}" MaxLines="2"
                    TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
         <!-- 同传上岛：对方那句话的译文（逐字更新，过期结果不会覆盖新句子）。 -->
-        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_18_5_0_0}"
+        <StackPanel x:Name="TranslationPanel" Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_18_5_0_0}"
                     IsVisible="{Binding HasIslandTranslation}">
           <TextBlock Text="译" Foreground="#7A7871" FontSize="10" VerticalAlignment="Center" />
           <TextBlock Text="{Binding IslandTranslation}" Foreground="#DCE3EA" FontSize="12" LineHeight="17"
