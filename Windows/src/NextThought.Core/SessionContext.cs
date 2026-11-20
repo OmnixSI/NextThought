@@ -61,6 +61,11 @@ public sealed class SessionContextIndex
                 documentFrequency[term] = documentFrequency.GetValueOrDefault(term) + 1;
     }
 
+    /// <summary>B22: index imported ContextDocuments directly; disabled files are not chunked.</summary>
+    public SessionContextIndex(IReadOnlyList<ContextDocument> documents) : this(ContextChunker.Chunks(documents))
+    {
+    }
+
     public static SessionContextIndex FromDocuments(IReadOnlyList<MaterialDocument> documents) =>
         new(ContextChunker.Chunks(documents));
 

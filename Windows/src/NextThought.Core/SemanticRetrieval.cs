@@ -59,6 +59,19 @@ public static class ContextChunker
         return result;
     }
 
+    /// <summary>B22: chunk imported ContextDocuments, honouring their enabled flag.</summary>
+    public static IReadOnlyList<ContextChunk> Chunks(IReadOnlyList<ContextDocument> documents)
+    {
+        var materials = documents.Where(document => document.Enabled).Select(document => new MaterialDocument
+        {
+            Id = document.Id,
+            Name = document.Name,
+            Extension = System.IO.Path.GetExtension(document.Name),
+            Blocks = document.Pages.Select((page, index) => new DocumentBlock("第 " + (index + 1) + " 页", page, index + 1)).ToList()
+        }).ToList();
+        return Chunks(materials);
+    }
+
     /// <summary>Short paragraphs of one place (same page or slide) become one block.</summary>
     internal static IReadOnlyList<StructuredDocumentBlock> Merged(IReadOnlyList<StructuredDocumentBlock> blocks)
     {

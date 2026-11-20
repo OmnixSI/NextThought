@@ -56,13 +56,30 @@ public sealed class RealtimeRegressionParityTests
             TranscriptDeduplicator.RemoveOverlappingPrefix("Why?", "Why?", Now, Now.AddSeconds(-1)));
     }
 
-    [Fact(
-        Skip = "Blocked: the C# port has no SessionContextIndex/ContextChunker overload over ContextDocument "
-             + "(Pages/Enabled), so disabled-file filtering cannot be exercised; SessionContextIndex only "
-             + "accepts MaterialDocument, which has no Enabled flag.")]
+    [Fact]
     public void RetrievalSupportsChineseEnglishPageReferencesAndDisabledFiles()
     {
-        // Intentionally not translated: the required C# API does not exist yet.
+        var docs = new[]
+        {
+            new ContextDocument
+            {
+                Name = "notes.pdf",
+                Pages = ["网络延迟主要由传输和排队组成。", "数据库索引减少查询时间。"]
+            },
+            new ContextDocument
+            {
+                Name = "JD.md",
+                Pages = ["Kubernetes reliability and deployment"],
+                Enabled = false
+            }
+        };
+        var index = new SessionContextIndex(docs);
+        var matches = index.Retrieve("数据库索引有什么用");
+        Assert.Equal("notes.pdf", matches[0].Source);
+        Assert.Equal(2, matches[0].Page);
+        Assert.Empty(index.Retrieve("Kubernetes"));
+        Assert.Empty(index.Retrieve("unrelatedword"));
+        Assert.True(index.Retrieve("索引", maximumCharacters: 3).Sum(excerpt => excerpt.Text.Length) <= 3);
     }
 
     [Fact]
