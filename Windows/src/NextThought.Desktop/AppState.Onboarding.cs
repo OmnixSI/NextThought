@@ -71,6 +71,15 @@ public partial class AppState
         if (OnboardingSteps.Clamped(OnboardingStep).Previous() is { } previous) OnboardingStep = (int)previous;
     }
 
+
+    [RelayCommand]
+    private void OpenOnboardingSample()
+    {
+        CompleteOnboarding();
+        LoadDemo();
+        Section = AppSection.Home;
+    }
+
     [RelayCommand]
     private void SkipOnboarding() => CompleteOnboarding();
 
