@@ -138,9 +138,16 @@ public sealed class CompanionServer : IAsyncDisposable
                     accepted = commands.ContainsKey(command);
                     if (!accepted && commands.Count < 1024)
                     {
-                        try { accepted = await action(query["a"]).WaitAsync(deadline.Token).ConfigureAwait(false); }
-                        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException) { accepted = false; }
-                        if (accepted) commands[command] = DateTimeOffset.UtcNow;
+                        // F10: record the command and answer at once; the phone has an 8s request
+                        // deadline and a retry of the same id must not run the action twice.
+                        commands[command] = DateTimeOffset.UtcNow;
+                        accepted = true;
+                        var requestedAction = query["a"];
+                        _ = Task.Run(async () =>
+                        {
+                            try { await action(requestedAction).ConfigureAwait(false); }
+                            catch (Exception) { /* the action failure is reported through state */ }
+                        }, lifetime.Token);
                     }
                 }
                 finally { commandGate.Release(); }

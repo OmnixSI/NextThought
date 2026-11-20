@@ -195,6 +195,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CompanionActionsAckImmediately()
+    {
+        var server = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "CompanionServer.cs"));
+        Assert.Contains("F10", server);
+        Assert.Contains("Task.Run(async () =>", server);
+        Assert.DoesNotContain("await action(query[", server);
+    }
+
     [Fact]
     public void CloudSttSettingsTextMatchesBehavior()
     {
