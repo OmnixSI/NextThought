@@ -263,10 +263,10 @@ public partial class MainWindow
     }
 
     /// <summary>Mac captureWindow/commitRegionScreenshot: analyze at once, or wait on the home card.</summary>
-    private async Task CommitScreenshotAsync(string path, Avalonia.Media.Imaging.Bitmap bitmap)
+    private async Task CommitScreenshotAsync(string path, Avalonia.Media.Imaging.Bitmap cropped)
     {
         if (state.Recording) await state.AnalyzeScreenshotFileAsync(path);
-        else state.SetScreenshotPreview(path, bitmap);
+        else state.SetScreenshotPreview(path, cropped);
     }
 
     /// <summary>E13: own windows never end up in our own screenshots (Mac excludes the app).</summary>
