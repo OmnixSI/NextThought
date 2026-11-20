@@ -28,20 +28,29 @@ public sealed class SettingsStore(AppPaths paths)
         File.WriteAllBytes(temporary, bytes); File.Move(temporary, secretFile, true);
     }
 
+    /// <summary>True when the DPAPI read failed; an empty key must then not overwrite the file.</summary>
+    public bool CloudSttKeyReadFailed { get; private set; }
+
     public string ReadCloudSttKey()
     {
+        CloudSttKeyReadFailed = false;
         try
         {
             if (!File.Exists(cloudSttSecretFile)) return "";
             return Encoding.UTF8.GetString(ProtectedData.Unprotect(File.ReadAllBytes(cloudSttSecretFile), cloudSttEntropy, DataProtectionScope.CurrentUser));
         }
-        catch { return ""; }
+        catch
+        {
+            CloudSttKeyReadFailed = true;
+            return "";
+        }
     }
 
     public void SaveCloudSttKey(string key)
     {
         if (key.Length == 0)
         {
+            if (CloudSttKeyReadFailed && File.Exists(cloudSttSecretFile)) return;
             if (File.Exists(cloudSttSecretFile)) File.Delete(cloudSttSecretFile);
             return;
         }

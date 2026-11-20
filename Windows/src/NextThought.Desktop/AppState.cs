@@ -119,6 +119,7 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private string companionLink = "";
     [ObservableProperty] private string shortcutText = "";
     private Dictionary<string, string> shortcutOverrides = [];
+    public IReadOnlyDictionary<string, string> ShortcutOverrides => shortcutOverrides;
     public event Action? ShortcutsChanged;
     public event Action<bool>? LanguageChanged;
     public event Action<int>? TranscriptJumpRequested;
@@ -996,7 +997,7 @@ public partial class AppState : ObservableObject
                         "deepgram" => CloudSTTProvider.Deepgram,
                         _ => throw new InvalidOperationException("未知的云端识别服务。")
                     };
-                    var endpoint = string.IsNullOrWhiteSpace(settings.CloudSttEndpoint) ? null : new Uri(settings.CloudSttEndpoint);
+                    var endpoint = CloudSttEndpointPolicy.FromSetting(settings.CloudSttEndpoint);
                     cloudStt = await CloudSttSession.StartAsync(cloudProvider, SettingsStore.ReadCloudSttKey(),
                         settings.CloudSttModel, settings.CloudSttLanguage, RecognitionHotwords(), endpoint);
                     cloudStt.Updated += update => Dispatcher.UIThread.Post(() =>
@@ -1879,7 +1880,7 @@ public partial class AppState : ObservableObject
                         _ => (CloudSTTProvider?)null
                     } ?? throw new InvalidOperationException("未知的云端识别服务。");
                     SetStatus(UiText.EnglishUi ? "Transcribing the WAV in the cloud…" : "正在通过云端识别转写 WAV…");
-                    var endpoint = string.IsNullOrWhiteSpace(settings.CloudSttEndpoint) ? null : new Uri(settings.CloudSttEndpoint);
+                    var endpoint = CloudSttEndpointPolicy.FromSetting(settings.CloudSttEndpoint);
                     var updates = await CloudSttClient.TranscribeWavAsync(
                         file, provider, SettingsStore.ReadCloudSttKey(), settings.CloudSttModel,
                         settings.CloudSttLanguage, RecognitionHotwords(), null, endpoint, ct);

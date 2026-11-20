@@ -113,8 +113,10 @@ public sealed class CloudSttSession : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        lifetime.Cancel();
+        // Send the end-of-audio message and wait for the final result before cancelling:
+        // cancelling first made StopAsync send with a cancelled token, dropping the last sentence.
         await StopAsync();
+        lifetime.Cancel();
         socket.Dispose();
         sendLock.Dispose();
         lifetime.Dispose();
