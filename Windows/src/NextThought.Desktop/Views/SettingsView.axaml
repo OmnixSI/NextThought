@@ -165,14 +165,12 @@
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorGeneral2" Text="全局快捷键（Ctrl+Alt + 按键）" Classes="section" />
-          <TextBlock Text="每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。"
+          <TextBlock Text="点按键位后直接按下组合键录入，Esc 取消；「清除」「默认」恢复该动作的 Mac 默认键位。必须包含 Ctrl/Alt/Shift/Win 之一，两个动作不能相同。"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ShortcutConflicts}" IsVisible="{Binding HasShortcutConflicts}"
                      Foreground="{DynamicResource Caution}" FontSize="11" TextWrapping="Wrap" />
-          <TextBox Text="{Binding ShortcutText}" AcceptsReturn="True" Height="150" TextWrapping="Wrap"
-                   ScrollViewer.VerticalScrollBarVisibility="Auto"
-                   FontFamily="Consolas,monospace" FontSize="11" />
-          <Button Content="保存快捷键" Command="{Binding SaveShortcutsCommand}" HorizontalAlignment="Left" />
+          <StackPanel x:Name="ShortcutRecorderPanel" Spacing="{DynamicResource D4Spacing_6}" />
+          <TextBlock x:Name="ShortcutRecorderStatus" Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
