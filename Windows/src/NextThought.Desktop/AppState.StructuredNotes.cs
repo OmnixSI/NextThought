@@ -101,6 +101,7 @@ public partial class AppState
         {
             // A missing or unreadable file is the same as "not generated yet".
         }
+        NotifyMeetingPageProperties();
     }
 
     [RelayCommand(CanExecute = nameof(CanGenerateStructured))]
@@ -358,6 +359,7 @@ public partial class AppState
             if (StartupOptions.Demo)
             {
                 LoadDemo();
+                Library.NotifyDemoLoaded();
                 SetStatus("演示模式：内置样本数据，不会写入你的资料。");
             }
             else
@@ -838,6 +840,7 @@ public partial class AppState
             OnPropertyChanged(nameof(NotesFormatIsViewpoints));
             OnPropertyChanged(nameof(StructuredHint));
             await LoadStructuredAsync(data.Meta, SelectedNotesFormat);
+            NotifyMeetingPageProperties();
             BuildNotesEvidence(lines, data.Meta.Id);
             Section = AppSection.Live;
             RefreshHistory(meta.Id);
@@ -889,5 +892,192 @@ public partial class AppState
         companionHistoryIndex = 0;
         DetectedQuestion = "自检问题";
         AnswerText = "自检回答";
+    }
+
+    // MARK: E15 会议页（MeetingPage / MeetingTab / NotesProgressLine / SessionEvidencePane）
+
+    /// <summary>MeetingPage keeps the jump inside the meeting page: 纪要 → 转写 tab, not the live page.</summary>
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private int notesTabIndex;
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private int notesJumpSeconds = -1;
+
+    public bool HasSessionAnswers => SelectedSessionAnswers.Count > 0;
+    public bool HasMeetingHighlights => MeetingHighlights.Count > 0;
+    public bool HasOutlineSections => StructuredPayload?.Outline.Sections.Count > 0;
+    public bool HasOutlineConcepts => StructuredPayload?.Outline.Concepts.Count > 0;
+    public bool HasOutlineReview => StructuredPayload?.Outline.Review.Count > 0;
+
+    /// <summary>MeetingPage's tabs(): 纪要/复盘, 转写, 我的笔记, 会中回答 only when there are answers.</summary>
+    public string NotesTabTitle => "";
+
+    // OutlineView.swift: numbered sections → points → sub-points, then 关键概念 and 待复习.
+    public ObservableCollection<NotesOutlineRow> NotesOutlineRows { get; } = [];
+    public ObservableCollection<NotesOutlineConceptRow> NotesOutlineConcepts { get; } = [];
+    public ObservableCollection<NotesReviewRow> NotesOutlineReview { get; } = [];
+
+    /// <summary>MeetingPage's alert copy depends on whether the notes have user edits.</summary>
+    public bool HasEditedNotesForCurrentSession
+    {
+        get
+        {
+            if (CurrentSession is not { } meta) return false;
+            try
+            {
+                var content = SessionUserContentStore.Load(Sessions.Folder(meta.Id));
+                return content.EditedNotes is not null || content.EditedSummary is not null
+                    || content.EditedMarkdown is not null;
+            }
+            catch { return false; }
+        }
+    }
+
+    /// <summary>Jump from a notes timestamp / evidence / outline line to the transcript inside this page.</summary>
+    public void ShowNotesTranscriptAt(int? seconds)
+    {
+        NotesTabIndex = 1;
+        NotesJumpSeconds = seconds ?? 0;
+        var target = NotesJumpSeconds;
+        TranscriptHighlightSeconds = target;
+        foreach (var row in Transcript) row.IsHighlighted = false;
+        if (Transcript.Count == 0) return;
+        TranscriptRow? nearest = null;
+        var best = int.MaxValue;
+        foreach (var row in Transcript)
+        {
+            var offset = (int)Math.Abs((row.Date - (CurrentSession?.StartedAt ?? row.Date)).TotalSeconds - target);
+            if (offset >= best) continue;
+            best = offset;
+            nearest = row;
+        }
+        if (nearest is not null) nearest.IsHighlighted = true;
+        NotesJumpRequested?.Invoke(target);
+    }
+
+    /// <summary>Played by the view: scroll the transcript list to the jumped line.</summary>
+    public event Action<int>? NotesJumpRequested;
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private int transcriptHighlightSeconds = -1;
+
+    public string NotesJumpNotice => NotesJumpSeconds < 0
+        ? ""
+        : UiText.Format("已跳到原话 · %@", NotesOutlineRow.TimeText(NotesJumpSeconds));
+    public bool HasNotesJumpNotice => NotesJumpSeconds >= 0;
+
+    partial void OnNotesJumpSecondsChanged(int value)
+    {
+        OnPropertyChanged(nameof(NotesJumpNotice));
+        OnPropertyChanged(nameof(HasNotesJumpNotice));
+    }
+
+    /// <summary>SessionInfoView.swift: 会议 / 纪要 / 存储 / 归档 groups for the current meeting.</summary>
+    public IReadOnlyList<(string Group, string Label, string Value)> CurrentSessionInfoGroups()
+    {
+        if (CurrentSession is not { } meta) return [];
+        var ended = meta.EndedAt;
+        var duration = ended is { } end ? end - meta.StartedAt : DateTimeOffset.Now - meta.StartedAt;
+        var players = Transcript.Select(row => row.Label.Split(" · ")[0]).Distinct().ToList();
+        var speakers = rowsSpeakerLabels();
+        var folder = Sessions.Folder(meta.Id);
+        var size = 0L;
+        try
+        {
+            if (Directory.Exists(folder))
+                size = Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+                    .Sum(path => { try { return new FileInfo(path).Length; } catch { return 0L; } });
+        }
+        catch { }
+        var storage = size >= 1024 * 1024
+            ? UiText.Format("%.1f MB", size / 1024.0 / 1024.0)
+            : UiText.Format("%lld KB", size / 1024);
+        var notes = CurrentSession?.SummaryState switch
+        {
+            "ready" => UiText.T("已有纪要"),
+            "pending" => Summarizing ? UiText.T("正在整理纪要") : UiText.T("整理已中断，可重试"),
+            "failed" => UiText.Format("整理失败：%@", CurrentSession.SummaryError ?? UiText.T("原因不可用")),
+            _ => UiText.T("没有纪要")
+        };
+        return
+        [
+            (UiText.T("会议"), UiText.T("开始时间"), meta.LocalStartedAt),
+            (UiText.T("会议"), UiText.T("时长"), DurationText(duration)),
+            (UiText.T("会议"), UiText.T("发言人"), speakers),
+            (UiText.T("会议"), UiText.T("模式"), meta.Mode),
+            (UiText.T("纪要"), UiText.T("状态"), notes),
+            (UiText.T("存储"), UiText.T("存储位置"), folder),
+            (UiText.T("存储"), UiText.T("存储大小"), storage),
+            (UiText.T("归档"), UiText.T("写入状态"), UiText.Format("已读取归档；%lld 项待写入", writes.Count))
+        ];
+    }
+
+    private string rowsSpeakerLabels()
+    {
+        var names = new List<string>();
+        foreach (var row in Transcript)
+        {
+            var label = row.Speaker switch
+            {
+                "remote" => UiText.T("对方"),
+                "room" => UiText.T("现场"),
+                _ => UiText.T("我")
+            };
+            if (!names.Contains(label)) names.Add(label);
+        }
+        return names.Count > 0 ? string.Join("、", names) : UiText.T("暂无可识别发言人");
+    }
+
+    /// <summary>Personal-notes tab: a saved highlight jumps to its transcript line.</summary>
+    public void JumpToMeetingHighlight(NextThought.Core.SessionHighlight highlight) =>
+        ShowNotesTranscriptAt(highlight.OffsetSeconds);
+
+    /// <summary>Evidence pane: jump by line id (preferred) or by the stored mm:ss location.</summary>
+    public void JumpToEvidenceLine(Guid? lineId, string? location)
+    {
+        if (lineId is { } id && Transcript.FirstOrDefault(row => row.Id == id) is { } target)
+        {
+            var offset = (int)Math.Max(0, (target.Date - (CurrentSession?.StartedAt ?? target.Date)).TotalSeconds);
+            ShowNotesTranscriptAt(offset);
+            return;
+        }
+        if (location is not null && TimeSpan.TryParse(location, out var span))
+        {
+            ShowNotesTranscriptAt((int)span.TotalSeconds);
+            return;
+        }
+        ShowNotesTranscriptAt(0);
+    }
+
+    /// <summary>E15 evidence pane rows notify these when the projection changes.</summary>
+    public void NotifyMeetingPageProperties()
+    {
+        OnPropertyChanged(nameof(HasSessionAnswers));
+        OnPropertyChanged(nameof(HasMeetingHighlights));
+        OnPropertyChanged(nameof(HasOutlineSections));
+        OnPropertyChanged(nameof(HasOutlineConcepts));
+        OnPropertyChanged(nameof(HasOutlineReview));
+        OnPropertyChanged(nameof(HasEditedNotesForCurrentSession));
+        RebuildNotesOutline();
+    }
+
+    private void RebuildNotesOutline()
+    {
+        NotesOutlineRows.Clear();
+        NotesOutlineConcepts.Clear();
+        NotesOutlineReview.Clear();
+        if (StructuredPayload?.Outline is not { } outline) return;
+        var number = 0;
+        foreach (var section in outline.Sections)
+        {
+            number++;
+            var lines = new List<NotesOutlineLineRow>();
+            foreach (var point in section.Points)
+            {
+                lines.Add(new NotesOutlineLineRow(point.Text, point.At, false));
+                foreach (var child in point.Children) lines.Add(new NotesOutlineLineRow(child.Text, child.At, true));
+            }
+            NotesOutlineRows.Add(new NotesOutlineRow(number, section.Title, section.At, lines));
+        }
+        foreach (var concept in outline.Concepts)
+            NotesOutlineConcepts.Add(new NotesOutlineConceptRow(concept.Term, concept.Meaning, concept.At));
+        foreach (var review in outline.Review)
+            NotesOutlineReview.Add(new NotesReviewRow(review.Text, review.At));
     }
 }

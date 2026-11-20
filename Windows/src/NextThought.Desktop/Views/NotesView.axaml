@@ -6,7 +6,7 @@
              xmlns:views="using:NextThought.Desktop.Views"
              x:Class="NextThought.Desktop.Views.NotesView"
              x:DataType="local:AppState">
-  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}" MaxWidth="720" HorizontalAlignment="Left">
         <TextBlock Text="{loc:Tr 会后纪要}" Classes="display" />
@@ -18,9 +18,10 @@
         </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+        <Button Content="{loc:Tr 详细信息}" Click="Info_Click" ToolTip.Tip="{loc:Tr 会议信息}" />
         <Button Content="{loc:Tr 导出…}" Command="{Binding OpenSessionExportCommand}" ToolTip.Tip="{loc:Tr 导出 Markdown}" />
         <Button Content="{loc:Tr 编辑纪要}" Click="EditNotes_Click" />
-        <Button Content="{loc:Tr 重新整理}" Command="{Binding SummarizeCommand}" />
+        <Button Content="{loc:Tr 重新整理}" Click="RegenerateNotes_Click" />
         <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="{DynamicResource HitRow}" Padding="{DynamicResource D4Padding_18_0}">
           <TextBlock Text="{loc:Tr 整理这场会议}" Foreground="{DynamicResource OnInk}" />
         </Button>
@@ -71,7 +72,7 @@
       </StackPanel>
     </Grid>
 
-    <Border Classes="card" Padding="{DynamicResource D4Padding_14}" Margin="{DynamicResource D4Margin_0_10_0_0}"
+    <Border Grid.Row="3" Classes="card" Padding="{DynamicResource D4Padding_14}" Margin="{DynamicResource D4Margin_0_10_0_0}"
             IsVisible="{Binding CoachSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
         <TextBlock Text="{loc:Tr 教练小结}" Classes="overline" />
@@ -79,41 +80,159 @@
       </StackPanel>
     </Border>
 
-    <TabControl Grid.Row="3" Margin="{DynamicResource D4Margin_0_12_0_16}">
+    <!-- E15: MeetingPage four tabs (纪要 / 转写 / 回答 / 个人笔记)，证据栏在纪要标签右侧 -->
+    <TabControl Grid.Row="4" Margin="{DynamicResource D4Margin_0_12_0_16}" SelectedIndex="{Binding NotesTabIndex}">
       <TabItem Header="{loc:Tr 纪要}">
-    <Border Classes="card" Padding="{DynamicResource D4Padding_0}">
-      <Grid RowDefinitions="Auto,*">
-        <Grid Margin="{DynamicResource D4Margin_22_16_22_10}" ColumnDefinitions="*,Auto">
-          <StackPanel>
-            <TextBlock Text="{Binding MeetingTitle}" Classes="title" FontSize="15" />
-            <TextBlock Text="{Binding PageSubtitle}" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_3_0_0}" />
-            <TextBlock Text="{Binding StructuredHint}" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_4_0_0}" />
-          </StackPanel>
-          <Border Grid.Column="1" Classes="chip" VerticalAlignment="Top">
-            <TextBlock Text="Markdown" Classes="overline" FontSize="10" />
+        <Grid ColumnDefinitions="*,300" ColumnSpacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_0_8_0_0}">
+          <Border Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_0}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+              <StackPanel Spacing="{DynamicResource D4Spacing_10}" Margin="{DynamicResource D4Margin_22_16_22_22}">
+                <!-- NotesProgressLine：生成中显示阶段与进度，就地从纪要页看到 -->
+                <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" IsVisible="{Binding Summarizing}">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                    <TextBlock Text="{loc:Tr 正在整理纪要…}" Classes="label" />
+                    <TextBlock Text="{Binding Status}" Classes="caption" />
+                    <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}" Maximum="1" />
+                  </StackPanel>
+                </Border>
+                <StackPanel>
+                  <TextBlock Text="{Binding MeetingTitle}" Classes="title" FontSize="17" />
+                  <TextBlock Text="{Binding PageSubtitle}" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_3_0_0}" />
+                  <TextBlock Text="{Binding StructuredHint}" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_4_0_0}" />
+                </StackPanel>
+
+                <!-- 文字纪要 -->
+                <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14"
+                                    IsVisible="{Binding NotesFormatIsStandard}" />
+                <!-- 结构化纪要：鱼骨图画成骨图，观点对照画成矩阵 -->
+                <StackPanel Spacing="{DynamicResource D4Spacing_10}" IsVisible="{Binding !NotesFormatIsStandard}">
+                  <views:FishboneView x:Name="Fishbone" Height="360" Notes="{Binding StructuredPayload.Fishbone}"
+                                      IsVisible="{Binding HasFishboneDrawing}" />
+                  <views:ViewpointMatrixView x:Name="Viewpoints" Matrix="{Binding StructuredPayload.Viewpoints}"
+                                             IsVisible="{Binding HasViewpointMatrix}" />
+                </StackPanel>
+                <!-- OutlineView.swift 的真提纲视图（不再是 Markdown） -->
+                <StackPanel Spacing="{DynamicResource D4Spacing_10}" IsVisible="{Binding NotesFormatIsOutline}">
+                  <ItemsControl ItemsSource="{Binding NotesOutlineRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:NotesOutlineRow">
+                        <StackPanel Spacing="{DynamicResource D4Spacing_3}" Margin="{DynamicResource D4Margin_0_0_0_10}">
+                          <Grid ColumnDefinitions="28,*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding Number}" Classes="caption" Foreground="{DynamicResource Tertiary}" />
+                            <TextBlock Grid.Column="1" Text="{Binding Title}" Classes="section" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Classes="quiet" Content="{Binding AtText}" Tag="{Binding At}"
+                                    Click="OutlineTime_Click" IsVisible="{Binding HasAt}" ToolTip.Tip="{loc:Tr 跳到原话}" />
+                          </Grid>
+                          <ItemsControl ItemsSource="{Binding Lines}" Margin="{DynamicResource D4Margin_28_0_0_0}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="local:NotesOutlineLineRow">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                      Margin="{DynamicResource D4Margin_0_2}">
+                                  <TextBlock Grid.Column="0" Text="{Binding Prefix}" Classes="body" Foreground="{DynamicResource Tertiary}" />
+                                  <TextBlock Grid.Column="1" Text="{Binding Text}" Classes="body" TextWrapping="Wrap" />
+                                  <Button Grid.Column="2" Classes="quiet" Content="{Binding AtText}" Tag="{Binding At}"
+                                          Click="OutlineTime_Click" IsVisible="{Binding HasAt}" ToolTip.Tip="{loc:Tr 跳到原话}" />
+                                </Grid>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <StackPanel IsVisible="{Binding HasOutlineConcepts}" Spacing="{DynamicResource D4Spacing_4}">
+                    <TextBlock Text="{loc:Tr 关键概念}" Classes="section" />
+                    <ItemsControl ItemsSource="{Binding NotesOutlineConcepts}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:NotesOutlineConceptRow">
+                          <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}"
+                                Margin="{DynamicResource D4Margin_0_0_0_6}">
+                            <TextBlock Grid.Column="0" Text="{Binding Term}" Classes="label" TextWrapping="Wrap" />
+                            <TextBlock Grid.Column="1" Text="{Binding Meaning}" Classes="body" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Classes="quiet" Content="{Binding AtText}" Tag="{Binding At}"
+                                    Click="OutlineTime_Click" IsVisible="{Binding HasAt}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                  <StackPanel IsVisible="{Binding HasOutlineReview}" Spacing="{DynamicResource D4Spacing_4}">
+                    <TextBlock Text="{loc:Tr 待复习}" Classes="section" />
+                    <ItemsControl ItemsSource="{Binding NotesOutlineReview}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:NotesReviewRow">
+                          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                Margin="{DynamicResource D4Margin_0_0_0_4}">
+                            <TextBlock Grid.Column="0" Text="○" Classes="caption" Foreground="{DynamicResource Tertiary}" />
+                            <TextBlock Grid.Column="1" Text="{Binding Text}" Classes="body" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Classes="quiet" Content="{Binding AtText}" Tag="{Binding At}"
+                                    Click="OutlineTime_Click" IsVisible="{Binding HasAt}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr 还没有生成这种纪要。点上方「生成这种纪要」，会用当前回答服务把转写整理成它；每条都带原话时间。}"
+                             Classes="caption" IsVisible="{Binding !HasStructuredNotes}" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <!-- 系列知识回看（Mac KnowledgeReviewSection；原「回顾」标签并入纪要页） -->
+                <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding NotesFormatIsStandard}">
+                  <TextBlock Text="{loc:Tr 已确认经验}" Classes="overline" />
+                  <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:WorkspaceLesson">
+                        <TextBlock Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_4}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{loc:Tr 题库}" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+                  <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.QuestionBank}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:QuestionBankItem">
+                        <StackPanel Spacing="{DynamicResource D4Spacing_1}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+                          <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Border>
+
+          <!-- SessionEvidencePane：证据栏常驻纪要页右侧 -->
+          <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_12_10}">
+            <Grid RowDefinitions="Auto,*">
+              <TextBlock Grid.Row="0" Text="{loc:Tr 证据}" Classes="overline" />
+              <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_6_0_0}">
+                <ItemsControl ItemsSource="{Binding NotesEvidence}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:SessionEvidenceRow">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_10}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                          <Border Classes="chip">
+                            <TextBlock Text="{Binding Badge}" Classes="overline" FontSize="10" />
+                          </Border>
+                          <TextBlock Text="{Binding SupportLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Claim}" Classes="caption" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                          <Button Classes="quiet" Content="{loc:Tr 跳到原话}" Tag="{Binding}" Click="JumpEvidence_Click" />
+                          <Button Classes="quiet" Content="{loc:Tr 编辑}" Tag="{Binding}" Click="EditEvidence_Click" />
+                        </StackPanel>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Grid>
           </Border>
         </Grid>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="{DynamicResource D4Padding_22_0_22_22}">
-          <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-            <!-- 文字纪要 -->
-            <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14"
-                                IsVisible="{Binding NotesFormatIsStandard}" />
-            <!-- 结构化纪要：鱼骨图画成骨图，观点对照画成矩阵，大纲以带时间的 Markdown 呈现 -->
-            <StackPanel Spacing="{DynamicResource D4Spacing_10}" IsVisible="{Binding !NotesFormatIsStandard}">
-              <views:FishboneView x:Name="Fishbone" Height="360" Notes="{Binding StructuredPayload.Fishbone}"
-                                  IsVisible="{Binding HasFishboneDrawing}" />
-              <views:ViewpointMatrixView x:Name="Viewpoints" Matrix="{Binding StructuredPayload.Viewpoints}"
-                                         IsVisible="{Binding HasViewpointMatrix}" />
-              <views:MarkdownText Text="{Binding StructuredMarkdown}" BaseFontSize="14"
-                                  IsVisible="{Binding ShowStructuredMarkdown}" />
-              <TextBlock Text="{loc:Tr 还没有生成这种纪要。点右上角「生成这种纪要」，会用当前回答服务把转写整理成它；每条都带原话时间。}"
-                         Classes="caption" IsVisible="{Binding !HasStructuredNotes}" />
-            </StackPanel>
-          </StackPanel>
-        </ScrollViewer>
-      </Grid>
-    </Border>
       </TabItem>
+
       <TabItem Header="{loc:Tr 转写}">
         <Grid RowDefinitions="Auto,*">
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
@@ -122,19 +241,30 @@
                     ToolTip.Tip="{loc:Tr 查看校正转写}" />
             <TextBlock Text="{Binding CorrectedTranscriptStatus}" Classes="caption" FontSize="11"
                        VerticalAlignment="Center" IsVisible="{Binding HasCorrectedTranscriptStatus}" />
+            <TextBlock Text="{Binding NotesJumpNotice}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                       Foreground="{DynamicResource Caution}" IsVisible="{Binding HasNotesJumpNotice}" />
           </StackPanel>
-          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Transcript}" Margin="{DynamicResource D4Margin_22}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="local:TranscriptRow">
-                  <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_8}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
+          <ListBox Grid.Row="1" Name="TranscriptListBox" ItemsSource="{Binding Transcript}"
+                   Background="Transparent" Margin="{DynamicResource D4Margin_22_0_22_16}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="local:TranscriptRow">
+                <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                    <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                    <TextBlock Text="{loc:Tr ★ 高亮}" FontSize="11" Foreground="{DynamicResource Caution}"
+                               IsVisible="{Binding IsHighlighted}" />
+                  </StackPanel>
+                  <SelectableTextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Translation}" Classes="body" FontSize="13" TextWrapping="Wrap"
+                             Foreground="{DynamicResource Ai}" IsVisible="{Binding HasTranslation}" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
         </Grid>
       </TabItem>
-      <TabItem Header="{loc:Tr 回答}">
+
+      <TabItem Header="{loc:Tr 回答}" IsVisible="{Binding HasSessionAnswers}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}" Margin="{DynamicResource D4Margin_22}">
             <ItemsControl.ItemTemplate>
@@ -154,82 +284,28 @@
           </ItemsControl>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="{loc:Tr 提纲}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding StructuredPayload.Outline.Sections}" Margin="{DynamicResource D4Margin_22}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:OutlineSection">
-                <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
-                  <TextBlock Text="{Binding Title}" Classes="section" />
-                  <ItemsControl ItemsSource="{Binding Points}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="core:OutlinePoint">
-                        <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_4}" />
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </TabItem>
+
       <TabItem Header="{loc:Tr 个人笔记}">
-        <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
-          <TextBlock Text="{loc:Tr 个人笔记保存在 user-content.json，不覆盖生成纪要。}" Classes="caption" />
-          <TextBox Text="{Binding PersonalNotesText}" AcceptsReturn="True" TextWrapping="Wrap" Height="320" />
-          <Button Classes="primary" Content="{loc:Tr 保存个人笔记}" Command="{Binding SaveNotesEditorCommand}" HorizontalAlignment="Left" />
-        </StackPanel>
-      </TabItem>
-      <TabItem Header="{loc:Tr 证据}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding NotesEvidence}" Margin="{DynamicResource D4Margin_22}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:SessionEvidenceRow">
-                <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_10}">
-                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                    <TextBlock Text="{Binding Badge}" Classes="caption" />
-                    <TextBlock Text="{Binding SupportLabel}" Classes="caption" />
-                  </StackPanel>
-                  <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Claim}" Classes="body" TextWrapping="Wrap" />
-                  <Button Classes="quiet" Content="{loc:Tr 编辑}" Tag="{Binding}" Click="EditEvidence_Click" HorizontalAlignment="Left" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </TabItem>
-      <TabItem Header="{loc:Tr 回顾}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_10}">
-            <TextBlock Text="{loc:Tr 已确认经验}" Classes="overline" />
-            <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="core:WorkspaceLesson">
-                  <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_6}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <TextBlock Text="{loc:Tr 题库}" Classes="overline" />
-            <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.QuestionBank}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="core:QuestionBankItem">
-                  <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
-                    <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap" />
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-      <TabItem Header="{loc:Tr 工作纪要}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="{loc:Tr 工作会议模板纪要}" Classes="section" />
-            <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14" />
+            <TextBlock Text="{loc:Tr 个人笔记保存在 user-content.json，不覆盖生成纪要。}" Classes="caption" />
+            <TextBox Text="{Binding PersonalNotesText}" AcceptsReturn="True" TextWrapping="Wrap" Height="220" />
+            <Button Classes="primary" Content="{loc:Tr 保存个人笔记}" Command="{Binding SaveNotesEditorCommand}" HorizontalAlignment="Left" />
+            <TextBlock Text="{loc:Tr 高亮}" Classes="overline" Margin="{DynamicResource D4Margin_0_8_0_0}" />
+            <TextBlock Text="{loc:Tr 还没有高亮。在转写里点「高亮」记下一句，会把原话时间一起存进个人笔记。}"
+                       Classes="caption" IsVisible="{Binding !HasMeetingHighlights}" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding MeetingHighlights}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:SessionHighlight">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                        Margin="{DynamicResource D4Margin_0_0_0_6}">
+                    <TextBlock Grid.Column="0" Text="{Binding Quote}" Classes="caption" TextWrapping="Wrap" />
+                    <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 跳到原话}" Tag="{Binding}"
+                            Click="HighlightJump_Click" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </StackPanel>
         </ScrollViewer>
       </TabItem>

@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "会议页加载（四标签）",
+      "passed": true,
+      "detail": "标签索引 0；证据 0 条"
+    },
+    {
+      "step": "真提纲视图",
+      "passed": true,
+      "detail": "格式=Outline；payload=True；md=0；章节 1；概念 1；待复习 1"
+    },
+    {
+      "step": "纪要内跳到转写并高亮",
+      "passed": true,
+      "detail": "已跳到原话 · 00:40；高亮=我们决定先更新数据库再删缓存。"
+    },
+    {
+      "step": "个人笔记与高亮",
+      "passed": true,
+      "detail": "高亮 1 条"
+    },
+    {
+      "step": "会议信息分组",
+      "passed": true,
+      "detail": "8 项"
+    },
+    {
+      "step": "改过纪要时重新整理先确认",
+      "passed": true,
+      "detail": "无修订=True；有修订=True"
+    }
+  ]
+}
