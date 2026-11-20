@@ -388,26 +388,9 @@ public partial class MainWindow
     /// <summary>A short fade so floating windows do not pop in (plan §8 animation).</summary>
     private static async Task FadeInAsync(Avalonia.Visual visual)
     {
+        var animation = Motion.FadeIn();
+        if (animation is null) { visual.Opacity = 1; return; }
         visual.Opacity = 0;
-        var animation = new Avalonia.Animation.Animation
-        {
-            Duration = TimeSpan.FromMilliseconds(160),
-            Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
-            FillMode = Avalonia.Animation.FillMode.Forward,
-            Children =
-            {
-                new Avalonia.Animation.KeyFrame
-                {
-                    Cue = new Avalonia.Animation.Cue(0),
-                    Setters = { new Avalonia.Styling.Setter(Avalonia.Visual.OpacityProperty, 0d) }
-                },
-                new Avalonia.Animation.KeyFrame
-                {
-                    Cue = new Avalonia.Animation.Cue(1),
-                    Setters = { new Avalonia.Styling.Setter(Avalonia.Visual.OpacityProperty, 1d) }
-                }
-            }
-        };
         try { await animation.RunAsync(visual); } catch { }
         visual.Opacity = 1;
     }
@@ -417,26 +400,8 @@ public partial class MainWindow
     {
         try
         {
-            var animation = new Avalonia.Animation.Animation
-            {
-                Duration = TimeSpan.FromMilliseconds(120),
-                Easing = new Avalonia.Animation.Easings.CubicEaseIn(),
-                FillMode = Avalonia.Animation.FillMode.Forward,
-                Children =
-                {
-                    new Avalonia.Animation.KeyFrame
-                    {
-                        Cue = new Avalonia.Animation.Cue(0),
-                        Setters = { new Avalonia.Styling.Setter(Avalonia.Visual.OpacityProperty, 1d) }
-                    },
-                    new Avalonia.Animation.KeyFrame
-                    {
-                        Cue = new Avalonia.Animation.Cue(1),
-                        Setters = { new Avalonia.Styling.Setter(Avalonia.Visual.OpacityProperty, 0d) }
-                    }
-                }
-            };
-            await animation.RunAsync(visual);
+            var animation = Motion.FadeOut();
+            if (animation is not null) await animation.RunAsync(visual);
         }
         catch { }
         if (visual is Avalonia.Controls.Window window && window.IsVisible)
