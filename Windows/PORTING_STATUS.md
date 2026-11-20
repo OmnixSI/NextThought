@@ -1,7 +1,7 @@
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
 测试：Core **871/871**（新增 2 项），NextThought.Tests **136/136**。
-状态：D6「未做」。场景数据已齐；SceneGlyph、SceneTag、InkWash 组件和首页截图对照未做。
+状态：D6「未做」。场景数据已接入 SceneChoice（tint/深色/promise/moments 绑定，首页 tooltip 用 Mac promise）；SceneGlyph、SceneTag、InkWash 组件和首页截图对照未做。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
