@@ -336,14 +336,81 @@
         </StackPanel>
       </Border>
 
-      <!-- Library and retrieval -->
+      <!-- E23: 资料 — 读取资料的方式（Mac DocumentReadingSettings；组件细节在 高级 → 资料组件） -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
-        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorAnswer2" Text="{loc:Tr 资料与检索}" Classes="section" />
-          <CheckBox Content="{loc:Tr 参考资料库时使用语义与关键词混合检索}" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
-          <TextBlock Text="{loc:Tr Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。}"
-                     Classes="caption" FontSize="11" />
-          <Button Content="{loc:Tr 准备检索组件}" Command="{Binding PrepareRetrievalCommand}" HorizontalAlignment="Left" />
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="{loc:Tr 资料}" Classes="section" />
+          <TextBlock Text="{loc:Tr 读取资料的方式}" Classes="label" />
+          <ComboBox ItemsSource="{Binding Settings.DocumentProviderChoices}" SelectedItem="{Binding Settings.SelectedDocumentProvider}"
+                    HorizontalAlignment="Left" MinWidth="260" />
+          <TextBlock Text="{Binding Settings.DocumentProviderHelp}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="620" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding DocumentProviderNeedsSetup}">
+            <TextBlock Text="{Binding DocumentProviderStatus}" Classes="caption" FontSize="11"
+                       Foreground="{DynamicResource Caution}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="360" />
+            <Button Content="{loc:Tr 安装支持}" Command="{Binding PrepareDocumentComponentsCommand}"
+                    IsEnabled="{Binding !DocumentSetupBusy}" />
+            <Button Content="{loc:Tr 先用系统识别}" Click="UseSystemDocumentReader_Click" />
+          </StackPanel>
+          <TextBlock Text="{Binding DocumentSetupStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+                     IsVisible="{Binding DocumentSetupBusy}" />
+          <ProgressBar Value="{Binding DocumentSetupProgress}" Maximum="1" MaxWidth="420" HorizontalAlignment="Left"
+                       IsVisible="{Binding DocumentSetupBusy}" />
+          <TextBlock Text="{loc:Tr 资料原件保留在本机。只有选择在线代读或在线回答时，资料才会发送给对应服务。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="620" />
+        </StackPanel>
+      </Border>
+
+      <!-- E23: 高级 → 资料组件（Mac DocumentComponentsAdvanced；语义检索原「资料与检索」并入） -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Name="AnchorAnswer2" Text="{loc:Tr 资料组件}" Classes="section" />
+          <TextBlock Text="{loc:Tr 本机识别模型}" Classes="label" />
+          <TextBlock Text="{Binding DocumentOcrModelsStatusText}" Classes="caption" FontSize="11" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 共用文档组件 · 已安装}" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DocumentRuntimeStatusText}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+            <Button Content="{loc:Tr 安装}" Command="{Binding InstallDocumentRuntimeCommand}" IsEnabled="{Binding !DocumentSetupBusy}" />
+            <Button Content="{loc:Tr 校验／修复}" Command="{Binding VerifyDocumentRuntimeCommand}" IsEnabled="{Binding DocumentRuntimeInstalled}" />
+            <Button Content="{loc:Tr 删除}" Command="{Binding DeleteDocumentRuntimeCommand}" IsEnabled="{Binding DocumentRuntimeInstalled}" />
+          </StackPanel>
+          <TextBlock Text="{Binding DocumentRuntimeDetail}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="PaddleOCR-VL 1.6 + PP-DocLayoutV3" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding DocumentOcrModelsDetail}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+            <Button Content="{loc:Tr 安装}" Command="{Binding InstallDocumentOcrModelsCommand}" IsEnabled="{Binding !DocumentSetupBusy}" />
+            <Button Content="{loc:Tr 校验／修复}" Command="{Binding VerifyDocumentOcrModelsCommand}" IsEnabled="{Binding DocumentOcrModelsInstalled}" />
+            <Button Content="{loc:Tr 删除}" Command="{Binding DeleteDocumentOcrModelsCommand}" IsEnabled="{Binding DocumentOcrModelsInstalled}" />
+          </StackPanel>
+          <CheckBox Content="{loc:Tr 本机识别失败时用系统识别补读，并标明降级内容}" IsChecked="{Binding Settings.DocumentFallbackToVision}" />
+          <TextBlock Text="{loc:Tr 关闭后，识别失败会让该文件导入失败；不会自动切到在线 Codex。}" Classes="caption" FontSize="11" />
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Settings.ShowCodexDocumentSettings}">
+              <TextBlock Text="{loc:Tr Codex 模型}" Classes="label" />
+              <TextBox Text="{Binding Settings.CodexOcrModel}" Width="240" HorizontalAlignment="Left" />
+              <TextBlock Text="{loc:Tr 推理强度}" Classes="label" />
+              <ComboBox ItemsSource="{Binding Settings.CodexOcrEffortChoices}" SelectedItem="{Binding Settings.CodexOcrEffort}"
+                        Width="140" HorizontalAlignment="Left" />
+              <TextBlock Text="{loc:Tr 每个文件超时（秒）}" Classes="label" />
+              <TextBox Text="{Binding Settings.CodexOcrTimeout}" Width="100" HorizontalAlignment="Left" />
+            </StackPanel>
+          </Border>
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Text="{loc:Tr 查找方式}" Classes="label" />
+              <CheckBox Content="{loc:Tr 参考资料库时使用语义与关键词混合检索}" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
+              <TextBlock Text="{loc:Tr Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。}"
+                         Classes="caption" FontSize="11" />
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                <TextBlock Text="{Binding DocumentEmbeddingStatusText}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding DocumentEmbeddingDetail}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+                <Button Content="{loc:Tr 准备检索组件}" Command="{Binding PrepareRetrievalCommand}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <TextBlock Text="{Binding DocumentSetupStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+                     IsVisible="{Binding DocumentSetupBusy}" />
+          <ProgressBar Value="{Binding DocumentSetupProgress}" Maximum="1" MaxWidth="420" HorizontalAlignment="Left"
+                       IsVisible="{Binding DocumentSetupBusy}" />
         </StackPanel>
       </Border>
 

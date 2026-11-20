@@ -23,7 +23,9 @@ public static class MacPreferenceMap
         "cueScreen", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen",
         "insightScreenWatch", "insightScreenInterval", "insightFollowSlides",
         "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
-        "apiPresets", "activeApiPresetId", "codexFastMode", "updateRepository"
+        "apiPresets", "activeApiPresetId", "codexFastMode", "updateRepository",
+        "documentOcrProvider", "documentProviderWasSelected", "localOcrModelId",
+        "ocrFallbackToVision", "codexOcrModel", "codexOcrEffort", "codexOcrTimeout"
     ];
 
     /// <summary>JSON property names of the typed settings that already use the Mac key name.</summary>
@@ -39,7 +41,9 @@ public static class MacPreferenceMap
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
         "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects",
-        "apiPresets", "activeAPIPresetID", "codexFastMode", "updateRepository"
+        "apiPresets", "activeAPIPresetID", "codexFastMode", "updateRepository",
+        "documentOCRProvider", "documentProviderWasSelected", "localOCRModelID",
+        "ocrFallbackToVision", "codexOCRModel", "codexOCREffort", "codexOCRTimeout"
     ];
 
     private static readonly Dictionary<string, string> ModeNames = new(StringComparer.Ordinal)
@@ -101,6 +105,13 @@ public static class MacPreferenceMap
         "activeAPIPresetID" => settings.ActiveApiPresetId.Length == 0 ? null : settings.ActiveApiPresetId,
         "codexFastMode" => settings.CodexFastMode,
         "updateRepository" => settings.UpdateRepository,
+        "documentOCRProvider" => settings.DocumentOcrProvider,
+        "documentProviderWasSelected" => settings.DocumentProviderWasSelected,
+        "localOCRModelID" => settings.LocalOcrModelId,
+        "ocrFallbackToVision" => settings.OcrFallbackToVision,
+        "codexOCRModel" => settings.CodexOcrModel,
+        "codexOCREffort" => settings.CodexOcrEffort,
+        "codexOCRTimeout" => settings.CodexOcrTimeout,
         "cloudModel" => settings.CloudSttModel,
         "cloudProvider" => string.IsNullOrEmpty(settings.CloudStt) ? "soniox" : settings.CloudStt,
         "transcriptionBackend" => string.IsNullOrEmpty(settings.CloudStt) ? "zipformer" : "cloud",
@@ -182,6 +193,45 @@ public static class MacPreferenceMap
                 break;
             case "updateRepository":
                 settings.UpdateRepository = AsString(normalized, settings.UpdateRepository);
+                break;
+            case "documentOCRProvider":
+            {
+                var provider = AsString(normalized, settings.DocumentOcrProvider);
+                settings.DocumentOcrProvider = provider is "system" or "paddle" or "codex"
+                    ? provider
+                    : settings.DocumentOcrProvider;
+                break;
+            }
+            case "documentProviderWasSelected":
+                settings.DocumentProviderWasSelected = normalized is bool selected
+                    ? selected
+                    : settings.DocumentProviderWasSelected;
+                break;
+            case "localOCRModelID":
+                settings.LocalOcrModelId = AsString(normalized, settings.LocalOcrModelId);
+                break;
+            case "ocrFallbackToVision":
+                settings.OcrFallbackToVision = normalized is bool fallback ? fallback : settings.OcrFallbackToVision;
+                break;
+            case "codexOCRModel":
+                settings.CodexOcrModel = AsString(normalized, settings.CodexOcrModel);
+                break;
+            case "codexOCREffort":
+            {
+                var effort = AsString(normalized, settings.CodexOcrEffort);
+                settings.CodexOcrEffort = effort is "low" or "medium" or "high" or "xhigh"
+                    ? effort
+                    : settings.CodexOcrEffort;
+                break;
+            }
+            case "codexOCRTimeout":
+                settings.CodexOcrTimeout = normalized switch
+                {
+                    double real => Math.Clamp(real, 30, 3600),
+                    long integer => Math.Clamp(integer, 30, 3600),
+                    int integer => Math.Clamp(integer, 30, 3600),
+                    _ => settings.CodexOcrTimeout
+                };
                 break;
             case "cloudModel": settings.CloudSttModel = AsString(normalized, settings.CloudSttModel); break;
             case "companionRelayURL": settings.CompanionRelayUrl = AsString(normalized, settings.CompanionRelayUrl); break;

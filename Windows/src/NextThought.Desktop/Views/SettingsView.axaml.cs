@@ -103,6 +103,8 @@ public partial class SettingsView : UserControl
         SettingsScroll.Offset = new Avalonia.Vector(0, 0);
         // E29: permissions can change in Windows Settings while this page is open.
         if (page == "General" && DataContext is AppState state) state.RefreshPermissions();
+        // E23: installed document components can change from another page while the app runs.
+        if (page is "Answer" or "Advanced" && DataContext is AppState documentState) documentState.RefreshDocumentComponents();
     }
 
     /// <summary>Filters the visible setting cards by their text (Mac settings search).</summary>
@@ -230,6 +232,14 @@ public partial class SettingsView : UserControl
         }
         catch (Exception ex) { (DataContext as AppState)?.SetStatus("操作失败：" + ex.Message, true); }
         }
+
+    /// <summary>E23: Mac DocumentReadingSettings 先用系统识别 — keep the files that were imported before.</summary>
+    private void UseSystemDocumentReader_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        state.Settings.SelectedDocumentProvider =
+            state.Settings.DocumentProviderChoices.First(choice => choice.Value == "system");
+    }
 
     /// <summary>E27: Mac APIPresetManager delete confirmation; removes the preset and its key.</summary>
     private async void DeleteApiPreset_Click(object? sender, RoutedEventArgs e)

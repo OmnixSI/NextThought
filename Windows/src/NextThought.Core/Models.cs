@@ -195,6 +195,27 @@ public sealed record AppSettings
     /// <summary>E9: region rectangle x,y,width,height in physical pixels.</summary>
     public string InsightScreenRegion { get; set; } = "";
 
+    /// <summary>E23: Mac <c>documentOCRProvider</c> — how documents are read: system, paddle (本机增强) or codex (代读).</summary>
+    public string DocumentOcrProvider { get; set; } = "system";
+
+    /// <summary>E23: Mac <c>documentProviderWasSelected</c> — the first-run guide has already chosen a reader.</summary>
+    public bool DocumentProviderWasSelected { get; set; }
+
+    /// <summary>E23: Mac <c>localOCRModelID</c> — the installed local enhancement model (Mac default; Windows ships PaddleOCR-VL 1.6 for native x64).</summary>
+    public string LocalOcrModelId { get; set; } = "paddleocr-vl-1-6-mlx-8bit";
+
+    /// <summary>E23: Mac <c>ocrFallbackToVision</c> — fall back to the system reader and mark degraded text.</summary>
+    public bool OcrFallbackToVision { get; set; } = true;
+
+    /// <summary>E23: Mac <c>codexOCRModel</c> — the Codex model used when reading documents with Codex.</summary>
+    public string CodexOcrModel { get; set; } = "gpt-6-luna";
+
+    /// <summary>E23: Mac <c>codexOCREffort</c> — low / medium / high / xhigh.</summary>
+    public string CodexOcrEffort { get; set; } = "medium";
+
+    /// <summary>E23: Mac <c>codexOCRTimeout</c> — seconds per file, clamped to 30–3600.</summary>
+    public double CodexOcrTimeout { get; set; } = 600;
+
     /// <summary>G6: settings this build does not understand survive a JSON round-trip untouched.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }

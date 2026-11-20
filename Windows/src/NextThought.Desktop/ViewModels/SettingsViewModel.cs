@@ -20,6 +20,12 @@ public sealed record ApiEffortChoice(string Value, string Title)
     public override string ToString() => UiText.T(Title);
 }
 
+/// <summary>E23: how documents are read (Mac <c>DocumentOCRProvider</c>).</summary>
+public sealed record DocumentProviderChoice(string Value, string Title)
+{
+    public override string ToString() => UiText.T(Title);
+}
+
 /// <summary>
 /// Editable draft of <see cref="AppSettings"/> plus the device, process and model choices
 /// the settings page offers. Mirrors the settings surface of the Mac app; the keys and
@@ -100,6 +106,54 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 
     /// <summary>E27: Mac APIPresetManager disables 删除 when only one preset is left.</summary>
     public bool CanDeleteApiPreset => ApiPresetChoices.Count > 1;
+
+    // MARK: - E23 文档读取（Mac DocumentModelSettings / DocumentFeatureSetup）
+
+    public IReadOnlyList<DocumentProviderChoice> DocumentProviderChoices { get; } =
+    [
+        new("system", "系统识别"),
+        new("paddle", "本机增强"),
+        new("codex", "Codex 代读")
+    ];
+
+    [ObservableProperty] private DocumentProviderChoice? selectedDocumentProvider;
+    [ObservableProperty] private bool documentFallbackToVision = true;
+    [ObservableProperty] private string codexOcrModel = "gpt-6-luna";
+    [ObservableProperty] private string codexOcrEffort = "medium";
+    [ObservableProperty] private string codexOcrTimeout = "600";
+    public IReadOnlyList<string> CodexOcrEffortChoices => ["low", "medium", "high", "xhigh"];
+    private bool documentProviderWasSelected;
+
+    partial void OnSelectedDocumentProviderChanged(DocumentProviderChoice? value)
+    {
+        if (string.IsNullOrEmpty(value?.Value)) return;
+        documentProviderWasSelected = true;
+        state.RefreshDocumentComponents();
+        OnPropertyChanged(nameof(DocumentProviderHelp));
+        OnPropertyChanged(nameof(ShowCodexDocumentSettings));
+    }
+
+    public bool ShowCodexDocumentSettings => SelectedDocumentProvider?.Value == "codex";
+
+    /// <summary>Mac DocumentReadingSettings help under the provider picker.</summary>
+    public string DocumentProviderHelp => SelectedDocumentProvider?.Value switch
+    {
+        "paddle" => UiText.T("适合扫描件、表格和公式，在本机计算，占一些内存。"),
+        "codex" => UiText.T("读取原文件，不用下载识别模型。需要已登录的 Codex，占用账号额度。"),
+        _ => UiText.T("Mac 自带，离线、无需下载。普通文字够用；复杂表格和公式可能丢失结构。")
+    };
+
+    private void LoadDocumentSettings(AppSettings settings)
+    {
+        SelectedDocumentProvider = DocumentProviderChoices.FirstOrDefault(choice => choice.Value == settings.DocumentOcrProvider)
+                                   ?? DocumentProviderChoices[0];
+        documentProviderWasSelected = settings.DocumentProviderWasSelected;
+        DocumentFallbackToVision = settings.OcrFallbackToVision;
+        CodexOcrModel = settings.CodexOcrModel;
+        CodexOcrEffort = settings.CodexOcrEffort;
+        CodexOcrTimeout = settings.CodexOcrTimeout.ToString("0");
+        state.RefreshDocumentComponents();
+    }
 
     /// <summary>E27: reads the saved API presets and the GitHub access state into the page model.</summary>
     private void LoadApiPresets()
@@ -672,6 +726,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         SelectedProcess = Processes.FirstOrDefault();
         LoadApiPresets();
         LoadGitHubAccess();
+        LoadDocumentSettings(settings);
         RefreshScreens();
     }
 
@@ -731,6 +786,15 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         ActiveApiPresetId = selectedApiPreset?.Id ?? "",
         CodexFastMode = CodexFastMode ? true : null,
         UpdateRepository = GithubRepository.Trim(),
+        // E23: how documents are read (Mac DocumentModelSettings keys).
+        DocumentOcrProvider = SelectedDocumentProvider?.Value ?? "system",
+        DocumentProviderWasSelected = documentProviderWasSelected,
+        OcrFallbackToVision = DocumentFallbackToVision,
+        CodexOcrModel = CodexOcrModel.Trim().Length == 0 ? "gpt-6-luna" : CodexOcrModel.Trim(),
+        CodexOcrEffort = CodexOcrEffort is "low" or "medium" or "high" or "xhigh" ? CodexOcrEffort : "medium",
+        CodexOcrTimeout = double.TryParse(CodexOcrTimeout, out var codexOcrSeconds)
+            ? Math.Clamp(codexOcrSeconds, 30, 3600)
+            : 600,
         PresenterMode = PresenterMode,
         PresenterSlidesScreen = SelectedSlidesScreen?.Id ?? PresenterSlidesScreen,
         CompanionRelayUrl = CompanionRelayUrl.Trim(),

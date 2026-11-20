@@ -101,12 +101,21 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
         var added = 0;
         try
         {
+            // E23: the saved reading method decides whether the optional enhancement runs for this import.
+            var settings = state.Settings.Build();
+            bool enhanced;
+            try { enhanced = DocumentAssets.UseEnhancedOcr(state.Paths, settings.DocumentOcrProvider, settings.OcrFallbackToVision); }
+            catch (Exception exception)
+            {
+                ImportStatus = exception.Message;
+                return;
+            }
             foreach (var file in list)
             {
                 ImportProgress = UiText.Format("正在解析 %@…", System.IO.Path.GetFileName(file));
                 try
                 {
-                    await Store.ImportAsync(file, CancellationToken.None);
+                    await Store.ImportAsync(file, CancellationToken.None, enhanced);
                     added++;
                 }
                 catch (Exception ex)
