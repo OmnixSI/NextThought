@@ -505,8 +505,9 @@ public static class MacPreferenceMap
             if (!Enum.TryParse<MeetingMode>(modeName, out var mode)) continue;
             var raw = char.ToLowerInvariant(modeName[0]) + modeName[1..];
             if (!ModeNames.ContainsKey(raw)) continue;
-            if (defaults.NotesTemplate.Length > 0 && defaults.NotesTemplate != SceneDefaults.For(mode).NotesTemplate)
-                byType[raw] = defaults.NotesTemplate;
+            // The typed round-trip keeps every stored per-type template: Mac stores the key only
+            // when it was chosen, and the scene page already stores overrides only.
+            if (defaults.NotesTemplate.Length > 0) byType[raw] = defaults.NotesTemplate;
         }
         return byType;
     }
