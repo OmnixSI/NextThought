@@ -87,4 +87,9 @@ public partial class LiveView : UserControl
         if (SourcesBox.SelectedItem is SourceCitation citation) state.OpenMaterial(citation);
         else state.SetStatus("当前回答尚无资料引用。");
     }
+
+    private async void CaptureWindow_Click(object? sender, RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is MainWindow window) await window.CaptureWindowAsync();
+    }
 }

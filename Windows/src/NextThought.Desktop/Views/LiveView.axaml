@@ -19,6 +19,24 @@
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
         <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" VerticalAlignment="Center"
                   ToolTip.Tip="系统声音里出现提问时自动生成回答" />
+        <Button Content="&#xE8F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Command="{Binding ToggleCompanionCommand}" ToolTip.Tip="手机伴侣" />
+        <Button Content="&#xE7F4;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Click="CaptureWindow_Click" ToolTip.Tip="截取当前窗口" />
+        <Button ToolTip.Tip="回答设置">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+            <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
+            <TextBlock Text="回答设置" VerticalAlignment="Center" />
+          </StackPanel>
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <StackPanel Spacing="{DynamicResource D4Spacing_6}" Width="220">
+                <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" />
+                <CheckBox Content="参考资料库" IsChecked="{Binding Settings.UseMaterials}" />
+                <CheckBox Content="语义检索" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
+                <CheckBox Content="联网搜索" IsChecked="{Binding Settings.WebSearch}" />
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
         <Button Content="{Binding LiveModeLabel}" Command="{Binding CycleLiveModeCommand}" ToolTip.Tip="纪要窗口 → 字幕条 → 隐藏" />
         <Button Content="提词器" Click="Teleprompter_Click" ToolTip.Tip="浮在屏幕上的大字提词窗（Ctrl+Alt+T）" />
         <Button Content="截图" Click="Capture_Click" ToolTip.Tip="框选屏幕区域，存入资料库并 OCR（Ctrl+Alt+S）" />

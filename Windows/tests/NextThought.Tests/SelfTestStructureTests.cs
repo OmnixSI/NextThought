@@ -109,6 +109,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LiveTopBarHasCompanionAndAnswerSettings()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("ToggleCompanionCommand", xaml);
+        Assert.Contains("回答设置", xaml);
+        Assert.Contains("UseSemanticRetrieval", xaml);
+    }
+
     [Fact]
     public void LivePageHasNotesOnlyColumn()
     {
