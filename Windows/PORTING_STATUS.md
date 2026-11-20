@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · B22（592/592）
+改动：`Tests/NextThoughtCoreTests/` 的 592 项 Swift 测试全部翻译到 `NextThought.Core.Tests`，逐文件写入 `Windows/CORE_PARITY.md`，末尾附复算命令；清掉全部跳过，补齐磁盘搜索、快照生成、工作区归档修复、JSON 文档任务存储、删除事务恢复、系列变更回执、内容搜索连线等 API。
+测试：Core **1514/1514**（0 跳过），NextThought.Tests 255/255。
+状态：B22「已实现、未验证」；592 项均已翻译并通过，尚缺一次对 Mac 原始测试数字的独立复算记录。
+
 ## 2026-11-20 · 0.5.145 · 全量截图验证
 改动：重新跑 `--demo --screenshots`，生成 96 张 PNG（含中/英 × 浅/深、会议 8 标签、设置 6 页、引导 first/last），首页 `home-light.png` 正常。
 测试：Core **872/872**，NextThought.Tests **255/255**。
