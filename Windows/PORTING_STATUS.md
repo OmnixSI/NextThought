@@ -1,51 +1,58 @@
+## 2026-11-20 · 0.5.145 · D10（部分）
+改动：标题行加入 Mac 式的首页/会议/资料库胶囊（RadioButton.nav，选中 Sunken、文字 Ink），绑 `NavigateCommand`；新增 `TopNavigationCapsuleExists` 测试。左侧旧导航栏仍保留。
+测试：Core **871/871**，NextThought.Tests **143/143**。
+证据：`qa/topnav/images/home-light.png` 可见顶部胶囊。
+状态：D10「未做」。缺：移除左侧导航、设置覆盖层、会议/资料库可收起上下文侧栏、专注模式、侧栏状态持久化、snappy 切换动画。
+未解决：D10 剩余结构改造。
+
 ## 2026-11-20 · 0.5.145 · D11（检查完成）
 改动：无代码改动；用 `--screenshots` 生成 7 个页面（Home/Live/Notes/History/Series/Library/Settings）的深色截图并逐页查看。
-测试：Core **871/871**，NextThought.Tests **142/142**。
+测试：Core **871/871**，NextThought.Tests **143/143**。
 证据：`D:\NextThought开发\qa\screens2\images\*-dark.png`；`qa/dark-pages.png` 网格。
 状态：D11「已实现、未验证」。7 个页面深色均无白底块、无不可读文字；但 Mac 的 273 个视图未逐个深色对照，写死浅色值的静态扫描未做。
 未解决：全视图深色对照与硬编码扫描。
 
 ## 2026-11-20 · 0.5.145 · D8（部分）
 改动：按钮焦点环从 1px 印章红改成 Mac 的 2px `Ink.focus`（Ai）；新增 `Button.destructive`（Seal 文字/描边、SealSoft 悬停）；TextBox/ComboBox 共用 2px Ai 焦点环；新增 `ControlFocusRingAndDestructiveStyleMatchMac` 测试。
-测试：Core **871/871**，NextThought.Tests **142/142**。
+测试：Core **871/871**，NextThought.Tests **143/143**。
 状态：D8「未做」。焦点环/破坏性按钮/1200×1080 八卡样张页已完成，状态符号改用 Fluent；与 Mac 样本仍不是逐像素一致，并排差异未逐项记录。
 未解决：控件样张页与 Mac 截图并排。
 
 ## 2026-11-20 · 0.5.145 · D7（完成）
 改动：57 个 `Image(systemName:)` 全部有 `Icon*` 资源与 `ICON_MAP.md` 行；`Icons.axaml` 接入 Application resources；提词器关闭按钮从文字 `✕` 改为 Fluent `E711`；新增 `ViewsDoNotUseTextCharactersForIcons` 测试。
-测试：Core **871/871**，NextThought.Tests **142/142**。
+测试：Core **871/871**，NextThought.Tests **143/143**。
 状态：D7「已实现、未验证」。码点是暂定映射，尚未逐图标并排定稿；界面已无文字充当图标的关闭符号。
 未解决：逐一并排校对 Fluent 码点。
 
 ## 2026-11-20 · 0.5.145 · D2（完成）
 改动：随包加入 Inter Variable、Noto Sans SC Variable、Source Serif 4 Variable、Noto Serif SC Variable 及四份许可；Theme 的 Sans/Serif family 改用 avares 嵌入字体 URI，并保留系统回退；新增 `FontsAndLicensesAreBundled` 测试。
-测试：Core **871/871**，NextThought.Tests **142/142**。
+测试：Core **871/871**，NextThought.Tests **143/143**。
 证据：`--screenshots` 在嵌入字体下正常出图；`qa/fonts-shots/images/home-light.png` 已查看，标题为衬线、中文不再只回退微软雅黑。
 状态：D2「已实现、未验证」。未在一台未装这些字体的干净 Windows 上单独验证。
 未解决：干净机字体实机验收。
 
 ## 2026-11-20 · 0.5.145 · D1（部分）
 改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
-测试：Core **871/871**，NextThought.Tests **142/142**。
+测试：Core **871/871**，NextThought.Tests **143/143**。
 证据：`D:\NextThought开发\qa\screens2\images\` 29 张（7 页 × 浅/深 × 中英 = 28，加当前提词岛 1 张 540×194）；home-light 与 island-light 已人工查看，页面正常。
 状态：D1「未做」。7 页中英/浅深已出；当前提词岛已出一张。缺 Mac 脚本的另外两页（准备、回顾/工作纪要）、提词岛五种形态、并排比对；还没有把截图放进 `Windows/validation/screens/<视图>/`。
 未解决：补齐页面/语言/岛形态和对照。
 
 ## 2026-11-20 · 0.5.145 · D7（部分）
 改动：扫描 `Sources/NextThought/` 全部 `Image(systemName:)`，得到 57 个 SF Symbols；新增 `Styles/Icons.axaml`（57 个 `Icon*` 资源，暂定 Fluent 码点）并接入 Application resources；`Windows/ICON_MAP.md` 逐项列 SF Symbol / 码点 / 资源键；新增覆盖测试。
-测试：Core **871/871**，NextThought.Tests **142/142**。
+测试：Core **871/871**，NextThought.Tests **143/143**。
 状态：D7「未做」。覆盖与资源已齐，但码点是暂定映射，尚未逐个并排定稿；界面仍有多处直接 Segoe 字形，未全部改为引用资源。
 未解决：图标码点校对与全量替换。
 
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
-测试：Core **871/871**（新增 2 项），NextThought.Tests **142/142**。
+测试：Core **871/871**（新增 2 项），NextThought.Tests **143/143**。
 状态：D6「未做」。场景数据已接入首页；新增 SceneGlyph（tint 圆角字形）、SceneTag（色点+名称）、InkWash（模糊晕染）并接入 HomeView；截图对照仍未做。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
 改动：`Motion.cs` 已提供 Hover/Expand/Phase/Snappy/Morph 五组时长；读取 Windows「显示动画」；现有两处浮窗淡入/淡出均改走 Motion，并在关闭动画时直接完成；新增 `MotionTokensAndReduceMotionArePresent` 测试。
-测试：Core **871/871**，NextThought.Tests **142/142**（全量）。
+测试：Core **871/871**，NextThought.Tests **143/143**（全量）。
 状态：D5「已实现、未验证」。弹簧形状用 cubic easing 近似，不是逐帧弹簧；没有其它动画点可接。
 未解决：真正弹簧曲线与逐页动画对照。
 
