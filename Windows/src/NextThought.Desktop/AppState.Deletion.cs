@@ -52,7 +52,12 @@ public partial class AppState
         try
         {
             await Sessions.DeleteAsync(row.Meta.Id);
-            workspace = workspace.Remove(row.Meta.Id.ToString());
+            // B3: remove the meeting from the series and scrub knowledge only it supported.
+            var sessionId = row.Meta.Id.ToString("D");
+            workspace = new WorkspaceData(workspace.Series.Select(series =>
+                series.SessionIds.Contains(sessionId)
+                    ? WorkspaceSourceIntegrity.RemoveMeetings(series, [sessionId]).Series
+                    : series).ToList());
             SaveWorkspace();
             History.Remove(row);
             HomeRecent.Remove(row);

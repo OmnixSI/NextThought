@@ -208,6 +208,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void MeetingDeletionUsesWorkspaceSourceIntegrity()
+    {
+        var deletion = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
+        Assert.Contains("WorkspaceSourceIntegrity.RemoveMeetings", deletion);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Core", "WorkspaceSourceIntegrity.cs")));
+    }
+
     [Fact]
     public void ScreenWatchIsSingleFrameDefaultOffAndVisible()
     {
