@@ -1,7 +1,7 @@
 ## 2026-11-20 · 0.5.145 · E15（部分）
 改动：会议页改成四标签 `TabControl`：纪要 / 转写 / 回答 / 个人笔记。转写列出归档句，回答列出 `SelectedSessionAnswers`，个人笔记可编辑并保存到 `user-content.json`。截图流程会逐标签生成 `notes-*/transcript-*/answers-*/personal-*`。新增 `NotesPageHasFourTabs` 测试。
 测试：Core **872/872**，NextThought.Tests **190/190**。
-状态：E15「未做」。已有五标签（纪要/转写/回答/个人笔记/证据）；缺条目编辑框、提纲视图；已加回答「自动」徽标、重新整理、生成进度行，证据标签显示待确认/引文支持徽标；与 Mac NotesPageView 未逐项对照。
+状态：E15「未做」。已有五标签（纪要/转写/回答/个人笔记/证据）；已有六标签（纪要/转写/回答/个人笔记/证据/提纲）、回答自动徽标、重新整理、进度行与证据支持徽标；缺条目编辑框；与 Mac NotesPageView 未逐项对照。
 证据：`Windows/validation/screens/notes/`。
 
 ## 2026-11-20 · 0.5.145 · E16（已完成实现）

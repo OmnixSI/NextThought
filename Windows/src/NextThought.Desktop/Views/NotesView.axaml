@@ -141,6 +141,26 @@
           </ItemsControl>
         </ScrollViewer>
       </TabItem>
+      <TabItem Header="提纲">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding StructuredPayload.Outline.Sections}" Margin="{DynamicResource D4Margin_22}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:OutlineSection">
+                <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
+                  <TextBlock Text="{Binding Title}" Classes="section" />
+                  <ItemsControl ItemsSource="{Binding Points}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="core:OutlinePoint">
+                        <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_4}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </TabItem>
       <TabItem Header="个人笔记">
         <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
           <TextBlock Text="个人笔记保存在 user-content.json，不覆盖生成纪要。" Classes="caption" />
