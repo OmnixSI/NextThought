@@ -55,6 +55,14 @@ public sealed class SelfTestStructureTests
         Assert.Contains("IsVisible=\"False\"", main);
     }
 
+
+    [Fact]
+    public void TopNavigationHasSnappyBrushTransition()
+    {
+        var controls = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Styles", "Controls.axaml"));
+        Assert.Contains("BrushTransition Property=\"Background\" Duration=\"0:0:0.28\"", controls);
+    }
+
     [Fact]
     public void TopNavigationCapsuleExists()
     {
