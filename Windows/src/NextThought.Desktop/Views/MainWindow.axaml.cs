@@ -28,6 +28,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = state;
         WindowCaptureHiding.StartTracking();
+        // E13: clear capture files left behind by cancelled/failed screenshots.
+        CleanupStaleCaptureFiles();
         state.ShowWorkbenchRequested = RestoreMainWindow;
         state.Settings.PropertyChanged += (_, e) =>
         {

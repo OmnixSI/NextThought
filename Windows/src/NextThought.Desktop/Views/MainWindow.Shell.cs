@@ -200,34 +200,105 @@ public partial class MainWindow
         try { if (File.Exists(path)) File.Delete(path); } catch { }
     }
 
-    /// <summary>Capture the window that had focus before NextThought was minimized (Mac captureWindow).</summary>
+    /// <summary>Capture the window the user picks (Mac WindowPickerSheet + captureWindow).</summary>
     public async Task CaptureWindowAsync()
     {
         if (state.Working) { state.SetStatus("当前有任务在进行，稍后再截图。"); return; }
-        var wasVisible = IsVisible;
         try
         {
-            WindowState = WindowState.Minimized;
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
-            await Task.Delay(360);
-            var bounds = ScreenCapture.ForegroundWindowBounds();
-            if (bounds.Width <= 1 || bounds.Height <= 1) { state.SetStatus("没有找到可截图的窗口。", true); return; }
-            var capture = ScreenCapture.VirtualScreen();
-            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
-            var cropped = ScreenCapture.Crop(capture, new Avalonia.PixelRect(
-                bounds.X - capture.X, bounds.Y - capture.Y, bounds.Width, bounds.Height));
-            var path = Path.Combine(Path.GetTempPath(), $"nextthought-window-{DateTime.Now:yyyyMMdd-HHmmss}.png");
-            cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
-            // E1/Mac captureWindow: a screenshot taken outside a meeting waits on the home card;
-            // during a recording it is analyzed right away, as the live page expects.
-            if (state.Recording) await state.AnalyzeScreenshotFileAsync(path);
-            else state.SetScreenshotPreview(path, cropped);
+            var picker = new WindowPickerWindow();
+            var picked = await picker.ShowDialog<bool>(this);
+            if (picked is false || picker.Selected is not { } target)
+            {
+                state.SetStatus("已取消截图。");
+                return;
+            }
+            await CaptureTargetAsync(target);
         }
         catch (Exception ex)
         {
-            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            RestoreOwnWindowCapture();
             state.SetStatus("窗口截图失败：" + ex.Message, true);
         }
+    }
+
+    /// <summary>
+    /// E13: hides NextThought's own windows from the capture, grabs the chosen window's frame,
+    /// then hands the picture to the question flow (analyzed right away during a meeting).
+    /// </summary>
+    private async Task CaptureTargetAsync(ScreenCapture.CaptureTarget target)
+    {
+        var wasVisible = IsVisible;
+        string? path = null;
+        var committed = false;
+        try
+        {
+            HideOwnWindowsFromCapture();
+            if (wasVisible) { WindowState = WindowState.Minimized; }
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
+            await Task.Delay(360);
+            var capture = ScreenCapture.CaptureWindow(target);
+            RestoreWindow(wasVisible);
+            if (capture is null)
+            {
+                state.SetStatus(UiText.Format("窗口“%@”已关闭或无法捕获，请刷新窗口列表后重试。", target.DisplayTitle), true);
+                return;
+            }
+            path = Path.Combine(Path.GetTempPath(), $"nextthought-window-{DateTime.Now:yyyyMMdd-HHmmss}.png");
+            capture.Image.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            await CommitScreenshotAsync(path, capture.Image);
+            committed = true;
+            path = state.Recording ? null : path; // the home card owns the file until analyzed
+        }
+        catch (Exception ex)
+        {
+            state.SetStatus("窗口截图失败：" + ex.Message, true);
+        }
+        finally
+        {
+            RestoreWindow(wasVisible);
+            RestoreOwnWindowCapture();
+            if (!committed && path is not null) TryDeleteCapture(path);
+        }
+    }
+
+    /// <summary>Mac captureWindow/commitRegionScreenshot: analyze at once, or wait on the home card.</summary>
+    private async Task CommitScreenshotAsync(string path, Avalonia.Media.Imaging.Bitmap bitmap)
+    {
+        if (state.Recording) await state.AnalyzeScreenshotFileAsync(path);
+        else state.SetScreenshotPreview(path, bitmap);
+    }
+
+    /// <summary>E13: own windows never end up in our own screenshots (Mac excludes the app).</summary>
+    private static void HideOwnWindowsFromCapture()
+    {
+        WindowCaptureHiding.PrivacyEnabled = true;
+        WindowCaptureHiding.ApplyAll(true);
+    }
+
+    private static void RestoreOwnWindowCapture()
+    {
+        try { WindowCaptureHiding.ApplyAll(CurrentSettingsCapturePrivacy()); } catch { }
+    }
+
+    private static bool CurrentSettingsCapturePrivacy()
+    {
+        try { return AppState.Current?.Settings.CapturePrivacy ?? true; } catch { return true; }
+    }
+
+    private void RestoreWindow(bool wasVisible)
+    {
+        if (!wasVisible) return;
+        WindowState = WindowState.Normal;
+        Show();
+        Activate();
+    }
+
+    /// <summary>E13: screenshots are temporary; cancelled or failed captures must not pile up.</summary>
+    public static int CleanupStaleCaptureFiles()
+    {
+        try { return CaptureFiles.DeleteStale(Path.GetTempPath(), DateTimeOffset.UtcNow.AddHours(-6)); }
+        catch { return 0; }
     }
 
 
@@ -238,13 +309,15 @@ public partial class MainWindow
         var wasVisible = IsVisible;
         try
         {
+            HideOwnWindowsFromCapture();
             WindowState = WindowState.Minimized;
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
             await Task.Delay(360);
             var capture = ScreenCapture.VirtualScreen();
-            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            RestoreWindow(wasVisible);
             var picker = new RegionCaptureWindow(capture);
             await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
+            RestoreOwnWindowCapture();
             if (picker.SelectedScreenRect is { } rect)
             {
                 state.Settings.InsightScreenSource = "region";
@@ -256,7 +329,8 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            RestoreWindow(wasVisible);
+            RestoreOwnWindowCapture();
             state.SetStatus("框选读屏区域失败：" + ex.Message, true);
         }
     }
@@ -265,26 +339,35 @@ public partial class MainWindow
     {
         if (state.Working) { state.SetStatus("当前有任务在进行，稍后再截图。"); return; }
         var wasVisible = IsVisible;
+        string? path = null;
+        var committed = false;
         try
         {
-            WindowState = WindowState.Minimized; // definitely off the screen, unlike a deferred Hide()
+            // E13: the frame may not contain our own floating windows (Mac excludes the app).
+            HideOwnWindowsFromCapture();
+            if (wasVisible) WindowState = WindowState.Minimized;
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
             await Task.Delay(360);
             var capture = ScreenCapture.VirtualScreen();
-            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
+            RestoreWindow(wasVisible); // the picker needs a visible, active owner window
             var picker = new RegionCaptureWindow(capture);
             var cropped = await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
             if (cropped is null) { state.SetStatus("已取消截图。"); return; }
-            var path = Path.Combine(Path.GetTempPath(), $"nextthought-shot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
+            path = Path.Combine(Path.GetTempPath(), $"nextthought-shot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
             cropped.Save(path, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
-            // E1/Mac commitRegionScreenshot: the crop waits on the home card until analyzed.
-            if (state.Recording) await state.AnalyzeScreenshotFileAsync(path);
-            else state.SetScreenshotPreview(path, cropped);
+            await CommitScreenshotAsync(path, cropped);
+            committed = true;
+            path = state.Recording ? null : path;
         }
         catch (Exception ex)
         {
-            if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
             state.SetStatus("截图失败：" + ex.Message, true);
+        }
+        finally
+        {
+            RestoreWindow(wasVisible);
+            RestoreOwnWindowCapture();
+            if (!committed && path is not null) TryDeleteCapture(path);
         }
     }
 

@@ -218,32 +218,30 @@ public partial class AppState
         var path = ScreenshotPreviewPath;
         ScreenshotPreview = null;
         ScreenshotPreviewPath = "";
-        await AnalyzeScreenshotFileAsync(path);
+        try { await AnalyzeScreenshotFileAsync(path); }
+        finally
+        {
+            // E13: the temporary picture is deleted after the question, even when analysis fails.
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
     }
 
     /// <summary>The old capture tail (archive → library OCR → prompt → slide follow), shared with live capture.</summary>
     public async Task AnalyzeScreenshotFileAsync(string path)
     {
-        await ArchiveScreenshotAsync(path);
-        await Library.ImportAsync([path]);
-        PromptAboutScreenshot(Library.SelectedPreview);
-        FollowSlideFromCapture(Library.SelectedPreview);
-        try { if (File.Exists(path)) File.Delete(path); } catch { }
+        try
+        {
+            await ArchiveScreenshotAsync(path);
+            await Library.ImportAsync([path]);
+            PromptAboutScreenshot(Library.SelectedPreview);
+            FollowSlideFromCapture(Library.SelectedPreview);
+        }
+        finally
+        {
+            // E13: Mac keeps the temp file until the question is asked, then deletes it.
+            try { if (File.Exists(path)) File.Delete(path); } catch { }
+        }
     }
-
-    // ---- first-run resume row (HomeView.swift OnboardingResumeRow) --------------------
-
-    /// <summary>
-    /// Mac shows this row after "稍后继续" in the guide. Windows' guide (E3) does not defer yet, so
-    /// the row stays hidden; the wiring exists for when the guide stores its stopped step.
-    /// </summary>
-    public bool OnboardingResumeVisible => false;
-
-    public string OnboardingResumeLine => "";
-
-    public void ResumeOnboarding() => OnboardingVisible = true;
-
-    public void DismissOnboardingResume() => OnPropertyChanged(nameof(OnboardingResumeVisible));
 
     // ---- page refresh ----------------------------------------------------------------
 
