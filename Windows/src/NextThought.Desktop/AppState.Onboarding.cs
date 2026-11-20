@@ -64,11 +64,18 @@ public partial class AppState
         : UiText.T("先到设置准备语音组件；未连接回答服务时也可以只记录。");
 
     public string OnboardingSampleToggle => OnboardingShowSample ? UiText.T("收起示例") : UiText.T("看一段面试示例");
+    public string OnboardingSampleToggleHint => OnboardingShowSample ? UiText.T("收起面试示例") : UiText.T("看一段面试示例");
     public string OnboardingVoiceStatus => MyVoiceHasProfile ? MyVoiceStatus : UiText.T("还没有录入");
 
     partial void OnOnboardingStepChanged(int value) => RaiseOnboardingStep();
 
-    partial void OnOnboardingShowSampleChanged(bool value) => OnPropertyChanged(nameof(OnboardingSampleToggle));
+    partial void OnOnboardingShowSampleChanged(bool value)
+    {
+        OnPropertyChanged(nameof(OnboardingSampleToggle));
+        OnPropertyChanged(nameof(OnboardingSampleToggleHint));
+        if (value) PlaySample();
+        else StopSample();
+    }
 
     private void RaiseOnboardingStep()
     {
@@ -137,9 +144,9 @@ public partial class AppState
         Section = AppSection.Home;
     }
 
-    /// <summary>Mac "稍后继续": dismiss the guide (the home page keeps an entry).</summary>
+    /// <summary>Mac "稍后继续": put the guide aside; the home page keeps a resume row.</summary>
     [RelayCommand]
-    private void SkipOnboarding() => CompleteOnboarding();
+    private void SkipOnboarding() => DeferOnboarding();
 
     /// <summary>Mac "开始第一场": finish the guide and start recording with the chosen scene.</summary>
     [RelayCommand]
@@ -157,10 +164,13 @@ public partial class AppState
         {
             var settings = SettingsStore.Load();
             settings.OnboardingCompletedVersion = OnboardingVersion.GuideVersion(typeof(AppState).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
+            settings.OnboardingDeferredVersion = "";
+            settings.OnboardingDismissedVersion = "";
             _ = SettingsStore.SaveAsync(settings);
         }
         catch { }
-        SetStatus("引导已完成；之后可在设置中重新查看。");
+        RaiseOnboardingResume();
+        SetStatus(UiText.T("引导已完成；之后可在设置中重新查看。"));
     }
 
     private static string OnboardingStepTitleOf(NextThought.Core.OnboardingStep step) => step switch

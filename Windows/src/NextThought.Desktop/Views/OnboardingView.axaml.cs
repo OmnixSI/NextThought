@@ -10,7 +10,50 @@ namespace NextThought.Desktop.Views;
 /// </summary>
 public partial class OnboardingView : UserControl
 {
-    public OnboardingView() => InitializeComponent();
+    private AppState? observed;
+    private bool animating;
+
+    public OnboardingView()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, _) => Observe();
+        Loaded += (_, _) =>
+        {
+            Observe();
+            _ = AnimatePageAsync();
+        };
+    }
+
+    private void Observe()
+    {
+        if (observed is { } previous) previous.PropertyChanged -= OnStateChanged;
+        observed = DataContext as AppState;
+        if (observed is { } state) state.PropertyChanged += OnStateChanged;
+    }
+
+    private void OnStateChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AppState.OnboardingStep)) _ = AnimatePageAsync();
+    }
+
+    /// <summary>Mac goto: withAnimation(Motion.phase) around the step change (0.46 s settle).</summary>
+    private async Task AnimatePageAsync()
+    {
+        if (animating || this.FindControl<Grid>("GuidePageHost") is not { } host) return;
+        animating = true;
+        try
+        {
+            await GuideMotion.PhaseIn().RunAsync(host);
+        }
+        catch
+        {
+            host.Opacity = 1;
+        }
+        finally
+        {
+            animating = false;
+        }
+    }
 
     private async void VoiceTest_Click(object? sender, RoutedEventArgs e)
     {

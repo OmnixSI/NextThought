@@ -50,7 +50,7 @@
       </Grid>
 
       <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="{DynamicResource D4Margin_28_8_28_16}">
+        <Grid x:Name="GuidePageHost" Margin="{DynamicResource D4Margin_28_8_28_16}">
           <!-- 1 · Scene: the same sheet as the home composer, minus the title field. -->
           <StackPanel Spacing="{DynamicResource D4Spacing_18}" IsVisible="{Binding OnboardingIsScene}">
             <StackPanel Spacing="{DynamicResource D4Spacing_6}">
@@ -92,11 +92,71 @@
             </Border>
             <StackPanel Spacing="{DynamicResource D4Spacing_6}">
               <Button Classes="quiet caption" Content="{Binding OnboardingSampleToggle}" HorizontalAlignment="Left"
+                      ToolTip.Tip="{Binding OnboardingSampleToggleHint}"
                       Command="{Binding ToggleOnboardingSampleCommand}" />
               <TextBlock Text="{loc:Tr 示例不录音、不申请权限、不调用模型，与上面选的场合无关。}" Classes="caption"
                          IsVisible="{Binding OnboardingShowSample}" TextWrapping="Wrap" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="{DynamicResource D4Spacing_14}" IsVisible="{Binding OnboardingShowSample}">
+                <!-- Sample transcript: the replay reveals lines as the clock runs (Mac OnboardingSampleMeeting). -->
+                <Border Classes="card" Padding="{DynamicResource D4Padding_14}">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{loc:Tr 实时转写}" Classes="overline" />
+                      <TextBlock Grid.Column="1" Text="{loc:Tr 示例}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding OnboardingSampleVisibleLines}" MaxHeight="280">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:OnboardingSampleLine">
+                          <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                            <TextBlock Text="{Binding Speaker}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                            <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+                <!-- Notes grow beside it; the reference answer appears when the question is asked. -->
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_10}">
+                  <Border Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="{Binding OnboardingSampleShowSuggestion}">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                      <TextBlock Text="{loc:Tr 面试官在追问 · 参考回答}" Classes="overline" />
+                      <TextBlock Text="{Binding OnboardingSampleSuggestionQuestion}" Classes="body"
+                                 Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding OnboardingSampleSuggestionAnswer}" Classes="body" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                  <Border Classes="card" Padding="{DynamicResource D4Padding_14}">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr 面试记录}" Classes="overline" />
+                        <TextBlock Grid.Column="1" Text="{loc:Tr 示例}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                      </Grid>
+                      <TextBlock Text="{loc:Tr 被问到的题、你的回答和会后要补的地方会在这里留下来。}" Classes="caption"
+                                 Foreground="{DynamicResource Secondary}" TextWrapping="Wrap"
+                                 IsVisible="{Binding !OnboardingSampleHasTakeaways}" />
+                      <ItemsControl ItemsSource="{Binding OnboardingSampleVisibleTakeaways}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="local:OnboardingSampleTakeaway">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_8}"
+                                  Margin="{DynamicResource D4Margin_0_0_0_4}">
+                              <TextBlock Text="{Binding Kind}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                              <TextBlock Grid.Column="1" Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding OnboardingShowSample}">
+                <ProgressBar Value="{Binding OnboardingSampleProgress}" Maximum="1" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 重播}" Command="{Binding ReplayOnboardingSampleCommand}"
+                        IsVisible="{Binding OnboardingSampleFinished}" />
+              </Grid>
               <Button Classes="quiet" Content="{loc:Tr 看一场示例会议}" HorizontalAlignment="Left"
-                      Command="{Binding OpenOnboardingSampleCommand}" IsVisible="{Binding OnboardingShowSample}" />
+                      Command="{Binding OpenOnboardingSampleCommand}" />
             </StackPanel>
           </StackPanel>
 

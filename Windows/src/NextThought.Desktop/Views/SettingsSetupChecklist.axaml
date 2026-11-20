@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.SettingsSetupChecklist"
+             x:DataType="local:AppState">
+  <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+    <ItemsControl ItemsSource="{Binding SetupChecklistRows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:SetupChecklistRow">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_10}"
+                Margin="{DynamicResource D4Margin_0_0_0_4}">
+            <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                       Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding Ready}" />
+            <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                       Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !Ready}" />
+            <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
+              <TextBlock Text="{Binding Title}" Classes="label" />
+              <TextBlock Text="{Binding Detail}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="quiet" Content="{Binding ActionLabel}" IsVisible="{Binding HasAction}"
+                    Command="{Binding $parent[ItemsControl].((local:AppState)DataContext).SetupChecklistActionCommand}"
+                    CommandParameter="{Binding Id}" VerticalAlignment="Center" />
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>
