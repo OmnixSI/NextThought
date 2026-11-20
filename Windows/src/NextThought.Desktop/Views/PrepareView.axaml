@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
              x:Class="NextThought.Desktop.Views.PrepareView"
              x:DataType="local:AppState">
   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -23,9 +24,22 @@
                      FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="36"
                      PlaceholderText="给这场会起个名字" />
           </Grid>
-          <TextBlock Text="{Binding SelectedScene.Title}" Classes="label" />
-          <TextBlock Text="{Binding SelectedScene.Promise}" Classes="caption" />
-          <TextBlock Text="更改场合请回到首页场景选择器；本页先沿用当前场合。" Classes="caption" />
+          <ItemsControl ItemsSource="{Binding Scenes}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SceneChoice">
+                <Button Classes="scene" Tag="{Binding}" Click="PrepareScene_Click"
+                        Margin="{DynamicResource D4Margin_0_0_4_4}">
+                  <TextBlock Text="{Binding Title}" FontSize="13" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="{Binding SelectedScene.Promise}" Classes="caption" Foreground="{DynamicResource Secondary}" />
         </StackPanel>
       </Border>
 
@@ -34,6 +48,13 @@
           <TextBlock Text="系列与资料" Classes="section" />
           <TextBlock Text="{Binding SeriesSummary}" Classes="body" />
           <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
+          <ItemsControl ItemsSource="{Binding Library.Materials}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:MaterialDocument">
+                <TextBlock Text="{Binding Name}" Classes="caption" TextTrimming="CharacterEllipsis" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <Button Content="打开资料库" Command="{Binding NavigateCommand}" CommandParameter="Library" />
             <Button Content="打开系列" Command="{Binding NavigateCommand}" CommandParameter="Series" />
