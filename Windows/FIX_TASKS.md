@@ -53,7 +53,7 @@ Nov 20, 2026 · @Homing
 | B15 | 已实现、未验证 | 小组作业/组会阈值统一 0.55/0.3；候选跟踪器新增 `Config`、`Reset`、`NoteAnswered`、`Confirm`，稳定/提前触发/线索/片段/去重/最小间隔均由 Config 控制；4 个对齐测试通过 | `QuestionIntentTests` 8 项、`QuestionCorpusReportTests` 5 项、`RealtimeRegressionTests` 9 项尚未全部翻译；可空句子键尚未加入 |
 | B16 | 已实现、未验证 | 新增投影字幕导出：用校对后文本、说话人名字、原文/译文/双语三种模式、无译文回退原文、译文过期标记与计数；SRT/VTT 时间戳；2 个对齐测试通过 | `SessionExportTests` 其余 10 项尚未翻译；会议页导出按钮尚未改接投影字幕导出 |
 | B17 | 已实现、未验证 | 新增 `KnowledgeMerger.MatchesCurrentSummary`（来源会议、摘要/实时两个修订号、重新生成候选 id 必须命中）；`CollectCandidates` 增加 `originId`；来源清单时间改用 Unix 秒 double 位模式，保留亚毫秒精度；3 个对齐测试通过 | `WorkspaceTests` 其余 39 项尚未全部翻译；会议页调用尚未改用 `MatchesCurrentSummary` |
-| B18 | 未做 | — | 未开始 |
+| B18 | 已实现、未验证 | 系列新增 `EffectiveMode`（custom 归一到基础类型、嵌套 custom→general）、`Profile`、无参 `MaterialText()`（结构化字段+遗留字段+自由笔记）、`RetrievalDocuments`（题库作为一篇可检索文档）、`ModeProfile.MatchesDefaultTemplatePreferences`；4 个对齐测试通过 | Mac 旧版本对 meeting/client/general 的历史默认偏好字符串未逐字补入；`WorkspaceTests` 其余项留给 B22 |
 | B19 | 未做 | — | 未开始 |
 | B20 | 未做 | — | 未开始 |
 | B21 | 未做 | — | 未开始 |

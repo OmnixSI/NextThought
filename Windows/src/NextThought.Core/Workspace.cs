@@ -189,6 +189,61 @@ public sealed record WorkspaceSeries(
         return string.Join("\n", lines);
     }
 
+    /// <summary>B18: a custom type behaves like its base type (Workspace.effectiveMode).</summary>
+    public MeetingMode EffectiveMode
+    {
+        get
+        {
+            var mode = ParseMode(Mode);
+            if (mode != MeetingMode.Custom) return mode;
+            var baseMode = ParseMode(CustomBaseMode);
+            return baseMode == MeetingMode.Custom ? MeetingMode.General : baseMode;
+        }
+    }
+
+    public ModeProfile Profile => ModeProfile.For(EffectiveMode);
+
+    private static MeetingMode ParseMode(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return MeetingMode.General;
+        var normalized = raw.Trim();
+        foreach (var value in Enum.GetValues<MeetingMode>())
+            if (string.Equals(value.ToString(), normalized, StringComparison.OrdinalIgnoreCase)) return value;
+        return normalized.ToLowerInvariant() switch
+        {
+            "labmeeting" or "lab_meeting" => MeetingMode.LabMeeting,
+            "groupproject" or "group_project" => MeetingMode.GroupProject,
+            "general" => MeetingMode.General,
+            _ => MeetingMode.General
+        };
+    }
+
+    /// <summary>B18: structured fields, leftover fields, then free notes (Workspace.materialText).</summary>
+    public string MaterialText() =>
+        MaterialText(Profile.Fields.Select(field => (field.Id, field.Title)).ToList(), Fields ?? new Dictionary<string, string>())
+        + (string.IsNullOrWhiteSpace(Notes) ? "" : (Fields is { Count: > 0 } ? "\n" : "") + Notes.Trim());
+
+    /// <summary>B18: the question bank becomes one more searchable document (Workspace.retrievalDocuments).</summary>
+    public IReadOnlyList<ContextDocument> RetrievalDocuments
+    {
+        get
+        {
+            var result = Documents.ToList();
+            var reviewed = (QuestionBank ?? []).Where(item =>
+                !string.IsNullOrWhiteSpace(item.Question) && !string.IsNullOrWhiteSpace(item.Answer)).ToList();
+            if (UseKnowledge && reviewed.Count > 0)
+                result.Add(new ContextDocument
+                {
+                    Id = Id,
+                    Name = "题库（历次复盘）",
+                    Pages = reviewed.Select(item => "问题：" + item.Question.Trim() + "\n准备好的回答：" + item.Answer.Trim()).ToList(),
+                    Enabled = true,
+                    Category = "题库"
+                });
+            return result;
+        }
+    }
+
     /// <summary>Lessons as prompt bullets: pinned first, then newest, bounded (port of experienceNotes).</summary>
     public string ExperienceNotes(int limit = 2_000)
     {

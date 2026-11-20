@@ -18,6 +18,10 @@ public sealed record ModeProfile(MeetingMode Mode, string Role, string ReviewFoc
     public IReadOnlyList<string> DocumentCategories { get; init; } = [];
     public string TemplatePreferences { get; init; } = "";
 
+    /// <summary>B18: a preference equal to this type's default (or an old default) is not a user choice.</summary>
+    public bool MatchesDefaultTemplatePreferences(string value) =>
+        string.IsNullOrEmpty(value) || value == TemplatePreferences;
+
     public static string Title(MeetingMode mode) => mode switch
     {
         MeetingMode.Interview => "面试",
