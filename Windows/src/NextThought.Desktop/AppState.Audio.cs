@@ -44,6 +44,12 @@ public partial class AppState
         _ => "晚上好。今天有哪些值得留下的结论？"
     };
 
+    public string DateLine => DateTime.Now.ToString("M月d日 dddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
+
+    public string GreetingHeadline => Settings.UiLanguage == "English"
+        ? "What's next?"
+        : Greeting.Split('。')[0] + "。接下来是什么场合？";
+
     partial void OnRecordingChanged(bool value) { RaiseBusy(); PublishCompanionSnapshot(); OnPropertyChanged(nameof(ContextSidebarVisible)); }
 
     public void RefreshModelState()

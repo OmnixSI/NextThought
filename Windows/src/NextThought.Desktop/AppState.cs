@@ -75,6 +75,8 @@ public partial class AppState : ObservableObject
             PageSubtitle = UiText.Translate(PageSubtitle, english);
             OnPropertyChanged(nameof(StatsText));
             OnPropertyChanged(nameof(Greeting));
+            OnPropertyChanged(nameof(DateLine));
+            OnPropertyChanged(nameof(GreetingHeadline));
             OnPropertyChanged(nameof(HistorySummary));
             OnPropertyChanged(nameof(SeriesSummary));
             OnPropertyChanged(nameof(SelectedSeriesMeta));

@@ -10,10 +10,8 @@
     <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_26}">
       <!-- Greeting -->
       <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-        <TextBlock Text="{Binding Greeting}" Classes="overline" />
-        <TextBlock Text="把讨论留下来" Classes="hero" />
-        <TextBlock Text="开会、听讲、面谈。NextThought 在本机把声音变成文字，再变成可以带走的结论。"
-                   Classes="body" Foreground="{DynamicResource Secondary}" MaxWidth="620" />
+        <TextBlock Text="{Binding DateLine}" Classes="overline" />
+        <TextBlock Text="{Binding GreetingHeadline}" Classes="hero" />
       </StackPanel>
 
       <!-- Next meeting -->
