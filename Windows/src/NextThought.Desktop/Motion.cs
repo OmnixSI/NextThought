@@ -1,21 +1,34 @@
-using NextThought.Platform;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Styling;
+using NextThought.Platform;
 
 namespace NextThought.Desktop;
 
 /// <summary>
-/// D5 motion tokens. Durations are the Mac spring responses; the exact spring is
-/// approximated with the closest Avalonia easing until a spring renderer exists.
-/// Nothing runs when Windows animations are disabled.
+/// D5 motion tokens. The Mac design system (DesignSystem.swift, <c>enum Motion</c>) uses one
+/// timing curve and four damped springs:
+/// <list type="bullet">
+/// <item><c>hover</c>: 0.14 s cubic-bezier(0.2, 0.8, 0.2, 1) — a timing curve, not a spring.</item>
+/// <item><c>expand</c>: spring(response: 0.32, dampingFraction: 0.9).</item>
+/// <item><c>phase</c>: spring(response: 0.46, dampingFraction: 0.9).</item>
+/// <item><c>snappy</c>: spring(response: 0.28, dampingFraction: 0.78).</item>
+/// <item><c>morph</c>: spring(response: 0.5, dampingFraction: 0.82).</item>
+/// </list>
+/// The springs are driven by the analytic under-damped solution in
+/// <see cref="MotionTokens"/>/<see cref="MotionPlan"/> (<c>NextThought.Platform</c>), sampled
+/// every frame; durations are the spring settling times, never the response values.
+/// When Windows asks for fewer animations (<see cref="Reduce"/>) nothing animates: floating
+/// windows appear at their final opacity and the cue island snaps to its final width.
 /// </summary>
 public static class Motion
 {
     public enum Kind { Hover, Expand, Phase, Snappy, Morph }
 
     private const uint SpiGetClientAreaAnimation = 0x1042;
-public static bool Reduce
+
+    /// <summary>True when the system animation setting is off ("show animations in Windows").</summary>
+    public static bool Reduce
     {
         get
         {
@@ -24,23 +37,30 @@ public static bool Reduce
         }
     }
 
-    public static TimeSpan Duration(Kind kind) => Reduce ? TimeSpan.Zero : kind switch
+    internal static MotionKind PlatformKind(Kind kind) => kind switch
     {
-        Kind.Hover => TimeSpan.FromMilliseconds(140),
-        Kind.Expand => TimeSpan.FromMilliseconds(320),
-        Kind.Phase => TimeSpan.FromMilliseconds(460),
-        Kind.Snappy => TimeSpan.FromMilliseconds(280),
-        _ => TimeSpan.FromMilliseconds(500)
+        Kind.Hover => MotionKind.Hover,
+        Kind.Expand => MotionKind.Expand,
+        Kind.Phase => MotionKind.Phase,
+        Kind.Snappy => MotionKind.Snappy,
+        _ => MotionKind.Morph
     };
 
-    public static Easing Easing(Kind kind) => kind switch
+    /// <summary>The Mac token's duration: a spring's settling time, or 0.14 s for hover.</summary>
+    public static TimeSpan Duration(Kind kind) => MotionPlan.Duration(PlatformKind(kind), Reduce);
+
+    /// <summary>Avalonia easing that samples the analytic spring (or the hover timing curve).</summary>
+    public static Easing Easing(Kind kind)
     {
-        Kind.Hover => new CubicEaseInOut(),
-        Kind.Expand => new CubicEaseOut(),
-        Kind.Phase => new CubicEaseOut(),
-        Kind.Snappy => new CubicEaseInOut(),
-        _ => new CubicEaseOut()
-    };
+        var mapped = PlatformKind(kind);
+        return mapped == MotionKind.Hover ? new MotionHoverEasing() : new MotionSpringEasing(mapped);
+    }
+
+    /// <summary>
+    /// Eased progress for an animation driven by hand every frame (the cue island width
+    /// morph). 0 → 1 over the spring's settling time; under-damped tokens overshoot past 1.
+    /// </summary>
+    public static double Progress(Kind kind, TimeSpan elapsed) => MotionPlan.Progress(PlatformKind(kind), elapsed, Reduce);
 
     public static Animation? FadeIn() => Reduce ? null : Fade(0d, 1d, Kind.Expand);
     public static Animation? FadeOut() => Reduce ? null : Fade(1d, 0d, Kind.Snappy);
@@ -56,4 +76,22 @@ public static bool Reduce
             new KeyFrame { Cue = new Cue(1), Setters = { new Setter(Visual.OpacityProperty, to) } }
         }
     };
+}
+
+/// <summary>D5: Avalonia easing wrapper around one of the analytic spring tokens.</summary>
+public sealed class MotionSpringEasing : Easing
+{
+    private readonly MotionKind kind;
+
+    public MotionSpringEasing() : this(MotionKind.Morph) { }
+
+    public MotionSpringEasing(MotionKind kind) => this.kind = kind;
+
+    public override double Ease(double progress) => MotionPlan.EasedProgress(kind, progress);
+}
+
+/// <summary>D5: the Mac <c>Motion.hover</c> cubic-bezier(0.2, 0.8, 0.2, 1) timing curve.</summary>
+public sealed class MotionHoverEasing : Easing
+{
+    public override double Ease(double progress) => MotionPlan.EasedProgress(MotionKind.Hover, progress);
 }

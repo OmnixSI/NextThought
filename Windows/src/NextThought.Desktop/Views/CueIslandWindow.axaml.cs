@@ -33,7 +33,6 @@ public partial class CueIslandWindow : Window
             if (e.PropertyName == nameof(NextThought.Desktop.SettingsViewModel.SelectedCueWidth)) ApplyCueWidth();
             if (e.PropertyName == nameof(NextThought.Desktop.SettingsViewModel.CueScreen) && IsVisible) MoveToTopCentre();
         };
-        Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         Closing += (_, e) =>
         {
             if (AllowClose) return;
@@ -77,9 +76,12 @@ public partial class CueIslandWindow : Window
     private DispatcherTimer? springTimer;
     private double targetWidth;
     private double springWidth;
-    private double springVelocity;
+    private double springFrom;
+    private DateTimeOffset springStarted;
 
-    /// <summary>C9: Motion.morph spring (response 0.5 s, damping 0.82).</summary>
+    /// <summary>C9/D5: Motion.morph spring (response 0.5 s, damping fraction 0.82), sampled
+    /// from the analytic solution by <see cref="Motion.Progress"/> on every frame. When the
+    /// system asks for less motion the width snaps straight to its target.</summary>
     private void StartSpring()
     {
         if (springTimer is not null) return;
@@ -93,22 +95,33 @@ public partial class CueIslandWindow : Window
         if (Math.Abs(targetWidth - width) < 0.1) return;
         targetWidth = width;
         if (springWidth <= 0) springWidth = Width;
+        if (Motion.Reduce)
+        {
+            springTimer?.Stop();
+            springTimer = null;
+            springWidth = width;
+            Width = Math.Max(120, width);
+            return;
+        }
+        springFrom = springWidth;
+        springStarted = DateTimeOffset.UtcNow;
         StartSpring();
     }
 
     private void StepSpring()
     {
-        const double dt = 0.016, omega = 2 * Math.PI / 0.5, zeta = 0.82;
-        var acceleration = omega * omega * (targetWidth - springWidth) - 2 * zeta * omega * springVelocity;
-        springVelocity += acceleration * dt;
-        springWidth += springVelocity * dt;
-        if (Math.Abs(targetWidth - springWidth) < 0.3 && Math.Abs(springVelocity) < 1)
+        var elapsed = DateTimeOffset.UtcNow - springStarted;
+        var duration = Motion.Duration(Motion.Kind.Morph);
+        if (elapsed >= duration)
         {
             springWidth = targetWidth;
-            springVelocity = 0;
             springTimer?.Stop();
             springTimer = null;
+            Width = Math.Max(120, springWidth);
+            return;
         }
+        var progress = Motion.Progress(Motion.Kind.Morph, elapsed);
+        springWidth = springFrom + (targetWidth - springFrom) * progress;
         Width = Math.Max(120, springWidth);
     }
 

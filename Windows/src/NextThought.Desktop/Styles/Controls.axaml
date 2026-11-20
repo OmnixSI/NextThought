@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:motion="using:NextThought.Desktop">
   <!--
     Buttons are styled with plain templates rather than ControlThemes: the Fluent
     theme keeps its own ContentPresenter foreground, which would override the ink
@@ -303,7 +304,12 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.28" />
+        <!-- D5: Motion.hover — 0.14 s timing curve (0.2, 0.8, 0.2, 1). -->
+        <BrushTransition Property="Background" Duration="0:0:0.14">
+          <BrushTransition.Easing>
+            <motion:MotionHoverEasing />
+          </BrushTransition.Easing>
+        </BrushTransition>
       </Transitions>
     </Setter>
     <Setter Property="Template">

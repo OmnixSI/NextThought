@@ -1166,10 +1166,12 @@ public sealed class SelfTestStructureTests
 
 
     [Fact]
-    public void TopNavigationHasSnappyBrushTransition()
+    public void TopNavigationHasHoverBrushTransition()
     {
+        // D5: hover is the Mac Motion.hover token — 0.14 s, timing curve (0.2, 0.8, 0.2, 1).
         var controls = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Styles", "Controls.axaml"));
-        Assert.Contains("BrushTransition Property=\"Background\" Duration=\"0:0:0.28\"", controls);
+        Assert.Contains("BrushTransition Property=\"Background\" Duration=\"0:0:0.14\"", controls);
+        Assert.Contains("MotionHoverEasing", controls);
     }
 
 
