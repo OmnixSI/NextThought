@@ -82,6 +82,60 @@ public partial class AppState
         SkillsStatus = $"{skills.Count} 个技能；已保存启停状态。";
     }
 
+    /// <summary>E28: skills as rows the settings page edits one by one.</summary>
+    public IReadOnlyList<Skill> EditableSkills => skills;
+
+    public void SaveSkillEdit(Skill edited)
+    {
+        var list = skills.ToList();
+        var index = list.FindIndex(skill => skill.Id == edited.Id);
+        if (index >= 0) list[index] = edited with { ImportedAt = list[index].ImportedAt };
+        else list.Add(edited);
+        PersistSkills(list, "技能已保存。");
+    }
+
+    public void AddSkill()
+    {
+        var list = skills.ToList();
+        list.Add(new Skill { Id = Guid.NewGuid().ToString("D"), Name = "新技能", Summary = "", Content = "在这里写这个技能的要求。", Enabled = true, Global = true });
+        PersistSkills(list, "已新建技能，改完内容后保存。");
+    }
+
+    public void DeleteSkill(string id)
+    {
+        PersistSkills(skills.Where(skill => skill.Id != id).ToList(), "技能已删除。");
+    }
+
+    /// <summary>Mac SkillLibrary.installDemo: one sample skill users can edit.</summary>
+    public void InstallDemoSkill()
+    {
+        var list = skills.ToList();
+        if (list.Any(skill => skill.Name == "简洁回答")) { SetStatus("示例技能已经在列表里。"); return; }
+        list.Add(new Skill
+        {
+            Id = Guid.NewGuid().ToString("D"), Name = "简洁回答", Summary = "先说结论",
+            Content = "回答不超过三句话：先给结论，再给一条依据。", Enabled = true, Global = true
+        });
+        PersistSkills(list, "已安装示例技能。");
+    }
+
+    private void PersistSkills(IReadOnlyList<Skill> list, string status)
+    {
+        try
+        {
+            skillStore ??= new SkillStore(Paths.Root);
+            skillStore.Save(list);
+            skills = SkillStore.PreserveIdentity(list, skills);
+            SkillCount = skills.Count;
+            SkillsText = SkillStore.ToText(skills);
+            SkillsStatus = status;
+            RefreshSkillRows();
+            RefreshSeriesSkills();
+            SetStatus(status);
+        }
+        catch (Exception ex) { SkillsStatus = "技能保存失败：" + ex.Message; SetStatus(SkillsStatus, true); }
+    }
+
     /// <summary>Enabled skill instructions for the answer prompt (capped so a huge file cannot crowd out the meeting).</summary>
     public string SkillPrompt(SessionMeta? meta = null)
     {

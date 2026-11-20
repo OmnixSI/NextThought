@@ -231,12 +231,10 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBox Text="{Binding SkillsText}" AcceptsReturn="True" Height="120" TextWrapping="Wrap"
-                   ScrollViewer.VerticalScrollBarVisibility="Auto"
-                   PlaceholderText="## 简洁回答&#10;摘要：先说结论&#10;回答不超过三句话，先给结论再给理由。" />
+          <StackPanel x:Name="SkillEditorPanel" Spacing="{DynamicResource D4Spacing_8}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <Button Content="保存技能" Command="{Binding SaveSkillsCommand}" />
-            <Button Content="导入 .md…" Click="ImportSkill_Click" />
+            <Button Content="新建技能" Click="NewSkill_Click" />
+            <Button Content="安装示例技能" Click="InstallDemoSkill_Click" />
             <TextBlock Text="{Binding SkillsStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
           </StackPanel>
         </StackPanel>

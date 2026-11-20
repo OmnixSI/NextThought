@@ -1,4 +1,5 @@
 using System.IO;
+using NextThought.Core;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -17,6 +18,7 @@ public partial class SettingsView : UserControl
         base.OnLoaded(e);
         RefreshScreens();
         BuildShortcutRows();
+        BuildSkillRows();
         ShowPage(currentPage);
     }
 
@@ -392,4 +394,63 @@ public partial class SettingsView : UserControl
         Avalonia.Input.Key.Down => 0x28,
         _ => NextThought.Core.ShortcutKeys.Parse(key.ToString(), 0)
     };
+
+    /// <summary>E28: one editor per skill, with create/delete/install-demo.</summary>
+    private void BuildSkillRows()
+    {
+        if (DataContext is not AppState state) return;
+        SkillEditorPanel.Children.Clear();
+        foreach (var skill in state.EditableSkills)
+        {
+            var card = new Avalonia.Controls.Border
+            {
+                BorderBrush = Avalonia.Media.Brush.Parse("#33ECEBE8"),
+                BorderThickness = new Avalonia.Thickness(0, 0, 0, 0.5),
+                Padding = new Avalonia.Thickness(0, 6, 0, 6)
+            };
+            var stack = new Avalonia.Controls.StackPanel { Spacing = 4 };
+            var header = new Avalonia.Controls.StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
+            var name = new Avalonia.Controls.TextBox { Text = skill.Name, Width = 160, FontSize = 11 };
+            var summary = new Avalonia.Controls.TextBox { Text = skill.Summary, Watermark = "摘要", Width = 260, FontSize = 11 };
+            var enabled = new Avalonia.Controls.CheckBox { Content = "启用", IsChecked = skill.Enabled, FontSize = 11 };
+            var global = new Avalonia.Controls.CheckBox { Content = "全部会议", IsChecked = skill.Global, FontSize = 11 };
+            header.Children.Add(name); header.Children.Add(summary); header.Children.Add(enabled); header.Children.Add(global);
+            var content = new Avalonia.Controls.TextBox
+            {
+                Text = skill.Content, AcceptsReturn = true, Height = 70, TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                FontSize = 11, Watermark = "这个技能的要求（Markdown）"
+            };
+            var actions = new Avalonia.Controls.StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
+            var save = new Avalonia.Controls.Button { Content = "保存", FontSize = 11 };
+            save.Click += (_, _) =>
+            {
+                state.SaveSkillEdit(skill with
+                {
+                    Name = name.Text ?? "", Summary = summary.Text ?? "", Content = content.Text ?? "",
+                    Enabled = enabled.IsChecked == true, Global = global.IsChecked == true
+                });
+                BuildSkillRows();
+            };
+            var remove = new Avalonia.Controls.Button { Content = "删除", FontSize = 11 };
+            remove.Click += (_, _) => { state.DeleteSkill(skill.Id); BuildSkillRows(); };
+            actions.Children.Add(save); actions.Children.Add(remove);
+            stack.Children.Add(header); stack.Children.Add(content); stack.Children.Add(actions);
+            card.Child = stack;
+            SkillEditorPanel.Children.Add(card);
+        }
+    }
+
+    private void NewSkill_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        state.AddSkill();
+        BuildSkillRows();
+    }
+
+    private void InstallDemoSkill_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        state.InstallDemoSkill();
+        BuildSkillRows();
+    }
 }
