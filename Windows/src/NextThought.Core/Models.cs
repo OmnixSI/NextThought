@@ -32,7 +32,7 @@ public sealed record TranscriptLine
     public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
 }
 public sealed record SessionVoiceTag(Guid Id, int Voice);
-public sealed record SessionTranslation(Guid Id, int Revision, string SourceHash, string Direction, string Text, string Model, DateTimeOffset Date);
+public sealed record SessionTranslation(Guid Id, int Revision, string SourceHash, string Direction, string Text, string Model, DateTimeOffset Date, string? InputRevision = null);
 public sealed record AnswerRecord
 {
     public Guid Id { get; init; } = Guid.NewGuid();

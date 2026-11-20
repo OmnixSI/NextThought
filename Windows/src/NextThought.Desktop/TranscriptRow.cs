@@ -12,8 +12,8 @@ public partial class TranscriptRow : ObservableObject
         Id = line.Id;
         Label = BuildLabel(line);
         Text = line.Text;
-        TranslationRaw = line.Translation is { } t ? t.Text : "";
-        Translation = TranslationRaw.Length == 0 ? "" : (line.Translation!.Direction == "zh-en" ? "英译：" : "中译：") + TranslationRaw;
+        TranslationRaw = line.Translation is { } t ? t.Text : (line.TranslatedText ?? "");
+        Translation = TranslationRaw.Length == 0 ? "" : (line.Translation?.Direction == "zh-en" ? "英译：" : "中译：") + TranslationRaw;
         Speaker = line.Speaker;
         Date = line.Date;
         IsEcho = line.SuspectedEcho == true;

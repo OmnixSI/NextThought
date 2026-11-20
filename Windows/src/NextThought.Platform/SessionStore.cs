@@ -8,6 +8,7 @@ namespace NextThought.Platform;
 public sealed class SessionStore(AppPaths paths)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
+    private sealed record MacTranslation(Guid Id, string Text, string? InputRevision);
     public string Folder(Guid id) => Path.Combine(paths.Sessions, id.ToString().ToUpperInvariant());
     public FileStream AcquireLease(Guid id) => new(Path.Combine(Folder(id), ".active.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
     public Task CreateAsync(SessionMeta meta, CancellationToken ct = default) => CreateAsync(meta, null, ct);
@@ -189,7 +190,7 @@ public sealed class SessionStore(AppPaths paths)
             // A late completion must not attach to a revised or missing source line.
             var line = ReadLines<TranscriptLine>(Path.Combine(Folder(session), "transcript.jsonl")).LastOrDefault(l => l.Id == translation.Id);
             if (line is null || MeetingTranslator.SourceHash(line.Text) != translation.SourceHash) return;
-            await AppendAsync(Path.Combine(Folder(session), "translations.jsonl"), translation, ct).ConfigureAwait(false);
+            await AppendAsync(Path.Combine(Folder(session), "translations.jsonl"), translation with { InputRevision = translation.InputRevision ?? translation.SourceHash }, ct).ConfigureAwait(false);
         }
         finally { gate.Release(); }
     }
@@ -234,8 +235,25 @@ public sealed class SessionStore(AppPaths paths)
         if (File.Exists(summaryPath)) { using var doc = JsonDocument.Parse(File.ReadAllText(summaryPath)); summary = doc.RootElement.GetProperty("markdown").GetString() ?? ""; }
         var voices = ReadLines<SessionVoiceTag>(Path.Combine(folder, "voices.jsonl")).Where(v => v.Voice is >= 0 and < 16).GroupBy(v => v.Id).ToDictionary(g => g.Key, g => g.Last().Voice);
         var lines = ReadLines<TranscriptLine>(Path.Combine(folder, "transcript.jsonl")).Select(l => voices.TryGetValue(l.Id, out var voice) ? l with { Voice = voice } : l).ToArray();
-        var translations = ReadLines<SessionTranslation>(Path.Combine(folder, "translations.jsonl")).GroupBy(t => (t.Id, t.SourceHash)).ToDictionary(g => g.Key, g => g.Last());
-        lines = lines.Select(l => translations.TryGetValue((l.Id, MeetingTranslator.SourceHash(l.Text)), out var translation) ? l with { Translation = translation } : l).ToArray();
+        var translationPath = Path.Combine(folder, "translations.jsonl");
+        var translations = ReadLines<SessionTranslation>(translationPath).GroupBy(t => (t.Id, t.SourceHash)).ToDictionary(g => g.Key, g => g.Last());
+        // Mac writes {id, text, inputRevision}; it has no Windows SourceHash. Match by line id and
+        // expose the text through TranslatedText/Translation so the transcript row renders it.
+        var macTranslations = ReadLines<MacTranslation>(translationPath)
+            .GroupBy(t => t.Id).ToDictionary(g => g.Key, g => g.Last());
+        lines = lines.Select(l =>
+        {
+            if (translations.TryGetValue((l.Id, MeetingTranslator.SourceHash(l.Text)), out var translation))
+                return l with { Translation = translation, TranslatedText = translation.Text, TranslationInputRevision = translation.InputRevision };
+            if (macTranslations.TryGetValue(l.Id, out var mac))
+                return l with
+                {
+                    TranslatedText = mac.Text,
+                    TranslationInputRevision = mac.InputRevision,
+                    Translation = new SessionTranslation(mac.Id, 1, "", "", mac.Text, "", l.Date, mac.InputRevision)
+                };
+            return l;
+        }).ToArray();
         return new(meta, lines, ReadLines<AnswerRecord>(Path.Combine(folder, "answers.jsonl")), summary);
     }
     private SessionMeta ReadMeta(Guid id) => JsonSerializer.Deserialize<SessionMeta>(
