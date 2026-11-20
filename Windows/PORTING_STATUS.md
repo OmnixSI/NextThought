@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · H2 阻塞复核、D5（部分）
+改动：H2 脚本复核确认 15 个 Swift 扩展共 179 个方法、C# 189 个方法，方法名完全匹配 0，逐方法同名需要大范围改名/调用点迁移，已记入 OPEN_QUESTIONS。D5 新增 `Motion.cs`：Hover 140ms、Expand 320ms、Phase 460ms、Snappy 280ms、Morph 500ms；读取 Windows「显示动画」设置；浮窗淡入/淡出改走 Motion；弹簧形状用 cubic easing 近似。
+测试：Core **869/869**，NextThought.Tests **134/134**。
+状态：H2「未做」（方法映射阻塞）；D5「未做」（只有两个淡入淡出点用了 Motion，其他动画点未接）。
+未解决：H2 改名；D5 全量动画点；A15 阻塞。
+
 ## 2026-11-20 · 0.5.145 · H2 复核、D4（部分）
 改动：H2 已把 AppState 主文件降到 202 行、15 个 Mac 扩展文件已建；但脚本对比 179 个 Swift 方法对 189 个 C# 方法，名字完全对上为 0，逐方法同名映射未完成。D4 新增 S12/Control/ControlLarge/Sidebar/Content 资源，侧栏 222→220，首页 920→720，设置 860→720；新增间距资源测试。
 测试：Core **869/869**，NextThought.Tests **134/134**。
