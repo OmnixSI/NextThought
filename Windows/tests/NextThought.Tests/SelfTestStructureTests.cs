@@ -198,6 +198,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void RollingUpdateUsesTheManifest()
+    {
+        var catalog = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Core", "UpdateCatalog.cs"));
+        Assert.Contains("ManifestAsset", catalog);
+        var feed = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "UpdateFeed.cs"));
+        Assert.Contains("UpdateManifest.Decode", feed);
+        Assert.Contains("UpdateCatalog.IsNewer(manifest", feed);
+    }
+
     [Fact]
     public void CompanionScopeMatchesMac()
     {

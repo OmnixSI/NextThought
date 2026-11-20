@@ -78,7 +78,15 @@ public static class UpdateCheck
             var latest = UpdateCatalog.ParseVersion(candidate.TagName) is { } parsed
                 ? string.Join('.', parsed.Numbers) + (parsed.Prerelease is { } pre ? "-" + pre : "")
                 : candidate.TagName;
-            var available = UpdateCatalog.IsNewer(null, candidate.TagName, version, build);
+            // F14: feed the release's update.json into the comparison so a rolling build's
+            // build number is used instead of comparing the tag alone.
+            UpdateManifest? manifest = null;
+            if (candidate.ManifestAsset?.BrowserDownloadUrl is { Length: > 0 } manifestUrl)
+            {
+                try { manifest = UpdateManifest.Decode(await UpdateFeed.ReadAsync(manifestUrl, cancellationToken)); }
+                catch (Exception) { /* a malformed manifest falls back to the tag */ }
+            }
+            var available = UpdateCatalog.IsNewer(manifest, candidate.TagName, version, build);
             var url = candidate.WindowsAsset?.BrowserDownloadUrl;
             var setup = candidate.SetupAsset;
             var checksums = setup is null ? null : candidate.ChecksumsAsset(setup.Name);

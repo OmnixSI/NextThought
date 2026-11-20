@@ -30,6 +30,10 @@ public sealed record GitHubRelease(
     public GitHubReleaseAsset? WindowsAsset => Assets.FirstOrDefault(asset =>
         asset.Name.EndsWith("-windows-x64.zip", StringComparison.OrdinalIgnoreCase) || asset.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>F14: the update.json manifest published with the release.</summary>
+    public GitHubReleaseAsset? ManifestAsset => Assets.FirstOrDefault(asset =>
+        string.Equals(asset.Name, "update.json", StringComparison.OrdinalIgnoreCase));
+
     /// <summary>The Windows installer, when this release ships one (in-app replacement).</summary>
     public GitHubReleaseAsset? SetupAsset => Assets.FirstOrDefault(asset =>
         asset.Name.EndsWith("-windows-x64-setup.exe", StringComparison.OrdinalIgnoreCase));

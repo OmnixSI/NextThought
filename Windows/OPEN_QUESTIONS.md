@@ -32,3 +32,9 @@
 - Mac 做法：`MyVoice.swift` 录 3 段、`VoiceEnrollment.Make` 取平均、存本机。
 - 可选做法：暴露 `MeetingVoiceTagger` 的 embedding 或集成 wespeaker onnx；需要确认模型分发与隐私说明。
 - 当前实现：说话人命名/「这是我」/持久化/合并已完成；录音入库未做。
+
+## F13 蓝牙备用通道
+- 卡在哪：Windows 需要 `GattServiceProvider` 做 BLE 外设端；仓库没有该实现。手机端按 `IH-` 名字过滤，任务要求改成按服务 UUID 过滤，手机端不在 Windows 仓库内。
+- Mac 做法：`CompanionBluetooth.swift` 外设广播 + 手机端按名字过滤。
+- 可选做法：Windows 实现 GATT service（固定 UUID），同时改手机端扫描过滤；需要手机端代码权限与实机 BLE 测试。
+- 当前状态：未做，标 F13「未做」，不伪造完成。
