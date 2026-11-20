@@ -1,66 +1,75 @@
-# Mac / Windows 功能对照与验收范围
+# Mac / Windows 功能对照与验收基线（v3.3.0）
 
-> **这份表是 P1–P3 阶段的验收快照**（当时版本 0.4.0），部分行已被后续版本推进（场景、字幕条、自动收尾、
-> 系列知识库、逐字同传等）。当前能力与证据以 `README.md`、`docs/PARITY_REPORT.md` 与 `CORE_PARITY.md` 为准；
-> 下表保留当时的口径，便于追溯「哪一版做完了什么」。
+> **本文件是 v3.3.0 的 37 行验收基线。** 旧 FEATURE_PARITY 的 47 行功能切片表（0.4.0 时代、对照 Mac v2.3.1）
+> 已整体作废，不再作为验收口径；旧行中不在这 37 行内的动作按文末「本版不做与旧行归属」处理。
 
-对照依据：本地上游快照 `af60a4def90c750872197f81ac8b91c726d05b63` 的 Mac README（v2.3.1）及对应源码；Windows P1/P2/P3 验收与 P4 当前实现。这里只核对功能和证据，不把源码结构检查当作 Mac 实机往返结果。
+- 对照基线：Mac 主分支 `5ddb9e5`（v3.3.0，2026-11-17）。
+- 旧基线快照：`af60a4d`（v2.3.1，2026-11-06）；两者之间 86 个提交、`Sources` 约 +2.4 万行。
+- 阶段列是 Windows 侧的归属，不是先后承诺（先后按 v2 §16 的 P1→P8）。
+- 配套认领表：`CORE_PARITY.md`（Core 80 个文件）、`VIEW_PARITY.md`（主窗口约 257 个视图 + 5 类特殊窗口）。
+- 行内验收只核对功能与证据；不把源码结构检查当作 Mac 实机往返结果。
 
-Windows 当前目标为 Windows 10 build 19041+ / 11、x64、中文界面；进程级采音要求 build 20348+。普通 CPU 基线使用本机 Sherpa/ORT，未证明 GPU 加速收益。安装候选版本为 0.4.0，正式签名、另一台机器和长测结果以 P4_VALIDATION.md 最新状态为准。
+## 验收记录规则
 
-| Mac 功能 | Windows 对应能力与状态 | 证据及差异 |
-|---|---|---|
-| 系统声音 + 麦克风双路 | 已实现并有 HECATE 短时实采 | P1 单路、双路固定句；P3 一小时公开 PCM 回放单列；不等于连续长时硬件采音 |
-| 所选应用声音 | Windows process loopback 已实现 | P2 两个独立进程频率隔离通过；并非所有会议软件实机通过 |
-| 线下麦克风会议 | 可单独开启麦克风，具备现场编号通路 | 未复刻 Mac 全部会议准备向导；麦克风实采需用户确认 |
-| 本机流式 ASR + 整句精修 | 480 ms 路线通过 | P1/P3 公开 WAV 和硬件短句；160 ms 通路存在但未验收 |
-| Apple Speech、云端 ASR | 未移植 | 当前只交付本机 X-ASR；远程回答 API 不等于云端语音识别 |
-| 默认不保存原始声音 | 已实现 | 会议只保存转写、句段和侧车；用户主动导入的资料原件由资料库受管保存 |
-| 问题识别、自动与手动回答 | 已实现通用模式 | 原双语语料、候选跟踪、修订和去重回归；P1 DeepSeek 真实请求 |
-| 发言期间延迟自动回答 | 已实现 | Windows 麦克风 RMS 与候选调度；不保证任意设备和回声场景 |
-| 回声判断的手动“是我说的”恢复 | 未完整移植 | 部分数据字段与自动处理保留；未复刻 Mac 手动恢复交互 |
-| 多种会议类型及场景预设 | 九个场景已实现 | 场景决定纪要模板、提词样式与教练规则；Mac 的自定义会议类型未移植 |
-| 多家 API 预设一键切换 | 部分实现 | 兼容 API 地址、模型、推理强度、独立纪要模型及连接检查；未提供完整多预设管理 |
-| Codex 本机账号 | 已实现并联验 | P2 app-server stdio、流式、取消和进程清理；read-only 配置不是独立 OS 沙箱 |
-| 联网搜索、Tavily、联网版回答切换 | 未移植 | Windows 知识回答来源是会议转写和已导入资料，不承诺自动取得最新互联网事实 |
-| 系列、议程、经验库、题库、复盘 | 系列与知识库已实现 | 会议归档进系列；模板 `NotesCarry` 章节成为待确认候选，确认后进经验/题库并参与回答；议程与 `SeriesBriefing` 未移植 |
-| 会议搜索、筛选、批量删除 | 未完整移植 | 已有历史选择、重载；未复刻 Mac 完整浏览和批量管理 |
-| TXT/Markdown/PDF/Office 等资料 | 基础读取已实现并有固定样本 | P2 7 个合成文件；Word 无真实页码，PPT 只文字/表格，Excel 用缓存公式值；旧 Office 格式需转换，CSV/HTML 尚未接入 |
-| 基础图片/扫描 PDF OCR | Windows OCR 已实现 | 依赖系统已安装的 OCR 语言；复杂手写和多帧图像另验 |
-| 增强表格、公式及多栏 OCR | 原始 Paddle CPU 可选路线已实现 | P3 三张固定图及一页扫描 PDF；HTML/LaTeX 保留、双栏顺序使用保守启发式；复杂多页不作普遍保证 |
-| Mac 托管文档运行包与本机组件扫描 | 未等价移植 | Windows 增强 OCR 需独立 Python 3.12 环境与准备脚本；未交付 Mac 式托管下载包/全盘扫描向导 |
-| Qwen 语义检索与缓存 | ONNX Q8 CPU 路线通过 | P3 固定 38 问、版本化缓存、来源及回退；同一合成语料，不是外部真实准确率基准 |
-| 引用原文与资料位置 | 已实现 | P2 PDF 页、段落/单元格定位及历史引用；不能据引用存在推断任意回答事实正确 |
-| 会议内说话人分组 | WeSpeaker ONNX 已实现，默认关闭 | P3 三组公开样本、1/2/3/1 桌面 WAV、保存/重载/导出；短句和模糊结果允许未知 |
-| 术语与人名表 | ASR 热词输入作为部分支持 | 原生识别器使用热词；未提供完整人名术语库、归一化纠错及全部纪要联动 |
-| “我的声音”录入及跨会议身份识别 | 未移植 | Windows 不持久保存个人声纹和特征；会议内编号不代表身份鉴定 |
-| Mac 本机中英同传 | 逐字同传已实现（字幕条 + 提词岛，0.21.0） | 走所选回答服务；`LiveTranslationCoordinator` 保证旧快照译文不覆盖新句子，整句落地由整句译文接管；真实译文需密钥，不是离线翻译 |
-| 会后纪要与续作 | 已实现通用 Markdown 纪要 | P1 分段与故障续作，P3 导出/备份；无原文依据时标记待确认 |
-| 提纲、鱼骨图、观点对照与 LaTeX 排版 | 未完整移植 | Windows 保留 Markdown/LaTeX 文本，未复刻 Mac 原生公式和多种结构图展示 |
-| 无人发言自动结束会议 | 未移植 | 目前由用户结束，不计自动收尾验收 |
-| 回答浮窗、托盘 | 基础能力通过 | P2 悬浮窗和托盘；不是 Mac 所有历史翻页、字号、鼠标穿透和可拆分面板的等价实现 |
-| 字幕条、可拖动模块布局 | 未移植 | 普通浮窗不计作字幕条或自定义模块布局 |
-| 共享屏幕时排除回答浮窗 | 未提供等价排除能力 | 当前浮窗可能进入会议共享或录屏，不能承诺隐藏 |
-| 双屏演讲（PresenterMode） | 窗口规则已实现（0.22.0） | 幻灯片屏不出现窗口、提词岛留在摄像头屏、主窗口收起可用 Ctrl+Alt+N 唤回；单屏拒绝启用；幻灯片页匹配未移植，真机双屏未验收 |
-| 多屏 DPI 与无障碍专项 | 未完成专项验收 | 既有桌面截图和点击流程不代替完整缩放、屏幕阅读器及多屏切换测试 |
-| 全局快捷键 | 固定 Windows 快捷键通过 | Ctrl+Alt+N/O/R；未实现 Mac 式全部可配置动作；R 涉及实采未重复验收 |
-| 截图提问、屏幕感知、讲稿跟随 | 未移植 | 资料图片 OCR 与 PDF 原页查看不等于屏幕自动采集和跟随 |
-| 全局/系列 SKILL.md 导入 | 未移植 | 当前 Codex 后端不代表已复刻 Mac 技能管理 |
-| 中文/English 界面 | 中文界面；双语转写与回答 | 英文界面本地化未完成；回答语言可由问题控制 |
-| LAN 手机页面、配对、命令与重连 | 协议后台测试通过，实机未整体验收 | 0.3.1 修正 RFC 6598 地址；用户确认热点下页面实时同步，命令和重连依要求暂跳；校园网互访根因未确证 |
-| WSS 中转、BLE | 中转已接入（0.23.0），BLE 明确不可用 | 中转：本地中继 + 模拟手机端到端（HKDF/AES-GCM）通过；真实手机与公网 TLS 未联调。BLE：手机端仍按 `IH-` 名字过滤，Windows 不能自定义广播名，等手机端改动 |
-| 本机凭据 | Windows 用户 DPAPI | 不迁移 Mac Keychain，不把密钥加入备份、安装包或报告 |
-| 完整 .ntbackup 与旧 .ihbackup | Windows 往返及 Mac 结构样本通过 | P2 路径/哈希/失败撤回；同 ID 保留当前项，Mac 未映射信息保存在 Migration 原档 |
-| 增量 .ntrestore、含 secrets.plist 备份 | 未支持 | 明确拒绝；应从 Mac 导出无凭据的完整备份 |
-| Mac ↔ Windows 完整双向迁移 | 未实机验收 | 不能把单向结构样本和原档保留计为双方实机完整兼容 |
-| 每日/升级前自动备份策略 | 未等价移植 | 已有手动导出、导入前安全备份；安装版本目录不触碰数据，但不代替数据备份 |
-| 安装、升级、回退与卸载 | P4 候选每用户安装流程 | 独立版本目录，显式回退，卸载保留外部数据；当前结果以生命周期报告为准 |
-| Mac 后台自动更新及绑定本机签名 | 应用内更新已实现（0.24.0，无签名） | 检查更新 → 下载安装包 → 校验发布 SHA-256 → 静默安装并重启；后台静默下载、绑定本机签名与回滚未移植 |
-| 第二台干净机器 | 用户确认可提供电脑 | 必须收回真实自检及模型准备结果，当前开发机结果不代替它 |
-| Windows ARM64 / GPU | 未验收 | 当前包限 x64 CPU；尚无 ARM64 原生构建或同条件 GPU 收益结果 |
+1. 本表取代旧 FEATURE_PARITY.md 的 47 行。每行在 Windows 上验完，补日期、机器、版本、结果、证据路径；没验的写「未做」或「本版不做 + 原因」。
+2. 表中「P7（P2 接口先行）」只指联网与技能：接口和提示词在 P2 落地，真实联网与技能导入在 P7 验收。
+3. 提词岛（第 12 行）以 v2 §9 八项为前提；八项不过，先走退路（区域裁剪 / 不透明窗口），不换整个界面框架。
+4. 第 14 行眼神提醒不在本版验收内；`GazeEstimator` 进入 P1 只是保留 Core 逻辑，不承诺功能。
+5. 第 35 行必须在第二台干净机器上做；开发机的结果不算。
 
-## 数据兼容说明
+> 状态列说明（本轮 0-4）：只按第 4 节的四种状态填写。**没有任何 Windows 实机记录，因此全表没有「已验证」**。
+> 「已实现、未验证」= 代码/测试已存在但未在 Windows 实机操作；「未做」= 代码或验收尚未完成；「本版不做」= 第 1 节允许差异。
 
-会议 JSON/JSONL、声纹编号、译文句段关联及资料引用有 Windows 往返证据。Mac 结构样本只证明当前解析器接受对应结构，未证明实际 Mac 应用能够重载 Windows 的全部字段与展示。发布清单与安装状态的归档契约标记目前为 1，未知发布契约会拒绝切换；这不等于能对任意外部新版本的数据自动迁移或回退。每个待验或未移植项目是明确差异，不属于已通过项目。
+| # | 功能 | Mac 侧源码位置 | Windows 阶段 | 验收方式 | Windows 实测（日期 / 机器 / 版本 / 结果 / 证据路径） |
+|---|---|---|---|---|---|
+| 1 | 系统声加麦克风双路 | AudioCaptureService.swift、MicrophoneCaptureService.swift、AppState+Audio.swift | P3 | 六家会议软件各开一场 10 分钟，双方发言分别进入对应通道 | 已实现、未验证 |
+| 2 | 指定应用采音 | AudioCaptureService.swift（应用选择与进程树） | P3 | 会议软件与音乐播放器同时发声，只记录会议软件 | 已实现、未验证 |
+| 3 | 连续实采稳定性 | AudioCaptureService.swift、AppState+Resilience.swift | P3 | 2 小时真实硬件采音（不是回放），无丢帧、内存不持续增长 | 未做 |
+| 4 | 流式识别加整句精修 | ZipformerStreamingTranscriber.swift、LocalASRModels.swift、ZipformerModelStore.swift、Core ZipformerStreaming.swift | P1+P3 | 4 段标准 WAV 输出与 Mac 相同；最终句延迟 p95 ≤ 0.8 秒 | 已实现、未验证 |
+| 5 | 回声抑制与「是我说的」恢复 | EchoMonitor.swift、Core EchoSuppression.swift、LiveSessionView.swift | P1+P4 | 不戴耳机开会，对方的话不重复记到我方；手动恢复可用 | 已实现、未验证 |
+| 6 | 说话人分组、我的声音 | SpeakerID.swift、MyVoice.swift、MyVoiceViews.swift、Core SpeakerClustering.swift、VoiceProfile.swift | P1+P3 | 三人录音分组正确；录入我的声音后标为「我」 | 已实现、未验证 |
+| 7 | 术语与人名表 | GlossaryStore.swift、GlossaryView.swift、Core Glossary.swift、XASRVocabulary.swift | P1+P4 | 加入术语后识别结果和纪要中拼写正确 | 已实现、未验证 |
+| 8 | 问题识别与自动回答 | Core QuestionDetector/QuestionIntent/QuestionTurn、AnswerCoordinator.swift、AppState+Live.swift | P1+P2 | 全量评测语料逐条与 Mac 判定一致；实际会议中提问后自动出回答 | 已实现、未验证 |
+| 9 | 三种回答后端 | AnswerEngines.swift、CodexBridge.swift、CodexModelCatalog.swift、APIPresets.swift、Core AnswerStreaming.swift、AnswerServiceSupport.swift | P2 | Codex 常驻、Codex exec、兼容接口各完成一次流式回答和一次取消 | 已实现、未验证 |
+| 10 | 联网搜索、技能 | WebSearch.swift、SkillLibrary.swift、Core WebSearchNeed/WebLookupPromptBuilder/Skill | P7（P2 接口先行） | 需要最新信息的问题触发联网；导入 SKILL.md 后回答引用技能 | 已实现、未验证 |
+| 11 | 截图提问、屏幕感知 | ScreenshotService.swift、RegionScreenshotPicker.swift、ScreenContextService.swift、ScreenRegionSheet.swift、Core ScreenContext/ScreenDelta | P5 | 窗口截图和区域截图各提问一次；屏幕文字进入回答上下文 | 已实现、未验证 |
+| 12 | 提词岛 | CueIsland.swift、AppState+Launcher.swift | P5 | v2 §9 验证表八项全过；各状态与 Mac 录屏逐一对照 | 已实现、未验证 |
+| 13 | 一直展开、双屏演讲、讲稿跟随 | CueIsland.swift、PresenterMode.swift、ScrollFollowObserver.swift、ReadingScrollMonitor.swift、SlideNotesCache.swift、Core ScrollFollowInputClassifier/ScrollFollowState、LiveInsights.swift | P5 | 外接屏放映幻灯片，翻页后岛上要点跟随；外接屏上无本应用窗口 | 已实现、未验证 |
+| 14 | 临场教练 | LiveCoach.swift、CoachSummaryStore.swift、Core CoachSummary.swift、GazeEstimator.swift（眼神本版不做） | P5 | 语速、独白时长、发言占比三种提醒各触发一次；眼神提醒见 v2 §7 | 未做 |
+| 15 | 字幕条、提词器浮窗 | SubtitleBarController/SubtitleBarView/SubtitleBarSettingsView.swift、TeleprompterController.swift、Core SubtitleBar.swift | P5 | 显示、拖动、穿透、录屏隐藏各验一次 | 已实现、未验证 |
+| 16 | 同声传译 | LiveTranslation.swift、Core LiveTranslationRevisionGate.swift、AnswerLanguage.swift | P2+P5 | 英译中、中译英各一段，译文随修订更新并上岛 | 已实现、未验证 |
+| 17 | 九个场景与自定义 | Core Scene.swift、MeetingType.swift、SceneSettings.swift、Onboarding.swift | P1+P4 | 每个场景开一场会，会中模式/回答风格/纪要模板与 Mac 一致；按标题自动选场景 | 已实现、未验证 |
+| 18 | 系列、议程、经验库、题库 | WorkspaceStore/WorkspaceActions/WorkspacesView.swift、KnowledgeReviewSection.swift、Core Workspace/SeriesBriefing/MeetingCarry/MeetingPreparation | P2+P6 | 同一系列开两场会，第二场带上第一场确认的经验和常见问题 | 已实现、未验证 |
+| 19 | 无人发言自动结束 | Core MeetingEndWatch.swift、AppState+AutoEnd.swift、AutoEndViews.swift | P1+P2 | 静音到达阈值后倒计时并结束，可取消 | 已实现、未验证 |
+| 20 | 会后纪要及四种格式 | Core NotesTemplates/StructuredNotes、StructuredNotesView/OutlineView/FishboneView/ViewpointMatrixView、NotesRegeneration.swift | P2+P6 | 纪要、提纲、鱼骨图、观点对照各生成一次；要点能跳回原话 | 已实现、未验证 |
+| 21 | 证据核对、高亮、修订 | Core SessionEvidence/SessionUserContent/SessionTextProjection、MeetingNotesEditor/NotesPageView/NotesFormatBar | P2+P4 | 改一句转写后相关要点标记待核对；高亮在重新生成后仍定位正确 | 已实现、未验证 |
+| 22 | 导出 | Core SessionExport.swift、SessionFileExporter/SessionExportUI/SessionDocumentRenderer | P7 | Markdown、纯文本、字幕、PDF 各导出一次，内容与界面一致 | 已实现、未验证 |
+| 23 | 资料导入 | DocumentPipeline/DocumentPreparation/DocumentImporter/DocumentRuntime/DocumentRuntimeInstaller/DocumentCheckpoint/DocumentFeatureSetup、Resources/DocumentRuntime/worker.py、Core DocumentStructure/DocumentClassifier/DocumentFeatureAvailability/DocumentNotice/DocumentJobs | P2+P7 | 固定样本（PDF、扫描 PDF、Word、PPT、Excel、图片、Markdown）导入结果与 Mac 参考输出对照 | 已实现、未验证 |
+| 24 | 检索与引用 | Embedding/SemanticIndexStore、SemanticRetrievalService、SemanticWorkspacePreparation、Core SemanticRetrieval.swift、MaterialArchive.swift | P2+P7 | 固定 38 问命中率不低于基线；引用跳到正确的页、幻灯片或工作表 | 已实现、未验证 |
+| 25 | 历史 | HistoryView.swift、SessionArchive.swift、AppState+Archive.swift、Core SessionSearch/SessionContentSearch/SessionArchivePersistence | P2+P4 | 搜索、筛选、批量删除、可回滚删除 | 已实现、未验证 |
+| 26 | 备份往返 | DataBackup.swift、BackupRestoreReview.swift、Core Backup/BackupArchivePolicy/BackupContent/IncrementalBackup | P2+P7 | Mac 导出到 Windows 恢复、Windows 导出到 Mac 恢复各一次，逐项核对系列、会议、高亮、模板 | 已实现、未验证 |
+| 27 | 自动备份与恢复点 | DataBackup.swift、Core IncrementalBackup/BackupArchivePolicy | P7 | 每日和升级前自动生成；从恢复点恢复 | 已实现、未验证 |
+| 28 | 设置与引导 | SettingsView/SettingsPages/SettingsAdvanced/SettingsGeneralData/SettingsPresenter/SettingsStatusRows/SettingsSearch、QuickSettings、Onboarding、AppPreferences | P4+P6 | 六页设置每项可改且重启后保留；设置搜索可用；四步引导走通 | 已实现、未验证 |
+| 29 | 全局快捷键 | HotkeyManager.swift、ShortcutSettingsView.swift、Core ShortcutBinding.swift | P5 | 18 个动作逐个触发；改键后生效；冲突时提示 | 已实现、未验证 |
+| 30 | 手机伴侣 | CompanionServer/CompanionBluetooth/CompanionRelay、Mobile/、Core Companion/CompanionBLEProtocol/CompanionCrypto | P7 | 局域网、中转、蓝牙各完成配对、状态同步、命令、断线重连 | 未做 |
+| 31 | 中英双语界面 | AppLanguage.swift、Resources/Localization/Localizable.xcstrings、InfoPlist.xcstrings、各 View 文案 | P6 | 英文界面下逐页检查无中文残留、无截断 | 已实现、未验证 |
+| 32 | 浅色与深色 | Theme.swift、DesignSystem.swift、LiquidGlass.swift、Stage.swift | P4 | 每页两种外观与 Mac 截图对照 | 已实现、未验证 |
+| 33 | 缩放与多显示器 | Stage.swift、LiveWindowController.swift、CueIsland.swift（cueScreen） | P4+P6 | 100%–200% 四档；窗口在缩放不同的显示器间拖动 | 已实现、未验证 |
+| 34 | 键盘与读屏 | HitTargets.swift、ControlComponents.swift、各视图 accessibility | P6 | 全程键盘操作；讲述人读出主要控件名称和状态 | 未做 |
+| 35 | 安装、更新、回退、卸载 | Updater.swift、installer/、AppPaths.swift、SingleInstance.swift | P7 | 干净的第二台机器全流程一次；后台更新一次；回退一次 | 未做 |
+| 36 | 性能 | AppState+Lifecycle、AudioCaptureService、AnswerCoordinator、CueIsland | P8 | 冷启动、空闲内存、会中 CPU 占用、最终句延迟各有实测数 | 已实现、未验证 |
+| 37 | 异常恢复 | AppState+Resilience.swift、Core SessionArchivePersistence.swift、AppState+Lifecycle.swift、SingleInstance.swift | P2+P8 | 会中强杀进程后重启，会议记录完整可续；休眠唤醒后继续记录 | 已实现、未验证 |
 
-本对照不会追加新功能到 P4 的实现范围；它用于使本次交付及后续安排有可核对的边界。原 Mac 源码、签名身份和权限配置保持原样。
+## 本版不做与旧行归属
+
+按验收记录规则 1，旧 47 行中不在上表的功能归入「本版不做」：
+
+- **Apple Speech、云端 ASR**：本版不做。只交付本机 X-ASR；远程回答 API 不等于云端语音识别。
+- **旧 Office 格式转换**（.doc/.xls/.ppt 等）：本版不做。只处理 OOXML、文本、PDF 与图片；旧格式需先转换。
+- **Windows ARM64 / GPU**：本版不做。仅交付 x64 CPU 版本，无 ARM64 原生构建，也未证明 GPU 加速收益。
+- **共享屏幕时排除回答浮窗**：本版不做等价能力。Windows 不承诺浮窗在共享或录屏中隐藏。
+- **眼神提醒**：本版不做功能；`GazeEstimator` 只在 Core 保留逻辑（见验收记录规则 4）。
+- **每日 / 升级前自动备份策略**：旧行已由第 27 行「自动备份与恢复点」取代，按第 27 行验收，不再单列。
+
+> 说明：旧行里的「默认不保存原始声音」「本机凭据用 Windows DPAPI」等是贯穿所有功能的约束，不是独立验收行，
+> 见 `README.md` 的「数据和隐私」一节。
