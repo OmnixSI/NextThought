@@ -164,6 +164,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SeriesEditorCanArchiveAndDelete()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SeriesEditorWindow.axaml"));
+        Assert.Contains("ArchiveSeriesCommand", xaml);
+        Assert.Contains("DeleteSeries_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SeriesEditor.cs"));
+        Assert.Contains("ArchiveSeries", state);
+    }
+
     [Fact]
     public void SeriesEditorListsDocuments()
     {

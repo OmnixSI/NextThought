@@ -30,6 +30,8 @@
     </ItemsControl>
     <TextBlock Text="把资料加入系列请在资料库中选择；这里可移除。" Classes="caption" />
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
+      <Button Content="归档系列" Command="{Binding ArchiveSeriesCommand}" Click="Close_Click" />
+      <Button Content="删除系列" Click="DeleteSeries_Click" Classes="destructive" />
       <Button Content="取消" Click="Close_Click" />
       <Button Classes="primary" Content="保存" Command="{Binding SaveSeriesEditorCommand}" Click="Close_Click" />
     </StackPanel>

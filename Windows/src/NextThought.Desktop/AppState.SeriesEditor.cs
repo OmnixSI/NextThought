@@ -41,6 +41,17 @@ public partial class AppState
         SetStatus("系列文档已移除。");
     }
 
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ArchiveSeries()
+    {
+        if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
+        workspace = workspace.WithSeries(series with { Archived = true });
+        SaveWorkspace();
+        RefreshSeries();
+        SetStatus("系列已归档。");
+    }
+
     [RelayCommand]
     private void SaveSeriesEditor()
     {
