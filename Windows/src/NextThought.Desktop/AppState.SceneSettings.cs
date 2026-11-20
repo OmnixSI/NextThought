@@ -19,6 +19,9 @@ public partial class AppState
         }
     }
 
+    public SceneDefaults SceneDefaultsFor(MeetingMode mode) =>
+        SceneSettingsRows.FirstOrDefault(row => row.Mode == mode)?.Defaults ?? new SceneDefaults();
+
     private void SaveSceneSetting(SceneSettingRow row)
     {
         try

@@ -74,6 +74,8 @@ public partial class AppState
         SessionMeta? meta = null;
         try
         {
+            var sceneDefaults = SceneDefaultsFor(SelectedMode);
+            Settings.AutomaticAnswers = sceneDefaults.LiveMode == "自动回答";
             await Settings.SaveAsync();
             SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
             // Endpoints are enumerated lazily; make sure a saved device choice is applied.
@@ -86,7 +88,7 @@ public partial class AppState
             var context = new SessionContextSnapshot
             {
                 Mode = meta.Mode,
-                Style = "concise",
+                Style = sceneDefaults.AnswerStyle == "详细" ? "detailed" : "concise",
                 Preferences = "",
                 Profile = "",
                 EffectiveMode = meta.Mode,

@@ -74,6 +74,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SceneDefaultsAreAppliedAtMeetingStart()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("SceneDefaultsFor(SelectedMode)", live);
+        Assert.Contains("Settings.AutomaticAnswers = sceneDefaults.LiveMode", live);
+        Assert.Contains("sceneDefaults.AnswerStyle == \"详细\"", live);
+    }
+
     [Fact]
     public void SceneSettingsRowsAreWired()
     {
