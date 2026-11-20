@@ -156,6 +156,7 @@ public partial class SettingsView : UserControl
     private async void OpenGlossary_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not AppState state || Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
+        state.RefreshSeriesGlossaryRows();
         await new GlossaryWindow { DataContext = state }.ShowDialog(owner);
     }
 }

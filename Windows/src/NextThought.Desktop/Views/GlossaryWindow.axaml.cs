@@ -14,6 +14,17 @@ public partial class GlossaryWindow : Window
         state.NewGlossaryTerm = row.Text.Trim();
     }
 
+
+    private void RemoveSeries_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: GlossaryEntryRow row } && DataContext is AppState state)
+        {
+            state.NewGlossaryTerm = row.Canonical;
+            state.NewGlossaryVariants = string.Join("|", row.Entry.Variants);
+            row.Remove(row.Entry);
+        }
+    }
+
     private void Remove_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: GlossaryEntryRow row }) row.Remove(row.Entry);

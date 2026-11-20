@@ -159,6 +159,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void GlossaryHasSeriesOverlay()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
+        Assert.Contains("系列术语", xaml);
+        Assert.Contains("SeriesGlossaryRows", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
+        Assert.Contains("AddGlossaryToSeries", state);
+    }
+
     [Fact]
     public void GlossaryMarksMisheardEntries()
     {

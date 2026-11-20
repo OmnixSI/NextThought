@@ -39,6 +39,41 @@ public partial class AppState
             GlossaryTranscriptHits.Add(row);
     }
 
+
+    public System.Collections.ObjectModel.ObservableCollection<GlossaryEntryRow> SeriesGlossaryRows { get; } = [];
+
+    public void RefreshSeriesGlossaryRows()
+    {
+        SeriesGlossaryRows.Clear();
+        if (SelectedSeries is not { } selected || workspace.Find(selected.Id)?.Glossary is not { } seriesGlossary) return;
+        foreach (var entry in seriesGlossary.Entries)
+            SeriesGlossaryRows.Add(new GlossaryEntryRow(entry, RemoveSeriesGlossaryEntry));
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void AddGlossaryToSeries()
+    {
+        var term = NewGlossaryTerm.Trim();
+        if (term.Length == 0 || SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
+        var variants = NewGlossaryVariants.Split(['|', ',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var layered = Glossary.Layered(series.Glossary ?? Glossary.Empty, new Glossary([new GlossaryEntry(term, variants: variants)]));
+        workspace = workspace.WithSeries(series with { Glossary = layered });
+        SaveWorkspace();
+        RefreshSeries();
+        RefreshSeriesGlossaryRows();
+        NewGlossaryTerm = ""; NewGlossaryVariants = "";
+        SetStatus("已加入系列术语：" + term);
+    }
+
+    private void RemoveSeriesGlossaryEntry(GlossaryEntry entry)
+    {
+        if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series || series.Glossary is not { } current) return;
+        workspace = workspace.WithSeries(series with { Glossary = new Glossary(current.Entries.Where(item => item.Id != entry.Id).ToList()) });
+        SaveWorkspace();
+        RefreshSeries();
+        RefreshSeriesGlossaryRows();
+    }
+
     public System.Collections.ObjectModel.ObservableCollection<GlossaryEntryRow> GlossaryRows { get; } = [];
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string glossaryQuery = "";
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string newGlossaryTerm = "";
