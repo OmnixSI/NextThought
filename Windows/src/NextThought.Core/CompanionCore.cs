@@ -6,12 +6,25 @@ namespace NextThought.Core;
 
 /// <summary>B22: the small state mirrored to the paired phone (Companion.swift).</summary>
 public sealed record CompanionSnapshot(
-    string Status = "待机", string Question = "", string Answer = "", bool Answering = false,
-    string Candidate = "", string Position = "", string? SessionId = null, string? AnswerId = null,
-    string? Phase = null, string? Sources = null, string? Slide = null, bool? UpdateAvailable = false);
+    [property: System.Text.Json.Serialization.JsonPropertyName("status")] string Status = "待机",
+    [property: System.Text.Json.Serialization.JsonPropertyName("question")] string Question = "",
+    [property: System.Text.Json.Serialization.JsonPropertyName("answer")] string Answer = "",
+    [property: System.Text.Json.Serialization.JsonPropertyName("answering")] bool Answering = false,
+    [property: System.Text.Json.Serialization.JsonPropertyName("candidate")] string Candidate = "",
+    [property: System.Text.Json.Serialization.JsonPropertyName("position")] string Position = "",
+    [property: System.Text.Json.Serialization.JsonPropertyName("sessionID")] string? SessionId = null,
+    [property: System.Text.Json.Serialization.JsonPropertyName("answerID")] string? AnswerId = null,
+    [property: System.Text.Json.Serialization.JsonPropertyName("phase")] string? Phase = null,
+    [property: System.Text.Json.Serialization.JsonPropertyName("sources")] string? Sources = null,
+    [property: System.Text.Json.Serialization.JsonPropertyName("slide")] string? Slide = null,
+    [property: System.Text.Json.Serialization.JsonPropertyName("updateAvailable")] bool? UpdateAvailable = false);
 
 /// <summary>B22: a full replacement frame with a server-scoped sequence number.</summary>
-public sealed record CompanionEnvelope(string ServerId, ulong Sequence, CompanionSnapshot Snapshot, double UpdatedAt)
+public sealed record CompanionEnvelope(
+    [property: System.Text.Json.Serialization.JsonPropertyName("serverID")] string ServerId,
+    [property: System.Text.Json.Serialization.JsonPropertyName("sequence")] ulong Sequence,
+    [property: System.Text.Json.Serialization.JsonPropertyName("snapshot")] CompanionSnapshot Snapshot,
+    [property: System.Text.Json.Serialization.JsonPropertyName("updatedAt")] double UpdatedAt)
 {
     public static CompanionEnvelope Create(string serverId, ulong sequence, CompanionSnapshot snapshot, DateTimeOffset now) =>
         new(serverId, sequence, snapshot, now.ToUnixTimeMilliseconds());

@@ -186,7 +186,7 @@ python Windows/scripts/core_usage.py
 | LiveTranslationRevisionGateTests.swift | 5 | 5 |
 | LocalModelReuseTests.swift | 5 | 5 |
 | MeetingCarryTests.swift | 2 | 2 |
-| MeetingEndWatchTests.swift | 18 | 17 |
+| MeetingEndWatchTests.swift | 18 | 18 |
 | MeetingPreparationTests.swift | 5 | 5 |
 | MeetingTypeAndNotesTests.swift | 17 | 17 |
 | OnboardingFlowTests.swift | 6 | 6 |
@@ -218,7 +218,7 @@ python Windows/scripts/core_usage.py
 | SessionUserContentTests.swift | 7 | 7 |
 | SkillTests.swift | 4 | 4 |
 | SpeakerClusteringTests.swift | 20 | 20 |
-| StabilityTests.swift | 6 | 5 |
+| StabilityTests.swift | 6 | 6 |
 | StructuredNotesTests.swift | 31 | 31 |
 | SubtitleBarTests.swift | 24 | 24 |
 | TranscriptContextBuilderTests.swift | 1 | 1 |
@@ -233,3 +233,7 @@ python Windows/scripts/core_usage.py
 | ZipformerStreamingIntegrationTests.swift | 1 | 1 |
 
 复算：`Select-String -Path "$b\Tests\NextThoughtCoreTests\*.swift" -Pattern '^\s*@Test' | Measure-Object`；逐行数字见上表。
+
+## 复算命令
+
+`python -c "import re,pathlib; rows=re.findall(r'^\| ([A-Za-z0-9_]+\.swift) \| (\d+) \| (\d+) \|$', pathlib.Path('Windows/CORE_PARITY.md').read_text(encoding='utf-8'), re.M); print(sum(int(a) for _,a,_ in rows), sum(int(b) for _,_,b in rows))"`

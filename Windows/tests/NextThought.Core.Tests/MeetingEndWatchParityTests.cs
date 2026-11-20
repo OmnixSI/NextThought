@@ -126,6 +126,16 @@ public sealed class MeetingEndWatchParityTests
     // beyond a mutable config / SetMode on MeetingEndWatch.
 
     [Fact]
+    public void SwitchingToOffWithdrawsTheReminder()
+    {
+        var watch = Watch();
+        Assert.Null(watch.Tick(At(600), said: true));
+        watch.Configuration = watch.Configuration with { Mode = MeetingEndWatch.Mode.Off };
+        Assert.Null(watch.Tick(At(610), said: true));
+        Assert.Null(watch.PendingDeadline);
+    }
+
+    [Fact]
     public void PausedTimeIsNotCounted()
     {
         var watch = Watch();

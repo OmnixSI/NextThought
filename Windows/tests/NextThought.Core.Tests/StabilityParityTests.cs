@@ -29,10 +29,20 @@ public sealed class StabilityParityTests
         Assert.True(expired);
     }
 
-    // Not translated: snapshotFrameCarriesOrderingAndFreshness needs CompanionSnapshot /
-    // CompanionEnvelope.sse(). Those types live in NextThought.Platform (CompanionServer.cs), which
-    // NextThought.Core.Tests does not reference, and no Core API renders the
-    // "id: <serverID>:<sequence>" SSE frame at all; there is no C# equivalent to port against.
+    [Fact]
+    public void SnapshotFrameCarriesOrderingAndFreshness()
+    {
+        var snapshot = new CompanionSnapshot("\u5C31\u7EEA", "\u65B0\u95EE\u9898", "", true, "", "",
+            AnswerId: "new", Phase: "generating");
+        var now = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000);
+        var envelope = CompanionEnvelope.Create("epoch", 9, snapshot, now);
+        var text = Encoding.UTF8.GetString(envelope.Sse());
+        Assert.Contains("id: epoch:9\n", text);
+        Assert.Contains("\"answerID\":\"new\"", text);
+        var encoded = JsonSerializer.SerializeToUtf8Bytes(envelope, JsonDefaults.Options);
+        var decoded = JsonSerializer.Deserialize<CompanionEnvelope>(encoded, JsonDefaults.Options)!;
+        Assert.Equal(envelope, decoded);
+    }
 
     [Fact]
     public void IncrementalBackupDeduplicatesRecoversAndRejectsCorruption()

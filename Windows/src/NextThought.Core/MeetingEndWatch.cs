@@ -43,6 +43,8 @@ public sealed class MeetingEndWatch
     }
 
     private Config config;
+
+    public Config Configuration { get => config; set => config = value; }
     private DateTimeOffset? pendingDeadline;
     private DateTimeOffset quietSince;
 
