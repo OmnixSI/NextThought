@@ -14,7 +14,7 @@
   <Border Background="#F0121110" CornerRadius="{DynamicResource D4CornerRadius_20}" Padding="{DynamicResource D4Padding_16_11}" Margin="{DynamicResource D4Margin_0_8_0_0}"
           BoxShadow="0 10 22 0 #40000000">
     <Border Background="#F2121110" BorderBrush="#33ECEBE8" BorderThickness="0.5" CornerRadius="{DynamicResource D4CornerRadius_16}" Padding="{DynamicResource D4Padding_16_10}">
-      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
         <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
                 Background="{DynamicResource Seal}" Margin="{DynamicResource D4Margin_0_0_10_0}" IsVisible="{Binding Recording}" />
         <Border Grid.Row="0" Grid.Column="0" Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
@@ -35,6 +35,31 @@
           <TextBlock Text="译" Foreground="#7A7871" FontSize="10" VerticalAlignment="Center" />
           <TextBlock Text="{Binding IslandTranslation}" Foreground="#DCE3EA" FontSize="12" LineHeight="17"
                      MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxWidth="470" />
+        </StackPanel>
+        <TextBlock x:Name="SlidePointsText" Grid.Row="4" Grid.ColumnSpan="3" Text="{Binding CurrentSlidePointsText}"
+                   Foreground="#AFC7D9" FontSize="11" LineHeight="16" TextWrapping="Wrap" MaxLines="4"
+                   Margin="{DynamicResource D4Margin_18_5_0_0}" IsVisible="{Binding HasCurrentSlidePoints}" />
+        <Border Grid.Row="5" Grid.ColumnSpan="3" Background="#1A7AB8D9" CornerRadius="{DynamicResource D4CornerRadius_8}"
+                Padding="{DynamicResource D4Padding_10_5}" Margin="{DynamicResource D4Margin_18_5_0_0}"
+                IsVisible="{Binding HasCoachHint}">
+          <TextBlock Text="{Binding CoachHint}" Foreground="#DCE3EA" FontSize="11.5" TextWrapping="Wrap" MaxLines="2" />
+        </Border>
+        <StackPanel Grid.Row="6" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                    Margin="{DynamicResource D4Margin_18_5_0_0}" IsVisible="{Binding HasAutoEndNotice}">
+          <TextBlock Text="{Binding AutoEndNotice}" Foreground="#E9C46A" FontSize="11.5" TextWrapping="Wrap" MaxWidth="430" VerticalAlignment="Center" />
+          <Button Classes="quiet" Content="继续记录" Command="{Binding KeepRecordingCommand}" />
+        </StackPanel>
+        <TextBlock Grid.Row="7" Grid.ColumnSpan="3" Text="{Binding BilingualQuestionText}" Foreground="#9FB4C7"
+                   FontSize="12" LineHeight="17" TextWrapping="Wrap" MaxLines="2"
+                   Margin="{DynamicResource D4Margin_18_5_0_0}" IsVisible="{Binding HasBilingualQuestion}" />
+        <StackPanel x:Name="ActionPanel" Grid.Row="8" Grid.ColumnSpan="3" Orientation="Horizontal"
+                    Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_18_7_0_0}" IsVisible="False">
+          <Button Classes="quiet" Content="&#xE76B;" FontFamily="Segoe Fluent Icons" Command="{Binding PreviousAnswerCommand}" />
+          <Button Classes="quiet" Content="&#xE76C;" FontFamily="Segoe Fluent Icons" Command="{Binding NextAnswerCommand}" />
+          <Button Classes="quiet" Content="重新生成" Command="{Binding RegenerateAnswerCommand}" />
+          <Button Classes="quiet" Content="改短" Command="{Binding ShorterAnswerCommand}" />
+          <Button Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}" />
+          <Button Classes="quiet" Content="取消" Command="{Binding CancelCommand}" />
         </StackPanel>
       </Grid>
     </Border>

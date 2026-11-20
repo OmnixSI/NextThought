@@ -65,9 +65,9 @@ Nov 20, 2026 · @Homing
 | C3 | 已实现、未验证 | `CueIslandWindow.axaml.cs`：指针停留 0.22 秒展开，离开 0.2 秒收起；展开后恢复回答正文/详情 | 需实机确认 0.22/0.2 秒节奏与动画 |
 | C4 | 已实现、未验证 | `Settings.CueAlwaysOpen`（键 `cueAlwaysOpen`）与设置页「会中一直展开提词岛，不用把鼠标移上去」；窗口打开/录音时按该值保持展开并禁用穿透 | 需实机勾选后确认岛不再自动收起 |
 | C5 | 未做 | — | 各阶段形态未实现 |
-| C6 | 未做 | — | 展开面板与按钮未实现 |
-| C7 | 未做 | — | 讲稿要点/教练提示/自动结束倒计时未实现 |
-| C8 | 未做 | — | 双语回答未实现 |
+| C6 | 已实现、未验证 | `CueIslandWindow` 展开时显示按钮条：上一条/下一条、重新生成、改短、复制、取消，分别绑定 `PreviousAnswerCommand`、`NextAnswerCommand`、`RegenerateAnswerCommand`、`ShorterAnswerCommand`、`CopyAnswerCommand`、`CancelCommand`；收起时隐藏 | 需与 `island-deck.png` 对照；Mac 是按钮区可点、其余区域仍穿透，Windows 当前展开时整窗可点，逐元素对齐待补 |
+| C7 | 已实现、未验证 | 提词岛绑定三类附加内容：`CurrentSlidePointsText`（讲稿当前页要点）、`CoachHint`（教练提示）、`AutoEndNotice`+「继续记录」（`KeepRecordingCommand`）；各自按可见性显示 | 需演示模式确认三类都出现并与 `island-slide.png` 对照 |
+| C8 | 已实现、未验证 | `CueIslandWindow` 增加 `BilingualQuestionText` 行（`BilingualAnswer` 的问句标记），翻译行继续用 `IslandTranslation`；`HasBilingualQuestion` 控制可见性 | 需 `island-bilingual.png` 并排对照 |
 | C9 | 未做 | — | 场景颜料描边与 morph 弹簧未实现 |
 | C10 | 已实现、未验证 | `Settings.CueScreen`（Mac 键 `cueScreen`）与设置页「提示岛所在屏」下拉框，列出主屏与全部显示器；`CueIslandWindow.SelectedScreen` 按名字选屏，未选时用主屏/内置屏，位置按 `screen.Bounds` 与 `Scaling` 顶部居中，切换设置即时重定位 | 需实机在 150% 缩放副屏确认水平居中、贴顶 |
 | C11 | 已实现、未验证 | 浮窗关闭改为隐藏；QA passed | 待逐元素对照或实机验证 |

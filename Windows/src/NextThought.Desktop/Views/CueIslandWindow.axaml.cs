@@ -121,6 +121,7 @@ public partial class CueIslandWindow : Window
         checkExpanded = forCheck && expanded;
         Hovering = expanded;
         Collapsed = !expanded;
+        ActionPanel.IsVisible = expanded;
         if (expanded)
         {
             HeadlineText.IsVisible = true;
@@ -129,6 +130,7 @@ public partial class CueIslandWindow : Window
         }
         else
         {
+            ActionPanel.IsVisible = false;
             DetailText.IsVisible = false;
             TranslationPanel.IsVisible = false;
             FitHeight();

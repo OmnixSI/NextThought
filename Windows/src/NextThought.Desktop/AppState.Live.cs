@@ -23,6 +23,8 @@ public partial class AppState
     }
 
 
+    public bool HasBilingualQuestion => BilingualQuestionText.Length > 0;
+
     public string BilingualQuestionText
     {
         get
@@ -41,6 +43,7 @@ public partial class AppState
         OnPropertyChanged(nameof(IslandHeadline));
         OnPropertyChanged(nameof(IslandDetail));
         OnPropertyChanged(nameof(BilingualQuestionText));
+        OnPropertyChanged(nameof(HasBilingualQuestion));
     }
 
     private DateTimeOffset recordingStartedAt;

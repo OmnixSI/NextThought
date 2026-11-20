@@ -133,6 +133,7 @@ public partial class AppState
         OnPropertyChanged(nameof(SlideStatus));
         OnPropertyChanged(nameof(CurrentSlideText));
         OnPropertyChanged(nameof(CurrentSlidePointsText));
+        OnPropertyChanged(nameof(HasCurrentSlidePoints));
         SetStatus($"已按屏幕切到第 {matched.Page} 页。");
     }
 
@@ -158,6 +159,8 @@ public partial class AppState
             return cached;
         }
     }
+
+    public bool HasCurrentSlidePoints => CurrentSlidePointsText.Length > 0;
 
     private void MoveSlide(int delta)
     {
