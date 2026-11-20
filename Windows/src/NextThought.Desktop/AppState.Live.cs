@@ -128,7 +128,8 @@ public partial class AppState
             ResetDisplay();
             meta = NewMeta(settings, string.IsNullOrWhiteSpace(MeetingTitle) || IsNewMeetingTitle(MeetingTitle) ? null : MeetingTitle);
             MeetingTitle = meta.Title;
-            var context = new SessionContextSnapshot
+            // F20: building the context copies material text; keep it off the UI thread.
+            var context = await Task.Run(() => new SessionContextSnapshot
             {
                 Mode = meta.Mode,
                 Style = sceneDefaults.AnswerStyle == "详细" ? "detailed" : "concise",
@@ -137,7 +138,7 @@ public partial class AppState
                 EffectiveMode = meta.Mode,
                 Documents = PreparedDocuments(),
                 Glossary = glossary
-            };
+            });
             await Sessions.CreateAsync(meta, context);
             CurrentSession = meta;
             sessionLease = Sessions.AcquireLease(meta.Id);

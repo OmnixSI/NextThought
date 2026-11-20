@@ -201,6 +201,14 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SessionContextIsBuiltOffTheUiThread()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("Task.Run(() => new SessionContextSnapshot", live);
+    }
+
     [Fact]
     public void ExitWaitsForShutdownWithATimeout()
     {
