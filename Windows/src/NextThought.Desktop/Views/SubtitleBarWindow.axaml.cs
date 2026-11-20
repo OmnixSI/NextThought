@@ -2,6 +2,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using NextThought.Core;
+using System.Runtime.InteropServices;
+using Avalonia.Input;
 
 namespace NextThought.Desktop.Views;
 
@@ -22,6 +24,27 @@ public partial class SubtitleBarWindow : Window
     public bool AllowClose { get; set; }
     private int layoutWidth = -1;
     private int layoutFont = -1;
+    private bool dimmed;
+    private bool editing;
+    private double stillSeconds;
+    private NativePoint lastMouse;
+
+    private const int GwlExstyle = -20;
+    private const long WsExTransparent = 0x00000020L;
+    private const long WsExNoActivate = 0x08000000L;
+    private const long WsExToolWindow = 0x00000080L;
+
+    [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X; public int Y; }
+    [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left; public int Top; public int Right; public int Bottom; }
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
+    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr window, out NativeRect rect);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLongPtr(IntPtr window, int index, IntPtr value);
+
+    /// <summary>C13: QA state for the self-check.</summary>
+    public bool IsDimmed => dimmed;
+    public bool IsEditing => editing;
+    public bool IsClickThrough { get; private set; }
 
     /// <summary>True while the user explicitly chose the subtitles mode; no idle fade-out.</summary>
     public bool Persistent { get; set; }
@@ -39,11 +62,12 @@ public partial class SubtitleBarWindow : Window
         this.state = state;
         Opened += (_, _) =>
         {
+            ApplyNonActivatingStyle();
             ApplyLayout();
             WindowCaptureHiding.Hide(this);
             timer.Start();
         };
-        timer.Tick += (_, _) => Tick();
+        timer.Tick += (_, _) => { Tick(); TrackPointer(); };
         Closed += (_, _) => timer.Stop();
         Closing += (_, e) =>
         {
@@ -55,6 +79,90 @@ public partial class SubtitleBarWindow : Window
         {
             if (e.PropertyName is nameof(AppState.Recording) && !state.Recording) HideForUser();
         };
+    }
+
+    private void ApplyNonActivatingStyle()
+    {
+        if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
+        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64() | WsExNoActivate | WsExToolWindow;
+        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+    }
+
+    /// <summary>C13: hover dims the bar; resting 0.6 s makes it solid and draggable.</summary>
+    private void TrackPointer()
+    {
+        if (!IsVisible || TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
+        if (!GetCursorPos(out var mouse) || !GetWindowRect(handle, out var rect)) return;
+        var inside = mouse.X >= rect.Left - 4 && mouse.X <= rect.Right + 4
+                     && mouse.Y >= rect.Top - 4 && mouse.Y <= rect.Bottom + 4;
+        var moved = Math.Abs(mouse.X - lastMouse.X) > 2 || Math.Abs(mouse.Y - lastMouse.Y) > 2;
+        lastMouse = mouse;
+        if (editing)
+        {
+            if (!inside) editing = false;
+            else return;
+        }
+        if (!inside)
+        {
+            dimmed = false;
+            stillSeconds = 0;
+            Opacity = 1;
+            SetClickThrough(true);
+            return;
+        }
+        dimmed = true;
+        Opacity = 0.15;
+        stillSeconds = moved ? 0 : stillSeconds + 0.1;
+        if (stillSeconds >= 0.6)
+        {
+            dimmed = false;
+            editing = true;
+            Opacity = 1;
+            SetClickThrough(false);
+        }
+        else
+        {
+            SetClickThrough(!editing);
+        }
+    }
+
+    private void SetClickThrough(bool enabled)
+    {
+        IsClickThrough = enabled;
+        if (TryGetPlatformHandle()?.Handle is not { } handle || handle == IntPtr.Zero) return;
+        var style = GetWindowLongPtr(handle, GwlExstyle).ToInt64();
+        style = enabled ? style | WsExTransparent : style & ~WsExTransparent;
+        SetWindowLongPtr(handle, GwlExstyle, new IntPtr(style));
+    }
+
+    /// <summary>C13: back to the default bottom-centre spot and forget the saved position.</summary>
+    public void ResetPosition()
+    {
+        state.Settings.SubtitleBarX = null;
+        state.Settings.SubtitleBarY = null;
+        _ = state.Settings.SaveAsync();
+        PlaceAtBottom(forceDefault: true);
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (editing && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        if (!editing) return;
+        state.Settings.SubtitleBarX = Position.X;
+        state.Settings.SubtitleBarY = Position.Y;
+        _ = state.Settings.SaveAsync();
+    }
+
+    protected override void OnDoubleTapped(Avalonia.Input.TappedEventArgs e)
+    {
+        base.OnDoubleTapped(e);
+        if (editing) ResetPosition();
     }
 
     private void ApplyLayout()
@@ -70,8 +178,17 @@ public partial class SubtitleBarWindow : Window
         PlaceAtBottom();
     }
 
-    private void PlaceAtBottom()
+    private void PlaceAtBottom(bool forceDefault = false)
     {
+        if (!forceDefault && state.Settings.SubtitleBarX is { } savedX && state.Settings.SubtitleBarY is { } savedY)
+        {
+            var point = new PixelPoint((int)savedX, (int)savedY);
+            if (Screens.All.Any(screen => screen.Bounds.Contains(point)))
+            {
+                Position = point;
+                return;
+            }
+        }
         if (Screens.Primary is not { } screen) return;
         var scale = screen.Scaling;
         var widthPixels = (int)(Width * scale);
