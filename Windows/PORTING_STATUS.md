@@ -8,8 +8,8 @@
 ## 2026-11-20 · 0.5.145 · D1（部分）
 改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
 测试：Core **871/871**，NextThought.Tests **139/139**。
-证据：`D:\NextThought开发\qa\screens\images\` 14 张；home-light 1120×820 已人工查看，页面正常。
-状态：D1「未做」。缺 Mac 脚本的另外两页（准备、回顾/工作纪要）、英文一轮、提词岛五种形态、与 Mac 截图并排比对；还没有把截图放进 `Windows/validation/screens/<视图>/`。
+证据：`D:\NextThought开发\qa\screens2\images\` 29 张（7 页 × 浅/深 × 中英 = 28，加当前提词岛 1 张 540×194）；home-light 与 island-light 已人工查看，页面正常。
+状态：D1「未做」。7 页中英/浅深已出；当前提词岛已出一张。缺 Mac 脚本的另外两页（准备、回顾/工作纪要）、提词岛五种形态、并排比对；还没有把截图放进 `Windows/validation/screens/<视图>/`。
 未解决：补齐页面/语言/岛形态和对照。
 
 ## 2026-11-20 · 0.5.145 · D7（部分）
