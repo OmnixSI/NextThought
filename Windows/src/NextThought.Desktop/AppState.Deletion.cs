@@ -45,18 +45,34 @@ public partial class AppState
         SetStatus(UiText.Format("已删除 %lld 场会议。", rows.Count));
     }
 
+    /// <summary>
+    /// E18 (HistoryView.deleteAllArchivedMeetings): delete every archived meeting except the one
+    /// being recorded, optionally retaining the accepted series content they supported.
+    /// </summary>
+    public async Task DeleteAllMeetingsAsync(bool retainAcceptedContent)
+    {
+        if (Recording || Working) { SetStatus("先停止当前任务，再删除会议。", true); return; }
+        var rows = History.Where(row => CurrentSession?.Id != row.Meta.Id).ToList();
+        if (rows.Count == 0) return;
+        foreach (var row in rows) await DeleteSessionAsync(row, retainAcceptedContent);
+        SetStatus(retainAcceptedContent
+            ? UiText.Format("已删除 %lld 场会议；已确认的系列内容已保留。", rows.Count)
+            : UiText.Format("已删除 %lld 场会议及其依赖内容。", rows.Count));
+    }
+
     /// <summary>E18: delete one archived meeting, its series membership and visible lists.</summary>
-    public async Task DeleteSessionAsync(RecentMeetingRow row)
+    public async Task DeleteSessionAsync(RecentMeetingRow row, bool retainAcceptedContent = false)
     {
         if (Recording || Working) { SetStatus("先停止当前任务，再删除会议。", true); return; }
         try
         {
             await Sessions.DeleteAsync(row.Meta.Id);
-            // B3: remove the meeting from the series and scrub knowledge only it supported.
+            // B3: remove the meeting from the series and scrub knowledge only it supported;
+            // HistoryView offers the Mac "keep accepted series content" variant as well.
             var sessionId = row.Meta.Id.ToString("D");
             workspace = new WorkspaceData(workspace.Series.Select(series =>
                 series.SessionIds.Contains(sessionId)
-                    ? WorkspaceSourceIntegrity.RemoveMeetings(series, [sessionId]).Series
+                    ? WorkspaceSourceIntegrity.RemoveMeetings(series, [sessionId], retainAcceptedContent).Series
                     : series).ToList());
             SaveWorkspace();
             History.Remove(row);

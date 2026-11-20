@@ -1,0 +1,66 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "所有会议页加载",
+      "passed": true,
+      "detail": "会议 2 场"
+    },
+    {
+      "step": "内容搜索：命中转写并标在行上",
+      "passed": true,
+      "detail": "全文搜索：2 场会议有匹配内容。；原话 · 00:00"
+    },
+    {
+      "step": "搜索命中导航：搜索结果有位置/摘要且可上下移动",
+      "passed": true,
+      "detail": "命中 2 条；搜索命中 2/2；纪要"
+    },
+    {
+      "step": "命中导航回到上一个",
+      "passed": true,
+      "detail": "索引 0"
+    },
+    {
+      "step": "清空搜索：命中与导航条一起清空",
+      "passed": true,
+      "detail": "命中 0"
+    },
+    {
+      "step": "归档概览与回答列表",
+      "passed": true,
+      "detail": "11-21 04:00 · 0:01 · meeting · E18 自检系列 · 1 条转写 · 1 条回答 · 问题 0 个 · 纪要已整理"
+    },
+    {
+      "step": "以此为上一场，准备下一场",
+      "passed": true,
+      "detail": "Section=Prepare；带入上一场转写=True；Working=False；已把「E18 自检会议甲」当作上一场，准备下一场。"
+    },
+    {
+      "step": "重命名会议",
+      "passed": true,
+      "detail": "E18 自检会议甲（改名）"
+    },
+    {
+      "step": "详细信息字段",
+      "passed": true,
+      "detail": "13 项"
+    },
+    {
+      "step": "删除会议（保留已确认系列内容选项）",
+      "passed": true,
+      "detail": "删除前 2，磁盘上剩 1；保留选项=True；已删除会议：E18 自检会议乙"
+    },
+    {
+      "step": "批量删除系列：选择当前结果",
+      "passed": true,
+      "detail": "已选 1 个系列"
+    },
+    {
+      "step": "删除系列连同会议记录",
+      "passed": true,
+      "detail": "会议 1→0；系列剩余 0"
+    }
+  ]
+}

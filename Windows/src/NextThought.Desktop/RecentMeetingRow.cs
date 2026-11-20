@@ -20,8 +20,34 @@ public sealed record SeriesRow(string Id, string Name, int Count, int LessonCoun
 }
 
 
-/// <summary>One history section when meetings are grouped by series.</summary>
-public sealed record HistoryGroupRow(string Name, string? SeriesId, IReadOnlyList<RecentMeetingRow> Rows);
+/// <summary>One history section when meetings are grouped by series (E18: selectable for batch delete).</summary>
+public sealed class HistoryGroupRow : System.ComponentModel.INotifyPropertyChanged
+{
+    public HistoryGroupRow(string name, string? seriesId, IReadOnlyList<RecentMeetingRow> rows)
+    {
+        Name = name;
+        SeriesId = seriesId;
+        Rows = rows;
+    }
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+    public string Name { get; }
+    public string? SeriesId { get; }
+    public IReadOnlyList<RecentMeetingRow> Rows { get; }
+    public bool CanManage => SeriesId is not null;
+
+    private bool isSelected;
+    public bool IsSelected
+    {
+        get => isSelected;
+        set
+        {
+            if (isSelected == value) return;
+            isSelected = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(IsSelected)));
+        }
+    }
+}
 
 public sealed record RecentMeetingRow(SessionMeta Meta) : System.ComponentModel.INotifyPropertyChanged
 {
@@ -38,6 +64,39 @@ public sealed record RecentMeetingRow(SessionMeta Meta) : System.ComponentModel.
         }
     }
 
+    private SessionSearchHit? searchHit;
+
+    /// <summary>E18: the first content-search hit of this meeting (the row shows where it came from).</summary>
+    public SessionSearchHit? SearchHit
+    {
+        get => searchHit;
+        private set
+        {
+            searchHit = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(SearchHit)));
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(HasSearchHit)));
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(SearchHitLine)));
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(SearchHitExcerpt)));
+        }
+    }
+
+    public void ApplySearchHit(SessionSearchHit? hit) => SearchHit = hit;
+
+    public bool HasSearchHit => SearchHit is not null;
+
+    /// <summary>HistoryView.searchHitKindLabel + location: e.g. 「回答 · 00:20」.</summary>
+    public string SearchHitLine
+    {
+        get
+        {
+            if (SearchHit is not { } hit) return "";
+            var kind = HistoryHitRow.KindLabel(hit.Kind);
+            return hit.Location is { Length: > 0 } location ? kind + " · " + location : kind;
+        }
+    }
+
+    public string SearchHitExcerpt => SearchHit?.Excerpt ?? "";
+
     public string Title => string.IsNullOrWhiteSpace(Meta.Title) ? UiText.T("未命名会议") : Meta.Title;
 
     public string Subtitle
@@ -53,6 +112,51 @@ public sealed record RecentMeetingRow(SessionMeta Meta) : System.ComponentModel.
     }
 
     public bool HasSummary => Meta.SummaryState == "ready";
+}
+
+/// <summary>E18: one content-search hit shown by the history hit navigator (HistoryView.swift).</summary>
+public sealed record HistoryHitRow(SessionSearchHit Hit)
+{
+    public string KindLabelText => KindLabel(Hit.Kind);
+    public string LocationText => Hit.Location ?? "";
+    public string Line => LocationText.Length > 0 ? KindLabelText + " · " + LocationText : KindLabelText;
+    public string Excerpt => Hit.Excerpt;
+
+    /// <summary>HistoryView.searchHitKindLabel(_:).</summary>
+    public static string KindLabel(SessionSearchFieldKind kind) => kind switch
+    {
+        SessionSearchFieldKind.Transcript => UiText.T("原话"),
+        SessionSearchFieldKind.CorrectedTranscript => UiText.T("校正原话"),
+        SessionSearchFieldKind.Translation => UiText.T("译文"),
+        SessionSearchFieldKind.Question => UiText.T("问题"),
+        SessionSearchFieldKind.Answer => UiText.T("回答"),
+        _ => UiText.T("纪要")
+    };
+}
+
+/// <summary>E18: one archived answer in the history overview (HistoryView SessionAnswersList).</summary>
+public sealed record HistoryAnswerRow(AnswerRecord Answer, Guid SessionId)
+{
+    public string Question => Answer.Question;
+    public string AnswerText => Answer.Answer;
+
+    /// <summary>SessionAnswersList: a fragment without answer text is marked incomplete.</summary>
+    public bool IsComplete => Answer.Answer.Trim().Length > 0;
+
+    public string AutomaticLabel => UiText.T(Answer.Automatic ? "自动" : "手动");
+
+    public string MetaLine
+    {
+        get
+        {
+            var parts = new List<string> { Answer.Date.ToLocalTime().ToString("HH:mm:ss"), Answer.Model };
+            if (Answer.FirstTokenSeconds is { } first) parts.Add(UiText.Format("首字 %.1fs", first));
+            return string.Join(" · ", parts);
+        }
+    }
+
+    public bool HasScreenshot => Answer.ScreenshotPath is { Length: > 0 };
+    public string ScreenshotPath => Answer.ScreenshotPath ?? "";
 }
 
 /// <summary>

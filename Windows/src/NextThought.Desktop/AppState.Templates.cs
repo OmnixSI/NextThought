@@ -55,11 +55,18 @@ public partial class AppState
     /// <summary>The scene decides the template until the user picks another one.</summary>
     private void ApplyDefaultTemplate()
     {
+        var preferred = DefaultTemplateIdFor(SelectedMode);
+        if (TemplateChoices.FirstOrDefault(choice => choice.Template.Id == preferred) is { } template)
+        {
+            SelectedTemplateId = template.Template.Id;
+            if (template.Kind is { } preferredKind) TemplateKind = preferredKind;
+            return;
+        }
         TemplateKind = MeetingTypeDefaults.TemplateFor(SelectedMode);
     }
 
     [RelayCommand]
-    private void ResetTemplate() => TemplateKind = MeetingTypeDefaults.TemplateFor(SelectedMode);
+    private void ResetTemplate() => ApplyDefaultTemplate();
 
     private void LoadCustomTemplates()
     {
@@ -183,7 +190,8 @@ public partial class AppState
         {
             await Task.WhenAll(writes.ToArray());
             var transcript = BuildNumberedTranscript(meta);
-            var english = AnswerLanguage.Spoken(transcript) == "English";
+            // E18: 纪要语言 from the meeting menu forces the summary language for this run.
+            var english = summaryLanguageOverride ?? (AnswerLanguage.Spoken(transcript) == "English");
             var template = SelectedTemplate?.Template ?? NotesTemplate.BuiltIn(TemplateKind, english);
             var header = english
                 ? $"# {meta.Title}\n\nMeeting: {meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · Template: {template.Name}"

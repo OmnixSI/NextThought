@@ -9,6 +9,12 @@ namespace NextThought.Platform;
 /// <summary>E18: one full-text hit in an archived transcript.</summary>
 public sealed record SessionContentHit(SessionMeta Meta, string Text, string Speaker, DateTimeOffset Date, int LineNumber);
 
+/// <summary>E18: one archived meeting and its projection-backed content-search hits.</summary>
+public sealed record SessionContentSearchResult(SessionMeta Meta, IReadOnlyList<SessionSearchHit> Hits)
+{
+    public SessionSearchHit? First => Hits.Count == 0 ? null : Hits[0];
+}
+
 public sealed class SessionStore(AppPaths paths)
 {
     private readonly SemaphoreSlim gate = new(1, 1);
@@ -75,6 +81,58 @@ public sealed class SessionStore(AppPaths paths)
         finally { gate.Release(); }
     }
 
+
+    /// <summary>
+    /// E18: projection-backed content search (port of SessionSearch): transcript, corrected
+    /// transcript, translations, questions, answers and notes, each with the Mac field kind and
+    /// excerpt so a history row can show where the hit came from.
+    /// </summary>
+    public IReadOnlyList<SessionContentSearchResult> SearchContentHits(string query, int maximumHits = 200,
+        CancellationToken cancellationToken = default)
+    {
+        var trimmed = query.Trim();
+        if (trimmed.Length < 2) return [];
+        var terms = new Glossary().Search(trimmed);
+        gate.Wait();
+        try
+        {
+            var results = new List<SessionContentSearchResult>();
+            foreach (var meta in ListCore())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var data = LoadCore(meta.Id);
+                var questionsPath = Path.Combine(Folder(meta.Id), "questions.jsonl");
+                var questions = File.Exists(questionsPath)
+                    ? ReadLines<SessionQuestionEvent>(questionsPath, out _)
+                    : [];
+                var answers = data.Answers.Select(ToSearchAnswer).ToList();
+                var summary = data.Summary.Length == 0
+                    ? null
+                    : new SessionSummary { Title = meta.Title, Markdown = data.Summary };
+                var fields = SessionContentSearch.Fields(meta, data.Lines, questions, answers, summary, null);
+                var hits = SessionContentSearch.Hits(fields, terms);
+                if (hits.Count == 0) continue;
+                results.Add(new SessionContentSearchResult(meta, hits));
+                if (results.Sum(result => result.Hits.Count) >= maximumHits) break;
+            }
+            return results;
+        }
+        finally { gate.Release(); }
+    }
+
+    private static SessionAnswerEvent ToSearchAnswer(AnswerRecord answer) => new()
+    {
+        Id = answer.Id.ToString("D"),
+        Date = answer.Date,
+        Question = answer.Question,
+        Answer = answer.Answer,
+        Model = answer.Model,
+        Seconds = answer.Seconds,
+        FirstTokenSeconds = answer.FirstTokenSeconds,
+        Automatic = answer.Automatic,
+        ScreenshotPath = answer.ScreenshotPath,
+        Evidence = answer.Evidence
+    };
 
     /// <summary>E18: keep a screenshot with the meeting archive; returns the archived path.</summary>
     public async Task<string> SaveScreenshotAsync(Guid id, string sourcePath, CancellationToken ct = default)

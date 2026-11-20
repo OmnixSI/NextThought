@@ -269,6 +269,23 @@ public static class WorkspaceSourceIntegrity
         }, true);
     }
 
+    /// <summary>
+    /// E18 (Workspace.hasRetainableAcceptedContent): true when accepted lessons or series items
+    /// depend on one of the meetings about to be deleted, so the delete dialog can offer both
+    /// "delete dependent content" and "keep accepted series content".
+    /// </summary>
+    public static bool HasRetainableAcceptedContent(WorkspaceSeries workspace, IReadOnlyCollection<string> deletedSessionIds)
+    {
+        var deleted = deletedSessionIds.Where(id => !string.IsNullOrWhiteSpace(id)).ToHashSet(IdOrder);
+        if (deleted.Count == 0) return false;
+        bool Intersects(IReadOnlySet<string> sources) => sources.Overlaps(deleted);
+        if (workspace.Lessons.Any(lesson => Intersects(AllSources(lesson))
+                                             || lesson.History.Any(revision => Intersects(AllSources(revision)))))
+            return true;
+        return workspace.SeriesItems.Any(item => deleted.Contains(item.SourceSessionId)
+                                                  || item.History.Any(revision => deleted.Contains(revision.SourceSessionId)));
+    }
+
     private static bool SameTombstones(
         IReadOnlyList<WorkspaceSeriesItemSourceTombstone> left,
         IReadOnlyList<WorkspaceSeriesItemSourceTombstone> right) =>

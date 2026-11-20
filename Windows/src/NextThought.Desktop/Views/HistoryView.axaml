@@ -2,153 +2,201 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
-             xmlns:platform="using:NextThought.Platform"
              xmlns:core="using:NextThought.Core"
              x:Class="NextThought.Desktop.Views.HistoryView"
              x:DataType="local:AppState">
   <UserControl.Resources>
     <DataTemplate x:Key="HistoryRowTemplate" x:DataType="local:RecentMeetingRow">
-            <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Tag="{Binding}" Click="Row_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
-              <Button.ContextMenu>
-                <ContextMenu>
-                  <MenuItem Header="{loc:Tr 打开纪要}" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.OpenSessionCommand}" CommandParameter="{Binding}" />
-                  <MenuItem Header="{loc:Tr 导出 Markdown}" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.ExportSessionCommand}" CommandParameter="{Binding}" />
-                  <MenuItem Header="{loc:Tr 重命名会议}" Tag="{Binding}" Tapped="RenameSession_Tapped" />
-                  <MenuItem Header="{loc:Tr 删除会议}" Tag="{Binding}" Tapped="DeleteSession_Tapped" />
-                </ContextMenu>
-              </Button.ContextMenu>
-              <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
-                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_10_0}" />
-                <Border Grid.Column="1" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
-                        VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_14_0}">
-                  <TextBlock Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}" FontSize="15"
-                             Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center"
-                             VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-                  <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
-                </StackPanel>
-                <StackPanel Grid.Column="3" Spacing="{DynamicResource D4Spacing_6}" Orientation="Horizontal" VerticalAlignment="Center">
-                  <Border Classes="chip" IsVisible="{Binding HasSummary}">
-                    <TextBlock Text="{loc:Tr 有纪要}" Classes="overline" FontSize="10" />
-                  </Border>
-                  <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="12"
-                             Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_6_0_0_0}" />
-                </StackPanel>
-              </Grid>
-            </Button>
-              </DataTemplate>
+      <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              Tag="{Binding}" Click="Row_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="{loc:Tr 打开纪要}" Tag="{Binding}" Click="OpenSession_Tapped" />
+            <MenuItem Header="{loc:Tr 重新整理}" Tag="{Binding}" Click="Regenerate_Tapped" />
+            <MenuItem Header="{loc:Tr 纪要语言}">
+              <MenuItem Header="{loc:Tr 简体中文}" Tag="{Binding}" Click="RegenerateChinese_Tapped" />
+              <MenuItem Header="{loc:Tr English}" Tag="{Binding}" Click="RegenerateEnglish_Tapped" />
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="{loc:Tr 导出 Markdown…}" Tag="{Binding}" Click="ExportSession_Tapped" />
+            <MenuItem Header="{loc:Tr 重命名…}" Tag="{Binding}" Click="RenameSession_Tapped" />
+            <MenuItem Header="{loc:Tr 在资源管理器中显示}" Tag="{Binding}" Click="RevealSession_Tapped" />
+            <MenuItem Header="{loc:Tr 详细信息}" Tag="{Binding}" Click="SessionInfo_Tapped" />
+            <MenuItem Header="{loc:Tr 以此为上一场，准备下一场}" Tag="{Binding}" Click="PrepareNext_Tapped" />
+            <Separator />
+            <MenuItem Header="{loc:Tr 删除这场会议}" Tag="{Binding}" Click="DeleteSession_Tapped" />
+          </ContextMenu>
+        </Button.ContextMenu>
+        <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Grid.Column="0" Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}"
+                       FontSize="15" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                       Margin="{DynamicResource D4Margin_0_0_10_0}" />
+            <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
+              <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+              <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
+              <StackPanel Spacing="{DynamicResource D4Spacing_0}" IsVisible="{Binding HasSearchHit}">
+                <TextBlock Text="{Binding SearchHitLine}" Classes="overline" FontSize="10" />
+                <TextBlock Text="{Binding SearchHitExcerpt}" Classes="caption" FontSize="11"
+                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_6}" Orientation="Horizontal" VerticalAlignment="Center">
+              <Border Classes="chip" IsVisible="{Binding HasSummary}">
+                <TextBlock Text="{loc:Tr 有纪要}" Classes="overline" FontSize="10" />
+              </Border>
+              <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                         Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_6_0_0_0}" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Button>
+    </DataTemplate>
   </UserControl.Resources>
 
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
-    <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_6}">
-      <TextBlock Text="{loc:Tr 历史}" Classes="display" />
-      <TextBlock Text="{loc:Tr 每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。}"
-                 Classes="caption" />
-    </StackPanel>
-
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_18_0_12}">
-      <TextBox Text="{Binding HistoryQuery}" PlaceholderText="{loc:Tr 搜索会议标题、日期或模式}" MaxWidth="420"
-               HorizontalAlignment="Left" />
-      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
-        <RadioButton Classes="chip" GroupName="history" IsChecked="{Binding HistoryFilterIsAll, Mode=OneWay}"
-                     Command="{Binding SetHistoryFilterCommand}" CommandParameter="{loc:Tr 全部}">
-          <TextBlock Text="{loc:Tr 全部}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-        <RadioButton Classes="chip" GroupName="history" IsChecked="{Binding HistoryFilterHasSummary, Mode=OneWay}"
-                     Command="{Binding SetHistoryFilterCommand}" CommandParameter="{loc:Tr 有纪要}">
-          <TextBlock Text="{loc:Tr 有纪要}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-        <RadioButton Classes="chip" GroupName="history" IsChecked="{Binding HistoryFilterUnfiled, Mode=OneWay}"
-                     Command="{Binding SetHistoryFilterCommand}" CommandParameter="{loc:Tr 未整理}">
-          <TextBlock Text="{loc:Tr 未整理}" Foreground="{Binding $parent[RadioButton].Foreground}" />
-        </RadioButton>
-        <TextBlock Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
-        <Button Classes="quiet" Content="{loc:Tr 全文搜索}" Command="{Binding SearchHistoryContentCommand}" VerticalAlignment="Center" />
-        <Button Classes="quiet" Content="{loc:Tr 删除选中}" Click="DeleteSelected_Click" VerticalAlignment="Center" />
-        <Button Classes="quiet" Content="{loc:Tr 删除筛选结果}" Click="DeleteFiltered_Click" VerticalAlignment="Center" />
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="{loc:Tr 所有会议}" Classes="display" />
+        <TextBlock Text="{loc:Tr 每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。}"
+                   Classes="caption" />
       </StackPanel>
+      <Button Grid.Column="1" Classes="quiet" Content="{StaticResource IconEllipsis}" FontFamily="{StaticResource IconFont}"
+              ToolTip.Tip="{loc:Tr 会议记录操作}" VerticalAlignment="Top">
+        <Button.Flyout>
+          <MenuFlyout>
+            <MenuItem Header="{loc:Tr 删除全部会议记录}" Click="DeleteAll_Tapped" />
+          </MenuFlyout>
+        </Button.Flyout>
+      </Button>
     </Grid>
 
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_0_0_12}">
-      <ComboBox ItemsSource="{Binding HistoryDateChoices}" SelectedItem="{Binding HistoryDateFilter}" Width="140" />
-      <ComboBox ItemsSource="{Binding HistoryLengthChoices}" SelectedItem="{Binding HistoryLengthFilter}" Width="140" />
-      <ComboBox ItemsSource="{Binding HistorySortChoices}" SelectedItem="{Binding HistorySort}" Width="140" />
+    <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_14_0_8}">
+      <TextBox Text="{Binding HistoryQuery}" PlaceholderText="{loc:Tr 搜索全部转写、纪要、笔记}" MaxWidth="520"
+               HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+        <ComboBox Grid.Column="0" ItemsSource="{Binding HistoryDateChoices}" SelectedItem="{Binding HistoryDateFilter}" Width="140" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding HistoryLengthChoices}" SelectedItem="{Binding HistoryLengthFilter}" Width="140" />
+        <ComboBox Grid.Column="2" ItemsSource="{Binding HistorySortChoices}" SelectedItem="{Binding HistorySort}" Width="140" />
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+          <ProgressBar IsIndeterminate="True" Width="90" IsVisible="{Binding IsSearchingHistory}" />
+          <TextBlock Text="{Binding HistorySearchStatus}" Classes="caption" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Grid.Column="4" Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" />
+      </Grid>
     </StackPanel>
 
-    <Border Grid.Row="3" Classes="card" Margin="{DynamicResource D4Margin_0_0_0_10}"
-            IsVisible="{Binding HasSelectedHistory}">
-      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="{loc:Tr 归档概览}" Classes="overline" />
-        <TextBlock Text="{Binding CurrentSession.Title}" Classes="section" />
-        <TextBlock Text="{Binding CurrentSession.LocalStartedAt}" Classes="caption" />
-        <TextBlock Text="{Binding CurrentSession.AnswerCount}" Classes="caption" />
-        <TextBlock Text="{Binding SelectedSessionScreenshotCount}" Classes="caption" />
-        <ItemsControl ItemsSource="{Binding SelectedSessionScreenshots}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <WrapPanel Orientation="Horizontal" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <Button Classes="quiet" Padding="{DynamicResource D4Padding_0}" ToolTip.Tip="{loc:Tr 查看截图}"
-                      Click="Screenshot_Click" Margin="{DynamicResource D4Margin_0_0_6_6}">
-                <Image Source="{Binding}" Width="120" Height="76" Stretch="UniformToFill" />
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock Text="{loc:Tr 回答列表}" Classes="overline" />
-        <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="core:AnswerRecord">
-              <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_6}">
-                <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
+    <!-- E18: search hit navigator (HistoryView.searchHitNavigator) -->
+    <Border Grid.Row="2" Classes="card" Margin="{DynamicResource D4Margin_0_0_0_8}" IsVisible="{Binding HasHistoryHits}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+        <TextBlock Grid.Column="0" Text="{Binding HistoryHitPosition}" Classes="caption" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_0}">
+          <TextBlock Text="{Binding HistoryHitLine}" Classes="overline" FontSize="10" />
+          <TextBlock Text="{Binding HistoryHitExcerpt}" Classes="caption" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="quiet" Content="{StaticResource IconChevronUp}" FontFamily="{StaticResource IconFont}"
+                ToolTip.Tip="{loc:Tr 上一个搜索命中}" Command="{Binding PreviousHistoryHitCommand}" />
+        <Button Grid.Column="3" Classes="quiet" Content="{StaticResource IconChevronDown}" FontFamily="{StaticResource IconFont}"
+                ToolTip.Tip="{loc:Tr 下一个搜索命中}" Command="{Binding NextHistoryHitCommand}" />
+      </Grid>
     </Border>
 
-    <Border Grid.Row="4" Classes="card" Margin="{DynamicResource D4Margin_0_0_0_10}"
-              IsVisible="{Binding HistoryContentHits.Count}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-          <TextBlock Text="{loc:Tr 全文命中}" Classes="overline" />
-          <ItemsControl ItemsSource="{Binding HistoryContentHits}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="platform:SessionContentHit">
-                <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                        Tag="{Binding}" Click="SearchHit_Click">
-                  <StackPanel Spacing="{DynamicResource D4Spacing_2}">
-                    <TextBlock Text="{Binding Meta.Title}" Classes="label" />
-                    <TextBlock Text="{Binding Text}" Classes="caption" TextTrimming="CharacterEllipsis" />
-                  </StackPanel>
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+    <!-- E18: series management header (HistoryView 批量删除 / 全选当前结果 / 删除所选 / 完成) -->
+    <StackPanel Grid.Row="3" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+      <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_0_0_0_4}">
+        <TextBlock Grid.Column="0" Text="{loc:Tr 会议系列}" Classes="section" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+          <Button Classes="quiet" Content="{loc:Tr 批量删除}" Command="{Binding BeginHistorySeriesSelectionCommand}"
+                  IsVisible="{Binding !SelectingHistorySeries}" ToolTip.Tip="{loc:Tr 选择多个系列后删除}" />
+          <TextBlock Text="{Binding HistorySelectionText}" Classes="caption" VerticalAlignment="Center"
+                     IsVisible="{Binding SelectingHistorySeries}" />
+          <Button Classes="quiet" Content="{loc:Tr 全选当前结果}" Command="{Binding SelectAllHistorySeriesCommand}"
+                  IsVisible="{Binding SelectingHistorySeries}" />
+          <Button Classes="quiet" Content="{loc:Tr 删除所选}" Command="{Binding DeleteSelectedSeriesCommand}"
+                  IsVisible="{Binding SelectingHistorySeries}" />
+          <Button Classes="quiet" Content="{loc:Tr 完成}" Command="{Binding ExitHistorySeriesSelectionCommand}"
+                  IsVisible="{Binding SelectingHistorySeries}" />
         </StackPanel>
-      </Border>
-    <ScrollViewer Grid.Row="5" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
-      <StackPanel>
+      </Grid>
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+        <!-- Archive overview (MeetingArchiveOverview compact card for the selected meeting) -->
+        <Border Classes="card" IsVisible="{Binding HasSelectedHistory}">
+          <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+            <TextBlock Text="{loc:Tr 归档概览}" Classes="overline" />
+            <TextBlock Text="{Binding CurrentSessionTitle}" Classes="section" />
+            <TextBlock Text="{Binding SelectedSessionFacts}" Classes="caption" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding CurrentSession.SummaryError}" Classes="caption" Foreground="{DynamicResource Caution}"
+                       IsVisible="{Binding HasSummaryError}" TextWrapping="Wrap" />
+            <TextBlock Text="{loc:Tr 归档截图}" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+            <TextBlock Text="{loc:Tr 还没有归档截图。}" Classes="caption" FontSize="11"
+                       IsVisible="{Binding !HasSelectedSessionScreenshots}" />
+            <ItemsControl ItemsSource="{Binding SelectedSessionScreenshots}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Classes="quiet" Padding="{DynamicResource D4Padding_0}" ToolTip.Tip="{loc:Tr 点击查看原图}"
+                          Click="Screenshot_Click" Margin="{DynamicResource D4Margin_0_0_6_6}">
+                    <Image Source="{Binding}" Width="120" Height="76" Stretch="UniformToFill" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{loc:Tr 回答列表}" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+            <TextBlock Text="{loc:Tr 这场会议没有生成回答。}" Classes="caption" FontSize="11"
+                       IsVisible="{Binding !HasSelectedSessionAnswers}" />
+            <ItemsControl ItemsSource="{Binding HistoryAnswers}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:HistoryAnswerRow">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Grid.Column="0" Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="1" Text="{Binding AutomaticLabel}" Classes="overline" FontSize="10"
+                                 VerticalAlignment="Top" Margin="{DynamicResource D4Margin_8_0_0_0}" />
+                    </Grid>
+                    <TextBlock Text="{loc:Tr 未完成的回答片段}" Classes="overline" FontSize="10"
+                               Foreground="{DynamicResource Caution}" IsVisible="{Binding !IsComplete}" />
+                    <TextBlock Text="{Binding AnswerText}" Classes="caption" TextWrapping="Wrap" MaxLines="4"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding MetaLine}" Classes="caption" FontSize="10"
+                               Foreground="{DynamicResource Tertiary}" />
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                                IsVisible="{Binding HasScreenshot}">
+                      <TextBlock Text="{loc:Tr 截图已归档}" Classes="caption" FontSize="10"
+                                 Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+                      <Button Classes="quiet" Content="{loc:Tr 查看截图}" Tag="{Binding}" Click="AnswerScreenshot_Click" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <ItemsControl ItemsSource="{Binding HistoryGroups}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="local:HistoryGroupRow">
               <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding Name}" Classes="overline" />
-                  <Button Grid.Column="1" Classes="quiet" Content="{StaticResource IconEllipsis}" FontFamily="{StaticResource IconFont}"
-                          ToolTip.Tip="{loc:Tr 系列管理}">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}">
+                  <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=OneWay}" Tag="{Binding SeriesId}"
+                            IsVisible="{Binding $parent[UserControl].DataContext.SelectingHistorySeries}"
+                            VerticalAlignment="Center" Click="SeriesCheckBox_Click" />
+                  <Button Grid.Column="1" Classes="quiet" HorizontalContentAlignment="Left"
+                          Content="{Binding Name}" Tag="{Binding SeriesId}" Click="OpenSeries_Tapped" />
+                  <TextBlock Grid.Column="2" Text="{Binding Rows.Count}" Classes="overline" VerticalAlignment="Center" />
+                  <Button Grid.Column="3" Classes="quiet" Content="{StaticResource IconEllipsis}" FontFamily="{StaticResource IconFont}"
+                          ToolTip.Tip="{loc:Tr 管理系列}" IsVisible="{Binding CanManage}">
                     <Button.Flyout>
                       <MenuFlyout>
-                        <MenuItem Header="{loc:Tr 打开系列}" Command="{Binding $parent[UserControl].DataContext.OpenSeriesCommand}" CommandParameter="{Binding SeriesId}" />
-                        <MenuItem Header="{loc:Tr 重命名系列}" Tag="{Binding SeriesId}" Tapped="RenameSeries_Tapped" />
-                        <MenuItem Header="{loc:Tr 删除系列}" Command="{Binding $parent[UserControl].DataContext.DeleteSeriesCommand}" CommandParameter="{Binding SeriesId}" />
+                        <MenuItem Header="{loc:Tr 打开系列}" Tag="{Binding SeriesId}" Click="OpenSeries_Tapped" />
+                        <MenuItem Header="{loc:Tr 编辑系列信息}" Tag="{Binding SeriesId}" Click="EditSeriesInfo_Tapped" />
+                        <MenuItem Header="{loc:Tr 删除系列…}" Tag="{Binding SeriesId}" Click="DeleteSeries_Tapped" />
                       </MenuFlyout>
                     </Button.Flyout>
                   </Button>
@@ -158,7 +206,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock Text="{loc:Tr 没有匹配的会议。换个关键词，或把筛选切回「全部」。}"
+        <TextBlock Text="{loc:Tr 没有符合条件的记录，可以清除条件后查看全部。}"
                    Classes="caption" IsVisible="{Binding IsHistoryViewEmpty}" Margin="{DynamicResource D4Margin_4_12_0_0}" />
       </StackPanel>
     </ScrollViewer>

@@ -22,7 +22,12 @@ public partial class AppState
         if (value == AppSection.Prepare) SetPageSubtitle("准备这场会 · 类型、资料与检查");
     }
 
-    partial void OnHistoryQueryChanged(string value) => ApplyHistoryFilter();
+    partial void OnHistoryQueryChanged(string value)
+    {
+        ApplyHistoryFilter();
+        // E18: the content search follows typing with a debounce, like HistoryView.task(id:).
+        ScheduleHistoryContentSearch();
+    }
 
     partial void OnCurrentSessionChanged(SessionMeta? value) { OnPropertyChanged(nameof(StatsText)); OnPropertyChanged(nameof(HasSelectedHistory)); }
 
@@ -110,6 +115,7 @@ public partial class AppState
         }
         catch { }
         SelectedSessionScreenshotCount = SelectedSessionScreenshots.Count;
+        OnPropertyChanged(nameof(HasSelectedSessionScreenshots));
     }
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private int selectedSessionScreenshotCount;

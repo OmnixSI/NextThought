@@ -412,10 +412,13 @@ public partial class AppState
         else if (MatchesFilter(HistoryLengthFilter, "10 分钟以上")) rows = rows.Where(row => Duration(row) >= 600);
         if (query.Length > 0)
         {
+            // E18: metadata matches stay available without disk access; content-search matches
+            // (transcript/answer/notes…) keep the row visible as soon as the scan publishes them.
             rows = rows.Where(row =>
                 row.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
                 || row.Meta.LocalStartedAt.Contains(query, StringComparison.OrdinalIgnoreCase)
-                || row.Meta.Mode.Contains(query, StringComparison.OrdinalIgnoreCase));
+                || row.Meta.Mode.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || historyHitsBySession.ContainsKey(row.Meta.Id));
         }
         if (MatchesFilter(HistorySort, "最早优先")) rows = rows.OrderBy(row => row.Meta.StartedAt);
         else if (MatchesFilter(HistorySort, "时长最长")) rows = rows.OrderByDescending(Duration);
@@ -430,7 +433,14 @@ public partial class AppState
                      var series = workspace.SeriesOfSession(row.Meta.Id.ToString());
                      return (Id: series?.Id, Name: series?.Name ?? UiText.T("未归入系列"));
                  }))
-            HistoryGroups.Add(new HistoryGroupRow(group.Key.Name, group.Key.Id, group.ToList()));
+        {
+            // E18: the series checkbox state survives list rebuilds.
+            var groupRow = new HistoryGroupRow(group.Key.Name, group.Key.Id, group.ToList())
+            {
+                IsSelected = group.Key.Id is { } id && SelectedHistorySeries.Contains(id)
+            };
+            HistoryGroups.Add(groupRow);
+        }
         OnPropertyChanged(nameof(HistorySummary));
         OnPropertyChanged(nameof(IsHistoryViewEmpty));
     }
@@ -809,6 +819,9 @@ public partial class AppState
             SelectedSessionAnswers.Clear();
             CurrentAnswerHistory.Clear();
             foreach (var answer in data.Answers) { SelectedSessionAnswers.Add(answer); CurrentAnswerHistory.Add(answer); }
+            // E18: 归档概览 and 回答列表 for the selected meeting.
+            RefreshHistoryOverview();
+            RefreshHistoryHitsForSelection();
             AnswerText = data.Answers.LastOrDefault()?.Answer ?? "";
             DetectedQuestion = data.Answers.LastOrDefault()?.Question ?? UiText.T("可以继续对这场会议提问。");
             SummaryText = data.Summary.Length > 0 ? data.Summary : UiText.T("这场会议还没有纪要，点击上方整理。");

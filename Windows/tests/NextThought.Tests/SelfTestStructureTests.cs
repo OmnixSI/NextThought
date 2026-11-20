@@ -51,9 +51,10 @@ public sealed class SelfTestStructureTests
     [Fact]
     public void AcademicAnswersUseWholeSeriesMaterial()
     {
-        var notes = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.StructuredNotes.cs"));
-        Assert.Contains("SelectedMode == MeetingMode.Academic", notes);
-        Assert.Contains("WholeMaterialOf(DocumentsForRetrieval())", notes);
+        // G8 moved the answer prompt builder next to the live request path (AppState.Live.cs).
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("SelectedMode == MeetingMode.Academic", live);
+        Assert.Contains("WholeMaterialOf(DocumentsForRetrieval())", live);
     }
 
     [Fact]
@@ -552,7 +553,7 @@ public sealed class SelfTestStructureTests
     {
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("ScreenContextText", live);
-        Assert.Contains("屏幕 OCR 文本", live);
+        Assert.Contains("screen: ScreenContextText", live);
         var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
         Assert.Contains("SelectedPreview", shell);
     }
@@ -653,8 +654,9 @@ public sealed class SelfTestStructureTests
         Assert.Contains("AnswerLanguage", models);
         Assert.Contains("AnswerGloss", models);
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "QuickSettingsPanel.axaml"));
-        Assert.Contains("回答语言", xaml);
-        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.StructuredNotes.cs"));
+        Assert.Contains("{loc:Tr 回答语言}", xaml);
+        // G8 moved the prompt builder next to the live request path.
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("Settings.AnswerGloss", state);
     }
 
@@ -896,10 +898,12 @@ public sealed class SelfTestStructureTests
     public void HistorySupportsMultiSelectDelete()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
-        Assert.Contains("IsSelected", xaml);
-        Assert.Contains("DeleteSelected_Click", xaml);
-        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
-        Assert.Contains("DeleteSelectedSessionsAsync", state);
+        Assert.Contains("BeginHistorySeriesSelectionCommand", xaml);
+        Assert.Contains("DeleteSelectedSeriesCommand", xaml);
+        Assert.Contains("SeriesCheckBox_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Meeting.cs"));
+        Assert.Contains("DeleteSelectedSeriesAsync", state);
+        Assert.Contains("ToggleHistorySeriesSelection", state);
     }
 
     [Fact]
@@ -934,7 +938,8 @@ public sealed class SelfTestStructureTests
         var archive = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
         Assert.Contains("ArchiveScreenshotAsync", archive);
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
-        Assert.Contains("SelectedSessionScreenshotCount", xaml);
+        Assert.Contains("SelectedSessionScreenshots", xaml);
+        Assert.Contains("HasSelectedSessionScreenshots", xaml);
     }
 
 
@@ -942,11 +947,13 @@ public sealed class SelfTestStructureTests
     public void HistorySeriesMenuCanRenameAndDelete()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
-        Assert.Contains("重命名系列", xaml);
-        Assert.Contains("DeleteSeriesCommand", xaml);
+        Assert.Contains("编辑系列信息", xaml);
+        Assert.Contains("删除系列…", xaml);
+        Assert.Contains("DeleteSeries_Tapped", xaml);
         var series = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Series.cs"));
         Assert.Contains("RenameSeries(string seriesId", series);
-        Assert.Contains("DeleteSeries(string? seriesId)", series);
+        var meeting = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Meeting.cs"));
+        Assert.Contains("DeleteSeriesWithMeetingsAsync", meeting);
     }
 
     [Fact]
@@ -954,7 +961,7 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
         Assert.Contains("打开系列", xaml);
-        Assert.Contains("OpenSeriesCommand", xaml);
+        Assert.Contains("OpenSeries_Tapped", xaml);
         var series = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Series.cs"));
         Assert.Contains("OpenSeries(string? seriesId)", series);
     }
@@ -975,18 +982,23 @@ public sealed class SelfTestStructureTests
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
         Assert.Contains("归档概览", xaml);
-        Assert.Contains("SelectedSessionAnswers", xaml);
+        Assert.Contains("HistoryAnswers", xaml);
         var archive = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
         Assert.Contains("SelectedSessionAnswers", archive);
+        var meeting = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Meeting.cs"));
+        Assert.Contains("SelectedSessionFacts", meeting);
     }
 
     [Fact]
     public void HistoryHasFullTextSearchUi()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
-        Assert.Contains("全文搜索", xaml);
-        Assert.Contains("SearchHistoryContentCommand", xaml);
-        Assert.Contains("SearchHit_Click", xaml);
+        Assert.Contains("HistorySearchStatus", xaml);
+        Assert.Contains("HistoryHitPosition", xaml);
+        Assert.Contains("PreviousHistoryHitCommand", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Meeting.cs"));
+        Assert.Contains("ScheduleHistoryContentSearch", state);
+        Assert.Contains("SearchContentHits", state);
     }
 
     [Fact]
@@ -1003,8 +1015,10 @@ public sealed class SelfTestStructureTests
     public void HistoryHasFilteredBatchDelete()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
-        Assert.Contains("DeleteFiltered_Click", xaml);
+        Assert.Contains("DeleteAll_Tapped", xaml);
+        Assert.Contains("批量删除", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
+        Assert.Contains("DeleteAllMeetingsAsync", state);
         Assert.Contains("DeleteFilteredSessionsAsync", state);
     }
 
@@ -1012,7 +1026,7 @@ public sealed class SelfTestStructureTests
     public void HistoryRowsOfferSessionRename()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
-        Assert.Contains("重命名会议", xaml);
+        Assert.Contains("重命名…", xaml);
         Assert.Contains("RenameSession_Tapped", xaml);
         Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "RenameSessionDialog.axaml")));
     }
@@ -1021,10 +1035,11 @@ public sealed class SelfTestStructureTests
     public void HistoryRowsOfferSessionDeletion()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
-        Assert.Contains("删除会议", xaml);
+        Assert.Contains("删除这场会议", xaml);
         Assert.Contains("DeleteSession_Tapped", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
         Assert.Contains("Sessions.DeleteAsync", state);
+        Assert.Contains("retainAcceptedContent", state);
     }
 
     [Fact]
