@@ -214,6 +214,7 @@ public partial class MainWindow
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
             state.PromptAboutScreenshot(state.Library.SelectedPreview);
+            state.FollowSlideFromCapture(state.Library.SelectedPreview);
             TryDeleteCapture(path);
         }
         catch (Exception ex)
@@ -243,6 +244,7 @@ public partial class MainWindow
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
             state.PromptAboutScreenshot(state.Library.SelectedPreview);
+            state.FollowSlideFromCapture(state.Library.SelectedPreview);
             TryDeleteCapture(path);
         }
         catch (Exception ex)

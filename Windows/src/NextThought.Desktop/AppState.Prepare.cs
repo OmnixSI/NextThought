@@ -112,6 +112,29 @@ public partial class AppState
         }
     }
 
+
+    /// <summary>E9: follow the deck from a screenshot's OCR text.</summary>
+    public void FollowSlideFromCapture(string screenText) => FollowSlideFromScreen(screenText);
+
+    private void FollowSlideFromScreen(string screenText)
+    {
+        if (!Settings.FollowSlides || screenText.Trim().Length == 0) return;
+        if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());
+        if (slides.Count == 0) return;
+        var pages = slides.Select(info => new NextThought.Core.SlidePage
+        {
+            Page = info.Number, PageCount = slides.Count, DocumentName = info.DocumentName, Text = info.Text
+        }).ToList();
+        var follower = new NextThought.Core.SlideFollower(pages);
+        if (follower.Observe(screenText) is not { } matched) return;
+        var index = slides.ToList().FindIndex(info => info.Number == matched.Page);
+        if (index < 0 || index == slideIndex) return;
+        slideIndex = index;
+        OnPropertyChanged(nameof(SlideStatus));
+        OnPropertyChanged(nameof(CurrentSlideText));
+        SetStatus($"已按屏幕切到第 {matched.Page} 页。");
+    }
+
     private void MoveSlide(int delta)
     {
         if (slides.Count == 0) slides = SlideDecks.FromDocuments(Library.DocumentsForRetrieval());

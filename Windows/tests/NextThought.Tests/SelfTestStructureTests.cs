@@ -180,6 +180,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SlidesCanFollowScreenshots()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
+        Assert.Contains("FollowSlideFromScreen", state);
+        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
+        Assert.Contains("FollowSlideFromCapture", shell);
+    }
+
     [Fact]
     public void SlidesCanFollowSpeech()
     {
