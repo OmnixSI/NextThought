@@ -19,6 +19,10 @@ public sealed record SeriesRow(string Id, string Name, int Count, int LessonCoun
     public string Preview => LastLesson.Length > 0 ? LastLesson : LastTitle;
 }
 
+
+/// <summary>One history section when meetings are grouped by series.</summary>
+public sealed record HistoryGroupRow(string Name, IReadOnlyList<RecentMeetingRow> Rows);
+
 public sealed record RecentMeetingRow(SessionMeta Meta)
 {
     public string Title => string.IsNullOrWhiteSpace(Meta.Title) ? UiText.T("未命名会议") : Meta.Title;

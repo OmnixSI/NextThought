@@ -46,6 +46,8 @@ public partial class AppState
 
     partial void OnHistorySortChanged(string value) => ApplyHistoryFilter();
 
+    public System.Collections.ObjectModel.ObservableCollection<HistoryGroupRow> HistoryGroups { get; } = [];
+
     public bool IsHistoryEmpty => History.Count == 0;
 
     [RelayCommand(CanExecute = nameof(CanExport))]

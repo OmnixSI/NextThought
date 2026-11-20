@@ -521,6 +521,10 @@ public partial class AppState
         };
         FilteredHistory.Clear();
         foreach (var row in rows) FilteredHistory.Add(row);
+        HistoryGroups.Clear();
+        foreach (var group in FilteredHistory.GroupBy(row =>
+                     workspace.SeriesOfSession(row.Meta.Id.ToString())?.Name ?? "未归入系列"))
+            HistoryGroups.Add(new HistoryGroupRow(group.Key, group.ToList()));
         OnPropertyChanged(nameof(HistorySummary));
         OnPropertyChanged(nameof(IsHistoryViewEmpty));
     }

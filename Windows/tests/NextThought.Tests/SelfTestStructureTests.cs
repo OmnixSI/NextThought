@@ -89,6 +89,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryIsGroupedBySeries()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("HistoryGroups", xaml);
+        Assert.Contains("HistoryGroupRow", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.StructuredNotes.cs"));
+        Assert.Contains("HistoryGroups.Add", state);
+    }
+
     [Fact]
     public void HistoryHasFilteredBatchDelete()
     {

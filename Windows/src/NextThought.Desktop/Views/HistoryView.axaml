@@ -3,6 +3,39 @@
              xmlns:local="using:NextThought.Desktop"
              x:Class="NextThought.Desktop.Views.HistoryView"
              x:DataType="local:AppState">
+  <UserControl.Resources>
+    <DataTemplate x:Key="HistoryRowTemplate" x:DataType="local:RecentMeetingRow">
+            <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Tag="{Binding}" Click="Row_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
+              <Button.ContextMenu>
+                <ContextMenu>
+                  <MenuItem Header="重命名会议" Tag="{Binding}" Tapped="RenameSession_Tapped" />
+                  <MenuItem Header="删除会议" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.DeleteSessionCommand}" CommandParameter="{Binding}" />
+                </ContextMenu>
+              </Button.ContextMenu>
+              <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
+                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
+                        VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_14_0}">
+                  <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                             Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center"
+                             VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_6}" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Border Classes="chip" IsVisible="{Binding HasSummary}">
+                    <TextBlock Text="有纪要" Classes="overline" FontSize="10" />
+                  </Border>
+                  <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"
+                             Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_6_0_0_0}" />
+                </StackPanel>
+              </Grid>
+            </Button>
+              </DataTemplate>
+  </UserControl.Resources>
+
   <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_6}">
       <TextBlock Text="历史" Classes="display" />
@@ -39,40 +72,16 @@
 
     <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_0_0_16}">
       <StackPanel>
-        <ItemsControl ItemsSource="{Binding FilteredHistory}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="local:RecentMeetingRow">
-            <Button Classes="recent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Tag="{Binding}" Click="Row_Click" Margin="{DynamicResource D4Margin_0_0_0_6}">
-              <Button.ContextMenu>
-                <ContextMenu>
-                  <MenuItem Header="重命名会议" Tag="{Binding}" Tapped="RenameSession_Tapped" />
-                  <MenuItem Header="删除会议" Tag="{Binding}" Command="{Binding $parent[UserControl].DataContext.DeleteSessionCommand}" CommandParameter="{Binding}" />
-                </ContextMenu>
-              </Button.ContextMenu>
-              <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_6_4}">
-                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="{DynamicResource D4CornerRadius_10}" Background="{DynamicResource Sunken}"
-                        VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_14_0}">
-                  <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
-                             Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center"
-                             VerticalAlignment="Center" />
-                </Border>
-                <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding Title}" Classes="title" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-                  <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" />
-                </StackPanel>
-                <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_6}" Orientation="Horizontal" VerticalAlignment="Center">
-                  <Border Classes="chip" IsVisible="{Binding HasSummary}">
-                    <TextBlock Text="有纪要" Classes="overline" FontSize="10" />
-                  </Border>
-                  <TextBlock Text="&#xE76C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"
-                             Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_6_0_0_0}" />
-                </StackPanel>
-              </Grid>
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+        <ItemsControl ItemsSource="{Binding HistoryGroups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="local:HistoryGroupRow">
+              <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_0_0_10}">
+                <TextBlock Text="{Binding Name}" Classes="overline" />
+                <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource HistoryRowTemplate}" />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         <TextBlock Text="没有匹配的会议。换个关键词，或把筛选切回「全部」。"
                    Classes="caption" IsVisible="{Binding IsHistoryViewEmpty}" Margin="{DynamicResource D4Margin_4_12_0_0}" />
       </StackPanel>
