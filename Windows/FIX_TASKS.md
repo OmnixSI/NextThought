@@ -48,7 +48,7 @@ Nov 20, 2026 · @Homing
 | B10 | 已实现、未验证 | `NotesShape.tidy` 只对要点段限 14/6 条并按 topic 分组；JSON 解码接受字符串布尔值、数字时间/字段；Markdown 改为 # 标题 + 事实行、## 章节、待改进/答得好/待确认标记、问题回答与更好答法；旧冲突测试已替换 | 未实机核对英文页；`StructuredNotesMarkdown` 的三种结构化视图仍用旧渲染；其余笔记 Swift 测试留给 B22 |
 | B11 | 已实现、未验证 | 补齐纪要模型：`ActiveCorrections/ActionItemCount/QuestionCount/ImproveCount/BankEntries/Lessons(template)/Named`、`NotesTemplate.CustomCopy`；`NotesKnowledge.Extract` 改用这些方法；模板纪要传入会中参考回答；翻译 `reviewFeedsTheQuestionBank` | 未逐项核对 `named` 与 Mac 在真实姓名上的每个边界；其余纪 Swift 测试留给 B22 |
 | B12 | 已实现、未验证 | `NotesDates.Resolve` 增加时区参数，默认按本地日历日计算；全角数字/冒号先归一化，数字解析不再抛异常；翻译 `relativeDatesBecomeDates` 并增加东八区 07:00/UTC 25 日 23:00 的「明天」测试 | 未在非东八区机器实机核对；其余日期 Swift 测试留给 B22 |
-| B13 | 未做 | — | 未开始 |
+| B13 | 未做 | `SessionSummaryPrompt.TranscriptText` 已按 Mac 区分 `me/房间/对方`（现场发言标「现场」）；翻译 `SessionRecordTests` 的提示词/分段/标题问题清单 3 项通过 | 其余 6 项（JSONLines 撕尾行、录制恢复、deferred notes、standing 系列、设置快照、Markdown 导出）依赖尚未移植的存储 API |
 | B14 | 未做 | — | 未开始 |
 | B15 | 未做 | — | 未开始 |
 | B16 | 未做 | — | 未开始 |

@@ -50,7 +50,12 @@ public static class SessionSummaryPrompt
         foreach (var line in lines)
         {
             var offset = Math.Max(0, (int)(line.Date - start).TotalSeconds);
-            var label = speakerLabels?.GetValueOrDefault(line.Id) ?? (line.Speaker == "me" ? "我" : "对方");
+            var label = speakerLabels?.GetValueOrDefault(line.Id) ?? line.Speaker switch
+            {
+                "me" => "我",
+                "room" => "现场",
+                _ => "对方"
+            };
             if (builder.Length > 0) builder.Append('\n');
             builder.Append($"[{offset / 60:00}:{offset % 60:00}] {label}：{line.Text}");
         }
