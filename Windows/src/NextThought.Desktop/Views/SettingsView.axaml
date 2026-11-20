@@ -4,7 +4,20 @@
              xmlns:platform="using:NextThought.Platform"
              x:Class="NextThought.Desktop.Views.SettingsView"
              x:DataType="local:AppState">
-  <ScrollViewer Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+  <Grid ColumnDefinitions="184,*">
+    <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
+            BorderThickness="0,0,0.5,0">
+      <StackPanel Margin="{DynamicResource D4Margin_14_18_14_14}" Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="设置" Classes="overline" Margin="{DynamicResource D4Margin_10_0_10_8}" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="场景" Tag="AnchorScene" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="回答与资料" Tag="AnchorAnswer" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="提词与教练" Tag="AnchorCoach" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="纪要" Tag="AnchorNotes" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="通用" Tag="AnchorGeneral" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="高级" Tag="AnchorAdvanced" Click="SettingsPage_Click" />
+      </StackPanel>
+    </Border>
+    <ScrollViewer Grid.Column="1" Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="{DynamicResource D4Margin_32_18_32_36}" MaxWidth="720" Spacing="{DynamicResource D4Spacing_18}">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
         <TextBlock Text="设置" Classes="display" />
@@ -19,7 +32,7 @@
       <!-- Sound sources -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="声音来源" Classes="section" />
+          <TextBlock Name="AnchorScene" Text="声音来源" Classes="section" />
           <CheckBox Content="系统输出设备混音" IsChecked="{Binding Settings.CaptureSystem}" />
           <ComboBox ItemsSource="{Binding Settings.SystemDevices}" SelectedItem="{Binding Settings.SelectedSystemDevice}"
                     HorizontalAlignment="Stretch" PlaceholderText="选择输出设备" />
@@ -48,7 +61,7 @@
       <!-- Recognition -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="本机语音识别" Classes="section" />
+          <TextBlock Name="AnchorAnswer" Text="本机语音识别" Classes="section" />
           <TextBlock Text="识别模型" Classes="label" />
           <ComboBox ItemsSource="{Binding Settings.ModelChoicesList}" SelectedItem="{Binding Settings.SelectedModelChoice}"
                     HorizontalAlignment="Left" MinWidth="300" />
@@ -76,7 +89,7 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="界面语言 / Language" Classes="section" />
+          <TextBlock Name="AnchorGeneral" Text="界面语言 / Language" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.UiLanguages}" SelectedItem="{Binding Settings.UiLanguage}"
                     Width="160" HorizontalAlignment="Left" />
           <TextBlock Text="保存设置后立即生效；当前覆盖主导航、设置分节、常用按钮与说明文案，动态状态和会议内容保持原文。"
@@ -86,7 +99,7 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="外观" Classes="section" />
+          <TextBlock Name="AnchorCoach" Text="外观" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.AppearanceChoices}" SelectedItem="{Binding Settings.SelectedAppearance}"
                     Width="200" HorizontalAlignment="Left" />
           <TextBlock Text="保存后立即应用；跟随系统会随后台主题切换。" Classes="caption" FontSize="11" TextWrapping="Wrap" />
@@ -101,7 +114,7 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="字幕条" Classes="section" />
+          <TextBlock Name="AnchorCoach2" Text="字幕条" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
             <TextBlock Text="宽度" Classes="label" VerticalAlignment="Center" />
             <Slider Minimum="520" Maximum="1400" TickFrequency="20" IsSnapToTickEnabled="True"
@@ -119,7 +132,7 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="云端识别（实验）" Classes="section" />
+          <TextBlock Name="AnchorAdvanced" Text="云端识别（实验）" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
                     Width="240" HorizontalAlignment="Left" />
           <TextBox Text="{Binding Settings.CloudSttKey}" PasswordChar="•" PlaceholderText="云服务 API Key" />
@@ -135,7 +148,7 @@
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="全局快捷键（Ctrl+Alt + 按键）" Classes="section" />
+          <TextBlock Name="AnchorGeneral2" Text="全局快捷键（Ctrl+Alt + 按键）" Classes="section" />
           <TextBlock Text="每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
           <TextBox Text="{Binding ShortcutText}" AcceptsReturn="True" Height="150" TextWrapping="Wrap"
@@ -148,7 +161,7 @@
       <!-- Custom notes templates: imported Mac note-templates.json. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="自定义纪要模板" Classes="section" />
+          <TextBlock Name="AnchorNotes" Text="自定义纪要模板" Classes="section" />
           <TextBlock Text="每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。"
                      Classes="caption" FontSize="11" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
@@ -192,7 +205,7 @@
       <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="技能（回答时遵守的说明）" Classes="section" />
+          <TextBlock Name="AnchorAdvanced2" Text="技能（回答时遵守的说明）" Classes="section" />
           <TextBlock Text="每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。"
                      Classes="caption" FontSize="11" />
           <ItemsControl ItemsSource="{Binding SkillRows}">
@@ -216,7 +229,7 @@
       <!-- Speakers and translation -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="说话人与翻译" Classes="section" />
+          <TextBlock Name="AnchorCoach3" Text="说话人与翻译" Classes="section" />
           <CheckBox Content="区分会议中的说话人（本机实验功能）" IsChecked="{Binding Settings.SeparateSpeakers}" />
           <TextBlock Text="仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。"
                      Classes="caption" FontSize="11" />
@@ -234,7 +247,7 @@
       <!-- Dual-screen presenting (PresenterMode.swift) -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="双屏演讲" Classes="section" />
+          <TextBlock Name="AnchorCoach4" Text="双屏演讲" Classes="section" />
           <CheckBox Content="开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口"
                     IsChecked="{Binding Settings.PresenterMode}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
@@ -251,7 +264,7 @@
       <!-- Meeting auto-end -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="会议自动收尾" Classes="section" />
+          <TextBlock Name="AnchorGeneral3" Text="会议自动收尾" Classes="section" />
           <TextBlock Text="忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。"
                      Classes="caption" FontSize="11" />
           <ComboBox ItemsSource="{Binding Settings.AutoEndModes}" SelectedItem="{Binding Settings.SelectedAutoEndMode}"
@@ -268,7 +281,7 @@
       <!-- Library and retrieval -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="资料与检索" Classes="section" />
+          <TextBlock Name="AnchorAnswer2" Text="资料与检索" Classes="section" />
           <CheckBox Content="参考资料库时使用语义与关键词混合检索" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
           <TextBlock Text="Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。"
                      Classes="caption" FontSize="11" />
@@ -279,7 +292,7 @@
       <!-- Answer service -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="回答服务" Classes="section" />
+          <TextBlock Name="AnchorAnswer3" Text="回答服务" Classes="section" />
           <CheckBox Content="允许联网核实（需 TAVILY_API_KEY）" IsChecked="{Binding Settings.WebSearch}" />
           <TextBlock Text="问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。"
                      Classes="caption" FontSize="11" />
@@ -403,4 +416,5 @@
       </Border>
     </StackPanel>
   </ScrollViewer>
+  </Grid>
 </UserControl>

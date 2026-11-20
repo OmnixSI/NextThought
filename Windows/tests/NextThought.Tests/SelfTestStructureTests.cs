@@ -71,6 +71,17 @@ public sealed class SelfTestStructureTests
         Assert.Contains("ContextSidebarHidden", model);
     }
 
+
+    [Fact]
+    public void SettingsRailHasSixGroups()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        foreach (var tag in new[] { "AnchorScene", "AnchorAnswer", "AnchorCoach", "AnchorNotes", "AnchorGeneral", "AnchorAdvanced" })
+            Assert.Contains("Tag=\"" + tag + "\"", xaml);
+        var code = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));
+        Assert.Contains("SettingsPage_Click", code);
+    }
+
     [Fact]
     public void SettingsIsAnOverlay()
     {

@@ -30,6 +30,14 @@ public partial class SettingsView : UserControl
         }
     }
 
+
+    /// <summary>E25: the left rail jumps to the Mac settings page groups.</summary>
+    private void SettingsPage_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string anchor } && this.FindControl<TextBlock>(anchor) is { } target)
+            target.BringIntoView();
+    }
+
     private async void RefreshDevices_Click(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not AppState state) return;
