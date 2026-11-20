@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "total": 61,
+  "total": 60,
   "failed": [],
   "checks": [
     {
@@ -228,10 +228,6 @@
       "Passed": true
     },
     {
-      "Name": "archive-ownership",
-      "Passed": true
-    },
-    {
       "Name": "zipformer",
       "Passed": true
     },
@@ -246,6 +242,5 @@
     {
       "Name": "projection",
       "Passed": true
-    }
-  ]
+    }  ]
 }

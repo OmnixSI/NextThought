@@ -24,3 +24,7 @@ Mobile/iOS/DerivedData/
 
 # Agent worktrees
 .claude/
+
+# Validation bundle binaries live in the GitHub release (windows-1.3.7-evidence).
+Windows/validation/bundles/**/*.exe
+Windows/validation/bundles/**/*.zip
