@@ -30,5 +30,5 @@ Mac 侧从 macOS 15.4 起无法让本应用窗口逃出 ScreenCaptureKit；群�
 
 ## 验证
 
-- `--demo --share-hide-check` 实测：`passed=true, hidden=true, restored=true, width=660`。
+- `--demo --share-hide-check` 实测：`passed=true, detected=true, hidden=true, restored=true, width=660`。
 - `ScreenShareDetectorTests` 8 项通过（标题/窗口类识别；含误报排除）。

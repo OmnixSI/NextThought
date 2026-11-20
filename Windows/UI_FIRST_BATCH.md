@@ -13,7 +13,7 @@
 - 新增设置 `cueWidth`：窄 440 / 标准 540 / 宽 660；`CueIslandWindow` 启动和设置变化时应用。
 - 设置页“外观”卡片增加「提示岛宽度 / Cue island width」下拉。
 - Windows 没有 Mac 刘海，岛仍固定在主屏顶部居中；默认宽度对齐 Mac regular 540，而不是原来的固定 560。
-- QA：`--demo --share-hide-check` 实测 `width=660`（宽档），并验证共享时收回、结束后恢复。
+- QA：`--demo --share-hide-check` 实测 `width=660`（宽档），并验证真实标题为 `Zoom - Screen Sharing` 的窗口被检测到、共享时收回、结束后恢复。
 
 ## 3. 设置页 / 历史归档
 

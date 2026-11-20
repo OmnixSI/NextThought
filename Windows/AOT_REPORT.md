@@ -7,6 +7,7 @@
 - Visual Studio Build Tools 2026（18.12.1）
 - MSVC 14.52.37025，链接器：`D:\APPs\VisualStudioBuildTools\VC\Tools\MSVC\14.52.37025\bin\Hostx64\x64\link.exe`
 - 两个版本均 x64；普通版为 0.5.145 自包含 ReadyToRun，AOT 由 `PublishAot=true`、`PublishSingleFile=true` 发布，ILC 使用上述 MSVC 链接器。
+- AOT 探针源码提交：`2e2011c`（UI 第一批之前；UI 改动不影响启动路径和 JSON 使用方式）。
 
 ## 表 A：普通自包含版（非 AOT）
 
