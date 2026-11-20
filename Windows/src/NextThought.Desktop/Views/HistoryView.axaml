@@ -65,7 +65,7 @@
         </RadioButton>
         <TextBlock Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
         <Button Classes="quiet" Content="全文搜索" Command="{Binding SearchHistoryContentCommand}" VerticalAlignment="Center" />
-        <Button Classes="quiet" Content="删除筛选结果" Command="{Binding DeleteFilteredSessionsCommand}" VerticalAlignment="Center" />
+        <Button Classes="quiet" Content="删除筛选结果" Click="DeleteFiltered_Click" VerticalAlignment="Center" />
       </StackPanel>
     </Grid>
 

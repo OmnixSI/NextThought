@@ -21,6 +21,16 @@ public partial class HistoryView : UserControl
     }
 
 
+
+    private async void DeleteFiltered_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state || Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
+        var count = state.FilteredHistory.Count;
+        if (count == 0) return;
+        var confirmed = await new ConfirmDialog($"删除当前筛选的 {count} 场会议？此操作会移除归档目录。").ShowDialog<bool>(owner);
+        if (confirmed) state.DeleteFilteredSessionsCommand.Execute(null);
+    }
+
     private async void DeleteSession_Tapped(object? sender, Avalonia.Input.TappedEventArgs e)
     {
         if (sender is not MenuItem { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
