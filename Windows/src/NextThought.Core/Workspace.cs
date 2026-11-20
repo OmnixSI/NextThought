@@ -310,6 +310,9 @@ public sealed class WorkspaceStore
 
     private readonly string path;
     private readonly string seriesDirectory;
+    private readonly HashSet<string> loadedFiles = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> unreadableFiles = new(StringComparer.OrdinalIgnoreCase);
+    private bool loadFailed;
 
     public WorkspaceStore(string dataDirectory)
     {
@@ -321,6 +324,9 @@ public sealed class WorkspaceStore
 
     public WorkspaceData Load()
     {
+        loadedFiles.Clear();
+        unreadableFiles.Clear();
+        loadFailed = false;
         try
         {
             // Mac keeps one file per series. Prefer that layout when present, then fall back to
@@ -330,29 +336,42 @@ public sealed class WorkspaceStore
                 var series = new List<WorkspaceSeries>();
                 foreach (var file in Directory.EnumerateFiles(seriesDirectory, "*.json"))
                 {
+                    var name = Path.GetFileName(file);
                     try
                     {
                         if (JsonSerializer.Deserialize<WorkspaceSeries>(File.ReadAllText(file), ReadOptions) is { } item)
+                        {
                             series.Add(item);
+                            loadedFiles.Add(name);
+                        }
                     }
-                    catch (JsonException) { }
+                    catch (Exception error) when (error is JsonException or IOException or UnauthorizedAccessException)
+                    {
+                        // Never let Save delete a file just because it could not be read.
+                        unreadableFiles.Add(name);
+                        LogLoadFailure(name, error);
+                    }
                 }
                 if (series.Count > 0) return Sanitise(new WorkspaceData(series));
+                if (unreadableFiles.Count > 0) return WorkspaceData.Empty;
             }
             if (!File.Exists(path)) return WorkspaceData.Empty;
             var json = File.ReadAllText(path);
             var data = JsonSerializer.Deserialize<WorkspaceData>(json, ReadOptions);
             return data is null ? WorkspaceData.Empty : Sanitise(data);
         }
-        catch (Exception)
+        catch (Exception error)
         {
-            // A damaged file must not stop the app: an empty workspace is recoverable by hand.
+            // Refuse the next save rather than interpreting a read failure as an empty workspace.
+            loadFailed = true;
+            LogLoadFailure(Path.GetFileName(path), error);
             return WorkspaceData.Empty;
         }
     }
 
     public void Save(WorkspaceData data)
     {
+        if (loadFailed) throw new InvalidOperationException("工作区读取失败，已拒绝保存以免覆盖原文件。");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         Directory.CreateDirectory(seriesDirectory);
         var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -360,12 +379,43 @@ public sealed class WorkspaceStore
         {
             var name = series.Id.ToUpperInvariant() + ".json";
             keep.Add(name);
-            File.WriteAllText(Path.Combine(seriesDirectory, name), JsonSerializer.Serialize(series, Options));
+            AtomicWrite(Path.Combine(seriesDirectory, name), JsonSerializer.Serialize(series, Options));
         }
-        foreach (var file in Directory.EnumerateFiles(seriesDirectory, "*.json"))
-            if (!keep.Contains(Path.GetFileName(file))) File.Delete(file);
+        // Delete only files that were read successfully and are no longer present in memory.
+        // Unreadable or unknown files stay untouched; they may be hand-edited Mac data.
+        foreach (var name in loadedFiles)
+        {
+            if (keep.Contains(name)) continue;
+            var file = Path.Combine(seriesDirectory, name);
+            if (File.Exists(file) && !unreadableFiles.Contains(name)) File.Delete(file);
+        }
         // Legacy single-file copy for older Windows builds; Mac reads Workspaces/.
-        File.WriteAllText(path, JsonSerializer.Serialize(data, Options));
+        AtomicWrite(path, JsonSerializer.Serialize(data, Options));
+    }
+
+    private static void AtomicWrite(string target, string content)
+    {
+        var temporary = target + ".tmp-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            File.WriteAllText(temporary, content);
+            File.Move(temporary, target, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporary)) File.Delete(temporary);
+        }
+    }
+
+    private void LogLoadFailure(string name, Exception error)
+    {
+        try
+        {
+            var log = Path.Combine(Path.GetDirectoryName(path)!, "workspace-load.log");
+            Directory.CreateDirectory(Path.GetDirectoryName(log)!);
+            File.AppendAllText(log, $"{DateTimeOffset.UtcNow:O}\t{name}\t{error.GetType().Name}\t{error.Message}\n");
+        }
+        catch { /* logging must never start a data-loss path */ }
     }
 
     /// <summary>

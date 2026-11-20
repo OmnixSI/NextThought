@@ -86,6 +86,28 @@ public sealed class WorkspaceTests : IDisposable
     }
 
     [Fact]
+    public void StoreKeepsUnreadableSeriesFilesAndRefusesSaveAfterLoadFailure()
+    {
+        var store = new WorkspaceStore(directory);
+        var seriesDirectory = Path.Combine(directory, "Workspaces");
+        Directory.CreateDirectory(seriesDirectory);
+        var corrupt = Path.Combine(seriesDirectory, "BROKEN.json");
+        File.WriteAllText(corrupt, "{ not a series");
+        var saved = WorkspaceData.Empty.AddSeries("A");
+        store.Save(saved);
+        var loaded = store.Load();
+        Assert.Single(loaded.Series);
+        store.Save(loaded);
+        Assert.Equal("{ not a series", File.ReadAllText(corrupt));
+
+        var bad = new WorkspaceStore(Path.Combine(directory, "bad"));
+        Directory.CreateDirectory(Path.GetDirectoryName(bad.Path_)!);
+        File.WriteAllText(bad.Path_, "{ not json");
+        Assert.Empty(bad.Load().Series);
+        Assert.Throws<InvalidOperationException>(() => bad.Save(WorkspaceData.Empty));
+    }
+
+    [Fact]
     public void StoreKeepsMacSceneSetupFields()
     {
         var id = Guid.NewGuid().ToString("D").ToUpperInvariant();
