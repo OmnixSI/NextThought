@@ -32,6 +32,19 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void FontsAndLicensesAreBundled()
+    {
+        var dir = Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Assets", "Fonts");
+        foreach (var file in new[] { "InterVariable.ttf", "NotoSansSC-VF.ttf", "SourceSerif4-VF.ttf", "NotoSerifSC-VF.ttf",
+                     "LICENSE-Inter.txt", "OFL-NotoSansSC.txt", "OFL-SourceSerif4.txt", "OFL-NotoSerifSC.txt" })
+            Assert.True(File.Exists(Path.Combine(dir, file)), file);
+        var theme = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Styles", "Theme.axaml"));
+        Assert.Contains("InterVariable.ttf#Inter Variable", theme);
+        Assert.Contains("SourceSerif4-VF.ttf#Source Serif 4", theme);
+    }
+
     [Fact]
     public void IconMapCoversEverySwiftSymbol()
     {

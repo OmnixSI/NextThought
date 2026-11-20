@@ -1,25 +1,32 @@
+## 2026-11-20 · 0.5.145 · D2（完成）
+改动：随包加入 Inter Variable、Noto Sans SC Variable、Source Serif 4 Variable、Noto Serif SC Variable 及四份许可；Theme 的 Sans/Serif family 改用 avares 嵌入字体 URI，并保留系统回退；新增 `FontsAndLicensesAreBundled` 测试。
+测试：Core **871/871**，NextThought.Tests **139/139**。
+证据：`--screenshots` 在嵌入字体下正常出图；`qa/fonts-shots/images/home-light.png` 已查看，标题为衬线、中文不再只回退微软雅黑。
+状态：D2「已实现、未验证」。未在一台未装这些字体的干净 Windows 上单独验证。
+未解决：干净机字体实机验收。
+
 ## 2026-11-20 · 0.5.145 · D1（部分）
 改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
-测试：Core **871/871**，NextThought.Tests **138/138**。
+测试：Core **871/871**，NextThought.Tests **139/139**。
 证据：`D:\NextThought开发\qa\screens\images\` 14 张；home-light 1120×820 已人工查看，页面正常。
 状态：D1「未做」。缺 Mac 脚本的另外两页（准备、回顾/工作纪要）、英文一轮、提词岛五种形态、与 Mac 截图并排比对；还没有把截图放进 `Windows/validation/screens/<视图>/`。
 未解决：补齐页面/语言/岛形态和对照。
 
 ## 2026-11-20 · 0.5.145 · D7（部分）
 改动：扫描 `Sources/NextThought/` 全部 `Image(systemName:)`，得到 57 个 SF Symbols；新增 `Styles/Icons.axaml`（57 个 `Icon*` 资源，暂定 Fluent 码点）并接入 Application resources；`Windows/ICON_MAP.md` 逐项列 SF Symbol / 码点 / 资源键；新增覆盖测试。
-测试：Core **871/871**，NextThought.Tests **138/138**。
+测试：Core **871/871**，NextThought.Tests **139/139**。
 状态：D7「未做」。覆盖与资源已齐，但码点是暂定映射，尚未逐个并排定稿；界面仍有多处直接 Segoe 字形，未全部改为引用资源。
 未解决：图标码点校对与全量替换。
 
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
-测试：Core **871/871**（新增 2 项），NextThought.Tests **138/138**。
+测试：Core **871/871**（新增 2 项），NextThought.Tests **139/139**。
 状态：D6「未做」。场景数据已接入首页；新增 SceneGlyph（tint 圆角字形）、SceneTag（色点+名称）、InkWash（模糊晕染）并接入 HomeView；截图对照仍未做。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
 改动：`Motion.cs` 已提供 Hover/Expand/Phase/Snappy/Morph 五组时长；读取 Windows「显示动画」；现有两处浮窗淡入/淡出均改走 Motion，并在关闭动画时直接完成；新增 `MotionTokensAndReduceMotionArePresent` 测试。
-测试：Core **871/871**，NextThought.Tests **138/138**（全量）。
+测试：Core **871/871**，NextThought.Tests **139/139**（全量）。
 状态：D5「已实现、未验证」。弹簧形状用 cubic easing 近似，不是逐帧弹簧；没有其它动画点可接。
 未解决：真正弹簧曲线与逐页动画对照。
 
