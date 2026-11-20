@@ -41,8 +41,9 @@ public sealed class SelfTestStructureTests
     public void SelfChecksLiveOutsideTheWindowFile()
     {
         var root = Root();
-        Assert.True(File.Exists(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "SelfTest", "MainWindow.SelfTests.cs")));
+        Assert.True(File.Exists(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "SelfTest", "Checks", "GlobalUsings.cs")));
         var window = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml.cs"));
         Assert.DoesNotContain("private async Task RunAcceptanceCheckAsync", window);
+        Assert.True(Directory.GetFiles(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "SelfTest", "Checks"), "*.cs").Length > 40);
     }
 }

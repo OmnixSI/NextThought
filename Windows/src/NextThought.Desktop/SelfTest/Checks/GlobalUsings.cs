@@ -1,0 +1,15 @@
+global using System.Diagnostics;
+global using System.IO;
+global using System.Text;
+global using System.Text.Json;
+global using System.Text.RegularExpressions;
+global using Avalonia;
+global using Avalonia.Controls;
+global using Avalonia.Input;
+global using Avalonia.Interactivity;
+global using Avalonia.Media;
+global using Avalonia.Platform.Storage;
+global using Avalonia.Threading;
+global using Avalonia.VisualTree;
+global using NextThought.Core;
+global using NextThought.Platform;
