@@ -33,6 +33,20 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ViewsDoNotUseTextCharactersForIcons()
+    {
+        var views = Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views");
+        foreach (var file in Directory.GetFiles(views, "*.axaml", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("✕", text);
+        }
+        var tp = File.ReadAllText(Path.Combine(views, "TeleprompterWindow.axaml"));
+        Assert.Contains("&#xE711;", tp);
+    }
+
     [Fact]
     public void FontsAndLicensesAreBundled()
     {
