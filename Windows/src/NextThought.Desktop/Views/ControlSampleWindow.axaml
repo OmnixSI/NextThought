@@ -27,7 +27,8 @@
           <StackPanel Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="DataStateView · loading / no-match" Classes="title" />
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-              <ProgressBar IsIndeterminate="True" Width="18" Height="2" Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+              <TextBlock Text="&#xE895;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                         Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
               <TextBlock Text="正在加载本场资料…" Classes="body" />
             </StackPanel>
             <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}" Padding="{DynamicResource D4Padding_10}">
@@ -101,7 +102,7 @@
         <Border Grid.Row="3" Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_16}">
           <StackPanel Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="NewContentPill / ComposerDock · keyboard contract" Classes="title" />
-            <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_8_4}" HorizontalAlignment="Left">
+            <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_12_6}" HorizontalAlignment="Left">
               <TextBlock Text="新增 6 句 · 回到现场" Classes="caption" />
             </Border>
             <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_4_0_0}">
