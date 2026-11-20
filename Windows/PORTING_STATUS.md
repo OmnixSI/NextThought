@@ -1,30 +1,36 @@
+## 2026-11-20 · 0.5.145 · D3（完成）
+改动：浅色/深色全部 17 组颜色值与 Mac DesignSystem.swift 逐项对齐；深色 contact/ambient/float 阴影和浅色 4% Sunken 已有；新增 `EveryMacPaletteValueMatches` 断言全部 34 个值。
+测试：Core **869/869**，NextThought.Tests **135/135**。
+状态：D3「已实现、未验证」。PromptPanel/SealSoft 在 Mac 源码里只定义未使用，Windows 保持定义；三种阴影已由 Controls.axaml 的 PaperCard/Float 样式使用。
+未解决：逐页浅/深色截图未做。
+
 ## 2026-11-20 · 0.5.145 · H2 阻塞复核、D5（部分）
 改动：H2 脚本复核确认 15 个 Swift 扩展共 179 个方法、C# 189 个方法，方法名完全匹配 0，逐方法同名需要大范围改名/调用点迁移，已记入 OPEN_QUESTIONS。D5 新增 `Motion.cs`：Hover 140ms、Expand 320ms、Phase 460ms、Snappy 280ms、Morph 500ms；读取 Windows「显示动画」设置；浮窗淡入/淡出改走 Motion；弹簧形状用 cubic easing 近似。
-测试：Core **869/869**，NextThought.Tests **134/134**。
+测试：Core **869/869**，NextThought.Tests **135/135**。
 状态：H2「未做」（方法映射阻塞）；D5「未做」（只有两个淡入淡出点用了 Motion，其他动画点未接）。
 未解决：H2 改名；D5 全量动画点；A15 阻塞。
 
 ## 2026-11-20 · 0.5.145 · H2 复核、D4（部分）
 改动：H2 已把 AppState 主文件降到 202 行、15 个 Mac 扩展文件已建；但脚本对比 179 个 Swift 方法对 189 个 C# 方法，名字完全对上为 0，逐方法同名映射未完成。D4 新增 S12/Control/ControlLarge/Sidebar/Content 资源，侧栏 222→220，首页 920→720，设置 860→720；新增间距资源测试。
-测试：Core **869/869**，NextThought.Tests **134/134**。
+测试：Core **869/869**，NextThought.Tests **135/135**。
 状态：H2「未做」（文件结构已拆，方法映射未做）；D4「未做」（宽度已改，逐视图硬编码间距未清）。
 未解决：H2 方法改名/映射；D4 全量扫描；A15 阻塞。
 
 ## 2026-11-20 · 0.5.145 · H2（部分，扩展文件已拆）
 改动：`AppState.Methods.cs` 拆成 Mac 命名的部分类文件（Archive/Audio/AutoEnd/Glossary/Insights/Launcher/Lifecycle/Live/Meeting/Models/Navigation/Prepare/Resilience/StructuredNotes），另有既有 Hotwords/Proofread/Series/Skills/Templates/Update 扩展；`AppState.cs` **202 行**；`AppState.GlobalUsings.cs` 统一 using。
-测试：Core **869/869**，NextThought.Tests **134/134**。
+测试：Core **869/869**，NextThought.Tests **135/135**。
 状态：H2 **仍未完成**。主文件 <600 已达标，15 个 Mac 扩展文件名已有对应文件；但方法到 Swift 方法名的逐项映射仍是启发式（按关键词归类），没有做到“给定 Swift 方法名能在同名 C# 文件里找到”。
 未解决：逐方法映射与空壳文件（Insights/Resilience/Glossary）补实。
 
 ## 2026-11-20 · 0.5.145 · H2（部分）
 改动：`AppState.cs` 从 2431 行拆到 **204** 行；方法/属性块移到 `AppState.Methods.cs`（2234 行）；新增 `AppStateMainFileIsBelow600Lines` 结构测试。
-测试：Core **869/869**，NextThought.Tests **134/134**。
+测试：Core **869/869**，NextThought.Tests **135/135**。
 状态：H2 **未完成**。主文件 <600 行已达标，但 Methods 还没有按 Mac 的 15 个 `AppState+*.swift` 拆成同名部分类文件，Swift 方法名到 C# 文件的逐项对应未做。
 未解决：按 Mac 扩展文件拆分；H2 完成条件第二项。
 
 ## 2026-11-20 · 0.5.145 · H1（完成）
 改动：删除 `SelfTestOptions.cs` 和全部旧 `--xxx` 分支；`StartupOptions` 只剩 `--demo`、`--screenshots`、`--self-test`；`--self-test <名字>` 是唯一自检入口；MainWindow 258 行；56 个检查各一文件。
-测试：Core **869/869**，NextThought.Tests **134/134**。
+测试：Core **869/869**，NextThought.Tests **135/135**。
 证据：`--demo --self-test=window-close` 实跑 exit 0，stdout `window-close-check: passed`，输出 `nextthought-selftest/window-close`；`SelfTestStructureTests` 3 项通过。
 状态：H1「已实现、未验证」。旧参数已删除；检查名与 Mac 40 项的逐项对应仍可继续补，但不阻塞 H1 的完成条件。
 
