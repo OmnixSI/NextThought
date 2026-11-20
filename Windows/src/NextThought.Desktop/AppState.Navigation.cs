@@ -7,6 +7,8 @@ public partial class AppState
 
     public bool OnLive => Section == AppSection.Live;
 
+    public bool OnPrepare => Section == AppSection.Prepare;
+
     public bool OnNotes => Section == AppSection.Notes;
 
     public bool OnSettings => Section == AppSection.Settings;

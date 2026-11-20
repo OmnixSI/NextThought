@@ -12,7 +12,7 @@ using NextThought.Platform;
 
 namespace NextThought.Desktop;
 
-public enum AppSection { Home, Live, Notes, History, Series, Library, Settings }
+public enum AppSection { Home, Prepare, Live, Notes, History, Series, Library, Settings }
 
 /// <summary>
 /// Application state and meeting orchestration. Ported from the WPF window

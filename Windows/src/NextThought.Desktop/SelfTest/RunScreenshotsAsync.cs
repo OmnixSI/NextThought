@@ -13,7 +13,7 @@ public partial class MainWindow
         Directory.CreateDirectory(directory);
         var pages = new[]
         {
-            (AppSection.Home, "home"), (AppSection.Live, "live"), (AppSection.Notes, "notes"),
+            (AppSection.Home, "home"), (AppSection.Prepare, "prepare"), (AppSection.Live, "live"), (AppSection.Notes, "notes"),
             (AppSection.History, "history"), (AppSection.Series, "series"),
             (AppSection.Library, "library"), (AppSection.Settings, "settings")
         };

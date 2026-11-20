@@ -77,6 +77,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PreparePageIsHosted()
+    {
+        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "SelfTest", "Checks", "ShowSection.cs"));
+        Assert.Contains("AppSection.Prepare => new PrepareView()", shell);
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml")));
+        var home = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HomeView.axaml"));
+        Assert.Contains("CommandParameter=\"Prepare\"", home);
+    }
+
     [Fact]
     public void QuickSettingsPanelExists()
     {

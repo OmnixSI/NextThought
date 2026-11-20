@@ -52,7 +52,7 @@
           </ItemsControl>
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <TextBlock Text="⌘⇧N 不挑场合，立即记录" Classes="caption" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Content="先准备资料" Command="{Binding NavigateCommand}" CommandParameter="Live" />
+            <Button Grid.Column="1" Content="先准备资料" Command="{Binding NavigateCommand}" CommandParameter="Prepare" />
             <Button Grid.Column="2" Classes="primary" Content="开始" Command="{Binding StartRecordingCommand}" />
           </Grid>
         </StackPanel>

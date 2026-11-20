@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.PrepareView"
+             x:DataType="local:AppState">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_18}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="准备" Classes="display" />
+        <TextBlock Text="先选场合、补资料、做检查，再开始这场会。" Classes="caption" />
+      </StackPanel>
+
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Text="类型与标题" Classes="section" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Border Width="44" Height="44" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                    Background="{DynamicResource Sunken}" VerticalAlignment="Center">
+              <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+                         Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
+                     FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="36"
+                     PlaceholderText="给这场会起个名字" />
+          </Grid>
+          <TextBlock Text="{Binding SelectedScene.Title}" Classes="label" />
+          <TextBlock Text="{Binding SelectedScene.Promise}" Classes="caption" />
+          <TextBlock Text="更改场合请回到首页场景选择器；本页先沿用当前场合。" Classes="caption" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="系列与资料" Classes="section" />
+          <TextBlock Text="{Binding SeriesSummary}" Classes="body" />
+          <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <Button Content="打开资料库" Command="{Binding NavigateCommand}" CommandParameter="Library" />
+            <Button Content="打开系列" Command="{Binding NavigateCommand}" CommandParameter="Series" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="检查" Classes="section" />
+          <TextBlock Text="{Binding AudioSourceText}" Classes="caption" />
+          <TextBlock Text="{Binding ModelStatusText}" Classes="caption" />
+          <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="检查完即可开始；会中仍可随时切换场合。" Classes="caption" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+          <Button Content="导入 WAV" Command="{Binding ImportWaveCommand}" />
+          <Button Classes="primary" Content="开始记录" Command="{Binding StartRecordingCommand}" />
+        </StackPanel>
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -10,6 +10,7 @@ public partial class MainWindow
             page = section switch
             {
                 AppSection.Home => new HomeView(),
+                AppSection.Prepare => new PrepareView(),
                 AppSection.Live => new LiveView(),
                 AppSection.Notes => new NotesView(),
                 AppSection.History => new HistoryView(),

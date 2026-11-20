@@ -12,12 +12,14 @@ public partial class AppState
     {
         OnPropertyChanged(nameof(OnHome));
         OnPropertyChanged(nameof(OnLive));
+        OnPropertyChanged(nameof(OnPrepare));
         OnPropertyChanged(nameof(OnNotes));
         OnPropertyChanged(nameof(OnLibrary));
         OnPropertyChanged(nameof(OnHistory));
         OnPropertyChanged(nameof(OnSeries));
         OnPropertyChanged(nameof(OnSettings));
         OnPropertyChanged(nameof(ContextSidebarVisible));
+        if (value == AppSection.Prepare) SetPageSubtitle("准备这场会 · 类型、资料与检查");
     }
 
     partial void OnHistoryQueryChanged(string value) => ApplyHistoryFilter();
