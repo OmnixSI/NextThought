@@ -73,6 +73,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SceneSettingsRowsAreWired()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        Assert.Contains("SceneSettingsRows", xaml);
+        Assert.Contains("SceneOption_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SceneSettings.cs"));
+        Assert.Contains("LoadSceneSettings", state);
+        Assert.Contains("SceneDefaults", state);
+    }
+
     [Fact]
     public void SettingsCardsAreAssignedToSixPages()
     {

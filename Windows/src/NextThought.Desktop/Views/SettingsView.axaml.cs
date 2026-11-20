@@ -18,6 +18,24 @@ public partial class SettingsView : UserControl
         ShowPage(currentPage);
     }
 
+
+
+
+    private void SceneOption_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string field, DataContext: SceneSettingRow row }) return;
+        switch (field)
+        {
+            case "LiveMode": row.LiveMode = Next(row.LiveOptions, row.LiveMode); break;
+            case "AnswerStyle": row.AnswerStyle = Next(row.AnswerOptions, row.AnswerStyle); break;
+            case "NotesTemplate": row.NotesTemplate = Next(row.TemplateOptions, row.NotesTemplate); break;
+            case "CueStyle": row.CueStyle = Next(row.CueOptions, row.CueStyle); break;
+        }
+    }
+
+    private static string Next(IReadOnlyList<string> options, string current) =>
+        options.Count == 0 ? current : options[(options.ToList().IndexOf(current) + 1) % options.Count];
+
     public void SelectPage(string page) => ShowPage(page);
 
     private void ShowPage(string page)

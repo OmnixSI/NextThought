@@ -112,6 +112,10 @@ public sealed record AppSettings
     /// <summary>D10: the Live/Library context sidebar is collapsed.</summary>
     public bool ContextSidebarHidden { get; set; }
 
+    /// <summary>E26: per-scene defaults, keyed by MeetingMode name.</summary>
+    public Dictionary<string, SceneDefaults> SceneDefaults { get; set; } = [];
+
+
     /// <summary>Appearance: "system" (default), "light" or "dark".</summary>
     public string Appearance { get; set; } = "system";
 

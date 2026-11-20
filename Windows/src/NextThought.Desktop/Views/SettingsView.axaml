@@ -415,10 +415,34 @@
         </StackPanel>
       </Border>
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
-        <StackPanel Spacing="{DynamicResource D4Spacing_8}">
-          <TextBlock Text="各场景的默认设置" Classes="section" />
-          <TextBlock Text="场景级默认值（会中、回答、纪要模板、提词）将在 E26 接入；本页暂不显示可编辑项。"
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Text="各场景开会时的设置" Classes="section" />
+          <TextBlock Text="开始一场会时按这里的设置来；会中仍可随时切换。"
                      Classes="caption" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="150,*,*,*,*" ColumnSpacing="10">
+            <TextBlock Text="场景" Classes="caption" />
+            <TextBlock Grid.Column="1" Text="会中" Classes="caption" />
+            <TextBlock Grid.Column="2" Text="回答" Classes="caption" />
+            <TextBlock Grid.Column="3" Text="纪要模板" Classes="caption" />
+            <TextBlock Grid.Column="4" Text="提词" Classes="caption" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding SceneSettingsRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SceneSettingRow">
+                <Grid ColumnDefinitions="150,*,*,*,*" ColumnSpacing="10" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+                    <Border Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}"
+                            Background="{Binding TintBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Label}" Classes="label" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <Button Grid.Column="1" MinWidth="104" Classes="quiet" HorizontalContentAlignment="Left" Content="{Binding LiveMode}" Tag="LiveMode" Click="SceneOption_Click" />
+                  <Button Grid.Column="2" MinWidth="104" Classes="quiet" HorizontalContentAlignment="Left" Content="{Binding AnswerStyle}" Tag="AnswerStyle" Click="SceneOption_Click" />
+                  <Button Grid.Column="3" MinWidth="104" Classes="quiet" HorizontalContentAlignment="Left" Content="{Binding NotesTemplate}" Tag="NotesTemplate" Click="SceneOption_Click" />
+                  <Button Grid.Column="4" MinWidth="104" Classes="quiet" HorizontalContentAlignment="Left" Content="{Binding CueStyle}" Tag="CueStyle" Click="SceneOption_Click" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
       </Border>
     </StackPanel>
