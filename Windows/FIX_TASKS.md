@@ -57,7 +57,7 @@ Nov 20, 2026 · @Homing
 | B19 | 已实现、未验证 | 讲稿提示词的相关资料改为 `ContextExcerpt.Budget(4000, 5)`（只取完整片段），引用改为 Mac 的 `[来源 定位]`（无 locator 用「第 N 段」）；新增 2 个对齐测试 | `LiveInsightsTests` 其余 11 项尚未翻译；未实机核对真实幻灯片导出 |
 | B20 | 已实现、未验证 | 文档任务队列：重开时未完成阶段回到 Queued 并保留进度，失败/取消状态与消息保留；删除记录墓碑、迟到保存不能复活、可恢复；损坏 JSON 拒绝覆盖；容量只淘汰已结束任务，不再静默丢未完成任务；4 个测试通过 | 尚未移植 SQLite 行读取器异常测试与工作区删除日志的完整事务；未在正式导入流程接入恢复调用 |
 | B21 | 已实现、未验证 | 追问判断按 Mac 去掉首尾所有标点；摘要去重只去标点、保留符号；说话人名按字素簇截断 24；表意文字范围补 CJK 扩展 A/兼容区（连字假名/谚文已有）；4 个边界测试通过 | `QuestionDetectorTests`、`TranscriptDeduplicatorTests`(3)、`SpeakerClusteringTests`(20) 尚未全部逐条翻译 |
-| B22 | 未做 | 已建立 `Windows/CORE_PARITY.md`（69 个 Swift 测试文件、592 项逐行）；已翻译并提交 207 项（31 个文件批次），Core 现有 1142 通过/12 跳过；剩余 385 项未翻译 | 12 项被跳过：JSONLines/录制恢复/deferred notes 3、会议类型与 NotesVerifier 4、SessionEvidence 校正 2、SessionExport/NotesShape 2、DocumentStructure 1、MeetingEndWatch 1、Stability SSE 1；正式流程尚未全部接入 |
+| B22 | 未做 | `Windows/CORE_PARITY.md` 69 文件/592 项逐行；已翻译并提交 208 项；Core 1154 通过、0 失败、0 跳过；剩余 384 项未翻译 | 剩余 28 个 Swift 测试文件的 384 项未翻译；尚未逐文件对照 Swift 方法名 |
 | B23 | 未做 | — | 未开始 |
 | B24 | 未做 | — | 未开始 |
 | C1 | 未做 | — | 提词岛不抢焦点未实现 |
