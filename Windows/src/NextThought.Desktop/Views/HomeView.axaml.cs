@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 
 namespace NextThought.Desktop.Views;
@@ -17,8 +18,15 @@ public partial class HomeView : UserControl
     {
         if (DataContext is not AppState state) return;
         foreach (var button in this.GetVisualDescendants().OfType<Button>())
-            if (button.Classes.Contains("scene") && button.Tag is SceneChoice scene)
-                button.Classes.Set("selected", scene.Mode == state.SelectedMode);
+        {
+            if (!button.Classes.Contains("scene") || button.Tag is not SceneChoice scene) continue;
+            var selected = scene.Mode == state.SelectedMode;
+            button.Classes.Set("selected", selected);
+            if (selected)
+                button.Background = new SolidColorBrush(Color.Parse(scene.Theme.TintLight), 0.13);
+            else
+                button.ClearValue(Button.BackgroundProperty);
+        }
     }
 
     private async void Recent_Click(object? sender, RoutedEventArgs e)

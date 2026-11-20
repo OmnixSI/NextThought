@@ -412,16 +412,10 @@
   </Style>
 
   <Style Selector="Button.scene.selected">
-    <Setter Property="Background" Value="{DynamicResource InkBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
-  </Style>
-  <Style Selector="Button.scene.selected /template/ ContentPresenter">
-    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+    <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
   </Style>
   <Style Selector="Button.scene.selected /template/ ContentPresenter TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
-  </Style>
-  <Style Selector="Button.scene.selected TextBlock">
-    <Setter Property="Foreground" Value="{DynamicResource OnInk}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
   </Style>
 </Styles>
