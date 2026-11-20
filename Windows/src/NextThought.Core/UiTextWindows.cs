@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1104;
+    public const int Count = 1137;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1116,5 +1116,38 @@ internal static class UiTextWindowsEnglish
         ["；已经记录的内容已保存。"] = "; what was recorded is saved.",
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
+        ["规范写法不能为空。"] = "The correct spelling cannot be empty.",
+        ["已切换会中模块布局。"] = "Meeting module layout changed.",
+        ["请先选择一个系列，或在全局作用域编辑。"] = "Select a series first, or edit in the global scope.",
+        ["术语已保存。"] = "Term saved.",
+        ["已整理重复项（%lld 条 → %lld 条）。"] = "Merged duplicates (%lld → %lld).",
+        ["%lld 处"] = "%lld matches",
+        ["已加入系列术语。"] = "Added to series terms.",
+        ["在转写中查找（听错的写法也会找出来）"] = "Find in transcript (misheard spellings too)",
+        ["全部术语"] = "All terms",
+        ["当前系列的术语"] = "Series terms",
+        ["还没有条目。点「新增」，或用「批量粘贴」一次加入多条。"] = "No entries yet. Click New, or use Paste to add several at once.",
+        ["新增条目"] = "New entry",
+        ["识别出来的错误写法，逗号分隔"] = "Misheard spellings, comma separated",
+        ["系列术语只叠加在这个系列的回答、纪要与查找里；全局术语仍然生效。"] = "Series terms only apply to this series's answers, notes and search; global terms still apply.",
+        ["这个系列还没有自己的术语；全局条目仍会叠加生效。"] = "This series has no terms of its own yet; global entries still apply.",
+        ["联网查证缓存已清空。"] = "Web verification cache cleared.",
+        ["正在联网核实（使用 %@ 的查证结果）…"] = "Verifying online (using the %@ check result)…",
+        ["这是「术语和人名」里记下的听错写法，搜索时一并找出来"] = "This is a misheard spelling recorded in Glossary; search finds it too.",
+        ["已删除"] = "Deleted",
+        ["从文件导入术语"] = "Import terms from file",
+        ["文本"] = "Text",
+        ["导出术语"] = "Export terms",
+        ["窗口“%@”已关闭或无法捕获，请刷新窗口列表后重试。"] = "Window “%@” is closed or cannot be captured. Refresh the window list and try again.",
+        ["未知应用"] = "Unknown app",
+        ["未命名窗口"] = "Untitled window",
+        ["没有找到可截图的窗口。请先打开要截图的窗口，再点「刷新」。"] = "No capturable window found. Open the window you want to capture, then click Refresh.",
+        ["%lld 个窗口"] = "%lld windows",
+        ["读取窗口列表失败："] = "Failed to read the window list: ",
+        ["保存条目"] = "Save entry",
+        ["只列出其他应用的可见窗口；NextThought 自己的窗口不会出现在列表里。"] = "Lists visible windows of other apps only; NextThought's own windows never appear.",
+        ["在这句里选中听错的词并复制（⌘C / Ctrl+C），再打开本窗口，会自动填入。"] = "Select the misheard word in this line and copy it (Ctrl+C), then open this window to fill it in automatically.",
+        ["批量粘贴、导入导出与整理"] = "Bulk paste, import/export and tidy",
+        ["转写里的匹配"] = "Matches in transcript",
     };
 }
