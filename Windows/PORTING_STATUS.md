@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · G5（部分，未结）
+改动：新增 `Windows/scripts/settings_parity.py`，从 Swift 源码提取偏好键；生成 `Windows/SETTINGS_PARITY.md`，当前 107/113 键，每键列默认类型、默认值、Mac 视图、Windows 状态。
+缺口：差 6 个键未找到；同键名/默认值断言与真实生效尚未完成，G5 仍为「未做」。
+测试：Core **1526/1526**，NextThought.Tests **269/269**（本轮无代码变更）。
+
 ## 2026-11-20 · 0.5.145 · H4/H6
 改动：Core 使用统计改为类型级（含 tests 与 Core 内部引用），复算 `core_files=129, unused=0`；新增 AOT JSON 警告预算测试锁定 161 行。
 测试：Core **1526/1526**，NextThought.Tests **269/269**；`core_usage.py` 输出 unused=0。
