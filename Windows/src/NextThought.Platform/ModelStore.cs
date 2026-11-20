@@ -76,7 +76,7 @@ public sealed class ModelStore(AppPaths paths)
             try
             {
                 progress?.Report(new(.94, "解压 " + package.Title));
-                var info = new ProcessStartInfo("tar.exe") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
+                var info = new ProcessStartInfo(TarExecutable) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
                 foreach (var argument in new[]{"-xjf", archive, "-C", staging}) info.ArgumentList.Add(argument);
                 using var process = Process.Start(info) ?? throw new IOException("无法启动 Windows tar.exe。");
                 var errors = process.StandardError.ReadToEndAsync(ct); var stdout = process.StandardOutput.ReadToEndAsync(ct);
@@ -113,6 +113,17 @@ public sealed class ModelStore(AppPaths paths)
         }
         finally { gate.Release(); }
     }
+    /// <summary>F21: Windows' bsdtar sits in System32; never resolve it through PATH.</summary>
+    internal static string TarExecutable
+    {
+        get
+        {
+            var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "tar.exe");
+            if (!File.Exists(path)) throw new FileNotFoundException("找不到系统 tar.exe。", path);
+            return path;
+        }
+    }
+
     private static async Task<string> HashAsync(string file, CancellationToken ct)
     { await using var input = File.OpenRead(file); return Convert.ToHexStringLower(await SHA256.HashDataAsync(input, ct)); }
     private static Stream Resource(string suffix) => typeof(ModelStore).Assembly.GetManifestResourceStream("NextThought.Platform.Resources." + suffix) ?? throw new InvalidDataException("缺少模型目录资源。");

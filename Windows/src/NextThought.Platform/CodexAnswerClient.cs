@@ -63,7 +63,7 @@ public sealed class CodexAnswerClient(string? executable = null) : IAnswerClient
                     await Handle(message);
                 }
             }
-            await Rpc(1, "initialize", new { clientInfo = new { name = "nextthought_windows", title = "NextThought", version = "0.2.0" } });
+            await Rpc(1, "initialize", new { clientInfo = new { name = "nextthought_windows", title = "NextThought", version = ProductVersion.Current } });
             await Send(new { jsonrpc = "2.0", method = "initialized" });
             var model = string.IsNullOrWhiteSpace(options.Model) || options.Model == "default" ? null : options.Model;
             var thread = await Rpc(2, "thread/start", new { model, cwd = workspace, sandbox = "read-only", approvalPolicy = "never", ephemeral = true,

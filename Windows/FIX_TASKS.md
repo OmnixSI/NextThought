@@ -141,7 +141,7 @@ Nov 20, 2026 · @Homing
 | F18 | 未做 | — | 未开始 |
 | F19 | 已实现、未验证 | 全局兜底+各视图 async void try/catch；实机恢复未验证 | 待逐元素对照或实机验证 |
 | F20 | 未做 | — | 未开始 |
-| F21 | 未做 | — | 未开始 |
+| F21 | 已实现、未验证 | Codex 客户端 `initialize.clientInfo.version` 改用 `ProductVersion.Current`（入口程序集版本，去掉 +sha）；模型解压改用 `Environment.SpecialFolder.System` 下 `tar.exe` 的完整路径，缺失时抛 `FileNotFoundException`，不再从 PATH 找 | 未实跑 Codex 初始化与模型下载；需联网/账号实测 |
 | G1 | 已实现、未验证 | 保存设置带快捷键 | 待逐元素对照或实机验证 |
 | G2 | 已实现、未验证 | `ShortcutKeys.Actions` 改为 Mac 的 18 个动作（标识按 Mac 顺序，名称用 Mac 文案），默认键按换算表：⌘⇧/⌘⌃→Ctrl+Alt，⌃⌥→Ctrl+Alt+Shift；去掉 Windows 独有「显示主窗口」，原「显示/隐藏提示岛」改为 Mac 的 `toggleCueOpen`（会中一直展开/恢复）；主窗口注册表同步更新；`ShortcutKeysTests` 逐个断言标识/按键/修饰键 | 需实机按 18 个快捷键逐个触发；与 Mac 名称/顺序的并排核对待做 |
 | G3 | 已实现、未验证 | 新增 `ShortcutKeys.Validate`：必须带修饰键、两个动作不得同键，错误文案用 Mac 原句；保存快捷键时先校验；`AppState.ShortcutConflicts` 记录被其他程序占用的动作并在设置页显示；`ShortcutKeysTests` 新增校验用例 | 需实机占用一个键（如被其他程序注册 Ctrl+Alt+M）确认设置页标出该动作；重复键保存被拒的界面提示待看 |
@@ -158,7 +158,7 @@ Nov 20, 2026 · @Homing
 | H4 | 未做 | — | 未使用 Core 文件未归位 |
 | H5 | 未做 | — | 等待是否删除旧工程答复 |
 | H6 | 未做 | — | 未开始 |
-| H7 | 未做 | — | verify.ps1 未建立 |
+| H7 | 已实现、未验证 | 新增 `Windows/verify.ps1`：锁定模式还原（运行库项目带 win-x64，测试项目 `--no-dependencies`）、Release 构建、两个测试工程、A15 MacCodec check（夹具缺失时明确 SKIP）、D1 截图（`--demo --screenshots`，可用 `-SkipScreenshots`）；任一步失败即停，末尾打印 PASS/FAIL 摘要。已运行 `-SkipScreenshots` 一次：构建与 1526/267 测试通过，A15 因夹具缺失 SKIP | 需夹具到位后跑完整 A15 check 与 D1 截图；脚本尚未在干净机器上验证 |
 
 ## 1. ⽬标与范围 
 
