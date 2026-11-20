@@ -92,4 +92,10 @@ public partial class LiveView : UserControl
     {
         if (TopLevel.GetTopLevel(this) is MainWindow window) await window.CaptureWindowAsync();
     }
+
+    private void DetachAnswer_Click(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        new DetachedAnswerWindow { DataContext = state }.Show();
+    }
 }

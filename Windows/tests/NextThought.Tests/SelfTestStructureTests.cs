@@ -155,6 +155,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LiveCanDetachTheAnswerWindow()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "DetachedAnswerWindow.axaml")));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("DetachAnswer_Click", xaml);
+        Assert.Contains("独立窗口", xaml);
+    }
+
     [Fact]
     public void LivePageHasScreenshotCard()
     {
