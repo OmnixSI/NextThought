@@ -35,8 +35,10 @@ public static class LocalModelReuse
         IReadOnlyList<string>? indexedFiles,
         IReadOnlySet<string> names,
         int maximumEntries = 300_000,
-        double seconds = 20)
+        double seconds = 20,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var result = new LocalModelSearch();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -63,6 +65,7 @@ public static class LocalModelReuse
             stack.Push(root);
             while (stack.Count > 0)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (DateTime.UtcNow > deadline) { result.Limited = true; return result; }
                 var directory = stack.Pop();
                 IEnumerable<string> entries;
@@ -70,6 +73,7 @@ public static class LocalModelReuse
                 catch { result.Inaccessible++; continue; }
                 foreach (var entry in entries)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     count++;
                     if (count > maximumEntries || DateTime.UtcNow > deadline) { result.Limited = true; return result; }
                     var name = Path.GetFileName(entry);

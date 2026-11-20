@@ -68,6 +68,14 @@ public sealed record SessionMeta
     public string SummaryState { get; set; } = "none";
     public string? SummaryError { get; set; }
 
+    /// <summary>Voices recognised as the user (Mac meVoices).</summary>
+    [JsonPropertyName("meVoices")]
+    public IReadOnlyList<int>? MeVoices { get; set; }
+
+    /// <summary>Names given to voices in this meeting (Mac voiceNames).</summary>
+    [JsonPropertyName("voiceNames")]
+    public IReadOnlyDictionary<string, string>? VoiceNames { get; set; }
+
     /// <summary>Notes were deferred at recording time (Mac notesDeferred).</summary>
     public bool? NotesDeferred { get; set; }
 
@@ -227,7 +235,7 @@ public static class JsonDefaults
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         // Mac archive JSON is UTF-8 text; escaping every Chinese character made files unreadable.
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new SessionModeJsonConverter(), new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
+        Converters = { new SessionModeJsonConverter(), new GlossaryKindJsonConverter(), new GlossaryJsonConverter(), new JsonStringEnumConverter(JsonNamingPolicy.CamelCase), new GlossaryEntryConverter() }
     };
     public static readonly JsonSerializerOptions ArchiveOptions = Archive();
     private static JsonSerializerOptions Archive()

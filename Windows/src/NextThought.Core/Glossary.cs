@@ -298,7 +298,7 @@ public sealed record Glossary
     }
 
     private static string Marker(int omitted, bool english) =>
-        english ? $"({omitted} more not shown)" : "\uFF08\u53E6\u6709 {omitted} \u6761\u672A\u5217\u51FA\uFF09";
+        english ? $"({omitted} more not shown)" : $"\uFF08\u53E6\u6709 {omitted} \u6761\u672A\u5217\u51FA\uFF09";
 
     private static string PromptLine(GlossaryEntry entry, bool english)
     {
@@ -554,6 +554,76 @@ public sealed record Glossary
 
     private static string Tidy(string text) =>
         string.Join(" ", text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+}
+
+/// <summary>B22: old and unknown kind strings read as a term instead of failing the archive.</summary>
+public sealed class GlossaryKindJsonConverter : System.Text.Json.Serialization.JsonConverter<GlossaryKind>
+{
+    public override GlossaryKind Read(ref System.Text.Json.Utf8JsonReader reader, Type type, System.Text.Json.JsonSerializerOptions options)
+    {
+        if (reader.TokenType != System.Text.Json.JsonTokenType.String) return GlossaryKind.Term;
+        return reader.GetString() switch
+        {
+            "person" or "\u4EBA\u540D" => GlossaryKind.Person,
+            "project" or "\u9879\u76EE" => GlossaryKind.Project,
+            "acronym" or "\u7F29\u5199" => GlossaryKind.Acronym,
+            "place" or "\u5730\u70B9" => GlossaryKind.Place,
+            "product" or "\u4EA7\u54C1" => GlossaryKind.Product,
+            _ => GlossaryKind.Term
+        };
+    }
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, GlossaryKind value, System.Text.Json.JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.Raw());
+}
+
+/// <summary>B22: tolerant glossary JSON, dropping junk entries and reading legacy kind names.</summary>
+public sealed class GlossaryJsonConverter : System.Text.Json.Serialization.JsonConverter<Glossary>
+{
+    public override Glossary Read(ref System.Text.Json.Utf8JsonReader reader, Type type, System.Text.Json.JsonSerializerOptions options)
+    {
+        using var document = System.Text.Json.JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        System.Text.Json.JsonElement.ArrayEnumerator items;
+        if (root.ValueKind == System.Text.Json.JsonValueKind.Array) items = root.EnumerateArray();
+        else if (root.ValueKind == System.Text.Json.JsonValueKind.Object
+                 && root.TryGetProperty("entries", out var entries) && entries.ValueKind == System.Text.Json.JsonValueKind.Array)
+            items = entries.EnumerateArray();
+        else return Glossary.Empty;
+        var result = new List<GlossaryEntry>();
+        foreach (var item in items)
+        {
+            if (item.ValueKind != System.Text.Json.JsonValueKind.Object) continue;
+            var canonical = item.TryGetProperty("canonical", out var canonicalValue) && canonicalValue.ValueKind == System.Text.Json.JsonValueKind.String
+                ? canonicalValue.GetString()?.Trim() : null;
+            if (string.IsNullOrEmpty(canonical)) continue;
+            var id = item.TryGetProperty("id", out var idValue) && idValue.ValueKind == System.Text.Json.JsonValueKind.String
+                     && Guid.TryParse(idValue.GetString(), out _) ? idValue.GetString() : null;
+            var kind = GlossaryKind.Term;
+            if (item.TryGetProperty("kind", out var kindValue) && kindValue.ValueKind == System.Text.Json.JsonValueKind.String)
+                kind = GlossaryKinds.Parse(kindValue.GetString());
+            var variants = item.TryGetProperty("variants", out var variantsValue) && variantsValue.ValueKind == System.Text.Json.JsonValueKind.Array
+                ? variantsValue.EnumerateArray().Where(value => value.ValueKind == System.Text.Json.JsonValueKind.String)
+                    .Select(value => value.GetString() ?? "").Where(value => value.Length > 0).ToList()
+                : [];
+            var note = item.TryGetProperty("note", out var noteValue) && noteValue.ValueKind == System.Text.Json.JsonValueKind.String
+                ? noteValue.GetString() : null;
+            result.Add(new GlossaryEntry(canonical, kind, variants, note, id));
+        }
+        return new Glossary(result);
+    }
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, Glossary value, System.Text.Json.JsonSerializerOptions options)
+    {
+        writer.WriteStartObject(); writer.WriteStartArray("entries");
+        foreach (var entry in value.Entries)
+        {
+            writer.WriteStartObject(); writer.WriteString("id", entry.Id); writer.WriteString("canonical", entry.Canonical);
+            writer.WriteString("kind", entry.Kind.Raw());
+            writer.WriteStartArray("variants"); foreach (var variant in entry.Variants) writer.WriteStringValue(variant); writer.WriteEndArray();
+            if (!string.IsNullOrEmpty(entry.Note)) writer.WriteString("note", entry.Note);
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray(); writer.WriteEndObject();
+    }
 }
 
 public sealed record GlossaryReplacement(string From, string To, int Count);

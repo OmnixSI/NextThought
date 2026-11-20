@@ -209,9 +209,27 @@ public sealed class GlossarySwiftParityTests
         Assert.Contains("- Rust — 语言", english);
     }
 
-    [Fact(Skip = "missing API: Glossary.PromptSection(maxCharacters:) omitted-count marker (Windows Marker emits the literal \"{omitted}\" instead of the count)")]
+    [Fact]
     public void PromptSectionIsCutToTheBudgetWithACount()
     {
+        var full = PromptGlossary().PromptSection(109);
+        Assert.Equal(109, full.Length);
+        Assert.DoesNotContain("\u672A\u5217\u51FA", full);
+
+        var cut = PromptGlossary().PromptSection(100);
+        Assert.EndsWith("- Kubernetes \u2190 \u5E93\u4F2F\u5948\u63D0\u65AF\u3001K8s\n\uFF08\u53E6\u6709 2 \u6761\u672A\u5217\u51FA\uFF09", cut);
+        Assert.DoesNotContain("\u6C5F\u5145", cut);
+        Assert.True(cut.Length <= 100);
+        Assert.Empty(PromptGlossary().PromptSection(60));
+
+        var entries = Enumerable.Range(0, 400)
+            .Select(index => new GlossaryEntry("\u672F\u8BED\u7F16\u53F7" + index,
+                GlossaryKind.Term, ["\u53D8\u4F53\u7532" + index, "\u53D8\u4F53\u4E59" + index]))
+            .ToList();
+        var many = new Glossary(entries);
+        var section = many.PromptSection();
+        Assert.True(section.Length <= 1_500);
+        Assert.Contains("\u672A\u5217\u51FA", section);
     }
 
     // MARK: Merging and cleaning
@@ -258,9 +276,30 @@ public sealed class GlossarySwiftParityTests
 
     // MARK: Decoding
 
-    [Fact(Skip = "missing API: Glossary JSON decoding (GlossaryKind tolerating 人名/alien and entry arrays tolerating junk elements)")]
+    [Fact]
     public void DecodingToleratesOldAndBrokenData()
     {
+        const string json = """{"entries":[{"canonical":"\u6C5F\u5145"},{"id":"not-a-uuid","canonical":"X","kind":"alien","variants":"oops"},{"foo":1},5]}""";
+        var decoded = System.Text.Json.JsonSerializer.Deserialize<Glossary>(json, JsonDefaults.Options)!;
+        Assert.Equal(["\u6C5F\u5145", "X"], decoded.Entries.Select(entry => entry.Canonical));
+        Assert.All(decoded.Entries, entry =>
+        {
+            Assert.Equal(GlossaryKind.Term, entry.Kind);
+            Assert.Empty(entry.Variants);
+            Assert.Null(entry.Note);
+        });
+        var person = System.Text.Json.JsonSerializer.Deserialize<GlossaryKind>("\"\u4EBA\u540D\"", JsonDefaults.Options);
+        Assert.Equal(GlossaryKind.Person, person);
+        Assert.True(System.Text.Json.JsonSerializer.Deserialize<Glossary>("{}", JsonDefaults.Options)!.IsEmpty);
+        Assert.True(System.Text.Json.JsonSerializer.Deserialize<Glossary>("""{"entries":"oops"}""", JsonDefaults.Options)!.IsEmpty);
+
+        var glossary = new Glossary([Kubernetes, JiangChong]);
+        var encoded = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(glossary, JsonDefaults.Options);
+        var again = System.Text.Json.JsonSerializer.Deserialize<Glossary>(encoded, JsonDefaults.Options)!;
+        Assert.Equal(glossary.Entries.Select(entry => entry.Canonical), again.Entries.Select(entry => entry.Canonical));
+        Assert.Equal(glossary.Entries.Select(entry => entry.Kind), again.Entries.Select(entry => entry.Kind));
+        Assert.Equal(glossary.Entries.Select(entry => entry.Variants), again.Entries.Select(entry => entry.Variants));
+        Assert.Equal(glossary.Entries.Select(entry => entry.Note), again.Entries.Select(entry => entry.Note));
     }
 
     [Fact]
