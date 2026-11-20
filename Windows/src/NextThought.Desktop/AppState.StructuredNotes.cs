@@ -915,6 +915,7 @@ public partial class AppState
             OnPropertyChanged(nameof(NotesFormatIsViewpoints));
             OnPropertyChanged(nameof(StructuredHint));
             await LoadStructuredAsync(data.Meta, SelectedNotesFormat);
+            BuildNotesEvidence(lines, data.Meta.Id);
             Section = AppSection.Live;
             RefreshHistory(meta.Id);
             RaiseBusy();

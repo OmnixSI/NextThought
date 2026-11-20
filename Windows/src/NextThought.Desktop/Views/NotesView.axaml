@@ -150,12 +150,16 @@
       </TabItem>
       <TabItem Header="证据">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding Sources}" Margin="{DynamicResource D4Margin_22}">
+          <ItemsControl ItemsSource="{Binding NotesEvidence}" Margin="{DynamicResource D4Margin_22}">
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:SourceCitation">
+              <DataTemplate x:DataType="local:SessionEvidenceRow">
                 <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_10}">
-                  <TextBlock Text="{Binding Label}" Classes="label" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Quote}" Classes="caption" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                    <TextBlock Text="{Binding Badge}" Classes="caption" />
+                    <TextBlock Text="{Binding SupportLabel}" Classes="caption" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Claim}" Classes="body" TextWrapping="Wrap" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

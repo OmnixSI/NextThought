@@ -103,6 +103,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void NotesEvidenceHasSupportBadges()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        Assert.Contains("NotesEvidence", xaml);
+        Assert.Contains("Badge", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.StructuredNotes.cs"));
+        Assert.Contains("BuildNotesEvidence", state);
+    }
+
     [Fact]
     public void NotesShowsGenerationProgressLine()
     {

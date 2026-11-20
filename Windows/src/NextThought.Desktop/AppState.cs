@@ -131,6 +131,21 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private string subtitleExportMode = "双语";
     [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
     [ObservableProperty] private string meetingTitle = "新会议";
+    public System.Collections.ObjectModel.ObservableCollection<SessionEvidenceRow> NotesEvidence { get; } = [];
+
+    private void BuildNotesEvidence(IReadOnlyList<TranscriptLine> lines, Guid sessionId)
+    {
+        NotesEvidence.Clear();
+        if (StructuredPayload is not { } payload) return;
+        try
+        {
+            foreach (var reference in SessionNotesEvidence.References(payload, lines, "", sessionId))
+                NotesEvidence.Add(new SessionEvidenceRow(reference));
+        }
+        catch { }
+    }
+
+
     [ObservableProperty] private string pageSubtitle = "选择声音来源，开始记录。";
     [ObservableProperty] private string status = "正在准备…";
     [ObservableProperty] private bool statusIsError;
