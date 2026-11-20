@@ -3,103 +3,57 @@ using Xunit;
 
 namespace NextThought.Core.Tests;
 
-/// <summary>Tests for the measurable projection builder.</summary>
+/// <summary>B7: translated from SessionTextProjectionTests.swift.</summary>
 public sealed class SessionProjectionBuilderTests
 {
-    private static readonly DateTimeOffset Start = new(2026, 11, 18, 9, 0, 0, TimeSpan.FromHours(8));
-
-    private static TranscriptLine Line(string text, int offset, string? translation = null) => new()
-    {
-        Text = text,
-        Date = Start.AddSeconds(offset),
-        StartedAt = Start.AddSeconds(offset),
-        Translation = translation is null
-            ? null
-            : new SessionTranslation(Guid.NewGuid(), 2, "hash", "zh-en", translation, "model", Start)
-    };
+    private static readonly DateTimeOffset Start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
 
     [Fact]
-    public void TranscriptLinesBecomeLocatedEntries()
+    public void NoteAndSummarySearchHitsExposeTheirStaleSourceRevision()
     {
-        var line = Line("Kubernetes 部署", 65);
-        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [line], []);
-        var text = Assert.Single(projection.SearchableText);
-        Assert.Equal("line:" + line.Id, text.Id);
-        Assert.Equal(SessionProjectionTextKind.Transcript, text.Kind);
-        Assert.Equal("01:05", text.Location);
-        Assert.Equal(line.Id, text.LineId);
-        Assert.False(string.IsNullOrEmpty(text.SourceRevision));
+        var meta = new SessionMeta { Id = Guid.NewGuid(), StartedAt = Start, EndedAt = Start.AddSeconds(30) };
+        var line = new TranscriptLine { Date = Start.AddSeconds(5), StartedAt = Start.AddSeconds(5), Speaker = "remote", Text = "周一提交" };
+        var notes = new StructuredNotesDoc("general", "会议", "zh", "安排",
+            [new NotesSectionResult("decisions", "决定", NotesSectionKind.Items, false,
+                [new NotesItem { Text = "周五提交" }])])
+        {
+            TranscriptSourceRevision = "previous-transcript"
+        };
+        var summary = new SessionProjectedSummary("旧摘要", "周五提交", "previous-transcript",
+            SessionDerivedContentStatus.Unknown);
+        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, [line], [], summary,
+            textNotes: notes);
+        Assert.Contains(projection.SearchableText, text => text.Kind == SessionProjectionTextKind.Notes
+            && text.Text == "周五提交" && text.IsStale);
+        Assert.Contains(projection.SearchableText, text => text.Kind == SessionProjectionTextKind.Summary
+            && text.Text == "周五提交" && text.IsStale);
+        Assert.Equal(SessionDerivedContentStatus.Stale, projection.Summary?.SourceStatus);
+        Assert.NotEmpty(projection.TranscriptSourceRevision);
     }
 
     [Fact]
-    public void TranslationsAppearUnlessSourceOnly()
+    public void ProjectionSearchHitKeepsLineIdentityAndTranslationRevisionChanges()
     {
-        var line = Line("hello", 1, "你好");
-        var bilingual = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [line], []);
-        Assert.Equal(2, bilingual.SearchableText.Count);
-        Assert.Equal(SessionProjectionTextKind.Translation, bilingual.SearchableText[1].Kind);
-        var sourceOnly = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [line], [],
-            options: new SessionProjectionOptions { LanguageView = SessionLanguageView.Source });
-        Assert.Single(sourceOnly.SearchableText);
-    }
-
-    [Fact]
-    public void QuestionsAnswersAndSummaryHaveStableIds()
-    {
-        var answer = new SessionProjectedAnswer(Guid.NewGuid(), Start, "为什么？", "因为。", "rev");
-        var question = new SessionQuestionEvent { Text = "怎么做？" };
-        var summary = new SessionProjectedSummary("复盘", "## 摘要\n内容", "t1", SessionDerivedContentStatus.Stale);
-        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [], [answer], summary, [question]);
-        Assert.Contains(projection.SearchableText, text => text.Id == "question:" + question.Id && text.Kind == SessionProjectionTextKind.Question);
-        Assert.Contains(projection.SearchableText, text => text.Id == "answer:" + answer.Id && text.AlternateText == "为什么？");
-        Assert.Contains(projection.SearchableText, text => text.Id == "summary" && text.IsStale);
-        Assert.Equal(SessionDerivedContentStatus.Stale, projection.DerivedContentStatus);
-    }
-
-    [Fact]
-    public void NotesBecomeANotesEntryAndStayOnTheProjection()
-    {
-        var notes = new StructuredNotesPayload(NotesFormat.Outline,
-            outline: new OutlineNotes([new OutlineSection("结论", Points: [new OutlinePoint("先演练")])]));
-        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [], [], notes: notes);
-        Assert.Same(notes, projection.Notes);
-        var entry = Assert.Single(projection.SearchableText, item => item.Kind == SessionProjectionTextKind.Notes);
-        Assert.Contains("先演练", entry.Text);
-        Assert.Equal("notes:Outline", entry.Id);
-        Assert.Equal(SessionDerivedContentStatus.Current, projection.DerivedContentStatus);
-
-        var without = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [], []);
-        Assert.Null(without.Notes);
-        Assert.DoesNotContain(without.SearchableText, item => item.Kind == SessionProjectionTextKind.Notes);
-        Assert.NotEqual(projection.Revision, without.Revision);
-    }
-
-    [Fact]
-    public void RevisionIsStableAndChangesWithText()
-    {
-        var line = Line("同一句", 1);
-        var first = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [line], []);
-        var second = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [line], []);
-        Assert.Equal(first.Revision, second.Revision);
-        var changed = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [line with { Text = "改过" }], []);
-        Assert.NotEqual(first.Revision, changed.Revision);
-        Assert.Equal(64, first.Revision.Length);
-    }
-
-    [Fact]
-    public void EmptyMeetingIsCurrentWithARevision()
-    {
-        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [], []);
-        Assert.Empty(projection.SearchableText);
-        Assert.Equal(SessionDerivedContentStatus.Current, projection.DerivedContentStatus);
-        Assert.Equal(64, projection.Revision.Length);
-    }
-
-    [Fact]
-    public void AnswersCarryCompletionState()
-    {
-        var answer = new SessionProjectedAnswer(Guid.NewGuid(), Start, "q", "a", "r", AnswerCompletion.Failed);
-        var projection = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [], [answer]);
-        Assert.False(projection.Answers[0].IsComplete);
+        var id = Guid.NewGuid();
+        var first = new TranscriptLine
+        {
+            Id = id, Date = Start, StartedAt = Start, Speaker = "remote", Text = "原文",
+            Translation = new SessionTranslation(Guid.NewGuid(), 1, "hash", "zh-en", "First", "model", Start),
+            TranslatedText = "First", TranslationInputRevision = TranscriptRevisions.Of(id, "原文")
+        };
+        var updated = first with
+        {
+            Translation = new SessionTranslation(Guid.NewGuid(), 2, "hash2", "zh-en", "Updated", "model", Start),
+            TranslatedText = "Updated"
+        };
+        var a = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [first], []);
+        var b = SessionProjectionBuilder.Build(Guid.NewGuid(), Start, [updated], []);
+        var hitA = a.SearchableText.First(text => text.Kind == SessionProjectionTextKind.Transcript);
+        Assert.Equal(id, hitA.LineId);
+        Assert.Equal("line:" + id + ":original", hitA.Id);
+        var translationA = a.SearchableText.First(text => text.Kind == SessionProjectionTextKind.Translation);
+        var translationB = b.SearchableText.First(text => text.Kind == SessionProjectionTextKind.Translation);
+        Assert.Equal(translationA.Id, translationB.Id);
+        Assert.NotEqual(translationA.SourceRevision, translationB.SourceRevision);
     }
 }

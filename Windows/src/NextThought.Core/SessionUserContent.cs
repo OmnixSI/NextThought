@@ -8,7 +8,10 @@ namespace NextThought.Core;
 /// <summary>A generated meeting summary; user edits keep their own copy (port of SessionSummary fields used here).</summary>
 public sealed record SessionSummary
 {
+    public string Title { get; init; } = "";
     public string Markdown { get; init; } = "";
+    public string? TranscriptSourceRevision { get; init; }
+    public string? StructuredNotesSourceRevision { get; init; }
     public StructuredNotesPayload? Structured { get; init; }
     public DateTimeOffset? GeneratedAt { get; init; }
 

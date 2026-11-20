@@ -58,7 +58,10 @@ public sealed record SessionProjectedSummary(
     string Title,
     string Markdown,
     string? SourceTranscriptRevision = null,
-    SessionDerivedContentStatus SourceStatus = SessionDerivedContentStatus.Unknown);
+    SessionDerivedContentStatus SourceStatus = SessionDerivedContentStatus.Unknown,
+    string? StructuredNotesSourceRevision = null,
+    StructuredNotesPayload? Structured = null,
+    IReadOnlyList<StructuredNotesPayload>? StructuredAll = null);
 
 /// <summary>
 /// A frozen view of the session's answers, summary and searchable text (port of

@@ -42,7 +42,7 @@ Nov 20, 2026 · @Homing
 | B4 | 已实现、未验证 | `BackupMerge` 增加 `mergeLessons/mergeQuestionBank/mergeSeriesItems/mergeSeriesCandidates/mergeCandidates` 与系列条目墓碑；三个 Swift 合并测试已翻译通过 | 其余备份合并 Swift 测试未逐项翻译；B22 时补齐 |
 | B5 | 已实现、未验证 | `SeriesBriefingBuilder.HasCurrentEvidence` 增加 `origin == textNotes`、`lineID != null` 与证据修订比对；翻译两个证据测试 | 其余简报 Swift 测试未逐项翻译；B22 补齐 |
 | B6 | 已实现、未验证 | 新增 `SessionEvidenceBuilder.Build`：文本笔记引用、引文/时间匹配、原/修订版本、claimRevision、review 当前/过期、三种结构化视图引用；翻译两个 Swift 证据测试 | 会议页尚未改为使用该构建器（需 B9 文本笔记模型）；其余 Swift 证据测试未逐项翻译 |
-| B7 | 未做 | — | 未开始 |
+| B7 | 未做 | `SessionTextProjection` 已有原文/修订/译文检索项、transcriptSourceRevision、笔记/纪要 stale 状态；翻译两个投影测试 | 缺摘要 questions/lessons/bank 检索项、detected 问题 lead-in、speaker label 参与来源指纹、Markdown 导出过期提示 |
 | B8 | 未做 | — | 未开始 |
 | B9 | 未做 | — | 未开始 |
 | B10 | 未做 | — | 未开始 |
