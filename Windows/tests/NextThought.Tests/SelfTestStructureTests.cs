@@ -200,6 +200,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ExitWaitsForShutdownWithATimeout()
+    {
+        var window = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml.cs"));
+        Assert.Contains("ShutdownAsync().WaitAsync", window);
+        var app = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "App.axaml.cs"));
+        Assert.Contains("ShutdownRequested", app);
+    }
+
     [Fact]
     public void TitleBarOffersInstallAndRestart()
     {

@@ -53,7 +53,11 @@ public partial class App : Application
                 return;
             }
             desktop.MainWindow = new MainWindow(state);
-            desktop.ShutdownRequested += async (_, _) => await state.ShutdownAsync();
+            desktop.ShutdownRequested += async (_, _) =>
+            {
+                try { await state.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(15)); }
+                catch { }
+            };
             desktop.Exit += (_, _) =>
             {
                 if (ownsInstance) instance?.ReleaseMutex();

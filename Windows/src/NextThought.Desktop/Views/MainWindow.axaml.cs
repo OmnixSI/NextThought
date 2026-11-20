@@ -173,7 +173,8 @@ public partial class MainWindow : Window
         tray = null;
         try
         {
-            await state.ShutdownAsync();
+            // F18: wait for the final transcript/flush work, but never hang the exit forever.
+            await state.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(15));
         }
         catch
         {
