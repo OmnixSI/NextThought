@@ -186,6 +186,13 @@ public partial class MainWindow
     /// 区域截图（方案第 9 节）：先隐藏自己的窗口再抓屏，框选后裁切，然后存入资料库并由
     /// Windows.Media.Ocr 读取文字。
     /// </summary>
+
+    /// <summary>E13: the library copies the file; the temporary capture should not pile up.</summary>
+    private static void TryDeleteCapture(string path)
+    {
+        try { if (File.Exists(path)) File.Delete(path); } catch { }
+    }
+
     /// <summary>Capture the window that had focus before NextThought was minimized (Mac captureWindow).</summary>
     public async Task CaptureWindowAsync()
     {
@@ -207,6 +214,7 @@ public partial class MainWindow
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
             state.PromptAboutScreenshot(state.Library.SelectedPreview);
+            TryDeleteCapture(path);
         }
         catch (Exception ex)
         {
@@ -235,6 +243,7 @@ public partial class MainWindow
             await state.ArchiveScreenshotAsync(path);
             await state.Library.ImportAsync([path]);
             state.PromptAboutScreenshot(state.Library.SelectedPreview);
+            TryDeleteCapture(path);
         }
         catch (Exception ex)
         {

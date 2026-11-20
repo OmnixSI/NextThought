@@ -177,6 +177,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ScreenshotTempFilesAreCleaned()
+    {
+        var shell = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.Shell.cs"));
+        Assert.Contains("TryDeleteCapture", shell);
+        Assert.Contains("File.Delete(path)", shell);
+    }
+
     [Fact]
     public void ScreenshotOcrFeedsTheAnswerPrompt()
     {
