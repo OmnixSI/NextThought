@@ -23,6 +23,8 @@ Nov 20, 2026 · @Homing
 | B1 | 已实现、未验证 | Workspace 读取失败保留、原子写；回归测试 |
 | B2 | 已实现、未验证 | Glossary 导出/解析按 Mac；往返测试 |
 | A1 | 已实现、未验证 | 归档日期统一为 UTC 秒 + Z；ArchiveDateTests |
+| A2 | 已实现、未验证 | editedSummary 未知字段保留；字段级测试 |
+| A3 | 已实现、未验证 | Mac translations 按 id 读取/显示；写出 inputRevision |
 
 ## 1. ⽬标与范围 
 

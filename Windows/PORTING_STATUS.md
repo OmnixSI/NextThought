@@ -1,3 +1,11 @@
+## 2026-11-20 · 0.5.145 · A2、A3
+改动：
+- A2 `SessionSummary` 增加 JsonExtensionData，Mac 的 `editedSummary` 里 title/questions/model 等未知字段读入再保存不丢；测试 `MacEditedSummaryFieldsSurviveUserContentRoundTrip`。
+- A3 `SessionTranslation` 增加 `inputRevision`；`SessionStore` 读 Mac `{id,text,inputRevision}` 行并按行 id 挂到转写；`TranscriptRow` 回退显示 `translatedText`；Windows 写出的译文行带 `inputRevision`；测试 `MacTranslationRowsAreReadByLineIdAndWrittenWithInputRevision`。
+测试：Core **869/869**，NextThought.Tests **123/123**；新翻译 Swift 测试 0。
+状态：A2、A3 均为「已实现、未验证」。
+未解决：A4、A5 尚未开始；A2 的“逐字节相同”只做到字段不丢，未做到字节级。
+
 ## 2026-11-20 · 0.5.145 · A1
 改动：`SessionUserContentStore`、`SkillStore`、`NotesTemplateStore` 改用 `JsonDefaults.ArchiveOptions`；`summary.json` 的 `generatedAt` 与恢复标记改为 `yyyy-MM-ddTHH:mm:ssZ`；结构化纪要载荷改用 ArchiveOptions；新增 `ArchiveDateTests`。
 测试：Core **868/868**，NextThought.Tests **122/122**；新翻译 Swift 测试 0。
