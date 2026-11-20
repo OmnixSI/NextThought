@@ -1,3 +1,10 @@
+## 2026-11-20 · 0.5.145 · H1（部分）
+改动：`MainWindow.axaml.cs` 从 3742 行降到 **258** 行；全部 `Run*CheckAsync` 移到 `Desktop/SelfTest/MainWindow.SelfTests.cs`；热键、托盘、浮窗、演示模式移到 `MainWindow.Shell.cs`；新增 `SelfTestStructureTests` 2 项。
+测试：Core **869/869**，NextThought.Tests **130/130**。
+状态：H1 **未完成**。MainWindow <400 行已达标、自检已在 Desktop/SelfTest 下，但 StartupOptions 仍有 65 个 `--xxx=` 参数，尚未合并为 `--self-test <名字>`。
+证据：`SelfTestStructureTests`。
+未解决：StartupOptions 收口；H2 未开始。
+
 ## 2026-11-20 · 0.5.145 · A15（尝试，阻塞）
 改动：新建 `Windows/tools/MacCodec` SwiftPM 包、纯 Swift SHA-256 shim、junction 同步脚本和构建说明；未产出 emit 夹具。
 阻塞：官方 swift-crypto 的 BoringSSL 要求 Clang 22，本机 Clang 21；`CompanionCrypto`（HKDF/AES-GCM）和 SQLite/Darwin/CoreGraphics/Sherpa 文件无法在 Windows 编译，`DocumentJob` 依赖又牵连 `WorkspaceDeletionTransaction`。
