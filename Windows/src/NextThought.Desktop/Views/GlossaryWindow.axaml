@@ -28,7 +28,12 @@
           <DataTemplate x:DataType="local:GlossaryEntryRow">
             <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
               <StackPanel Spacing="{DynamicResource D4Spacing_2}">
-                <TextBlock Text="{Binding Canonical}" Classes="label" />
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                  <TextBlock Text="{Binding Canonical}" Classes="label" />
+                  <Border Classes="chip" IsVisible="{Binding HasVariants}">
+                    <TextBlock Text="误听" Classes="overline" FontSize="10" />
+                  </Border>
+                </StackPanel>
                 <TextBlock Text="{Binding Variants}" Classes="caption" IsVisible="{Binding HasVariants}" />
               </StackPanel>
               <Button Grid.Column="1" Classes="quiet" Content="删除" Click="Remove_Click" Tag="{Binding}" />

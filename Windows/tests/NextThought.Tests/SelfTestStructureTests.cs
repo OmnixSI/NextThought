@@ -158,6 +158,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void GlossaryMarksMisheardEntries()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
+        Assert.Contains("误听", xaml);
+        var row = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "GlossaryEntryRow.cs"));
+        Assert.Contains("MisheardBadge", row);
+    }
+
     [Fact]
     public void GlossaryCanSearchAndAddFromTranscript()
     {
