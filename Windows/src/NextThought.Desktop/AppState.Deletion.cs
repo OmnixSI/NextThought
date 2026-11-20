@@ -23,6 +23,17 @@ public partial class AppState
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private Task DeleteSession(RecentMeetingRow row) => DeleteSessionAsync(row);
 
+
+    /// <summary>E18: batch delete every meeting currently matching the history filters.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task DeleteFilteredSessionsAsync()
+    {
+        var rows = FilteredHistory.ToList();
+        if (rows.Count == 0 || Recording || Working) return;
+        foreach (var row in rows) await DeleteSessionAsync(row);
+        SetStatus($"已删除 {rows.Count} 场会议。");
+    }
+
     /// <summary>E18: delete one archived meeting, its series membership and visible lists.</summary>
     public async Task DeleteSessionAsync(RecentMeetingRow row)
     {

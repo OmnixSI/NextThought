@@ -88,6 +88,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void HistoryHasFilteredBatchDelete()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "HistoryView.axaml"));
+        Assert.Contains("DeleteFilteredSessionsCommand", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Deletion.cs"));
+        Assert.Contains("DeleteFilteredSessionsAsync", state);
+    }
+
     [Fact]
     public void HistoryRowsOfferSessionRename()
     {

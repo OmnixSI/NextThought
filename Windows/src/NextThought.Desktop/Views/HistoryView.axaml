@@ -27,6 +27,7 @@
           <TextBlock Text="未整理" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
         <TextBlock Text="{Binding HistorySummary}" Classes="caption" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_8_0_0_0}" />
+        <Button Classes="quiet" Content="删除筛选结果" Command="{Binding DeleteFilteredSessionsCommand}" VerticalAlignment="Center" />
       </StackPanel>
     </Grid>
 
