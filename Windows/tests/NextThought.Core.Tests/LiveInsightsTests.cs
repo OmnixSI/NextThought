@@ -196,7 +196,7 @@ public sealed class LiveInsightsTests
         Assert.Contains("当前第 3 / 10 页（talk.pptx）", prompt);
         Assert.Contains("缓存一致性设计", prompt);
         Assert.Contains("上一页：", prompt);
-        Assert.Contains("[论文 p.2] 相关资料", prompt);
+        Assert.Contains("[论文 第 2 段] 相关资料", prompt);
         Assert.Contains("回答简短", prompt);
     }
 }

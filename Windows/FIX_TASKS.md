@@ -54,7 +54,7 @@ Nov 20, 2026 · @Homing
 | B16 | 已实现、未验证 | 新增投影字幕导出：用校对后文本、说话人名字、原文/译文/双语三种模式、无译文回退原文、译文过期标记与计数；SRT/VTT 时间戳；2 个对齐测试通过 | `SessionExportTests` 其余 10 项尚未翻译；会议页导出按钮尚未改接投影字幕导出 |
 | B17 | 已实现、未验证 | 新增 `KnowledgeMerger.MatchesCurrentSummary`（来源会议、摘要/实时两个修订号、重新生成候选 id 必须命中）；`CollectCandidates` 增加 `originId`；来源清单时间改用 Unix 秒 double 位模式，保留亚毫秒精度；3 个对齐测试通过 | `WorkspaceTests` 其余 39 项尚未全部翻译；会议页调用尚未改用 `MatchesCurrentSummary` |
 | B18 | 已实现、未验证 | 系列新增 `EffectiveMode`（custom 归一到基础类型、嵌套 custom→general）、`Profile`、无参 `MaterialText()`（结构化字段+遗留字段+自由笔记）、`RetrievalDocuments`（题库作为一篇可检索文档）、`ModeProfile.MatchesDefaultTemplatePreferences`；4 个对齐测试通过 | Mac 旧版本对 meeting/client/general 的历史默认偏好字符串未逐字补入；`WorkspaceTests` 其余项留给 B22 |
-| B19 | 未做 | — | 未开始 |
+| B19 | 已实现、未验证 | 讲稿提示词的相关资料改为 `ContextExcerpt.Budget(4000, 5)`（只取完整片段），引用改为 Mac 的 `[来源 定位]`（无 locator 用「第 N 段」）；新增 2 个对齐测试 | `LiveInsightsTests` 其余 11 项尚未翻译；未实机核对真实幻灯片导出 |
 | B20 | 未做 | — | 未开始 |
 | B21 | 未做 | — | 未开始 |
 | B22 | 未做 | — | 592 项 Swift Core 测试尚未翻译 |

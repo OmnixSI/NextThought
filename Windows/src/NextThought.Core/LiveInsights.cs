@@ -249,8 +249,8 @@ public sealed record SlideNotes
         if (excerpts is { Count: > 0 })
         {
             user.Append("\n\n相关资料片段：");
-            foreach (var excerpt in excerpts.Take(5))
-                user.Append("\n[").Append(excerpt.Source).Append(" p.").Append(excerpt.Page).Append("] ").Append(excerpt.Text);
+            foreach (var excerpt in ContextExcerpt.Budget(excerpts, 4_000, 5))
+                user.Append("\n[").Append(excerpt.Citation).Append("] ").Append(excerpt.Text);
         }
         if (preferences.Length > 0)
             user.Append("\n\n我的回答偏好（可用于语气和语言）：\n")

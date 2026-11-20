@@ -11,7 +11,28 @@ public enum AnswerStyle
 public sealed record ContextExcerpt(
     string Source, int Page, string Text, DocumentLocator? Locator = null,
     [property: System.Text.Json.Serialization.JsonPropertyName("chunkID")] string? ChunkId = null,
-    [property: System.Text.Json.Serialization.JsonPropertyName("blockID")] string? BlockId = null);
+    [property: System.Text.Json.Serialization.JsonPropertyName("blockID")] string? BlockId = null)
+{
+    /// <summary>B19: source plus locator label, or the page number (ContextExcerpt.citation).</summary>
+    public string Citation => Source + " " + (Locator?.Label ?? "第 " + Page + " 段");
+
+    /// <summary>B19: whole excerpts only, while the character budget and count allow.</summary>
+    public static IReadOnlyList<ContextExcerpt> Budget(IReadOnlyList<ContextExcerpt> excerpts, int characters, int count = 8)
+    {
+        var left = characters;
+        var result = new List<ContextExcerpt>();
+        foreach (var excerpt in excerpts)
+        {
+            if (result.Count >= count) break;
+            if (excerpt.Text.Length <= left)
+            {
+                result.Add(excerpt);
+                left -= excerpt.Text.Length;
+            }
+        }
+        return result;
+    }
+}
 
 /// <summary>
 /// Small, deterministic, offline lexical index (port of SessionContextIndex). This is not
