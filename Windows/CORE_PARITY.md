@@ -188,7 +188,7 @@ python Windows/scripts/core_usage.py
 | MeetingCarryTests.swift | 2 | 2 |
 | MeetingEndWatchTests.swift | 18 | 17 |
 | MeetingPreparationTests.swift | 5 | 5 |
-| MeetingTypeAndNotesTests.swift | 17 | 2 |
+| MeetingTypeAndNotesTests.swift | 17 | 17 |
 | OnboardingFlowTests.swift | 6 | 6 |
 | OnboardingVersionTests.swift | 4 | 4 |
 | PDFTextLayoutTests.swift | 7 | 0 |
@@ -210,9 +210,9 @@ python Windows/scripts/core_usage.py
 | SeriesBriefingTests.swift | 12 | 0 |
 | SessionArchivePersistenceTests.swift | 21 | 0 |
 | SessionContentSearchTests.swift | 13 | 0 |
-| SessionEvidenceTests.swift | 8 | 1 |
-| SessionExportTests.swift | 12 | 0 |
-| SessionRecordTests.swift | 9 | 3 |
+| SessionEvidenceTests.swift | 8 | 8 |
+| SessionExportTests.swift | 12 | 12 |
+| SessionRecordTests.swift | 9 | 9 |
 | SessionTextProjectionTests.swift | 8 | 1 |
 | SessionTranscriptLocatorTests.swift | 4 | 4 |
 | SessionUserContentTests.swift | 7 | 0 |
