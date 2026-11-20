@@ -11,6 +11,8 @@ namespace NextThought.Desktop.Views;
 public partial class CueIslandWindow : Window
 {
     private readonly AppState state;
+    /// <summary>Set only by the owner at real shutdown; otherwise Alt+F4 hides the island.</summary>
+    public bool AllowClose { get; set; }
     public CueIslandWindow() : this(new AppState()) { }
 
     public CueIslandWindow(AppState state)
@@ -23,6 +25,12 @@ public partial class CueIslandWindow : Window
             if (e.PropertyName == nameof(NextThought.Desktop.SettingsViewModel.SelectedCueWidth)) ApplyCueWidth();
         };
         Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
+        Closing += (_, e) =>
+        {
+            if (AllowClose) return;
+            e.Cancel = true;
+            Hide();
+        };
         DataContext = state;
         Opened += (_, _) =>
         {

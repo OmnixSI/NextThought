@@ -18,6 +18,8 @@ public partial class SubtitleBarWindow : Window
     private readonly SubtitleFeed feed = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private bool hiddenByTiming;
+    /// <summary>Set only by the owner at real shutdown; otherwise Alt+F4 hides the bar.</summary>
+    public bool AllowClose { get; set; }
     private int layoutWidth = -1;
     private int layoutFont = -1;
 
@@ -43,9 +45,15 @@ public partial class SubtitleBarWindow : Window
         };
         timer.Tick += (_, _) => Tick();
         Closed += (_, _) => timer.Stop();
+        Closing += (_, e) =>
+        {
+            if (AllowClose) return;
+            e.Cancel = true;
+            HideForUser();
+        };
         state.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(AppState.Recording) && !state.Recording) Hide();
+            if (e.PropertyName is nameof(AppState.Recording) && !state.Recording) HideForUser();
         };
     }
 
@@ -72,6 +80,20 @@ public partial class SubtitleBarWindow : Window
         Position = new PixelPoint(x, y);
     }
 
+    /// <summary>User-initiated hide: stop the timer so the bar cannot resurrect itself.</summary>
+    public void HideForUser()
+    {
+        hiddenByTiming = false;
+        timer.Stop();
+        Hide();
+    }
+
+    /// <summary>Re-showing the bar after a user hide must restart its timer.</summary>
+    public void ResumeAfterUserShow()
+    {
+        if (!timer.IsEnabled) timer.Start();
+    }
+
     private void Tick()
     {
         var now = DateTimeOffset.UtcNow;
@@ -92,8 +114,12 @@ public partial class SubtitleBarWindow : Window
             if (!hiddenByTiming) { hiddenByTiming = true; IsVisible = false; }
             return;
         }
+        if (!IsVisible)
+        {
+            if (!hiddenByTiming) return;
+            Show();
+        }
         hiddenByTiming = false;
-        if (!IsVisible) Show();
         Opacity = opacity;
 
         if (feed.Line is not { } line)

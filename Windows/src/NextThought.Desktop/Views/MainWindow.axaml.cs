@@ -140,6 +140,7 @@ public partial class MainWindow : Window
             if (StartupOptions.NotesJumpCheck is { } notesJump) await RunNotesJumpCheckAsync(notesJump);
             if (StartupOptions.LiveModeCheck is { } liveMode) await RunLiveModeCheckAsync(liveMode);
             if (StartupOptions.ShareHideCheck is { } shareHide) await RunShareHideCheckAsync(shareHide);
+            if (StartupOptions.WindowCloseCheck is { } closeCheck) await RunWindowCloseCheckAsync(closeCheck);
             if (StartupOptions.SubtitleSettingsCheck is { } subtitleCheck) await RunSubtitleSettingsCheckAsync(subtitleCheck);
             if (StartupOptions.CaptureHideCheck is { } captureHide) await RunCaptureHideCheckAsync(captureHide);
             if (StartupOptions.AudioSwitchCheck is { } audioSwitch) await RunAudioSwitchCheckAsync(audioSwitch);
@@ -2474,6 +2475,59 @@ public partial class MainWindow : Window
 
     /// <summary>QA: a saved key override is used and all 19 bindings register.</summary>
     /// <summary>QA: --demo seeds the sample meeting without writing a session.</summary>
+    /// <summary>QA: Alt+F4-style close hides the floating windows instead of disposing them.</summary>
+    private async Task RunWindowCloseCheckAsync(string path)
+    {
+        var passed = false;
+        var islandHidden = false;
+        var islandReshow = false;
+        var subtitleHidden = false;
+        var subtitleReshow = false;
+        try
+        {
+            ShowCueIsland();
+            await Task.Delay(300);
+            if (island is { } cue)
+            {
+                cue.Close();
+                await Task.Delay(300);
+                islandHidden = !cue.IsVisible;
+                cue.Show();
+                await Task.Delay(300);
+                islandReshow = cue.IsVisible;
+                cue.AllowClose = true;
+                cue.Close();
+            }
+            var bar = new SubtitleBarWindow(state) { Persistent = true };
+            bar.Show();
+            await Task.Delay(300);
+            bar.Close();
+            await Task.Delay(300);
+            subtitleHidden = !bar.IsVisible;
+            bar.Show();
+            bar.ResumeAfterUserShow();
+            await Task.Delay(300);
+            subtitleReshow = bar.IsVisible;
+            bar.AllowClose = true;
+            bar.Close();
+            passed = islandHidden && islandReshow && subtitleHidden && subtitleReshow;
+        }
+        catch (Exception ex) { Console.WriteLine("window-close-check: " + ex.Message); }
+        var report = new { passed, islandHidden, islandReshow, subtitleHidden, subtitleReshow };
+        try
+        {
+            var directory = Path.GetDirectoryName(Path.GetFullPath(path));
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(path, System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            }));
+        }
+        catch { }
+        Console.WriteLine(passed ? "window-close-check: passed" : "window-close-check: failed");
+        Close();
+    }
+
     /// <summary>QA: a detected share retracts the cue island and restores it afterwards.</summary>
     private async Task RunShareHideCheckAsync(string path)
     {
@@ -3171,7 +3225,7 @@ public partial class MainWindow : Window
     {
         hiddenAll = true;
         island?.Hide();
-        subtitleBar?.Hide();
+        subtitleBar?.HideForUser();
         teleprompter?.Hide();
         Hide();
         state.SetStatus("所有窗口已收起，会议继续记录。Ctrl+Alt+\\ 或托盘图标可恢复。");
@@ -3400,7 +3454,12 @@ public partial class MainWindow : Window
             state.SetStatus("检测到屏幕共享，提示岛保持收回；共享结束后自动恢复。");
             return;
         }
-        island ??= new CueIslandWindow(state);
+        if (island is null)
+        {
+            var window = new CueIslandWindow(state);
+            window.Closed += (_, _) => { if (ReferenceEquals(island, window)) island = null; };
+            island = window;
+        }
         UiTranslation.Apply(island, state.Settings.UiLanguage == "English");
         if (!island.IsVisible)
         {
@@ -3531,7 +3590,12 @@ public partial class MainWindow : Window
         presenterActive = true;
         if (island is not { IsVisible: true })
         {
-            island ??= new CueIslandWindow(state);
+            if (island is null)
+            {
+                var window = new CueIslandWindow(state);
+                window.Closed += (_, _) => { if (ReferenceEquals(island, window)) island = null; };
+                island = window;
+            }
             UiTranslation.Apply(island, state.Settings.UiLanguage == "English");
             island.Show();
         }
@@ -3565,10 +3629,16 @@ public partial class MainWindow : Window
         }
         // Subtitles: the floating bar replaces the main window, so the three modes differ.
         if (IsVisible) Hide();
-        subtitleBar ??= new SubtitleBarWindow(state);
+        if (subtitleBar is null)
+        {
+            var window = new SubtitleBarWindow(state);
+            window.Closed += (_, _) => { if (ReferenceEquals(subtitleBar, window)) subtitleBar = null; };
+            subtitleBar = window;
+        }
         subtitleBar.Persistent = true;
         UiTranslation.Apply(subtitleBar, state.Settings.UiLanguage == "English");
         if (!subtitleBar.IsVisible) subtitleBar.Show();
+        subtitleBar.ResumeAfterUserShow();
     }
 
     private void HandleInitialized()
@@ -3666,8 +3736,8 @@ public partial class MainWindow : Window
         }
         // Floating windows keep the process alive under OnLastWindowClose: close them first,
         // then shut the lifetime down instead of leaving an invisible process behind.
-        island?.Close();
-        subtitleBar?.Close();
+        if (island is { } cue) { cue.AllowClose = true; cue.Close(); }
+        if (subtitleBar is { } bar) { bar.AllowClose = true; bar.Close(); }
         teleprompter?.Close();
         (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         Close();
