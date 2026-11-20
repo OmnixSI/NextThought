@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+"""Regenerate Windows/VIEW_PARITY.md from Sources/NextThought/*.swift.
+
+Run from the repository root (or anywhere; paths are resolved from this file):
+    python Windows/scripts/scan_views.py
+
+Task ids come from Windows/FIX_TASKS.md. The Windows mapping is page-level:
+subviews keep their page file in the mapping but are marked 未做 until the
+individual view is actually ported.
+"""
+from __future__ import annotations
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "Sources" / "NextThought"
+OUT = ROOT / "Windows" / "VIEW_PARITY.md"
+TASKS = ROOT / "Windows" / "FIX_TASKS.md"
+
+fallback = {
+    "AppLanguage.swift": "E25", "AppNavigationSidebar.swift": "E4", "AutoEndViews.swift": "E4",
+    "ControlComponents.swift": "C9", "FishboneView.swift": "E15", "HitTargets.swift": "C9",
+    "LiquidGlass.swift": "C9", "LiveSessionAcceptanceComponentSamples.swift": "E4",
+    "LiveWindowController.swift": "E4", "NotesFormatBar.swift": "E15",
+    "NotesSettingsView.swift": "E15", "OperationFeedback.swift": "C9",
+    "PaperTextFieldStyle.swift": "C9", "RegionScreenshotPicker.swift": "E13",
+    "SettingsAdvanced.swift": "E25", "SettingsStatusRows.swift": "E25",
+    "ShortcutSettingsView.swift": "E25", "Stage.swift": "C9",
+    "StructuredNotesView.swift": "E15", "SubtitleBarSettingsView.swift": "C12",
+    "SubtitleBarView.swift": "C12", "Theme.swift": "C9", "UnderlineTabs.swift": "C9",
+    "ViewpointMatrixView.swift": "E15",
+}
+winmap = {
+    "HomeView.swift": "Views/HomeView.axaml",
+    "LiveSessionView.swift": "Views/LiveView.axaml",
+    "NotesPageView.swift": "Views/NotesView.axaml",
+    "HistoryView.swift": "Views/HistoryView.axaml",
+    "WorkspacesView.swift": "Views/SeriesView.axaml",
+    "SettingsView.swift": "Views/SettingsView.axaml",
+    "CueIsland.swift": "Views/CueIslandWindow.axaml",
+    "SubtitleBarController.swift": "Views/SubtitleBarWindow.axaml",
+    "TeleprompterController.swift": "Views/TeleprompterWindow.axaml",
+    "RegionScreenshotPicker.swift": "Views/RegionCaptureWindow.axaml",
+    "ContentView.swift": "Views/MainWindow.axaml",
+    "AppNavigationSidebar.swift": "Views/MainWindow.axaml",
+}
+top_views = {
+    "HomeView": "HomeView.swift",
+    "LiveSessionView": "LiveSessionView.swift",
+    "NotesPageView": "NotesPageView.swift",
+    "HistoryView": "HistoryView.swift",
+    "WorkspacesView": "WorkspacesView.swift",
+    "SettingsView": "SettingsView.swift",
+    "CueIslandView": "CueIsland.swift",
+    "SubtitleBarView": "SubtitleBarController.swift",
+    "TeleprompterView": "TeleprompterController.swift",
+}
+
+def task_map() -> dict[str, str]:
+    result: dict[str, str] = {}
+    for line in TASKS.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = line.split("|")
+        if len(cells) < 4:
+            continue
+        tid = cells[1].strip().replace("<br>", "")
+        if not re.fullmatch(r"[CE]\d+", tid):
+            continue
+        for cell in cells[2:]:
+            for name in re.findall(r"([A-Za-z0-9_+]+\.swift)", cell.replace("<br>", "")):
+                result.setdefault(name, tid)
+    return result
+
+def main() -> None:
+    tasks = task_map()
+    rows = []
+    pattern = re.compile(r"\b(?:struct|class)\s+(\w+)(?:\s*<[^>{}]*>)?\s*:\s*(?:SwiftUI\.)?View\b")
+    for path in sorted(SRC.glob("*.swift")):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for match in pattern.finditer(text):
+            name = match.group(1)
+            rel = path.relative_to(ROOT).as_posix()
+            tid = tasks.get(path.name) or fallback.get(path.name, "E4")
+            windows = winmap.get(path.name, "—")
+            implemented = top_views.get(name) == path.name
+            status = "已实现、未验证" if implemented else "未做"
+            shot = f"`Windows/validation/screens/{Path(windows).stem}/`" if windows != "—" and implemented else "—"
+            rows.append((rel, name, tid, windows, status, shot))
+    rows.sort(key=lambda row: (row[2], row[0], row[1]))
+    text = [
+        "# Windows / Mac 视图对照（VIEW_PARITY）", "",
+        "由 `Windows/scripts/scan_views.py` 从 `Sources/NextThought/` 扫描生成，共 **%d** 个 `: View` 类型。" % len(rows),
+        "本轮只建表，不改像素。状态只用第 4 节四态；没有 Windows 实机截图，因此没有「已验证」。",
+        "Windows 对应文件按 Mac 页面文件重新映射；子视图只有在实际移植后才写「已实现、未验证」。", "",
+        "| Swift 文件 | 视图名 | 任务编号 | Windows 对应文件 | 状态 | 截图路径 |",
+        "|---|---|---|---|---|---|",
+    ]
+    for row in rows:
+        text.append("| `%s` | `%s` | %s | %s | %s | %s |" % row)
+    text += ["", "总计：**%d** 个视图；已有 Windows 页面 **%d** 个，其余 **%d** 个待做。" % (
+        len(rows), sum(1 for r in rows if r[4] == "已实现、未验证"), sum(1 for r in rows if r[4] != "已实现、未验证"))]
+    OUT.write_text("\n".join(text) + "\n", encoding="utf-8")
+    print("wrote", OUT, "rows", len(rows))
+
+if __name__ == "__main__":
+    main()
