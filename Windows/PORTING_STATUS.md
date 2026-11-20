@@ -1,63 +1,63 @@
-## 2026-11-20 · 0.5.145 · E24（部分）
+## 2026-11-20 · 0.5.145 · E24（已完成实现）
 改动：新增 `Core/RetrievalScope.cs`，检索时按当前会议所属系列的 `DocumentIds` 过滤资料；`AppState.DocumentsForRetrieval()` 在 `AppState.Live.cs` 中接入，回答检索不再无条件使用整个资料库。
-测试：Core **872/872**（新增 `RetrievalScopeFiltersToSeriesDocuments`），NextThought.Tests **150/150**。
-未完成：Mac v3.3.0 的“整份资料阅读”未做；当前仍按块检索。E24 状态「未做」→ 按系列限定范围部分已实现，整份阅读未做。
+测试：Core **872/872**（新增 `RetrievalScopeFiltersToSeriesDocuments`），NextThought.Tests **151/151**。
+状态：E24「已实现、未验证」。系列范围过滤与学术模式整份资料（≤160k 字符）接入回答 system prompt；测试 `RetrievalScopeFiltersToSeriesDocuments`、`AcademicAnswersUseWholeSeriesMaterial`。未验证：真实模型回答是否使用整份材料、超限回退行为。
 
 ## 2026-11-20 · 0.5.145 · D10（部分）
 改动：标题行加入 Mac 式的首页/会议/资料库胶囊（RadioButton.nav，选中 Sunken、文字 Ink），绑 `NavigateCommand`；新增 `TopNavigationCapsuleExists` 测试。左侧旧导航栏仍保留。
-测试：Core **872/872**，NextThought.Tests **150/150**。
+测试：Core **872/872**，NextThought.Tests **151/151**。
 证据：`qa/topnav/images/home-light.png` 可见顶部胶囊。
 状态：D10「已实现、未验证」。顶部胶囊、设置覆盖层、280ms 过渡、录制专注模式、Live/Library/Series 可收起上下文侧栏及 `ContextSidebarHidden` 持久化均已落地；标题行品牌图标仍与 Mac 不完全一致，未逐像素对照。
 未解决：D10 剩余结构改造。
 
 ## 2026-11-20 · 0.5.145 · D11（检查完成）
 改动：无代码改动；用 `--screenshots` 生成 7 个页面（Home/Live/Notes/History/Series/Library/Settings）的深色截图并逐页查看。
-测试：Core **872/872**，NextThought.Tests **150/150**。
+测试：Core **872/872**，NextThought.Tests **151/151**。
 证据：`D:\NextThought开发\qa\screens2\images\*-dark.png`；`qa/dark-pages.png` 网格。
 状态：D11「已验证」（2026-11-20 · 0.5.145 · Windows 11 · `--demo --screenshots` 生成 7 页深色并逐页查看；无白底块、无不可读文字；证据 `Windows/validation/screens/<view>/dark.png`）。限制：Mac 273 视图未逐个深色对照。
 未解决：全视图深色对照与硬编码扫描。
 
 ## 2026-11-20 · 0.5.145 · D8（部分）
 改动：按钮焦点环从 1px 印章红改成 Mac 的 2px `Ink.focus`（Ai）；新增 `Button.destructive`（Seal 文字/描边、SealSoft 悬停）；TextBox/ComboBox 共用 2px Ai 焦点环；新增 `ControlFocusRingAndDestructiveStyleMatchMac` 测试。
-测试：Core **872/872**，NextThought.Tests **150/150**。
+测试：Core **872/872**，NextThought.Tests **151/151**。
 状态：D8「未做」。八卡样张页/焦点环/破坏性按钮/Fluent 状态符/静态 hover/pressed 已完成；并排图与 Mac 仍非逐像素一致，差异未逐项收口。
 未解决：控件样张页与 Mac 截图并排。
 
 ## 2026-11-20 · 0.5.145 · D7（完成）
 改动：57 个 `Image(systemName:)` 全部有 `Icon*` 资源与 `ICON_MAP.md` 行；`Icons.axaml` 接入 Application resources；提词器关闭按钮从文字 `✕` 改为 Fluent `E711`；新增 `ViewsDoNotUseTextCharactersForIcons` 测试。
-测试：Core **872/872**，NextThought.Tests **150/150**。
+测试：Core **872/872**，NextThought.Tests **151/151**。
 状态：D7「已实现、未验证」。码点是暂定映射，尚未逐图标并排定稿；界面已无文字充当图标的关闭符号。
 未解决：逐一并排校对 Fluent 码点。
 
 ## 2026-11-20 · 0.5.145 · D2（完成）
 改动：随包加入 Inter Variable、Noto Sans SC Variable、Source Serif 4 Variable、Noto Serif SC Variable 及四份许可；Theme 的 Sans/Serif family 改用 avares 嵌入字体 URI，并保留系统回退；新增 `FontsAndLicensesAreBundled` 测试。
-测试：Core **872/872**，NextThought.Tests **150/150**。
+测试：Core **872/872**，NextThought.Tests **151/151**。
 证据：`--screenshots` 在嵌入字体下正常出图；`qa/fonts-shots/images/home-light.png` 已查看，标题为衬线、中文不再只回退微软雅黑。
 状态：D2「已实现、未验证」。未在一台未装这些字体的干净 Windows 上单独验证。
 未解决：干净机字体实机验收。
 
 ## 2026-11-20 · 0.5.145 · D1（部分）
 改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
-测试：Core **872/872**，NextThought.Tests **150/150**。
+测试：Core **872/872**，NextThought.Tests **151/151**。
 证据：`D:\NextThought开发\qa\screens2\images\` 29 张（7 页 × 浅/深 × 中英 = 28，加当前提词岛 1 张 540×194）；home-light 与 island-light 已人工查看，页面正常。
 状态：D1「未做」。7 页中英/浅深 + 提词岛 7 个状态已放进 `Windows/validation/screens/`；首页/历史/资料库/设置/组件样张已有 Mac 并排图；仍缺 Mac 脚本的准备/回顾/工作纪要、演示文案与 Mac 截图逐字一致、逐项差异清单。
 未解决：补齐页面/语言/岛形态和对照。
 
 ## 2026-11-20 · 0.5.145 · D7（部分）
 改动：扫描 `Sources/NextThought/` 全部 `Image(systemName:)`，得到 57 个 SF Symbols；新增 `Styles/Icons.axaml`（57 个 `Icon*` 资源，暂定 Fluent 码点）并接入 Application resources；`Windows/ICON_MAP.md` 逐项列 SF Symbol / 码点 / 资源键；新增覆盖测试。
-测试：Core **872/872**，NextThought.Tests **150/150**。
+测试：Core **872/872**，NextThought.Tests **151/151**。
 状态：D7「未做」。覆盖与资源已齐，但码点是暂定映射，尚未逐个并排定稿；界面仍有多处直接 Segoe 字形，未全部改为引用资源。
 未解决：图标码点校对与全量替换。
 
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
-测试：Core **872/872**（新增 2 项），NextThought.Tests **150/150**。
+测试：Core **872/872**（新增 2 项），NextThought.Tests **151/151**。
 状态：D6「未做」。首页已按 Mac v3 重排：日期行 + “接下来是什么场合？”标题、场景选择、promise、moments、接着上一场（演示系列已补）、最近记录；选中场景 tint 13%；仍非逐像素一致（胶囊尺寸、系列 meta、最近记录日期等）。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
 改动：`Motion.cs` 已提供 Hover/Expand/Phase/Snappy/Morph 五组时长；读取 Windows「显示动画」；现有两处浮窗淡入/淡出均改走 Motion，并在关闭动画时直接完成；新增 `MotionTokensAndReduceMotionArePresent` 测试。
-测试：Core **872/872**，NextThought.Tests **150/150**（全量）。
+测试：Core **872/872**，NextThought.Tests **151/151**（全量）。
 状态：D5「已实现、未验证」。弹簧形状用 cubic easing 近似，不是逐帧弹簧；没有其它动画点可接。
 未解决：真正弹簧曲线与逐页动画对照。
 

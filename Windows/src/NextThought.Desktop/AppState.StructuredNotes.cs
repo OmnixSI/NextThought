@@ -667,6 +667,9 @@ public partial class AppState
         // Use the ported AnswerPromptBuilder instructions (safety, citation, style) instead of
         // the old three-sentence prompt; series experience and skills stay as extra sections.
         var prompt = AnswerPromptBuilder.Instructions(Settings.WebSearch);
+        if (SelectedMode == MeetingMode.Academic && Settings.UseMaterials
+            && AnswerPromptBuilder.WholeMaterialOf(DocumentsForRetrieval()) is { } whole)
+            prompt += "\n\n" + AnswerPromptBuilder.WholeMaterial(whole);
         if (experience.Length > 0) prompt += "\n\n这个系列已经确认的经验（优先遵守）：\n" + experience;
         return skills.Length == 0 ? prompt : prompt + "\n\n用户加载的技能（按适用部分执行）：\n" + skills;
     }

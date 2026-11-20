@@ -47,6 +47,15 @@ public sealed class SelfTestStructureTests
     }
 
 
+
+    [Fact]
+    public void AcademicAnswersUseWholeSeriesMaterial()
+    {
+        var notes = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.StructuredNotes.cs"));
+        Assert.Contains("SelectedMode == MeetingMode.Academic", notes);
+        Assert.Contains("WholeMaterialOf(DocumentsForRetrieval())", notes);
+    }
+
     [Fact]
     public void ContextSidebarIsCollapsibleAndPersisted()
     {
