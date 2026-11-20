@@ -132,7 +132,7 @@ Nov 20, 2026 · @Homing
 | F9 | 已实现、未验证 | 设置页云端识别说明改为「实时记录与导入 WAV 都走云端识别」；双屏演讲说明改为已支持讲话/截图跟页 | 实机确认选云端后实时录音确实发往所选服务，关闭时无音频离开本机 |
 | F10 | 已实现、未验证 | `CompanionServer` 对动作先去重（`commands` 按动作编号）、记录后立即返回 204/409，再在后台执行；相同编号重试不会重复执行；`Allowed` 含 9 个动作 | 需实机手机点一次「回答」，确认电脑只生成一次；8 秒期限内应答需实测 |
 | F11 | 已实现、未验证 | 快照已填 `Position`（第几条/共几条）、`AnswerID`（会议:回答数）、`Phase`（generating/recording/idle）；回答开始/结束都通过 `OnAnsweringChanged` 推送；`regenerate` 已是“重新生成不同版本”而不是普通 answer；`CompanionBLETests`/`CompanionCryptoTests` 已翻译通过 | 需实机手机看状态、第几条、上一条/下一条与电脑一致 |
-| F12 | 未做 | — | 未开始 |
+| F12 | 已实现、未验证 | 逐项对照表写入 `Windows/validation/companion/SCOPE_LIFETIME.md`：监听范围仅 RFC 1918+回环（100.64/10 已移除）、配对 fragment 令牌每次轮换、无 8 小时自动停止、配对链接字段与 Mac 相同、中转通道接口相同；`CompanionCryptoTests`/`CompanionBLETests` 已翻译通过 | 需手机实机扫码、跨网段与中转通道验证；对照表基于源码核对，非实机 |
 | F13 | 本版不做 | OPEN_QUESTIONS 已记录；不修改 Mobile/，不实现 Windows 蓝牙外设 | 本版不做；事实更正：Mobile/ 在本仓库，手机端已按服务标识扫描但发现后仍检查 IH- 名字，Mac 广播 NT- 同样过不了，留给以后 |
 | F14 | 未做 | — | 未开始 |
 | F15 | 已实现、未验证 | 更新状态改到 UI 线程；断网日志未验证 | 待逐元素对照或实机验证 |
