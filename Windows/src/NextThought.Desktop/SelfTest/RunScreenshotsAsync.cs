@@ -69,6 +69,16 @@ public partial class MainWindow
             CaptureVisual(sample, Path.Combine(directory, "controls" + (dark ? "-dark.png" : "-light.png")));
             sample.Close();
         }
+        // First-run guide (E3): first and last step.
+        state.OnboardingStep = 0;
+        state.OnboardingVisible = true;
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+        CaptureWindow(Path.Combine(directory, "onboarding-first" + suffix));
+        state.OnboardingStep = 3;
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+        CaptureWindow(Path.Combine(directory, "onboarding-last" + suffix));
+        state.OnboardingVisible = false;
+
         // Quick settings panel (E26)
         var quick = new QuickSettingsPanel { DataContext = state };
         var quickWindow = new Avalonia.Controls.Window
