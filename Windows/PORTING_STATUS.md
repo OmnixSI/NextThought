@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · H1（自检文件与入口）
+改动：`SelfTest/MainWindow.SelfTests.cs` 拆成 `Desktop/SelfTest/Checks/` 下 56 个检查文件 + 1 个 GlobalUsings；新增 `SelfTestRegistry`，按 `--self-test <名字>` 反射调用对应 `Run*CheckAsync`；MainWindow 仍是 258 行，StartupOptions 仍是 23 行三入口。
+测试：Core **869/869**，NextThought.Tests **131/131**；构建 0 警告 0 错误。
+状态：H1 **未完成**。每项自检一文件已做到；`--self-test` 入口代码已加，但实跑 `--demo --self-test=window-close` 时进程未在 180 秒内退出，已终止，不能记为通过。65 个旧 `--xxx=` 仍由 SelfTestOptions 解析，尚未删除。
+未解决：命名自检死锁/未退出的原因；旧参数收口；H2 未开始。
+
 ## 2026-11-20 · 0.5.145 · H1（继续）
 改动：`SelfTestOptions` 接管 65 个 QA/演示开关；`StartupOptions.cs` 缩到 23 行，只剩 `--demo`、`--screenshots`、`--self-test`；Desktop 内引用统一改到 `SelfTestOptions`。
 测试：Core **869/869**，NextThought.Tests **131/131**（新增 StartupOptions 结构测试）。
