@@ -186,7 +186,7 @@ python Windows/scripts/core_usage.py
 | LiveTranslationRevisionGateTests.swift | 5 | 0 |
 | LocalModelReuseTests.swift | 5 | 0 |
 | MeetingCarryTests.swift | 2 | 2 |
-| MeetingEndWatchTests.swift | 18 | 1 |
+| MeetingEndWatchTests.swift | 18 | 17 |
 | MeetingPreparationTests.swift | 5 | 5 |
 | MeetingTypeAndNotesTests.swift | 17 | 2 |
 | OnboardingFlowTests.swift | 6 | 6 |
@@ -206,7 +206,7 @@ python Windows/scripts/core_usage.py
 | SceneAndGazeTests.swift | 20 | 1 |
 | ScreenDeltaTests.swift | 1 | 1 |
 | ScreenEvidenceTests.swift | 5 | 1 |
-| ScrollFollowStateTests.swift | 8 | 0 |
+| ScrollFollowStateTests.swift | 8 | 8 |
 | SeriesBriefingTests.swift | 12 | 0 |
 | SessionArchivePersistenceTests.swift | 21 | 0 |
 | SessionContentSearchTests.swift | 13 | 0 |
@@ -218,9 +218,9 @@ python Windows/scripts/core_usage.py
 | SessionUserContentTests.swift | 7 | 0 |
 | SkillTests.swift | 4 | 4 |
 | SpeakerClusteringTests.swift | 20 | 0 |
-| StabilityTests.swift | 6 | 0 |
+| StabilityTests.swift | 6 | 5 |
 | StructuredNotesTests.swift | 31 | 0 |
-| SubtitleBarTests.swift | 24 | 0 |
+| SubtitleBarTests.swift | 24 | 24 |
 | TranscriptContextBuilderTests.swift | 1 | 1 |
 | TranscriptDeduplicatorTests.swift | 3 | 0 |
 | UpdateCatalogTests.swift | 6 | 0 |
