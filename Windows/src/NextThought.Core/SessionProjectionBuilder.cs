@@ -4,6 +4,28 @@ using System.Text.Json;
 
 namespace NextThought.Core;
 
+/// <summary>A11: the Mac digest is SHA-256 over length-prefixed (big-endian) UTF-8 parts, full lowercase hex.</summary>
+public static class SwiftDigest
+{
+    public static string Of(params string[] parts)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        foreach (var part in parts)
+        {
+            var bytes = Encoding.UTF8.GetBytes(part);
+            var length = new byte[8];
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt64BigEndian(length, (ulong)bytes.Length);
+            hash.AppendData(length);
+            hash.AppendData(bytes);
+        }
+        return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
+    }
+
+    /// <summary>Swift's <c>String(date.timeIntervalSince1970.bitPattern)</c>.</summary>
+    public static string DateBitPattern(DateTimeOffset date) =>
+        BitConverter.DoubleToUInt64Bits((date.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.UtcDateTime.Ticks) / 10_000_000.0)
+            .ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
 /// <summary>
 /// Builds a frozen, searchable view of a meeting (port of the portable part of
 /// SessionProjectionBuilder). Transcript corrections, notes rendering and speaker labels are
@@ -11,10 +33,32 @@ namespace NextThought.Core;
 /// </summary>
 public static class SessionProjectionBuilder
 {
-    /// <summary>B22: a stable revision of the rendered note text; edits change it.</summary>
-    public static string StructuredNotesRevision(StructuredNotesDoc notes) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-            JsonSerializer.Serialize(notes, JsonDefaults.Options)))).ToLowerInvariant()[..32];
+    /// <summary>A11: Mac's structured-notes snapshot fingerprint: sorted-key JSON, ISO-8601 dates, base64, digest.</summary>
+    public static string StructuredNotesRevision(StructuredNotesDoc notes)
+    {
+        var json = JsonSerializer.Serialize(notes, JsonDefaults.ArchiveOptions);
+        var node = System.Text.Json.Nodes.JsonNode.Parse(json);
+        var sorted = SortKeys(node);
+        var options = new JsonSerializerOptions(JsonDefaults.ArchiveOptions)
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        var bytes = Encoding.UTF8.GetBytes(sorted?.ToJsonString(options) ?? "null");
+        return SwiftDigest.Of("structured-notes-v1", Convert.ToBase64String(bytes));
+    }
+
+    private static System.Text.Json.Nodes.JsonNode? Clone(System.Text.Json.Nodes.JsonNode? node) =>
+        node is null ? null : System.Text.Json.Nodes.JsonNode.Parse(node.ToJsonString());
+
+    private static System.Text.Json.Nodes.JsonNode? SortKeys(System.Text.Json.Nodes.JsonNode? node) => node switch
+    {
+        System.Text.Json.Nodes.JsonObject obj => new System.Text.Json.Nodes.JsonObject(
+            obj.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => KeyValuePair.Create(pair.Key, Clone(SortKeys(pair.Value))))),
+        System.Text.Json.Nodes.JsonArray array => new System.Text.Json.Nodes.JsonArray(
+            array.Select(value => Clone(SortKeys(value))).ToArray()),
+        _ => node
+    };
 
     public static SessionTextProjection Build(Guid sessionId, DateTimeOffset startedAt,
         IReadOnlyList<TranscriptLine> lines, IReadOnlyList<SessionProjectedAnswer> answers,
@@ -163,29 +207,37 @@ public static class SessionProjectionBuilder
     }
 
 
-    /// <summary>B7: fingerprint of the immutable transcript source (ids, times, speaker, text and corrections).</summary>
+    /// <summary>A11: fingerprint of the immutable transcript source, byte-for-byte as the Mac computes it.</summary>
     public static string TranscriptSourceRevision(Guid sessionId, DateTimeOffset startedAt,
         IReadOnlyList<TranscriptLine> lines, IReadOnlyList<TranscriptCorrection> corrections)
     {
         var corrected = NotesCorrections.Apply(corrections, lines);
         var labels = SpeakerLabels.PromptLabels(lines, null, null, false);
-        var builder = new StringBuilder();
-        builder.Append(sessionId.ToString("D")).Append('\u0000').Append("transcript-source-v1").Append('\u0001');
+        var parts = new List<string> { sessionId.ToString("D").ToUpperInvariant(), "transcript-source-v1" };
         for (var index = 0; index < lines.Count; index++)
         {
             var line = lines[index];
             var text = corrected[index].Text;
-            builder.Append(line.Id).Append('\u0000').Append(line.Date.ToUnixTimeMilliseconds()).Append('\u0000')
-                .Append(line.Speaker).Append('\u0000').Append(line.Voice?.ToString() ?? "").Append('\u0000')
-                .Append(labels.TryGetValue(line.Id, out var label) ? label : line.Speaker).Append('\u0000')
-                .Append(line.Text).Append('\u0000').Append(text).Append('\u0001');
+            parts.Add(line.Id.ToString("D").ToUpperInvariant());
+            parts.Add(SwiftDigest.DateBitPattern(line.Date));
+            parts.Add(line.Speaker);
+            parts.Add(line.Voice?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "");
+            parts.Add(labels.TryGetValue(line.Id, out var label) ? label : line.Speaker);
+            parts.Add(line.Text);
+            parts.Add(text);
+            if (text == line.Text) continue;
             foreach (var correction in corrections.Where(correction => !correction.Reverted
                 && (correction.LineId == line.Id || (correction.LineId is null && correction.Line == index))
                 && text.Contains(correction.Corrected, StringComparison.Ordinal)))
-                builder.Append(correction.Id).Append('\u0000').Append(correction.BaseRevision ?? "").Append('\u0000')
-                    .Append(correction.Original).Append('\u0000').Append(correction.Corrected).Append('\u0001');
+            {
+                parts.Add(correction.Id.ToUpperInvariant());
+                parts.Add(correction.BaseRevision ?? "");
+                parts.Add(JsonNamingPolicy.CamelCase.ConvertName(correction.Source.ToString()));
+                parts.Add(correction.Original);
+                parts.Add(correction.Corrected);
+            }
         }
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString()))).ToLowerInvariant();
+        return SwiftDigest.Of([.. parts]);
     }
 
     private static SessionDerivedContentStatus DerivedStatus(string? saved, string current) =>

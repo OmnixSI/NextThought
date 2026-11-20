@@ -186,17 +186,8 @@ public static partial class SessionEvidenceBuilder
     }
 
     private static string ClaimRevision(string id, string title, string claim, string? quote, string? location,
-        NotesSectionKind? kind, string? owner, string? due, DateTimeOffset? dueDate)
-    {
-        var parts = new[] { id, title, claim, quote ?? "", location ?? "", kind?.ToString() ?? "",
-            owner ?? "", due ?? "", dueDate?.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture) ?? "" };
-        using var stream = new MemoryStream();
-        foreach (var part in parts)
-        {
-            var bytes = Encoding.UTF8.GetBytes(part);
-            stream.Write(BitConverter.GetBytes((ulong)bytes.Length).Reverse().ToArray());
-            stream.Write(bytes);
-        }
-        return Convert.ToHexString(SHA256.HashData(stream.ToArray())).ToLowerInvariant();
-    }
+        NotesSectionKind? kind, string? owner, string? due, DateTimeOffset? dueDate) =>
+        SwiftDigest.Of(id, title, claim, quote ?? "", location ?? "",
+            kind is { } value ? System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(value.ToString()) : "",
+            owner ?? "", due ?? "", dueDate is { } date ? SwiftDigest.DateBitPattern(date) : "");
 }

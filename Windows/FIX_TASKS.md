@@ -30,7 +30,7 @@ Nov 20, 2026 · @Homing
 | A8 | 已实现、未验证 | `ReadMeta` 记录原始键集合，重写时缺失的 `title/platform/inPerson` 不再补默认值；`AppendQuestionAsync` 同步 `questionCount`；纪要状态统一用 `ready`（最近会议行、模板整理、演示数据）。新增 `SessionToleranceTests` 一项验证 Mac meta 重写不新增键、提问数正确 | 需用一份真实 Mac `meta.json` 再保存核对键集合；Windows 新建会议仍会写 `platform`（Mac 会议重写不写） |
 | A9 | 已实现、未验证 | `ReadLines` 跳过任意损坏行并计数，`SessionData.SkippedLines` 在界面提示；答案行损坏时去掉 `evidence` 再解一次；说话人上限从 16 改为 32；转写/译文/答案/语音/旧译文行都计入。新增损坏中间行与旧 evidence 两项测试 | 需用真实 Mac 会议文件和损坏样本实测；证据逐字段对照仍待夹具 |
 | A10 | 已实现、未验证 | `SkillStore.PreserveIdentity`：文本编辑后按名称保留原 `Id/ImportedAt/Global/Enabled`；`NotesTemplateStore.PreserveIdentity`：按 Id/名称保留模板 `Id/Base` 与各段 `Id/Kind/IsGap/Carry/CarryPrefix`，只更新段名/说明 | 需在技能与模板文本框实测编辑后系列引用仍有效、其余字段不变 |
-| A11 | 未做 | — | 未开始 |
+| A11 | 已实现、未验证 | 新增 `SwiftDigest`（长度前缀大端 SHA-256、全 64 位小写）与 Swift `dateRevision`（timeIntervalSince1970 bitPattern）；`TranscriptSourceRevision` 按 Swift 的字段顺序/大小写 UUID/说话人/原文+修正/修正来源重写；`StructuredNotesRevision` 改为 sorted-key JSON + base64 + Swift digest；`claimFingerprint` 改用同一 digest 与 kind camelCase、dueDate bitPattern。新增 `RevisionPortTests` 3 项 | 必须用 A15 的 Swift emit 夹具逐值核对；`NotesItem.DueDate` 的 DateTime ISO 秒格式与 Swift `.iso8601` 是否一致待夹具确认 |
 | A12 | 未做 | — | 未开始 |
 | A13 | 未做 | — | 未开始 |
 | A14 | 已实现、未验证 | `IncrementalBackupStore.Prune` 现在从读不出的清单原文里提取 64 位哈希并加入保护集，删除对象前先合并，损坏清单引用的对象不再被删；新增 `PruneKeepsObjectsReferencedByAnUnreadableManifest`；`BackupArchive` 的 `settings.json` 仍走 `SettingsSnapshot.Filter`（与 A12 的 exportedKeys 同一列表） | 需与 A12 夹具一起验证 settings.json 与 Mac 备份内容一致；增量备份/恢复点尚未接到自动备份界面（E 组） |

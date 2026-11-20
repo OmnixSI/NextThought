@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · A11
+改动：移植 Swift 的长度前缀 SHA-256 摘要与日期 bitPattern；`transcriptSourceRevision`/`structuredNotesRevision`/`claimFingerprint` 按 Swift 字段顺序、UUID 大写、kind camelCase 重算；新增 3 项算法回归测试。
+测试：Core **1522/1522**，NextThought.Tests **261/261**。
+状态：A11「已实现、未验证」；必须等 A15 的 Swift emit 夹具逐值核对，dueDate 编码差异待查。
+
 ## 2026-11-20 · 0.5.145 · A14
 改动：增量备份 `Prune` 读不出清单时保留其引用的对象，不再误删；损坏清单测试通过；`BackupArchive` 的 `settings.json` 继续使用 `SettingsSnapshot.Filter`（A12 同一导出键列表）。
 测试：Core **1519/1519**，NextThought.Tests **261/261**。
