@@ -1,3 +1,9 @@
+## 2026-11-20 · 0.5.145 · H1（完成）
+改动：删除 `SelfTestOptions.cs` 和全部旧 `--xxx` 分支；`StartupOptions` 只剩 `--demo`、`--screenshots`、`--self-test`；`--self-test <名字>` 是唯一自检入口；MainWindow 258 行；56 个检查各一文件。
+测试：Core **869/869**，NextThought.Tests **132/132**。
+证据：`--demo --self-test=window-close` 实跑 exit 0，stdout `window-close-check: passed`，输出 `nextthought-selftest/window-close`；`SelfTestStructureTests` 3 项通过。
+状态：H1「已实现、未验证」。旧参数已删除；检查名与 Mac 40 项的逐项对应仍可继续补，但不阻塞 H1 的完成条件。
+
 ## 2026-11-20 · 0.5.145 · H1（命名入口已打通）
 改动：`Program.Main` 改为调用 `StartupOptions.Parse`（之前被批量替换成了 `SelfTestOptions.Parse`，导致 `StartupOptions.SelfTest` 一直为 null）。
 测试：Core **869/869**，NextThought.Tests **131/131**。
