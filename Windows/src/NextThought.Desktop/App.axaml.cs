@@ -53,10 +53,19 @@ public partial class App : Application
                 return;
             }
             desktop.MainWindow = new MainWindow(state);
-            desktop.ShutdownRequested += async (_, _) =>
+            desktop.ShutdownRequested += (_, args) =>
             {
-                try { await state.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(15)); }
-                catch { }
+                // F18: a shutdown request (window close, tray exit, OS logoff) first cancels the
+                // exit, waits for the bounded shutdown work, then requests the real shutdown.
+                // A window/update path that is already finishing has its own bounded wait.
+                if (state.AllowClose || state.ShuttingDown) return;
+                args.Cancel = true;
+                _ = Task.Run(async () =>
+                {
+                    try { await state.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(15)); }
+                    catch { }
+                    await Dispatcher.UIThread.InvokeAsync(() => desktop.Shutdown());
+                });
             };
             desktop.Exit += (_, _) =>
             {
