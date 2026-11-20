@@ -173,6 +173,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void ForeignSpeechCanAutoTranslate()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("LooksForeign", live);
+        Assert.Contains("AutoTranslateForeign", live);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "QuickSettingsPanel.axaml"));
+        Assert.Contains("听到外语自动翻译", xaml);
+    }
+
     [Fact]
     public void LiveCanLookUpTheDisplayedAnswer()
     {

@@ -13,6 +13,7 @@
       <TextBlock Text="偏好" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
       <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" />
       <CheckBox Content="字幕显示译文" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
+      <CheckBox Content="听到外语自动翻译" IsChecked="{Binding Settings.AutoTranslateForeign}" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBlock Text="回答语言" VerticalAlignment="Center" />
         <ComboBox Grid.Column="1" Width="120" ItemsSource="{Binding Settings.AnswerLanguageChoices}" SelectedItem="{Binding Settings.AnswerLanguage}" />

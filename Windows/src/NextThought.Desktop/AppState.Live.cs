@@ -357,6 +357,11 @@ public partial class AppState
         writes.Add(write);
         if (voiceTagger is { } tagger && line.Speaker != "me") writes.Add(TagVoiceAsync(meta, line, tagger));
         if (translator is { } translationService) writes.Add(TranslateLineAsync(meta, line, translationService, write));
+        else if (Settings.AutoTranslateForeign && LooksForeign(line.Text))
+        {
+            using var onDemand = new MeetingTranslator(CurrentClient(), AnswerOptions());
+            writes.Add(TranslateLineAsync(meta, line, onDemand, write));
+        }
         _ = write.ContinueWith(task => Dispatcher.UIThread.Post(() => HandleAudioFailure("会议写入失败：" + task.Exception!.GetBaseException().Message)), TaskContinuationOptions.OnlyOnFaulted);
         if (automatic && update.Source == AudioSource.System && Recording && !Stopping) ApplyCandidate(tracker.Ingest(update.Text, true, update.Id, DateTimeOffset.UtcNow));
         NoteSpeechHeard(line);
@@ -379,6 +384,14 @@ public partial class AppState
             }
             SetStatus("补译已结束；有译文的句子已分别保存。未成功的句子可再次补译。");
         });
+    }
+
+    private static bool LooksForeign(string text)
+    {
+        var letters = text.Count(char.IsLetter);
+        if (letters < 4) return false;
+        var cjk = text.Count(character => character is >= '\u4E00' and <= '\u9FFF');
+        return cjk * 5 < letters;
     }
 
     private bool CanTranslate() => IsIdle && !Answering && currentLines.Count > 0;

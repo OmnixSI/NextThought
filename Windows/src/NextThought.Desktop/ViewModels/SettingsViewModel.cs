@@ -144,6 +144,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     public IReadOnlyList<string> AnswerLanguageChoices { get; } = ["auto", "zh", "en"];
     [ObservableProperty] private string answerLanguage = "auto";
     [ObservableProperty] private bool answerGloss;
+    [ObservableProperty] private bool autoTranslateForeign;
     [ObservableProperty] private string tavilyKey = "";
     [ObservableProperty] private string tavilyKeyStatus = "密钥只保存在当前 Windows 用户；也可以继续用 TAVILY_API_KEY 环境变量。";
 
@@ -263,6 +264,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         OnboardingCompletedVersion = settings.OnboardingCompletedVersion;
         AnswerLanguage = settings.AnswerLanguage;
         AnswerGloss = settings.AnswerGloss;
+        AutoTranslateForeign = settings.AutoTranslateForeign;
         AutoEndMode = settings.MeetingAutoEndMode;
         AutoEndMinutes = settings.MeetingAutoEndMinutes.ToString();
         SelectedAutoEndMode = AutoEndModes.FirstOrDefault(x => x.Value == settings.MeetingAutoEndMode) ?? AutoEndModes[0];
@@ -332,6 +334,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         OnboardingCompletedVersion = OnboardingCompletedVersion,
         AnswerLanguage = AnswerLanguage,
         AnswerGloss = AnswerGloss,
+        AutoTranslateForeign = AutoTranslateForeign,
         MeetingAutoEndMode = SelectedAutoEndMode?.Value ?? "prompt",
         MeetingAutoEndMinutes = int.TryParse(AutoEndMinutes, out var minutes) ? Math.Clamp(minutes, 1, 240) : MeetingEndWatch.Config.DefaultMinutes,
         CaptureProcessId = SelectedProcess?.Id ?? 0,

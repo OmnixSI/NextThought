@@ -112,6 +112,9 @@ public sealed record AppSettings
     /// <summary>D10: the Live/Library context sidebar is collapsed.</summary>
     public bool ContextSidebarHidden { get; set; }
 
+    /// <summary>E11: turn translation on automatically when the speech is mostly non-Chinese.</summary>
+    public bool AutoTranslateForeign { get; set; }
+
     /// <summary>E6: answer language: auto / zh / en.</summary>
     public string AnswerLanguage { get; set; } = "auto";
 
