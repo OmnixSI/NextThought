@@ -114,8 +114,16 @@
             </StackPanel>
           </Grid>
 
-          <TextBlock Grid.Row="1" Text="{Binding DetectedQuestion}" Classes="caption" Margin="{DynamicResource D4Margin_18_0_18_10}"
-                     TextWrapping="Wrap" MaxHeight="56" TextTrimming="CharacterEllipsis" />
+          <StackPanel Grid.Row="1" Margin="{DynamicResource D4Margin_18_0_18_10}" Spacing="{DynamicResource D4Spacing_4}">
+            <TextBlock Text="{Binding DetectedQuestion}" Classes="caption" TextWrapping="Wrap" MaxHeight="56" TextTrimming="CharacterEllipsis" />
+            <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}" Padding="{DynamicResource D4Padding_8_6}"
+                    IsVisible="{Binding CandidateQuestion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{Binding CandidateQuestion}" Classes="caption" TextWrapping="Wrap" />
+                <Button Grid.Column="1" Classes="quiet" Content="回答" Command="{Binding ForceAnswerCommand}" />
+              </Grid>
+            </Border>
+          </StackPanel>
 
           <ScrollViewer Grid.Row="2" Margin="{DynamicResource D4Margin_12_0_12_0}" VerticalScrollBarVisibility="Auto">
             <views:MarkdownText Text="{Binding AnswerText}" BaseFontSize="15" Margin="{DynamicResource D4Margin_6_0}" />

@@ -32,6 +32,8 @@ public partial class AppState
 
     private DateTimeOffset recordingStartedAt;
 
+    public string CandidateQuestion => tracker.Current is { } candidate ? candidate.FullText : "";
+
     public string RecordingElapsedText => Recording
         ? (DateTimeOffset.Now - recordingStartedAt).ToString(@"hh\:mm\:ss")
         : "00:00:00";
@@ -39,6 +41,7 @@ public partial class AppState
     private void OnCandidateTimer()
     {
         if (Recording) OnPropertyChanged(nameof(RecordingElapsedText));
+        OnPropertyChanged(nameof(CandidateQuestion));
         var now = DateTimeOffset.UtcNow;
         ApplyCandidate(tracker.Tick(now));
         if (!Settings.AutomaticAnswers || !Recording || Stopping) { automaticScheduler.Clear(); return; }
