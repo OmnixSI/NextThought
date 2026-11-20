@@ -1,31 +1,32 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              x:Class="NextThought.Desktop.Views.QuickSettingsPanel"
              x:DataType="local:AppState">
   <Border Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
           CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_16}" Width="340">
     <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-      <TextBlock Text="状态" Classes="overline" />
+      <TextBlock Text="{loc:Tr 状态}" Classes="overline" />
       <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
       <TextBlock Text="{Binding ModelStatusText}" Classes="caption" TextWrapping="Wrap" />
       <TextBlock Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
-      <TextBlock Text="偏好" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
-      <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" />
-      <CheckBox Content="字幕显示译文" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
-      <CheckBox Content="听到外语自动翻译" IsChecked="{Binding Settings.AutoTranslateForeign}" />
-      <CheckBox Content="跟着讲话翻幻灯片" IsChecked="{Binding Settings.FollowSlides}" />
+      <TextBlock Text="{loc:Tr 偏好}" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+      <CheckBox Content="{loc:Tr 自动回答}" IsChecked="{Binding Settings.AutomaticAnswers}" />
+      <CheckBox Content="{loc:Tr 字幕显示译文}" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
+      <CheckBox Content="{loc:Tr 听到外语自动翻译}" IsChecked="{Binding Settings.AutoTranslateForeign}" />
+      <CheckBox Content="{loc:Tr 跟着讲话翻幻灯片}" IsChecked="{Binding Settings.FollowSlides}" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBlock Text="回答语言" VerticalAlignment="Center" />
+        <TextBlock Text="{loc:Tr 回答语言}" VerticalAlignment="Center" />
         <ComboBox Grid.Column="1" Width="120" ItemsSource="{Binding Settings.AnswerLanguageChoices}" SelectedItem="{Binding Settings.AnswerLanguage}" />
       </Grid>
-      <CheckBox Content="英语回答附中文对照" IsChecked="{Binding Settings.AnswerGloss}" />
+      <CheckBox Content="{loc:Tr 英语回答附中文对照}" IsChecked="{Binding Settings.AnswerGloss}" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBlock Text="提词宽度" VerticalAlignment="Center" />
+        <TextBlock Text="{loc:Tr 提词宽度}" VerticalAlignment="Center" />
         <ComboBox Grid.Column="1" MinWidth="120" ItemsSource="{Binding Settings.CueWidthChoices}"
                   SelectedItem="{Binding Settings.SelectedCueWidth}" />
       </Grid>
-      <Button Classes="primary" Content="全部设置" HorizontalAlignment="Stretch"
+      <Button Classes="primary" Content="{loc:Tr 全部设置}" HorizontalAlignment="Stretch"
               Command="{Binding NavigateCommand}" CommandParameter="Settings" />
     </StackPanel>
   </Border>

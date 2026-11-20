@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:platform="using:NextThought.Platform"
              x:Class="NextThought.Desktop.Views.SettingsView"
@@ -8,51 +9,51 @@
     <Border Grid.Column="0" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
             BorderThickness="0,0,0.5,0">
       <StackPanel Margin="{DynamicResource D4Margin_14_18_14_14}" Spacing="{DynamicResource D4Spacing_2}">
-        <TextBlock Text="设置" Classes="overline" Margin="{DynamicResource D4Margin_10_0_10_8}" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="场景" Tag="Scene" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="回答与资料" Tag="Answer" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="提词与教练" Tag="Coach" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="纪要" Tag="Notes" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="通用" Tag="General" Click="SettingsPage_Click" />
-        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="高级" Tag="Advanced" Click="SettingsPage_Click" />
+        <TextBlock Text="{loc:Tr 设置}" Classes="overline" Margin="{DynamicResource D4Margin_10_0_10_8}" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 场景}" Tag="Scene" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 回答与资料}" Tag="Answer" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 提词与教练}" Tag="Coach" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 纪要}" Tag="Notes" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 通用}" Tag="General" Click="SettingsPage_Click" />
+        <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{loc:Tr 高级}" Tag="Advanced" Click="SettingsPage_Click" />
       </StackPanel>
     </Border>
     <ScrollViewer Grid.Column="1" Name="SettingsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="{DynamicResource D4Margin_32_18_32_36}" MaxWidth="720" Spacing="{DynamicResource D4Spacing_18}">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="设置" Classes="display" />
-        <TextBlock Text="所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。"
+        <TextBlock Text="{loc:Tr 设置}" Classes="display" />
+        <TextBlock Text="{loc:Tr 所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。}"
                    Classes="caption" />
       </StackPanel>
 
       <Border Name="SettingsSearchCard" Classes="card" Padding="{DynamicResource D4Padding_16}">
-        <TextBox Name="SettingsSearch" PlaceholderText="搜索设置" TextChanged="SettingsSearch_TextChanged" />
+        <TextBox Name="SettingsSearch" PlaceholderText="{loc:Tr 搜索设置}" TextChanged="SettingsSearch_TextChanged" />
       </Border>
 
       <!-- Sound sources -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorScene" Text="声音来源" Classes="section" />
-          <CheckBox Content="系统输出设备混音" IsChecked="{Binding Settings.CaptureSystem}" />
+          <TextBlock Name="AnchorScene" Text="{loc:Tr 声音来源}" Classes="section" />
+          <CheckBox Content="{loc:Tr 系统输出设备混音}" IsChecked="{Binding Settings.CaptureSystem}" />
           <ComboBox ItemsSource="{Binding Settings.SystemDevices}" SelectedItem="{Binding Settings.SelectedSystemDevice}"
-                    HorizontalAlignment="Stretch" PlaceholderText="选择输出设备" />
-          <TextBlock Text="系统声音范围（每次开始前选择）" Classes="label" />
+                    HorizontalAlignment="Stretch" PlaceholderText="{loc:Tr 选择输出设备}" />
+          <TextBlock Text="{loc:Tr 系统声音范围（每次开始前选择）}" Classes="label" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <ComboBox ItemsSource="{Binding Settings.Processes}" SelectedItem="{Binding Settings.SelectedProcess}"
-                      Width="380" PlaceholderText="整个输出设备混音" />
-            <Button Content="刷新应用列表" Command="{Binding ReloadProcessesCommand}" />
+                      Width="380" PlaceholderText="{loc:Tr 整个输出设备混音}" />
+            <Button Content="{loc:Tr 刷新应用列表}" Command="{Binding ReloadProcessesCommand}" />
           </StackPanel>
-          <TextBlock Text="选应用时仅采集该进程及其子进程的声音；选整个设备时采集该设备全部混音。需要 Windows 10 build 20348 以上。"
+          <TextBlock Text="{loc:Tr 选应用时仅采集该进程及其子进程的声音；选整个设备时采集该设备全部混音。需要 Windows 10 build 20348 以上。}"
                      Classes="caption" FontSize="11" />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
             <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-              <CheckBox Content="麦克风" IsChecked="{Binding Settings.CaptureMicrophone}" />
+              <CheckBox Content="{loc:Tr 麦克风}" IsChecked="{Binding Settings.CaptureMicrophone}" />
               <ComboBox ItemsSource="{Binding Settings.MicrophoneDevices}" SelectedItem="{Binding Settings.SelectedMicrophoneDevice}"
-                        HorizontalAlignment="Stretch" PlaceholderText="选择麦克风" />
-              <TextBlock Text="麦克风增益（1–8 倍，声音偏小时调高）" Classes="label" />
+                        HorizontalAlignment="Stretch" PlaceholderText="{loc:Tr 选择麦克风}" />
+              <TextBlock Text="{loc:Tr 麦克风增益（1–8 倍，声音偏小时调高）}" Classes="label" />
               <Slider Minimum="1" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True"
                       Value="{Binding Settings.MicrophoneGain}" Width="280" HorizontalAlignment="Left" />
-              <Button Content="刷新设备" Click="RefreshDevices_Click" HorizontalAlignment="Left" />
+              <Button Content="{loc:Tr 刷新设备}" Click="RefreshDevices_Click" HorizontalAlignment="Left" />
             </StackPanel>
           </Border>
         </StackPanel>
@@ -61,30 +62,30 @@
       <!-- Recognition -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorAnswer" Text="本机语音识别" Classes="section" />
-          <TextBlock Text="识别模型" Classes="label" />
+          <TextBlock Name="AnchorAnswer" Text="{loc:Tr 本机语音识别}" Classes="section" />
+          <TextBlock Text="{loc:Tr 识别模型}" Classes="label" />
           <ComboBox ItemsSource="{Binding Settings.ModelChoicesList}" SelectedItem="{Binding Settings.SelectedModelChoice}"
                     HorizontalAlignment="Left" MinWidth="300" />
-          <CheckBox Content="整句精修，提高最终转写质量" IsChecked="{Binding Settings.SecondPass}" />
+          <CheckBox Content="{loc:Tr 整句精修，提高最终转写质量}" IsChecked="{Binding Settings.SecondPass}" />
           <TextBlock Text="{Binding ModelStatusText}" Classes="caption" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <Button Classes="primary" Command="{Binding PrepareModelsCommand}">
-          <TextBlock Text="准备语音组件" Foreground="{DynamicResource OnInk}" />
+          <TextBlock Text="{loc:Tr 准备语音组件}" Foreground="{DynamicResource OnInk}" />
         </Button>
-            <TextBlock Text="首次需下载流式模型约 134 MB；整句精修另约 136 MB，下载后离线运行。"
+            <TextBlock Text="{loc:Tr 首次需下载流式模型约 134 MB；整句精修另约 136 MB，下载后离线运行。}"
                        Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
           </StackPanel>
-          <TextBlock Text="术语表（人名与专有名词）" Classes="label" />
-          <TextBlock Text="每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。"
+          <TextBlock Text="{loc:Tr 术语表（人名与专有名词）}" Classes="label" />
+          <TextBlock Text="{loc:Tr 每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。}"
                      Classes="caption" FontSize="11" />
           <TextBox Text="{Binding GlossaryText}" AcceptsReturn="True" Height="96" TextWrapping="Wrap"
                    ScrollViewer.VerticalScrollBarVisibility="Auto"
-                   PlaceholderText="Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees" />
+                   PlaceholderText="{loc:Tr Kubernetes | K8s | 库伯奈提斯&#10;同济大学 | 同技大学&#10;OpenSees | open sees}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <Button Content="保存术语表" Command="{Binding SaveGlossaryCommand}" />
+            <Button Content="{loc:Tr 保存术语表}" Command="{Binding SaveGlossaryCommand}" />
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <TextBlock Text="{Binding GlossaryStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
-            <Button Classes="quiet" Content="打开术语表" Click="OpenGlossary_Click" />
+            <Button Classes="quiet" Content="{loc:Tr 打开术语表}" Click="OpenGlossary_Click" />
           </StackPanel>
           </StackPanel>
         </StackPanel>
@@ -92,71 +93,71 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Name="AnchorGeneral" Text="界面语言 / Language" Classes="section" />
+          <TextBlock Name="AnchorGeneral" Text="{loc:Tr 界面语言 / Language}" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.UiLanguages}" SelectedItem="{Binding Settings.UiLanguage}"
                     Width="160" HorizontalAlignment="Left" />
-          <TextBlock Text="保存设置后立即生效；当前覆盖主导航、设置分节、常用按钮与说明文案，动态状态和会议内容保持原文。"
+          <TextBlock Text="{loc:Tr 保存设置后立即生效；当前覆盖主导航、设置分节、常用按钮与说明文案，动态状态和会议内容保持原文。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Name="AnchorCoach" Text="外观" Classes="section" />
+          <TextBlock Name="AnchorCoach" Text="{loc:Tr 外观}" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.AppearanceChoices}" SelectedItem="{Binding Settings.SelectedAppearance}"
                     Width="200" HorizontalAlignment="Left" />
-          <TextBlock Text="保存后立即应用；跟随系统会随后台主题切换。" Classes="caption" FontSize="11" TextWrapping="Wrap" />
-          <CheckBox Content="会中一直展开提词岛，不用把鼠标移上去" IsChecked="{Binding Settings.CueAlwaysOpen}" />
+          <TextBlock Text="{loc:Tr 保存后立即应用；跟随系统会随后台主题切换。}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <CheckBox Content="{loc:Tr 会中一直展开提词岛，不用把鼠标移上去}" IsChecked="{Binding Settings.CueAlwaysOpen}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <TextBlock Text="提示岛所在屏" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 提示岛所在屏}" Classes="label" VerticalAlignment="Center" />
             <ComboBox x:Name="CueScreenCombo" Width="220" SelectionChanged="CueScreen_SelectionChanged" />
           </StackPanel>
-          <CheckBox Content="尽力从屏幕共享中排除本应用窗口" IsChecked="{Binding Settings.CapturePrivacy}" />
-          <CheckBox Content="隐藏背景，只保留文字、边框与按钮" IsChecked="{Binding Settings.TeleprompterHideBackground}" />
+          <CheckBox Content="{loc:Tr 尽力从屏幕共享中排除本应用窗口}" IsChecked="{Binding Settings.CapturePrivacy}" />
+          <CheckBox Content="{loc:Tr 隐藏背景，只保留文字、边框与按钮}" IsChecked="{Binding Settings.TeleprompterHideBackground}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-            <TextBlock Text="移到" Classes="label" VerticalAlignment="Center" />
-            <Button Classes="quiet" Content="屏幕顶部居中" Tag="camera" Click="MoveTeleprompter_Click" />
-            <Button Classes="quiet" Content="屏幕底部" Tag="bottom" Click="MoveTeleprompter_Click" />
-            <Button Classes="quiet" Content="右侧" Tag="right" Click="MoveTeleprompter_Click" />
+            <TextBlock Text="{loc:Tr 移到}" Classes="label" VerticalAlignment="Center" />
+            <Button Classes="quiet" Content="{loc:Tr 屏幕顶部居中}" Tag="camera" Click="MoveTeleprompter_Click" />
+            <Button Classes="quiet" Content="{loc:Tr 屏幕底部}" Tag="bottom" Click="MoveTeleprompter_Click" />
+            <Button Classes="quiet" Content="{loc:Tr 右侧}" Tag="right" Click="MoveTeleprompter_Click" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <TextBlock Text="提示岛宽度" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 提示岛宽度}" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.CueWidthChoices}" SelectedItem="{Binding Settings.SelectedCueWidth}"
                       Width="160" />
           </StackPanel>
-          <CheckBox Content="启动后自动检查更新（每 6 小时）" IsChecked="{Binding Settings.AutoCheckUpdates}" />
+          <CheckBox Content="{loc:Tr 启动后自动检查更新（每 6 小时）}" IsChecked="{Binding Settings.AutoCheckUpdates}" />
         </StackPanel>
       </Border>
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Name="AnchorCoach2" Text="字幕条" Classes="section" />
+          <TextBlock Name="AnchorCoach2" Text="{loc:Tr 字幕条}" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <TextBlock Text="宽度" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 宽度}" Classes="label" VerticalAlignment="Center" />
             <Slider Minimum="520" Maximum="1400" TickFrequency="20" IsSnapToTickEnabled="True"
                     Value="{Binding Settings.SubtitleWidth}" Width="260" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <TextBlock Text="字号" Classes="label" VerticalAlignment="Center" />
-            <Slider Minimum="16" Maximum="36" TickFrequency="1" IsSnapToTickEnabled="True"
+            <TextBlock Text="{loc:Tr 字号}" Classes="label" VerticalAlignment="Center" />
+            <Slider Minimum="16" Maximum="44" TickFrequency="1" IsSnapToTickEnabled="True"
                     Value="{Binding Settings.SubtitleFontSize}" Width="260" />
           </StackPanel>
-          <CheckBox Content="显示译文" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
-          <TextBlock Text="只影响悬浮字幕条；保存后立即生效。" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <CheckBox Content="{loc:Tr 显示译文}" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
+          <TextBlock Text="{loc:Tr 只影响悬浮字幕条；保存后立即生效。}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Name="AnchorAdvanced" Text="云端识别（实验）" Classes="section" />
+          <TextBlock Name="AnchorAdvanced" Text="{loc:Tr 云端识别（实验）}" Classes="section" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttChoices}" SelectedItem="{Binding Settings.SelectedCloudStt}"
                     Width="240" HorizontalAlignment="Left" />
-          <TextBox Text="{Binding Settings.CloudSttKey}" PasswordChar="•" PlaceholderText="云服务 API Key" />
+          <TextBox Text="{Binding Settings.CloudSttKey}" PasswordChar="•" PlaceholderText="{loc:Tr 云服务 API Key}" />
           <TextBlock Text="{Binding Settings.CloudSttKeyStatus}" Classes="caption" FontSize="11" />
-          <TextBox Text="{Binding Settings.CloudSttModel}" PlaceholderText="模型（留空用默认）" />
+          <TextBox Text="{Binding Settings.CloudSttModel}" PlaceholderText="{loc:Tr 模型（留空用默认）}" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttLanguages}" SelectedItem="{Binding Settings.SelectedCloudLanguage}"
                     Width="160" HorizontalAlignment="Left" />
-          <TextBlock Text="选云端后，实时记录与导入 WAV 都走云端识别；音频会发送到所选服务。只选本机时，录音与识别都在本机。"
+          <TextBlock Text="{loc:Tr 选云端后，实时记录与导入 WAV 都走云端识别；音频会发送到所选服务。只选本机时，录音与识别都在本机。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
@@ -164,8 +165,8 @@
       <!-- Global shortcuts: fixed Ctrl+Alt, remappable key. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Name="AnchorGeneral2" Text="全局快捷键（Ctrl+Alt + 按键）" Classes="section" />
-          <TextBlock Text="点按键位后直接按下组合键录入，Esc 取消；「清除」「默认」恢复该动作的 Mac 默认键位。必须包含 Ctrl/Alt/Shift/Win 之一，两个动作不能相同。"
+          <TextBlock Name="AnchorGeneral2" Text="{loc:Tr 全局快捷键（Ctrl+Alt + 按键）}" Classes="section" />
+          <TextBlock Text="{loc:Tr 点按键位后直接按下组合键录入，Esc 取消；「清除」「默认」恢复该动作的 Mac 默认键位。必须包含 Ctrl/Alt/Shift/Win 之一，两个动作不能相同。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
           <TextBlock Text="{Binding ShortcutConflicts}" IsVisible="{Binding HasShortcutConflicts}"
                      Foreground="{DynamicResource Caution}" FontSize="11" TextWrapping="Wrap" />
@@ -177,42 +178,42 @@
       <!-- Custom notes templates: imported Mac note-templates.json. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorNotes" Text="自定义纪要模板" Classes="section" />
-          <TextBlock Text="每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。"
+          <TextBlock Name="AnchorNotes" Text="{loc:Tr 自定义纪要模板}" Classes="section" />
+          <TextBlock Text="{loc:Tr 每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。}"
                      Classes="caption" FontSize="11" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <ComboBox ItemsSource="{Binding EditableTemplates}" SelectedItem="{Binding EditTemplateChoice}"
-                      PlaceholderText="选择自定义模板" Width="240" />
-            <Button Content="新建模板" Command="{Binding NewTemplateCommand}" />
-            <Button Content="添加章节" Command="{Binding AddTemplateSectionCommand}" />
-            <Button Content="保存结构" Command="{Binding SaveEditedTemplateCommand}" />
+                      PlaceholderText="{loc:Tr 选择自定义模板}" Width="240" />
+            <Button Content="{loc:Tr 新建模板}" Command="{Binding NewTemplateCommand}" />
+            <Button Content="{loc:Tr 添加章节}" Command="{Binding AddTemplateSectionCommand}" />
+            <Button Content="{loc:Tr 保存结构}" Command="{Binding SaveEditedTemplateCommand}" />
           </StackPanel>
-          <TextBox Text="{Binding EditTemplateName}" PlaceholderText="模板名" />
+          <TextBox Text="{Binding EditTemplateName}" PlaceholderText="{loc:Tr 模板名}" />
           <ItemsControl ItemsSource="{Binding EditSections}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:TemplateSectionRow">
                 <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0,0,0.5" Padding="{DynamicResource D4Padding_0_6}">
                   <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-                    <TextBox Text="{Binding Title}" PlaceholderText="章节标题" />
+                    <TextBox Text="{Binding Title}" PlaceholderText="{loc:Tr 章节标题}" />
                     <TextBox Text="{Binding Instruction}" AcceptsReturn="True" Height="52" TextWrapping="Wrap"
-                             PlaceholderText="这一节要整理什么" />
+                             PlaceholderText="{loc:Tr 这一节要整理什么}" />
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                      <Button Content="上移" Click="SectionUp_Click" Tag="{Binding}" />
-                      <Button Content="下移" Click="SectionDown_Click" Tag="{Binding}" />
-                      <Button Content="删除" Click="SectionDelete_Click" Tag="{Binding}" />
+                      <Button Content="{loc:Tr 上移}" Click="SectionUp_Click" Tag="{Binding}" />
+                      <Button Content="{loc:Tr 下移}" Click="SectionDown_Click" Tag="{Binding}" />
+                      <Button Content="{loc:Tr 删除}" Click="SectionDelete_Click" Tag="{Binding}" />
                     </StackPanel>
                   </StackPanel>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="高级：也可以直接按文本批量编辑。" Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr 高级：也可以直接按文本批量编辑。}" Classes="caption" FontSize="11" />
           <TextBox Text="{Binding CustomTemplateText}" AcceptsReturn="True" Height="120" TextWrapping="Wrap"
                    ScrollViewer.VerticalScrollBarVisibility="Auto"
-                   PlaceholderText="## 客户会&#10;### 决定&#10;只写已经拍板的事。&#10;### 待办&#10;写清负责人和日期。" />
+                   PlaceholderText="{loc:Tr ## 客户会&#10;### 决定&#10;只写已经拍板的事。&#10;### 待办&#10;写清负责人和日期。}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <Button Content="保存模板" Command="{Binding SaveCustomTemplatesCommand}" />
-            <Button Content="导入 .json…" Click="ImportTemplate_Click" />
+            <Button Content="{loc:Tr 保存模板}" Command="{Binding SaveCustomTemplatesCommand}" />
+            <Button Content="{loc:Tr 导入 .json…}" Click="ImportTemplate_Click" />
             <TextBlock Text="{Binding CustomTemplateStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="420" />
           </StackPanel>
         </StackPanel>
@@ -221,8 +222,8 @@
       <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorAdvanced2" Text="技能（回答时遵守的说明）" Classes="section" />
-          <TextBlock Text="每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。"
+          <TextBlock Name="AnchorAdvanced2" Text="{loc:Tr 技能（回答时遵守的说明）}" Classes="section" />
+          <TextBlock Text="{loc:Tr 每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。}"
                      Classes="caption" FontSize="11" />
           <ItemsControl ItemsSource="{Binding SkillRows}">
             <ItemsControl.ItemTemplate>
@@ -233,8 +234,8 @@
           </ItemsControl>
           <StackPanel x:Name="SkillEditorPanel" Spacing="{DynamicResource D4Spacing_8}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
-            <Button Content="新建技能" Click="NewSkill_Click" />
-            <Button Content="安装示例技能" Click="InstallDemoSkill_Click" />
+            <Button Content="{loc:Tr 新建技能}" Click="NewSkill_Click" />
+            <Button Content="{loc:Tr 安装示例技能}" Click="InstallDemoSkill_Click" />
             <TextBlock Text="{Binding SkillsStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
           </StackPanel>
         </StackPanel>
@@ -243,21 +244,21 @@
       <!-- Speakers and translation -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorCoach3" Text="说话人与翻译" Classes="section" />
-          <CheckBox Content="区分会议中的说话人（本机实验功能）" IsChecked="{Binding Settings.SeparateSpeakers}" />
-          <TextBlock Text="仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。"
+          <TextBlock Name="AnchorCoach3" Text="{loc:Tr 说话人与翻译}" Classes="section" />
+          <CheckBox Content="{loc:Tr 区分会议中的说话人（本机实验功能）}" IsChecked="{Binding Settings.SeparateSpeakers}" />
+          <TextBlock Text="{loc:Tr 仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。}"
                      Classes="caption" FontSize="11" />
-          <Button Content="准备声纹组件（约 26 MB）" Command="{Binding PrepareSpeakersCommand}" HorizontalAlignment="Left" />
+          <Button Content="{loc:Tr 准备声纹组件（约 26 MB）}" Command="{Binding PrepareSpeakersCommand}" HorizontalAlignment="Left" />
           <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-            <TextBlock Text="我的声音" Classes="label" />
+            <TextBlock Text="{loc:Tr 我的声音}" Classes="label" />
             <TextBlock Text="{Binding MyVoiceStatus}" Classes="caption" FontSize="11" />
-            <Button Content="录入 / 管理我的声音" Click="OpenMyVoice_Click" HorizontalAlignment="Left" />
-            <TextBlock Text="只在本机运行，声纹只是一组数字。" Classes="caption" FontSize="11" />
+            <Button Content="{loc:Tr 录入 / 管理我的声音}" Click="OpenMyVoice_Click" HorizontalAlignment="Left" />
+            <TextBlock Text="{loc:Tr 只在本机运行，声纹只是一组数字。}" Classes="caption" FontSize="11" />
           </StackPanel>
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_4_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
             <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-              <CheckBox Content="记录时将完整句中英互译（使用当前回答服务）" IsChecked="{Binding Settings.TranslateSpeech}" />
-              <TextBlock Text="Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。"
+              <CheckBox Content="{loc:Tr 记录时将完整句中英互译（使用当前回答服务）}" IsChecked="{Binding Settings.TranslateSpeech}" />
+              <TextBlock Text="{loc:Tr Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。}"
                          Classes="caption" FontSize="11" />
             </StackPanel>
           </Border>
@@ -267,33 +268,33 @@
       <!-- Screen reading and slide following (InsightSettingsView.swift, E9) -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Name="AnchorCoachScreen" Text="屏幕与讲稿" Classes="section" />
-          <CheckBox Content="会议中每隔几秒读一次屏幕" IsChecked="{Binding Settings.InsightScreenWatch}" />
-          <TextBlock Text="可选窗口、显示器或区域（本应用窗口除外）。系统 OCR 先给快速文字；本机增强会在后台补读复杂画面。"
+          <TextBlock Name="AnchorCoachScreen" Text="{loc:Tr 屏幕与讲稿}" Classes="section" />
+          <CheckBox Content="{loc:Tr 会议中每隔几秒读一次屏幕}" IsChecked="{Binding Settings.InsightScreenWatch}" />
+          <TextBlock Text="{loc:Tr 可选窗口、显示器或区域（本应用窗口除外）。系统 OCR 先给快速文字；本机增强会在后台补读复杂画面。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Settings.InsightScreenWatch}">
-            <TextBlock Text="读取来源" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 读取来源}" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" Width="140" ItemsSource="{Binding Settings.InsightSourceLabels}"
                       SelectedItem="{Binding Settings.SelectedInsightSourceLabel}" />
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" IsVisible="{Binding Settings.InsightScreenWatch}">
-            <Button Content="立即识别" Command="{Binding ReadScreenNowCommand}" />
-            <Button Content="框选区域" Click="PickScreenRegion_Click" />
-            <Button Content="读取完整来源" Click="ClearScreenRegion_Click" />
+            <Button Content="{loc:Tr 立即识别}" Command="{Binding ReadScreenNowCommand}" />
+            <Button Content="{loc:Tr 框选区域}" Click="PickScreenRegion_Click" />
+            <Button Content="{loc:Tr 读取完整来源}" Click="ClearScreenRegion_Click" />
           </StackPanel>
           <TextBlock Text="{Binding Settings.InsightScreenRegion}" Classes="caption" FontSize="11" IsVisible="{Binding Settings.InsightScreenWatch}" />
           <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Settings.InsightScreenWatch}">
-            <TextBlock Text="间隔" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 间隔}" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" Width="110" ItemsSource="{Binding Settings.InsightIntervals}"
                       SelectedItem="{Binding Settings.InsightScreenInterval}" />
           </Grid>
           <TextBlock Text="{Binding ScreenWatchStatus}" Classes="caption" FontSize="11" />
           <TextBlock Text="{Binding ScreenWatchError}" Classes="caption" FontSize="11" Foreground="{DynamicResource Caution}" TextWrapping="Wrap" />
-          <CheckBox Content="跟随演示文稿" IsChecked="{Binding Settings.InsightFollowSlides}"
+          <CheckBox Content="{loc:Tr 跟随演示文稿}" IsChecked="{Binding Settings.InsightFollowSlides}"
                     IsEnabled="{Binding Settings.InsightScreenWatch}" />
-          <TextBlock Text="导入 PPT、Keynote 或 PDF 后，放映时认出正在讲第几页，给出这一页的要点与提问。"
+          <TextBlock Text="{loc:Tr 导入 PPT、Keynote 或 PDF 后，放映时认出正在讲第几页，给出这一页的要点与提问。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding Settings.InsightScreenWatch}" />
-          <TextBlock Text="先打开上面的屏幕读取，才能认出演示文稿翻到了哪一页。"
+          <TextBlock Text="{loc:Tr 先打开上面的屏幕读取，才能认出演示文稿翻到了哪一页。}"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" IsVisible="{Binding !Settings.InsightScreenWatch}" />
         </StackPanel>
       </Border>
@@ -301,16 +302,16 @@
       <!-- Dual-screen presenting (PresenterMode.swift) -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorCoach4" Text="双屏演讲" Classes="section" />
-          <CheckBox Content="开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口"
+          <TextBlock Name="AnchorCoach4" Text="{loc:Tr 双屏演讲}" Classes="section" />
+          <CheckBox Content="{loc:Tr 开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口}"
                     IsChecked="{Binding Settings.PresenterMode}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="幻灯片所在屏" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 幻灯片所在屏}" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.ScreenChoices}"
                       SelectedItem="{Binding Settings.SelectedSlidesScreen}" MinWidth="240" />
           </StackPanel>
           <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11" />
-          <TextBlock Text="开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。已支持按讲话标题和截图 OCR 跟页；持续屏幕观察尚未移植。"
+          <TextBlock Text="{loc:Tr 开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。已支持按讲话标题和截图 OCR 跟页；持续屏幕观察尚未移植。}"
                      Classes="caption" FontSize="11" />
         </StackPanel>
       </Border>
@@ -318,16 +319,16 @@
       <!-- Meeting auto-end -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorGeneral3" Text="会议自动收尾" Classes="section" />
-          <TextBlock Text="忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。"
+          <TextBlock Name="AnchorGeneral3" Text="{loc:Tr 会议自动收尾}" Classes="section" />
+          <TextBlock Text="{loc:Tr 忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。}"
                      Classes="caption" FontSize="11" />
           <ComboBox ItemsSource="{Binding Settings.AutoEndModes}" SelectedItem="{Binding Settings.SelectedAutoEndMode}"
                     HorizontalAlignment="Left" MinWidth="280" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="静音多久后收尾" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 静音多久后收尾}" Classes="label" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding Settings.AutoEndMinuteChoices}"
                       SelectedItem="{Binding Settings.AutoEndMinutes}" Width="90" />
-            <TextBlock Text="分钟" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 分钟}" Classes="label" VerticalAlignment="Center" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -335,58 +336,58 @@
       <!-- Library and retrieval -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorAnswer2" Text="资料与检索" Classes="section" />
-          <CheckBox Content="参考资料库时使用语义与关键词混合检索" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
-          <TextBlock Text="Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。"
+          <TextBlock Name="AnchorAnswer2" Text="{loc:Tr 资料与检索}" Classes="section" />
+          <CheckBox Content="{loc:Tr 参考资料库时使用语义与关键词混合检索}" IsChecked="{Binding Settings.UseSemanticRetrieval}" />
+          <TextBlock Text="{loc:Tr Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。}"
                      Classes="caption" FontSize="11" />
-          <Button Content="准备检索组件" Command="{Binding PrepareRetrievalCommand}" HorizontalAlignment="Left" />
+          <Button Content="{loc:Tr 准备检索组件}" Command="{Binding PrepareRetrievalCommand}" HorizontalAlignment="Left" />
         </StackPanel>
       </Border>
 
       <!-- Answer service -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorAnswer3" Text="回答服务" Classes="section" />
-          <CheckBox Content="允许联网核实（需 TAVILY_API_KEY）" IsChecked="{Binding Settings.WebSearch}" />
+          <TextBlock Name="AnchorAnswer3" Text="{loc:Tr 回答服务}" Classes="section" />
+          <CheckBox Content="{loc:Tr 允许联网核实（需 TAVILY_API_KEY）}" IsChecked="{Binding Settings.WebSearch}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-            <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260" PlaceholderText="Tavily API Key（可选）" />
-            <Button Content="保存密钥" Click="SaveTavily_Click" />
+            <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260" PlaceholderText="{loc:Tr Tavily API Key（可选）}" />
+            <Button Content="{loc:Tr 保存密钥}" Click="SaveTavily_Click" />
           </StackPanel>
           <TextBlock Text="{Binding Settings.TavilyKeyStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="460" />
-          <TextBlock Text="问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。"
+          <TextBlock Text="{loc:Tr 问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。}"
                      Classes="caption" FontSize="11" />
-          <CheckBox Content="使用本机 Codex CLI 账号" IsChecked="{Binding Settings.UseCodex}" />
-          <TextBlock Text="Codex 模型（留空沿用账号默认模型）" Classes="label" />
+          <CheckBox Content="{loc:Tr 使用本机 Codex CLI 账号}" IsChecked="{Binding Settings.UseCodex}" />
+          <TextBlock Text="{loc:Tr Codex 模型（留空沿用账号默认模型）}" Classes="label" />
           <TextBox Text="{Binding Settings.CodexModel}" PlaceholderText="gpt-5.2-codex" />
-          <TextBlock Text="接口预设" Classes="label" />
+          <TextBlock Text="{loc:Tr 接口预设}" Classes="label" />
           <ComboBox ItemsSource="{Binding Settings.ProviderPresets}" SelectedItem="{Binding Settings.SelectedProviderPreset}"
                     Width="240" HorizontalAlignment="Left" />
-          <TextBlock Text="兼容 Chat Completions 的 API 地址" Classes="label" />
+          <TextBlock Text="{loc:Tr 兼容 Chat Completions 的 API 地址}" Classes="label" />
           <TextBox Text="{Binding Settings.BaseUrl}" PlaceholderText="https://api.openai.com/v1" />
           <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
             <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="回答模型名称" Classes="label" />
+              <TextBlock Text="{loc:Tr 回答模型名称}" Classes="label" />
               <TextBox Text="{Binding Settings.Model}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="纪要模型（留空沿用回答模型）" Classes="label" />
+              <TextBlock Text="{loc:Tr 纪要模型（留空沿用回答模型）}" Classes="label" />
               <TextBox Text="{Binding Settings.NotesModel}" />
             </StackPanel>
           </Grid>
           <TextBlock Text="API Key" Classes="label" />
           <TextBox Text="{Binding Settings.ApiKey}" PasswordChar="•" PlaceholderText="sk-…" />
           <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" FontSize="11" />
-          <TextBlock Text="推理强度" Classes="label" />
+          <TextBlock Text="{loc:Tr 推理强度}" Classes="label" />
           <ComboBox ItemsSource="{Binding Settings.EffortChoicesList}" SelectedItem="{Binding Settings.SelectedEffort}"
                     HorizontalAlignment="Left" MinWidth="220" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource D4Margin_0_6_0_0}">
             <Button Classes="primary" Command="{Binding SaveSettingsCommand}">
-          <TextBlock Text="保存设置" Foreground="{DynamicResource OnInk}" />
+          <TextBlock Text="{loc:Tr 保存设置}" Foreground="{DynamicResource OnInk}" />
         </Button>
-            <Button Content="检查回答服务" Command="{Binding CheckServiceCommand}" />
+            <Button Content="{loc:Tr 检查回答服务}" Command="{Binding CheckServiceCommand}" />
             <TextBlock Text="{Binding Settings.SavedHint}" Classes="caption" VerticalAlignment="Center" />
           </StackPanel>
-          <TextBlock Text="转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。"
+          <TextBlock Text="{loc:Tr 转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。}"
                      Classes="caption" FontSize="11" />
         </StackPanel>
       </Border>
@@ -394,18 +395,18 @@
       <!-- Phone companion (LAN channel) -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="手机伴侣" Classes="section" />
-          <TextBlock Text="手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。"
+          <TextBlock Text="{loc:Tr 手机伴侣}" Classes="section" />
+          <TextBlock Text="{loc:Tr 手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。}"
                      Classes="caption" FontSize="11" />
-          <TextBlock Text="局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。"
+          <TextBlock Text="{loc:Tr 局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。}"
                      Classes="caption" FontSize="11" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="中转地址（可选）" Classes="label" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 中转地址（可选）}" Classes="label" VerticalAlignment="Center" />
             <TextBox Text="{Binding Settings.CompanionRelayUrl}" PlaceholderText="https://relay.example.com" MinWidth="320" />
           </StackPanel>
-          <TextBlock Text="填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。"
+          <TextBlock Text="{loc:Tr 填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。}"
                      Classes="caption" FontSize="11" />
-          <TextBlock Text="蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。"
+          <TextBlock Text="{loc:Tr 蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。}"
                      Classes="caption" FontSize="11" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <ComboBox ItemsSource="{Binding CompanionAddresses}" SelectedItem="{Binding SelectedCompanionAddress}"
@@ -416,11 +417,11 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <Button Content="刷新网络地址" Command="{Binding RefreshCompanionAddressesCommand}" />
+            <Button Content="{loc:Tr 刷新网络地址}" Command="{Binding RefreshCompanionAddressesCommand}" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
             <Button Command="{Binding ToggleCompanionCommand}" Content="{Binding CompanionToggleLabel}" />
-            <Button Content="复制配对链接" Click="CopyCompanion_Click" />
+            <Button Content="{loc:Tr 复制配对链接}" Click="CopyCompanion_Click" />
           </StackPanel>
           <Image Source="{Binding CompanionQr}" Width="220" Height="220" HorizontalAlignment="Left"
                  IsVisible="{Binding CompanionRunning}" />
@@ -432,21 +433,21 @@
       <!-- Updates -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="更新" Classes="section" />
-          <TextBlock Text="检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。"
+          <TextBlock Text="{loc:Tr 更新}" Classes="section" />
+          <TextBlock Text="{loc:Tr 检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。}"
                      Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
             <ComboBox ItemsSource="{Binding UpdateChannels}" SelectedItem="{Binding SelectedUpdateChannel}" MinWidth="170" />
-            <Button Content="检查更新" Command="{Binding CheckUpdateCommand}" />
-            <Button Content="下载并安装" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanInstallUpdateInApp}" />
-            <Button Content="打开下载页" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding CanOpenUpdatePage}" />
-            <Button Content="回滚到上一版本" Command="{Binding RestoreUpdateBackupCommand}" IsVisible="{Binding HasUpdateBackup}" />
+            <Button Content="{loc:Tr 检查更新}" Command="{Binding CheckUpdateCommand}" />
+            <Button Content="{loc:Tr 下载并安装}" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding CanInstallUpdateInApp}" />
+            <Button Content="{loc:Tr 打开下载页}" Command="{Binding OpenUpdatePageCommand}" IsVisible="{Binding CanOpenUpdatePage}" />
+            <Button Content="{loc:Tr 回滚到上一版本}" Command="{Binding RestoreUpdateBackupCommand}" IsVisible="{Binding HasUpdateBackup}" />
           </StackPanel>
           <TextBlock Text="{Binding UpdateStatus}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
           <ProgressBar Value="{Binding UpdateInstallProgress}" Maximum="1" IsVisible="{Binding InstallingUpdate}" MaxWidth="420" HorizontalAlignment="Left" />
           <TextBlock Text="{Binding UpdateInstallStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
                      IsVisible="{Binding InstallingUpdate}" HorizontalAlignment="Left" />
-          <TextBlock Text="「下载并安装」会下载安装包并校验发布里的 SHA-256，校验通过后静默安装并重新打开；发布没有校验文件时只提供下载页。"
+          <TextBlock Text="{loc:Tr 「下载并安装」会下载安装包并校验发布里的 SHA-256，校验通过后静默安装并重新打开；发布没有校验文件时只提供下载页。}"
                      Classes="caption" FontSize="11" />
         </StackPanel>
       </Border>
@@ -454,20 +455,20 @@
       <!-- Data and about -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="数据与关于" Classes="section" />
+          <TextBlock Text="{loc:Tr 数据与关于}" Classes="section" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <Button Content="导出备份" Command="{Binding BackupCommand}" />
-            <Button Content="导入备份" Command="{Binding RestoreCommand}" />
-            <Button Content="打开数据目录" Command="{Binding OpenDataCommand}" />
+            <Button Content="{loc:Tr 导出备份}" Command="{Binding BackupCommand}" />
+            <Button Content="{loc:Tr 导入备份}" Command="{Binding RestoreCommand}" />
+            <Button Content="{loc:Tr 打开数据目录}" Command="{Binding OpenDataCommand}" />
           </StackPanel>
-          <TextBlock Text=".ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。"
+          <TextBlock Text="{loc:Tr .ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。}"
                      Classes="caption" FontSize="11" />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
             <StackPanel Spacing="{DynamicResource D4Spacing_4}">
               <TextBlock Text="{Binding VersionText}" Classes="overline" />
-              <TextBlock Text="NextThought 把会议讨论留在本机，变成可以带走的结论。"
+              <TextBlock Text="{loc:Tr NextThought 把会议讨论留在本机，变成可以带走的结论。}"
                          Classes="caption" FontSize="11" />
-              <Button Classes="quiet" Content="第三方许可与版权说明" HorizontalAlignment="Left" Margin="{DynamicResource D4Margin_m10_4_0_0}"
+              <Button Classes="quiet" Content="{loc:Tr 第三方许可与版权说明}" HorizontalAlignment="Left" Margin="{DynamicResource D4Margin_m10_4_0_0}"
                       Click="Notices_Click" />
             </StackPanel>
           </Border>
@@ -475,15 +476,15 @@
       </Border>
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Scene">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="各场景开会时的设置" Classes="section" />
-          <TextBlock Text="开始一场会时按这里的设置来；会中仍可随时切换。"
+          <TextBlock Text="{loc:Tr 各场景开会时的设置}" Classes="section" />
+          <TextBlock Text="{loc:Tr 开始一场会时按这里的设置来；会中仍可随时切换。}"
                      Classes="caption" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="150,*,*,*,*" ColumnSpacing="10">
-            <TextBlock Text="场景" Classes="caption" />
-            <TextBlock Grid.Column="1" Text="会中" Classes="caption" />
-            <TextBlock Grid.Column="2" Text="回答" Classes="caption" />
-            <TextBlock Grid.Column="3" Text="纪要模板" Classes="caption" />
-            <TextBlock Grid.Column="4" Text="提词" Classes="caption" />
+            <TextBlock Text="{loc:Tr 场景}" Classes="caption" />
+            <TextBlock Grid.Column="1" Text="{loc:Tr 会中}" Classes="caption" />
+            <TextBlock Grid.Column="2" Text="{loc:Tr 回答}" Classes="caption" />
+            <TextBlock Grid.Column="3" Text="{loc:Tr 纪要模板}" Classes="caption" />
+            <TextBlock Grid.Column="4" Text="{loc:Tr 提词}" Classes="caption" />
           </Grid>
           <ItemsControl ItemsSource="{Binding SceneSettingsRows}">
             <ItemsControl.ItemTemplate>

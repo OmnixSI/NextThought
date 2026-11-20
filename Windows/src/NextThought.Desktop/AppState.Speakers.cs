@@ -16,7 +16,7 @@ public partial class AppState
         SpeakerRows.Clear();
         foreach (var group in Transcript.Where(row => row.Voice is not null).GroupBy(row => row.Voice!.Value))
         {
-            var label = group.Key == 0 && group.All(row => row.Speaker == "me") ? "我" : $"说话人{group.Key + 1}";
+            var label = group.Key == 0 && group.All(row => row.Speaker == "me") ? "我" : UiText.Format("说话人 %lld", group.Key + 1);
             SpeakerRows.Add(new SpeakerRow(group.Key, label));
         }
         if (SpeakerRows.Count == 0) SpeakerRows.Add(new SpeakerRow(null, "当前没有可命名的说话人"));
@@ -72,13 +72,13 @@ public partial class AppState
     /// <summary>E12: merge one voice into another; transcript rows of the merged voice get the target name.</summary>
     public void MergeSpeakerVoices(int from, int into)
     {
-        var target = SpeakerRows.FirstOrDefault(row => row.Voice == into)?.Name ?? $"说话人{into + 1}";
+        var target = SpeakerRows.FirstOrDefault(row => row.Voice == into)?.Name ?? UiText.Format("说话人 %lld", into + 1);
         foreach (var row in Transcript.Where(row => row.Voice == from))
         {
             var suffix = " · " + target;
             if (!row.Label.Contains(suffix, StringComparison.Ordinal)) row.Label += suffix;
         }
         SpeakerRows.Remove(SpeakerRows.FirstOrDefault(row => row.Voice == from)!);
-        SetStatus($"说话人 {from + 1} 已合并到 {into + 1}。");
+        SetStatus(UiText.Format("说话人 %lld 已合并到 %lld。", from + 1, into + 1));
     }
 }

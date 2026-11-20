@@ -1,19 +1,20 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         x:Class="NextThought.Desktop.Views.OnboardingVoiceWindow"
         x:DataType="local:AppState"
-        Title="声音测试" Width="520" Height="320" WindowStartupLocation="CenterOwner"
+        Title="{loc:Tr 声音测试}" Width="520" Height="320" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Paper}">
   <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_12}">
-    <TextBlock Text="声音测试" Classes="section" />
-    <TextBlock Text="对着麦克风读一句话，观察下方电平。开始记录后这里会实时变化。" Classes="body" TextWrapping="Wrap" />
+    <TextBlock Text="{loc:Tr 声音测试}" Classes="section" />
+    <TextBlock Text="{loc:Tr 对着麦克风读一句话，观察下方电平。开始记录后这里会实时变化。}" Classes="body" TextWrapping="Wrap" />
     <TextBlock Text="{Binding LevelText}" Classes="caption" />
     <TextBlock Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
-      <Button Content="打开设置" Command="{Binding NavigateCommand}" CommandParameter="Settings" Click="Close_Click" />
-      <Button Content="录入我的声音" Click="MyVoice_Click" />
-      <Button Classes="primary" Content="关闭" Click="Close_Click" />
+      <Button Content="{loc:Tr 打开设置}" Command="{Binding NavigateCommand}" CommandParameter="Settings" Click="Close_Click" />
+      <Button Content="{loc:Tr 录入我的声音}" Click="MyVoice_Click" />
+      <Button Classes="primary" Content="{loc:Tr 关闭}" Click="Close_Click" />
     </StackPanel>
   </StackPanel>
 </Window>

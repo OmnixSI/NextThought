@@ -16,7 +16,7 @@ public partial class AppState
     public bool HasGlossary => GlossaryCount > 0;
     public string GlossaryStatus => GlossaryCount == 0
         ? "还没有术语。每行一个：正确写法 | 识别错的写法 | 另一种错法"
-        : $"{GlossaryCount} 条术语 · 识别时作为热词，转写里出现的错写会被改回正确写法";
+        : UiText.Format("%lld 条术语 · 识别时作为热词，转写里出现的错写会被改回正确写法", GlossaryCount);
 
     partial void OnGlossaryCountChanged(int value)
     {
@@ -142,7 +142,7 @@ public partial class AppState
                 ? NextThought.Core.UiText.EnglishUi ? "Glossary cleared." : "术语表已清空。"
                 : NextThought.Core.UiText.EnglishUi
                     ? $"Glossary saved ({parsed.Entries.Count} entries); applies to the next meeting."
-                    : $"术语表已保存 {parsed.Entries.Count} 条，下一场会议生效。");
+                    : UiText.Format("术语表已保存 %lld 条，下一场会议生效。", parsed.Entries.Count));
         }
         catch (Exception ex)
         {

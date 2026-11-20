@@ -129,7 +129,7 @@ public partial class MainWindow
     /// <summary>Tray icon: restore, hide everything while recording continues, record toggle, quit.</summary>
     private void SetupTray()
     {
-        tray = new TrayIntegration(RestoreMainWindow, HideAllWindows, ToggleRecording, RequestExit, state.Settings.UiLanguage == "English");
+        tray = new TrayIntegration(RestoreMainWindow, HideAllWindows, ToggleRecording, RequestExit, NextThought.Core.UiTextSource.Instance.IsEnglish);
         state.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(AppState.Recording))
@@ -245,7 +245,6 @@ public partial class MainWindow
             var capture = ScreenCapture.VirtualScreen();
             if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
             var picker = new RegionCaptureWindow(capture);
-            UiTranslation.Apply(picker, state.Settings.UiLanguage == "English");
             await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
             if (picker.SelectedScreenRect is { } rect)
             {
@@ -253,7 +252,7 @@ public partial class MainWindow
                 state.Settings.InsightScreenRegion = $"{rect.X},{rect.Y},{rect.Width},{rect.Height}";
                 state.Settings.SelectedInsightSourceLabel = "区域";
                 await state.Settings.SaveAsync();
-                state.SetStatus($"已框选读屏区域：{rect.Width}×{rect.Height}。");
+                state.SetStatus(UiText.Format("已框选读屏区域：%lld×%lld。", rect.Width, rect.Height));
             }
         }
         catch (Exception ex)
@@ -275,7 +274,6 @@ public partial class MainWindow
             var capture = ScreenCapture.VirtualScreen();
             if (wasVisible) { WindowState = WindowState.Normal; Show(); Activate(); }
             var picker = new RegionCaptureWindow(capture);
-            UiTranslation.Apply(picker, state.Settings.UiLanguage == "English");
             var cropped = await picker.ShowDialog<Avalonia.Media.Imaging.Bitmap?>(this);
             if (cropped is null) { state.SetStatus("已取消截图。"); return; }
             var path = Path.Combine(Path.GetTempPath(), $"nextthought-shot-{DateTime.Now:yyyyMMdd-HHmmss}.png");
@@ -390,7 +388,6 @@ public partial class MainWindow
             var window = new TeleprompterWindow(state);
             window.Closed += (_, _) => { if (ReferenceEquals(teleprompter, window)) teleprompter = null; };
             teleprompter = window;
-            UiTranslation.Apply(window, state.Settings.UiLanguage == "English");
         }
         teleprompter.Show();
         _ = FadeInAsync(teleprompter);
@@ -442,7 +439,6 @@ public partial class MainWindow
             window.Closed += (_, _) => { if (ReferenceEquals(island, window)) island = null; };
             island = window;
         }
-        UiTranslation.Apply(island, state.Settings.UiLanguage == "English");
         if (!island.IsVisible)
         {
             island.Show();
@@ -495,7 +491,7 @@ public partial class MainWindow
             return Screens.All.Select((screen, index) => new DisplayInfo(
                 // Avalonia 12's Screen has no DisplayIndex; the origin is stable for a given topology.
                 $"display:{screen.Bounds.X}x{screen.Bounds.Y}",
-                screen.IsPrimary ? "主屏（摄像头）" : $"显示器 {index + 1}",
+                screen.IsPrimary ? "主屏（摄像头）" : UiText.Format("显示器 %lld", index + 1),
                 screen.Bounds.X, screen.Bounds.Y, screen.Bounds.Width, screen.Bounds.Height,
                 screen.IsPrimary,
                 // Avalonia does not expose the built-in panel; in the common laptop case it is the primary display.
@@ -550,11 +546,10 @@ public partial class MainWindow
                 window.Closed += (_, _) => { if (ReferenceEquals(island, window)) island = null; };
                 island = window;
             }
-            UiTranslation.Apply(island, state.Settings.UiLanguage == "English");
             island.Show();
         }
         Hide();
-        state.SetStatus($"双屏演讲：{plan.Summary}；Ctrl+Alt+N 唤回主窗口。");
+        state.SetStatus(UiText.Format("双屏演讲：%@；Ctrl+Alt+N 唤回主窗口。", plan.Summary));
     }
 
     private void ExitPresenterMode(string? message = null)
@@ -590,7 +585,6 @@ public partial class MainWindow
             subtitleBar = window;
         }
         subtitleBar.Persistent = true;
-        UiTranslation.Apply(subtitleBar, state.Settings.UiLanguage == "English");
         if (!subtitleBar.IsVisible) subtitleBar.Show();
         subtitleBar.ResumeAfterUserShow();
     }

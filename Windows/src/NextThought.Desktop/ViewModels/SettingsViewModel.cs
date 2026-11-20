@@ -74,8 +74,38 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private bool useCodex;
     [ObservableProperty] private bool webSearch;
     [ObservableProperty] private string codexModel = "";
-    public IReadOnlyList<string> UiLanguages { get; } = ["中文", "English"];
-    [ObservableProperty] private string uiLanguage = "中文";
+    /// <summary>G8: Mac <c>appLanguagePreference</c> choices — 跟随系统 / 简体中文 / English.</summary>
+    public static readonly (string Value, string Key)[] UiLanguageOptions =
+    [
+        (UiTextSource.SystemPreference, "跟随系统"),
+        (UiTextSource.ChinesePreference, "简体中文"),
+        (UiTextSource.EnglishPreference, "English")
+    ];
+    public IReadOnlyList<string> UiLanguages => UiLanguageOptions.Select(option => LanguageLabel(option.Value)).ToArray();
+    [ObservableProperty] private string uiLanguage = "跟随系统";
+
+    public static string LanguageLabel(string preference) => preference switch
+    {
+        UiTextSource.ChinesePreference => UiText.T("简体中文"),
+        UiTextSource.EnglishPreference => "English",
+        _ => UiText.T("跟随系统")
+    };
+
+    public static string LanguagePreference(string? label) =>
+        UiLanguageOptions.Select(option => option.Value)
+            .FirstOrDefault(value => string.Equals(LanguageLabel(value), label, StringComparison.Ordinal))
+        ?? UiTextSource.NormalizePreference(label);
+
+    /// <summary>G8: the stored Mac <c>appLanguagePreference</c> value behind the picker label.</summary>
+    public string Language => LanguagePreference(UiLanguage);
+
+    /// <summary>G8: the picker labels are interface text too, so re-render them when the language changes.</summary>
+    public void NotifyLanguageChanged()
+    {
+        var value = LanguagePreference(UiLanguage);
+        OnPropertyChanged(nameof(UiLanguages));
+        UiLanguage = LanguageLabel(value);
+    }
 
     public IReadOnlyList<CloudSttChoice> CloudSttChoices { get; } =
     [
@@ -250,7 +280,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         AppSettings settings;
         try { settings = state.SettingsStore.Load(); }
         catch { settings = new AppSettings(); }
-        UiLanguage = UiText.IsEnglish(settings.Language) ? "English" : "中文";
+        UiLanguage = LanguageLabel(UiTextSource.NormalizePreference(settings.Language));
         // G5b: Mac key reducedEffects drives Motion.Reduce together with the system animation setting.
         Motion.AppReducedEffects = settings.ReducedEffects;
         SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
@@ -341,7 +371,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         return new AppSettings
         {
         BaseUrl = BaseUrl.Trim(),
-        Language = UiLanguage == "English" ? "en" : "zh",
+        Language = LanguagePreference(UiLanguage),
         Appearance = SelectedAppearance?.Value ?? "system",
         CueWidth = SelectedCueWidth?.Value ?? "regular",
         CueAlwaysOpen = CueAlwaysOpen,

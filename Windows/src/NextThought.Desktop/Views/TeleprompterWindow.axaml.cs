@@ -36,7 +36,6 @@ public partial class TeleprompterWindow : Window
     {
         this.state = state;
         InitializeComponent();
-        Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         DataContext = state;
         geometry = WindowLayout.Load(state.Paths);
         Width = geometry.TeleprompterWidth;

@@ -81,7 +81,8 @@ public partial class AppState : ObservableObject
         Sources = [];
         LanguageChanged += english =>
         {
-            UiText.EnglishUi = english;
+            UiTextSource.Instance.SetEnglish(english);
+            Settings.NotifyLanguageChanged();
             PageSubtitle = UiText.Translate(PageSubtitle, english);
             OnPropertyChanged(nameof(StatsText));
             OnPropertyChanged(nameof(Greeting));
@@ -95,6 +96,15 @@ public partial class AppState : ObservableObject
             OnPropertyChanged(nameof(SeriesBankHeader));
             OnPropertyChanged(nameof(SlideStatus));
             OnPropertyChanged(nameof(CompanionToggleLabel));
+            OnPropertyChanged(nameof(SubtitleExportModes));
+            OnPropertyChanged(nameof(SubtitleExportMode));
+            OnPropertyChanged(nameof(WebStatusText));
+            OnPropertyChanged(nameof(LevelText));
+            OnPropertyChanged(nameof(RetrievalInfo));
+            OnPropertyChanged(nameof(ModelStatusText));
+            OnPropertyChanged(nameof(CompanionInfo));
+            OnPropertyChanged(nameof(SkillsStatus));
+            OnPropertyChanged(nameof(CustomTemplateStatus));
             Library.NotifyLanguageChanged();
             LoadMyVoice();
             StartScreenWatchTimer();
@@ -138,8 +148,24 @@ public partial class AppState : ObservableObject
     public event Action? ShortcutsChanged;
     public event Action<bool>? LanguageChanged;
     public event Action<int>? TranscriptJumpRequested;
-    public IReadOnlyList<string> SubtitleExportModes { get; } = ["双语", "原文", "译文"];
-    [ObservableProperty] private string subtitleExportMode = "双语";
+    private static readonly string[] SubtitleExportKeys = ["双语", "原文", "译文"];
+
+    /// <summary>The picker labels follow the interface language; the stored value stays the Chinese key.</summary>
+    public IReadOnlyList<string> SubtitleExportModes => SubtitleExportKeys.Select(UiText.T).ToArray();
+
+    private string subtitleExportKey = "双语";
+
+    public string SubtitleExportMode
+    {
+        get => UiText.T(subtitleExportKey);
+        set
+        {
+            var key = SubtitleExportKeys.FirstOrDefault(candidate => UiText.T(candidate) == value) ?? value;
+            if (key == subtitleExportKey) return;
+            subtitleExportKey = key;
+            OnPropertyChanged();
+        }
+    }
     [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
     [ObservableProperty] private string meetingTitle = "新会议";
     public System.Collections.ObjectModel.ObservableCollection<SessionEvidenceRow> NotesEvidence { get; } = [];
@@ -201,7 +227,7 @@ public partial class AppState : ObservableObject
     public ObservableCollection<RecentMeetingRow> History { get; }
     public ObservableCollection<RecentMeetingRow> FilteredHistory { get; } = [];
     public ObservableCollection<WebResult> WebResults { get; } = [];
-    public string WebStatusText => WebResults.Count == 0 ? "未联网" : $"联网来源 {WebResults.Count} 条";
+    public string WebStatusText => WebResults.Count == 0 ? UiText.T("未联网") : UiText.Format("联网来源 %lld 条", WebResults.Count);
 
     public System.Collections.ObjectModel.ObservableCollection<AnswerRecord> CurrentAnswerHistory { get; } = [];
 
@@ -211,7 +237,7 @@ public partial class AppState : ObservableObject
     public string CompanionToggleLabel => UiText.T(CompanionRunning ? "关闭局域网手机伴侣" : "开启局域网手机伴侣");
     public string HistorySummary => UiText.EnglishUi
         ? $"{FilteredHistory.Count} shown · {History.Count} total"
-        : $"{FilteredHistory.Count} 场会议 · 共 {History.Count} 场";
+        : UiText.Format("%lld 场会议 · 共 %lld 场", FilteredHistory.Count, History.Count);
     public bool IsHistoryViewEmpty => FilteredHistory.Count == 0;
     public bool HistoryFilterIsAll => HistoryFilter == "全部";
     public bool HistoryFilterHasSummary => HistoryFilter == "有纪要";
@@ -240,6 +266,6 @@ public partial class AppState : ObservableObject
     public bool NotesFormatIsViewpoints => SelectedNotesFormat == NotesFormat.Viewpoints;
     public string StructuredHint => SelectedNotesFormat == NotesFormat.Standard
         ? "文字纪要由模板整理；鱼骨图、大纲与观点对照是同一场会议的另一种看法。"
-        : $"将调用回答服务把转写整理成「{SelectedNotesFormat.Title(false)}」；每条都带原话时间，找不到依据的不写。";
+        : UiText.Format("将调用回答服务把转写整理成「%@」；每条都带原话时间，找不到依据的不写。", SelectedNotesFormat.Title(false));
 
 }

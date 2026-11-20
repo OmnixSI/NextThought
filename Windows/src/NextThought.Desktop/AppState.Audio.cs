@@ -28,7 +28,7 @@ public partial class AppState
 
     public bool HasTranscript => Transcript.Count > 0;
 
-    public string Greeting => Settings.UiLanguage == "English" ? DateTime.Now.Hour switch
+    public string Greeting => UiText.EnglishUi ? DateTime.Now.Hour switch
     {
         < 6 => "Late night. Want to keep a thought?",
         < 11 => "Good morning. What should we capture today?",
@@ -44,9 +44,10 @@ public partial class AppState
         _ => "晚上好。今天有哪些值得留下的结论？"
     };
 
-    public string DateLine => DateTime.Now.ToString("M月d日 dddd", System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
+    public string DateLine => DateTime.Now.ToString(UiText.T("M月d日 dddd"),
+        UiText.EnglishUi ? System.Globalization.CultureInfo.InvariantCulture : System.Globalization.CultureInfo.GetCultureInfo("zh-CN"));
 
-    public string GreetingHeadline => Settings.UiLanguage == "English"
+    public string GreetingHeadline => UiText.EnglishUi
         ? "What's next?"
         : Greeting.Split('。')[0] + "。接下来是什么场合？";
 
@@ -63,7 +64,9 @@ public partial class AppState
         var streaming = Models.IsInstalled(settings.LocalModel);
         var refine = Models.IsInstalled("xasrOffline");
         ModelReady = streaming && (!settings.SecondPass || refine);
-        ModelStatusText = $"流式模型：{(streaming ? "已就绪" : "未安装或待修复")}　整句精修：{(refine ? "已就绪" : "未安装")}";
+        ModelStatusText = UiText.Format("流式模型：%@　整句精修：%@",
+            streaming ? UiText.T("已就绪") : UiText.T("未安装或待修复"),
+            refine ? UiText.T("已就绪") : UiText.T("未安装"));
         AudioSourceText = settings.CaptureSystem && settings.CaptureMicrophone
             ? "所选系统输出设备混音 + 麦克风 · 在设置中调整"
             : settings.CaptureSystem ? "所选系统输出设备混音 · 不采集麦克风"
@@ -118,7 +121,7 @@ public partial class AppState
         }
         if (autoEnd.Remaining(now) is { } remaining)
         {
-            AutoEndNotice = $"{(int)Math.Ceiling(remaining)} 秒后自动结束；说话或点「继续记录」可取消。";
+            AutoEndNotice = UiText.Format("%lld 秒后自动结束；说话或点「继续记录」可取消。", (int)Math.Ceiling(remaining));
             SetStatus(AutoEndNotice);
         }
     }
@@ -186,7 +189,7 @@ public partial class AppState
                 if (!known.Contains(id)) throw new FormatException("未知快捷键动作：" + id);
                 var binding = ShortcutKeys.ParseBinding(line[(separator + 1)..], 0);
                 if (binding.Key == 0) throw new FormatException("无法识别按键：" + line[(separator + 1)..].Trim());
-                if (binding.Modifiers == 0) throw new FormatException("快捷键必须包含 Command、Option 或 Control，不能只使用普通按键。");
+                if (binding.Modifiers == 0) throw new FormatException("快捷键必须包含 Ctrl、Alt 或 Shift，不能只使用普通按键。");
                 map[id] = ShortcutKeys.Format(binding.Modifiers, binding.Key);
             }
             var effective = new Dictionary<string, (uint Modifiers, uint Key)>(StringComparer.OrdinalIgnoreCase);

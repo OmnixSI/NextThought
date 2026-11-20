@@ -325,48 +325,46 @@ private void ApplyCueWidth()
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
     }
 
-    /// <summary>D1 evidence: switch the island through the Mac visual states with the Mac demo copy.</summary>
+    /// <summary>
+    /// E31: switch the island through DemoMode.snapshotIsland phases. The Mac phase names
+    /// (cue/open/compact/hearing/deck/launcher/bilingual/pinned/slide) are accepted directly;
+    /// "collapsed" and "listening" are the Windows screenshot aliases of compact and cue.
+    /// The copy comes from <see cref="NextThought.Platform.DemoIslands"/>, so the same data drives
+    /// the demo and its evidence captures.
+    /// </summary>
     public void ApplyStateForCheck(string state)
     {
-        checkExpanded = state != "collapsed";
-        Width = state switch { "collapsed" => 220, "launcher" => 360, _ => 540 };
-        switch (state)
+        var legacyCollapsed = state == "collapsed";
+        var normalized = state switch
         {
-            case "collapsed":
-                QuestionText.Text = "已收起";
-                HeadlineText.IsVisible = false;
-                DetailText.IsVisible = false;
-                TranslationPanel.IsVisible = false;
-                break;
-            case "launcher":
-                QuestionText.Text = "准备开始一场会议";
-                HeadlineText.IsVisible = false;
-                DetailText.IsVisible = false;
-                TranslationPanel.IsVisible = false;
-                break;
-            case "deck":
-                QuestionText.Text = NextThought.Platform.DemoScript.LiveQuestion;
-                HeadlineText.IsVisible = true;
-                DetailText.IsVisible = false;
-                TranslationPanel.IsVisible = false;
-                break;
-            case "bilingual":
-                // DemoMode snapshotIsland phase "bilingual": an English answer with what was asked
-                // and what each sentence means underneath.
-                this.state.DetectedQuestion = NextThought.Platform.DemoScript.IslandBilingualQuestion;
-                this.state.AnswerText = NextThought.Platform.DemoScript.IslandBilingualAnswer;
-                this.state.IslandTranslation = NextThought.Platform.DemoScript.IslandBilingualTranslation;
-                QuestionText.Text = NextThought.Platform.DemoScript.IslandBilingualQuestion;
-                HeadlineText.IsVisible = true;
-                DetailText.IsVisible = true;
-                TranslationPanel.IsVisible = true;
-                break;
-            default:
-                QuestionText.Text = NextThought.Platform.DemoScript.LiveQuestion;
-                HeadlineText.IsVisible = true;
-                DetailText.IsVisible = true;
-                TranslationPanel.IsVisible = false;
-                break;
+            "collapsed" => "compact",
+            "listening" => "cue",
+            _ => state
+        };
+        var phase = NextThought.Platform.DemoIslands.For(normalized);
+        checkExpanded = phase.Phase is not NextThought.Platform.DemoIslandPhase.Compact;
+        Width = phase.Phase switch
+        {
+            NextThought.Platform.DemoIslandPhase.Compact => 220,
+            NextThought.Platform.DemoIslandPhase.Launcher => 360,
+            _ => 540
+        };
+        if (phase.Question.Length > 0)
+        {
+            this.state.DetectedQuestion = phase.Question;
+            QuestionText.Text = phase.Question;
         }
+        if (phase.Answer.Length > 0) this.state.AnswerText = phase.Answer;
+        if (phase.Translation.Length > 0) this.state.IslandTranslation = phase.Translation;
+        if (phase.ExtraTranscriptLine is { Length: > 0 } heard) this.state.SystemPartial = heard;
+        else if (phase.Phase is NextThought.Platform.DemoIslandPhase.Hearing) this.state.SystemPartial = "";
+        if (legacyCollapsed) QuestionText.Text = "已收起";
+        else if (state == "launcher") QuestionText.Text = "准备开始一场会议";
+        HeadlineText.IsVisible = phase.Phase is not (NextThought.Platform.DemoIslandPhase.Compact
+            or NextThought.Platform.DemoIslandPhase.Launcher);
+        DetailText.IsVisible = phase.Phase is not (NextThought.Platform.DemoIslandPhase.Compact
+            or NextThought.Platform.DemoIslandPhase.Launcher or NextThought.Platform.DemoIslandPhase.Deck);
+        TranslationPanel.IsVisible = phase.Phase is NextThought.Platform.DemoIslandPhase.Bilingual
+            or NextThought.Platform.DemoIslandPhase.Pinned;
     }
 }

@@ -20,14 +20,13 @@ public partial class RegionCaptureWindow : Window
     {
         this.capture = capture;
         InitializeComponent();
-        Opened += (_, _) => UiTranslation.Apply(this, NextThought.Core.UiText.EnglishUi);
         ScreenImage.Source = capture.Image;
         CanvasHost.PointerPressed += OnPressed;
         CanvasHost.PointerMoved += OnMoved;
         CanvasHost.PointerReleased += OnReleased;
         Opened += (_, _) =>
         {
-            HintText.Text = $"已捕获 {capture.Width}×{capture.Height} 像素（{capture.X},{capture.Y}）。拖动选择区域，然后点「使用此区域」。";
+            HintText.Text = UiText.Format("已捕获 %lld×%lld 像素（%lld,%lld）。拖动选择区域，然后点「使用此区域」。", capture.Width, capture.Height, capture.X, capture.Y);
         };
     }
 
@@ -87,7 +86,7 @@ public partial class RegionCaptureWindow : Window
             Selection.Height = selection.Height;
             var rect = ImageRect;
             var scale = rect.Width / capture.Width;
-            SizeText.Text = $"选区 {Math.Round(selection.Width / scale)}×{Math.Round(selection.Height / scale)} 像素";
+            SizeText.Text = UiText.Format("选区 %lld×%lld 像素", (long)Math.Round(selection.Width / scale), (long)Math.Round(selection.Height / scale));
         }
         else
         {

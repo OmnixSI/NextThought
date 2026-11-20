@@ -878,7 +878,7 @@ public sealed class SelfTestStructureTests
     public void NotesPageHasFourTabs()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
-        foreach (var header in new[] { "Header=\"纪要\"", "Header=\"转写\"", "Header=\"回答\"", "Header=\"个人笔记\"", "Header=\"证据\"", "Header=\"提纲\"", "Header=\"回顾\"", "Header=\"工作纪要\"" })
+        foreach (var header in new[] { "{loc:Tr 纪要}", "{loc:Tr 转写}", "{loc:Tr 回答}", "{loc:Tr 个人笔记}", "{loc:Tr 证据}", "{loc:Tr 提纲}", "{loc:Tr 回顾}", "{loc:Tr 工作纪要}" })
             Assert.Contains(header, xaml);
     }
 

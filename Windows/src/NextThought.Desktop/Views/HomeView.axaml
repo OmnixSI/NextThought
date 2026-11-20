@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.HomeView"
@@ -22,7 +23,7 @@
             <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
                      Padding="{DynamicResource D4Padding_0}" FontFamily="{StaticResource SerifFamily}" FontSize="24"
                      FontWeight="Medium" MinHeight="36" VerticalAlignment="Center"
-                     Watermark="给这场会起个名字，比如“字节二面”" />
+                     Watermark="{loc:Tr 给这场会起个名字，比如“字节二面”}" />
           </Grid>
           <ItemsControl ItemsSource="{Binding Scenes}">
             <ItemsControl.ItemsPanel>
@@ -51,9 +52,9 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-            <TextBlock Text="⌘⇧N 不挑场合，立即记录" Classes="caption" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Content="先准备资料" Command="{Binding NavigateCommand}" CommandParameter="Prepare" />
-            <Button Grid.Column="2" Classes="primary" Content="开始" Command="{Binding StartRecordingCommand}" />
+            <TextBlock Text="{loc:Tr Ctrl+Alt+N 不挑场合，立即记录}" Classes="caption" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="{loc:Tr 先准备资料}" Command="{Binding NavigateCommand}" CommandParameter="Prepare" />
+            <Button Grid.Column="2" Classes="primary" Content="{loc:Tr 开始}" Command="{Binding StartRecordingCommand}" />
           </Grid>
         </StackPanel>
       </Border>
@@ -62,8 +63,8 @@
       <!-- Continue previous series -->
       <StackPanel Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding HasSeries}">
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="接着上一场" Classes="section" />
-          <Button Grid.Column="1" Classes="quiet" Content="全部资料夹" VerticalAlignment="Center"
+          <TextBlock Text="{loc:Tr 接着上一场}" Classes="section" />
+          <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部资料夹}" VerticalAlignment="Center"
                   Command="{Binding NavigateCommand}" CommandParameter="Series" />
         </Grid>
         <ItemsControl ItemsSource="{Binding SeriesRows}">
@@ -89,8 +90,8 @@
       <!-- Recent meetings -->
       <StackPanel Spacing="{DynamicResource D4Spacing_12}">
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="最近记录" Classes="section" />
-          <Button Grid.Column="1" Classes="quiet" Content="全部记录" VerticalAlignment="Center"
+          <TextBlock Text="{loc:Tr 最近记录}" Classes="section" />
+          <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 全部记录}" VerticalAlignment="Center"
                   Command="{Binding NavigateCommand}" CommandParameter="Live" />
         </Grid>
         <ItemsControl ItemsSource="{Binding HomeRecent}">
@@ -110,7 +111,7 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock Text="还没有会议记录。点击「开始记录」写下第一场。" Classes="caption"
+        <TextBlock Text="{loc:Tr 还没有会议记录。点击「开始记录」写下第一场。}" Classes="caption"
                    IsVisible="{Binding IsHistoryEmpty}" />
       </StackPanel>
     </StackPanel>

@@ -35,7 +35,7 @@ public partial class HistoryView : UserControl
         if (DataContext is not AppState state || Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
         var count = state.FilteredHistory.Count(row => row.IsSelected);
         if (count == 0) return;
-        var confirmed = await new ConfirmDialog($"删除选中的 {count} 场会议？此操作会移除归档目录。").ShowDialog<bool>(owner);
+        var confirmed = await new ConfirmDialog(UiText.Format("删除选中的 %lld 场会议？此操作会移除归档目录。", count)).ShowDialog<bool>(owner);
         if (confirmed) state.DeleteSelectedSessionsCommand.Execute(null);
     
         }
@@ -49,7 +49,7 @@ public partial class HistoryView : UserControl
         if (DataContext is not AppState state || Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
         var count = state.FilteredHistory.Count;
         if (count == 0) return;
-        var confirmed = await new ConfirmDialog($"删除当前筛选的 {count} 场会议？此操作会移除归档目录。").ShowDialog<bool>(owner);
+        var confirmed = await new ConfirmDialog(UiText.Format("删除当前筛选的 %lld 场会议？此操作会移除归档目录。", count)).ShowDialog<bool>(owner);
         if (confirmed) state.DeleteFilteredSessionsCommand.Execute(null);
     
         }
@@ -62,7 +62,7 @@ public partial class HistoryView : UserControl
         {
         if (sender is not MenuItem { Tag: RecentMeetingRow row } || DataContext is not AppState state) return;
         if (Avalonia.Controls.TopLevel.GetTopLevel(this) is not Window owner) return;
-        var confirmed = await new ConfirmDialog($"删除会议「{row.Title}」？会议归档会从磁盘移除。").ShowDialog<bool>(owner);
+        var confirmed = await new ConfirmDialog(UiText.Format("删除会议「%@」？会议归档会从磁盘移除。", row.Title)).ShowDialog<bool>(owner);
         if (confirmed) await state.DeleteSessionAsync(row);
     
         }

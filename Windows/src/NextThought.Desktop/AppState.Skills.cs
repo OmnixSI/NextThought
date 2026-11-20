@@ -23,7 +23,7 @@ public partial class AppState
         skills = skillStore.Load();
         SkillsText = SkillStore.ToText(skills);
         SkillCount = skills.Count;
-        SkillsStatus = skills.Count == 0 ? "尚未加载技能。" : $"{skills.Count} 个技能；回答时按需遵守。";
+        SkillsStatus = skills.Count == 0 ? UiText.T("尚未加载技能。") : UiText.Format("%lld 个技能；回答时按需遵守。", skills.Count);
         RefreshSkillRows();
     }
 
@@ -44,7 +44,7 @@ public partial class AppState
         SkillCount = merged.Count;
         RefreshSkillRows();
         RefreshSeriesSkills();
-        SkillsStatus = $"已导入，共 {merged.Count} 个技能。";
+        SkillsStatus = UiText.Format("已导入，共 %lld 个技能。", merged.Count);
         SetStatus(SkillsStatus);
     }
 
@@ -60,7 +60,7 @@ public partial class AppState
             skills = parsed;
             RefreshSkillRows();
             SkillCount = parsed.Count;
-            SkillsStatus = parsed.Count == 0 ? "技能已清空。" : $"已保存 {parsed.Count} 个技能，下一场回答生效。";
+            SkillsStatus = parsed.Count == 0 ? UiText.T("技能已清空。") : UiText.Format("已保存 %lld 个技能，下一场回答生效。", parsed.Count);
             SetStatus(SkillsStatus);
         }
         catch (Exception ex) { SkillsStatus = "技能保存失败：" + ex.Message; SetStatus(SkillsStatus, true); }
@@ -79,7 +79,7 @@ public partial class AppState
         skillStore.Save(skills);
         SkillCount = skills.Count;
         SkillsText = SkillStore.ToText(skills);
-        SkillsStatus = $"{skills.Count} 个技能；已保存启停状态。";
+        SkillsStatus = UiText.Format("%lld 个技能；已保存启停状态。", skills.Count);
     }
 
     /// <summary>E28: skills as rows the settings page edits one by one.</summary>

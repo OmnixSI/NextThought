@@ -50,10 +50,10 @@ public partial class AppState
     private static string Format(CoachSummary summary)
     {
         var parts = new List<string>();
-        if (summary.Pace is { } pace) parts.Add($"语速 {pace:F0} 单位/分钟");
-        if (summary.TalkShare is { } share) parts.Add($"发言占比 {share:P0}");
-        if (summary.LongestMonologue >= CoachSummaryAccumulator.MinimumMonologue) parts.Add($"最长独白 {summary.LongestMonologue:F0} 秒");
-        if (summary.EyeContact is { } contact) parts.Add($"看镜头 {contact:P0}");
+        if (summary.Pace is { } pace) parts.Add(UiText.Format("语速 %.0f 单位/分钟", pace));
+        if (summary.TalkShare is { } share) parts.Add(UiText.Format("发言占比 %.0f%%", share * 100));
+        if (summary.LongestMonologue >= CoachSummaryAccumulator.MinimumMonologue) parts.Add(UiText.Format("最长独白 %.0f 秒", summary.LongestMonologue));
+        if (summary.EyeContact is { } contact) parts.Add(UiText.Format("看镜头 %.0f%%", contact * 100));
         return string.Join(" · ", parts);
     }
 }

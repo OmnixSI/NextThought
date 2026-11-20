@@ -351,7 +351,7 @@ public partial class SettingsView : UserControl
         if (key == 0) { ShortcutRecorderStatus.Text = "这个键不能用作全局快捷键。"; return; }
         if (modifiers == 0)
         {
-            ShortcutRecorderStatus.Text = "快捷键必须包含 Command、Option 或 Control，不能只使用普通按键。";
+            ShortcutRecorderStatus.Text = "快捷键必须包含 Ctrl、Alt 或 Shift，不能只使用普通按键。";
             return;
         }
         ApplyShortcut(id, modifiers, key);

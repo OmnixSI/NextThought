@@ -35,7 +35,7 @@ public partial class TranscriptRow : ObservableObject
 
     private static string BuildLabel(TranscriptLine line) =>
         $"{line.Date.ToLocalTime():HH:mm:ss} · {(line.Speaker == "remote" ? "系统声音" : line.Speaker == "room" ? "现场" : "麦克风")}" +
-        (line.Voice is { } voice ? $" · 说话人{voice + 1}" : "") +
+        (line.Voice is { } voice ? UiText.Format(" · 说话人 %lld", voice + 1) : "") +
         (line.SuspectedEcho == true ? " · 可能回声" : "");
 }
 

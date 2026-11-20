@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              x:Class="NextThought.Desktop.Views.SeriesView"
@@ -18,13 +19,13 @@
   <Grid RowDefinitions="Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="系列" Classes="display" />
-        <TextBlock Text="同一门课、同一个项目、同一类面试放在一个系列里；每场会议的结论与经验会攒在一起。" Classes="caption" />
+        <TextBlock Text="{loc:Tr 系列}" Classes="display" />
+        <TextBlock Text="{loc:Tr 同一门课、同一个项目、同一类面试放在一个系列里；每场会议的结论与经验会攒在一起。}" Classes="caption" />
         <TextBlock Text="{Binding SeriesSummary}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
-        <TextBox Text="{Binding NewSeriesName}" PlaceholderText="新系列的名字" Width="180" MinHeight="34" />
-        <Button Content="新建系列" Command="{Binding CreateSeriesCommand}" />
+        <TextBox Text="{Binding NewSeriesName}" PlaceholderText="{loc:Tr 新系列的名字}" Width="180" MinHeight="34" />
+        <Button Content="{loc:Tr 新建系列}" Command="{Binding CreateSeriesCommand}" />
       </StackPanel>
     </Grid>
 
@@ -46,7 +47,7 @@
               </ListBox.ItemTemplate>
             </ListBox>
           </ScrollViewer>
-          <TextBlock Grid.Row="1" Text="还没有系列。上面的输入框新建一个，再把会议放进来。"
+          <TextBlock Grid.Row="1" Text="{loc:Tr 还没有系列。上面的输入框新建一个，再把会议放进来。}"
                      Classes="caption" Margin="{DynamicResource D4Margin_8_8_8_4}" IsVisible="{Binding SeriesIsEmpty}" TextWrapping="Wrap" />
         </Grid>
       </Border>
@@ -61,14 +62,14 @@
               <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
-              <Button Content="编辑系列" Click="EditSeries_Click" />
-              <Button Content="把这场景加入" Command="{Binding AssignCurrentToSeriesCommand}" />
-              <Button Content="移出" Command="{Binding RemoveCurrentFromSeriesCommand}" />
+              <Button Content="{loc:Tr 编辑系列}" Click="EditSeries_Click" />
+              <Button Content="{loc:Tr 把这场景加入}" Command="{Binding AssignCurrentToSeriesCommand}" />
+              <Button Content="{loc:Tr 移出}" Command="{Binding RemoveCurrentFromSeriesCommand}" />
             </StackPanel>
           </Grid>
 
           <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_14_0_0}">
-            <TextBlock Text="会议" Classes="overline" />
+            <TextBlock Text="{loc:Tr 会议}" Classes="overline" />
             <ScrollViewer MaxHeight="88" VerticalScrollBarVisibility="Auto">
               <ItemsControl ItemsSource="{Binding SeriesMeetings}">
                 <ItemsControl.ItemTemplate>
@@ -76,14 +77,14 @@
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_3}">
                       <TextBlock Text="{Binding Meta.Title}" Classes="label" />
                       <Border Classes="chip" IsVisible="{Binding HasSummary}">
-                        <TextBlock Text="有纪要" Classes="overline" FontSize="10" />
+                        <TextBlock Text="{loc:Tr 有纪要}" Classes="overline" FontSize="10" />
                       </Border>
                     </StackPanel>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
-            <TextBlock Text="附着技能" Classes="overline" />
+            <TextBlock Text="{loc:Tr 附着技能}" Classes="overline" />
             <ScrollViewer MaxHeight="110" VerticalScrollBarVisibility="Auto">
               <ItemsControl ItemsSource="{Binding SeriesSkills}">
                 <ItemsControl.ItemTemplate>
@@ -93,14 +94,14 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
-            <TextBlock Text="勾选的技能只加入这个系列的回答；全局技能仍然生效。" Classes="caption" FontSize="11" />
+            <TextBlock Text="{loc:Tr 勾选的技能只加入这个系列的回答；全局技能仍然生效。}" Classes="caption" FontSize="11" />
           </StackPanel>
 
           <!-- 经验 / 待确认 / 题库：只有确认过的知识会进入回答 -->
           <Border Grid.Row="2" Classes="card" Padding="{DynamicResource D4Padding_12}" Margin="{DynamicResource D4Margin_0_8_0_0}"
                   IsVisible="{Binding SeriesChangeRows.Count}">
             <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="系列变更待确认" Classes="overline" />
+              <TextBlock Text="{loc:Tr 系列变更待确认}" Classes="overline" />
               <ItemsControl ItemsSource="{Binding SeriesChangeRows}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="local:SeriesChangeRow">
@@ -110,8 +111,8 @@
                         <TextBlock Text="{Binding SourceQuote}" Classes="caption" TextWrapping="Wrap" />
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
-                        <Button Classes="quiet" Content="应用" Tag="{Binding}" Click="AcceptSeriesChange_Click" />
-                        <Button Classes="quiet" Content="忽略" Tag="{Binding}" Click="RejectSeriesChange_Click" />
+                        <Button Classes="quiet" Content="{loc:Tr 应用}" Tag="{Binding}" Click="AcceptSeriesChange_Click" />
+                        <Button Classes="quiet" Content="{loc:Tr 忽略}" Tag="{Binding}" Click="RejectSeriesChange_Click" />
                       </StackPanel>
                     </Grid>
                   </DataTemplate>
@@ -129,13 +130,13 @@
                       <DataTemplate x:DataType="core:WorkspaceLesson">
                         <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_3}">
                           <TextBlock Text="{Binding Text}" Classes="label" TextWrapping="Wrap" />
-                          <Button Grid.Column="1" Content="删除" Classes="ghost" Tag="{Binding}"
+                          <Button Grid.Column="1" Content="{loc:Tr 删除}" Classes="ghost" Tag="{Binding}"
                                   Click="RemoveLesson_Click" />
                         </Grid>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                  <TextBlock Text="还没有经验。整理纪要时会从「下次改进」这类章节提炼候选，确认后才会记下来；也可以手写一条。" Classes="caption"
+                  <TextBlock Text="{loc:Tr 还没有经验。整理纪要时会从「下次改进」这类章节提炼候选，确认后才会记下来；也可以手写一条。}" Classes="caption"
                              IsVisible="{Binding !HasSeriesLessons}" TextWrapping="Wrap" />
                 </StackPanel>
               </ScrollViewer>
@@ -162,18 +163,18 @@
                             </StackPanel>
                             <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
                               <Button Classes="primary" Tag="{Binding}" Click="AcceptCandidate_Click" Padding="{DynamicResource D4Padding_14_0}" MinHeight="30">
-                                <TextBlock Text="采纳" Foreground="{DynamicResource OnInk}" FontSize="13" />
+                                <TextBlock Text="{loc:Tr 采纳}" Foreground="{DynamicResource OnInk}" FontSize="13" />
                               </Button>
-                              <Button Content="替换回答" Classes="ghost" Tag="{Binding}" Click="ReplaceCandidate_Click"
+                              <Button Content="{loc:Tr 替换回答}" Classes="ghost" Tag="{Binding}" Click="ReplaceCandidate_Click"
                                       IsVisible="{Binding CanReplace}" />
-                              <Button Content="忽略" Classes="ghost" Tag="{Binding}" Click="RejectCandidate_Click" />
+                              <Button Content="{loc:Tr 忽略}" Classes="ghost" Tag="{Binding}" Click="RejectCandidate_Click" />
                             </StackPanel>
                           </Grid>
                         </Border>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                  <TextBlock Text="没有待确认的知识。按模板整理一份纪要后，模板里标了「带出经验」的章节会排到这里。"
+                  <TextBlock Text="{loc:Tr 没有待确认的知识。按模板整理一份纪要后，模板里标了「带出经验」的章节会排到这里。}"
                              Classes="caption" IsVisible="{Binding !HasSeriesCandidates}" TextWrapping="Wrap" />
                 </StackPanel>
               </ScrollViewer>
@@ -196,7 +197,7 @@
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
-                  <TextBlock Text="题库还空着。面试、汇报这类模板的「逐题回放」章节会在确认后进入题库。"
+                  <TextBlock Text="{loc:Tr 题库还空着。面试、汇报这类模板的「逐题回放」章节会在确认后进入题库。}"
                              Classes="caption" IsVisible="{Binding !HasSeriesBank}" TextWrapping="Wrap" />
                 </StackPanel>
               </ScrollViewer>
@@ -204,10 +205,10 @@
           </TabControl>
 
           <Grid Grid.Row="4" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
-            <TextBox Text="{Binding NewLessonText}" PlaceholderText="一句话经验，例如：先说结论，再说依据" MinHeight="34" />
+            <TextBox Text="{Binding NewLessonText}" PlaceholderText="{loc:Tr 一句话经验，例如：先说结论，再说依据}" MinHeight="34" />
             <Button Grid.Column="1" Classes="primary" Margin="{DynamicResource D4Margin_8_0_0_0}" Padding="{DynamicResource D4Padding_16_0}" MinHeight="34"
                     Command="{Binding AddLessonCommand}">
-              <TextBlock Text="记下" Foreground="{DynamicResource OnInk}" FontSize="13" />
+              <TextBlock Text="{loc:Tr 记下}" Foreground="{DynamicResource OnInk}" FontSize="13" />
             </Button>
           </Grid>
         </Grid>

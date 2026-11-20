@@ -1,9 +1,10 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         x:Class="NextThought.Desktop.Views.TeleprompterWindow"
         x:DataType="local:AppState"
-        Title="NextThought 提词器"
+        Title="{loc:Tr NextThought 提词器}"
         Width="640" Height="320" MinWidth="360" MinHeight="160"
         CanResize="True" ShowInTaskbar="False" ShowActivated="False"
         WindowDecorations="None" Topmost="True"
@@ -17,20 +18,20 @@
             PointerPressed="DragBar_PointerPressed">
         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_7}" VerticalAlignment="Center">
           <Border Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}" Background="{DynamicResource Seal}" />
-          <TextBlock Text="提词器" Foreground="#A3A19B" FontSize="11" VerticalAlignment="Center" />
-          <TextBlock x:Name="ModeText" Text="拖动可移动 · 双击隐藏控件" Foreground="#6B6963" FontSize="10"
+          <TextBlock Text="{loc:Tr 提词器}" Foreground="#A3A19B" FontSize="11" VerticalAlignment="Center" />
+          <TextBlock x:Name="ModeText" Text="{loc:Tr 拖动可移动 · 双击隐藏控件}" Foreground="#6B6963" FontSize="10"
                      VerticalAlignment="Center" Margin="{DynamicResource D4Margin_4_0_0_0}" />
           <TextBlock Text="{Binding DetectedQuestion}" Foreground="#B8B6AF" FontSize="11" MaxWidth="240"
                      TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
-          <Button Classes="tp" Content="A-" Click="Smaller_Click" ToolTip.Tip="缩小字号" />
-          <Button Classes="tp" Content="A+" Click="Larger_Click" ToolTip.Tip="放大字号" />
-          <Button Classes="tp" Content="−" Click="Fade_Click" ToolTip.Tip="降低不透明度" />
-          <Button Classes="tp" Content="+" Click="Solid_Click" ToolTip.Tip="提高不透明度" />
-          <Button Classes="tp" x:Name="ThroughButton" Content="穿透" Click="Through_Click"
-                  ToolTip.Tip="切换鼠标穿透（穿透后只能用快捷键改回）" />
-          <Button Classes="tp" Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Click="Close_Click" ToolTip.Tip="关闭提词器" />
+          <Button Classes="tp" Content="A-" Click="Smaller_Click" ToolTip.Tip="{loc:Tr 缩小字号}" />
+          <Button Classes="tp" Content="A+" Click="Larger_Click" ToolTip.Tip="{loc:Tr 放大字号}" />
+          <Button Classes="tp" Content="−" Click="Fade_Click" ToolTip.Tip="{loc:Tr 降低不透明度}" />
+          <Button Classes="tp" Content="+" Click="Solid_Click" ToolTip.Tip="{loc:Tr 提高不透明度}" />
+          <Button Classes="tp" x:Name="ThroughButton" Content="{loc:Tr 穿透}" Click="Through_Click"
+                  ToolTip.Tip="{loc:Tr 切换鼠标穿透（穿透后只能用快捷键改回）}" />
+          <Button Classes="tp" Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" Click="Close_Click" ToolTip.Tip="{loc:Tr 关闭提词器}" />
         </StackPanel>
       </Grid>
 
@@ -38,18 +39,18 @@
         <SelectableTextBlock x:Name="BodyText" Text="{Binding PlainAnswer}" Foreground="#F5F3EE"
                              FontSize="26" LineHeight="38" TextWrapping="Wrap" />
       </ScrollViewer>
-      <Button x:Name="FollowButton" Grid.Row="1" Content="回到最新" Classes="tp" HorizontalAlignment="Right"
+      <Button x:Name="FollowButton" Grid.Row="1" Content="{loc:Tr 回到最新}" Classes="tp" HorizontalAlignment="Right"
               VerticalAlignment="Bottom" Margin="{DynamicResource D4Margin_0_0_12_12}" IsVisible="False"
               Click="Follow_Click" />
       <Border x:Name="Footer" Grid.Row="2" Margin="{DynamicResource D4Margin_10_4_10_8}">
         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*,Auto">
-          <Button Grid.Column="0" Classes="tp" Content="改短" Command="{Binding ShorterAnswerCommand}" />
-          <Button Grid.Column="1" Classes="tp" Content="举例" Tag="Example" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="2" Classes="tp" Content="英文" Tag="English" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="4" Classes="tp" Content="复制" Command="{Binding CopyAnswerCommand}" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="5" Classes="tp" Content="工作台" Click="Workbench_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
-          <Button Grid.Column="8" Classes="tp" Content="停止生成" IsVisible="{Binding Answering}" Command="{Binding CancelCommand}" />
-          <Button Grid.Column="8" Classes="tp" Content="立即回答" IsVisible="{Binding !Answering}" Command="{Binding ForceAnswerCommand}" />
+          <Button Grid.Column="0" Classes="tp" Content="{loc:Tr 改短}" Command="{Binding ShorterAnswerCommand}" />
+          <Button Grid.Column="1" Classes="tp" Content="{loc:Tr 举例}" Tag="Example" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="2" Classes="tp" Content="{loc:Tr 英文}" Tag="English" Click="Refine_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="4" Classes="tp" Content="{loc:Tr 复制}" Command="{Binding CopyAnswerCommand}" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="5" Classes="tp" Content="{loc:Tr 工作台}" Click="Workbench_Click" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+          <Button Grid.Column="8" Classes="tp" Content="{loc:Tr 停止生成}" IsVisible="{Binding Answering}" Command="{Binding CancelCommand}" />
+          <Button Grid.Column="8" Classes="tp" Content="{loc:Tr 立即回答}" IsVisible="{Binding !Answering}" Command="{Binding ForceAnswerCommand}" />
         </Grid>
       </Border>
     </Grid>

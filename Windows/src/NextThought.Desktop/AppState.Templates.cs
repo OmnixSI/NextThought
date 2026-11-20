@@ -69,7 +69,7 @@ public partial class AppState
             if (TemplateChoices.All(choice => choice.Template.Id != template.Id))
                 TemplateChoices.Add(new NotesTemplateChoice(template, null));
         CustomTemplateText = NotesTemplateStore.ToText(custom);
-        CustomTemplateStatus = custom.Count == 0 ? "尚无自定义模板。" : $"{custom.Count} 个自定义模板。";
+        CustomTemplateStatus = custom.Count == 0 ? UiText.T("尚无自定义模板。") : UiText.Format("%lld 个自定义模板。", custom.Count);
         RefreshEditableTemplates();
     }
 
@@ -84,7 +84,7 @@ public partial class AppState
             foreach (var choice in TemplateChoices.Where(choice => choice.Kind is null).ToList()) TemplateChoices.Remove(choice);
             foreach (var template in imported) TemplateChoices.Add(new NotesTemplateChoice(template, null));
             templateStore.Save(imported);
-            CustomTemplateStatus = imported.Count == 0 ? "自定义模板已清空。" : $"已保存 {imported.Count} 个自定义模板。";
+            CustomTemplateStatus = imported.Count == 0 ? UiText.T("自定义模板已清空。") : UiText.Format("已保存 %lld 个自定义模板。", imported.Count);
             RefreshEditableTemplates();
             SetStatus(CustomTemplateStatus);
         }
@@ -103,7 +103,7 @@ public partial class AppState
         }
         templateStore.Save(TemplateChoices.Where(choice => choice.Kind is null).Select(choice => choice.Template).ToList());
         CustomTemplateText = NotesTemplateStore.ToText(TemplateChoices.Where(choice => choice.Kind is null).Select(choice => choice.Template).ToList());
-        CustomTemplateStatus = $"已导入模板，共 {TemplateChoices.Count(choice => choice.Kind is null)} 个自定义模板。";
+        CustomTemplateStatus = UiText.Format("已导入模板，共 %lld 个自定义模板。", TemplateChoices.Count(choice => choice.Kind is null));
         RefreshEditableTemplates();
         SetStatus(CustomTemplateStatus);
     }
@@ -164,7 +164,7 @@ public partial class AppState
         var template = new NotesTemplate(id, name, sections);
         AddTemplates([template]);
         EditTemplateChoice = EditableTemplates.FirstOrDefault(choice => choice.Template.Id == id);
-        SetStatus(NextThought.Core.UiText.EnglishUi ? $"Template \"{name}\" saved." : $"模板「{name}」已保存。");
+        SetStatus(UiText.Format("模板「%@」已保存。", name));
     }
 
     [RelayCommand(CanExecute = nameof(CanTemplate))]
@@ -187,7 +187,7 @@ public partial class AppState
             var template = SelectedTemplate?.Template ?? NotesTemplate.BuiltIn(TemplateKind, english);
             var header = english
                 ? $"# {meta.Title}\n\nMeeting: {meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · Template: {template.Name}"
-                : $"# {meta.Title}\n\n会议时间：{meta.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 模板：{template.Name}";
+                : UiText.Format("# %@\n\n会议时间：%@ · 模板：%@", meta.Title, meta.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), template.Name);
             var settings = Settings.Build();
             var answers = string.Join("\n\n", SelectedSessionAnswers.TakeLast(40)
                 .Where(answer => !string.IsNullOrWhiteSpace(answer.Answer))
@@ -206,12 +206,12 @@ public partial class AppState
                 for (var index = 0; index < chunks.Count; index++)
                 {
                     if (generation != requestEpoch) return;
-                    SetStatus($"正在按《{template.Name}》整理…（第 {index + 1}/{chunks.Count} 段）");
+                    SetStatus(UiText.Format("正在按《%@》整理…（第 %lld/%lld 段）", template.Name, index + 1, chunks.Count));
                     partials.Add(await CurrentClient().AnswerAsync(AnswerOptions(true), system,
                         NotesPrompt.PartialUser(header, chunks[index], index, chunks.Count), null,
                         cancellation.Token, 240));
                 }
-                SetStatus($"正在按《{template.Name}》合并分段结果…");
+                SetStatus(UiText.Format("正在按《%@》合并分段结果…", template.Name));
                 reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system,
                     NotesPrompt.MergeUser(header, partials), null, cancellation.Token, 240);
             }
@@ -236,7 +236,7 @@ public partial class AppState
             CollectFromNotes(meta, doc, template);
             if (lessons.Count + bank.Count > 0)
                 await Sessions.SaveSummaryKnowledgeAsync(meta, lessons, bank, appliedToWorkspace: false, cancellation.Token);
-            SetStatus($"已按《{template.Name}》整理，可导出 Markdown。");
+            SetStatus(UiText.Format("已按《%@》整理，可导出 Markdown。", template.Name));
         }
         catch (OperationCanceledException)
         {

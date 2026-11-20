@@ -54,7 +54,7 @@ public partial class AppState
         {
             await Settings.SaveAsync();
             if (!SettingsStore.CloudSttKeyReadFailed) SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
-            LanguageChanged?.Invoke(Settings.UiLanguage == "English");
+            LanguageChanged?.Invoke(UiText.ResolveEnglish(Settings.Language));
             ApplyAppearance();
             RefreshModelState();
             SetStatus("设置已保存，密钥已用当前 Windows 用户加密。");
@@ -143,7 +143,7 @@ public partial class AppState
             {
                 companion = new CompanionServer(address.Address, HandleCompanionActionAsync);
                 CompanionLink = companion.PairingUrl;
-                CompanionInfo = $"已在 {address.Address}:{companion.BaseUri.Port} 监听 · 配对链接相当于临时遥控密钥，只在可信网络使用。";
+                CompanionInfo = UiText.Format("已在 %@:%lld 监听 · 配对链接相当于临时遥控密钥，只在可信网络使用。", address.Address, companion.BaseUri.Port);
             }
             if (relayUrl.Length > 0) await StartRelayAsync(relayUrl);
             CompanionRunning = true;

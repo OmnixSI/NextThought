@@ -1,9 +1,10 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         x:Class="NextThought.Desktop.Views.CueIslandWindow"
         x:DataType="local:AppState"
-        Title="NextThought 提词岛"
+        Title="{loc:Tr NextThought 提词岛}"
         Width="560" SizeToContent="Height"
         CanResize="False" ShowInTaskbar="False" ShowActivated="False"
         WindowDecorations="None" Topmost="True"
@@ -32,7 +33,7 @@
         <!-- 同传上岛：对方那句话的译文（逐字更新，过期结果不会覆盖新句子）。 -->
         <StackPanel x:Name="TranslationPanel" Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_18_5_0_0}"
                     IsVisible="{Binding HasIslandTranslation}">
-          <TextBlock Text="译" Foreground="#7A7871" FontSize="10" VerticalAlignment="Center" />
+          <TextBlock Text="{loc:Tr 译}" Foreground="#7A7871" FontSize="10" VerticalAlignment="Center" />
           <TextBlock Text="{Binding IslandTranslation}" Foreground="#DCE3EA" FontSize="12" LineHeight="17"
                      MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxWidth="470" />
         </StackPanel>
@@ -47,7 +48,7 @@
         <StackPanel Grid.Row="6" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
                     Margin="{DynamicResource D4Margin_18_5_0_0}" IsVisible="{Binding HasAutoEndNotice}">
           <TextBlock Text="{Binding AutoEndNotice}" Foreground="#E9C46A" FontSize="11.5" TextWrapping="Wrap" MaxWidth="430" VerticalAlignment="Center" />
-          <Button Classes="quiet" Content="继续记录" Command="{Binding KeepRecordingCommand}" />
+          <Button Classes="quiet" Content="{loc:Tr 继续记录}" Command="{Binding KeepRecordingCommand}" />
         </StackPanel>
         <TextBlock Grid.Row="7" Grid.ColumnSpan="3" Text="{Binding BilingualQuestionText}" Foreground="#9FB4C7"
                    FontSize="12" LineHeight="17" TextWrapping="Wrap" MaxLines="2"
@@ -56,10 +57,10 @@
                     Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_18_7_0_0}" IsVisible="False">
           <Button Classes="quiet" Content="&#xE76B;" FontFamily="Segoe Fluent Icons" Command="{Binding PreviousAnswerCommand}" />
           <Button Classes="quiet" Content="&#xE76C;" FontFamily="Segoe Fluent Icons" Command="{Binding NextAnswerCommand}" />
-          <Button Classes="quiet" Content="重新生成" Command="{Binding RegenerateAnswerCommand}" />
-          <Button Classes="quiet" Content="改短" Command="{Binding ShorterAnswerCommand}" />
-          <Button Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}" />
-          <Button Classes="quiet" Content="取消" Command="{Binding CancelCommand}" />
+          <Button Classes="quiet" Content="{loc:Tr 重新生成}" Command="{Binding RegenerateAnswerCommand}" />
+          <Button Classes="quiet" Content="{loc:Tr 改短}" Command="{Binding ShorterAnswerCommand}" />
+          <Button Classes="quiet" Content="{loc:Tr 复制}" Command="{Binding CopyAnswerCommand}" />
+          <Button Classes="quiet" Content="{loc:Tr 取消}" Command="{Binding CancelCommand}" />
         </StackPanel>
         <TextBlock x:Name="PhaseText" Grid.Row="9" Grid.ColumnSpan="3" Text="" Foreground="#9FB4C7"
                    FontSize="12" LineHeight="17" TextWrapping="Wrap" MaxLines="2"

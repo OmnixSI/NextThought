@@ -29,14 +29,14 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
     public string MaterialsInsight => Materials.Count == 0
         ? "还没有资料；导入 PDF、Word、PPT、Excel、Markdown 或图片后，这里显示页数与段落数。"
         : string.Join("  ·  ", Materials.Take(3).Select(document =>
-            $"{document.Name} {document.Blocks.Count} 段")) + (Materials.Count > 3 ? $"  ·  另 {Materials.Count - 3} 份" : "");
+            UiText.Format("%@ %lld 段", document.Name, document.Blocks.Count))) + (Materials.Count > 3 ? UiText.Format("  ·  另 %lld 份", Materials.Count - 3) : "");
 
     public bool HasMaterials => Materials.Count > 0;
     public void NotifyLanguageChanged() => OnPropertyChanged(nameof(MaterialCountText));
 
     public string MaterialCountText => NextThought.Core.UiText.EnglishUi
         ? $"{NextThought.Core.UiText.Materials(Materials.Count)} · parsed on device"
-        : $"{Materials.Count} 份资料 · 本机解析";
+        : UiText.Format("%lld 份资料 · 本机解析", Materials.Count);
 
     partial void OnFilterChanged(string value) => ApplyFilter();
 
@@ -49,7 +49,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
             all = Store.List().ToList();
             ApplyFilter();
             OnPropertyChanged(nameof(MaterialsInsight));
-            ImportStatus = all.Count == 0 ? "还没有资料。导入 PDF、Word、PPT、Excel、Markdown 或图片。" : $"共 {all.Count} 份资料，均在本机解析，不上传。";
+            ImportStatus = all.Count == 0 ? UiText.T("还没有资料。导入 PDF、Word、PPT、Excel、Markdown 或图片。") : UiText.Format("共 %lld 份资料，均在本机解析，不上传。", all.Count);
         }
         catch (Exception ex)
         {
@@ -74,7 +74,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
     {
         if (value is null) { SelectedPreview = "选择一份资料，查看本机解析出的文本。"; return; }
         var builder = new System.Text.StringBuilder();
-        builder.AppendLine($"{value.Name} · {value.Extension} · {value.Blocks.Count} 段 · 解析器 {value.Reader}");
+        builder.AppendLine(UiText.Format("%@ · %@ · %lld 段 · 解析器 %@", value.Name, value.Extension, value.Blocks.Count, value.Reader));
         if (value.Warnings.Count > 0) builder.AppendLine("提示：" + string.Join("；", value.Warnings));
         builder.AppendLine();
         foreach (var block in value.Blocks.Take(120))
@@ -82,7 +82,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
             builder.AppendLine($"[{block.Location}] {block.Text}");
             builder.AppendLine();
         }
-        if (value.Blocks.Count > 120) builder.AppendLine($"…… 其余 {value.Blocks.Count - 120} 段未显示。");
+        if (value.Blocks.Count > 120) builder.AppendLine(UiText.Format("…… 其余 %lld 段未显示。", value.Blocks.Count - 120));
         SelectedPreview = builder.ToString();
     }
 
@@ -96,7 +96,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
         {
             foreach (var file in list)
             {
-                ImportProgress = $"正在解析 {System.IO.Path.GetFileName(file)}…";
+                ImportProgress = UiText.Format("正在解析 %@…", System.IO.Path.GetFileName(file));
                 try
                 {
                     await Store.ImportAsync(file, CancellationToken.None);
@@ -104,12 +104,12 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
                 }
                 catch (Exception ex)
                 {
-                    ImportStatus = $"导入 {System.IO.Path.GetFileName(file)} 失败：{ex.Message}";
+                    ImportStatus = UiText.Format("导入 %@ 失败：%@", System.IO.Path.GetFileName(file), ex.Message);
                 }
             }
             Refresh();
             state.RefreshMaterialTerms();
-            ImportStatus = added > 0 ? $"已导入 {added} 份资料。" : ImportStatus;
+            ImportStatus = added > 0 ? UiText.Format("已导入 %lld 份资料。", added) : ImportStatus;
             ImportProgress = "";
         }
         finally

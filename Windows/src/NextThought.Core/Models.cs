@@ -158,8 +158,8 @@ public sealed record AppSettings
     /// <summary>Per-action key overrides for the Ctrl+Alt global shortcuts (id → key name).</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = [];
 
-    /// <summary>UI language: "zh" (default) or "en".</summary>
-    public string Language { get; set; } = "zh";
+    /// <summary>G8/Mac <c>appLanguagePreference</c>: "system" (default), "zh-Hans" or "en".</summary>
+    public string Language { get; set; } = "system";
 
     /// <summary>D10: the Live/Library context sidebar is collapsed.</summary>
     public bool ContextSidebarHidden { get; set; }

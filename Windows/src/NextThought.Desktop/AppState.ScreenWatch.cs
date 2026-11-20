@@ -60,7 +60,7 @@ public partial class AppState
                 lastScreenText = hash;
                 if (Settings.InsightFollowSlides) FollowSlideFromScreen(text);
             }
-            ScreenWatchStatus = $"已读屏 · {text.Length} 字";
+            ScreenWatchStatus = UiText.Format("已读屏 · %lld 字", text.Length);
             ScreenWatchError = "";
         }
         catch (Exception ex)

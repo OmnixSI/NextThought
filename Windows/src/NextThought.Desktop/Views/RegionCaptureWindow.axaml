@@ -1,15 +1,16 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         x:Class="NextThought.Desktop.Views.RegionCaptureWindow"
-        Title="区域截图"
+        Title="{loc:Tr 区域截图}"
         Width="1080" Height="760" MinWidth="720" MinHeight="540"
         Background="{DynamicResource Paper}"
         WindowStartupLocation="CenterScreen">
   <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_20_16_20_16}">
     <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_12}">
-      <TextBlock Text="拖动选择截图区域" Classes="display" FontSize="22" />
-      <TextBlock x:Name="HintText" Text="截图会裁切到选中范围，然后存入资料库并由系统 OCR 读取文字。请把题目、代码或公式完整框入。"
+      <TextBlock Text="{loc:Tr 拖动选择截图区域}" Classes="display" FontSize="22" />
+      <TextBlock x:Name="HintText" Text="{loc:Tr 截图会裁切到选中范围，然后存入资料库并由系统 OCR 读取文字。请把题目、代码或公式完整框入。}"
                  Classes="caption" />
     </StackPanel>
 
@@ -26,9 +27,9 @@
     <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_12_0_0}">
       <TextBlock x:Name="SizeText" Classes="caption" VerticalAlignment="Center" />
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-        <Button Content="取消" Click="Cancel_Click" />
+        <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
         <Button Classes="primary" Click="Accept_Click" IsEnabled="False" Name="AcceptButton">
-          <TextBlock Text="使用此区域" Foreground="{DynamicResource OnInk}" />
+          <TextBlock Text="{loc:Tr 使用此区域}" Foreground="{DynamicResource OnInk}" />
         </Button>
       </StackPanel>
     </Grid>

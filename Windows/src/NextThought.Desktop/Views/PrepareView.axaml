@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              x:Class="NextThought.Desktop.Views.PrepareView"
@@ -8,13 +9,13 @@
     <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_18}">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="准备" Classes="display" />
-        <TextBlock Text="先选场合、补资料、做检查，再开始这场会。" Classes="caption" />
+        <TextBlock Text="{loc:Tr 准备}" Classes="display" />
+        <TextBlock Text="{loc:Tr 先选场合、补资料、做检查，再开始这场会。}" Classes="caption" />
       </StackPanel>
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Text="类型与标题" Classes="section" />
+          <TextBlock Text="{loc:Tr 类型与标题}" Classes="section" />
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
             <Border Width="44" Height="44" CornerRadius="{DynamicResource D4CornerRadius_10}"
                     Background="{DynamicResource Sunken}" VerticalAlignment="Center">
@@ -23,7 +24,7 @@
             </Border>
             <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
                      FontFamily="{StaticResource SerifFamily}" FontSize="22" MinHeight="36"
-                     PlaceholderText="给这场会起个名字" />
+                     PlaceholderText="{loc:Tr 给这场会起个名字}" />
           </Grid>
           <ItemsControl ItemsSource="{Binding Scenes}">
             <ItemsControl.ItemsPanel>
@@ -46,7 +47,7 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="系列与资料" Classes="section" />
+          <TextBlock Text="{loc:Tr 系列与资料}" Classes="section" />
           <TextBlock Text="{Binding SeriesSummary}" Classes="body" />
           <ListBox ItemsSource="{Binding SeriesRows}" SelectedItem="{Binding SelectedSeries}"
                    Background="Transparent" BorderThickness="0" MaxHeight="160">
@@ -62,10 +63,10 @@
           <TextBlock Text="{Binding SelectedSeriesTitle}" Classes="label" />
           <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
           <WrapPanel>
-            <CheckBox Content="带入资料" IsChecked="{Binding CarryMaterials}" />
-            <CheckBox Content="带入题库" IsChecked="{Binding CarryReview}" />
-            <CheckBox Content="带入经验" IsChecked="{Binding CarryLessons}" />
-            <CheckBox Content="带入上一场转写" IsChecked="{Binding CarryTranscript}" />
+            <CheckBox Content="{loc:Tr 带入资料}" IsChecked="{Binding CarryMaterials}" />
+            <CheckBox Content="{loc:Tr 带入题库}" IsChecked="{Binding CarryReview}" />
+            <CheckBox Content="{loc:Tr 带入经验}" IsChecked="{Binding CarryLessons}" />
+            <CheckBox Content="{loc:Tr 带入上一场转写}" IsChecked="{Binding CarryTranscript}" />
           </WrapPanel>
           <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
           <TextBlock Text="{Binding Library.MaterialsInsight}" Classes="caption" TextWrapping="Wrap" />
@@ -77,18 +78,18 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <Button Content="打开资料库" Command="{Binding NavigateCommand}" CommandParameter="Library" />
-            <Button Content="打开系列" Command="{Binding NavigateCommand}" CommandParameter="Series" />
+            <Button Content="{loc:Tr 打开资料库}" Command="{Binding NavigateCommand}" CommandParameter="Library" />
+            <Button Content="{loc:Tr 打开系列}" Command="{Binding NavigateCommand}" CommandParameter="Series" />
           </StackPanel>
         </StackPanel>
       </Border>
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="系列简报" Classes="section" />
+          <TextBlock Text="{loc:Tr 系列简报}" Classes="section" />
           <TextBlock Text="{Binding SelectedSeriesBriefing.WorkspaceName}" Classes="label" />
           <TextBlock Text="{Binding SelectedSeriesBriefing.SessionCount}" Classes="caption" />
-          <TextBlock Text="最近会议" Classes="overline" />
+          <TextBlock Text="{loc:Tr 最近会议}" Classes="overline" />
           <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.LatestSessions}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="core:SessionMeta">
@@ -96,7 +97,7 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="已确认经验" Classes="overline" />
+          <TextBlock Text="{loc:Tr 已确认经验}" Classes="overline" />
           <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="core:WorkspaceLesson">
@@ -104,7 +105,7 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <TextBlock Text="题库" Classes="overline" />
+          <TextBlock Text="{loc:Tr 题库}" Classes="overline" />
           <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.QuestionBank}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="core:QuestionBankItem">
@@ -117,47 +118,47 @@
 
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-          <TextBlock Text="检查" Classes="section" />
+          <TextBlock Text="{loc:Tr 检查}" Classes="section" />
           <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
             <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
                     Padding="{DynamicResource D4Padding_12_10}">
               <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="采音" Classes="overline" />
+                <TextBlock Text="{loc:Tr 采音}" Classes="overline" />
                 <TextBlock Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
             <Border Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
                     Padding="{DynamicResource D4Padding_12_10}">
               <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="场地" Classes="overline" />
-                <TextBlock Text="本机 · 不依赖网络" Classes="caption" />
+                <TextBlock Text="{loc:Tr 场地}" Classes="overline" />
+                <TextBlock Text="{loc:Tr 本机 · 不依赖网络}" Classes="caption" />
               </StackPanel>
             </Border>
             <Border Grid.Row="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
                     Padding="{DynamicResource D4Padding_12_10}">
               <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="回答服务" Classes="overline" />
+                <TextBlock Text="{loc:Tr 回答服务}" Classes="overline" />
                 <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
             <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
                     Padding="{DynamicResource D4Padding_12_10}">
               <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="手机伴侣" Classes="overline" />
+                <TextBlock Text="{loc:Tr 手机伴侣}" Classes="overline" />
                 <TextBlock Text="{Binding Settings.CompanionRelayUrl}" Classes="caption" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
             <Border Grid.Row="2" Grid.ColumnSpan="2" Background="{DynamicResource Sunken}"
                     CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_12_10}">
               <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                <TextBlock Text="资料与模型" Classes="overline" />
+                <TextBlock Text="{loc:Tr 资料与模型}" Classes="overline" />
                 <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
                 <TextBlock Text="{Binding ModelStatusText}" Classes="caption" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
           </Grid>
           <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
-          <Button Classes="quiet" Content="打开设置" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+          <Button Classes="quiet" Content="{loc:Tr 打开设置}" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
         </StackPanel>
       </Border>
     </StackPanel>
@@ -165,10 +166,10 @@
     <Border Grid.Row="1" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}"
             BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_32_12}">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBlock Text="检查完即可开始；会中仍可随时切换场合。" Classes="caption" VerticalAlignment="Center" />
+        <TextBlock Text="{loc:Tr 检查完即可开始；会中仍可随时切换场合。}" Classes="caption" VerticalAlignment="Center" />
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-          <Button Content="导入 WAV" Command="{Binding ImportWaveCommand}" />
-          <Button Classes="primary" Content="开始记录" Command="{Binding StartRecordingCommand}" />
+          <Button Content="{loc:Tr 导入 WAV}" Command="{Binding ImportWaveCommand}" />
+          <Button Classes="primary" Content="{loc:Tr 开始记录}" Command="{Binding StartRecordingCommand}" />
         </StackPanel>
       </Grid>
     </Border>

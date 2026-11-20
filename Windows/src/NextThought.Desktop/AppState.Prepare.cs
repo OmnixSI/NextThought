@@ -77,7 +77,7 @@ public partial class AppState
 
 
     public string CurrentSlideText => CurrentSlide is { } slide
-        ? $"第 {slide.Number} 页 · {slide.DocumentName}\n{slide.Text}"
+        ? UiText.Format("第 %lld 页 · %@\n%@", slide.Number, slide.DocumentName, slide.Text)
         : "还没有幻灯片；导入 PPTX 后可翻页。";
 
     public int CurrentScreenshotCount => CurrentScreenshots.Count;
@@ -107,7 +107,7 @@ public partial class AppState
             slideIndex = index;
             OnPropertyChanged(nameof(SlideStatus));
             OnPropertyChanged(nameof(CurrentSlideText));
-            SetStatus($"已跟随讲话切到第 {slides[index].Number} 页。");
+            SetStatus(UiText.Format("已跟随讲话切到第 %lld 页。", slides[index].Number));
             return;
         }
     }
@@ -134,7 +134,7 @@ public partial class AppState
         OnPropertyChanged(nameof(CurrentSlideText));
         OnPropertyChanged(nameof(CurrentSlidePointsText));
         OnPropertyChanged(nameof(HasCurrentSlidePoints));
-        SetStatus($"已按屏幕切到第 {matched.Page} 页。");
+        SetStatus(UiText.Format("已按屏幕切到第 %lld 页。", matched.Page));
     }
 
 
@@ -168,7 +168,7 @@ public partial class AppState
         if (slides.Count == 0) { SetStatus("还没有导入 PPTX，导入后可翻页。", true); return; }
         slideIndex = Math.Clamp(slideIndex + delta, 0, slides.Count - 1);
         OnPropertyChanged(nameof(SlideStatus));
-        SetStatus($"幻灯片：{SlideStatus} · {slides[slideIndex].Text[..Math.Min(80, slides[slideIndex].Text.Length)]}");
+        SetStatus(UiText.Format("幻灯片：%@ · %@", SlideStatus, slides[slideIndex].Text[..Math.Min(80, slides[slideIndex].Text.Length)]));
     }
 
     public void OpenMaterial(SourceCitation citation) => Library.OpenCitation(citation);

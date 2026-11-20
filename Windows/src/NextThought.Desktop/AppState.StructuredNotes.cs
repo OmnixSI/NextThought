@@ -118,12 +118,12 @@ public partial class AppState
         RaiseBusy();
         try
         {
-            SetStatus($"正在整理成{format.Title(false)}…");
+            SetStatus(UiText.Format("正在整理成%@…", format.Title(false)));
             var transcript = BuildNumberedTranscript(session);
             var english = AnswerLanguage.Spoken(transcript) == "English";
             var header = english
                 ? $"# {session.Title}\n\nMeeting: {session.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · Scene: {SceneTitle}"
-                : $"# {session.Title}\n\n会议时间：{session.StartedAt.ToLocalTime():yyyy-MM-dd HH:mm} · 场景：{SceneTitle}";
+                : UiText.Format("# %@\n\n会议时间：%@ · 场景：%@", session.Title, session.StartedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), SceneTitle);
             var system = StructuredNotesPrompt.System(format, english);
             var user = StructuredNotesPrompt.User(header, transcript);
             var reply = await CurrentClient().AnswerAsync(AnswerOptions(true), system, user, null, cancellation.Token, 180);
@@ -138,7 +138,7 @@ public partial class AppState
             var cleaned = StructuredNotesCleaner.Clean(payload, LineOffsets(session), MeetingSeconds(session));
             if (cleaned is null)
             {
-                SetStatus($"整理出的{format.Title(false)}缺少可核对的转写依据，已丢弃；可重试，或改用文字纪要。", true);
+                SetStatus(UiText.Format("整理出的%@缺少可核对的转写依据，已丢弃；可重试，或改用文字纪要。", format.Title(false)), true);
                 return;
             }
             payload = cleaned;
@@ -203,8 +203,8 @@ public partial class AppState
                 // The view is still useful without the cached copy.
             }
             SetStatus(payload.DroppedCount > 0
-                ? $"已整理成{format.Title(false)}；{payload.DroppedCount} 条找不到原话依据的内容已丢弃。"
-                : $"已整理成{format.Title(false)}，可复制或导出。");
+                ? UiText.Format("已整理成%@；%lld 条找不到原话依据的内容已丢弃。", format.Title(false), payload.DroppedCount)
+                : UiText.Format("已整理成%@，可复制或导出。", format.Title(false)));
         }
         catch (OperationCanceledException) { if (generation == requestEpoch) SetStatus("整理已取消。"); }
         catch (Exception ex) { if (generation == requestEpoch) SetStatus(ex.Message, true); }
@@ -270,7 +270,7 @@ public partial class AppState
 
     /// <summary>What the picker says about the chosen scene.</summary>
     public string SceneSummary => SelectedScene is { } scene
-        ? $"当前场景：{scene.Title} · {scene.Subtitle}" + (SceneCueStyle == CueStyle.Script ? " · 提词按句" : " · 提词按要点")
+        ? UiText.Format("当前场景：%@ · %@", scene.Title, scene.Subtitle) + (SceneCueStyle == CueStyle.Script ? UiText.T(" · 提词按句") : UiText.T(" · 提词按要点"))
         : "当前场景：通用";
 
     /// <summary>Cue lines for the island: key points or a script, per the scene.</summary>
@@ -317,7 +317,7 @@ public partial class AppState
 
     /// <summary>Header subtitle; the fixed ones follow the interface language.</summary>
     private void SetPageSubtitle(string text) =>
-        PageSubtitle = UiText.Translate(text, Settings.UiLanguage == "English");
+        PageSubtitle = UiText.Translate(text, UiTextSource.Instance.IsEnglish);
 
     public async Task InitializeAsync()
     {
@@ -331,7 +331,7 @@ public partial class AppState
         try
         {
             Settings.LoadFromStore();
-            UiText.EnglishUi = Settings.UiLanguage == "English";
+            UiTextSource.Instance.SetPreference(Settings.Language);
             Mark("settings");
             RefreshProcesses();
             RefreshCompanionAddresses();
@@ -363,7 +363,7 @@ public partial class AppState
             else
             {
                 SetStatus(recovered.Count > 0
-                    ? $"已处理 {recovered.Count} 场中断会议；可在历史中继续查看或整理纪要。"
+                    ? UiText.Format("已处理 %lld 场中断会议；可在历史中继续查看或整理纪要。", recovered.Count)
                     : ModelReady ? "语音已就绪。可以开始记录，或先导入 WAV 验证。" : "先到设置准备语音组件；未连接回答服务时也可以只记录。");
             }
         }
@@ -663,10 +663,10 @@ public partial class AppState
         if (CurrentSession is not { } meta || PickSaveFile is null) return;
         var extension = format == SessionSubtitleFormat.Srt ? "srt" : "vtt";
         var name = Regex.Replace(meta.Title, "[<>:\"/\\\\|?*]", "_") + "." + extension;
-        if (await PickSaveFile($"{extension.ToUpperInvariant()} 字幕 (*.{extension})|*.{extension}", name) is not { } file) return;
+        if (await PickSaveFile(UiText.Format("%@ 字幕 (*.%@)|*.%@", extension.ToUpperInvariant(), extension, extension), name) is not { } file) return;
         try
         {
-            var content = SubtitleExportMode switch
+            var content = subtitleExportKey switch
             {
                 "原文" => SessionSubtitleContent.Original,
                 "译文" => SessionSubtitleContent.Translation,
@@ -674,10 +674,8 @@ public partial class AppState
             };
             var export = SessionSubtitleExporter.Export(meta, currentLines, format, content);
             await File.WriteAllTextAsync(file, export.Text, new System.Text.UTF8Encoding(false));
-            var estimated = export.EstimatedTimingCount > 0 ? $"，其中 {export.EstimatedTimingCount} 条按文字长度估算结束时间" : "";
-            SetStatus(UiText.EnglishUi
-                ? $"Subtitles exported ({extension.ToUpperInvariant()}){estimated}."
-                : $"字幕已导出（{extension.ToUpperInvariant()}）{estimated}。");
+            var estimated = export.EstimatedTimingCount > 0 ? UiText.Format("，其中 %lld 条按文字长度估算结束时间", export.EstimatedTimingCount) : "";
+            SetStatus(UiText.Format("字幕已导出（%@）%@。", extension.ToUpperInvariant(), estimated));
         }
         catch (Exception ex) { SetStatus(ex.Message, true); }
     }
@@ -791,7 +789,7 @@ public partial class AppState
             var data = await Task.Run(() => Sessions.Load(meta.Id));
             if (generation != selectionEpoch) return;
             CurrentSession = data.Meta;
-            if (data.SkippedLines > 0) SetStatus($"已跳过 {data.SkippedLines} 行损坏记录，其余内容仍可查看。");
+            if (data.SkippedLines > 0) SetStatus(UiText.Format("已跳过 %lld 行损坏记录，其余内容仍可查看。", data.SkippedLines));
             var lines = data.Lines;
             try
             {

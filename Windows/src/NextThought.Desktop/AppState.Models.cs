@@ -5,9 +5,20 @@ public partial class AppState
 
     public AppSettings SettingsSnapshot => Settings.Build();
 
+    /// <summary>
+    /// G8: applies an interface language at runtime. The markup extensions update by themselves; this
+    /// also refreshes the code-built labels, lists and rows (used by the settings picker, the
+    /// screenshots batch and the ui-language self-test).
+    /// </summary>
+    public void ApplyUiLanguage(bool english)
+    {
+        UiTextSource.Instance.SetEnglish(english);
+        LanguageChanged?.Invoke(english);
+    }
+
     public void SetStatus(string text, bool error = false)
     {
-        Status = UiText.Translate(text, Settings.UiLanguage == "English");
+        Status = UiText.Translate(text, UiTextSource.Instance.IsEnglish);
         StatusIsError = error;
     }
 

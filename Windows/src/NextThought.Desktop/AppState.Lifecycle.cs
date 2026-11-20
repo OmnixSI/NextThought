@@ -5,7 +5,9 @@ public partial class AppState
 
     public string IslandHeadline => IslandLines.Count > 0 ? IslandLines[0].Spoken : "";
 
-    public string IslandDetail => IslandLines.Count > 1 ? string.Join("　", IslandLines.Skip(1).Select(line => line.Spoken)) : "";
+    public string IslandDetail => IslandLines.Count > 1
+        ? string.Join(UiText.EnglishUi ? " " : "　", IslandLines.Skip(1).Select(line => line.Spoken))
+        : "";
 
     partial void OnWorkingChanged(bool value) => RaiseBusy();
 
@@ -44,8 +46,8 @@ public partial class AppState
     public string SlideStatus => slides.Count == 0
         ? UiText.T("未导入 PPT")
         : slideIndex < 0
-            ? UiText.EnglishUi ? $"{slides.Count} slides" : $"{slides.Count} 页"
-            : UiText.EnglishUi ? $"Slide {slides[slideIndex].Number} / {slides.Count}" : $"第 {slides[slideIndex].Number} 页 / {slides.Count}";
+            ? UiText.Format("%lld 页", slides.Count)
+            : UiText.Format("第 %lld 页，共 %lld 页", slides[slideIndex].Number, slides.Count);
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string shortcutConflicts = "";
     public bool HasShortcutConflicts => ShortcutConflicts.Length > 0;

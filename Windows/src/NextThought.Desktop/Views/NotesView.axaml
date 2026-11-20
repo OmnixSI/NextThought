@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              xmlns:views="using:NextThought.Desktop.Views"
@@ -8,8 +9,8 @@
   <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{DynamicResource D4Margin_32_18_32_0}">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}" MaxWidth="720" HorizontalAlignment="Left">
-        <TextBlock Text="会后纪要" Classes="display" />
-        <TextBlock Text="按这场会议的转写整理总结、决定、待办和未决问题；原始文字不会被改写。"
+        <TextBlock Text="{loc:Tr 会后纪要}" Classes="display" />
+        <TextBlock Text="{loc:Tr 按这场会议的转写整理总结、决定、待办和未决问题；原始文字不会被改写。}"
                    Classes="caption" TextWrapping="Wrap" />
         <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding Working}">
           <TextBlock Text="{Binding Status}" Classes="caption" />
@@ -17,16 +18,16 @@
         </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
-        <Button Content="导出 Markdown" Command="{Binding ExportCommand}" />
-        <Button Content="导出 Word" Command="{Binding ExportDocxCommand}" />
-        <Button Content="导出 PDF" Command="{Binding ExportPdfCommand}" />
+        <Button Content="{loc:Tr 导出 Markdown}" Command="{Binding ExportCommand}" />
+        <Button Content="{loc:Tr 导出 Word}" Command="{Binding ExportDocxCommand}" />
+        <Button Content="{loc:Tr 导出 PDF}" Command="{Binding ExportPdfCommand}" />
         <ComboBox ItemsSource="{Binding SubtitleExportModes}" SelectedItem="{Binding SubtitleExportMode}" Width="86" />
-        <Button Content="导出 SRT" Command="{Binding ExportSrtCommand}" />
-        <Button Content="导出 VTT" Command="{Binding ExportVttCommand}" />
-        <Button Content="编辑纪要" Click="EditNotes_Click" />
-        <Button Content="重新整理" Command="{Binding SummarizeCommand}" />
+        <Button Content="{loc:Tr 导出 SRT}" Command="{Binding ExportSrtCommand}" />
+        <Button Content="{loc:Tr 导出 VTT}" Command="{Binding ExportVttCommand}" />
+        <Button Content="{loc:Tr 编辑纪要}" Click="EditNotes_Click" />
+        <Button Content="{loc:Tr 重新整理}" Command="{Binding SummarizeCommand}" />
         <Button Classes="primary" Command="{Binding SummarizeCommand}" MinHeight="36" Padding="{DynamicResource D4Padding_18_0}">
-          <TextBlock Text="整理这场会议" Foreground="{DynamicResource OnInk}" />
+          <TextBlock Text="{loc:Tr 整理这场会议}" Foreground="{DynamicResource OnInk}" />
         </Button>
       </StackPanel>
     </Grid>
@@ -35,14 +36,14 @@
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_14_0_0}">
       <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
         <ComboBox ItemsSource="{Binding TemplateChoices}" SelectedItem="{Binding SelectedTemplate}" MinWidth="150"
-                  ToolTip.Tip="纪要模板：章节由模板决定，模型只填内容" />
-        <Button Content="按模板整理" Command="{Binding SummarizeWithTemplateCommand}" />
-        <Button Content="校对转写" Command="{Binding ProofreadTranscriptCommand}"
-                ToolTip.Tip="只更正名字与术语的识别错误，改动写入 corrections.json" />
+                  ToolTip.Tip="{loc:Tr 纪要模板：章节由模板决定，模型只填内容}" />
+        <Button Content="{loc:Tr 按模板整理}" Command="{Binding SummarizeWithTemplateCommand}" />
+        <Button Content="{loc:Tr 校对转写}" Command="{Binding ProofreadTranscriptCommand}"
+                ToolTip.Tip="{loc:Tr 只更正名字与术语的识别错误，改动写入 corrections.json}" />
         <TextBlock Text="{Binding ProofreadStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center"
                    IsVisible="{Binding HasProofreadStatus}" />
       </StackPanel>
-      <CheckBox Grid.Column="1" Content="结束后自动整理" IsChecked="{Binding Settings.AutoSummarize}" VerticalAlignment="Center" />
+      <CheckBox Grid.Column="1" Content="{loc:Tr 结束后自动整理}" IsChecked="{Binding Settings.AutoSummarize}" VerticalAlignment="Center" />
     </Grid>
 
     <!-- 纪要格式：文字纪要 / 因果鱼骨图 / 要点大纲 / 观点对照 -->
@@ -51,26 +52,26 @@
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsStandard, Mode=OneWay}"
                      Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Standard}">
-          <TextBlock Text="文字纪要" Foreground="{Binding $parent[RadioButton].Foreground}" />
+          <TextBlock Text="{loc:Tr 文字纪要}" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsFishbone, Mode=OneWay}"
                      Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Fishbone}">
-          <TextBlock Text="鱼骨图" Foreground="{Binding $parent[RadioButton].Foreground}" />
+          <TextBlock Text="{loc:Tr 鱼骨图}" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsOutline, Mode=OneWay}"
                      Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Outline}">
-          <TextBlock Text="要点大纲" Foreground="{Binding $parent[RadioButton].Foreground}" />
+          <TextBlock Text="{loc:Tr 要点大纲}" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
         <RadioButton Classes="chip" GroupName="notesformat"
                      IsChecked="{Binding NotesFormatIsViewpoints, Mode=OneWay}"
                      Command="{Binding SetNotesFormatCommand}" CommandParameter="{x:Static core:NotesFormat.Viewpoints}">
-          <TextBlock Text="观点对照" Foreground="{Binding $parent[RadioButton].Foreground}" />
+          <TextBlock Text="{loc:Tr 观点对照}" Foreground="{Binding $parent[RadioButton].Foreground}" />
         </RadioButton>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-        <Button Content="生成这种纪要" Command="{Binding GenerateStructuredNotesCommand}"
+        <Button Content="{loc:Tr 生成这种纪要}" Command="{Binding GenerateStructuredNotesCommand}"
                 IsVisible="{Binding !NotesFormatIsStandard}" />
       </StackPanel>
     </Grid>
@@ -78,13 +79,13 @@
     <Border Classes="card" Padding="{DynamicResource D4Padding_14}" Margin="{DynamicResource D4Margin_0_10_0_0}"
             IsVisible="{Binding CoachSummaryText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
       <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-        <TextBlock Text="教练小结" Classes="overline" />
+        <TextBlock Text="{loc:Tr 教练小结}" Classes="overline" />
         <TextBlock Text="{Binding CoachSummaryText}" Classes="body" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
 
     <TabControl Grid.Row="3" Margin="{DynamicResource D4Margin_0_12_0_16}">
-      <TabItem Header="纪要">
+      <TabItem Header="{loc:Tr 纪要}">
     <Border Classes="card" Padding="{DynamicResource D4Padding_0}">
       <Grid RowDefinitions="Auto,*">
         <Grid Margin="{DynamicResource D4Margin_22_16_22_10}" ColumnDefinitions="*,Auto">
@@ -110,7 +111,7 @@
                                          IsVisible="{Binding HasViewpointMatrix}" />
               <views:MarkdownText Text="{Binding StructuredMarkdown}" BaseFontSize="14"
                                   IsVisible="{Binding ShowStructuredMarkdown}" />
-              <TextBlock Text="还没有生成这种纪要。点右上角「生成这种纪要」，会用当前回答服务把转写整理成它；每条都带原话时间。"
+              <TextBlock Text="{loc:Tr 还没有生成这种纪要。点右上角「生成这种纪要」，会用当前回答服务把转写整理成它；每条都带原话时间。}"
                          Classes="caption" IsVisible="{Binding !HasStructuredNotes}" />
             </StackPanel>
           </StackPanel>
@@ -118,7 +119,7 @@
       </Grid>
     </Border>
       </TabItem>
-      <TabItem Header="转写">
+      <TabItem Header="{loc:Tr 转写}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding Transcript}" Margin="{DynamicResource D4Margin_22}">
             <ItemsControl.ItemTemplate>
@@ -129,7 +130,7 @@
           </ItemsControl>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="回答">
+      <TabItem Header="{loc:Tr 回答}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding SelectedSessionAnswers}" Margin="{DynamicResource D4Margin_22}">
             <ItemsControl.ItemTemplate>
@@ -138,7 +139,7 @@
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                     <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
                     <Border Classes="chip" IsVisible="{Binding Automatic}">
-                      <TextBlock Text="自动" Classes="overline" FontSize="10" />
+                      <TextBlock Text="{loc:Tr 自动}" Classes="overline" FontSize="10" />
                     </Border>
                   </StackPanel>
                   <TextBlock Text="{Binding Answer}" Classes="body" TextWrapping="Wrap" />
@@ -149,7 +150,7 @@
           </ItemsControl>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="提纲">
+      <TabItem Header="{loc:Tr 提纲}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding StructuredPayload.Outline.Sections}" Margin="{DynamicResource D4Margin_22}">
             <ItemsControl.ItemTemplate>
@@ -169,14 +170,14 @@
           </ItemsControl>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="个人笔记">
+      <TabItem Header="{loc:Tr 个人笔记}">
         <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
-          <TextBlock Text="个人笔记保存在 user-content.json，不覆盖生成纪要。" Classes="caption" />
+          <TextBlock Text="{loc:Tr 个人笔记保存在 user-content.json，不覆盖生成纪要。}" Classes="caption" />
           <TextBox Text="{Binding PersonalNotesText}" AcceptsReturn="True" TextWrapping="Wrap" Height="320" />
-          <Button Classes="primary" Content="保存个人笔记" Command="{Binding SaveNotesEditorCommand}" HorizontalAlignment="Left" />
+          <Button Classes="primary" Content="{loc:Tr 保存个人笔记}" Command="{Binding SaveNotesEditorCommand}" HorizontalAlignment="Left" />
         </StackPanel>
       </TabItem>
-      <TabItem Header="证据">
+      <TabItem Header="{loc:Tr 证据}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl ItemsSource="{Binding NotesEvidence}" Margin="{DynamicResource D4Margin_22}">
             <ItemsControl.ItemTemplate>
@@ -188,17 +189,17 @@
                   </StackPanel>
                   <TextBlock Text="{Binding Title}" Classes="label" TextWrapping="Wrap" />
                   <TextBlock Text="{Binding Claim}" Classes="body" TextWrapping="Wrap" />
-                  <Button Classes="quiet" Content="编辑" Tag="{Binding}" Click="EditEvidence_Click" HorizontalAlignment="Left" />
+                  <Button Classes="quiet" Content="{loc:Tr 编辑}" Tag="{Binding}" Click="EditEvidence_Click" HorizontalAlignment="Left" />
                 </StackPanel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="回顾">
+      <TabItem Header="{loc:Tr 回顾}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_10}">
-            <TextBlock Text="已确认经验" Classes="overline" />
+            <TextBlock Text="{loc:Tr 已确认经验}" Classes="overline" />
             <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="core:WorkspaceLesson">
@@ -206,7 +207,7 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock Text="题库" Classes="overline" />
+            <TextBlock Text="{loc:Tr 题库}" Classes="overline" />
             <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.QuestionBank}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="core:QuestionBankItem">
@@ -220,10 +221,10 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
-      <TabItem Header="工作纪要">
+      <TabItem Header="{loc:Tr 工作纪要}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="工作会议模板纪要" Classes="section" />
+            <TextBlock Text="{loc:Tr 工作会议模板纪要}" Classes="section" />
             <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14" />
           </StackPanel>
         </ScrollViewer>

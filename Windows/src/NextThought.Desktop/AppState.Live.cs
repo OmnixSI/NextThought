@@ -103,6 +103,8 @@ public partial class AppState
     private async Task StartRecordingAsync()
     {
         if (Working || Recording || closing) return;
+        // E30/DataBackup.applyImport: a running backup or restore blocks starting a meeting.
+        if (BackupBusy) { SetStatus("正在备份或恢复数据，完成后即可开始记录。", true); return; }
         Working = true;
         RaiseBusy();
         SessionMeta? meta = null;
@@ -349,6 +351,9 @@ public partial class AppState
             RefreshHistory(meta.Id);
             RaiseBusy();
         }
+        // E30/DataBackup.afterSession: a recovery point is created in the background after the
+        // meeting is archived; its failure is shown on the backup settings line, not as a stop error.
+        if (!closing) _ = RunAfterSessionBackupAsync(meta.Id);
         if (reason == null && !closing && Settings.AutoSummarize && CurrentSession?.Id == meta.Id) await SummarizeCoreAsync(meta);
     }
 

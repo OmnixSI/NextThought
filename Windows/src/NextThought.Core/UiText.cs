@@ -1,8 +1,15 @@
+using System.Globalization;
+using System.Text;
+
 namespace NextThought.Core;
 
 /// <summary>
-/// Static interface strings for the English shell. Dynamic meeting content is never translated;
-/// unknown strings pass through unchanged so a partial dictionary is safe.
+/// The Windows interface string table. Chinese is the source language: the catalogue key is the
+/// Mac original sentence (G8), so Chinese mode returns the key and English mode looks the key up.
+/// English translations come from two places: the generated Mac catalogue
+/// (<see cref="UiTextMacEnglish"/>, 2,607 entries) and the hand-written Windows-only wording table
+/// (<see cref="UiTextWindowsEnglish"/>, every sentence whose Windows wording differs from Mac — G10
+/// records each of these in <c>Windows/WORDING.md</c>).
 /// </summary>
 public static class UiText
 {
@@ -14,325 +21,13 @@ public static class UiText
     /// <summary>G7: how many Mac catalogue strings the generated table carries.</summary>
     public static int MacStringCount => UiTextMacEnglish.Count;
 
+    /// <summary>Number of hand-written Windows-only entries (the G10 replacement table).</summary>
+    public static int WindowsStringCount => UiTextWindowsEnglish.Count;
+
     private static Dictionary<string, string> BuildEnglish()
     {
-        var dictionary = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-        ["首页"] = "Home",
-        ["会议"] = "Meetings",
-        ["纪要"] = "Notes",
-        ["历史"] = "History",
-        ["系列"] = "Series",
-        ["资料库"] = "Library",
-        ["设置"] = "Settings",
-        ["最近会议"] = "Recent meetings",
-        ["数据目录"] = "Data folder",
-        ["取消当前任务"] = "Cancel task",
-        ["保存"] = "Save",
-        ["取消"] = "Cancel",
-        ["删除"] = "Delete",
-        ["新建"] = "New",
-        ["导入"] = "Import",
-        ["导出"] = "Export",
-        ["复制"] = "Copy",
-        ["搜索"] = "Search",
-        ["刷新"] = "Refresh",
-        ["关闭"] = "Close",
-        ["返回"] = "Back",
-        ["上移"] = "Move up",
-        ["下移"] = "Move down",
-        ["添加"] = "Add",
-        ["重试"] = "Retry",
-        ["开始记录"] = "Start recording",
-        ["停止记录"] = "Stop recording",
-        ["声音来源"] = "Audio sources",
-        ["本机语音识别"] = "On-device speech",
-        ["术语表"] = "Glossary",
-        ["全局快捷键"] = "Global shortcuts",
-        ["自定义纪要模板"] = "Custom note templates",
-        ["技能"] = "Skills",
-        ["说话人与翻译"] = "Speakers and translation",
-        ["双屏演讲"] = "Presenter mode",
-        ["会议自动收尾"] = "Auto-end meetings",
-        ["模型与接口"] = "Model and API",
-        ["音频"] = "Audio",
-        ["数据"] = "Data",
-        ["关于"] = "About",
-        ["系统输出设备混音"] = "System output mix",
-        ["麦克风"] = "Microphone",
-        ["保存术语表"] = "Save glossary",
-        ["保存快捷键"] = "Save shortcuts",
-        ["新建模板"] = "New template",
-        ["添加章节"] = "Add section",
-        ["保存结构"] = "Save structure",
-        ["保存模板"] = "Save template",
-        ["保存技能"] = "Save skills",
-        ["刷新设备"] = "Refresh devices",
-        ["刷新应用列表"] = "Refresh apps",
-        ["分钟"] = "minutes",
-        ["选择输出设备"] = "Select output device",
-        ["选择麦克风"] = "Select microphone",
-        ["整个输出设备混音"] = "Entire output device",
-        ["准备语音组件"] = "Prepare speech components",
-        ["准备声纹组件（约 26 MB）"] = "Prepare speaker components (~26 MB)",
-        ["导入 .json…"] = "Import .json…",
-        ["导入 .md…"] = "Import .md…",
-        ["新建会议"] = "New meeting",
-        ["全部会议"] = "All meetings",
-        ["打开设置"] = "Open settings",
-        ["数据与关于"] = "Data and about",
-        ["资料与检索"] = "Materials and retrieval",
-        ["会后纪要"] = "Meeting notes",
-        ["实时转写"] = "Live transcript",
-        ["手机伴侣"] = "Phone companion",
-        ["提词岛"] = "Cue island",
-        ["提词器"] = "Teleprompter",
-        ["提词器已穿透"] = "Teleprompter click-through on",
-        ["穿透"] = "Click-through",
-        ["恢复点击"] = "Restore clicks",
-        ["截图"] = "Screenshot",
-        ["校对转写"] = "Proofread transcript",
-        ["整理这场会议"] = "Summarize this meeting",
-        ["按模板整理"] = "Organize with template",
-        ["生成这种纪要"] = "Generate this note",
-        ["文字纪要"] = "Text notes",
-        ["鱼骨图"] = "Fishbone",
-        ["要点大纲"] = "Outline",
-        ["观点对照"] = "Viewpoints",
-        ["未整理"] = "Not organized",
-        ["有纪要"] = "Has notes",
-        ["下一场会议"] = "Next meeting",
-        ["结束会议"] = "End meeting",
-        ["继续记录"] = "Resume recording",
-        ["自动回答"] = "Automatic answers",
-        ["检查更新"] = "Check for updates",
-        ["检查回答服务"] = "Test answer service",
-        ["保存设置"] = "Save settings",
-        ["导入 WAV"] = "Import WAV",
-        ["导入资料"] = "Import materials",
-        ["导入备份"] = "Import backup",
-        ["导出备份"] = "Export backup",
-        ["参考资料库"] = "Reference materials",
-        ["打开数据目录"] = "Open data folder",
-        ["复制配对链接"] = "Copy pairing link",
-        ["刷新网络地址"] = "Refresh addresses",
-        ["新建系列"] = "New series",
-        ["移出"] = "Remove",
-        ["采纳"] = "Accept",
-        ["忽略"] = "Ignore",
-        ["记下"] = "Save",
-        ["补译"] = "Translate missing",
-        ["替换回答"] = "Replace answer",
-        ["查看来源"] = "View sources",
-        ["引用来源"] = "Cite source",
-        ["参考回答"] = "Reference answer",
-        ["回答"] = "Answer",
-        ["回答服务"] = "Answer service",
-        ["回答模型名称"] = "Answer model",
-        ["推理强度"] = "Reasoning effort",
-        ["识别模型"] = "Recognition model",
-        ["系统声音范围（每次开始前选择）"] = "System audio scope (choose before each start)",
-        ["麦克风增益（1–8 倍，声音偏小时调高）"] = "Microphone gain (1–8×, raise for quiet audio)",
-        ["术语表（人名与专有名词）"] = "Glossary (names and terms)",
-        ["准备检索组件"] = "Prepare retrieval components",
-        ["整句精修，提高最终转写质量"] = "Refine whole sentences for a better transcript",
-        ["区分会议中的说话人（本机实验功能）"] = "Separate speakers (on-device, experimental)",
-        ["记录时将完整句中英互译（使用当前回答服务）"] = "Translate full sentences while recording (uses the answer service)",
-        ["幻灯片所在屏"] = "Slides display",
-        ["静音多久后收尾"] = "End after silence for",
-        ["导出 Markdown"] = "Export Markdown",
-        ["导出 Word"] = "Export Word",
-        ["导出 PDF"] = "Export PDF",
-        ["导出 SRT"] = "Export SRT",
-        ["导出 VTT"] = "Export VTT",
-        ["打开文件位置"] = "Open file location",
-        ["打开下载页"] = "Open download page",
-        ["下载并安装"] = "Download and install",
-        ["允许联网核实（需 TAVILY_API_KEY）"] = "Allow web verification (needs TAVILY_API_KEY)",
-        ["使用本机 Codex CLI 账号"] = "Use local Codex CLI account",
-        ["使用此区域"] = "Use this area",
-        ["拖动选择截图区域"] = "Drag to select a capture area",
-        ["拖动可移动 · 双击隐藏控件"] = "Drag to move · double-click to hide controls",
-        ["知道了"] = "Got it",
-        ["把讨论留下来"] = "Keep the discussion",
-        ["按这场会议的转写整理总结、决定、待办和未决问题；原始文字不会被改写。"] = "Summarize decisions, actions and open questions from the transcript; the original text is not rewritten.",
-        ["输入问题，回车回答"] = "Type a question and press Enter",
-        ["译"] = "Translate",
-        ["所有偏好保存在本机数据目录的 settings.json；API Key 用当前 Windows 用户加密，不会写进备份。"] = "Preferences live in settings.json in the local data folder; the API key is encrypted for the current Windows user and never written to backups.",
-        ["首次需下载流式模型约 134 MB；整句精修另约 136 MB，下载后离线运行。"] = "The streaming model is about 134 MB; sentence refinement adds about 136 MB. Both run offline after download.",
-        ["仅保留会议内编号，不保存声纹或原始音频。短句和不确定结果保持未知。"] = "Only in-meeting numbers are kept; voiceprints and raw audio are not stored. Short or uncertain results stay unknown.",
-        ["Windows 没有系统翻译框架：开启后完整句会发送到所选回答服务，与 Mac 的本机翻译不同。"] = "Windows has no system translation framework: complete sentences are sent to the chosen answer service, unlike the on-device translation on Mac.",
-        ["开会时把提词岛留在摄像头这一屏，幻灯片屏不出现任何 NextThought 窗口"] = "Keep the cue island on the camera display; no NextThought window appears on the slides display",
-        ["开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。幻灯片自动翻页识别（LiveInsights 页面匹配）尚未移植。"] = "The main window hides when recording starts (Ctrl+Alt+N brings it back); with a single display it stays off. Automatic slide-change detection (LiveInsights page matching) is not ported yet.",
-        ["忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。"] = "A meeting left running ends after a long stretch without recognized text, so the next meeting does not leak into these notes. Only recognized text counts; background music does not keep it open.",
-        ["每行「动作=按键」，保存后立即重新注册。可用 Ctrl/Alt/Shift/Win 组合，按键支持 A–Z、0–9、F1–F24、Left/Right/Up/Down/PageUp/PageDown/Space/Backslash。"] = "One action=key per line; saving re-registers immediately. Modifiers may include Ctrl/Alt/Shift/Win, and keys may be A–Z, 0–9, F1–F24, Left/Right/Up/Down/PageUp/PageDown/Space/Backslash.",
-        ["切换后重启生效；当前覆盖主导航、设置分节与常用按钮，动态状态和会议内容保持原文。"] = "Takes effect after a restart; covers navigation, settings sections and common buttons. Status text and meeting content stay in their original language.",
-        ["每个模板以 ## 模板名 开头，每个章节以 ### 章节标题 开头，下一行写要求。保存后会出现在纪要页的模板下拉框；原有内置模板不变。"] = "Each template starts with ## name; each section starts with ### title and the next line states the requirement. Saved templates appear in the Notes template picker; built-ins are unchanged.",
-        ["每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。"] = "Each skill starts with ## name, may include one Summary: line and is otherwise Markdown. Enabled skills join the answer prompt; truth and safety rules win on conflict.",
-        ["每行一个：正确写法 | 识别错的写法 | 另一种错法。正确写法会作为识别热词；错写法出现在转写里时会被改回。"] = "One per line: correct form | misheard form | another misheard form. Correct forms become recognition hotwords; misheard forms are rewritten in the transcript.",
-        ["NextThought 把会议讨论留在本机，变成可以带走的结论。"] = "NextThought keeps meeting discussions on this device and turns them into conclusions you can take away.",
-        ["开会、听讲、面谈。NextThought 在本机把声音变成文字，再变成可以带走的结论。"] = "Meetings, lectures, interviews. NextThought turns speech into text on this device, then into conclusions you can take away.",
-        ["还没有会议记录。点击「开始记录」写下第一场。"] = "No meetings yet. Choose Start recording to write the first one.",
-        ["每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。"] = "Every meeting stays on this device. Search by title, date or mode, and return to the exact words when details are unclear.",
-        ["按资料原有的页、幻灯片或工作表定位"] = "Locate by the material's own page, slide or sheet",
-        ["使用语义与关键词混合检索"] = "Hybrid semantic and keyword retrieval",
-        ["导入 PDF、Word、PPT、Excel、Markdown 与图片；解析在本机完成，检索时只把相关摘录发给回答服务。"] = "Import PDF, Word, PPT, Excel, Markdown and images; parsing is local and only relevant excerpts are sent to the answer service.",
-        ["转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。"] = "Transcripts stay on this device. With a remote answer service, the question and relevant transcript are sent to that service.",
-        ["转写会显示在这里。也可以导入录音 WAV 验证。"] = "The transcript appears here. You can also import a WAV recording to try it.",
-        ["系统声音与麦克风分别处理；只在本机保存文字。"] = "System audio and microphone are handled separately; only text is stored locally.",
-        ["还没有生成这种纪要。点右上角「生成这种纪要」，会用当前回答服务把转写整理成它；每条都带原话时间。"] = "This note has not been generated. Choose Generate this note to organize the transcript with the current answer service; every entry carries its original time.",
-        ["还没有经验。整理纪要时会从「下次改进」这类章节提炼候选，确认后才会记下来；也可以手写一条。"] = "No lessons yet. When notes are organized, sections such as Next time produce candidates; nothing is saved until you confirm, and you can also write one.",
-        ["题库还空着。面试、汇报这类模板的「逐题回放」章节会在确认后进入题库。"] = "The question bank is empty. Question-by-question sections from interview or talk templates enter the bank after confirmation.",
-        ["没有待确认的知识。按模板整理一份纪要后，模板里标了「带出经验」的章节会排到这里。"] = "Nothing to confirm. After organizing notes, sections marked to carry lessons appear here.",
-        ["还没有系列。上面的输入框新建一个，再把会议放进来。"] = "No series yet. Create one above, then add meetings to it.",
-        ["同一门课、同一个项目、同一类面试放在一个系列里；每场会议的结论与经验会攒在一起。"] = "Keep one course, project or interview loop in a series; conclusions and lessons accumulate across meetings.",
-        ["局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。"] = "LAN HTTP is unencrypted; the pairing link is a temporary remote key, so use it only on a trusted network. Full transcripts, material files, audio and API keys are never sent.",
-        ["填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。"] = "When set, pairing uses an HTTPS/WSS relay (end-to-end encrypted) and no shared LAN is needed; leave empty for LAN only. Re-enable and re-pair after changing it.",
-        ["手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。"] = "Turn on after the phone and PC join the same trusted network. Scan the code in a browser to see the current question, answer and status, and to trigger answer, shorter, example or stop.",
-        ["检查 GitHub 上的发布页：正式版本只看 vX.Y.Z，main 最新构建跟随 main 分支。发布带安装包与校验文件时可下载并校验后应用内安装，否则只打开下载页。"] = "Checks the GitHub release page: stable builds use vX.Y.Z, latest follows main. When a release has an installer and checksum, it downloads, verifies and installs; otherwise it opens the download page.",
-        ["「下载并安装」会下载安装包并校验发布里的 SHA-256，校验通过后静默安装并重新打开；发布没有校验文件时只提供下载页。"] = "Download and install fetches the installer and verifies its published SHA-256, then installs silently and reopens; without a checksum only the download page is offered.",
-        [".ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。"] = ".ntbackup contains meetings, materials and settings; it excludes API keys, speech models and device settings. Uninstalling does not delete the data folder.",
-        ["段"] = "segment",
-        ["模板名"] = "Template name",
-        ["章节标题"] = "Section title",
-        ["这一节要整理什么"] = "What should this section collect?",
-        ["新系列的名字"] = "New series name",
-        ["中转地址（可选）"] = "Relay URL (optional)",
-        ["Codex 模型（留空沿用账号默认模型）"] = "Codex model (empty uses the account default)",
-        ["兼容 Chat Completions 的 API 地址"] = "Chat Completions-compatible API URL",
-        ["纪要模型（留空沿用回答模型）"] = "Notes model (empty uses the answer model)",
-        ["更新"] = "Update",
-        ["回滚到上一版本"] = "Roll back to the previous version",
-        ["第三方许可与版权说明"] = "Third-party licenses and copyright",
-        ["截图会裁切到选中范围，然后存入资料库并由系统 OCR 读取文字。请把题目、代码或公式完整框入。"] = "The screenshot is cropped to the selection, saved to the library and read with system OCR. Frame the question, code or formula completely.",
-        ["一句话经验，例如：先说结论，再说依据"] = "One-line lesson, e.g. lead with the conclusion, then the evidence",
-        ["搜索会议标题、日期或模式"] = "Search meeting title, date or mode",
-        ["没有匹配的会议。换个关键词，或把筛选切回「全部」。"] = "No matching meetings. Try another keyword or switch the filter back to All.",
-        ["筛选资料名称"] = "Filter material names",
-        ["蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。"] = "The Bluetooth fallback is unavailable: the phone still filters by the IH- broadcast name, Windows cannot rename its broadcast, and it stays closed until the phone scans by service ID.",
-        ["备份已导出：包含会议与资料；不包含 API Key、语音模型和设备设置。"] = "Backup exported: contains meetings and materials; excludes API keys, speech models and device settings.",
-        ["补译已结束；有译文的句子已分别保存。未成功的句子可再次补译。"] = "Translation finished; translated sentences were saved. Retry the ones that failed.",
-        ["还没有导入 PPTX，导入后可翻页。"] = "No PPTX imported yet; import one to turn pages.",
-        ["还没有可回答的转写。"] = "No transcript to answer yet.",
-        ["回答已复制。"] = "Answer copied.",
-        ["回答已取消。"] = "Answer cancelled.",
-        ["会议已导出。"] = "Meeting exported.",
-        ["会议已导出为 PDF。"] = "Meeting exported as PDF.",
-        ["会议已导出为 Word 文档。"] = "Meeting exported as a Word document.",
-        ["纪要已保存，可导出 Markdown。"] = "Notes saved; Markdown export is available.",
-        ["纪要整理已取消；原始转写和已完成片段已保留，可继续整理。"] = "Note generation cancelled; the transcript and finished parts were kept.",
-        ["继续记录。"] = "Recording resumed.",
-        ["经验已记下。"] = "Lesson saved.",
-        ["开始记录后才能暂停聆听。"] = "Start recording before pausing listening.",
-        ["录音已转写并归档，未保存原始音频。"] = "Recording transcribed and archived; raw audio was not kept.",
-        ["没有可用的更新备份。"] = "No update backup is available.",
-        ["模板需要名字。"] = "A template needs a name.",
-        ["模板至少需要一个有标题和要求的章节。"] = "A template needs at least one section with a title and requirement.",
-        ["模型已下载并校验，可以离线记录。"] = "Model downloaded and verified; offline recording is ready.",
-        ["请先输入问题。"] = "Type a question first.",
-        ["请先选择一个局域网地址，或在设置里填写中转地址。"] = "Choose a LAN address, or set a relay URL in settings.",
-        ["全局快捷键已保存并重新注册。"] = "Shortcuts saved and re-registered.",
-        ["设置已保存，密钥已用当前 Windows 用户加密。"] = "Settings saved; the key is encrypted for the current Windows user.",
-        ["声纹模型已准备，可在设置中开启并保存。"] = "Speaker model ready; enable and save it in settings.",
-        ["手机伴侣已关闭。"] = "Phone companion stopped.",
-        ["先给系列起一个名字。"] = "Give the series a name first.",
-        ["校对完成：没有需要更正的地方。"] = "Proofreading finished: nothing needed correction.",
-        ["校对已取消。"] = "Proofreading cancelled.",
-        ["演示模式：内置样本数据，不会写入你的资料。"] = "Demo mode: built-in sample data, nothing is written to your materials.",
-        ["已刷新可采集的应用程序列表。"] = "The list of recordable apps was refreshed.",
-        ["已在浏览器中打开下载页。"] = "Opened the download page in the browser.",
-        ["语义检索模型已准备，勾选语义检索并保存设置后使用。"] = "Semantic model ready; enable semantic retrieval and save settings.",
-        ["这场会议还不属于任何系列。到「系列」页把它加进去，之后整理纪要就会攒经验。"] = "This meeting is not in a series. Add it on the Series page to accumulate lessons when notes are generated.",
-        ["这场会议还没有转写，无法整理。"] = "This meeting has no transcript yet.",
-        ["这次回复不是可用的 JSON，可以重试；原来的纪要保持不变。"] = "The reply was not usable JSON; retry. The previous notes are unchanged.",
-        ["这次没有新的经验和问题：之前整理过同一份纪要。"] = "No new lessons or questions: these notes were already organized.",
-        ["整理结果不是可用的 JSON，稍后可重试。"] = "The result was not usable JSON; try again later.",
-        ["整理已取消。"] = "Note generation cancelled.",
-        ["正在安装更新，NextThought 会退出并在安装完成后重新打开。"] = "Installing the update; NextThought will exit and reopen when it finishes.",
-        ["正在加载本地语音模型…"] = "Loading the on-device speech model…",
-        ["正在加载模型并转写 WAV…"] = "Loading the model and transcribing the WAV…",
-        ["正在检索相关资料；首次使用时生成本地索引…"] = "Searching materials; the local index is built on first use…",
-        ["正在联网核实…"] = "Checking online…",
-        ["正在校对转写…"] = "Proofreading the transcript…",
-        ["选择自定义模板"] = "Select custom template",
-        ["NextThought 提词岛"] = "NextThought Cue island",
-        ["区域截图"] = "Region capture",
-        ["NextThought 字幕条"] = "NextThought Subtitles",
-        ["NextThought 提词器"] = "NextThought Teleprompter",
-        ["打开主窗口"] = "Open main window",
-        ["隐藏所有窗口"] = "Hide all windows",
-        ["开始或停止记录"] = "Start or stop recording",
-        ["退出 NextThought"] = "Quit NextThought",
-        ["NextThought · 把讨论留下来"] = "NextThought · Keep the discussion",
-        ["选择声音来源，开始记录。"] = "Choose an audio source and start recording.",
-        ["演示数据 · 不会写入你的资料"] = "Demo data · nothing is written to your materials",
-        ["进行中 · 转写持续保存在本机"] = "In progress · transcript saved locally",
-        ["已结束 · 会议已归档"] = "Ended · meeting archived",
-        ["正在本机读取录音…"] = "Reading the recording on this device…",
-        ["录音转写 · 已归档"] = "Recording transcribed · archived",
-        ["把这场景加入"] = "Add this scene",
-        ["附着技能"] = "Attach skills",
-        ["保存设置后立即生效；当前覆盖主导航、设置分节、常用按钮与说明文案，动态状态和会议内容保持原文。"] = "Takes effect immediately after saving; covers navigation, settings sections, common buttons and help text. Status and meeting content stay in their original language.",
-        ["参考资料库时使用语义与关键词混合检索"] = "Use hybrid semantic and keyword retrieval for materials",
-        ["勾选的技能只加入这个系列的回答；全局技能仍然生效。"] = "Checked skills apply to this series only; global skills still apply.",
-        ["结束后自动整理"] = "Summarize automatically after ending",
-        ["解析结果"] = "Parse result",
-        ["问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。"] = "Searches Tavily for the latest prices, versions or news and passes linked results to the answer; stays offline without a key.",
-        ["选应用时仅采集该进程及其子进程的声音；选整个设备时采集该设备全部混音。需要 Windows 10 build 20348 以上。"] = "App capture records only that process and its children; device capture records the whole mix. Requires Windows 10 build 20348 or later.",
-        ["Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。"] = "Qwen3-Embedding-0.6B Q8 · CPU · about 596 MB on first download. The index is local; missing or failed models fall back to keywords.",
-        ["X-ASR 流式识别加整句精修，CPU 离线运行；原始音频只在内存中经过。"] = "X-ASR streaming plus sentence refinement runs offline on CPU; raw audio only passes through memory.",
-        ["高级：也可以直接按文本批量编辑。"] = "Advanced: you can also edit everything as text.",
-        ["未命名会议"] = "Untitled meeting",
-        ["还没有选择系列"] = "No series selected",
-        ["在左边选择一个系列，或者先新建一个。"] = "Select a series on the left, or create one first.",
-        ["把同一门课、同一个项目、同一类面试的会议放在一个系列里，经验会攒下来。"] = "Keep meetings from one course, project or interview loop in a series; lessons accumulate.",
-        ["问题"] = "Question",
-        ["经验"] = "Lesson",
-        ["被问到 1 次"] = "Asked once",
-        ["采纳后进入这个系列的经验，下次回答会带上它"] = "Accepted lessons join this series and are used in later answers",
-        ["题库里已有相似问题时，「替换」会用新回答覆盖旧的，旧回答留在历史里"] = "If a similar question exists, Replace overwrites its answer; the old one stays in history",
-        ["界面语言 / Language"] = "Interface language",
-        ["X-ASR 中英 · 480 ms（推荐）"] = "X-ASR bilingual · 480 ms (recommended)",
-        ["X-ASR 中英 · 160 ms"] = "X-ASR bilingual · 160 ms",
-        ["默认，不指定"] = "Default, not specified",
-        ["none（关闭思考）"] = "none (reasoning off)",
-        ["静音后先提示，再结束（推荐）"] = "Prompt after silence, then end (recommended)",
-        ["静音后直接结束"] = "End immediately after silence",
-        ["不自动结束"] = "Do not auto-end",
-        ["自动（第一块外接屏）"] = "Automatic (first external display)",
-        ["主屏（摄像头）"] = "Main display (camera)",
-        ["搜索设置"] = "Search settings",
-        ["自定义"] = "Custom",
-        ["接口预设"] = "API preset",
-        ["跟随系统"] = "Follow system",
-        ["浅色"] = "Light",
-        ["深色"] = "Dark",
-        ["外观"] = "Appearance",
-        ["保存后立即应用；跟随系统会随后台主题切换。"] = "Applied after saving; Follow system tracks the OS theme.",
-        ["可以继续对这场会议提问。"] = "You can keep asking about this meeting.",
-        ["这场会议还没有纪要，点击上方整理。"] = "This meeting has no notes yet; organize it above.",
-        ["开启局域网手机伴侣"] = "Start LAN phone companion",
-        ["关闭局域网手机伴侣"] = "Stop LAN phone companion",
-        ["通用"] = "General",
-        ["未导入 PPT"] = "No PPT imported",
-        ["待确认"] = "To confirm",
-        ["题库"] = "Question bank",
-        ["云端识别（实验）"] = "Cloud transcription (experimental)",
-        ["本地（默认）"] = "Local (default)",
-        ["Soniox · 中英混说"] = "Soniox · bilingual",
-        ["自动"] = "Automatic",
-        ["中文"] = "Chinese",
-        ["英文"] = "English",
-        ["云服务 API Key"] = "Cloud service API key",
-        ["模型（留空用默认）"] = "Model (empty uses default)",
-        ["选云端后，导入 WAV 走云端识别；实时记录仍用本机。音频会发送到所选服务。"] = "With cloud selected, WAV import uses the cloud; live recording stays on-device. Audio is sent to the chosen service.",
-            ["提示岛宽度"] = "Cue island width",
-        ["窄"] = "Narrow",
-        ["标准"] = "Regular",
-        ["宽"] = "Wide",
-        ["未填写"] = "Not set",
-        ["已加密保存"] = "Saved encrypted",
-    };
+        // Windows-specific wording wins for identical keys; Mac entries fill the remaining 2,607.
+        var dictionary = new Dictionary<string, string>(UiTextWindowsEnglish.Strings, StringComparer.Ordinal);
         foreach (var pair in UiTextMacEnglish.Strings) dictionary.TryAdd(pair.Key, pair.Value);
         return dictionary;
     }
@@ -341,18 +36,187 @@ public static class UiText
         .GroupBy(pair => pair.Value, StringComparer.Ordinal)
         .ToDictionary(group => group.Key, group => group.First().Key, StringComparer.Ordinal);
 
+    /// <summary>Legacy direction-agnostic lookup kept for call sites that store either language.</summary>
     public static string Translate(string text, bool english)
     {
         if (english) return English.TryGetValue(text, out var translated) ? translated : text;
         return Chinese.TryGetValue(text, out var original) ? original : text;
     }
 
+    /// <summary>G8: the one lookup used by the markup extension and the helpers below.</summary>
+    public static string Lookup(string key, bool english) =>
+        english && English.TryGetValue(key, out var translated) ? translated : key;
+
+    /// <summary>True when the key has an English translation (used by coverage tests/scans).</summary>
+    public static bool HasTranslation(string key) => English.ContainsKey(key);
+
+    /// <summary>G8: does the key exist in the Mac catalogue (i.e. is the wording shared with Mac)?</summary>
+    public static bool IsMacString(string key) => UiTextMacEnglish.Strings.ContainsKey(key);
+
+    /// <summary>All key → English pairs (Mac + Windows-only) for the localization scan.</summary>
     public static IReadOnlyDictionary<string, string> EnglishStrings => English;
-    /// <summary>Global UI language flag for row/subtitle formatting outside AppState.</summary>
+
+    /// <summary>G8: the hand-written Windows-only replacement table (G10 source).</summary>
+    public static IReadOnlyDictionary<string, string> WindowsStrings => UiTextWindowsEnglish.Strings;
+
+    /// <summary>
+    /// G8: resolves a stored language preference. Mac stores "system" (default), "zh-Hans" or "en";
+    /// the Windows setting also accepts "zh" and the picker labels.
+    /// </summary>
+    public static bool ResolveEnglish(string? preference)
+    {
+        var normalized = UiTextSource.NormalizePreference(preference);
+        return normalized switch
+        {
+            UiTextSource.EnglishPreference => true,
+            UiTextSource.ChinesePreference => false,
+            _ => SystemIsEnglish()
+        };
+    }
+
+    /// <summary>G8: with the default "跟随系统" the first launch follows the Windows display language.</summary>
+    public static bool SystemIsEnglish() => SystemIsEnglish(CultureInfo.CurrentUICulture);
+
+    /// <summary>Test seam: the app ships Chinese and English, so every other system language resolves to English.</summary>
+    public static bool SystemIsEnglish(CultureInfo culture)
+    {
+        ArgumentNullException.ThrowIfNull(culture);
+        var language = culture.TwoLetterISOLanguageName;
+        return !string.Equals(language, "zh", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Global UI language flag for row/subtitle formatting outside the Avalonia shell.</summary>
     public static bool EnglishUi { get; set; }
 
     public static string T(string text) => Translate(text, EnglishUi);
 
+    /// <summary>
+    /// G8: formats a catalogue sentence. The source sentence carries the Mac placeholder style
+    /// (%@ string, %lld integer, %.2f double, %1$@/%2$lld positional, %% literal).
+    /// </summary>
+    public static string Format(string key, params object?[] arguments) =>
+        FormatTemplate(Lookup(key, EnglishUi), arguments);
+
+    /// <summary>Same as <see cref="Format"/> for a template that is already resolved.</summary>
+    public static string FormatTemplate(string template, params object?[] arguments)
+    {
+        if (string.IsNullOrEmpty(template)) return template;
+        if (template.IndexOf('%') < 0 || arguments.Length == 0) return template;
+        var builder = new StringBuilder(template.Length + 16);
+        var next = 0;
+        var index = 0;
+        while (index < template.Length)
+        {
+            var current = template[index];
+            if (current != '%')
+            {
+                builder.Append(current);
+                index++;
+                continue;
+            }
+            var parsed = ParsePlaceholder(template, index);
+            if (parsed is null)
+            {
+                builder.Append(current);
+                index++;
+                continue;
+            }
+            var (conversion, argumentIndex, precision, length) = parsed.Value;
+            if (conversion == '%')
+            {
+                builder.Append('%');
+                index += length;
+                continue;
+            }
+            var position = argumentIndex is { } explicitIndex ? explicitIndex - 1 : next++;
+            if (position < 0 || position >= arguments.Length)
+            {
+                builder.Append(template, index, length);
+                index += length;
+                continue;
+            }
+            builder.Append(Render(arguments[position], conversion, precision));
+            index += length;
+        }
+        return builder.ToString();
+    }
+
+    private static (char Conversion, int? ArgumentIndex, int? Precision, int Length)? ParsePlaceholder(string template, int start)
+    {
+        var index = start + 1;
+        if (index >= template.Length) return null;
+        if (template[index] == '%') return ('%', null, null, 2);
+        int? argumentIndex = null;
+        var digitsStart = index;
+        while (index < template.Length && char.IsAsciiDigit(template[index])) index++;
+        if (index < template.Length && template[index] == '$' && index > digitsStart)
+        {
+            if (!int.TryParse(template.AsSpan(digitsStart, index - digitsStart), NumberStyles.None, CultureInfo.InvariantCulture, out var explicitIndex))
+                return null;
+            argumentIndex = explicitIndex;
+            index++;
+        }
+        else
+        {
+            index = digitsStart;
+        }
+        while (index < template.Length && "-+ #0'".Contains(template[index])) index++;
+        while (index < template.Length && char.IsAsciiDigit(template[index])) index++;
+        int? precision = null;
+        if (index < template.Length && template[index] == '.')
+        {
+            index++;
+            var precisionStart = index;
+            while (index < template.Length && char.IsAsciiDigit(template[index])) index++;
+            if (index > precisionStart &&
+                int.TryParse(template.AsSpan(precisionStart, index - precisionStart), NumberStyles.None, CultureInfo.InvariantCulture, out var value))
+                precision = value;
+        }
+        foreach (var modifier in new[] { "hh", "h", "ll", "l", "q", "L", "z", "t", "j" })
+        {
+            if (index + modifier.Length <= template.Length && string.CompareOrdinal(template, index, modifier, 0, modifier.Length) == 0)
+            {
+                index += modifier.Length;
+                break;
+            }
+        }
+        if (index >= template.Length) return null;
+        var conversion = template[index];
+        if (!"@diouxXeEfFgGcspaA".Contains(conversion)) return null;
+        return (conversion, argumentIndex, precision, index - start + 1);
+    }
+
+    private static string Render(object? argument, char conversion, int? precision)
+    {
+        if (conversion == '%') return "%";
+        if (argument is null) return string.Empty;
+        var culture = CultureInfo.InvariantCulture;
+        try
+        {
+            return conversion switch
+            {
+                '@' or 's' => argument as string ?? Convert.ToString(argument, culture) ?? string.Empty,
+                'c' => Convert.ToChar(argument, culture).ToString(),
+                'd' or 'i' => Convert.ToInt64(argument, culture).ToString(culture),
+                'u' => ((ulong)Convert.ToInt64(argument, culture)).ToString(culture),
+                'o' => Convert.ToString(Convert.ToInt64(argument, culture), 8),
+                'x' => Convert.ToString(Convert.ToInt64(argument, culture), 16),
+                'X' => Convert.ToString(Convert.ToInt64(argument, culture), 16).ToUpperInvariant(),
+                'f' or 'F' => Convert.ToDouble(argument, culture).ToString("F" + (precision ?? 6), culture),
+                'e' => Convert.ToDouble(argument, culture).ToString("e" + (precision ?? 6), culture),
+                'E' => Convert.ToDouble(argument, culture).ToString("E" + (precision ?? 6), culture),
+                'g' => Convert.ToDouble(argument, culture).ToString("g" + (precision ?? 6), culture),
+                'G' => Convert.ToDouble(argument, culture).ToString("G" + (precision ?? 6), culture),
+                _ => Convert.ToString(argument, culture) ?? string.Empty
+            };
+        }
+        catch (Exception exception) when (exception is FormatException or InvalidCastException or OverflowException)
+        {
+            return Convert.ToString(argument, culture) ?? string.Empty;
+        }
+    }
+
+    // Backwards-compatible count helpers (Mac plural rule: other branch only).
     public static string Meetings(int count) => EnglishUi
         ? $"{count} meeting{(count == 1 ? "" : "s")}" : $"{count} 场会议";
 

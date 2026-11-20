@@ -32,7 +32,7 @@ public partial class AppState
         var rows = FilteredHistory.Where(row => row.IsSelected).ToList();
         if (rows.Count == 0 || Recording || Working) return;
         foreach (var row in rows) await DeleteSessionAsync(row);
-        SetStatus($"已删除选中的 {rows.Count} 场会议。");
+        SetStatus(UiText.Format("已删除选中的 %lld 场会议。", rows.Count));
     }
 
     /// <summary>E18: batch delete every meeting currently matching the history filters.</summary>
@@ -42,7 +42,7 @@ public partial class AppState
         var rows = FilteredHistory.ToList();
         if (rows.Count == 0 || Recording || Working) return;
         foreach (var row in rows) await DeleteSessionAsync(row);
-        SetStatus($"已删除 {rows.Count} 场会议。");
+        SetStatus(UiText.Format("已删除 %lld 场会议。", rows.Count));
     }
 
     /// <summary>E18: delete one archived meeting, its series membership and visible lists.</summary>

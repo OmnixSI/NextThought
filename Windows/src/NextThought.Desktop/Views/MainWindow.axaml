@@ -1,5 +1,6 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         xmlns:views="using:NextThought.Desktop.Views"
         x:Class="NextThought.Desktop.Views.MainWindow"
@@ -26,19 +27,19 @@
         </Border>
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !Recording}">
-        <RadioButton Classes="nav" GroupName="topnav" Content="首页" IsChecked="{Binding OnHome, Mode=OneWay}"
+        <RadioButton Classes="nav" GroupName="topnav" Content="{loc:Tr 首页}" IsChecked="{Binding OnHome, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Home" />
-        <RadioButton Classes="nav" GroupName="topnav" Content="会议" IsChecked="{Binding OnLive, Mode=OneWay}"
+        <RadioButton Classes="nav" GroupName="topnav" Content="{loc:Tr 会议}" IsChecked="{Binding OnLive, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Live" />
-        <RadioButton Classes="nav" GroupName="topnav" Content="资料库" IsChecked="{Binding OnLibrary, Mode=OneWay}"
+        <RadioButton Classes="nav" GroupName="topnav" Content="{loc:Tr 资料库}" IsChecked="{Binding OnLibrary, Mode=OneWay}"
                      Command="{Binding NavigateCommand}" CommandParameter="Library" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_0_0_142_0}" IsVisible="{Binding !Recording}">
         <TextBlock Text="{Binding PageSubtitle}" Classes="caption" VerticalAlignment="Center" MaxWidth="280"
                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
-        <Button Classes="primary" Content="重启以更新" Command="{Binding InstallUpdateCommand}"
-                IsVisible="{Binding CanInstallUpdateInApp}" ToolTip.Tip="安装已下载的更新并重新打开" />
-        <Button Classes="quiet" ToolTip.Tip="快速设置">
+        <Button Classes="primary" Content="{loc:Tr 重启以更新}" Command="{Binding InstallUpdateCommand}"
+                IsVisible="{Binding CanInstallUpdateInApp}" ToolTip.Tip="{loc:Tr 安装已下载的更新并重新打开}" />
+        <Button Classes="quiet" ToolTip.Tip="{loc:Tr 快速设置}">
           <Button.Flyout>
             <Flyout Placement="BottomEdgeAlignedRight">
               <views:QuickSettingsPanel />
@@ -46,18 +47,18 @@
           </Button.Flyout>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
             <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center" />
-            <TextBlock Text="设置" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 设置}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </StackPanel>
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch" Spacing="{DynamicResource D4Spacing_0}">
-        <Button Name="MinimizeButton" Classes="caption" Click="Minimize_Click" ToolTip.Tip="最小化">
+        <Button Name="MinimizeButton" Classes="caption" Click="Minimize_Click" ToolTip.Tip="{loc:Tr 最小化}">
           <Path Data="M0,5 H10" StrokeThickness="1" />
         </Button>
-        <Button Name="MaximizeButton" Classes="caption" Click="Maximize_Click" ToolTip.Tip="最大化">
+        <Button Name="MaximizeButton" Classes="caption" Click="Maximize_Click" ToolTip.Tip="{loc:Tr 最大化}">
           <Path Data="M0.5,0.5 H9.5 V9.5 H0.5 Z" StrokeThickness="1" />
         </Button>
-        <Button Name="CloseButton" Classes="caption close" Click="Close_Click" ToolTip.Tip="关闭">
+        <Button Name="CloseButton" Classes="caption close" Click="Close_Click" ToolTip.Tip="{loc:Tr 关闭}">
           <Path Data="M0.5,0.5 L9.5,9.5 M9.5,0.5 L0.5,9.5" StrokeThickness="1" />
         </Button>
       </StackPanel>
@@ -70,58 +71,58 @@
         <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_14_6_14_14}">
           <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_1}">
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHome, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="Home" ToolTip.Tip="首页">
+                         Command="{Binding NavigateCommand}" CommandParameter="Home" ToolTip.Tip="{loc:Tr 首页}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE80F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="首页" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 首页}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLive, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="Live" ToolTip.Tip="会议">
+                         Command="{Binding NavigateCommand}" CommandParameter="Live" ToolTip.Tip="{loc:Tr 会议}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE720;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="会议" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 会议}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnNotes, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="Notes" ToolTip.Tip="纪要">
+                         Command="{Binding NavigateCommand}" CommandParameter="Notes" ToolTip.Tip="{loc:Tr 纪要}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE8A5;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="纪要" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 纪要}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHistory, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="History" ToolTip.Tip="历史">
+                         Command="{Binding NavigateCommand}" CommandParameter="History" ToolTip.Tip="{loc:Tr 历史}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE81C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="历史" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 历史}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSeries, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="Series" ToolTip.Tip="系列">
+                         Command="{Binding NavigateCommand}" CommandParameter="Series" ToolTip.Tip="{loc:Tr 系列}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE8F1;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="系列" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 系列}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLibrary, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="Library" ToolTip.Tip="资料库">
+                         Command="{Binding NavigateCommand}" CommandParameter="Library" ToolTip.Tip="{loc:Tr 资料库}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="资料库" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 资料库}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
             <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSettings, Mode=OneWay}"
-                         Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="设置">
+                         Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="{loc:Tr 设置}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
                 <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" VerticalAlignment="Center" />
-                <TextBlock Text="设置" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 设置}" VerticalAlignment="Center" />
               </StackPanel>
             </RadioButton>
           </StackPanel>
 
           <StackPanel Grid.Row="1" Margin="{DynamicResource D4Margin_10_22_10_8}">
-            <TextBlock Text="最近会议" Classes="overline" />
+            <TextBlock Text="{loc:Tr 最近会议}" Classes="overline" />
           </StackPanel>
 
           <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -145,10 +146,10 @@
               <TextBlock Text="{Binding StatsText}" Classes="caption" FontSize="10" />
             </Border>
             <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                    Command="{Binding OpenDataCommand}" ToolTip.Tip="打开数据目录">
+                    Command="{Binding OpenDataCommand}" ToolTip.Tip="{loc:Tr 打开数据目录}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
                 <TextBlock Text="&#xE838;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" />
-                <TextBlock Text="数据目录" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 数据目录}" VerticalAlignment="Center" />
               </StackPanel>
             </Button>
           </StackPanel>
@@ -161,12 +162,12 @@
               BorderThickness="0,0,0.5,0">
         <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_14_8_14_14}">
           <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-            <TextBlock Text="上下文" Classes="overline" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Classes="quiet" Content="隐藏" Command="{Binding ToggleContextSidebarCommand}" />
+            <TextBlock Text="{loc:Tr 上下文}" Classes="overline" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 隐藏}" Command="{Binding ToggleContextSidebarCommand}" />
           </Grid>
           <ScrollViewer Grid.Row="1" Margin="{DynamicResource D4Margin_0_10_0_0}" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-              <TextBlock Text="最近会议" Classes="overline" />
+              <TextBlock Text="{loc:Tr 最近会议}" Classes="overline" />
               <ListBox ItemsSource="{Binding History}" Background="Transparent" SelectionChanged="History_SelectionChanged">
                 <ListBox.ItemTemplate>
                   <DataTemplate x:DataType="local:RecentMeetingRow">
@@ -182,7 +183,7 @@
             </StackPanel>
           </ScrollViewer>
           <Button Grid.Row="2" Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                  Command="{Binding OpenDataCommand}" Content="数据目录" />
+                  Command="{Binding OpenDataCommand}" Content="{loc:Tr 数据目录}" />
         </Grid>
       </Border>
 
@@ -204,7 +205,7 @@
               <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}"
                            Maximum="1" IsVisible="{Binding Working}" />
             </StackPanel>
-            <Button Grid.Column="1" Classes="quiet" Content="取消当前任务" VerticalAlignment="Center"
+            <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 取消当前任务}" VerticalAlignment="Center"
                     Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" />
           </Grid>
         </Border>
@@ -214,7 +215,7 @@
               IsVisible="{Binding OnSettings}">
           <Grid RowDefinitions="Auto,*">
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_32_14_32_0}">
-              <Button Grid.Column="1" Classes="quiet" Content="完成" HorizontalAlignment="Right" VerticalAlignment="Center"
+              <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 完成}" HorizontalAlignment="Right" VerticalAlignment="Center"
                       Command="{Binding NavigateCommand}" CommandParameter="Home" />
             </Grid>
             <views:SettingsView x:Name="SettingsOverlay" Grid.Row="1" />
@@ -229,10 +230,10 @@
               HorizontalAlignment="Center" VerticalAlignment="Center">
         <StackPanel Spacing="{DynamicResource D4Spacing_14}">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="首次引导" Classes="overline" />
+            <TextBlock Text="{loc:Tr 首次引导}" Classes="overline" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
               <TextBlock Text="{Binding OnboardingPosition}" Classes="caption" VerticalAlignment="Center" />
-              <Button Classes="quiet" Content="关闭" Command="{Binding SkipOnboardingCommand}" />
+              <Button Classes="quiet" Content="{loc:Tr 关闭}" Command="{Binding SkipOnboardingCommand}" />
             </StackPanel>
           </Grid>
           <TextBlock Text="{Binding OnboardingStepTitle}" Classes="display" FontSize="26" />
@@ -254,22 +255,22 @@
           <Border Background="#F0121110" CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_14}"
                   IsVisible="{Binding OnboardingIsLast}">
             <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-              <TextBlock Text="提词岛示意" Foreground="#B8B6AF" FontSize="10" />
-              <TextBlock Text="温度补偿之后残差还剩多少，和有限元对得上吗？" Foreground="#ECEBE8" FontSize="13" TextWrapping="Wrap" />
-              <TextBlock Text="残差约占 12%，主要集中在支座附近。" Foreground="#B8B6AF" FontSize="11" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 提词岛示意}" Foreground="#B8B6AF" FontSize="10" />
+              <TextBlock Text="{loc:Tr 温度补偿之后残差还剩多少，和有限元对得上吗？}" Foreground="#ECEBE8" FontSize="13" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 残差约占 12%，主要集中在支座附近。}" Foreground="#B8B6AF" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
-          <Button Content="声音测试" Click="OnboardingVoice_Click" IsVisible="{Binding OnboardingIsSound}"
+          <Button Content="{loc:Tr 声音测试}" Click="OnboardingVoice_Click" IsVisible="{Binding OnboardingIsSound}"
                   Classes="quiet" HorizontalAlignment="Left" />
-          <Button Content="看一场示例会议" Command="{Binding OpenOnboardingSampleCommand}"
+          <Button Content="{loc:Tr 看一场示例会议}" Command="{Binding OpenOnboardingSampleCommand}"
                   IsVisible="{Binding OnboardingIsLast}" Classes="quiet" HorizontalAlignment="Left" />
           <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
-            <Button Content="跳过" Command="{Binding SkipOnboardingCommand}" HorizontalAlignment="Left" Classes="quiet" />
-            <Button Grid.Column="1" Content="上一步" Command="{Binding PreviousOnboardingStepCommand}"
+            <Button Content="{loc:Tr 跳过}" Command="{Binding SkipOnboardingCommand}" HorizontalAlignment="Left" Classes="quiet" />
+            <Button Grid.Column="1" Content="{loc:Tr 上一步}" Command="{Binding PreviousOnboardingStepCommand}"
                     IsEnabled="{Binding !OnboardingIsFirst}" />
-            <Button Grid.Column="2" Content="下一步" Command="{Binding NextOnboardingStepCommand}"
+            <Button Grid.Column="2" Content="{loc:Tr 下一步}" Command="{Binding NextOnboardingStepCommand}"
                     IsVisible="{Binding !OnboardingIsLast}" />
-            <Button Grid.Column="3" Classes="primary" Content="完成" Command="{Binding CompleteOnboardingCommand}"
+            <Button Grid.Column="3" Classes="primary" Content="{loc:Tr 完成}" Command="{Binding CompleteOnboardingCommand}"
                     IsVisible="{Binding OnboardingIsLast}" />
           </Grid>
         </StackPanel>

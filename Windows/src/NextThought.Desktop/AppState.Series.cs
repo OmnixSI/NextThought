@@ -101,7 +101,9 @@ public partial class AppState
         if (row.IsAttached) ids.Add(row.SkillId);
         workspace = workspace.WithSeries(series with { SkillIds = ids });
         SaveWorkspace();
-        SetStatus(row.IsAttached ? $"已把「{row.Name}」附着到「{series.Name}」。" : $"已从「{series.Name}」移除「{row.Name}」。");
+        SetStatus(row.IsAttached
+    ? UiText.Format("已把「%@」附着到「%@」。", row.Name, series.Name)
+    : UiText.Format("已从「%@」移除「%@」。", series.Name, row.Name));
     }
 
     private void SaveWorkspace()
@@ -164,11 +166,11 @@ public partial class AppState
     public bool HasSeriesCandidates => SeriesCandidates.Count > 0;
     public bool HasSeriesBank => SeriesBank.Count > 0;
 
-    public string SeriesLessonsHeader => UiText.EnglishUi ? $"Lessons {SeriesLessons.Count}" : $"经验 {SeriesLessons.Count}";
+    public string SeriesLessonsHeader => UiText.Format("经验 %lld", SeriesLessons.Count);
     public string SeriesCandidatesHeader => SeriesCandidates.Count > 0
-        ? (UiText.EnglishUi ? $"To confirm {SeriesCandidates.Count}" : $"待确认 {SeriesCandidates.Count}")
+        ? UiText.Format("待确认 %lld", SeriesCandidates.Count)
         : UiText.T("待确认");
-    public string SeriesBankHeader => UiText.EnglishUi ? $"Question bank {SeriesBank.Count}" : $"题库 {SeriesBank.Count}";
+    public string SeriesBankHeader => UiText.Format("题库 %lld", SeriesBank.Count);
 
     private void RefreshSeriesLessons()
     {
@@ -218,7 +220,7 @@ public partial class AppState
         SaveWorkspace();
         RefreshSeries();
         SelectedSeries = SeriesRows.FirstOrDefault(item => item.Id == series.Id);
-        SetStatus($"「{series.Name}」有 {added.Count} 条经验和问题待确认，确认后才会进入知识库。");
+        SetStatus(UiText.Format("「%@」有 %lld 条经验和问题待确认，确认后才会进入知识库。", series.Name, added.Count));
     }
 
     /// <summary>Applies the user's decision to one queued candidate.</summary>
@@ -355,7 +357,7 @@ public partial class AppState
         SaveWorkspace();
         RefreshSeries();
         SelectedSeries = SeriesRows.FirstOrDefault(row => row.Name == name);
-        SetStatus(NextThought.Core.UiText.EnglishUi ? $"Series \"{name}\" created." : $"已新建系列「{name}」。");
+        SetStatus(UiText.Format("已新建系列「%@」。", name));
     }
 
     [RelayCommand(CanExecute = nameof(CanAssignCurrent))]
@@ -369,8 +371,8 @@ public partial class AppState
         RefreshSeries();
         SelectedSeries = SeriesRows.FirstOrDefault(item => item.Id == row.Id);
         SetStatus(previous is { } from && from.Id != row.Id
-            ? $"已把「{meta.Title}」从「{from.Name}」移到系列「{row.Name}」。"
-            : $"已把「{meta.Title}」放进系列「{row.Name}」。");
+            ? UiText.Format("已把「%@」从「%@」移到系列「%@」。", meta.Title, from.Name, row.Name)
+            : UiText.Format("已把「%@」放进系列「%@」。", meta.Title, row.Name));
     }
 
     private bool CanAssignCurrent() => CurrentSession is not null && SelectedSeries is not null;

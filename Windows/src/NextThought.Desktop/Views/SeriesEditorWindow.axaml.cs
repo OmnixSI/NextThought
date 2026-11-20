@@ -20,7 +20,7 @@ public partial class SeriesEditorWindow : Window
         try
         {
         if (DataContext is not AppState state || state.SelectedSeries is not { } selected) return;
-        var confirmed = await new ConfirmDialog($"删除系列「{selected.Name}」？会议记录会保留。").ShowDialog<bool>(this);
+        var confirmed = await new ConfirmDialog(UiText.Format("删除系列「%@」？会议记录会保留。", selected.Name)).ShowDialog<bool>(this);
         if (!confirmed) return;
         state.DeleteSeriesCommand.Execute(selected.Id);
         Close();

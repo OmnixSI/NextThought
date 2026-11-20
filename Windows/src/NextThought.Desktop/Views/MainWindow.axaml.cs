@@ -68,17 +68,10 @@ public partial class MainWindow : Window
             openedOnce = true;
             await state.InitializeAsync();
             state.BeginBackgroundUpdateCheck();
-            UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
-            state.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(AppState.Section))
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => UiTranslation.Apply(this, state.Settings.UiLanguage == "English"));
-            };
+            // G8: every view binds through {loc:Tr …}; a language switch only has to notify the source.
             state.LanguageChanged += english =>
             {
-                UiTranslation.Apply(this, english);
-                if (island is not null) UiTranslation.Apply(island, english);
-                if (teleprompter is not null) UiTranslation.Apply(teleprompter, english);
+                NextThought.Core.UiTextSource.Instance.SetEnglish(english);
                 tray?.SetLanguage(english);
             };
             RefreshDisplays();
