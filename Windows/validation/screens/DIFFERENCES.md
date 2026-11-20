@@ -22,7 +22,7 @@
 仍差：
 1. 标题行：Mac 居中胶囊更窄，Windows 胶囊字号/间距偏大；Mac 左上无品牌区，Windows 保留品牌+版本。
 2. 首页场景区：Mac 选中“面试”时是紫色 tint 13%，Windows 演示数据默认“工作会议”，显示为灰色 tint；选中态逻辑已实现。
-3. 首页 greeting：Mac 是“11月11日 星期三 / 下午好。接下来是什么场合？”，Windows 仍是“晚上好。今天有哪些值得留下的结论？/ 把讨论留下来”。
+3. 首页 greeting：已改为日期行 + “{问候}。接下来是什么场合？”；日期随当天变化，Mac 截图是 11 月 11 日。
 4. “接着上一场”行：Mac 有场景类型与 0 场记录/2 份资料，Windows 只有“1 场会议 · 0 条经验”，缺资料数。
 5. “最近记录”行：Mac 有日期/时间，Windows 只有标题/统计。
 
@@ -32,8 +32,8 @@
 
 仍差：
 1. 卡片高度/垂直间距与 Mac 不一致（Windows 卡片更矮，行间更紧）。
-2. Mac 的 DataState loading 是转圈，Windows 是横条 ProgressBar。
-3. Mac 的 NewContentPill 在 Composer 上方且更大，Windows 的 pill 偏小。
+2. ~~DataState loading：横条 ProgressBar~~ 已改为 Fluent 同步字形，静态截图仍不旋转。
+3. ~~NewContentPill 偏小~~ 已增大到 12×6，仍缺 Mac 的独立浮起位置。
 4. Mac 的 ActionButton 有真实 hover/pressed 光标态；Windows 只是样张静态类。
 5. 字体、字号、卡片阴影强度未逐项对比。
 
