@@ -215,6 +215,15 @@ public sealed record AppSettings
     /// <summary>Mac key <c>teleprompterHideBackground</c>: transparent window background, opaque text.</summary>
     public bool TeleprompterHideBackground { get; set; }
 
+    /// <summary>Mac key <c>teleprompterOpacity</c>: cue window opacity, Mac default 1.0, range 0.35–1.</summary>
+    public double TeleprompterOpacity { get; set; } = 1.0;
+
+    /// <summary>Mac key <c>teleprompterFontSize</c>: answer font size, Mac default 22, range 14–36.</summary>
+    public double TeleprompterFontSize { get; set; } = 22.0;
+
+    /// <summary>Mac key <c>reducedEffects</c>: the app's own "less visual effects" switch (macOS default off).</summary>
+    public bool ReducedEffects { get; set; }
+
     /// <summary>Mac key <c>cueScreen</c>: display name the cue island sits on; empty picks the built-in/primary.</summary>
     public string CueScreen { get; set; } = "";
 

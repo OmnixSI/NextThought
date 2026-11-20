@@ -21,7 +21,8 @@ public static class MacPreferenceMap
         "onboardingCompletedVersion", "companionRelayUrl", "sceneDefaults", "insightScreenRegion",
         "answerGloss", "answerLanguage", "appearance", "capturePrivacy", "cueAlwaysOpen", "cueWidth",
         "cueScreen", "teleprompterHideBackground", "presenterMode", "presenterSlidesScreen",
-        "insightScreenWatch", "insightScreenInterval", "insightFollowSlides"
+        "insightScreenWatch", "insightScreenInterval", "insightFollowSlides",
+        "teleprompterOpacity", "teleprompterFontSize", "reducedEffects"
     ];
 
     /// <summary>JSON property names of the typed settings that already use the Mac key name.</summary>
@@ -36,7 +37,7 @@ public static class MacPreferenceMap
         "localStreamingModel", "microphoneEnabled", "notesModelID", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
-        "webSearchMode"
+        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects"
     ];
 
     private static readonly Dictionary<string, string> ModeNames = new(StringComparer.Ordinal)
@@ -83,6 +84,9 @@ public static class MacPreferenceMap
         "insightScreenInterval" => settings.InsightScreenInterval,
         "insightFollowSlides" => settings.InsightFollowSlides,
         "insightScreenRegion" => RegionToMac(settings.InsightScreenRegion),
+        "teleprompterOpacity" => settings.TeleprompterOpacity,
+        "teleprompterFontSize" => settings.TeleprompterFontSize,
+        "reducedEffects" => settings.ReducedEffects,
         "cloudModel" => settings.CloudSttModel,
         "cloudProvider" => string.IsNullOrEmpty(settings.CloudStt) ? "soniox" : settings.CloudStt,
         "transcriptionBackend" => string.IsNullOrEmpty(settings.CloudStt) ? "zipformer" : "cloud",
@@ -139,6 +143,15 @@ public static class MacPreferenceMap
                 break;
             case "insightFollowSlides": settings.InsightFollowSlides = normalized is bool follow ? follow : settings.InsightFollowSlides; break;
             case "insightScreenRegion": settings.InsightScreenRegion = RegionFromMac(normalized); break;
+            case "teleprompterOpacity":
+                settings.TeleprompterOpacity = normalized is double opacity ? opacity : settings.TeleprompterOpacity;
+                break;
+            case "teleprompterFontSize":
+                settings.TeleprompterFontSize = normalized is double fontSize ? fontSize : settings.TeleprompterFontSize;
+                break;
+            case "reducedEffects":
+                settings.ReducedEffects = normalized is bool reduced ? reduced : settings.ReducedEffects;
+                break;
             case "cloudModel": settings.CloudSttModel = AsString(normalized, settings.CloudSttModel); break;
             case "companionRelayURL": settings.CompanionRelayUrl = AsString(normalized, settings.CompanionRelayUrl); break;
             case "subtitleBarFontSize":

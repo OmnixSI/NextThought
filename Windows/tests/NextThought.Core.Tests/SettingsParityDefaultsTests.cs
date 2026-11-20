@@ -366,6 +366,7 @@ public sealed class SettingsParityDefaultsTests
         ["recordSessions"] = false,
         ["recordingNoticeShown"] = true,
         ["reducedEffects"] = true,
+        ["reducedEffects"] = true,
         ["sceneOverrides"] = new Dictionary<string, object?>
         {
             ["interview"] = new Dictionary<string, object?>

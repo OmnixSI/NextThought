@@ -40,7 +40,8 @@ public sealed class SettingsParityTableTests
             Assert.True(status.StartsWith("已实现、未验证", StringComparison.Ordinal)
                         || status.StartsWith("本版不做", StringComparison.Ordinal),
                 $"{preference.Key}: {status}");
-            Assert.DoesNotContain("未做", status, StringComparison.Ordinal);
+            // The status column value itself must never be 未做 (evidence may mention a task).
+            Assert.False(status.StartsWith("未做", StringComparison.Ordinal), preference.Key);
             var evidence = status.Contains('｜', StringComparison.Ordinal) ? status[(status.IndexOf('｜') + 1)..].Trim() : "";
             Assert.False(string.IsNullOrWhiteSpace(evidence), $"{preference.Key} has no evidence");
             Assert.True(evidence.Length > 8, $"{preference.Key}: {evidence}");

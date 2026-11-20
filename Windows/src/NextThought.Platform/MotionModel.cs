@@ -248,6 +248,13 @@ public static class MotionPlan
     /// <summary>False when the shell must not animate at all (system "show animations" off).</summary>
     public static bool IsAnimated(bool reduceMotion) => !reduceMotion;
 
+    /// <summary>
+    /// G5: nothing animates when either Windows asks for fewer animations (system setting) or the
+    /// app's own <c>reducedEffects</c> preference (Mac key) is on.
+    /// </summary>
+    public static bool ShouldReduce(bool systemReduceMotion, bool appReducedEffects) =>
+        systemReduceMotion || appReducedEffects;
+
     public static TimeSpan Duration(MotionKind kind, bool reduceMotion) =>
         reduceMotion ? TimeSpan.Zero : MotionTokens.Duration(kind);
 

@@ -27,8 +27,11 @@ public static class Motion
 
     private const uint SpiGetClientAreaAnimation = 0x1042;
 
+    /// <summary>G5: the app's own 减少视觉特效 switch (Mac key <c>reducedEffects</c>), synced by SettingsViewModel.</summary>
+    public static bool AppReducedEffects { get; set; }
+
     /// <summary>True when the system animation setting is off ("show animations in Windows").</summary>
-    public static bool Reduce
+    private static bool SystemReduce
     {
         get
         {
@@ -36,6 +39,9 @@ public static class Motion
             catch { return false; }
         }
     }
+
+    /// <summary>True when the system animation setting is off or the app asks for fewer effects.</summary>
+    public static bool Reduce => MotionPlan.ShouldReduce(SystemReduce, AppReducedEffects);
 
     internal static MotionKind PlatformKind(Kind kind) => kind switch
     {

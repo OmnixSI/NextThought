@@ -251,6 +251,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         try { settings = state.SettingsStore.Load(); }
         catch { settings = new AppSettings(); }
         UiLanguage = UiText.IsEnglish(settings.Language) ? "English" : "中文";
+        // G5b: Mac key reducedEffects drives Motion.Reduce together with the system animation setting.
+        Motion.AppReducedEffects = settings.ReducedEffects;
         SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == settings.Appearance) ?? AppearanceChoices[0];
         SelectedCueWidth = CueWidthChoices.FirstOrDefault(choice => choice.Value == settings.CueWidth) ?? CueWidthChoices[1];
         CueAlwaysOpen = settings.CueAlwaysOpen;
@@ -396,6 +398,10 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CaptureProcessStartTicks = SelectedProcess?.StartTicks ?? 0,
         Shortcuts = new Dictionary<string, string>(state.ShortcutOverrides),
         ContextSidebarHidden = state.ContextSidebarHidden,
+        // G5b: fields this page has no control for yet keep their on-disk / Mac-key values.
+        TeleprompterOpacity = disk.TeleprompterOpacity,
+        TeleprompterFontSize = disk.TeleprompterFontSize,
+        ReducedEffects = disk.ReducedEffects,
         SceneDefaults = disk.SceneDefaults,
         AdditionalProperties = disk.AdditionalProperties
     };
@@ -412,6 +418,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
             apiKeyReadFailed = false;
         }
         await state.SettingsStore.SaveAsync(settings);
+        // G5b: apply the Mac reducedEffects key to the motion tokens immediately after a save.
+        Motion.AppReducedEffects = settings.ReducedEffects;
         HasApiKey = ApiKey.Trim().Length > 0;
         KeyStatus = HasApiKey ? "密钥已保存（当前 Windows 用户加密）" : "尚未保存密钥；本机服务可不填。";
         LastMeetingTitle = settings.LastMeetingTitle;
