@@ -8,44 +8,139 @@ public partial class AppState
 {
     [ObservableProperty] private string notesEditorText = "";
     [ObservableProperty] private string personalNotesText = "";
+    [ObservableProperty] private bool notesEditorShowOriginal;
+    [ObservableProperty] private bool notesEditorSaving;
+    [ObservableProperty] private string notesEditorError = "";
+    [ObservableProperty] private string notesEditorOriginalText = "";
 
-    /// <summary>E16: prefill the editor from user-content.json without touching generated notes.</summary>
+    private string notesEditorBaseline = "";
+    private Guid? notesEditorSessionId;
+    private bool notesEditorWasEdited;
+
+    /// <summary>E16: the draft differs from what was loaded (Mac MeetingNotesEditor.dirty).</summary>
+    public bool NotesEditorDirty =>
+        NotesEditorText != notesEditorBaseline || PersonalNotesText != personalNotesBaseline;
+
+    private string personalNotesBaseline = "";
+
+    public string NotesEditorDirtyText => NotesEditorDirty
+        ? UiText.T("更改尚未保存")
+        : UiText.T("没有未保存的更改");
+    public bool HasNotesEditorError => NotesEditorError.Length > 0;
+    public bool CanSaveNotesEditor => !NotesEditorSaving && !NotesEditorShowOriginal;
+
+    partial void OnNotesEditorTextChanged(string value) => RaiseNotesEditorDirty();
+    partial void OnPersonalNotesTextChanged(string value) => RaiseNotesEditorDirty();
+    partial void OnNotesEditorSavingChanged(bool value) => OnPropertyChanged(nameof(CanSaveNotesEditor));
+    partial void OnNotesEditorShowOriginalChanged(bool value) => OnPropertyChanged(nameof(CanSaveNotesEditor));
+    partial void OnNotesEditorErrorChanged(string value) => OnPropertyChanged(nameof(HasNotesEditorError));
+
+    private void RaiseNotesEditorDirty()
+    {
+        OnPropertyChanged(nameof(NotesEditorDirty));
+        OnPropertyChanged(nameof(NotesEditorDirtyText));
+    }
+
+    /// <summary>
+    /// E16: prefill from user-content.json. The editor shows the user's version when it exists;
+    /// 查看 AI 原稿 shows the AI draft without touching the edits (Mac MeetingNotesEditor init).
+    /// </summary>
     public void LoadNotesEditor()
     {
         if (CurrentSession is not { } meta) return;
+        notesEditorSessionId = meta.Id;
+        notesEditorError = "";
         try
         {
             var content = SessionUserContentStore.Load(Sessions.Folder(meta.Id));
-            NotesEditorText = content.EditedMarkdown ?? SummaryText;
+            var aiDraft = SummaryText;
+            NotesEditorOriginalText = aiDraft;
+            NotesEditorText = content.EditedMarkdown
+                ?? content.EditedSummary?.Markdown
+                ?? aiDraft;
             PersonalNotesText = content.PersonalNotes;
+            notesEditorWasEdited = content.EditedNotes is not null || content.EditedSummary is not null
+                || content.EditedMarkdown is not null;
         }
-        catch { NotesEditorText = SummaryText; PersonalNotesText = ""; }
+        catch
+        {
+            NotesEditorOriginalText = SummaryText;
+            NotesEditorText = SummaryText;
+            PersonalNotesText = "";
+            notesEditorWasEdited = false;
+        }
+        notesEditorBaseline = NotesEditorText;
+        personalNotesBaseline = PersonalNotesText;
+        NotesEditorShowOriginal = false;
+        RaiseNotesEditorDirty();
+        OnPropertyChanged(nameof(NotesEditorDirtyText));
+        OnPropertyChanged(nameof(CanSaveNotesEditor));
     }
 
+    /// <summary>
+    /// E16 (MeetingNotesEditor.save): the edit goes to the user's own version — editedSummary when
+    /// no structured notes exist, editedMarkdown otherwise; the generated notes stay untouched.
+    /// </summary>
     [RelayCommand]
-    private void SaveNotesEditor()
+    private async Task SaveNotesEditorAsync()
     {
         if (CurrentSession is not { } meta) return;
+        NotesEditorSaving = true;
+        NotesEditorError = "";
         try
         {
+            await Task.WhenAll(writes.ToArray());
             var folder = Sessions.Folder(meta.Id);
             var content = SessionUserContentStore.Load(folder);
+            var text = NotesEditorText;
+            SessionSummary? editedSummary = content.EditedSummary;
+            string? editedMarkdown = content.EditedMarkdown;
+            if (content.EditedNotes is null)
+            {
+                editedSummary = (editedSummary ?? new SessionSummary { Title = meta.Title }) with
+                {
+                    Markdown = text,
+                    Model = (editedSummary ?? new SessionSummary()).Model
+                };
+                editedMarkdown = null;
+            }
+            else
+            {
+                editedMarkdown = text;
+            }
             SessionUserContentStore.Save(content with
             {
-                EditedMarkdown = NotesEditorText,
-                PersonalNotes = PersonalNotesText
+                EditedSummary = editedSummary,
+                EditedMarkdown = editedMarkdown,
+                PersonalNotes = PersonalNotesText,
+                BasedOnGeneratedAt = content.BasedOnGeneratedAt ?? DateTimeOffset.UtcNow
             }, folder);
-            SetStatus("纪要编辑已保存；生成结果未被覆盖。");
+            notesEditorBaseline = NotesEditorText;
+            personalNotesBaseline = PersonalNotesText;
+            notesEditorWasEdited = true;
+            RaiseNotesEditorDirty();
+            SetStatus(UiText.T("纪要编辑已保存；生成结果未被覆盖。"));
         }
-        catch (Exception ex) { SetStatus("保存失败：" + ex.Message, true); }
+        catch (Exception ex)
+        {
+            NotesEditorError = UiText.Format("更改尚未保存：%@", ex.Message);
+            SetStatus(NotesEditorError, true);
+        }
+        finally
+        {
+            NotesEditorSaving = false;
+        }
     }
+
+    /// <summary>True when the current meeting's notes have a user version (Mac hasEdits).</summary>
+    public bool NotesEditorHasUserVersion => notesEditorWasEdited;
 
     /// <summary>E15: apply an edit to one structured-notes node and keep it in user-content.json.</summary>
     public void ApplyNotesEdit(SessionStructuredNotesTarget target, string text)
     {
         if (CurrentSession is not { } meta || StructuredPayload is not { } payload) return;
         var edited = SessionNotesEditor.Apply(payload, target, text);
-        if (edited is null) { SetStatus("这条内容已被重新生成，编辑未应用。", true); return; }
+        if (edited is null) { SetStatus(UiText.T("这条内容已被重新生成，编辑未应用。"), true); return; }
         StructuredPayload = edited;
         StructuredMarkdown = StructuredNotesMarkdown.Render(edited);
         OnPropertyChanged(nameof(HasStructuredNotes));
@@ -53,9 +148,13 @@ public partial class AppState
         {
             var folder = Sessions.Folder(meta.Id);
             var content = SessionUserContentStore.Load(folder);
-            SessionUserContentStore.Save(content with { EditedNotes = edited }, folder);
-            SetStatus("条目已编辑；生成结果的其他内容未改。");
+            SessionUserContentStore.Save(content with
+            {
+                EditedNotes = edited,
+                BasedOnGeneratedAt = content.BasedOnGeneratedAt ?? DateTimeOffset.UtcNow
+            }, folder);
+            SetStatus(UiText.T("条目已编辑；生成结果的其他内容未改。"));
         }
-        catch (Exception ex) { SetStatus("保存条目失败：" + ex.Message, true); }
+        catch (Exception ex) { SetStatus(UiText.T("保存条目失败：") + ex.Message, true); }
     }
 }

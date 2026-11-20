@@ -1,41 +1,75 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
-        xmlns:core="using:NextThought.Core"
         x:Class="NextThought.Desktop.Views.NotesEditorWindow"
         x:DataType="local:AppState"
-        Title="{loc:Tr 编辑纪要}" Width="980" Height="680" WindowStartupLocation="CenterOwner"
+        Title="{loc:Tr 编辑纪要}" Width="900" Height="640" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Paper}">
-  <Grid RowDefinitions="*,Auto" Margin="{DynamicResource D4Margin_18}">
-    <Grid ColumnDefinitions="*,320" ColumnSpacing="14">
-      <StackPanel Spacing="{DynamicResource D4Spacing_10}">
-        <TextBlock Text="{loc:Tr 纪要编辑}" Classes="section" />
-        <TextBlock Text="{loc:Tr 生成结果保持不变；这里的修改写入 user-content.json。}" Classes="caption" />
-        <TextBox Text="{Binding NotesEditorText}" AcceptsReturn="True" TextWrapping="Wrap" Height="360"
-                 FontFamily="{StaticResource MonoFamily}" FontSize="12" />
-        <TextBlock Text="{loc:Tr 个人笔记}" Classes="section" />
-        <TextBox Text="{Binding PersonalNotesText}" AcceptsReturn="True" TextWrapping="Wrap" Height="120" />
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_18}">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_4}">
+        <TextBlock Text="{loc:Tr 编辑纪要}" Classes="section" />
+        <TextBlock Text="{loc:Tr 修改保存在独立的用户版本中。重新生成只更新 AI 原稿，时间引用仍然保留。}"
+                   Classes="caption" TextWrapping="Wrap" />
       </StackPanel>
-      <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_14}">
-        <StackPanel Spacing="{DynamicResource D4Spacing_8}">
-          <TextBlock Text="{loc:Tr 证据}" Classes="section" />
-          <ItemsControl ItemsSource="{Binding Sources}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="core:SourceCitation">
-                <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
-                  <TextBlock Text="{Binding Label}" Classes="label" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Quote}" Classes="caption" TextWrapping="Wrap" MaxLines="3" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
+      <ToggleButton Grid.Column="1" Content="{loc:Tr 查看 AI 原稿}" IsChecked="{Binding NotesEditorShowOriginal}"
+                    VerticalAlignment="Top" />
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,300" ColumnSpacing="{DynamicResource D4Spacing_10}"
+          Margin="{DynamicResource D4Margin_0_12_0_0}">
+      <Border Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_12}">
+        <Grid>
+          <TextBox Text="{Binding NotesEditorText}" AcceptsReturn="True" TextWrapping="Wrap"
+                   IsVisible="{Binding !NotesEditorShowOriginal}" FontSize="13" Background="Transparent"
+                   BorderThickness="0" VerticalContentAlignment="Top" />
+          <ScrollViewer IsVisible="{Binding NotesEditorShowOriginal}" VerticalScrollBarVisibility="Auto">
+            <SelectableTextBlock Text="{Binding NotesEditorOriginalText}" Classes="body" TextWrapping="Wrap" />
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- MeetingEvidenceSidebar.swift: 原话依据 panel -->
+      <Border Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_12_10}">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBlock Grid.Row="0" Text="{loc:Tr 原话依据}" Classes="overline" />
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="{DynamicResource D4Margin_0_6_0_0}">
+            <ItemsControl ItemsSource="{Binding NotesEvidence}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:SessionEvidenceRow">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                      <Border Classes="chip">
+                        <TextBlock Text="{Binding Badge}" Classes="overline" FontSize="10" />
+                      </Border>
+                      <TextBlock Text="{Binding SupportLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Claim}" Classes="caption" TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                    <Button Classes="quiet" Content="{loc:Tr 在完整转写中查看}" Tag="{Binding}"
+                            Click="FindEvidence_Click" HorizontalAlignment="Left" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+          <TextBlock Grid.Row="2" Text="{loc:Tr 修改保存在独立用户版本里；原话依据只用于核对。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource Tertiary}" />
+        </Grid>
       </Border>
     </Grid>
-    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
-      <Button Content="{loc:Tr 关闭}" Click="Close_Click" />
-      <Button Classes="primary" Content="{loc:Tr 保存}" Command="{Binding SaveNotesEditorCommand}" Click="Close_Click" />
-    </StackPanel>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_10_0_0}">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{Binding NotesEditorDirtyText}" Classes="caption" />
+        <TextBlock Text="{Binding NotesEditorError}" Classes="caption" Foreground="{DynamicResource Caution}"
+                   IsVisible="{Binding HasNotesEditorError}" TextWrapping="Wrap" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+        <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
+        <Button Classes="primary" Content="{loc:Tr 保存更改}" Command="{Binding SaveNotesEditorCommand}"
+                IsEnabled="{Binding CanSaveNotesEditor}" />
+      </StackPanel>
+    </Grid>
   </Grid>
 </Window>
