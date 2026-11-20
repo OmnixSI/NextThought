@@ -38,7 +38,7 @@ Nov 20, 2026 · @Homing
 | A15 | 未做 | MacCodec 包已建；Windows Swift/CryptoKit 阻塞，见 OPEN_QUESTIONS |
 | H1 | 已实现、未验证 | MainWindow 258 行、56 检查各一文件、旧参数删除、--self-test 实跑通过 |
 | H2 | 未做 | AppState 202 行、15 个 Mac 扩展文件已有；179 个 Swift 方法名对 C# 完全匹配 0 |
-| D4 | 未做 | S12/Control 等资源、侧栏/内容宽度已改；逐视图硬编码未清 |
+| D4 | 已实现、未验证 | Views 数值间距/圆角已全部资源化（118 项）；点击区域尺寸未逐项核对 |
 | D5 | 已实现、未验证 | Motion 五组时长、减弱动画；两处淡入淡出已接入，弹簧为 cubic 近似 |
 | D6 | 未做 | 场景数据+SceneGlyph/SceneTag/InkWash 已接入首页；截图对照未做 |
 | D7 | 已实现、未验证 | 57 图标资源/对照表；文字关闭符已换 Fluent；码点待并排定稿 |
