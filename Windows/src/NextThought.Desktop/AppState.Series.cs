@@ -217,7 +217,7 @@ public partial class AppState
     /// <summary>Accepted lessons for the answer prompt, or "" when this meeting has no series.</summary>
     public string ExperiencePromptFor(SessionMeta? meta)
     {
-        if (meta is null) return "";
+        if (meta is null || ActiveCarry?.Lessons == false) return "";
         return workspace.SeriesOfSession(meta.Id.ToString()) is { } series
             ? WorkspaceKnowledgePrompt.ExperienceNotes(series)
             : "";
@@ -226,7 +226,7 @@ public partial class AppState
     /// <summary>The series question bank as prompt context, or "" when empty.</summary>
     public string QuestionBankPromptFor(SessionMeta? meta)
     {
-        if (meta is null) return "";
+        if (meta is null || ActiveCarry?.Review == false) return "";
         return workspace.SeriesOfSession(meta.Id.ToString()) is { } series
             ? WorkspaceKnowledgePrompt.QuestionBankContext(series)
             : "";

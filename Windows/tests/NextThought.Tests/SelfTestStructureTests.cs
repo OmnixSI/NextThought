@@ -79,6 +79,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareCarrySwitchesGateMeetingContext()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("BeginPreparedMeeting", live);
+        Assert.Contains("ActiveCarry?.Materials == false", live);
+        var series = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Series.cs"));
+        Assert.Contains("ActiveCarry?.Lessons == false", series);
+        Assert.Contains("ActiveCarry?.Review == false", series);
+    }
+
     [Fact]
     public void PrepareCarryPlanIsExposed()
     {

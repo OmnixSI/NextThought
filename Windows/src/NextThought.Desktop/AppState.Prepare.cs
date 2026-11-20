@@ -9,6 +9,10 @@ public partial class AppState
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool carryLessons = true;
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool carryTranscript;
 
+    public NextThought.Core.MeetingCarry? ActiveCarry { get; private set; }
+
+    public void BeginPreparedMeeting() => ActiveCarry = CarryPlan;
+
     public NextThought.Core.MeetingCarry CarryPlan => new()
     {
         Materials = CarryMaterials,

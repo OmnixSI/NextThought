@@ -74,6 +74,7 @@ public partial class AppState
         SessionMeta? meta = null;
         try
         {
+            BeginPreparedMeeting();
             var sceneDefaults = SceneDefaultsFor(SelectedMode);
             Settings.AutomaticAnswers = sceneDefaults.LiveMode == "自动回答";
             Settings.SelectedCueWidth = Settings.CueWidthChoices.FirstOrDefault(choice =>
@@ -639,6 +640,7 @@ public partial class AppState
     /// <summary>E24: when the current meeting belongs to a series, retrieve only that series' documents.</summary>
     public IReadOnlyList<NextThought.Core.MaterialDocument> DocumentsForRetrieval()
     {
+        if (ActiveCarry?.Materials == false) return [];
         var documents = Library.DocumentsForRetrieval();
         var sessionId = CurrentSession?.Id.ToString();
         if (sessionId is null) return documents;
