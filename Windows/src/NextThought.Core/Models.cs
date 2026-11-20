@@ -121,6 +121,9 @@ public sealed record AppSettings
     /// <summary>Show the translated second line in the floating subtitle bar.</summary>
     public bool SubtitleShowTranslation { get; set; } = true;
 
+    /// <summary>Check for a new release silently after launch and every six hours.</summary>
+    public bool AutoCheckUpdates { get; set; } = true;
+
     /// <summary>Cloud STT provider id ("", "soniox", "openai", "deepgram").</summary>
     public string CloudStt { get; set; } = "";
 

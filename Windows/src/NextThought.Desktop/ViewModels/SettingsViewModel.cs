@@ -122,6 +122,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private int subtitleWidth = 920;
     [ObservableProperty] private int subtitleFontSize = 22;
     [ObservableProperty] private bool subtitleShowTranslation = true;
+    [ObservableProperty] private bool autoCheckUpdates = true;
     [ObservableProperty] private string autoEndMode = "prompt";
     private string autoEndMinutes = "10";
 
@@ -216,6 +217,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         SubtitleWidth = Math.Clamp(settings.SubtitleWidth, 520, 1400);
         SubtitleFontSize = Math.Clamp(settings.SubtitleFontSize, 16, 36);
         SubtitleShowTranslation = settings.SubtitleShowTranslation;
+        AutoCheckUpdates = settings.AutoCheckUpdates;
         SelectedCloudStt = CloudSttChoices.FirstOrDefault(choice => choice.Value == settings.CloudStt) ?? CloudSttChoices[0];
         CloudSttModel = settings.CloudSttModel;
         SelectedCloudLanguage = CloudSttLanguages.FirstOrDefault(choice => choice.Value == settings.CloudSttLanguage) ?? CloudSttLanguages[0];
@@ -280,6 +282,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         SubtitleWidth = Math.Clamp(SubtitleWidth, 520, 1400),
         SubtitleFontSize = Math.Clamp(SubtitleFontSize, 16, 36),
         SubtitleShowTranslation = SubtitleShowTranslation,
+        AutoCheckUpdates = AutoCheckUpdates,
         CloudStt = SelectedCloudStt?.Value ?? "",
         CloudSttModel = CloudSttModel.Trim(),
         CloudSttLanguage = SelectedCloudLanguage?.Value ?? "auto",

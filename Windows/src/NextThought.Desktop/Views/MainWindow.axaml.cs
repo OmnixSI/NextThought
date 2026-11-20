@@ -54,6 +54,7 @@ public partial class MainWindow : Window
             if (openedOnce) return;
             openedOnce = true;
             await state.InitializeAsync();
+            state.BeginBackgroundUpdateCheck();
             UiTranslation.Apply(this, state.Settings.UiLanguage == "English");
             state.PropertyChanged += (_, e) =>
             {

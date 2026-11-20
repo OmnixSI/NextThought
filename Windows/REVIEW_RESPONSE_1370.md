@@ -153,11 +153,11 @@ effectiveMode/experience/glossary 字段；问题变化追加 `questions.jsonl`�
 - 仓库卫生：安装包/便携包仍在 `Windows/validation/bundles`（171 MB LFS），未迁移到 Release；
   自检代码仍在 `MainWindow.axaml.cs`，未拆到 Cli；PDB 仍在便携包内。
 
-## 0.5.143 实测
+## 0.5.144 实测
 
 - 构建：0 警告 0 错误（ReadyToRun，默认）
 - 测试：Core **863**、基线 **114**
 - 安装版验收：**63/63**；`--capture-hide-check` passed（岛/字幕条/提词器 affinity=17）；
   `--companion-check` passed；手机页 Chromium 渲染与本机中转协议测试通过
 - 静默安装不自动启动（`launchedAfterSilent=0`），带 `/LAUNCH=1` 才重启
-- 启动 4.18 秒、工作集 **126.6 MiB**、私有 58.5 MiB
+- 启动 4.58 秒、工作集 **127.0 MiB**、私有 58.3 MiB

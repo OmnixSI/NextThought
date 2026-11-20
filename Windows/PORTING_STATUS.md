@@ -29,7 +29,17 @@
   工作集 108.6 MiB、私有 43 MiB。
 - **签名**：按用户指令跳过，不作为阻塞条件；本地 exe 无 MotW，分发前再换正式 EV/OV 证书。
 
+# P2 后台检查更新 · 0.5.144
+
+- `AppSettings.AutoCheckUpdates` 默认开；设置页可关。启动 30 秒后静默检查一次，
+  每 6 小时重复；有更新只在状态栏提示，不自动安装。离线/限流静默失败。
+- **未声称**：没有对真实 GitHub Release feed 做成功断言；只验证了应用不崩、检查仍通过。
+- Core 863 + 基线 114；全部检查通过。
+- **0.5.144 实测**：Core 863 + 基线 114；验收 63/63、门禁 17/17；环境负载下启动
+  4.58 秒、工作集 127.0 MiB、私有 58.3 MiB。
+
 # P2 设计 token 落地 · 0.5.143
+
 
 - `Border.card` 使用 `RadiusMedium` + `PaperCardShadow`；`Border.floating` 使用
   `RadiusLarge` + `FloatShadowValue`，不再在样式里写死 14/22 与阴影字符串。

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
@@ -86,6 +87,37 @@ public partial class AppState
 
     [RelayCommand]
     private async Task CheckUpdateAsync() => await CheckForUpdatesAsync();
+
+    /// <summary>Silent background check after launch and every six hours (review: auto update).</summary>
+    public void BeginBackgroundUpdateCheck()
+    {
+        if (!Settings.AutoCheckUpdates) return;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30));
+                while (true)
+                {
+                    try
+                    {
+                        var report = await CheckForUpdatesAsync();
+                        if (report.Available)
+                            Dispatcher.UIThread.Post(() => SetStatus($"发现新版本 {report.LatestVersion}，可在设置中更新。"));
+                    }
+                    catch
+                    {
+                        // Offline or rate-limited: automatic checks stay silent.
+                    }
+                    await Task.Delay(TimeSpan.FromHours(6));
+                }
+            }
+            catch
+            {
+                // The background loop must never take the app down.
+            }
+        });
+    }
 
     public static string UpdateBackupRoot => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NextThought", "UpdateBackups");
