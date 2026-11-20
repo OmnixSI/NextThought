@@ -143,7 +143,7 @@
           <TextBox Text="{Binding Settings.CloudSttModel}" PlaceholderText="模型（留空用默认）" />
           <ComboBox ItemsSource="{Binding Settings.CloudSttLanguages}" SelectedItem="{Binding Settings.SelectedCloudLanguage}"
                     Width="160" HorizontalAlignment="Left" />
-          <TextBlock Text="选云端后，导入 WAV 走云端识别；实时记录仍用本机。音频会发送到所选服务。"
+          <TextBlock Text="选云端后，实时记录与导入 WAV 都走云端识别；音频会发送到所选服务。只选本机时，录音与识别都在本机。"
                      Classes="caption" FontSize="11" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
@@ -259,7 +259,7 @@
                       SelectedItem="{Binding Settings.SelectedSlidesScreen}" MinWidth="240" />
           </StackPanel>
           <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11" />
-          <TextBlock Text="开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。幻灯片自动翻页识别（LiveInsights 页面匹配）尚未移植。"
+          <TextBlock Text="开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。已支持按讲话标题和截图 OCR 跟页；持续屏幕观察尚未移植。"
                      Classes="caption" FontSize="11" />
         </StackPanel>
       </Border>

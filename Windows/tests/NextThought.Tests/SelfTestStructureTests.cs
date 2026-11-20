@@ -194,6 +194,15 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CloudSttSettingsTextMatchesBehavior()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        Assert.Contains("实时记录与导入 WAV 都走云端识别", xaml);
+        Assert.DoesNotContain("实时记录仍用本机", xaml);
+    }
+
     [Fact]
     public void CloudSttKeyIsNotErasedAfterReadFailure()
     {
