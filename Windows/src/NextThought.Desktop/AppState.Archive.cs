@@ -26,34 +26,27 @@ public partial class AppState
 
     partial void OnCurrentSessionChanged(SessionMeta? value) { OnPropertyChanged(nameof(StatsText)); OnPropertyChanged(nameof(HasSelectedHistory)); }
 
-    public void RefreshHistory(Guid? select = null)
-    {
-        var list = Sessions.List();
-        History.Clear();
-        foreach (var item in list) History.Add(new RecentMeetingRow(item));
-        if (select is { } id)
-        {
-            var match = list.FirstOrDefault(x => x.Id == id);
-            if (match is not null) CurrentSession ??= match;
-        }
-        HomeRecent.Clear();
-        foreach (var item in list.Take(5)) HomeRecent.Add(new RecentMeetingRow(item));
-        OnPropertyChanged(nameof(IsHistoryEmpty));
-        ApplyHistoryFilter();
-    }
-
+    /// <summary>F20: refreshing the list never waits for the session lock on the UI thread.</summary>
+    public void RefreshHistory(Guid? select = null) => _ = RefreshHistoryAsync(select);
 
     /// <summary>F20: read the meeting list off the UI thread, then update the history on it.</summary>
     public async Task RefreshHistoryAsync(Guid? select = null)
     {
-        var list = await Task.Run(() => Sessions.List());
-        History.Clear();
-        foreach (var item in list) History.Add(new RecentMeetingRow(item));
-        if (select is { } id && list.FirstOrDefault(x => x.Id == id) is { } match) CurrentSession ??= match;
-        HomeRecent.Clear();
-        foreach (var item in list.Take(5)) HomeRecent.Add(new RecentMeetingRow(item));
-        OnPropertyChanged(nameof(IsHistoryEmpty));
-        ApplyHistoryFilter();
+        try
+        {
+            var list = await Task.Run(() => Sessions.List());
+            History.Clear();
+            foreach (var item in list) History.Add(new RecentMeetingRow(item));
+            if (select is { } id && list.FirstOrDefault(x => x.Id == id) is { } match) CurrentSession ??= match;
+            HomeRecent.Clear();
+            foreach (var item in list.Take(5)) HomeRecent.Add(new RecentMeetingRow(item));
+            OnPropertyChanged(nameof(IsHistoryEmpty));
+            ApplyHistoryFilter();
+        }
+        catch (Exception ex)
+        {
+            SetStatus("读取会议列表失败：" + ex.Message, true);
+        }
     }
 
     partial void OnHistoryLengthFilterChanged(string value) => ApplyHistoryFilter();

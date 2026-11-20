@@ -123,6 +123,8 @@ public sealed record ContextDocument
     /// <summary>Opaque Mac DocumentContent (pipeline + blocks); kept verbatim for round-trips.</summary>
     public System.Text.Json.JsonElement? Content { get; init; }
 
+    /// <summary>Mac's ContextDocument has this computed property outside CodingKeys: never written to context.json.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public int CharacterCount => Pages.Sum(page => page.Length);
 }
 

@@ -110,7 +110,9 @@ public partial class AppState
         {
             var planSeries = SelectedSeries is { } selectedSeriesRow ? workspace.Find(selectedSeriesRow.Id)
                 : CurrentSession is { } currentMeta ? workspace.SeriesOfSession(currentMeta.Id.ToString()) : null;
-            BeginPreparedMeeting(planSeries);
+            // F20: the plan may read the previous meeting's transcript when 带入上一场转写 is on;
+            // keep that file read off the UI thread like the context snapshot below.
+            await Task.Run(() => BeginPreparedMeeting(planSeries));
             var sceneDefaults = SceneDefaultsFor(SelectedMode);
             Settings.AutomaticAnswers = sceneDefaults.LiveMode == "自动回答";
             Settings.SelectedCueWidth = Settings.CueWidthChoices.FirstOrDefault(choice =>

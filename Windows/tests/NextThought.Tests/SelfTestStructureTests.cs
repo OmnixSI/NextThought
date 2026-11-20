@@ -255,6 +255,8 @@ public sealed class SelfTestStructureTests
     {
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
         Assert.Contains("RefreshHistoryAsync", state);
+        Assert.Contains("public void RefreshHistory(Guid? select = null) => _ = RefreshHistoryAsync(select);", state);
+        Assert.DoesNotContain("var list = Sessions.List();", state);
         var startup = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.cs"));
         Assert.Contains("_ = RefreshHistoryAsync()", startup);
     }
@@ -272,6 +274,15 @@ public sealed class SelfTestStructureTests
         var update = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Update.cs"));
         Assert.Contains("PrefetchInstallerAsync", update);
         Assert.Contains("prefetchedInstaller", update);
+        // F16: the check kicks off the background download, and the button waits for it.
+        Assert.Contains("_ = StartInstallerPrefetch(report)", update);
+        Assert.Contains("UpdateInstallerReady", update);
+        Assert.Contains("UpdateInstaller.PrepareAsync", update);
+        Assert.Contains("UpdateInstaller.VerifyAsync", update);
+        Assert.Contains("Dispatcher.UIThread.InvokeAsync", update);
+        var helper = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "UpdateInstaller.cs"));
+        Assert.Contains("UpdateChecksums.Verify", helper);
+        Assert.Contains("SHA-256", helper);
     }
 
     [Fact]
@@ -287,15 +298,29 @@ public sealed class SelfTestStructureTests
     {
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
         Assert.Contains("Task.Run(() => new SessionContextSnapshot", live);
+        // F20: the prepared plan may read the previous meeting's transcript; that read is off the UI thread too.
+        Assert.Contains("await Task.Run(() => BeginPreparedMeeting(planSeries))", live);
     }
 
     [Fact]
     public void ExitWaitsForShutdownWithATimeout()
     {
         var window = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml.cs"));
-        Assert.Contains("ShutdownAsync().WaitAsync", window);
+        Assert.Contains("e.Cancel = true;", window);
+        // Closing while recording goes to the tray (the meeting keeps running); only a real exit waits.
+        Assert.Contains("if (state.Recording && !ExitRequested)", window);
+        Assert.Contains("ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(15))", window);
         var app = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "App.axaml.cs"));
         Assert.Contains("ShutdownRequested", app);
+        Assert.Contains("args.Cancel = true", app);
+        Assert.Contains("state.AllowClose", app);
+        // Ending a meeting also waits for every pending write before meta is closed out.
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        var stop = live.IndexOf("private async Task StopRecordingCoreAsync", StringComparison.Ordinal);
+        Assert.True(stop >= 0);
+        var stopBody = live[stop..Math.Min(live.Length, stop + 2600)];
+        Assert.Contains("await Task.WhenAll(writes.ToArray())", stopBody);
+        Assert.Contains("await Sessions.EndAsync(meta)", stopBody);
     }
 
     [Fact]
@@ -304,6 +329,9 @@ public sealed class SelfTestStructureTests
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
         Assert.Contains("重启以更新", xaml);
         Assert.Contains("CanInstallUpdateInApp", xaml);
+        // F16: Updater.phase == .ready — the button only appears once the download finished.
+        var update = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Update.cs"));
+        Assert.Contains("UpdateInstallerReady && !InstallingUpdate", update);
     }
 
     [Fact]
@@ -311,9 +339,12 @@ public sealed class SelfTestStructureTests
     {
         var catalog = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Core", "UpdateCatalog.cs"));
         Assert.Contains("ManifestAsset", catalog);
-        var feed = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "UpdateFeed.cs"));
-        Assert.Contains("UpdateManifest.Decode", feed);
-        Assert.Contains("UpdateCatalog.IsNewer(manifest", feed);
+        var check = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "UpdateCheck.cs"));
+        Assert.Contains("UpdateManifest.Decode", check);
+        Assert.Contains("UpdateCatalog.IsNewer(manifest", check);
+        Assert.Contains("ManifestAsset", check);
+        // Updater.check: the manifest must name this release before it decides anything.
+        Assert.Contains("Describes(manifest, candidate)", check);
     }
 
     [Fact]

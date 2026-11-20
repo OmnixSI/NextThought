@@ -816,7 +816,8 @@ public partial class AppState
             Sources.Clear();
             foreach (var source in data.Answers.LastOrDefault()?.Sources ?? []) Sources.Add(source);
             RetrievalInfo = data.Answers.LastOrDefault()?.Sources?.Count > 0 ? "历史回答的引用已保存，可查看来源。" : "";
-            LoadSessionScreenshots(data.Meta.Id);
+            await LoadSessionScreenshotsAsync(data.Meta.Id);
+            if (generation != selectionEpoch) return;
             LoadNotesEditor();
             SelectedSessionAnswers.Clear();
             CurrentAnswerHistory.Clear();
