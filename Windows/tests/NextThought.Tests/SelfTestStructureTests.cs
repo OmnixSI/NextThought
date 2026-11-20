@@ -154,6 +154,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LivePageHasScreenshotCard()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("CurrentScreenshots", xaml);
+        Assert.Contains("截图", xaml);
+        var archive = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Archive.cs"));
+        Assert.Contains("CurrentScreenshots.Add", archive);
+    }
+
     [Fact]
     public void LiveCandidateShowsConfidence()
     {

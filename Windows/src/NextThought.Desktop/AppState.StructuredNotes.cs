@@ -438,6 +438,8 @@ public partial class AppState
         RefreshSeries();
         Sources.Clear();
         CurrentAnswerHistory.Clear();
+        foreach (var shot in CurrentScreenshots) shot.Dispose();
+        CurrentScreenshots.Clear();
         Sources.Add(new SourceCitation("监测方案 v3 · 第 2 页", "demo-scheme", "监测方案 v3.pdf", "demo",
             "第 2 页 · 3.1", "支座刚度的取值需要通过敏感性分析标定。", 2));
         Sources.Add(new SourceCitation("温度补偿记录 · 第 1 页", "demo-notes", "温度补偿记录.docx", "demo",

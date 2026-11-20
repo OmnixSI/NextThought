@@ -105,12 +105,15 @@ public partial class AppState
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private int selectedSessionScreenshotCount;
 
+    public System.Collections.ObjectModel.ObservableCollection<Avalonia.Media.Imaging.Bitmap> CurrentScreenshots { get; } = [];
+
     public async Task ArchiveScreenshotAsync(string path)
     {
         if (CurrentSession is not { } meta) return;
         try
         {
             await Sessions.SaveScreenshotAsync(meta.Id, path);
+            try { CurrentScreenshots.Add(new Avalonia.Media.Imaging.Bitmap(path)); } catch { }
             LoadSessionScreenshots(meta.Id);
         }
         catch { }
