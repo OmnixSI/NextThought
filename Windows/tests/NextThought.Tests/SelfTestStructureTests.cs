@@ -80,6 +80,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareTranscriptCarryAttachesPreviousMeeting()
+    {
+        var prepare = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
+        Assert.Contains("PreviousTranscriptContext", prepare);
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("PreparedDocuments()", live);
+    }
+
     [Fact]
     public void PrepareCarrySwitchesGateMeetingContext()
     {

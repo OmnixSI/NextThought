@@ -102,13 +102,7 @@ public partial class AppState
                 Preferences = "",
                 Profile = "",
                 EffectiveMode = meta.Mode,
-                Documents = Library.DocumentsForRetrieval().Select(document => new ContextDocument
-                {
-                    Id = document.Id,
-                    Name = document.Name,
-                    Pages = document.Blocks.Select(block => block.Text).ToList(),
-                    Enabled = true
-                }).ToList(),
+                Documents = PreparedDocuments(),
                 Glossary = glossary
             };
             await Sessions.CreateAsync(meta, context);
@@ -362,6 +356,21 @@ public partial class AppState
         if (settings.UseCodex) return new("https://codex.local", settings.CodexModel.Length > 0 ? settings.CodexModel : "default", "");
         return new(settings.BaseUrl, notes && settings.NotesModel.Length > 0 ? settings.NotesModel : settings.Model, Settings.ApiKey.Trim(), settings.ReasoningEffort);
     }
+
+
+    private IReadOnlyList<ContextDocument> PreparedDocuments()
+    {
+        var documents = Library.DocumentsForRetrieval().Select(document => new ContextDocument
+        {
+            Id = document.Id,
+            Name = document.Name,
+            Pages = document.Blocks.Select(block => block.Text).ToList(),
+            Enabled = true
+        }).ToList();
+        if (PreviousTranscriptContext() is { } previous) documents.Add(previous);
+        return documents;
+    }
+
 
     public IAnswerClient CurrentClient() => Settings.UseCodex ? new CodexAnswerClient() : Api;
 
