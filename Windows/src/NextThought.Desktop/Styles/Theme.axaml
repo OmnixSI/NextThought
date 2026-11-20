@@ -85,7 +85,11 @@
       <CornerRadius x:Key="RadiusMedium">14</CornerRadius>
       <CornerRadius x:Key="RadiusLarge">22</CornerRadius>
 
-      <!-- D4 spacing/size resources: every numeric Margin/Padding/Spacing/CornerRadius in Views. -->
+      <!-- D4 spacing/size resources:
+      <Thickness x:Key="D4Padding_13_5">13,5</Thickness>
+      <Thickness x:Key="D4Margin_0_0_4_4">0,0,4,4</Thickness>
+      <CornerRadius x:Key="D4CornerRadius_14">14</CornerRadius>
+ every numeric Margin/Padding/Spacing/CornerRadius in Views. -->
       <CornerRadius x:Key="D4CornerRadius_10">10</CornerRadius>
       <CornerRadius x:Key="D4CornerRadius_16">16</CornerRadius>
       <CornerRadius x:Key="D4CornerRadius_18">18</CornerRadius>

@@ -18,53 +18,48 @@
 
       <!-- Next meeting -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_24}">
-        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="下一场会议" Classes="overline" />
-            <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="{DynamicResource D4Padding_0}"
-                     FontFamily="{StaticResource SerifFamily}" FontSize="24" FontWeight="Medium" MinHeight="36" />
-            <TextBlock Text="{Binding AudioSourceText}" Classes="caption" />
-            <!-- 九个场景：一个场景就是一次选择，提示样式与教练规则跟着它走 -->
-            <ItemsControl ItemsSource="{Binding Scenes}" Margin="{DynamicResource D4Margin_0_8_0_0}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="local:SceneChoice">
-                  <Button Classes="scene" Tag="{Binding}" Click="Scene_Click" Margin="{DynamicResource D4Margin_0_0_6_6}"
-                          ToolTip.Tip="{Binding Promise}">
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                      <controls:SceneGlyph Mode="{Binding Mode}" Size="18" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding Title}" FontSize="12" />
-                    </StackPanel>
-                  </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <TextBlock Text="{Binding SceneSummary}" Classes="caption" FontSize="11" />
-          </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Bottom">
-            <Button Content="导入 WAV" Command="{Binding ImportWaveCommand}" />
-            <Button Classes="primary" Command="{Binding StartRecordingCommand}"
-                    MinHeight="40" Padding="{DynamicResource D4Padding_20_0}" FontSize="14">
-          <TextBlock Text="开始记录" Foreground="{DynamicResource OnInk}" />
-        </Button>
-          </StackPanel>
-          <Border Grid.Row="1" Grid.ColumnSpan="2" Margin="{DynamicResource D4Margin_0_18_0_0}" BorderBrush="{DynamicResource Hairline}"
-                  BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_0_14_0_0}">
-            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_18}">
-              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
-                <Border Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}" VerticalAlignment="Center"
-                        Background="{DynamicResource Ready}" />
-                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" />
-              </StackPanel>
-              <TextBlock Text="{Binding Status}" Classes="caption" TextTrimming="CharacterEllipsis" MaxWidth="460" />
-            </StackPanel>
-          </Border>
-        </Grid>
+        <StackPanel Spacing="{DynamicResource D4Spacing_16}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="44" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0"
+                     Padding="{DynamicResource D4Padding_0}" FontFamily="{StaticResource SerifFamily}" FontSize="24"
+                     FontWeight="Medium" MinHeight="36" VerticalAlignment="Center"
+                     Watermark="给这场会起个名字，比如“字节二面”" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding Scenes}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SceneChoice">
+                <Button Classes="scene" Tag="{Binding}" Click="Scene_Click"
+                        Margin="{DynamicResource D4Margin_0_0_4_4}" ToolTip.Tip="{Binding Promise}">
+                  <TextBlock Text="{Binding Title}" FontSize="13" />
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="{Binding SelectedScene.Promise}" Classes="section" />
+          <ItemsControl ItemsSource="{Binding SelectedScene.Moments}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_0_2_0_0}">
+                  <TextBlock Text="•" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                  <TextBlock Text="{Binding}" Classes="caption" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <TextBlock Text="⌘⇧N 不挑场合，立即记录" Classes="caption" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="先准备资料" Command="{Binding NavigateCommand}" CommandParameter="Live" />
+            <Button Grid.Column="2" Classes="primary" Content="开始" Command="{Binding StartRecordingCommand}" />
+          </Grid>
+        </StackPanel>
       </Border>
+      <TextBlock Text="{Binding AudioSourceText}" Classes="caption" />
 
       <!-- Capability cards -->
       <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
