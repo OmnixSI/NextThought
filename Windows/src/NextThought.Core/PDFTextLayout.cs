@@ -136,7 +136,7 @@ public static class PDFTextLayout
     }
 
     /// <summary>Joins a wrapped line: no space inside Chinese, the hyphen of a broken word removed.</summary>
-    internal static string Join(string head, string tail)
+    public static string Join(string head, string tail)
     {
         if (head.Length == 0) return tail;
         if (tail.Length == 0) return head;
@@ -169,7 +169,7 @@ public static class PDFTextLayout
     }
 
     /// <summary>"3.2 Research questions" → level 3; "Abstract" → level 2. Null unless it can only be a title.</summary>
-    internal static (int Level, string Title)? Heading(string line, string? next, bool numbered = true)
+    public static (int Level, string Title)? Heading(string line, string? next, bool numbered = true)
     {
         if (line.Length > 90) return null;
         if (Named.Contains(line.Trim(' ', ':', '：', '.').ToLowerInvariant())) return (2, line);

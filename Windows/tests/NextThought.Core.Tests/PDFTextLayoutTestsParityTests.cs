@@ -86,18 +86,17 @@ public sealed class PDFTextLayoutTestsParityTests
         Assert.Equal(slide, PDFTextLayout.Markdown(slide));
     }
 
-    [Fact(Skip = "missing API: PDFTextLayout.Heading (internal in NextThought.Core; the test assembly cannot call it)")]
+    [Fact]
     public void OnlyRealTitlesBecomeHeadings()
     {
-        // Source expectations (LaTeXMathTests/PDFTextLayoutTests.swift):
-        //   heading("3.2 Research questions", next: "The questions are") != nil
-        //   heading("Abstract", next: nil)?.level == 2
-        //   heading("参考文献", next: nil) != nil
-        //   heading("3.2 Research questions … 11", next: nil) == nil
-        //   heading("5 GHz was used in all of the experiments.", next: nil) == nil
-        //   heading("3 12.5 45.1 0.92", next: nil) == nil
-        //   heading("28 GHz paths are easily blocked", next: "and reflected") == nil
-        //   heading("2026 Annual Review", next: nil) == nil
+        Assert.NotNull(PDFTextLayout.Heading("3.2 Research questions", "The questions are"));
+        Assert.Equal(2, PDFTextLayout.Heading("Abstract", null)?.Level);
+        Assert.NotNull(PDFTextLayout.Heading("\u53c2\u8003\u6587\u732e", null));
+        Assert.Null(PDFTextLayout.Heading("3.2 Research questions \u2026 11", null));
+        Assert.Null(PDFTextLayout.Heading("5 GHz was used in all of the experiments.", null));
+        Assert.Null(PDFTextLayout.Heading("3 12.5 45.1 0.92", null));
+        Assert.Null(PDFTextLayout.Heading("28 GHz paths are easily blocked", "and reflected"));
+        Assert.Null(PDFTextLayout.Heading("2026 Annual Review", null));
     }
 
     [Fact]
@@ -118,13 +117,15 @@ public sealed class PDFTextLayoutTestsParityTests
         Assert.Null(PDFTextLayout.JournalHeading("I. Smith", null));
     }
 
-    [Fact(Skip = "missing API: PDFTextLayout.Join (internal in NextThought.Core; the test assembly cannot call it)")]
+    [Fact]
     public void ChineseLinesJoinWithoutSpaces()
     {
-        // Source expectations (PDFTextLayoutTests.swift):
-        //   join("这一页看部署条件越差，我们的收", "益越大。") == "这一页看部署条件越差，我们的收益越大。"
-        //   join("learned from", "service pilots") == "learned from service pilots"
-        //   isPageNumber("12") && isPageNumber("Page 3 of 20") && isPageNumber("- 7 -")
-        //   !isPageNumber("2026 results")
+        Assert.Equal("\u8fd9\u4e00\u9875\u770b\u90e8\u7f72\u6761\u4ef6\u8d8a\u5dee\uff0c\u6211\u4eec\u7684\u6536\u76ca\u8d8a\u5927\u3002",
+            PDFTextLayout.Join("\u8fd9\u4e00\u9875\u770b\u90e8\u7f72\u6761\u4ef6\u8d8a\u5dee\uff0c\u6211\u4eec\u7684\u6536", "\u76ca\u8d8a\u5927\u3002"));
+        Assert.Equal("learned from service pilots", PDFTextLayout.Join("learned from", "service pilots"));
+        Assert.True(PDFTextLayout.IsPageNumber("12"));
+        Assert.True(PDFTextLayout.IsPageNumber("Page 3 of 20"));
+        Assert.True(PDFTextLayout.IsPageNumber("- 7 -"));
+        Assert.False(PDFTextLayout.IsPageNumber("2026 results"));
     }
 }

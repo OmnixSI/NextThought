@@ -176,11 +176,11 @@ python Windows/scripts/core_usage.py
 | CompanionCryptoTests.swift | 2 | 2 |
 | DocumentDependencyTests.swift | 2 | 2 |
 | DocumentFeatureAvailabilityTests.swift | 1 | 1 |
-| DocumentJobTests.swift | 6 | 0 |
-| DocumentNoticeTests.swift | 11 | 0 |
+| DocumentJobTests.swift | 6 | 6 |
+| DocumentNoticeTests.swift | 11 | 11 |
 | DocumentStructureTests.swift | 5 | 5 |
 | EchoSuppressionTests.swift | 7 | 7 |
-| GlossaryTests.swift | 18 | 0 |
+| GlossaryTests.swift | 18 | 18 |
 | LaTeXMathTests.swift | 13 | 13 |
 | LiveInsightsTests.swift | 24 | 1 |
 | LiveTranslationRevisionGateTests.swift | 5 | 5 |
@@ -205,7 +205,7 @@ python Windows/scripts/core_usage.py
 | RealtimeSetupReadinessTests.swift | 8 | 8 |
 | SceneAndGazeTests.swift | 20 | 1 |
 | ScreenDeltaTests.swift | 1 | 1 |
-| ScreenEvidenceTests.swift | 5 | 1 |
+| ScreenEvidenceTests.swift | 5 | 5 |
 | ScrollFollowStateTests.swift | 8 | 8 |
 | SeriesBriefingTests.swift | 12 | 0 |
 | SessionArchivePersistenceTests.swift | 21 | 0 |
@@ -222,14 +222,14 @@ python Windows/scripts/core_usage.py
 | StructuredNotesTests.swift | 31 | 0 |
 | SubtitleBarTests.swift | 24 | 24 |
 | TranscriptContextBuilderTests.swift | 1 | 1 |
-| TranscriptDeduplicatorTests.swift | 3 | 0 |
-| UpdateCatalogTests.swift | 6 | 0 |
+| TranscriptDeduplicatorTests.swift | 3 | 3 |
+| UpdateCatalogTests.swift | 6 | 6 |
 | VoiceActivitySegmenterTests.swift | 7 | 7 |
 | VoiceProfileTests.swift | 16 | 0 |
 | WebLookupPromptBuilderTests.swift | 3 | 3 |
 | WebSearchNeedTests.swift | 4 | 4 |
 | WorkspaceDeletionTransactionTests.swift | 5 | 5 |
 | WorkspaceTests.swift | 39 | 1 |
-| ZipformerStreamingIntegrationTests.swift | 1 | 0 |
+| ZipformerStreamingIntegrationTests.swift | 1 | 1 |
 
 复算：`Select-String -Path "$b\Tests\NextThoughtCoreTests\*.swift" -Pattern '^\s*@Test' | Measure-Object`；逐行数字见上表。
