@@ -44,8 +44,11 @@
 ## E10 看镜头
 
 - 决定：批准使用摄像头，但放到最后一批；不接受「手动校准占位」。
-- 动手前先回答模型问题：列出打算使用的 ONNX 关键点模型，写明来源、许可证、文件大小、输出关键点是否包含眼眶和瞳孔、如何随包分发。写完继续做别的任务，等答复后再实现。
-- 得到答复后：Windows.Media.Capture 帧读取器 640×480；帧只在内存；设置项「留意眼神是否离开镜头（使用摄像头）」默认关闭并带灵敏度；校准流程和最少帧数照 Mac `LiveCoach.swift`、`SettingsPresenter.swift`、Core `GazeEstimator.swift`。
+- 模型方案（待答复）：
+  - 首选：MediaPipe Face Landmarker（`face_landmarker.task`），Apache-2.0，约 3.7 MB，输出 478 个 3D 关键点；其中 468–477 为虹膜/瞳孔点，33–133 为眼睛轮廓，满足 `GazeEstimator` 需要的眼眶与瞳孔输入。来源：Google MediaPipe 官方模型卡；随包分发时附 Apache-2.0 NOTICE。运行时现有 `Microsoft.ML.OnnxRuntime`，需要把 `.task` 的 TFLite 图转换成 ONNX（tf2onnx），转换脚本和期望 SHA-256 放进 `Windows/tools/`，模型文件按现有模型清单校验后分发。
+  - 备选：MediaPipe Iris（`iris_landmark.tflite`）+ BlazeFace 人脸检测，Apache-2.0，合计约 2 MB，虹膜模型输出 71 个关键点（含瞳孔/虹膜和眼睛轮廓）。同样需要 TFLite→ONNX。
+  - 不选：InsightFace 2D106（无虹膜点）、OpenCV Haar（只有人脸框）、dlib 68（无瞳孔）。
+- 需要确认：是否接受 MediaPipe 模型随包分发、是否允许引入 TFLite→ONNX 的转换产物；确认后按 Mac `LiveCoach.swift` 的 `requestCameraAndWatch`、`calibrate`、`GazeCamera`、`SettingsPresenter.swift`、Core `GazeEstimator.swift` 实现，Windows.Media.Capture 640×480，帧只在内存，设置默认关闭并带灵敏度。
 - 状态：等待模型方案答复。
 
 ## E12 我的声音
