@@ -120,15 +120,24 @@
     </Border>
       </TabItem>
       <TabItem Header="{loc:Tr 转写}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding Transcript}" Margin="{DynamicResource D4Margin_22}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:TranscriptRow">
-                <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_8}" />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
+        <Grid RowDefinitions="Auto,*">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                      Margin="{DynamicResource D4Margin_22_12_22_0}">
+            <Button Content="{loc:Tr 校正原话}" Command="{Binding OpenCorrectedTranscriptCommand}"
+                    ToolTip.Tip="{loc:Tr 查看校正转写}" />
+            <TextBlock Text="{Binding CorrectedTranscriptStatus}" Classes="caption" FontSize="11"
+                       VerticalAlignment="Center" IsVisible="{Binding HasCorrectedTranscriptStatus}" />
+          </StackPanel>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Transcript}" Margin="{DynamicResource D4Margin_22}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:TranscriptRow">
+                  <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_8}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
       </TabItem>
       <TabItem Header="{loc:Tr 回答}">
         <ScrollViewer VerticalScrollBarVisibility="Auto">

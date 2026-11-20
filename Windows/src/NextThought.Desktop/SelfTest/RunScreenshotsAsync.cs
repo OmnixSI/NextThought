@@ -57,6 +57,16 @@ public partial class MainWindow
                                 await Task.Delay(120);
                                 await CaptureWindowAsync(directory, textDirectory, tabNames[index] + suffix, english, englishInventory);
                             }
+                            // E17: 校正原话 (CorrectedTranscript) — corrected/original transcript with per-line undo.
+                            state.RefreshCorrectedTranscript();
+                            var correctedWindow = new CorrectedTranscript { DataContext = state };
+                            correctedWindow.Show();
+                            await Task.Delay(200);
+                            var correctedName = "corrected-transcript" + suffix;
+                            CaptureVisual(correctedWindow, Path.Combine(directory, correctedName));
+                            var correctedRows = await WriteInventoryAsync(correctedWindow, textDirectory, correctedName);
+                            if (english) englishInventory[correctedName] = correctedRows;
+                            correctedWindow.Close();
                         }
                         if (section == AppSection.Settings && this.FindControl<SettingsView>("SettingsOverlay") is { } settings)
                         {
