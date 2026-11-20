@@ -1,3 +1,10 @@
+## 2026-11-20 · 0.5.145 · A1
+改动：`SessionUserContentStore`、`SkillStore`、`NotesTemplateStore` 改用 `JsonDefaults.ArchiveOptions`；`summary.json` 的 `generatedAt` 与恢复标记改为 `yyyy-MM-ddTHH:mm:ssZ`；结构化纪要载荷改用 ArchiveOptions；新增 `ArchiveDateTests`。
+测试：Core **868/868**，NextThought.Tests **122/122**；新翻译 Swift 测试 0。
+状态：A1「已实现、未验证」。
+证据：`ArchiveDateTests.ArchiveDatesAreUtcWholeSecondsWithZ`。
+未解决：A2–A5 尚未开始。
+
 ## 2026-11-20 · 0.5.145 · B1、B2
 改动：
 - B1 `Workspace.cs`：Load 记录读失败的系列文件并写 `Workspace/workspace-load.log`；Save 只删除成功读过且用户移除的系列文件，读失败/未知文件保留；系列与 legacy 都改为临时文件替换；整目录读失败后 Save 拒绝覆盖。

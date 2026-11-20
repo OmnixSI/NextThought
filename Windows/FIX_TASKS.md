@@ -22,6 +22,7 @@ Nov 20, 2026 · @Homing
 | 0-9 | 已实现、未验证 | `Windows/UPSTREAM` |
 | B1 | 已实现、未验证 | Workspace 读取失败保留、原子写；回归测试 |
 | B2 | 已实现、未验证 | Glossary 导出/解析按 Mac；往返测试 |
+| A1 | 已实现、未验证 | 归档日期统一为 UTC 秒 + Z；ArchiveDateTests |
 
 ## 1. ⽬标与范围 
 
