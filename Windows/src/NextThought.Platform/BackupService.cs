@@ -20,7 +20,10 @@ public sealed class BackupService(AppPaths paths)
             var sessions = new SessionStore(paths); var records = sessions.List();
             foreach (var meta in records) { if (meta.EndedAt is null) throw new IOException("请先结束会议再备份。"); leases.Add(sessions.AcquireLease(meta.Id)); }
             var files = PortableDirectories.SelectMany(name => SafeFiles(Path.Combine(paths.Root, name)))
-                .Where(f => !f.EndsWith(".active.lock", StringComparison.OrdinalIgnoreCase) && !Path.GetRelativePath(paths.Root, f).Split(Path.DirectorySeparatorChar).Any(n => n.StartsWith('.'))).ToList();
+                .Where(f => !f.EndsWith(".active.lock", StringComparison.OrdinalIgnoreCase) && !Path.GetRelativePath(paths.Root, f).Split(Path.DirectorySeparatorChar).Any(n => n.StartsWith('.')))
+                // A12: Windows-only derivations never enter a Mac-readable backup.
+                .Where(f => !IsWindowsOnlyBackupFile(Path.GetFileName(f)))
+                .ToList();
             // Settings and the glossary are part of a full backup; API keys live in DPAPI and never enter it.
             var settingsFile = Path.Combine(paths.Root, "settings.json");
             if (File.Exists(settingsFile)) files.Add(settingsFile);
@@ -58,6 +61,13 @@ public sealed class BackupService(AppPaths paths)
         }
         finally { foreach (var lease in leases) lease.Dispose(); if (File.Exists(temporary)) File.Delete(temporary); }
     }
+    private static bool IsWindowsOnlyBackupFile(string name) =>
+        name.StartsWith("structured-", StringComparison.OrdinalIgnoreCase)
+            ? name.EndsWith(".md", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+            : name.Equals("corrections.json", StringComparison.OrdinalIgnoreCase)
+              || name.Equals("summary-job.json", StringComparison.OrdinalIgnoreCase)
+              || name.EndsWith(".bak", StringComparison.OrdinalIgnoreCase);
+
     private static IEnumerable<string> SafeFiles(string directory)
     {
         if (!Directory.Exists(directory)) yield break;

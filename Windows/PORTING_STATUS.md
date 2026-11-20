@@ -1,3 +1,8 @@
+## 2026-11-20 · 0.5.145 · A12
+改动：`settings.plist` 写出全部 `SettingsSnapshot.ExportedKeys`（类型分 bool/real/integer/array/dict），XML 声明与 DOCTYPE、`webSearchMode` 改 `off`/`auto`；导出排除 Windows 独有 `structured-*`、`corrections.json`、`summary-job.json`、`*.bak`；新增两项测试。
+测试：Core **1522/1522**，NextThought.Tests **263/263**。
+状态：A12「已实现、未验证」；需 Swift check 工具逐文件验证，资料目录与会话数算法待对照。
+
 ## 2026-11-20 · 0.5.145 · A11
 改动：移植 Swift 的长度前缀 SHA-256 摘要与日期 bitPattern；`transcriptSourceRevision`/`structuredNotesRevision`/`claimFingerprint` 按 Swift 字段顺序、UUID 大写、kind camelCase 重算；新增 3 项算法回归测试。
 测试：Core **1522/1522**，NextThought.Tests **261/261**。

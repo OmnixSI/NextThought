@@ -10,29 +10,131 @@ namespace NextThought.Platform;
 /// </summary>
 public static class MacSettingsPlist
 {
+    private static readonly HashSet<string> BoolKeys =
+    [
+        "apiVisionEnabled", "verifyUncertainWithModel", "automaticAnswers", "recordSessions", "autoSummarize",
+        "autoCollectKnowledgeCandidates", "autoApplyLessons", "secondPassEnabled", "cloudConsent", "echoSuppression",
+        "microphoneVoiceProcessing", "microphoneEnabled", "capturePrivacy", "keepOnTop", "reducedEffects",
+        "automaticUpdateChecks", "autoBackup", "advancedSettingsEnabled", "insightScreenWatch", "insightFollowSlides",
+        "insightAnswerProgress", "documentProviderWasSelected", "ocrFallbackToVision", "semanticRetrievalEnabled",
+        "coachEnabled", "coachWatchesGaze", "cueAlwaysOpen", "cueLauncher", "cueAvoidsSharing", "keepRecognizerWarm"
+    ];
+
+    private static readonly HashSet<string> RealKeys =
+        ["teleprompterOpacity", "teleprompterFontSize", "insightScreenInterval", "coachGazeSensitivity", "codexOCRTimeout"];
+
+    private static readonly HashSet<string> ArrayKeys =
+        ["apiPresets", "globalSkillIDs", "pinnedWorkspaceIDs", "customNotesTemplates", "customShortcuts",
+         "notesTemplateByType", "sceneOverrides", "projectLibrarySort", "assistantLayout"];
+
+    /// <summary>A12: every SettingsSnapshot.exportedKeys entry, in the Mac settings.plist shape.</summary>
     public static byte[] Write(AppSettings settings)
     {
-        var values = new List<(string Key, string Type, string Value)>
+        var values = new Dictionary<string, (string Type, string Value)>(StringComparer.Ordinal)
         {
-            ("apiBaseURL", "string", settings.BaseUrl),
-            ("apiModel", "string", settings.Model),
-            ("notesModelID", "string", settings.NotesModel),
-            ("localStreamingModel", "string", settings.LocalModel),
-            ("secondPassEnabled", "bool", settings.SecondPass ? "true" : "false"),
-            ("microphoneEnabled", "bool", settings.CaptureMicrophone ? "true" : "false"),
-            ("automaticAnswers", "bool", settings.AutomaticAnswers ? "true" : "false"),
-            ("autoSummarize", "bool", settings.AutoSummarize ? "true" : "false"),
-            ("semanticRetrievalEnabled", "bool", settings.UseSemanticRetrieval ? "true" : "false"),
-            ("webSearchMode", "string", settings.WebSearch ? "automatic" : "off"),
-            ("codexModelID", "string", settings.CodexModel),
+            ["apiBaseURL"] = ("string", settings.BaseUrl),
+            ["apiModel"] = ("string", settings.Model),
+            ["answerBackend"] = ("string", settings.UseCodex ? "codex" : "api"),
+            ["codexModelID"] = ("string", settings.CodexModel),
+            ["codexReasoning"] = ("string", settings.ReasoningEffort),
+            ["automaticAnswers"] = ("bool", settings.AutomaticAnswers ? "true" : "false"),
+            ["recordSessions"] = ("bool", "true"),
+            ["autoSummarize"] = ("bool", settings.AutoSummarize ? "true" : "false"),
+            ["autoCollectKnowledgeCandidates"] = ("bool", "true"),
+            ["autoApplyLessons"] = ("bool", "true"),
+            ["transcriptionBackend"] = ("string", "local"),
+            ["localStreamingModel"] = ("string", settings.LocalModel),
+            ["secondPassEnabled"] = ("bool", settings.SecondPass ? "true" : "false"),
+            ["recognitionLanguage"] = ("string", settings.Language),
+            ["recognitionVocabulary"] = ("string", settings.Vocabulary),
+            ["cloudProvider"] = ("string", ""),
+            ["cloudModel"] = ("string", ""),
+            ["cloudConsent"] = ("bool", "false"),
+            ["echoSuppression"] = ("bool", "false"),
+            ["microphoneVoiceProcessing"] = ("bool", "false"),
+            ["microphoneEnabled"] = ("bool", settings.CaptureMicrophone ? "true" : "false"),
+            ["teleprompterOpacity"] = ("real", "0.92"),
+            ["teleprompterFontSize"] = ("real", "26"),
+            ["capturePrivacy"] = ("bool", "true"),
+            ["keepOnTop"] = ("bool", "true"),
+            ["appearance"] = ("string", settings.Appearance),
+            ["reducedEffects"] = ("bool", "false"),
+            ["customShortcuts"] = ("dict", ""),
+            ["companionPort"] = ("integer", "0"),
+            ["companionRelayURL"] = ("string", ""),
+            ["keepRecognizerWarm"] = ("bool", "false"),
+            ["updateChannel"] = ("string", "stable"),
+            ["automaticUpdateChecks"] = ("bool", "true"),
+            ["updateRepository"] = ("string", ""),
+            ["activeWorkspaceID"] = ("string", ""),
+            ["autoBackup"] = ("bool", "false"),
+            ["advancedSettingsEnabled"] = ("bool", "true"),
+            ["apiPresets"] = ("array", ""),
+            ["activeAPIPresetID"] = ("string", ""),
+            ["webSearchMode"] = ("string", settings.WebSearch ? "auto" : "off"),
+            ["webSearchProvider"] = ("string", ""),
+            ["insightScreenWatch"] = ("bool", settings.InsightScreenWatch ? "true" : "false"),
+            ["insightScreenInterval"] = ("real", settings.InsightScreenInterval.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            ["insightFollowSlides"] = ("bool", settings.InsightFollowSlides ? "true" : "false"),
+            ["insightAnswerProgress"] = ("bool", "false"),
+            ["globalSkillIDs"] = ("array", ""),
+            ["assistantLayout"] = ("dict", ""),
+            ["documentOCRProvider"] = ("string", ""),
+            ["documentProviderWasSelected"] = ("bool", "false"),
+            ["ocrFallbackToVision"] = ("bool", "false"),
+            ["semanticRetrievalEnabled"] = ("bool", settings.UseSemanticRetrieval ? "true" : "false"),
+            ["localOCRModelID"] = ("string", ""),
+            ["codexOCRModel"] = ("string", ""),
+            ["codexOCREffort"] = ("string", ""),
+            ["codexOCRTimeout"] = ("real", "60"),
+            ["notesModelID"] = ("string", settings.NotesModel),
+            ["notesReasoning"] = ("string", settings.ReasoningEffort),
+            ["notesLanguage"] = ("string", ""),
+            ["notesTemplateByType"] = ("dict", ""),
+            ["customNotesTemplates"] = ("array", ""),
+            ["pinnedWorkspaceIDs"] = ("array", ""),
+            ["projectLibrarySort"] = ("dict", ""),
+            ["cueSurface"] = ("string", "island"),
+            ["cueWidth"] = ("string", settings.CueWidth),
+            ["cueStyle"] = ("string", "keyPoints"),
+            ["cueScreen"] = ("string", settings.CueScreen),
+            ["cueLauncher"] = ("bool", "true"),
+            ["cueAvoidsSharing"] = ("bool", "false"),
+            ["coachEnabled"] = ("bool", "false"),
+            ["coachWatchesGaze"] = ("bool", "false"),
+            ["coachGazeSensitivity"] = ("real", "1"),
+            ["lastScene"] = ("string", ""),
+            ["sceneOverrides"] = ("dict", "")
         };
+        foreach (var key in SettingsSnapshot.ExportedKeys)
+        {
+            if (values.ContainsKey(key)) continue;
+            values[key] = BoolKeys.Contains(key) ? ("bool", "false")
+                : RealKeys.Contains(key) ? ("real", "0")
+                : ArrayKeys.Contains(key) ? (key.EndsWith("IDs", StringComparison.Ordinal) ? "array" : "dict", "")
+                : ("string", "");
+        }
         var xml = new XElement("plist", new XAttribute("version", "1.0"),
-            new XElement("dict", values.SelectMany(value => new object[]
-            {
-                new XElement("key", value.Key),
-                value.Type == "bool" ? new XElement(value.Value == "true" ? "true" : "false") : new XElement("string", value.Value)
-            })));
-        return System.Text.Encoding.UTF8.GetBytes(new XDocument(new XDeclaration("1.0", "UTF-8", null), xml).ToString());
+            new XElement("dict", values
+                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .SelectMany(pair => new object[]
+                {
+                    new XElement("key", pair.Key),
+                    pair.Value.Type switch
+                    {
+                        "bool" => new XElement(pair.Value.Value == "true" ? "true" : "false"),
+                        "real" => new XElement("real", pair.Value.Value),
+                        "integer" => new XElement("integer", pair.Value.Value),
+                        "array" => new XElement("array"),
+                        "dict" => new XElement("dict"),
+                        _ => new XElement("string", pair.Value.Value)
+                    }
+                })));
+        var document = new XDocument(
+            new XDeclaration("1.0", "UTF-8", null),
+            new XDocumentType("plist", "-//Apple//DTD PLIST 1.0//EN", "http://www.apple.com/DTDs/PropertyList-1.0.dtd", null),
+            xml);
+        return System.Text.Encoding.UTF8.GetBytes(document.ToString());
     }
 
     public static AppSettings Apply(byte[] plist, AppSettings current)
