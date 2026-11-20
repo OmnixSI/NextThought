@@ -137,6 +137,20 @@
           <Button Classes="primary" Content="保存个人笔记" Command="{Binding SaveNotesEditorCommand}" HorizontalAlignment="Left" />
         </StackPanel>
       </TabItem>
+      <TabItem Header="证据">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Sources}" Margin="{DynamicResource D4Margin_22}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:SourceCitation">
+                <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_10}">
+                  <TextBlock Text="{Binding Label}" Classes="label" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Quote}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </TabItem>
     </TabControl>
   </Grid>
 </UserControl>
