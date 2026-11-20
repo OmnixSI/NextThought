@@ -68,6 +68,7 @@
             <CheckBox Content="{loc:Tr 带入经验}" IsChecked="{Binding CarryLessons}" />
             <CheckBox Content="{loc:Tr 带入上一场转写}" IsChecked="{Binding CarryTranscript}" />
           </WrapPanel>
+          <TextBlock Text="{Binding PrepareCarrySummary}" Classes="caption" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
           <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
           <TextBlock Text="{Binding Library.MaterialsInsight}" Classes="caption" TextWrapping="Wrap" />
           <ItemsControl ItemsSource="{Binding Library.Materials}">
@@ -78,6 +79,7 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <Button Classes="primary" Content="{loc:Tr 导入资料}" Command="{Binding ImportPreparedDocumentsCommand}" />
             <Button Content="{loc:Tr 打开资料库}" Command="{Binding NavigateCommand}" CommandParameter="Library" />
             <Button Content="{loc:Tr 打开系列}" Command="{Binding NavigateCommand}" CommandParameter="Series" />
           </StackPanel>
@@ -165,9 +167,31 @@
     </ScrollViewer>
     <Border Grid.Row="1" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}"
             BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_32_12}">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBlock Text="{loc:Tr 检查完即可开始；会中仍可随时切换场合。}" Classes="caption" VerticalAlignment="Center" />
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_12}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAudioReady}" />
+              <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Caution}" VerticalAlignment="Center" IsVisible="{Binding !PrepareAudioReady}" />
+              <TextBlock Text="{loc:Tr 声音}" Classes="caption" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Ready}" VerticalAlignment="Center" IsVisible="{Binding PrepareAnswerReady}" />
+              <TextBlock Text="{loc:Tr AI 可选}" Classes="caption" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding PreparePhoneReady}">
+              <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10" Foreground="{DynamicResource Ready}" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 手机}" Classes="caption" />
+            </StackPanel>
+          </StackPanel>
+          <TextBlock Classes="caption" TextWrapping="Wrap">
+            <Run Text="{Binding Status}" />
+            <Run Text="  ·  " Foreground="{DynamicResource Secondary}" />
+            <Run Text="{Binding PrepareMaterialsLine}" Foreground="{DynamicResource Secondary}" />
+          </TextBlock>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
+          <Button Classes="quiet" Content="{loc:Tr 取消}" Command="{Binding CancelDraftCommand}" />
           <Button Content="{loc:Tr 导入 WAV}" Command="{Binding ImportWaveCommand}" />
           <Button Classes="primary" Content="{loc:Tr 开始记录}" Command="{Binding StartRecordingCommand}" />
         </StackPanel>
