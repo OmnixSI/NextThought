@@ -57,7 +57,7 @@ Nov 20, 2026 · @Homing
 | B19 | 已实现、未验证 | 讲稿提示词的相关资料改为 `ContextExcerpt.Budget(4000, 5)`（只取完整片段），引用改为 Mac 的 `[来源 定位]`（无 locator 用「第 N 段」）；新增 2 个对齐测试 | `LiveInsightsTests` 其余 11 项尚未翻译；未实机核对真实幻灯片导出 |
 | B20 | 未做 | — | 未开始 |
 | B21 | 已实现、未验证 | 追问判断按 Mac 去掉首尾所有标点；摘要去重只去标点、保留符号；说话人名按字素簇截断 24；表意文字范围补 CJK 扩展 A/兼容区（连字假名/谚文已有）；4 个边界测试通过 | `QuestionDetectorTests`、`TranscriptDeduplicatorTests`(3)、`SpeakerClusteringTests`(20) 尚未全部逐条翻译 |
-| B22 | 未做 | — | 592 项 Swift Core 测试尚未翻译 |
+| B22 | 未做 | 已建立 `Windows/CORE_PARITY.md`：69 个 Swift 文件、592 项测试逐行列出；当前同名方法口径已翻译 34 项；正在分批翻译其余测试 | 其余 558 项未翻译；本轮已委派 3 批并行翻译，结果待验 |
 | B23 | 未做 | — | 未开始 |
 | B24 | 未做 | — | 未开始 |
 | C1 | 未做 | — | 提词岛不抢焦点未实现 |
