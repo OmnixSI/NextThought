@@ -13,6 +13,41 @@
 3. `RestorePointUsesFoundationEpochAndReadsMacNumbers`：新建恢复点的 `createdAt` 是 Foundation 纪元秒数字；同时能读入 Mac 写入的数字日期恢复点并通过校验。
 
 
+# 启动时间实测（分表）· 0.5.145 + ed39491
+
+测法：同一台机器，冷启动指新进程 + 全新 `NEXTTHOUGHT_DATA_DIR`，每版连续 5 次，
+每次启动自检 `--startup-check` 记录内部 `seconds` 与 `privateMiB`，取中位数。
+进程间杀掉 NextThought、间隔 700ms；未清 OS 文件缓存。
+
+## 表 A：自包含版（ReadyToRun，非 AOT）
+
+| 运行 | 版本 | 配置 | 是否 AOT | 启动秒数 | 私有内存 MiB |
+|---|---|---|---:|---:|---:|
+| 1 | 0.5.145 | win-x64 self-contained ReadyToRun | 否 | 3.994 | 64.3 |
+| 2 | 0.5.145 | win-x64 self-contained ReadyToRun | 否 | 1.344 | 65.2 |
+| 3 | 0.5.145 | win-x64 self-contained ReadyToRun | 否 | 1.477 | 64.8 |
+| 4 | 0.5.145 | win-x64 self-contained ReadyToRun | 否 | 1.382 | 64.8 |
+| 5 | 0.5.145 | win-x64 self-contained ReadyToRun | 否 | 1.328 | 64.5 |
+| **中位数** | 0.5.145 | self-contained ReadyToRun | 否 | **1.382** | **64.8** |
+
+## 表 B：Native AOT 探针版
+
+AOT 以 `NEXTTHOUGHT_DISABLE_AUDIO_DEVICES=1` 启动，仅验证启动与窗口；
+发布方式仍为自包含 ReadyToRun，AOT 不作为发布包。
+
+| 运行 | 版本 | 配置 | 是否 AOT | 启动秒数 | 私有内存 MiB |
+|---|---|---|---:|---:|---:|
+| 1 | 0.5.145 | win-x64 Native AOT single-file，音频设备枚举禁用 | 是 | 0.665 | 58.4 |
+| 2 | 0.5.145 | win-x64 Native AOT single-file，音频设备枚举禁用 | 是 | 0.546 | 58.8 |
+| 3 | 0.5.145 | win-x64 Native AOT single-file，音频设备枚举禁用 | 是 | 0.544 | 58.1 |
+| 4 | 0.5.145 | win-x64 Native AOT single-file，音频设备枚举禁用 | 是 | 0.528 | 58.7 |
+| 5 | 0.5.145 | win-x64 Native AOT single-file，音频设备枚举禁用 | 是 | 0.532 | 58.4 |
+| **中位数** | 0.5.145 | Native AOT single-file，禁用音频枚举 | 是 | **0.544** | **58.4** |
+
+结论：AOT 只作探针，不能替代发布包。**NAudio 的 `MMDeviceEnumeratorComObject`
+在 Native AOT 下不可用**，ILC 明确报告 `will always throw`（Invalid IL/CLR metadata）；
+因此 AOT 版必须禁用音频设备枚举，设备枚举数为 0，不能作为正式音频功能发布包。
+
 # P4 伴侣局域网通道自检 · 1.3.7
 
 1.3.7 新增 ``--companion-check``，在没有手机的情况下把局域网 HTTP 通道跑通：
