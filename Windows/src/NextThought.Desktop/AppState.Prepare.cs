@@ -3,6 +3,20 @@ namespace NextThought.Desktop;
 public partial class AppState
 {
 
+
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool carryMaterials = true;
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool carryReview = true;
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool carryLessons = true;
+    [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private bool carryTranscript;
+
+    public NextThought.Core.MeetingCarry CarryPlan => new()
+    {
+        Materials = CarryMaterials,
+        Review = CarryReview,
+        Lessons = CarryLessons,
+        Transcript = CarryTranscript
+    };
+
     public bool OnLibrary => Section == AppSection.Library;
 
     public bool OnSeries => Section == AppSection.Series;

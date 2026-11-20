@@ -78,6 +78,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareCarryPlanIsExposed()
+    {
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
+        Assert.Contains("CarryPlan", state);
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
+        Assert.Contains("CarryMaterials", xaml);
+        Assert.Contains("CarryTranscript", xaml);
+    }
+
     [Fact]
     public void PreparePageIsHosted()
     {

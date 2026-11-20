@@ -47,6 +47,25 @@
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="系列与资料" Classes="section" />
           <TextBlock Text="{Binding SeriesSummary}" Classes="body" />
+          <ListBox ItemsSource="{Binding SeriesRows}" SelectedItem="{Binding SelectedSeries}"
+                   Background="Transparent" BorderThickness="0" MaxHeight="160">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="local:SeriesRow">
+                <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                  <TextBlock Text="{Binding Name}" Classes="label" />
+                  <TextBlock Text="{Binding Meta}" Classes="caption" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Text="{Binding SelectedSeriesTitle}" Classes="label" />
+          <TextBlock Text="{Binding SelectedSeriesMeta}" Classes="caption" />
+          <WrapPanel>
+            <CheckBox Content="带入资料" IsChecked="{Binding CarryMaterials}" />
+            <CheckBox Content="带入题库" IsChecked="{Binding CarryReview}" />
+            <CheckBox Content="带入经验" IsChecked="{Binding CarryLessons}" />
+            <CheckBox Content="带入上一场转写" IsChecked="{Binding CarryTranscript}" />
+          </WrapPanel>
           <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
           <ItemsControl ItemsSource="{Binding Library.Materials}">
             <ItemsControl.ItemTemplate>
