@@ -84,6 +84,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareCheckCardsArePresent()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
+        Assert.Contains("采音", xaml);
+        Assert.Contains("场地", xaml);
+        Assert.Contains("回答服务", xaml);
+        Assert.Contains("手机伴侣", xaml);
+        Assert.Contains("资料与模型", xaml);
+    }
+
     [Fact]
     public void PrepareHasStickyStartBar()
     {

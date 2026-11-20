@@ -118,34 +118,48 @@
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Text="检查" Classes="section" />
-          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
-            <Grid ColumnDefinitions="90,*" ColumnSpacing="10">
-              <TextBlock Text="采音" Classes="caption" />
-              <TextBlock Grid.Column="1" Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
-            </Grid>
-            <Grid ColumnDefinitions="90,*" ColumnSpacing="10">
-              <TextBlock Text="场地" Classes="caption" />
-              <TextBlock Grid.Column="1" Text="本机 · 不依赖网络" Classes="caption" />
-            </Grid>
-            <Grid ColumnDefinitions="90,*" ColumnSpacing="10">
-              <TextBlock Text="回答服务" Classes="caption" />
-              <TextBlock Grid.Column="1" Text="{Binding Settings.KeyStatus}" Classes="caption" TextWrapping="Wrap" />
-            </Grid>
-            <Grid ColumnDefinitions="90,*" ColumnSpacing="10">
-              <TextBlock Text="手机伴侣" Classes="caption" />
-              <TextBlock Grid.Column="1" Text="{Binding Settings.CompanionRelayUrl}" Classes="caption" TextWrapping="Wrap" />
-            </Grid>
-            <Grid ColumnDefinitions="90,*" ColumnSpacing="10">
-              <TextBlock Text="资料" Classes="caption" />
-              <TextBlock Grid.Column="1" Text="{Binding Library.MaterialCountText}" Classes="caption" />
-            </Grid>
-            <TextBlock Text="{Binding ModelStatusText}" Classes="caption" />
-            <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
-          </StackPanel>
+          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+            <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                    Padding="{DynamicResource D4Padding_12_10}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="采音" Classes="overline" />
+                <TextBlock Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                    Padding="{DynamicResource D4Padding_12_10}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="场地" Classes="overline" />
+                <TextBlock Text="本机 · 不依赖网络" Classes="caption" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Row="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                    Padding="{DynamicResource D4Padding_12_10}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="回答服务" Classes="overline" />
+                <TextBlock Text="{Binding Settings.KeyStatus}" Classes="caption" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                    Padding="{DynamicResource D4Padding_12_10}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="手机伴侣" Classes="overline" />
+                <TextBlock Text="{Binding Settings.CompanionRelayUrl}" Classes="caption" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Row="2" Grid.ColumnSpan="2" Background="{DynamicResource Sunken}"
+                    CornerRadius="{DynamicResource D4CornerRadius_10}" Padding="{DynamicResource D4Padding_12_10}">
+              <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="资料与模型" Classes="overline" />
+                <TextBlock Text="{Binding Library.MaterialCountText}" Classes="caption" />
+                <TextBlock Text="{Binding ModelStatusText}" Classes="caption" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
           <Button Classes="quiet" Content="打开设置" Command="{Binding NavigateCommand}" CommandParameter="Settings" />
         </StackPanel>
       </Border>
-
     </StackPanel>
     </ScrollViewer>
     <Border Grid.Row="1" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}"
