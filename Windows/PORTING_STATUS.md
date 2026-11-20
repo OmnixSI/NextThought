@@ -7,7 +7,7 @@
 ## 2026-11-20 · 0.5.145 · E3（部分）
 改动：新增首次引导覆盖层（4 步：选场合/准备声音/回答服务/开始），`OnboardingFlow` 驱动步骤、位置、上一步/下一步/跳过/完成；完成时把 `OnboardingCompletedVersion` 写回设置；`--onboarding` 可强制显示，正常首次启动按版本判断。新增 `OnboardingOverlayExists` 测试。
 测试：Core **872/872**，NextThought.Tests **204/204**。
-状态：E3「未做」。已有一个四步引导 + 设置清单 + 提词岛示意 + 「看一场示例会议」+「声音测试」页（显示 LevelText/AudioSourceText）；与 Mac OnboardingView 视觉未对照。
+状态：E3「已实现、未验证」。四步引导、设置清单、提词岛示意、示例会议、声音测试页都已接入；未验证：与 Mac OnboardingView 的逐项视觉对照、引导在各窗口尺寸下的布局。
 证据：`Windows/validation/screens/onboarding/light.png`。
 
 ## 2026-11-20 · 0.5.145 · E4（部分）
