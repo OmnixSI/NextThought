@@ -47,7 +47,7 @@
 ## 2026-11-20 · 0.5.145 · D6（数据部分）
 改动：新增 `SceneTheme.cs`，十种场景的 tint/deep 浅深四色、symbol、promise、三条 moments 逐项从 Stage.swift 搬入；新增 `SceneThemeTests` 2 项（10 个模式全量、custom 与 general 关系）。
 测试：Core **871/871**（新增 2 项），NextThought.Tests **149/149**。
-状态：D6「未做」。场景数据+SceneGlyph/SceneTag/InkWash 已接入首页；并排图 `Windows/validation/screens/compare-home-light.png` 已生成，显示场景选择器/标题行与 Mac v3 差异仍大。
+状态：D6「未做」。首页已按 Mac v3 结构重排：场景字形、标题输入、单行场景选择、promise、三条 moments、先准备资料/开始；场景选中态未着色，与 Mac 仍非逐像素一致。
 未解决：D6 组件与截图。
 
 ## 2026-11-20 · 0.5.145 · D5（完成）
