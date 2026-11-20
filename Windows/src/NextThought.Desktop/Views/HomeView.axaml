@@ -1,9 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:NextThought.Desktop"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.HomeView"
              x:DataType="local:AppState">
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+  <Grid>
+    <controls:InkWash Mode="{Binding SelectedMode}" Height="240" VerticalAlignment="Top" />
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="40,26,40,36" MaxWidth="720" Spacing="26">
       <!-- Greeting -->
       <StackPanel Spacing="10">
@@ -33,7 +36,7 @@
                   <Button Classes="scene" Tag="{Binding}" Click="Scene_Click" Margin="0,0,6,6"
                           ToolTip.Tip="{Binding Promise}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <Ellipse Width="6" Height="6" Fill="{Binding Tint}" VerticalAlignment="Center" />
+                      <controls:SceneGlyph Mode="{Binding Mode}" Size="18" VerticalAlignment="Center" />
                       <TextBlock Text="{Binding Title}" FontSize="12" />
                     </StackPanel>
                   </Button>
@@ -120,5 +123,6 @@
                    IsVisible="{Binding IsHistoryEmpty}" />
       </StackPanel>
     </StackPanel>
-  </ScrollViewer>
+    </ScrollViewer>
+  </Grid>
 </UserControl>

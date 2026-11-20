@@ -30,6 +30,18 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SceneGlyphTagAndInkWashAreWiredIntoHome()
+    {
+        var root = Root();
+        foreach (var name in new[] { "SceneGlyph.cs", "SceneTag.cs", "InkWash.cs" })
+            Assert.True(File.Exists(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "Controls", name)));
+        var home = File.ReadAllText(Path.Combine(root, "Windows", "src", "NextThought.Desktop", "Views", "HomeView.axaml"));
+        Assert.Contains("<controls:SceneGlyph", home);
+        Assert.Contains("<controls:InkWash", home);
+    }
+
     [Fact]
     public void MotionTokensAndReduceMotionArePresent()
     {
