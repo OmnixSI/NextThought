@@ -257,6 +257,8 @@
               <TextBlock Text="残差约占 12%，主要集中在支座附近。" Foreground="#B8B6AF" FontSize="11" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
+          <Button Content="声音测试" Click="OnboardingVoice_Click" IsVisible="{Binding OnboardingIsSound}"
+                  Classes="quiet" HorizontalAlignment="Left" />
           <Button Content="看一场示例会议" Command="{Binding OpenOnboardingSampleCommand}"
                   IsVisible="{Binding OnboardingIsLast}" Classes="quiet" HorizontalAlignment="Left" />
           <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">

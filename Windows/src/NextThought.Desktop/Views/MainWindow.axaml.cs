@@ -187,4 +187,10 @@ public partial class MainWindow : Window
         (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         Close();
     }
+
+    private async void OnboardingVoice_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        await new OnboardingVoiceWindow { DataContext = state }.ShowDialog(this);
+    }
 }

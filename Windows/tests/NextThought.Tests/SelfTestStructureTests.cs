@@ -113,6 +113,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void OnboardingHasVoiceTestPage()
+    {
+        Assert.True(File.Exists(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "OnboardingVoiceWindow.axaml")));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml"));
+        Assert.Contains("OnboardingVoice_Click", xaml);
+        Assert.Contains("声音测试", xaml);
+    }
+
     [Fact]
     public void OnboardingOffersASampleMeeting()
     {

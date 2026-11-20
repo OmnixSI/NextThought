@@ -35,6 +35,7 @@ public partial class AppState
 
     public string OnboardingPosition => $"{OnboardingSteps.Clamped(OnboardingStep).Position()} / {OnboardingSteps.Count}";
     public bool OnboardingIsFirst => OnboardingStep <= 0;
+    public bool OnboardingIsSound => OnboardingSteps.Clamped(OnboardingStep) == NextThought.Core.OnboardingStep.Sound;
     public bool OnboardingIsLast => OnboardingSteps.Clamped(OnboardingStep).IsLast();
 
     partial void OnOnboardingStepChanged(int value)
@@ -43,6 +44,7 @@ public partial class AppState
         OnPropertyChanged(nameof(OnboardingStepBody));
         OnPropertyChanged(nameof(OnboardingPosition));
         OnPropertyChanged(nameof(OnboardingIsFirst));
+        OnPropertyChanged(nameof(OnboardingIsSound));
         OnPropertyChanged(nameof(OnboardingIsLast));
     }
 
