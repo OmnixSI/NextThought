@@ -188,6 +188,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void AudioStallContinuesAndStopDrainsTail()
+    {
+        var audio = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "AudioCaptureService.cs"));
+        Assert.Contains("短暂卡顿", audio);
+        Assert.Contains("deadline.Elapsed < TimeSpan.FromSeconds(5)", audio);
+        Assert.DoesNotContain("drain++ < 30", audio);
+    }
+
     [Fact]
     public void ReleaseBuildHasNoUpdateLaunchBypass()
     {

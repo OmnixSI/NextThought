@@ -89,9 +89,15 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
                     {
                         if (beforeFrame != null) await beforeFrame(lifetime.Token);
                         var now = DateTimeOffset.UtcNow;
-                        if (now - lastWake > TimeSpan.FromMilliseconds(1500)) throw new IOException("检测到休眠或采音暂停，已停止本次记录，请重新开始。");
+                        if (now - lastWake > TimeSpan.FromMilliseconds(1500))
+                        {
+                            // F2: a short stall (sleep, CPU load) may drop audio, but must not end the meeting.
+                            LastError = "检测到短暂卡顿，已丢弃卡顿期间的音频并继续记录。";
+                        }
                         lastWake = now;
-                        for (var due = timeline.Advance(clock.Elapsed); due > 0; due--) EmitFrame();
+                        var due = timeline.Advance(clock.Elapsed);
+                        // A long sleep must not create minutes of backlog; keep at most a second.
+                        for (var count = Math.Min(due, 10); count > 0; count--) EmitFrame();
                     }
                 }
                 catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
@@ -196,9 +202,9 @@ public sealed class AudioCaptureService(Func<CancellationToken, Task>? beforeFra
         {
             foreach (var pipe in pipes) pipe.Stop();
             lifetime.Cancel(); if (pump != null) await pump;
-            // Drain queued device samples and the resampler tail before the recognizer is finalized.
-            var drain = 0;
-            while (pipes.Any(p => p.HasBufferedAudio) && drain++ < 30) EmitFrame();
+            // F3: drain until empty (bounded only by a deadline) so the last sentence is not lost.
+            var deadline = Stopwatch.StartNew();
+            while (pipes.Any(p => p.HasBufferedAudio) && deadline.Elapsed < TimeSpan.FromSeconds(5)) EmitFrame();
             EmitFrame();
         }
         finally
