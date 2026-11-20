@@ -12,7 +12,7 @@ internal static class Program
     {
         Clock.Start();
         StartedAt = DateTime.Now;
-        SelfTestOptions.Parse(args);
+        StartupOptions.Parse(args);
 #if DEBUG
 #else
 #endif
