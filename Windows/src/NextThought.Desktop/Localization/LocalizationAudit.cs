@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 
@@ -7,8 +7,9 @@ namespace NextThought.Desktop.Localization;
 /// <summary>
 /// G9 evidence collector: reads every piece of text a page currently shows (including tooltips that
 /// are not open) so the English screenshot batch can prove there is no Chinese outside user data.
-/// This is a read-only audit — unlike the removed load-time tree walk it never writes text back
-/// and no production view calls it.
+/// Only controls that are effectively visible are collected, so a hidden page from another tab does
+/// not leak into the current page's inventory. This is a read-only audit — unlike the removed
+/// load-time tree walk it never writes text back and no production view calls it.
 /// </summary>
 public static class LocalizationAudit
 {
@@ -24,21 +25,40 @@ public static class LocalizationAudit
             if (seen.Add(kind + "\u0001" + trimmed)) rows.Add(kind + "\u0001" + trimmed);
         }
 
-        foreach (var window in root.GetVisualDescendants().OfType<Window>().Prepend(root as Window).Where(window => window is not null))
-            Add("title", window!.Title);
-        foreach (var text in root.GetVisualDescendants().OfType<TextBlock>()) Add("text", text.Text);
+        foreach (var window in root.GetVisualDescendants().OfType<Window>().Prepend(root as Window))
+        {
+            if (window is null || !window.IsVisible) continue;
+            Add("title", window.Title);
+        }
+        foreach (var text in root.GetVisualDescendants().OfType<TextBlock>())
+        {
+            if (!text.IsEffectivelyVisible) continue;
+            Add("text", text.Text);
+        }
         foreach (var box in root.GetVisualDescendants().OfType<TextBox>())
         {
+            if (!box.IsEffectivelyVisible) continue;
             Add("edit", box.Text);
             Add("placeholder", box.PlaceholderText);
         }
-        foreach (var box in root.GetVisualDescendants().OfType<ComboBox>()) Add("placeholder", box.PlaceholderText);
+        foreach (var box in root.GetVisualDescendants().OfType<ComboBox>())
+        {
+            if (!box.IsEffectivelyVisible) continue;
+            Add("placeholder", box.PlaceholderText);
+        }
         foreach (var control in root.GetVisualDescendants().OfType<ContentControl>())
+        {
+            if (!control.IsEffectivelyVisible) continue;
             if (control.Content is string value) Add("content", value);
+        }
         foreach (var item in root.GetVisualDescendants().OfType<MenuItem>())
+        {
+            if (!item.IsEffectivelyVisible) continue;
             if (item.Header is string header) Add("menu", header);
+        }
         foreach (var control in root.GetVisualDescendants().OfType<Control>())
         {
+            if (!control.IsEffectivelyVisible) continue;
             if (ToolTip.GetTip(control) is string tip) Add("tooltip", tip);
         }
         rows.Sort(StringComparer.Ordinal);

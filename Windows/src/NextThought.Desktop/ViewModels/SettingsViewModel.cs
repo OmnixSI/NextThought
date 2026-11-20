@@ -29,13 +29,13 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 {
     private readonly AppState state = state;
 
-    public static IReadOnlyList<ModelChoice> ModelChoices { get; } =
+    private static readonly ModelChoice[] ModelChoiceValues =
     [
         new("xasr480", "X-ASR 中英 · 480 ms（推荐）"),
         new("xasr160", "X-ASR 中英 · 160 ms")
     ];
 
-    public static IReadOnlyList<EffortChoice> EffortChoices { get; } =
+    private static readonly EffortChoice[] EffortChoiceValues =
     [
         new("", "默认，不指定"),
         new("none", "none（关闭思考）"),
@@ -44,17 +44,27 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         new("high", "high")
     ];
 
-    public IReadOnlyList<ProviderPreset> ProviderPresets { get; } =
+    private static readonly ProviderPreset[] ProviderPresetsValues =
     [
         new("OpenAI", "https://api.openai.com/v1", "gpt-5.2"),
         new("DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat"),
         new("OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-4o-mini"),
         new("Ollama (local)", "http://127.0.0.1:11434/v1", "qwen2.5:7b"),
         new("LM Studio (local)", "http://127.0.0.1:1234/v1", "local-model"),
-        new(UiText.T("自定义"), "", "")
+        new("自定义", "", "")
     ];
 
+    /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
+    public IReadOnlyList<ProviderPreset> ProviderPresets => ProviderPresetsValues.ToArray();
+
     [ObservableProperty] private ProviderPreset? selectedProviderPreset;
+
+    partial void OnSelectedProviderPresetChanged(ProviderPreset? value)
+    {
+        if (value is null || value.BaseUrl.Length == 0) return;
+        BaseUrl = value.BaseUrl;
+        if (value.Model.Length > 0) Model = value.Model;
+    }
 
     // MARK: - E27 回答服务设置：预设、推理强度、快速模式、引擎测试、GitHub 访问
 
@@ -256,13 +266,6 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         catch { }
     }
 
-    partial void OnSelectedProviderPresetChanged(ProviderPreset? value)
-    {
-        if (value is null || value.BaseUrl.Length == 0) return;
-        BaseUrl = value.BaseUrl;
-        if (value.Model.Length > 0) Model = value.Model;
-    }
-
     [ObservableProperty] private string baseUrl = "https://api.openai.com/v1";
     [ObservableProperty] private string model = "";
     [ObservableProperty] private string notesModel = "";
@@ -317,21 +320,53 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         var value = LanguagePreference(UiLanguage);
         OnPropertyChanged(nameof(UiLanguages));
         UiLanguage = LanguageLabel(value);
+        OnPropertyChanged(nameof(CloudSttChoices));
+        OnPropertyChanged(nameof(CloudSttLanguages));
+        OnPropertyChanged(nameof(AppearanceChoices));
+        OnPropertyChanged(nameof(CueWidthChoices));
+        OnPropertyChanged(nameof(AutoEndModes));
+        OnPropertyChanged(nameof(ProviderPresets));
+        OnPropertyChanged(nameof(ModelChoicesList));
+        OnPropertyChanged(nameof(EffortChoicesList));
+        OnPropertyChanged(nameof(InsightSourceLabels));
+        OnPropertyChanged(nameof(SelectedInsightSourceLabel));
+        OnPropertyChanged(nameof(SelectedCloudStt));
+        OnPropertyChanged(nameof(SelectedCloudLanguage));
+        OnPropertyChanged(nameof(SelectedAppearance));
+        OnPropertyChanged(nameof(SelectedCueWidth));
+        OnPropertyChanged(nameof(SelectedAutoEndMode));
+        OnPropertyChanged(nameof(SelectedModelChoice));
+        OnPropertyChanged(nameof(SelectedEffort));
+        OnPropertyChanged(nameof(SelectedProviderPreset));
+        OnPropertyChanged(nameof(SelectedSystemDevice));
+        OnPropertyChanged(nameof(SelectedMicrophoneDevice));
+        OnPropertyChanged(nameof(SelectedProcess));
+        OnPropertyChanged(nameof(PresenterSummary));
+        KeyStatus = UiText.Translate(KeyStatus, UiTextSource.Instance.IsEnglish);
+        CloudSttKeyStatus = CloudSttKey.Length == 0 ? UiText.T("未填写") : UiText.T("已加密保存");
+        TavilyKeyStatus = UiText.T("密钥只保存在当前 Windows 用户；也可以继续用 TAVILY_API_KEY 环境变量。");
+        RefreshScreens();
     }
 
-    public IReadOnlyList<CloudSttChoice> CloudSttChoices { get; } =
+    private static readonly CloudSttChoice[] CloudSttChoicesValues =
     [
         new("", "本地（默认）"),
         new("soniox", "Soniox · 中英混说"),
         new("openai", "OpenAI Realtime"),
         new("deepgram", "Deepgram Nova-3")
     ];
-    public IReadOnlyList<CloudLanguageChoice> CloudSttLanguages { get; } =
+
+    /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
+    public IReadOnlyList<CloudSttChoice> CloudSttChoices => CloudSttChoicesValues.ToArray();
+    private static readonly CloudLanguageChoice[] CloudSttLanguagesValues =
     [
         new("auto", "自动"),
         new("zh", "中文"),
         new("en", "英文")
     ];
+
+    /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
+    public IReadOnlyList<CloudLanguageChoice> CloudSttLanguages => CloudSttLanguagesValues.ToArray();
     [ObservableProperty] private CloudSttChoice? selectedCloudStt;
     [ObservableProperty] private string cloudSttModel = "";
     [ObservableProperty] private string cloudSttKey = "";
@@ -354,19 +389,25 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         };
     }
 
-    public IReadOnlyList<AppearanceOption> AppearanceChoices { get; } =
+    private static readonly AppearanceOption[] AppearanceChoicesValues =
     [
         new("system", "跟随系统"),
         new("light", "浅色"),
         new("dark", "深色")
     ];
+
+    /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
+    public IReadOnlyList<AppearanceOption> AppearanceChoices => AppearanceChoicesValues.ToArray();
     [ObservableProperty] private AppearanceOption? selectedAppearance;
-    public IReadOnlyList<CueWidthOption> CueWidthChoices { get; } =
+    private static readonly CueWidthOption[] CueWidthChoicesValues =
     [
         new("narrow", "窄"),
         new("regular", "标准"),
         new("wide", "宽")
     ];
+
+    /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
+    public IReadOnlyList<CueWidthOption> CueWidthChoices => CueWidthChoicesValues.ToArray();
     [ObservableProperty] private CueWidthOption? selectedCueWidth;
     [ObservableProperty] private bool cueAlwaysOpen;
     [ObservableProperty] private double? subtitleBarX;
@@ -399,24 +440,36 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     [ObservableProperty] private string insightScreenSource = "display";
     [ObservableProperty] private string insightScreenRegion = "";
     public IReadOnlyList<string> InsightScreenSources { get; } = ["display", "window", "region"];
-    public IReadOnlyList<string> InsightSourceLabels { get; } = ["显示器", "窗口", "区域"];
+    private static readonly string[] InsightSourceLabelKeys = ["显示器", "窗口", "区域"];
+    public IReadOnlyList<string> InsightSourceLabels => InsightSourceLabelKeys.Select(UiText.T).ToArray();
     public IReadOnlyList<double> InsightIntervals { get; } = [1, 2, 4, 8, 15];
     public string SelectedInsightSourceLabel
     {
-        get => InsightScreenSource switch { "window" => "窗口", "region" => "区域", _ => "显示器" };
+        get => UiText.T(InsightScreenSource switch { "window" => "窗口", "region" => "区域", _ => "显示器" });
         set
         {
-            InsightScreenSource = value switch { "窗口" => "window", "区域" => "region", _ => "display" };
+            var key = InsightSourceLabelKeys.FirstOrDefault(candidate => UiText.T(candidate) == value) ?? value;
+            InsightScreenSource = key switch { "窗口" => "window", "区域" => "region", _ => "display" };
             OnPropertyChanged();
         }
     }
     [ObservableProperty] private bool autoTranslateForeign;
     [ObservableProperty] private string tavilyKey = "";
-    [ObservableProperty] private string tavilyKeyStatus = "密钥只保存在当前 Windows 用户；也可以继续用 TAVILY_API_KEY 环境变量。";
+    [ObservableProperty] private string tavilyKeyStatus = "";
 
     public ObservableCollection<ScreenChoice> ScreenChoices { get; } = [];
 
-    public string PresenterSummary => PresenterLayout.Summary(DisplayCatalog.Displays, PresenterSlidesScreen, PresenterMode);
+    /// <summary>G8: the Mac presenter summary is localized where the settings page shows it.</summary>
+    public string PresenterSummary
+    {
+        get
+        {
+            if (!PresenterMode) return UiText.T(PresenterLayout.Off);
+            var plan = PresenterLayout.Resolve(DisplayCatalog.Displays, PresenterSlidesScreen);
+            if (!plan.CanActivate || plan.Slides is null || plan.Camera is null) return UiText.T(plan.Summary);
+            return UiText.Format("幻灯片在 %@，提示在 %@", plan.Slides.Name, plan.Camera.Name);
+        }
+    }
 
     partial void OnPresenterModeChanged(bool value) => OnPropertyChanged(nameof(PresenterSummary));
 
@@ -456,14 +509,19 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     public ObservableCollection<DeviceChoice> SystemDevices { get; } = [];
     public ObservableCollection<DeviceChoice> MicrophoneDevices { get; } = [];
     public ObservableCollection<ProcessChoice> Processes { get; } = [];
-    public IReadOnlyList<ModelChoice> ModelChoicesList => ModelChoices;
-    public IReadOnlyList<EffortChoice> EffortChoicesList => EffortChoices;
-    public IReadOnlyList<AutoEndChoice> AutoEndModes { get; } =
+    public static IReadOnlyList<ModelChoice> ModelChoices => ModelChoiceValues;
+    public IReadOnlyList<ModelChoice> ModelChoicesList => ModelChoiceValues.ToArray();
+    public static IReadOnlyList<EffortChoice> EffortChoices => EffortChoiceValues;
+    public IReadOnlyList<EffortChoice> EffortChoicesList => EffortChoiceValues.ToArray();
+    private static readonly AutoEndChoice[] AutoEndModesValues =
     [
         new("prompt", "静音后先提示，再结束（推荐）"),
         new("end", "静音后直接结束"),
         new("off", "不自动结束")
     ];
+
+    /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
+    public IReadOnlyList<AutoEndChoice> AutoEndModes => AutoEndModesValues.ToArray();
     public IReadOnlyList<string> AutoEndMinuteChoices { get; } = ["5", "10", "20", "30"];
 
     partial void OnSelectedModelChoiceChanged(ModelChoice? value)
@@ -555,19 +613,19 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         {
             ApiKey = state.SettingsStore.ReadApiKey();
             HasApiKey = ApiKey.Length > 0;
-            KeyStatus = HasApiKey ? "密钥已保存（当前 Windows 用户加密）" : "尚未保存密钥；本机服务可不填。";
+            KeyStatus = HasApiKey ? UiText.T("密钥已保存（当前 Windows 用户加密）") : UiText.T("尚未保存密钥；本机服务可不填。");
         }
         catch (CryptographicException)
         {
             apiKeyReadFailed = true;
             HasApiKey = false;
-            KeyStatus = "原凭据无法由当前用户解密，请重新输入密钥。";
+            KeyStatus = UiText.T("原凭据无法由当前用户解密，请重新输入密钥。");
         }
         catch (Exception)
         {
             apiKeyReadFailed = true;
             HasApiKey = false;
-            KeyStatus = "密钥读取失败，已保留原密钥；如需更换请直接输入新密钥。";
+            KeyStatus = UiText.T("密钥读取失败，已保留原密钥；如需更换请直接输入新密钥。");
         }
         SelectedProcess = Processes.FirstOrDefault();
         LoadApiPresets();
@@ -625,7 +683,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         CodexModel = CodexModel.Trim(),
         // E27: saved providers, the active preset and the GitHub access settings.
         ApiPresets = EditedApiPresets(),
-        ActiveApiPresetId = SelectedApiPreset?.Id ?? "",
+        ActiveApiPresetId = selectedApiPreset?.Id ?? "",
         CodexFastMode = CodexFastMode ? true : null,
         UpdateRepository = GithubRepository.Trim(),
         PresenterMode = PresenterMode,
@@ -672,7 +730,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         // G5b: apply the Mac reducedEffects key to the motion tokens immediately after a save.
         Motion.AppReducedEffects = settings.ReducedEffects;
         HasApiKey = ApiKey.Trim().Length > 0;
-        KeyStatus = HasApiKey ? "密钥已保存（当前 Windows 用户加密）" : "尚未保存密钥；本机服务可不填。";
+        KeyStatus = HasApiKey ? UiText.T("密钥已保存（当前 Windows 用户加密）") : UiText.T("尚未保存密钥；本机服务可不填。");
         LastMeetingTitle = settings.LastMeetingTitle;
         SavedHint = "已保存 · " + DateTime.Now.ToString("HH:mm:ss");
     }
@@ -691,7 +749,7 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
 
     public void RefreshProcesses()
     {
-        var choices = new List<ProcessChoice> { new(0, 0, "整个输出设备混音") };
+        var choices = new List<ProcessChoice> { new(0, 0, "整个输出设备混音") }; // key, localized by ToString
         foreach (var process in Process.GetProcesses())
         {
             using (process)

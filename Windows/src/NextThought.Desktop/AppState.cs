@@ -105,6 +105,49 @@ public partial class AppState : ObservableObject
             OnPropertyChanged(nameof(CompanionInfo));
             OnPropertyChanged(nameof(SkillsStatus));
             OnPropertyChanged(nameof(CustomTemplateStatus));
+            foreach (var row in Transcript) row.RefreshLanguage();
+            HistoryFilter = UiText.Translate(HistoryFilter, english);
+            HistoryDateFilter = UiText.Translate(HistoryDateFilter, english);
+            HistoryLengthFilter = UiText.Translate(HistoryLengthFilter, english);
+            HistorySort = UiText.Translate(HistorySort, english);
+            OnPropertyChanged(nameof(Scenes));
+            OnPropertyChanged(nameof(SceneTitle));
+            OnPropertyChanged(nameof(LiveModeLabel));
+            LanguageGeneration++;
+            RefreshModelState();
+            CompanionInfo = UiText.Translate(CompanionInfo, english);
+            MyVoiceStatus = UiText.Translate(MyVoiceStatus, english);
+            OnPropertyChanged(nameof(SelectedScene));
+            OnPropertyChanged(nameof(HistoryDateChoices));
+            OnPropertyChanged(nameof(HistoryLengthChoices));
+            OnPropertyChanged(nameof(HistorySortChoices));
+            OnPropertyChanged(nameof(HistoryDateFilter));
+            OnPropertyChanged(nameof(HistoryLengthFilter));
+            OnPropertyChanged(nameof(HistorySort));
+            OnPropertyChanged(nameof(TemplateChoices));
+            OnPropertyChanged(nameof(GlossaryEmptyText));
+            OnPropertyChanged(nameof(StructuredHint));
+            OnPropertyChanged(nameof(SummaryText));
+            OnPropertyChanged(nameof(AudioSourceText));
+            OnPropertyChanged(nameof(DetectedQuestion));
+            OnPropertyChanged(nameof(ShortcutText));
+            if (meetingTitleRaw is "新会议" or "New meeting")
+            {
+                meetingTitleRaw = "新会议";
+                OnPropertyChanged(nameof(MeetingTitle));
+            }
+            OnPropertyChanged(nameof(GlossaryStatus));
+            Settings.RefreshProcesses();
+            var templateId = SelectedTemplateId;
+            TemplateChoices.Clear();
+            foreach (var choice in BuildChoices()) TemplateChoices.Add(choice);
+            LoadCustomTemplates();
+            SelectedTemplateId = templateId;
+            LoadSceneSettings();
+            LoadGlossary();
+            LoadCustomTemplates();
+            LoadSkills();
+            Library.Refresh();
             Library.NotifyLanguageChanged();
             LoadMyVoice();
             StartScreenWatchTimer();
@@ -129,6 +172,9 @@ public partial class AppState : ObservableObject
     public Func<string, string, Task>? Notify { get; set; }
 
     [ObservableProperty] private AppSection section = AppSection.Home;
+
+    /// <summary>G8: bumped on a language switch so views can rebuild code-generated rows.</summary>
+    [ObservableProperty] private int languageGeneration;
     [ObservableProperty] private string versionText = "WINDOWS  " + typeof(AppState).Assembly.GetName().Version!.ToString(3);
     [ObservableProperty] private bool working;
     [ObservableProperty] private bool recording;
@@ -167,7 +213,19 @@ public partial class AppState : ObservableObject
         }
     }
     [ObservableProperty] private Avalonia.Media.Imaging.Bitmap? companionQr;
-    [ObservableProperty] private string meetingTitle = "新会议";
+    private string meetingTitleRaw = "新会议";
+
+    /// <summary>G8: the untitled placeholder follows the interface language, even when demo setup resets it.</summary>
+    public string MeetingTitle
+    {
+        get => meetingTitleRaw is "新会议" or "New meeting" ? UiText.T("新会议") : meetingTitleRaw;
+        set
+        {
+            if (meetingTitleRaw == value) return;
+            meetingTitleRaw = value;
+            OnPropertyChanged();
+        }
+    }
     public System.Collections.ObjectModel.ObservableCollection<SessionEvidenceRow> NotesEvidence { get; } = [];
 
     private void BuildNotesEvidence(IReadOnlyList<TranscriptLine> lines, Guid sessionId)
@@ -214,15 +272,19 @@ public partial class AppState : ObservableObject
     [ObservableProperty] private bool progressIndeterminate;
     [ObservableProperty] private SessionMeta? currentSession;
     [ObservableProperty] private LiveWindowMode liveMode = LiveWindowMode.Notes;
+
     [ObservableProperty] private string? startupErrorText;
     [ObservableProperty] private string historyQuery = "";
     [ObservableProperty] private string historyFilter = "全部";
     [ObservableProperty] private string historyDateFilter = "全部时间";
     [ObservableProperty] private string historyLengthFilter = "全部时长";
     [ObservableProperty] private string historySort = "最新优先";
-    public IReadOnlyList<string> HistoryDateChoices { get; } = ["全部时间", "今天", "近 7 天", "近 30 天", "本年度"];
-    public IReadOnlyList<string> HistoryLengthChoices { get; } = ["全部时长", "1 分钟以内", "1–10 分钟", "10 分钟以上"];
-    public IReadOnlyList<string> HistorySortChoices { get; } = ["最新优先", "最早优先", "时长最长", "时长最短", "问题最多"];
+    private static readonly string[] HistoryDateKeys = ["全部时间", "今天", "近 7 天", "近 30 天", "本年度"];
+    private static readonly string[] HistoryLengthKeys = ["全部时长", "1 分钟以内", "1–10 分钟", "10 分钟以上"];
+    private static readonly string[] HistorySortKeys = ["最新优先", "最早优先", "时长最长", "时长最短", "问题最多"];
+    public IReadOnlyList<string> HistoryDateChoices => HistoryDateKeys.Select(UiText.T).ToArray();
+    public IReadOnlyList<string> HistoryLengthChoices => HistoryLengthKeys.Select(UiText.T).ToArray();
+    public IReadOnlyList<string> HistorySortChoices => HistorySortKeys.Select(UiText.T).ToArray();
     public ObservableCollection<TranscriptRow> Transcript { get; }
     public ObservableCollection<RecentMeetingRow> History { get; }
     public ObservableCollection<RecentMeetingRow> FilteredHistory { get; } = [];
@@ -239,9 +301,13 @@ public partial class AppState : ObservableObject
         ? $"{FilteredHistory.Count} shown · {History.Count} total"
         : UiText.Format("%lld 场会议 · 共 %lld 场", FilteredHistory.Count, History.Count);
     public bool IsHistoryViewEmpty => FilteredHistory.Count == 0;
-    public bool HistoryFilterIsAll => HistoryFilter == "全部";
-    public bool HistoryFilterHasSummary => HistoryFilter == "有纪要";
-    public bool HistoryFilterUnfiled => HistoryFilter == "未整理";
+    public bool HistoryFilterIsAll => MatchesFilter(HistoryFilter, "全部");
+    public bool HistoryFilterHasSummary => MatchesFilter(HistoryFilter, "有纪要");
+    public bool HistoryFilterUnfiled => MatchesFilter(HistoryFilter, "未整理");
+
+    /// <summary>G8: filter values may arrive as the Chinese key or as the translated label.</summary>
+    internal static bool MatchesFilter(string? value, string key) =>
+        value == key || value == UiText.T(key);
 
     // ---- 结构化纪要（Core StructuredNotes：鱼骨图 / 要点大纲 / 观点对照） ----
 
@@ -265,7 +331,7 @@ public partial class AppState : ObservableObject
     public bool NotesFormatIsOutline => SelectedNotesFormat == NotesFormat.Outline;
     public bool NotesFormatIsViewpoints => SelectedNotesFormat == NotesFormat.Viewpoints;
     public string StructuredHint => SelectedNotesFormat == NotesFormat.Standard
-        ? "文字纪要由模板整理；鱼骨图、大纲与观点对照是同一场会议的另一种看法。"
+        ? UiText.T("文字纪要由模板整理；鱼骨图、大纲与观点对照是同一场会议的另一种看法。")
         : UiText.Format("将调用回答服务把转写整理成「%@」；每条都带原话时间，找不到依据的不写。", SelectedNotesFormat.Title(false));
 
 }

@@ -358,8 +358,8 @@ private void ApplyCueWidth()
         if (phase.Translation.Length > 0) this.state.IslandTranslation = phase.Translation;
         if (phase.ExtraTranscriptLine is { Length: > 0 } heard) this.state.SystemPartial = heard;
         else if (phase.Phase is NextThought.Platform.DemoIslandPhase.Hearing) this.state.SystemPartial = "";
-        if (legacyCollapsed) QuestionText.Text = "已收起";
-        else if (state == "launcher") QuestionText.Text = "准备开始一场会议";
+        if (legacyCollapsed) QuestionText.Text = UiText.T("已收起");
+        else if (state == "launcher") QuestionText.Text = UiText.T("准备开始一场会议");
         HeadlineText.IsVisible = phase.Phase is not (NextThought.Platform.DemoIslandPhase.Compact
             or NextThought.Platform.DemoIslandPhase.Launcher);
         DetailText.IsVisible = phase.Phase is not (NextThought.Platform.DemoIslandPhase.Compact

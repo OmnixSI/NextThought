@@ -13,7 +13,7 @@ public sealed record SeriesRow(string Id, string Name, int Count, int LessonCoun
             if (DocumentCount > 0) parts.Add(UiText.Materials(DocumentCount));
             if (PendingCount > 0) parts.Add(UiText.Pending(PendingCount));
             else if (LessonCount > 0) parts.Add(UiText.Lessons(LessonCount));
-            return string.Join(" 路 ", parts);
+            return string.Join(" · ", parts);
         }
     }
     public string Preview => LastLesson.Length > 0 ? LastLesson : LastTitle;

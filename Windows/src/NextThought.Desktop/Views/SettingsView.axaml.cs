@@ -11,7 +11,27 @@ public partial class SettingsView : UserControl
 {
     private string currentPage = "Scene";
 
-    public SettingsView() => InitializeComponent();
+    public SettingsView()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, _) => AttachLanguageRefresh();
+    }
+
+    private AppState? languageState;
+
+    private void AttachLanguageRefresh()
+    {
+        if (languageState is not null) languageState.PropertyChanged -= OnLanguagePropertyChanged;
+        languageState = DataContext as AppState;
+        if (languageState is not null) languageState.PropertyChanged += OnLanguagePropertyChanged;
+    }
+
+    private void OnLanguagePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(AppState.LanguageGeneration)) return;
+        RefreshScreens();
+        BuildShortcutRows();
+    }
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
@@ -34,11 +54,11 @@ public partial class SettingsView : UserControl
         if (top is null) return;
         refreshingScreens = true;
         CueScreenCombo.Items.Clear();
-        CueScreenCombo.Items.Add(new ComboBoxItem { Content = "内置屏 / 主屏（自动）", Tag = "" });
+        CueScreenCombo.Items.Add(new ComboBoxItem { Content = UiText.T("内置屏 / 主屏（自动）"), Tag = "" });
         foreach (var screen in top.Screens.All)
         {
-            var label = screen.DisplayName ?? "显示器";
-            if (ReferenceEquals(screen, top.Screens.Primary)) label += "（主屏）";
+            var label = screen.DisplayName ?? UiText.T("显示器");
+            if (ReferenceEquals(screen, top.Screens.Primary)) label += UiText.T("（主屏）");
             CueScreenCombo.Items.Add(new ComboBoxItem { Content = label, Tag = screen.DisplayName ?? "" });
         }
         var selected = CueScreenCombo.Items.OfType<ComboBoxItem>()
@@ -294,7 +314,7 @@ public partial class SettingsView : UserControl
             };
             grid.Children.Add(new Avalonia.Controls.TextBlock
             {
-                Text = action.Label, FontSize = 11, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+                Text = UiText.T(action.Label), FontSize = 11, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
             });
             var value = new Avalonia.Controls.Button
             {
@@ -311,11 +331,11 @@ public partial class SettingsView : UserControl
                 Avalonia.Interactivity.RoutingStrategies.Tunnel);
             Avalonia.Controls.Grid.SetColumn(value, 1);
             grid.Children.Add(value);
-            var clear = new Avalonia.Controls.Button { Content = "清除", Tag = action.Id, FontSize = 11, Margin = new Avalonia.Thickness(4, 0, 0, 0) };
+            var clear = new Avalonia.Controls.Button { Content = UiText.T("清除"), Tag = action.Id, FontSize = 11, Margin = new Avalonia.Thickness(4, 0, 0, 0) };
             clear.Click += (_, _) => ApplyShortcut(action.Id, action.DefaultModifiers, action.DefaultKey);
             Avalonia.Controls.Grid.SetColumn(clear, 2);
             grid.Children.Add(clear);
-            var restore = new Avalonia.Controls.Button { Content = "默认", Tag = action.Id, FontSize = 11, Margin = new Avalonia.Thickness(4, 0, 0, 0) };
+            var restore = new Avalonia.Controls.Button { Content = UiText.T("默认"), Tag = action.Id, FontSize = 11, Margin = new Avalonia.Thickness(4, 0, 0, 0) };
             restore.Click += (_, _) => ApplyShortcut(action.Id, action.DefaultModifiers, action.DefaultKey);
             Avalonia.Controls.Grid.SetColumn(restore, 3);
             grid.Children.Add(restore);
@@ -326,9 +346,9 @@ public partial class SettingsView : UserControl
     private void BeginShortcutRecording(string id, Avalonia.Controls.Button button)
     {
         recordingShortcutId = id;
-        button.Content = "按下组合键…";
+        button.Content = UiText.T("按下组合键…");
         button.Focus();
-        ShortcutRecorderStatus.Text = "按下带 Ctrl/Alt/Shift/Win 的组合键；Esc 取消。";
+        ShortcutRecorderStatus.Text = UiText.T("按下带 Ctrl/Alt/Shift/Win 的组合键；Esc 取消。");
     }
 
     private void ShortcutRecorder_KeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
@@ -348,14 +368,14 @@ public partial class SettingsView : UserControl
         if (e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Shift)) modifiers |= NextThought.Core.ShortcutKeys.ShiftModifier;
         if (e.KeyModifiers.HasFlag(Avalonia.Input.KeyModifiers.Meta)) modifiers |= NextThought.Core.ShortcutKeys.WindowsModifier;
         var key = ToVirtualKey(e.Key);
-        if (key == 0) { ShortcutRecorderStatus.Text = "这个键不能用作全局快捷键。"; return; }
+        if (key == 0) { ShortcutRecorderStatus.Text = UiText.T("这个键不能用作全局快捷键。"); return; }
         if (modifiers == 0)
         {
-            ShortcutRecorderStatus.Text = "快捷键必须包含 Ctrl、Alt 或 Shift，不能只使用普通按键。";
+            ShortcutRecorderStatus.Text = UiText.T("快捷键必须包含 Ctrl、Alt 或 Shift，不能只使用普通按键。");
             return;
         }
         ApplyShortcut(id, modifiers, key);
-        ShortcutRecorderStatus.Text = "已改为 " + NextThought.Core.ShortcutKeys.Format(modifiers, key) + "，立即生效。";
+        ShortcutRecorderStatus.Text = UiText.T("已改为 ") + NextThought.Core.ShortcutKeys.Format(modifiers, key) + UiText.T("，立即生效。");
     }
 
     private void ApplyShortcut(string id, uint modifiers, uint key)

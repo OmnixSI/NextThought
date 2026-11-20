@@ -15,7 +15,7 @@ public partial class AppState
 
     public bool HasGlossary => GlossaryCount > 0;
     public string GlossaryStatus => GlossaryCount == 0
-        ? "还没有术语。每行一个：正确写法 | 识别错的写法 | 另一种错法"
+        ? UiText.T("还没有术语。每行一个：正确写法 | 识别错的写法 | 另一种错法")
         : UiText.Format("%lld 条术语 · 识别时作为热词，转写里出现的错写会被改回正确写法", GlossaryCount);
 
     partial void OnGlossaryCountChanged(int value)
@@ -78,7 +78,7 @@ public partial class AppState
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string glossaryQuery = "";
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string newGlossaryTerm = "";
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty] private string newGlossaryVariants = "";
-    public string GlossaryEmptyText => GlossaryRows.Count == 0 ? "还没有术语；添加一个正确写法和常见误听。" : "";
+    public string GlossaryEmptyText => GlossaryRows.Count == 0 ? UiText.T("还没有术语；添加一个正确写法和常见误听。") : "";
 
     private void RefreshGlossaryRows()
     {

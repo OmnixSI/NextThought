@@ -267,7 +267,7 @@ public partial class AppState
 
 public sealed record NotesTemplateChoice(NotesTemplate Template, NotesTemplateKind? Kind)
 {
-    public string Title => Template.Name;
+    public string Title => UiText.T(Template.Name);
     public override string ToString() => Title;
 }
 

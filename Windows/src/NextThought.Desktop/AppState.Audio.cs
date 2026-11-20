@@ -3,7 +3,7 @@ namespace NextThought.Desktop;
 public partial class AppState
 {
 
-    public IReadOnlyList<SceneChoice> Scenes { get; } =
+    private static readonly SceneChoice[] SceneChoices =
     [
         new(MeetingMode.Interview, "面试", "被问、要答得清楚"),
         new(MeetingMode.Academic, "汇报 / 答辩", "讲给别人听"),
@@ -15,6 +15,9 @@ public partial class AppState
         new(MeetingMode.Discussion, "小组讨论", "来回交换观点"),
         new(MeetingMode.General, "通用", "什么都可以")
     ];
+
+    /// <summary>G8: a new list instance per access so a language switch re-renders the cards.</summary>
+    public IReadOnlyList<SceneChoice> Scenes => SceneChoices.ToArray();
 
     public SceneChoice? SelectedScene
     {
@@ -68,9 +71,9 @@ public partial class AppState
             streaming ? UiText.T("已就绪") : UiText.T("未安装或待修复"),
             refine ? UiText.T("已就绪") : UiText.T("未安装"));
         AudioSourceText = settings.CaptureSystem && settings.CaptureMicrophone
-            ? "所选系统输出设备混音 + 麦克风 · 在设置中调整"
-            : settings.CaptureSystem ? "所选系统输出设备混音 · 不采集麦克风"
-            : settings.CaptureMicrophone ? "麦克风 · 适合线下会议" : "尚未选择声音来源，请到设置中选择。";
+            ? UiText.T("所选系统输出设备混音 + 麦克风 · 在设置中调整")
+            : settings.CaptureSystem ? UiText.T("所选系统输出设备混音 · 不采集麦克风")
+            : settings.CaptureMicrophone ? UiText.T("麦克风 · 适合线下会议") : UiText.T("尚未选择声音来源，请到设置中选择。");
         StartRecordingCommand.NotifyCanExecuteChanged();
         ImportWaveCommand.NotifyCanExecuteChanged();
     }

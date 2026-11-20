@@ -21,7 +21,7 @@ public sealed class LocalizationCoverageTests
     private static readonly string[] ForeignFiles =
     [
         "DemoContent.cs", "KnowledgeCheck.cs", "AppState.Proofread.cs", "AppState.Update.cs", "UpdateFeed.cs",
-        "AppState.Demo.cs", "DemoScript.cs", "MacPreferences.cs"
+        "AppState.Demo.cs", "DemoScript.cs", "MacPreferences.cs", "AppState.Archive.cs"
     ];
 
     /// <summary>Demo/user data shown as sample content; identical Mac wording is not required.</summary>
@@ -71,6 +71,7 @@ public sealed class LocalizationCoverageTests
     }
 
     private static string Desktop => Path.Combine(RepoRoot(), "Windows", "src", "NextThought.Desktop");
+
 
     [Fact]
     public void EveryMarkupExtensionKeyHasAnEnglishTranslation()

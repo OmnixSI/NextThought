@@ -18,6 +18,8 @@ public partial class AppState
     public void ApplyUiLanguage(bool english)
     {
         UiTextSource.Instance.SetEnglish(english);
+        Status = UiText.Translate(Status, UiText.EnglishUi);
+        PageSubtitle = UiText.Translate(PageSubtitle, UiText.EnglishUi);
         LanguageChanged?.Invoke(english);
     }
 

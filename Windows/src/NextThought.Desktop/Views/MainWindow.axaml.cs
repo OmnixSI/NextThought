@@ -73,6 +73,7 @@ public partial class MainWindow : Window
             {
                 NextThought.Core.UiTextSource.Instance.SetEnglish(english);
                 tray?.SetLanguage(english);
+                ReloadHotkeys();
             };
             RefreshDisplays();
             if (StartupOptions.SelfTest is { Length: > 0 } selfTest) await RunNamedSelfTestAsync(selfTest);

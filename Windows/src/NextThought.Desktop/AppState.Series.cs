@@ -130,7 +130,7 @@ public partial class AppState
                 .OrderByDescending(meta => meta!.StartedAt)
                 .FirstOrDefault();
             SeriesRows.Add(new SeriesRow(series.Id, series.Name, series.SessionIds.Count, series.Lessons.Count,
-                last?.Title ?? "还没有会议", series.Lessons.LastOrDefault()?.Text ?? "", series.PendingCandidates.Count, series.Documents.Count));
+                last?.Title ?? UiText.T("还没有会议"), series.Lessons.LastOrDefault()?.Text ?? "", series.PendingCandidates.Count, series.Documents.Count));
         }
         OnPropertyChanged(nameof(HasSeries));
         OnPropertyChanged(nameof(SeriesIsEmpty));

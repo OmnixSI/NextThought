@@ -93,7 +93,7 @@ public partial class MainWindow
                              ?? throw new InvalidOperationException("Unknown shortcut: " + id);
             var binding = state.ShortcutBinding(id, definition.DefaultModifiers, definition.DefaultKey);
             return new GlobalHotkeys.Binding(
-                $"{NextThought.Core.ShortcutKeys.Format(binding.Modifiers, binding.Key)} {definition.Label}", binding.Key, action)
+                $"{NextThought.Core.ShortcutKeys.Format(binding.Modifiers, binding.Key)} {UiText.T(definition.Label)}", binding.Key, action)
             {
                 Modifiers = binding.Modifiers
             };
@@ -121,7 +121,7 @@ public partial class MainWindow
         ]);
         state.ShortcutConflicts = hotkeys.Unregistered.Count == 0
             ? ""
-            : "以下全局快捷键被其他程序占用：" + string.Join("、", hotkeys.Unregistered) + "；界面按钮仍可使用。";
+            : UiText.T("以下全局快捷键被其他程序占用：") + string.Join(UiText.T("、"), hotkeys.Unregistered) + UiText.T("；界面按钮仍可使用。");
         if (hotkeys.Unregistered.Count > 0)
             state.SetStatus(state.ShortcutConflicts, true);
     }

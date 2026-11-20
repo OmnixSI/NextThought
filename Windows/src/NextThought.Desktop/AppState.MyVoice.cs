@@ -45,10 +45,10 @@ public partial class AppState
         catch { myVoiceProfile = null; }
         MyVoiceHasProfile = myVoiceProfile is not null;
         MyVoiceStatus = myVoiceProfile is null
-            ? "还没有录入"
+            ? UiText.T("还没有录入")
             : myVoiceProfile.Model == SpeakerEmbedder.ModelId
-                ? "已录入 · " + myVoiceProfile.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")
-                : "已录入（来自旧模型的声纹，需要重新录入）";
+                ? UiText.T("已录入 · ") + myVoiceProfile.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")
+                : UiText.T("已录入（来自旧模型的声纹，需要重新录入）");
         MyVoicePrompt = VoicePrompts[0];
     }
 
@@ -151,7 +151,7 @@ public partial class AppState
         try { if (File.Exists(MyVoiceFile)) File.Delete(MyVoiceFile); } catch { }
         myVoiceProfile = null;
         MyVoiceHasProfile = false;
-        MyVoiceStatus = "还没有录入";
+        MyVoiceStatus = UiText.T("还没有录入");
         MyVoiceMessage = "";
     }
 

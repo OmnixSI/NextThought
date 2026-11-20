@@ -113,7 +113,7 @@ public partial class AppState
         foreach (var address in CompanionServer.Addresses()) CompanionAddresses.Add(address);
         SelectedCompanionAddress = CompanionAddresses.FirstOrDefault();
         CompanionInfo = CompanionAddresses.Count == 0
-            ? "没有找到可用的局域网 IPv4 地址；请先连接 Wi-Fi 或以太网。"
+            ? UiText.T("没有找到可用的局域网 IPv4 地址；请先连接 Wi-Fi 或以太网。")
             : "默认关闭；开启后手机与电脑需在同一可信网络。首次监听时 Windows 防火墙会询问，请只允许专用网络。";
     }
 

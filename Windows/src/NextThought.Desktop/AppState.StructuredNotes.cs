@@ -398,26 +398,18 @@ public partial class AppState
     {
         var query = HistoryQuery.Trim();
         IEnumerable<RecentMeetingRow> rows = History;
-        if (HistoryFilter == "有纪要") rows = rows.Where(row => row.HasSummary);
-        else if (HistoryFilter == "未整理") rows = rows.Where(row => !row.HasSummary);
+        if (MatchesFilter(HistoryFilter, "有纪要")) rows = rows.Where(row => row.HasSummary);
+        else if (MatchesFilter(HistoryFilter, "未整理")) rows = rows.Where(row => !row.HasSummary);
         var now = DateTimeOffset.Now;
         var today = now.Date;
-        rows = HistoryDateFilter switch
-        {
-            "今天" => rows.Where(row => row.Meta.StartedAt.ToLocalTime().Date == today),
-            "近 7 天" => rows.Where(row => row.Meta.StartedAt.ToLocalTime() >= now.AddDays(-7)),
-            "近 30 天" => rows.Where(row => row.Meta.StartedAt.ToLocalTime() >= now.AddDays(-30)),
-            "本年度" => rows.Where(row => row.Meta.StartedAt.ToLocalTime().Year == now.Year),
-            _ => rows
-        };
+        if (MatchesFilter(HistoryDateFilter, "今天")) rows = rows.Where(row => row.Meta.StartedAt.ToLocalTime().Date == today);
+        else if (MatchesFilter(HistoryDateFilter, "近 7 天")) rows = rows.Where(row => row.Meta.StartedAt.ToLocalTime() >= now.AddDays(-7));
+        else if (MatchesFilter(HistoryDateFilter, "近 30 天")) rows = rows.Where(row => row.Meta.StartedAt.ToLocalTime() >= now.AddDays(-30));
+        else if (MatchesFilter(HistoryDateFilter, "本年度")) rows = rows.Where(row => row.Meta.StartedAt.ToLocalTime().Year == now.Year);
         double Duration(RecentMeetingRow row) => (row.Meta.EndedAt ?? row.Meta.StartedAt).Subtract(row.Meta.StartedAt).TotalSeconds;
-        rows = HistoryLengthFilter switch
-        {
-            "1 分钟以内" => rows.Where(row => Duration(row) < 60),
-            "1–10 分钟" => rows.Where(row => Duration(row) >= 60 && Duration(row) < 600),
-            "10 分钟以上" => rows.Where(row => Duration(row) >= 600),
-            _ => rows
-        };
+        if (MatchesFilter(HistoryLengthFilter, "1 分钟以内")) rows = rows.Where(row => Duration(row) < 60);
+        else if (MatchesFilter(HistoryLengthFilter, "1–10 分钟")) rows = rows.Where(row => Duration(row) >= 60 && Duration(row) < 600);
+        else if (MatchesFilter(HistoryLengthFilter, "10 分钟以上")) rows = rows.Where(row => Duration(row) >= 600);
         if (query.Length > 0)
         {
             rows = rows.Where(row =>
@@ -425,21 +417,18 @@ public partial class AppState
                 || row.Meta.LocalStartedAt.Contains(query, StringComparison.OrdinalIgnoreCase)
                 || row.Meta.Mode.Contains(query, StringComparison.OrdinalIgnoreCase));
         }
-        rows = HistorySort switch
-        {
-            "最早优先" => rows.OrderBy(row => row.Meta.StartedAt),
-            "时长最长" => rows.OrderByDescending(Duration),
-            "时长最短" => rows.OrderBy(Duration),
-            "问题最多" => rows.OrderByDescending(row => row.Meta.QuestionCount),
-            _ => rows.OrderByDescending(row => row.Meta.StartedAt)
-        };
+        if (MatchesFilter(HistorySort, "最早优先")) rows = rows.OrderBy(row => row.Meta.StartedAt);
+        else if (MatchesFilter(HistorySort, "时长最长")) rows = rows.OrderByDescending(Duration);
+        else if (MatchesFilter(HistorySort, "时长最短")) rows = rows.OrderBy(Duration);
+        else if (MatchesFilter(HistorySort, "问题最多")) rows = rows.OrderByDescending(row => row.Meta.QuestionCount);
+        else rows = rows.OrderByDescending(row => row.Meta.StartedAt);
         FilteredHistory.Clear();
         foreach (var row in rows) FilteredHistory.Add(row);
         HistoryGroups.Clear();
         foreach (var group in FilteredHistory.GroupBy(row =>
                  {
                      var series = workspace.SeriesOfSession(row.Meta.Id.ToString());
-                     return (Id: series?.Id, Name: series?.Name ?? "未归入系列");
+                     return (Id: series?.Id, Name: series?.Name ?? UiText.T("未归入系列"));
                  }))
             HistoryGroups.Add(new HistoryGroupRow(group.Key.Name, group.Key.Id, group.ToList()));
         OnPropertyChanged(nameof(HistorySummary));

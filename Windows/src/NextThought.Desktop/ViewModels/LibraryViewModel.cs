@@ -27,12 +27,19 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
 
 
     public string MaterialsInsight => Materials.Count == 0
-        ? "还没有资料；导入 PDF、Word、PPT、Excel、Markdown 或图片后，这里显示页数与段落数。"
+        ? UiText.T("还没有资料；导入 PDF、Word、PPT、Excel、Markdown 或图片后，这里显示页数与段落数。")
         : string.Join("  ·  ", Materials.Take(3).Select(document =>
             UiText.Format("%@ %lld 段", document.Name, document.Blocks.Count))) + (Materials.Count > 3 ? UiText.Format("  ·  另 %lld 份", Materials.Count - 3) : "");
 
     public bool HasMaterials => Materials.Count > 0;
-    public void NotifyLanguageChanged() => OnPropertyChanged(nameof(MaterialCountText));
+    public void NotifyLanguageChanged()
+    {
+        OnPropertyChanged(nameof(MaterialCountText));
+        OnPropertyChanged(nameof(MaterialsInsight));
+        OnPropertyChanged(nameof(HasMaterials));
+        SelectedPreview = UiText.T("选择一份资料，查看本机解析出的文本。");
+        OnFilterChanged(Filter);
+    }
 
     public string MaterialCountText => NextThought.Core.UiText.EnglishUi
         ? $"{NextThought.Core.UiText.Materials(Materials.Count)} · parsed on device"
