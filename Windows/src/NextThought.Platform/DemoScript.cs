@@ -303,7 +303,7 @@ public static class DemoScript
             Name = "系统设计答题框架",
             Summary = "需求 → 估算 → 架构 → 取舍",
             Content = "系统设计题按 需求澄清、容量估算、核心架构、关键取舍 四步回答。",
-            Global = true,
+            Global = false,
             Enabled = true
         },
         new()
@@ -312,7 +312,7 @@ public static class DemoScript
             Name = "学术答辩应对",
             Summary = "承认局限、给出补充实验",
             Content = "被质疑时先承认问题，再说明已有证据和计划中的补充实验。",
-            Global = true,
+            Global = false,
             Enabled = true
         }
     ];

@@ -242,9 +242,12 @@
       <!-- Skills: Markdown guidance injected into answers (Skill.swift). -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorAdvanced2" Text="{loc:Tr 技能（回答时遵守的说明）}" Classes="section" />
-          <TextBlock Text="{loc:Tr 每个技能以 ## 名称 开头，可写一行「摘要：…」，其余为 Markdown。启用后会加入回答提示；与真实性/安全约束冲突时以安全约束为准。}"
-                     Classes="caption" FontSize="11" />
+          <TextBlock Name="AnchorAdvanced2" Text="{loc:Tr 技能}" Classes="section" />
+          <TextBlock Text="{loc:Tr 技能可用于所有系列，或在资料夹中按系列选择。}" Classes="caption" FontSize="11" />
+          <TextBlock Text="{loc:Tr 技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在资料夹的“技能”页按系列勾选。}"
+                     Classes="caption" FontSize="11" TextWrapping="Wrap" />
+          <TextBlock Text="{loc:Tr 还没有技能。可以导入现成的 SKILL.md，或点“新建技能”从模板开始。}"
+                     Classes="caption" FontSize="11" IsVisible="{Binding !HasSkills}" />
           <ItemsControl ItemsSource="{Binding SkillRows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:SkillRow">
@@ -254,6 +257,7 @@
           </ItemsControl>
           <StackPanel x:Name="SkillEditorPanel" Spacing="{DynamicResource D4Spacing_8}" />
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+            <Button Content="{loc:Tr 导入 .md 文件…}" Click="ImportSkill_Click" />
             <Button Content="{loc:Tr 新建技能}" Click="NewSkill_Click" />
             <Button Content="{loc:Tr 安装示例技能}" Click="InstallDemoSkill_Click" />
             <TextBlock Text="{Binding SkillsStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center" MaxWidth="460" />
@@ -553,6 +557,14 @@
                  IsVisible="{Binding CompanionRunning}" />
           <TextBox Text="{Binding CompanionLink}" IsReadOnly="True" TextWrapping="Wrap" FontSize="12" />
           <TextBlock Text="{Binding CompanionInfo}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- E3: 设置清单 — Mac SetupChecklist（排除 Windows 没有的录屏/签名项） -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="{loc:Tr 设置清单}" Classes="section" />
+          <views:SettingsSetupChecklist />
         </StackPanel>
       </Border>
 

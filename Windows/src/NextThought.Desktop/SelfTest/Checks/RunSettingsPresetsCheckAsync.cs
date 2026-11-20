@@ -76,6 +76,29 @@ public partial class MainWindow
         Step("github-commands", settings.SaveGithubTokenCommand is not null && settings.ClearGithubTokenCommand is not null
                                 && settings.FetchApiModelsCommand is not null, "");
 
+        // E28: skills — new, edit+save, install the three Mac demo skills, delete (with the
+        // same store calls the settings card's buttons use).
+        var skillsBefore = state.EditableSkills.Count;
+        state.AddSkill();
+        var addedSkill = state.EditableSkills[^1];
+        Step("skill-new", state.EditableSkills.Count == skillsBefore + 1
+                           && addedSkill.Name == NextThought.Core.Skill.StarterName
+                           && addedSkill.Summary == NextThought.Core.Skill.StarterSummary,
+            $"{skillsBefore} → {state.EditableSkills.Count}，{addedSkill.Name}");
+        Step("skill-starter", addedSkill.Content == NextThought.Core.Skill.StarterContent
+                             && !addedSkill.Global && addedSkill.Enabled, "starter template / 默认仅本系列");
+        state.SaveSkillEdit(addedSkill with { Name = "QA 技能", Summary = "测试摘要", Content = "测试正文" });
+        var editedSkill = state.EditableSkills.FirstOrDefault(skill => skill.Id == addedSkill.Id);
+        Step("skill-save", editedSkill is { Name: "QA 技能", Summary: "测试摘要", Content: "测试正文" }, editedSkill?.Name ?? "");
+        state.InstallDemoSkill();
+        var demo = NextThought.Core.Skill.DemoSkills;
+        var demoRows = demo.Select(item => state.EditableSkills.FirstOrDefault(skill => skill.Name == item.Name)).ToList();
+        Step("skill-install-demo", demoRows.All(row => row is not null)
+                                 && demoRows[0]!.Global && !demoRows[1]!.Global && !demoRows[2]!.Global,
+            string.Join(" / ", demoRows.Select(row => row?.Name ?? "missing")));
+        state.DeleteSkill(addedSkill.Id);
+        Step("skill-delete", state.EditableSkills.All(skill => skill.Id != addedSkill.Id), $"删除后 {state.EditableSkills.Count} 个技能");
+
         // E26b: capture the scene page and the quick settings panel in light/dark/English from
         // inside the self-test (the full screenshot batch can be interrupted by other QA runs).
         var evidenceDirectory = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path)) ?? Path.GetTempPath(), "evidence");
@@ -100,6 +123,11 @@ public partial class MainWindow
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(settingsView.UpdateLayout, Avalonia.Threading.DispatcherPriority.Background);
                 await Task.Delay(250);
                 CaptureControl(settingsView, Path.Combine(evidenceDirectory, "settings-scene" + suffix + ".png"));
+                // E28: the skill card is the first card of 回答与资料.
+                settingsView.SelectPage("Answer");
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(settingsView.UpdateLayout, Avalonia.Threading.DispatcherPriority.Background);
+                await Task.Delay(200);
+                CaptureControl(settingsView, Path.Combine(evidenceDirectory, "settings-skills" + suffix + ".png"));
                 window.Close();
 
                 var quick = new QuickSettingsPanel { DataContext = state };

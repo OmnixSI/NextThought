@@ -66,8 +66,12 @@ public partial class AppState
         catch (Exception ex) { SkillsStatus = "技能保存失败：" + ex.Message; SetStatus(SkillsStatus, true); }
     }
 
+    /// <summary>E28: the Mac SkillSettings empty state.</summary>
+    public bool HasSkills => skills.Count > 0;
+
     private void RefreshSkillRows()
     {
+        OnPropertyChanged(nameof(HasSkills));
         SkillRows.Clear();
         foreach (var skill in skills) SkillRows.Add(new SkillRow(skill, PersistSkillRows));
     }
@@ -97,7 +101,15 @@ public partial class AppState
     public void AddSkill()
     {
         var list = skills.ToList();
-        list.Add(new Skill { Id = Guid.NewGuid().ToString("D"), Name = "新技能", Summary = "", Content = "在这里写这个技能的要求。", Enabled = true, Global = true });
+        // Mac SkillLibrary.create: Skill.parse(Skill.starterTemplate, fileName: "新技能.md"), per-scenario.
+        list.Add(new Skill
+        {
+            Id = Guid.NewGuid().ToString("D"),
+            Name = Skill.StarterName,
+            Summary = Skill.StarterSummary,
+            Content = Skill.StarterContent,
+            Enabled = true
+        });
         PersistSkills(list, "已新建技能，改完内容后保存。");
     }
 
@@ -106,16 +118,18 @@ public partial class AppState
         PersistSkills(skills.Where(skill => skill.Id != id).ToList(), "技能已删除。");
     }
 
-    /// <summary>Mac SkillLibrary.installDemo: one sample skill users can edit.</summary>
+    /// <summary>Mac DemoMode installDemo list: the three sample skills, verbatim (E28).</summary>
     public void InstallDemoSkill()
     {
         var list = skills.ToList();
-        if (list.Any(skill => skill.Name == "简洁回答")) { SetStatus("示例技能已经在列表里。"); return; }
-        list.Add(new Skill
+        var added = 0;
+        foreach (var demo in Skill.DemoSkills)
         {
-            Id = Guid.NewGuid().ToString("D"), Name = "简洁回答", Summary = "先说结论",
-            Content = "回答不超过三句话：先给结论，再给一条依据。", Enabled = true, Global = true
-        });
+            if (list.Any(skill => skill.Name == demo.Name)) continue;
+            list.Add(demo with { Id = Guid.NewGuid().ToString("D") });
+            added++;
+        }
+        if (added == 0) { SetStatus("示例技能已经在列表里。"); return; }
         PersistSkills(list, "已安装示例技能。");
     }
 

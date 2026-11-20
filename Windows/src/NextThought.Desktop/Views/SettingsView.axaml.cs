@@ -483,18 +483,25 @@ public partial class SettingsView : UserControl
             };
             var stack = new Avalonia.Controls.StackPanel { Spacing = 4 };
             var header = new Avalonia.Controls.StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
-            var name = new Avalonia.Controls.TextBox { Text = skill.Name, Width = 160, FontSize = 11 };
-            var summary = new Avalonia.Controls.TextBox { Text = skill.Summary, Watermark = "摘要", Width = 260, FontSize = 11 };
-            var enabled = new Avalonia.Controls.CheckBox { Content = "启用", IsChecked = skill.Enabled, FontSize = 11 };
-            var global = new Avalonia.Controls.CheckBox { Content = "全部会议", IsChecked = skill.Global, FontSize = 11 };
+            var name = new Avalonia.Controls.TextBox { Text = skill.Name, Width = 160, FontSize = 11, Watermark = UiText.T("名称") };
+            var summary = new Avalonia.Controls.TextBox { Text = skill.Summary, Watermark = UiText.T("一句话说明（可选）"), Width = 260, FontSize = 11 };
+            var enabled = new Avalonia.Controls.CheckBox { Content = UiText.T("启用"), IsChecked = skill.Enabled, FontSize = 11 };
+            var global = new Avalonia.Controls.CheckBox { Content = UiText.T("所有系列都使用这个技能"), IsChecked = skill.Global, FontSize = 11 };
             header.Children.Add(name); header.Children.Add(summary); header.Children.Add(enabled); header.Children.Add(global);
             var content = new Avalonia.Controls.TextBox
             {
                 Text = skill.Content, AcceptsReturn = true, Height = 70, TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-                FontSize = 11, Watermark = "这个技能的要求（Markdown）"
+                FontSize = 11
             };
+            var length = new Avalonia.Controls.TextBlock
+            {
+                Text = UiText.Format("%lld 字 · 单个技能最多使用约 6000 字", skill.Content.Length),
+                FontSize = 11, Opacity = 0.6
+            };
+            content.TextChanged += (_, _) =>
+                length.Text = UiText.Format("%lld 字 · 单个技能最多使用约 6000 字", content.Text?.Length ?? 0);
             var actions = new Avalonia.Controls.StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
-            var save = new Avalonia.Controls.Button { Content = "保存", FontSize = 11 };
+            var save = new Avalonia.Controls.Button { Content = UiText.T("保存"), FontSize = 11 };
             save.Click += (_, _) =>
             {
                 state.SaveSkillEdit(skill with
@@ -504,10 +511,18 @@ public partial class SettingsView : UserControl
                 });
                 BuildSkillRows();
             };
-            var remove = new Avalonia.Controls.Button { Content = "删除", FontSize = 11 };
-            remove.Click += (_, _) => { state.DeleteSkill(skill.Id); BuildSkillRows(); };
+            var remove = new Avalonia.Controls.Button { Content = UiText.T("删除"), FontSize = 11 };
+            // Mac SkillSettings confirmationDialog: 删除技能“%@”？
+            remove.Click += async (_, _) =>
+            {
+                if (TopLevel.GetTopLevel(this) is not Window owner) return;
+                var confirmed = await new ConfirmDialog(UiText.Format("删除技能“%@”？", skill.Name)).ShowDialog<bool>(owner);
+                if (!confirmed) return;
+                state.DeleteSkill(skill.Id);
+                BuildSkillRows();
+            };
             actions.Children.Add(save); actions.Children.Add(remove);
-            stack.Children.Add(header); stack.Children.Add(content); stack.Children.Add(actions);
+            stack.Children.Add(header); stack.Children.Add(content); stack.Children.Add(length); stack.Children.Add(actions);
             card.Child = stack;
             SkillEditorPanel.Children.Add(card);
         }

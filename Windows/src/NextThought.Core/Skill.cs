@@ -10,9 +10,24 @@ public sealed record Skill
     public string Name { get; init; } = "";
     public string Summary { get; init; } = "";
     public string Content { get; init; } = "";
-    public bool Global { get; init; } = true;
+    /// <summary>Mac Skill default: a new/imported skill is per-scenario until 所有系列 is switched on.</summary>
+    public bool Global { get; init; }
     public bool Enabled { get; init; } = true;
     public DateTimeOffset ImportedAt { get; init; } = DateTimeOffset.UtcNow;
+
+    /// <summary>Mac Skill.starterTemplate: the front-matter name/summary and the editable body.</summary>
+    public static string StarterName => "新技能";
+    public static string StarterSummary => "一句话说明这个技能做什么";
+    public static string StarterContent =>
+        "# 新技能\n\n在这里写给模型的要求，例如：\n- 回答像我平时说话：先说结论，再讲一个具体例子。\n- 被问到项目时，按“背景 → 我做了什么 → 结果数字”讲。\n- 不知道的就说“这块我了解得不深，我的理解是……”，不要硬编。";
+
+    /// <summary>Mac DemoMode demo skills (installDemo list), verbatim.</summary>
+    public static IReadOnlyList<Skill> DemoSkills =>
+    [
+        new() { Name = "面试口语化", Summary = "回答像真人说话，先结论后例子", Content = "先用一句话回答，再讲一个我做过的具体例子；不用“首先其次最后”。", Global = true, Enabled = true },
+        new() { Name = "系统设计答题框架", Summary = "需求 → 估算 → 架构 → 取舍", Content = "系统设计题按 需求澄清、容量估算、核心架构、关键取舍 四步回答。", Enabled = true },
+        new() { Name = "学术答辩应对", Summary = "承认局限、给出补充实验", Content = "被质疑时先承认问题，再说明已有证据和计划中的补充实验。", Enabled = true }
+    ];
 
     /// <summary>Parses a Markdown skill with optional YAML front matter and a # heading.</summary>
     public static Skill Parse(string text, string fileName)
