@@ -101,6 +101,8 @@ public partial class SettingsView : UserControl
                      .Where(border => border.Classes.Contains("card") && border.Name != "SettingsSearchCard"))
             card.IsVisible = card.Tag as string == page;
         SettingsScroll.Offset = new Avalonia.Vector(0, 0);
+        // E29: permissions can change in Windows Settings while this page is open.
+        if (page == "General" && DataContext is AppState state) state.RefreshPermissions();
     }
 
     /// <summary>Filters the visible setting cards by their text (Mac settings search).</summary>

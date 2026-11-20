@@ -577,7 +577,11 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     partial void OnSelectedAutoEndModeChanged(AutoEndChoice? value)
     {
         if (value is not null) AutoEndMode = value.Value;
+        OnPropertyChanged(nameof(AutoEndCanEndByItself));
     }
+
+    /// <summary>E29: Mac shows 多久没人说话算结束 only when the meeting can end by itself.</summary>
+    public bool AutoEndCanEndByItself => (SelectedAutoEndMode?.Value ?? "prompt") != "off";
 
     partial void OnSecondPassChanged(bool value) => state.RefreshModelState();
     partial void OnCaptureSystemChanged(bool value) => state.RefreshModelState();

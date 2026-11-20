@@ -176,7 +176,26 @@
         </StackPanel>
       </Border>
 
+      <!-- E29: 会议自动收尾 — Mac 纪要页 (AutoEndViews.swift AutoEndSettingsSection) -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Name="AnchorNotesAutoEnd" Text="{loc:Tr 会议自动收尾}" Classes="section" />
+          <TextBlock Text="{loc:Tr 会议没人说话时}" Classes="label" />
+          <ComboBox ItemsSource="{Binding Settings.AutoEndModes}" SelectedItem="{Binding Settings.SelectedAutoEndMode}"
+                    HorizontalAlignment="Left" MinWidth="280" />
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding Settings.AutoEndCanEndByItself}">
+            <TextBlock Text="{loc:Tr 多久没人说话算结束}" Classes="label" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+              <ComboBox ItemsSource="{Binding Settings.AutoEndMinuteChoices}"
+                        SelectedItem="{Binding Settings.AutoEndMinutes}" Width="90" />
+              <TextBlock Text="{loc:Tr 分钟}" Classes="label" VerticalAlignment="Center" />
+            </StackPanel>
+            <TextBlock Text="{loc:Tr 只数识别到的文字，背景音乐不算。}" Classes="caption" FontSize="11" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
 
+      <!-- Custom notes templates: imported Mac note-templates.json. -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Notes">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorNotes" Text="{loc:Tr 自定义纪要模板}" Classes="section" />
@@ -267,7 +286,7 @@
       </Border>
 
       <!-- Screen reading and slide following (InsightSettingsView.swift, E9) -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Coach">
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Advanced">
         <StackPanel Spacing="{DynamicResource D4Spacing_10}">
           <TextBlock Name="AnchorCoachScreen" Text="{loc:Tr 屏幕与讲稿}" Classes="section" />
           <CheckBox Content="{loc:Tr 会议中每隔几秒读一次屏幕}" IsChecked="{Binding Settings.InsightScreenWatch}" />
@@ -314,23 +333,6 @@
           <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11" />
           <TextBlock Text="{loc:Tr 开始记录时主窗口会收起（Ctrl+Alt+N 唤回）；只有一块屏时不会启用，避免把会议窗口藏起来。已支持按讲话标题和截图 OCR 跟页；持续屏幕观察尚未移植。}"
                      Classes="caption" FontSize="11" />
-        </StackPanel>
-      </Border>
-
-      <!-- Meeting auto-end -->
-      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
-        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-          <TextBlock Name="AnchorGeneral3" Text="{loc:Tr 会议自动收尾}" Classes="section" />
-          <TextBlock Text="{loc:Tr 忘了结束的会议会在长时间没有识别到文字后自动收尾，避免把下一场会议的内容写进这场纪要。只统计识别到的文字，背景音乐不会让它一直开着。}"
-                     Classes="caption" FontSize="11" />
-          <ComboBox ItemsSource="{Binding Settings.AutoEndModes}" SelectedItem="{Binding Settings.SelectedAutoEndMode}"
-                    HorizontalAlignment="Left" MinWidth="280" />
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="{loc:Tr 静音多久后收尾}" Classes="label" VerticalAlignment="Center" />
-            <ComboBox ItemsSource="{Binding Settings.AutoEndMinuteChoices}"
-                      SelectedItem="{Binding Settings.AutoEndMinutes}" Width="90" />
-            <TextBlock Text="{loc:Tr 分钟}" Classes="label" VerticalAlignment="Center" />
-          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -487,7 +489,41 @@
         </StackPanel>
       </Border>
 
+      <!-- E29: 备份与恢复 — Mac 通用页；界面主体由 E30 做 (BackupSettingsSection) -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <views:BackupSettingsSection />
+        </StackPanel>
+      </Border>
 
+      <!-- E29: 权限 — Mac 通用页 PermissionSettingsSection；Windows 没有录屏授权，只显示麦克风/摄像头 -->
+      <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
+        <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+          <TextBlock Text="{loc:Tr 权限}" Classes="section" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 麦克风}" Classes="label" Width="64" VerticalAlignment="Center" />
+            <Border Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}"
+                    Background="{DynamicResource Ready}" IsVisible="{Binding MicrophonePermissionGranted}" VerticalAlignment="Center" />
+            <Border Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}"
+                    Background="{DynamicResource Caution}" IsVisible="{Binding !MicrophonePermissionGranted}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding MicrophonePermissionDetail}" Classes="caption" VerticalAlignment="Center"
+                       TextWrapping="Wrap" MaxWidth="460" />
+            <Button Content="{loc:Tr 打开系统设置}" Command="{Binding OpenMicrophonePermissionSettingsCommand}" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="{loc:Tr 摄像头}" Classes="label" Width="64" VerticalAlignment="Center" />
+            <Border Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}"
+                    Background="{DynamicResource Ready}" IsVisible="{Binding CameraPermissionGranted}" VerticalAlignment="Center" />
+            <Border Width="8" Height="8" CornerRadius="{DynamicResource D4CornerRadius_4}"
+                    Background="{DynamicResource Caution}" IsVisible="{Binding !CameraPermissionGranted}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding CameraPermissionDetail}" Classes="caption" VerticalAlignment="Center"
+                       TextWrapping="Wrap" MaxWidth="460" />
+            <Button Content="{loc:Tr 打开系统设置}" Command="{Binding OpenCameraPermissionSettingsCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Updates -->
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 更新}" Classes="section" />
@@ -513,8 +549,6 @@
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="General">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Text="{loc:Tr 数据与关于}" Classes="section" />
-          <!-- E30: 备份与恢复 (自动备份、恢复点列表、导入与恢复预览) -->
-          <views:BackupSettingsSection />
           <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0" Margin="{DynamicResource D4Margin_0_6_0_0}" Padding="{DynamicResource D4Padding_0_12_0_0}">
             <StackPanel Spacing="{DynamicResource D4Spacing_4}">
               <TextBlock Text="{Binding VersionText}" Classes="overline" />

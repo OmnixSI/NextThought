@@ -121,4 +121,43 @@ public partial class AppState
             OnPropertyChanged(nameof(EngineTestLabel));
         }
     }
+
+    // MARK: - E29 权限分组（Mac PermissionSettingsSection；Windows 没有录屏授权，只显示麦克风/摄像头）
+
+    public WindowsPermissions.PermissionState MicrophonePermission => WindowsPermissions.Microphone();
+    public WindowsPermissions.PermissionState CameraPermission => WindowsPermissions.Camera();
+    public bool MicrophonePermissionGranted => MicrophonePermission == WindowsPermissions.PermissionState.Allowed;
+    public bool CameraPermissionGranted => CameraPermission == WindowsPermissions.PermissionState.Allowed;
+
+    public string MicrophonePermissionDetail => MicrophonePermission switch
+    {
+        WindowsPermissions.PermissionState.Allowed => UiText.T("已允许 · 你说的话标记为“我”"),
+        WindowsPermissions.PermissionState.Denied => UiText.T("未允许 · 只记录对方的声音"),
+        _ => UiText.T("第一次使用时才会询问")
+    };
+
+    public string CameraPermissionDetail => CameraPermission switch
+    {
+        WindowsPermissions.PermissionState.Allowed => UiText.T("已允许 · 临场教练用它留意眼神，画面不保存、不上传"),
+        WindowsPermissions.PermissionState.Denied => UiText.T("未允许 · 只影响临场教练的眼神提示"),
+        _ => UiText.T("打开“留意眼神”时才会询问")
+    };
+
+    /// <summary>E29: Mac opens System Settings; Windows opens the matching Settings deep link.</summary>
+    [RelayCommand]
+    private void OpenMicrophonePermissionSettings() => WindowsPermissions.OpenMicrophoneSettings();
+
+    [RelayCommand]
+    private void OpenCameraPermissionSettings() => WindowsPermissions.OpenCameraSettings();
+
+    /// <summary>Called when the page is shown: permissions changed in Windows Settings meanwhile.</summary>
+    public void RefreshPermissions()
+    {
+        OnPropertyChanged(nameof(MicrophonePermission));
+        OnPropertyChanged(nameof(CameraPermission));
+        OnPropertyChanged(nameof(MicrophonePermissionGranted));
+        OnPropertyChanged(nameof(CameraPermissionGranted));
+        OnPropertyChanged(nameof(MicrophonePermissionDetail));
+        OnPropertyChanged(nameof(CameraPermissionDetail));
+    }
 }
