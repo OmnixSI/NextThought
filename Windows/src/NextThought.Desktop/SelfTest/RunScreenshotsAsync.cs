@@ -36,7 +36,7 @@ public partial class MainWindow
                         && PageHost.Content is Avalonia.Controls.Control notesPage
                         && notesPage.GetVisualDescendants().OfType<TabControl>().FirstOrDefault() is { } tabs)
                     {
-                        var tabNames = new[] { "notes", "transcript", "answers", "personal", "evidence", "outline" };
+                        var tabNames = new[] { "notes", "transcript", "answers", "personal", "evidence", "outline", "review", "work" };
                         for (var index = 0; index < tabs.ItemCount && index < tabNames.Length; index++)
                         {
                             tabs.SelectedIndex = index;

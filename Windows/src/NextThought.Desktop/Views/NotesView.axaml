@@ -187,6 +187,39 @@
           </ItemsControl>
         </ScrollViewer>
       </TabItem>
+      <TabItem Header="回顾">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_10}">
+            <TextBlock Text="已确认经验" Classes="overline" />
+            <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:WorkspaceLesson">
+                  <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_0_0_0_6}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="题库" Classes="overline" />
+            <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.QuestionBank}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:QuestionBankItem">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                    <TextBlock Text="{Binding Question}" Classes="label" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Answer}" Classes="caption" TextWrapping="Wrap" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <TabItem Header="工作纪要">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="工作会议模板纪要" Classes="section" />
+            <views:MarkdownText Text="{Binding SummaryText}" BaseFontSize="14" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
     </TabControl>
   </Grid>
 </UserControl>

@@ -78,7 +78,7 @@
 改动：实现 `--screenshots <目录>`，用演示数据在 1120×820 下依次切换 Home/Live/Notes/History/Series/Library/Settings，浅色和深色各导出一张 PNG。
 测试：Core **872/872**，NextThought.Tests **191/191**。
 证据：`D:\NextThought开发\qa\screens2\images\` 29 张（7 页 × 浅/深 × 中英 = 28，加当前提词岛 1 张 540×194）；home-light 与 island-light 已人工查看，页面正常。
-状态：D1「未做」。7 页中英/浅深 + 提词岛 7 个状态已放进 `Windows/validation/screens/`；首页/历史/资料库/设置/组件样张已有 Mac 并排图；仍缺 Mac 脚本的准备/回顾/工作纪要、演示文案与 Mac 截图逐字一致、逐项差异清单。
+状态：D1「未做」。7 页中英/浅深 + 提词岛 7 个状态已放进 `Windows/validation/screens/`；会议页新增回顾/工作纪要标签并可截图；首页/历史/资料库/设置/组件样张已有 Mac 并排图；仍缺演示文案与 Mac 截图逐字一致、逐项差异清单。
 未解决：补齐页面/语言/岛形态和对照。
 
 ## 2026-11-20 · 0.5.145 · D7（部分）
