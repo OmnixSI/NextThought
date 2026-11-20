@@ -165,11 +165,11 @@ python Windows/scripts/core_usage.py
 | AnswerPromptBuilderTests.swift | 7 | 0 |
 | AnswerServiceSupportTests.swift | 16 | 0 |
 | AnswerStreamingTests.swift | 17 | 0 |
-| AudioTimelineTests.swift | 10 | 1 |
+| AudioTimelineTests.swift | 10 | 10 |
 | BackupArchivePolicyTests.swift | 1 | 1 |
 | ByteLevelBPETokenizerTests.swift | 4 | 4 |
 | CancellableTaskValueTests.swift | 2 | 2 |
-| CloudTranscriptionTests.swift | 9 | 0 |
+| CloudTranscriptionTests.swift | 9 | 9 |
 | CoachSummaryTests.swift | 5 | 5 |
 | CodexEventParserTests.swift | 4 | 4 |
 | CompanionBLETests.swift | 4 | 4 |
@@ -179,7 +179,7 @@ python Windows/scripts/core_usage.py
 | DocumentJobTests.swift | 6 | 0 |
 | DocumentNoticeTests.swift | 11 | 0 |
 | DocumentStructureTests.swift | 5 | 5 |
-| EchoSuppressionTests.swift | 7 | 0 |
+| EchoSuppressionTests.swift | 7 | 7 |
 | GlossaryTests.swift | 18 | 0 |
 | LaTeXMathTests.swift | 13 | 0 |
 | LiveInsightsTests.swift | 24 | 1 |
@@ -202,7 +202,7 @@ python Windows/scripts/core_usage.py
 | QuestionIntentTests.swift | 8 | 8 |
 | QuestionTurnTests.swift | 8 | 8 |
 | RealtimeRegressionTests.swift | 9 | 9 |
-| RealtimeSetupReadinessTests.swift | 8 | 0 |
+| RealtimeSetupReadinessTests.swift | 8 | 8 |
 | SceneAndGazeTests.swift | 20 | 1 |
 | ScreenDeltaTests.swift | 1 | 1 |
 | ScreenEvidenceTests.swift | 5 | 1 |
@@ -224,7 +224,7 @@ python Windows/scripts/core_usage.py
 | TranscriptContextBuilderTests.swift | 1 | 1 |
 | TranscriptDeduplicatorTests.swift | 3 | 0 |
 | UpdateCatalogTests.swift | 6 | 0 |
-| VoiceActivitySegmenterTests.swift | 7 | 0 |
+| VoiceActivitySegmenterTests.swift | 7 | 7 |
 | VoiceProfileTests.swift | 16 | 0 |
 | WebLookupPromptBuilderTests.swift | 3 | 0 |
 | WebSearchNeedTests.swift | 4 | 4 |
