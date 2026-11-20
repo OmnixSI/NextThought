@@ -469,11 +469,13 @@ public partial class AppState
                     CurrentSession = meta;
                 }
                 meta.AnswerCount += 1;
-                await Sessions.AppendAnswerAsync(meta, new AnswerRecord
+                var answerRecord = new AnswerRecord
                 {
                     Question = question, Answer = result, Model = options.Model,
                     Seconds = clock.Elapsed.TotalSeconds, Automatic = automatic, Sources = cited
-                });
+                };
+                await Sessions.AppendAnswerAsync(meta, answerRecord);
+                CurrentAnswerHistory.Add(answerRecord);
                 RefreshHistory();
             }
             tracker.HasPriorAnswer = true;

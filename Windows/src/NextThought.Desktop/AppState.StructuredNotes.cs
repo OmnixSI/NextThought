@@ -437,6 +437,7 @@ public partial class AppState
             workspace = workspace.Assign(demoMeetings[i].Id.ToString(), workspace.Series[i].Id);
         RefreshSeries();
         Sources.Clear();
+        CurrentAnswerHistory.Clear();
         Sources.Add(new SourceCitation("监测方案 v3 · 第 2 页", "demo-scheme", "监测方案 v3.pdf", "demo",
             "第 2 页 · 3.1", "支座刚度的取值需要通过敏感性分析标定。", 2));
         Sources.Add(new SourceCitation("温度补偿记录 · 第 1 页", "demo-notes", "温度补偿记录.docx", "demo",
@@ -898,7 +899,8 @@ public partial class AppState
             LoadSessionScreenshots(data.Meta.Id);
             LoadNotesEditor();
             SelectedSessionAnswers.Clear();
-            foreach (var answer in data.Answers) SelectedSessionAnswers.Add(answer);
+            CurrentAnswerHistory.Clear();
+            foreach (var answer in data.Answers) { SelectedSessionAnswers.Add(answer); CurrentAnswerHistory.Add(answer); }
             AnswerText = data.Answers.LastOrDefault()?.Answer ?? "";
             DetectedQuestion = data.Answers.LastOrDefault()?.Question ?? UiText.T("可以继续对这场会议提问。");
             SummaryText = data.Summary.Length > 0 ? data.Summary : UiText.T("这场会议还没有纪要，点击上方整理。");

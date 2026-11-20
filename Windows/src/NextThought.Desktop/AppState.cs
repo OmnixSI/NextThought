@@ -186,6 +186,8 @@ public partial class AppState : ObservableObject
     public ObservableCollection<WebResult> WebResults { get; } = [];
     public string WebStatusText => WebResults.Count == 0 ? "未联网" : $"联网来源 {WebResults.Count} 条";
 
+    public System.Collections.ObjectModel.ObservableCollection<AnswerRecord> CurrentAnswerHistory { get; } = [];
+
     public ObservableCollection<SourceCitation> Sources { get; }
     public ObservableCollection<CompanionAddress> CompanionAddresses { get; } = [];
 
