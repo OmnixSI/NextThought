@@ -30,8 +30,15 @@ public partial class AppState
         OnPropertyChanged(nameof(IslandDetail));
     }
 
+    private DateTimeOffset recordingStartedAt;
+
+    public string RecordingElapsedText => Recording
+        ? (DateTimeOffset.Now - recordingStartedAt).ToString(@"hh\:mm\:ss")
+        : "00:00:00";
+
     private void OnCandidateTimer()
     {
+        if (Recording) OnPropertyChanged(nameof(RecordingElapsedText));
         var now = DateTimeOffset.UtcNow;
         ApplyCandidate(tracker.Tick(now));
         if (!Settings.AutomaticAnswers || !Recording || Stopping) { automaticScheduler.Clear(); return; }
@@ -211,6 +218,7 @@ public partial class AppState
             });
             await Task.Run(() => capture.Start(settings));
             if (capture.LastError is { } captureError) throw new IOException(captureError);
+            recordingStartedAt = DateTimeOffset.Now;
             Recording = true;
             ListeningPaused = false;
             candidateTimer.Start();

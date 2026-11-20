@@ -105,6 +105,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LivePageHasTimerAndAnswerActions()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("RecordingElapsedText", xaml);
+        foreach (var action in new[] { "暂停", "重新生成", "改短", "上一条", "下一条" })
+            Assert.Contains(action, xaml);
+    }
+
     [Fact]
     public void NotesEvidenceItemsCanBeEdited()
     {

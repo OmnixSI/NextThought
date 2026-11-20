@@ -11,7 +11,10 @@
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
         <TextBox Text="{Binding MeetingTitle}" Background="Transparent" BorderThickness="0" Padding="{DynamicResource D4Padding_0}"
                  FontFamily="{StaticResource SerifFamily}" FontSize="28" FontWeight="Medium" MinHeight="40" />
-        <TextBlock Text="{Binding PageSubtitle}" Classes="caption" />
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+          <TextBlock Text="{Binding PageSubtitle}" Classes="caption" />
+          <TextBlock Text="{Binding RecordingElapsedText}" Classes="caption" />
+        </StackPanel>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" VerticalAlignment="Center">
         <CheckBox Content="自动回答" IsChecked="{Binding Settings.AutomaticAnswers}" VerticalAlignment="Center"
@@ -101,8 +104,14 @@
               <TextBlock Text="参考回答" Classes="title" FontSize="16" />
               <TextBlock Text="{Binding RetrievalInfo}" Classes="caption" FontSize="11" Margin="{DynamicResource D4Margin_0_3_0_0}" />
             </StackPanel>
-            <Button Grid.Column="1" Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}"
-                    VerticalAlignment="Top" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Top">
+              <Button Classes="quiet" Content="暂停" Command="{Binding TogglePauseListeningCommand}" />
+              <Button Classes="quiet" Content="重新生成" Command="{Binding RegenerateAnswerCommand}" />
+              <Button Classes="quiet" Content="改短" Command="{Binding ShorterAnswerCommand}" />
+              <Button Classes="quiet" Content="上一条" Command="{Binding PreviousAnswerCommand}" />
+              <Button Classes="quiet" Content="下一条" Command="{Binding NextAnswerCommand}" />
+              <Button Classes="quiet" Content="复制" Command="{Binding CopyAnswerCommand}" />
+            </StackPanel>
           </Grid>
 
           <TextBlock Grid.Row="1" Text="{Binding DetectedQuestion}" Classes="caption" Margin="{DynamicResource D4Margin_18_0_18_10}"
