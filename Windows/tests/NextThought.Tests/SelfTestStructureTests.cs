@@ -83,6 +83,16 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void PrepareHasStickyStartBar()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "PrepareView.axaml"));
+        Assert.Contains("<Grid RowDefinitions=\"*,Auto\">", xaml);
+        Assert.Contains("Grid.Row=\"1\"", xaml);
+        Assert.Contains("开始记录", xaml);
+    }
+
     [Fact]
     public void PrepareMaterialsInsightIsShown()
     {

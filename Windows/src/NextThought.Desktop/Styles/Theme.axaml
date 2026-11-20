@@ -164,6 +164,7 @@
       <Thickness x:Key="D4Margin_6_4">6,4</Thickness>
       <Thickness x:Key="D4Margin_8_0_0_0">8,0,0,0</Thickness>
       <Thickness x:Key="D4Margin_8_8_8_4">8,8,8,4</Thickness>
+      <Thickness x:Key="D4Padding_32_12">32,12</Thickness>
       <Thickness x:Key="D4Padding_0">0</Thickness>
       <Thickness x:Key="D4Padding_0_12_0_0">0,12,0,0</Thickness>
       <Thickness x:Key="D4Padding_0_14_0_0">0,14,0,0</Thickness>

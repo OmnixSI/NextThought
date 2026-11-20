@@ -4,7 +4,8 @@
              xmlns:core="using:NextThought.Core"
              x:Class="NextThought.Desktop.Views.PrepareView"
              x:DataType="local:AppState">
-  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="{DynamicResource D4Margin_40_26_40_36}" MaxWidth="720" HorizontalAlignment="Center" Spacing="{DynamicResource D4Spacing_18}">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
         <TextBlock Text="准备" Classes="display" />
@@ -145,6 +146,10 @@
         </StackPanel>
       </Border>
 
+    </StackPanel>
+    </ScrollViewer>
+    <Border Grid.Row="1" Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}"
+            BorderThickness="0,0.5,0,0" Padding="{DynamicResource D4Padding_32_12}">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBlock Text="检查完即可开始；会中仍可随时切换场合。" Classes="caption" VerticalAlignment="Center" />
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
@@ -152,6 +157,6 @@
           <Button Classes="primary" Content="开始记录" Command="{Binding StartRecordingCommand}" />
         </StackPanel>
       </Grid>
-    </StackPanel>
-  </ScrollViewer>
+    </Border>
+  </Grid>
 </UserControl>
