@@ -1,3 +1,12 @@
+## 2026-11-20 · 0.5.145 · D9、D3（部分）
+改动：
+- D9 删除强制 `Win32RenderingMode.Software` 和 `NEXTTHOUGHT_GPU_RENDER`，恢复平台默认 GPU 渲染。
+- D3 浅色 `Sunken` 从 3.1% 改为 4%；深色 contact/ambient/float 阴影改为黑 40/32/50%；`PaperCardShadow`/`FloatShadowValue` 移入 Light/Dark 主题字典，深色不再套用浅色阴影。
+- 新增 `ThemeResourceTests` 2 项。
+测试：Core **869/869**，NextThought.Tests **128/128**。
+状态：D9「已实现、未验证」（未看启动日志/未实机看动画）；D3「已实现、未验证」（`PromptPanel`/`SealSoft` 的使用点未全查，逐页深色截图未做）。
+未解决：H1、H2、A15 尚未开始；D3 未做到“所有已定义颜色都用在 Mac 的位置”。
+
 ## 2026-11-20 · 0.5.145 · F1（止损清单收口）
 改动：`AudioCaptureService.SwitchDefaultDevice` 在替换成功后立即 `Stop()` + `Dispose()` 旧管道，旧管道事件被 `disposed` 标志忽略；只有用户没有显式选择设备（`SystemDeviceId`/`MicrophoneDeviceId` 为空）时才跟随系统默认设备变化；显式选择不被默认变化覆盖。
 测试：Core **869/869**，NextThought.Tests **126/126**；新翻译 Swift 测试 0。
