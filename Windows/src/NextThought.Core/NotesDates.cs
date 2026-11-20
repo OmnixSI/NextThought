@@ -24,10 +24,11 @@ public static partial class NotesDates
     /// The concrete date a phrase means, counted from <paramref name="reference"/>; null when the
     /// phrase is not a date or is too vague ("下周", "尽快").
     /// </summary>
-    public static DateTime? Resolve(string phrase, DateTimeOffset reference)
+    public static DateTime? Resolve(string phrase, DateTimeOffset reference, TimeZoneInfo? zone = null)
     {
-        var text = phrase.ToLowerInvariant().Replace(" ", "");
-        var day = reference.Date;
+        var text = Normalize(phrase.ToLowerInvariant());
+        var local = TimeZoneInfo.ConvertTime(reference, zone ?? TimeZoneInfo.Local);
+        var day = local.Date;
         DateTime Add(int days) => day.AddDays(days);
 
         if (text.Contains("大后天")) return Add(3);
@@ -43,7 +44,8 @@ public static partial class NotesDates
         // "10月30日" / "10 月 30 号"
         if (MonthDay().Match(text) is { Success: true } match)
         {
-            var numbers = Regex.Split(match.Value, @"\D+").Where(part => part.Length > 0).Select(int.Parse).ToList();
+            var numbers = Regex.Split(match.Value, @"\D+").Where(part => part.Length > 0)
+                .Select(part => int.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : -1).ToList();
             if (numbers.Count == 2)
             {
                 if (numbers[0] is >= 1 and <= 12 && numbers[1] is >= 1 and <= 31)
@@ -86,6 +88,20 @@ public static partial class NotesDates
     }
 
     /// <summary>"10 月 30 日（周四）" / "Thu, Oct 30".</summary>
+    /// <summary>B12: full-width digits and punctuation are normalized so parsing never throws.</summary>
+    private static string Normalize(string text)
+    {
+        var builder = new System.Text.StringBuilder(text.Length);
+        foreach (var character in text)
+        {
+            if (character is >= '\uFF10' and <= '\uFF19') builder.Append((char)('0' + (character - '\uFF10')));
+            else if (character == '\uFF1A') builder.Append(':');
+            else if (character == '\u3000') builder.Append(' ');
+            else builder.Append(character);
+        }
+        return builder.ToString().Replace(" ", "");
+    }
+
     public static string Format(DateTime date, bool english = false)
     {
         if (english)
