@@ -74,9 +74,11 @@ public sealed class DocumentSettingsPageTests
     public void TheImporterHonoursTheSavedReadingMethod()
     {
         var library = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "ViewModels", "LibraryViewModel.cs"));
-        Assert.Contains("DocumentAssets.UseEnhancedOcr", library);
-        Assert.Contains("settings.DocumentOcrProvider", library);
+        Assert.Contains("new DocumentPreparationOptions(settings.DocumentOcrProvider", library);
         Assert.Contains("settings.OcrFallbackToVision", library);
+        Assert.Contains("Preparation.ImportAsync", library);
+        var preparation = Read(Path.Combine("Windows", "src", "NextThought.Platform", "DocumentPreparation.cs"));
+        Assert.Contains("CodexDocumentReader.ReadAsync", preparation);
         var store = Read(Path.Combine("Windows", "src", "NextThought.Platform", "MaterialStore.cs"));
         Assert.Contains("enhancedOcr", store);
     }
@@ -149,7 +151,8 @@ public sealed class DocumentSettingsPageTests
         Assert.False(DocumentAssets.UseEnhancedOcr(paths, "system", true));
         Assert.False(DocumentAssets.UseEnhancedOcr(paths, "paddle", true));
         Assert.Throws<InvalidOperationException>(() => DocumentAssets.UseEnhancedOcr(paths, "paddle", false));
-        Assert.Throws<NotSupportedException>(() => DocumentAssets.UseEnhancedOcr(paths, "codex", true));
+        // Codex 代读 is its own reader; it does not claim the enhanced-OCR path.
+        Assert.False(DocumentAssets.UseEnhancedOcr(paths, "codex", true));
         Assert.All(DocumentAssets.Models, model => Assert.True(model.Bytes > 0));
         Assert.True(DocumentAssets.Ocr.Bytes > DocumentAssets.Layout.Bytes);
     }
