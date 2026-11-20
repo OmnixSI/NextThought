@@ -100,6 +100,7 @@
                     <SelectableTextBlock Text="{Binding Text}" FontSize="14" LineHeight="22" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Translation}" FontSize="13" TextWrapping="Wrap"
                                Foreground="{DynamicResource Ai}" IsVisible="{Binding HasTranslation}" />
+                    <Button Classes="quiet" Content="高亮" Tag="{Binding}" Click="HighlightLine_Click" HorizontalAlignment="Left" />
                   </StackPanel>
                 </Border>
               </DataTemplate>
@@ -107,6 +108,17 @@
           </ListBox>
 
           <StackPanel Grid.Row="2" Margin="{DynamicResource D4Margin_18_6_18_16}" Spacing="{DynamicResource D4Spacing_4}">
+            <Expander Header="会中笔记" IsExpanded="False">
+              <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+                <TextBox Text="{Binding MeetingNoteDraft}" AcceptsReturn="True" TextWrapping="Wrap" Height="90"
+                         PlaceholderText="随手记；保存到 user-content.json" />
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                  <Button Classes="primary" Content="保存笔记" Command="{Binding SaveMeetingNotesCommand}" />
+                  <TextBlock Text="{Binding MeetingHighlights.Count}" Classes="caption" VerticalAlignment="Center" />
+                  <TextBlock Text="条高亮" Classes="caption" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </Expander>
             <TextBlock Text="{Binding SystemPartial}" Foreground="{DynamicResource Ai}" FontSize="13" />
             <TextBlock Text="{Binding MicrophonePartial}" Foreground="{DynamicResource Secondary}" FontSize="13" />
             <TextBlock Text="转写会显示在这里。也可以导入录音 WAV 验证。"

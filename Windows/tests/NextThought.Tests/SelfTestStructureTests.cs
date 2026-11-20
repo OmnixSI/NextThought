@@ -169,6 +169,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void LivePageHasMeetingNotesAndHighlights()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
+        Assert.Contains("MeetingNoteDraft", xaml);
+        Assert.Contains("HighlightLine_Click", xaml);
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.MeetingNotes.cs"));
+        Assert.Contains("SessionUserContentStore.Save", state);
+    }
+
     [Fact]
     public void InsightsPanelExists()
     {

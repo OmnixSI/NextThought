@@ -104,4 +104,10 @@ public partial class LiveView : UserControl
         if (DataContext is not AppState state) return;
         new InsightsPanelWindow { DataContext = state }.Show();
     }
+
+    private void HighlightLine_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: TranscriptRow row } && DataContext is AppState state)
+            state.HighlightLineCommand.Execute(row);
+    }
 }
