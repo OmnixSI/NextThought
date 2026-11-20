@@ -171,6 +171,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void SettingsCanSaveTavilyKey()
+    {
+        var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+        Assert.Contains("TavilyKey", xaml);
+        Assert.Contains("SaveTavily_Click", xaml);
+        var store = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "SettingsStore.cs"));
+        Assert.Contains("ReadTavilyKey", store);
+    }
+
     [Fact]
     public void LiveTranscriptMarksHighlights()
     {

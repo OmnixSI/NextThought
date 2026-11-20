@@ -86,9 +86,10 @@ public static class WebSearchConfiguration
         return (string.IsNullOrEmpty(key) ? null : key, !disabled && !string.IsNullOrEmpty(key));
     }
 
-    public static IWebSearchProvider? CreateProvider(HttpClient? client = null, Func<string, string?>? read = null)
+    public static IWebSearchProvider? CreateProvider(HttpClient? client = null, Func<string, string?>? read = null, string? keyOverride = null)
     {
         var (key, enabled) = FromEnvironment(read);
+        if (!string.IsNullOrWhiteSpace(keyOverride)) { key = keyOverride.Trim(); enabled = true; }
         if (!enabled || key is null) return null;
         client ??= new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("NextThought-Windows/1.3");

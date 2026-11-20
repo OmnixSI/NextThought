@@ -159,4 +159,11 @@ public partial class SettingsView : UserControl
         state.RefreshSeriesGlossaryRows();
         await new GlossaryWindow { DataContext = state }.ShowDialog(owner);
     }
+
+    private void SaveTavily_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not AppState state) return;
+        state.SaveTavilyKeyCommand.Execute(state.Settings.TavilyKey);
+        state.Settings.TavilyKeyStatus = "已保存（当前 Windows 用户加密）。";
+    }
 }

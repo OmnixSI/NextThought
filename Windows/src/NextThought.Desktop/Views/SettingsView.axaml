@@ -297,6 +297,11 @@
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer3" Text="回答服务" Classes="section" />
           <CheckBox Content="允许联网核实（需 TAVILY_API_KEY）" IsChecked="{Binding Settings.WebSearch}" />
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+            <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260" PlaceholderText="Tavily API Key（可选）" />
+            <Button Content="保存密钥" Click="SaveTavily_Click" />
+          </StackPanel>
+          <TextBlock Text="{Binding Settings.TavilyKeyStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="460" />
           <TextBlock Text="问题涉及最新价格、版本、新闻等时检索 Tavily，并把带链接的结果交给回答；没有密钥时保持离线。"
                      Classes="caption" FontSize="11" />
           <CheckBox Content="使用本机 Codex CLI 账号" IsChecked="{Binding Settings.UseCodex}" />

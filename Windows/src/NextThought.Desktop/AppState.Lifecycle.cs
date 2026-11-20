@@ -36,7 +36,7 @@ public partial class AppState
     {
         if (webSearchResolved) return webSearchProvider;
         webSearchResolved = true;
-        try { webSearchProvider = WebSearchConfiguration.CreateProvider(); }
+        try { webSearchProvider = WebSearchConfiguration.CreateProvider(keyOverride: SettingsStore.ReadTavilyKey()); }
         catch { webSearchProvider = null; }
         return webSearchProvider;
     }

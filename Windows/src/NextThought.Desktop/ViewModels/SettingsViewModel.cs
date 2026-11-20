@@ -144,6 +144,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     public IReadOnlyList<string> AnswerLanguageChoices { get; } = ["auto", "zh", "en"];
     [ObservableProperty] private string answerLanguage = "auto";
     [ObservableProperty] private bool answerGloss;
+    [ObservableProperty] private string tavilyKey = "";
+    [ObservableProperty] private string tavilyKeyStatus = "密钥只保存在当前 Windows 用户；也可以继续用 TAVILY_API_KEY 环境变量。";
 
     public ObservableCollection<ScreenChoice> ScreenChoices { get; } = [];
 
