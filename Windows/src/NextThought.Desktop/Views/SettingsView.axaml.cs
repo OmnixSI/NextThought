@@ -14,7 +14,7 @@ public partial class SettingsView : UserControl
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        if (StartupOptions.SettingsScroll is { } offset) SettingsScroll.Offset = new Avalonia.Vector(0, offset);
+        if (SelfTestOptions.SettingsScroll is { } offset) SettingsScroll.Offset = new Avalonia.Vector(0, offset);
     }
 
     /// <summary>Filters the visible setting cards by their text (Mac settings search).</summary>

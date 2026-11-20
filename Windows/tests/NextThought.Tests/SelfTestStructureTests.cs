@@ -17,6 +17,19 @@ public sealed class SelfTestStructureTests
         throw new DirectoryNotFoundException("repository root not found");
     }
 
+
+    [Fact]
+    public void ProductionStartupOptionsOnlyExposeThreeSwitches()
+    {
+        var path = Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "StartupOptions.cs");
+        var text = File.ReadAllText(path);
+        Assert.Contains("Demo", text);
+        Assert.Contains("Screenshots", text);
+        Assert.Contains("SelfTest", text);
+        Assert.DoesNotContain("--knowledge-check", text);
+        Assert.True(File.ReadAllLines(path).Length < 40);
+    }
+
     [Fact]
     public void MainWindowFileIsBelow400Lines()
     {
