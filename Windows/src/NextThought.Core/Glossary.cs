@@ -180,18 +180,18 @@ public sealed record Glossary
     {
         var builder = new StringBuilder();
         foreach (var character in Fold(text, lowercase: true))
-            if (char.IsLetterOrDigit(character) || character is '+' or '#') builder.Append(character);
+        {
+            if (char.IsWhiteSpace(character)) continue;
+            if (char.GetUnicodeCategory(character) == System.Globalization.UnicodeCategory.Format) continue;
+            if (char.IsPunctuation(character) && character != '#') continue;
+            builder.Append(character);
+        }
         return builder.ToString();
     }
 
-    /// <summary>Case-sensitive comparison: only whitespace and punctuation are ignored.</summary>
-    public static string StrictKey(string text)
-    {
-        var builder = new StringBuilder();
-        foreach (var character in Fold(text, lowercase: false))
-            if (char.IsLetterOrDigit(character) || character is '+' or '#') builder.Append(character);
-        return builder.ToString();
-    }
+    /// <summary>B14: lowercased, punctuation kept, whitespace runs collapsed to one space.</summary>
+    public static string StrictKey(string text) =>
+        string.Join(" ", string.Concat(Fold(text, lowercase: true)).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
 
     /// <summary>
     /// <paramref name="text"/> with every recorded wrong spelling replaced by its canonical spelling.
@@ -224,14 +224,49 @@ public sealed record Glossary
         return new GlossaryCanonicalization(output.ToString(), replacements);
     }
 
-    /// <summary>Spellings to give the recognizer: canonical forms only, longest first, one per line.</summary>
-    public IReadOnlyList<string> Hotwords(int limit = 200) =>
-        Entries.Select(entry => Tidy(entry.Canonical))
-            .Where(word => word.Length > 0)
-            .Distinct()
-            .OrderByDescending(word => word.Length)
-            .Take(limit)
-            .ToList();
+    private static readonly char[] HotwordSeparators = [',', '\uFF0C', '\u3001', ';', '\uFF1B', '\n', '\r'];
+
+    private static bool IsUsableHotword(string word)
+    {
+        if (word.Length is < 2 or > 40) return false;
+        if (word.IndexOfAny(HotwordSeparators) >= 0 || word.Contains(':')) return false;
+        foreach (var piece in word.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            if (piece.StartsWith('#') || piece.StartsWith('@')) return false;
+        return true;
+    }
+
+    /// <summary>B14: canonical spellings only; entries with recorded mishearings first, 2–40 chars, max 80.</summary>
+    public IReadOnlyList<string> Hotwords(int limit = 80)
+    {
+        if (limit <= 0) return [];
+        var ordered = Entries.Select((entry, index) => (entry, index))
+            .OrderBy(pair => pair.entry.Variants.Count > 0 ? 0 : 1)
+            .ThenBy(pair => pair.index)
+            .Select(pair => pair.entry);
+        var seen = new HashSet<string>();
+        var words = new List<string>();
+        foreach (var entry in ordered)
+        {
+            var word = Tidy(entry.Canonical);
+            if (!IsUsableHotword(word) || !seen.Add(StrictKey(word))) continue;
+            words.Add(word);
+            if (words.Count >= limit) break;
+        }
+        return words;
+    }
+
+    /// <summary>B14: the user's own vocabulary first, then glossary words up to the limit.</summary>
+    public string HotwordString(string baseWords, int limit = 80)
+    {
+        var seen = new HashSet<string>();
+        var words = new List<string>();
+        foreach (var word in baseWords.Split(HotwordSeparators, StringSplitOptions.RemoveEmptyEntries)
+                     .Select(Tidy).Where(word => word.Length > 0))
+            if (seen.Add(StrictKey(word))) words.Add(word);
+        foreach (var word in Hotwords(Math.Max(0, limit - words.Count)))
+            if (seen.Add(StrictKey(word))) words.Add(word);
+        return string.Join(",", words);
+    }
 
     /// <summary>
     /// The glossary as a prompt section, capped like Mac <c>promptSection(maxCharacters: 1500)</c>:
@@ -263,7 +298,7 @@ public sealed record Glossary
     }
 
     private static string Marker(int omitted, bool english) =>
-        english ? $"({omitted} more not shown)" : $"（另 {omitted} 条未列出）";
+        english ? $"({omitted} more not shown)" : "\uFF08\u53E6\u6709 {omitted} \u6761\u672A\u5217\u51FA\uFF09";
 
     private static string PromptLine(GlossaryEntry entry, bool english)
     {
@@ -503,7 +538,8 @@ public sealed record Glossary
     }
 
     private static bool IsLatinWord(char character) =>
-        character is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
+        character is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_'
+        || (character is >= '\u00C0' and <= '\u024F' && character is not ('\u00D7' or '\u00F7'));
 
     /// <summary>Width folding (full width → half width) and optional lower casing for one character.</summary>
     private static char Fold(char character, bool lowercase)
@@ -516,7 +552,8 @@ public sealed record Glossary
 
     private static IEnumerable<char> Fold(string text, bool lowercase) => text.Select(character => Fold(character, lowercase));
 
-    private static string Tidy(string text) => text.Trim();
+    private static string Tidy(string text) =>
+        string.Join(" ", text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }
 
 public sealed record GlossaryReplacement(string From, string To, int Count);
