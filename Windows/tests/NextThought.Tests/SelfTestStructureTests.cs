@@ -193,6 +193,17 @@ public sealed class SelfTestStructureTests
 
 
 
+
+    [Fact]
+    public void CloudSttKeyIsNotErasedAfterReadFailure()
+    {
+        var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
+        Assert.Contains("CloudSttKeyReadFailed", live);
+        var policy = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Platform", "CloudSttEndpointPolicy.cs"));
+        Assert.Contains("wss", policy);
+        Assert.Contains("AllowedHosts", policy);
+    }
+
     [Fact]
     public void CloudMessagesAreReassembled()
     {

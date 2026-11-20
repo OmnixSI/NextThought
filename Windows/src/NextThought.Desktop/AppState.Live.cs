@@ -119,7 +119,8 @@ public partial class AppState
             };
             SelectedTemplateId = TemplateKind.Raw();
             await Settings.SaveAsync();
-            SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
+            // F7: a failed DPAPI read leaves an empty view; do not overwrite the stored key with it.
+            if (!SettingsStore.CloudSttKeyReadFailed) SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
             // Endpoints are enumerated lazily; make sure a saved device choice is applied.
             await Settings.RefreshDevicesAsync();
             var settings = Settings.Build();

@@ -53,7 +53,7 @@ public partial class AppState
         try
         {
             await Settings.SaveAsync();
-            SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
+            if (!SettingsStore.CloudSttKeyReadFailed) SettingsStore.SaveCloudSttKey(Settings.CloudSttKey);
             LanguageChanged?.Invoke(Settings.UiLanguage == "English");
             ApplyAppearance();
             RefreshModelState();
