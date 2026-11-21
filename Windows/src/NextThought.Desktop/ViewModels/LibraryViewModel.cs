@@ -146,7 +146,7 @@ public partial class LibraryViewModel(AppState state) : ObservableObject
         var material = Materials.FirstOrDefault(x => x.Id == citation.DocumentId) ?? Store.List().FirstOrDefault(x => x.Id == citation.DocumentId);
         if (material is null) { ImportStatus = "引用来自已删除的资料：" + citation.DocumentName; return; }
         SelectedMaterial = material;
-        state.Section = AppSection.Library;
+        state.Section = AppSection.Series; // §3.5: materials live in the series detail
     }
 
     public void RevealSourceFile()

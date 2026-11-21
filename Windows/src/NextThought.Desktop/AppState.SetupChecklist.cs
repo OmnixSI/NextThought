@@ -38,7 +38,7 @@ public partial class AppState
                 NavigateCommand.Execute("Settings");
                 break;
             case "workspace":
-                NavigateCommand.Execute("Library");
+                NavigateCommand.Execute("Series");
                 break;
         }
     }
