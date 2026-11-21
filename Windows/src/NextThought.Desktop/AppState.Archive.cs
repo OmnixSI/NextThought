@@ -38,9 +38,10 @@ public partial class AppState
     /// <summary>F20: read the meeting list off the UI thread, then update the history on it.</summary>
     public async Task RefreshHistoryAsync(Guid? select = null)
     {
-        // Demo mode owns its two synthetic meetings; the demo never writes the data folder, so a
-        // page-triggered refresh would empty the home statistics and recent rows between shots.
-        if (demoData is not null) return;
+        // The screenshot batch keeps the demo's two synthetic meetings across theme/page switches
+        // (the demo never writes the data folder). Self-tests still reload a meeting they created on
+        // disk, so the guard is only on while that batch is capturing.
+        if (PreserveDemoHistory && demoData is not null) return;
         try
         {
             var list = await Task.Run(() => Sessions.List());

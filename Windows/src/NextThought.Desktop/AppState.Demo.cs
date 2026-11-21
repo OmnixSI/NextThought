@@ -13,6 +13,9 @@ public partial class AppState
     /// <summary>The resolved Mac demo data for the current demo session (null outside demo mode).</summary>
     private DemoDataset? demoData;
 
+    /// <summary>Set by the screenshot batch: keep the demo's synthetic history across page changes.</summary>
+    internal static bool PreserveDemoHistory;
+
     /// <summary>
     /// Fills the interface with the Mac demonstration data (DemoMode.swift populateDemo,
     /// demoReviewNotes and demoWeeklyMeeting) and applies a Mac demo stage. The Windows shell opens

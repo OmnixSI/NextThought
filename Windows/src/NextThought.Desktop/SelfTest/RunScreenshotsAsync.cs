@@ -21,6 +21,7 @@ public partial class MainWindow
         var textDirectory = Path.Combine(directory, "text");
         Directory.CreateDirectory(textDirectory);
         var source = UiTextSource.Instance;
+        AppState.PreserveDemoHistory = true;
         var previousPreference = source.Preference;
         var englishInventory = new Dictionary<string, string[]>(StringComparer.Ordinal);
         var pages = new[]
@@ -55,6 +56,7 @@ public partial class MainWindow
                             await Task.Delay(120);
                         }
                         await CaptureWindowAsync(directory, textDirectory, name + suffix, english, englishInventory);
+                        if (english) await LocalizationAudit.WriteTruncationsAsync(this, textDirectory, name + suffix);
                         if (section == AppSection.Home && PageHost.Content is Avalonia.Controls.Control homePage
                             && homePage.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is { } homeScroll)
                         {
@@ -87,6 +89,7 @@ public partial class MainWindow
                             var correctedName = "corrected-transcript" + suffix;
                             CaptureVisual(correctedWindow, Path.Combine(directory, correctedName));
                             var correctedRows = await WriteInventoryAsync(correctedWindow, textDirectory, correctedName);
+                            if (english) await LocalizationAudit.WriteTruncationsAsync(correctedWindow, textDirectory, correctedName);
                             if (english) englishInventory[correctedName] = correctedRows;
                             correctedWindow.Close();
                         }
@@ -114,6 +117,7 @@ public partial class MainWindow
                     var quickName = "quick-settings" + quickSuffix;
                     CaptureVisual(quickPanel, Path.Combine(directory, quickName + ".png"));
                     var quickRows = await WriteInventoryAsync(quickPanel, textDirectory, quickName);
+                if (english) await LocalizationAudit.WriteTruncationsAsync(quickPanel, textDirectory, quickName);
                     if (english) englishInventory[quickName] = quickRows;
                     quickWindow.Close();
                 }
@@ -209,6 +213,7 @@ public partial class MainWindow
                 await Task.Delay(120);
                 var rows = await WriteInventoryAsync(island, textDirectory, "island-" + islandState + "-en");
                 englishInventory["island-" + islandState + "-en"] = rows;
+                await LocalizationAudit.WriteTruncationsAsync(island, textDirectory, "island-" + islandState + "-en");
             }
             state.ApplyUiLanguage(false);
             island.ClearStateForCheck();
@@ -225,6 +230,7 @@ public partial class MainWindow
         }
         finally
         {
+            AppState.PreserveDemoHistory = false;
             source.SetPreference(previousPreference);
             Close();
         }
