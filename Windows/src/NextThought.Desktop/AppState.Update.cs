@@ -40,10 +40,14 @@ public partial class AppState
     public bool CanInstallUpdateInApp =>
         UpdateAvailable && LastUpdateReport is { CanInstall: true } && UpdateInstallerReady && !InstallingUpdate;
 
+    /// <summary>
+    /// R4 / §10.4: Windows ships one formal channel in this release. The Main rolling channel is
+    /// hidden and recorded as "本版不做" in SETTINGS_PARITY (the Core rolling selection is kept so
+    /// the translated UpdateCatalog tests keep their meaning).
+    /// </summary>
     public IReadOnlyList<UpdateChannelChoice> UpdateChannels { get; } =
     [
-        new(UpdateChannel.Stable, "正式版本"),
-        new(UpdateChannel.Main, "main 最新构建")
+        new(UpdateChannel.Stable, "正式版本")
     ];
 
     public UpdateChannelChoice? SelectedUpdateChannel

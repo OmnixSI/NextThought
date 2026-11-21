@@ -47,16 +47,23 @@ public sealed record GitHubRelease(
         JsonSerializer.Deserialize<List<GitHubRelease>>(json, UpdateJson.Options) ?? [];
 }
 
-/// <summary><c>update.json</c>, published next to the ZIP by the release workflow.</summary>
+/// <summary>
+/// <c>update.json</c>, published next to the payload by the release workflow. The Mac writes the
+/// archive name in <c>zip</c>; Windows (R4) writes the installer name in <c>asset</c>. Both decode.
+/// </summary>
 public sealed record UpdateManifest(
     [property: JsonPropertyName("tag")] string Tag,
     [property: JsonPropertyName("version")] string Version,
     [property: JsonPropertyName("build")] int Build,
-    [property: JsonPropertyName("zip")] string Zip,
+    [property: JsonPropertyName("zip")] string? Zip,
     [property: JsonPropertyName("sha256")] string Sha256,
+    [property: JsonPropertyName("asset")] string? Asset = null,
     [property: JsonPropertyName("commit")] string? Commit = null,
     [property: JsonPropertyName("publishedAt")] DateTimeOffset? PublishedAt = null)
 {
+    /// <summary>The published payload file: the installer on Windows, the zip on the Mac.</summary>
+    public string FileName => Asset ?? Zip ?? "";
+
     public static UpdateManifest? Decode(string json)
     {
         try { return JsonSerializer.Deserialize<UpdateManifest>(json, UpdateJson.Options); }
@@ -104,6 +111,8 @@ public enum VersionOrder
 public static class UpdateCatalog
 {
     public const string RollingTag = "main-latest";
+    /// <summary>R4: Windows releases are tagged windows-v&lt;version&gt;; the Mac uses v&lt;version&gt;.</summary>
+    public const string WindowsTagPrefix = "windows-v";
 
     /// <summary>The release to offer on a channel, or null.</summary>
     /// <summary>Swift max(by:): equal publish times keep the first release, not the last.</summary>
@@ -119,6 +128,7 @@ public static class UpdateCatalog
         return best;
     }
 
+    /// <summary>The release to offer on a channel, or null (Mac UpdateCatalog.swift rules).</summary>
     public static GitHubRelease? Candidate(IReadOnlyList<GitHubRelease> releases, UpdateChannel channel)
     {
         var usable = releases.Where(release => !release.Draft && release.WindowsAsset is not null).ToList();
@@ -138,6 +148,38 @@ public static class UpdateCatalog
                 .LastOrDefault()
         };
     }
+
+    /// <summary>
+    /// R4: the Windows updater's candidate. A Windows release is tagged <c>windows-v&lt;version&gt;</c>
+    /// and ships both the installer and update.json; Mac releases, main-latest, the old
+    /// windows-1.3.7-evidence tag and Windows releases without a manifest are ignored. Kept separate
+    /// from <see cref="Candidate"/> so the translated Mac UpdateCatalog tests keep their contract.
+    /// </summary>
+    public static GitHubRelease? WindowsCandidate(IReadOnlyList<GitHubRelease> releases) =>
+        releases
+            .Where(IsWindowsRelease)
+            .OrderBy(release => WindowsVersion(release.TagName) is { } version ? version.Numbers.Length : 0)
+            .ThenBy(release => release.TagName, Comparer<string>.Create((a, b) => CompareVersions(a, b) switch
+            {
+                VersionOrder.Ascending => -1,
+                VersionOrder.Descending => 1,
+                _ => 0
+            }))
+            .LastOrDefault();
+
+    /// <summary>The version after the windows-v prefix, or null when this is not a Windows tag.</summary>
+    public static (int[] Numbers, string? Prerelease)? WindowsVersion(string tag)
+    {
+        if (!tag.StartsWith(WindowsTagPrefix, StringComparison.Ordinal)) return null;
+        return ParseVersion(tag[WindowsTagPrefix.Length..]);
+    }
+
+    /// <summary>R4: a release the Windows updater may consider at all.</summary>
+    public static bool IsWindowsRelease(GitHubRelease release) =>
+        !release.Draft
+        && WindowsVersion(release.TagName) is not null
+        && release.SetupAsset is not null
+        && release.ManifestAsset is not null;
 
     /// <summary>Whether <paramref name="manifest"/> (or, without one, the release tag) is newer than the running app.</summary>
     public static bool IsNewer(UpdateManifest? manifest, string releaseTag, string currentVersion, int currentBuild)
