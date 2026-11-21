@@ -68,7 +68,6 @@ public partial class AppState
         AssistantLayoutState = AssistantLayout.For(preset);
         SyncDetachedModuleWindows(previous);
         SaveAssistantLayout();
-        SetStatus("已切换会中模块布局。");
     }
 
     public void OpenDetachedModule(AssistantModule module)

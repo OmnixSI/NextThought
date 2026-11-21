@@ -4,39 +4,138 @@
              xmlns:local="using:NextThought.Desktop"
              x:Class="NextThought.Desktop.Views.InsightsPanel"
              x:DataType="local:AppState">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.point">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.point.next">
+      <Setter Property="FontSize" Value="14" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.point.done">
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    </Style>
+  </UserControl.Styles>
   <StackPanel Spacing="{DynamicResource D4Spacing_12}">
-    <Border Classes="card" Padding="{DynamicResource D4Padding_14}">
+    <!-- Header: the module name, one immediate read, and the settings entry. -->
+    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+      <TextBlock Text="{StaticResource IconRectangleOnRectangle}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                 Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="1" Text="{loc:Tr 屏幕与讲稿}" Classes="overline" VerticalAlignment="Center" />
+      <Button Grid.Column="2" Classes="chip" Content="{loc:Tr 立即识别}" FontSize="11"
+              Command="{Binding RequestScreenReadCommand}" />
+      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+        <ProgressBar IsIndeterminate="True" Width="36" Height="3" IsVisible="{Binding ScreenIsReading}" VerticalAlignment="Center" />
+        <Button Classes="quiet" Click="OpenInsightSettings_Click" ToolTip.Tip="{loc:Tr 设置 → 高级 → 回答服务 → 屏幕与讲稿}">
+          <TextBlock Text="{StaticResource IconGearshape}" FontFamily="{StaticResource IconFont}" FontSize="12" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <!-- Screen watch off: Mac ScreenWatchOffHint. -->
+    <Border Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="{Binding ScreenWatchOff}">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="{loc:Tr 幻灯片}" Classes="overline" />
-        <TextBlock Text="{Binding SlideStatus}" Classes="label" />
-        <TextBlock Text="{Binding CurrentSlideText}" Classes="caption" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis" />
-        <TextBlock Text="{loc:Tr 讲稿要点}" Classes="overline" />
-        <TextBlock Text="{Binding CurrentSlidePointsText}" Classes="caption" TextWrapping="Wrap" MaxLines="6" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="{loc:Tr 屏幕感知}" Classes="label" />
+        <TextBlock Text="{loc:Tr 屏幕感知已开启：跟随讲稿，相关的屏幕文字会用于回答}" Classes="caption" TextWrapping="Wrap" />
+        <Button Classes="chip" Content="{loc:Tr 屏幕感知}" HorizontalAlignment="Left" Click="EnableScreenWatch_Click" />
       </StackPanel>
     </Border>
-    <Border Classes="card" Padding="{DynamicResource D4Padding_14}">
-      <StackPanel Spacing="{DynamicResource D4Spacing_6}">
-        <TextBlock Text="{loc:Tr 屏幕与截图}" Classes="overline" />
-        <TextBlock Text="{Binding CurrentScreenshotCount}" Classes="label" />
-        <ItemsControl ItemsSource="{Binding CurrentScreenshots}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <WrapPanel Orientation="Horizontal" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
+
+    <!-- Slide section: the page, its talking points, the transition and the audience questions. -->
+    <Border Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="{Binding HasSlide}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+          <TextBlock Text="{StaticResource IconRectangleOnRectangle}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                     Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
+            <TextBlock Text="{Binding SlidePositionText}" Classes="label" />
+            <TextBlock Text="{Binding SlideDocumentName}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Center">
+            <Button Classes="quiet" Content="{StaticResource IconChevronLeft}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                    Command="{Binding PreviousSlideCommand}" IsEnabled="{Binding SlideHasPrevious}" />
+            <Button Classes="quiet" Content="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                    Command="{Binding NextSlideCommand}" IsEnabled="{Binding SlideHasNext}" ToolTip.Tip="{loc:Tr 下一页}" />
+            <Button Classes="chip" Content="{loc:Tr 重新生成}" FontSize="11" Command="{Binding RegenerateNotesCommand}"
+                    IsVisible="{Binding !SlideNotesAreScript}" />
+            <Button Classes="chip" Content="{loc:Tr 改用 AI 要点}" FontSize="11" Command="{Binding RegenerateNotesCommand}"
+                    IsVisible="{Binding SlideNotesAreScript}" />
+          </StackPanel>
+        </Grid>
+        <TextBlock Text="{loc:Tr 讲稿要点}" Classes="overline" />
+        <ItemsControl ItemsSource="{Binding SlidePointRows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="local:SlidePointRow">
+              <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="6" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                           Foreground="{DynamicResource Caution}" IsVisible="{Binding Done}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                           Foreground="{DynamicResource Ai}" IsVisible="{Binding Next}" VerticalAlignment="Center" />
+                <Ellipse Grid.Column="2" Width="4" Height="4" Fill="{DynamicResource Secondary}"
+                         IsVisible="{Binding Pending}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{Binding Text}" Classes="point" Classes.next="{Binding Next}" Classes.done="{Binding Done}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Text="{Binding SlideTransitionText}" Classes="caption" TextWrapping="Wrap"
+                   IsVisible="{Binding SlideTransitionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <ItemsControl ItemsSource="{Binding SlideQuestionRows}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Image Source="{Binding}" Width="120" Height="76" Stretch="UniformToFill" Margin="{DynamicResource D4Margin_0_0_6_6}" />
+              <Button Classes="quiet" HorizontalAlignment="Left" Tag="{Binding}" Click="AskSlideQuestion_Click" FontSize="12"
+                      Foreground="{DynamicResource Ai}">
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                  <TextBlock Text="{StaticResource IconQuestionmarkBubble}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                             VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding}" TextWrapping="Wrap" MaxWidth="360" />
+                </StackPanel>
+              </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
     </Border>
-    <Border Classes="card" Padding="{DynamicResource D4Padding_14}">
+
+    <!-- Screen section: what is on the screen, its source and the recognised text. -->
+    <Border Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="{Binding ScreenWatchRunning}">
       <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+        <TextBlock Text="{loc:Tr 屏幕与截图}" Classes="overline" />
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+          <TextBlock Text="{StaticResource IconDisplay}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                     Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{Binding ScreenStatusLine}" Classes="caption" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </Grid>
+        <TextBlock Text="{Binding ScreenErrorText}" Classes="caption" Foreground="{DynamicResource Caution}" TextWrapping="Wrap"
+                   IsVisible="{Binding HasScreenError}" />
+        <TextBlock Text="{Binding ScreenText}" Classes="caption" TextWrapping="Wrap" MaxLines="{Binding ScreenTextMaxLines}"
+                   IsVisible="{Binding HasScreenText}" />
+        <Button Classes="quiet" HorizontalAlignment="Left" Click="ToggleScreenText_Click" IsVisible="{Binding HasScreenText}">
+          <Grid>
+            <TextBlock Text="{StaticResource IconChevronDown}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                       IsVisible="{Binding !ScreenTextExpanded}" />
+            <TextBlock Text="{StaticResource IconChevronUp}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                       IsVisible="{Binding ScreenTextExpanded}" />
+          </Grid>
+        </Button>
+      </StackPanel>
+    </Border>
+
+    <!-- Answer progress strip: how much of the answer has been said, and the next sentence. -->
+    <Border Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="{Binding HasAnswerProgress}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_4}">
         <TextBlock Text="{loc:Tr 回答进度}" Classes="overline" />
-        <TextBlock Text="{Binding Status}" Classes="caption" />
-        <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}" Maximum="1" />
+        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6">
+          <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                     Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{Binding AnswerProgressCounterText}" Classes="label" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="2" Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                     Foreground="{DynamicResource Ai}" VerticalAlignment="Center"
+                     IsVisible="{Binding NextAnswerPointText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </Grid>
+        <TextBlock Text="{Binding NextAnswerPointText}" Classes="caption" TextWrapping="Wrap"
+                   IsVisible="{Binding NextAnswerPointText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
       </StackPanel>
     </Border>
   </StackPanel>

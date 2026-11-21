@@ -506,11 +506,15 @@ public sealed class SelfTestStructureTests
     [Fact]
     public void SlidePointsAreCachedAndShown()
     {
-        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
-        Assert.Contains("slideNotesCache", state);
-        Assert.Contains("CurrentSlidePointsText", state);
+        // E9 moved the slide follow and its note cache into AppState.SlideFollow.
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SlideFollow.cs"));
+        Assert.Contains("slideNotesCacheByPage", state);
+        Assert.Contains("SlideNotesCacheStore.Save", state);
+        var prepare = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
+        Assert.Contains("CurrentSlidePointsText", prepare);
         var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
         Assert.Contains("讲稿要点", panel);
+        Assert.Contains("SlidePointRows", panel);
     }
 
     [Fact]
@@ -526,10 +530,11 @@ public sealed class SelfTestStructureTests
     [Fact]
     public void SlidesCanFollowSpeech()
     {
-        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Prepare.cs"));
-        Assert.Contains("TryFollowSlide", state);
+        // E9: followSpeech lives in AppState.SlideFollow and is driven from the live transcript.
+        var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.SlideFollow.cs"));
+        Assert.Contains("FollowSpeechForLine", state);
         var live = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Live.cs"));
-        Assert.Contains("TryFollowSlide", live);
+        Assert.Contains("FollowSpeechForLine", live);
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "QuickSettingsPanel.axaml"));
         Assert.Contains("跟着讲话翻幻灯片", xaml);
     }
@@ -638,9 +643,13 @@ public sealed class SelfTestStructureTests
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "LiveView.axaml"));
         Assert.Contains("Insights_Click", xaml);
         var panel = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "InsightsPanel.axaml"));
-        Assert.Contains("幻灯片", panel);
+        // E7: the panel now has the Mac header + slide/screen/answer-progress sections.
+        Assert.Contains("屏幕与讲稿", panel);
+        Assert.Contains("讲稿要点", panel);
         Assert.Contains("屏幕与截图", panel);
         Assert.Contains("回答进度", panel);
+        Assert.Contains("SlidePointRows", panel);
+        Assert.Contains("AnswerProgressCounterText", panel);
     }
 
     [Fact]
