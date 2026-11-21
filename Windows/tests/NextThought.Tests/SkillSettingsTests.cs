@@ -26,8 +26,8 @@ public sealed class SkillSettingsTests
         var xaml = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
         foreach (var key in new[]
                  {
-                     "{loc:Tr 技能}", "{loc:Tr 技能可用于所有系列，或在资料夹中按系列选择。}",
-                     "{loc:Tr 技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在资料夹的“技能”页按系列勾选。}",
+                     "{loc:Tr 技能}", "{loc:Tr 技能可用于所有系列，或在系列中按系列选择。}",
+                     "{loc:Tr 技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。}",
                      "{loc:Tr 还没有技能。可以导入现成的 SKILL.md，或点“新建技能”从模板开始。}",
                      "{loc:Tr 导入 .md 文件…}", "{loc:Tr 新建技能}"
                  })
