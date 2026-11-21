@@ -383,7 +383,11 @@
       <Border Classes="card" Padding="{DynamicResource D4Padding_22}" Tag="Answer">
         <StackPanel Spacing="{DynamicResource D4Spacing_12}">
           <TextBlock Name="AnchorAnswer3" Text="{loc:Tr 回答服务}" Classes="section" />
-          <CheckBox Content="{loc:Tr 允许联网核实（需 TAVILY_API_KEY）}" IsChecked="{Binding Settings.WebSearch}" />
+          <!-- §6.7 English: the Mac label wraps; give it a wrapping TextBlock so the checkbox grows
+               instead of clipping the second line (English scan needed 38px, had 19.3px). -->
+          <CheckBox IsChecked="{Binding Settings.WebSearch}" HorizontalContentAlignment="Left">
+            <TextBlock Text="{loc:Tr 允许联网核实（需 TAVILY_API_KEY）}" TextWrapping="Wrap" MaxWidth="520" />
+          </CheckBox>
           <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
             <TextBox Text="{Binding Settings.TavilyKey}" PasswordChar="●" Width="260" PlaceholderText="{loc:Tr Tavily API Key（可选）}" />
             <Button Content="{loc:Tr 保存密钥}" Click="SaveTavily_Click" />
