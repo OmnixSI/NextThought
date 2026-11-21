@@ -26,7 +26,7 @@ public sealed record LiveNotesDecisionRow(string Text, bool Fresh);
 public sealed record LiveNotesTodoRow(string Text, string OwnerText, bool Fresh)
 {
     /// <summary>Mac LiveNotesColumn: the owner is written after the text in full-width brackets.</summary>
-    public string DisplayText => OwnerText.Length > 0 ? Text + "（" + OwnerText + "）" : Text;
+    public string DisplayText => OwnerText.Length > 0 ? UiText.Format("%@（%@）", Text, OwnerText) : Text;
 }
 
 /// <summary>
@@ -286,19 +286,19 @@ public partial class AppState
     {
         var demo = new LiveNotes
         {
-            Summary = "面试进行到系统设计：先聊了订单缓存层的项目，现在在追问数据库和缓存的一致性。",
+            Summary = UiText.T("面试进行到系统设计：先聊了订单缓存层的项目，现在在追问数据库和缓存的一致性。"),
             Topics =
             [
-                new LiveNotes.Topic("项目经历", ["负责订单服务的缓存层", "核心查询从数据库迁到 Redis"]),
-                new LiveNotes.Topic("缓存一致性", ["先更新数据库，再删除缓存", "删除失败进重试队列", "面试官追问：删除缓存失败怎么办"])
+                new LiveNotes.Topic(UiText.T("项目经历"), [UiText.T("负责订单服务的缓存层"), UiText.T("核心查询从数据库迁到 Redis")]),
+                new LiveNotes.Topic(UiText.T("缓存一致性"), [UiText.T("先更新数据库，再删除缓存"), UiText.T("删除失败进重试队列"), UiText.T("面试官追问：删除缓存失败怎么办")])
             ],
-            Decisions = ["下一步讲热点 key 的处理"],
-            Todos = [new LiveNotes.Todo("会后补一张读写时序图", "我")],
+            Decisions = [UiText.T("下一步讲热点 key 的处理")],
+            Todos = [new LiveNotes.Todo(UiText.T("会后补一张读写时序图"), "我")],
             Covered = 6
         };
         notes = demo;
         liveNotesFresh.Clear();
-        foreach (var statement in new[] { "面试官追问：删除缓存失败怎么办", "会后补一张读写时序图" })
+        foreach (var statement in new[] { UiText.T("面试官追问：删除缓存失败怎么办"), UiText.T("会后补一张读写时序图") })
             liveNotesFresh.Add(statement);
         liveNotesIsEnabled = true;
         liveNotesEngineStatus = LiveNotesStatus.Waiting;

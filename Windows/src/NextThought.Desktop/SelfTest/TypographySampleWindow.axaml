@@ -7,8 +7,8 @@
   <ScrollViewer Padding="40,32,40,40">
     <StackPanel Spacing="22">
       <StackPanel Spacing="4">
-        <TextBlock Classes="overline" Text="字体样张 · TYPE SPECIMEN" />
-        <TextBlock Classes="caption" Text="每一级字号一行，中英文混排；文字颜色只用 Ink 的 ink / secondary / tertiary。" />
+        <TextBlock Classes="overline" Text="{loc:Tr 字体样张 · TYPE SPECIMEN}" />
+        <TextBlock Classes="caption" Text="{loc:Tr 每一级字号一行，中英文混排；文字颜色只用 Ink 的 ink / secondary / tertiary。}" />
       </StackPanel>
 
       <!-- hero 38 serif medium -->
