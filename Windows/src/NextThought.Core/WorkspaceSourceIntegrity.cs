@@ -56,7 +56,7 @@ public static class WorkspaceSourceIntegrity
                     SourceSessionId = revisionRemaining.Contains(revision.SourceSessionId ?? "")
                         ? revision.SourceSessionId
                         : Sorted(revisionRemaining).FirstOrDefault(),
-                    SourceMissingSessionIds = Sorted((revision.SourceMissingSessionIds ?? []).Concat(removed.Intersect(revisionSources)))
+                    SourceMissingSessionIds = Sorted((revision.SourceMissingSessionIds ?? []).Concat(deleted.Intersect(revisionSources)))
                 };
                 historyChanged |= cleaned != revision;
                 history.Add(cleaned);
@@ -77,7 +77,7 @@ public static class WorkspaceSourceIntegrity
                         SourceSessionId = revisionRemaining.Contains(revision.SourceSessionId ?? "")
                             ? revision.SourceSessionId
                             : Sorted(revisionRemaining).FirstOrDefault(),
-                        SourceMissingSessionIds = Sorted((revision.SourceMissingSessionIds ?? []).Concat(removed.Intersect(revisionSources)))
+                        SourceMissingSessionIds = Sorted((revision.SourceMissingSessionIds ?? []).Concat(deleted.Intersect(revisionSources)))
                     });
                 }
                 updated = updated with

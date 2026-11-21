@@ -202,6 +202,8 @@ public static partial class BackupMerge
         && (left.KnowledgeCandidates ?? []).Select(candidate => candidate.Id).SequenceEqual((right.KnowledgeCandidates ?? []).Select(candidate => candidate.Id))
         && System.Text.Json.JsonSerializer.Serialize(left.SeriesItems, WorkspaceStore.Options)
             == System.Text.Json.JsonSerializer.Serialize(right.SeriesItems, WorkspaceStore.Options)
+        && System.Text.Json.JsonSerializer.Serialize(left.SeriesChangeCandidates, WorkspaceStore.Options)
+            == System.Text.Json.JsonSerializer.Serialize(right.SeriesChangeCandidates, WorkspaceStore.Options)
         && (left.SourceDeletionTombstones ?? []).SequenceEqual(right.SourceDeletionTombstones ?? []);
 
     private static DateTimeOffset Touched(WorkspaceSeries series) => new[]

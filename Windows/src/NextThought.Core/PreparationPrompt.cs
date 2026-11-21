@@ -19,8 +19,20 @@ public sealed record ModeProfile(MeetingMode Mode, string Role, string ReviewFoc
     public string TemplatePreferences { get; init; } = "";
 
     /// <summary>B18: a preference equal to this type's default (or an old default) is not a user choice.</summary>
-    public bool MatchesDefaultTemplatePreferences(string value) =>
-        string.IsNullOrEmpty(value) || value == TemplatePreferences;
+    public bool MatchesDefaultTemplatePreferences(string value)
+    {
+        if (string.IsNullOrEmpty(value) || value == TemplatePreferences) return true;
+        return Mode switch
+        {
+            MeetingMode.Meeting =>
+                value == "我是会议参与者。回答聚焦决策、风险和下一步行动，给出可以直接说出口的简短发言；涉及数据时标注来源；守住资料中我方的立场与底线，不确定时建议会后确认。",
+            MeetingMode.Client =>
+                value == "我是我方代表，正在和客户沟通。回答聚焦客户的需求和顾虑，给出可以直接说出口的简短回应；涉及价格、时间和承诺时以资料为准，不确定的说“会后确认”，不替公司做资料里没有的承诺。",
+            MeetingMode.General or MeetingMode.Custom =>
+                value == "直接回答当前问题：先给一句可以说出口的结论，再给 2–3 个要点；涉及资料时标注来源，不确定时说明。",
+            _ => false
+        };
+    }
 
     public static string Title(MeetingMode mode) => mode switch
     {

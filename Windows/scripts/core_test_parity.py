@@ -50,34 +50,10 @@ NO_CSHARP_EXPECTED: set[str] = set()
 # implementation differs (the Mac SQLite journal/store was replaced by the JSON queue). J9 audits
 # them; ``--strict-names`` keeps failing until the names are aligned, so the debt is visible.
 AUDIT_LEGACY: dict[str, list[str]] = {
-    "WorkspaceTests.swift": [
-        "legacyDefaultAnswerRequirementsFollowModeChanges",
-        "workspaceDecodesOlderFilesAndBuildsMaterial",
-        "questionBankIsSearchableAndCategoriesLabelSources",
-        "knowledgeCandidateAcceptanceRequiresItsArchivedSummaryAndTranscriptRevision",
-        "acceptedLessonEditsPersistSourceVersionsAndRestoreWithoutTranscriptData",
-        "acceptingAnotherSourceCreatesAnAuditableLessonRevision",
-        "historicalLessonSourceKeepsTheDeletionRetentionChoiceAvailable",
-        "backupMergeKeepsAndDeterministicallyResolvesReceiptsAcrossDeletedCandidates",
-        "backupMergePreservesExplicitSeriesRetentionWithoutRevivingItsSource",
-        "explicitSeriesRetentionWinsAgainstDefaultDeleteInEitherBackupOrder",
-        "higherLiveSeriesRevisionWinsOverRetainedStaleTextAndKeepsItInHistory",
-        "explicitDeletionRetentionKeepsAcceptedTextWithAnAccurateSourceTombstone",
-        "stageReviewKnowledgeTracksEveryContributingMeeting",
-        "knowledgeCandidatesStayPendingUntilAcceptedAndRepeatedReviewsDoNotCountTwice",
-        "replacingAnAnswerRequiresFreshRevisionAndKeepsTheOldAnswer",
-        "replacingAnAnswerPreservesItsSourceAttribution",
-        "staleKeepExistingRequiresReviewOfTheCurrentQuestionRevision",
-        "keepingAnExistingLessonIsRejectedWhenNoSimilarLessonRemains",
-        "editingQuestionWordingInvalidatesOpenReplacementWithoutErasingProvenance",
-        "whyAndHowQuestionsRemainSeparateCandidates",
-    ],
-    "LocalModelReuseTests.swift": [
-        "hiddenCacheSymlinksAndPartialReuse",
-        "corruptedDestinationIsReplacedOnlyWithValidData",
-        "partialNamedRevisionIsDiscoveredWithoutWeightFile",
-        "indexedExternalFilesAndBoundedTraversal",
-    ],
+    # J9 follow-up: WorkspaceTests.swift and LocalModelReuseTests.swift are now translated with
+    # the same method names (WorkspaceSameNameTests.cs / LocalModelReuseParityTests.cs). Only the
+    # two SQLite-journal tests remain: Windows replaced the Mac SQLite store with a JSON queue, so
+    # there is no same-name counterpart to write without adding a SQLite dependency. Lead decides.
     "DocumentJobTests.swift": [
         "journalRowReaderThrowsInsteadOfTreatingSQLiteErrorsAsEndOfRows",
         "failedJournalQueryAbortsStartupRecoveryBeforeTouchingStagedFiles",
