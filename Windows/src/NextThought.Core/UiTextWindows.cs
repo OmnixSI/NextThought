@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1296;
+    public const int Count = 1297;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1306,6 +1306,7 @@ internal static class UiTextWindowsEnglish
 
         // E10 看镜头提醒 (MediaPipe face landmarker + Windows.Media.Capture camera).
         ["画面只在这台电脑上分析成几个特征点，不保存、不上传。"] = "The picture is reduced to a few landmarks on this computer only. Nothing is saved or uploaded.",
+        ["更新（高级）"] = "Update (advanced)",
         ["没有找到看镜头模型（assets/face-landmarker）。"] = "The eye-contact model is missing (assets/face-landmarker).",
         ["正在看镜头（已校准）"] = "Looking at the camera (calibrated).",
         ["正在看镜头；先校准一次更准。"] = "Looking at the camera; calibrate once for a better reading.",
