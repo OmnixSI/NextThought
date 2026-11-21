@@ -55,7 +55,8 @@ Require(summary, "summary.json", "title", "markdown", "generatedAt", "questions"
 var user = ParseJson("user-content.json");
 Require(user, "user-content.json", "schemaVersion", "revision", "personalNotes", "highlights");
 var workspace = ParseJson("workspace.json");
-Require(workspace, "workspace.json", "id", "name", "sessionIds", "lessons", "seriesItems");
+// Mac has no session list in a workspace: a meeting points at its series through meta.workspaceID.
+Require(workspace, "workspace.json", "id", "name", "mode", "lessons", "questionBank", "seriesItems");
 if (workspace is not null && workspace.RootElement.TryGetProperty("seriesItems", out var items) && items.ValueKind == JsonValueKind.Array)
 {
     foreach (var item in items.EnumerateArray())
@@ -63,7 +64,8 @@ if (workspace is not null && workspace.RootElement.TryGetProperty("seriesItems",
             if (!item.TryGetProperty(property, out _)) failures.Add($"workspace.json: series item missing {property}");
 }
 var backup = ParseJson("backup-manifest.json");
-Require(backup, "backup-manifest.json", "format", "version", "createdAt", "includesSecrets", "sessions", "workspaces");
+// Mac BackupManifest stores counts, not id lists (Sources/NextThoughtCore/Backup.swift).
+Require(backup, "backup-manifest.json", "format", "version", "kind", "createdAt", "appVersion", "appBuild", "includesSecrets", "workspaceCount", "sessionCount");
 var revisions = ParseJson("revisions.json");
 Require(revisions, "revisions.json", "transcriptSourceRevision", "claimSourceRevision", "sourceRevision", "expected");
 Lines("transcript.jsonl", "id", "date", "speaker", "text");

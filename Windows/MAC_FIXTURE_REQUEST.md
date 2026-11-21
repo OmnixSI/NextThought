@@ -77,10 +77,12 @@ nt-mac-fixtures-<macOS版本>-<日期>.zip
 
 ## A15：在 Mac 上运行 MacCodec emit
 
+> 2026-11-21 已在 Mac（M2 Pro，macOS 26.5.2）上运行并提交到 `Windows/tests/Fixtures/mac/`。emit 已改为用 Core 真实类型编码，和旧手写样本的键名差异见该目录的 README.md。
+
 在仓库根目录执行（只运行命令行工具，不构建/安装/签名应用）：
 
 ```bash
-swift run --package-path Windows/tools/MacCodecMac emit --output Windows/tests/Fixtures/mac
+swift run --package-path Windows/tools/MacCodecMac MacCodec emit --output Windows/tests/Fixtures/mac
 ```
 
 产物应包含：`session-meta.json`、`transcript.jsonl`、`translations.jsonl`、`questions.jsonl`、`summary.json`、`user-content.json`、`workspace.json`（含一条被替换过的系列条目）、`skills.json`、`templates.json`、`glossary.json`、`backup-manifest.json`、`revisions.json`（A11 三个修订号样本与期望值）。
