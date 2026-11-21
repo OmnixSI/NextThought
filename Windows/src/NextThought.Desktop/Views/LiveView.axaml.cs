@@ -93,6 +93,10 @@ public partial class LiveView : UserControl
             state.RaiseLiveSceneUi();
             state.RaiseWebSearchModeUi();
             state.RaiseLiveNotesTabUi();
+            state.ReloadLiveSpeakerStrip();
+            state.EnsureDemoLiveNotes();
+            if (state.Recording && state.LiveNotesEngineStatus == LiveNotesStatus.Off)
+                state.BeginLiveNotes(!state.AnswerModeIsAuto);
         }
     }
 
@@ -123,9 +127,17 @@ public partial class LiveView : UserControl
                 break;
             case nameof(AppState.CurrentSession):
                 state?.RefreshSessionAnswerHistory();
+                state?.ReloadLiveSpeakerStrip();
                 break;
             case nameof(AppState.Recording):
                 state?.RaiseLiveStatusCountersUi();
+                if (state is { Recording: true } && state.LiveNotesEngineStatus == LiveNotesStatus.Off)
+                    state.BeginLiveNotes(!state.AnswerModeIsAuto);
+                else if (state is { Recording: false })
+                    state.EndLiveNotes();
+                break;
+            case nameof(AppState.SpeakerPeople):
+                state?.RefreshLiveSpeakerNames();
                 break;
         }
     }
@@ -134,6 +146,63 @@ public partial class LiveView : UserControl
     {
         state?.RefreshSessionAnswerHistory();
         state?.RaiseLiveAnswerUi();
+    }
+
+    // ---- J6/Mac SpeakerStrip + LineSpeakerMenu ---------------------------------------
+
+    /// <summary>Mac SpeakerStrip: tapping a person opens their name / merge / 这是我 editor.</summary>
+    private void SpeakerChip_Click(object? sender, RoutedEventArgs e)
+    {
+        if (state is null) return;
+        if (sender is Button { Tag: SpeakerPersonRow person }) state.SelectSpeakerPersonCommand.Execute(person);
+        new SpeakerEditorWindow { DataContext = state }.Show();
+    }
+
+    /// <summary>Mac SpeakerStrip's 「我是哪个？」: pick which voice is the user.</summary>
+    private void WhoAmI_Click(object? sender, RoutedEventArgs e)
+    {
+        if (state is null) return;
+        new SpeakerEditorWindow { DataContext = state }.Show();
+    }
+
+    /// <summary>
+    /// Mac TranscriptLine's context menu: 回答这句 / 标记重点 / 这句是谁说的 (我 · 新说话人 · each
+    /// recognised voice). assignLine only appends a voices.jsonl tag and writes meta.json, so the
+    /// recognised transcript.jsonl stays byte for byte unchanged.
+    /// </summary>
+    private void TranscriptRow_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (state is null || sender is not Control control || control.DataContext is not TranscriptRow row) return;
+        if (!e.GetCurrentPoint(control).Properties.IsRightButtonPressed) return;
+        var flyout = new Flyout { Placement = Avalonia.Controls.PlacementMode.Pointer };
+        var panel = new StackPanel { Width = 220, Spacing = 2 };
+        void Add(string text, Action action)
+        {
+            var button = new Button
+            {
+                Content = text,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Left
+            };
+            button.Classes.Add("quiet");
+            button.Click += (_, _) => { flyout.Hide(); action(); };
+            panel.Children.Add(button);
+        }
+        Add(UiText.T("回答这句"), () =>
+        {
+            state.DetectedQuestion = row.Text;
+            if (state.ForceAnswerCommand.CanExecute(null)) state.ForceAnswerCommand.Execute(null);
+        });
+        Add(UiText.T("标记或取消重点"), () => state.HighlightLineCommand.Execute(row));
+        panel.Children.Add(new Border { Height = 0.5, Background = Avalonia.Media.Brushes.Gray, Margin = new Thickness(0, 4, 0, 4) });
+        panel.Children.Add(new TextBlock { Text = UiText.T("这句是谁说的"), FontSize = 11, Opacity = 0.7, Margin = new Thickness(8, 2, 0, 2) });
+        Add(UiText.T("我"), () => _ = state.AssignLiveLineSpeakerAsync(row.Id, LineSpeaker.Me));
+        Add(UiText.T("新说话人"), () => _ = state.AssignLiveLineSpeakerAsync(row.Id, LineSpeaker.SomeoneNew));
+        foreach (var person in state.SpeakerPeople.Where(person => !person.IsMe))
+            Add(person.DisplayLabel, () => _ = state.AssignLiveLineSpeakerAsync(row.Id, LineSpeaker.FromVoice(person.Voice)));
+        flyout.Content = panel;
+        flyout.ShowAt(control);
+        e.Handled = true;
     }
 
     private void OnSettingsPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -260,8 +329,8 @@ public partial class LiveView : UserControl
     private void EnableLiveNotes_Click(object? sender, RoutedEventArgs e)
     {
         if (state is null) return;
-        if (!state.LiveNotesEnabled) state.EnableLiveNotes();
-        else state.UpdateLiveNotesNow();
+        if (!state.LiveNotesEnabled) state.SetLiveNotesEnabled(true);
+        else _ = state.UpdateLiveNotesNowAsync();
         ShowRightTab(RightTab.LiveNotes);
     }
 
@@ -368,6 +437,7 @@ public partial class LiveView : UserControl
     private void OnTranscriptChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (TranscriptList.ItemCount == 0) return;
+        state?.RefreshLiveSpeakerNames();
         var added = e.Action == NotifyCollectionChangedAction.Add ? e.NewItems?.Count ?? 1 : 1;
         if (state is not null && !state.LiveIsFollowingTranscript)
         {

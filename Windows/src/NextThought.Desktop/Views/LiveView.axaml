@@ -59,6 +59,10 @@
     <Style Selector="TextBlock.speaker.me">
       <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
     </Style>
+    <!-- J1: 实时纪要 status warns when an update failed or no answer service is connected. -->
+    <Style Selector="TextBlock.caption.warning">
+      <Setter Property="Foreground" Value="{DynamicResource Caution}" />
+    </Style>
 
     <!-- §5.3: Mac InkSegmented — a sunken rounded container with the selected item on a white
          block. Used by the top-bar 自动回答/只记录 switch and the right-column tabs. -->
@@ -297,7 +301,7 @@
     <!-- ===== Body: flat transcript column │ hairline │ right column (Mac HSplitView) ===== -->
     <Grid Grid.Row="3" ColumnDefinitions="11*,1,9*">
       <!-- 左栏: 实时对话 (Mac TranscriptColumn) — flat, no card, no shadow. -->
-      <Grid x:Name="LiveTranscriptColumn" Grid.Column="0" RowDefinitions="Auto,Auto,*,Auto">
+      <Grid x:Name="LiveTranscriptColumn" Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*,Auto">
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource LvMargin_24_16_24_0}">
           <TextBlock Text="{loc:Tr 实时对话}" Classes="overline" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="quiet" Width="24" Height="24" Padding="{DynamicResource D4Padding_0}"
@@ -312,12 +316,43 @@
                              Margin="{DynamicResource LvMargin_16_12_16_0}"
                              IsVisible="{Binding LiveShowsInsightsPanel}" />
 
-        <ListBox Name="TranscriptList" Grid.Row="2" ItemsSource="{Binding Transcript}" Background="Transparent" SelectionMode="Single"
+        <!-- J6/Mac SpeakerStrip: one capsule per recognised person, "我是哪个？" until one is the
+             user, and the hint. Tapping a capsule opens the speaker editor. -->
+        <StackPanel x:Name="LiveSpeakerStrip" Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                    Margin="{DynamicResource LvMargin_24_8_24_0}" IsVisible="{Binding LiveSpeakerStripVisible}">
+          <ItemsControl ItemsSource="{Binding SpeakerPeople}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SpeakerPersonRow">
+                <Button Classes="pill" Tag="{Binding}" Click="SpeakerChip_Click" MinHeight="{DynamicResource LvMinHeight_24}"
+                        Margin="{DynamicResource D4Margin_0_0_4_0}" ToolTip.Tip="{loc:Tr 点名字改名、合并或标成我}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                    <Ellipse Width="6" Height="6" Fill="{DynamicResource InkBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding DisplayLabel}" FontSize="12" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button x:Name="LiveWhoAmIButton" Classes="pill" MinHeight="{DynamicResource LvMinHeight_24}"
+                  Click="WhoAmI_Click" IsVisible="{Binding LiveAsksForMe}"
+                  ToolTip.Tip="{loc:Tr 还没认出你的声音：点一下，选出哪个是你}">
+            <TextBlock Text="{loc:Tr 我是哪个？}" FontSize="12" Foreground="{DynamicResource Secondary}" />
+          </Button>
+          <TextBlock Text="{Binding LiveSpeakerStripHint}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                     TextWrapping="NoWrap" />
+        </StackPanel>
+
+        <ListBox Name="TranscriptList" Grid.Row="3" ItemsSource="{Binding Transcript}" Background="Transparent" SelectionMode="Single"
                  Margin="{DynamicResource LvMargin_24_16_24_8}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="local:TranscriptRow">
               <Grid Classes="transcript-row" ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_12}"
-                    Margin="{DynamicResource LvMargin_0_0_0_16}">
+                    Margin="{DynamicResource LvMargin_0_0_0_16}" PointerPressed="TranscriptRow_PointerPressed">
                 <!-- SpeakerLabel: 对方 / 我, with the 问题 capsule below a detected question. -->
                 <StackPanel MinWidth="40" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Top">
                   <TextBlock Text="{Binding SpeakerName}" Classes="speaker" Classes.me="{Binding SpeakerIsMe}" />
@@ -368,7 +403,7 @@
 
         <!-- Footer: the utterances still being recognised, follow banner, candidate strip and
              the status row with the privacy lock. -->
-        <StackPanel Grid.Row="3">
+        <StackPanel Grid.Row="4">
           <!-- PartialLines (Mac): the two lanes still being recognised, shown in the secondary
                colour at the end of the transcript. -->
           <StackPanel Spacing="{DynamicResource D4Spacing_1}" Margin="{DynamicResource LvMargin_24_0_24_4}"
@@ -457,14 +492,83 @@
           <Grid x:Name="LiveNotesPanel" RowDefinitions="Auto,*" IsVisible="False">
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource LvMargin_24_12_24_0}">
               <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
-                <TextBlock Text="{Binding LiveNotesStatusText}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+                <ProgressBar IsIndeterminate="True" Width="16" Height="3" VerticalAlignment="Center"
+                             IsVisible="{Binding LiveNotesIsUpdating}" />
+                <TextBlock Text="{Binding LiveNotesStatusText}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                           Classes.warning="{Binding LiveNotesStatusIsWarning}" />
               </StackPanel>
               <Button Grid.Column="1" Classes="pill" Content="{Binding LiveNotesButtonText}" FontSize="11" MinHeight="{DynamicResource LvMinHeight_24}"
                       Click="EnableLiveNotes_Click" IsEnabled="{Binding LiveNotesCanUpdate}" />
             </Grid>
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-              <TextBlock Text="{Binding LiveNotesHintText}" Classes="body" FontSize="15" Foreground="{DynamicResource Secondary}"
-                         TextWrapping="Wrap" Margin="{DynamicResource LvMargin_24_16_24_16}" />
+              <StackPanel Margin="{DynamicResource LvMargin_24_12_24_16}" Spacing="{DynamicResource D4Spacing_12}">
+                <TextBlock Text="{Binding LiveNotesHintText}" Classes="body" FontSize="15" Foreground="{DynamicResource Secondary}"
+                           TextWrapping="Wrap" IsVisible="{Binding !LiveNotesHasContent}" />
+                <StackPanel Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding LiveNotesHasContent}">
+                  <!-- 整场在谈什么：the summary on a sunken rounded block (Mac LiveNotesColumn). -->
+                  <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                          Padding="{DynamicResource D4Padding_16}">
+                    <TextBlock Text="{Binding LiveNotesSummaryText}" FontSize="15" LineHeight="24" TextWrapping="Wrap" />
+                  </Border>
+                  <!-- 议题要点：new points carry the scene's pigment. -->
+                  <ItemsControl ItemsSource="{Binding LiveNotesTopicRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:LiveNotesTopicRow">
+                        <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                          <TextBlock Text="{Binding Title}" Classes="label" FontSize="13" FontWeight="SemiBold" />
+                          <ItemsControl ItemsSource="{Binding Points}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="local:LiveNotesPointRow">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                      Margin="{DynamicResource D4Margin_0_2_0_0}">
+                                  <Panel VerticalAlignment="Top" Margin="{DynamicResource D4Margin_0_6_0_0}">
+                                    <Ellipse Width="4" Height="4" Fill="{DynamicResource Tertiary}" IsVisible="{Binding !Fresh}" />
+                                    <Ellipse Width="4" Height="4" Fill="{Binding $parent[UserControl].((local:AppState)DataContext).LiveSceneTintBrush}"
+                                             IsVisible="{Binding Fresh}" />
+                                  </Panel>
+                                  <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="15" LineHeight="22" TextWrapping="Wrap" />
+                                </Grid>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <!-- 定下来的 -->
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding HasLiveNotesDecisions}">
+                    <TextBlock Text="{loc:Tr 定下来的}" Classes="overline" />
+                    <ItemsControl ItemsSource="{Binding LiveNotesDecisionRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:LiveNotesDecisionRow">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                Margin="{DynamicResource D4Margin_0_2_0_0}">
+                            <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                                       Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="15" LineHeight="22" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                  <!-- 要做的（带负责人） -->
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding HasLiveNotesTodos}">
+                    <TextBlock Text="{loc:Tr 要做的}" Classes="overline" />
+                    <ItemsControl ItemsSource="{Binding LiveNotesTodoRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:LiveNotesTodoRow">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                Margin="{DynamicResource D4Margin_0_2_0_0}">
+                            <TextBlock Text="{StaticResource IconCircle}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                                       Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayText}" FontSize="15" LineHeight="22" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
             </ScrollViewer>
           </Grid>
 

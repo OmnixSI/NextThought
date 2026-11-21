@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using NextThought.Core;
 using Xunit;
 
 namespace NextThought.Tests;
@@ -135,9 +136,10 @@ public sealed class LiveSessionStage4Tests
         Assert.Contains("IconLock", live);
         var state = Read("AppState.LivePage.cs");
         Assert.Contains("MarkNotEcho", state);
-        var row = Read("TranscriptRow.cs");
-        Assert.Contains("public string SpeakerName", row);
-        Assert.Contains("RestoreEcho", row);
+        // J6: the speaker column is generated from an observable name so voice names update in place.
+        var transcriptRowSource = Read("TranscriptRow.cs");
+        Assert.Contains("[ObservableProperty] private string speakerName", transcriptRowSource);
+        Assert.Contains("RestoreEcho", transcriptRowSource);
     }
 
     // ------------------------------------------------------------------------------------
@@ -203,12 +205,79 @@ public sealed class LiveSessionStage4Tests
         Assert.Contains("{Binding LiveNotesHintText}", live);
         Assert.Contains("{Binding LiveNotesButtonText}", live);
         Assert.Contains("EnableLiveNotes_Click", live);
-        var state = Read("AppState.LivePage.cs");
+        var state = Read("AppState.LiveNotes.cs");
         Assert.Contains("实时纪要没有开", state);
         Assert.Contains("还没有连接回答服务，写不了实时纪要", state);
         Assert.Contains("说上几句之后，这里会出现这场会的要点：在谈什么、定了什么、谁要做什么。", state);
         Assert.Contains("开启实时纪要", state);
         Assert.Contains("现在更新", state);
+    }
+
+    // ------------------------------------------------------------------------------------
+    // J6: 说话人 — the Mac SpeakerStrip above the transcript (people capsules + 「我是哪个？」),
+    // voice names in the speaker column, and the right-click 「这句是谁说的」 assignment. The
+    // recognised transcript.jsonl is never rewritten: a change is a voices.jsonl tag + meta.json.
+    // ------------------------------------------------------------------------------------
+
+    [Fact]
+    public void TheLivePageHasTheMacSpeakerStripAndLineSpeakerMenu()
+    {
+        var live = Live();
+        Assert.Contains("x:Name=\"LiveSpeakerStrip\"", live);
+        Assert.Contains("{Binding LiveSpeakerStripVisible}", live);
+        Assert.Contains("{Binding SpeakerPeople}", live);
+        Assert.Contains("SpeakerChip_Click", live);
+        Assert.Contains("x:Name=\"LiveWhoAmIButton\"", live);
+        Assert.Contains("{loc:Tr 我是哪个？}", live);
+        Assert.Contains("{Binding LiveAsksForMe}", live);
+        Assert.Contains("WhoAmI_Click", live);
+        Assert.Contains("TranscriptRow_PointerPressed", live);
+        var code = Read("Views", "LiveView.axaml.cs");
+        Assert.Contains("这句是谁说的", code);
+        Assert.Contains("AssignLiveLineSpeakerAsync", code);
+        Assert.Contains("LineSpeaker.Me", code);
+        Assert.Contains("LineSpeaker.SomeoneNew", code);
+        var state = Read("AppState.LivePage.cs");
+        Assert.Contains("public bool LiveSpeakerStripVisible", state);
+        Assert.Contains("public bool LiveAsksForMe", state);
+        Assert.Contains("public void RefreshLiveSpeakerNames", state);
+        Assert.Contains("public async Task AssignLiveLineSpeakerAsync", state);
+        Assert.Contains("SessionSpeakerEdits.AssignLine", state);
+        // The assignment goes through the archive tag + meta.json only.
+        Assert.Contains("Sessions.AppendVoiceTagAsync", state);
+        Assert.Contains("Sessions.SetVoiceLabelAsync", state);
+        Assert.DoesNotContain("AppendTranscriptAsync", state);
+        var row = Read("TranscriptRow.cs");
+        Assert.Contains("public void ApplyLiveIdentity", row);
+        Assert.Contains("public void MoveToVoice", row);
+        Assert.Contains("[ObservableProperty] private string speakerName", row);
+        Assert.Contains("[ObservableProperty] private int? voice", row);
+    }
+
+    [Fact]
+    public void SpeakerAssignmentLeavesTheRecognisedTranscriptUntouched()
+    {
+        var line = new TranscriptLine
+        {
+            Id = Guid.NewGuid(),
+            Speaker = "remote",
+            Text = "如果删除缓存失败了怎么办",
+            Date = DateTimeOffset.UtcNow,
+            Voice = null
+        };
+        var lines = new List<TranscriptLine> { line };
+        var before = System.Text.Json.JsonSerializer.Serialize(lines);
+        var meta = new SessionMeta { Id = Guid.NewGuid(), Title = "演示", StartedAt = DateTimeOffset.UtcNow };
+        var (updated, tag) = SessionSpeakerEdits.AssignLine(meta, lines, line.Id, LineSpeaker.Me);
+        Assert.Equal(before, System.Text.Json.JsonSerializer.Serialize(lines));
+        Assert.Equal(line.Id, tag.Id);
+        Assert.True(updated.MeVoices?.Contains(tag.Voice) == true);
+        var (merged, tags) = SessionSpeakerEdits.MergeVoices(updated, lines, [tag], tag.Voice, tag.Voice);
+        Assert.Empty(tags);
+        Assert.Equal(updated, merged);
+        var applied = SessionSpeakerEdits.ApplyVoiceTags(lines, [tag]);
+        Assert.Equal(tag.Voice, applied[0].Voice);
+        Assert.Equal(line.Text, applied[0].Text);
     }
 
     // ------------------------------------------------------------------------------------

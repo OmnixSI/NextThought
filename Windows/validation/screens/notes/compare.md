@@ -137,3 +137,24 @@ Windows 最新批次：`validation/screens/current/notes-*.png`、`transcript-*.
 - 「…」更多菜单合并、模板下拉在面包屑行；
 - 复盘结构化段落 vs Markdown 卡、证据卡常驻；
 - work（工作会议纪要）演示模板截图的 Mac 对照（Windows 用 `--demo` 默认模板，未单独拍 work 变体）。
+
+## task-62 / E16：转写右键菜单（改说话人 / 改这一句）——逐元素对照（2026-11-21）
+
+- Mac 参照：`Sources/NextThought/SpeakerID.swift`（assignLine/setVoiceName/setMeVoice/mergeVoices）、`Sources/NextThought/NotesPageView.swift` 的 LineSpeakerMenu 与 editLine；数据层由 core-parity J6 落成 `Windows/src/NextThought.Core/SessionLineEdits.cs`（`SessionSpeakerEdits` / `SessionTextEdits`）。
+- Windows：`Views/NotesView.axaml` 转写行右键菜单、`Views/NotesView.axaml.cs` 的 Opening/Click、`AppState.TranscriptEdits.cs`；测试 `tests/NextThought.Tests/TranscriptEditsTests.cs`（4 项）。
+- 截图：转写标签证据图沿用 `notes-transcript-{light,dark}.png`（菜单为弹出层，未截弹出态，记录）。
+
+| # | Mac 元素（LineSpeakerMenu / editLine） | Windows 现状 | 结论 |
+|---|---|---|---|
+| 1 | 右键行菜单「这句是谁说的」→ 我 / 新说话人 / 每个识别到的人 | 同名菜单：固定「我」「新说话人」+ `SpeakerPeople` 里每个非我的人（`FromVoice`），Opening 时动态生成 | 逐条一致 |
+| 2 | assignLine：句子改到目标声音，只追加 voices.jsonl 标签，meta.json 写 voiceNames/meVoices | `AssignTranscriptLineSpeakerAsync` → `SessionSpeakerEdits.AssignLine` → `AppendVoiceTagAsync` + `SetVoiceLabelAsync`；`TranscriptEditsTests` 断言 **transcript.jsonl 字节哈希不变**、meta/行 voice 更新 | 逐条一致 |
+| 3 | 标成「我」：复用/新建用户声音并写 meVoices | `LineSpeaker.Me` 分支同 Mac；测试断言 meVoices 含目标声音、字节不变 | 逐条一致 |
+| 4 | 改这一句（editLine）：用户改字写入 user-content 的 correctionDecisions，原转写不动 | 右键「改这一句…」→ `EditTextDialog` → `SessionTextEdits.EditLine` → `SessionUserContentStore.Save`；重新按 `EffectiveLines` 装载转写；测试断言字节不变、EffectiveLines 生效/撤销恢复 | 逐条一致 |
+| 5 | 校对结果里逐条接受/撤销（E17 窗口） | 本轮只接数据层 `SessionTextEdits.ToggleCorrection` 往返测试；E17 窗口 UI 在 E17 步逐元素对照 | 部分：数据层已覆盖，UI 归 E17 |
+| 6 | 菜单其余项：加入术语表… | 保留原有「加入术语表…」 | 逐条一致 |
+
+### 未解决/后续
+
+- 右键菜单弹出态截图未拍（需要真实右键操作；E12 运行环境修复后补）；
+- 说话人条/实时页的 assignLine 由 live-parity J6 live 接线（`c7aa185f`），本页只做会后转写标签；
+- E17 校对结果窗口的逐条接受/撤销 UI、E18 知识复核待下一步。

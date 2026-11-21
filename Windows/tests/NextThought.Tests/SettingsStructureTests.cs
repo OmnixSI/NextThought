@@ -90,6 +90,14 @@ public sealed class SettingsStructureTests
         // Mac NotesSettingsView: 会议自动收尾 / 自定义模板.
         Assert.StartsWith("Notes|", Card("会议自动收尾"));
         Assert.StartsWith("Notes|", Card("自定义纪要模板"));
+        // §6.7 ownership: 区分说话人（声纹）and 术语和人名 live on 通用; 同声传译 and 字幕条 on 提词与教练;
+        // 联网搜索 stays on the 回答与资料 page (inside the answer-service card).
+        Assert.StartsWith("General|", Card("区分说话人"));
+        Assert.StartsWith("General|", Card("术语和人名"));
+        Assert.StartsWith("Coach|", Card("同声传译"));
+        Assert.StartsWith("Coach|", Card("字幕条"));
+        Assert.StartsWith("Answer|", Card("回答服务"));
+        Assert.Contains("{loc:Tr 允许联网核实（需 TAVILY_API_KEY）}", Card("回答服务"));
     }
 
     [Fact]

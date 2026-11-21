@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -164,4 +165,44 @@ public partial class NotesView : UserControl
         }
         catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
+
+    // ---- task-62/E16: Mac LineSpeakerMenu + editLine on the 转写 rows ---------------------
+
+    private TranscriptRow? transcriptMenuRow;
+
+    private void TranscriptRowMenu_Opening(object? sender, CancelEventArgs e)
+    {
+        if (sender is not ContextMenu menu || DataContext is not AppState state) return;
+        transcriptMenuRow = menu.PlacementTarget?.DataContext as TranscriptRow;
+        if (transcriptMenuRow is null) { e.Cancel = true; return; }
+        if (menu.Items.OfType<MenuItem>().FirstOrDefault(item => item.Name == "LineSpeakerMenu") is not { } speakers) return;
+        speakers.Items.Clear();
+        AddSpeakerItem(speakers, UiText.T("我"), LineSpeaker.Me);
+        AddSpeakerItem(speakers, UiText.T("新说话人"), LineSpeaker.SomeoneNew);
+        foreach (var person in state.SpeakerPeople.Where(person => !person.IsMe))
+            AddSpeakerItem(speakers, person.DisplayLabel, LineSpeaker.FromVoice(person.Voice));
+    }
+
+    private void AddSpeakerItem(MenuItem parent, string label, LineSpeaker target)
+    {
+        var item = new MenuItem { Header = label, Tag = target };
+        item.Click += AssignTranscriptSpeaker_Click;
+        parent.Items.Add(item);
+    }
+
+    private async void AssignTranscriptSpeaker_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: LineSpeaker target } || transcriptMenuRow is not { } row) return;
+        if (DataContext is AppState state) await state.AssignTranscriptLineSpeakerAsync(row, target);
+    }
+
+    private async void EditTranscriptLine_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: TranscriptRow row } || DataContext is not AppState state) return;
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+        var dialog = new EditTextDialog(row.Text);
+        var text = await dialog.ShowDialog<string?>(owner);
+        if (!string.IsNullOrWhiteSpace(text)) await state.SaveTranscriptLineEditAsync(row, text);
+    }
+
 }
