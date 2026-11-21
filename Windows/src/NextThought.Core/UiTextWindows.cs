@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1288;
+    public const int Count = 1297;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1181,6 +1181,15 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["未完成"] = "Not finished",
+        ["纪要高级"] = "Notes: advanced",
+        ["还没有记录。从这个系列开始一场会议，记录会出现在这里。"] = "No records yet. Start a meeting in this series and it will appear here.",
+        ["还没有资料。点「编辑系列」把 PDF、Word、PPT、Excel、Markdown 或图片加进这个系列。"] = "No materials yet. Open Edit series to add PDF, Word, PPT, Excel, Markdown or images to this series.",
+        ["正在复用 %@…"] = "Reusing %@…",
+        ["第 %lld / %lld 页"] = "Page %lld of %lld",
+        ["待保存队列已满，会议内容未能入队。"] = "The save queue is full; the meeting content could not be queued.",
+        ["待保存队列已满；部分新写入没有入队。"] = "The save queue is full; some new writes were not queued.",
+        ["PaddleOCR-VL 1.6 Q4（更省内存）"] = "PaddleOCR-VL 1.6 Q4 (uses less memory)",
         ["重试保存"] = "Retry save",
         ["第三方组件"] = "Third-party components",
         ["隔离的 Python 3.12 环境，读取 PDF、Office 与文本文件。"] = "An isolated Python 3.12 environment reads PDF, Office and text files.",
