@@ -3,6 +3,7 @@
         xmlns:loc="using:NextThought.Desktop.Localization"
         xmlns:local="using:NextThought.Desktop"
         xmlns:controls="using:NextThought.Desktop.Views.Controls"
+        xmlns:dsc="using:NextThought.Desktop.Controls"
         xmlns:core="using:NextThought.Core"
         x:Class="NextThought.Desktop.Views.SeriesEditorWindow"
         x:DataType="local:AppState"
@@ -10,30 +11,6 @@
         Title="{loc:Tr 编辑系列}" Width="760" Height="720" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource Paper}">
   <Window.Styles>
-    <!-- WorkspaceEditor section strip: a 2px Ink underline on the selected section, hairline track. -->
-    <Style Selector="Button.sectionTab">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0,0,0,2" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="Padding" Value="8,12" />
-      <Setter Property="MinHeight" Value="0" />
-      <Setter Property="FontSize" Value="13" />
-      <Setter Property="FontWeight" Value="Medium" />
-      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
-    </Style>
-    <Style Selector="Button.sectionTab:pointerover /template/ Border#Root">
-      <Setter Property="Background" Value="{DynamicResource Hover}" />
-    </Style>
-    <Style Selector="Button.sectionTab.active">
-      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource InkBrush}" />
-    </Style>
-    <Style Selector="Button.sectionTab.active:pointerover /template/ Border#Root">
-      <Setter Property="Background" Value="{DynamicResource Sunken}" />
-    </Style>
-    <Style Selector="ToggleSwitch.wide">
-      <Setter Property="MinHeight" Value="{DynamicResource HitRow}" />
-    </Style>
     <Style Selector="StackPanel.editorBar">
       <Setter Property="Background" Value="{DynamicResource Sunken}" />
     </Style>
@@ -71,23 +48,8 @@
     <!-- Primary sections: 记录 / 资料 / 经验积累 (WorkspaceEditorSection.primary). -->
     <Border Grid.Row="1" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0,0,0.5"
             Margin="{DynamicResource D4Margin_0_10_0_0}">
-      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
-        <Button x:Name="RecordsTab" Classes="sectionTab active" Click="SectionRecords_Click">
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}">
-            <TextBlock Text="{loc:Tr 记录}" />
-            <TextBlock Text="{Binding SeriesRecords.Count}" Classes="caption" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button x:Name="DocumentsTab" Classes="sectionTab" Click="SectionDocuments_Click">
-          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_5}">
-            <TextBlock Text="{loc:Tr 资料}" />
-            <TextBlock Text="{Binding SeriesEditorDocuments.Count}" Classes="caption" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
-        <Button x:Name="KnowledgeTabButton" Classes="sectionTab" Click="SectionKnowledge_Click">
-          <TextBlock Text="{loc:Tr 经验积累}" />
-        </Button>
-      </StackPanel>
+      <dsc:InkSegmented x:Name="SectionTabs" HorizontalAlignment="Left" VerticalAlignment="Center"
+                        SelectionChanged="SectionTabs_SelectionChanged" />
     </Border>
 
     <!-- Draft action bar for basic/requirements (WorkspaceEditor.editActionsBar). -->
@@ -113,8 +75,8 @@
               <DataTemplate x:DataType="local:RecentMeetingRow">
                 <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" Margin="{DynamicResource D4Margin_0_0_0_6}">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
-                    <Border Grid.Column="0" Width="7" Height="7" CornerRadius="{DynamicResource D4CornerRadius_4}"
-                            Background="{Binding ModeTintBrush}" VerticalAlignment="Center" />
+                    <dsc:StatusDot Grid.Column="0" DotSize="7" Background="{Binding ModeTintBrush}"
+                                   VerticalAlignment="Center" />
                     <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
                       <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" />
                       <TextBlock Text="{Binding Details}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxLines="2"
@@ -173,8 +135,8 @@
               <DataTemplate x:DataType="local:SeriesDocumentRow">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}"
                       Margin="{DynamicResource D4Margin_0_0_0_6}">
-                  <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" Tag="{Binding}"
-                            Click="DocumentEnabled_Click" ToolTip.Tip="{loc:Tr 开启后，回答时会参考这份资料。}" />
+                  <dsc:InkSwitch Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" Tag="{Binding}"
+                                 Click="DocumentEnabled_Click" ToolTip.Tip="{loc:Tr 开启后，回答时会参考这份资料。}" />
                   <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_1}">
                     <TextBlock Text="{Binding Name}" Classes="caption" TextTrimming="CharacterEllipsis" />
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
@@ -268,7 +230,9 @@
               <TextBox Text="{Binding SeriesEditorStyle}" PlaceholderText="concise / detailed" />
             </StackPanel>
           </Grid>
-          <CheckBox Content="{loc:Tr 使用系列知识（经验与题库）}" IsChecked="{Binding SeriesEditorUseKnowledge}" />
+          <dsc:WideToggleRow IsChecked="{Binding SeriesEditorUseKnowledge, Mode=TwoWay}">
+            <TextBlock Text="{loc:Tr 使用系列知识（经验与题库）}" VerticalAlignment="Center" />
+          </dsc:WideToggleRow>
           <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding IsSeriesEditorCustomMode}">
             <TextBlock Text="{loc:Tr 类型}" Classes="caption" />
             <TextBox Text="{Binding SeriesEditorCustomTypeName}" />
@@ -331,8 +295,8 @@
           <ItemsControl ItemsSource="{Binding SeriesSkills}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="local:SeriesSkillRow">
-                <CheckBox IsChecked="{Binding IsAttached, Mode=TwoWay}" IsEnabled="{Binding CanToggle}"
-                          MinHeight="{DynamicResource HitRow}" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                <dsc:WideToggleRow IsChecked="{Binding IsAttached, Mode=TwoWay}" IsEnabled="{Binding CanToggle}"
+                                   Margin="{DynamicResource D4Margin_0_0_0_4}">
                   <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                     <TextBlock Text="{loc:Tr 所有系列}" FontSize="10" FontWeight="SemiBold"
@@ -342,7 +306,7 @@
                     <TextBlock Text="{Binding Summary}" FontSize="11" Opacity="0.6" VerticalAlignment="Center"
                                IsVisible="{Binding HasSummary}" />
                   </StackPanel>
-                </CheckBox>
+                </dsc:WideToggleRow>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

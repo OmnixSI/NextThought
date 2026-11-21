@@ -46,22 +46,37 @@ public sealed class SeriesEditorParityTests
     }
 
     [Fact]
+    public void EditorUsesDesignSystemComponentsForSwitchesAndDots()
+    {
+        var view = Read("Views", "SeriesEditorWindow.axaml");
+        // decisions §3.1 components 6: status dots and switches come from the design system.
+        Assert.Contains("dsc:StatusDot", view);
+        Assert.Contains("dsc:InkSegmented", view);
+        Assert.Contains("dsc:InkSwitch", view);
+        Assert.Contains("dsc:WideToggleRow", view);
+        Assert.DoesNotContain("ToggleSwitch", view);
+        Assert.Contains("DotSize=\"7\"", view);
+    }
+
+    [Fact]
     public void PrimarySectionsAreRecordsDocumentsKnowledgeWithTheInkUnderline()
     {
         var view = Read("Views", "SeriesEditorWindow.axaml");
-        // WorkspaceEditorSection.primary = [records, documents, knowledge]
-        Assert.Contains("x:Name=\"RecordsTab\"", view);
-        Assert.Contains("x:Name=\"DocumentsTab\"", view);
-        Assert.Contains("x:Name=\"KnowledgeTabButton\"", view);
-        Assert.Contains("经验积累", view);
-        Assert.Contains("SectionRecords_Click", view);
-        Assert.Contains("SectionDocuments_Click", view);
-        Assert.Contains("SectionKnowledge_Click", view);
-        // Selected section is a 2px Ink underline over a 0.5px hairline track.
-        Assert.Contains("Button.sectionTab.active", view);
-        Assert.Contains("Value=\"0,0,0,2\"", view);
+        // decisions §3.1 components 6: the section strip is the design-system InkSegmented
+        // (sliding thumb), not three hand-made sectionTab buttons.
+        Assert.Contains("x:Name=\"SectionTabs\"", view);
+        Assert.Contains("InkSegmented", view);
+        Assert.DoesNotContain("Classes=\"sectionTab", view);
+        Assert.Contains("SectionTabs_SelectionChanged", view);
+        // The three primary titles are the component's items, set next to the section state.
+        var code = Read("Views", "SeriesEditorWindow.axaml.cs");
+        foreach (var title in new[] { "记录", "资料", "经验积累" })
+            Assert.Contains(title, code);
+        // The strip's hairline track stays; the thumb/selection styling now comes from the component.
         Assert.Contains("BorderThickness=\"0,0,0,0.5\"", view);
-        Assert.Contains("Value=\"{DynamicResource InkBrush}\"", view);
+        Assert.Contains("dsc:InkSegmented", view);
+        Assert.Contains("dsc:StatusDot", view);
+        Assert.DoesNotContain("ToggleSwitch", view);
         // Draft save/cancel bar only for basic/requirements (WorkspaceEditor.editActionsBar).
         Assert.Contains("EditActionsBar", view);
         Assert.Contains("SaveDraft_Click", view);
