@@ -49,7 +49,7 @@ public sealed class SettingsStructureTests
     {
         var xaml = Xaml();
         var pages = new HashSet<string> { "Scene", "Answer", "Coach", "Notes", "General", "Advanced" };
-        var tags = System.Text.RegularExpressions.Regex.Matches(xaml, "<Border Classes=\"card\"[^>]*?Tag=\"(\\w+)\"")
+        var tags = System.Text.RegularExpressions.Regex.Matches(xaml, "<Border Classes=\"card settings-section\"[^>]*?Tag=\"(\\w+)\"")
             .Select(match => match.Groups[1].Value).ToList();
         Assert.NotEmpty(tags);
         Assert.All(tags, tag => Assert.Contains(tag, pages));

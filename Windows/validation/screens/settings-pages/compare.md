@@ -1,6 +1,16 @@
-# 设置六页 / 快速设置 / 主窗口设置 逐元素对照（阶段 4 §6.7）
+# 设置六页 / 快速设置 / 主窗口设置 逐元素对照（Mac 3.4.0 ↔ Windows，阶段 4 §6.7）
 
 Mac 参照：`Windows/validation/mac-screens/settings-pages/{scenes,answers,presenter,notes,general,advanced}-{light,dark}.png`、`mac-screens/settings/{quick-settings,window}-{light,dark}.png`。
+- Mac 3.4.0 参考图：
+  [scenes-light](../../mac-screens/settings-pages/scenes-light.png) / [scenes-dark](../../mac-screens/settings-pages/scenes-dark.png)、
+  [answers-light](../../mac-screens/settings-pages/answers-light.png) / [answers-dark](../../mac-screens/settings-pages/answers-dark.png)、
+  [presenter-light](../../mac-screens/settings-pages/presenter-light.png) / [presenter-dark](../../mac-screens/settings-pages/presenter-dark.png)、
+  [notes-light](../../mac-screens/settings-pages/notes-light.png) / [notes-dark](../../mac-screens/settings-pages/notes-dark.png)、
+  [general-light](../../mac-screens/settings-pages/general-light.png) / [general-dark](../../mac-screens/settings-pages/general-dark.png)、
+  [advanced-light](../../mac-screens/settings-pages/advanced-light.png) / [advanced-dark](../../mac-screens/settings-pages/advanced-dark.png)；
+  快速设置：[quick-settings-light](../../mac-screens/settings/quick-settings-light.png) / [quick-settings-dark](../../mac-screens/settings/quick-settings-dark.png)、
+  主窗口设置：[window-light](../../mac-screens/settings/window-light.png) / [window-dark](../../mac-screens/settings/window-dark.png)。
+
 Windows 截图：本目录 `settings-{scene,answer,coach,notes,general,advanced}-{light,dark}.png`、`quick-settings-{light,dark}.png`；`Windows/validation/screens/settings/settings-{light,dark}.png`（主窗口内设置覆盖层）。
 Swift 参照：`SettingsView.swift`（SettingsPage / SettingsPageView / SettingsSearch）、`SettingsPages.swift`（SceneSettingsPage / SceneRow / AnswerSettings）、`SettingsGeneralData.swift`（GeneralSettings / BackupSettingsSection / PermissionSettingsSection / UpdateSettings）、`SettingsPresenter.swift`、`SettingsAdvanced.swift`、`QuickSettings.swift`。
 
