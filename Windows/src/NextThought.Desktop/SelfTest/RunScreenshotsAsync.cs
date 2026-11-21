@@ -109,6 +109,19 @@ public partial class MainWindow
                 await WriteInventoryAsync(sample, textDirectory, dark ? "controls-dark" : "controls-light");
                 sample.Close();
             }
+            // D5 §5.1: the typography specimen, one line per size in Chinese and English mixed.
+            foreach (var dark in new[] { false, true })
+            {
+                if (Application.Current is { } app)
+                    app.RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light;
+                var specimen = new TypographySampleWindow();
+                specimen.Show();
+                await Task.Delay(300);
+                var specimenName = dark ? "typography-dark" : "typography-light";
+                CaptureVisual(specimen, Path.Combine(directory, specimenName + ".png"));
+                await WriteInventoryAsync(specimen, textDirectory, specimenName);
+                specimen.Close();
+            }
             // First-run guide: all four steps in both themes, so the Mac step-1..4 reference
             // screenshots each have a matching Windows capture (the old batch only kept the first
             // and last step and happened to inherit the dark theme from the loop above).

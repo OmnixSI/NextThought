@@ -242,10 +242,13 @@
       <x:Double x:Key="D4Spacing_7">7</x:Double>
       <x:Double x:Key="D4Spacing_8">8</x:Double>
 
-      <!-- Type families: Inter for Latin, Noto Sans SC / Microsoft YaHei UI for Chinese;
-           Source Serif 4 / SimSun for the serif headings (Typo). -->
-      <FontFamily x:Key="SansFamily">avares://NextThought/Assets/Fonts/InterVariable.ttf#Inter Variable, avares://NextThought/Assets/Fonts/NotoSansSC-VF.ttf#Noto Sans SC, Microsoft YaHei UI, Segoe UI</FontFamily>
-      <FontFamily x:Key="SerifFamily">avares://NextThought/Assets/Fonts/SourceSerif4-VF.ttf#Source Serif 4, avares://NextThought/Assets/Fonts/NotoSerifSC-VF.ttf#Noto Serif SC, SimSun, Georgia</FontFamily>
+      <!-- Type families (§5.1): one static face per weight, no variable fonts (their default
+           instance renders Thin/ExtraLight in Avalonia). Each family carries Latin and Chinese of
+           the same weight, so a mixed line keeps one weight across both scripts. -->
+      <FontFamily x:Key="SansFamily">avares://NextThought/Assets/Fonts/Inter-Regular.ttf#Inter, avares://NextThought/Assets/Fonts/NotoSansSC-Regular.otf#Noto Sans SC</FontFamily>
+      <FontFamily x:Key="SansMediumFamily">avares://NextThought/Assets/Fonts/Inter-Medium.ttf#Inter, avares://NextThought/Assets/Fonts/NotoSansSC-Medium.otf#Noto Sans SC</FontFamily>
+      <FontFamily x:Key="SansSemiBoldFamily">avares://NextThought/Assets/Fonts/Inter-SemiBold.ttf#Inter, avares://NextThought/Assets/Fonts/NotoSansSC-SemiBold.otf#Noto Sans SC</FontFamily>
+      <FontFamily x:Key="SerifFamily">avares://NextThought/Assets/Fonts/SourceSerif4-Medium.ttf#Source Serif 4, avares://NextThought/Assets/Fonts/NotoSerifSC-Medium.otf#Noto Serif SC</FontFamily>
       <FontFamily x:Key="MonoFamily">Cascadia Mono, Consolas, Noto Sans Mono CJK SC</FontFamily>
 
       <!-- Surfaces: paperCard, aiBlock, floatingSurface; shadows are theme resources. -->
@@ -284,26 +287,32 @@
     <Setter Property="FontWeight" Value="Medium" />
   </Style>
   <Style Selector="TextBlock.prompt">
+    <Setter Property="FontFamily" Value="{StaticResource SansMediumFamily}" />
     <Setter Property="FontSize" Value="22" />
     <Setter Property="FontWeight" Value="Medium" />
     <Setter Property="LineHeight" Value="32" />
   </Style>
   <Style Selector="TextBlock.title">
+    <Setter Property="FontFamily" Value="{StaticResource SansSemiBoldFamily}" />
     <Setter Property="FontSize" Value="15" />
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>
   <Style Selector="TextBlock.body">
+    <Setter Property="FontFamily" Value="{StaticResource SansFamily}" />
     <Setter Property="FontSize" Value="15" />
   </Style>
   <Style Selector="TextBlock.label">
+    <Setter Property="FontFamily" Value="{StaticResource SansMediumFamily}" />
     <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="Medium" />
   </Style>
   <Style Selector="TextBlock.caption">
+    <Setter Property="FontFamily" Value="{StaticResource SansFamily}" />
     <Setter Property="FontSize" Value="12" />
     <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
   </Style>
   <Style Selector="TextBlock.overline">
+    <Setter Property="FontFamily" Value="{StaticResource SansSemiBoldFamily}" />
     <Setter Property="FontSize" Value="11" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="LetterSpacing" Value="0.66" />
