@@ -19,7 +19,8 @@ public partial class AppState
 
     /// <summary>E16: the draft differs from what was loaded (Mac MeetingNotesEditor.dirty).</summary>
     public bool NotesEditorDirty =>
-        NotesEditorText != notesEditorBaseline || PersonalNotesText != personalNotesBaseline;
+        NotesEditorText != notesEditorBaseline || PersonalNotesText != personalNotesBaseline
+        || notesEditorStructuredDirty;
 
     private string personalNotesBaseline = "";
 
@@ -55,9 +56,14 @@ public partial class AppState
             var content = SessionUserContentStore.Load(Sessions.Folder(meta.Id));
             var aiDraft = SummaryText;
             NotesEditorOriginalText = aiDraft;
+            LoadStructuredNotesEditor(meta, content);
+            var duration = meta.EndedAt is { } ended ? (ended - meta.StartedAt).TotalSeconds : 0;
             NotesEditorText = content.EditedMarkdown
                 ?? content.EditedSummary?.Markdown
-                ?? aiDraft;
+                ?? (notesEditorStructuredDoc is { } document
+                    ? NotesMarkdown.Render(document, meta.Title,
+                        NotesMarkdown.Facts(document, meta.StartedAt, duration, meta.InPerson, UiText.EnglishUi))
+                    : aiDraft);
             PersonalNotesText = content.PersonalNotes;
             notesEditorWasEdited = content.EditedNotes is not null || content.EditedSummary is not null
                 || content.EditedMarkdown is not null;
@@ -92,6 +98,11 @@ public partial class AppState
             await Task.WhenAll(writes.ToArray());
             var folder = Sessions.Folder(meta.Id);
             var content = SessionUserContentStore.Load(folder);
+            if (notesEditorStructuredDoc is not null)
+            {
+                await SaveStructuredNotesEditorAsync(meta, content);
+                return;
+            }
             var text = NotesEditorText;
             SessionSummary? editedSummary = content.EditedSummary;
             string? editedMarkdown = content.EditedMarkdown;
@@ -150,7 +161,7 @@ public partial class AppState
             var content = SessionUserContentStore.Load(folder);
             SessionUserContentStore.Save(content with
             {
-                EditedNotes = edited,
+                EditedStructuredViews = edited,
                 BasedOnGeneratedAt = content.BasedOnGeneratedAt ?? DateTimeOffset.UtcNow
             }, folder);
             SetStatus(UiText.T("条目已编辑；生成结果的其他内容未改。"));

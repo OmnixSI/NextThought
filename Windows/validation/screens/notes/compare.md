@@ -158,3 +158,23 @@ Windows 最新批次：`validation/screens/current/notes-*.png`、`transcript-*.
 - 右键菜单弹出态截图未拍（需要真实右键操作；E12 运行环境修复后补）；
 - 说话人条/实时页的 assignLine 由 live-parity J6 live 接线（`c7aa185f`），本页只做会后转写标签；
 - E17 校对结果窗口的逐条接受/撤销 UI、E18 知识复核待下一步。
+
+## task-62 / ① 结构化纪要逐条编辑 +「我已核实」（2026-11-21）
+
+- Mac 参照：`Sources/NextThought/MeetingNotesEditor.swift`（`ForEach(sections) → ForEach(items)`：每项 `TextEditor`、`time` Label、「我已核实」按钮；`save()` 写 `content.editedNotes`）；数据源 `effectiveNotes = userContent.editedNotes ?? summary.notes`。
+- Windows 实现：
+  - **持久化**：`summary.json` 新增 Mac 的 `notes` 文档（`SessionSummary.Notes`，模板纪要生成时写入）；`user-content.json` 的 `editedNotes` 恢复为 Mac 语义 `StructuredNotesDoc`，旧的 Windows structured payload 迁到 `editedStructuredViews`（Load 时自动搬移，兼容旧文件）。
+  - **编辑器**：`Views/NotesEditorWindow.axaml` 在存在模板文档时显示 sections/items 列表——每 items 一条 TextBox、time caption、未确认项右侧「我已核实」按钮；无文档时保留原 Markdown 文本编辑器。「查看 AI 原稿」、原话依据侧栏、取消/放弃确认、脏状态提示均保留。保存调 `StructuredNotesEditing.WithEditedNotes` 写 `editedNotes`，并按 `NotesMarkdown.Render` 重渲染页面 Markdown；生成结果不被覆盖。
+- 逐元素结论（对照 MeetingNotesEditor.swift）：
+  | # | Mac | Windows | 结论 |
+  |---|---|---|---|
+  | 1 | `effectiveNotes = editedNotes ?? summary.notes` | `EffectiveTemplateNotes()` / `LoadStructuredNotesEditor` 同逻辑 | 逐条一致 |
+  | 2 | 每 section 标题 + 每 item TextEditor | `NotesEditorSections` → `NotesEditorSectionRow.Title` + `NotesEditorItemRow.Text` TwoWay TextBox | 逐条一致 |
+  | 3 | item.time Label | `Time`/`HasTime` caption | 逐条一致 |
+  | 4 | uncertain 项「我已核实」清除标记 | `Uncertain` + `ConfirmNoteItem_Click` → `ConfirmNotesEditorItem` | 逐条一致 |
+  | 5 | 保存写 `content.editedNotes`，`basedOnGeneratedAt` 保已有值 | `StructuredNotesEditing.WithEditedNotes` + `BasedOnGeneratedAt` | 逐条一致 |
+  | 6 | 无 notes 时整篇 Markdown TextEditor | `NotesEditorPlainText`（`!NotesEditorStructured && !ShowOriginal`） | 逐条一致 |
+  | 7 | 查看 AI 原稿 / 原话依据 / 脏状态 / 取消确认 | 原实现保留（`NotesEditorShowOriginal`、`NotesEvidence`、`NotesEditorDirty`、`ConfirmDialog`） | 逐条一致 |
+- 截图（本目录，1120 窗口位图，`--self-test=notes-ui` 用合成 `StructuredNotesDoc` 捕获）：`notes-editor-light.png` / `notes-editor-dark.png`；`notes-ui-check.json`（自检 passed）。
+- 测试：`Windows/tests/NextThought.Core.Tests/StructuredNotesEditingTests.cs`（4 项：编辑保其它项并重渲染、我已核实只清该项、doc/user-content 往返、旧 payload 迁移）、`Windows/tests/NextThought.Tests/StructuredNotesEditorTests.cs`（2 项：窗口 sections/items/time/我已核实 接线、加载/保存路径）；`--self-test=notes-ui` passed。
+- 未解决/记录：Mac 的 evidence sidebar 在本页为只读原话依据（与之前一致）；结构化编辑器只覆盖模板纪要（Fishbone/Outline/Viewpoints 的只读展示由 island-parity §6.7 提供，编辑仍走原 structured payload 路径）；「查看 AI 原稿」显示 Markdown 而不是 Mac 的 `NotesMarkdown.render` 只读块（渲染内容等价）。

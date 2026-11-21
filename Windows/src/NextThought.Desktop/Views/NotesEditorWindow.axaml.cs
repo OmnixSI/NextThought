@@ -39,6 +39,12 @@ public partial class NotesEditorWindow : Window
         catch (Exception ex) { (DataContext as AppState)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    private void ConfirmNoteItem_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: NotesEditorItemRow row } && DataContext is AppState state)
+            state.ConfirmNotesEditorItem(row);
+    }
+
     private void FindEvidence_Click(object? sender, RoutedEventArgs e)
     {
         try

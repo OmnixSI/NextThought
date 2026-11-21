@@ -267,6 +267,8 @@ public partial class AppState
         coachSummary = new CoachSummaryAccumulator();
         coachTicks = 0;
         lastNudge = null;
+        // E10: honour 留意眼神 (off by default) for the meeting that is starting now.
+        ApplyCoachGazeSettings();
         autoEndTimer.Tick += (_, _) => AutoEndTick();
         autoEndTimer.Start();
     }
@@ -276,6 +278,10 @@ public partial class AppState
         autoEndTimer?.Stop();
         autoEndTimer = null;
         autoEnd = null;
+        // E10: the Mac LiveCoach.end() bookends the eye-contact share into the meeting summary
+        // and lets go of the camera; do both before the coach state goes away.
+        coachSummary?.ObserveEyeContact(GazeContactRatio);
+        _ = StopGazeWatchingAsync();
         coach = null;
         coachSummary = null;
         lastNudge = null;
@@ -298,6 +304,8 @@ public partial class AppState
             var segment = new SpokenSegment(line.Speaker != "remote", start, finish, line.Text);
             coach.Ingest(segment);
             coachSummary?.Ingest(segment);
+            // E10: our own finished line keeps the eye-contact speaking window open (Mac ingest).
+            if (line.Speaker != "remote") NoteGazeSpeech();
         }
     }
 
