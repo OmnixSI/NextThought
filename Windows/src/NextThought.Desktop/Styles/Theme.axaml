@@ -1,0 +1,401 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Design tokens ported from Sources/NextThought/DesignSystem.swift.
+    Paper, ink and a seal: warm paper and near-black ink carry the interface;
+    one cinnabar red (seal) marks what is live, the way a seal marks a finished page.
+  -->
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="Paper" Color="#F7F5F0" />
+    <LinearGradientBrush x:Key="ScrollFadeToTop" StartPoint="50%,100%" EndPoint="50%,0%">
+      <GradientStop Color="#F7F5F0" Offset="0" />
+      <GradientStop Color="#D9F7F5F0" Offset="0.5" />
+      <GradientStop Color="#00F7F5F0" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ScrollFadeToBottom" StartPoint="50%,0%" EndPoint="50%,100%">
+      <GradientStop Color="#F7F5F0" Offset="0" />
+      <GradientStop Color="#D9F7F5F0" Offset="0.5" />
+      <GradientStop Color="#00F7F5F0" Offset="1" />
+    </LinearGradientBrush>
+          <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="SurfaceRaised" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="Sunken" Color="#0A1C1B19" />
+          <SolidColorBrush x:Key="Hover" Color="#0F1C1B19" />
+          <SolidColorBrush x:Key="Pressed" Color="#1C1C1B19" />
+          <SolidColorBrush x:Key="InkBrush" Color="#1C1B19" />
+          <SolidColorBrush x:Key="OnInk" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="Secondary" Color="#6B6963" />
+          <SolidColorBrush x:Key="Tertiary" Color="#706E68" />
+          <SolidColorBrush x:Key="Hairline" Color="#171C1B19" />
+          <SolidColorBrush x:Key="Ai" Color="#595751" />
+          <SolidColorBrush x:Key="AiSoft" Color="#0B1C1B19" />
+          <SolidColorBrush x:Key="PromptPanel" Color="#F0EFEC" />
+          <SolidColorBrush x:Key="Seal" Color="#C4452C" />
+          <SolidColorBrush x:Key="SealSoft" Color="#14C4452C" />
+          <SolidColorBrush x:Key="Ready" Color="#237542" />
+          <SolidColorBrush x:Key="Caution" Color="#8A5707" />
+          <BoxShadows x:Key="ContactShadow">0 1 2 0 #121C1B19</BoxShadows>
+          <BoxShadows x:Key="AmbientShadow">0 8 14 0 #0F1C1B19</BoxShadows>
+          <BoxShadows x:Key="FloatShadow">0 12 16 0 #1F1C1B19</BoxShadows>
+          <BoxShadows x:Key="PaperCardShadow">0 1 2 0 #121C1B19, 0 8 14 0 #0F1C1B19</BoxShadows>
+          <BoxShadows x:Key="FloatShadowValue">0 12 16 0 #1F1C1B19</BoxShadows>
+          <SolidColorBrush x:Key="SidebarTint" Color="#F2F0EA" />
+          <SolidColorBrush x:Key="TranscriptBubble" Color="#F4F2ED" />
+          <SolidColorBrush x:Key="PrimaryHover" Color="#33312C" />
+          <SolidColorBrush x:Key="PrimaryPressed" Color="#121110" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="Paper" Color="#121110" />
+    <LinearGradientBrush x:Key="ScrollFadeToTop" StartPoint="50%,100%" EndPoint="50%,0%">
+      <GradientStop Color="#121110" Offset="0" />
+      <GradientStop Color="#D9121110" Offset="0.5" />
+      <GradientStop Color="#00121110" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ScrollFadeToBottom" StartPoint="50%,0%" EndPoint="50%,100%">
+      <GradientStop Color="#121110" Offset="0" />
+      <GradientStop Color="#D9121110" Offset="0.5" />
+      <GradientStop Color="#00121110" Offset="1" />
+    </LinearGradientBrush>
+          <SolidColorBrush x:Key="Surface" Color="#1B1B19" />
+          <SolidColorBrush x:Key="SurfaceRaised" Color="#242422" />
+          <SolidColorBrush x:Key="Sunken" Color="#0DECEBE8" />
+          <SolidColorBrush x:Key="Hover" Color="#14ECEBE8" />
+          <SolidColorBrush x:Key="Pressed" Color="#24ECEBE8" />
+          <SolidColorBrush x:Key="InkBrush" Color="#ECEBE8" />
+          <SolidColorBrush x:Key="OnInk" Color="#131312" />
+          <SolidColorBrush x:Key="Secondary" Color="#A3A19B" />
+          <SolidColorBrush x:Key="Tertiary" Color="#95938C" />
+          <SolidColorBrush x:Key="Hairline" Color="#1CECEBE8" />
+          <SolidColorBrush x:Key="Ai" Color="#B8B6AF" />
+          <SolidColorBrush x:Key="AiSoft" Color="#12ECEBE8" />
+          <SolidColorBrush x:Key="PromptPanel" Color="#242422" />
+          <SolidColorBrush x:Key="Seal" Color="#F07055" />
+          <SolidColorBrush x:Key="SealSoft" Color="#22F07055" />
+          <SolidColorBrush x:Key="Ready" Color="#4CC38A" />
+          <SolidColorBrush x:Key="Caution" Color="#F0B24A" />
+          <BoxShadows x:Key="ContactShadow">0 1 2 0 #66000000</BoxShadows>
+          <BoxShadows x:Key="AmbientShadow">0 8 14 0 #52000000</BoxShadows>
+          <BoxShadows x:Key="FloatShadow">0 12 16 0 #80000000</BoxShadows>
+          <BoxShadows x:Key="PaperCardShadow">0 1 2 0 #66000000, 0 8 14 0 #52000000</BoxShadows>
+          <BoxShadows x:Key="FloatShadowValue">0 12 16 0 #80000000</BoxShadows>
+          <SolidColorBrush x:Key="SidebarTint" Color="#181816" />
+          <SolidColorBrush x:Key="TranscriptBubble" Color="#201F1D" />
+          <SolidColorBrush x:Key="PrimaryHover" Color="#D8D6CF" />
+          <SolidColorBrush x:Key="PrimaryPressed" Color="#C2C0B9" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+
+      <!-- Spacing and radii (Space) -->
+      <x:Double x:Key="S1">4</x:Double>
+      <x:Double x:Key="S2">8</x:Double>
+      <x:Double x:Key="S3">12</x:Double>
+      <x:Double x:Key="S4">16</x:Double>
+      <x:Double x:Key="S6">24</x:Double>
+      <x:Double x:Key="S8">32</x:Double>
+      <x:Double x:Key="S10">40</x:Double>
+      <x:Double x:Key="S12">48</x:Double>
+      <x:Double x:Key="Control">32</x:Double>
+      <x:Double x:Key="ControlLarge">40</x:Double>
+      <!-- HitTargets.swift: least clickable height of a text button/chip/row control, an
+           icon-only button and a whole-row switch. -->
+      <x:Double x:Key="HitMin">32</x:Double>
+      <x:Double x:Key="HitIcon">36</x:Double>
+      <x:Double x:Key="HitRow">36</x:Double>
+      <x:Double x:Key="Sidebar">220</x:Double>
+      <x:Double x:Key="Content">720</x:Double>
+      <!-- E4: live page spacing (question marker capsule, side column margins, composer). -->
+      <Thickness x:Key="D4Margin_0_0">0</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_4">0,0,0,4</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_14">0,0,0,14</Thickness>
+      <Thickness x:Key="D4Margin_0_0_6_4">0,0,6,4</Thickness>
+      <Thickness x:Key="D4Margin_0_10_0_4">0,10,0,4</Thickness>
+      <Thickness x:Key="D4Margin_0_16_0_10">0,16,0,10</Thickness>
+      <Thickness x:Key="D4Margin_0_4_0_2">0,4,0,2</Thickness>
+      <Thickness x:Key="D4Margin_0_8_0_6">0,8,0,6</Thickness>
+      <Thickness x:Key="D4Margin_14_0_14_12">14,0,14,12</Thickness>
+      <Thickness x:Key="D4Margin_14_0_14_4">14,0,14,4</Thickness>
+      <Thickness x:Key="D4Margin_18_14_18_6">18,14,18,6</Thickness>
+      <Thickness x:Key="D4Margin_18_6_18_12">18,6,18,12</Thickness>
+      <Thickness x:Key="D4Margin_24">24</Thickness>
+      <Thickness x:Key="D4Margin_m2_2_2_0">-2,-2,-2,0</Thickness>
+      <Thickness x:Key="D4Padding_0_0_0_4">0,0,0,4</Thickness>
+      <Thickness x:Key="D4Padding_7_2">7,2</Thickness>
+      <Thickness x:Key="D4Padding_2">2</Thickness>
+      <Thickness x:Key="D4Margin_8_14_8_14">8,14,8,14</Thickness>
+      <Thickness x:Key="D4Padding_10_6">10,6</Thickness>
+      <Thickness x:Key="D4Padding_12_8">12,8</Thickness>
+      <CornerRadius x:Key="RadiusSmall">8</CornerRadius>
+      <CornerRadius x:Key="RadiusMedium">14</CornerRadius>
+      <CornerRadius x:Key="RadiusLarge">22</CornerRadius>
+
+      <!-- D4 spacing/size resources:
+      <Thickness x:Key="D4Padding_13_5">13,5</Thickness>
+      <Thickness x:Key="D4Margin_0_0_4_4">0,0,4,4</Thickness>
+      <CornerRadius x:Key="D4CornerRadius_14">14</CornerRadius>
+ every numeric Margin/Padding/Spacing/CornerRadius in Views. -->
+      <CornerRadius x:Key="D4CornerRadius_10">10</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_16">16</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_18">18</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_20">20</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_3">3</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_13">13</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_15">15</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_4">4</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_7">7</CornerRadius>
+      <CornerRadius x:Key="D4CornerRadius_8">8</CornerRadius>
+      <Thickness x:Key="D4Margin_m10_0_0_0">-10,0,0,0</Thickness>
+      <Thickness x:Key="D4Margin_m10_4_0_0">-10,4,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0">0</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_0">0,0,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_10">0,0,0,10</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_12">0,0,0,12</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_16">0,0,0,16</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_6">0,0,0,6</Thickness>
+      <Thickness x:Key="D4Margin_0_0_0_8">0,0,0,8</Thickness>
+      <Thickness x:Key="D4Margin_0_2_0_0">0,2,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_12_0_12">0,12,0,12</Thickness>
+      <Thickness x:Key="D4Margin_0_24_0_0">0,24,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_32_0_0">0,32,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_40_0_0">0,40,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_48_0_0">0,48,0,0</Thickness>
+      <Thickness x:Key="D4Margin_32_40_32_40">32,40,32,40</Thickness>
+      <Thickness x:Key="D4Margin_8_12">8,12</Thickness>
+      <Thickness x:Key="D4Margin_0_0_10_0">0,0,10,0</Thickness>
+      <Thickness x:Key="D4Margin_0_0_10_6">0,0,10,6</Thickness>
+      <Thickness x:Key="D4Margin_0_0_12_6">0,0,12,6</Thickness>
+      <Thickness x:Key="D4Margin_0_0_14_0">0,0,14,0</Thickness>
+      <Thickness x:Key="D4Margin_0_0_142_0">0,0,142,0</Thickness>
+      <Thickness x:Key="D4Margin_0_0_6_6">0,0,6,6</Thickness>
+      <Thickness x:Key="D4Margin_0_0_6_8">0,0,6,8</Thickness>
+      <Thickness x:Key="D4Margin_0_0_8_6">0,0,8,6</Thickness>
+      <Thickness x:Key="D4Margin_0_10_0_0">0,10,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_10_0_12">0,10,0,12</Thickness>
+      <Thickness x:Key="D4Margin_0_12_0_0">0,12,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_12_0_16">0,12,0,16</Thickness>
+      <Thickness x:Key="D4Margin_0_14_0_0">0,14,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_16_0_16">0,16,0,16</Thickness>
+      <Thickness x:Key="D4Margin_0_18_0_0">0,18,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_18_0_12">0,18,0,12</Thickness>
+      <Thickness x:Key="D4Margin_0_18_0_16">0,18,0,16</Thickness>
+      <Thickness x:Key="D4Margin_0_3">0,3</Thickness>
+      <Thickness x:Key="D4Margin_0_3_0_0">0,3,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_4_0_0">0,4,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_6">0,6</Thickness>
+      <Thickness x:Key="D4Margin_0_6_0_0">0,6,0,0</Thickness>
+      <Thickness x:Key="D4Margin_0_8_0_0">0,8,0,0</Thickness>
+      <Thickness x:Key="D4Margin_10_0_12_0">10,0,12,0</Thickness>
+      <Thickness x:Key="D4Margin_10_22_10_8">10,22,10,8</Thickness>
+      <Thickness x:Key="D4Margin_10_6_6_6">10,6,6,6</Thickness>
+      <Thickness x:Key="D4Margin_12_0_0_0">12,0,0,0</Thickness>
+      <Thickness x:Key="D4Margin_12_0_12_0">12,0,12,0</Thickness>
+      <Thickness x:Key="D4Margin_14_6_14_14">14,6,14,14</Thickness>
+      <Thickness x:Key="D4Margin_14_8_14_14">14,8,14,14</Thickness>
+      <Thickness x:Key="D4Margin_16_14_16_8">16,14,16,8</Thickness>
+      <Thickness x:Key="D4Margin_18_0_18_10">18,0,18,10</Thickness>
+      <Thickness x:Key="D4Margin_18_10_18_14">18,10,18,14</Thickness>
+      <Thickness x:Key="D4Margin_18_16_18_10">18,16,18,10</Thickness>
+      <Thickness x:Key="D4Margin_18_16_18_6">18,16,18,6</Thickness>
+      <Thickness x:Key="D4Margin_18_3_0_0">18,3,0,0</Thickness>
+      <Thickness x:Key="D4Margin_18_5_0_0">18,5,0,0</Thickness>
+      <Thickness x:Key="D4Margin_18_6_0_0">18,6,0,0</Thickness>
+      <Thickness x:Key="D4Margin_18_6_18_16">18,6,18,16</Thickness>
+      <Thickness x:Key="D4Margin_2_10_2_0">2,10,2,0</Thickness>
+      <Thickness x:Key="D4Margin_20_16_20_10">20,16,20,10</Thickness>
+      <Thickness x:Key="D4Margin_20_16_20_16">20,16,20,16</Thickness>
+      <Thickness x:Key="D4Margin_22_16_22_10">22,16,22,10</Thickness>
+      <Thickness x:Key="D4Margin_24_0_0_0">24,0,0,0</Thickness>
+      <Thickness x:Key="D4Margin_32_14_32_0">32,14,32,0</Thickness>
+      <Thickness x:Key="D4Margin_32_18_32_0">32,18,32,0</Thickness>
+      <Thickness x:Key="D4Margin_32_18_32_36">32,18,32,36</Thickness>
+      <Thickness x:Key="D4Margin_4_0_0_0">4,0,0,0</Thickness>
+      <Thickness x:Key="D4Margin_4_12_0_0">4,12,0,0</Thickness>
+      <Thickness x:Key="D4Margin_4_2">4,2</Thickness>
+      <Thickness x:Key="D4Margin_40_26_40_36">40,26,40,36</Thickness>
+      <Thickness x:Key="D4Margin_6_0">6,0</Thickness>
+      <Thickness x:Key="D4Margin_6_0_0_0">6,0,0,0</Thickness>
+      <Thickness x:Key="D4Margin_6_0_6_10">6,0,6,10</Thickness>
+      <Thickness x:Key="D4Margin_6_4">6,4</Thickness>
+      <Thickness x:Key="D4Margin_8_0_0_0">8,0,0,0</Thickness>
+      <Thickness x:Key="D4Margin_8_8_8_4">8,8,8,4</Thickness>
+      <Thickness x:Key="D4Padding_32_12">32,12</Thickness>
+      <Thickness x:Key="D4Padding_0">0</Thickness>
+      <Thickness x:Key="D4Padding_3">3</Thickness>
+      <Thickness x:Key="D4Padding_12_0">12,0</Thickness>
+      <Thickness x:Key="D4Padding_0_12_0_0">0,12,0,0</Thickness>
+      <Thickness x:Key="D4Padding_0_14_0_0">0,14,0,0</Thickness>
+      <Thickness x:Key="D4Padding_0_6">0,6</Thickness>
+      <Thickness x:Key="D4Padding_10">10</Thickness>
+      <Thickness x:Key="D4Padding_10_8">10,8</Thickness>
+      <Thickness x:Key="D4Padding_10_9">10,9</Thickness>
+      <Thickness x:Key="D4Padding_12_10">12,10</Thickness>
+      <Thickness x:Key="D4Padding_14_0">14,0</Thickness>
+      <Thickness x:Key="D4Padding_14_4_14_12">14,4,14,12</Thickness>
+      <Thickness x:Key="D4Padding_16">16</Thickness>
+      <Thickness x:Key="D4Padding_16_0">16,0</Thickness>
+      <Thickness x:Key="D4Padding_16_10">16,10</Thickness>
+      <Thickness x:Key="D4Padding_16_11">16,11</Thickness>
+      <Thickness x:Key="D4Padding_18_0">18,0</Thickness>
+      <Thickness x:Key="D4Padding_20_0">20,0</Thickness>
+      <Thickness x:Key="D4Padding_20_0_20_20">20,0,20,20</Thickness>
+      <Thickness x:Key="D4Padding_22">22</Thickness>
+      <Thickness x:Key="D4Padding_22_0_22_22">22,0,22,22</Thickness>
+      <Thickness x:Key="D4Padding_22_16">22,16</Thickness>
+      <Thickness x:Key="D4Padding_24">24</Thickness>
+      <Thickness x:Key="D4Padding_24_10_24_12">24,10,24,12</Thickness>
+      <Thickness x:Key="D4Padding_28">28</Thickness>
+      <Thickness x:Key="D4Padding_30_14">30,14</Thickness>
+      <Thickness x:Key="D4Padding_6">6</Thickness>
+      <Thickness x:Key="D4Padding_6_2">6,2</Thickness>
+      <Thickness x:Key="D4Padding_7_3">7,3</Thickness>
+      <Thickness x:Key="D4Padding_8">8</Thickness>
+      <Thickness x:Key="D4Padding_8_2">8,2</Thickness>
+      <Thickness x:Key="D4Padding_8_4">8,4</Thickness>
+      <Thickness x:Key="D4Padding_12_6">12,6</Thickness>
+      <Thickness x:Key="D4Padding_8_6">8,6</Thickness>
+      <x:Double x:Key="D4Spacing_0">0</x:Double>
+      <x:Double x:Key="D4Spacing_1">1</x:Double>
+      <x:Double x:Key="D4Spacing_10">10</x:Double>
+      <x:Double x:Key="D4Spacing_12">12</x:Double>
+      <x:Double x:Key="D4Spacing_14">14</x:Double>
+      <x:Double x:Key="D4Spacing_16">16</x:Double>
+      <x:Double x:Key="D4TextArea_220">220</x:Double>
+      <x:Double x:Key="D4Spacing_18">18</x:Double>
+      <x:Double x:Key="D4Spacing_2">2</x:Double>
+      <x:Double x:Key="D4Spacing_26">26</x:Double>
+      <x:Double x:Key="D4Spacing_3">3</x:Double>
+      <x:Double x:Key="D4Spacing_4">4</x:Double>
+      <x:Double x:Key="D4Spacing_5">5</x:Double>
+      <x:Double x:Key="D4Spacing_6">6</x:Double>
+      <x:Double x:Key="D4Spacing_7">7</x:Double>
+      <x:Double x:Key="D4Spacing_8">8</x:Double>
+
+      <!-- Type families (§5.1): one static face per weight, no variable fonts (their default
+           instance renders Thin/ExtraLight in Avalonia). Each family carries Latin and Chinese of
+           the same weight, so a mixed line keeps one weight across both scripts. -->
+      <FontFamily x:Key="SansFamily">avares://NextThought/Assets/Fonts/Inter-Regular.ttf#Inter, avares://NextThought/Assets/Fonts/NotoSansSC-Regular.otf#Noto Sans SC</FontFamily>
+      <FontFamily x:Key="SansMediumFamily">avares://NextThought/Assets/Fonts/Inter-Medium.ttf#Inter, avares://NextThought/Assets/Fonts/NotoSansSC-Medium.otf#Noto Sans SC</FontFamily>
+      <FontFamily x:Key="SansSemiBoldFamily">avares://NextThought/Assets/Fonts/Inter-SemiBold.ttf#Inter, avares://NextThought/Assets/Fonts/NotoSansSC-SemiBold.otf#Noto Sans SC</FontFamily>
+      <FontFamily x:Key="SerifFamily">avares://NextThought/Assets/Fonts/SourceSerif4-Medium.ttf#Source Serif 4, avares://NextThought/Assets/Fonts/NotoSerifSC-Medium.otf#Noto Serif SC</FontFamily>
+      <FontFamily x:Key="MonoFamily">Cascadia Mono, Consolas, Noto Sans Mono CJK SC</FontFamily>
+
+      <!-- Surfaces: paperCard, aiBlock, floatingSurface; shadows are theme resources. -->
+      <Thickness x:Key="D4Margin_0_16_0_0">0,16,0,0</Thickness>
+      <Thickness x:Key="D4Padding_12">12</Thickness>
+      <Thickness x:Key="D4Margin_8">8</Thickness>
+      <Thickness x:Key="D4Padding_14">14</Thickness>
+      <CornerRadius x:Key="D4CornerRadius_12">12</CornerRadius>
+      <Thickness x:Key="D4Padding_8_3">8,3</Thickness>
+      <Thickness x:Key="D4Margin_16">16</Thickness>
+      <Thickness x:Key="D4Margin_20">20</Thickness>
+      <Thickness x:Key="D4Margin_20_16_20_28">20,16,20,28</Thickness>
+      <CornerRadius x:Key="D4CornerRadius_22">22</CornerRadius>
+      <Thickness x:Key="D4Padding_24_12">24,12</Thickness>
+      <Thickness x:Key="D4Margin_0_7_8_0">0,7,8,0</Thickness>
+      <Thickness x:Key="D4Padding_8_0">8,0</Thickness>
+      <Thickness x:Key="D4Margin_18">18</Thickness>
+      <Thickness x:Key="D4Margin_2_0_0_0">2,0,0,0</Thickness>
+    </ResourceDictionary>
+  </Styles.Resources>
+
+  <!-- Default window typography -->
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="{StaticResource SansFamily}" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource SansFamily}" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- Type scale: hero 38 serif, display 30 serif, section 19 serif, prompt 22 medium,
+       title 15 semibold, body 15, label 13 medium, caption 12, overline 11 semibold -->
+  <Style Selector="TextBlock.hero">
+    <Setter Property="FontFamily" Value="{StaticResource SerifFamily}" />
+    <Setter Property="FontSize" Value="38" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="TextBlock.display">
+    <Setter Property="FontFamily" Value="{StaticResource SerifFamily}" />
+    <Setter Property="FontSize" Value="30" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontFamily" Value="{StaticResource SerifFamily}" />
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="TextBlock.prompt">
+    <Setter Property="FontFamily" Value="{StaticResource SansMediumFamily}" />
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LineHeight" Value="32" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontFamily" Value="{StaticResource SansSemiBoldFamily}" />
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.body">
+    <Setter Property="FontFamily" Value="{StaticResource SansFamily}" />
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontFamily" Value="{StaticResource SansMediumFamily}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="TextBlock.caption">
+    <Setter Property="FontFamily" Value="{StaticResource SansFamily}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+  </Style>
+  <Style Selector="TextBlock.overline">
+    <Setter Property="FontFamily" Value="{StaticResource SansSemiBoldFamily}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.66" />
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+  </Style>
+  <Style Selector="TextBlock.faint">
+    <Setter Property="Foreground" Value="{DynamicResource Tertiary}" />
+  </Style>
+  <Style Selector="TextBlock.code">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFamily}" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <!-- §5.5: Mac's scroll bars are thin overlays that appear while scrolling or hovering. -->
+  <Style Selector="ScrollBar">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Width" Value="8" />
+    <Setter Property="MinWidth" Value="8" />
+    <Setter Property="AllowAutoHide" Value="True" />
+    <Setter Property="HideDelay" Value="0:0:1.5" />
+  </Style>
+
+  <!-- §5.7: the content area keeps Mac's 720 column, centred in the window. -->
+  <Style Selector="Control.contentColumn">
+    <Setter Property="MaxWidth" Value="{StaticResource Content}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+    <Setter Property="BorderThickness" Value="0.5" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="8,5" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+</Styles>

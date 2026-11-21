@@ -1,0 +1,216 @@
+content	All records
+content	Automatic answers
+content	Brief
+content	Choose another folder…
+content	Clear
+content	Client call
+content	Copy pairing link
+content	Create a token on GitHub
+content	Delete
+content	Detailed
+content	Edit
+content	Enable semantic enhancement
+content	Fast mode
+content	Follow the presentation
+content	General
+content	Group discussion
+content	Group project
+content	Home
+content	If on-device recognition fails, use system recognition as a fallback and label the downgraded content.
+content	Install
+content	Interview review
+content	Keep the workspace on top
+content	Key points
+content	Lab meeting / research discussion
+content	Lecture / Class
+content	Line by line
+content	Microphone
+content	Model source and version
+content	Presentation / Defense
+content	Read the screen every few seconds during a meeting
+content	Rebuild semantic index
+content	Record only
+content	Reduce visual effects
+content	Refine whole sentences for a better transcript
+content	Refresh addresses
+content	Refresh apps
+content	Refresh devices
+content	Save and check
+content	Scan existing components
+content	Series
+content	Settings
+content	Start LAN phone companion
+content	System output mix
+content	Third-party licenses and copyright
+content	Use hybrid semantic and keyword retrieval for materials
+content	Verify / repair
+content	Work meeting
+edit	OmnixSI/NextThought
+placeholder	Cloud service API key
+placeholder	Entire output device
+placeholder	Model (empty uses default)
+placeholder	Paste access token (github_pat_…)
+placeholder	Search settings
+placeholder	Select microphone
+placeholder	Select output device
+placeholder	https://relay.example.com
+text	0.9.0
+text	2.1 GB
+text	3. Permissions → Contents: choose Read-only and leave the rest unchanged. Copy the full github_pat_ token and paste it above.
+text	625 MB
+text	A meeting starts with these settings. You can still switch during the meeting.
+text	About 1.5× faster · higher usage
+text	Actual installation status is shown below. “Installed” means the files were verified; use the selector above to choose whether recognition is enabled.
+text	Advanced
+text	All records
+text	Answer
+text	Answer engine
+text	Answer service (Codex)
+text	Answers and materials
+text	Apache-2.0 · Chinese-English semantic search with 1,024-dimensional embeddings.
+text	Apache-2.0 · Recognizes Chinese and English text, tables, and formulas by page region.
+text	App capture records only that process and its children; device capture records the whole mix. Requires Windows 10 build 20348 or later.
+text	Audio sources
+text	Automatic
+text	Automatic answers
+text	Brief
+text	Checks at launch and every 6 hours, and downloads new versions in the background. A backup is made before updating and the package is verified.
+text	Choose a window, display or region, excluding this app. System OCR provides quick text; local enhancement can read complex images in the background.
+text	Choose another folder…
+text	Clear
+text	Client call
+text	Cloud service API key
+text	Cloud transcription (experimental)
+text	Copy pairing link
+text	Create a token on GitHub
+text	Cue and coach
+text	Current scene
+text	Custom
+text	Data and about
+text	Delete
+text	Detailed
+text	Document components
+text	Done
+text	Edit
+text	Enable semantic enhancement
+text	Entire output device
+text	Fast mode
+text	Fast responses use more of your ChatGPT plan allowance.
+text	Follow the presentation
+text	General
+text	GitHub access
+text	Group discussion
+text	Group meeting
+text	Group project
+text	Home
+text	How to search
+text	If on-device recognition fails, use system recognition as a fallback and label the downgraded content.
+text	In meeting
+text	Install
+text	Installed
+text	Interview
+text	Interview review
+text	Interview · 6 materials · parsed on device
+text	Keep the workspace on top
+text	Key points
+text	LAN HTTP is unencrypted; the pairing link is a temporary remote key, so use it only on a trusted network. Full transcripts, material files, audio and API keys are never sent.
+text	Lab meeting
+text	Lab meeting / research discussion
+text	Lecture / Class
+text	Line by line
+text	Local (default)
+text	LocalOcrModelChoice { Id = paddleocr-vl-1-6-mlx-8bit, Title = PaddleOCR-VL 1.6 }
+text	Microphone
+text	Microphone gain (1–8×, raise for quiet audio)
+text	Model (empty uses default)
+text	Model source and version
+text	NextThought keeps meeting discussions on this device and turns them into conclusions you can take away.
+text	No access token saved
+text	No usable LAN IPv4 address; connect Wi-Fi or Ethernet first.
+text	Not installed
+text	Not set
+text	Notes
+text	Notes template
+text	On-device offline recognition is ready
+text	On-device recognition models
+text	On-device speech
+text	Or run gh auth login in Terminal; no token is needed
+text	PaddleOCR-VL 1.6 + PP-DocLayoutV3
+text	Paste access token (github_pat_…)
+text	Phone companion
+text	Prepare speech components
+text	Presentation / Defense
+text	Prompt
+text	Qwen3-Embedding-0.6B Q8
+text	Qwen3-Embedding-0.6B Q8 · CPU · about 596 MB on first download. The index is local; missing or failed models fall back to keywords.
+text	Read the screen every few seconds during a meeting
+text	Reasoning effort
+text	Rebuild semantic index
+text	Recognition model
+text	Record only
+text	Reduce visual effects
+text	Refine whole sentences for a better transcript
+text	Refresh addresses
+text	Refresh apps
+text	Refresh devices
+text	Relay URL (optional)
+text	Repository
+text	Required: choose a provider and paste an API key
+text	Reuse existing components
+text	Save and check
+text	Scan coverage depends on permissions and file indexing. Select an external disk or missing folder manually. Only models that pass version and file checks can be reused.
+text	Scan existing components
+text	Scan for compatible document models and components already on this Mac. Verified files are reused in place; OCR and semantic retrieval are not enabled automatically.
+text	Scenes
+text	Screen and slides
+text	Search provider
+text	Search settings
+text	See the release manifest for package size
+text	Series
+text	Settings
+text	Settings for each scene
+text	Setup checklist
+text	Shared document components
+text	Speech recognition
+text	Start LAN phone companion
+text	Streaming model: Ready; sentence refinement: Ready
+text	System audio scope (choose before each start)
+text	System output mix
+text	The Bluetooth fallback is unavailable: the phone still filters by the IH- broadcast name, Windows cannot rename its broadcast, and it stays closed until the phone scans by service ID.
+text	The streaming model is about 134 MB; sentence refinement adds about 136 MB. Both run offline after download.
+text	The token is stored in the system keychain. If the organization requires approval, an administrator must approve it.
+text	Third-party components · An isolated Python 3.12 environment reads PDF, Office and text files.
+text	Third-party licenses and copyright
+text	This model or Codex version does not support Fast.
+text	Turn on after the phone and PC join the same trusted network. Scan the code in a browser to see the current question, answer and status, and to trigger answer, shorter, example or stop.
+text	Turn on screen reading above first, so it can tell which slide you are on.
+text	Update (advanced)
+text	Update channel
+text	Use hybrid semantic and keyword retrieval for materials
+text	Verify / repair
+text	WebSearchProviderChoice { Value = codex, Title = Codex }
+text	When set, pairing uses an HTTPS/WSS relay (end-to-end encrypted) and no shared LAN is needed; leave empty for LAN only. Re-enable and re-pair after changing it.
+text	When this is off, a recognition failure fails that file's import. It doesn't switch to online Codex automatically.
+text	With cloud selected, both live recording and WAV import use cloud recognition and audio is sent to the chosen service; with local only, recording and recognition stay on this device.
+text	Work assignment
+text	Work meeting
+text	X-ASR bilingual · 480 ms (recommended)
+text	https://relay.example.com
+text	low
+text	扬声器 (Realtek(R) Audio)
+text	正式版本
+text	麦克风 (HECATE G4 MAX底座版)
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Settings

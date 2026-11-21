@@ -1,0 +1,34 @@
+﻿{
+    "test":  "K3 鼠标穿透",
+    "date":  "2026-11-21T16:24:44",
+    "exe":  "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-k7-artifacts\\bin\\NextThought.Desktop\\release_win-x64\\NextThought.exe",
+    "os":  "Microsoft Windows NT 10.0.26200.0",
+    "underlayLog":  "D:\\NextThought开发\\src\\NextThought\\Windows\\scripts\\realmachine\\..\\..\\validation\\realmachine\\K3\\underlay-clicks.log",
+    "underlay":  {
+                     "processAlive":  true,
+                     "logExists":  true,
+                     "logLines":  1,
+                     "stdout":  {
+
+                                },
+                     "stderr":  {
+
+                                }
+                 },
+    "steps":  [
+                  {
+                      "scenario":  "A 收起/透明区域点击穿透",
+                      "passed":  true,
+                      "detail":  "attempt=1 island=(658,0)-1018,120 hitPoint=1006,108 underlayClicks=0-\u003e1"
+                  },
+                  {
+                      "scenario":  "B 展开/面板收到点击",
+                      "passed":  true,
+                      "detail":  "attempt=1 island=(658,0)-1048,244 click=(853,26) underlayClicks=1-\u003e1 islandDiff=48.44"
+                  }
+              ],
+    "passed":  true,
+    "failures":  [
+
+                 ]
+}

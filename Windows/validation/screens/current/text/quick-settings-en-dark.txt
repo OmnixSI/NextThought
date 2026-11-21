@@ -1,0 +1,29 @@
+content	All settings…
+content	Auto-translate foreign speech
+content	Automatic answers
+content	Chinese under English answers
+content	Follow the talk across slides
+content	Keep the cue island open
+content	Presenter mode
+content	Show translation in subtitles
+content	auto
+text	All settings…
+text	Answer language
+text	Auto-translate foreign speech
+text	Automatic answers
+text	Chinese under English answers
+text	Cue font size
+text	Cue island
+text	Cue width
+text	Follow the talk across slides
+text	Keep the cue island open
+text	Preferences
+text	Presenter mode
+text	Prompt
+text	Regular
+text	Show translation in subtitles
+text	Speech is ready. Start recording, or import a WAV to try it.
+text	Status
+text	Streaming model: Ready; sentence refinement: Ready
+text	Zoom · Backend engineer, second round
+text	auto

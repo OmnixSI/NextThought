@@ -1,0 +1,57 @@
+content	All records
+content	Copy notes
+content	Details
+content	Edit notes
+content	Export…
+content	Home
+content	Organize with template
+content	Proofread transcript
+content	Rewrite notes
+content	Series
+content	Write notes when a meeting ends
+text	2026-11-20 19:22 · 44 min · Online
+text	All records
+text	Confirmed lessons
+text	Copy notes
+text	Details
+text	Edit notes
+text	Evidence
+text	Export…
+text	Fri, Nov 20 19:22 · 44 min · Online · 1 recognition errors fixed
+text	Home
+text	Interview review
+text	Live answers
+text	Meetings
+text	My notes
+text	Organize with template
+text	Proofread transcript
+text	Question bank
+text	Review
+text	Rewrite notes
+text	Series
+text	Summarize this meeting
+text	Text notes come from a template; fishbone, outline and viewpoint views are other ways to read the same meeting.
+text	Transcript
+text	Write notes when a meeting ends
+text	·
+text	›
+text	一致性问题先画读写时序，再说兜底方案
+text	为什么选 Kafka 而不是 RabbitMQ？
+text	先更新数据库再删除缓存；删除失败进入重试队列，并用 Canal 订阅 binlog 再删一次；热点 key 做延迟双删。
+text	反问环节准备 2 个关于团队技术栈的问题
+text	后端二面：缓存一致性与项目经历
+text	吞吐和分区扩展性更好，订单事件需要按 key 有序且可回放。
+text	如果删除缓存失败了怎么办？
+text	数据库和缓存同时更新时怎么保证一致性？
+text	被问项目时先报规模和结果数字，再讲方案
+text	重试队列 + binlog 异步兜底，监控删除失败率并告警。
+text	
+title	NextThought
+tooltip	Close
+tooltip	Export Markdown…
+tooltip	Maximize
+tooltip	Meeting info
+tooltip	Minimize
+tooltip	Note template: the template defines sections, the model fills them
+tooltip	Only fixes misrecognized names and terms; changes are written to corrections.json
+tooltip	Settings

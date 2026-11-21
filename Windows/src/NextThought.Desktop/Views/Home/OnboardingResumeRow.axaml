@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Home.OnboardingResumeRow"
+             x:DataType="local:AppState"
+             IsVisible="{Binding OnboardingResumeVisible}">
+  <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource RadiusSmall}"
+          Padding="{DynamicResource D4Padding_12_6}" Margin="{DynamicResource D4Margin_0_10_0_0}">
+    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+      <Ellipse Width="6" Height="6" Fill="{DynamicResource Seal}" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+              Content="{Binding OnboardingResumeLine}" Click="Resume_Click" />
+      <Button Grid.Column="2" Width="24" Height="24" Content="{StaticResource IconXmark}"
+              FontFamily="{StaticResource IconFont}" Click="Dismiss_Click" ToolTip.Tip="{loc:Tr 不再提示}" />
+    </Grid>
+  </Border>
+</UserControl>

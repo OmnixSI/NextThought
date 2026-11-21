@@ -1,0 +1,42 @@
+content	会议结束后自动整理
+content	复制纪要
+content	导出…
+content	所有记录
+content	按模板整理
+content	校对转写
+content	系列
+content	编辑纪要
+content	详细信息
+content	重新整理
+content	首页
+text	2026-11-20 19:22 · 44 min · 线上
+text	›
+text	会中回答
+text	会议结束后自动整理
+text	后端二面：缓存一致性与项目经历
+text	复制纪要
+text	复盘
+text	导出…
+text	我的笔记
+text	所有会议
+text	所有记录
+text	按模板整理
+text	整理这场会议
+text	校对转写
+text	系列
+text	编辑纪要
+text	详细信息
+text	转写
+text	重新整理
+text	面试复盘
+text	首页
+text	
+title	NextThought
+tooltip	会议信息
+tooltip	关闭
+tooltip	只更正名字与术语的识别错误，改动写入 corrections.json
+tooltip	导出 Markdown…
+tooltip	最大化
+tooltip	最小化
+tooltip	纪要模板：章节由模板决定，模型只填内容
+tooltip	设置

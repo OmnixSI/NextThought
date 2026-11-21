@@ -1,0 +1,211 @@
+using NextThought.Platform;
+using Xunit;
+
+namespace NextThought.Tests;
+
+/// <summary>
+/// E23: the document pipeline settings follow the Mac surfaces — 资料 (reading method) on
+/// 回答与资料, 资料组件 on 高级 (runtime, local models, fallback, Codex fields, semantic retrieval),
+/// and the importer honours the saved method. No Avalonia page is instantiated here.
+/// </summary>
+public sealed class DocumentSettingsPageTests
+{
+    private static string Root()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml.cs")))
+                return directory.FullName;
+            directory = directory.Parent;
+        }
+        throw new DirectoryNotFoundException("repository root not found");
+    }
+
+    private static string Read(string relative) => File.ReadAllText(Path.Combine(Root(), relative));
+
+    private static string SettingsXaml() => Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml"));
+
+    /// <summary>The Tag of the settings card that contains <paramref name="anchor"/>.</summary>
+    private static string CardTag(string xaml, string anchor)
+    {
+        var index = xaml.IndexOf(anchor, StringComparison.Ordinal);
+        Assert.True(index >= 0, "settings card 未找到：" + anchor);
+        var start = xaml.LastIndexOf("<Border", index, StringComparison.Ordinal);
+        var tagAt = xaml.IndexOf("Tag=\"", start, StringComparison.Ordinal);
+        Assert.True(tagAt > 0, "card Tag not found");
+        return xaml[(tagAt + 5)..xaml.IndexOf('"', tagAt + 5)];
+    }
+
+    [Fact]
+    public void TheReadingMethodLivesOnTheAnswerPage()
+    {
+        var xaml = SettingsXaml();
+        // E23: the card now hosts the Mac-named view; its fields live in that view.
+        Assert.Contains("<views:DocumentReadingSettings />", xaml);
+        Assert.Equal("Answer", CardTag(xaml, "<views:DocumentReadingSettings />"));
+        var reading = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "DocumentReadingSettings.axaml"));
+        Assert.Contains("{loc:Tr 读取资料的方式}", reading);
+        Assert.Contains("Settings.DocumentProviderChoices", reading);
+        Assert.Contains("Settings.SelectedDocumentProvider", reading);
+        Assert.Contains("Settings.DocumentProviderHelp", reading);
+        Assert.Contains("DocumentProviderNeedsSetup", reading);
+        Assert.Contains("PrepareDocumentComponentsCommand", reading);
+        Assert.Contains("UseSystemDocumentReader_Click", reading);
+    }
+
+    [Fact]
+    public void TheDocumentComponentsCardMovedToTheAdvancedPage()
+    {
+        var xaml = SettingsXaml();
+        Assert.Equal("Advanced", CardTag(xaml, "{loc:Tr 资料组件}"));
+        Assert.Contains("<views:DocumentComponentsAdvanced />", xaml);
+        // E23: the fields are in the Mac-named view and its ManagedModelRow rows.
+        var advanced = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "DocumentComponentsAdvanced.axaml"));
+        foreach (var member in new[]
+                 {
+                     "Settings.DocumentFallbackToVision", "Settings.ShowCodexDocumentSettings",
+                     "Settings.CodexOcrModel", "Settings.CodexOcrEffort", "Settings.CodexOcrTimeout",
+                     "Settings.UseSemanticRetrieval", "ComponentRows",
+                     "{loc:Tr 本机识别模型}",
+                     "{loc:Tr 本机识别失败时用系统识别补读，并标明降级内容}", "{loc:Tr 每个文件超时（秒）}"
+                 })
+            Assert.Contains(member, advanced);
+        var row = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "ManagedModelRow.axaml"));
+        Assert.Contains("{loc:Tr 安装}", row);
+        Assert.Contains("{loc:Tr 校验／修复}", row);
+        // §3.5 deep items: scan/choose-directory, cancel, licence/source link, semantic enable/rebuild.
+        foreach (var member in new[]
+                 {
+                     "ScanLocalDocumentAssetsCommand", "ChooseLocalDocumentAssetsCommand",
+                     "CancelDocumentSetupCommand", "DocumentSetupBusy", "DocumentSetupCancelLabel",
+                     "DocumentAssetsScanning", "DocumentAssetsScanStatus",
+                     "EnableSemanticEnhancementCommand", "RebuildSemanticIndexCommand",
+                     "Settings.LocalOcrModelChoices", "Settings.SelectedLocalOcrModel",
+                     "{loc:Tr 复用已有组件}", "{loc:Tr 扫描本机已有组件}", "{loc:Tr 选择其他目录…}",
+                     "{loc:Tr 启用语义增强}", "{loc:Tr 重建语义索引}"
+                 })
+            Assert.Contains(member, advanced);
+        Assert.Contains("{Binding LicenseNote}", row);
+        Assert.Contains("Source_Click", row);
+        Assert.Contains("{loc:Tr 模型来源与版本}", row);
+        var rowCode = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "ManagedModelRow.axaml.cs"));
+        Assert.Contains("LaunchUriAsync", rowCode);
+        Assert.Contains("SourceUrl", rowCode);
+        var documents = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "AppState.Documents.cs"));
+        foreach (var member in new[]
+                 {
+                     "CancelDocumentSetup", "BeginDocumentSetup", "ScanLocalDocumentAssetsAsync",
+                     "ReuseLocalDocumentAssets", "EnumerateNamedFiles", "ReuseLocalDocumentAssets",
+                     "EnableSemanticEnhancementAsync", "RebuildSemanticIndex",
+                     "DocumentSetupCancelLabel", "取消下载组件"
+                 })
+            Assert.Contains(member, documents);
+        Assert.Contains("LicenseNote", documents);
+        var retrieval = Read(Path.Combine("Windows", "src", "NextThought.Platform", "RetrievalService.cs"));
+        Assert.Contains("public void RebuildIndex()", retrieval);
+        var main = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "MainWindow.axaml.cs"));
+        Assert.Contains("PickFolderAsync", main);
+        Assert.Contains("OpenFolderPickerAsync", main);
+    }
+
+    [Fact]
+    public void TheImporterHonoursTheSavedReadingMethod()
+    {
+        var library = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "ViewModels", "LibraryViewModel.cs"));
+        Assert.Contains("new DocumentPreparationOptions(settings.DocumentOcrProvider", library);
+        Assert.Contains("settings.OcrFallbackToVision", library);
+        Assert.Contains("Preparation.ImportAsync", library);
+        var preparation = Read(Path.Combine("Windows", "src", "NextThought.Platform", "DocumentPreparation.cs"));
+        Assert.Contains("CodexDocumentReader.ReadAsync", preparation);
+        var store = Read(Path.Combine("Windows", "src", "NextThought.Platform", "MaterialStore.cs"));
+        Assert.Contains("enhancedOcr", store);
+    }
+
+    [Fact]
+    public void TheRuntimeInstallerNeedsAnIsolatedPythonAndVerifiesTheWorker()
+    {
+        var installer = Read(Path.Combine("Windows", "src", "NextThought.Platform", "DocumentRuntimeInstaller.cs"));
+        Assert.Contains("-m\", \"venv", installer);
+        Assert.Contains("paddle, paddlex", installer);
+        Assert.Contains("ocr-requirements-lock.txt", installer);
+        var csproj = Read(Path.Combine("Windows", "src", "NextThought.Platform", "NextThought.Platform.csproj"));
+        Assert.Contains("Resources/ocr-requirements-lock.txt", csproj);
+    }
+
+    [Fact]
+    public void TheModelDownloaderUsesThePinnedManifests()
+    {
+        var assets = Read(Path.Combine("Windows", "src", "NextThought.Platform", "DocumentAssets.cs"));
+        Assert.Contains("PaddlePaddle/PaddleOCR-VL-1.6", assets);
+        Assert.Contains("132c45f52c0a26ed5a6b2f6bd8e3985794cc27dd", assets);
+        Assert.Contains("PaddlePaddle/PP-DocLayoutV3", assets);
+        Assert.Contains("241f8bdfc77a7c7bee915a5057aaee58c235a8d3", assets);
+        Assert.Contains("ocr-native-assets.json", assets);
+        Assert.Contains("SHA256", assets);
+        // Local folders of the pinned manifests used by the old preparation scripts.
+        Assert.Contains("pp-doclayout-v3", assets);
+        Assert.Contains("paddleocr-vl-1.6-native", assets);
+    }
+
+    [Fact]
+    public void TheMacLabelsComeFromTheStringTable()
+    {
+        var catalogue = Read(Path.Combine("Windows", "src", "NextThought.Core", "UiTextMac.g.cs"));
+        foreach (var key in new[]
+                 {
+                     "资料", "读取资料的方式", "系统识别", "本机增强", "Codex 代读",
+                     "资料组件", "本机识别模型", "共用文档组件 · 已安装", "已安装", "未安装",
+                     "安装", "校验／修复", "删除", "准备", "扫描本机已有组件",
+                     "复用已有组件", "选择其他目录…", "模型来源与版本", "启用语义增强", "重建语义索引",
+                     "先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。",
+                     "扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。",
+                     "本机识别模型", "查找方式", "按版面区域识别中英正文、表格与公式。", "中英语义检索，1024 维向量。",
+                     "导入 Word、Excel、PowerPoint 需要文档组件", "最多下载约 186 MB，只需一次。",
+                     "已选的识别方式还没准备好，当前读取会失败。", "先用系统识别",
+                     "本机识别失败时用系统识别补读，并标明降级内容",
+                     "关闭后，识别失败会让该文件导入失败；不会自动切到在线 Codex。",
+                     "Codex 模型", "推理强度", "每个文件超时（秒）", "运行包大小见发布清单",
+                     "适合扫描件、表格和公式，在本机计算，占一些内存。",
+                     "读取原文件，不用下载识别模型。需要已登录的 Codex，占用账号额度。",
+                     "Mac 自带，离线、无需下载。普通文字够用；复杂表格和公式可能丢失结构。"
+                 })
+            Assert.Contains($"[\"{key}\"]", catalogue);
+    }
+
+    [Fact]
+    public void TheComponentStateIsLoadedWithTheSettingsPage()
+    {
+        var viewModel = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "ViewModels", "SettingsViewModel.cs"));
+        Assert.Contains("LoadDocumentSettings(settings)", viewModel);
+        Assert.Contains("DocumentOcrProvider = SelectedDocumentProvider?.Value", viewModel);
+        Assert.Contains("OcrFallbackToVision = DocumentFallbackToVision", viewModel);
+        var code = Read(Path.Combine("Windows", "src", "NextThought.Desktop", "Views", "SettingsView.axaml.cs"));
+        Assert.Contains("RefreshDocumentComponents()", code);
+    }
+
+    [Fact]
+    public void TheDocumentModelPathsStayInsideTheModelDirectory()
+    {
+        // Pure checks against the shared paths so a buggy manifest cannot escape %LOCALAPPDATA%.
+        using var temp = new TempDirectory();
+        var paths = new AppPaths(temp.Path);
+        Assert.False(DocumentAssets.OcrInstalled(paths));
+        Assert.False(DocumentAssets.UseEnhancedOcr(paths, "system", true));
+        Assert.False(DocumentAssets.UseEnhancedOcr(paths, "paddle", true));
+        Assert.Throws<InvalidOperationException>(() => DocumentAssets.UseEnhancedOcr(paths, "paddle", false));
+        // Codex 代读 is its own reader; it does not claim the enhanced-OCR path.
+        Assert.False(DocumentAssets.UseEnhancedOcr(paths, "codex", true));
+        Assert.All(DocumentAssets.Models, model => Assert.True(model.Bytes > 0));
+        Assert.True(DocumentAssets.Ocr.Bytes > DocumentAssets.Layout.Bytes);
+    }
+
+    private sealed class TempDirectory : IDisposable
+    {
+        public string Path { get; } = Directory.CreateTempSubdirectory("nt-doc-settings-").FullName;
+        public void Dispose()
+        {
+            try { Directory.Delete(Path, true); } catch (IOException) { }
+        }
+    }
+}

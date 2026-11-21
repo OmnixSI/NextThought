@@ -1,0 +1,880 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             xmlns:components="using:NextThought.Desktop.Controls"
+             xmlns:views="using:NextThought.Desktop.Views"
+             xmlns:viewsshell="using:NextThought.Desktop.Views"
+             xmlns:assistant="using:NextThought.Desktop.Views.Assistant"
+             x:Class="NextThought.Desktop.Views.LiveView"
+             x:DataType="local:AppState">
+  <!--
+    §6.5 / E4: 会中页 rebuilt element by element against LiveSessionView.swift and the Mac 3.4.0
+    reference screenshots (mac-screens/live/live-*.png, live-notes-*.png): one 52 pt LiveTopBar,
+    a flat transcript column (no card, no shadow) facing the right column across one hairline,
+    the three-tab right column with the raised answer card, and the LiveComposer row.
+  -->
+  <!-- §5.7: the live page's spacing values as resources (Views may not carry numeric literals). -->
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <Thickness x:Key="LvMargin_16_0_16_0">16,0,16,0</Thickness>
+      <Thickness x:Key="LvMargin_16_10_16_0">16,10,16,0</Thickness>
+      <Thickness x:Key="LvMargin_16_8_16_0">16,8,16,0</Thickness>
+      <Thickness x:Key="LvMargin_16_12_16_0">16,12,16,0</Thickness>
+      <Thickness x:Key="LvMargin_16_12_16_12">16,12,16,12</Thickness>
+      <Thickness x:Key="LvMargin_0_0_8_0">0,0,8,0</Thickness>
+      <Thickness x:Key="LvMargin_0_0_0_16">0,0,0,16</Thickness>
+      <Thickness x:Key="LvMargin_24_16_24_0">24,16,24,0</Thickness>
+      <Thickness x:Key="LvMargin_24_16_24_8">24,16,24,8</Thickness>
+      <Thickness x:Key="LvMargin_24_16_24_12">24,16,24,12</Thickness>
+      <Thickness x:Key="LvMargin_24_0_24_0">24,0,24,0</Thickness>
+      <Thickness x:Key="LvMargin_24_0_24_4">24,0,24,4</Thickness>
+      <Thickness x:Key="LvMargin_24_0_24_8">24,0,24,8</Thickness>
+      <Thickness x:Key="LvMargin_24_12_24_16">24,12,24,16</Thickness>
+      <Thickness x:Key="LvMargin_24_24_24_12">24,24,24,12</Thickness>
+      <Thickness x:Key="LvMargin_24_8_24_16">24,8,24,16</Thickness>
+      <Thickness x:Key="LvPadding_6_0">6,0</Thickness>
+      <Thickness x:Key="LvPadding_24_4_24_4">24,4,24,4</Thickness>
+      <Thickness x:Key="LvPadding_8_0_8_0">8,0,8,0</Thickness>
+      <Thickness x:Key="LvPadding_16_0_8_0">16,0,8,0</Thickness>
+      <CornerRadius x:Key="LvCapsuleRadius">99</CornerRadius>
+      <!-- Small chip heights: Mac LiveChipStyle minHeight 24/26 for the secondary actions. -->
+      <x:Double x:Key="LvMinHeight_24">24</x:Double>
+      <x:Double x:Key="LvMinHeight_26">26</x:Double>
+      <!-- §3.3 live 2: the answerEngineReady dot sits on the segmented control's top-right corner. -->
+      <Thickness x:Key="LvDotMargin">0,-2,2,0</Thickness>
+      <!-- §3.3 live 5: Mac AnswerColumn's raised sheet — contactShadow radius 1 / y 1 and
+           ambientShadow radius 20 / y 10 (light and dark values from Theme.swift). -->
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <BoxShadows x:Key="LvAnswerCardShadow">0 1 1 0 #121C1B19, 0 10 20 0 #0F1C1B19</BoxShadows>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <BoxShadows x:Key="LvAnswerCardShadow">0 1 1 0 #66000000, 0 10 20 0 #52000000</BoxShadows>
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <!-- E4/Mac TranscriptLine: the row actions only appear while the pointer is on the row. -->
+    <Style Selector="Grid.transcript-row Button.row-action">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="Grid.transcript-row:pointerover Button.row-action">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="TextBlock.speaker">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    </Style>
+    <Style Selector="TextBlock.speaker.me">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <!-- J1: 实时纪要 status warns when an update failed or no answer service is connected. -->
+    <Style Selector="TextBlock.caption.warning">
+      <Setter Property="Foreground" Value="{DynamicResource Caution}" />
+    </Style>
+
+    <!-- §5.3: Mac InkSegmented — a sunken rounded container with the selected item on a white
+         block. Used by the top-bar 自动回答/只记录 switch and the right-column tabs. -->
+    <Style Selector="Border.seg-container">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="2" />
+    </Style>
+    <Style Selector="RadioButton.seg">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.seg:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <Style Selector="RadioButton.seg:checked /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource PaperCardShadow}" />
+    </Style>
+    <Style Selector="RadioButton.seg:checked">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="RadioButton.seg:checked /template/ ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+
+    <!-- E4/Mac LiveChipStyle: capsule refinement chips with a hairline outline. -->
+    <Style Selector="Button.pill">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+      <Setter Property="BorderThickness" Value="0.5" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
+    <!-- E4/Mac ShortcutHint: a small key cap beside the composer input. -->
+    <Style Selector="Border.keycap">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+      <Setter Property="BorderThickness" Value="0.5" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="6,2" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Mac TranscriptColumn: rows have no hover wash; only their actions appear. -->
+    <Style Selector="ListBox#TranscriptList ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Background="{DynamicResource Paper}">
+    <!-- ===== 顶部条 (Mac LiveTopBar): one row — timer/status · scene · title · mode ·
+         teleprompter + more · bordered pause and end. ===== -->
+    <Border x:Name="LiveTopBar" Grid.Row="0" Height="52" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0,0,0.5">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="{DynamicResource LvMargin_16_0_16_0}">
+        <!-- RecordingTimer: on-air dot, elapsed, 正在聆听 / 已暂停 / 未在聆听. -->
+        <StackPanel x:Name="LiveRecordingTimer" Grid.Column="0" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                    VerticalAlignment="Center" Height="28">
+          <components:StatusDot Tone="Live" IsVisible="{Binding IsLiveOnAir}" />
+          <components:StatusDot Tone="Idle" IsVisible="{Binding !IsLiveOnAir}" />
+          <TextBlock Text="{Binding RecordingElapsedText}" FontFamily="{StaticResource MonoFamily}" FontSize="14" FontWeight="Medium"
+                     VerticalAlignment="Center" />
+          <TextBlock Text="{Binding LiveListeningStatus}" Classes="caption" VerticalAlignment="Center" />
+          <!-- §3.3 live 9 (Mac archiveSaveStatus): 保存中 / 保存受阻 · N 项未保存 · 重试 / 确认缺失. -->
+          <Border IsVisible="{Binding HasSaveStatus}" CornerRadius="{DynamicResource D4CornerRadius_8}"
+                  Background="{DynamicResource Sunken}" Padding="{DynamicResource D4Padding_8_2}"
+                  Margin="{DynamicResource D4Margin_6_0_0_0}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{Binding SaveStatusText}" Classes="caption" FontSize="11"
+                         Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <Button Classes="quiet" Content="{loc:Tr 重试保存}" Command="{Binding RetryPersistenceCommand}"
+                      FontSize="11" Padding="{DynamicResource D4Padding_4_0}" IsVisible="{Binding SaveIsBlocked}" />
+              <Button Classes="quiet" Content="{loc:Tr 确认缺失并继续保存}" Command="{Binding AcknowledgeSaveLossCommand}"
+                      FontSize="11" Padding="{DynamicResource D4Padding_4_0}" IsVisible="{Binding CanAcknowledgeSaveLoss}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- SceneTag: pigment dot + scene name (Mac sceneTag). -->
+        <controls:SceneTag x:Name="LiveSceneTag" Grid.Column="1" Mode="{Binding SelectedMode}" Name="{Binding SceneTitle}"
+                           Margin="{DynamicResource D4Margin_12_0_0_0}" VerticalAlignment="Center" />
+
+        <!-- titleBlock: serif title with the series name under it (Mac titleBlock). -->
+        <StackPanel x:Name="LiveTitleBlock" Grid.Column="2" Spacing="{DynamicResource D4Spacing_1}"
+                    VerticalAlignment="Center" Margin="{DynamicResource D4Margin_10_0_12_0}" MaxWidth="340">
+          <TextBlock Text="{Binding MeetingTitle}" FontFamily="{StaticResource SerifFamily}" FontSize="16" FontWeight="Medium" />
+          <TextBlock Text="{Binding LiveSeriesName}" Classes="caption" FontSize="11"
+                     IsVisible="{Binding LiveSeriesName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <!-- Right: mode segmented · 回答浮窗 · more tools · 暂停 · 结束 (Mac expandedControls). -->
+        <StackPanel x:Name="LiveTopBarActions" Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                    VerticalAlignment="Center">
+          <!-- 自动回答 / 只记录 (Mac answerModePicker). The 6 pt caution dot marks "no answer
+               service connected yet" (§3.3 live 2, Mac answerEngineReady overlay). -->
+          <Panel Margin="{DynamicResource LvMargin_0_0_8_0}">
+            <Border x:Name="LiveModeSegmented" Classes="seg-container">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+                <RadioButton x:Name="LiveAutoModeTab" Classes="seg" GroupName="live-answer-mode" Content="{loc:Tr 自动回答}"
+                             IsChecked="{Binding AnswerModeIsAuto, Mode=OneWay}" Click="AnswerModeAuto_Click" />
+                <RadioButton x:Name="LiveRecordModeTab" Classes="seg" GroupName="live-answer-mode" Content="{loc:Tr 只记录}"
+                             IsChecked="{Binding !AnswerModeIsAuto, Mode=OneWay}" Click="AnswerModeRecord_Click" />
+              </StackPanel>
+            </Border>
+            <components:StatusDot x:Name="LiveAnswerEngineDot" Tone="Caution" DotSize="6"
+                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{DynamicResource LvDotMargin}"
+                     IsVisible="{Binding !AnswerEngineReady}" IsHitTestVisible="False"
+                     ToolTip.Tip="{loc:Tr 还没有连接回答服务，听到问题也不会自动回答}" />
+          </Panel>
+
+          <!-- E4 / ContentView.swift LevelMeters: them (system audio) and me (microphone), in the top bar. -->
+          <viewsshell:LevelMeters Width="11" Height="16" Margin="{DynamicResource D4Margin_0_0_8_0}"
+                                  VerticalAlignment="Center" ToolTip.Tip="{Binding AudioLevelsText}" />
+
+          <!-- 回答浮窗 (Mac teleprompterButton). -->
+          <Button x:Name="LiveTeleprompterButton" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
+                  Click="Teleprompter_Click" ToolTip.Tip="{loc:Tr 回答浮窗}">
+            <TextBlock Text="{StaticResource IconRectangleTopthirdInsetFilled}" FontFamily="{StaticResource IconFont}" FontSize="14" />
+          </Button>
+
+          <!-- 会中窗口 (Mac LiveWindowMenu): small icon button with the three modes + the shortcut hint. -->
+          <Button x:Name="LiveWindowMenuButton" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
+                  ToolTip.Tip="{loc:Tr 会中窗口}">
+            <TextBlock Text="{StaticResource IconCaptionsBubble}" FontFamily="{StaticResource IconFont}" FontSize="14" />
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <StackPanel Width="230" Spacing="{DynamicResource D4Spacing_6}">
+                  <TextBlock Text="{loc:Tr 会中窗口}" Classes="overline" />
+                  <RadioButton GroupName="live-window-mode" Content="{loc:Tr 纪要窗口}" FontSize="12"
+                               IsChecked="{Binding LiveModeIsNotes, Mode=OneWay}"
+                               Command="{Binding SetLiveWindowModeCommand}" CommandParameter="notes" />
+                  <RadioButton GroupName="live-window-mode" Content="{loc:Tr 字幕条}" FontSize="12"
+                               IsChecked="{Binding LiveModeIsSubtitles, Mode=OneWay}"
+                               Command="{Binding SetLiveWindowModeCommand}" CommandParameter="subtitles" />
+                  <RadioButton GroupName="live-window-mode" Content="{loc:Tr 隐藏}" FontSize="12"
+                               IsChecked="{Binding LiveModeIsHidden, Mode=OneWay}"
+                               Command="{Binding SetLiveWindowModeCommand}" CommandParameter="hidden" />
+                  <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                  <TextBlock Text="{Binding ToggleLiveWindowHint}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+          <!-- More tools (Mac moreMenu). The model name is gone from the bar; 回答设置 is a
+               section inside this menu. -->
+          <Button x:Name="LiveMoreMenuButton" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
+                  ToolTip.Tip="{loc:Tr 会中设置和工具}">
+            <TextBlock Text="{StaticResource IconEllipsis}" FontFamily="{StaticResource IconFont}" FontSize="14" />
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight" Opened="MoreMenu_Opened">
+                <StackPanel Width="300" Spacing="{DynamicResource D4Spacing_6}">
+                  <!-- 回答设置 (Mac AnswerSettingsMenu): model · fast · web · answer length. -->
+                  <TextBlock Text="{loc:Tr 回答设置}" Classes="overline" />
+                  <TextBlock Text="{loc:Tr 模型}" Classes="caption" FontSize="11" />
+                  <!-- §3.3 live 11: the Mac AnswerSettingsMenu model picker is the design system's
+                       MenuPicker (a ComboBox-shaped control with the Mac menu look). -->
+                  <components:MenuPicker x:Name="LiveModelBox" ItemsSource="{Binding LiveModelChoices}"
+                                         SelectionChanged="LiveModel_SelectionChanged" HorizontalAlignment="Stretch">
+                    <components:MenuPicker.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding}" FontSize="12" />
+                      </DataTemplate>
+                    </components:MenuPicker.ItemTemplate>
+                  </components:MenuPicker>
+                  <CheckBox Content="{Binding LiveFastModeLabel}" IsChecked="{Binding LiveFastMode, Mode=TwoWay}"
+                            IsVisible="{Binding LiveFastModeAvailable}" FontSize="12" />
+                  <TextBlock Text="{loc:Tr 联网}" Classes="caption" FontSize="11" />
+                  <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                    <RadioButton GroupName="live-web-mode" Content="{loc:Tr 不联网}" FontSize="12"
+                                 IsChecked="{Binding LiveWebSearchIsOff, Mode=OneWay}" Command="{Binding SetLiveWebSearchModeCommand}" CommandParameter="off" />
+                    <RadioButton GroupName="live-web-mode" Content="{loc:Tr 自动判断}" FontSize="12"
+                                 IsChecked="{Binding LiveWebSearchIsAuto, Mode=OneWay}" Command="{Binding SetLiveWebSearchModeCommand}" CommandParameter="auto" />
+                    <RadioButton GroupName="live-web-mode" Content="{loc:Tr 每次都查}" FontSize="12"
+                                 IsChecked="{Binding LiveWebSearchIsAlways, Mode=OneWay}" Command="{Binding SetLiveWebSearchModeCommand}" CommandParameter="always" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr 回答长度}" Classes="caption" FontSize="11" />
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                    <RadioButton GroupName="live-answer-length" Content="{loc:Tr 要点}"
+                                 IsChecked="{Binding !CurrentAnswerIsDetailed, Mode=OneWay}" Click="AnswerLengthBrief_Click" FontSize="12" />
+                    <RadioButton GroupName="live-answer-length" Content="{loc:Tr 详细}"
+                                 IsChecked="{Binding CurrentAnswerIsDetailed, Mode=OneWay}" Click="AnswerLengthDetailed_Click" FontSize="12" />
+                  </StackPanel>
+                  <TextBlock Text="{loc:Tr 从下一个回答开始生效}" Classes="caption" FontSize="11" />
+                  <Button Classes="quiet" Content="{loc:Tr 更多回答设置…}" FontSize="12" HorizontalAlignment="Left"
+                          Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+                  <Border Height="0.5" Background="{DynamicResource Hairline}" />
+
+                  <!-- 提词 (Mac moreMenu 提词). -->
+                  <TextBlock Text="{loc:Tr 提词}" Classes="overline" />
+                  <CheckBox Content="{loc:Tr 提词岛一直展开}" IsChecked="{Binding LiveCueAlwaysOpen, Mode=OneWay}" Click="CueAlwaysOpen_Click" FontSize="12" />
+                  <CheckBox Content="{loc:Tr 双屏演讲}" IsChecked="{Binding LivePresenterMode, Mode=OneWay}" Click="PresenterMode_Click" FontSize="12" />
+
+                  <!-- 回答 (Mac moreMenu 回答). -->
+                  <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                  <TextBlock Text="{loc:Tr 回答}" Classes="overline" />
+                  <TextBlock Text="{loc:Tr 回答语言}" Classes="caption" FontSize="11" />
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                    <Button Classes="quiet" FontSize="12" Content="{loc:Tr 跟随问题}" Tag="auto" Click="AnswerLanguage_Click" />
+                    <Button Classes="quiet" FontSize="12" Content="{loc:Tr 中文}" Tag="zh" Click="AnswerLanguage_Click" />
+                    <Button Classes="quiet" FontSize="12" Content="English" Tag="en" Click="AnswerLanguage_Click" />
+                  </StackPanel>
+                  <CheckBox Content="{loc:Tr 英文回答附中文对照}" IsChecked="{Binding Settings.AnswerGloss, Mode=TwoWay}" Click="AnswerGloss_Click" FontSize="12" />
+
+                  <!-- 工具 (Mac moreMenu 工具). -->
+                  <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                  <TextBlock Text="{loc:Tr 工具}" Classes="overline" />
+                  <CheckBox Content="{loc:Tr 实时纪要}" IsChecked="{Binding LiveNotesEnabled, Mode=OneWay}" Click="EnableLiveNotes_Click" FontSize="12" />
+                  <CheckBox Content="{loc:Tr 屏幕感知}" IsChecked="{Binding Settings.InsightScreenWatch, Mode=TwoWay}" FontSize="12" />
+                  <CheckBox Content="{loc:Tr 手机伴侣}" IsChecked="{Binding LiveCompanionOn, Mode=OneWay}" Click="Companion_Click" FontSize="12" />
+                  <CheckBox Content="{loc:Tr 同声传译}" IsChecked="{Binding LiveTranslationEnabled, Mode=OneWay}" Click="LiveTranslation_Click" FontSize="12" />
+                  <Button Classes="quiet" Content="{loc:Tr 回答浮窗}" Click="Teleprompter_Click" FontSize="12" HorizontalAlignment="Left" />
+                  <!-- §3.3 insights 5: the 屏幕与讲稿 module lives in the page/停靠 modules only; the Mac
+                       has no separate insights window, so the standalone-window entry is gone. -->
+                  <Button Classes="quiet" Content="{loc:Tr 说话人}" Click="Speakers_Click" FontSize="12" HorizontalAlignment="Left" />
+                  <Button Classes="quiet" Content="{loc:Tr 补译}" Command="{Binding TranslateMissingCommand}" FontSize="12" HorizontalAlignment="Left" />
+
+                  <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                  <Button Classes="quiet" Content="{loc:Tr 设置…}" Command="{Binding NavigateCommand}" CommandParameter="Settings" FontSize="12" HorizontalAlignment="Left" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+
+          <!-- Bordered pause / end (Mac SecondaryButtonStyle; the pause label carries pause.fill /
+               play.fill, §3.3 live 1). -->
+          <Button x:Name="LivePauseButton" Command="{Binding TogglePauseListeningCommand}"
+                  ToolTip.Tip="{Binding LivePauseButtonLabel}" IsVisible="{Binding Recording}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{StaticResource IconPause}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         VerticalAlignment="Center" IsVisible="{Binding !ListeningPaused}" />
+              <TextBlock Text="{StaticResource IconPlay}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         VerticalAlignment="Center" IsVisible="{Binding ListeningPaused}" />
+              <TextBlock Text="{Binding LivePauseButtonText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="LiveEndButton" Content="{loc:Tr 结束}" Command="{Binding StopRecordingCommand}"
+                  ToolTip.Tip="{loc:Tr 现在结束并整理纪要}" IsVisible="{Binding Recording}" />
+          <Button x:Name="LiveStartButton" Classes="primary" Content="{loc:Tr 开始记录}" Command="{Binding StartRecordingCommand}"
+                  IsVisible="{Binding !Recording}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Auto-end reminder: counts down, speech or 「继续记录」 cancels it (Mac AutoEndBanner). -->
+    <Border Grid.Row="1" Classes="aiBlock" Padding="{DynamicResource D4Padding_16_10}" Margin="{DynamicResource LvMargin_16_10_16_0}"
+            IsVisible="{Binding HasAutoEndNotice}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}" VerticalAlignment="Center">
+          <TextBlock Text="{StaticResource IconClock}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                     Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding AutoEndNotice}" Classes="label" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="{loc:Tr 继续记录}" Command="{Binding KeepRecordingCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- 临场教练: speech-pace / monologue-length nudge, one line per session (Mac coach nudge). -->
+    <Border Grid.Row="2" Classes="aiBlock" Padding="{DynamicResource D4Padding_16_10}" Margin="{DynamicResource LvMargin_16_8_16_0}"
+            IsVisible="{Binding HasCoachHint}">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}" VerticalAlignment="Center">
+          <TextBlock Text="{StaticResource IconLightbulb}" FontFamily="{StaticResource IconFont}" FontSize="14"
+                     Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding CoachHint}" Classes="label" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="{loc:Tr 知道了}" Command="{Binding DismissCoachCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- ===== Body: flat transcript column │ hairline │ right column (Mac HSplitView) ===== -->
+    <Grid Grid.Row="3" ColumnDefinitions="11*,1,9*">
+      <!-- 左栏: 实时对话 (Mac TranscriptColumn) — flat, no card, no shadow. -->
+      <Grid x:Name="LiveTranscriptColumn" Grid.Column="0" RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource LvMargin_24_16_24_0}">
+          <TextBlock Text="{loc:Tr 实时对话}" Classes="overline" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="quiet" Width="24" Height="24" Padding="{DynamicResource D4Padding_0}"
+                  Command="{Binding ReturnLiveToFollowCommand}" ToolTip.Tip="{loc:Tr 回到现场并恢复跟随}">
+            <TextBlock Text="{StaticResource IconTrayAndArrowDown}" FontFamily="{StaticResource IconFont}" FontSize="13" />
+          </Button>
+        </Grid>
+
+        <!-- E7/Mac: while screen awareness follows the slides, the 屏幕与讲稿 panel sits above
+             the transcript, 240 pt tall. -->
+        <views:InsightsPanel x:Name="LiveInsightsPanel" Grid.Row="1" Height="240"
+                             Margin="{DynamicResource LvMargin_16_12_16_0}"
+                             IsVisible="{Binding LiveShowsInsightsPanel}" />
+
+          <!-- J6/Mac SpeakerStrip: one capsule per recognised person, "我是哪个？" until one is the
+             user, and the hint. Tapping a capsule opens the speaker editor. -->
+        <StackPanel x:Name="LiveSpeakerStrip" Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                    Margin="{DynamicResource LvMargin_24_8_24_0}" IsVisible="{Binding LiveSpeakerStripVisible}">
+          <ItemsControl ItemsSource="{Binding SpeakerPeople}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SpeakerPersonRow">
+                <Button Classes="pill" Tag="{Binding}" Click="SpeakerChip_Click" MinHeight="{DynamicResource LvMinHeight_24}"
+                        Margin="{DynamicResource D4Margin_0_0_4_0}" ToolTip.Tip="{loc:Tr 点名字改名、合并或标成我}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                    <TextBlock Text="{Binding MarkGlyph}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                               VerticalAlignment="Center" Foreground="{DynamicResource InkBrush}" />
+                    <TextBlock Text="{Binding DisplayLabel}" FontSize="12" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <!-- §3.3 live 16: Mac asksForMe capsule is drawn with a dashed hairline. -->
+          <Button x:Name="LiveWhoAmIButton" Classes="quiet" MinHeight="{DynamicResource LvMinHeight_24}"
+                  Padding="{DynamicResource D4Padding_12_8}" Click="WhoAmI_Click" IsVisible="{Binding LiveAsksForMe}"
+                  ToolTip.Tip="{loc:Tr 还没认出你的声音：点一下，选出哪个是你}">
+            <Grid>
+              <controls:DashedCapsule Stroke="{DynamicResource Secondary}" StrokeThickness="1" />
+              <TextBlock Text="{loc:Tr 我是哪个？}" FontSize="12" Foreground="{DynamicResource Secondary}"
+                         VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Grid>
+          </Button>
+          <TextBlock Text="{Binding LiveSpeakerStripHint}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                     TextWrapping="NoWrap" />
+        </StackPanel>
+
+        <ListBox Name="TranscriptList" Grid.Row="3" ItemsSource="{Binding Transcript}" Background="Transparent" SelectionMode="Single"
+                 Margin="{DynamicResource LvMargin_24_16_24_8}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="local:TranscriptRow">
+              <Grid Classes="transcript-row" ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_12}"
+                    Margin="{DynamicResource LvMargin_0_0_0_16}" PointerPressed="TranscriptRow_PointerPressed">
+                <!-- SpeakerLabel: 对方 / 我, with the 问题 capsule below a detected question. -->
+                <StackPanel MinWidth="40" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Top">
+                  <TextBlock Text="{Binding SpeakerName}" Classes="speaker" Classes.me="{Binding SpeakerIsMe}"
+                             IsVisible="{Binding ShowSpeakerLabel}" />
+                  <Border IsVisible="{Binding IsQuestion}" HorizontalAlignment="Left" Padding="{DynamicResource D4Padding_7_2}"
+                          CornerRadius="{DynamicResource LvCapsuleRadius}"
+                          Background="{Binding $parent[UserControl].((local:AppState)DataContext).LiveSceneTintSoftBrush}">
+                    <!-- §5 dark-contrast: scene pigment as text on its own 13% wash fails WCAG in dark
+                         (ratio 3.1); the capsule stays tinted but the label uses the themed ink token. -->
+                    <TextBlock Text="{loc:Tr 问题}" FontSize="10" FontWeight="Medium" TextWrapping="NoWrap"
+                               Foreground="{DynamicResource InkBrush}" />
+                  </Border>
+                </StackPanel>
+
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+                  <!-- Normal line: the utterance and its translation. -->
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding !IsEcho}">
+                    <!-- §3.3 live 8: Avalonia 12's SelectableTextBlock has no SelectionChanged event;
+                         a mouse or keyboard selection is noticed on the pointer/key events and pauses
+                         the scroll follow in the handler. -->
+                    <SelectableTextBlock Text="{Binding Text}" FontSize="15" LineHeight="24" TextWrapping="Wrap"
+                                         PointerReleased="TranscriptText_PointerReleased"
+                                         KeyUp="TranscriptText_KeyUp" />
+                    <TextBlock Text="{Binding Translation}" FontSize="12" Foreground="{DynamicResource Ai}" TextWrapping="Wrap"
+                               IsVisible="{Binding HasTranslation}" />
+                  </StackPanel>
+                  <!-- Echo line: struck through, with 是我说的 to put it back (Mac suspectedEcho). -->
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding IsEcho}"
+                              VerticalAlignment="Top">
+                    <SelectableTextBlock Text="{Binding Text}" FontSize="12" LineHeight="20" TextWrapping="Wrap" MaxWidth="480"
+                                         Foreground="{DynamicResource Tertiary}" TextDecorations="Strikethrough" />
+                    <Button Classes="quiet" Content="{loc:Tr 是我说的}" FontSize="12" Foreground="{DynamicResource Secondary}"
+                            Tag="{Binding}" Click="MarkNotEcho_Click" />
+                  </StackPanel>
+                  <!-- Row actions appear on hover (Mac TranscriptLine). -->
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Top">
+                    <Button Classes="quiet row-action" Width="24" Height="24" Padding="{DynamicResource D4Padding_0}"
+                            Tag="{Binding}" Click="AnswerLine_Click" ToolTip.Tip="{loc:Tr 回答这句}" IsVisible="{Binding !SpeakerIsMe}">
+                      <TextBlock Text="{StaticResource IconBolt}" FontFamily="{StaticResource IconFont}" FontSize="13" />
+                    </Button>
+                    <Button Classes="quiet row-action" Width="24" Height="24" Padding="{DynamicResource D4Padding_0}"
+                            Tag="{Binding}" Click="HighlightLine_Click" ToolTip.Tip="{loc:Tr 标记或取消重点}">
+                      <Panel>
+                        <TextBlock Text="{StaticResource IconCircle}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                   Foreground="{DynamicResource Secondary}" IsVisible="{Binding !IsHighlighted}" />
+                        <TextBlock Text="{StaticResource IconStarFill}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                                   Foreground="{DynamicResource Caution}" IsVisible="{Binding IsHighlighted}" />
+                      </Panel>
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Footer: the utterances still being recognised, follow banner, candidate strip and
+             the status row with the privacy lock. -->
+        <StackPanel Grid.Row="4">
+          <!-- PartialLines (Mac): the two lanes still being recognised, shown in the secondary
+               colour at the end of the transcript. -->
+          <StackPanel Spacing="{DynamicResource D4Spacing_1}" Margin="{DynamicResource LvMargin_24_0_24_4}"
+                      IsVisible="{Binding SystemPartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Text="{loc:Tr 对方}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="{Binding SystemPartial}" FontSize="15" LineHeight="24" Foreground="{DynamicResource Secondary}"
+                         TextWrapping="Wrap" MaxWidth="560" />
+            </StackPanel>
+            <TextBlock Text="{Binding SystemPartialTranslationLine}" FontSize="12" Foreground="{DynamicResource Ai}"
+                       TextWrapping="Wrap" IsVisible="{Binding HasSystemPartialTranslation}" />
+          </StackPanel>
+          <StackPanel Spacing="{DynamicResource D4Spacing_1}" Margin="{DynamicResource LvMargin_24_0_24_4}"
+                      IsVisible="{Binding MicrophonePartial, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Text="{loc:Tr 我}" Classes="caption" FontSize="11" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="{Binding MicrophonePartial}" FontSize="15" LineHeight="24" Foreground="{DynamicResource Secondary}"
+                         TextWrapping="Wrap" MaxWidth="560" />
+            </StackPanel>
+            <TextBlock Text="{Binding MicrophonePartialTranslationLine}" FontSize="12" Foreground="{DynamicResource Ai}"
+                       TextWrapping="Wrap" IsVisible="{Binding HasMicrophonePartialTranslation}" />
+          </StackPanel>
+          <TextBlock Text="{loc:Tr 转写会显示在这里。也可以导入录音 WAV 验证。}" Classes="caption"
+                     IsVisible="{Binding !HasTranscript}" Margin="{DynamicResource LvMargin_24_0_24_4}" />
+          <Button Classes="quiet" Content="{Binding LiveFollowBannerText}" Command="{Binding ReturnLiveToFollowCommand}"
+                  HorizontalAlignment="Center" FontSize="11" Margin="{DynamicResource D4Margin_0_0_0_4}"
+                  IsVisible="{Binding HasLiveFollowBanner}" ToolTip.Tip="{loc:Tr 回到现场并恢复跟随}" />
+          <!-- CandidateStrip: 可能的问题 + the question text + 回答这句, one click to answer. -->
+          <Border IsVisible="{Binding HasLiveCandidate}" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0"
+                  Padding="{DynamicResource LvPadding_24_4_24_4}">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+              <Ellipse Width="6" Height="6" Fill="{Binding LiveSceneTintBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{loc:Tr 可能的问题}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{Binding LiveCandidateText}" Classes="caption" FontSize="12"
+                         Foreground="{DynamicResource InkBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              <Button Grid.Column="3" Classes="pill" Content="{loc:Tr 回答这句}" FontSize="11" MinHeight="{DynamicResource LvMinHeight_26}"
+                      Padding="{DynamicResource LvPadding_8_0_8_0}" Click="AnswerCandidate_Click" />
+            </Grid>
+          </Border>
+          <!-- TranscriptStatus: source · engine · microphone · echo · lock (Mac TranscriptStatus). -->
+          <Grid Height="36" ColumnDefinitions="*,Auto" Margin="{DynamicResource LvMargin_24_0_24_0}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+              <TextBlock Text="{Binding AudioSourceText}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding LiveAudioEngineLabel}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding LiveMicrophoneSuffix}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                         IsVisible="{Binding LiveUsesMicrophone}" />
+              <TextBlock Text="{Binding EchoDroppedText}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                         IsVisible="{Binding HasEchoDropped}" />
+              <TextBlock Text="{Binding DroppedSegmentsText}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                         Foreground="{DynamicResource Caution}" IsVisible="{Binding HasDroppedAudioSegments}" />
+              <TextBlock Text="{Binding LiveMicOffText}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                         Foreground="{DynamicResource Caution}" IsVisible="{Binding HasLiveMicOff}" />
+              <TextBlock Text="{Binding LiveTranslationStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                         Foreground="{DynamicResource Ai}" IsVisible="{Binding HasLiveTranslationStatus}" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{StaticResource IconLock}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                       Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center"
+                       ToolTip.Tip="{loc:Tr 音频只在本机识别，不保存录音；文字与回答只保存在本机。}" />
+          </Grid>
+        </StackPanel>
+      </Grid>
+
+      <!-- One vertical line between the two columns (Mac HSplitView's divider). -->
+      <Border x:Name="LiveColumnDivider" Grid.Column="1" Width="1" Background="{DynamicResource Hairline}" />
+
+      <!-- 右栏: 实时纪要 / 问答 / 我的笔记 (Mac RightColumn). -->
+      <Grid x:Name="LiveRightColumn" Grid.Column="2" RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource LvMargin_24_16_24_0}">
+          <Border Classes="seg-container" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+              <RadioButton x:Name="LiveNotesTab" Classes="seg" GroupName="live-right-tab" Content="{loc:Tr 实时纪要}" Click="LiveNotesTab_Click" />
+              <RadioButton x:Name="AnswerTab" Classes="seg" GroupName="live-right-tab" Content="{loc:Tr 问答}" Click="AnswerTab_Click" />
+              <RadioButton x:Name="NotesTab" Classes="seg" GroupName="live-right-tab" Content="{loc:Tr 我的笔记}" Click="NotesTab_Click" />
+            </StackPanel>
+          </Border>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+            <ProgressBar IsIndeterminate="True" Width="36" Height="3" IsVisible="{Binding Answering}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 回答生成中}" Classes="caption" Foreground="{DynamicResource Ai}"
+                       IsVisible="{Binding Answering}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1">
+          <!-- 实时纪要 tab (Mac LiveNotesColumn): status line, 现在更新/开启实时纪要, and the Mac
+               empty state until the J1 engine has its first update. -->
+          <Grid x:Name="LiveNotesPanel" RowDefinitions="Auto,*" IsVisible="False">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="{DynamicResource LvMargin_24_12_24_0}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="3" VerticalAlignment="Center"
+                             IsVisible="{Binding LiveNotesIsUpdating}" />
+                <TextBlock Text="{Binding LiveNotesStatusText}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                           Classes.warning="{Binding LiveNotesStatusIsWarning}" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="pill" Content="{Binding LiveNotesButtonText}" FontSize="11" MinHeight="{DynamicResource LvMinHeight_24}"
+                      Click="EnableLiveNotes_Click" IsEnabled="{Binding LiveNotesCanUpdate}" />
+            </Grid>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+              <StackPanel Margin="{DynamicResource LvMargin_24_12_24_16}" Spacing="{DynamicResource D4Spacing_12}">
+                <TextBlock Text="{Binding LiveNotesHintText}" Classes="body" FontSize="15" Foreground="{DynamicResource Secondary}"
+                           TextWrapping="Wrap" IsVisible="{Binding !LiveNotesHasContent}" />
+                <StackPanel Spacing="{DynamicResource D4Spacing_12}" IsVisible="{Binding LiveNotesHasContent}">
+                  <!-- 整场在谈什么：the summary on a sunken rounded block (Mac LiveNotesColumn). -->
+                  <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_10}"
+                          Padding="{DynamicResource D4Padding_16}">
+                    <TextBlock Text="{Binding LiveNotesSummaryText}" FontSize="15" LineHeight="24" TextWrapping="Wrap" />
+                  </Border>
+                  <!-- 议题要点：new points carry the scene's pigment. -->
+                  <ItemsControl ItemsSource="{Binding LiveNotesTopicRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:LiveNotesTopicRow">
+                        <StackPanel Spacing="{DynamicResource D4Spacing_4}" Margin="{DynamicResource D4Margin_0_0_0_8}">
+                          <TextBlock Text="{Binding Title}" Classes="label" FontSize="13" FontWeight="SemiBold" />
+                          <ItemsControl ItemsSource="{Binding Points}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="local:LiveNotesPointRow">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                      Margin="{DynamicResource D4Margin_0_2_0_0}">
+                                  <Panel VerticalAlignment="Top" Margin="{DynamicResource D4Margin_0_6_0_0}">
+                                    <Ellipse Width="4" Height="4" Fill="{DynamicResource Tertiary}" IsVisible="{Binding !Fresh}" />
+                                    <Ellipse Width="4" Height="4" Fill="{Binding $parent[UserControl].((local:AppState)DataContext).LiveSceneTintBrush}"
+                                             IsVisible="{Binding Fresh}" />
+                                  </Panel>
+                                  <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="15" LineHeight="22" TextWrapping="Wrap" />
+                                </Grid>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <!-- 定下来的 -->
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding HasLiveNotesDecisions}">
+                    <TextBlock Text="{loc:Tr 定下来的}" Classes="overline" />
+                    <ItemsControl ItemsSource="{Binding LiveNotesDecisionRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:LiveNotesDecisionRow">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                Margin="{DynamicResource D4Margin_0_2_0_0}">
+                            <TextBlock Text="{StaticResource IconCheckmark}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                                       Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="15" LineHeight="22" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                  <!-- 要做的（带负责人） -->
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding HasLiveNotesTodos}">
+                    <TextBlock Text="{loc:Tr 要做的}" Classes="overline" />
+                    <ItemsControl ItemsSource="{Binding LiveNotesTodoRows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="local:LiveNotesTodoRow">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource D4Spacing_6}"
+                                Margin="{DynamicResource D4Margin_0_2_0_0}">
+                            <TextBlock Text="{StaticResource IconCircle}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                                       Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayText}" FontSize="15" LineHeight="22" TextWrapping="Wrap" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+
+          <!-- 问答 tab (Mac AnswerColumn): header with history navigation, the question, the raised
+               answer sheet, and the refinement + evidence foot. -->
+          <Grid x:Name="AnswerPanel" RowDefinitions="Auto,Auto,Auto,*">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_4}"
+                  Margin="{DynamicResource LvMargin_24_16_24_8}">
+              <TextBlock Text="{StaticResource IconSparkle}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         Foreground="{Binding LiveSceneTintBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding AnswerColumnTitle}" Classes="overline" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Center">
+                <Button Classes="quiet" Width="22" Height="22" Padding="{DynamicResource D4Padding_0}"
+                        Command="{Binding PreviousAnswerCommand}" ToolTip.Tip="{loc:Tr 上一条}" IsVisible="{Binding AnswerHistoryHasMultiple}">
+                  <TextBlock Text="{StaticResource IconChevronLeft}" FontFamily="{StaticResource IconFont}" FontSize="11" />
+                </Button>
+                <TextBlock Text="{Binding HistoryPositionText}" Classes="caption" FontSize="11" FontFamily="{StaticResource MonoFamily}"
+                           VerticalAlignment="Center" IsVisible="{Binding AnswerHistoryHasMultiple}" />
+                <Button Classes="quiet" Width="22" Height="22" Padding="{DynamicResource D4Padding_0}"
+                        Command="{Binding NextAnswerCommand}" ToolTip.Tip="{loc:Tr 下一条}" IsVisible="{Binding AnswerHistoryHasMultiple}">
+                  <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="11" />
+                </Button>
+                <Button Classes="quiet" Content="{loc:Tr 回到最新}" FontSize="11" Click="LatestAnswer_Click" IsVisible="{Binding HistoryCursorActive}" />
+              </StackPanel>
+            </Grid>
+
+            <!-- WebStatusLine (Mac WebStatusLine): only while a web lookup exists. The pill switches
+                 between the original answer and the web version (§3.3 live 4 / web-search 3). -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                        Margin="{DynamicResource LvMargin_24_0_24_4}" IsVisible="{Binding HasWebResults}">
+              <TextBlock Text="{StaticResource IconGlobe}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding LiveWebStatusLine}" Classes="caption" FontSize="11" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding WebLookupStatusText}" Classes="caption" FontSize="11" VerticalAlignment="Center"
+                         IsVisible="{Binding HasWebLookup}" />
+              <Button x:Name="LiveWebAnswerToggle" Classes="pill" Content="{Binding WebAnswerToggleLabel}" FontSize="11"
+                      MinHeight="{DynamicResource LvMinHeight_24}" Command="{Binding ToggleWebAnswerCommand}"
+                      IsVisible="{Binding CanToggleWebAnswer}" ToolTip.Tip="{loc:Tr 看原回答}" />
+              <Button Classes="quiet" Content="{loc:Tr 重试}" FontSize="11" Command="{Binding LookUpDisplayedAnswerCommand}"
+                      ToolTip.Tip="{loc:Tr 重新联网查一下当前回答}" />
+            </StackPanel>
+
+            <!-- The question the answer responds to, in the secondary colour (Mac displayedQuestion). -->
+            <StackPanel Grid.Row="2" Margin="{DynamicResource LvMargin_24_0_24_8}"
+                        IsVisible="{Binding DisplayedQuestionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <TextBlock Text="{Binding DisplayedQuestionText}" Classes="caption" FontSize="12" TextWrapping="Wrap" MaxLines="2"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding BilingualQuestionText}" Classes="caption" FontSize="12" Foreground="{DynamicResource Ai}"
+                         TextWrapping="Wrap" IsVisible="{Binding HasBilingualQuestion}" />
+            </StackPanel>
+
+            <!-- The raised answer sheet: white, radius 22, Mac contact + ambient shadow (§3.3 live 5). -->
+            <Border x:Name="AnswerCard" Grid.Row="3" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}"
+                    BorderThickness="0.5" CornerRadius="{DynamicResource RadiusLarge}" BoxShadow="{DynamicResource LvAnswerCardShadow}"
+                    Margin="{DynamicResource LvMargin_24_12_24_16}">
+              <Grid RowDefinitions="*,Auto,Auto">
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_8}" Margin="{DynamicResource LvMargin_24_24_24_12}">
+                    <views:BilingualAnswerText Text="{Binding DisplayedAnswerText}" BaseFontSize="18"
+                                               IsVisible="{Binding IsBilingualAnswer}" />
+                    <views:MarkdownText Text="{Binding DisplayedAnswerText}" BaseFontSize="18" IsVisible="{Binding !IsBilingualAnswer}" />
+                    <TextBlock Text="{Binding AnswerEmptyHint}" Classes="body" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap"
+                               IsVisible="{Binding !HasAnswerText}" />
+                  </StackPanel>
+                </ScrollViewer>
+
+                <!-- Numbered web sources behind the web version (Mac WebSources). -->
+                <StackPanel Grid.Row="1" Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource LvMargin_24_0_24_8}"
+                            IsVisible="{Binding HasWebResults}">
+                  <ItemsControl ItemsSource="{Binding LiveWebSources}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:WebSourceRow">
+                        <Button Classes="quiet" HorizontalAlignment="Left" Tag="{Binding}" Click="WebSource_Click" FontSize="11"
+                                Content="{Binding Label}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+
+                <!-- Foot of the sheet: 更简短 / 举例 / 英文版 · ⋯, then 依据 (Mac RefinementRow + EvidenceLine). -->
+                <StackPanel Grid.Row="2">
+                  <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                  <StackPanel Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource LvMargin_16_12_16_12}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_4}">
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                        <Button Classes="pill" Content="{loc:Tr 更简短}" FontSize="12" Command="{Binding ShorterAnswerCommand}"
+                                IsEnabled="{Binding HasAnswerText}" ToolTip.Tip="{loc:Tr 把回答改短}" />
+                        <Button Classes="pill" Content="{loc:Tr 举例}" FontSize="12" Tag="Example" Click="Refine_Click"
+                                IsEnabled="{Binding HasAnswerText}" />
+                        <Button Classes="pill" Content="{loc:Tr 英文版}" FontSize="12" Tag="English" Click="Refine_Click"
+                                IsEnabled="{Binding HasAnswerText}" />
+                        <Button Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}" ToolTip.Tip="{loc:Tr 更多}">
+                          <TextBlock Text="{StaticResource IconEllipsis}" FontFamily="{StaticResource IconFont}" FontSize="12" />
+                          <Button.Flyout>
+                            <Flyout Placement="TopEdgeAlignedLeft">
+                              <StackPanel Width="220" Spacing="{DynamicResource D4Spacing_2}">
+                                <Button Classes="quiet" Content="{loc:Tr 展开}" Tag="Detailed" Click="Refine_Click" FontSize="12" IsEnabled="{Binding HasAnswerText}" />
+                                <Button Classes="quiet" Content="{loc:Tr STAR}" Tag="Star" Click="Refine_Click" FontSize="12" IsEnabled="{Binding HasAnswerText}" />
+                                <Button Classes="quiet" Content="{loc:Tr 中文版}" Tag="Chinese" Click="Refine_Click" FontSize="12" IsEnabled="{Binding HasAnswerText}" />
+                                <Button Classes="quiet" Content="{loc:Tr 澄清问题}" Tag="Clarify" Click="Refine_Click" FontSize="12" IsEnabled="{Binding HasAnswerText}" />
+                                <Button Classes="quiet" Content="{loc:Tr 我可以反问}" Tag="FollowUps" Click="Refine_Click" FontSize="12" IsEnabled="{Binding HasAnswerText}" />
+                                <Border Height="0.5" Background="{DynamicResource Hairline}" />
+                                <Button Classes="quiet" Content="{loc:Tr 重新生成}" Command="{Binding RegenerateAnswerCommand}" FontSize="12" />
+                                <Button Classes="quiet" Content="{loc:Tr 联网查一下}" Command="{Binding LookUpDisplayedAnswerCommand}" FontSize="12" IsEnabled="{Binding HasAnswerText}" />
+                                <Button Classes="quiet" Content="{loc:Tr 复制回答}" Command="{Binding CopyAnswerCommand}" FontSize="12" IsEnabled="{Binding HasAnswerText}" />
+                                <Button Classes="quiet" Content="{loc:Tr 独立窗口}" Click="DetachAnswer_Click" FontSize="12" />
+                              </StackPanel>
+                            </Flyout>
+                          </Button.Flyout>
+                        </Button>
+                      </StackPanel>
+                      <Button Grid.Column="2" Classes="quiet" Content="{loc:Tr 停止生成}" Command="{Binding CancelCommand}" FontSize="11"
+                              IsVisible="{Binding Answering}" />
+                    </Grid>
+
+                    <!-- EvidenceLine + EvidenceDetails (Mac): what the answer was based on. -->
+                    <Button Classes="quiet" HorizontalAlignment="Left" IsVisible="{Binding HasDisplayedEvidence}"
+                            ToolTip.Tip="{loc:Tr 依据：}">
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                        <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                   Foreground="{DynamicResource Caution}" IsVisible="{Binding EvidenceHasLimits}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding EvidenceSummary}" Classes="caption" FontSize="11" />
+                      </StackPanel>
+                      <Button.Flyout>
+                        <Flyout Placement="TopEdgeAlignedLeft">
+                          <ScrollViewer MaxHeight="360">
+                            <StackPanel Width="380" Spacing="{DynamicResource D4Spacing_6}">
+                              <TextBlock Text="{Binding EvidenceRetrievalText}" Classes="caption" FontSize="11" />
+                              <ItemsControl ItemsSource="{Binding EvidenceMaterialRows}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="local:EvidenceMaterialRow">
+                                    <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_4}">
+                                      <TextBlock Text="{Binding Citation}" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                      <TextBlock Text="{Binding Text}" Classes="caption" FontSize="11" MaxLines="6" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}"
+                                          IsVisible="{Binding EvidenceScreenSource, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{StaticResource IconDisplay}" FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding EvidenceScreenSource}" Classes="caption" FontSize="11" />
+                              </StackPanel>
+                              <ItemsControl ItemsSource="{Binding EvidenceWebSourceRows}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate x:DataType="local:WebSourceRow">
+                                    <Button Classes="quiet" HorizontalAlignment="Left" Tag="{Binding}" Click="WebSource_Click" FontSize="11" Content="{Binding Label}" />
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                              <ItemsControl ItemsSource="{Binding EvidenceNoteRows}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                                      <TextBlock Text="{StaticResource IconExclamationmarkTriangle}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                                                 Foreground="{DynamicResource Caution}" VerticalAlignment="Center" />
+                                      <TextBlock Text="{Binding}" Classes="caption" FontSize="11" Foreground="{DynamicResource Caution}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+                          </ScrollViewer>
+                        </Flyout>
+                      </Button.Flyout>
+                    </Button>
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Grid>
+
+          <!-- 我的笔记 tab (§3.3 live 12): Mac LiveSessionView puts MeetingUserNotes here. -->
+          <Grid x:Name="NotesPanel" RowDefinitions="*" IsVisible="False" Margin="{DynamicResource LvMargin_24_16_24_12}">
+            <views:MeetingUserNotes />
+          </Grid>
+        </Grid>
+      </Grid>
+    </Grid>
+
+    <!-- ===== 底部输入条 (Mac LiveComposer): screenshot strip, input card with the shortcut hint,
+         the screenshot menu, send, and 立即回答. ===== -->
+    <StackPanel Grid.Row="4" Margin="{DynamicResource LvMargin_24_8_24_16}" Spacing="{DynamicResource D4Spacing_8}">
+      <assistant:ScreenshotCard />
+      <Grid x:Name="LiveInputRow" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_12}">
+        <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
+                CornerRadius="{DynamicResource RadiusMedium}" BoxShadow="{DynamicResource PaperCardShadow}"
+                MinHeight="{DynamicResource ControlLarge}" Padding="{DynamicResource LvPadding_16_0_8_0}">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+            <TextBox x:Name="LiveComposer" Text="{Binding QuestionInput}" PlaceholderText="{Binding LiveComposerPlaceholder}"
+                     AcceptsReturn="True" MinHeight="{DynamicResource Control}" MaxHeight="110" TextWrapping="Wrap"
+                     BorderThickness="0" Background="Transparent" KeyDown="Composer_KeyDown" VerticalContentAlignment="Center" />
+            <Border Grid.Column="1" Classes="keycap">
+              <TextBlock Text="Ctrl+L" FontSize="11" Foreground="{DynamicResource Secondary}" />
+            </Border>
+            <Button Grid.Column="2" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
+                    ToolTip.Tip="{loc:Tr 截图提问}" Click="CaptureMenu_Click">
+              <TextBlock Text="{StaticResource IconCameraViewfinder}" FontFamily="{StaticResource IconFont}" FontSize="14" />
+              <Button.Flyout>
+                <Flyout Placement="TopEdgeAlignedRight">
+                  <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+                    <Button Classes="quiet" Content="{loc:Tr 框选区域}" Click="CaptureRegion_Click" />
+                    <Button Classes="quiet" Content="{loc:Tr 选择窗口}" Click="CaptureWindow_Click" />
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <Button Grid.Column="3" Classes="quiet" Width="28" Height="28" Padding="{DynamicResource D4Padding_0}"
+                    ToolTip.Tip="{loc:Tr 发送问题}" Click="Composer_Send_Click" IsEnabled="{Binding CanSubmitLiveComposer}">
+              <TextBlock Text="{StaticResource IconArrowUpCircleFill}" FontFamily="{StaticResource IconFont}" FontSize="16" />
+            </Button>
+          </Grid>
+        </Border>
+        <Button Grid.Column="1" Classes="primary" Command="{Binding ForceAnswerCommand}" MinHeight="{DynamicResource ControlLarge}"
+                IsVisible="{Binding AnswerModeIsAuto}" ToolTip.Tip="{loc:Tr 回答最新的问题或转写，不等自动判断}">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+            <TextBlock Text="{StaticResource IconBoltFill}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                       Foreground="{DynamicResource OnInk}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Tr 立即回答}" Foreground="{DynamicResource OnInk}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ForceAnswerShortcut}" FontSize="10" Foreground="{DynamicResource OnInk}" Opacity="0.7" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </StackPanel>
+  </Grid>
+</UserControl>

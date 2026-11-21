@@ -1,0 +1,42 @@
+content	All records
+content	Copy notes
+content	Details
+content	Edit notes
+content	Export…
+content	Home
+content	Organize with template
+content	Proofread transcript
+content	Rewrite notes
+content	Series
+content	Write notes when a meeting ends
+text	2026-11-20 19:22 · 44 min · Online
+text	All records
+text	Copy notes
+text	Details
+text	Edit notes
+text	Export…
+text	Home
+text	Interview review
+text	Live answers
+text	Meetings
+text	My notes
+text	Organize with template
+text	Proofread transcript
+text	Review
+text	Rewrite notes
+text	Series
+text	Summarize this meeting
+text	Transcript
+text	Write notes when a meeting ends
+text	›
+text	后端二面：缓存一致性与项目经历
+text	
+title	NextThought
+tooltip	Close
+tooltip	Export Markdown…
+tooltip	Maximize
+tooltip	Meeting info
+tooltip	Minimize
+tooltip	Note template: the template defines sections, the model fills them
+tooltip	Only fixes misrecognized names and terms; changes are written to corrections.json
+tooltip	Settings

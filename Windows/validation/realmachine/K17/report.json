@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "ocrChars": 31,
+  "matchedPage": 1,
+  "screenExcerpt": "缓 存 一 致 性\n读 写 时 序 方 案\n重 试 与 降 级",
+  "ranked": [
+    {
+      "page": 1,
+      "score": 1
+    }
+  ],
+  "error": "",
+  "rulesPassed": true,
+  "cachePassed": true,
+  "classifyPassed": true,
+  "ruleError": ""
+}

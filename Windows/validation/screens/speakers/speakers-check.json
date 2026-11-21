@@ -1,0 +1,36 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "说话人条：我 + 陈老师 + 说话人",
+      "passed": true,
+      "detail": "人数 3；我(5句) / 陈老师(6句) / 说话人 2(6句)"
+    },
+    {
+      "step": "命名写入 meta.json",
+      "passed": true,
+      "detail": "voiceNames=[0, 李老师]"
+    },
+    {
+      "step": "转写行标签显示名字",
+      "passed": true,
+      "detail": "17:21:21 · 现场 · 李老师"
+    },
+    {
+      "step": "合并两个声音（记录跟随、名字保留）",
+      "passed": true,
+      "detail": "line voices=0,2"
+    },
+    {
+      "step": "我的声音：录入流程可打开（录音未执行）",
+      "passed": true,
+      "detail": "visible=True label=开始 takes=4 hint=第 1 / 4 句，点“开始”后用平时开会的声音读出来"
+    },
+    {
+      "step": "真实麦克风录音未在自检中执行",
+      "passed": true,
+      "detail": "需要麦克风与声纹组件；见 compare.md 未解决项"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+        x:Class="NextThought.Desktop.Views.RenameSessionDialog"
+        Title="{loc:Tr 重命名会议}" Width="420" Height="170" WindowStartupLocation="CenterOwner"
+        CanResize="False" Background="{DynamicResource Paper}">
+  <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_12}">
+    <TextBlock x:Name="HeadingText" Text="{loc:Tr 重命名会议}" Classes="section" />
+    <TextBox x:Name="TitleBox" PlaceholderText="{loc:Tr 会议标题}" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="{DynamicResource D4Spacing_8}">
+      <Button Content="{loc:Tr 取消}" Click="Cancel_Click" />
+      <Button Classes="primary" Content="{loc:Tr 保存}" Click="Save_Click" />
+    </StackPanel>
+  </StackPanel>
+</Window>

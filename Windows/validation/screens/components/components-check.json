@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "23 个通用组件出现在样张页",
+      "passed": true,
+      "detail": "全部存在"
+    },
+    {
+      "step": "MarkdownText 渲染加粗/列表/行内代码",
+      "passed": true,
+      "detail": "blocks=4 inlineRuns=3"
+    },
+    {
+      "step": "浅色与深色样张截图",
+      "passed": true,
+      "detail": "component-samples-light.png / component-samples-dark.png"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "系列编辑器加载",
+      "passed": true,
+      "detail": "E20 自检系列；字段 2 项；资料 1 份"
+    },
+    {
+      "step": "字段编辑器保存",
+      "passed": true,
+      "detail": "domain=高并发交易系统"
+    },
+    {
+      "step": "准备队列摘要与重试",
+      "passed": true,
+      "detail": "会前准备 · 0 份已就绪 · 1 份需处理；重试后=Queued"
+    },
+    {
+      "step": "资料导入到系列",
+      "passed": true,
+      "detail": "已把 1 份资料加入系列。；文档 2 份"
+    },
+    {
+      "step": "资料移除与撤销",
+      "passed": true,
+      "detail": "移除干净=True；撤销恢复=True"
+    },
+    {
+      "step": "经验可编辑并保留历史",
+      "passed": true,
+      "detail": "先说结论，再给三条依据。；历史 1 条"
+    },
+    {
+      "step": "题库可编辑",
+      "passed": true,
+      "detail": "缓存怎么保证一致性？"
+    },
+    {
+      "step": "系列归档",
+      "passed": true,
+      "detail": "Archived=True"
+    },
+    {
+      "step": "删除系列连同会议记录",
+      "passed": true,
+      "detail": "系列剩余 0；会议 2→0"
+    }
+  ]
+}

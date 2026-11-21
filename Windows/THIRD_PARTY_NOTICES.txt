@@ -1,0 +1,48 @@
+NextThought for Windows 0.9.0
+Upstream snapshot: OmnixSI/NextThought Mac v3.4.0, commit f015e8c6.
+The upstream application has no top-level open-source license. This local port does not change its licensing.
+
+Avalonia 12.1.6 (Avalonia, Avalonia.Desktop, Avalonia.Themes.Fluent): MIT, https://github.com/AvaloniaUI/Avalonia; licenses/Avalonia-LICENSE.txt
+CommunityToolkit.Mvvm 8.4.2: MIT, https://github.com/CommunityToolkit/dotnet; licenses/CommunityToolkit-Mvvm-LICENSE.txt
+Microsoft.ML.OnnxRuntime.Managed 1.28.0: MIT, https://github.com/microsoft/onnxruntime
+Sherpa-ONNX 1.13.8: Apache-2.0, https://github.com/k2-fsa/sherpa-onnx
+ONNX Runtime distributed with Sherpa-ONNX: MIT, https://github.com/microsoft/onnxruntime
+NAudio.Core / NAudio.Wasapi 2.2.1: MIT, https://github.com/naudio/NAudio
+Microsoft .NET: MIT, https://github.com/dotnet/runtime
+Fluent System Icons: MIT, Copyright (c) 2020 Microsoft Corporation, https://github.com/microsoft/fluentui-system-icons; bundled as src/NextThought.Desktop/Assets/Fonts/FluentSystemIcons-Regular.ttf with license in LICENSE-FluentSystemIcons.txt
+Bundled interface fonts: Inter (OFL-1.1), Noto Sans SC (OFL-1.1), Noto Serif SC (OFL-1.1), Source Serif 4 (OFL-1.1); license texts bundled under src/NextThought.Desktop/Assets/Fonts/.
+X-ASR models: Apache-2.0, https://github.com/Gilgamesh-J/X-ASR
+Models are downloaded separately from official sherpa-onnx releases and checked against the upstream SHA-256 values.
+Additional upstream notices: ../Resources/ThirdPartyNotices.txt in the source tree.
+
+PdfPig 0.1.16: Apache-2.0, https://github.com/UglyToad/PdfPig
+Windows PDF rendering and OCR use installed Windows APIs and language capabilities.
+Codex is invoked as a separately installed CLI; it is not redistributed in this package.
+
+Qwen3-Embedding-0.6B: Apache-2.0, Qwen/Qwen3-Embedding-0.6B.
+Optional ONNX Q8 conversion: onnx-community/Qwen3-Embedding-0.6B-ONNX, revision c25a394dd583836952667c12f008335071b3f43d.
+Microsoft.ML.OnnxRuntime.Managed 1.28.0: MIT, uses the existing Sherpa native ORT 1.28.2 DLL.
+Model weights are separately downloaded and verified; not included in the application ZIP.
+
+Optional WeSpeaker VoxCeleb ResNet34-LM ONNX model: CC BY 4.0, WeSpeaker contributors.
+https://huggingface.co/Wespeaker/wespeaker-resnet34-LM (revision f0c48c298fd835726c27956a5d617bad7115627e).
+Unmodified model; Windows feature extraction and meeting-local grouping implemented separately.
+License text: licenses/WeSpeaker-CC-BY-4.0.txt. Model downloaded separately.
+QRCoder 1.7.0: MIT, https://github.com/Shane32/QRCoder/tree/v1.7.0; licenses/QRCoder-LICENSE.txt.
+Companion page adapted from the same private upstream snapshot (Mac labels changed to Windows; unavailable history controls hidden).
+Bundled noble packages: MIT, see licenses/Companion-LICENSES.txt.
+
+MediaPipe Face Landmarker (E10 看镜头提醒): Apache-2.0, Google LLC / MediaPipe contributors.
+Model bundle: https://huggingface.co/litert-community/MediaPipe-FaceLandmarker
+revision cfb66f449dc5cb9f8dada3d52174d4cdae1c9ef1, face_landmarker.task 3,758,596 B,
+SHA-256 64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff.
+The bundle (BlazeFace short-range detector, FaceMesh V2 landmarks, blendshape network and the
+landmark geometry metadata) is Apache-2.0; the upstream Google model cards are included verbatim:
+licenses/MediaPipe-BlazeFace-Model-Card.pdf, licenses/MediaPipe-FaceMesh-V2-Model-Card.pdf,
+licenses/MediaPipe-Blendshape-V2-Model-Card.pdf; license text:
+licenses/MediaPipe-Face-Landmarker-LICENSE.txt.
+Windows converts the detector and landmark sub-models to ONNX with
+scripts/convert_face_landmarker.py (tflite2onnx 0.4.1 with a documented layout patch) and ships
+the two converted files under assets/face-landmarker/ with their SHA-256 in SHA256SUMS; the
+conversion is numerically checked against the TFLite originals (see
+validation/e10/numeric-alignment.json).

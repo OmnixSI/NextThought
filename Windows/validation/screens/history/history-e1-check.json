@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "HistoryView 已加载（两栏）",
+      "passed": true,
+      "detail": "HistoryView"
+    },
+    {
+      "step": "会话列表与系列分组",
+      "passed": true,
+      "detail": "组 2，会话 2"
+    },
+    {
+      "step": "SessionRow 场景色点/时间/细节字段",
+      "passed": true,
+      "detail": "行 2"
+    },
+    {
+      "step": "右栏内嵌会议页（MeetingPage）",
+      "passed": true,
+      "detail": "NotesView=内嵌"
+    },
+    {
+      "step": "系列作用域：标题/列表/面包屑",
+      "passed": true,
+      "detail": "E1 自检系列 · 1 场"
+    },
+    {
+      "step": "返回所有记录",
+      "passed": true,
+      "detail": "会话 2"
+    },
+    {
+      "step": "深色下内嵌会议页",
+      "passed": true,
+      "detail": "NotesView=内嵌"
+    }
+  ]
+}

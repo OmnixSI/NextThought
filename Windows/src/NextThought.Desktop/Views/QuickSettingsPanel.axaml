@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.QuickSettingsPanel"
+             x:DataType="local:AppState">
+  <Border Background="{DynamicResource Paper}" BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
+          CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_16}" Width="340">
+    <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+      <TextBlock Text="{loc:Tr 状态}" Classes="overline" />
+      <TextBlock Text="{Binding Status}" Classes="caption" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding ModelStatusText}" Classes="caption" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding AudioSourceText}" Classes="caption" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Tr 偏好}" Classes="overline" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+      <CheckBox Content="{loc:Tr 自动回答}" IsChecked="{Binding Settings.AutomaticAnswers}" />
+      <CheckBox Content="{loc:Tr 字幕显示译文}" IsChecked="{Binding Settings.SubtitleShowTranslation}" />
+      <CheckBox Content="{loc:Tr 提词岛一直展开}" IsChecked="{Binding Settings.CueAlwaysOpen}" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{loc:Tr 提词字号}" VerticalAlignment="Center" />
+        <Slider Grid.Column="1" Width="140" Minimum="14" Maximum="36" TickFrequency="1"
+                Value="{Binding Settings.TeleprompterFontSize}" />
+      </Grid>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{loc:Tr 提词}" VerticalAlignment="Center" />
+        <ComboBox Grid.Column="1" MinWidth="120" ItemsSource="{Binding Settings.CueSurfaceChoices}"
+                  SelectedItem="{Binding Settings.SelectedCueSurface}" SelectionChanged="CueSurface_SelectionChanged" />
+      </Grid>
+      <CheckBox Content="{loc:Tr 双屏演讲}" IsChecked="{Binding Settings.PresenterMode}" />
+      <TextBlock Text="{Binding Settings.PresenterSummary}" Classes="caption" FontSize="11"
+                 IsVisible="{Binding Settings.PresenterMode}" TextWrapping="Wrap" />
+      <CheckBox Content="{loc:Tr 讲的时候显示这一页的讲稿}" IsChecked="{Binding Settings.PresenterSlideNotes}"
+                IsVisible="{Binding Settings.PresenterMode}" Click="PresenterSlideNotes_Click" />
+      <CheckBox Content="{loc:Tr 听到外语自动翻译}" IsChecked="{Binding Settings.AutoTranslateForeign}" />
+      <CheckBox Content="{loc:Tr 跟着讲话翻幻灯片}" IsChecked="{Binding Settings.FollowSlides}" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{loc:Tr 回答语言}" VerticalAlignment="Center" />
+        <ComboBox Grid.Column="1" Width="120" ItemsSource="{Binding Settings.AnswerLanguageChoices}" SelectedItem="{Binding Settings.AnswerLanguage}" />
+      </Grid>
+      <CheckBox Content="{loc:Tr 英文回答附中文对照}" IsChecked="{Binding Settings.AnswerGloss}" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{loc:Tr 提词宽度}" VerticalAlignment="Center" />
+        <ComboBox Grid.Column="1" MinWidth="120" ItemsSource="{Binding Settings.CueWidthChoices}"
+                  SelectedItem="{Binding Settings.SelectedCueWidth}" />
+      </Grid>
+      <Button Classes="primary" Content="{loc:Tr 全部设置…}" HorizontalAlignment="Stretch"
+              Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+    </StackPanel>
+  </Border>
+</UserControl>

@@ -1,0 +1,512 @@
+{
+  "documents": [
+    {
+      "id": "benchmark-01",
+      "name": "巡检安排.md",
+      "sha256": "8f4f9b8bce03c67b3737e6279b10501223252b2d18ff8687d2928b081aa8309d",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "桥面日常巡检周期为七天，由养护组负责。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-02",
+      "name": "支座复核.md",
+      "sha256": "5849f07912627ebd39fdfd6ca716d9b83f4e2973f5f21d592a57fdbd224da36a",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "支座标高复核每九十天进行一次，技术负责人是陈工。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-03",
+      "name": "混凝土养护.md",
+      "sha256": "830de4c585dc4de4090b7ac3755bc764c6ea277127d88be31d9b9281b788adc5",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "新浇筑混凝土应持续保湿养护不少于十四天。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-04",
+      "name": "桥梁复核.md",
+      "sha256": "2062d4038a4e775c2831b8f1c8abf3222f652c0e90bada4bd113d15af4980b88",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "曙光桥安全复核负责人为林工，计划于十一月十五日完成。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-05",
+      "name": "材料复检.md",
+      "sha256": "68aef0737339c5e5bcb34294fa39f198e6f60d6afdcaf75b43a153150f354d66",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "材料入场质量复检周期为三十天，质量负责人是王工。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-06",
+      "name": "例会安排.md",
+      "sha256": "4d340698439e28caa9f71b8d0d3bcae463ec79e24a23079c4b2c5a211c8094dc",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "现场例会固定在每周三下午三点召开。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-07",
+      "name": "钢梁吊装.md",
+      "sha256": "20ec1439721ce172809829c651a4f5a469a06354c2ea9a1d219df3e319f36dbd",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "钢梁吊装分为四个阶段，第二阶段结束后复核支座标高。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-08",
+      "name": "临时封路.md",
+      "sha256": "a5a7fc1ca3facd10d29bfba7c41db249473f7b9a084449119a12f62edef75de3",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "吊装期间东侧施工便道临时封闭，西侧应急通道保持畅通。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-09",
+      "name": "雨天停工.md",
+      "sha256": "6baba3e2c137f155085712401928bffc2faec14d31cf7e03ff3a73cf3d0ec011",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "雷电预警发布后暂停露天吊装，解除预警并完成检查后复工。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-10",
+      "name": "设备点检.md",
+      "sha256": "9ea1d73cc51fece281db4f265dc704ff86229841743b0c0e9313c980a3c77993",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "起重机每天作业前检查制动器、钢丝绳和限位装置。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-11",
+      "name": "监测报警.md",
+      "sha256": "ce4420485b1473c431988466bbbe166224db7d8530a65a1bd8080902749db5a9",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "主梁竖向位移超过二十毫米触发黄色预警，并立即人工复核。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-12",
+      "name": "审图流程.md",
+      "sha256": "a2a7d7544783901ebea20d395d8a11a95839490d05be304078f1995d47300aae",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "设计变更先由设计单位出具文件，再由监理审查，最后报建设单位批准。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-13",
+      "name": "防腐涂装.md",
+      "sha256": "be259c6a9bdf2dfcc6395d294b04af495f404f0b119f73ea890bd6bbcf0d46a3",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "钢构件表面除锈达到 Sa2.5 后，依次施工底漆、中间漆和面漆。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-14",
+      "name": "人员培训.md",
+      "sha256": "93791b114ae5d688049bb1184adab7877386b00a8653dbdcf735e3cfe018bae7",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "新进场人员须完成三级安全教育，并通过考核后才能上岗。"
+        }
+      ]
+    },
+    {
+      "id": "benchmark-15",
+      "name": "试验归档.md",
+      "sha256": "7236af4bca5f2c076851b2eb2b8352cf3f87593dce9c2e5235225645d5805b9e",
+      "extension": ".md",
+      "blocks": [
+        {
+          "location": "段落 1",
+          "text": "试验报告由试验室签发，资料员在五个工作日内录入归档系统。"
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "benchmark-01-exact",
+      "query": "桥面巡检周期是多久？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-01:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-01-paraphrase",
+      "query": "路面多久查看一遍？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-01:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-02-exact",
+      "query": "支座标高复核负责人是谁？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-02:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-02-paraphrase",
+      "query": "谁来检查桥墩顶部承重垫块的高度？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-02:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-03-exact",
+      "query": "混凝土养护至少多少天？",
+      "category": "exact",
+      "split": "dev",
+      "relevant": [
+        "benchmark-03:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-03-paraphrase",
+      "query": "刚浇好的砼要洒水保湿多长时间？",
+      "category": "paraphrase",
+      "split": "dev",
+      "relevant": [
+        "benchmark-03:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-04-exact",
+      "query": "曙光桥安全复核负责人是谁？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-04:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-04-paraphrase",
+      "query": "谁负责确认曙光桥能安全使用？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-04:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-05-exact",
+      "query": "材料质量复检周期是多少？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-05:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-05-paraphrase",
+      "query": "进场物料隔多久重新检查一次质量？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-05:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-06-exact",
+      "query": "现场例会什么时候开？",
+      "category": "exact",
+      "split": "dev",
+      "relevant": [
+        "benchmark-06:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-06-paraphrase",
+      "query": "工地大家固定碰头商量工作的时间是什么？",
+      "category": "paraphrase",
+      "split": "dev",
+      "relevant": [
+        "benchmark-06:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-07-exact",
+      "query": "钢梁吊装有几个阶段？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-07:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-07-paraphrase",
+      "query": "大梁分几步吊上去？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-07:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-08-exact",
+      "query": "吊装期间哪条通道保持畅通？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-08:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-08-paraphrase",
+      "query": "起吊作业时紧急救援车辆应该从哪边通行？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-08:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-09-exact",
+      "query": "雷电预警后吊装如何处理？",
+      "category": "exact",
+      "split": "dev",
+      "relevant": [
+        "benchmark-09:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-09-paraphrase",
+      "query": "打雷风险提示出来以后还能在室外起吊吗？",
+      "category": "paraphrase",
+      "split": "dev",
+      "relevant": [
+        "benchmark-09:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-10-exact",
+      "query": "起重机作业前检查什么？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-10:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-10-paraphrase",
+      "query": "开吊车之前要查看哪些关键部件？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-10:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-11-exact",
+      "query": "主梁位移多少毫米触发黄色预警？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-11:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-11-paraphrase",
+      "query": "桥面主要承重构件往下移动到什么程度会提醒人员核实？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-11:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-12-exact",
+      "query": "设计变更的审批顺序是什么？",
+      "category": "exact",
+      "split": "dev",
+      "relevant": [
+        "benchmark-12:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-12-paraphrase",
+      "query": "修改施工图之前要经过哪些单位同意？",
+      "category": "paraphrase",
+      "split": "dev",
+      "relevant": [
+        "benchmark-12:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-13-exact",
+      "query": "钢构件涂装顺序是什么？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-13:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-13-paraphrase",
+      "query": "金属构件防锈保护层分几层刷？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-13:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-14-exact",
+      "query": "新进场人员上岗前有什么要求？",
+      "category": "exact",
+      "split": "test",
+      "relevant": [
+        "benchmark-14:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-14-paraphrase",
+      "query": "第一次来工地的人怎样才能开始干活？",
+      "category": "paraphrase",
+      "split": "test",
+      "relevant": [
+        "benchmark-14:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-15-exact",
+      "query": "试验报告在几天内归档？",
+      "category": "exact",
+      "split": "dev",
+      "relevant": [
+        "benchmark-15:段落 1"
+      ]
+    },
+    {
+      "id": "benchmark-15-paraphrase",
+      "query": "实验结果的正式文件最迟多久要存进系统？",
+      "category": "paraphrase",
+      "split": "dev",
+      "relevant": [
+        "benchmark-15:段落 1"
+      ]
+    },
+    {
+      "id": "negative-01",
+      "query": "桥梁总预算是多少？",
+      "category": "unanswerable",
+      "split": "test",
+      "relevant": []
+    },
+    {
+      "id": "negative-02",
+      "query": "陈工的手机号码是什么？",
+      "category": "unanswerable",
+      "split": "test",
+      "relevant": []
+    },
+    {
+      "id": "negative-03",
+      "query": "哪家餐馆的面条最好吃？",
+      "category": "unanswerable",
+      "split": "dev",
+      "relevant": []
+    },
+    {
+      "id": "negative-04",
+      "query": "明年的台风具体在哪一天登陆？",
+      "category": "unanswerable",
+      "split": "test",
+      "relevant": []
+    },
+    {
+      "id": "negative-05",
+      "query": "施工单位营业执照编号是多少？",
+      "category": "unanswerable",
+      "split": "test",
+      "relevant": []
+    },
+    {
+      "id": "negative-06",
+      "query": "会议使用的投影仪是什么品牌？",
+      "category": "unanswerable",
+      "split": "dev",
+      "relevant": []
+    },
+    {
+      "id": "negative-07",
+      "query": "Who won the international chess tournament?",
+      "category": "unanswerable",
+      "split": "test",
+      "relevant": []
+    },
+    {
+      "id": "negative-08",
+      "query": "这座桥的主跨长度是多少米？",
+      "category": "unanswerable",
+      "split": "test",
+      "relevant": []
+    }
+  ]
+}

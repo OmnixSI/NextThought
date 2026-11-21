@@ -1,0 +1,52 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.RegionCaptureWindow"
+        Title="{loc:Tr 区域截图}"
+        Width="900" Height="640" MinWidth="720" MinHeight="540"
+        Background="{DynamicResource Paper}"
+        WindowStartupLocation="CenterScreen">
+  <!-- E13 / §6.7: RegionScreenshotPicker.swift / ScreenRegionSheet.swift — headline + 显示器 picker
+       on one row (the picker shows the system's friendly monitor name), the fitted screen image
+       with a drag selection, then the Mac caption and 取消 / 使用此区域. -->
+  <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_16}">
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="{DynamicResource D4Margin_0_0_0_12}">
+      <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+        <TextBlock Text="{StaticResource IconCameraViewfinder}" FontFamily="{StaticResource IconFont}"
+                   FontSize="14" Foreground="{DynamicResource InkBrush}" VerticalAlignment="Center" />
+        <TextBlock x:Name="HeadlineText" Text="{loc:Tr 拖动选择截图区域}" Classes="label" FontSize="15"
+                   VerticalAlignment="Center" />
+      </StackPanel>
+      <ComboBox x:Name="DisplayBox" Grid.Column="2" MaxWidth="310" MinWidth="150"
+                SelectionChanged="Display_Changed" VerticalAlignment="Center" />
+    </Grid>
+
+    <Border Grid.Row="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_8}">
+      <Grid x:Name="CanvasHost" ClipToBounds="True">
+        <Image x:Name="ScreenImage" Stretch="Uniform" />
+        <Canvas x:Name="Overlay" Background="Transparent">
+          <Border x:Name="Selection" BorderBrush="{DynamicResource Seal}" BorderThickness="2"
+                  Background="#22C4452C" IsVisible="False" />
+        </Canvas>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="{DynamicResource D4Margin_0_12_0_0}">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Center">
+        <TextBlock x:Name="HintText" Classes="caption" Foreground="{DynamicResource Secondary}"
+                   Text="{loc:Tr 截图会裁切到选中范围。请把题目、代码或公式完整框入。}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="PromptText" IsVisible="False" Classes="caption"
+                   Foreground="{DynamicResource Caution}" TextWrapping="Wrap"
+                   Text="{loc:Tr 屏幕选区无效，请重新框选。}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+        <Button Classes="quiet" Content="{loc:Tr 取消}" Click="Cancel_Click" />
+        <Button Classes="primary" Click="Accept_Click" IsEnabled="False" Name="AcceptButton">
+          <TextBlock Text="{loc:Tr 使用此区域}" Foreground="{DynamicResource OnInk}" />
+        </Button>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>

@@ -1,0 +1,5 @@
+Mac upstream: f015e8c6 (v3.4.0, 2026-11-20)
+Windows work branch: windows/parity
+基线版本: 0.5.145
+Windows 发布版本: 0.9.0（任务书 §0；R1 起只从 NextThought.Desktop.csproj 读取）
+对照基准固定为 v3.4.0；上游之后的新提交先不追。

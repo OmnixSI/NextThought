@@ -1,0 +1,248 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        xmlns:controls="using:NextThought.Desktop.Controls"
+        x:Class="NextThought.Desktop.Views.GlossaryWindow"
+        x:DataType="local:AppState"
+        Title="{loc:Tr 术语和人名}" Width="820" Height="580" MinWidth="780" MinHeight="540"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource Paper}">
+  <Window.Styles>
+    <Style Selector="Button.glossaryRow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Button.glossaryRow:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+    </Style>
+    <Style Selector="Button.glossaryRow.selected /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <!-- Mac InkSegmented: sunken track, raised surface thumb on the selected item. -->
+    <Style Selector="Border.segTrack">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="2" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.segItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="10,3" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    </Style>
+    <Style Selector="Button.segItem:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+    </Style>
+    <Style Selector="Button.segItem.selected /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+    </Style>
+    <Style Selector="Button.segItem.selected /template/ ContentPresenter TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <!-- Mac fieldSurface(): a sunken 32 pt single-line field. -->
+    <Style Selector="TextBox.paste">
+      <Setter Property="MinHeight" Value="220" />
+    </Style>
+    <Style Selector="Button.tagRemove">
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Height" Value="20" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Border.field">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Padding" Value="10,0" />
+    </Style>
+    <Style Selector="Border.field TextBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+  </Window.Styles>
+
+  <!-- E22 / §6.7: the glossary page (GlossaryView.swift). Two scopes, a 270 pt list, the entry
+       editor (or the bulk-paste editor) on the right; 完成 has the default action; the window
+       commits the open entry and tidies duplicates when it closes. -->
+  <Grid RowDefinitions="Auto,Auto,*" Margin="{DynamicResource D4Margin_24}" RowSpacing="12">
+    <!-- Header: title + hint, 完成. -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="0" Spacing="{DynamicResource D4Spacing_4}">
+        <TextBlock Text="{Binding GlossaryTitleText}" Classes="section" />
+        <TextBlock Text="{Binding GlossaryHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+      <Button x:Name="DoneButton" Grid.Column="1" Classes="primary" Content="{loc:Tr 完成}"
+              Click="Done_Click" VerticalAlignment="Top" IsDefault="True" />
+    </Grid>
+
+    <!-- Toolbar: global/series scope, filter, status and the more menu. -->
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
+      <controls:InkSegmented x:Name="ScopeSeg" Grid.Column="0" HorizontalAlignment="Left"
+                             VerticalAlignment="Center" SelectionChanged="Scope_Changed" />
+      <Border Grid.Column="1" Classes="field" MaxWidth="200" MinWidth="140">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+          <TextBlock Text="{StaticResource IconMagnifyingglass}" FontFamily="{StaticResource IconFont}"
+                     FontSize="11" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+          <TextBox Text="{Binding GlossaryFilter, Mode=TwoWay}" PlaceholderText="{loc:Tr 查找}"
+                   Width="150" />
+        </StackPanel>
+      </Border>
+      <TextBlock Grid.Column="3" Text="{Binding GlossaryStatusText}" Classes="caption"
+                 Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                 IsVisible="{Binding HasGlossaryStatus}" />
+      <Button x:Name="MoreButton" Grid.Column="4" Classes="quiet" ToolTip.Tip="{loc:Tr 更多}"
+              HorizontalAlignment="Right">
+        <TextBlock Text="{StaticResource IconIslandEllipsis}" FontFamily="{StaticResource IconFont}" FontSize="13" />
+        <Button.Flyout>
+          <MenuFlyout>
+            <MenuItem Header="{loc:Tr 批量粘贴…}" Click="Paste_Click" />
+            <Separator />
+            <MenuItem Header="{loc:Tr 从文件导入…}" Click="ImportFile_Click" />
+            <MenuItem Header="{loc:Tr 导出为文件…}" Click="ExportFile_Click" />
+            <MenuItem Header="{loc:Tr 复制为文字}" Click="CopyText_Click" />
+            <Separator />
+            <MenuItem Header="{loc:Tr 整理重复项}" Command="{Binding TidyGlossariesCommand}" />
+          </MenuFlyout>
+        </Button.Flyout>
+      </Button>
+    </Grid>
+
+    <!-- List + editor. -->
+    <Grid Grid.Row="2" ColumnDefinitions="270,*" ColumnSpacing="16">
+      <Border Grid.Column="0" Classes="card" Padding="{DynamicResource D4Padding_8}">
+        <Grid RowDefinitions="Auto,*" RowSpacing="4">
+          <Button Grid.Row="0" Classes="quiet" Click="New_Click" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{StaticResource IconPlus}" FontFamily="{StaticResource IconFont}" FontSize="11"
+                         VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr 新增}" FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+              <ItemsControl x:Name="GlossaryList" ItemsSource="{Binding GlossaryRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="local:GlossaryEntryRow">
+                    <Button Classes="glossaryRow" Tag="{Binding}" Click="SelectEntry_Click">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+                          <TextBlock Text="{Binding Canonical}" Classes="label" TextTrimming="CharacterEllipsis" />
+                          <controls:MetricPill Text="{loc:Tr 人名}" IsVisible="{Binding IsPerson}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding VariantsLine}" Classes="caption" FontSize="11"
+                                   Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasVariants}"
+                                   TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding GlossaryEmptyText}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                         TextWrapping="Wrap" Margin="{DynamicResource D4Margin_8}" />
+              <TextBlock Text="{Binding GlossaryFilteredEmptyText}" Classes="caption"
+                         Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" Margin="{DynamicResource D4Margin_8}" />
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+
+      <!-- Empty editor: nothing selected. -->
+      <Border x:Name="EmptyEditor" Grid.Column="1" Classes="card" MinHeight="200" IsVisible="False">
+        <TextBlock Text="{loc:Tr 选一条来编辑，或新增一条。}" Classes="body"
+                   Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Border>
+
+      <!-- Entry editor. -->
+      <Border x:Name="EntryEditor" Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="False">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="{DynamicResource D4Spacing_16}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+              <TextBlock Text="{loc:Tr 规范写法}" Classes="overline" />
+              <Border Classes="field">
+                <TextBox x:Name="CanonicalBox" Text="{Binding GlossaryEditorCanonical, Mode=TwoWay}"
+                         PlaceholderText="{loc:Tr 正确的写法，例如 Kubernetes}" TextChanged="Field_Changed" />
+              </Border>
+            </StackPanel>
+            <controls:InkSegmented x:Name="KindSeg" HorizontalAlignment="Left" SelectionChanged="Kind_Changed" />
+            <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Text="{loc:Tr 听错的写法}" Classes="overline" />
+              <ItemsControl x:Name="VariantTags">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_8_3}" Margin="{DynamicResource D4Margin_0_0_6_6}">
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                        <TextBlock Text="{Binding}" Classes="caption" />
+                        <Button Classes="quiet" Tag="{Binding}" Click="RemoveVariant_Click" Padding="{DynamicResource D4Padding_0}"
+                                MinWidth="20" MinHeight="{DynamicResource Control}" ToolTip.Tip="{loc:Tr 移除}">
+                          <TextBlock Text="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}"
+                                     FontSize="8" Foreground="{DynamicResource Secondary}" />
+                        </Button>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border Classes="field">
+                <TextBox x:Name="VariantInput" PlaceholderText="{loc:Tr 识别出来的错误写法，回车或逗号分隔后加入}"
+                         KeyDown="VariantInput_KeyDown" TextChanged="VariantInput_TextChanged" />
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+              <TextBlock Text="{loc:Tr 备注}" Classes="overline" />
+              <Border Classes="field">
+                <TextBox Text="{Binding GlossaryEditorNote, Mode=TwoWay}"
+                         PlaceholderText="{loc:Tr 可选，例如“我们的数据库项目”}" TextChanged="Field_Changed" />
+              </Border>
+            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBlock Grid.Column="0" Text="{loc:Tr 已有同名条目，关闭这个页面时会合并。}" Classes="caption"
+                         Foreground="{DynamicResource Secondary}" IsVisible="{Binding HasGlossaryDuplicate}"
+                         TextWrapping="Wrap" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 删除}" Click="DeleteSelected_Click" />
+            </Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+      <!-- Paste editor: one line per entry. -->
+      <Border x:Name="PasteEditor" Grid.Column="1" Classes="card" Padding="{DynamicResource D4Padding_14}" IsVisible="False">
+        <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+          <TextBlock Text="{loc:Tr 批量粘贴}" Classes="label" />
+          <TextBlock Text="{Binding GlossaryPasteHint}" Classes="caption" Foreground="{DynamicResource Secondary}"
+                     TextWrapping="Wrap" />
+          <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_8}" Padding="{DynamicResource D4Padding_8}">
+            <TextBox Text="{Binding GlossaryPasteText, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="{DynamicResource D4TextArea_220}" Background="Transparent" BorderThickness="0"
+                     FontFamily="{StaticResource MonoFamily}" FontSize="12" />
+          </Border>
+          <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
+            <TextBlock Grid.Column="0" Text="{loc:Tr 没写类型的当作}" Classes="caption"
+                       Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+            <controls:InkSegmented x:Name="PasteKindSeg" Grid.Column="1" VerticalAlignment="Center"
+                                   SelectionChanged="PasteKind_Changed" />
+            <Button Grid.Column="3" Classes="quiet" Content="{loc:Tr 取消}" Click="CancelPaste_Click" />
+            <Button Grid.Column="4" Classes="primary" Content="{loc:Tr 加入}"
+                    IsEnabled="{Binding HasGlossaryPasteText}" Click="ImportPasted_Click" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

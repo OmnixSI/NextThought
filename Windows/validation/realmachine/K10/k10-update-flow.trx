@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="5ef65d8b-a1a8-459a-847e-51275c90fe39" name="Thunderobot@MATEBOOKFOLD 2026-11-21 16:27:34" runUser="MATEBOOKFOLD\Thunderobot" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-11-21T16:27:34.0925370+08:00" queuing="2026-11-21T16:27:34.0925374+08:00" start="2026-11-21T16:27:32.9354108+08:00" finish="2026-11-21T16:27:34.1000310+08:00" />
+  <TestSettings name="default" id="2a56b425-be10-4cb8-922c-2b063036bb43">
+    <Deployment runDeploymentRoot="Thunderobot_MATEBOOKFOLD_2026-11-21_16_27_34" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="2d198107-9864-4d1b-ac5f-5c4506bcf103" testId="f3032e61-b118-97c1-f177-dc18b51fa103" testName="NextThought.Tests.UpdateFeedParityTests.RollingReleaseIsFoundThroughItsManifestBuildNumber" computerName="MATEBOOKFOLD" duration="00:00:00.0395830" startTime="2026-11-21T16:27:33.9659286+08:00" endTime="2026-11-21T16:27:33.9659288+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2d198107-9864-4d1b-ac5f-5c4506bcf103" />
+    <UnitTestResult executionId="adab2187-7b4b-42c4-9b2e-a6b1423dd494" testId="eab5e8b5-cad8-6b5c-7de9-8248ed5684b1" testName="NextThought.Tests.WindowsUpdateCatalogTests.TheWindowsFeedOffersTheLatestWindowsReleaseOnly" computerName="MATEBOOKFOLD" duration="00:00:00.0237895" startTime="2026-11-21T16:27:34.0064655+08:00" endTime="2026-11-21T16:27:34.0064658+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="adab2187-7b4b-42c4-9b2e-a6b1423dd494" />
+    <UnitTestResult executionId="a40c2b9f-aa13-4c72-8084-79ef4fbd276d" testId="c1b73711-437b-0d56-1025-48240d03a407" testName="NextThought.Tests.WindowsUpdateCatalogTests.OnlyWindowsTaggedReleasesWithInstallerAndManifestAreCandidates" computerName="MATEBOOKFOLD" duration="00:00:00.0856327" startTime="2026-11-21T16:27:33.9713702+08:00" endTime="2026-11-21T16:27:33.9713704+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a40c2b9f-aa13-4c72-8084-79ef4fbd276d" />
+    <UnitTestResult executionId="7a28fd90-7d91-4817-830d-cb6f12ae32ac" testId="bab15e3e-208f-148f-f2f4-4d020411a08f" testName="NextThought.Tests.UpdateInstallerTests.InstallerIsDownloadedAndVerifiedBeforeTheButtonAppears" computerName="MATEBOOKFOLD" duration="00:00:00.0227112" startTime="2026-11-21T16:27:33.9767119+08:00" endTime="2026-11-21T16:27:33.9767120+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7a28fd90-7d91-4817-830d-cb6f12ae32ac" />
+    <UnitTestResult executionId="3b7e8905-58d0-458d-9b95-5f7c98b30134" testId="3b99b57c-c7aa-0522-45d7-0e2f70ce78bc" testName="NextThought.Tests.WindowsUpdateCatalogTests.TheManifestReadsTheInstallerAssetFieldFromTheWindowsRelease" computerName="MATEBOOKFOLD" duration="00:00:00.0002618" startTime="2026-11-21T16:27:33.9716032+08:00" endTime="2026-11-21T16:27:33.9716033+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3b7e8905-58d0-458d-9b95-5f7c98b30134" />
+    <UnitTestResult executionId="9cdb217a-0a53-48bf-a3be-9a2a0bfe204a" testId="db9817a3-da57-95d1-572b-cfdce94afebb" testName="NextThought.Tests.UpdateInstallerTests.InstallerWithAWrongChecksumIsRejectedAndDeleted" computerName="MATEBOOKFOLD" duration="00:00:00.0875819" startTime="2026-11-21T16:27:33.9535348+08:00" endTime="2026-11-21T16:27:33.9535352+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9cdb217a-0a53-48bf-a3be-9a2a0bfe204a" />
+    <UnitTestResult executionId="a74e09f6-41a3-4d34-bd1b-2c6cfa218d86" testId="87db717d-db85-6808-e20d-6e111a145975" testName="NextThought.Tests.WindowsUpdateCatalogTests.TheAppExposesOnlyTheFormalWindowsChannel" computerName="MATEBOOKFOLD" duration="00:00:00.0162222" startTime="2026-11-21T16:27:33.8856548+08:00" endTime="2026-11-21T16:27:33.8856881+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a74e09f6-41a3-4d34-bd1b-2c6cfa218d86" />
+    <UnitTestResult executionId="381945f6-ecb4-4945-9206-8c6f2db7d8a2" testId="dff88cd1-b8a8-5c26-a12a-b214e108c9fe" testName="NextThought.Tests.WindowsUpdateCatalogTests.WindowsVersionComesOnlyFromTheWindowsTagPrefix" computerName="MATEBOOKFOLD" duration="00:00:00.0106272" startTime="2026-11-21T16:27:33.9823021+08:00" endTime="2026-11-21T16:27:33.9823022+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="381945f6-ecb4-4945-9206-8c6f2db7d8a2" />
+    <UnitTestResult executionId="10a3f108-75a1-4269-aeaa-1d0494e5a339" testId="21e53e26-29e3-badb-9ca4-4e4c815ce3e3" testName="NextThought.Tests.UpdateFeedParityTests.ManifestMustDescribeTheRelease" computerName="MATEBOOKFOLD" duration="00:00:00.0539089" startTime="2026-11-21T16:27:33.9239527+08:00" endTime="2026-11-21T16:27:33.9239530+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="10a3f108-75a1-4269-aeaa-1d0494e5a339" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="NextThought.Tests.WindowsUpdateCatalogTests.TheManifestReadsTheInstallerAssetFieldFromTheWindowsRelease" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="3b99b57c-c7aa-0522-45d7-0e2f70ce78bc">
+      <Execution id="3b7e8905-58d0-458d-9b95-5f7c98b30134" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.WindowsUpdateCatalogTests" name="TheManifestReadsTheInstallerAssetFieldFromTheWindowsRelease" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.UpdateInstallerTests.InstallerIsDownloadedAndVerifiedBeforeTheButtonAppears" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="bab15e3e-208f-148f-f2f4-4d020411a08f">
+      <Execution id="7a28fd90-7d91-4817-830d-cb6f12ae32ac" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.UpdateInstallerTests" name="InstallerIsDownloadedAndVerifiedBeforeTheButtonAppears" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.WindowsUpdateCatalogTests.WindowsVersionComesOnlyFromTheWindowsTagPrefix" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="dff88cd1-b8a8-5c26-a12a-b214e108c9fe">
+      <Execution id="381945f6-ecb4-4945-9206-8c6f2db7d8a2" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.WindowsUpdateCatalogTests" name="WindowsVersionComesOnlyFromTheWindowsTagPrefix" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.UpdateFeedParityTests.ManifestMustDescribeTheRelease" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="21e53e26-29e3-badb-9ca4-4e4c815ce3e3">
+      <Execution id="10a3f108-75a1-4269-aeaa-1d0494e5a339" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.UpdateFeedParityTests" name="ManifestMustDescribeTheRelease" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.WindowsUpdateCatalogTests.OnlyWindowsTaggedReleasesWithInstallerAndManifestAreCandidates" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="c1b73711-437b-0d56-1025-48240d03a407">
+      <Execution id="a40c2b9f-aa13-4c72-8084-79ef4fbd276d" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.WindowsUpdateCatalogTests" name="OnlyWindowsTaggedReleasesWithInstallerAndManifestAreCandidates" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.UpdateInstallerTests.InstallerWithAWrongChecksumIsRejectedAndDeleted" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="db9817a3-da57-95d1-572b-cfdce94afebb">
+      <Execution id="9cdb217a-0a53-48bf-a3be-9a2a0bfe204a" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.UpdateInstallerTests" name="InstallerWithAWrongChecksumIsRejectedAndDeleted" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.UpdateFeedParityTests.RollingReleaseIsFoundThroughItsManifestBuildNumber" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="f3032e61-b118-97c1-f177-dc18b51fa103">
+      <Execution id="2d198107-9864-4d1b-ac5f-5c4506bcf103" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.UpdateFeedParityTests" name="RollingReleaseIsFoundThroughItsManifestBuildNumber" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.WindowsUpdateCatalogTests.TheAppExposesOnlyTheFormalWindowsChannel" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="87db717d-db85-6808-e20d-6e111a145975">
+      <Execution id="a74e09f6-41a3-4d34-bd1b-2c6cfa218d86" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.WindowsUpdateCatalogTests" name="TheAppExposesOnlyTheFormalWindowsChannel" />
+    </UnitTest>
+    <UnitTest name="NextThought.Tests.WindowsUpdateCatalogTests.TheWindowsFeedOffersTheLatestWindowsReleaseOnly" storage="d:\nextthought开发\src\nextthought\windows\tests\nextthought.tests\bin\release\net10.0-windows10.0.19041.0\win-x64\nextthought.tests.dll" id="eab5e8b5-cad8-6b5c-7de9-8248ed5684b1">
+      <Execution id="adab2187-7b4b-42c4-9b2e-a6b1423dd494" />
+      <TestMethod codeBase="D:\NextThought开发\src\NextThought\Windows\tests\NextThought.Tests\bin\Release\net10.0-windows10.0.19041.0\win-x64\NextThought.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="NextThought.Tests.WindowsUpdateCatalogTests" name="TheWindowsFeedOffersTheLatestWindowsReleaseOnly" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="f3032e61-b118-97c1-f177-dc18b51fa103" executionId="2d198107-9864-4d1b-ac5f-5c4506bcf103" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="eab5e8b5-cad8-6b5c-7de9-8248ed5684b1" executionId="adab2187-7b4b-42c4-9b2e-a6b1423dd494" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c1b73711-437b-0d56-1025-48240d03a407" executionId="a40c2b9f-aa13-4c72-8084-79ef4fbd276d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bab15e3e-208f-148f-f2f4-4d020411a08f" executionId="7a28fd90-7d91-4817-830d-cb6f12ae32ac" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3b99b57c-c7aa-0522-45d7-0e2f70ce78bc" executionId="3b7e8905-58d0-458d-9b95-5f7c98b30134" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="db9817a3-da57-95d1-572b-cfdce94afebb" executionId="9cdb217a-0a53-48bf-a3be-9a2a0bfe204a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="87db717d-db85-6808-e20d-6e111a145975" executionId="a74e09f6-41a3-4d34-bd1b-2c6cfa218d86" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dff88cd1-b8a8-5c26-a12a-b214e108c9fe" executionId="381945f6-ecb4-4945-9206-8c6f2db7d8a2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="21e53e26-29e3-badb-9ca4-4e4c815ce3e3" executionId="10a3f108-75a1-4269-aeaa-1d0494e5a339" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="列表中未列出的结果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="所有已加载的结果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="9" executed="9" passed="9" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 10.0.14)&#xD;
+[xUnit.net 00:00:00.45]   Discovering: NextThought.Tests&#xD;
+[xUnit.net 00:00:00.56]   Discovered:  NextThought.Tests&#xD;
+[xUnit.net 00:00:00.56]   Starting:    NextThought.Tests&#xD;
+[xUnit.net 00:00:00.75]   Finished:    NextThought.Tests&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

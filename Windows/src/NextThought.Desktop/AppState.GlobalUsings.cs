@@ -1,0 +1,14 @@
+global using System.Collections.ObjectModel;
+global using System.Diagnostics;
+global using System.Globalization;
+global using System.IO;
+global using System.Security.Cryptography;
+global using System.Text;
+global using System.Text.Json;
+global using System.Text.RegularExpressions;
+global using Avalonia.Threading;
+global using CommunityToolkit.Mvvm.ComponentModel;
+global using CommunityToolkit.Mvvm.Input;
+global using NextThought.Core;
+global using NextThought.Platform;
+global using QRCoder;

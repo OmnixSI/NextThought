@@ -1,0 +1,129 @@
+content	All records
+content	Also import settings (answer service, recognition, shortcuts and so on)
+content	Automatic answers
+content	Back up now
+content	Brief
+content	Check for updates
+content	Check for updates automatically after launch (every 6 hours)
+content	Client call
+content	Create a restore point after meetings
+content	Detailed
+content	Enroll / manage my voice
+content	Export all data…
+content	Follow system
+content	General
+content	Group discussion
+content	Group project
+content	Home
+content	Import…
+content	Interview review
+content	Key points
+content	Lab meeting / research discussion
+content	Lecture / Class
+content	Line by line
+content	Manage…
+content	Open System Settings
+content	Open data folder
+content	Prepare speaker components (~26 MB)
+content	Presentation / Defense
+content	Record every meeting
+content	Record only
+content	Separate speakers (on-device, experimental)
+content	Series
+content	Translate full sentences while recording (uses the answer service)
+content	Work meeting
+placeholder	Search settings
+text	.ntbackup contains meetings, materials and settings; it excludes API keys, speech models and device settings. Uninstalling does not delete the data folder.
+text	A meeting starts with these settings. You can still switch during the meeting.
+text	Advanced
+text	All records
+text	Allowed · Your speech is marked as yours
+text	Allowed · the live coach uses it to watch eye contact. Video is neither saved nor uploaded.
+text	Also import settings (answer service, recognition, shortcuts and so on)
+text	Answer
+text	Answers and materials
+text	Appearance
+text	Automatic answers
+text	Back up now
+text	Backup & restore
+text	Brief
+text	Camera
+text	Check for updates
+text	Check for updates automatically after launch (every 6 hours)
+text	Checks the GitHub release page: stable builds use vX.Y.Z, latest follows main. When a release has an installer and checksum, it downloads, verifies and installs; otherwise it opens the download page.
+text	Client call
+text	Create a restore point after meetings
+text	Cue and coach
+text	Custom
+text	Detailed
+text	Done
+text	Download and install fetches the installer and verifies its published SHA-256, then installs silently and reopens; without a checksum only the download page is offered.
+text	Enroll / manage my voice
+text	Export all data…
+text	Follow system
+text	General
+text	Group discussion
+text	Group meeting
+text	Group project
+text	Home
+text	Import & export options
+text	Importing merges and never deletes existing data. Preview first, then decide what to restore.
+text	Import…
+text	In meeting
+text	Interface language
+text	Interview
+text	Interview review
+text	Keep names and terms spelled the same in transcripts, answers and notes; record the spellings that get misheard so searches find them too.
+text	Key points
+text	Lab meeting
+text	Lab meeting / research discussion
+text	Lecture / Class
+text	Line by line
+text	Live translation
+text	Manage…
+text	Microphone
+text	My voice
+text	Names and terms
+text	NextThought 0.9.0
+text	No automatic backups yet.
+text	No glossary terms yet.
+text	Not recorded yet
+text	Notes
+text	Notes template
+text	Only in-meeting numbers are kept; voiceprints and raw audio are not stored. Short or uncertain results stay unknown.
+text	Open System Settings
+text	Open data folder
+text	Permissions
+text	Prepare speaker components (~26 MB)
+text	Presentation / Defense
+text	Prompt
+text	Record every meeting
+text	Record only
+text	Restore points keep the latest 10 within a soft 2 GiB budget. They don't include models, indexes or keys.
+text	Runs on-device; the voiceprint is just numbers.
+text	Saves the transcript and in-meeting answers, never the raw audio. When notes are written, this meeting's transcript is sent to the current answer service.
+text	Scenes
+text	Search settings
+text	Separate speakers (on-device, experimental)
+text	Series
+text	Settings for each scene
+text	Speakers
+text	Takes effect immediately after saving; covers navigation, settings sections, common buttons and help text. Status and meeting content stay in their original language.
+text	Translate full sentences while recording (uses the answer service)
+text	Update
+text	Windows has no system translation framework: complete sentences are sent to the chosen answer service, unlike the on-device translation on Mac.
+text	Work assignment
+text	Work meeting
+text	构建 0
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Settings

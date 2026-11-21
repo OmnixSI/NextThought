@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "actions": [
+    "shorter"
+  ],
+  "duplicate": true,
+  "unauthorized": 403,
+  "error": ""
+}

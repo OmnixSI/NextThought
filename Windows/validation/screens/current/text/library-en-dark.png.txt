@@ -1,0 +1,46 @@
+content	Add this scene
+content	All records
+content	Edit series
+content	Home
+content	New series
+content	Remove
+content	Series
+content	Start next meeting
+content	经验积累
+content	记录
+content	资料
+placeholder	New series name
+placeholder	Search series or materials
+text	0 materials · 0 questions · 1 meeting
+text	1 meeting · 3 lessons
+text	2 materials · 0 questions · 0 meetings
+text	3 series · 2 meetings
+text	4 materials · 3 questions · 1 meeting
+text	ACL 2026 口头报告
+text	Add this scene
+text	All records
+text	Edit series
+text	Home
+text	Keep one course, project or interview loop in a series; conclusions and lessons accumulate across meetings.
+text	New series
+text	New series name
+text	No records yet. Start a meeting in this series and it will appear here.
+text	Remove
+text	Search series or materials
+text	Series
+text	Sort
+text	Start next meeting
+text	周一客户例会 · 华东区
+text	字节后端二面
+text	经验积累
+text	记录
+text	资料
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Settings

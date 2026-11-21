@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        xmlns:views="using:NextThought.Desktop.Views"
+        xmlns:c="using:NextThought.Desktop.Controls"
+        x:Class="NextThought.Desktop.Views.CorrectedTranscript"
+        x:DataType="local:AppState"
+        Title="{loc:Tr 校正原话}" Width="880" Height="640"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Paper}">
+  <Grid RowDefinitions="Auto,Auto,*" Margin="{DynamicResource D4Margin_18}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_4}">
+      <TextBlock Text="{loc:Tr 校正原话}" Classes="display" FontSize="24" />
+      <TextBlock Text="{Binding CorrectedTranscriptStatus}" Classes="caption"
+                 IsVisible="{Binding HasCorrectedTranscriptStatus}" />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_0_12_0_12}">
+      <TextBlock Text="{loc:Tr 转写版本}" Classes="caption" VerticalAlignment="Center" />
+        <c:PillTabs SelectedIndex="{Binding CorrectedTranscriptVersionIndex}" VerticalAlignment="Center">
+        <ListBoxItem Content="{loc:Tr 校正转写}" ToolTip.Tip="{loc:Tr 查看校正转写}" />
+        <ListBoxItem Content="{loc:Tr 原始转写}" ToolTip.Tip="{loc:Tr 查看原始转写}" />
+      </c:PillTabs>
+      <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_16_0_16_0}">
+        <TextBox Text="{Binding CorrectedTranscriptFind}"
+                 PlaceholderText="{loc:Tr 在转写里查找（听错的写法也会找出来）}" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}"
+                    Margin="{DynamicResource D4Margin_8_0_0_0}" VerticalAlignment="Center">
+          <TextBlock Text="{Binding CorrectedTranscriptCountText}" Classes="caption"
+                     IsVisible="{Binding HasCorrectedTranscriptCount}" />
+          <Button Classes="quiet" Content="{loc:Tr 清空搜索}" Click="ClearFind_Click"
+                  IsVisible="{Binding HasCorrectedTranscriptCount}" />
+        </StackPanel>
+      </Grid>
+      <Button Grid.Column="2" Content="{loc:Tr 关闭}" Click="Close_Click" />
+    </Grid>
+
+    <Grid Grid.Row="2">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding CorrectedTranscriptRows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="views:CorrectedTranscriptRow">
+              <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_12}">
+                <Grid ColumnDefinitions="64,64,*">
+                  <TextBlock Text="{Binding Time}" Classes="caption" VerticalAlignment="Top" />
+                  <TextBlock Grid.Column="1" Text="{Binding Speaker}" Classes="label" TextWrapping="Wrap" VerticalAlignment="Top" />
+                  <TextBlock Grid.Column="2" Text="{Binding Text}" Classes="body" TextWrapping="Wrap" />
+                </Grid>
+                <ItemsControl Grid.Column="2" ItemsSource="{Binding Fixes}" IsVisible="{Binding HasFixes}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="views:CorrectedTranscriptFix">
+                      <Button Classes="quiet" Content="{Binding ActionLabel}" Tag="{Binding}"
+                              Click="ToggleFix_Click" HorizontalAlignment="Left" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+      <TextBlock Text="{loc:Tr 这场会议没有转写。}" Classes="body"
+                 IsVisible="{Binding !HasCorrectedTranscriptRows}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Grid>
+  </Grid>
+</Window>

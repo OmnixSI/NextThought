@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.DocumentReadingSettings"
+             x:DataType="local:AppState">
+  <StackPanel Spacing="{DynamicResource D4Spacing_10}">
+    <TextBlock Text="{loc:Tr 读取资料的方式}" Classes="label" />
+    <ComboBox ItemsSource="{Binding Settings.DocumentProviderChoices}" SelectedItem="{Binding Settings.SelectedDocumentProvider}"
+              HorizontalAlignment="Left" MinWidth="260" />
+    <TextBlock Text="{Binding Settings.DocumentProviderHelp}" Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="620" />
+    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}" IsVisible="{Binding DocumentProviderNeedsSetup}">
+      <TextBlock Text="{Binding DocumentProviderStatus}" Classes="caption" FontSize="11"
+                 Foreground="{DynamicResource Caution}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="360" />
+      <Button Content="{loc:Tr 安装支持}" Command="{Binding PrepareDocumentComponentsCommand}"
+              IsEnabled="{Binding !DocumentSetupBusy}" />
+      <Button Content="{loc:Tr 先用系统识别}" Click="UseSystemDocumentReader_Click" />
+    </StackPanel>
+    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+      <Button Classes="quiet" Content="{loc:Tr 读取资料}" Click="ShowChoiceSummary_Click" />
+      <TextBlock Text="{loc:Tr 选一种即可。PDF、图片和纯文本可先用系统识别，无需下载文档模型。}"
+                 Classes="caption" FontSize="11" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="480" />
+    </StackPanel>
+    <TextBlock Text="{Binding DocumentSetupStatus}" Classes="caption" FontSize="11" TextWrapping="Wrap"
+               IsVisible="{Binding DocumentSetupBusy}" />
+    <ProgressBar Value="{Binding DocumentSetupProgress}" Maximum="1" MaxWidth="420" HorizontalAlignment="Left"
+                 IsVisible="{Binding DocumentSetupBusy}" />
+    <TextBlock Text="{loc:Tr 资料原件保留在本机。只有选择在线代读或在线回答时，资料才会发送给对应服务。}"
+               Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="620" />
+  </StackPanel>
+</UserControl>

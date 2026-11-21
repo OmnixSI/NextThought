@@ -1,0 +1,235 @@
+content	上一步
+content	会议中每隔几秒读一次屏幕
+content	保存并检查
+content	先看看
+content	减少视觉特效
+content	删除
+content	刷新应用列表
+content	刷新网络地址
+content	刷新设备
+content	去 GitHub 创建令牌
+content	参考资料库时使用语义与关键词混合检索
+content	只看要点
+content	只记录
+content	启用语义增强
+content	复制配对链接
+content	安装
+content	客户沟通
+content	小组作业
+content	小组讨论
+content	工作会议
+content	工作台置顶
+content	开启局域网手机伴侣
+content	开始第一场
+content	快速模式
+content	所有记录
+content	扫描本机已有组件
+content	整句精修，提高最终转写质量
+content	本机识别失败时用系统识别补读，并标明降级内容
+content	校验／修复
+content	模型来源与版本
+content	汇报 / 答辩
+content	清除
+content	稍后继续
+content	第三方许可与版权说明
+content	简洁
+content	系列
+content	系统输出设备混音
+content	组会 / 研究讨论
+content	编辑
+content	自动回答
+content	讲座 / 课程
+content	设置
+content	详细
+content	跟随演示文稿
+content	选择其他目录…
+content	逐句
+content	通用
+content	重建语义索引
+content	面试复盘
+content	首页
+content	麦克风
+edit	OmnixSI/NextThought
+placeholder	https://relay.example.com
+placeholder	云服务 API Key
+placeholder	搜索设置
+placeholder	整个输出设备混音
+placeholder	模型（留空用默认）
+placeholder	粘贴访问令牌（github_pat_…）
+placeholder	选择输出设备
+placeholder	选择麦克风
+text	0.9.0
+text	2.1 GB
+text	3. Permissions → Contents 选 Read-only，其余不动；生成后复制 github_pat_ 开头的整串粘贴到上面
+text	4 / 4
+text	625 MB
+text	Apache-2.0 · 中英语义检索，1024 维向量。
+text	Apache-2.0 · 按版面区域识别中英正文、表格与公式。
+text	Fast 回答更快，但会消耗更多 ChatGPT 套餐用量。
+text	GitHub 访问
+text	LocalOcrModelChoice { Id = paddleocr-vl-1-6-mlx-8bit, Title = PaddleOCR-VL 1.6 }
+text	NextThought 把会议讨论留在本机，变成可以带走的结论。
+text	PaddleOCR-VL 1.6 + PP-DocLayoutV3
+text	Qwen3-Embedding-0.6B Q8
+text	Qwen3-Embedding-0.6B Q8 · CPU · 首次下载约 596 MB。索引仅在本机生成；模型缺失或失败时回退关键词。
+text	WebSearchProviderChoice { Value = codex, Title = Codex }
+text	X-ASR 中英 · 480 ms（推荐）
+text	https://relay.example.com
+text	low
+text	上一步
+text	下面列出实际安装状态；“已安装”表示文件已校验，识别方式是否启用以上方选择为准。
+text	中转地址（可选）
+text	云服务 API Key
+text	云端识别（实验）
+text	仓库
+text	令牌保存在系统钥匙串。组织要求审批时，需要管理员批准后才能用。
+text	会中
+text	会中，回答在镜头下方
+text	会议中每隔几秒读一次屏幕
+text	保存并检查
+text	先打开上面的屏幕读取，才能认出演示文稿翻到了哪一页。
+text	先扫描本机已有的兼容文档模型与支持组件，校验后复用，保留原文件。无需重复下载，也不会自动启用 OCR 或语义检索。
+text	先看看
+text	共用文档组件
+text	关闭后，识别失败会让该文件导入失败；不会自动切到在线 Codex。
+text	准备语音组件
+text	减少视觉特效
+text	删除
+text	刷新应用列表
+text	刷新网络地址
+text	刷新设备
+text	去 GitHub 创建令牌
+text	参考资料库时使用语义与关键词混合检索
+text	只看要点
+text	只记录
+text	可选窗口、显示器或区域（本应用窗口除外）。系统 OCR 先给快速文字；本机增强会在后台补读复杂画面。
+text	各场景开会时的设置
+text	启动后及每 6 小时检查；有新版本时在后台下载。更新前会自动备份，并校验安装包。
+text	启用语义增强
+text	回答
+text	回答与资料
+text	回答引擎
+text	回答服务（Codex）
+text	场景
+text	填写后配对链接走 HTTPS/WSS 中转（端到端加密），不必在同一局域网；留空则只用局域网。改地址后重新开启伴侣并重新配对。
+text	声音来源
+text	复制配对链接
+text	复用已有组件
+text	安装
+text	完成
+text	客户沟通
+text	小组作业
+text	小组讨论
+text	局域网 HTTP 不加密；配对链接相当于临时遥控密钥，请仅在可信网络使用。不会发送完整转写、资料文件、音频或 API Key。
+text	屏幕与讲稿
+text	工作会议
+text	工作台置顶
+text	工作布置
+text	已安装
+text	开启局域网手机伴侣
+text	开始一场会时按这里的设置来；会中仍可随时切换。
+text	开始第一场
+text	当前场景
+text	当前模型或 Codex 版本不支持 Fast。
+text	必需：选择服务商，粘贴 API Key
+text	快速模式
+text	我的角色：方案设计和灰度上线由我主导
+text	我负责订单服务的缓存层。
+text	或在终端运行 gh auth login，就不用填令牌
+text	所有记录
+text	手机与电脑连接同一可信网络后开启。手机扫码用浏览器打开，可查看当前问题、回答与状态，并触发回答、简短版、举例或停止生成。
+text	手机伴侣
+text	扫描本机已有组件
+text	扫描范围受系统权限和文件索引影响；外置磁盘或未找到的目录可手动选择。只有版本与文件校验匹配的模型才能复用。
+text	扬声器 (Realtek(R) Audio)
+text	推理强度
+text	提词
+text	提词与开始
+text	提词与教练
+text	搜索方式
+text	搜索设置
+text	数据与关于
+text	整个输出设备混音
+text	整句精修，提高最终转写质量
+text	更新渠道
+text	更新（高级）
+text	未保存访问令牌
+text	未填写
+text	未安装
+text	本地（默认）
+text	本机离线识别已就绪
+text	本机识别失败时用系统识别补读，并标明降级内容
+text	本机识别模型
+text	本机语音识别
+text	查找方式
+text	校验／修复
+text	模型来源与版本
+text	模型（留空用默认）
+text	正式版本
+text	汇报 / 答辩
+text	没有找到可用的局域网 IPv4 地址；请先连接 Wi-Fi 或以太网。
+text	流式模型：已就绪　整句精修：已就绪
+text	清除
+text	稍后继续
+text	第一场按“面试”开始。
+text	第三方组件 · 隔离的 Python 3.12 环境，读取 PDF、Office 与文本文件。
+text	第三方许可与版权说明
+text	简洁
+text	粘贴访问令牌（github_pat_…）
+text	系列
+text	系统声音范围（每次开始前选择）
+text	系统输出设备混音
+text	约 1.5 倍速度 · 用量更多
+text	约 15 秒
+text	纪要
+text	纪要模板
+text	组会
+text	组会 / 研究讨论
+text	组会讨论
+text	编辑
+text	能介绍一下你在这个项目里负责的部分吗？
+text	自动
+text	自动回答
+text	自定义
+text	蓝牙备用通道暂不可用：手机端仍按 IH- 广播名过滤，Windows 无法自定义广播名，等手机端改成按服务标识扫描后再开放。
+text	被问到时，回答出现在摄像头下方的提词岛，眼睛不用离开镜头。
+text	规模：日均 2 亿次读取，P99 降到 18 ms
+text	讲座 / 课程
+text	设置
+text	设置清单
+text	识别模型
+text	详细
+text	语音识别
+text	资料组件
+text	跟随演示文稿
+text	运行包大小见发布清单
+text	选云端后，实时记录与导入 WAV 都走云端识别；音频会发送到所选服务。只选本机时，录音与识别都在本机。
+text	选应用时仅采集该进程及其子进程的声音；选整个设备时采集该设备全部混音。需要 Windows 10 build 20348 以上。
+text	选择其他目录…
+text	逐句
+text	通用
+text	重建语义索引
+text	面试
+text	面试 · 6 份资料 · 本机解析
+text	面试复盘
+text	首次需下载流式模型约 134 MB；整句精修另约 136 MB，下载后离线运行。
+text	首页
+text	高级
+text	麦克风
+text	麦克风 (HECATE G4 MAX底座版)
+text	麦克风增益（1–8 倍，声音偏小时调高）
+text	鼠标移到提词岛上，可以暂停、结束或立即回答。
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	关闭
+tooltip	最大化
+tooltip	最小化
+tooltip	设置

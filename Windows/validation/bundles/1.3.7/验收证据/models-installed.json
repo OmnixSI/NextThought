@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "ids": [
+    "xasr480",
+    "xasrOffline"
+  ],
+  "installed": [
+    {
+      "id": "xasr480",
+      "title": "X-ASR 480ms 中英流式",
+      "isInstalled": true,
+      "directory": "C:\\Users\\Thunderobot\\AppData\\Local\\NextThought\\models\\sherpa-onnx-x-asr-480ms-streaming-zipformer-transducer-zh-en-punct-int8-2026-06-05",
+      "bytes": 169289689
+    },
+    {
+      "id": "xasrOffline",
+      "title": "X-ASR 整句精修",
+      "isInstalled": true,
+      "directory": "C:\\Users\\Thunderobot\\AppData\\Local\\NextThought\\models\\sherpa-onnx-x-asr-zipformer-transducer-zh-en-punct-int8-2026-06-03",
+      "bytes": 175026745
+    }
+  ],
+  "seconds": 0,
+  "error": "",
+  "dataDirectory": "C:\\Users\\Thunderobot\\AppData\\Local\\NextThought"
+}

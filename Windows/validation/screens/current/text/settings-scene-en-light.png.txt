@@ -1,0 +1,67 @@
+content	All records
+content	Automatic answers
+content	Brief
+content	Client call
+content	Detailed
+content	General
+content	Group discussion
+content	Group project
+content	Home
+content	Interview review
+content	Key points
+content	Lab meeting / research discussion
+content	Lecture / Class
+content	Line by line
+content	Presentation / Defense
+content	Record only
+content	Series
+content	Work meeting
+placeholder	Search settings
+text	A meeting starts with these settings. You can still switch during the meeting.
+text	Advanced
+text	All records
+text	Answer
+text	Answers and materials
+text	Automatic answers
+text	Brief
+text	Client call
+text	Cue and coach
+text	Custom
+text	Detailed
+text	Done
+text	General
+text	Group discussion
+text	Group meeting
+text	Group project
+text	Home
+text	In meeting
+text	Interview
+text	Interview review
+text	Key points
+text	Lab meeting
+text	Lab meeting / research discussion
+text	Lecture / Class
+text	Line by line
+text	Notes
+text	Notes template
+text	Presentation / Defense
+text	Prompt
+text	Record only
+text	Scenes
+text	Search settings
+text	Series
+text	Settings for each scene
+text	Work assignment
+text	Work meeting
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Settings

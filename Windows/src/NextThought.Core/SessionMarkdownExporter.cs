@@ -1,0 +1,159 @@
+using System.Text;
+
+namespace NextThought.Core;
+
+/// <summary>One question detected during a meeting (port of the SessionQuestionEvent fields used here).</summary>
+public sealed record SessionQuestionEvent
+{
+    public string Id { get; init; } = Guid.NewGuid().ToString("D");
+    public DateTimeOffset Date { get; init; } = DateTimeOffset.UtcNow;
+    public string Text { get; init; } = "";
+    public string? LeadIn { get; init; }
+    public string Intent { get; init; } = "";
+    public double Score { get; init; }
+    public string? Disposition { get; init; }
+
+    [System.Text.Json.Serialization.JsonExtensionData]
+    public Dictionary<string, System.Text.Json.JsonElement>? AdditionalProperties { get; init; }
+}
+
+/// <summary>
+/// Renders a meeting as Markdown (port of SessionMarkdownExporter adapted to the Windows
+/// projection and transcript models). Search and export share the same freshness decisions.
+/// </summary>
+public static class SessionMarkdownExporter
+{
+    public static string Export(
+        string title,
+        string modeTitle,
+        DateTimeOffset startedAt,
+        double durationSeconds,
+        string audioSource,
+        SessionTextProjection projection,
+        IReadOnlyList<TranscriptLine> lines,
+        IReadOnlyList<SessionQuestionEvent>? detectedQuestions = null,
+        StructuredNotesPayload? notes = null,
+        TimeZoneInfo? timeZone = null)
+    {
+        // B24: the header time is produced in an explicit zone (null = the process-local one), so
+        // the exporter renders the same Markdown in a UTC process as on the presenter's machine.
+        var zone = timeZone ?? LocalTime.Zone;
+        var output = new List<string>
+        {
+            "# " + (projection.Summary is { Title.Length: > 0 } summary ? summary.Title : title),
+            ""
+        };
+        var facts = new List<string>
+        {
+            modeTitle,
+            TimeZoneInfo.ConvertTime(startedAt, zone).ToString("yyyy-MM-dd HH:mm")
+        };
+        if (durationSeconds > 0) facts.Add((int)(durationSeconds / 60) + " 分钟");
+        if (audioSource.Length > 0) facts.Add(audioSource);
+        output.Add("> " + string.Join(" · ", facts));
+        output.Add("");
+
+        switch (projection.DerivedContentStatus)
+        {
+            case SessionDerivedContentStatus.Stale:
+                output.Add("> 提示：部分纪要内容来自较旧的转写版本；请核对当前原话后再转发。");
+                output.Add("");
+                break;
+            case SessionDerivedContentStatus.Unknown:
+                output.Add("> 提示：旧纪要未记录转写版本，无法确认它是否与当前原话一致。");
+                output.Add("");
+                break;
+        }
+
+        var renderedNotes = notes is null ? "" : StructuredNotesMarkdown.Render(notes);
+        if (renderedNotes.Length > 0)
+        {
+            output.Add("## 纪要");
+            output.Add("");
+            output.Add(renderedNotes);
+            output.Add("");
+        }
+        else if (projection.Summary is { } projectedSummary && projectedSummary.Markdown.Length > 0)
+        {
+            // The model's own document, minus its title section (already the heading).
+            var body = projectedSummary.Markdown;
+            var range = body.IndexOf("## ", StringComparison.Ordinal);
+            if (range >= 0) body = body[range..];
+            output.Add(body.Trim());
+            output.Add("");
+        }
+        else if (detectedQuestions is { Count: > 0 })
+        {
+            output.Add("## 检测到的问题");
+            output.AddRange(detectedQuestions.Select((question, index) => (index + 1) + ". " + question.Text));
+            output.Add("");
+        }
+
+        if (projection.Answers.Count > 0)
+        {
+            output.Add("## 会中回答");
+            foreach (var answer in projection.Answers)
+            {
+                output.Add("");
+                var question = answer.Question.Replace("\n", " ");
+                output.Add("### " + (question.Length > 200 ? question[..200] : question));
+                output.Add("");
+                if (!answer.IsComplete) output.Add("> 未完成的回答片段，请核实后使用。\n");
+                output.Add(answer.Answer);
+            }
+            output.Add("");
+        }
+
+        output.Add("## 完整转录");
+        output.Add("");
+        if (projection.Transcript.Count > 0)
+        {
+            foreach (var line in projection.Transcript)
+            {
+                var timestamp = $"- `{line.Offset / 60:00}:{line.Offset % 60:00}` ";
+                var speaker = "**" + line.SpeakerLabel + "**\uFF1A";
+                if (line.LanguageView == SessionLanguageView.Translated && line.TranslationIsStale
+                    && line.TranslationText is { } staleTranslation && staleTranslation.Trim().Length > 0)
+                {
+                    output.Add(timestamp + speaker + "\u8BD1\u6587\uFF08\u5F85\u66F4\u65B0\uFF09\uFF1A" + staleTranslation);
+                    continue;
+                }
+                output.Add(timestamp + speaker + line.DisplayText);
+                if (line.LanguageView == SessionLanguageView.Bilingual
+                    && line.TranslationText is { } translated && translated.Trim().Length > 0)
+                {
+                    var label = line.TranslationIsStale ? "译文（待更新）" : "译文";
+                    output.Add("  *" + label + "：* " + translated);
+                }
+            }
+        }
+        else
+        {
+            foreach (var line in lines)
+            {
+                var offset = line.StartedAt is { } started
+                    ? Math.Max(0, (int)(started - startedAt).TotalSeconds)
+                    : Math.Max(0, (int)(line.Date - startedAt).TotalSeconds);
+                var timestamp = $"- `{offset / 60:00}:{offset % 60:00}` ";
+                var speaker = "**" + SpeakerLabel(line.Speaker) + "**：";
+                var original = timestamp + speaker + line.Text;
+                var translation = line.Translation?.Text;
+                if (translation is null || translation.Trim().Length == 0)
+                {
+                    output.Add(original);
+                    continue;
+                }
+                output.Add(original);
+                output.Add("  *译文：* " + translation);
+            }
+        }
+        return string.Join("\n", output) + "\n";
+    }
+
+    private static string SpeakerLabel(string speaker) => speaker switch
+    {
+        "me" => "我",
+        "remote" => "对方",
+        _ => speaker
+    };
+}

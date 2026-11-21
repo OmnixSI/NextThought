@@ -1,0 +1,132 @@
+content	All records
+content	Cancel
+content	Carry from an earlier meeting…
+content	Connect
+content	Download
+content	Home
+content	In person
+content	Not the same series
+content	Online
+content	Other side only (no microphone)
+content	Prepare Discussion Points
+content	Series
+content	Sound test
+content	Test answer service
+edit	字节跳动 · 后端二面
+placeholder	Meeting title
+text	1 blocks
+text	3 lessons
+text	3 questions
+text	4 files
+text	AI reads the materials and writes 3 key points and 5 likely questions you can rehearse in your head.
+text	Add
+text	All records
+text	Always on
+text	Answers right by the lens when you're asked
+text	Answers when asked
+text	Appears automatically when English is heard: Chinese under each sentence and in the cue island. Translated on this PC, offline
+text	Audio
+text	Automatic answers
+text	Before you start
+text	Cancel
+text	Carry from an earlier meeting…
+text	Client call
+text	Configured · connection not checked
+text	Confirmed answers
+text	Confirmed lessons
+text	Connect
+text	Continue the last one
+text	Cues by the camera, eyes up
+text	Custom…
+text	Discussion Prep · Optional AI
+text	Download
+text	General
+text	Group discussion
+text	Group project
+text	Home
+text	In person
+text	Interview
+text	Interview: Answers automatically · concise answers · notes: review each question (saved to the question bank), what went poorly, next round · Suggested materials: Résumé, job description, company info
+text	Lab meeting
+text	Lecture / Class
+text	Lessons · “被问项目时先报规模和结果数字”“一致性问题先画读写时序，再说”
+text	Live notes
+text	Live transcript
+text	Live translation
+text	Materials · 简历-2026.pdf, 岗位JD-后端开发.md…
+text	Me · microphone
+text	Meeting 1 of “字节后端二面”
+text	Microphone · Me
+text	New materials for this meeting
+text	No meetings in this series yet
+text	Not set up · recording is available
+text	Not the same series
+text	On this Mac · Saved content
+text	Online
+text	Optional
+text	Optional AI
+text	Organizes topics, decisions and to-dos while the meeting runs, about every 45 seconds; the full notes are still organized afterwards
+text	Other side only (no microphone)
+text	Picked from the title; you can change it
+text	Prepare Discussion Points
+text	Presentation / Defense
+text	Question review afterward
+text	Ready to record  ·  This meeting uses 4 ready materials; readable text is enough to start.
+text	Review · improved answers
+text	Selected system output mix + microphone · adjust in settings
+text	Series
+text	Series briefing
+text	Sound test
+text	Speakers
+text	Start
+text	Streaming model: Ready; sentence refinement: Ready
+text	Tells people apart by voice, lets you name them and writes notes per person. Fix a mistake anytime
+text	Test answer service
+text	Them · computer audio
+text	This series has no archived meetings yet.
+text	Turn off what you don’t need
+text	Use the selected materials to outline discussion points, evidence, and questions worth asking. Recording works without AI.
+text	What kind of meeting
+text	What this meeting uses
+text	When the other side asks, the suggested answer appears in the cue island below the camera and on the right
+text	Work meeting
+text	Writes both sides' speech as text. Answers, notes and search depend on it; always on.
+text	paper-final.pdf
+text	slides-v3.pptx
+text	一致性问题先画读写时序，再说兜底方案
+text	为什么选 Kafka 而不是 RabbitMQ？
+text	先更新数据库再删除缓存；删除失败进入重试队列，并用 Canal 订阅 binlog 再删一次；热点 key 做延迟双删。
+text	八股-缓存与数据库.md
+text	反问环节准备 2 个关于团队技术栈的问题
+text	吞吐和分区扩展性更好，订单事件需要按 key 有序且可回放。
+text	如果删除缓存失败了怎么办？
+text	岗位JD-后端开发.md
+text	抖音电商-团队介绍.pdf
+text	数据库和缓存同时更新时怎么保证一致性？
+text	简历-2026.pdf
+text	被问项目时先报规模和结果数字，再讲方案
+text	重试队列 + binlog 异步兜底，监控删除失败率并告警。
+text	󰊑
+text	
+text	
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Answers automatically and follows the script · concise answers · notes: audience questions reviewed one by one (saved to the question bank), what to change, promised follow-ups
+tooltip	Answers automatically · concise answers · notes: needs, concerns and replies, what we promised, next steps
+tooltip	Answers automatically · concise answers · notes: review each question (saved to the question bank), what went poorly, next round
+tooltip	Close
+tooltip	Interview: Answers automatically · concise answers · notes: review each question (saved to the question bank), what went poorly, next round · Suggested materials: Résumé, job description, company info
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Ready to record
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: chosen plan, assignments, my tasks, next meetup
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: decisions, todos, risks, next meeting
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: each side's view, conclusions and disagreements, assignments
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: summary, key points, decisions, todos
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: key points, concepts, examples, my questions
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: questions discussed, what stayed unresolved, comments and requests, next steps
+tooltip	Settings

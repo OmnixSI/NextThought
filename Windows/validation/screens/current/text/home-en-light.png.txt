@@ -1,0 +1,80 @@
+content	All records
+content	All series
+content	All time
+content	Home
+content	Prepare materials first
+content	Series
+content	This month
+placeholder	Name this meeting, for example “Second-round interview”
+text	0
+text	1 h 18 min
+text	18
+text	7
+text	ACL 2026 口头报告
+text	All records
+text	All series
+text	All time
+text	Answers right by the lens when you're asked
+text	Answers when asked
+text	Any occasion, record right away
+text	Client call
+text	Continue a series
+text	Ctrl+Alt+N
+text	Cues by the camera, eyes up
+text	General
+text	Good evening.
+text	Group discussion
+text	Group project
+text	Home
+text	How much you've recorded
+text	Interview
+text	Lab meeting
+text	Lab meeting · 1 min
+text	Lecture / Class
+text	Name this meeting, for example “Second-round interview”
+text	Not started yet · 0 files
+text	Not started yet · 2 files
+text	Not started yet · 4 files
+text	Nov 7
+text	November 21, Saturday
+text	Prepare materials first
+text	Presentation / Defense
+text	Question review afterward
+text	Recent Recordings
+text	Recording time runs from the start to the end of each meeting; pauses count too.
+text	Series
+text	Start
+text	This month
+text	Thursday
+text	Wednesday
+text	What is the meeting?
+text	Work meeting
+text	Work meeting · 4 min
+text	Work meeting · 67 min
+text	Yesterday 1:20 PM
+text	answers given
+text	meetings
+text	questions heard
+text	recorded time
+text	周一客户例会 · 华东区
+text	字节后端二面
+text	新会议
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Answers automatically and follows the script · concise answers · notes: audience questions reviewed one by one (saved to the question bank), what to change, promised follow-ups
+tooltip	Answers automatically · concise answers · notes: needs, concerns and replies, what we promised, next steps
+tooltip	Answers automatically · concise answers · notes: review each question (saved to the question bank), what went poorly, next round
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Prepare Next
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: chosen plan, assignments, my tasks, next meetup
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: decisions, todos, risks, next meeting
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: each side's view, conclusions and disagreements, assignments
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · concise answers · notes: summary, key points, decisions, todos
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: key points, concepts, examples, my questions
+tooltip	Records only during the meeting; Ctrl+Shift+Enter answers when needed · detailed answers · notes: questions discussed, what stayed unresolved, comments and requests, next steps
+tooltip	Settings

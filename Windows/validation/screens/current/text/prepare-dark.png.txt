@@ -1,0 +1,132 @@
+content	下载
+content	不是同一个系列
+content	从以前的会议带入…
+content	去连接
+content	取消
+content	只记录对方（不用麦克风）
+content	声音测试
+content	所有记录
+content	整理讨论重点
+content	检查回答服务
+content	系列
+content	线上
+content	线下
+content	首页
+edit	字节跳动 · 后端二面
+placeholder	这场会议叫什么
+text	1 段
+text	3 条
+text	3 题
+text	4 份
+text	AI 可选
+text	Zoom · 后端工程师二面
+text	paper-final.pdf
+text	slides-v3.pptx
+text	一致性问题先画读写时序，再说兜底方案
+text	下载
+text	不是同一个系列
+text	不用的可以关掉
+text	为什么选 Kafka 而不是 RabbitMQ？
+text	从以前的会议带入…
+text	会后逐题复盘，存进题库
+text	先更新数据库再删除缓存；删除失败进入重试队列，并用 Canal 订阅 binlog 再删一次；热点 key 做延迟双删。
+text	八股-缓存与数据库.md
+text	区分说话人
+text	去连接
+text	反问环节准备 2 个关于团队技术栈的问题
+text	取消
+text	只记录对方（不用麦克风）
+text	可以开始记录  ·  本场使用 4 份已就绪资料；文字可用即可开始。
+text	可跳过
+text	同声传译
+text	吞吐和分区扩展性更好，订单事件需要按 key 有序且可回放。
+text	听到对方提问，参考回答出现在摄像头下方的提词岛和右侧。
+text	听到对方说英文时自动出现：每句话下面和提词岛上给出中文。在本机翻译，不联网。
+text	听到问题自动给出回答
+text	声音
+text	声音测试
+text	复盘 · 改进后的答法
+text	如果删除缓存失败了怎么办？
+text	始终开启
+text	实时纪要
+text	实时转写
+text	客户沟通
+text	对方 · 系统声音
+text	小组作业
+text	小组讨论
+text	岗位JD-后端开发.md
+text	工作会议
+text	已确认的答法
+text	已确认的经验
+text	已配置 · 尚未检查连接
+text	开始
+text	开始前检查
+text	我 · 麦克风
+text	所有记录
+text	把双方说的话写成文字。回答、纪要和搜索都靠它，一直开着。
+text	抖音电商-团队介绍.pdf
+text	按声音分出每个人，可以起名字；纪要里按人来写。认错了随时能改。
+text	接着上一场
+text	提词贴着摄像头，不用低头
+text	数据库和缓存同时更新时怎么保证一致性？
+text	整理讨论重点
+text	未配置 · 不影响记录
+text	本机 · 已保存内容
+text	根据标题选好了，可以改
+text	检查回答服务
+text	汇报 / 答辩
+text	流式模型：已就绪　整句精修：已就绪
+text	添加
+text	用本场选择的资料整理讨论重点、证据和值得追问的问题。无需 AI 也能开始记录。
+text	简历-2026.pdf
+text	系列
+text	系列简报
+text	线上
+text	线下
+text	组会
+text	经验 · “被问项目时先报规模和结果数字”“一致性问题先画读写时序，再说”
+text	自动回答
+text	自定义…
+text	被问到时，答案就在镜头旁
+text	被问项目时先报规模和结果数字，再讲方案
+text	讨论准备 · AI 可选
+text	讲座 / 课程
+text	读完资料后，AI 写出它读到的 3 条重点和 5 道可能会问的题，可以先在心里过一遍。
+text	资料 · 简历-2026.pdf、岗位JD-后端开发.md…
+text	边开边整理议题、决定和待办，大约每 45 秒更新一次；结束后仍会整理完整纪要。
+text	这个系列还没有已归档的会议。
+text	这个系列还没有开过会
+text	这场用什么
+text	这是「字节后端二面」的第 1 场
+text	这是什么会
+text	这次新加的资料
+text	通用
+text	重试队列 + binlog 异步兜底，监控删除失败率并告警。
+text	面试
+text	面试：会中自动回答 · 回答简洁 · 纪要：逐题复盘（存进题库）、说得不好的地方、下一轮 · 建议放：简历、职位描述、公司信息
+text	首页
+text	麦克风 · 我
+text	󰊑
+text	
+text	
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：决定、待办、风险、下次会议
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：各方观点、结论与分歧、分工
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：定下的方案、分工、我的任务、下次碰头
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答简洁 · 纪要：总结、要点、决定、待办
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答详细 · 纪要：要点、概念、例子、我的疑问
+tooltip	会中只记录，需要时 Ctrl+Shift+Enter 回答 · 回答详细 · 纪要：讨论的问题、没讨论透的地方、意见与要求、下一步
+tooltip	会中自动回答 · 回答简洁 · 纪要：逐题复盘（存进题库）、说得不好的地方、下一轮
+tooltip	会中自动回答 · 回答简洁 · 纪要：需求、顾虑与回应、我们答应的、下一步
+tooltip	会中自动回答，跟着讲稿 · 回答简洁 · 纪要：听众提问逐题复盘（存进题库）、要改的地方、答应的跟进
+tooltip	关闭
+tooltip	可以开始记录
+tooltip	最大化
+tooltip	最小化
+tooltip	设置
+tooltip	面试：会中自动回答 · 回答简洁 · 纪要：逐题复盘（存进题库）、说得不好的地方、下一轮 · 建议放：简历、职位描述、公司信息

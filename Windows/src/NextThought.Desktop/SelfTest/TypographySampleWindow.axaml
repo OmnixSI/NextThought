@@ -1,0 +1,89 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        x:Class="NextThought.Desktop.Views.TypographySampleWindow"
+        Width="900" Height="1020"
+        Background="{DynamicResource Paper}"
+        Title="{loc:Tr 字体样张}">
+  <ScrollViewer Padding="40,32,40,40">
+    <StackPanel Spacing="22">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="overline" Text="{loc:Tr 字体样张 · TYPE SPECIMEN}" />
+        <TextBlock Classes="caption" Text="{loc:Tr 每一级字号一行，中英文混排；文字颜色只用 Ink 的 ink / secondary / tertiary。}" />
+      </StackPanel>
+
+      <!-- hero 38 serif medium -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="hero · 38 · serif medium" />
+        <TextBlock Classes="hero" Text="{loc:Tr 交付之前，先把话说清楚。}" />
+        <TextBlock Classes="hero" Text="Say it clearly before the meeting." />
+      </StackPanel>
+
+      <!-- display 30 serif medium -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="display · 30 · serif medium" />
+        <TextBlock Classes="display" Text="{loc:Tr 下周的评审，我们只带一个版本。}" />
+        <TextBlock Classes="display" Text="One version for next week's review." />
+      </StackPanel>
+
+      <!-- section 19 serif medium -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="section · 19 · serif medium" />
+        <TextBlock Classes="section" Text="{loc:Tr 这一页讲了什么}" />
+        <TextBlock Classes="section" Text="What this page covers" />
+      </StackPanel>
+
+      <!-- prompt 22 sans medium -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="prompt · 22 · sans medium" />
+        <TextBlock Classes="prompt" Text="{loc:Tr 被问到时，答案就在镜头旁。}" />
+        <TextBlock Classes="prompt" Text="The answer sits beside the camera." />
+      </StackPanel>
+
+      <!-- title 15 sans semibold -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="title · 15 · sans semibold" />
+        <TextBlock Classes="title" Text="{loc:Tr 最近记录 · Recent meetings}" />
+      </StackPanel>
+
+      <!-- body 15 sans regular -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="body · 15 · sans regular" />
+        <TextBlock Classes="body" Text="{loc:Tr 会议结束后，转写、纪要和我的笔记都保存在记录里。}" />
+        <TextBlock Classes="body" Text="After the meeting the transcript, notes and highlights stay under Records." />
+      </StackPanel>
+
+      <!-- label 13 sans medium -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="label · 13 · sans medium" />
+        <TextBlock Classes="label" Text="{loc:Tr 全部系列 · All series}" />
+      </StackPanel>
+
+      <!-- caption 12 sans regular -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="caption · 12 · sans regular" />
+        <TextBlock Classes="caption" Text="{loc:Tr 演示数据 · Demo data}" />
+      </StackPanel>
+
+      <!-- overline 11 sans semibold -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="overline · 11 · sans semibold" />
+        <TextBlock Classes="overline" Text="{loc:Tr 下一场会议 · NEXT MEETING}" />
+      </StackPanel>
+
+      <!-- code 13 mono -->
+      <StackPanel Spacing="2">
+        <TextBlock Classes="overline" Text="code · 13 · monospace" />
+        <TextBlock Classes="code" Text="SessionProjectionBuilder.TranscriptSourceRevision(meta, lines, corrections) → 00:20" />
+      </StackPanel>
+
+      <!-- Ink text colours -->
+      <StackPanel Spacing="6">
+        <TextBlock Classes="overline" Text="{loc:Tr 文字颜色 · INK / SECONDARY / TERTIARY}" />
+        <TextBlock Classes="body" Foreground="{DynamicResource InkBrush}" Text="{loc:Tr ink：正文和标题 Use for body and headings}" />
+        <TextBlock Classes="body" Foreground="{DynamicResource Secondary}" Text="{loc:Tr secondary：次要说明 Use for secondary labels}" />
+        <TextBlock Classes="body" Foreground="{DynamicResource Tertiary}" Text="{loc:Tr tertiary：占位和装饰 Placeholders and decoration only}" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

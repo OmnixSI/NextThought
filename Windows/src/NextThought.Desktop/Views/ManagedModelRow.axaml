@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.ManagedModelRow"
+             x:DataType="local:DocumentComponentRow">
+  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_2}" VerticalAlignment="Center">
+      <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding Status}" Classes="caption" FontSize="11" />
+      <TextBlock Text="{Binding Detail}" Classes="caption" FontSize="11" TextWrapping="Wrap" />
+      <!-- §3.5: Mac ManagedModelRow note = size · license · summary. -->
+      <TextBlock Text="{Binding LicenseNote}" Classes="caption" FontSize="11" TextWrapping="Wrap" Opacity="0.75" />
+      <Button Classes="quiet" Content="{loc:Tr 模型来源与版本}" HorizontalAlignment="Left" FontSize="11"
+              Click="Source_Click" IsVisible="{Binding HasSource}" />
+    </StackPanel>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+      <Button Content="{loc:Tr 安装}" Click="Install_Click" />
+      <Button Content="{loc:Tr 校验／修复}" Click="Verify_Click" IsEnabled="{Binding Installed}" />
+      <Button Content="{loc:Tr 删除}" Click="Delete_Click" IsEnabled="{Binding Installed}" />
+    </StackPanel>
+  </Grid>
+</UserControl>

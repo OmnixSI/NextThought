@@ -1,0 +1,111 @@
+content	All records
+content	Automatic answers
+content	Bottom of the screen
+content	Brief
+content	Built-in / main display (automatic)
+content	Client call
+content	Detailed
+content	General
+content	Gentle in-meeting nudges: pace, long stretches, share of talking
+content	Group discussion
+content	Group project
+content	Hide background, keeping text, borders and buttons
+content	Home
+content	Interview review
+content	Keep the cue island on the camera display; no NextThought window appears on the slides display
+content	Keep the cue island open during meetings, no hovering needed
+content	Key points
+content	Lab meeting / research discussion
+content	Lecture / Class
+content	Line by line
+content	Notice when your eyes leave the camera (uses the camera)
+content	Presentation / Defense
+content	Record only
+content	Right side
+content	Screen-sharing visibility test
+content	Series
+content	Show translation
+content	Top center of screen
+content	Try to exclude this app's windows from screen sharing
+content	Work meeting
+placeholder	Search settings
+text	A meeting starts with these settings. You can still switch during the meeting.
+text	Advanced
+text	All records
+text	Answer
+text	Answers and materials
+text	Automatic (first external display)
+text	Automatic answers
+text	Bottom of the screen
+text	Brief
+text	Built-in / main display (automatic)
+text	Client call
+text	Cue and coach
+text	Cue island
+text	Cue island display
+text	Cue island width
+text	Custom
+text	Detailed
+text	Display
+text	Done
+text	Font size
+text	General
+text	Gentle in-meeting nudges: pace, long stretches, share of talking
+text	Group discussion
+text	Group meeting
+text	Group project
+text	Hide background, keeping text, borders and buttons
+text	Home
+text	In meeting
+text	Interview
+text	Interview review
+text	Keep the cue island on the camera display; no NextThought window appears on the slides display
+text	Keep the cue island open during meetings, no hovering needed
+text	Key points
+text	Lab meeting
+text	Lab meeting / research discussion
+text	Lecture / Class
+text	Line by line
+text	Live coach
+text	Move to
+text	Notes
+text	Notes template
+text	Notice when your eyes leave the camera (uses the camera)
+text	Only affects the floating subtitle bar; takes effect immediately after saving.
+text	Presentation / Defense
+text	Presenter mode
+text	Presenter mode is off
+text	Prompt
+text	Record only
+text	Regular
+text	Right side
+text	Scenes
+text	Screen-sharing visibility test
+text	Search settings
+text	Series
+text	Settings for each scene
+text	Shortcuts…
+text	Show translation
+text	Slides display
+text	Subtitle bar
+text	The main window hides when recording starts (Ctrl+Alt+N brings it back); with a single display it stays off. Following slides by spoken title and screenshot OCR is supported; continuous screen watching is not ported yet.
+text	The picture is reduced to a few landmarks on this computer only. Nothing is saved or uploaded.
+text	These global shortcuts are used by other programs: Ctrl+Alt+P Pause / resume listening, Ctrl+Alt+Shift+, Previous slide's notes; window buttons still work.
+text	Top center of screen
+text	Try to exclude this app's windows from screen sharing
+text	Width
+text	Work assignment
+text	Work meeting
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	Close
+tooltip	Maximize
+tooltip	Minimize
+tooltip	Settings

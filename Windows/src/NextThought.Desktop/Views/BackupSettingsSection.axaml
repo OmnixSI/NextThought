@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.BackupSettingsSection"
+             x:DataType="local:AppState">
+  <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+    <TextBlock Text="{loc:Tr 备份与恢复}" Classes="section" />
+    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+      <Button Classes="primary" Content="{loc:Tr 导出全部数据…}" Command="{Binding ExportAllBackupCommand}" />
+      <Button Content="{loc:Tr 导入…}" Click="Import_Click" />
+      <Button Content="{loc:Tr 立即备份}" Command="{Binding BackupNowCommand}" />
+      <Button Content="{loc:Tr 打开数据文件夹}" Command="{Binding OpenBackupsFolderCommand}" />
+    </StackPanel>
+    <TextBlock Text="{Binding BackupNote}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+    <ProgressBar IsIndeterminate="True" IsVisible="{Binding BackupBusy}" MaxWidth="420" HorizontalAlignment="Left" />
+    <TextBlock Text="{Binding BackupStatusLine}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left"
+               IsVisible="{Binding HasBackupStatus}" />
+    <TextBlock Text="{Binding BackupIssue}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left"
+               Foreground="{DynamicResource Caution}" IsVisible="{Binding HasBackupIssue}" />
+    <Button Content="{loc:Tr 重试备份}" HorizontalAlignment="Left" Command="{Binding BackupNowCommand}"
+            IsVisible="{Binding ShowBackupRetry}" />
+    <TextBlock Text="{Binding RecoveryPointWarning}" Classes="caption" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left"
+               Foreground="{DynamicResource Caution}" IsVisible="{Binding HasRecoveryPointWarning}" />
+    <CheckBox Content="{loc:Tr 会议结束后自动创建恢复点}" IsChecked="{Binding AutoBackup, Mode=TwoWay}" />
+    <TextBlock Text="{loc:Tr 还没有自动备份。}" Classes="caption" FontSize="11" IsVisible="{Binding !HasBackups}" />
+    <ItemsControl ItemsSource="{Binding Backups}" MaxHeight="260">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:BackupFileRow">
+          <Border BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0"
+                  Padding="{DynamicResource D4Padding_8}">
+            <Grid ColumnDefinitions="150,*,90,84,84,32" ColumnSpacing="{DynamicResource D4Spacing_8}">
+              <TextBlock Text="{Binding DateText}" Classes="caption" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding ReasonTitle}" Classes="caption" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{Binding SizeText}" Classes="caption" VerticalAlignment="Center" />
+              <Button Grid.Column="3" Content="{loc:Tr 恢复…}" Classes="quiet" Click="RestoreRow_Click" Tag="{Binding}" />
+              <Button Grid.Column="4" Content="{loc:Tr 删除}" Classes="quiet" Click="DeleteRow_Click" Tag="{Binding}"
+                      IsVisible="{Binding IsRecoveryPoint}" />
+              <Button Grid.Column="5" Classes="quiet" Content="↗" ToolTip.Tip="{loc:Tr 打开数据文件夹}"
+                      Click="RevealRow_Click" Tag="{Binding}" />
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBlock Text="{loc:Tr 恢复点最多保留最近 10 份、软预算 2 GiB，不含模型、索引或密钥。}"
+               Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+    <TextBlock Text="{loc:Tr 导入导出选项}" Classes="label" Margin="{DynamicResource D4Margin_0_6_0_0}" />
+    <CheckBox Content="{loc:Tr 导入时同时导入设置（回答服务、识别、快捷键等）}"
+              IsChecked="{Binding BackupIncludeSettings, Mode=TwoWay}" />
+    <TextBlock Text="{loc:Tr .ntbackup 包含会议、资料与设置；不包含 API Key、语音模型与设备设置。卸载不会删除数据目录。}"
+               Classes="caption" FontSize="11" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left" />
+  </StackPanel>
+</UserControl>

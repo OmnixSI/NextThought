@@ -1,0 +1,49 @@
+content	开下一场
+content	所有记录
+content	把这场景加入
+content	新建系列
+content	有纪要
+content	移出
+content	系列
+content	经验积累
+content	编辑系列
+content	记录
+content	资料
+content	首页
+placeholder	搜索系列或资料
+placeholder	新系列的名字
+text	0 份资料 · 0 题 · 1 场会议
+text	1 场会议 · 3 条经验
+text	2 份资料 · 0 题 · 0 场会议
+text	3 个系列 · 2 场会议
+text	4 份资料 · 3 题 · 1 场会议
+text	ACL 2026 口头报告
+text	同一门课、同一个项目、同一类面试放在一个系列里；每场会议的结论与经验会攒在一起。
+text	后端二面：缓存一致性与项目经历
+text	周一客户例会 · 华东区
+text	字节后端二面
+text	开下一场
+text	所有记录
+text	把这场景加入
+text	排序
+text	搜索系列或资料
+text	新建系列
+text	新系列的名字
+text	昨天 下午7:22
+text	移出
+text	系列
+text	经验积累
+text	编辑系列
+text	记录
+text	资料
+text	面试 · 44 分钟
+text	首页
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	关闭
+tooltip	最大化
+tooltip	最小化
+tooltip	设置

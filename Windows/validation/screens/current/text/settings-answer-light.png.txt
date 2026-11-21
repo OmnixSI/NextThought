@@ -1,0 +1,124 @@
+content	API
+content	Codex
+content	删除
+content	只看要点
+content	只记录
+content	客户沟通
+content	导入 .md 文件…
+content	小组作业
+content	小组讨论
+content	工作会议
+content	所有记录
+content	新建技能
+content	新建预设
+content	检查连接
+content	汇报 / 答辩
+content	简洁
+content	系列
+content	组会 / 研究讨论
+content	自动回答
+content	获取列表
+content	讲座 / 课程
+content	详细
+content	读取资料
+content	逐句
+content	通用
+content	重命名
+content	面试复盘
+content	首页
+edit	deepseek-flash
+edit	https://api.deepseek.com
+placeholder	https://api.openai.com/v1
+placeholder	sk-…
+placeholder	名称
+placeholder	搜索设置
+placeholder	模型名
+placeholder	请选择模型
+text	3 个技能；回答时按需遵守。
+text	API
+text	API Key
+text	Codex
+text	DeepSeek
+text	Mac 自带，离线、无需下载。普通文字够用；复杂表格和公式可能丢失结构。
+text	WebSearchModeChoice { Value = auto, Title = 自动判断 }
+text	sk-…
+text	仅对服务商支持的推理模型有效；不确定时保持默认。
+text	会中
+text	保存设置
+text	先立刻给出快速回答；需要最新信息（价格、新闻、版本、现任人员、“今天 / 最近”…）时在后台联网，通常 5–20 秒后自动换成联网版，可随时切回原回答。“自动判断”用本地规则。
+text	兼容 Chat Completions 的 API 地址
+text	删除
+text	只看要点
+text	只记录
+text	各场景开会时的设置
+text	名称
+text	回答
+text	回答与资料
+text	回答服务
+text	场景
+text	完成
+text	客户沟通
+text	导入 .md 文件…
+text	小组作业
+text	小组讨论
+text	尚未保存密钥；本机服务可不填。
+text	工作会议
+text	工作布置
+text	开始一场会时按这里的设置来；会中仍可随时切换。
+text	所有记录
+text	技能
+text	技能可用于所有系列，或在系列中按系列选择。
+text	技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。
+text	推理强度
+text	提词
+text	提词与教练
+text	搜索设置
+text	新建技能
+text	新建预设
+text	检查连接
+text	模型
+text	汇报 / 答辩
+text	简洁
+text	系列
+text	系统识别
+text	纪要
+text	纪要模板
+text	组会
+text	组会 / 研究讨论
+text	组会讨论
+text	联网
+text	联网搜索
+text	自动回答
+text	自定义
+text	获取列表
+text	讲座 / 课程
+text	详细
+text	请选择模型
+text	读取资料
+text	读取资料的方式
+text	资料
+text	资料原件保留在本机。只有选择在线代读或在线回答时，资料才会发送给对应服务。
+text	转写保存在本机。使用远程回答服务时，问题和相关转写会发送到该服务。
+text	选一种即可。PDF、图片和纯文本可先用系统识别，无需下载文档模型。
+text	逐句
+text	通用
+text	重命名
+text	面试
+text	面试复盘
+text	预设
+text	首页
+text	高级
+text	默认（不指定）
+text	󰌓
+text	󰭡
+text	
+text	
+text	
+text	
+text	
+title	NextThought
+tooltip	从服务商读取可用的模型
+tooltip	关闭
+tooltip	最大化
+tooltip	最小化
+tooltip	设置

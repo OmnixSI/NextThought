@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "打开备份设置：读取自动备份开关与恢复点列表",
+      "passed": true,
+      "detail": "autoBackup=True，已有恢复点 0 个"
+    },
+    {
+      "step": "切换自动备份开关",
+      "passed": true,
+      "detail": "autoBackup false→true 已写入设置"
+    },
+    {
+      "step": "点「立即备份」创建恢复点",
+      "passed": true,
+      "detail": "已备份到 d7b5d0ff-8a10-45b4-9060-f371c2cd124c-manual.ntrestore。；d7b5d0ff-8a10-45b4-9060-f371c2cd124c-manual.ntrestore"
+    },
+    {
+      "step": "会议结束后自动创建恢复点",
+      "passed": true,
+      "detail": "恢复点 1 个（内容未变时按指纹去重）"
+    },
+    {
+      "step": "设置页入口：数据与关于里的备份与恢复",
+      "passed": true,
+      "detail": "已在设置页挂载（通用 → 数据与关于）"
+    },
+    {
+      "step": "备份设置页：自动备份开关、恢复点列表、导入导出按钮",
+      "passed": true,
+      "detail": "列表 1 行；最近备份：2026-11-21 02:45"
+    },
+    {
+      "step": "导入前复核页：新增/相同/冲突记录与备份模板",
+      "passed": true,
+      "detail": "计划 1 场会议、0 个模板"
+    },
+    {
+      "step": "确认后应用所选内容（先创建恢复点）",
+      "passed": true,
+      "detail": "已导入 0 场会议、0 份资料、0 个系列，相同跳过 1 场会议；0 个重复项保留现有版本。"
+    },
+    {
+      "step": "删除恢复点",
+      "passed": true,
+      "detail": "恢复点 1→0"
+    }
+  ]
+}

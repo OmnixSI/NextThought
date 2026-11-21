@@ -1,0 +1,81 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        x:Class="NextThought.Desktop.Views.LiveComponentSamplesWindow"
+        Title="{loc:Tr 会中组件状态样板}" Width="1200" Height="1080"
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource Paper}">
+  <!-- Debug-only sample sheet (LiveSessionAcceptanceComponentSamples.swift). Synthetic content
+       only: no microphone, ASR, model, network or archive is touched; opened by the shell self-test.
+       Sample copy is English on purpose so the sheet needs no catalogue rows beyond the Mac title. -->
+  <ScrollViewer>
+    <StackPanel Margin="{DynamicResource D4Padding_24}" Spacing="{DynamicResource D4Spacing_16}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{loc:Tr 会中组件状态样板}" FontSize="24" Foreground="{DynamicResource InkBrush}" />
+        <TextBlock Text="Native Avalonia sample sheet · all text and states are synthetic; no microphone, ASR, model, network or archive is touched."
+                   FontSize="11.5" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+      </StackPanel>
+      <UniformGrid Columns="2" ColumnSpacing="{DynamicResource D4Spacing_12}" RowSpacing="{DynamicResource D4Spacing_12}">
+        <Border Classes="card" Padding="{DynamicResource D4Padding_12}">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="ActionButton · default / hover / pressed / focus / unavailable" FontSize="13" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+              <Button Classes="primary" Content="Default" />
+              <Button Content="Hover" />
+              <Button Classes="quiet" Content="Pressed" />
+              <Button Content="Focus" />
+              <Button Content="Unavailable" IsEnabled="False" />
+            </StackPanel>
+            <TextBlock Text="Preview states are injected by the demo environment; they are not mouse-event recordings."
+                       FontSize="11" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="{DynamicResource D4Padding_12}">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="DataStateView · loading / no-match" FontSize="13" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+              <ProgressBar IsIndeterminate="True" Width="80" VerticalAlignment="Center" />
+              <TextBlock Text="Loading this meeting's materials…" Foreground="{DynamicResource Secondary}" />
+            </StackPanel>
+            <TextBlock Text="Nothing matched yet." FontSize="11" Foreground="{DynamicResource Secondary}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="{DynamicResource D4Padding_12}">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="SourceChip · system / microphone / screen" FontSize="13" />
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}">
+              <Border Classes="chip"><TextBlock Text="System audio" FontSize="11" /></Border>
+              <Border Classes="chip"><TextBlock Text="Microphone" FontSize="11" /></Border>
+              <Border Classes="chip"><TextBlock Text="Screen" FontSize="11" /></Border>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="{DynamicResource D4Padding_12}">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="TranscriptRow · remote / me / partial" FontSize="13" />
+            <TextBlock Text="Them: Should we load-test the cache consistency plan once more?" FontSize="13" TextWrapping="Wrap" />
+            <TextBlock Text="Me: Yes, let's add one regression round before release." FontSize="13"
+                       Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+            <TextBlock Text="Me: Then we…" FontSize="13" Foreground="{DynamicResource Tertiary}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="{DynamicResource D4Padding_12}">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="TaskRow · running / done / failed" FontSize="13" />
+            <TextBlock Text="Generating the answer…" FontSize="12" />
+            <TextBlock Text="Done · answer and evidence saved" FontSize="12" Foreground="{DynamicResource Secondary}" />
+            <TextBlock Text="Failed · can retry" FontSize="12" Foreground="{DynamicResource Caution}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" Padding="{DynamicResource D4Padding_12}">
+          <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+            <TextBlock Text="InlineNotice · caution / info" FontSize="13" />
+            <TextBlock Text="This pass did not succeed; the notes are unaffected." FontSize="12"
+                       Foreground="{DynamicResource Caution}" TextWrapping="Wrap" />
+            <TextBlock Text="The cue island is not in the picture when you share a window or another screen."
+                       FontSize="12" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </UniformGrid>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

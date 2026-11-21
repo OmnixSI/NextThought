@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        x:Class="NextThought.Desktop.Views.DocumentChoiceSummary"
+        x:DataType="local:AppState"
+        Title="{loc:Tr 读取资料}" Width="640" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <Border Padding="{DynamicResource D4Padding_24}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_12}">
+      <TextBlock Text="{loc:Tr 读取资料}" Classes="title" />
+      <TextBlock Text="{loc:Tr 系统识别：Mac 自带、离线、无需下载；复杂表格和公式可能丢失结构。&#10;本机增强：另下约 1.42 GB（含共用组件），适合复杂版面；占存储与内存，仍可能识别错。&#10;Codex 代读：免 OCR 权重，另需约 186 MB 共用组件；联网、使用账号额度，耗时受网络影响。}"
+                 Classes="caption" FontSize="12" TextWrapping="Wrap" />
+      <TextBlock Text="{loc:Tr 查找资料（向量检索可选）}" Classes="title" />
+      <TextBlock Text="{loc:Tr 不启用：按关键词查找，无需下载或建索引，准备快；同义问法可能漏检。&#10;启用：模型加共用组件最多约 835 MB，先在本机建索引，额外占内存；能补充按含义查找，但仍可能漏检。&#10;两者都只把相关片段带入回答，并非“关闭向量就发送全文”。全量发送资料会增加等待与用量，也可能超过上下文上限。共用组件只需安装一次。}"
+                 Classes="caption" FontSize="12" TextWrapping="Wrap" />
+      <Button Classes="primary" Content="{loc:Tr 关闭}" HorizontalAlignment="Right" Click="Close_Click" />
+    </StackPanel>
+  </Border>
+</Window>

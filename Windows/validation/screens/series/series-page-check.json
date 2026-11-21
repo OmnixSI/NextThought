@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "系列页加载",
+      "passed": true,
+      "detail": "SeriesView"
+    },
+    {
+      "step": "左栏搜索与排序",
+      "passed": true,
+      "detail": "排序选项 最近活动/名称"
+    },
+    {
+      "step": "三段标签 记录/资料/经验积累",
+      "passed": true,
+      "detail": "TabItem 记录 | 资料 | 经验积累"
+    },
+    {
+      "step": "左栏场景行",
+      "passed": true,
+      "detail": "行 3"
+    },
+    {
+      "step": "搜索过滤",
+      "passed": true,
+      "detail": "查询「ACL」→ 1/3"
+    }
+  ]
+}

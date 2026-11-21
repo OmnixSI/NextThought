@@ -1,0 +1,26 @@
+content	Close
+content	Undo correction: 先写数据库、再删缓存 → 先更新数据库、再删除缓存
+content	Undo correction: 我主要负责订单业务 → 我主要负责订单服务
+placeholder	Find in transcript (misheard spellings too)
+text	00:15
+text	00:55
+text	01:35
+text	02:15
+text	02:55
+text	03:35
+text	2 recognition errors fixed
+text	Close
+text	Corrected transcript
+text	Find in transcript (misheard spellings too)
+text	Me
+text	Them
+text	Transcript version
+text	Undo correction: 先写数据库、再删缓存 → 先更新数据库、再删除缓存
+text	Undo correction: 我主要负责订单业务 → 我主要负责订单服务
+text	嗯，这个挺关键的。
+text	好，我们先聊聊你最近做的项目吧，简单介绍一下你负责的部分。
+text	我主要负责订单业务的缓存层，把核心查询从数据库迁移到 Redis。
+text	我们用的是先写数据库、再删缓存的方式。
+text	数据库和缓存同时更新的时候你们是怎么保证一致性的
+text	那数据库和缓存同时更新的时候，你们是怎么保证一致性的？
+title	Corrected transcript

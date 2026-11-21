@@ -1,0 +1,6 @@
+text	12:36
+text	I am not fully convinced by the term physics informed. Many model-based methods already use the array response.
+text	对方在说
+text	我不太认同“物理信息”这个说法。很多基于模型的方法已经用了阵列响应。
+text	
+title	NextThought 提词岛

@@ -1,0 +1,270 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+        xmlns:local="using:NextThought.Desktop"
+        xmlns:views="using:NextThought.Desktop.Views"
+        xmlns:components="using:NextThought.Desktop.Controls"
+        xmlns:viewsshell="using:NextThought.Desktop.Views"
+        x:Class="NextThought.Desktop.Views.MainWindow"
+        x:DataType="local:AppState"
+        Title="NextThought"
+        Width="1120" Height="820" MinWidth="960" MinHeight="660"
+        Background="{DynamicResource Paper}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="52"
+        WindowDecorations="BorderOnly"
+        WindowStartupLocation="CenterScreen"
+        Topmost="{Binding Settings.KeepOnTop}">
+  <Window.Resources>
+    <Thickness x:Key="ShellMargin_0_0_12_0">0,0,12,0</Thickness>
+    <Thickness x:Key="ShellMargin_0_12_0_0">0,12,0,0</Thickness>
+    <Thickness x:Key="ShellMargin_0_2_0_0">0,2,0,0</Thickness>
+  </Window.Resources>
+  <Window.Styles>
+    <!-- §5.2: the capsule items; selected one is a white rounded block on the sunken capsule, and
+         the background change runs on the snappy spring timing (Motion.snappy response 0.28). -->
+    <Style Selector="Button.pillnav">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_12_0}" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_16}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.28" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.pillnav.active">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="Button.pillnav.active /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource PaperCardShadow}" />
+    </Style>
+    <Style Selector="Button.pillnav.active:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+    </Style>
+    <Style Selector="Button.pillnav:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_0}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource D4CornerRadius_16}" />
+    </Style>
+    <Style Selector="Button.icon:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+  </Window.Styles>
+  <Grid RowDefinitions="52,*">
+    <!-- Title row: the client area extends into the title bar; the window keeps only its
+         resize border, and the caption buttons are drawn here so the brand reads first. -->
+    <Grid Grid.Row="0" Name="TitleBar" Background="Transparent" PointerPressed="TitleBar_PointerPressed">
+      <!-- §5.2: Mac AppNavigationSidebar has only the centred capsule and the right-hand tool
+           buttons. No brand, no version badge, no demo hint, no “设置” text. -->
+      <Grid ColumnDefinitions="*,Auto,*" Margin="{DynamicResource D4Margin_0_0_142_0}">
+        <Border Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_20}"
+                Padding="{DynamicResource D4Padding_3}" IsVisible="{Binding !Recording}">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+            <Button Classes="pillnav" Classes.active="{Binding OnHome}" Content="{loc:Tr 首页}"
+                    Tag="Home" Click="SectionNav_Click" />
+            <Button Classes="pillnav" Classes.active="{Binding OnHistory}" Content="{loc:Tr 所有记录}"
+                    Tag="History" Click="SectionNav_Click" />
+            <Button Classes="pillnav" Classes.active="{Binding OnSeries}" Content="{loc:Tr 系列}"
+                    Tag="Series" Click="SectionNav_Click" />
+          </StackPanel>
+        </Border>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}"
+                    HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding !Recording}">
+          <Button Classes="icon" IsVisible="{Binding ShowsContextSidebarToggle}"
+                  Command="{Binding ToggleContextSidebarCommand}" IsEnabled="{Binding !Recording}"
+                  ToolTip.Tip="{loc:Tr 显示侧栏}">
+            <TextBlock Text="{StaticResource IconSidebarLeft}" FontFamily="{StaticResource IconFont}" FontSize="14" />
+          </Button>
+          <Button Classes="primary" Content="{loc:Tr 重启以更新}" Command="{Binding InstallUpdateCommand}"
+                  IsVisible="{Binding CanInstallUpdateInApp}" ToolTip.Tip="{loc:Tr 安装已下载的更新并重新打开}" />
+          <Button Classes="icon" ToolTip.Tip="{loc:Tr 设置}">
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <views:QuickSettingsPanel />
+              </Flyout>
+            </Button.Flyout>
+            <TextBlock Text="{StaticResource IconGearshape}" FontFamily="{StaticResource IconFont}" FontSize="14" />
+          </Button>
+        </StackPanel>
+      </Grid>
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch" Spacing="{DynamicResource D4Spacing_0}">
+        <Button Name="MinimizeButton" Classes="caption" Click="Minimize_Click" ToolTip.Tip="{loc:Tr 最小化}">
+          <Path Data="M0,5 H10" StrokeThickness="1" />
+        </Button>
+        <Button Name="MaximizeButton" Classes="caption" Click="Maximize_Click" ToolTip.Tip="{loc:Tr 最大化}">
+          <Path Data="M0.5,0.5 H9.5 V9.5 H0.5 Z" StrokeThickness="1" />
+        </Button>
+        <Button Name="CloseButton" Classes="caption close" Click="Close_Click" ToolTip.Tip="{loc:Tr 关闭}">
+          <Path Data="M0.5,0.5 L9.5,9.5 M9.5,0.5 L0.5,9.5" StrokeThickness="1" />
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+      <!-- Sidebar: brand, sections, recent meetings, data controls -->
+      <Border Grid.Column="0" IsVisible="False" Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
+              BorderThickness="0,0,0.5,0">
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="{DynamicResource D4Margin_14_6_14_14}">
+          <StackPanel Grid.Row="0" Spacing="{DynamicResource D4Spacing_1}">
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHome, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Home" ToolTip.Tip="{loc:Tr 首页}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+                <TextBlock Text="{StaticResource IconHouse}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 首页}" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnLive, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Live" ToolTip.Tip="{loc:Tr 会议}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+                <TextBlock Text="{StaticResource IconListBullet}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 会议}" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnNotes, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Notes" ToolTip.Tip="{loc:Tr 纪要}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+                <TextBlock Text="{StaticResource IconDocPlaintext}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 纪要}" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnHistory, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="History" ToolTip.Tip="{loc:Tr 历史}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+                <TextBlock Text="{StaticResource IconHistory}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 历史}" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSeries, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Series" ToolTip.Tip="{loc:Tr 系列}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+                <TextBlock Text="{StaticResource IconBook}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 系列}" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+            <RadioButton Classes="nav" GroupName="nav" IsChecked="{Binding OnSettings, Mode=OneWay}"
+                         Command="{Binding NavigateCommand}" CommandParameter="Settings" ToolTip.Tip="{loc:Tr 设置}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_10}">
+                <TextBlock Text="{StaticResource IconGearshape}" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 设置}" VerticalAlignment="Center" />
+              </StackPanel>
+            </RadioButton>
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Margin="{DynamicResource D4Margin_10_22_10_8}">
+            <TextBlock Text="{loc:Tr 最近会议}" Classes="overline" />
+          </StackPanel>
+
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <ListBox Name="HistoryList" ItemsSource="{Binding History}" SelectionChanged="History_SelectionChanged"
+                     Background="Transparent" Margin="{DynamicResource D4Margin_0_0_0_0}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="local:RecentMeetingRow">
+                  <Border Padding="{DynamicResource D4Padding_10_8}" CornerRadius="{DynamicResource D4CornerRadius_8}" Background="Transparent">
+                    <StackPanel Spacing="{DynamicResource D4Spacing_3}">
+                      <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                      <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="3" Spacing="{DynamicResource D4Spacing_6}" Margin="{DynamicResource D4Margin_2_10_2_0}">
+            <components:MetricPill Text="{Binding StatsText}" HorizontalAlignment="Left" />
+            <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Command="{Binding OpenDataCommand}" ToolTip.Tip="{loc:Tr 打开数据目录}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                <TextBlock Text="{StaticResource IconFolderOpen}" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 数据目录}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- D10 context sidebar for Live/Library/Series -->
+      <Border Grid.Column="0" Width="260" IsVisible="{Binding ContextSidebarVisible}"
+              Background="{DynamicResource SidebarTint}" BorderBrush="{DynamicResource Hairline}"
+              BorderThickness="0,0,0.5,0">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="{DynamicResource D4Margin_14_8_14_14}">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <TextBlock Text="{loc:Tr 上下文}" Classes="overline" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 隐藏}" Command="{Binding ToggleContextSidebarCommand}" />
+          </Grid>
+          <ScrollViewer Grid.Row="1" Margin="{DynamicResource D4Margin_0_10_0_0}" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+              <TextBlock Text="{loc:Tr 最近会议}" Classes="overline" />
+              <ListBox ItemsSource="{Binding History}" Background="Transparent" SelectionChanged="History_SelectionChanged">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="local:RecentMeetingRow">
+                    <Border Padding="{DynamicResource D4Padding_8_6}" CornerRadius="{DynamicResource D4CornerRadius_8}">
+                      <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+                        <TextBlock Text="{Binding Title}" Classes="label" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                        <TextBlock Text="{Binding Subtitle}" Classes="caption" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+          </ScrollViewer>
+          <Button Grid.Row="2" Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Command="{Binding OpenDataCommand}" Content="{loc:Tr 数据目录}" />
+        </Grid>
+      </Border>
+
+      <!-- Content -->
+      <Grid Grid.Column="1" RowDefinitions="*,Auto">
+        <Grid Grid.Row="0" Margin="{DynamicResource D4Margin_0}">
+          <ContentControl x:Name="PageHost" />
+        </Grid>
+
+        <!-- Settings is an overlay, not a page (D10). -->
+        <!-- §3.6 settings-pages W1/W2: the settings window covers the shell (mac-screens/settings/window-*.png). -->
+        <Grid Grid.Column="1" Grid.RowSpan="2" ZIndex="10" Background="{DynamicResource Paper}"
+              IsVisible="{Binding OnSettings}">
+          <views:SettingsView x:Name="SettingsOverlay" />
+        </Grid>
+      </Grid>
+    </Grid>
+
+    <!-- E4 / ContentView.swift ErrorBanner: caution triangle, the message, 关闭提示. -->
+    <Border Grid.RowSpan="2" ZIndex="30" MaxWidth="560" Margin="{DynamicResource ShellMargin_0_12_0_0}" VerticalAlignment="Top"
+            IsVisible="{Binding ShowErrorBanner}" Background="{DynamicResource SurfaceRaised}"
+            BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
+            CornerRadius="{DynamicResource D4CornerRadius_12}" Padding="{DynamicResource D4Padding_12}"
+            BoxShadow="{DynamicResource FloatShadow}">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}">
+        <TextBlock Text="{StaticResource IconExclamationmarkTriangleFill}" FontFamily="{StaticResource IconFont}"
+                   FontSize="12" Foreground="{DynamicResource Caution}" VerticalAlignment="Top" Margin="{DynamicResource ShellMargin_0_2_0_0}" />
+        <SelectableTextBlock Grid.Column="1" Text="{Binding ErrorBannerText}" FontSize="13" TextWrapping="Wrap"
+                             Foreground="{DynamicResource InkBrush}" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_6}" VerticalAlignment="Center">
+          <Button Classes="quiet" Content="{loc:Tr 重试保存}" Command="{Binding RetryPersistenceCommand}"
+                  IsVisible="{Binding ShowRetrySave}" />
+          <Button Classes="quiet" Content="{loc:Tr 确认缺失并继续保存}" Command="{Binding AcknowledgeSaveLossCommand}"
+                  IsVisible="{Binding ShowAcknowledgeLoss}" />
+          <Button Classes="icon" Command="{Binding CloseStatusCommand}" ToolTip.Tip="{loc:Tr 关闭提示}">
+            <TextBlock Text="{StaticResource IconXmark}" FontFamily="{StaticResource IconFont}" FontSize="10" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- E3 first-run guide overlay (Views/OnboardingView.axaml) -->
+    <views:OnboardingView Grid.RowSpan="2" ZIndex="20" IsVisible="{Binding OnboardingVisible}" />
+  </Grid>
+</Window>

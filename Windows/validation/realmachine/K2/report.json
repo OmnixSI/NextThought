@@ -1,0 +1,47 @@
+﻿{
+    "test":  "K2 不抢焦点",
+    "date":  "2026-11-21T15:02:08",
+    "exe":  "C:\\Users\\THUNDE~1\\AppData\\Local\\Temp\\nt-home-artifacts\\bin\\NextThought.Desktop\\release_win-x64\\NextThought.exe",
+    "os":  "Microsoft Windows NT 10.0.26200.0",
+    "steps":  [
+                  {
+                      "step":  "记事本在前台",
+                      "ok":  true,
+                      "detail":  "foreground=0x1D0716"
+                  },
+                  {
+                      "step":  "提词岛出现",
+                      "ok":  true,
+                      "detail":  "rect=549,0,939,244"
+                  },
+                  {
+                      "step":  "点击提词岛 (744,122)",
+                      "ok":  true,
+                      "detail":  "before=0x1D0716 after=0x1D0716"
+                  },
+                  {
+                      "step":  "点击提词岛 (634,122)",
+                      "ok":  true,
+                      "detail":  "before=0x1D0716 after=0x1D0716"
+                  },
+                  {
+                      "step":  "点击提词岛 (854,122)",
+                      "ok":  true,
+                      "detail":  "before=0x1D0716 after=0x1D0716"
+                  },
+                  {
+                      "step":  "键入进入记事本",
+                      "ok":  true,
+                      "detail":  "clipboard=[K2FocusTest 123]"
+                  },
+                  {
+                      "step":  "整个过程中应用未成为前台",
+                      "ok":  true,
+                      "detail":  "foreground=0x1D0716"
+                  }
+              ],
+    "passed":  true,
+    "failures":  [
+
+                 ]
+}

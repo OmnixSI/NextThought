@@ -1,0 +1,26 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="NextThought.Desktop.App"
+             RequestedThemeVariant="Light">
+  <Application.Resources>
+    <ResourceDictionary>
+      <!-- Fluent's accent, aligned with the one accent the design allows (Ink). -->
+      <Color x:Key="SystemAccentColor">#1C1B19</Color>
+      <Color x:Key="SystemAccentColorLight1">#3A3833</Color>
+      <Color x:Key="SystemAccentColorLight2">#595751</Color>
+      <Color x:Key="SystemAccentColorLight3">#706E68</Color>
+      <Color x:Key="SystemAccentColorDark1">#121110</Color>
+      <Color x:Key="SystemAccentColorDark2">#0C0B0A</Color>
+      <Color x:Key="SystemAccentColorDark3">#060605</Color>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://NextThought/Styles/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://NextThought/Styles/Theme.axaml" />
+    <StyleInclude Source="avares://NextThought/Styles/Controls.axaml" />
+    <StyleInclude Source="avares://NextThought/Styles/DesignSystem.axaml" />
+  </Application.Styles>
+</Application>

@@ -1,0 +1,10 @@
+text	12:36
+text	End now
+text	Nobody seems to be talking. Recording ends in 42 s
+text	Resume recording
+text	󰕄
+text	
+text	
+title	NextThought Cue island
+tooltip	Cancel the countdown and keep recording this meeting
+tooltip	End now and write notes

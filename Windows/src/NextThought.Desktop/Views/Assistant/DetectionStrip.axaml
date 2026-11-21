@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Assistant.DetectionStrip"
+             x:DataType="local:AppState">
+  <Border Classes="card" Padding="{DynamicResource D4Padding_10_8}" IsVisible="{Binding HasLiveCandidate}">
+    <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{StaticResource IconSparkle}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                   Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="{loc:Tr 可能的问题}" FontSize="11" FontWeight="SemiBold"
+                   Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+        <!-- E5/ConfidenceBar: the detector's confidence, green ≥ 0.6, amber ≥ 0.4. -->
+        <ProgressBar Grid.Column="2" x:Name="ConfidenceBar" Value="{Binding CandidateConfidence}" Maximum="1"
+                     Width="36" Height="4" MinHeight="4" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="3" Text="{Binding LiveCandidateText}" FontSize="12" TextTrimming="CharacterEllipsis"
+                   VerticalAlignment="Center" />
+        <Button Grid.Column="4" Classes="chip" Content="{loc:Tr 回答这句}" FontSize="11" Click="Answer_Click" />
+      </Grid>
+      <TextBlock Text="{Binding CandidateConfidenceLabel}" Classes="caption" FontSize="10"
+                 Foreground="{DynamicResource Tertiary}" IsVisible="False" />
+    </StackPanel>
+  </Border>
+</UserControl>

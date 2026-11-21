@@ -1,0 +1,507 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             xmlns:core="using:NextThought.Core"
+             xmlns:c="using:NextThought.Desktop.Controls"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
+             xmlns:sys="using:System"
+             x:Class="NextThought.Desktop.Views.OnboardingView"
+             x:DataType="local:AppState">
+  <!-- E3 §6.7: the first-run guide, four short steps (Onboarding.swift). Header: progress capsules,
+       "1 / 4", the step's name and estimate, 稍后继续. Footer: 上一步 and the one forward action. -->
+    <UserControl.Resources>
+    <ResourceDictionary>
+      <CornerRadius x:Key="PageCornerRadius0_0_26_26">0,0,26,26</CornerRadius>
+      <CornerRadius x:Key="PageCornerRadius1">1</CornerRadius>
+      <CornerRadius x:Key="PageCornerRadius14">14</CornerRadius>
+      <CornerRadius x:Key="PageCornerRadius22">22</CornerRadius>
+      <CornerRadius x:Key="PageCornerRadius9">9</CornerRadius>
+      <Thickness x:Key="PageMargin0">0</Thickness>
+      <Thickness x:Key="PageMargin0_0_0_4">0,0,0,4</Thickness>
+      <Thickness x:Key="PageMargin0_0_0_6">0,0,0,6</Thickness>
+      <Thickness x:Key="PageMargin0_0_0_8">0,0,0,8</Thickness>
+      <Thickness x:Key="PageMargin0_0_4_0">0,0,4,0</Thickness>
+      <Thickness x:Key="PageMargin0_0_4_4">0,0,4,4</Thickness>
+      <Thickness x:Key="PageMargin0_24_0_24">0,24,0,24</Thickness>
+      <Thickness x:Key="PageMargin12_0_0_0">12,0,0,0</Thickness>
+      <Thickness x:Key="PageMargin24_16_24_24">24,16,24,24</Thickness>
+      <Thickness x:Key="PageMargin24_24_24_16">24,24,24,16</Thickness>
+      <Thickness x:Key="PageMargin32_16">32,16</Thickness>
+      <Thickness x:Key="PageMargin32_32_32_12">32,32,32,12</Thickness>
+      <Thickness x:Key="PagePadding0">0</Thickness>
+      <Thickness x:Key="PagePadding16">16</Thickness>
+      <Thickness x:Key="PagePadding18_0">18,0</Thickness>
+      <Thickness x:Key="PagePadding22_8_22_18">22,8,22,18</Thickness>
+      <x:Double x:Key="PageSpacing0">0</x:Double>
+      <x:Double x:Key="PageSpacing10">10</x:Double>
+      <x:Double x:Key="PageSpacing12">12</x:Double>
+      <x:Double x:Key="PageSpacing2">2</x:Double>
+      <x:Double x:Key="PageSpacing24">24</x:Double>
+      <x:Double x:Key="PageSpacing3">3</x:Double>
+      <x:Double x:Key="PageSpacing4">4</x:Double>
+      <x:Double x:Key="PageSpacing6">6</x:Double>
+      <x:Double x:Key="PageSpacing8">8</x:Double>
+    </ResourceDictionary>
+  </UserControl.Resources>
+<UserControl.Styles>
+    <Style Selector="Button.guideChip">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="11,0" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.guideChip:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <Style Selector="TextBlock.guideSection">
+      <Setter Property="FontFamily" Value="{StaticResource SansMediumFamily}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+    <Style Selector="Border.guideRow">
+      <Setter Property="Padding" Value="0,12" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="Padding" Value="18,0" />
+    </Style>
+    <!-- Mac InkSegmented (LiquidGlass.swift): sunken track radius 8 padding 2; raised radius-6
+         selected block with a contact shadow and a hairline. -->
+    <Style Selector="Border.venueContainer">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="2" />
+    </Style>
+    <Style Selector="RadioButton.venue">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="MinWidth" Value="32" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}" MinHeight="{TemplateBinding MinHeight}">
+            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.venue:pointerover /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Hover}" />
+    </Style>
+    <Style Selector="RadioButton.venue:checked /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Hairline}" />
+      <Setter Property="BorderThickness" Value="0.5" />
+      <Setter Property="BoxShadow" Value="{DynamicResource PaperCardShadow}" />
+    </Style>
+    <Style Selector="RadioButton.venue:checked">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="RadioButton.venue:checked /template/ ContentPresenter">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid Background="{DynamicResource Paper}">
+    <Grid RowDefinitions="Auto,*,Auto">
+      <!-- Header (Mac OnboardingView.header): capsules · 1 / 4 · step · time · 稍后继续. -->
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="{DynamicResource PageMargin32_32_32_12}"
+            VerticalAlignment="Center">
+        <ItemsControl Grid.Column="0" ItemsSource="{Binding OnboardingProgressCapsules}" VerticalAlignment="Center">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="local:OnboardingProgressCapsule">
+              <Border Width="22" Height="2" CornerRadius="{DynamicResource PageCornerRadius1}" Background="{Binding Background}" Margin="{DynamicResource PageMargin0_0_4_0}" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Grid.Column="1" Text="{Binding OnboardingPosition}" Classes="caption"
+                   Margin="{DynamicResource PageMargin12_0_0_0}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding OnboardingStepTitle}" Classes="label" Margin="{DynamicResource PageMargin12_0_0_0}"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="3" Text="{Binding OnboardingStepTime}" Classes="caption" Margin="{DynamicResource PageMargin12_0_0_0}"
+                   VerticalAlignment="Center" />
+        <Button Grid.Column="5" Classes="quiet" Content="{loc:Tr 稍后继续}" Command="{Binding SkipOnboardingCommand}"
+                VerticalAlignment="Center" />
+      </Grid>
+
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid x:Name="GuidePageHost" Width="720" HorizontalAlignment="Center" Margin="{DynamicResource PageMargin0_24_0_24}">
+
+          <!-- ===== 1 · 场合 (Mac scenePage + sceneSheet) ===== -->
+          <StackPanel Spacing="{DynamicResource PageSpacing24}" IsVisible="{Binding OnboardingIsScene}">
+            <StackPanel Spacing="{DynamicResource PageSpacing8}">
+              <TextBlock Text="{loc:Tr NextThought 按场合帮你开会}" Classes="display" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 先选一个最常用的场合。每个场合有自己的提示和纪要，开会前随时可以换。}"
+                         Classes="body" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}" BorderThickness="0.5"
+                    CornerRadius="{DynamicResource PageCornerRadius22}" BoxShadow="0 1 2 0 #121C1B19, 0 16 28 0 #0F1C1B19">
+              <StackPanel>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="{DynamicResource PageMargin24_24_24_16}">
+                  <controls:SceneGlyph Mode="{Binding SelectedMode}" Size="38" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding OnboardingSceneTitle}" FontSize="19"
+                             FontFamily="{StaticResource SansMediumFamily}" FontWeight="Medium"
+                             VerticalAlignment="Center" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding OnboardingSceneChips}" Margin="{DynamicResource PageMargin0}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:PrepareSceneChip">
+                      <Button Classes="guideChip" Tag="{Binding Scene}" Click="SceneChip_Click"
+                              Background="{Binding Background}" ToolTip.Tip="{Binding DefaultsSummary}"
+                              Margin="{DynamicResource PageMargin0_0_4_4}">
+                        <TextBlock Text="{Binding Title}" Foreground="{Binding Foreground}" />
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel Spacing="{DynamicResource PageSpacing8}" Margin="{DynamicResource PageMargin24_16_24_24}">
+                  <TextBlock Text="{Binding OnboardingScenePromise}" FontFamily="{StaticResource SerifFamily}"
+                             FontSize="17" FontWeight="Medium" TextWrapping="Wrap" />
+                  <ItemsControl ItemsSource="{Binding OnboardingSceneMomentRows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="local:PrepareMomentRow">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing8}" Margin="{DynamicResource PageMargin0_0_0_6}">
+                          <Ellipse Width="4" Height="4" Fill="{Binding Dot}" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding Text}" Classes="caption" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <StackPanel Spacing="{DynamicResource PageSpacing12}">
+              <Button Command="{Binding ToggleOnboardingSampleCommand}" Background="Transparent" BorderThickness="0"
+                      Padding="{DynamicResource PagePadding0}" Cursor="Hand" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing6}">
+                  <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                             Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                             IsVisible="{Binding !OnboardingShowSample}" />
+                  <TextBlock Text="{StaticResource IconChevronDown}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                             Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                             IsVisible="{Binding OnboardingShowSample}" />
+                  <TextBlock Text="{Binding OnboardingSampleToggle}" Classes="caption" />
+                </StackPanel>
+              </Button>
+              <StackPanel Spacing="{DynamicResource PageSpacing12}" IsVisible="{Binding OnboardingShowSample}">
+                <TextBlock Text="{loc:Tr 示例不录音、不申请权限、不调用模型，与上面选的场合无关。}" Classes="caption"
+                           TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                  <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}"
+                          BorderThickness="0.5" CornerRadius="{DynamicResource PageCornerRadius14}" Padding="{DynamicResource PagePadding16}">
+                    <StackPanel Spacing="{DynamicResource PageSpacing8}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{loc:Tr 实时转写}" Classes="overline" />
+                        <TextBlock Grid.Column="1" Text="{loc:Tr 示例}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                      </Grid>
+                      <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding OnboardingSampleVisibleLines}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:OnboardingSampleLine">
+                              <StackPanel Spacing="{DynamicResource PageSpacing2}" Margin="{DynamicResource PageMargin0_0_0_8}">
+                                <TextBlock Text="{Binding Speaker}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                                <TextBlock Text="{Binding Text}" Classes="body" TextWrapping="Wrap" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </StackPanel>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="{DynamicResource PageSpacing10}">
+                    <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}"
+                            BorderThickness="0.5" CornerRadius="{DynamicResource PageCornerRadius14}" Padding="{DynamicResource PagePadding16}"
+                            IsVisible="{Binding OnboardingSampleShowSuggestion}">
+                      <StackPanel Spacing="{DynamicResource PageSpacing4}">
+                        <TextBlock Text="{loc:Tr 面试官在追问 · 参考回答}" Classes="overline" />
+                        <TextBlock Text="{Binding OnboardingSampleSuggestionQuestion}" Classes="body"
+                                   Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding OnboardingSampleSuggestionAnswer}" Classes="body" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Hairline}"
+                            BorderThickness="0.5" CornerRadius="{DynamicResource PageCornerRadius14}" Padding="{DynamicResource PagePadding16}">
+                      <StackPanel Spacing="{DynamicResource PageSpacing6}">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{loc:Tr 面试记录}" Classes="overline" />
+                          <TextBlock Grid.Column="1" Text="{loc:Tr 示例}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+                        </Grid>
+                        <TextBlock Text="{loc:Tr 被问到的题、你的回答和会后要补的地方会在这里留下来。}" Classes="caption"
+                                   Foreground="{DynamicResource Secondary}" TextWrapping="Wrap"
+                                   IsVisible="{Binding !OnboardingSampleHasTakeaways}" />
+                        <ItemsControl ItemsSource="{Binding OnboardingSampleVisibleTakeaways}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="local:OnboardingSampleTakeaway">
+                              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Margin="{DynamicResource PageMargin0_0_0_4}">
+                                <TextBlock Text="{Binding Kind}" Classes="caption" Foreground="{DynamicResource Secondary}" Width="32" />
+                                <TextBlock Grid.Column="1" Text="{Binding Text}" Classes="caption" TextWrapping="Wrap" />
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                  <ProgressBar Value="{Binding OnboardingSampleProgress}" Maximum="1" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 重播}" Command="{Binding ReplayOnboardingSampleCommand}"
+                          IsVisible="{Binding OnboardingSampleFinished}" />
+                </Grid>
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- ===== 2 · 声音 (Mac soundPage) ===== -->
+          <StackPanel Spacing="{DynamicResource PageSpacing24}" IsVisible="{Binding OnboardingIsSound}">
+            <StackPanel Spacing="{DynamicResource PageSpacing8}">
+              <TextBlock Text="{loc:Tr 让它听得到}" Classes="display" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 只在这里问一次。每一项都要你按下按钮才会请求，不允许也可以先往下看。}"
+                         Classes="body" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Spacing="{DynamicResource PageSpacing0}">
+              <!-- 会议在哪里 -->
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Classes="guideRow">
+                <StackPanel Spacing="{DynamicResource PageSpacing3}">
+                  <TextBlock Text="{loc:Tr 会议在哪里}" Classes="guideSection" />
+                  <TextBlock Text="{Binding OnboardingVenueDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+                <Border Grid.Column="1" Classes="venueContainer" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal">
+                    <RadioButton Classes="venue" GroupName="onboarding-venue" Content="{loc:Tr 线上}"
+                                 IsChecked="{Binding OnboardingOnline, Mode=OneWay}" Click="OnboardingOnlineVenue_Click" />
+                    <RadioButton Classes="venue" GroupName="onboarding-venue" Content="{loc:Tr 线下}"
+                                 IsChecked="{Binding OnboardingOffline, Mode=OneWay}" Click="OnboardingOfflineVenue_Click" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" />
+              <!-- 系统音频 -->
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Classes="guideRow" IsVisible="{Binding Settings.CaptureSystem}">
+                <StackPanel Spacing="{DynamicResource PageSpacing3}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing6}">
+                    <c:StatusDot Tone="{Binding OnboardingSystemAudioTone}" />
+                    <TextBlock Text="{loc:Tr 系统音频}" Classes="guideSection" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding OnboardingSystemAudioDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" IsVisible="{Binding Settings.CaptureSystem}" />
+              <!-- 麦克风 -->
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Classes="guideRow">
+                <StackPanel Spacing="{DynamicResource PageSpacing3}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing6}">
+                    <c:StatusDot Tone="{Binding OnboardingMicrophoneTone}" />
+                    <TextBlock Text="{loc:Tr 麦克风}" Classes="guideSection" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding OnboardingMicrophoneDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource PageSpacing8}" VerticalAlignment="Center">
+                  <Border Classes="venueContainer" IsVisible="{Binding OnboardingShowsMicrophoneChoice}">
+                    <StackPanel Orientation="Horizontal">
+                      <RadioButton Classes="venue" GroupName="onboarding-mic" Content="{loc:Tr 记录我的声音}"
+                                   IsChecked="{Binding OnboardingMicrophoneRecordsMe, Mode=OneWay}" Click="OnboardingRecordMe_Click" />
+                      <RadioButton Classes="venue" GroupName="onboarding-mic" Content="{loc:Tr 只记录对方}"
+                                   IsChecked="{Binding OnboardingMicrophoneOnlyOther, Mode=OneWay}" Click="OnboardingOnlyOther_Click" />
+                    </StackPanel>
+                  </Border>
+                  <Button Content="{Binding OnboardingMicrophoneActionLabel}" FontSize="12"
+                          Command="{Binding OpenMicrophonePermissionSettingsCommand}"
+                          IsVisible="{Binding OnboardingShowsMicrophonePermissionAction}" />
+                </StackPanel>
+              </Grid>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" />
+              <!-- 语音识别 -->
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16" Classes="guideRow">
+                <StackPanel Spacing="{DynamicResource PageSpacing3}">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing6}">
+                    <c:StatusDot Tone="{Binding OnboardingRecognitionTone}" />
+                    <TextBlock Text="{loc:Tr 语音识别}" Classes="guideSection" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding OnboardingRecognitionDetail}" Classes="caption" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="{Binding OnboardingRecognitionDownloadLabel}" FontSize="12"
+                        Command="{Binding PrepareModelsCommand}" VerticalAlignment="Center"
+                        IsVisible="{Binding OnboardingRecognitionNeedsDownload}" />
+              </Grid>
+              <StackPanel Spacing="{DynamicResource PageSpacing8}">
+                <Button Command="{Binding ToggleRecognitionOptionsCommand}" Background="Transparent" BorderThickness="0"
+                        Padding="{DynamicResource PagePadding0}" Cursor="Hand" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing6}">
+                    <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                               Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                               IsVisible="{Binding !OnboardingShowRecognitionOptions}" />
+                    <TextBlock Text="{StaticResource IconChevronDown}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                               Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                               IsVisible="{Binding OnboardingShowRecognitionOptions}" />
+                    <TextBlock Text="{loc:Tr 换一种识别方式}" Classes="caption" />
+                  </StackPanel>
+                </Button>
+                <TextBlock Text="{loc:Tr 本机模型需要下载并占内存；云端识别需要填写 API Key 并确认音频上传说明。}"
+                           Classes="caption" TextWrapping="Wrap"
+                           IsVisible="{Binding OnboardingShowRecognitionOptions}" />
+              </StackPanel>
+              <Border Height="0.5" Background="{DynamicResource Hairline}" />
+            </StackPanel>
+            <TextBlock Text="{Binding OnboardingDataRouteSummary}" Classes="caption" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <!-- ===== 3 · 回答 (Mac answersPage + AnswerEngineForm) ===== -->
+          <StackPanel Spacing="{DynamicResource PageSpacing24}" IsVisible="{Binding OnboardingIsAnswers}">
+            <StackPanel Spacing="{DynamicResource PageSpacing8}">
+              <TextBlock Text="{loc:Tr 接上一个回答服务}" Classes="display" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 会中的回答和会后的纪要由它来写。选一个服务商，粘贴 Key，点一下检查。}"
+                         Classes="body" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Spacing="{DynamicResource PageSpacing12}">
+              <TextBlock Text="{loc:Tr 服务商}" Classes="caption" />
+              <ItemsControl ItemsSource="{Binding OnboardingAnswerProviders}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="sys:String">
+                    <Button Classes="guideChip" Content="{Binding}" Margin="{DynamicResource PageMargin0_0_4_4}" FontSize="13"
+                            Click="Provider_Click" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <Border Height="0.5" Background="{DynamicResource Hairline}" />
+            <StackPanel Spacing="{DynamicResource PageSpacing12}">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <c:StatusDot Tone="{Binding OnboardingAnswerTone}" />
+                <TextBlock Grid.Column="1" Text="{Binding OnboardingAnswerServiceTitle}" Classes="guideSection" />
+                <TextBlock Grid.Column="2" Text="{Binding OnboardingAnswerServiceDetail}" Classes="caption"
+                           VerticalAlignment="Center" />
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing12}">
+                <TextBlock Text="{loc:Tr 模型}" Classes="caption" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding OnboardingModelLine}" Classes="label" VerticalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Spacing="{DynamicResource PageSpacing8}">
+                <Button Command="{Binding ToggleAnswerOptionsCommand}" Background="Transparent" BorderThickness="0"
+                        Padding="{DynamicResource PagePadding0}" Cursor="Hand" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing6}">
+                    <TextBlock Text="{StaticResource IconChevronRight}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                               Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                               IsVisible="{Binding !OnboardingShowAnswerOptions}" />
+                    <TextBlock Text="{StaticResource IconChevronDown}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                               Foreground="{DynamicResource Secondary}" VerticalAlignment="Center"
+                               IsVisible="{Binding OnboardingShowAnswerOptions}" />
+                    <TextBlock Text="{loc:Tr 更多选项}" Classes="caption" />
+                  </StackPanel>
+                </Button>
+                <StackPanel Spacing="{DynamicResource PageSpacing8}" IsVisible="{Binding OnboardingShowAnswerOptions}">
+                  <TextBlock Text="{loc:Tr 服务地址、模型、推理强度、联网搜索都可以在设置 → 回答 里改。}"
+                             Classes="caption" TextWrapping="Wrap" />
+                  <Button Classes="quiet" Content="{loc:Tr 打开设置}" FontSize="12" HorizontalAlignment="Left"
+                          Command="{Binding NavigateCommand}" CommandParameter="Settings" />
+                </StackPanel>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing12}">
+                <Button Content="{Binding OnboardingTestAnswerLabel}" Command="{Binding TestAnswerEngineCommand}" />
+                <TextBlock Text="{Binding OnboardingTestAnswerHint}" Classes="caption" VerticalAlignment="Center"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+            <TextBlock Text="{loc:Tr 不连接也能记录和转写；回答和会后纪要需要它，可以之后再接。}" Classes="caption"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+
+          <!-- ===== 4 · 提词与开始 (Mac startPage + CueIslandMock) ===== -->
+          <StackPanel Spacing="{DynamicResource PageSpacing24}" IsVisible="{Binding OnboardingIsStart}">
+            <StackPanel Spacing="{DynamicResource PageSpacing8}">
+              <TextBlock Text="{loc:Tr 会中，回答在镜头下方}" Classes="display" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding OnboardingStartHeadline}" Classes="body" Foreground="{DynamicResource Secondary}"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource PageCornerRadius14}" BorderBrush="{DynamicResource Hairline}"
+                    BorderThickness="0.5" ClipToBounds="True" Padding="{DynamicResource PagePadding0}">
+              <Grid MinHeight="184">
+                <Border Width="380" HorizontalAlignment="Center" VerticalAlignment="Top" Background="#000000"
+                        CornerRadius="{DynamicResource PageCornerRadius0_0_26_26}" Padding="{DynamicResource PagePadding22_8_22_18}">
+                  <StackPanel Spacing="{DynamicResource PageSpacing10}">
+                    <Ellipse Width="7" Height="7" Fill="#33FFFFFF" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding OnboardingCueIslandQuestion}" Foreground="#80FFFFFF" FontSize="11"
+                               FontWeight="Medium" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding OnboardingCueIslandAnswer}" Foreground="#FFFFFF" FontSize="16"
+                               FontWeight="SemiBold" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Spacing="{DynamicResource PageSpacing6}">
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing8}">
+                        <Ellipse Width="5" Height="5" Fill="{Binding OnboardingSceneTintBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding OnboardingCuePoint1}" Foreground="#CCFFFFFF" FontSize="13"
+                                   FontWeight="Medium" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing8}">
+                        <Ellipse Width="5" Height="5" Fill="{Binding OnboardingSceneTintBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding OnboardingCuePoint2}" Foreground="#CCFFFFFF" FontSize="13"
+                                   FontWeight="Medium" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+            <StackPanel Spacing="{DynamicResource PageSpacing4}">
+              <TextBlock Text="{loc:Tr 被问到时，回答出现在摄像头下方的提词岛，眼睛不用离开镜头。}" Classes="body" TextWrapping="Wrap" />
+              <TextBlock Text="{loc:Tr 鼠标移到提词岛上，可以暂停、结束或立即回答。}" Classes="body" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource PageSpacing12}" IsVisible="{Binding !OnboardingCanStartFirstMeeting}">
+              <TextBlock Text="{Binding OnboardingReadinessMessage}" Classes="caption" Foreground="{DynamicResource Caution}"
+                         TextWrapping="Wrap" VerticalAlignment="Center" />
+              <Button Classes="quiet" Content="{loc:Tr 回到声音}" Command="{Binding GoToOnboardingStepCommand}"
+                      CommandParameter="Sound" />
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+
+      <!-- Footer (Mac OnboardingView.footer): 上一步 left; the step's forward actions right. -->
+      <Border Grid.Row="2" BorderBrush="{DynamicResource Hairline}" BorderThickness="0,0.5,0,0">
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="{DynamicResource PageMargin32_16}">
+          <Button Content="{loc:Tr 上一步}" Command="{Binding PreviousOnboardingStepCommand}"
+                  IsVisible="{Binding !OnboardingIsFirst}" MinHeight="{DynamicResource ControlLarge}" CornerRadius="{DynamicResource PageCornerRadius9}" Padding="{DynamicResource PagePadding18_0}" />
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource PageSpacing12}" VerticalAlignment="Center">
+            <Button Content="{loc:Tr 跳过}" Command="{Binding NextOnboardingStepCommand}"
+                    IsVisible="{Binding OnboardingCanSkipAnswers}" MinHeight="{DynamicResource ControlLarge}" CornerRadius="{DynamicResource PageCornerRadius9}" Padding="{DynamicResource PagePadding18_0}" />
+            <Button Classes="quiet" Content="{loc:Tr 先看看}" Command="{Binding CompleteOnboardingCommand}"
+                    IsVisible="{Binding OnboardingIsStart}" MinHeight="{DynamicResource ControlLarge}" CornerRadius="{DynamicResource PageCornerRadius9}" Padding="{DynamicResource PagePadding18_0}" />
+            <Button Classes="primary" Content="{loc:Tr 下一步}" Command="{Binding NextOnboardingStepCommand}"
+                    IsVisible="{Binding !OnboardingIsLast}" />
+            <Button Classes="primary" Content="{loc:Tr 开始第一场}" Command="{Binding BeginFirstMeetingCommand}"
+                    IsVisible="{Binding OnboardingIsStart}" IsEnabled="{Binding OnboardingCanStartFirstMeeting}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

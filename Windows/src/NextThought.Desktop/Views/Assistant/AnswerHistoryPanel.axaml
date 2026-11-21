@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Assistant.AnswerHistoryPanel"
+             x:DataType="local:AppState">
+  <UserControl.Styles>
+    <Style Selector="Button.history-row">
+      <Setter Property="Background" Value="{DynamicResource Sunken}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_8_6}" />
+    </Style>
+    <Style Selector="Button.history-row.active">
+      <Setter Property="Background" Value="{DynamicResource AiSoft}" />
+    </Style>
+  </UserControl.Styles>
+  <StackPanel Spacing="{DynamicResource D4Spacing_6}">
+    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6">
+      <TextBlock Text="{StaticResource IconClock}" FontFamily="{StaticResource IconFont}" FontSize="12"
+                 Foreground="{DynamicResource Ai}" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="1" Text="{loc:Tr 回答记录}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <TextBlock Grid.Column="2" Text="{Binding AnswerHistoryCountText}" Classes="caption" FontSize="11"
+                 Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" Margin="{DynamicResource D4Margin_4_0_0_0}" />
+      <Button Grid.Column="3" Classes="quiet" Content="{loc:Tr 回到最新}" FontSize="11" Click="Latest_Click"
+              IsVisible="{Binding HistoryCursorActive}" />
+    </Grid>
+    <!-- E5/Mac AnswerHistoryPanel: empty state sentence -->
+    <TextBlock Text="{loc:Tr 回答过的问题会按时间列在这里，点一下就能回看当时的回答。}" FontSize="12"
+               Foreground="{DynamicResource Secondary}" TextWrapping="Wrap"
+               IsVisible="{Binding !HasSessionAnswerHistory}" />
+    <ItemsControl ItemsSource="{Binding AnswerHistoryRows}" IsVisible="{Binding HasSessionAnswerHistory}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:AnswerHistoryRow">
+          <Button Classes="history-row" Classes.active="{Binding Shown}" Tag="{Binding}" Click="Row_Click"
+                  Margin="{DynamicResource D4Margin_0_0_0_4}">
+            <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+              <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}">
+                <TextBlock Text="{Binding TimeText}" FontFamily="{StaticResource MonoFamily}" FontSize="10"
+                           Foreground="{DynamicResource Tertiary}" VerticalAlignment="Center" />
+                <TextBlock Text="{StaticResource IconGlobe}" FontFamily="{StaticResource IconFont}" FontSize="9"
+                           Foreground="{DynamicResource Ai}" IsVisible="{Binding HasWebLookup}" VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Tr 手动}" FontSize="10" Foreground="{DynamicResource Tertiary}"
+                           IsVisible="{Binding IsManual}" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{Binding Question}" FontSize="12" FontWeight="SemiBold" MaxLines="2" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding AnswerPreview}" Classes="caption" FontSize="11" MaxLines="2"
+                         TextTrimming="CharacterEllipsis" TextWrapping="Wrap" />
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

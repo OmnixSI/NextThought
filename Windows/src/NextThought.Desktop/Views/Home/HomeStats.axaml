@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.Home.HomeStats"
+             x:DataType="local:AppState"
+             IsVisible="{Binding HomeHasStats}">
+  <UserControl.Styles>
+    <!-- Mac InkSegmented: a sunken pill container with the chosen item as a white block. -->
+    <Style Selector="RadioButton.stats-seg">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Padding" Value="11,3" />
+      <Setter Property="MinHeight" Value="22" />
+      <Setter Property="CornerRadius" Value="11" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.stats-seg:checked /template/ Border#Root">
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
+    </Style>
+    <Style Selector="RadioButton.stats-seg:checked">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="RadioButton.stats-seg:checked /template/ ContentPresenter TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+    <Style Selector="TextBlock.stat-figure">
+      <Setter Property="FontFamily" Value="{StaticResource SerifFamily}" />
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <StackPanel Spacing="{DynamicResource D4Spacing_0}">
+    <Grid ColumnDefinitions="*,Auto" Margin="{DynamicResource D4Margin_0_0_0_8}">
+      <TextBlock Text="{loc:Tr 用了多少}" Classes="overline" VerticalAlignment="Center" />
+      <Border Grid.Column="1" Background="{DynamicResource Sunken}" CornerRadius="{DynamicResource D4CornerRadius_13}" Padding="{DynamicResource D4Padding_2}" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_2}">
+          <RadioButton Classes="stats-seg" GroupName="home-stats" Content="{loc:Tr 本月}"
+                       IsChecked="{Binding HomeStatsIsMonth, Mode=OneWay}"
+                       Command="{Binding ShowHomeStatsMonthCommand}" />
+          <RadioButton Classes="stats-seg" GroupName="home-stats" Content="{loc:Tr 累计}"
+                       IsChecked="{Binding HomeStatsIsAll, Mode=OneWay}"
+                       Command="{Binding ShowHomeStatsAllTimeCommand}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+    <Border Height="0.5" Background="{DynamicResource Hairline}" />
+    <Grid ColumnDefinitions="*,*,*,*" Margin="{DynamicResource D4Margin_8_14_8_14}">
+      <StackPanel Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{Binding HomeStatsMeetings}" Classes="stat-figure" />
+        <TextBlock Text="{loc:Tr 场会议}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{Binding HomeStatsDuration}" Classes="stat-figure" />
+        <TextBlock Text="{loc:Tr 记录时长}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{Binding HomeStatsQuestions}" Classes="stat-figure" />
+        <TextBlock Text="{loc:Tr 听到的提问}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+      <StackPanel Grid.Column="3" Spacing="{DynamicResource D4Spacing_2}">
+        <TextBlock Text="{Binding HomeStatsAnswers}" Classes="stat-figure" />
+        <TextBlock Text="{loc:Tr 给出的回答}" Classes="caption" Foreground="{DynamicResource Secondary}" />
+      </StackPanel>
+    </Grid>
+    <Border Height="0.5" Background="{DynamicResource Hairline}" />
+    <TextBlock Text="{loc:Tr 时长按每场从开始记录到结束计算；暂停的时间也算在内。}"
+               Classes="caption" FontSize="11" Foreground="{DynamicResource Tertiary}"
+               Margin="{DynamicResource D4Margin_0_6_0_0}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

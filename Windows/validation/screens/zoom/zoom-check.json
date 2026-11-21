@@ -1,0 +1,61 @@
+{
+  "passed": true,
+  "scope": "three zoom steps, page rescaling, persistence, island/answer-window exclusion",
+  "steps": [
+    {
+      "Name": "steps-are-the-mac-steps",
+      "Passed": true,
+      "Detail": "0.9, 1, 1.1, 1.2, 1.3, 1.45 · textZoom"
+    },
+    {
+      "Name": "island-and-answer-window-keep-their-own-size",
+      "Passed": true,
+      "Detail": "cue island + answer window excluded from the page zoom"
+    },
+    {
+      "Name": "scaled-0.9",
+      "Passed": true,
+      "Detail": "13 -> 12 (expected 12)"
+    },
+    {
+      "Name": "no-truncation-0.9",
+      "Passed": true,
+      "Detail": "0 rows"
+    },
+    {
+      "Name": "scaled-1.2",
+      "Passed": true,
+      "Detail": "13 -> 16 (expected 16)"
+    },
+    {
+      "Name": "no-truncation-1.2",
+      "Passed": true,
+      "Detail": "0 rows"
+    },
+    {
+      "Name": "scaled-1.45",
+      "Passed": true,
+      "Detail": "13 -> 19 (expected 19)"
+    },
+    {
+      "Name": "no-truncation-1.45",
+      "Passed": true,
+      "Detail": "0 rows"
+    },
+    {
+      "Name": "reset-restores-the-size",
+      "Passed": true,
+      "Detail": "13 == 13"
+    },
+    {
+      "Name": "persist-textZoom",
+      "Passed": true,
+      "Detail": "1.2"
+    },
+    {
+      "Name": "reload-after-restart",
+      "Passed": true,
+      "Detail": "1.2"
+    }
+  ]
+}

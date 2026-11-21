@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "error": null,
+  "steps": [
+    {
+      "step": "shell 布局：标题胶囊 + 内容（无底部常驻文字条）",
+      "passed": true,
+      "detail": "主窗口已渲染"
+    },
+    {
+      "step": "ErrorBanner：错误横幅（caution 三角 + 可选中文字 + 关闭）",
+      "passed": true,
+      "detail": "操作失败：E4 自检错误横幅"
+    },
+    {
+      "step": "ErrorBanner 关闭后恢复",
+      "passed": true,
+      "detail": "StatusIsError=false"
+    },
+    {
+      "step": "ErrorBanner「重试保存」：保存队列受阻时显示重试",
+      "passed": true,
+      "detail": "保存受阻 · 有 3 项未保存 · 重试"
+    },
+    {
+      "step": "ErrorBanner 保存队列恢复后隐藏",
+      "passed": true,
+      "detail": "forced blocked cleared"
+    },
+    {
+      "step": "FocusMode：录制中隐藏窗口外壳（标题胶囊/状态栏）",
+      "passed": true,
+      "detail": "Recording=true；ContextSidebarVisible=false"
+    },
+    {
+      "step": "LevelMeters：live 顶栏的对方/我两条电平",
+      "passed": true,
+      "detail": "系统 82% · 麦克风 35%"
+    },
+    {
+      "step": "LiveWindowMenu：三项会中窗口 + 快捷键提示的弹出层",
+      "passed": true,
+      "detail": "按 Ctrl+Alt+Shift+S 在三者之间切换"
+    },
+    {
+      "step": "LiveComponentSamples：调试样张页（合成内容，不触达真实管线）",
+      "passed": true,
+      "detail": "1200×1080 样张"
+    }
+  ]
+}
