@@ -143,6 +143,7 @@ public partial class AppState
         }
         MeetingNotesDirty = false;
         RefreshMeetingHighlights();
+        if (CurrentSession is { } session) RefreshAiNewVersion(session, content);
     }
 
     /// <summary>Rebuilds the flat rows and the merged paragraphs from the highlight list.</summary>

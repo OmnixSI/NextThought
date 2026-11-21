@@ -89,4 +89,19 @@ public sealed class NotesPageStage4Tests
         var wording = File.ReadAllText(Path.Combine(Root(), "Windows", "WORDING.md"));
         Assert.Contains("一句话印象", wording);
     }
+
+    [Fact]
+    public void TheAiNewVersionStripOffersBothActions()
+    {
+        var state = Read("AppState.NotesNewVersion.cs");
+        Assert.Contains("RefreshAiNewVersion", state);
+        Assert.Contains("ViewNewAiVersion", state);
+        Assert.Contains("KeepMyNotesRevision", state);
+        Assert.Contains("BasedOnGeneratedAt", state);
+        var view = Read("Views", "NotesView.axaml");
+        Assert.Contains("{Binding HasAiNewVersion}", view);
+        Assert.Contains("{Binding ViewNewAiVersionCommand}", view);
+        Assert.Contains("{Binding KeepMyNotesRevisionCommand}", view);
+        Assert.Contains("AI 整理出了新版本。现在显示的仍是你改过的版本。", view);
+    }
 }
