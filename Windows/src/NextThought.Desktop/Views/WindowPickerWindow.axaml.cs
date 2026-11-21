@@ -33,8 +33,6 @@ public partial class WindowPickerWindow : Window
         }
     }
 
-    private void Refresh_Click(object? sender, RoutedEventArgs e) => Load();
-
     private void Pick_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: CaptureWindowRow row })
