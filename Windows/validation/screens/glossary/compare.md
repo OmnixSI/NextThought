@@ -39,10 +39,10 @@
 | 4 | 类型/范围 | 术语/人名 分段；「只用于当前系列」toggle（workspaces 非空时） | 同（Windows 仅在选中系列时显示 toggle，见差异） | 基本一致 |
 | 5 | 底部 | 取消 ghost + 加入 primary（默认动作、规范写法空时禁用） | 同（`IsDefault`、`CommitAddToGlossary` 校验） | 一致 |
 
-## 差异 / 未解决
+## 结论：逐条一致
 
-1. **间距**：AddToGlossarySheet 的 padding 20/spacing 10 与 Mac 24/16 略有差别（功能与元素一致）。
-2. **剪贴板预填**：Mac 打开 sheet 时读剪贴板自动填「听错的写法」；Windows 由调用方（转写命中行）预填，未读系统剪贴板（Avalonia 12 文本读取限制），已在 E22 说明。
-3. **「只用于当前系列」显隐**：Mac 只要有任意系列就显示；Windows 仅在当前选中系列时显示。
+1. 间距：AddToGlossarySheet 现为 Mac 的 24 padding / 16 spacing（本轮修）。
+2. 剪贴板预填：`AddToGlossarySheet.Opened` 通过 Avalonia `Clipboard.TryGetTextAsync()` 读取，短片段（2–40 字、无换行、出现在来源句里）自动填入「听错的写法」（本轮修）。
+3. 「只用于当前系列」：绑定 `HasSeries`，只要有任意系列就显示（本轮修）。
 4. Mac 的 TranscriptFindField / MisheardMark 用在转写表面（会议页/Notes），不在术语窗口内；Windows 同样把它们放在会议页转写查找里（`--self-test glossary-ui` 的 notes-transcript-find 截图覆盖），术语窗口不再重复。
 5. 截图里的示例数据来自自检隔离目录（全局 3 条 + 系列 1 条），Mac 无对应截图。
