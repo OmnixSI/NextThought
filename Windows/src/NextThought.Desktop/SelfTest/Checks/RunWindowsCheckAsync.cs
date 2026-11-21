@@ -128,6 +128,11 @@ public partial class MainWindow
             await state.RefreshHistoryAsync();
             if (state.History.FirstOrDefault(item => item.Meta.Id == meta.Id) is { } row)
                 await state.SelectHistoryAsync(row.Meta);
+            // The demo data loaded above keeps its own CurrentSession; point the export at the real
+            // archived meeting the same way the session-export self-test does.
+            if (state.History.FirstOrDefault(item => item.Meta.Id == meta.Id) is { } selected)
+                state.CurrentSession = selected.Meta;
+            var exportPrepared = state.PrepareSessionExport();
             var export = new SessionExportSheet { DataContext = state };
             export.Show();
             await Pump();
@@ -135,8 +140,8 @@ public partial class MainWindow
             await Pump();
             var preview = export.FindControl<TextBox>("PreviewBox");
             var format = export.FindControl<ComboBox>("FormatBox");
-            Check("e21-preview", preview?.Text?.Contains("-->") == true && format?.ItemCount == 5,
-                "SRT preview with arrows; 5 formats");
+            Check("e21-preview", exportPrepared && preview?.Text?.Contains("-->") == true && format?.ItemCount == 5,
+                $"prepared={exportPrepared} preview={preview?.Text?.Length ?? -1} formats={format?.ItemCount}");
             foreach (var dark in new[] { false, true })
             {
                 if (Avalonia.Application.Current is { } app)
@@ -148,14 +153,26 @@ public partial class MainWindow
 
             // ---- E22: backup restore review (a real recovery point) ---------------------------
             Directory.CreateDirectory(Evidence("backup-review"));
+            // PrepareBackupImportAsync refuses while a meeting records or a working operation runs:
+            // the demo stage above had a running meeting, so end it and wait for idle first.
+            state.Recording = false;
+            for (var idle = 0; idle < 60 && !state.IsIdle; idle++) await Task.Delay(100);
             state.LoadBackupPreferences();
             await state.RefreshBackupsAsync();
             await state.BackupNowCommand.ExecuteAsync(null);
             await Task.Delay(500);
+            await state.RefreshBackupsAsync();
             var point = state.Backups.FirstOrDefault();
             if (point is null) throw new InvalidOperationException("没有生成恢复点，无法复核。");
-            var prepared = await state.PrepareBackupImportAsync(point.File.Path);
-            if (prepared is null) throw new InvalidOperationException("恢复点无法准备成复核。");
+            // Same real flow as --self-test backup-ui: the recovery point is prepared, retried while
+            // the just-finished backup is still being written.
+            PreparedBackupImport? prepared = null;
+            for (var attempt = 0; attempt < 6 && prepared is null; attempt++)
+            {
+                prepared = await state.PrepareBackupImportAsync(point.File.Path);
+                if (prepared is null) await Task.Delay(700);
+            }
+            if (prepared is null) throw new InvalidOperationException("恢复点无法准备成复核：" + state.BackupStatusLine);
             var review = new BackupRestoreReviewView(prepared, state);
             var reviewWindow = new Window
             {
