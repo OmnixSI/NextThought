@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -14,7 +15,6 @@ namespace NextThought.Desktop.Views;
 /// </summary>
 public partial class HistoryView : UserControl
 {
-    public HistoryView() => InitializeComponent();
 
     private static AppState? StateOf(object? sender) => (sender as Control)?.DataContext as AppState;
     private static Window? OwnerOf(Control control) => TopLevel.GetTopLevel(control) as Window;
@@ -125,7 +125,7 @@ public partial class HistoryView : UserControl
             }
             var keepAccepted = state.HasRetainableContent([row]);
             var action = await ConfirmDeleteAsync(owner,
-                UiText.T("删除这场会议？"),
+                UiText.T("删除这场会议"),
                 UiText.T("将永久删除这场会议的转写、音频、手记、索引、问题、回答和纪要。默认同时删除只依赖它的已确认经验、决定和行动。若选择保留，内容会作为独立经验保存并标记原来源已删除，不保留会议原话。"),
                 keepAccepted);
             if (action == DeleteAction.Cancel) return;
@@ -161,6 +161,18 @@ public partial class HistoryView : UserControl
         catch (Exception ex) { StateOf(sender)?.SetStatus(UiText.T("操作失败：") + ex.Message, true); }
     }
 
+    /// <summary>MeetingMenuItems: 录音中/任务中的条目不能删除或重新整理（MenuItem 置灰 + help 原因）。</summary>
+    private void RowMenu_Opening(object? sender, EventArgs e)
+    {
+        if (sender is not ContextMenu menu || DataContext is not AppState state) return;
+        foreach (var item in menu.Items.OfType<MenuItem>())
+        {
+            var header = item.Header as string ?? "";
+            if (header == UiText.T("删除这场会议")) item.IsEnabled = state.CanManageSessions;
+            else if (header == UiText.T("重新整理")) item.IsEnabled = state.CanManageSessions;
+            else if (header == UiText.T("以此为上一场，准备下一场")) item.IsEnabled = state.CanManageSessions;
+        }
+    }
     private void SeriesCheckBox_Click(object? sender, RoutedEventArgs e)
     {
         try
@@ -339,5 +351,41 @@ public partial class HistoryView : UserControl
         panel.Children.Add(close);
         dialog.Content = panel;
         await dialog.ShowDialog(owner);
+    }
+    private NotesView? embeddedMeeting;
+
+    public HistoryView()
+    {
+        InitializeComponent();
+        Loaded += (_, _) => SyncEmbeddedMeeting();
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (DataContext is AppState state) state.PropertyChanged += OnHistoryStateChanged;
+        SyncEmbeddedMeeting();
+    }
+
+    private void OnHistoryStateChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(AppState.HasSelectedHistory) or nameof(AppState.CurrentSession))
+            SyncEmbeddedMeeting();
+    }
+
+    /// <summary>§3.4: the Mac history right pane embeds the meeting page, not a separate overview card.</summary>
+    private void SyncEmbeddedMeeting()
+    {
+        if (this.FindControl<ContentControl>("HistoryMeetingHost") is not { } host) return;
+        if (DataContext is AppState state && state.HasSelectedHistory)
+        {
+            embeddedMeeting ??= new NotesView();
+            embeddedMeeting.DataContext = state;
+            host.Content = embeddedMeeting;
+        }
+        else
+        {
+            host.Content = null;
+        }
     }
 }

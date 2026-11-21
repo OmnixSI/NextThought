@@ -40,6 +40,9 @@ public sealed class HistoryGroupRow : System.ComponentModel.INotifyPropertyChang
     /// <summary>§6.7 E1: the series' scene title shown beside its name (Mac folder.modeTitle).</summary>
     public string ModeTitle { get; init; } = "";
 
+    /// <summary>§3.4: the series scene, for the root overview series cards (SceneGlyph).</summary>
+    public MeetingMode Mode { get; init; } = MeetingMode.General;
+
     /// <summary>§6.7 E1: "N 场 · M 未整理" for the series card/list row.</summary>
     public string CountsText
     {

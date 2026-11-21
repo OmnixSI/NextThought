@@ -321,7 +321,7 @@ public partial class AppState : ObservableObject
     public string CompanionToggleLabel => UiText.T(CompanionRunning ? "关闭局域网手机伴侣" : "开启局域网手机伴侣");
     public string HistorySummary => UiText.EnglishUi
         ? $"{FilteredHistory.Count} shown · {History.Count} total"
-        : UiText.Format("%lld 场会议 · 共 %lld 场", FilteredHistory.Count, History.Count);
+        : UiText.Format("%lld 场会议 · 系列共 %lld 场", FilteredHistory.Count, History.Count);
     public bool IsHistoryViewEmpty => FilteredHistory.Count == 0;
     public bool HistoryFilterIsAll => MatchesFilter(HistoryFilter, "全部");
     public bool HistoryFilterHasSummary => MatchesFilter(HistoryFilter, "有纪要");

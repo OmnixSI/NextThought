@@ -162,6 +162,7 @@ public partial class AppState
     {
         if (HistoryHits.Count == 0) return;
         HistoryHitIndex = (HistoryHitIndex + delta + HistoryHits.Count) % HistoryHits.Count;
+        OpenHistoryHitInMeeting(HistoryHits[HistoryHitIndex].Hit);
     }
 
     // MARK: 会议操作菜单 (MeetingActionsMenu.swift)
@@ -171,7 +172,7 @@ public partial class AppState
     /// <summary>MeetingMenuItems: an active recording cannot be deleted; the tooltip says why.</summary>
     public bool CanDeleteSessionRow(RecentMeetingRow row) => CanManageSessions && CurrentSession?.Id != row.Meta.Id;
     public string SessionDeleteDisabledReason(RecentMeetingRow row) => Recording
-        ? UiText.T("正在记录的会议不能删除")
+        ? UiText.T("正在记录的会议不能删除。")
         : Working ? UiText.T("先停止当前任务，再删除会议。") : "";
 
     public string SessionFolderPath(RecentMeetingRow row) => Sessions.Folder(row.Meta.Id);
@@ -274,10 +275,10 @@ public partial class AppState
             parts.Add(UiText.Format("问题 %lld 个", meta.QuestionCount));
             parts.Add(meta.SummaryState switch
             {
-                "ready" => UiText.T("纪要已整理"),
+                "ready" => UiText.T("纪要已整理好"),
                 "pending" => UiText.T("纪要整理中"),
                 "failed" => UiText.T("纪要整理失败"),
-                _ => UiText.T("还没有纪要")
+                _ => UiText.T("还没有纪要。")
             });
             return string.Join(" · ", parts);
         }

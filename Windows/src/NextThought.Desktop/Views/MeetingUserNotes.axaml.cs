@@ -10,7 +10,11 @@ namespace NextThought.Desktop.Views;
 /// </summary>
 public partial class MeetingUserNotes : UserControl
 {
-    public MeetingUserNotes() => InitializeComponent();
+    public MeetingUserNotes()
+    {
+        InitializeComponent();
+        DetachedFromVisualTree += (_, _) => (DataContext as AppState)?.FlushMeetingNotes();
+    }
 
     private void Highlight_Click(object? sender, RoutedEventArgs e)
     {

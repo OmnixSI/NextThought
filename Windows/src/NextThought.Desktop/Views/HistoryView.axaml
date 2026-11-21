@@ -4,6 +4,7 @@
              xmlns:local="using:NextThought.Desktop"
              xmlns:core="using:NextThought.Core"
              xmlns:c="using:NextThought.Desktop.Controls"
+             xmlns:controls="using:NextThought.Desktop.Views.Controls"
              x:Class="NextThought.Desktop.Views.HistoryView"
              x:DataType="local:AppState">
   <UserControl.Resources>
@@ -14,7 +15,7 @@
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
               Tag="{Binding}" Click="Row_Click" Padding="{DynamicResource D4Padding_8_6}">
         <Button.ContextMenu>
-          <ContextMenu>
+          <ContextMenu Opening="RowMenu_Opening">
             <MenuItem Header="{loc:Tr 打开纪要}" Tag="{Binding}" Click="OpenSession_Tapped" />
             <MenuItem Header="{loc:Tr 重新整理}" Tag="{Binding}" Click="Regenerate_Tapped" />
             <MenuItem Header="{loc:Tr 纪要语言}">
@@ -208,7 +209,11 @@
         </StackPanel>
       </Border>
 
-      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <!-- §3.4: Mac history embeds the meeting page in the right pane; the archive overview only
+           shows when nothing is selected. -->
+      <Grid Grid.Row="1">
+        <ContentControl x:Name="HistoryMeetingHost" />
+        <ScrollViewer IsVisible="{Binding !HasSelectedHistory}" VerticalScrollBarVisibility="Auto">
         <Border MaxWidth="720" HorizontalAlignment="Left" ClipToBounds="True">
         <StackPanel Spacing="{DynamicResource D4Spacing_16}" Margin="{DynamicResource D4Margin_32_24_32_24}">
           <StackPanel Spacing="{DynamicResource D4Spacing_2}">
@@ -280,6 +285,10 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Tr 会议系列}" Classes="section" VerticalAlignment="Center" />
               <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}">
+                <Button Classes="quiet" Content="{loc:Tr 返回首页}" FontSize="12" Command="{Binding NavigateCommand}" CommandParameter="Home" />
+                <Button Classes="quiet" Content="{loc:Tr 清除搜索与筛选}" FontSize="12"
+                        Command="{Binding ClearHistoryFiltersCommand}" IsVisible="{Binding HistoryHasNarrowingFilter}" />
+                <Button Classes="quiet" Content="{loc:Tr 重试读取}" FontSize="12" Command="{Binding RetryHistoryReadCommand}" />
                 <c:ControlButtonBody Emphasis="Secondary" Content="{loc:Tr 批量删除}"
                                      Command="{Binding BeginHistorySeriesSelectionCommand}"
                                      IsVisible="{Binding !SelectingHistorySeries}"
@@ -298,24 +307,31 @@
               </StackPanel>
             </Grid>
             <ItemsControl ItemsSource="{Binding HistoryGroups}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="local:HistoryGroupRow">
-                  <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource D4Spacing_8}"
-                        Margin="{DynamicResource D4Margin_0_0_0_6}">
+                  <!-- MeetingArchiveOverview folder card: scene glyph, name, mode/counts line, manage menu. -->
+                  <Border Classes="card" Width="300" Margin="{DynamicResource D4Margin_0_0_10_10}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource D4Spacing_10}">
                     <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=OneWay}" Tag="{Binding SeriesId}"
                               IsVisible="{Binding $parent[UserControl].DataContext.SelectingHistorySeries}"
                               VerticalAlignment="Center" Click="SeriesCheckBox_Click" />
-                    <Button Grid.Column="1" Classes="quiet" HorizontalContentAlignment="Left"
-                            Content="{Binding Name}" Tag="{Binding SeriesId}" Click="OpenHistorySeries_Tapped"
-                            FontSize="13" Padding="{DynamicResource D4Padding_4_0}" />
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_8}"
+                    <controls:SceneGlyph Grid.Column="1" Mode="{Binding Mode}" Size="28" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_44_0_0_0}"
                                 VerticalAlignment="Center">
+                      <Button Classes="quiet" HorizontalContentAlignment="Left" Content="{Binding Name}"
+                              Tag="{Binding SeriesId}" Click="OpenHistorySeries_Tapped"
+                              FontWeight="Medium" FontSize="13" Padding="{DynamicResource D4Padding_0}" />
                       <TextBlock Text="{Binding ModeTitle}" Classes="caption" FontSize="11"
                                  Foreground="{DynamicResource Secondary}" />
                       <TextBlock Text="{Binding CountsText}" Classes="overline" FontSize="10"
                                  Foreground="{DynamicResource Tertiary}" />
                     </StackPanel>
-                    <Button Grid.Column="3" Classes="quiet" Content="{StaticResource IconEllipsis}"
+                    <Button Grid.Column="2" Classes="quiet" Content="{StaticResource IconEllipsis}"
                             FontFamily="{StaticResource IconFont}" ToolTip.Tip="{loc:Tr 管理系列}"
                             IsVisible="{Binding CanManage}" Padding="{DynamicResource D4Padding_4}">
                       <Button.Flyout>
@@ -327,6 +343,7 @@
                       </Button.Flyout>
                     </Button>
                   </Grid>
+                  </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -342,7 +359,8 @@
           </StackPanel>
         </StackPanel>
         </Border>
-      </ScrollViewer>
+        </ScrollViewer>
+      </Grid>
     </Grid>
   </Grid>
 </UserControl>

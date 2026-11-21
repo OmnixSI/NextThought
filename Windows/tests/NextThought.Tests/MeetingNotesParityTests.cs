@@ -56,8 +56,8 @@ public sealed class MeetingNotesParityTests
         Assert.Contains("{Binding MeetingNotesSaving}", view);
         Assert.Contains("{Binding MeetingNoteDraft}", view);
         Assert.Contains("{loc:Tr 记下自己的想法、别人的反馈和待查的问题。AI 重新整理不会覆盖这里。}", view);
-        Assert.Contains("{loc:Tr 保存个人笔记}", view);
-        Assert.Contains("SaveMeetingNotesCommand", view);
+        Assert.Contains("MeetingNotesStatusText", view);
+        Assert.DoesNotContain("SaveMeetingNotesCommand", view);
         Assert.Contains("MeetingNotesStatusIsDirty", view);
     }
 
@@ -66,8 +66,8 @@ public sealed class MeetingNotesParityTests
     {
         var view = Read("Views", "MeetingUserNotes.axaml");
         Assert.Contains("{Binding MeetingHighlightCountText}", view);
-        Assert.Contains("{Binding MeetingHighlightGroups}", view);
-        Assert.Contains("{Binding RangeText}", view);
+        Assert.Contains("{Binding MeetingHighlightRows}", view);
+        Assert.Contains("{Binding Citation}", view);
         Assert.Contains("{Binding Quote}", view);
         Assert.Contains("ToolTip.Tip=\"{loc:Tr 跳到原话}\"", view);
         var code = Read("Views", "MeetingUserNotes.axaml.cs");

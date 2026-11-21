@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using NextThought.Core;
@@ -9,6 +10,8 @@ namespace NextThought.Desktop;
 public sealed record MeetingHighlightRow(SessionHighlight Highlight)
 {
     public string TimeText => NotesTime.Text(Highlight.OffsetSeconds);
+    /// <summary>Mac citation prefix: [mm:ss].</summary>
+    public string Citation => "[" + TimeText + "]";
     public string Quote => Highlight.Quote;
 }
 
@@ -26,6 +29,13 @@ public partial class AppState
     [ObservableProperty] private string meetingNoteDraft = "";
     [ObservableProperty] private bool meetingNotesSaving;
     [ObservableProperty] private bool meetingNotesDirty;
+    [ObservableProperty] private string meetingNotesLoadError = "";
+
+    /// <summary>Mac editPersonalNotes: a short delay after typing persists the draft.</summary>
+    private DispatcherTimer? meetingNotesAutoSaveTimer;
+    private const int MeetingNotesAutoSaveMilliseconds = 800;
+
+    public bool HasMeetingNotesLoadError => MeetingNotesLoadError.Length > 0;
 
     public ObservableCollection<SessionHighlight> MeetingHighlights { get; } = [];
 
@@ -54,11 +64,60 @@ public partial class AppState
         if (loadingMeetingNotes) return;
         MeetingNotesDirty = true;
         RaiseMeetingNotesStatus();
+        ScheduleMeetingNotesAutoSave();
     }
 
     partial void OnMeetingNotesSavingChanged(bool value) => RaiseMeetingNotesStatus();
 
     partial void OnMeetingNotesDirtyChanged(bool value) => RaiseMeetingNotesStatus();
+
+    private void ScheduleMeetingNotesAutoSave()
+    {
+        meetingNotesAutoSaveTimer ??= new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(MeetingNotesAutoSaveMilliseconds)
+        };
+        meetingNotesAutoSaveTimer.Stop();
+        meetingNotesAutoSaveTimer.Tick -= OnMeetingNotesAutoSaveTick;
+        meetingNotesAutoSaveTimer.Tick += OnMeetingNotesAutoSaveTick;
+        meetingNotesAutoSaveTimer.Start();
+    }
+
+    private void OnMeetingNotesAutoSaveTick(object? sender, EventArgs e)
+    {
+        meetingNotesAutoSaveTimer?.Stop();
+        if (MeetingNotesDirty) SaveMeetingNotes();
+    }
+
+    /// <summary>Mac onDisappear: persist an unsaved draft when leaving the page.</summary>
+    public void FlushMeetingNotes()
+    {
+        meetingNotesAutoSaveTimer?.Stop();
+        if (MeetingNotesDirty) SaveMeetingNotes();
+    }
+
+    /// <summary>Mac retry row: read the user content again after a load failure.</summary>
+    [RelayCommand]
+    private void RetryMeetingNotes()
+    {
+        if (CurrentSession is not { } meta) return;
+        try
+        {
+            MeetingNotesLoadError = "";
+            OnPropertyChanged(nameof(HasMeetingNotesLoadError));
+            LoadMeetingNotes(SessionUserContentStore.Load(Sessions.Folder(meta.Id)));
+        }
+        catch (Exception ex)
+        {
+            SetMeetingNotesLoadError(ex);
+        }
+    }
+
+    public void SetMeetingNotesLoadError(Exception error)
+    {
+        MeetingNotesLoadError = error.Message;
+        OnPropertyChanged(nameof(HasMeetingNotesLoadError));
+    }
 
     private void RaiseMeetingNotesStatus()
     {
@@ -69,6 +128,8 @@ public partial class AppState
 
     private void LoadMeetingNotes(SessionUserContent content)
     {
+        MeetingNotesLoadError = "";
+        OnPropertyChanged(nameof(HasMeetingNotesLoadError));
         loadingMeetingNotes = true;
         try
         {

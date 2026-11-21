@@ -55,8 +55,10 @@ public partial class MainWindow
             state.Section = AppSection.History;
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
             await Task.Delay(500);
-            Step("归档概览（选中会议）", state.HasSelectedHistory, state.CurrentSessionTitle);
-            CaptureVisual(this, Path.Combine(shots, "history-overview-light.png"));
+            var notesHost = this.GetVisualDescendants().OfType<NotesView>().FirstOrDefault();
+            Step("右栏内嵌会议页（MeetingPage）", state.HasSelectedHistory && notesHost is not null,
+                "NotesView=" + (notesHost is not null ? "内嵌" : "缺失"));
+            CaptureVisual(this, Path.Combine(shots, "history-meeting-light.png"));
 
             // workspace/series scope (HistoryView.showFolder + onOpenRoot).
             state.OpenHistorySeriesCommand.Execute(series.Id);
@@ -78,7 +80,9 @@ public partial class MainWindow
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
             await Task.Delay(700);
             CaptureVisual(this, Path.Combine(shots, "history-dark.png"));
-            CaptureVisual(this, Path.Combine(shots, "history-overview-dark.png"));
+            var darkMeetingHost = this.GetVisualDescendants().OfType<NotesView>().FirstOrDefault();
+            Step("深色下内嵌会议页", darkMeetingHost is not null, "NotesView=" + (darkMeetingHost is not null ? "内嵌" : "缺失"));
+            CaptureVisual(this, Path.Combine(shots, "history-meeting-dark.png"));
             Application.Current.RequestedThemeVariant = ThemeVariant.Light;
             await Task.Delay(300);
             passed = steps.All(step => (bool)step.GetType().GetProperty("passed")!.GetValue(step)!);

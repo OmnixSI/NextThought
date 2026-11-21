@@ -48,7 +48,7 @@ public partial class AppState
     public string GlossaryHint => UiText.T("名字和术语在转写、回答、纪要里写法统一；记下听错的写法，搜索时一并找出来。原始转写不会被改写。");
     public string GlossaryScopeGlobalLabel => UiText.T("全局");
     public string GlossaryScopeSeriesLabel => UiText.T("当前系列");
-    public string GlossaryFindPlaceholder => UiText.T("在转写中查找（听错的写法也会找出来）");
+    public string GlossaryFindPlaceholder => UiText.T("在转写里查找（听错的写法也会找出来）");
     public string GlossaryListHeading => GlossarySeriesScope ? UiText.T("当前系列的术语") : UiText.T("全部术语");
     public string GlossaryEmptyText => GlossaryRows.Count == 0
         ? UiText.T(GlossarySeriesScope

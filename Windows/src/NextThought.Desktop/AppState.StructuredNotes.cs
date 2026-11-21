@@ -113,7 +113,9 @@ public partial class AppState
             {
                 LoadDemo();
                 Library.NotifyDemoLoaded();
-                SetStatus("演示模式：内置样本数据，不会写入你的资料。");
+                SetStatus(ModelReady
+                    ? UiText.T("语音已就绪。可以开始记录，或先导入 WAV 验证。")
+                    : UiText.T("先到设置准备语音组件；未连接回答服务时也可以只记录。"));
             }
             else
             {
@@ -198,7 +200,8 @@ public partial class AppState
             var groupRow = new HistoryGroupRow(group.Key.Name, group.Key.Id, group.ToList())
             {
                 IsSelected = group.Key.Id is { } selectedId && SelectedHistorySeries.Contains(selectedId),
-                ModeTitle = seriesRow is null ? "" : UiText.T(SessionModes.Parse(seriesRow.Mode).Title())
+                ModeTitle = seriesRow is null ? "" : UiText.T(SessionModes.Parse(seriesRow.Mode).Title()),
+                Mode = seriesRow?.EffectiveMode ?? MeetingMode.General
             };
             HistoryGroups.Add(groupRow);
         }

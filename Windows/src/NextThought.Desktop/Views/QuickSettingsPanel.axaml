@@ -36,13 +36,13 @@
         <TextBlock Text="{loc:Tr 回答语言}" VerticalAlignment="Center" />
         <ComboBox Grid.Column="1" Width="120" ItemsSource="{Binding Settings.AnswerLanguageChoices}" SelectedItem="{Binding Settings.AnswerLanguage}" />
       </Grid>
-      <CheckBox Content="{loc:Tr 英语回答附中文对照}" IsChecked="{Binding Settings.AnswerGloss}" />
+      <CheckBox Content="{loc:Tr 英文回答附中文对照}" IsChecked="{Binding Settings.AnswerGloss}" />
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBlock Text="{loc:Tr 提词宽度}" VerticalAlignment="Center" />
         <ComboBox Grid.Column="1" MinWidth="120" ItemsSource="{Binding Settings.CueWidthChoices}"
                   SelectedItem="{Binding Settings.SelectedCueWidth}" />
       </Grid>
-      <Button Classes="primary" Content="{loc:Tr 全部设置}" HorizontalAlignment="Stretch"
+      <Button Classes="primary" Content="{loc:Tr 全部设置…}" HorizontalAlignment="Stretch"
               Command="{Binding NavigateCommand}" CommandParameter="Settings" />
     </StackPanel>
   </Border>

@@ -21,7 +21,7 @@
         <Button Classes="primary" Content="{loc:Tr 复制纪要}" Command="{Binding CopyNotesCommand}" />
         <Button Content="{loc:Tr 编辑纪要}" Click="EditNotes_Click" />
         <Button Content="{loc:Tr 重新整理}" Click="RegenerateNotes_Click" />
-        <Button Content="{loc:Tr 导出…}" Command="{Binding OpenSessionExportCommand}" ToolTip.Tip="{loc:Tr 导出 Markdown}" />
+        <Button Content="{loc:Tr 导出…}" Command="{Binding OpenSessionExportCommand}" ToolTip.Tip="{loc:Tr 导出 Markdown…}" />
         <Button Content="{loc:Tr 详细信息}" Click="Info_Click" ToolTip.Tip="{loc:Tr 会议信息}" />
       </StackPanel>
     </Grid>
@@ -54,7 +54,7 @@
         <TextBlock Text="{Binding ProofreadStatus}" Classes="caption" FontSize="11" VerticalAlignment="Center"
                    IsVisible="{Binding HasProofreadStatus}" />
       </StackPanel>
-      <CheckBox Grid.Column="1" Content="{loc:Tr 结束后自动整理}" IsChecked="{Binding Settings.AutoSummarize}" VerticalAlignment="Center" />
+      <CheckBox Grid.Column="1" Content="{loc:Tr 会议结束后自动整理}" IsChecked="{Binding Settings.AutoSummarize}" VerticalAlignment="Center" />
     </Grid>
 
     <!-- 纪要格式：文字纪要 / 因果鱼骨图 / 要点大纲 / 观点对照 -->
@@ -109,7 +109,7 @@
                 <!-- NotesProgressLine：生成中显示阶段与进度，就地从纪要页看到 -->
                 <Border Classes="card" Padding="{DynamicResource D4Padding_12_10}" IsVisible="{Binding Summarizing}">
                   <StackPanel Spacing="{DynamicResource D4Spacing_4}">
-                    <TextBlock Text="{loc:Tr 正在整理纪要…}" Classes="label" />
+                    <TextBlock Text="{loc:Tr 正在整理纪要}" Classes="label" />
                     <TextBlock Text="{Binding Status}" Classes="caption" />
                     <ProgressBar Value="{Binding Progress}" IsIndeterminate="{Binding ProgressIndeterminate}" Maximum="1" />
                   </StackPanel>
@@ -201,7 +201,7 @@
 
                 <!-- 系列知识回看（Mac KnowledgeReviewSection；原「回顾」标签并入纪要页） -->
                 <StackPanel Spacing="{DynamicResource D4Spacing_4}" IsVisible="{Binding NotesFormatIsStandard}">
-                  <TextBlock Text="{loc:Tr 已确认经验}" Classes="overline" />
+                  <TextBlock Text="{loc:Tr 已确认的经验}" Classes="overline" />
                   <ItemsControl ItemsSource="{Binding SelectedSeriesBriefing.Lessons}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="core:WorkspaceLesson">

@@ -54,7 +54,7 @@ public partial class AppState
 
     public string GreetingHeadline => UiText.EnglishUi
         ? "What's next?"
-        : Greeting.Split('。')[0] + "。接下来是什么场合？";
+        : Greeting.Split('。')[0] + "接下来是什么场合？";
 
     partial void OnRecordingChanged(bool value)
     {
@@ -136,7 +136,7 @@ public partial class AppState
     {
         autoEnd?.KeepGoing(DateTimeOffset.UtcNow);
         AutoEndNotice = "";
-        SetStatus("继续记录。");
+        SetStatus("继续记录");
     }
 
     private async Task TagVoiceAsync(SessionMeta meta, TranscriptLine line, MeetingVoiceTagger tagger)

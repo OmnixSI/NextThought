@@ -108,4 +108,33 @@ public sealed class HistoryViewParityTests
         Assert.Contains("MeetingOutcome.Line", row);
         Assert.Contains("SceneTheme.For", row);
     }
+    [Fact]
+    public void HistoryEmbedsTheMeetingPageInTheRightPane()
+    {
+        var view = Read("Views", "HistoryView.axaml");
+        Assert.Contains("HistoryMeetingHost", view);
+        Assert.Contains("IsVisible=\"{Binding !HasSelectedHistory}\"", view);
+        Assert.Contains("SceneGlyph", view);
+        Assert.Contains("MeetingArchiveOverview folder card", view);
+        var code = File.ReadAllText(Path.Combine(Windows(), "src", "NextThought.Desktop", "Views", "HistoryView.axaml.cs"));
+        Assert.Contains("new NotesView()", code);
+        Assert.Contains("OpenHistoryHitInMeeting", code);
+    }
+
+    [Fact]
+    public void HistoryOverviewActionsAndRowMenuMatchMac()
+    {
+        var view = Read("Views", "HistoryView.axaml");
+        foreach (var label in new[] { "返回首页", "清除搜索与筛选", "重试读取" })
+            Assert.Contains(label, view);
+        Assert.Contains("RowMenu_Opening", view);
+        var meeting = Read("AppState.HistoryMeeting.cs");
+        Assert.Contains("OpenHistoryHitInMeeting", meeting);
+        Assert.Contains("ShowNotesTranscriptAt", meeting);
+        Assert.Contains("RetryHistoryRead", meeting);
+        var state = Read("AppState.Meeting.cs");
+        Assert.Contains("OpenHistoryHitInMeeting(HistoryHits[HistoryHitIndex].Hit)", state);
+        var row = Read("RecentMeetingRow.cs");
+        Assert.Contains("public MeetingMode Mode", row);
+    }
 }
