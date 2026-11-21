@@ -74,7 +74,7 @@ public sealed class GazeEstimator
     }
 
     /// <summary>Pupil travel, in half eye-widths, that still reads as eye contact.</summary>
-    public double Tolerance { get; init; }
+    public double Tolerance { get; set; }
 
     public GazeSignature Baseline { get; private set; } = new(0, 0);
     public bool IsCalibrated { get; private set; }
