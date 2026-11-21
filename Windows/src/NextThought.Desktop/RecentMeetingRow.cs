@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using NextThought.Core;
 
 namespace NextThought.Desktop;
@@ -112,6 +113,37 @@ public sealed record RecentMeetingRow(SessionMeta Meta) : System.ComponentModel.
     }
 
     public bool HasSummary => Meta.SummaryState == "ready";
+
+    /// <summary>G9: the Subtitle/Title/Outcome strings are computed, so a language switch has to
+    /// invalidate them explicitly (the demo screenshot batch keeps its rows across the switch).</summary>
+    public void NotifyLanguageChanged() =>
+        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(string.Empty));
+
+    /// <summary>G9: the Subtitle/Title/Outcome strings are computed, so a language switch has to
+    /// invalidate them explicitly (the demo screenshot batch keeps its rows across the switch).</summary>
+    public void NotifyLanguageChanged() =>
+        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(string.Empty));
+
+    // ---- E1 §6.7: HistoryView.swift SessionRow -------------------------------------------------
+    // A scene-tint dot, the meeting time on the right, and MeetingOutcome.line under the title.
+    private static MeetingMode ModeOf(string raw) =>
+        Enum.TryParse<MeetingMode>(raw, true, out var mode) ? mode : MeetingMode.General;
+
+    /// <summary>SessionRow: the dot uses the scene tint (Mac meta.mode.theme.tint).</summary>
+    public IBrush ModeTintBrush => new SolidColorBrush(Color.Parse(SceneTheme.For(ModeOf(Meta.Mode)).TintLight));
+
+    /// <summary>SessionRow: MeetingOutcome.when(meta.startedAt) on the right.</summary>
+    public string TimeText => MeetingOutcome.When(Meta.StartedAt);
+
+    /// <summary>SessionRow details: MeetingOutcome.line(meta).</summary>
+    public string Details => MeetingOutcome.Line(Meta);
+
+    public bool HasReadySummary => Meta.SummaryState == "ready";
+
+    public bool HasPendingSummary => Meta.SummaryState == "pending";
+
+    public bool HasFailedSummary => Meta.SummaryState == "failed";
+
 }
 
 /// <summary>E18: one content-search hit shown by the history hit navigator (HistoryView.swift).</summary>

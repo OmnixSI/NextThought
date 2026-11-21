@@ -56,7 +56,6 @@ public partial class MainWindow
                             await Task.Delay(120);
                         }
                         await CaptureWindowAsync(directory, textDirectory, name + suffix, english, englishInventory);
-                        if (english) await LocalizationAudit.WriteTruncationsAsync(this, textDirectory, name + suffix);
                         if (section == AppSection.Home && PageHost.Content is Avalonia.Controls.Control homePage
                             && homePage.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is { } homeScroll)
                         {
@@ -241,7 +240,11 @@ public partial class MainWindow
     {
         CaptureWindow(Path.Combine(directory, name));
         var rows = await WriteInventoryAsync(this, textDirectory, name);
-        if (english) englishInventory[name] = rows;
+        if (english)
+        {
+            englishInventory[name] = rows;
+            await LocalizationAudit.WriteTruncationsAsync(this, textDirectory, name);
+        }
     }
 
     private static async Task<string[]> WriteInventoryAsync(Visual root, string textDirectory, string name)

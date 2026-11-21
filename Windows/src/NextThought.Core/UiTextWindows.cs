@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1171;
+    public const int Count = 1173;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1183,6 +1183,7 @@ internal static class UiTextWindowsEnglish
         ["；已经记录的内容已保存。"] = "; what was recorded is saved.",
         ["；本机回退失败："] = "; local fallback failed: ",
         ["；界面按钮仍可使用。"] = "; window buttons still work.",
+        ["一句话印象"] = "One-line impression",
         ["用了多少"] = "How much you've recorded",
         ["本月"] = "This month",
         ["累计"] = "All time",
@@ -1203,5 +1204,7 @@ internal static class UiTextWindowsEnglish
         ["技能可用于所有系列，或在系列中按系列选择。"] = "Skills can apply to all series, or be chosen per series.",
         ["技能是一份 Markdown 说明（例如 SKILL.md）：你希望的说话方式、答题套路、领域知识。打开“所有系列”的技能每次回答都会用；其他技能在系列的“技能”页按系列勾选。"] = "A skill is a Markdown instruction describing the desired speaking style, answer method or subject knowledge. Skills opened to all series are used for every answer; other skills are chosen per series on the series' Skills tab.",
         ["开下一场"] = "Start next meeting",
+        ["结束并整理纪要"] = "End and write notes",
+        ["一直展开"] = "Keep the cue island open",
     };
 }

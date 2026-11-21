@@ -169,6 +169,11 @@ public partial class AppState : ObservableObject
             RaiseOnboardingResume();
             StartScreenWatchTimer();
             _ = RefreshHistoryAsync();
+            // The demo batch keeps its in-memory rows, so the session rows are told to refresh the
+            // computed language-dependent fields (RecentMeetingRow.Subtitle etc.) themselves.
+            foreach (var row in History) row.NotifyLanguageChanged();
+            foreach (var row in HomeRecent) row.NotifyLanguageChanged();
+            foreach (var row in FilteredHistory) row.NotifyLanguageChanged();
             RefreshSeries();
         };
     }
