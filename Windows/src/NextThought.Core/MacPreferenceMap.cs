@@ -17,7 +17,8 @@ public static class MacPreferenceMap
     [
         "baseUrl", "model", "notesModel", "reasoningEffort", "localModel", "secondPass", "captureMicrophone",
         "vocabulary", "autoSummarize", "automaticAnswers", "autoCheckUpdates", "cloudSttModel", "cloudStt", "recordSessions",
-        "codexModel", "useCodex", "webSearch", "useSemanticRetrieval", "subtitleFontSize", "cueSurface", "presenterSlideNotes",
+        "codexModel", "useCodex", "webSearch", "webSearchProvider", "useSemanticRetrieval", "subtitleFontSize",
+        "cueSurface", "presenterSlideNotes",
         "coachWatchesGaze", "coachGazeSensitivity",
         "onboardingCompletedVersion", "companionRelayUrl", "sceneDefaults", "insightScreenRegion",
         "answerGloss", "answerLanguage", "appearance", "capturePrivacy", "cueAlwaysOpen", "cueWidth",
@@ -42,7 +43,7 @@ public static class MacPreferenceMap
         "localStreamingModel", "microphoneEnabled", "notesModelID", "notesReasoning", "notesLanguage", "onboardingGuideCompletedVersion",
         "presenterMode", "presenterSlidesScreen", "recognitionVocabulary", "sceneOverrides", "notesTemplateByType", "secondPassEnabled",
         "semanticRetrievalEnabled", "subtitleBarFontSize", "teleprompterHideBackground", "transcriptionBackend",
-        "webSearchMode", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "keepOnTop", "textZoom", "textZoom",
+        "webSearchMode", "webSearchProvider", "teleprompterOpacity", "teleprompterFontSize", "reducedEffects", "keepOnTop", "textZoom", "textZoom",
         "apiPresets", "activeAPIPresetID", "codexFastMode", "updateRepository",
         "documentOCRProvider", "documentProviderWasSelected", "localOCRModelID",
         "ocrFallbackToVision", "codexOCRModel", "codexOCREffort", "codexOCRTimeout"
@@ -78,7 +79,9 @@ public static class MacPreferenceMap
         "recordSessions" => settings.RecordSessions,
         "automaticUpdateChecks" => settings.AutoCheckUpdates,
         "answerBackend" => settings.UseCodex ? "codexAppServer" : "openAICompatible",
-        "webSearchMode" => settings.WebSearchMode,
+        // A caller that only set the legacy bool (WebSearch = false) means off; the tri-state key
+        // alone cannot represent that, so derive the written Mac value from both fields.
+        "webSearchMode" => settings.WebSearch ? settings.WebSearchMode : "off",
         "webSearchProvider" => settings.WebSearchProvider,
         "semanticRetrievalEnabled" => settings.UseSemanticRetrieval,
         "codexModelID" => settings.CodexModel,

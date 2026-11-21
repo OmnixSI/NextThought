@@ -1,3 +1,5 @@
+> 截图来源：提交 `746068e8`（2026-11-21 16:50，最终构建；浅/深/英与状态截图均由该提交生成）。
+
 # E14 联网搜索收尾：Mac ↔ Windows 对照
 
 对照代码：`Sources/NextThought/WebSearch.swift`（272 行全文：WebSearchProvider/TavilyClient/WebLookup/toggleWebAnswer/lookUpDisplayedAnswer/WebSourcesList 相关）；`Sources/NextThought/SettingsView.swift` 的 `WebSearchSettings`（联网模式 off/auto/always）与高级页「搜索方式与 Tavily」；`Sources/NextThought/SearchAssessment.swift`（模型复核判断是否联网）
@@ -49,14 +51,21 @@ Windows 截图：待 verify 阶段补跑（本轮按 Lead 要求暂停应用启�
 
 自检 `RunWebSearchCheckAsync` 已加入：无密钥→未配置；保存假密钥→加密落盘、解析 provider=tavily、状态行刷新；缓存命中/区分 provider/过期；保存新密钥后缓存清空；手动清空缓存；设置页「联网」区块截图；清空密钥回到未配置。
 
-**本轮运行状态（如实记录）**：按 Lead 要求本轮结束前暂停应用启动与截图，**自检未执行取证**；E14 现在为「已实现、未验证」，缓存语义由上述单元测试覆盖，key 状态/provider 解析为编译级验证。
+**运行状态（task-81 收尾后）**：`--self-test web-search` 在隔离数据目录执行 **passed**（本目录 `web-search-check.json`），设置页「联网」区块截图 `web-search-settings-light.png`；E14 三态/分类器/切换的证据见下方 §7。缓存语义、key 状态/provider 解析仍由上述单元测试覆盖。
 
 ## 6. 未解决 / 待补
 
-1. 无 Mac 的「联网模式」三态（关/自动判断/总是）与 Codex 搜索 provider；Windows 只有开关 + 规则自动判断 + Tavily。
-2. 无 Mac 的模型复核（assessWebSearch 3 秒分类器，失败 fallback 记录）；Windows 直接按规则判断。
-3. 无「原回答 ↔ 联网版」切换（`toggleWebAnswer`/`showOriginalAnswer`）与按回答 id 的 `WebLookup` 状态机；LiveView 由 d-parity 在途，本轮未改。
+1. ~~无 Mac 的「联网模式」三态~~：task-81 已修——`AppSettings.WebSearchMode` 字符串键 `webSearchMode`（off/auto/always，与 Mac 同值），`MacPreferenceMap` 双向映射并迁移旧 bool；`AppState.E4.cs` 有三态命令/标签，设置键位置交 settings-parity 按 Mac 拆组。仍未做：Codex 搜索 provider（Windows 只有 Tavily；decisions 第 4 条已接受 DPAPI key 存储，provider 差异待第二批）。
+2. ~~无 Mac 的模型复核~~：task-81 已修——Core `WebSearchClassifier` 移植 `assessWebSearch`（off/always→规则→模型 JSON，3 秒超时；失败/取消按规则回退并把原因记入 `SearchDecision.Reason`/mechanism=fallback|cancelled）；7 项 Core 测试覆盖超时/无效 JSON/取消。
+3. ~~无「原回答 ↔ 联网版」切换与按回答 id 的 WebLookup~~：task-81 已实现数据/状态层——Core `WebLookupStore`（按 answer id、generation、searching/done/failed、12 条上限）+ `AppState.WebSearch.cs`（`ShowsWebAnswer`/`CanToggleWebAnswer`/`WebAnswerToggleLabel`/`ToggleWebAnswerCommand`/`WebLookupStatusText`/`LookUpDisplayedAnswerCommand`；原回答先出，决定要查时后台生成联网版并写回 `AnswerRecord.WebAnswer/WebSources`）；LiveView 的 pill/状态行绑定已与 live-parity 约定，由其在 E4 live page 收尾截图。
 4. 密钥存储从 Mac 系统钥匙串改为 Windows 当前用户加密文件（DPAPI）；备份排除清单已含 `websearch.tavily`。
-5. 设置页缺少 Mac 的「搜索方式/Tavily Key」高级分组视觉（当前「联网」区在回答服务卡片内）；本轮 SettingsView 有其它队友在途修改，未追加布局改动。
+5. 设置页分组（回答与资料→联网搜索 三态；高级→回答服务·联网搜索 provider/key）：已把 Mac 定位与现有绑定发 settings-parity（其 SettingsView 在途），收尾由该任务确认。
 6. 缓存目前只服务自动联网；手动「联网查一下」总是新请求（Mac 语义如此），无 UI 显示缓存年龄（状态行有文字，LiveView 未改）。
 7. 真实 Tavily 联网未在自动化中执行（无有效密钥/网络），需 verify 阶段实机点按。
+
+## 7. task-81 收尾证据（2026-11-21）
+
+- 三态键：`webSearchMode` = off/auto/always（Mac 同名键，`MacPreferenceMap` 读写；旧 bool 迁移）；Core 测试 `WebSearchClassifierTests.WebSearchModeIsTheMacThreeStateString`、`SettingsParityDefaultsTests` 全过。
+- 模型复核：Core `WebSearchClassifier` 3 秒超时 + fallback，测试 7/7；`AppState.AssessWebSearchAsync` 在 answer 前取决定并写 `EvidenceBundle.Search`。
+- 原回答 ↔ 联网版：`AppState.WebSearch.cs`（上一节第 3 条）+ `DisplayedAnswerText` 在 `ShowsWebAnswer` 时返回联网版；`MaybeStartWebLookup(answerRecord, searchDecision)` 在回答保存后启动；`--self-test web-search` passed。
+- 端到端真实 Tavily/模型联网仍归 verify/实机阶段（第 7 条）。
