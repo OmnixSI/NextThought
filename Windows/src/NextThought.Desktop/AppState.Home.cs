@@ -308,6 +308,7 @@ public partial class AppState
     {
         RefreshHomeSeries();
         RefreshHomeRecent();
+        RefreshHomeStats();
         OnPropertyChanged(nameof(HomeGreeting));
         OnPropertyChanged(nameof(HomeQuestion));
     }

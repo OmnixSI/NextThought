@@ -47,10 +47,10 @@ public partial class MainWindow
                         if (section == AppSection.Home)
                         {
                             // Refresh the home lists before the shot: a theme switch can leave a page
-                            // visit in between, and the counts must be identical in both themes.
-                            state.RefreshHomeSeries();
-                            state.RefreshHomeRecent();
-                            state.RefreshHomeStats();
+                            // visit in between, and the counts must be identical in both themes. The
+                            // demo history can be lost if a page refresh ran before the demo loaded.
+                            if (state.History.Count == 0) state.LoadDemo();
+                            state.RefreshHome();
                             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
                             await Task.Delay(120);
                         }
