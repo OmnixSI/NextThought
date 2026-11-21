@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:NextThought.Desktop.Localization"
+             xmlns:local="using:NextThought.Desktop"
+             x:Class="NextThought.Desktop.Views.MeetingUserNotes"
+             x:DataType="local:AppState">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.notes-status">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Foreground" Value="{DynamicResource Secondary}" />
+    </Style>
+    <Style Selector="TextBlock.notes-status.dirty">
+      <Setter Property="Foreground" Value="{DynamicResource Caution}" />
+    </Style>
+    <Style Selector="Button.highlight-row">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="{DynamicResource D4Padding_4_2}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    </Style>
+  </UserControl.Styles>
+  <StackPanel Spacing="{DynamicResource D4Spacing_8}">
+    <!-- Mac MeetingUserNotes header: one title and the save state. -->
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+      <TextBlock Text="{loc:Tr 我的笔记}" Classes="title" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource D4Spacing_4}" VerticalAlignment="Center">
+        <ProgressBar IsIndeterminate="True" Width="28" Height="3" IsVisible="{Binding MeetingNotesSaving}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding MeetingNotesStatusText}" Classes="notes-status"
+                   Classes.dirty="{Binding MeetingNotesStatusIsDirty}" VerticalAlignment="Center" />
+      </StackPanel>
+    </Grid>
+    <TextBlock Text="{loc:Tr 记下自己的想法、别人的反馈和待查的问题。AI 重新整理不会覆盖这里。}"
+               Classes="caption" TextWrapping="Wrap" />
+    <TextBox Text="{Binding MeetingNoteDraft}" AcceptsReturn="True" TextWrapping="Wrap" Height="180"
+             PlaceholderText="{loc:Tr 个人笔记保存在 user-content.json，不覆盖生成纪要。}" />
+    <Button Classes="primary" Content="{loc:Tr 保存个人笔记}" Command="{Binding SaveMeetingNotesCommand}"
+            HorizontalAlignment="Left" />
+    <!-- 重点: nearby highlights merged into paragraphs (E8 分段合并). -->
+    <TextBlock Text="{Binding MeetingHighlightCountText}" Classes="overline"
+               IsVisible="{Binding HasMeetingHighlights}" />
+    <TextBlock Text="{loc:Tr 还没有高亮。在转写里点「高亮」记下一句，会把原话时间一起存进个人笔记。}"
+               Classes="caption" IsVisible="{Binding !HasMeetingHighlights}" TextWrapping="Wrap" />
+    <ItemsControl ItemsSource="{Binding MeetingHighlightGroups}" IsVisible="{Binding HasMeetingHighlights}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="local:MeetingHighlightGroup">
+          <StackPanel Spacing="{DynamicResource D4Spacing_2}" Margin="{DynamicResource D4Margin_0_0_0_6}">
+            <TextBlock Text="{Binding RangeText}" Classes="caption" FontSize="10"
+                       Foreground="{DynamicResource Tertiary}" />
+            <ItemsControl ItemsSource="{Binding Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:MeetingHighlightRow">
+                  <Button Classes="highlight-row" Tag="{Binding}" Click="Highlight_Click"
+                          ToolTip.Tip="{loc:Tr 跳到原话}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                      <TextBlock Text="{StaticResource IconStarFill}" FontFamily="{StaticResource IconFont}" FontSize="10"
+                                 Foreground="{DynamicResource Caution}" VerticalAlignment="Top" />
+                      <TextBlock Grid.Column="1" Text="{Binding Quote}" Classes="caption" TextWrapping="Wrap" MaxLines="3" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

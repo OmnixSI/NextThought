@@ -344,28 +344,7 @@
       </TabItem>
 
       <TabItem Header="{loc:Tr 个人笔记}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <StackPanel Margin="{DynamicResource D4Margin_22}" Spacing="{DynamicResource D4Spacing_8}">
-            <TextBlock Text="{loc:Tr 个人笔记保存在 user-content.json，不覆盖生成纪要。}" Classes="caption" />
-            <TextBox Text="{Binding PersonalNotesText}" AcceptsReturn="True" TextWrapping="Wrap" Height="220" />
-            <Button Classes="primary" Content="{loc:Tr 保存个人笔记}" Command="{Binding SaveNotesEditorCommand}" HorizontalAlignment="Left" />
-            <TextBlock Text="{loc:Tr 高亮}" Classes="overline" Margin="{DynamicResource D4Margin_0_8_0_0}" />
-            <TextBlock Text="{loc:Tr 还没有高亮。在转写里点「高亮」记下一句，会把原话时间一起存进个人笔记。}"
-                       Classes="caption" IsVisible="{Binding !HasMeetingHighlights}" TextWrapping="Wrap" />
-            <ItemsControl ItemsSource="{Binding MeetingHighlights}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="core:SessionHighlight">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource D4Spacing_6}"
-                        Margin="{DynamicResource D4Margin_0_0_0_6}">
-                    <TextBlock Grid.Column="0" Text="{Binding Quote}" Classes="caption" TextWrapping="Wrap" />
-                    <Button Grid.Column="1" Classes="quiet" Content="{loc:Tr 跳到原话}" Tag="{Binding}"
-                            Click="HighlightJump_Click" />
-                  </Grid>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </ScrollViewer>
+        <views:MeetingUserNotes Margin="{DynamicResource D4Margin_22}" />
       </TabItem>
     </TabControl>
   </Grid>
