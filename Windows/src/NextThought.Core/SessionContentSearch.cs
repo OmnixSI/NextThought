@@ -112,7 +112,7 @@ public static class SessionContentSearch
             SessionDerivedContentStatus.Unknown, summary.StructuredNotesSourceRevision,
             summary.Structured, summary.StructuredAll, summary.Questions, summary.Lessons, summary.Bank);
         var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, lines, projectedAnswers,
-            projectedSummary, questions, textNotes: notes);
+            projectedSummary, questions, textNotes: notes, meta: meta);
         var fields = Fields(projection)
             .Where(field => field.Id is null || !field.Id.Contains(":structured:", StringComparison.Ordinal))
             .ToList();

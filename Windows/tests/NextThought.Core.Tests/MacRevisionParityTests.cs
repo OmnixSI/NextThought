@@ -112,6 +112,21 @@ public sealed class MacRevisionParityTests
     }
 
     [Fact]
+    public void StructuredNotesBytesAreTheMacFileBytes()
+    {
+        if (!MacFixtures.Available) return; // SKIP: fixtures only exist in the repository checkout.
+        // §4.2: the canonical JSON must be byte-identical to what Mac's JSONLines encoder writes
+        // (compact, sorted keys, unescaped slashes, whole-second dates). The commit fixture file is
+        // that encoder's output, so comparing bytes proves the digest input is the same data.
+        foreach (var (_, folder) in Meetings)
+        {
+            var bytes = SessionProjectionBuilder.StructuredNotesBytes(Notes(folder));
+            var expected = File.ReadAllBytes(MacFixtures.SessionPath(folder, "structured-notes.json"));
+            Assert.Equal(Convert.ToBase64String(expected), Convert.ToBase64String(bytes));
+        }
+    }
+
+    [Fact]
     public void TheFixtureInputsAreTheRenderedMacOnes()
     {
         if (!MacFixtures.Available) return; // SKIP: fixtures only exist in the repository checkout.

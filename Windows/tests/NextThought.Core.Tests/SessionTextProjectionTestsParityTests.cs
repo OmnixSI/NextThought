@@ -167,7 +167,8 @@ public sealed class SessionTextProjectionTestsParityTests
             Sections:
             [
                 new OutlineSection("决定", Points: [new OutlinePoint("用户改过的最终措辞")])
-            ]), transcriptSourceRevision: SessionProjectionBuilder.TranscriptSourceRevision(sessionId, Start, [line], []));
+            ]), transcriptSourceRevision: SessionProjectionBuilder.TranscriptSourceRevision(
+                new SessionMeta { Id = sessionId, StartedAt = Start }, [line], []));
         var olderSummary = new SessionProjectedSummary("交付安排", "## 决定\n模型原先写的措辞");
 
         var projection = SessionProjectionBuilder.Build(sessionId, Start, [line], [],

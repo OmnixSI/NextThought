@@ -51,14 +51,14 @@ public sealed class RevisionPortTests
         var start = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
         var line = new TranscriptLine { Id = Guid.NewGuid(), Date = start.AddSeconds(3), Speaker = "remote", Text = "old" };
         var sessionId = Guid.NewGuid();
-        var revision = SessionProjectionBuilder.TranscriptSourceRevision(sessionId, start, [line], []);
+        var meta = new SessionMeta { Id = sessionId, StartedAt = start };
+        var revision = SessionProjectionBuilder.TranscriptSourceRevision(meta, [line], []);
         Assert.Equal(64, revision.Length);
         var correction = new TranscriptCorrection
         { Line = 0, LineId = line.Id, Original = "old", Corrected = "new" };
-        var withCorrection = SessionProjectionBuilder.TranscriptSourceRevision(sessionId, start, [line], [correction]);
+        var withCorrection = SessionProjectionBuilder.TranscriptSourceRevision(meta, [line], [correction]);
         Assert.NotEqual(revision, withCorrection);
         Assert.Equal(64, withCorrection.Length);
-        Assert.Equal(withCorrection,
-            SessionProjectionBuilder.TranscriptSourceRevision(sessionId, start, [line], [correction]));
+        Assert.Equal(withCorrection, SessionProjectionBuilder.TranscriptSourceRevision(meta, [line], [correction]));
     }
 }

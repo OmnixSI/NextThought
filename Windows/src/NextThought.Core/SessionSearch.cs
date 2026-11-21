@@ -96,7 +96,7 @@ public static SessionSearchSnapshot FromSession(SessionData session)
             SourceStatus: SessionDerivedContentStatus.Unknown)
         : null;
     var projection = SessionProjectionBuilder.Build(session.Meta.Id, session.Meta.StartedAt, session.Lines,
-        answers, summary);
+        answers, summary, meta: session.Meta);
     var issues = new List<string>();
     if (session.Meta.SummaryError is { Length: > 0 } error) issues.Add("摘要：" + error);
     return new SessionSearchSnapshot(SessionContentSearch.Fields(projection), issues);

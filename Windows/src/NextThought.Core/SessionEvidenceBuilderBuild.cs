@@ -12,8 +12,7 @@ public static partial class SessionEvidenceBuilder
         IReadOnlyList<TranscriptCorrection>? corrections = null)
     {
         var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, lines, [],
-            corrections: corrections ?? notes?.Corrections,
-            voiceNames: meta.VoiceNames, meVoices: meta.MeVoices?.ToHashSet());
+            corrections: corrections ?? notes?.Corrections, meta: meta);
         var transcript = projection.Transcript;
         var currentRevision = projection.TranscriptSourceRevision;
         var references = new List<SessionEvidenceReference>();

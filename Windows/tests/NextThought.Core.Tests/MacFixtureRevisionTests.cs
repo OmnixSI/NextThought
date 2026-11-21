@@ -80,11 +80,10 @@ public sealed class MacFixtureRevisionTests
             var node = meetingsNode[index];
             Assert.Equal(sessionId, meta.Id.ToString("D"));
 
-            var withoutNotes = SessionProjectionBuilder.TranscriptSourceRevision(meta.Id, meta.StartedAt, lines, []);
+            var withoutNotes = SessionProjectionBuilder.TranscriptSourceRevision(meta, lines, []);
             Assert.Equal(node.GetProperty("transcriptSourceRevisionWithoutNotes").GetString(), withoutNotes);
 
-            var withNotes = SessionProjectionBuilder.TranscriptSourceRevision(meta.Id, meta.StartedAt, lines,
-                notes.ActiveCorrections());
+            var withNotes = SessionProjectionBuilder.TranscriptSourceRevision(meta, lines, notes.ActiveCorrections());
             Assert.Equal(node.GetProperty("transcriptSourceRevision").GetString(), withNotes);
         }
     }
@@ -148,7 +147,7 @@ public sealed class MacFixtureRevisionTests
         var computed = new[]
         {
             "transcriptSourceRevision=" + SessionProjectionBuilder.TranscriptSourceRevision(
-                meta.Id, meta.StartedAt, lines, notes.ActiveCorrections()),
+                meta, lines, notes.ActiveCorrections()),
             "claimSourceRevision=" + revisions.RootElement.GetProperty("claimSourceRevision").GetString(),
             "sourceRevision=" + revisions.RootElement.GetProperty("sourceRevision").GetString()
         };

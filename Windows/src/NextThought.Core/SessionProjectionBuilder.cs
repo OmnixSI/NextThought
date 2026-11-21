@@ -33,8 +33,12 @@ public static class SwiftDigest
 /// </summary>
 public static class SessionProjectionBuilder
 {
-    /// <summary>A11: Mac's structured-notes snapshot fingerprint: sorted-key JSON, ISO-8601 dates, base64, digest.</summary>
-    public static string StructuredNotesRevision(StructuredNotesDoc notes)
+    /// <summary>
+    /// A11: the exact bytes Mac's JSONLines encoder produces for a structured-notes snapshot:
+    /// compact JSON, keys sorted alphabetically at every level, slashes unescaped, whole-second
+    /// ISO-8601 dates (SessionTextProjection.swift:371-374 encodes notes with JSONLines.encoder()).
+    /// </summary>
+    public static byte[] StructuredNotesBytes(StructuredNotesDoc notes)
     {
         var json = JsonSerializer.Serialize(notes, JsonDefaults.ArchiveOptions);
         var node = System.Text.Json.Nodes.JsonNode.Parse(json);
@@ -43,9 +47,12 @@ public static class SessionProjectionBuilder
         {
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
-        var bytes = Encoding.UTF8.GetBytes(sorted?.ToJsonString(options) ?? "null");
-        return SwiftDigest.Of("structured-notes-v1", Convert.ToBase64String(bytes));
+        return Encoding.UTF8.GetBytes(sorted?.ToJsonString(options) ?? "null");
     }
+
+    /// <summary>A11: Mac's structured-notes snapshot fingerprint: the JSONLines bytes, base64, digest.</summary>
+    public static string StructuredNotesRevision(StructuredNotesDoc notes) =>
+        SwiftDigest.Of("structured-notes-v1", Convert.ToBase64String(StructuredNotesBytes(notes)));
 
     private static System.Text.Json.Nodes.JsonNode? Clone(System.Text.Json.Nodes.JsonNode? node) =>
         node is null ? null : System.Text.Json.Nodes.JsonNode.Parse(node.ToJsonString());
@@ -65,16 +72,20 @@ public static class SessionProjectionBuilder
         SessionProjectedSummary? summary = null, IReadOnlyList<SessionQuestionEvent>? detected = null,
         SessionProjectionOptions? options = null, IReadOnlyList<TranscriptCorrection>? corrections = null,
         StructuredNotesPayload? notes = null, StructuredNotesDoc? textNotes = null,
-        IReadOnlyDictionary<string, string>? voiceNames = null, ISet<int>? meVoices = null)
+        IReadOnlyDictionary<string, string>? voiceNames = null, ISet<int>? meVoices = null,
+        SessionMeta? meta = null)
     {
         options ??= new SessionProjectionOptions();
         corrections ??= [];
+        voiceNames ??= meta?.VoiceNames;
+        meVoices ??= meta?.MeVoices?.ToHashSet();
         var correctedLines = NotesCorrections.Apply(corrections, lines);
         var speakerLabels = SpeakerLabels.PromptLabels(lines, voiceNames, meVoices, false);
         var text = new List<SessionProjectedText>();
         var transcript = new List<SessionProjectedTranscriptLine>();
-        var currentTranscriptRevision = TranscriptSourceRevision(sessionId, startedAt, lines, corrections,
-            voiceNames, meVoices);
+        var currentTranscriptRevision = meta is not null
+            ? TranscriptSourceRevision(meta, lines, corrections)
+            : TranscriptSourceDigest(sessionId, startedAt, lines, corrections, voiceNames, meVoices);
         for (var index = 0; index < lines.Count; index++)
         {
             var line = lines[index];
@@ -209,16 +220,19 @@ public static class SessionProjectionBuilder
     }
 
 
-    /// <summary>A11: fingerprint of the immutable transcript source, byte-for-byte as the Mac computes it.</summary>
+    /// <summary>
+    /// A11: fingerprint of the immutable transcript source, byte-for-byte as the Mac computes it
+    /// (SessionTextProjection.swift:376-394). The speaker labels come from meta.voiceNames/meVoices,
+    /// so the whole <see cref="SessionMeta"/> is needed rather than just its id and start time.
+    /// </summary>
     public static string TranscriptSourceRevision(SessionMeta meta, IReadOnlyList<TranscriptLine> lines,
         IReadOnlyList<TranscriptCorrection> corrections) =>
-        TranscriptSourceRevision(meta.Id, meta.StartedAt, lines, corrections, meta.VoiceNames,
+        TranscriptSourceDigest(meta.Id, meta.StartedAt, lines, corrections, meta.VoiceNames,
             meta.MeVoices?.ToHashSet());
 
-    /// <summary>A11: fingerprint of the immutable transcript source, byte-for-byte as the Mac computes it.</summary>
-    public static string TranscriptSourceRevision(Guid sessionId, DateTimeOffset startedAt,
+    private static string TranscriptSourceDigest(Guid sessionId, DateTimeOffset startedAt,
         IReadOnlyList<TranscriptLine> lines, IReadOnlyList<TranscriptCorrection> corrections,
-        IReadOnlyDictionary<string, string>? voiceNames = null, ISet<int>? meVoices = null)
+        IReadOnlyDictionary<string, string>? voiceNames, ISet<int>? meVoices)
     {
         var corrected = NotesCorrections.Apply(corrections, lines);
         var labels = SpeakerLabels.PromptLabels(lines, voiceNames, meVoices, false);

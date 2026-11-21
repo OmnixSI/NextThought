@@ -280,7 +280,7 @@ public sealed class SessionContentSearchTestsParityTests
         var notes = new StructuredNotesDoc("general", "\u4F1A\u8BAE", "zh", "\u7EAA\u8981",
             [new NotesSectionResult("actions", "\u5F85\u529E", NotesSectionKind.Actions, false,
                 [new NotesItem { Text = "\u539F\u59CB\u5F85\u529E\u63AA\u8F9E" }])]);
-        var transcriptRevision = SessionProjectionBuilder.TranscriptSourceRevision(meta.Id, start, [line], []);
+        var transcriptRevision = SessionProjectionBuilder.TranscriptSourceRevision(meta, [line], []);
         notes = notes with { TranscriptSourceRevision = transcriptRevision };
         var summary = new SessionSummary
         {

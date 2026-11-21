@@ -77,7 +77,7 @@ public partial class AppState
                 TranscriptVariant = transcriptVariant,
                 LanguageView = languageView
             },
-            corrections: exportCorrections);
+            corrections: exportCorrections, meta: meta);
         var duration = (meta.EndedAt ?? meta.StartedAt) - meta.StartedAt;
         return SessionExportContent.Build(format, projection, meta, exportLines, exportModeTitle,
             duration.TotalSeconds, meta.AudioSource);
@@ -140,7 +140,7 @@ public partial class AppState
         if (exportMeta is not { } meta) return (0, 0);
         var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, exportLines, exportAnswers,
             options: new SessionProjectionOptions { TranscriptVariant = variant, LanguageView = languageView },
-            corrections: exportCorrections);
+            corrections: exportCorrections, meta: meta);
         var export = SessionSubtitleExporter.ExportProjected(meta, projection.Transcript, SessionSubtitleFormat.Srt,
             SessionExportContent.SubtitleContent(languageView));
         return (export.EstimatedTimingCount, export.StaleTranslationCount);

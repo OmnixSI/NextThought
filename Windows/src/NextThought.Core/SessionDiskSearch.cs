@@ -64,8 +64,8 @@ public sealed class DiskSessionSearch
         }
         var start = lines.Count > 0 ? lines.Min(line => line.Date) : DateTimeOffset.UnixEpoch;
         var meta = new SessionMeta { Id = id, StartedAt = start, Mode = "meeting" };
-        var sessionRevision = SessionProjectionBuilder.TranscriptSourceRevision(id, start, lines, []);
-        var projection = SessionProjectionBuilder.Build(id, start, lines, [], null);
+        var sessionRevision = SessionProjectionBuilder.TranscriptSourceRevision(meta, lines, []);
+        var projection = SessionProjectionBuilder.Build(id, start, lines, [], null, meta: meta);
         var fields = SessionContentSearch.Fields(projection).ToList();
         var userPath = Path.Combine(folder, SessionUserContent.FileName);
         if (File.Exists(userPath))
