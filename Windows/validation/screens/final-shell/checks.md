@@ -10,7 +10,7 @@
 | `history-light.png` / `history-dark.png` | 所有记录：胶囊选中项为白色圆角块；标题行右侧出现上下文侧栏开关 |
 | `series-light.png` / `series-dark.png` | 系列：右侧出现上下文侧栏开关 |
 | `live-light.png` / `live-dark.png` | 会中页：设计系统控件的折叠区（历史回答/截图由 live-parity 重写） |
-| `settings-light.png` / `settings-dark.png` | 设置快捷键页：快捷键冲突只在此页标出（底部状态栏不再常驻冲突提示） |
+| `settings-shortcuts-light.png` / `settings-shortcuts-dark.png` | 设置 → 提词与教练页（含「全局快捷键」组）：快捷键冲突只在此页标出（底部状态栏不再常驻冲突提示；取自 settings-coach 截图更名） |
 
 ## 新增自动检查（`tests/NextThought.Tests`）
 
