@@ -8,7 +8,7 @@ namespace NextThought.Core;
 
 internal static class UiTextWindowsEnglish
 {
-    public const int Count = 1287;
+    public const int Count = 1288;
 
     public static readonly IReadOnlyDictionary<string, string> Strings = new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -1181,6 +1181,7 @@ internal static class UiTextWindowsEnglish
         ["开下一场"] = "Start next meeting",
         ["字体样张"] = "Type specimen",
         ["字体样张 · TYPE SPECIMEN"] = "TYPE SPECIMEN",
+        ["重试保存"] = "Retry save",
         ["第三方组件"] = "Third-party components",
         ["隔离的 Python 3.12 环境，读取 PDF、Office 与文本文件。"] = "An isolated Python 3.12 environment reads PDF, Office and text files.",
         ["正在校验文档组件…"] = "Verifying document components…",
