@@ -189,7 +189,7 @@ PREFERENCES = [
          allowed=["soniox", "openai", "deepgram"]),
     done("coachEnabled", "bool", True, "true", "设置 → 提词与教练 → 临场教练（SettingsPresenter.swift）",
          'object(forKey: "coachEnabled") as? Bool ?? true',
-         "MacPreferences+SettingsStore（Mac 键名/默认 true）；缺口：E10 未做，等待模型方案答复，Windows 尚无临场教练行为消费者"),
+         "已实现、未验证｜AppSettings.CoachEnabled←Mac 键名/默认 true（SettingsStore）；设置 → 提词与教练 → 临场教练卡首个开关，切换即写 Mac key；行为：关闭时停摄像头并清 CoachHint，岛提示/每秒 tick/逐行 ingest/纪要教练摘要全部短路（Mac LiveCoach.isEnabled 语义）；测试：CoachGazeSettingsTests、SettingsStructureTests"),
     done("coachGazeSensitivity", "string", "standard", '"standard"', "设置 → 提词与教练 → 临场教练（SettingsPresenter.swift）",
          'string(forKey: "coachGazeSensitivity") ?? ""',
          "MacPreferences+SettingsStore（Mac 键名/默认 \"standard\"，允许值 relaxed/standard/strict 已写入注册表）；缺口：E10 未做，等待模型方案答复",
