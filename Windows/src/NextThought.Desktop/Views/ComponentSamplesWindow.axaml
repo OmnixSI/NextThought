@@ -3,114 +3,131 @@
         xmlns:views="using:NextThought.Desktop.Views"
         xmlns:c="using:NextThought.Desktop.Controls"
         x:Class="NextThought.Desktop.Views.ComponentSamplesWindow"
-        Title="设计系统组件样张" Width="1120" Height="820"
+        Title="Design system components" Width="1120" Height="820"
         WindowStartupLocation="CenterScreen" Background="{DynamicResource Paper}">
+  <Window.Resources>
+    <Thickness x:Key="SampleMargin_32_18_32_24">32,18,32,24</Thickness>
+    <x:Double x:Key="SampleSpacing_12">12</x:Double>
+    <x:Double x:Key="SampleSpacing_2">2</x:Double>
+    <Thickness x:Key="SamplePadding_16">16</Thickness>
+    <x:Double x:Key="SampleSpacing_8">8</x:Double>
+    <Thickness x:Key="SampleMargin_0_0_10_6">0,0,10,6</Thickness>
+    <x:Double x:Key="SampleSpacing_6">6</x:Double>
+    <x:Double x:Key="SampleSpacing_10">10</x:Double>
+    <x:Double x:Key="SampleSpacing_16">16</x:Double>
+    <CornerRadius x:Key="SampleRadius_6">6</CornerRadius>
+    <Thickness x:Key="SamplePadding_8_4">8,4</Thickness>
+    <x:Double x:Key="SampleSpacing_14">14</x:Double>
+    <Thickness x:Key="SampleMargin_8">8</Thickness>
+    <x:Double x:Key="SampleSpacing_3">3</x:Double>
+  </Window.Resources>
+
   <!-- 每个组件的每种状态（常态、悬停、按下、选中、禁用、聚焦）；浅色和深色各截一张。 -->
   <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="32,18,32,24" Spacing="12">
-      <StackPanel Spacing="2">
-        <TextBlock Text="通用组件" Classes="display" />
-        <TextBlock Text="设计系统组件样张 · 浅色与深色 · 每种状态一行" Classes="caption" />
+    <StackPanel Margin="{StaticResource SampleMargin_32_18_32_24}" Spacing="{StaticResource SampleSpacing_12}">
+      <StackPanel Spacing="{StaticResource SampleSpacing_2}">
+        <TextBlock Text="Components" Classes="display" />
+        <TextBlock Text="Design system components · light and dark · one row per state" Classes="caption" />
       </StackPanel>
 
       <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-        <StackPanel Grid.Column="0" Spacing="12">
-          <Border Classes="card" Padding="16">
-            <StackPanel Spacing="8">
+        <StackPanel Grid.Column="0" Spacing="{StaticResource SampleSpacing_12}">
+          <Border Classes="card" Padding="{StaticResource SamplePadding_16}">
+            <StackPanel Spacing="{StaticResource SampleSpacing_8}">
               <TextBlock Text="ControlButtonBody · BusyActionLabel" Classes="section" />
               <WrapPanel Orientation="Horizontal">
-                <StackPanel Margin="0,0,10,6" Spacing="2">
-                  <TextBlock Text="常态" Classes="caption" />
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <c:ControlButtonBody Content="主要" Emphasis="Primary" />
-                    <c:ControlButtonBody Content="次要" Emphasis="Secondary" />
-                    <c:ControlButtonBody Content="安静" Emphasis="Quiet" />
+                <StackPanel Margin="{StaticResource SampleMargin_0_0_10_6}" Spacing="{StaticResource SampleSpacing_2}">
+                  <TextBlock Text="Normal" Classes="caption" />
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_6}">
+                    <c:ControlButtonBody Content="Primary" Emphasis="Primary" />
+                    <c:ControlButtonBody Content="Secondary" Emphasis="Secondary" />
+                    <c:ControlButtonBody Content="Quiet" Emphasis="Quiet" />
                   </StackPanel>
                 </StackPanel>
-                <StackPanel Margin="0,0,10,6" Spacing="2">
-                  <TextBlock Text="悬停" Classes="caption" />
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <c:ControlButtonBody Content="主要" Emphasis="Primary" Classes="sample-hover" />
-                    <c:ControlButtonBody Content="次要" Emphasis="Secondary" Classes="sample-hover" />
-                    <c:ControlButtonBody Content="安静" Emphasis="Quiet" Classes="sample-hover" />
+                <StackPanel Margin="{StaticResource SampleMargin_0_0_10_6}" Spacing="{StaticResource SampleSpacing_2}">
+                  <TextBlock Text="Hover" Classes="caption" />
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_6}">
+                    <c:ControlButtonBody Content="Primary" Emphasis="Primary" Classes="sample-hover" />
+                    <c:ControlButtonBody Content="Secondary" Emphasis="Secondary" Classes="sample-hover" />
+                    <c:ControlButtonBody Content="Quiet" Emphasis="Quiet" Classes="sample-hover" />
                   </StackPanel>
                 </StackPanel>
-                <StackPanel Margin="0,0,10,6" Spacing="2">
-                  <TextBlock Text="按下" Classes="caption" />
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <c:ControlButtonBody Content="主要" Emphasis="Primary" Classes="sample-pressed" />
-                    <c:ControlButtonBody Content="安静" Emphasis="Quiet" Classes="sample-pressed" />
+                <StackPanel Margin="{StaticResource SampleMargin_0_0_10_6}" Spacing="{StaticResource SampleSpacing_2}">
+                  <TextBlock Text="Pressed" Classes="caption" />
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_6}">
+                    <c:ControlButtonBody Content="Primary" Emphasis="Primary" Classes="sample-pressed" />
+                    <c:ControlButtonBody Content="Quiet" Emphasis="Quiet" Classes="sample-pressed" />
                   </StackPanel>
                 </StackPanel>
-                <StackPanel Margin="0,0,10,6" Spacing="2">
-                  <TextBlock Text="禁用" Classes="caption" />
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <c:ControlButtonBody Content="主要" Emphasis="Primary" IsEnabled="False" />
-                    <c:ControlButtonBody Content="危险" Emphasis="Destructive" IsEnabled="False" />
+                <StackPanel Margin="{StaticResource SampleMargin_0_0_10_6}" Spacing="{StaticResource SampleSpacing_2}">
+                  <TextBlock Text="Disabled" Classes="caption" />
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_6}">
+                    <c:ControlButtonBody Content="Primary" Emphasis="Primary" IsEnabled="False" />
+                    <c:ControlButtonBody Content="Destructive" Emphasis="Destructive" IsEnabled="False" />
                   </StackPanel>
                 </StackPanel>
-                <StackPanel Spacing="2">
-                  <TextBlock Text="聚焦" Classes="caption" />
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <c:ControlButtonBody Content="主要" Emphasis="Primary" Classes="sample-focus" />
-                    <c:ControlButtonBody Content="危险" Emphasis="Destructive" />
+                <StackPanel Spacing="{StaticResource SampleSpacing_2}">
+                  <TextBlock Text="Focused" Classes="caption" />
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_6}">
+                    <c:ControlButtonBody Content="Primary" Emphasis="Primary" Classes="sample-focus" />
+                    <c:ControlButtonBody Content="Destructive" Emphasis="Destructive" />
                   </StackPanel>
                 </StackPanel>
               </WrapPanel>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <c:BusyActionLabel Title="保存" BusyTitle="保存中…" />
-                <c:BusyActionLabel Title="保存" BusyTitle="保存中…" IsBusy="True" />
-                <c:ControlButtonBody Emphasis="Primary"><c:BusyActionLabel Title="保存" BusyTitle="保存中…" IsBusy="True" /></c:ControlButtonBody>
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_10}">
+                <c:BusyActionLabel Title="Save" BusyTitle="Saving…" />
+                <c:BusyActionLabel Title="Save" BusyTitle="Saving…" IsBusy="True" />
+                <c:ControlButtonBody Emphasis="Primary"><c:BusyActionLabel Title="Save" BusyTitle="Saving…" IsBusy="True" /></c:ControlButtonBody>
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <Border Classes="card" Padding="16">
-            <StackPanel Spacing="8">
+          <Border Classes="card" Padding="{StaticResource SamplePadding_16}">
+            <StackPanel Spacing="{StaticResource SampleSpacing_8}">
               <TextBlock Text="AIHeading · ShortcutHint · StatusDot · MetricPill" Classes="section" />
-              <StackPanel Orientation="Horizontal" Spacing="16">
-                <c:AIHeading Title="建议回答" />
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_16}">
+                <c:AIHeading Title="Suggested answer" />
                 <c:ShortcutHint Text="⌘L" />
-                <Border Background="{DynamicResource InkBrush}" CornerRadius="6" Padding="8,4">
+                <Border Background="{DynamicResource InkBrush}" CornerRadius="{StaticResource SampleRadius_6}" Padding="{StaticResource SamplePadding_8_4}">
                   <c:ShortcutHint Text="⌘L" OnInk="True" /></Border>
                 <c:StatusDot Tone="Live" />
                 <c:StatusDot Tone="Ready" />
                 <c:StatusDot Tone="Caution" />
                 <c:StatusDot Tone="Idle" />
-                <c:MetricPill Symbol="⏱" Text="首字 0.8 s" />
+                <c:MetricPill Symbol="⏱" Text="first token 0.8 s" />
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <Border Classes="card" Padding="16">
-            <StackPanel Spacing="8">
+          <Border Classes="card" Padding="{StaticResource SamplePadding_16}">
+            <StackPanel Spacing="{StaticResource SampleSpacing_8}">
               <TextBlock Text="InkSegmented · PillTabs · UnderlineTabs" Classes="section" />
-              <StackPanel Spacing="6">
+              <StackPanel Spacing="{StaticResource SampleSpacing_6}">
                 <c:InkSegmented SelectedIndex="0" Width="220">
                   <c:InkSegmented.Items>
-                    <x:String>自动回答</x:String>
-                    <x:String>只记录</x:String>
+                    <x:String>Auto answer</x:String>
+                    <x:String>Record only</x:String>
                   </c:InkSegmented.Items>
                 </c:InkSegmented>
                 <c:InkSegmented SelectedIndex="1" Width="220">
                   <c:InkSegmented.Items>
-                    <x:String>自动回答</x:String>
-                    <x:String>只记录</x:String>
+                    <x:String>Auto answer</x:String>
+                    <x:String>Record only</x:String>
                   </c:InkSegmented.Items>
                 </c:InkSegmented>
-                <StackPanel Orientation="Horizontal" Spacing="16">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_16}">
                   <c:PillTabs SelectedIndex="0">
                     <c:PillTabs.Items>
-                      <x:String>实时纪要</x:String>
-                      <x:String>问答</x:String>
-                      <x:String>我的笔记</x:String>
+                      <x:String>Live notes</x:String>
+                      <x:String>Answers</x:String>
+                      <x:String>My notes</x:String>
                     </c:PillTabs.Items>
                   </c:PillTabs>
                   <c:UnderlineTabs SelectedIndex="1">
                     <c:UnderlineTabs.Items>
-                      <x:String>实时纪要</x:String>
-                      <x:String>问答</x:String>
-                      <x:String>我的笔记</x:String>
+                      <x:String>Live notes</x:String>
+                      <x:String>Answers</x:String>
+                      <x:String>My notes</x:String>
                     </c:UnderlineTabs.Items>
                   </c:UnderlineTabs>
                 </StackPanel>
@@ -118,75 +135,75 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="card" Padding="16">
-            <StackPanel Spacing="8">
+          <Border Classes="card" Padding="{StaticResource SamplePadding_16}">
+            <StackPanel Spacing="{StaticResource SampleSpacing_8}">
               <TextBlock Text="InkSwitch · WideToggleRow · InteractiveRowBody" Classes="section" />
-              <StackPanel Orientation="Horizontal" Spacing="14">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_14}">
                 <c:InkSwitch />
                 <c:InkSwitch IsChecked="True" />
                 <c:InkSwitch IsEnabled="False" IsChecked="True" />
-                <c:WideToggleRow Content="区分说话人" />
-                <c:WideToggleRow Content="屏幕感知" IsChecked="True" />
+                <c:WideToggleRow Content="Speakers" />
+                <c:WideToggleRow Content="Screen" IsChecked="True" />
               </StackPanel>
-              <StackPanel Spacing="2">
-                <c:InteractiveRowBody><TextBlock Text="常态" /></c:InteractiveRowBody>
-                <c:InteractiveRowBody Classes="sample-hover"><TextBlock Text="悬停" /></c:InteractiveRowBody>
-                <c:InteractiveRowBody Classes="sample-pressed"><TextBlock Text="按下" /></c:InteractiveRowBody>
-                <c:InteractiveRowBody IsEnabled="False"><TextBlock Text="禁用" /></c:InteractiveRowBody>
+              <StackPanel Spacing="{StaticResource SampleSpacing_2}">
+                <c:InteractiveRowBody><TextBlock Text="Normal" /></c:InteractiveRowBody>
+                <c:InteractiveRowBody Classes="sample-hover"><TextBlock Text="Hover" /></c:InteractiveRowBody>
+                <c:InteractiveRowBody Classes="sample-pressed"><TextBlock Text="Pressed" /></c:InteractiveRowBody>
+                <c:InteractiveRowBody IsEnabled="False"><TextBlock Text="Disabled" /></c:InteractiveRowBody>
               </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
 
-        <StackPanel Grid.Column="1" Spacing="12">
-          <Border Classes="card" Padding="16">
-            <StackPanel Spacing="8">
+        <StackPanel Grid.Column="1" Spacing="{StaticResource SampleSpacing_12}">
+          <Border Classes="card" Padding="{StaticResource SamplePadding_16}">
+            <StackPanel Spacing="{StaticResource SampleSpacing_8}">
               <TextBlock Text="AppBackdrop · GlassGroup · MenuPicker · ProminentFill" Classes="section" />
-              <StackPanel Orientation="Horizontal" Spacing="12">
-                <c:AppBackdrop Width="110" Height="60"><TextBlock Text="纸底" Margin="8" /></c:AppBackdrop>
-                <c:GlassGroup Width="150"><TextBlock Text="玻璃分组" /></c:GlassGroup>
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_12}">
+                <c:AppBackdrop Width="110" Height="60"><TextBlock Text="Paper" Margin="{StaticResource SampleMargin_8}" /></c:AppBackdrop>
+                <c:GlassGroup Width="150"><TextBlock Text="Glass group" /></c:GlassGroup>
                 <c:MenuPicker Width="150" SelectedIndex="0">
                   <c:MenuPicker.Items>
-                    <x:String>自动判断</x:String>
-                    <x:String>每次都查</x:String>
+                    <x:String>Automatic</x:String>
+                    <x:String>Always</x:String>
                   </c:MenuPicker.Items>
                 </c:MenuPicker>
-                <c:ProminentFill><TextBlock Text="主要操作" Foreground="{DynamicResource OnInk}" /></c:ProminentFill>
+                <c:ProminentFill><TextBlock Text="Prominent action" Foreground="{DynamicResource OnInk}" /></c:ProminentFill>
               </StackPanel>
-              <StackPanel Spacing="2">
-                <TextBlock Text="ScrollEdgeFade 上沿" Classes="caption" />
+              <StackPanel Spacing="{StaticResource SampleSpacing_2}">
+                <TextBlock Text="ScrollEdgeFade Top edge" Classes="caption" />
                 <c:ScrollEdgeFade Height="28" />
-                <TextBlock Text="下沿" Classes="caption" />
+                <TextBlock Text="Bottom edge" Classes="caption" />
                 <c:ScrollEdgeFade Bottom="True" Height="28" />
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <Border Classes="card" Padding="16">
-            <StackPanel Spacing="8">
+          <Border Classes="card" Padding="{StaticResource SamplePadding_16}">
+            <StackPanel Spacing="{StaticResource SampleSpacing_8}">
               <TextBlock Text="OperationFeedback · PaperFieldBody · Lift · VoiceWave" Classes="section" />
-              <StackPanel Spacing="3">
-                <c:OperationFeedback Message="已保存" Tone="Success" />
-                <c:OperationFeedback Message="保存失败：磁盘已满" Tone="Failure" />
+              <StackPanel Spacing="{StaticResource SampleSpacing_3}">
+                <c:OperationFeedback Message="Saved" Tone="Success" />
+                <c:OperationFeedback Message="Save failed: disk full" Tone="Failure" />
               </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <c:PaperFieldBody Text="输入名字" Width="170" />
-                <c:PaperFieldBody Text="禁用字段" Width="170" IsEnabled="False" />
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_10}">
+                <c:PaperFieldBody Text="Name" Width="170" />
+                <c:PaperFieldBody Text="Disabled field" Width="170" IsEnabled="False" />
                 <c:VoiceWave Level="0.8" Active="True" />
                 <c:VoiceWave Level="0.3" Active="False" />
               </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <c:Lift Content="上浮卡片" />
-                <c:Lift Content="上浮卡片" Classes="sample-hover" />
-                <c:Lift Content="禁用" IsEnabled="False" />
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource SampleSpacing_10}">
+                <c:Lift Content="Lift card" />
+                <c:Lift Content="Lift card" Classes="sample-hover" />
+                <c:Lift Content="Disabled" IsEnabled="False" />
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <Border Classes="card" Padding="16">
-            <StackPanel Spacing="8">
+          <Border Classes="card" Padding="{StaticResource SamplePadding_16}">
+            <StackPanel Spacing="{StaticResource SampleSpacing_8}">
               <TextBlock Text="MarkdownText · RefinementBar" Classes="section" />
-              <views:MarkdownText Text="## 加粗标题&#10;- 先给 **结论**，再给 `code` 依据&#10;- 第二点 *强调*&#10;&#10;```&#10;let answer = 42&#10;```" />
+              <views:MarkdownText Text="## Bold heading&#10;- start with **conclusion**, then `code` evidence&#10;- second point *emphasis*&#10;&#10;```&#10;let answer = 42&#10;```" />
               <c:RefinementBar />
             </StackPanel>
           </Border>
