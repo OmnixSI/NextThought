@@ -1,8 +1,6 @@
 # 首页（HomeView.swift ↔ HomeView.axaml）逐元素对照
 
-> 对照基准：Mac 3.4.0（`f015e8c6`）；参考图见 [home-light](../../mac-screens/home/home-light.png)、[home-dark](../../mac-screens/home/home-dark.png)。
-
-- 对照基准：Mac v3.4.0（`f015e8c6`）。Mac 参考图：[home-light](../../mac-screens/home/home-light.png) / [home-dark](../../mac-screens/home/home-dark.png)（2026-11-21，1120×820 pt @2x = 1600×1171 px）。
+- 对照基准：Mac 3.4.0（`f015e8c6`）。Mac 参考图：[home-light](../../mac-screens/home/home-light.png) / [home-dark](../../mac-screens/home/home-dark.png)（2026-11-21，1120×820 pt @2x = 1600×1171 px）。
 - Windows 截图：`Windows/validation/screens/home/windows-{light,dark}.png`（首屏）与 `windows-stats-{light,dark}.png`（滚到底的统计区），1120×820，2026-11-21 用隔离数据目录加 `--demo --screenshots` 生成并入库；`current/home*.png` 是同一 harness 的最新产物（不入库）。
 - 相关源码：`Sources/NextThought/HomeView.swift`、`MeetingStatsViews.swift`；Windows `Views/HomeView.axaml`、`Views/Home/*`、`AppState.Home.cs`、`MeetingStats.cs`/`MeetingStatsText.cs`。
 
@@ -76,7 +74,7 @@
 
 - `Windows/tests/NextThought.Tests/HomePolishTests.cs`（本轮新增：InkWash 绑定 reducedEffects、胶囊滑动/按压缩放、glyph 过渡、blurReplace、聚焦描边、updatedAt 排序）。
 - `--demo --self-test=home`（本轮新增：运行时断言 InkWash.Animated 与 `HomeInkWashAnimated` 一致、reducedEffects 关闭动画、选中胶囊与 chip 位置对齐并在换场景后滑动到新 chip、glyph 拿到 ScaleTransform、聚焦描边为场景 tint 45%/失焦回 hairline、继续系列首行为 ACL、共 3 行）。
-- `Windows/tests/NextThought.Tests/HomeStage4Tests.cs`（首页统计/系列文案/无「资料夹」/系列开下一场/场景胶囊/占位/按钮）。
+- `Windows/tests/NextThought.Tests/HomeStage4Tests.cs`（首页统计/系列文案/无「系列」/系列开下一场/场景胶囊/占位/按钮）。
 - `Windows/tests/NextThought.Tests/HomeParityTests.cs`（子视图同名、hero、猜场景、场景默认、继续系列排序、最近记录、截图卡）。
 - `Windows/tests/NextThought.Core.Tests/MeetingStatsTests.cs`（durationText/SeriesLine 文案与 Mac 值）。
 - `Windows/tests/NextThought.Tests/HomeStage4Tests.ImportedAllScenariosStatsMatchTheHandCalculatedMacNumber`：导入 all-scenarios 后 4 场 / 90 秒 / 2 问 / 0 答 → “1 分钟”。

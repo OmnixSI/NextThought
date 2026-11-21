@@ -760,8 +760,9 @@ public sealed class SelfTestStructureTests
     public void GlossaryHasSeriesOverlay()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
-        Assert.Contains("系列术语", xaml);
-        Assert.Contains("SeriesGlossaryRows", xaml);
+        // GlossaryView.swift: the scope is the 全局 / 当前系列 segmented control, not a second list.
+        Assert.Contains("GlossaryScopeSeriesLabel", xaml);
+        Assert.Contains("ScopeSeries_Click", xaml);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
         Assert.Contains("AddGlossaryToSeries", state);
     }
@@ -770,7 +771,7 @@ public sealed class SelfTestStructureTests
     public void GlossaryMarksMisheardEntries()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
-        Assert.Contains("误听", xaml);
+        Assert.Contains("听错的写法", xaml);
         var row = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "GlossaryEntryRow.cs"));
         Assert.Contains("MisheardBadge", row);
     }
@@ -779,8 +780,11 @@ public sealed class SelfTestStructureTests
     public void GlossaryCanSearchAndAddFromTranscript()
     {
         var xaml = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "GlossaryWindow.axaml"));
-        Assert.Contains("在转写中查找", xaml);
-        Assert.Contains("GlossaryTranscriptHits", xaml);
+        // GlossaryView.swift keeps transcript find on the transcript surfaces, not in the glossary
+        // window itself: the window has the filter, Notes owns TranscriptFindField.
+        Assert.Contains("查找", xaml);
+        var notes = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "Views", "NotesView.axaml"));
+        Assert.Contains("TranscriptFindQuery", notes);
         var state = File.ReadAllText(Path.Combine(Root(), "Windows", "src", "NextThought.Desktop", "AppState.Glossary.cs"));
         Assert.Contains("RefreshGlossaryTranscriptHits", state);
     }

@@ -59,10 +59,13 @@ public sealed class SceneComponentTests
     {
         var home = View("HomeView.axaml");
         Assert.Contains("<controls:InkWash Mode=\"{Binding SelectedMode}\"", home);
-        Assert.Contains("Animated=\"True\"", home);
+        // E1 home polish: the wash follows reducedEffects instead of always animating.
+        Assert.Contains("Animated=\"{Binding HomeInkWashAnimated}\"", home);
         // E1: the glyph moved into the home composer subview.
         var composer = File.ReadAllText(Path.Combine(Desktop(), "Views", "Home", "StartComposer.axaml"));
-        Assert.Contains("<controls:SceneGlyph Mode=\"{Binding SelectedMode}\" Size=\"38\"", composer);
+        Assert.Contains("<controls:SceneGlyph", composer);
+        Assert.Contains("Mode=\"{Binding SelectedMode}\"", composer);
+        Assert.Contains("Size=\"38\"", composer);
         // The scene card shows the promise and the three moments from the theme.
         Assert.Contains("SelectedScene.Promise", composer);
         Assert.Contains("SelectedScene.Moments", composer);

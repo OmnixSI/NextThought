@@ -96,6 +96,8 @@ Microsoft；系统 `Segoe Fluent Icons` 作为回退）。字形的码点来自 
 
 ## 暂未使用的资源
 
+- `IconIphone` — 收录未用（设置页手机连接入口待接）
+
 以下资源已收录但当前界面还没有引用；保留给对应的 E 组页面（用到时直接引用，不需要再改字体表）。
 
 - `IconArchivebox`
