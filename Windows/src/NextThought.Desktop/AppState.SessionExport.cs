@@ -1,5 +1,6 @@
 using NextThought.Core;
 using NextThought.Platform;
+using System.Text.Json;
 
 namespace NextThought.Desktop;
 
@@ -16,6 +17,10 @@ public partial class AppState
     private IReadOnlyList<TranscriptCorrection> exportCorrections = [];
     private string exportSummaryMarkdown = "";
     private string exportModeTitle = "";
+    private SessionSummary? exportSummary;
+    private StructuredNotesDoc? exportNotes;
+    private SessionUserContent exportUserContent = new();
+    private SessionDerivedContentStatus exportDerivedContentStatus = SessionDerivedContentStatus.Current;
 
     [CommunityToolkit.Mvvm.ComponentModel.ObservableProperty]
     private string sessionExportStatus = "";
@@ -43,11 +48,23 @@ public partial class AppState
                 answer.Id, answer.Date, answer.Question, answer.Answer, "", null)).ToList();
             try
             {
-                var userContent = SessionUserContentStore.Load(Sessions.Folder(data.Meta.Id));
-                exportCorrections = userContent.Corrections([], data.Lines);
+                exportUserContent = SessionUserContentStore.Load(Sessions.Folder(data.Meta.Id));
+                exportCorrections = exportUserContent.Corrections([], data.Lines);
             }
-            catch { exportCorrections = []; }
+            catch { exportUserContent = new SessionUserContent(); exportCorrections = []; }
+            exportSummary = null;
+            try
+            {
+                var summaryPath = Path.Combine(Sessions.Folder(data.Meta.Id), "summary.json");
+                if (File.Exists(summaryPath))
+                    exportSummary = JsonSerializer.Deserialize<SessionSummary>(File.ReadAllText(summaryPath),
+                        JsonDefaults.Options);
+            }
+            catch { exportSummary = null; }
+            exportNotes = exportUserContent.EditedNotes ?? exportSummary?.Notes;
             exportModeTitle = data.Meta.Mode;
+            exportDerivedContentStatus = BuildSessionExportProjection(
+                SessionTranscriptVariant.Corrected, SessionLanguageView.Bilingual).DerivedContentStatus;
             SessionExportStatus = "";
             OnPropertyChanged(nameof(HasSessionExport));
             OnPropertyChanged(nameof(SessionExportTitle));
@@ -70,18 +87,48 @@ public partial class AppState
         SessionLanguageView languageView)
     {
         if (exportMeta is not { } meta) return "";
-        var projection = SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, exportLines, exportAnswers,
-            summary: new SessionProjectedSummary(meta.Title, exportSummaryMarkdown),
+        var projection = BuildSessionExportProjection(transcriptVariant, languageView);
+        var duration = (meta.EndedAt ?? meta.StartedAt) - meta.StartedAt;
+        return SessionExportContent.Build(format, projection, meta, exportLines, exportModeTitle,
+            duration.TotalSeconds, meta.AudioSource,
+            userContentMarkdown: SessionExportContent.UserContentMarkdown(exportUserContent));
+    }
+
+    /// <summary>One projection for preview, file and staleness so the three can never disagree.</summary>
+    private SessionTextProjection BuildSessionExportProjection(SessionTranscriptVariant transcriptVariant,
+        SessionLanguageView languageView)
+    {
+        var meta = exportMeta!;
+        return SessionProjectionBuilder.Build(meta.Id, meta.StartedAt, exportLines, exportAnswers,
+            summary: ExportProjectedSummary(meta),
             options: new SessionProjectionOptions
             {
                 TranscriptVariant = transcriptVariant,
                 LanguageView = languageView
             },
-            corrections: exportCorrections, meta: meta);
-        var duration = (meta.EndedAt ?? meta.StartedAt) - meta.StartedAt;
-        return SessionExportContent.Build(format, projection, meta, exportLines, exportModeTitle,
-            duration.TotalSeconds, meta.AudioSource);
+            corrections: exportCorrections, textNotes: exportNotes, meta: meta);
     }
+
+    /// <summary>Mac SessionSummary with the saved source revisions so DerivedContentStatus is real.</summary>
+    private SessionProjectedSummary? ExportProjectedSummary(SessionMeta meta)
+    {
+        if (exportSummary is { } summary)
+            return new SessionProjectedSummary(summary.Title.Length > 0 ? summary.Title : meta.Title,
+                summary.Markdown, summary.TranscriptSourceRevision, SessionDerivedContentStatus.Unknown,
+                summary.StructuredNotesSourceRevision, summary.Structured, summary.StructuredAll,
+                summary.Questions, summary.Lessons, summary.Bank);
+        return exportSummaryMarkdown.Length == 0
+            ? null
+            : new SessionProjectedSummary(meta.Title, exportSummaryMarkdown);
+    }
+
+    /// <summary>SessionExportUI.swift derivedContentStatus notice (document formats only).</summary>
+    public SessionDerivedContentStatus SessionExportDerivedContentStatus => exportDerivedContentStatus;
+
+    public string SessionExportDerivedContentNotice =>
+        SessionExportContent.DerivedContentNotice(exportDerivedContentStatus);
+
+    public bool SessionExportHasDerivedNotes => exportSummary is not null || exportNotes is not null;
 
     /// <summary>Mac SessionFileExporter.write: Markdown/字幕 are text, Word/PDF go through the renderers.</summary>
     public async Task<bool> SaveSessionExportAsync(SessionExportFormat format,

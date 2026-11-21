@@ -46,6 +46,30 @@ public static class SessionExportContent
         }
     }
 
+    /// <summary>SessionArchive.userContentMarkdown: the user's personal notes and highlights are
+    /// appended after the generated notes (Mac headings included verbatim).</summary>
+    public static string UserContentMarkdown(SessionUserContent content)
+    {
+        var result = new System.Text.StringBuilder();
+        if (content.PersonalNotes.Trim() is { Length: > 0 } notes)
+            result.Append("\n\n## 我的笔记\n\n").Append(notes);
+        if (content.Highlights.Count > 0)
+        {
+            result.Append("\n\n## 重点标记\n\n");
+            result.Append(string.Join("\n", content.Highlights.Select(highlight =>
+                "- [" + NotesTime.Text(highlight.OffsetSeconds) + "] " + highlight.Quote)));
+        }
+        return result.ToString();
+    }
+
+    /// <summary>SessionExportUI.swift: the caution/secondary line above the preview.</summary>
+    public static string DerivedContentNotice(SessionDerivedContentStatus status) => status switch
+    {
+        SessionDerivedContentStatus.Stale => "纪要或手记可能已过期；导出预览已附上核对提示。",
+        SessionDerivedContentStatus.Unknown => "旧纪要未记录来源版本；导出预览会说明无法确认是否过期。",
+        _ => ""
+    };
+
     /// <summary>SessionExportUI.swift baseName: the title with path separators made harmless.</summary>
     public static string SuggestedFileName(string title, SessionExportFormat format)
     {

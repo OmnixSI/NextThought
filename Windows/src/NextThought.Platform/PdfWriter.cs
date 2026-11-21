@@ -28,7 +28,7 @@ public static class PdfWriter
             Producer = "NextThought / SkiaSharp"
         });
         using var regular = LoadCjkFont();
-        using var bold = regular;
+        using var mono = LoadMonoFont();
         using var paint = new SKPaint { IsAntialias = true, Color = SKColors.Black };
         using var font = new SKFont();
 
@@ -54,6 +54,7 @@ public static class PdfWriter
             }
             font.Typeface = typeface;
             font.Size = size;
+            font.SkewX = 0;
             var width = PageWidth - Margin * 2 - extraIndent;
             foreach (var part in Wrap(text, font, width))
             {
@@ -62,6 +63,47 @@ public static class PdfWriter
                 y += size + lineHeight;
             }
             y += after;
+        }
+
+        /// <summary>
+        /// Inline formatting (SessionDocumentRenderer.inlineRuns/pdfStyle): links become 文字 (URL),
+        /// inline code uses the system monospace face, bold/italic/strike carry their emphasis.
+        /// </summary>
+        void DrawRich(string markdown, float size, bool boldBase, bool italicBase, float before, float after,
+            float extraIndent)
+        {
+            if (before > 0)
+            {
+                y += before;
+                if (y > PageHeight - Margin) NewPage();
+            }
+            var runs = InlineRuns(markdown);
+            var startX = Margin + extraIndent;
+            var wrapWidth = PageWidth - Margin * 2 - extraIndent;
+            var x = startX;
+            font.SkewX = italicBase ? -0.2f : 0;
+            foreach (var run in runs)
+            {
+                font.Typeface = run.Code ? mono : regular;
+                font.Size = size;
+                font.SkewX = run.Italic || italicBase ? -0.2f : 0;
+                var runFont = new SKFont(font.Typeface, size) { SkewX = font.SkewX };
+                foreach (var rune in run.Text.EnumerateRunes())
+                {
+                    var piece = rune.ToString();
+                    var advance = runFont.MeasureText(piece);
+                    if (x + advance > startX + wrapWidth && x > startX)
+                    {
+                        y += size + 2;
+                        EnsureSpace(size + 2);
+                        x = startX;
+                    }
+                    canvas.DrawText(piece, x, y, SKTextAlign.Left, runFont, paint);
+                    x += advance;
+                }
+                runFont.Dispose();
+            }
+            y += size + 2 + after;
         }
 
         var lines = markdown.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
@@ -83,7 +125,7 @@ public static class PdfWriter
             }
             if (codeFence)
             {
-                Draw(Plain(line), 9, regular, extraIndent: 8, lineHeight: 2);
+                Draw(Plain(line), 9, mono, extraIndent: 8, lineHeight: 2);
                 continue;
             }
             if (IsTableRow(line))
@@ -103,19 +145,20 @@ public static class PdfWriter
             }
 
             float size;
-            SKTypeface typeface;
             var indent = 0f;
             string text;
-            if (line.StartsWith("# ", StringComparison.Ordinal)) { size = 18; typeface = bold; text = line[2..]; }
-            else if (line.StartsWith("## ", StringComparison.Ordinal)) { size = 15; typeface = bold; text = line[3..]; }
-            else if (line.StartsWith("### ", StringComparison.Ordinal)) { size = 12.5f; typeface = bold; text = line[4..]; }
-            else if (line.StartsWith("#### ", StringComparison.Ordinal)) { size = 11.5f; typeface = bold; text = line[5..]; }
-            else if (line.StartsWith("> ", StringComparison.Ordinal)) { size = 10.5f; typeface = regular; text = line[2..]; indent = 16; }
-            else if (line.StartsWith("  - ", StringComparison.Ordinal)) { size = 10.5f; typeface = regular; text = "• " + line[4..]; indent = 28; }
-            else if (line.StartsWith("- ", StringComparison.Ordinal)) { size = 10.5f; typeface = regular; text = "• " + line[2..]; indent = 14; }
-            else { size = 10.5f; typeface = regular; text = line; }
-            var heading = typeface == bold && size >= 11.5f;
-            Draw(Plain(text), size, typeface, before: heading ? 8 : 0, after: heading ? 4 : 5, extraIndent: indent);
+            var boldBase = false;
+            var italicBase = false;
+            var heading = false;
+            if (line.StartsWith("# ", StringComparison.Ordinal)) { size = 18; text = line[2..]; boldBase = heading = true; }
+            else if (line.StartsWith("## ", StringComparison.Ordinal)) { size = 15; text = line[3..]; boldBase = heading = true; }
+            else if (line.StartsWith("### ", StringComparison.Ordinal)) { size = 12.5f; text = line[4..]; boldBase = heading = true; }
+            else if (line.StartsWith("#### ", StringComparison.Ordinal)) { size = 11.5f; text = line[5..]; boldBase = heading = true; }
+            else if (line.StartsWith("> ", StringComparison.Ordinal)) { size = 10.5f; text = line[2..]; italicBase = true; indent = 16; }
+            else if (line.StartsWith("  - ", StringComparison.Ordinal)) { size = 10.5f; text = "• " + line[4..]; indent = 28; }
+            else if (line.StartsWith("- ", StringComparison.Ordinal)) { size = 10.5f; text = "• " + line[2..]; indent = 14; }
+            else { size = 10.5f; text = line; }
+            DrawRich(text, size, boldBase, italicBase, before: heading ? 8 : 0, after: heading ? 4 : 5, indent);
         }
 
         document.EndPage();
@@ -183,6 +226,76 @@ public static class PdfWriter
     /// <summary>SessionDocumentRenderer.displayWidth: CJK and full-width characters count as two cells.</summary>
     private static int DisplayWidth(string text) => text.EnumerateRunes().Sum(rune => rune.Value >= 0x2E80 ? 2 : 1);
 
+    private sealed record InlineRun(string Text, bool Bold = false, bool Italic = false, bool Strike = false,
+        bool Code = false);
+
+    /// <summary>Minimal inline Markdown splitter following SessionDocumentRenderer.inlineRuns.</summary>
+    private static IReadOnlyList<InlineRun> InlineRuns(string markdown)
+    {
+        var runs = new List<InlineRun>();
+        var pending = new System.Text.StringBuilder();
+        var index = 0;
+        void Flush()
+        {
+            if (pending.Length == 0) return;
+            runs.Add(new InlineRun(pending.ToString()));
+            pending.Clear();
+        }
+        while (index < markdown.Length)
+        {
+            if (markdown[index] == '[')
+            {
+                var labelEnd = markdown.IndexOf(']', index + 1);
+                if (labelEnd > index + 1 && labelEnd + 1 < markdown.Length && markdown[labelEnd + 1] == '(')
+                {
+                    var urlEnd = markdown.IndexOf(')', labelEnd + 2);
+                    if (urlEnd > labelEnd)
+                    {
+                        Flush();
+                        runs.Add(new InlineRun(markdown[(index + 1)..labelEnd] + " (" + markdown[(labelEnd + 2)..urlEnd] + ")"));
+                        index = urlEnd + 1;
+                        continue;
+                    }
+                }
+            }
+            if (Markup(markdown, index) is { } markup)
+            {
+                var contentStart = index + markup.Marker.Length;
+                var close = markdown.IndexOf(markup.Marker, contentStart, StringComparison.Ordinal);
+                if (close > contentStart)
+                {
+                    Flush();
+                    runs.Add(new InlineRun(markdown[contentStart..close], markup.Bold, markup.Italic, markup.Strike,
+                        markup.Code));
+                    index = close + markup.Marker.Length;
+                    continue;
+                }
+            }
+            pending.Append(markdown[index]);
+            index++;
+        }
+        Flush();
+        return runs.Count == 0 ? [new InlineRun("")] : runs;
+    }
+
+    private static (string Marker, bool Bold, bool Italic, bool Strike, bool Code)? Markup(string text, int start)
+    {
+        if (text.AsSpan(start).StartsWith("**", StringComparison.Ordinal)) return ("**", true, false, false, false);
+        if (text.AsSpan(start).StartsWith("__", StringComparison.Ordinal)) return ("__", true, false, false, false);
+        if (text.AsSpan(start).StartsWith("~~", StringComparison.Ordinal)) return ("~~", false, false, true, false);
+        if (text[start] == '`') return ("`", false, false, false, true);
+        if (text[start] == '*') return ("*", false, true, false, false);
+        if (text[start] == '_') return ("_", false, true, false, false);
+        return null;
+    }
+
+    private static SKTypeface LoadMonoFont()
+    {
+        foreach (var family in new[] { "Cascadia Mono", "Consolas", "Courier New" })
+            if (SKTypeface.FromFamilyName(family) is { } typeface) return typeface;
+        return SKTypeface.Default;
+    }
+
     private static SKTypeface LoadCjkFont()
     {
         // SimHei is smaller than YaHei; embed it when present so exported PDFs stay moderate.
@@ -227,7 +340,12 @@ public static class PdfWriter
                 if (close > 0 && close + 1 < text.Length && text[close + 1] == '(')
                 {
                     var end = text.IndexOf(')', close + 2);
-                    if (end > 0) { builder.Append(text[(index + 1)..close]); index = end; continue; }
+                    if (end > 0)
+                    {
+                        builder.Append(text[(index + 1)..close]).Append(" (").Append(text[(close + 2)..end]).Append(')');
+                        index = end;
+                        continue;
+                    }
                 }
             }
             builder.Append(text[index]);
