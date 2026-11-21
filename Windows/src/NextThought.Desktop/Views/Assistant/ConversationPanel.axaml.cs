@@ -49,7 +49,7 @@ public partial class ConversationPanel : UserControl
     private void UpdateFollowButton()
     {
         if (FollowButton is null) return;
-        FollowButton.Content = UiText.T(follow ? "自动滚动到最新（点击暂停）" : "已暂停自动滚动（点击恢复）");
+        FollowButton.Content = UiText.T(follow ? "自动滚动到最新（点按暂停）" : "已暂停自动滚动（点按恢复）");
         ToolTip.SetTip(FollowButton, UiText.T(follow ? "自动滚动到最新" : "已暂停自动滚动"));
     }
 

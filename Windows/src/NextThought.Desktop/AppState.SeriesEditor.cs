@@ -127,7 +127,7 @@ public partial class AppState
     {
         if (SelectedSeries is not { } selected || workspace.Find(selected.Id) is not { } series) return;
         var name = SeriesEditorName.Trim();
-        if (name.Length == 0) { SetStatus(UiText.T("系列名不能为空。"), true); return; }
+        if (name.Length == 0) { SetStatus(UiText.T("系列名称不能为空。"), true); return; }
         var fields = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var row in SeriesEditorFieldRows)
             if (!string.IsNullOrWhiteSpace(row.Value)) fields[row.Id] = row.Value.Trim();

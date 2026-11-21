@@ -378,9 +378,9 @@ public partial class AppState
     ];
 
     public string OnboardingAnswerServiceTitle => StartupOptions.Demo
-        ? UiText.T("Codex 已登录 (ChatGPT 账号)")
+        ? UiText.T("Codex 已登录（ChatGPT 账号）")
         : PrepareAnswerReady
-            ? Settings.UseCodex ? UiText.T("Codex 已登录 (ChatGPT 账号)") : UiText.T("已连接回答服务")
+            ? Settings.UseCodex ? UiText.T("Codex 已登录（ChatGPT 账号）") : UiText.T("已连接回答服务")
             : UiText.T("还没有连接回答服务");
 
     public string OnboardingAnswerServiceDetail => StartupOptions.Demo

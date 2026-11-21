@@ -169,7 +169,7 @@ public partial class AppState
         }
         await Settings.SaveAsync();
         SetStatus(UiText.T(offline
-            ? "线下会议只用麦克风，转写标为“现场”。"
+            ? "线下会议只用麦克风，转写会标为“现场”。"
             : "线上会议听电脑里播放的声音。"));
         RaisePrepareDraft();
     }
@@ -317,7 +317,7 @@ public partial class AppState
     {
         Settings.CaptureMicrophone = false;
         await Settings.SaveAsync();
-        SetStatus(UiText.T("这场只记录对方的声音；想连自己的话一起记，可以重新打开麦克风。"));
+        SetStatus(UiText.T("这场只记录对方的声音。想连自己的话一起记，可以重新打开麦克风。"));
         RaisePrepareDraft();
     }
 

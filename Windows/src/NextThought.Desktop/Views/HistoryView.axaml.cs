@@ -125,7 +125,7 @@ public partial class HistoryView : UserControl
             }
             var keepAccepted = state.HasRetainableContent([row]);
             var action = await ConfirmDeleteAsync(owner,
-                UiText.T("删除这场会议？"),
+                UiText.T("删除这场会议"),
                 UiText.T("将永久删除这场会议的转写、音频、手记、索引、问题、回答和纪要。默认同时删除只依赖它的已确认经验、决定和行动。若选择保留，内容会作为独立经验保存并标记原来源已删除，不保留会议原话。"),
                 keepAccepted);
             if (action == DeleteAction.Cancel) return;

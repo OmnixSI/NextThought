@@ -539,7 +539,7 @@ public partial class AppState
                 // E6/Mac ask(): this request covers everything heard so far in the turn.
                 MarkQuestionTurnAsked(QuestionTurnPartial);
             }
-            SetStatus(check ? "正在检查回答服务…" : "正在生成参考回答…");
+            SetStatus(check ? "正在检测回答服务…" : "正在生成参考回答…");
             var progress = new Progress<string>(text =>
             {
                 if (generation == requestEpoch && !check) AnswerText = text;

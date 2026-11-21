@@ -83,7 +83,7 @@ public partial class AppState
         var (repository, token) = UpdateAccess();
         var feed = source ?? UpdateFeed.SourceFor(repository);
         if (CheckingUpdate) return LastUpdateReport ?? new UpdateReport(DateTimeOffset.UtcNow, feed,
-            UpdateChannel.Title(), UpdateCheck.CurrentVersion, UpdateCheck.CurrentBuild, null, null, false, null, "正在检查");
+            UpdateChannel.Title(), UpdateCheck.CurrentVersion, UpdateCheck.CurrentBuild, null, null, false, null, "正在检查…");
         CheckingUpdate = true;
         UpdateStatus = UiText.T("正在检查更新…");
         try
