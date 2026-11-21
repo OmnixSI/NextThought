@@ -61,11 +61,16 @@ try {
             $signing = 'authenticode:' + $CertificateThumbprint.ToLowerInvariant()
         }
         if ((& git -C $projectRoot rev-parse HEAD).Trim() -ne $sourceRevision) { throw 'Source commit changed during the build; rerun to keep the release traceable.' }
+        # Prefer the pinned Python 3.12 through the launcher (write_release_manifest.py needs
+        # hashlib.file_digest, i.e. Python 3.11+); fall back to a compatible python on PATH.
+        $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
         $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
-        if ($pythonCommand -and $pythonCommand.Source -notlike '*WindowsApps*') {
+        if ($pyLauncher) {
+            & $pyLauncher.Source -3.12 scripts/write_release_manifest.py --directory $output --version $version --signing $signing
+        } elseif ($pythonCommand -and $pythonCommand.Source -notlike '*WindowsApps*') {
             & $pythonCommand.Source scripts/write_release_manifest.py --directory $output --version $version --signing $signing
         } else {
-            & py -3.12 scripts/write_release_manifest.py --directory $output --version $version --signing $signing
+            throw 'Python 3.11+ is required to write the release manifest (use the py launcher).'
         }
         if ($LASTEXITCODE -ne 0) { throw 'Release manifest creation failed.' }
         $zip = Join-Path $artifactRoot ('NextThought-Windows-preview-' + $version + '-win-x64.zip')
