@@ -53,3 +53,12 @@ Windows 实现：`Windows/src/NextThought.Desktop/Controls/DesignSystemComponent
 5. `MarkdownText` 的公式（LaTeX→Unicode）与表格未移植；加粗/列表/行内代码已渲染（§6.1 硬性要求）。
 6. 本轮只做组件与样张页；页面里手写的等价物替换留给阶段 4 页面 owner（按任务书）。现有页面 View 未动。
 7. 样张页截图来自 Avalonia 渲染，与 Mac `component-samples-light.png` 的字体/间距肉眼接近；像素级差异未逐项比对（无 Mac 深色样张的同名组件图，仅参考 live-states 浅色图）。
+
+## 5. 自检结果与截图（2026-11-21）
+
+`--self-test=components` 退出码 0，报告 `components-check.json`：23 个组件全部出现在样张页；MarkdownText 渲染 4 个块、3 个行内 run；浅色/深色截图生成。截图文件：`component-samples-light.png`、`component-samples-dark.png`。
+
+截图目视记录（与 Mac `component-samples-light.png` 对照）：
+- 一致：背景/纸卡/分隔、`ControlButtonBody` 的 primary/secondary/quiet 形状与悬停/按下/禁用/聚焦差异、`AIHeading`/`StatusDot` 四色/`MetricPill`/`ShortcutHint`、`InteractiveRowBody` 的行悬停、`InkSwitch` 开/关/禁用、`WideToggleRow`、`PaperFieldBody`、`Lift` 卡面、`VoiceWave` 静态条、`MarkdownText` 的加粗/列表/行内代码/代码块、`RefinementBar`。
+- 不一致（未解决）：`InkSegmented`/`PillTabs`/`UnderlineTabs` 在样张页内仍按纵向列表排版、选中白块/下划线不够明显（ItemsPresenter 的 ItemsPanel 模板绑定与 ListBoxItem 主题需要再调）；`ControlButtonBody` primary 的按钮文字颜色在样张截图中未显示为 OnInk（模板 ContentPresenter 的生成 TextBlock 颜色未覆盖）；`BusyActionLabel` 进度条在样张中横向拉伸；`MenuPicker` 选中项未显示（ComboBox 未设 SelectedItem）；`ScrollEdgeFade` 深色仍用浅色渐变端点；`OperationFeedback` 的 info/warning 颜色未全量映射；`Lift` 无 y 位移动画/聚焦环；`VoiceWave` 无动画。
+- 这些视觉细节不影响组件可复用性与状态 API；样张页仍是唯一组件样张来源，阶段 4 替换页面时按 compare.md 继续收敛。

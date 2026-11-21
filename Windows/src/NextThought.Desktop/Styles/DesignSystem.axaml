@@ -26,6 +26,7 @@
                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="9"
                 Padding="{TemplateBinding Padding}" Height="{TemplateBinding ButtonHeight}" MinHeight="32">
           <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
                             HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
       </ControlTemplate>
@@ -156,7 +157,10 @@
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="Template">
       <ControlTemplate>
-        <ContentPresenter Content="{TemplateBinding Content}" />
+        <Border Background="{TemplateBinding Background}" CornerRadius="6" Height="28" Padding="14,0">
+          <ContentPresenter Content="{TemplateBinding Content}" TextWrapping="NoWrap"
+                            VerticalAlignment="Center" HorizontalAlignment="Center" />
+        </Border>
       </ControlTemplate>
     </Setter>
   </Style>
@@ -175,10 +179,8 @@
   <Style Selector="c|InkSegmented > ListBoxItem:selected TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
   </Style>
-  <Style Selector="c|InkSegmented > ListBoxItem:selected /template/ ContentPresenter">
+  <Style Selector="c|InkSegmented > ListBoxItem:selected">
     <Setter Property="Background" Value="{DynamicResource SurfaceRaised}" />
-    <Setter Property="CornerRadius" Value="6" />
-    <Setter Property="Height" Value="28" />
   </Style>
 
   <Style Selector="c|PillTabs > ListBoxItem">

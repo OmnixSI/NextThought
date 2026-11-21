@@ -119,8 +119,8 @@ public class BusyActionLabel : ContentControl
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         panel.Children.Add(new ProgressBar
         {
-            Width = 14, Height = 14, IsIndeterminate = true, IsVisible = IsBusy,
-            VerticalAlignment = VerticalAlignment.Center
+            Width = 14, MaxWidth = 14, Height = 14, MinWidth = 14, IsIndeterminate = true, IsVisible = IsBusy,
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center
         });
         panel.Children.Add(new TextBlock
         {
@@ -160,6 +160,11 @@ public class InkSegmented : ListBox
         SelectionMode = SelectionMode.Single;
         Background = Brushes.Transparent;
         ItemsPanel = new FuncTemplate<Panel>(() => new StackPanel { Orientation = Orientation.Horizontal, Spacing = 2 });
+        ItemTemplate = new FuncDataTemplate<string>((value, _) => new TextBlock
+        {
+            Text = value ?? "", FontSize = 13, FontWeight = FontWeight.Medium,
+            VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center
+        }, true);
     }
 }
 
@@ -273,7 +278,12 @@ public class PillTabs : ListBox
     {
         SelectionMode = SelectionMode.Single;
         Background = Brushes.Transparent;
-        ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal });
+        ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN });
+        ItemTemplate = new FuncDataTemplate<string>((value, _) => new TextBlock
+        {
+            Text = value ?? "", FontSize = 13, FontWeight = FontWeight.Medium,
+            VerticalAlignment = VerticalAlignment.Center
+        }, true);
     }
 }
 
@@ -468,5 +478,10 @@ public class UnderlineTabs : ListBox
         SelectionMode = SelectionMode.Single;
         Background = Brushes.Transparent;
         ItemsPanel = new FuncTemplate<Panel>(() => new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 });
+        ItemTemplate = new FuncDataTemplate<string>((value, _) => new TextBlock
+        {
+            Text = value ?? "", FontSize = 13, FontWeight = FontWeight.Medium, Margin = new Thickness(0, 0, 0, 6),
+            VerticalAlignment = VerticalAlignment.Center
+        }, true);
     }
 }
