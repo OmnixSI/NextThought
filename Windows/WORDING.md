@@ -34,10 +34,10 @@
 | # | Windows 中文文案 | Windows 英文文案 | Mac 原文 | 位置 |
 |---|---|---|---|---|
 | 1 | 、 | ,  | — | Windows/src/NextThought.Desktop/AppState.Live.cs:868 |
-| 2 | 宽 | Wide | 宽 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:527 |
+| 2 | 宽 | Wide | 宽 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:538 |
 | 3 | 我 | Me | 我 | Windows/src/NextThought.Desktop/Views/LiveView.axaml |
 | 4 | 段 | segment | — | Windows/src/NextThought.Desktop/Views/LibraryView.axaml |
-| 5 | 窄 | Narrow | 窄 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:525 |
+| 5 | 窄 | Narrow | 窄 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:536 |
 | 6 | 译 | Translate | — |  |
 | 7 | Q： | Q:  | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:206 |
 | 8 | 上移 | Move up | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
@@ -53,7 +53,7 @@
 | 18 | 分钟 | minutes | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 19 | 删除 | Delete | 删除 | Windows/src/NextThought.Desktop/Views/BackupSettingsSection.axaml |
 | 20 | 刷新 | Refresh | 刷新 | Windows/src/NextThought.Desktop/Views/WindowPickerWindow.axaml |
-| 21 | 区域 | Region | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:609 |
+| 21 | 区域 | Region | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:622 |
 | 22 | 历史 | History | — | Windows/src/NextThought.Desktop/Views/MainWindow.axaml |
 | 23 | 原文 | Original | — | Windows/src/NextThought.Desktop/AppState.cs:219 |
 | 24 | 双语 | Bilingual | — | Windows/src/NextThought.Desktop/AppState.cs:219 |
@@ -92,13 +92,13 @@
 | 57 | 本月 | This month | 本月 | Windows/src/NextThought.Desktop/Views/Home/HomeStats.axaml |
 | 58 | 查看 | Open | 查看 | Windows/src/NextThought.Desktop/Views/HomeView.axaml |
 | 59 | 查证 | Verify | — |  |
-| 60 | 标准 | Regular | 标准 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:526 |
+| 60 | 标准 | Regular | 标准 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:537 |
 | 61 | 检查 | Checks | — |  |
 | 62 | 模式 | Mode | — | Windows/src/NextThought.Desktop/AppState.Meeting.cs:197 |
 | 63 | 洞察 | Insights | — | Windows/src/NextThought.Desktop/Views/InsightsPanelWindow.axaml |
-| 64 | 浅色 | Light | 浅色 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:516 |
+| 64 | 浅色 | Light | 浅色 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:527 |
 | 65 | 测试 | Test | — | Windows/src/NextThought.Desktop/AppState.Models.cs:124 |
-| 66 | 深色 | Dark | 深色 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:517 |
+| 66 | 深色 | Dark | 深色 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:528 |
 | 67 | 添加 | Add | 添加 | Windows/src/NextThought.Desktop/Views/PrepareView.axaml |
 | 68 | 焦点 | Focus | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
 | 69 | 确认 | Confirm | — | Windows/src/NextThought.Desktop/Views/ConfirmDialog.axaml |
@@ -113,7 +113,7 @@
 | 78 | 编辑 | Edit | 编辑 | Windows/src/NextThought.Desktop/Views/NotesView.axaml |
 | 79 | 聊天 | Chat | — | Windows/src/NextThought.Desktop/AppState.Insights.cs:158 |
 | 80 | 自动 | Automatic | 自动 | Windows/src/NextThought.Desktop/Views/NotesView.axaml |
-| 81 | 英文 | English | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:486 |
+| 81 | 英文 | English | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:497 |
 | 82 | 补译 | Translate missing | — | Windows/src/NextThought.Desktop/Views/LiveView.axaml |
 | 83 | 讨论 | Discussion | — | Windows/src/NextThought.Desktop/AppState.SeriesEditor.cs:41 |
 | 84 | 议程 | Agenda | 议程 | Windows/src/NextThought.Desktop/MeetingDraft.cs:76 |
@@ -161,12 +161,12 @@ A:  | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:206 |
 | 125 | 截止  | Due  | — | Windows/src/NextThought.Desktop/Views/ViewpointMatrixView.cs:181 |
 | 126 | 提示： | Tip:  | — | Windows/src/NextThought.Desktop/ViewModels/LibraryViewModel.cs:96 |
 | 127 | 提词器 | Teleprompter | 提词器 |  |
-| 128 | 提词岛 | Cue island | 提词岛 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:538 |
+| 128 | 提词岛 | Cue island | 提词岛 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:550 |
 | 129 | 文件夹 | Folder | — | Windows/src/NextThought.Desktop/AppState.Meeting.cs:206 |
 | 130 | 新技能 | New skill | — |  |
 | 131 | 新模板 | New template | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:142 |
 | 132 | 新章节 | New section | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:150 |
-| 133 | 显示器 | Displays | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:609 |
+| 133 | 显示器 | Displays | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:622 |
 | 134 | 最大化 | Maximize | — | Windows/src/NextThought.Desktop/Views/MainWindow.axaml |
 | 135 | 最小化 | Minimize | — | Windows/src/NextThought.Desktop/Views/MainWindow.axaml |
 | 136 | 有纪要 | Has notes | — | Windows/src/NextThought.Desktop/Views/SeriesView.axaml |
@@ -243,7 +243,7 @@ A:  | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:206 |
 | 207 | 工作布置 | Work assignment | — | Windows/src/NextThought.Desktop/SceneSettingRow.cs:119 |
 | 208 | 工作纪要 | Meeting notes | — |  |
 | 209 | 已取消。 | Cancelled. | — | Windows/src/NextThought.Desktop/AppState.SeriesEditor.cs:359 |
-| 210 | 已改为  | Changed to  | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:103 |
+| 210 | 已改为  | Changed to  | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:110 |
 | 211 | 已有纪要 | Notes exist | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:639 |
 | 212 | 带入经验 | Bring lessons | — |  |
 | 213 | 带入资料 | Bring materials | — |  |
@@ -346,7 +346,7 @@ A:  | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:206 |
 | 310 | 上一场转写 | Last meeting's transcript | — | Windows/src/NextThought.Desktop/AppState.Prepare.cs:101 |
 | 311 | 下一场会议 | Next meeting | — |  |
 | 312 | 下载并安装 | Download and install | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
-| 313 | 不自动结束 | Do not auto-end | 不自动结束 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:694 |
+| 313 | 不自动结束 | Do not auto-end | 不自动结束 | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:707 |
 | 314 | 什么都可以 | Anything goes | — | Windows/src/NextThought.Desktop/AppState.Audio.cs:18 |
 | 315 | 使用此区域 | Use this area | — | Windows/src/NextThought.Desktop/Views/RegionCaptureWindow.axaml |
 | 316 | 保存到设置 | Save to settings | — |  |
@@ -365,7 +365,7 @@ A:  | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:206 |
 | 329 | 屏幕与截图 | Screen and screenshots | — |  |
 | 330 | 屏幕：%@ | Screen: %@ | — | Windows/src/NextThought.Desktop/AppState.Insights.cs:150 |
 | 331 | 已保存密钥 | Key saved | — | Windows/src/NextThought.Desktop/AppState.Onboarding.cs:24 |
-| 332 | 已加密保存 | Saved encrypted | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:467 |
+| 332 | 已加密保存 | Saved encrypted | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:478 |
 | 333 | 已确认经验 | Confirmed lessons | — | Windows/src/NextThought.Desktop/Views/NotesView.axaml |
 | 334 | 已选择原话 | Quote selected | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
 | 335 | 录入失败： | Enrollment failed:  | — | Windows/src/NextThought.Desktop/AppState.MyVoice.cs:159 |
@@ -444,7 +444,7 @@ Materials:
 | 405 | 安装包签名： | Installer signature:  | — | Windows/src/NextThought.Desktop/AppState.Update.cs:278 |
 | 406 | 安装示例技能 | Install sample skill | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 407 | 导入 WAV | Import WAV | — |  |
-| 408 | 导入纪要模板 | Import note template | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:215 |
+| 408 | 导入纪要模板 | Import note template | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:245 |
 | 409 | 导出 PDF | Export PDF | — |  |
 | 410 | 导出 SRT | Export SRT | — |  |
 | 411 | 导出 VTT | Export VTT | — |  |
@@ -466,7 +466,7 @@ Materials:
 | 427 | 技能已清空。 | Skills cleared. | — | Windows/src/NextThought.Desktop/AppState.Skills.cs:63 |
 | 428 | 把讨论留下来 | Keep the discussion | — |  |
 | 429 | 把这场景加入 | Add this scene | — | Windows/src/NextThought.Desktop/Views/SeriesView.axaml |
-| 430 | 按下组合键… | Press a key combination… | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:74 |
+| 430 | 按下组合键… | Press a key combination… | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:81 |
 | 431 | 提示岛所在屏 | Cue island display | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 432 | 提词器已穿透 | Teleprompter click-through on | — | Windows/src/NextThought.Desktop/Views/TeleprompterHandleWindow.axaml |
 | 433 | 提高不透明度 | More opaque | — |  |
@@ -478,7 +478,7 @@ Materials:
 | 439 | 更改尚未保存 | Changes are not saved yet | 更改尚未保存 | Windows/src/NextThought.Desktop/AppState.NotesEditor.cs:28 |
 | 440 | 更新（高级） | Update (advanced) | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 441 | 未使用资料库 | No materials used | — | Windows/src/NextThought.Desktop/AppState.Live.cs:557 |
-| 442 | 本地（默认） | Local (default) | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:474 |
+| 442 | 本地（默认） | Local (default) | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:485 |
 | 443 | 本机语音识别 | On-device speech | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 444 | 术语已保存。 | Term saved. | — | Windows/src/NextThought.Desktop/AppState.Glossary.cs:236 |
 | 445 | 来回交换观点 | Exchange viewpoints | — | Windows/src/NextThought.Desktop/AppState.Audio.cs:17 |
@@ -509,7 +509,7 @@ Materials:
 | 470 | 麦克风 ·  | Microphone ·  | — | Windows/src/NextThought.Desktop/AppState.Live.cs:391 |
 | 471 | 默认，不指定 | Default, not specified | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:58 |
 | 472 | ，并恢复设置 | , and settings restored | — | Windows/src/NextThought.Desktop/AppState.Archive.cs:231 |
-| 473 | ，立即生效。 | , takes effect immediately. | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:103 |
+| 473 | ，立即生效。 | , takes effect immediately. | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:110 |
 | 474 |  · 可能回声 |  · possible echo | — | Windows/src/NextThought.Desktop/TranscriptRow.cs:109 |
 | 475 |  · 提词按句 |  · cue by sentence | — | Windows/src/NextThought.Desktop/AppState.StructuredNotes.cs:26 |
 | 476 | %lld 秒前 | %lld s ago | — | Windows/src/NextThought.Desktop/AppState.Insights.cs:170 |
@@ -585,7 +585,7 @@ Materials:
 | 546 | 还没有选择系列 | No series selected | — | Windows/src/NextThought.Desktop/AppState.Series.cs:33 |
 | 547 | 这一页讲了什么 | What this page covers | — | Windows/src/NextThought.Desktop/SelfTest/TypographySampleWindow.axaml |
 | 548 | 选择自定义模板 | Select custom template | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
-| 549 | 静音后直接结束 | End immediately after silence | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:693 |
+| 549 | 静音后直接结束 | End immediately after silence | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:706 |
 | 550 | 静音多久后收尾 | End after silence for | — |  |
 | 551 | 默认（不指定） | Default (not specified) | — |  |
 | 552 |  · 提词按要点 |  · cue by key points | — | Windows/src/NextThought.Desktop/AppState.StructuredNotes.cs:26 |
@@ -601,13 +601,13 @@ Materials:
 | 562 | 合并说话人失败： | Could not merge the speakers:  | — | Windows/src/NextThought.Desktop/AppState.Speakers.cs:159 |
 | 563 | 听到外语自动翻译 | Auto-translate foreign speech | — | Windows/src/NextThought.Desktop/Views/QuickSettingsPanel.axaml |
 | 564 | 回答语言已更新。 | Answer language updated. | — | Windows/src/NextThought.Desktop/Views/LiveView.axaml.cs:316 |
-| 565 | 声音设备已刷新。 | Audio devices refreshed. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:199 |
+| 565 | 声音设备已刷新。 | Audio devices refreshed. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:229 |
 | 566 | 尚无自定义模板。 | No custom templates. | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:83 |
 | 567 | 屏幕感知已关闭。 | Screen awareness turned off. | — |  |
 | 568 | 屏幕感知已开启。 | Screen awareness turned on. | — |  |
 | 569 | 工作会议模板纪要 | Meeting template notes | — |  |
 | 570 | 已从系列中移出。 | Removed from the series. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:523 |
-| 571 | 已保存 · %@ | Saved · %@ | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:680 |
+| 571 | 已保存 · %@ | Saved · %@ | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:693 |
 | 572 | 已关闭实时纪要。 | Live notes are off. | — | Windows/src/NextThought.Desktop/AppState.LiveNotes.cs:152 |
 | 573 | 已写入系列记录。 | Written to the series record. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:120 |
 | 574 | 已加入系列术语。 | Added to the series glossary. | — | Windows/src/NextThought.Desktop/AppState.Glossary.cs:473 |
@@ -620,7 +620,7 @@ Materials:
 | 581 | 恢复未全部完成： | Restore did not finish:  | — |  |
 | 582 | 截图文件已不存在 | The screenshot file no longer exists | — | Windows/src/NextThought.Desktop/Views/HistoryView.axaml.cs:239 |
 | 583 | 手机伴侣已关闭。 | Phone companion stopped. | — | Windows/src/NextThought.Desktop/AppState.Launcher.cs:130 |
-| 584 | 打开术语表失败： | Opening the glossary failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:348 |
+| 584 | 打开术语表失败： | Opening the glossary failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:378 |
 | 585 | 拖动选择截图区域 | Drag to select a capture area | — | Windows/src/NextThought.Desktop/Views/RegionCaptureWindow.axaml |
 | 586 | 接上外接屏后可用 | Available once an external display is connected | 接上外接屏后可用 |  |
 | 587 | 提词浮窗鼠标穿透 | Teleprompter click-through | 提词浮窗鼠标穿透 |  |
@@ -652,7 +652,7 @@ Materials:
 | 613 | 还没有检查更新。 | No update check yet. | — |  |
 | 614 | 这一节要整理什么 | What should this section collect? | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 615 | 这条建议已忽略。 | Suggestion ignored. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:119 |
-| 616 | 配对链接已复制。 | Pairing link copied. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:287 |
+| 616 | 配对链接已复制。 | Pairing link copied. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:317 |
 | 617 | 首字 %.1fs | first token %.1fs | — | Windows/src/NextThought.Desktop/RecentMeetingRow.cs:198 |
 | 618 | ；本机回退失败： | ; local fallback failed:  | — | Windows/src/NextThought.Desktop/AppState.Live.cs:235 |
 | 619 | %@ %lld 段 | %@ %lld sections | — | Windows/src/NextThought.Desktop/ViewModels/LibraryViewModel.cs:34 |
@@ -671,17 +671,17 @@ Materials:
 | 632 | 删除会议和依赖内容 | Delete the meeting and its dependent content | — | Windows/src/NextThought.Desktop/Views/HistoryView.axaml.cs:304 |
 | 633 | 删除全部会议记录？ | Delete all meeting records? | 删除全部会议记录？ | Windows/src/NextThought.Desktop/Views/HistoryView.axaml.cs:155 |
 | 634 | 删除失败进重试队列 | Failed deletes go to the retry queue | — | Windows/src/NextThought.Desktop/AppState.LiveNotes.cs:293 |
-| 635 | 刷新声音设备失败： | Refreshing audio devices failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:201 |
+| 635 | 刷新声音设备失败： | Refreshing audio devices failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:231 |
 | 636 | 回答服务连接成功： | Answer service connected:  | — | Windows/src/NextThought.Desktop/AppState.Live.cs:644 |
 | 637 | 在资源管理器中显示 | Show in File Explorer | — | Windows/src/NextThought.Desktop/Views/HistoryView.axaml |
-| 638 | 复制配对链接失败： | Copying the pairing link failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:289 |
+| 638 | 复制配对链接失败： | Copying the pairing link failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:319 |
 | 639 | 复盘 / 当前阶段 | Review / current stage | — | Windows/src/NextThought.Desktop/Views/SeriesEditorWindow.axaml |
 | 640 | 导入 .json… | Import .json… | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 641 | 开启局域网手机伴侣 | Start LAN phone companion | — | Windows/src/NextThought.Desktop/AppState.cs:321 |
 | 642 | 手动校正：缓存击穿 | Manual correction: cache stampede | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
 | 643 | 手机伴侣启动失败： | Starting the phone companion failed:  | — | Windows/src/NextThought.Desktop/AppState.Launcher.cs:159 |
-| 644 | 打开令牌页面失败： | Opening the token page failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:327 |
-| 645 | 打开我的声音失败： | Opening My Voice failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:365 |
+| 644 | 打开令牌页面失败： | Opening the token page failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:357 |
+| 645 | 打开我的声音失败： | Opening My Voice failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:395 |
 | 646 | 更改尚未保存：%@ | Changes are not saved yet: %@ | — | Windows/src/NextThought.Desktop/AppState.NotesEditor.cs:137 |
 | 647 | 有了内容就开始整理 | It will start once there is something to summarise | — | Windows/src/NextThought.Desktop/AppState.LiveNotes.cs:92 |
 | 648 | 本周进展、相关论文 | This week's progress, related papers | 本周进展、相关论文 | Windows/src/NextThought.Desktop/MeetingDraft.cs:75 |
@@ -689,7 +689,7 @@ Materials:
 | 650 | 本机离线识别已就绪 | On-device offline recognition is ready | — | Windows/src/NextThought.Desktop/AppState.SetupChecklist.cs:15 |
 | 651 | 框选读屏区域失败： | Selecting the screen-read area failed:  | — | Windows/src/NextThought.Desktop/Views/MainWindow.Shell.cs:341 |
 | 652 | 模型（留空用默认） | Model (empty uses default) | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
-| 653 | 模板文件格式无效： | The template file format is invalid:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:228 |
+| 653 | 模板文件格式无效： | The template file format is invalid:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:258 |
 | 654 | 正在加载本场资料… | Loading this meeting's materials… | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
 | 655 | 正在备份当前版本… | Backing up the current version… | — | Windows/src/NextThought.Desktop/AppState.Update.cs:296 |
 | 656 | 正在截屏读取屏幕… | Reading the screen… | — | Windows/src/NextThought.Desktop/AppState.ScreenWatch.cs:45 |
@@ -699,7 +699,7 @@ Materials:
 | 660 | 正在检查回答服务… | Checking the answer service… | — | Windows/src/NextThought.Desktop/AppState.Live.cs:542 |
 | 661 | 正在生成参考回答… | Generating a reference answer… | — | Windows/src/NextThought.Desktop/AppState.Live.cs:542 |
 | 662 | 没有新的知识候选。 | No new knowledge candidates. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:266 |
-| 663 | 清除读屏区域失败： | Clearing the screen-read area failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:386 |
+| 663 | 清除读屏区域失败： | Clearing the screen-read area failed:  | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:416 |
 | 664 | 组会 / 研究讨论 | Lab meeting / research discussion | — |  |
 | 665 | 经验 %lld 条 | %lld lessons | — | Windows/src/NextThought.Desktop/AppState.Prepare.cs:100 |
 | 666 | 自定义模板已清空。 | Custom templates cleared. | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:98 |
@@ -783,10 +783,10 @@ Materials:
 | 744 | 当前没有可命名的说话人 | No speaker to name right now | — | Windows/src/NextThought.Desktop/AppState.Speakers.cs:62 |
 | 745 | 录入 / 管理我的声音 | Enroll / manage my voice | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
 | 746 | 最长独白 %.0f 秒 | Longest monologue %.0f s | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:227 |
-| 747 | 未找到第三方许可文件。 | Third-party license file not found. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:335 |
+| 747 | 未找到第三方许可文件。 | Third-party license file not found. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:365 |
 | 748 | 正在加载本地语音模型… | Loading the on-device speech model… | — | Windows/src/NextThought.Desktop/AppState.Live.cs:172 |
 | 749 | 正在记录的会议不能删除 | A meeting that is recording cannot be deleted | — | Windows/src/NextThought.Desktop/AppState.Meeting.cs:174 |
-| 750 | 没有可导入的技能文件。 | No skill file to import. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:273 |
+| 750 | 没有可导入的技能文件。 | No skill file to import. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:303 |
 | 751 | 没有找到可截图的窗口。 | No window was found to capture. | — |  |
 | 752 | 示例技能已经在列表里。 | The sample skill is already in the list. | — | Windows/src/NextThought.Desktop/AppState.Skills.cs:132 |
 | 753 | 系列已有相近经验：%@ | The series already has related lessons: %@ | — | Windows/src/NextThought.Desktop/RecentMeetingRow.cs:241 |
@@ -821,7 +821,7 @@ Materials:
 | 782 | 早上好。今天要记下什么？ | Good morning. What should we capture today? | — | Windows/src/NextThought.Desktop/AppState.Audio.cs:46 |
 | 783 | 本机 LM Studio | Local LM Studio | — | Windows/src/NextThought.Desktop/AppState.Onboarding.cs:377 |
 | 784 | 术语表（人名与专有名词） | Glossary (names and terms) | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
-| 785 | 模板文件里没有可用模板。 | The template file has no usable templates. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:225 |
+| 785 | 模板文件里没有可用模板。 | The template file has no usable templates. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:255 |
 | 786 | 没有匹配到「数据库迁移」 | No match for “database migration” | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
 | 787 | 演示模式：未加载识别模型 | Demo mode: recognition model not loaded | — | Windows/src/NextThought.Desktop/AppState.Demo.cs:104 |
 | 788 | 简历、职位描述、公司信息 | Résumé, job description, company info | 简历、职位描述、公司信息 | Windows/src/NextThought.Desktop/MeetingDraft.cs:73 |
@@ -830,7 +830,7 @@ Materials:
 | 791 | 麦克风 · 适合线下会议 | Microphone · for in-person meetings | — | Windows/src/NextThought.Desktop/AppState.Audio.cs:78 |
 | 792 | ；已经记录的内容已保存。 | ; what was recorded is saved. | — | Windows/src/NextThought.Desktop/AppState.Live.cs:356 |
 | 793 |   ·  另 %lld 份 |   ·  %lld more | — | Windows/src/NextThought.Desktop/ViewModels/LibraryViewModel.cs:34 |
-| 794 | Soniox · 中英混说 | Soniox · bilingual | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:475 |
+| 794 | Soniox · 中英混说 | Soniox · bilingual | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:486 |
 | 795 | 会议已保存，可以整理纪要。 | Meeting saved; notes can be organized. | — | Windows/src/NextThought.Desktop/AppState.Live.cs:356 |
 | 796 | 使用系列知识（经验与题库） | Use series knowledge (lessons and question bank) | — | Windows/src/NextThought.Desktop/Views/SeriesEditorWindow.axaml |
 | 797 | 夜深了。要把想法留下来吗？ | Late night. Want to keep a thought? | — | Windows/src/NextThought.Desktop/AppState.Audio.cs:45 |
@@ -851,7 +851,7 @@ Materials:
 | 812 | 被问到时，答案就在镜头旁。 | The answer sits beside the camera. | — | Windows/src/NextThought.Desktop/SelfTest/TypographySampleWindow.axaml |
 | 813 | 语速 %.0f 单位/分钟 | Pace %.0f units/min | — | Windows/src/NextThought.Desktop/AppState.Coach.cs:225 |
 | 814 | 读屏失败，20 秒后重试。 | Screen read failed; retrying in 20 seconds. | — | Windows/src/NextThought.Desktop/AppState.ScreenWatch.cs:70 |
-| 815 | 这个键不能用作全局快捷键。 | That key cannot be used as a global shortcut. | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:96 |
+| 815 | 这个键不能用作全局快捷键。 | That key cannot be used as a global shortcut. | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:103 |
 | 816 | 这次没更新成功，稍后会再试 | This update did not come back; it will try again shortly. | — | Windows/src/NextThought.Desktop/AppState.LiveNotes.cs:88 |
 | 817 | 面试官在追问 · 参考回答 | The interviewer is following up · reference answer | 面试官在追问 · 参考回答 | Windows/src/NextThought.Desktop/Views/OnboardingView.axaml |
 | 818 | %lld 小时 %lld 分 | %lld h %lld min | — |  |
@@ -861,12 +861,12 @@ Materials:
 | 822 | 先停止当前任务，再删除系列。 | Stop the current task before deleting a series. | — | Windows/src/NextThought.Desktop/AppState.Meeting.cs:341 |
 | 823 | 全局快捷键已保存并重新注册。 | Shortcuts saved and re-registered. | — | Windows/src/NextThought.Desktop/AppState.Audio.cs:211 |
 | 824 | 全文搜索：%lld 条命中。 | Full-text search: %lld hits. | — | Windows/src/NextThought.Desktop/AppState.Archive.cs:87 |
-| 825 | 导入技能（Markdown） | Import skill (Markdown) | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:257 |
+| 825 | 导入技能（Markdown） | Import skill (Markdown) | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:287 |
 | 826 | 已刷新可采集的应用程序列表。 | The list of recordable apps was refreshed. | — | Windows/src/NextThought.Desktop/AppState.Launcher.cs:24 |
 | 827 | 已把「%@」附着到「%@」。 | Attached “%@” to “%@”. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:185 |
 | 828 | 已整理成%@，可复制或导出。 | Organized into %@; ready to copy or export. | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:481 |
 | 829 | 已新建技能，改完内容后保存。 | New skill created; edit it and save. | — | Windows/src/NextThought.Desktop/AppState.Skills.cs:113 |
-| 830 | 幻灯片在 %@，提示在 %@ | Slides on %@, cue on %@ | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:640 |
+| 830 | 幻灯片在 %@，提示在 %@ | Slides on %@, cue on %@ | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:653 |
 | 831 | 拖动可移动 · 双击隐藏控件 | Drag to move · double-click to hide controls | — |  |
 | 832 | 搜索命中 %lld/%lld | Search hits %lld/%lld | — | Windows/src/NextThought.Desktop/AppState.Meeting.cs:46 |
 | 833 | 正在加载模型并转写 WAV… | Loading the model and transcribing the WAV… | — | Windows/src/NextThought.Desktop/AppState.StructuredNotes.cs:408 |
@@ -883,7 +883,7 @@ Materials:
 | 844 | 这场会议还没有可收集的候选。 | This meeting has no candidates to collect yet. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:257 |
 | 845 | 退出 NextThought | Quit NextThought | — | Windows/src/NextThought.Desktop/TrayIntegration.cs:20 |
 | 846 | 选一个类型作为基础，再改名字 | Pick a base type, then rename it | 选一个类型作为基础，再改名字 | Windows/src/NextThought.Desktop/MeetingDraft.cs:68 |
-| 847 | 静音后先提示，再结束（推荐） | Prompt after silence, then end (recommended) | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:692 |
+| 847 | 静音后先提示，再结束（推荐） | Prompt after silence, then end (recommended) | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:705 |
 | 848 | %lld 份资料 · 本机解析 | %lld materials · parsed on this device | — | Windows/src/NextThought.Desktop/ViewModels/LibraryViewModel.cs:57 |
 | 849 | NextThought 字幕条 | NextThought Subtitles | NextThought 字幕条 | Windows/src/NextThought.Desktop/Views/SubtitleBarWindow.axaml |
 | 850 | NextThought 提词器 | NextThought Teleprompter | NextThought 提词器 |  |
@@ -899,7 +899,7 @@ Materials:
 | 860 | 双屏演讲已结束，主窗口已恢复。 | Presenter mode ended; main window restored. | — | Windows/src/NextThought.Desktop/Views/MainWindow.Shell.cs:717 |
 | 861 | 回答暂时不可用；记录仍在继续。 | Answers are temporarily unavailable; recording continues. | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
 | 862 | 对话在左 · 回答在右（默认） | Conversation left · answers right (default) | — |  |
-| 863 | 尚未保存密钥；本机服务可不填。 | No key saved yet; optional for local services. | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:804 |
+| 863 | 尚未保存密钥；本机服务可不填。 | No key saved yet; optional for local services. | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:817 |
 | 864 | 已导入，共 %lld 个技能。 | Imported %lld skills. | — | Windows/src/NextThought.Desktop/AppState.Skills.cs:47 |
 | 865 | 已把「%@」放进系列「%@」。 | Added “%@” to series “%@”. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:511 |
 | 866 | 已按屏幕切到第 %lld 页。 | Switched to slide %lld by screen. | — | Windows/src/NextThought.Desktop/AppState.SlideFollow.cs:130 |
@@ -1075,11 +1075,11 @@ Meeting time: %@ · Template: %@ | — | Windows/src/NextThought.Desktop/AppStat
 | 1031 | X-ASR 中英 · 480 ms（推荐） | X-ASR bilingual · 480 ms (recommended) | X-ASR 中英 · 480 ms（推荐） | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:52 |
 | 1032 | 保存后立即应用；跟随系统会随后台主题切换。 | Applied after saving; Follow system tracks the OS theme. | — |  |
 | 1033 | 切换为只记录：不再自动回答，仍可手动提问。 | Switched to record-only: no automatic answers, but you can still ask by hand. | — | Windows/src/NextThought.Desktop/AppState.LiveUi.cs:83 |
-| 1034 | 原凭据无法由当前用户解密，请重新输入密钥。 | The current user cannot decrypt the stored credential; enter the key again. | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:810 |
+| 1034 | 原凭据无法由当前用户解密，请重新输入密钥。 | The current user cannot decrypt the stored credential; enter the key again. | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:823 |
 | 1035 | 原始音频不保存；转写与回答保存在「记录」里 | Raw audio is not kept; the transcript and answers stay under Records. | — | Windows/src/NextThought.Desktop/Views/Assistant/EmptyConversationHint.axaml |
 | 1036 | 回答不超过三句话：先给结论，再给一条依据。 | Answer in at most three sentences: conclusion first, then one reason. | — |  |
 | 1037 | 已保存 %lld 个技能，下一场回答生效。 | Saved %lld skills; used in the next answer. | — | Windows/src/NextThought.Desktop/AppState.Skills.cs:63 |
-| 1038 | 已保存（当前 Windows 用户加密）。 | Saved (encrypted for the current Windows user). | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:358 |
+| 1038 | 已保存（当前 Windows 用户加密）。 | Saved (encrypted for the current Windows user). | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml.cs:388 |
 | 1039 | 已开启实时纪要：大约每 45 秒整理一次。 | Live notes are on: they update about every 45 seconds. | — | Windows/src/NextThought.Desktop/AppState.LiveNotes.cs:151 |
 | 1040 | 录音已通过云端转写并归档，未保存原始音频。 | Recording transcribed by the cloud and archived; raw audio was not kept. | — | Windows/src/NextThought.Desktop/AppState.StructuredNotes.cs:444 |
 | 1041 | 技能可用于所有系列，或在系列中按系列选择。 | Skills can apply to all series, or be chosen per series. | — | Windows/src/NextThought.Desktop/Views/SettingsView.axaml |
@@ -1101,7 +1101,7 @@ Meeting time: %@ · Template: %@ | — | Windows/src/NextThought.Desktop/AppStat
 | 1057 | 切换为自动回答：识别到问题后会生成参考回答。 | Switched to automatic answers: a reference answer is generated when a question is recognized. | — | Windows/src/NextThought.Desktop/AppState.LiveUi.cs:83 |
 | 1058 | 外接屏已断开，双屏演讲已退出，主窗口已恢复。 | External display disconnected; presenter mode exited; main window restored. | — | Windows/src/NextThought.Desktop/Views/MainWindow.Shell.cs:647 |
 | 1059 | 如果发布窗口需要延长，我们会先核对回滚指标。 | If the release window needs more time, we will check the rollback metrics first. | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
-| 1060 | 密钥已保存（当前 Windows 用户加密） | Key saved (encrypted for the current Windows user) | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:804 |
+| 1060 | 密钥已保存（当前 Windows 用户加密） | Key saved (encrypted for the current Windows user) | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:817 |
 | 1061 | 已删除会议「%@」，已确认的系列内容已保留。 | Deleted meeting “%@”; accepted series content kept. | — | Windows/src/NextThought.Desktop/Views/HistoryView.axaml.cs:139 |
 | 1062 | 已按《%@》整理，可导出 Markdown。 | Organized with “%@”; Markdown export is available. | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:251 |
 | 1063 | 把资料加入系列请在资料库中选择；这里可移除。 | Add materials to the series from the library; remove them here. | — |  |
@@ -1172,7 +1172,7 @@ Meeting time: %@ · Template: %@ | — | Windows/src/NextThought.Desktop/AppStat
 | 1128 | 合成版本差异样例；实际过期标记由归档投影版本比较产生。 | Synthetic revision-diff sample; real stale markers come from archive projection comparison. | — | Windows/src/NextThought.Desktop/Views/ControlSampleWindow.axaml |
 | 1129 | 听到对方提问，参考回答出现在摄像头下方的提词岛和右侧。 | When the other side asks, the suggested answer appears in the cue island below the camera and on the right | — | Windows/src/NextThought.Desktop/AppState.Prepare.cs:315 |
 | 1130 | 命名后应用到当前转写；也可以把某一声道标成「这是我」。 | Names apply to the current transcript; you can also mark a channel as “Me”. | — | Windows/src/NextThought.Desktop/Views/SpeakerEditorWindow.axaml |
-| 1131 | 密钥读取失败，已保留原密钥；如需更换请直接输入新密钥。 | Reading the key failed; the existing key was kept. Enter a new key to replace it. | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:816 |
+| 1131 | 密钥读取失败，已保留原密钥；如需更换请直接输入新密钥。 | Reading the key failed; the existing key was kept. Enter a new key to replace it. | — | Windows/src/NextThought.Desktop/ViewModels/SettingsViewModel.cs:829 |
 | 1132 | 已整理成%@；%lld 条找不到原话依据的内容已丢弃。 | Organized into %@; dropped %lld items with no transcript support. | — | Windows/src/NextThought.Desktop/AppState.Notes.cs:480 |
 | 1133 | 提词浮窗已开启鼠标穿透，Ctrl+Alt+J 可恢复。 | Teleprompter click-through is on; Ctrl+Alt+J restores clicks. | — | Windows/src/NextThought.Desktop/Views/MainWindow.Shell.cs:493 |
 | 1134 | 还没有条目。点「新增」，或用「批量粘贴」一次加入多条。 | No entries yet. Choose New, or use Bulk paste to add several at once. | — | Windows/src/NextThought.Desktop/AppState.Glossary.cs:56 |
@@ -1238,7 +1238,7 @@ Meeting time: %@ · Template: %@ | — | Windows/src/NextThought.Desktop/AppStat
 | 1194 | 快捷键必须包含 Ctrl、Alt 或 Shift，不能只使用普通按键。 | A shortcut must include Ctrl, Alt or Shift; a plain key is not enough. | — | Windows/src/NextThought.Desktop/AppState.Audio.cs:197 |
 | 1195 | 所有窗口已收起，会议继续记录。Ctrl+Alt+\ 或托盘图标可恢复。 | All windows hidden; the meeting keeps recording. Ctrl+Alt+\ or the tray icon restores them. | — | Windows/src/NextThought.Desktop/Views/MainWindow.Shell.cs:155 |
 | 1196 | 把同一门课、同一个项目、同一类面试的会议放在一个系列里，经验会攒下来。 | Keep meetings from one course, project or interview loop in a series; lessons accumulate. | — | Windows/src/NextThought.Desktop/AppState.Series.cs:31 |
-| 1197 | 按下带 Ctrl/Alt/Shift/Win 的组合键；Esc 取消。 | Press a combination with Ctrl/Alt/Shift/Win; Esc cancels. | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:76 |
+| 1197 | 按下带 Ctrl/Alt/Shift/Win 的组合键；Esc 取消。 | Press a combination with Ctrl/Alt/Shift/Win; Esc cancels. | — | Windows/src/NextThought.Desktop/Views/ShortcutSettingsView.axaml.cs:83 |
 | 1198 | 每一场会议都存在本机。搜索标题、日期或模式，看不清的细节可以回到原话。 | Every meeting stays on this device. Search by title, date or mode, and return to the exact words when details are unclear. | — |  |
 | 1199 | 没有找到可用的局域网 IPv4 地址；请先连接 Wi-Fi 或以太网。 | No usable LAN IPv4 address; connect Wi-Fi or Ethernet first. | — | Windows/src/NextThought.Desktop/AppState.Launcher.cs:116 |
 | 1200 | 生成结果保持不变；这里的修改写入 user-content.json。 | Generated content stays unchanged; edits here are written to user-content.json. | — |  |
@@ -1351,9 +1351,9 @@ OpenSees \| open sees | — | Windows/src/NextThought.Desktop/Views/SettingsView
 扫描对象：`--demo --screenshots=<dir>` 生成的英文模式页面文字清单（`text/*-en*.txt`，
 包含未展开的 tooltip；文字清单由截图工具在渲染后遍历控件树得到，不依赖 OCR）。
 
-- 页面数：**51**
-- 含中文字符的行：**222**
-- 其中用户数据/演示数据/系统设备名（允许）：**222**
+- 页面数：**55**
+- 含中文字符的行：**274**
+- 其中用户数据/演示数据/系统设备名（允许）：**274**
 - **残留（需要修）：0**
 - **英文文字截断/溢出（需要修）：0**
 
@@ -1361,16 +1361,16 @@ OpenSees \| open sees | — | Windows/src/NextThought.Desktop/Views/SettingsView
 
 | 页面 | 中文行 | 残留 | 截断 | 结论 |
 |---|---|---|---|---|
-| answers-en-dark.png | 1 | 0 | 0 | 通过 |
-| answers-en-light.png | 1 | 0 | 0 | 通过 |
+| answers-en-dark.png | 2 | 0 | 0 | 通过 |
+| answers-en-light.png | 2 | 0 | 0 | 通过 |
 | corrected-transcript-en-dark.png | 10 | 0 | 0 | 通过 |
 | corrected-transcript-en-light.png | 10 | 0 | 0 | 通过 |
-| history-en-dark.png | 7 | 0 | 0 | 通过 |
-| history-en-light.png | 7 | 0 | 0 | 通过 |
-| home-en-dark.png | 5 | 0 | 0 | 通过 |
-| home-en-light.png | 5 | 0 | 0 | 通过 |
-| home-stats-en-dark.png | 5 | 0 | 0 | 通过 |
-| home-stats-en-light.png | 5 | 0 | 0 | 通过 |
+| history-en-dark.png | 8 | 0 | 0 | 通过 |
+| history-en-light.png | 8 | 0 | 0 | 通过 |
+| home-en-dark.png | 6 | 0 | 0 | 通过 |
+| home-en-light.png | 6 | 0 | 0 | 通过 |
+| home-stats-en-dark.png | 6 | 0 | 0 | 通过 |
+| home-stats-en-light.png | 6 | 0 | 0 | 通过 |
 | island-autoend-en | 0 | 0 | 0 | 通过 |
 | island-bilingual-en | 4 | 0 | 0 | 通过 |
 | island-compact-en | 0 | 0 | 0 | 通过 |
@@ -1382,36 +1382,40 @@ OpenSees \| open sees | — | Windows/src/NextThought.Desktop/Views/SettingsView
 | island-open-en | 2 | 0 | 0 | 通过 |
 | island-pinned-en | 5 | 0 | 0 | 通过 |
 | island-slide-en | 2 | 0 | 0 | 通过 |
-| library-en-dark.png | 4 | 0 | 0 | 通过 |
-| library-en-light.png | 4 | 0 | 0 | 通过 |
+| library-en-dark.png | 5 | 0 | 0 | 通过 |
+| library-en-light.png | 5 | 0 | 0 | 通过 |
 | live-en-dark.png | 8 | 0 | 0 | 通过 |
 | live-en-light.png | 8 | 0 | 0 | 通过 |
-| notes-en-dark.png | 10 | 0 | 0 | 通过 |
-| notes-en-light.png | 10 | 0 | 0 | 通过 |
-| personal-en-dark.png | 9 | 0 | 0 | 通过 |
-| personal-en-light.png | 9 | 0 | 0 | 通过 |
-| prepare-en-dark.png | 16 | 0 | 0 | 通过 |
-| prepare-en-light.png | 16 | 0 | 0 | 通过 |
+| notes-en-dark.png | 11 | 0 | 0 | 通过 |
+| notes-en-light.png | 11 | 0 | 0 | 通过 |
+| personal-en-dark.png | 10 | 0 | 0 | 通过 |
+| personal-en-light.png | 10 | 0 | 0 | 通过 |
+| prepare-en-dark.png | 20 | 0 | 0 | 通过 |
+| prepare-en-light.png | 20 | 0 | 0 | 通过 |
 | quick-settings-en-dark | 0 | 0 | 0 | 通过 |
 | quick-settings-en-light | 0 | 0 | 0 | 通过 |
-| series-en-dark.png | 14 | 0 | 0 | 通过 |
-| series-en-light.png | 14 | 0 | 0 | 通过 |
-| settings-advanced-en-dark.png | 2 | 0 | 0 | 通过 |
-| settings-advanced-en-light.png | 2 | 0 | 0 | 通过 |
-| settings-answer-en-dark.png | 0 | 0 | 0 | 通过 |
-| settings-answer-en-light.png | 0 | 0 | 0 | 通过 |
-| settings-coach-en-dark.png | 0 | 0 | 0 | 通过 |
-| settings-coach-en-light.png | 0 | 0 | 0 | 通过 |
-| settings-en-dark.png | 2 | 0 | 0 | 通过 |
-| settings-en-light.png | 2 | 0 | 0 | 通过 |
+| series-en-dark.png | 15 | 0 | 0 | 通过 |
+| series-en-light.png | 15 | 0 | 0 | 通过 |
+| settings-advanced-en-dark.png | 4 | 0 | 0 | 通过 |
+| settings-advanced-en-light.png | 4 | 0 | 0 | 通过 |
+| settings-advanced-update-en-dark.png | 4 | 0 | 0 | 通过 |
+| settings-advanced-update-en-light.png | 4 | 0 | 0 | 通过 |
+| settings-answer-en-dark.png | 1 | 0 | 0 | 通过 |
+| settings-answer-en-light.png | 1 | 0 | 0 | 通过 |
+| settings-coach-en-dark.png | 1 | 0 | 0 | 通过 |
+| settings-coach-en-light.png | 1 | 0 | 0 | 通过 |
+| settings-coach-shortcuts-en-dark.png | 1 | 0 | 0 | 通过 |
+| settings-coach-shortcuts-en-light.png | 1 | 0 | 0 | 通过 |
+| settings-en-dark.png | 4 | 0 | 0 | 通过 |
+| settings-en-light.png | 4 | 0 | 0 | 通过 |
 | settings-general-en-dark.png | 1 | 0 | 0 | 通过 |
 | settings-general-en-light.png | 1 | 0 | 0 | 通过 |
-| settings-notes-en-dark.png | 0 | 0 | 0 | 通过 |
-| settings-notes-en-light.png | 0 | 0 | 0 | 通过 |
-| settings-scene-en-dark.png | 0 | 0 | 0 | 通过 |
-| settings-scene-en-light.png | 0 | 0 | 0 | 通过 |
-| transcript-en-dark.png | 7 | 0 | 0 | 通过 |
-| transcript-en-light.png | 8 | 0 | 0 | 通过 |
+| settings-notes-en-dark.png | 1 | 0 | 0 | 通过 |
+| settings-notes-en-light.png | 1 | 0 | 0 | 通过 |
+| settings-scene-en-dark.png | 1 | 0 | 0 | 通过 |
+| settings-scene-en-light.png | 1 | 0 | 0 | 通过 |
+| transcript-en-dark.png | 8 | 0 | 0 | 通过 |
+| transcript-en-light.png | 9 | 0 | 0 | 通过 |
 
 英文模式下除用户数据、演示数据与 Windows 设备名外，没有中文字符。
 

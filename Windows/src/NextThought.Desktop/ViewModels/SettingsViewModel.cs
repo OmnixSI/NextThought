@@ -438,7 +438,18 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
         OnPropertyChanged(nameof(SelectedCloudStt));
         OnPropertyChanged(nameof(SelectedCloudLanguage));
         OnPropertyChanged(nameof(SelectedAppearance));
+        var cueWidthValue = SelectedCueWidth?.Value ?? "regular";
+        SelectedCueWidth = CueWidthChoices.FirstOrDefault(choice => choice.Value == cueWidthValue)
+                           ?? CueWidthChoices[0];
+        var appearanceValue = SelectedAppearance?.Value ?? "system";
+        SelectedAppearance = AppearanceChoices.FirstOrDefault(choice => choice.Value == appearanceValue)
+                             ?? AppearanceChoices[0];
         OnPropertyChanged(nameof(SelectedCueWidth));
+        var gazeValue = SelectedGazeSensitivity?.Value ?? "standard";
+        SelectedGazeSensitivity = GazeSensitivityChoices.FirstOrDefault(option => option.Value == gazeValue)
+                                  ?? GazeSensitivityChoices[1];
+        OnPropertyChanged(nameof(GazeSensitivityChoices));
+        OnPropertyChanged(nameof(SelectedGazeSensitivity));
         OnPropertyChanged(nameof(CueSurfaceChoices));
         var cueSurfaceValue = SelectedCueSurface?.Value ?? "island";
         SelectedCueSurface = CueSurfaceChoices.FirstOrDefault(choice => choice.Value == cueSurfaceValue) ?? CueSurfaceChoices[0];
@@ -528,7 +539,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     ];
 
     /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
-    public IReadOnlyList<CueWidthOption> CueWidthChoices => CueWidthChoicesValues.ToArray();
+    public IReadOnlyList<CueWidthOption> CueWidthChoices =>
+        CueWidthChoicesValues.Select(option => option with { Title = UiText.T(option.Title) }).ToArray();
     [ObservableProperty] private CueWidthOption? selectedCueWidth;
     [ObservableProperty] private bool cueAlwaysOpen;
 
@@ -592,7 +604,8 @@ public partial class SettingsViewModel(AppState state) : ObservableObject
     private bool loadingCoachGaze;
 
     /// <summary>G8: a new list per access so ComboBox items re-render on a language switch.</summary>
-    public IReadOnlyList<GazeSensitivityChoice> GazeSensitivityChoices => GazeSensitivityValues.ToArray();
+    public IReadOnlyList<GazeSensitivityChoice> GazeSensitivityChoices =>
+        GazeSensitivityValues.Select(option => option with { Title = UiText.T(option.Title) }).ToArray();
 
     partial void OnCoachWatchesGazeChanged(bool value)
     {

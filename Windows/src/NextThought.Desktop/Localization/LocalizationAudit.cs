@@ -96,7 +96,17 @@ public static class LocalizationAudit
             var over = text.TextWrapping == TextWrapping.NoWrap
                 ? (needed.Width > bounds.Width + 1.5 ? $"{needed.Width:0.0}>{bounds.Width:0.0}" : null)
                 : (needed.Height > bounds.Height + 1.5 ? $"{needed.Height:0.0}>{bounds.Height:0.0}" : null);
-            if (over is not null) rows.Add($"text\t{over}\t{text.Text}");
+            if (over is not null)
+            {
+                var owner = "text";
+                for (var parent = text.Parent; parent is not null; parent = parent.Parent)
+                    if (parent is Control { Name.Length: > 0 } named)
+                    {
+                        owner = named.GetType().Name + "#" + named.Name;
+                        break;
+                    }
+                rows.Add($"text\t{over}\t{owner}\t{text.Text}");
+            }
         }
         rows.Sort(StringComparer.Ordinal);
         return rows;

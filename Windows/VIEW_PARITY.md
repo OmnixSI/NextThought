@@ -199,11 +199,11 @@
 | `Sources/NextThought/SettingsView.swift` | `SignatureStatus` | E25 | Views/SettingsView.axaml | 本版不做 | 平台差异：Mac Gatekeeper 签名状态行；Windows 本版不签名、无对应信息（任务书 §2.8 平台差异） |
 | `Sources/NextThought/SettingsView.swift` | `SkillEditor` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `SkillSettings` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/SettingsView.swift` | `UpdateAdvanced` | E25 | Views/SettingsView.axaml | 未做 | — |
+| `Sources/NextThought/SettingsView.swift` | `UpdateAdvanced` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `UpdateSettings` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `WebSearchAdvanced` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsView.swift` | `WebSearchSettings` | E25 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/ShortcutSettingsView.swift` | `ShortcutSettingsView` | E25 | — | 未做 | — |
+| `Sources/NextThought/ShortcutSettingsView.swift` | `ShortcutSettingsView` | E25 | Views/ShortcutSettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/QuickSettings.swift` | `QuickSettingsPanel` | E26 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/QuickSettings.swift` | `QuickStatusRow` | E26 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/InsightSettingsView.swift` | `InsightSettings` | E29 | Views/SettingsView.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
@@ -286,6 +286,6 @@
 | `Sources/NextThought/MeetingUserNotes.swift` | `MeetingUserNotes` | E8 | Views/MeetingUserNotes.axaml | 已实现、未验证 | `Windows/validation/screens/meeting-notes/` |
 | `Sources/NextThought/SettingsPresenter.swift` | `CueAdvanced` | E9 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 | `Sources/NextThought/SettingsPresenter.swift` | `PresenterSettings` | E9 | Views/QuickSettingsPanel.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
-| `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | — | 未做 | — |
+| `Sources/NextThought/SettingsPresenter.swift` | `ShortcutsSettingsRow` | E9 | Views/ShortcutsSettingsRow.axaml | 已实现、未验证 | `Windows/validation/screens/settings-pages/` |
 
-总计：**281** 个视图；已有 Windows 页面 **277** 个，其余 **4** 个待做。
+总计：**281** 个视图；已有 Windows 页面 **280** 个，其余 **1** 个待做。
