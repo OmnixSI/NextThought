@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace NextThought.Core;
@@ -106,6 +105,18 @@ public sealed record WorkspaceSeries(
 
     /// <summary>Material metadata of this series (port of Workspace.documents).</summary>
     public IReadOnlyList<ContextDocument> Documents { get; init; } = [];
+
+    /// <summary>
+    /// Mac <c>Workspace.updatedAt</c>: the last time the series itself changed. HomeView sorts
+    /// 继续一个系列 by <c>lastSessionDate ?? updatedAt</c>; Windows keeps the field so a Mac file
+    /// round-trips and the home order matches (Swift defaults it to createdAt when absent).
+    /// </summary>
+    [JsonPropertyName("updatedAt")]
+    public DateTimeOffset UpdatedAt { get; init; }
+
+    /// <summary>Swift: <c>updatedAt ?? createdAt</c>.</summary>
+    [JsonIgnore]
+    public DateTimeOffset EffectiveUpdatedAt => UpdatedAt == default ? CreatedAt : UpdatedAt;
 
     /// <summary>Reviewed-evidence proposals awaiting accept/reject.</summary>
     public IReadOnlyList<WorkspaceSeriesChangeCandidate> SeriesChangeCandidates { get; init; } = [];
@@ -397,6 +408,7 @@ public sealed class WorkspaceStore
     private readonly string path;
     private readonly string seriesDirectory;
     private readonly string windowsStatePath;
+    private readonly string sessionStatePath;
     private readonly HashSet<string> loadedFiles = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> unreadableFiles = new(StringComparer.OrdinalIgnoreCase);
     private bool loadFailed;
@@ -407,6 +419,8 @@ public sealed class WorkspaceStore
         seriesDirectory = Path.Combine(dataDirectory, "Workspaces");
         // A6: DocumentIds are Windows-only state; they live beside the data, never in a Mac file or backup.
         windowsStatePath = Path.Combine(dataDirectory, "WindowsState", "workspace-documents.json");
+        // A7/A6: session lists are Windows grouping state, never part of a Mac workspace file.
+        sessionStatePath = Path.Combine(dataDirectory, "WindowsState", "workspace-sessions.json");
     }
 
     public string Path_ => path;
@@ -442,7 +456,7 @@ public sealed class WorkspaceStore
                         LogLoadFailure(name, error);
                     }
                 }
-                if (series.Count > 0) return ApplyDocumentIds(SyncSessionMeta(Sanitise(new WorkspaceData(series))));
+                if (series.Count > 0) return ApplySessionIds(ApplyDocumentIds(SyncSessionMeta(Sanitise(new WorkspaceData(series)))));
                 if (unreadableFiles.Count > 0) return WorkspaceData.Empty;
             }
             if (!File.Exists(path)) return WorkspaceData.Empty;
@@ -470,7 +484,7 @@ public sealed class WorkspaceStore
                         ? item with { SessionIds = sessions } : item).ToList()
                 };
             }
-            return ApplyDocumentIds(SyncSessionMeta(Sanitise(data)));
+            return ApplySessionIds(ApplyDocumentIds(SyncSessionMeta(Sanitise(data))));
         }
         catch (Exception error)
         {
@@ -491,7 +505,7 @@ public sealed class WorkspaceStore
         {
             var name = StableSeriesId(series.Id) + ".json";
             keep.Add(name);
-            AtomicWrite(Path.Combine(seriesDirectory, name), SerializeSeries(series));
+            AtomicWrite(Path.Combine(seriesDirectory, name), JsonSerializer.Serialize(series, Options));
         }
         // Delete only files that were read successfully and are no longer present in memory.
         // Unreadable or unknown files stay untouched; they may be hand-edited Mac data.
@@ -503,35 +517,57 @@ public sealed class WorkspaceStore
         }
         SyncSessionMetaFiles(data);
         SaveDocumentIds(data);
+        SaveSessionIds(data);
         // Legacy single-file copy for older Windows builds; Mac reads Workspaces/.
-        AtomicWrite(path, SerializeData(data));
+        AtomicWrite(path, JsonSerializer.Serialize(data, Options));
     }
 
     /// <summary>
-    /// SessionIds is [JsonIgnore] (it is Windows grouping state, not part of the Mac model), but the
-    /// archive still has to keep it: Load() reads "sessionIds" back through ReadSessionIds. Write the
-    /// field explicitly so a save/load round trip keeps a series' meetings.
+    /// A7/A6: session ids are Windows grouping state. Mac workspace files never carry them, so the
+    /// store keeps them in WindowsState/workspace-sessions.json (beside workspace-documents.json,
+    /// never in a Mac file or a portable backup) and merges them back after Load.
     /// </summary>
-    private static string SerializeSeries(WorkspaceSeries series)
+    private void SaveSessionIds(WorkspaceData data)
     {
-        var node = JsonSerializer.SerializeToNode(series, Options)!.AsObject();
-        node["sessionIds"] = new JsonArray(series.SessionIds.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray());
-        return node.ToJsonString(Options);
+        try
+        {
+            var map = data.Series
+                .Where(series => series.SessionIds.Count > 0)
+                .ToDictionary(series => StableSeriesId(series.Id), series => series.SessionIds.ToList());
+            if (map.Count == 0)
+            {
+                if (File.Exists(sessionStatePath)) File.Delete(sessionStatePath);
+                return;
+            }
+            Directory.CreateDirectory(Path.GetDirectoryName(sessionStatePath)!);
+            AtomicWrite(sessionStatePath, JsonSerializer.Serialize(map, JsonDefaults.ArchiveOptions));
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
-    private static string SerializeData(WorkspaceData data)
+    private WorkspaceData ApplySessionIds(WorkspaceData data)
     {
-        var node = JsonSerializer.SerializeToNode(data, Options)!.AsObject();
-        if (node["series"] is JsonArray seriesNodes)
+        if (!File.Exists(sessionStatePath)) return data;
+        try
         {
-            for (var index = 0; index < seriesNodes.Count && index < data.Series.Count; index++)
+            var map = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(File.ReadAllText(sessionStatePath),
+                JsonDefaults.ArchiveOptions);
+            if (map is null || map.Count == 0) return data;
+            return data with
             {
-                if (seriesNodes[index] is not JsonObject seriesNode) continue;
-                seriesNode["sessionIds"] = new JsonArray(data.Series[index].SessionIds
-                    .Select(id => (JsonNode?)JsonValue.Create(id)).ToArray());
-            }
+                Series = data.Series.Select(series =>
+                {
+                    if (!map.TryGetValue(StableSeriesId(series.Id), out var stored) || stored.Count == 0) return series;
+                    var merged = series.SessionIds.Concat(stored).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                    return series with { SessionIds = merged };
+                }).ToList()
+            };
         }
-        return node.ToJsonString(Options);
+        catch (Exception error) when (error is JsonException or IOException or UnauthorizedAccessException)
+        {
+            return data;
+        }
     }
 
     /// <summary>A6/§4.3: the on-disk identifier spelling is upper-case with hyphens.</summary>
@@ -632,17 +668,19 @@ public sealed class WorkspaceStore
             if (node is null) continue;
             var workspaceId = node["workspaceID"]?.GetValue<string>() ?? "";
             var workspaceName = node["workspaceName"]?.GetValue<string>() ?? "";
+            // The folder name is upper-case on disk; meta.id is the canonical spelling used by History.
+            var sessionKey = node["id"]?.GetValue<string>() is { Length: > 0 } metaId ? metaId : sessionId;
             var index = series.FindIndex(item => SameGuid(item.Id, workspaceId));
             if (index >= 0)
             {
-                if (!(series[index].SessionIds ?? []).Any(id => SameGuid(id, sessionId)))
-                    series[index] = series[index].WithSession(sessionId);
+                if (!(series[index].SessionIds ?? []).Any(id => SameGuid(id, sessionKey)))
+                    series[index] = series[index].WithSession(sessionKey);
                 if (!SameGuid(workspaceId, series[index].Id) || workspaceName != series[index].Name)
                     WriteSessionMetaWorkspace(file, node, series[index].Id, series[index].Name);
             }
             else
             {
-                var owner = series.FindIndex(item => (item.SessionIds ?? []).Any(id => SameGuid(id, sessionId)));
+                var owner = series.FindIndex(item => (item.SessionIds ?? []).Any(id => SameGuid(id, sessionKey)));
                 if (owner >= 0) WriteSessionMetaWorkspace(file, node, series[owner].Id, series[owner].Name);
             }
         }

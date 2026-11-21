@@ -50,7 +50,7 @@
     {
       "step": "记录标签打开会议页",
       "passed": true,
-      "detail": "section=Notes；会话=E21 复核会议甲"
+      "detail": "section=Notes；会话=E21 复核会议乙"
     },
     {
       "step": "资料复核：警告与提取预览",
